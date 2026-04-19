@@ -120,6 +120,28 @@
         }
         .section { margin-top: 2rem; }
         .section:first-child { margin-top: 0; }
+        .ai-box {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
+            border-left: 4px solid #6366f1;
+            border-radius: 8px;
+        }
+        .ai-box h2 {
+            color: #4338ca;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        .ai-summary {
+            color: #1f2937;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .ai-btn {
+            background: #6366f1;
+            margin-top: 0.5rem;
+        }
+        .ai-btn:hover:not(:disabled) { background: #4338ca; }
     </style>
 </head>
 <body>
@@ -143,6 +165,10 @@
     </div>
 
     <script>
+        // Vul hier de URL van je gedeployde Cloudflare Worker in.
+        // Leeg laten = AI-samenvattingsknop verbergen.
+        const AI_PROXY_URL = "";
+
         const fieldLabels = {
             kenteken: "Kenteken",
             voertuigsoort: "Voertuigsoort",
@@ -297,8 +323,40 @@
 
                 const vehicleHtml = renderSection("Voertuiggegevens", vehicleData, fieldLabels);
                 const fuelHtml = renderSection("Brandstof & Milieu", fuelData, fuelLabels);
+                const aiHtml = AI_PROXY_URL ? `
+                    <div class="ai-box">
+                        <h2>AI-samenvatting</h2>
+                        <div id="aiSummary" class="ai-summary"></div>
+                        <button type="button" id="aiBtn" class="ai-btn">Genereer samenvatting</button>
+                    </div>` : "";
 
-                result.innerHTML = vehicleHtml + fuelHtml;
+                result.innerHTML = vehicleHtml + fuelHtml + aiHtml;
+
+                if (AI_PROXY_URL) {
+                    const aiBtn = document.getElementById("aiBtn");
+                    const aiSummary = document.getElementById("aiSummary");
+                    aiBtn.addEventListener("click", async () => {
+                        aiBtn.disabled = true;
+                        aiSummary.textContent = "Samenvatting genereren...";
+                        try {
+                            const res = await fetch(AI_PROXY_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    vehicle: vehicleData[0],
+                                    fuel: fuelData[0] || null,
+                                }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                            aiSummary.textContent = data.summary;
+                        } catch (err) {
+                            aiSummary.innerHTML = `<span style="color:#c33">Fout: ${escapeHtml(err.message)}</span>`;
+                        } finally {
+                            aiBtn.disabled = false;
+                        }
+                    });
+                }
             } catch (err) {
                 result.innerHTML = `<div class="error">Fout bij ophalen: ${escapeHtml(err.message)}</div>`;
             } finally {
