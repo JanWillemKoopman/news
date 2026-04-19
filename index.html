@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDW Kenteken Lookup</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+        .search-box {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 2rem;
+        }
+        form {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .plate-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.2rem;
+            border: 3px solid #ffcc00;
+            background: #ffcc00;
+            color: #000;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+        }
+        .plate-input:focus {
+            outline: none;
+            border-color: #e6b800;
+            box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.3);
+        }
+        button {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: bold;
+            background: #2a5298;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover:not(:disabled) { background: #1e3c72; }
+        button:disabled { background: #999; cursor: not-allowed; }
+        .result {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+        .result.visible { display: block; }
+        .result h2 {
+            color: #2a5298;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .data-item {
+            background: #f5f7fa;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border-left: 4px solid #2a5298;
+        }
+        .data-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 0.05rem;
+            margin-bottom: 0.25rem;
+        }
+        .data-value {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 2rem;
+        }
+        .section { margin-top: 2rem; }
+        .section:first-child { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RDW Kenteken Zoeker</h1>
+        <div class="search-box">
+            <form id="searchForm">
+                <input
+                    type="text"
+                    id="plateInput"
+                    class="plate-input"
+                    placeholder="XX-999-X"
+                    maxlength="8"
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" id="searchBtn">Zoeken</button>
+            </form>
+        </div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const fieldLabels = {
+            kenteken: "Kenteken",
+            voertuigsoort: "Voertuigsoort",
+            merk: "Merk",
+            handelsbenaming: "Handelsbenaming",
+            vervaldatum_apk: "APK vervaldatum",
+            datum_tenaamstelling: "Datum tenaamstelling",
+            bruto_bpm: "Bruto BPM",
+            inrichting: "Inrichting",
+            aantal_zitplaatsen: "Aantal zitplaatsen",
+            eerste_kleur: "Eerste kleur",
+            tweede_kleur: "Tweede kleur",
+            aantal_cilinders: "Aantal cilinders",
+            cilinderinhoud: "Cilinderinhoud (cc)",
+            massa_ledig_voertuig: "Massa ledig voertuig (kg)",
+            toegestane_maximum_massa_voertuig: "Toegestane max. massa (kg)",
+            massa_rijklaar: "Massa rijklaar (kg)",
+            maximum_massa_trekken_ongeremd: "Max. trekken ongeremd (kg)",
+            maximum_trekken_massa_geremd: "Max. trekken geremd (kg)",
+            datum_eerste_toelating: "Datum eerste toelating",
+            datum_eerste_tenaamstelling_in_nederland: "Eerste tenaamstelling NL",
+            wacht_op_keuren: "Wacht op keuren",
+            catalogusprijs: "Catalogusprijs (EUR)",
+            wam_verzekerd: "WAM verzekerd",
+            aantal_deuren: "Aantal deuren",
+            aantal_wielen: "Aantal wielen",
+            afstand_hart_koppeling_tot_achterzijde_voertuig: "Afstand koppeling-achterzijde",
+            afstand_voorzijde_voertuig_tot_hart_koppeling: "Afstand voorzijde-koppeling",
+            lengte: "Lengte (cm)",
+            breedte: "Breedte (cm)",
+            europese_voertuigcategorie: "Europese voertuigcategorie",
+            plaats_chassisnummer: "Plaats chassisnummer",
+            technische_max_massa_voertuig: "Technische max. massa",
+            type: "Type",
+            typegoedkeuringsnummer: "Typegoedkeuringsnummer",
+            variant: "Variant",
+            uitvoering: "Uitvoering",
+            volgnummer_wijziging_eu_typegoedkeuring: "Volgnr. wijziging EU typegoedkeuring",
+            vermogen_massarijklaar: "Vermogen/massa rijklaar",
+            wielbasis: "Wielbasis (cm)",
+            export_indicator: "Export indicator",
+            openstaande_terugroepactie_indicator: "Openstaande terugroepactie",
+            taxi_indicator: "Taxi indicator",
+            maximum_massa_samenstelling: "Max. massa samenstelling",
+            aantal_rolstoelplaatsen: "Aantal rolstoelplaatsen",
+            maximum_ondersteunende_snelheid: "Max. ondersteunende snelheid",
+            api_gekentekende_voertuigen_assen: "",
+            api_gekentekende_voertuigen_brandstof: "",
+            api_gekentekende_voertuigen_carrosserie: "",
+            api_gekentekende_voertuigen_carrosserie_specifiek: "",
+            api_gekentekende_voertuigen_voertuigklasse: ""
+        };
+
+        const fuelLabels = {
+            brandstof_omschrijving: "Brandstof",
+            brandstofverbruik_buiten: "Verbruik buiten (l/100km)",
+            brandstofverbruik_gecombineerd: "Verbruik gecombineerd (l/100km)",
+            brandstofverbruik_stad: "Verbruik stad (l/100km)",
+            co2_uitstoot_gecombineerd: "CO2-uitstoot gecombineerd (g/km)",
+            co2_uitstoot_gewogen: "CO2-uitstoot gewogen (g/km)",
+            geluidsniveau_rijdend: "Geluidsniveau rijdend (dB)",
+            geluidsniveau_stationair: "Geluidsniveau stationair (dB)",
+            emissiecode_omschrijving: "Emissiecode",
+            milieuklasse_eg_goedkeuring_licht: "Milieuklasse EG licht",
+            nettomaximumvermogen: "Netto maximumvermogen (kW)",
+            nominaal_continu_maximumvermogen: "Nominaal continu max. vermogen (kW)",
+            toerental_geluidsniveau: "Toerental geluidsniveau (rpm)",
+            uitstoot_deeltjes_licht: "Uitstoot deeltjes licht",
+            actie_radius_enkel_elektrisch_wltp: "Actieradius elektrisch WLTP (km)",
+            actie_radius_enkel_elektrisch_stad_wltp: "Actieradius elektrisch stad WLTP (km)",
+            elektrisch_verbruik_enkel_elektrisch_wltp: "Elektrisch verbruik WLTP (Wh/km)",
+            max_vermogen_15_minuten: "Max. vermogen 15 min (kW)",
+            max_vermogen_60_minuten: "Max. vermogen 60 min (kW)"
+        };
+
+        function formatPlate(value) {
+            return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        }
+
+        function renderSection(title, data, labels) {
+            if (!data || data.length === 0) return "";
+            const record = data[0];
+            const items = Object.entries(record)
+                .filter(([key]) => labels[key] !== "")
+                .filter(([key, value]) => value !== null && value !== undefined && value !== "")
+                .map(([key, value]) => {
+                    const label = labels[key] || key;
+                    return `
+                        <div class="data-item">
+                            <div class="data-label">${label}</div>
+                            <div class="data-value">${escapeHtml(String(value))}</div>
+                        </div>`;
+                }).join("");
+            if (!items) return "";
+            return `
+                <div class="section">
+                    <h2>${title}</h2>
+                    <div class="data-grid">${items}</div>
+                </div>`;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        async function lookupPlate(plate) {
+            const vehicleUrl = `https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken=${plate}`;
+            const fuelUrl = `https://opendata.rdw.nl/resource/8ys7-d773.json?kenteken=${plate}`;
+
+            const [vehicleRes, fuelRes] = await Promise.all([
+                fetch(vehicleUrl),
+                fetch(fuelUrl)
+            ]);
+
+            if (!vehicleRes.ok) {
+                throw new Error(`RDW API fout: ${vehicleRes.status}`);
+            }
+
+            const vehicleData = await vehicleRes.json();
+            const fuelData = fuelRes.ok ? await fuelRes.json() : [];
+
+            return { vehicleData, fuelData };
+        }
+
+        const form = document.getElementById("searchForm");
+        const input = document.getElementById("plateInput");
+        const btn = document.getElementById("searchBtn");
+        const result = document.getElementById("result");
+
+        input.addEventListener("input", (e) => {
+            e.target.value = formatPlate(e.target.value);
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const plate = formatPlate(input.value);
+            if (!plate) return;
+
+            result.classList.add("visible");
+            result.innerHTML = '<div class="loading">Gegevens ophalen...</div>';
+            btn.disabled = true;
+
+            try {
+                const { vehicleData, fuelData } = await lookupPlate(plate);
+
+                if (!vehicleData || vehicleData.length === 0) {
+                    result.innerHTML = `<div class="error">Geen voertuig gevonden voor kenteken <strong>${escapeHtml(plate)}</strong>.</div>`;
+                    return;
+                }
+
+                const vehicleHtml = renderSection("Voertuiggegevens", vehicleData, fieldLabels);
+                const fuelHtml = renderSection("Brandstof & Milieu", fuelData, fuelLabels);
+
+                result.innerHTML = vehicleHtml + fuelHtml;
+            } catch (err) {
+                result.innerHTML = `<div class="error">Fout bij ophalen: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
