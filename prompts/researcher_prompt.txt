@@ -1,0 +1,11 @@
+Zoek alle belangrijke nieuwsartikelen van de afgelopen 7 dagen op van de volgende Nederlandse nieuwsbronnen: {sources}
+
+Geef een gestructureerd overzicht terug als JSON-array. Elk object in de array heeft precies deze velden:
+- "title": de titel van het artikel (string)
+- "summary": een korte samenvatting van 2-3 zinnen (string)
+- "source": de naam van de nieuwsbron, bijv. "nu.nl" (string)
+- "date": de publicatiedatum in YYYY-MM-DD formaat (string)
+- "category": de nieuwscategorie, bijv. Binnenland, Buitenland, Economie, Politiek, Sport (string)
+
+Selecteer de 15 tot 25 meest significante en breed gedeelde nieuwsberichten, verdeeld over verschillende categorieën.
+Geef ALLEEN de JSON-array terug, zonder inleidende tekst of uitleg.
