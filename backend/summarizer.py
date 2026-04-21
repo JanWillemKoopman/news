@@ -1,7 +1,6 @@
 import logging
-from google import genai
-from google.genai.types import GenerateContentConfig
-from backend.config import GEMINI_API_KEY, SUMMARIZER_MODEL, SUMMARIZER_PROMPT_FILE
+from backend.config import SUMMARIZER_MODEL, SUMMARIZER_PROMPT_FILE
+from backend.gemini_client import generate
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +38,6 @@ def _load_system_prompt() -> str:
 
 
 def summarize_articles(articles: list, week_start: str, week_end: str) -> tuple:
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is niet ingesteld in .env")
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
     articles_text = "\n\n".join(
         f"**{a.get('title', '')}**\n"
         f"Bron: {a.get('source', '')} — {a.get('date', '')} — {a.get('category', '')}\n"
@@ -59,19 +53,15 @@ def summarize_articles(articles: list, week_start: str, week_end: str) -> tuple:
     )
 
     logger.info("Summarizer gestart")
-
-    response = client.models.generate_content(
+    text = generate(
         model=SUMMARIZER_MODEL,
-        contents=user_prompt,
-        config=GenerateContentConfig(
-            system_instruction=system_prompt,
-            temperature=0.6,
-        ),
+        prompt=user_prompt,
+        system=system_prompt,
+        temperature=0.6,
     )
+    text = text.strip()
 
-    text = response.text.strip()
     lines = text.split("\n")
-
     title = lines[0].lstrip("#").strip()
     body = "\n".join(lines[1:]).strip()
 
