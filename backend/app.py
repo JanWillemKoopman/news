@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from backend.storage import get_summaries
-from backend.config import PAGE_SIZE
+from backend.config import PAGE_SIZE, TRIGGER_SECRET
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,12 @@ def api_summaries():
 
 @app.route("/api/trigger", methods=["POST"])
 def api_trigger():
-    """Start handmatig een nieuwsupdate (voor testen)."""
+    """Start handmatig een nieuwsupdate (voor testen). Vereist TRIGGER_SECRET header."""
+    if TRIGGER_SECRET:
+        token = request.headers.get("X-Trigger-Secret", "")
+        if token != TRIGGER_SECRET:
+            return jsonify({"error": "Niet geautoriseerd"}), 401
+
     from backend.scheduler import run_weekly_update
 
     def _run():

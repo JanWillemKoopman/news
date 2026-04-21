@@ -21,6 +21,8 @@ SUMMARIES_FILE = DATA_DIR / "summaries.json"
 RESEARCHER_PROMPT_FILE = PROMPTS_DIR / "researcher_prompt.txt"
 SUMMARIZER_PROMPT_FILE = PROMPTS_DIR / "summarizer_prompt.txt"
 
+TRIGGER_SECRET = os.getenv("TRIGGER_SECRET", "")
+
 PAGE_SIZE = int(os.getenv("PAGE_SIZE", "5"))
 PORT = int(os.getenv("PORT", "5000"))
 
