@@ -8,7 +8,7 @@ from backend.config import PAGE_SIZE, TRIGGER_SECRET
 
 logger = logging.getLogger(__name__)
 
-STATIC_DIR = Path(__file__).parent.parent / "static"
+STATIC_DIR = Path(__file__).parent.parent  # project root: index.html, style.css, app.js
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
 CORS(app)
