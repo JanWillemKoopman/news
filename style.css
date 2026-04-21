@@ -279,12 +279,44 @@ footer {
   color: var(--border-soft);
 }
 
-/* ── Responsive Design ──────────────────────────────────── */
+/* ── Responsive Design (Geoptimaliseerd voor iPhone) ────── */
 
 @media (max-width: 600px) {
-  html { font-size: 17px; }
-  .site-title { font-size: 2.4rem; }
-  .header-top { flex-direction: column; align-items: center; gap: 0.5rem; }
-  .summary-title { font-size: 1.5rem; }
-  .container { padding: 0 1rem; }
+  html { 
+    /* Desktop was 18px, we zetten mobiel op 16px. 
+       Dit maakt alle tekst en witruimte direct 11% kleiner. */
+    font-size: 16px; 
+  }
+
+  .site-title { 
+    /* De hoofdtitel mag op mobiel nog iets compacter */
+    font-size: 2.1rem; 
+    letter-spacing: -0.03em;
+  }
+
+  .site-sub {
+    /* Ondertitel iets kleiner voor een betere balans */
+    font-size: 0.95rem;
+    padding: 0 10px;
+  }
+
+  .summary-title { 
+    /* De koppen van de artikelen iets minder dominant */
+    font-size: 1.45rem; 
+  }
+
+  .summary-card {
+    /* Iets minder witruimte tussen de artikelen op mobiel */
+    padding: 1.8rem 0;
+  }
+
+  .header-top { 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 0.4rem; 
+  }
+
+  .container { 
+    padding: 0 1rem; 
+  }
 }
