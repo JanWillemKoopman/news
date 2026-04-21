@@ -1,20 +1,27 @@
 /* ============================================================
-   Weekoverzicht — NRC-geïnspireerde stijl
+   Weekoverzicht — Volledige NRC-geïnspireerde Stijl
    ============================================================ */
 
 :root {
-  --accent:       #c0392b;
-  --text:         #1a1a1a;
-  --text-muted:   #666;
-  --text-light:   #999;
-  --border:       #d8d4cc;
-  --border-light: #eceae4;
-  --bg:           #ffffff;
-  --bg-subtle:    #f8f6f1;
-  --max-width:    720px;
-  --font-serif:   Georgia, "Times New Roman", Times, serif;
-  --font-sans:    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Kleurenpalet */
+  --accent:       #b30000;    /* NRC Rood */
+  --text:         #121212;    /* Diepzwart voor tekst */
+  --text-muted:   #4a4a4a;    /* Grijs voor subkoppen */
+  --text-light:   #757575;    /* Lichtgrijs voor meta-data */
+  --border:       #121212;    /* Harde lijnen */
+  --border-soft:  #e0ddd5;    /* Zachte scheidingslijnen */
+  
+  /* Achtergrond: Het 'papieren' gevoel */
+  --bg:           #fcfaf5;    
+  --bg-subtle:    #f5f2e9;
+  
+  /* Layout */
+  --max-width:    700px;
+  --font-serif:   'Libre Baskerville', Georgia, "Times New Roman", serif;
+  --font-sans:    'Inter', "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
+
+/* ── Basis Reset ────────────────────────────────────────── */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -23,30 +30,30 @@
 }
 
 html {
-  font-size: 17px;
+  font-size: 18px;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   font-family: var(--font-serif);
   color: var(--text);
-  background: var(--bg);
-  line-height: 1.75;
+  background-color: var(--bg);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
 
 header {
-  border-top: 5px solid var(--accent);
-  padding: 1.5rem 0 1.25rem;
-  border-bottom: 2px solid var(--text);
-  margin-bottom: 2.5rem;
+  padding: 2.5rem 0 1.5rem;
+  border-bottom: 3px solid var(--border); /* De kenmerkende dikke lijn */
+  margin-bottom: 3rem;
 }
 
 .header-top {
@@ -54,35 +61,39 @@ header {
   justify-content: space-between;
   align-items: baseline;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 0.6rem;
+  color: var(--text);
+  margin-bottom: 1.5rem;
 }
 
 .site-title {
   font-family: var(--font-serif);
-  font-size: 2.6rem;
+  font-size: 3.2rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  color: var(--text);
-  margin-bottom: 0.4rem;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-align: center;
+  margin-bottom: 1rem;
 }
 
 .site-sub {
-  font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  text-align: center;
   color: var(--text-muted);
-  letter-spacing: 0.01em;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
-/* ── Summary card ───────────────────────────────────────── */
+/* ── Summary Card (Artikelen) ────────────────────────────── */
 
 .summary-card {
-  padding: 2rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .summary-card:first-child {
@@ -91,124 +102,117 @@ header {
 
 .summary-week {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
 .summary-title {
   font-family: var(--font-serif);
-  font-size: 1.55rem;
+  font-size: 1.85rem;
   font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   color: var(--text);
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.25rem;
 }
+
+/* Markdown Content Styling */
 
 .summary-body {
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.75;
   color: var(--text);
 }
 
-/* Markdown-rendered content within a summary */
-
 .summary-body p {
-  margin-bottom: 1em;
-}
-
-.summary-body p:last-child {
-  margin-bottom: 0;
+  margin-bottom: 1.2rem;
 }
 
 .summary-body h2 {
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 1.6rem 0 0.5rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.08em;
+  margin: 2.2rem 0 0.8rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 0.3rem;
 }
 
 .summary-body h3 {
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin: 1.2rem 0 0.4rem;
+  margin: 1.5rem 0 0.5rem;
 }
 
 .summary-body strong {
   font-weight: 700;
 }
 
-.summary-body em {
-  font-style: italic;
-}
-
 .summary-meta {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-light);
-  letter-spacing: 0.04em;
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
 }
 
 .summary-meta-sep {
-  color: var(--border);
+  color: var(--border-soft);
 }
 
-/* Read-more toggle */
+/* ── Interactie (Knoppen) ────────────────────────────────── */
 
 .read-more-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-  padding: 0;
-  margin-top: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  text-decoration: none;
-}
-
-.read-more-btn:hover {
-  text-decoration: underline;
-}
-
-/* ── Pagination ─────────────────────────────────────────── */
-
-#pagination {
-  padding: 2rem 0 1rem;
-  text-align: left;
-}
-
-.btn-older {
   background: none;
   border: 1px solid var(--text);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+}
+
+.read-more-btn:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+#pagination {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.btn-older {
+  background: transparent;
+  border: 2px solid var(--text);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.8rem 1.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .btn-older:hover {
@@ -216,24 +220,20 @@ header {
   color: var(--bg);
 }
 
-.btn-arrow {
-  margin-left: 0.2em;
-}
-
-/* ── States ─────────────────────────────────────────────── */
+/* ── States (Laden & Leeg) ────────────────────────────────── */
 
 .loading-state {
-  padding: 3rem 0;
+  padding: 4rem 0;
   display: flex;
-  gap: 0.4rem;
-  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .loading-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--border);
+  background: var(--accent);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -242,40 +242,49 @@ header {
 
 @keyframes pulse {
   0%, 100% { opacity: 0.3; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.3); }
+  50%      { opacity: 1;   transform: scale(1.3); }
 }
 
 .empty-state {
-  padding: 3rem 0;
+  padding: 4rem 0;
+  text-align: center;
   font-family: var(--font-sans);
   font-size: 0.9rem;
   color: var(--text-muted);
-  border-top: 1px solid var(--border-light);
+  border: 1px dashed var(--border-soft);
+  margin-top: 2rem;
 }
 
 /* ── Footer ─────────────────────────────────────────────── */
 
 footer {
-  margin-top: 3rem;
-  padding: 1.25rem 0;
-  border-top: 1px solid var(--border);
+  margin-top: 5rem;
+  padding: 3rem 0;
+  background-color: var(--bg-subtle);
+  border-top: 1px solid var(--border-soft);
 }
 
 .footer-inner {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--text-light);
-  letter-spacing: 0.04em;
+  text-align: center;
 }
 
 .footer-sep {
-  margin: 0 0.4em;
+  margin: 0 0.5rem;
+  color: var(--border-soft);
 }
 
-/* ── Responsive ─────────────────────────────────────────── */
+/* ── Responsive Design ──────────────────────────────────── */
 
 @media (max-width: 600px) {
-  .site-title { font-size: 2rem; }
-  .summary-title { font-size: 1.3rem; }
-  .header-top { flex-direction: column; gap: 0.2rem; }
+  html { font-size: 17px; }
+  .site-title { font-size: 2.4rem; }
+  .header-top { flex-direction: column; align-items: center; gap: 0.5rem; }
+  .summary-title { font-size: 1.5rem; }
+  .container { padding: 0 1rem; }
 }
