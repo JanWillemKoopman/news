@@ -1,6 +1,6 @@
 """
-Deep Reader — fetcht de volledige artikeltekst en destilleert quotes, cijfers en context.
-Fallback op Researcher-samenvatting bij mislukte fetch.
+Deep Reader — fetcht de volledige artikeltekst per sectie en destilleert
+quotes, cijfers en context. Fallback op Researcher-samenvatting bij mislukte fetch.
 """
 import json
 import logging
@@ -18,14 +18,14 @@ alleen letterlijk overgenomen tekst is toegestaan.\
 """
 
 _PROMPT = """\
-Analyseer de onderstaande artikeltekst en extraheer:
+Analyseer de onderstaande artikeltekst en extraheer voor een PSV-nieuwsbrief:
 
-1. Directe QUOTES — alleen als ze letterlijk in de tekst staan, met exacte spreker
-2. Concrete CIJFERS en statistieken (transferbedragen, speelminuten, standen, doelpunten, etc.)
-3. CONTEXT die niet in de kop/lead stond maar wél relevant is voor PSV-supporters
+1. Directe QUOTES — alleen letterlijk overgenomen, met exacte spreker
+2. CIJFERS en statistieken (transferbedragen, speelminuten, standen, doelpunten, data)
+3. CONTEXT die niet in de kop/lead stond maar relevant is voor PSV-supporters
+4. KERNFEITEN — lijst met concrete gebeurtenissen / feiten uit dit artikel
 
 Artikel-URL: {url}
-
 Artikeltekst:
 ---
 {tekst}
@@ -34,113 +34,108 @@ Artikeltekst:
 Geef je antwoord UITSLUITEND als geldig JSON:
 {{
   "quotes": [
-    {{
-      "spreker": "Volledige naam",
-      "quote": "Letterlijke tekst uit het artikel",
-      "context": "Korte situatiebeschrijving"
-    }}
+    {{"spreker": "Volledige naam", "quote": "Letterlijke tekst", "context": "Korte situatie"}}
   ],
   "cijfers": [
-    {{
-      "type": "bijv. transferbedrag",
-      "waarde": "bijv. '€18 miljoen'",
-      "context": "Korte context"
-    }}
+    {{"type": "bijv. transferbedrag", "waarde": "bijv. '€18 miljoen'", "context": "Korte context"}}
   ],
-  "context": "Extra achtergrond die niet in de kop stond (max 3 zinnen)"
+  "kernfeiten": ["Feit 1 in 1 zin", "Feit 2 in 1 zin"],
+  "context": "Extra achtergrond die niet in kop/lead stond (max 3 zinnen)"
 }}
 
 Lege arrays zijn beter dan verzonnen feiten.\
 """
 
-_MAX_TEKST_TEKENS = 6000
-_MAX_ITEMS = 7
+_MAX_TEKST_TEKENS = 7000
+_MAX_ITEMS_PER_SECTIE = 3
+_MIN_TEXT_LENGTH = 300  # tekens; korter = paywall/cookiemuur/redirect → skippen
 
 
-def run(research_items: list, scout_profile: dict, run_dir: str) -> list:
-    selected = _select_items(research_items, max_n=_MAX_ITEMS)
-    logger.info(f"Deep Reader: {len(selected)} items geselecteerd voor verdieping")
+def run(research_per_sectie: dict, scout_profile: dict, run_dir: str) -> dict:
+    """Fetch + deep-read top items per sectie. Retourneert zelfde structuur verrijkt met 'diepgang'."""
+    enriched: dict = {}
+    totaal = 0
 
-    enriched = []
-    for item in selected:
-        url = item.get("bron_url", "")
-        logger.info(f"  Ophalen: {url[:70]}...")
+    for sectie, items in research_per_sectie.items():
+        sorted_items = sorted(items, key=_recency, reverse=True)
+        logger.info(f"Deep Reader sectie='{sectie}': {len(sorted_items)} items beschikbaar")
 
-        fetch_result = fetcher.fetch_article(url)
+        enriched_sectie = []
+        deep_read_count = 0
 
-        if not fetch_result.get("text"):
-            logger.warning(f"  → Fetch mislukt, gebruik Researcher-samenvatting als fallback")
-            item["diepgang"] = {
-                "quotes": [],
-                "cijfers": [],
-                "context": item.get("samenvatting", ""),
-                "deep_fallback": True,
-            }
-            enriched.append(item)
-            continue
+        for item in sorted_items:
+            url = item.get("bron_url", "")
+            if not url:
+                item["diepgang"] = _fallback_diepgang(item)
+                enriched_sectie.append(item)
+                continue
 
-        try:
-            tekst = fetch_result["text"][:_MAX_TEKST_TEKENS]
-            prompt = _PROMPT.format(url=url, tekst=tekst)
-            raw = llm.generate(
-                model=config.DEEP_READER_MODEL,
-                prompt=prompt,
-                system=_SYSTEM,
-                temperature=0.1,
-            )
-            diepgang = llm.parse_json(raw)
-            diepgang["deep_fallback"] = False
-            item["diepgang"] = diepgang
-            logger.info(
-                f"  → {len(diepgang.get('quotes', []))} quotes, "
-                f"{len(diepgang.get('cijfers', []))} cijfers"
-            )
-        except Exception as e:
-            logger.error(f"  → Deep Reader analyse mislukt: {e}")
-            item["diepgang"] = {
-                "quotes": [],
-                "cijfers": [],
-                "context": item.get("samenvatting", ""),
-                "deep_fallback": True,
-            }
+            if deep_read_count >= _MAX_ITEMS_PER_SECTIE:
+                # Alle deep-read slots zijn gevuld — rest meenemen als fallback-bron
+                item["diepgang"] = _fallback_diepgang(item)
+                enriched_sectie.append(item)
+                continue
 
-        enriched.append(item)
+            logger.info(f"  Ophalen: {url[:80]}")
+            fetched = fetcher.fetch_article(url)
+            tekst = fetched.get("text", "") or ""
+
+            if len(tekst) < _MIN_TEXT_LENGTH:
+                logger.warning(
+                    f"  → Tekst te kort ({len(tekst)} tekens, min {_MIN_TEXT_LENGTH}) "
+                    f"— paywall/cookiemuur? Volgende item wordt geprobeerd."
+                )
+                item["diepgang"] = _fallback_diepgang(item)
+                enriched_sectie.append(item)
+                continue
+
+            try:
+                raw = llm.generate(
+                    model=config.DEEP_READER_MODEL,
+                    prompt=_PROMPT.format(url=url, tekst=tekst[:_MAX_TEKST_TEKENS]),
+                    system=_SYSTEM,
+                    temperature=0.1,
+                )
+                diepgang = llm.parse_json(raw)
+                diepgang["deep_fallback"] = False
+                item["diepgang"] = diepgang
+                deep_read_count += 1
+                logger.info(
+                    f"  → quotes={len(diepgang.get('quotes', []))} "
+                    f"cijfers={len(diepgang.get('cijfers', []))} "
+                    f"feiten={len(diepgang.get('kernfeiten', []))}"
+                )
+            except Exception as e:
+                logger.error(f"  → Deep Reader fout: {e}")
+                item["diepgang"] = _fallback_diepgang(item)
+
+            enriched_sectie.append(item)
+
+        enriched[sectie] = enriched_sectie
+        totaal += len(enriched_sectie)
 
     _save(run_dir, enriched)
-    logger.info(f"Deep Reader voltooid: {len(enriched)} items verrijkt")
+    logger.info(f"Deep Reader voltooid: {totaal} items verrijkt over {len(enriched)} secties")
     return enriched
 
 
-def _select_items(items: list, max_n: int) -> list:
-    """Selecteer diverse recente items: één per categorie, dan aanvullen op recency."""
-    def recency(item):
-        try:
-            return datetime.strptime(item.get("datum", "2000-01-01"), "%Y-%m-%d").timestamp()
-        except ValueError:
-            return 0.0
-
-    sorted_items = sorted(items, key=recency, reverse=True)
-
-    selected = []
-    seen_cats = set()
-
-    for item in sorted_items:
-        cat = item.get("categorie", "")
-        if cat not in seen_cats:
-            selected.append(item)
-            seen_cats.add(cat)
-        if len(selected) >= max_n:
-            break
-
-    for item in sorted_items:
-        if item not in selected:
-            selected.append(item)
-        if len(selected) >= max_n:
-            break
-
-    return selected[:max_n]
+def _recency(item: dict) -> float:
+    try:
+        return datetime.strptime(item.get("datum", "2000-01-01"), "%Y-%m-%d").timestamp()
+    except ValueError:
+        return 0.0
 
 
-def _save(run_dir: str, data: list) -> None:
+def _fallback_diepgang(item: dict) -> dict:
+    return {
+        "quotes": [],
+        "cijfers": [],
+        "kernfeiten": [item.get("samenvatting", "")[:200]] if item.get("samenvatting") else [],
+        "context": item.get("samenvatting", ""),
+        "deep_fallback": True,
+    }
+
+
+def _save(run_dir: str, data: dict) -> None:
     with open(os.path.join(run_dir, "deep.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
