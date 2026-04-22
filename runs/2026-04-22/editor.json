@@ -2,30 +2,27 @@
   "sectievolgorde": [
     "vooruitblik",
     "ziekenboeg",
-    "terugblik",
     "transfers",
     "achtergrond"
   ],
   "sectie_hoeken": {
-    "vooruitblik": "Met de wedstrijd over minder dan 24 uur is de thuiswedstrijd tegen PEC Zwolle een cruciale, verplichte horde in de race om het kampioenschap.",
-    "ziekenboeg": "De personele puzzel voor Peter Bosz: wie is fit genoeg voor de eindsprint en hoe wordt de afwezigheid van sleutelspelers opgevangen?",
-    "terugblik": "De zakelijke overwinning op Sparta was een belangrijke stap die het team het vertrouwen geeft voor de beslissende fase van de competitie.",
-    "transfers": "Terwijl de focus op de titel ligt, wordt achter de schermen al hard gewerkt aan het vastleggen van sterkhouders en het plannen voor volgend seizoen.",
-    "achtergrond": "Een blik op de toekomst: de doorstroom van talent uit Jong PSV als fundament onder het huidige en toekomstige succes."
+    "vooruitblik": "Met de wedstrijd tegen PEC Zwolle binnen 24 uur, is dit de cruciale volgende stap in de jacht op de landstitel.",
+    "ziekenboeg": "Een update over de fitheid van sleutelspelers die bepalend is voor de opstelling in de seizoensfinale.",
+    "terugblik": "De zakelijke overwinning op Sparta (11 dagen geleden) toont de volwassenheid en focus van een ploeg die op het kampioenschap afstevent.",
+    "transfers": "De eerste contouren voor de selectie van volgend seizoen worden zichtbaar nu de transfergeruchten rondom sterkhouders aanzwellen.",
+    "achtergrond": "Een diepere analyse van de tactische keuzes die PSV dit seizoen naar de koppositie hebben gebracht."
   },
   "kopverhaal_sectie": "vooruitblik",
   "sectie_labels": {
     "vooruitblik": "Vooruitblik",
     "ziekenboeg": "Ziekenboeg & Schorsingen",
-    "terugblik": "Terugblik",
     "transfers": "Transfers & Geruchten",
     "achtergrond": "Achtergrond & Analyse"
   },
   "items_per_sectie_counts": {
-    "terugblik": 2,
     "vooruitblik": 3,
-    "ziekenboeg": 2,
-    "transfers": 4,
-    "achtergrond": 1
+    "ziekenboeg": 3,
+    "transfers": 3,
+    "achtergrond": 3
   }
 }

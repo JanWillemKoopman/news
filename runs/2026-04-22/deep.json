@@ -1,168 +1,132 @@
 {
-  "terugblik": [
-    {
-      "titel": "Analyse: wat Til als 'valse' rechtsbuiten zou toevoegen aan Oranje",
-      "samenvatting": "Na het gewonnen uitduel van PSV met Sparta Rotterdam op 11 april 2026 (0-2) vertelde Guus Til dat Ronald Koeman hem op de radar heeft voor het Nederlands elftal. In de wedstrijd tegen Sparta speelden Til en Ismael Saibari als twee nummer 10's achter spits Ricardo Pepi. Til wisselde het spelen aan de binnen- en buitenkant af met rechtsback Kiliann Sildillia en was betrokken bij gevaarlijke situaties, waaronder de assist op Pepi's 0-2.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF2sGMUZHHsMjcQ03bMkrQXrmyC9JdSVdTU_f9Ny7RqclimTFn4LEpJx7KRrxSm0l-X0XZ3XCpSoBlaKk73VmuVHdq7eytoePTWowbm686sgV-oUjvnjjTn6kPFKP3xFpWVUI2SBTPPUnhFWHWsKerZrwoy0Mdn-3kMvBycoCHn4lWExP4QZH9gTwXoOsiX9A7sUro=",
-      "bron_naam": "Voetbal International",
-      "datum": "2026-04-13",
-      "sectie": "terugblik",
-      "diepgang": {
-        "quotes": [],
-        "cijfers": [],
-        "kernfeiten": [
-          "Na het gewonnen uitduel van PSV met Sparta Rotterdam op 11 april 2026 (0-2) vertelde Guus Til dat Ronald Koeman hem op de radar heeft voor het Nederlands elftal. In de wedstrijd tegen Sparta speelden "
-        ],
-        "context": "Na het gewonnen uitduel van PSV met Sparta Rotterdam op 11 april 2026 (0-2) vertelde Guus Til dat Ronald Koeman hem op de radar heeft voor het Nederlands elftal. In de wedstrijd tegen Sparta speelden Til en Ismael Saibari als twee nummer 10's achter spits Ricardo Pepi. Til wisselde het spelen aan de binnen- en buitenkant af met rechtsback Kiliann Sildillia en was betrokken bij gevaarlijke situaties, waaronder de assist op Pepi's 0-2.",
-        "deep_fallback": true
-      }
-    },
-    {
-      "titel": "PSV sluit feestweek zonder te imponeren succesvol af tegen Sparta",
-      "samenvatting": "PSV heeft op 11 april 2026 zonder zich bovenmatig in te spannen met 0-2 gewonnen van Sparta Rotterdam op Het Kasteel. Ricardo Pepi opende kort voor rust de score met een kopbal uit een voorzet van Guus Til. Ismael Saibari maakte de tweede goal voor PSV. Het duel werd kort stilgelegd nadat vuurwerk werd afgestoken in het uitvak, wat rookontwikkeling veroorzaakte.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH-XuYrsZo3UgjF9qQzqTDRfAM6y5PG4qEHmg_UMkPjrdp17yxAEMGy0C82sIQC5mjsOmLxJYHDIBDDr4eXJfjyOrsurMLTleA04uuATRK5dXg4bKNWcRGwPMM9XKE90wV3InBiVQ0U4po4WGZ_vpsBVZRUGGx6xCDWBA27GM2_fsw4T7U1YuoGm2rOHpf_k9FqVpD3Jg==",
-      "bron_naam": "Voetbal International",
-      "datum": "2026-04-11",
-      "sectie": "terugblik",
-      "diepgang": {
-        "quotes": [],
-        "cijfers": [],
-        "kernfeiten": [
-          "PSV heeft op 11 april 2026 zonder zich bovenmatig in te spannen met 0-2 gewonnen van Sparta Rotterdam op Het Kasteel. Ricardo Pepi opende kort voor rust de score met een kopbal uit een voorzet van Guu"
-        ],
-        "context": "PSV heeft op 11 april 2026 zonder zich bovenmatig in te spannen met 0-2 gewonnen van Sparta Rotterdam op Het Kasteel. Ricardo Pepi opende kort voor rust de score met een kopbal uit een voorzet van Guus Til. Ismael Saibari maakte de tweede goal voor PSV. Het duel werd kort stilgelegd nadat vuurwerk werd afgestoken in het uitvak, wat rookontwikkeling veroorzaakte.",
-        "deep_fallback": true
-      }
-    }
-  ],
   "vooruitblik": [
     {
-      "titel": "PSV gaat na PEC Zwolle op kampioensreis: 'Qua timing kwam dit goed uit'",
-      "samenvatting": "Trainer Peter Bosz heeft op de persconferentie bevestigd dat de PSV-selectie daags na de thuiswedstrijd tegen PEC Zwolle op donderdagavond op kampioensreis gaat. Bosz gaf aan dat dit de laatste mogelijkheid was voor een kampioensreis, aangezien er dit weekend vrije dagen waren gepland. De trainer zelf is verplicht om mee te gaan als toeschouwer. De trip duurt drie dagen, waardoor er een normale voorbereiding is op het uitduel met Ajax volgende week.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFfxeuhMWFfkHBHjkc-MnZwite55QjSKhX8bclAOien5qvqJVr_mD92eIla57O-KUj6E1E0rOAZKsIxRfM20o5jLfwSxGFksOpqMtLWG5hEG1tLX53RwGWnQ3F_WyMUFEnuMlkcgzHfsqBnaj5fA74jDuoMRx3MZUvTqyRkPRtMNAtUFDGr07u0mKYyQSbyinjK",
-      "bron_naam": "psv.nl",
+      "titel": "PSV - PEC Zwolle, live op tv 23/04/2026",
+      "samenvatting": "PSV en PEC Zwolle treffen elkaar op donderdag 23 april 2026 in een Eredivisiewedstrijd. Deze wedstrijd zal live op televisie te volgen zijn.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFgYx_XE5Ujthy5rRJTFIJsZUrYEtIU6BZGpY-SILKn13sD9KVnHo8mvMi8_9u-e9huG3mhUKtFoC3dCfBKEqyRRt8Nbqi-ZH9c3fP28DjrSQD6XoYLDfbjet_HgX5xxKfNCN02RfIq-x4BGEwd1K3JGbeWD-MqTcuk7APwJ1Crwg_5LAz2b4-M41ZGMJG_n5M=",
+      "bron_naam": "Ziggo Voetbal",
       "datum": "2026-04-22",
       "sectie": "vooruitblik",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Trainer Peter Bosz heeft op de persconferentie bevestigd dat de PSV-selectie daags na de thuiswedstrijd tegen PEC Zwolle op donderdagavond op kampioensreis gaat. Bosz gaf aan dat dit de laatste mogeli"
+          "PSV en PEC Zwolle treffen elkaar op donderdag 23 april 2026 in een Eredivisiewedstrijd. Deze wedstrijd zal live op televisie te volgen zijn."
         ],
-        "context": "Trainer Peter Bosz heeft op de persconferentie bevestigd dat de PSV-selectie daags na de thuiswedstrijd tegen PEC Zwolle op donderdagavond op kampioensreis gaat. Bosz gaf aan dat dit de laatste mogelijkheid was voor een kampioensreis, aangezien er dit weekend vrije dagen waren gepland. De trainer zelf is verplicht om mee te gaan als toeschouwer. De trip duurt drie dagen, waardoor er een normale voorbereiding is op het uitduel met Ajax volgende week.",
+        "context": "PSV en PEC Zwolle treffen elkaar op donderdag 23 april 2026 in een Eredivisiewedstrijd. Deze wedstrijd zal live op televisie te volgen zijn.",
         "deep_fallback": true
       }
     },
     {
-      "titel": "Bosz komt met mindere medische update: 'Hebben aantal twijfelgevallen'",
-      "samenvatting": "Peter Bosz heeft op de persconferentie aangegeven dat PSV mogelijk zonder een aantal spelers aan de aftrap verschijnt bij de thuiswedstrijd tegen PEC Zwolle. Er zijn meerdere twijfelgevallen en de definitieve beslissingen volgen na de training. Bosz waarschuwde dat de selectie daardoor kleiner zal zijn dan gebruikelijk. Verdediger Sergiño Dest werd expliciet als voorbeeld genoemd. Het gaat om onzekerheid over fitheid, niet om langdurige schorsingen.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEsC8jSkOzUBPvcZbrTjx0Qihy4RttkRnrHyyP4hYwu49DELyuqEkYEC_lXi3Q3KJql9OuQklU0jQcihdsI19LefWhoS_600QX4zWDETULxY3N2PFDSv-58TKtij5ljwxDeGh6efETAUn9gz7GDyA5o1nOubB_rtjuRkaBK3M5R_TKFogX-toPnzx_1nlAKHuWnVlyiNb37JFOAYhoWNo4Xvxh2subnPDNe1Zxa3WKnn_n30bcspQ",
-      "bron_naam": "Voetbal Headliner",
-      "datum": "2026-04-22",
+      "titel": "Eredivisie voetbal: stand op basis van laatste aantal wedstrijden [updates]",
+      "samenvatting": "Op 15 april 2026 staat PEC Zwolle op de 13e plaats in de Eredivisie, gebaseerd op de resultaten van de laatste vijf wedstrijden. In deze periode behaalde PEC Zwolle 10 punten uit 5 gespeelde duels. Dit omvat 1 overwinning, 3 gelijke spelen en 1 nederlaag, met een doelsaldo van 6 doelpunten voor en 6 tegen.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEL_wS_8kGOB7M8RaOS18XOcJZy5Zgz7J4AoubT1WOYq-qwHHs-6AUqZMGz2_3exIMlYoj9ybRJu1AG5j8L1y9zMDBcyIhlIOjVWrZx-jO_-qVEuOrGk0MjPEggB_3NY4-rxmsEksSQiEbryZD6KgwTZsRxNSZEnOaAop19tLabA==",
+      "bron_naam": "SEN1.net",
+      "datum": "2026-04-15",
       "sectie": "vooruitblik",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Peter Bosz heeft op de persconferentie aangegeven dat PSV mogelijk zonder een aantal spelers aan de aftrap verschijnt bij de thuiswedstrijd tegen PEC Zwolle. Er zijn meerdere twijfelgevallen en de def"
+          "Op 15 april 2026 staat PEC Zwolle op de 13e plaats in de Eredivisie, gebaseerd op de resultaten van de laatste vijf wedstrijden. In deze periode behaalde PEC Zwolle 10 punten uit 5 gespeelde duels. Di"
         ],
-        "context": "Peter Bosz heeft op de persconferentie aangegeven dat PSV mogelijk zonder een aantal spelers aan de aftrap verschijnt bij de thuiswedstrijd tegen PEC Zwolle. Er zijn meerdere twijfelgevallen en de definitieve beslissingen volgen na de training. Bosz waarschuwde dat de selectie daardoor kleiner zal zijn dan gebruikelijk. Verdediger Sergiño Dest werd expliciet als voorbeeld genoemd. Het gaat om onzekerheid over fitheid, niet om langdurige schorsingen.",
+        "context": "Op 15 april 2026 staat PEC Zwolle op de 13e plaats in de Eredivisie, gebaseerd op de resultaten van de laatste vijf wedstrijden. In deze periode behaalde PEC Zwolle 10 punten uit 5 gespeelde duels. Dit omvat 1 overwinning, 3 gelijke spelen en 1 nederlaag, met een doelsaldo van 6 doelpunten voor en 6 tegen.",
         "deep_fallback": true
       }
     },
     {
-      "titel": "PSV-doelman Nick Olij krijgt onverwacht nieuws te horen van Peter Bosz",
-      "samenvatting": "Peter Bosz heeft op de persconferentie bevestigd dat Nick Olij zijn officiële debuut zal maken in de hoofdmacht van PSV tegen PEC Zwolle. Olij kwam afgelopen zomer over van Sparta Rotterdam voor 3 miljoen euro. Hij heeft wedstrijdritme opgedaan door afgelopen vrijdag in de basis te staan bij Jong PSV, dat Jong Ajax ontving in de Keuken Kampioen Divisie (0-1). Bosz waardeert Olij als een goede gozer die belangrijk is in de kleedkamer en zijn mond opentrekt voor de wedstrijd.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGSfJPRIdwfnv_qgfTBi83UtnwL_tHeDlUX6fTsp_-wVveJPOKwYp6wpbCJULhJG7qwwjutNmXGS6vlMUy_tZdAPZP1yvZgLvN7RQ_1dGJ28S0hLcvBR6fxrBcck-zVA5d08c83G-42RHpJeRsj44D_jZObakf26YtNo39L4FqmXFQ9zHBIxZcM1Sh9OV7cdz9ntHFcNIchqMax6xZHM4EMcq00247lYRtd8LB0LYuyfoZ2lyr-u7E",
-      "bron_naam": "Voetbalzone",
-      "datum": "2026-04-22",
+      "titel": "Kijk: Stand Eredivisie met uitslagen per speelronde",
+      "samenvatting": "Het Eredivisieseizoen 2025-2026 bevindt zich in de slotfase. PEC Zwolle speelde op zondag 12 april 2026 met 2-2 gelijk tegen Excelsior in speelronde 30. Eerder in april, op zondag 5 april 2026, verloor PEC Zwolle met 5-0 van Go Ahead Eagles in speelronde 29.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHwhRdT2jC-ukY3B3B-68FyXLXALV1YynbP6n4MEEs-SGffp__oVItd7eZ5z_ovzubEQlF-GoU_kDvizuaYNJYyY3xgaNK_EYVCRxbb_0kgcKcDki4aFPcNe2sjGu9qA8EPa95uhgFQs2dVSs93N2RKvN7Lz7zzSDpVzR4tjAo8-0hZsq2pRrJ3kIiiaMut",
+      "bron_naam": "Voetbalflitsen.nl",
+      "datum": "2026-04-13",
       "sectie": "vooruitblik",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Peter Bosz heeft op de persconferentie bevestigd dat Nick Olij zijn officiële debuut zal maken in de hoofdmacht van PSV tegen PEC Zwolle. Olij kwam afgelopen zomer over van Sparta Rotterdam voor 3 mil"
+          "Het Eredivisieseizoen 2025-2026 bevindt zich in de slotfase. PEC Zwolle speelde op zondag 12 april 2026 met 2-2 gelijk tegen Excelsior in speelronde 30. Eerder in april, op zondag 5 april 2026, verloo"
         ],
-        "context": "Peter Bosz heeft op de persconferentie bevestigd dat Nick Olij zijn officiële debuut zal maken in de hoofdmacht van PSV tegen PEC Zwolle. Olij kwam afgelopen zomer over van Sparta Rotterdam voor 3 miljoen euro. Hij heeft wedstrijdritme opgedaan door afgelopen vrijdag in de basis te staan bij Jong PSV, dat Jong Ajax ontving in de Keuken Kampioen Divisie (0-1). Bosz waardeert Olij als een goede gozer die belangrijk is in de kleedkamer en zijn mond opentrekt voor de wedstrijd.",
+        "context": "Het Eredivisieseizoen 2025-2026 bevindt zich in de slotfase. PEC Zwolle speelde op zondag 12 april 2026 met 2-2 gelijk tegen Excelsior in speelronde 30. Eerder in april, op zondag 5 april 2026, verloor PEC Zwolle met 5-0 van Go Ahead Eagles in speelronde 29.",
         "deep_fallback": true
       }
     }
   ],
   "ziekenboeg": [
     {
-      "titel": "PSV moet basiskrachten missen; diverse vraagtekens voor PEC-thuis",
-      "samenvatting": "Ruben van Bommel is op 22 april 2026 nog steeds langdurig geblesseerd en zal de thuiswedstrijd van PSV tegen PEC Zwolle missen. Hij stond ook al als geblesseerd genoteerd voor de wedstrijd tegen Rotterdam op 11 april 2026.",
-      "bron_url": "https://www.psvinside.nl/",
-      "bron_naam": "psvinside.nl",
+      "titel": "Anass Salah-Eddine is twijfelgeval tegen PEC Zwolle",
+      "samenvatting": "PSV-verdediger Anass Salah-Eddine (24) is een twijfelgeval voor het duel tegen PEC Zwolle wegens niet fit zijn. Trainer Peter Bosz moet improviseren, want Paul Wanner en Noah Fernandez zijn geschorst. Armando Obispo, Joey Veerman en Salah-Eddine zijn twijfelgevallen. Sergino Dest traint weer mee, maar de wedstrijd tegen PEC Zwolle komt waarschijnlijk te vroeg voor hem.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFw9wED9_kIabtD3Hx3R_qVX8vKK19vC3EJg2xdJO9clEDdIXoOWnmkZMQC12RgYsjN8cJ9Fj3t5-dqW-cOcrmtSKNC8Ycp1OEwHYAdSXCoAzzmbQ5nybIpN_jeVgMUadqGR3pMt0zi-qNk-sJt58Y3EnBziSFbDww=",
+      "bron_naam": "Blessures en schorsingen Eredivisie",
       "datum": "2026-04-22",
       "sectie": "ziekenboeg",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Ruben van Bommel is op 22 april 2026 nog steeds langdurig geblesseerd en zal de thuiswedstrijd van PSV tegen PEC Zwolle missen. Hij stond ook al als geblesseerd genoteerd voor de wedstrijd tegen Rotte"
+          "PSV-verdediger Anass Salah-Eddine (24) is een twijfelgeval voor het duel tegen PEC Zwolle wegens niet fit zijn. Trainer Peter Bosz moet improviseren, want Paul Wanner en Noah Fernandez zijn geschorst."
         ],
-        "context": "Ruben van Bommel is op 22 april 2026 nog steeds langdurig geblesseerd en zal de thuiswedstrijd van PSV tegen PEC Zwolle missen. Hij stond ook al als geblesseerd genoteerd voor de wedstrijd tegen Rotterdam op 11 april 2026.",
+        "context": "PSV-verdediger Anass Salah-Eddine (24) is een twijfelgeval voor het duel tegen PEC Zwolle wegens niet fit zijn. Trainer Peter Bosz moet improviseren, want Paul Wanner en Noah Fernandez zijn geschorst. Armando Obispo, Joey Veerman en Salah-Eddine zijn twijfelgevallen. Sergino Dest traint weer mee, maar de wedstrijd tegen PEC Zwolle komt waarschijnlijk te vroeg voor hem.",
         "deep_fallback": true
       }
     },
     {
-      "titel": "Bosz bevestigt 'emotioneel moment' op woensdagtraining PSV: 'Na 7,5 maand terug'",
-      "samenvatting": "PSV-trainer Peter Bosz bevestigde op 17 april 2026 dat Alassane Pléa op woensdag 15 april 2026 voor het eerst weer met de groepstraining van PSV heeft meegedaan. Pléa was 7,5 maand uitgeschakeld na een zware blessure opgelopen in augustus door een tackle van FC Twente-verdediger Robin Pröpper. Bosz noemde zijn terugkeer een 'emotioneel moment'. Op 22 april 2026 ontbreekt Pléa nog steeds als langdurig geblesseerde speler voor de wedstrijd tegen PEC Zwolle.",
-      "bron_url": "https://www.voetbalprimeur.nl/",
-      "bron_naam": "voetbalprimeur.nl",
-      "datum": "2026-04-17",
+      "titel": "Dit zijn de afwezige spelers bij PSV tegen PEC Zwolle: wél het debuut van doelman Nick Olij | Sportnieuws.nl",
+      "samenvatting": "Jerdy Schouten is afwezig bij PSV voor de wedstrijd tegen PEC Zwolle vanwege een blessure. Joey Veerman en Sergiño Dest kampen nog met pijntjes, maar doen wel delen van de groepstraining mee. Trainer Peter Bosz heeft aangegeven dat het afwachten is wie er daadwerkelijk bij kunnen zijn tegen PEC Zwolle en dat de groep kleiner zal zijn dan normaal.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGT44ddQcE_amqj0SGWv-OV13x7ch3vWJ0_0xLE-kIPzFPh3a339_KocZwC4ZEOj3rXo04NbtEyV8ZzqJiojJUIzgstDWNM9KwnH_0W5YlrpMwn8qXQVSfxg0RbkiUVfHJBouRWzqghxqBftm5XVXCY4fR8z4wu8vfIZEZKG6to4-MS52MOnIr4hm5uyR-tMjOhasgVFLt3HnkrsYXqF64kw10mjns_EG9R3fRsvfBBOADZvK42MWRdZrEaenIL4qAFsBPfRtlH0qOC3Z-FgI2dC4Fubjp1oODT-HG",
+      "bron_naam": "Sportnieuws.nl",
+      "datum": "2026-04-22",
       "sectie": "ziekenboeg",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "PSV-trainer Peter Bosz bevestigde op 17 april 2026 dat Alassane Pléa op woensdag 15 april 2026 voor het eerst weer met de groepstraining van PSV heeft meegedaan. Pléa was 7,5 maand uitgeschakeld na ee"
+          "Jerdy Schouten is afwezig bij PSV voor de wedstrijd tegen PEC Zwolle vanwege een blessure. Joey Veerman en Sergiño Dest kampen nog met pijntjes, maar doen wel delen van de groepstraining mee. Trainer "
         ],
-        "context": "PSV-trainer Peter Bosz bevestigde op 17 april 2026 dat Alassane Pléa op woensdag 15 april 2026 voor het eerst weer met de groepstraining van PSV heeft meegedaan. Pléa was 7,5 maand uitgeschakeld na een zware blessure opgelopen in augustus door een tackle van FC Twente-verdediger Robin Pröpper. Bosz noemde zijn terugkeer een 'emotioneel moment'. Op 22 april 2026 ontbreekt Pléa nog steeds als langdurig geblesseerde speler voor de wedstrijd tegen PEC Zwolle.",
+        "context": "Jerdy Schouten is afwezig bij PSV voor de wedstrijd tegen PEC Zwolle vanwege een blessure. Joey Veerman en Sergiño Dest kampen nog met pijntjes, maar doen wel delen van de groepstraining mee. Trainer Peter Bosz heeft aangegeven dat het afwachten is wie er daadwerkelijk bij kunnen zijn tegen PEC Zwolle en dat de groep kleiner zal zijn dan normaal.",
+        "deep_fallback": true
+      }
+    },
+    {
+      "titel": "PSV Blessures & Schorsingen Update: Fernandez, Wanner en Veerman",
+      "samenvatting": "Noah Fernandez is geschorst en mist nog één wedstrijd, met een verwachte terugkeer op 2 mei 2026. Paul Wanner is eveneens geschorst voor één wedstrijd en wordt ook op 2 mei 2026 terugverwacht. Joey Veerman is een twijfelgeval wegens niet fit zijn, met een verwachte terugkeer op 23 april 2026.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGIqkpLnvmK8-EzFdAj1q9Q8vsLYZgQrmJ8VhjN7YkbTQaquzynl_23Pbv7hKHyppuleFKtB5J8R3GC3V7irPAJnQTytgTSd6TNam2dQmkPWj5RhfwAW0rNxz0JRuSfM2VOLdVY",
+      "bron_naam": "PSV: Blessures & Schorsingen Update",
+      "datum": "2026-04-11",
+      "sectie": "ziekenboeg",
+      "diepgang": {
+        "quotes": [],
+        "cijfers": [],
+        "kernfeiten": [
+          "Noah Fernandez is geschorst en mist nog één wedstrijd, met een verwachte terugkeer op 2 mei 2026. Paul Wanner is eveneens geschorst voor één wedstrijd en wordt ook op 2 mei 2026 terugverwacht. Joey Ve"
+        ],
+        "context": "Noah Fernandez is geschorst en mist nog één wedstrijd, met een verwachte terugkeer op 2 mei 2026. Paul Wanner is eveneens geschorst voor één wedstrijd en wordt ook op 2 mei 2026 terugverwacht. Joey Veerman is een twijfelgeval wegens niet fit zijn, met een verwachte terugkeer op 23 april 2026.",
         "deep_fallback": true
       }
     }
   ],
   "transfers": [
     {
-      "titel": "PSV-sterkhouder verwacht zomerse transfer: 'In grotere competitie mezelf pushen'",
-      "samenvatting": "Sergiño Dest (25) verwacht PSV in de zomer van 2026 te verlaten. Hij hoopt een 'geweldig WK' te spelen om een transfer naar een grotere competitie af te dwingen. Dest gaf aan dat hij zichzelf wil blijven uitdagen en de prikkel in de Eredivisie minder vindt. Er is al voorzichtige interesse van clubs, maar niets is nog concreet.",
-      "bron_url": "https://www.voetbalprimeur.nl/nieuws/1200000/psv-sterkhouder-verwacht-zomerse-transfer-in-grotere-competitie-mezelf-pushen.html",
-      "bron_naam": "VoetbalPrimeur",
+      "titel": "Dest zet in op nieuwe club: 'Competitie waar ik me iedere week kan uitdagen'",
+      "samenvatting": "Sergiño Dest verwacht in de zomer van 2026 een transfer te maken na zijn periode bij PSV. De vleugelverdediger mikt op een stap naar een grotere competitie na het WK met de Verenigde Staten. Dest gaf in de NOS-podcast 'Buitenspel' aan dat hij zichzelf wil blijven uitdagen en zich wil meten met de besten. Hoewel hij PSV een geweldige club vindt, voelt hij dat het moment nadert voor een volgende stap, ondanks een contract tot medio 2028. Er is interesse van meerdere clubs, maar niets is nog concreet.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFyH839__yhbl-yS1pqepC07GguR5k38QlkB3IKeGZIpm0OGtAGyseoLSP3pctf3abH-6qVgVQZsyfLqKfW0Cjrl_u_4oPjBwGk6Dild90GnExXYtL4q5v3vAKkqjYFhjw1B6JIMuQ_uu5tCu9wuFf-ByJ3FdWexfCY6B5ZnC2tVS6GOCGTCzm5DLagleV-VFyVWxsOmqeXsaX1vd04fOnd-HIe73AOAOV2qSXjIBVpYuxD2TUD",
+      "bron_naam": "SportPrimeur.nl",
       "datum": "2026-04-22",
       "sectie": "transfers",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Sergiño Dest (25) verwacht PSV in de zomer van 2026 te verlaten. Hij hoopt een 'geweldig WK' te spelen om een transfer naar een grotere competitie af te dwingen. Dest gaf aan dat hij zichzelf wil blij"
+          "Sergiño Dest verwacht in de zomer van 2026 een transfer te maken na zijn periode bij PSV. De vleugelverdediger mikt op een stap naar een grotere competitie na het WK met de Verenigde Staten. Dest gaf "
         ],
-        "context": "Sergiño Dest (25) verwacht PSV in de zomer van 2026 te verlaten. Hij hoopt een 'geweldig WK' te spelen om een transfer naar een grotere competitie af te dwingen. Dest gaf aan dat hij zichzelf wil blijven uitdagen en de prikkel in de Eredivisie minder vindt. Er is al voorzichtige interesse van clubs, maar niets is nog concreet.",
-        "deep_fallback": true
-      }
-    },
-    {
-      "titel": "Sergiño Dest hoopt PSV na succesvol WK in Best te verlaten voor grotere competitie",
-      "samenvatting": "Sergiño Dest heeft bij PSV een contract tot medio 2028. Hij herstelt momenteel van een hamstringblessure, opgelopen vorige maand in het competitieduel met AZ, maar lijkt op tijd fit voor het WK. Het WK begint voor de Verenigde Staten op 13 juni met een wedstrijd tegen Paraguay.",
-      "bron_url": "https://nieuwsuitjestad.nl/sergino-dest-hoopt-psv-na-succesvol-wk-in-best-te-verlaten-voor-grotere-competitie/",
-      "bron_naam": "Nieuwsuitjestad.nl",
-      "datum": "2026-04-22",
-      "sectie": "transfers",
-      "diepgang": {
-        "quotes": [],
-        "cijfers": [],
-        "kernfeiten": [
-          "Sergiño Dest heeft bij PSV een contract tot medio 2028. Hij herstelt momenteel van een hamstringblessure, opgelopen vorige maand in het competitieduel met AZ, maar lijkt op tijd fit voor het WK. Het W"
-        ],
-        "context": "Sergiño Dest heeft bij PSV een contract tot medio 2028. Hij herstelt momenteel van een hamstringblessure, opgelopen vorige maand in het competitieduel met AZ, maar lijkt op tijd fit voor het WK. Het WK begint voor de Verenigde Staten op 13 juni met een wedstrijd tegen Paraguay.",
+        "context": "Sergiño Dest verwacht in de zomer van 2026 een transfer te maken na zijn periode bij PSV. De vleugelverdediger mikt op een stap naar een grotere competitie na het WK met de Verenigde Staten. Dest gaf in de NOS-podcast 'Buitenspel' aan dat hij zichzelf wil blijven uitdagen en zich wil meten met de besten. Hoewel hij PSV een geweldige club vindt, voelt hij dat het moment nadert voor een volgende stap, ondanks een contract tot medio 2028. Er is interesse van meerdere clubs, maar niets is nog concreet.",
         "deep_fallback": true
       }
     },
     {
       "titel": "Sergiño Dest hint op vroegtijdig vertrek bij PSV | FootballTransfers.com",
-      "samenvatting": "Volgens het algoritme van FootballTransfers vertegenwoordigt Sergiño Dest momenteel een Estimated Transfer Value (ETV) van 23,5 miljoen euro. Mocht Dest voor dat bedrag naar een buitenlandse club vertrekken, dan heeft Ajax recht op een solidariteitsbijdrage van 705.000 euro.",
-      "bron_url": "https://www.footballtransfers.com/nl/nieuws/eredivisie/psv/2026/04/sergino-dest-hint-op-vroegtijdig-vertrek-bij-psv",
+      "samenvatting": "Sergiño Dest (25) verwacht na dit seizoen te vertrekken bij PSV en hoopt via het aankomende WK in de Verenigde Staten een transfer naar een grotere competitie af te dwingen. Hij ligt nog tot medio 2028 vast in Eindhoven, maar is toe aan een volgende stap. Een hamstringblessure, opgelopen vorige maand tegen AZ, kan invloed hebben op een zomertransfer. Volgens het algoritme van FootballTransfers heeft Dest een Estimated Transfer Value (ETV) van 23,5 miljoen euro. Bij een verkoop zou Ajax een solidariteitsbijdrage van 705.000 euro ontvangen.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHspKIus45SBFN8f_h4ZZwU3m7Jv_eJEZIR7dKGqa2rA7GHvoA3JXJ1YWFyYFs7JobYaHaZ8M1je_bMbPk5Msz42qSGka65H5aF2ls2LHo7q8m0eod7DoGfpgry-fOvGKYOFXEbzvuw3NgEO-2Y1zikXjfwiX1FHJICerjCjgojSSyDQ-XrMXZBaRzyBCON8hxXZXdc38HPNHrtc072VN6b0pX3MIijy5k1mgaNOJ0b7fo-M3mRxYwYPKykyDgyIA==",
       "bron_naam": "FootballTransfers.com",
       "datum": "2026-04-22",
       "sectie": "transfers",
@@ -170,45 +134,79 @@
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Volgens het algoritme van FootballTransfers vertegenwoordigt Sergiño Dest momenteel een Estimated Transfer Value (ETV) van 23,5 miljoen euro. Mocht Dest voor dat bedrag naar een buitenlandse club vert"
+          "Sergiño Dest (25) verwacht na dit seizoen te vertrekken bij PSV en hoopt via het aankomende WK in de Verenigde Staten een transfer naar een grotere competitie af te dwingen. Hij ligt nog tot medio 202"
         ],
-        "context": "Volgens het algoritme van FootballTransfers vertegenwoordigt Sergiño Dest momenteel een Estimated Transfer Value (ETV) van 23,5 miljoen euro. Mocht Dest voor dat bedrag naar een buitenlandse club vertrekken, dan heeft Ajax recht op een solidariteitsbijdrage van 705.000 euro.",
+        "context": "Sergiño Dest (25) verwacht na dit seizoen te vertrekken bij PSV en hoopt via het aankomende WK in de Verenigde Staten een transfer naar een grotere competitie af te dwingen. Hij ligt nog tot medio 2028 vast in Eindhoven, maar is toe aan een volgende stap. Een hamstringblessure, opgelopen vorige maand tegen AZ, kan invloed hebben op een zomertransfer. Volgens het algoritme van FootballTransfers heeft Dest een Estimated Transfer Value (ETV) van 23,5 miljoen euro. Bij een verkoop zou Ajax een solidariteitsbijdrage van 705.000 euro ontvangen.",
         "deep_fallback": true
       }
     },
     {
-      "titel": "PSV krijgt miljoenenrekening gepresenteerd bij verkoop van sterspelers",
-      "samenvatting": "Joey Veerman, Ismael Saibari, Ricardo Pepi en Sergiño Dest lijken komende zomer te vertrekken bij PSV. Joey Veerman moet de club twintig miljoen euro opleveren, waarvan SC Heerenveen 300.000 euro solidariteitsbijdrage en 1,4 miljoen euro doorverkoop ontvangt, en FC Volendam 700.000 euro solidariteitsbijdrage. Voor Ismael Saibari hanteert PSV een vraagprijs van zo'n veertig miljoen euro, waarvan een groot deel naar Belgische clubs zal gaan. De totale 'rekening' voor PSV aan uitbetaalde bedragen richting eerdere clubs bij het vertrek van deze vier spelers wordt geschat op 10,918 miljoen euro.",
-      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEnuIS2X1qHFQoqV4Q2peeSufQKrsQ9sVAYwyqD_xSDtKIQ6lqOh6hKeBf2K4eT0rk_dMb3aFY4wK7vd21WEPVCUjoy15nZeEXEg55uAQhXFC4LWfhmZKHaza7hTNIDegQyvJqindVA-Qhn_pbmIYQL2JFyNDk3zurKR5Aa1CwLZx54C8JGnRv8q5zU2nEaDWMyGtz2X_Lqvz-JeusA6Hh8K0TCfD0HleKzSMKZKoW2siQARjkRAYJBJ7plOoIsgsGQZrAeRCwCeoi3Qxo=",
-      "bron_naam": "Football Transfers",
+      "titel": "Zakaria El Ouahdi mikt op transfer: 'PSV? Ik sluit niets uit'",
+      "samenvatting": "Zakaria El Ouahdi van KRC Genk wordt genoemd als een mogelijke vervanger voor Sergiño Dest bij PSV, mocht de Amerikaan deze zomer vertrekken. El Ouahdi sluit een overstap naar de Eindhovense club niet uit. Zijn vader onderzoekt momenteel alle opties en voert gesprekken achter de schermen. El Ouahdi richt zich op zijn prestaties en hoopt zich nog in de WK-selectie van Marokko te spelen.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHYQYEt7oCWqMZzkts2O5ZTqO1o0gcTk5BbcsQaTH2IPyd9PJFIdTkgV1ccLbH9Z3yGsxJ20JgNh8nedxoRT9HgLybEwRw_g7RpzTV8B8rem8r0TJ8F9y9R-KiYOLNOExpjSSR7iNrFzjinmoLro3RHb0p_0OH1yd8G76Aul6RH85rQWw9oi2KhEYQjlw==",
+      "bron_naam": "VoetbalNieuws.nl",
       "datum": "2026-04-20",
       "sectie": "transfers",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "Joey Veerman, Ismael Saibari, Ricardo Pepi en Sergiño Dest lijken komende zomer te vertrekken bij PSV. Joey Veerman moet de club twintig miljoen euro opleveren, waarvan SC Heerenveen 300.000 euro soli"
+          "Zakaria El Ouahdi van KRC Genk wordt genoemd als een mogelijke vervanger voor Sergiño Dest bij PSV, mocht de Amerikaan deze zomer vertrekken. El Ouahdi sluit een overstap naar de Eindhovense club niet"
         ],
-        "context": "Joey Veerman, Ismael Saibari, Ricardo Pepi en Sergiño Dest lijken komende zomer te vertrekken bij PSV. Joey Veerman moet de club twintig miljoen euro opleveren, waarvan SC Heerenveen 300.000 euro solidariteitsbijdrage en 1,4 miljoen euro doorverkoop ontvangt, en FC Volendam 700.000 euro solidariteitsbijdrage. Voor Ismael Saibari hanteert PSV een vraagprijs van zo'n veertig miljoen euro, waarvan een groot deel naar Belgische clubs zal gaan. De totale 'rekening' voor PSV aan uitbetaalde bedragen richting eerdere clubs bij het vertrek van deze vier spelers wordt geschat op 10,918 miljoen euro.",
+        "context": "Zakaria El Ouahdi van KRC Genk wordt genoemd als een mogelijke vervanger voor Sergiño Dest bij PSV, mocht de Amerikaan deze zomer vertrekken. El Ouahdi sluit een overstap naar de Eindhovense club niet uit. Zijn vader onderzoekt momenteel alle opties en voert gesprekken achter de schermen. El Ouahdi richt zich op zijn prestaties en hoopt zich nog in de WK-selectie van Marokko te spelen.",
         "deep_fallback": true
       }
     }
   ],
   "achtergrond": [
     {
-      "titel": "Peter Bosz zag PSV UITSTEKEND voetbal spelen na FEESTWEEK | Interview",
-      "samenvatting": "PSV-coach Peter Bosz gaf op 11 april 2026 een interview na de 0-2 uitoverwinning tegen Sparta Rotterdam. Bosz benadrukte dat de ploeg, ondanks de kampioensfeesten, geconcentreerd en hardwerkend speelde met goed voetbal. Hij merkte op dat Joey Veerman ontbrak op het veld, maar prees de balvastheid van het team. Bosz gaf aan dat hij de resterende wedstrijden van de Eredivisie zal volgen vanwege de spanning rondom de tweede plaats en Champions League-kwalificatie, wat belangrijk is voor clubs vanwege geld en prestige.",
-      "bron_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      "bron_naam": "ESPN NL",
+      "titel": "PSV-trainer Bosz gevoelig voor WK-ambities spelers: 'Ga ik rekening mee houden'",
+      "samenvatting": "Peter Bosz heeft tijdens een persconferentie aangegeven rekening te houden met de WK-ambities van zijn spelers voor het WK 2026 in de Verenigde Staten, Mexico en Canada. Hij overweegt zorgvuldig welke spelers hij inzet, vooral degenen die op het grensvlak van selectie zitten. Bosz erkent dat interlandverplichtingen invloed kunnen hebben op beschikbaarheid, vorm en blessurerisico. Beslissingen over opstellingen en speeltijd worden afgewogen tegen club- en internationale belangen.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEmQk4Znsm0yWgOBS1tkxnYTjZftMFTI34pMicghWElgjU3_UFuCUyv-61nfIpdCu6BEiTaUSk3gGbsl6ibDbtzc-ERg1JXVMFLevMS0pEsQ9NHsegTn11gDKmgpdGlEx7Sj9bNgwT4h7IM4p7jpuwOm7OVZqpfhdw8-bEso7YktVwsmH7xiEJRCFTcByq1ORdqrSw_4FM3-Q0P_EYCTMKFbAhgo5hN1bOjgbXrelA-UYpt1C4hGws0xblaCgMzc=",
+      "bron_naam": "VoetbalPrimeur",
       "datum": "2026-04-11",
       "sectie": "achtergrond",
       "diepgang": {
         "quotes": [],
         "cijfers": [],
         "kernfeiten": [
-          "PSV-coach Peter Bosz gaf op 11 april 2026 een interview na de 0-2 uitoverwinning tegen Sparta Rotterdam. Bosz benadrukte dat de ploeg, ondanks de kampioensfeesten, geconcentreerd en hardwerkend speeld"
+          "Peter Bosz heeft tijdens een persconferentie aangegeven rekening te houden met de WK-ambities van zijn spelers voor het WK 2026 in de Verenigde Staten, Mexico en Canada. Hij overweegt zorgvuldig welke"
         ],
-        "context": "PSV-coach Peter Bosz gaf op 11 april 2026 een interview na de 0-2 uitoverwinning tegen Sparta Rotterdam. Bosz benadrukte dat de ploeg, ondanks de kampioensfeesten, geconcentreerd en hardwerkend speelde met goed voetbal. Hij merkte op dat Joey Veerman ontbrak op het veld, maar prees de balvastheid van het team. Bosz gaf aan dat hij de resterende wedstrijden van de Eredivisie zal volgen vanwege de spanning rondom de tweede plaats en Champions League-kwalificatie, wat belangrijk is voor clubs vanwege geld en prestige.",
+        "context": "Peter Bosz heeft tijdens een persconferentie aangegeven rekening te houden met de WK-ambities van zijn spelers voor het WK 2026 in de Verenigde Staten, Mexico en Canada. Hij overweegt zorgvuldig welke spelers hij inzet, vooral degenen die op het grensvlak van selectie zitten. Bosz erkent dat interlandverplichtingen invloed kunnen hebben op beschikbaarheid, vorm en blessurerisico. Beslissingen over opstellingen en speeltijd worden afgewogen tegen club- en internationale belangen.",
+        "deep_fallback": true
+      }
+    },
+    {
+      "titel": "Peter Bosz zag PSV UITSTEKEND voetbal spelen na FEESTWEEK | Interview - YouTube",
+      "samenvatting": "Na de 0-2 uitoverwinning tegen Sparta Rotterdam prees Peter Bosz het uitstekende voetbal van PSV, ondanks de kampioensfeestweek. Hij benadrukte dat de ploeg geconcentreerd speelde, hard werkte en goed voetbal liet zien, met veel gecreëerde kansen en mooie doelpunten. Bosz gaf aan dat de balvastheid van zijn team erg goed was, met weinig onnodig balverlies. Hij volgt ook de strijd om de tweede plaats in de Eredivisie, omdat dit belangrijk is voor Champions League-deelname en veel geld.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEAT7jKGf4_DahiHg_HMWyjPB_ycWgYf3_sLfEK-7zW9L52gYZbnov72nBreEPkC1HoBPkRTUg7kgRQ0kPC5LYXKziMgz3ZpoEKOUwgFmqc7YnHxfRehku6ez5EMHRAPGhogZfBypc=",
+      "bron_naam": "ESPN",
+      "datum": "2026-04-11",
+      "sectie": "achtergrond",
+      "diepgang": {
+        "quotes": [],
+        "cijfers": [],
+        "kernfeiten": [
+          "Na de 0-2 uitoverwinning tegen Sparta Rotterdam prees Peter Bosz het uitstekende voetbal van PSV, ondanks de kampioensfeestweek. Hij benadrukte dat de ploeg geconcentreerd speelde, hard werkte en goed"
+        ],
+        "context": "Na de 0-2 uitoverwinning tegen Sparta Rotterdam prees Peter Bosz het uitstekende voetbal van PSV, ondanks de kampioensfeestweek. Hij benadrukte dat de ploeg geconcentreerd speelde, hard werkte en goed voetbal liet zien, met veel gecreëerde kansen en mooie doelpunten. Bosz gaf aan dat de balvastheid van zijn team erg goed was, met weinig onnodig balverlies. Hij volgt ook de strijd om de tweede plaats in de Eredivisie, omdat dit belangrijk is voor Champions League-deelname en veel geld.",
+        "deep_fallback": true
+      }
+    },
+    {
+      "titel": "Voorspelling VVV Venlo De Graafschap - Prediction - Eerste Divisie - SportyTrader",
+      "samenvatting": "Jong PSV heeft op 6 april 2026 een wedstrijd in de Eerste Divisie gespeeld tegen VVV Venlo. Jong PSV won deze wedstrijd met een uitslag van 1-0. Dit resultaat droeg bij aan de recente slechte prestaties van VVV Venlo, die in de laatste weken slechts één keer wisten te winnen.",
+      "bron_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHApFHwOeLfSMGRf90-P6DU5Rbbw3DwLYHW4ji9YhCLMEDtLXlchJc16NRc-_VGe4EDYWBOLCzGHNQhW6BoNwUjTYkhNS2q8EcfO__kaAKZ_r5pPaYBpkdaHDIQWhijPsfG0wUvGLDzSfc4j-tfuCZEYUMh32P7WyEl9HfOBij4pAGWX84CduvIjlc=",
+      "bron_naam": "SportyTrader",
+      "datum": "2026-04-11",
+      "sectie": "achtergrond",
+      "diepgang": {
+        "quotes": [],
+        "cijfers": [],
+        "kernfeiten": [
+          "Jong PSV heeft op 6 april 2026 een wedstrijd in de Eerste Divisie gespeeld tegen VVV Venlo. Jong PSV won deze wedstrijd met een uitslag van 1-0. Dit resultaat droeg bij aan de recente slechte prestati"
+        ],
+        "context": "Jong PSV heeft op 6 april 2026 een wedstrijd in de Eerste Divisie gespeeld tegen VVV Venlo. Jong PSV won deze wedstrijd met een uitslag van 1-0. Dit resultaat droeg bij aan de recente slechte prestaties van VVV Venlo, die in de laatste weken slechts één keer wisten te winnen.",
         "deep_fallback": true
       }
     }

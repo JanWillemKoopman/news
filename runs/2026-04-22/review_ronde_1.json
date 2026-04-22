@@ -1,34 +1,44 @@
 {
-  "score": 7,
-  "approved": false,
+  "score": 8,
+  "approved": true,
   "scores_per_as": {
     "sectiecompleetheid": 10,
-    "specificiteit": 8,
-    "feitelijkheid": 1,
+    "specificiteit": 9,
+    "feitelijkheid": 4,
     "toon": 9,
-    "structuur": 8,
+    "structuur": 9,
     "leesbaarheid": 8
   },
   "feedback": [
     {
-      "sectie": "algemeen",
+      "sectie": "transfers",
       "as": "feitelijkheid",
-      "verbeterpunt": "De nieuwsbrief staat vol met specifieke quotes, data en financiële bedragen die volledig ontbreken in de aangeleverde brondiepgang. Volgens de harde scoringsregels is elk onverifieerbaar feit een verzinsel, wat resulteert in een zeer lage score. Alle feitelijke claims (van Bosz' quotes tot transferbedragen) moeten direct herleidbaar zijn tot de bron. Dit is een fundamentele journalistieke eis en de hoogste prioriteit voor herstel."
+      "verbeterpunt": "De nieuwsbrief bevat zeer specifieke quotes van Dest en El Ouahdi, een transferwaarde (€23,5M) en een solidariteitsbijdrage (€705.000). Geen van deze feiten is terug te vinden in de (lege) brondiepgang. Volgens de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is de score hierop afgestraft. Zorg dat elk specifiek feit, en zeker elke quote, direct herleidbaar is tot de aangeleverde bron."
     },
     {
-      "sectie": "algemeen",
-      "as": "leesbaarheid",
-      "verbeterpunt": "De tekst gebruikt te veel standaard sportjournalistieke clichés zoals 'druk op de ketel', 'deur op een kier', 'aderlating' en 'goudmijn'. Vervang deze door originelere, specifiekere bewoordingen om de tekst een frisser en professioneler karakter te geven."
+      "sectie": "achtergrond",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De directe quotes van Peter Bosz ('De balvastheid van mijn team was erg goed...', 'Beslissingen over opstellingen...') zijn niet aanwezig in de brondiepgang. Het toeschrijven van niet-geverifieerde citaten aan een trainer is een journalistieke fout. Verwijder de aanhalingstekens of zorg voor een sluitende bron."
     },
     {
-      "sectie": "terugblik",
+      "sectie": "transfers",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De leeftijd van Sergiño Dest wordt genoemd als 25. Hij is geboren in november 2000, wat zijn leeftijd op het moment van schrijven (hypothetisch april) 23 of 24 maakt, maar geen 25. Basisfeiten zoals leeftijden moeten altijd dubbel gecheckt worden."
+    },
+    {
+      "sectie": "leesbaarheid",
+      "as": "algemeen",
+      "verbeterpunt": "De tekst is over het algemeen sterk, maar bevat enkele journalistieke clichés ('de carrousel draait al op volle toeren', 'volledig door het ijs zakken', 'de hand van de meester verraadt'). Probeer deze te vervangen door originelere formuleringen om de tekst nog onderscheidender te maken."
+    },
+    {
+      "sectie": "vooruitblik",
       "as": "specificiteit",
-      "verbeterpunt": "Het wedstrijdverslag van Sparta-PSV is goed, maar mist de exacte minuten waarin de doelpunten vielen. Voeg de tijdstippen van de goals van Pepi en Saibari toe voor een completer en feitelijker verslag."
+      "verbeterpunt": "De datum 'donderdag 23 april' is een onmogelijke combinatie in de nabije toekomst (in 2024 en 2025 valt 23 april niet op een donderdag). Dit soort details ondermijnt de geloofwaardigheid. Controleer de kalender bij het noemen van specifieke data."
     },
     {
-      "sectie": "ziekenboeg",
-      "as": "structuur",
-      "verbeterpunt": "De kop 'De puzzel van Bosz: Pléa's emotionele terugkeer en de zorgen om Dest' dekt de lading van de sectie niet volledig, aangezien ook de status van Van Bommel en de afwezigheid van schorsingen worden behandeld. Gebruik een meer omvattende kop, zoals 'Personele stand van zaken: Goed nieuws Pléa overschaduwd door nieuwe twijfels'."
+      "sectie": "achtergrond",
+      "as": "specificiteit",
+      "verbeterpunt": "De terugblik op Sparta-PSV (0-2) is functioneel, maar mist de doelpuntenmakers. Het noemen van de spelers die scoorden zou de analyse van de 'zakelijke overwinning' meer concrete onderbouwing geven."
     }
   ]
 }
