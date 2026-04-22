@@ -1,5 +1,5 @@
 """
-Publisher — rendert de nieuwsbrief naar markdown en slaat op in summaries.json.
+Publisher — rendert de nieuwsbrief (intro + secties) naar markdown en slaat op.
 Geen LLM-call.
 """
 import json
@@ -12,51 +12,62 @@ from backend.storage import save_summary
 
 logger = logging.getLogger(__name__)
 
+_SECTIE_LABELS = {
+    "terugblik":   "Terugblik",
+    "vooruitblik": "Vooruitblik",
+    "ziekenboeg":  "Ziekenboeg & Schorsingen",
+    "transfers":   "Transfers & Geruchten",
+    "achtergrond": "Achtergrond & Analyse",
+}
+
 
 def run(
     writer_result: dict,
-    deep_items: list,
+    deep_per_sectie: dict,
     scout_profile: dict,
     run_dir: str,
     dry_run: bool = False,
 ) -> dict:
     titel = writer_result.get("titel", "PSV Nieuwsbrief")
     inleiding = writer_result.get("inleiding", "")
-    sub_items = writer_result.get("items", [])
+    secties = writer_result.get("secties", [])
 
     # Render naar markdown
-    markdown_delen = [inleiding.strip()]
-    for item in sub_items:
-        kop  = item.get("kop", "")
-        lead = item.get("lead", "")
-        body = item.get("body", "")
-        markdown_delen.append(f"## {kop}\n\n{lead}\n\n{body}")
+    markdown_delen = [inleiding.strip()] if inleiding else []
+    for sectie in secties:
+        sectie_id = sectie.get("sectie_id", "")
+        kop = sectie.get("kop") or _SECTIE_LABELS.get(sectie_id, sectie_id.title())
+        body = sectie.get("body", "")
+        markdown_delen.append(f"## {kop}\n\n{body.strip()}")
 
     summary_markdown = "\n\n".join(markdown_delen)
 
-    # Week-bereik: maandag t/m zondag van de huidige week
+    # Week-bereik
     today = datetime.now()
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
-    week_end   = today.strftime("%Y-%m-%d")
+    week_end = today.strftime("%Y-%m-%d")
 
-    # Bronnen: unieke URLs en domeinnamen
+    # Verzamel alle bron-URLs
+    alle_items = []
+    for items in deep_per_sectie.values():
+        alle_items.extend(items)
+
     sources = list({
         item.get("bron_url") or item.get("bron_naam", "")
-        for item in deep_items
+        for item in alle_items
         if item.get("bron_url") or item.get("bron_naam")
     })
 
     if dry_run:
         logger.info(
-            f"DRY RUN — Publisher zou opslaan: '{titel}' "
-            f"met {len(sub_items)} sub-artikelen"
+            f"DRY RUN — Publisher zou opslaan: '{titel}' met {len(secties)} secties"
         )
         entry = {
-            "dry_run": True,
-            "titel": titel,
-            "n_items": len(sub_items),
+            "dry_run":    True,
+            "titel":      titel,
+            "n_secties":  len(secties),
             "week_start": week_start,
-            "week_end": week_end,
+            "week_end":   week_end,
         }
     else:
         entry = save_summary(
@@ -66,7 +77,7 @@ def run(
             week_end=week_end,
             sources=sources,
         )
-        dedup.mark_seen(deep_items)
+        dedup.mark_seen(alle_items)
         logger.info(f"Publisher: opgeslagen als ID {entry.get('id')}")
 
     _save(run_dir, {"entry": entry, "dry_run": dry_run})

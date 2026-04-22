@@ -23,8 +23,6 @@ from backend.psv import (
 
 logger = logging.getLogger(__name__)
 
-_STAGES = ["preflight", "scout", "researcher", "deep_reader", "editor", "writer"]
-
 
 def run(dry_run: bool = False, stage: str = None) -> None:
     logging.basicConfig(
@@ -50,22 +48,23 @@ def run(dry_run: bool = False, stage: str = None) -> None:
         return
 
     # ── 2. Researcher ─────────────────────────────────────────
-    research_items = researcher.run(scout_profile, run_dir)
-    if not research_items:
+    research_per_sectie = researcher.run(scout_profile, run_dir)
+    totaal_items = sum(len(v) for v in research_per_sectie.values())
+    if totaal_items == 0:
         logger.error("Researcher vond geen items — pipeline afgebroken.")
         sys.exit(1)
     if stage == "researcher":
         return
 
     # ── 3. Deep Reader ────────────────────────────────────────
-    deep_items = deep_reader.run(research_items, scout_profile, run_dir)
+    deep_per_sectie = deep_reader.run(research_per_sectie, scout_profile, run_dir)
     if stage == "deep_reader":
         return
 
     # ── 4. Editor ─────────────────────────────────────────────
-    editor_result = editor.run(deep_items, scout_profile, run_dir)
-    if not editor_result.get("items_volledig"):
-        logger.error("Editor selecteerde geen items — pipeline afgebroken.")
+    editor_result = editor.run(deep_per_sectie, scout_profile, run_dir)
+    if not editor_result.get("sectievolgorde"):
+        logger.error("Editor kon geen sectievolgorde bepalen — pipeline afgebroken.")
         sys.exit(1)
     if stage == "editor":
         return
@@ -74,7 +73,7 @@ def run(dry_run: bool = False, stage: str = None) -> None:
     writer_result, review = reviewer.run_loop(
         writer_func=writer.run,
         editor_result=editor_result,
-        deep_items=deep_items,
+        deep_per_sectie=deep_per_sectie,
         scout_profile=scout_profile,
         run_dir=run_dir,
     )
@@ -84,16 +83,14 @@ def run(dry_run: bool = False, stage: str = None) -> None:
     # ── 7. Publisher ──────────────────────────────────────────
     publisher.run(
         writer_result=writer_result,
-        deep_items=deep_items,
+        deep_per_sectie=deep_per_sectie,
         scout_profile=scout_profile,
         run_dir=run_dir,
         dry_run=dry_run,
     )
 
-    score  = review.get("score", "?")
-    n      = len(writer_result.get("items", []))
+    score = review.get("score", "?")
+    n     = len(writer_result.get("secties", []))
     logger.info("=" * 60)
-    logger.info(
-        f"Pipeline voltooid — score: {score}/10, items: {n}, dry_run: {dry_run}"
-    )
+    logger.info(f"Pipeline voltooid — score: {score}/10, secties: {n}, dry_run: {dry_run}")
     logger.info("=" * 60)
