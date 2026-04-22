@@ -1,24 +1,82 @@
 {
-  "fase": "Eindfase Eredivisie, na speelronde 30",
-  "editie_type": "regulier",
+  "fase": "Eredivisie, na speelronde 30",
+  "stand": "1e plaats, 74 punten uit 30 wedstrijden",
   "laatste_wedstrijd": {
-    "datum": null,
-    "tegenstander": null,
-    "uitslag": null,
-    "competitie": "Eredivisie"
+    "datum": "2026-04-11",
+    "tegenstander": "Sparta Rotterdam",
+    "thuis_uit": "uit",
+    "uitslag": "Sparta Rotterdam 0-2 PSV",
+    "competitie": "Eredivisie",
+    "dagen_geleden": 11
   },
   "volgende_wedstrijd": {
     "datum": "2026-04-23",
     "tegenstander": "PEC Zwolle",
-    "competitie": "Eredivisie"
+    "thuis_uit": "thuis",
+    "competitie": "Eredivisie",
+    "dagen_tot": 1
   },
-  "zoekvenster_dagen": 7,
-  "prioriteitsonderwerpen": [
-    "transfers",
-    "blessures",
-    "tactiek-analyse"
+  "sleutelspelers_nu": [
+    "Sergiño Dest",
+    "Joey Veerman",
+    "Ismael Saibari",
+    "Ricardo Pepi",
+    "Ruben van Bommel",
+    "Alassane Pléa"
   ],
-  "skip_onderwerpen": [],
-  "toon_advies": "De toon is overwegend positief en zelfverzekerd, passend bij de ongenaakbare landskampioen. Tegelijkertijd is er ruimte voor analyse en vooruitblikken op de toekomst, met name door de actuele transfergeruchten en blessures.",
-  "min_woorden_per_item": 200
+  "verplichte_secties": [
+    "vooruitblik",
+    "ziekenboeg",
+    "transfers",
+    "achtergrond"
+  ],
+  "requires_match_preview": true,
+  "research_queries": [
+    {
+      "sectie": "terugblik",
+      "query": "analyse en reacties Sparta PSV 11 april 2026"
+    },
+    {
+      "sectie": "terugblik",
+      "query": "site:vi.nl \"Sparta PSV\" 2026 doelpuntenmakers"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "voorbeschouwing PSV PEC Zwolle 23 april 2026"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "persconferentie Peter Bosz PSV PEC Zwolle april 2026"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "site:ed.nl vermoedelijke opstelling PSV PEC Zwolle 2026"
+    },
+    {
+      "sectie": "ziekenboeg",
+      "query": "PSV blessures en schorsingen april 2026"
+    },
+    {
+      "sectie": "ziekenboeg",
+      "query": "status blessure Ruben van Bommel Alassane Pléa PSV 2026"
+    },
+    {
+      "sectie": "transfers",
+      "query": "Sergiño Dest transfer PSV zomer 2026"
+    },
+    {
+      "sectie": "transfers",
+      "query": "transfergeruchten Joey Veerman Ismael Saibari PSV 2026"
+    },
+    {
+      "sectie": "achtergrond",
+      "query": "interview Peter Bosz analyse seizoen PSV 2025-2026"
+    },
+    {
+      "sectie": "achtergrond",
+      "query": "ontwikkeling Jong PSV talenten 2026"
+    }
+  ],
+  "toon_advies": "De toon moet urgent en gefocust zijn. Met de volgende wedstrijd binnen 24 uur, ligt de nadruk volledig op de vooruitblik en de personele puzzel voor Peter Bosz.",
+  "min_woorden_per_sectie": 250
 }

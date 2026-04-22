@@ -1,11 +1,31 @@
 {
-  "geselecteerde_items": [
-    {
-      "bron_url": "https://www.vi.nl/nieuws/drie-tactische-dingen-om-op-te-letten-tijdens-az-nec-bekerfinale",
-      "titel": "Tactische overwegingen van tegenstanders tegen PSV belicht in aanloop naar bekerfinale",
-      "categorie": "tactiek-analyse",
-      "rangorde_reden": "Dit item opent de nieuwsbrief omdat het een diepgaande tactische analyse is die de dominantie van PSV onderstreept, wat perfect past bij de status van aanstaand kampioen."
-    }
+  "sectievolgorde": [
+    "vooruitblik",
+    "ziekenboeg",
+    "terugblik",
+    "transfers",
+    "achtergrond"
   ],
-  "volgorde_rationale": "In een relatief rustige nieuwsweek kiezen we bewust voor één sterk, inhoudelijk item dat de status van PSV als de te kloppen ploeg in Nederland bevestigt. Deze focus op een tactische analyse biedt diepgang en onderstreept de impact van ons team op de keuzes van andere Eredivisieclubs, wat een krachtig signaal afgeeft aan onze lezers."
+  "sectie_hoeken": {
+    "vooruitblik": "Met de wedstrijd over minder dan 24 uur is de thuiswedstrijd tegen PEC Zwolle een cruciale, verplichte horde in de race om het kampioenschap.",
+    "ziekenboeg": "De personele puzzel voor Peter Bosz: wie is fit genoeg voor de eindsprint en hoe wordt de afwezigheid van sleutelspelers opgevangen?",
+    "terugblik": "De zakelijke overwinning op Sparta was een belangrijke stap die het team het vertrouwen geeft voor de beslissende fase van de competitie.",
+    "transfers": "Terwijl de focus op de titel ligt, wordt achter de schermen al hard gewerkt aan het vastleggen van sterkhouders en het plannen voor volgend seizoen.",
+    "achtergrond": "Een blik op de toekomst: de doorstroom van talent uit Jong PSV als fundament onder het huidige en toekomstige succes."
+  },
+  "kopverhaal_sectie": "vooruitblik",
+  "sectie_labels": {
+    "vooruitblik": "Vooruitblik",
+    "ziekenboeg": "Ziekenboeg & Schorsingen",
+    "terugblik": "Terugblik",
+    "transfers": "Transfers & Geruchten",
+    "achtergrond": "Achtergrond & Analyse"
+  },
+  "items_per_sectie_counts": {
+    "terugblik": 2,
+    "vooruitblik": 3,
+    "ziekenboeg": 2,
+    "transfers": 4,
+    "achtergrond": 1
+  }
 }

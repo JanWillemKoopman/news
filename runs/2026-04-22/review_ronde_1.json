@@ -1,23 +1,34 @@
 {
-  "score": 8,
-  "approved": true,
+  "score": 7,
+  "approved": false,
   "scores_per_as": {
-    "feitelijkheid": 8,
+    "sectiecompleetheid": 10,
+    "specificiteit": 8,
+    "feitelijkheid": 1,
     "toon": 9,
-    "structuur": 7,
-    "leesbaarheid": 8,
-    "relevantie": 9
+    "structuur": 8,
+    "leesbaarheid": 8
   },
   "feedback": [
     {
-      "as": "Structuur & Leesbaarheid",
-      "passage": "Body van item 'Zelfs als PSV niet speelt, gaat het over PSV'",
-      "verbeterpunt": "De structuur 'aanleiding → context → consequentie' is goed, maar wordt te expliciet benoemd ('De aanleiding was...', 'De context hiervan is...', 'De consequentie...'). Dit leest wat schools. Integreer deze elementen vloeiender. Begin de tweede alinea bijvoorbeeld direct met de concrete voorbeelden: 'Zo werd in analyses van de bekerfinale direct gerefereerd aan de vijf verdedigers waarmee AZ tegen PSV aantrad.' Dit maakt de tekst journalistieker en minder een ingevuld stramien."
+      "sectie": "algemeen",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De nieuwsbrief staat vol met specifieke quotes, data en financiële bedragen die volledig ontbreken in de aangeleverde brondiepgang. Volgens de harde scoringsregels is elk onverifieerbaar feit een verzinsel, wat resulteert in een zeer lage score. Alle feitelijke claims (van Bosz' quotes tot transferbedragen) moeten direct herleidbaar zijn tot de bron. Dit is een fundamentele journalistieke eis en de hoogste prioriteit voor herstel."
     },
     {
-      "as": "Feitelijkheid",
-      "passage": "Body van item 'Zelfs als PSV niet speelt, gaat het over PSV'",
-      "verbeterpunt": "De claim dat PSV hét ijkpunt was in de voorbeschouwingen op de bekerfinale is sterk, maar blijft nu algemeen ('in de voorbeschouwingen'). Maak dit specifieker om de autoriteit te verhogen, ook al is er geen brondiepgang. Verwijs bijvoorbeeld naar een type bron: 'Op tv benadrukten analisten...' of 'In diverse voetbalpodcasts werd gesteld dat...'. Dit maakt de observatie concreter en geloofwaardiger zonder een harde quote nodig te hebben."
+      "sectie": "algemeen",
+      "as": "leesbaarheid",
+      "verbeterpunt": "De tekst gebruikt te veel standaard sportjournalistieke clichés zoals 'druk op de ketel', 'deur op een kier', 'aderlating' en 'goudmijn'. Vervang deze door originelere, specifiekere bewoordingen om de tekst een frisser en professioneler karakter te geven."
+    },
+    {
+      "sectie": "terugblik",
+      "as": "specificiteit",
+      "verbeterpunt": "Het wedstrijdverslag van Sparta-PSV is goed, maar mist de exacte minuten waarin de doelpunten vielen. Voeg de tijdstippen van de goals van Pepi en Saibari toe voor een completer en feitelijker verslag."
+    },
+    {
+      "sectie": "ziekenboeg",
+      "as": "structuur",
+      "verbeterpunt": "De kop 'De puzzel van Bosz: Pléa's emotionele terugkeer en de zorgen om Dest' dekt de lading van de sectie niet volledig, aangezien ook de status van Van Bommel en de afwezigheid van schorsingen worden behandeld. Gebruik een meer omvattende kop, zoals 'Personele stand van zaken: Goed nieuws Pléa overschaduwd door nieuwe twijfels'."
     }
   ]
 }
