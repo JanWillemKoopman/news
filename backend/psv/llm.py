@@ -69,8 +69,9 @@ def generate(
         raise last_err
 
     try:
-        parts = data["candidates"][0]["content"]["parts"]
-        # Collect all text parts (grounding responses may split across parts)
+        candidate = data["candidates"][0]
+        # Grounding kan een lege content teruggeven (geen parts) — behandel als lege string
+        parts = candidate.get("content", {}).get("parts", [])
         texts = [p["text"] for p in parts if "text" in p]
         return "\n".join(texts)
     except (KeyError, IndexError) as e:

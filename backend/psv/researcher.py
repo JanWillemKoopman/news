@@ -98,6 +98,9 @@ def run(scout_profile: dict, run_dir: str) -> list:
                 temperature=0.1,
                 tools=llm.GOOGLE_SEARCH_TOOL,
             )
+            if not raw.strip():
+                logger.warning(f"  → Lege respons van Gemini voor '{onderwerp}', skip")
+                continue
             items = llm.parse_json(raw)
             if isinstance(items, list):
                 alle_items.extend(items)

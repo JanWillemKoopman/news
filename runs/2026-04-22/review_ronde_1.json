@@ -1,0 +1,23 @@
+{
+  "score": 8,
+  "approved": true,
+  "scores_per_as": {
+    "feitelijkheid": 8,
+    "toon": 9,
+    "structuur": 7,
+    "leesbaarheid": 8,
+    "relevantie": 9
+  },
+  "feedback": [
+    {
+      "as": "Structuur & Leesbaarheid",
+      "passage": "Body van item 'Zelfs als PSV niet speelt, gaat het over PSV'",
+      "verbeterpunt": "De structuur 'aanleiding → context → consequentie' is goed, maar wordt te expliciet benoemd ('De aanleiding was...', 'De context hiervan is...', 'De consequentie...'). Dit leest wat schools. Integreer deze elementen vloeiender. Begin de tweede alinea bijvoorbeeld direct met de concrete voorbeelden: 'Zo werd in analyses van de bekerfinale direct gerefereerd aan de vijf verdedigers waarmee AZ tegen PSV aantrad.' Dit maakt de tekst journalistieker en minder een ingevuld stramien."
+    },
+    {
+      "as": "Feitelijkheid",
+      "passage": "Body van item 'Zelfs als PSV niet speelt, gaat het over PSV'",
+      "verbeterpunt": "De claim dat PSV hét ijkpunt was in de voorbeschouwingen op de bekerfinale is sterk, maar blijft nu algemeen ('in de voorbeschouwingen'). Maak dit specifieker om de autoriteit te verhogen, ook al is er geen brondiepgang. Verwijs bijvoorbeeld naar een type bron: 'Op tv benadrukten analisten...' of 'In diverse voetbalpodcasts werd gesteld dat...'. Dit maakt de observatie concreter en geloofwaardiger zonder een harde quote nodig te hebben."
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "fase": "Eindfase Eredivisie, na speelronde 30",
+  "editie_type": "regulier",
+  "laatste_wedstrijd": {
+    "datum": null,
+    "tegenstander": null,
+    "uitslag": null,
+    "competitie": "Eredivisie"
+  },
+  "volgende_wedstrijd": {
+    "datum": "2026-04-23",
+    "tegenstander": "PEC Zwolle",
+    "competitie": "Eredivisie"
+  },
+  "zoekvenster_dagen": 7,
+  "prioriteitsonderwerpen": [
+    "transfers",
+    "blessures",
+    "tactiek-analyse"
+  ],
+  "skip_onderwerpen": [],
+  "toon_advies": "De toon is overwegend positief en zelfverzekerd, passend bij de ongenaakbare landskampioen. Tegelijkertijd is er ruimte voor analyse en vooruitblikken op de toekomst, met name door de actuele transfergeruchten en blessures.",
+  "min_woorden_per_item": 200
+}
