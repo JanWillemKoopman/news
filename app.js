@@ -59,7 +59,7 @@
     const needsToggle = !isFirst && item.summary.length > 400;
 
     card.innerHTML = `
-      <p class="summary-week">Week van ${weekLabel}</p>
+      <p class="summary-week">Editie ${weekLabel}</p>
       <h2 class="summary-title">${escapeHtml(item.title)}</h2>
       <div class="summary-body" data-expanded="${isFirst ? "true" : "false"}">${isFirst ? fullHtml : previewHtml}</div>
       ${needsToggle ? `<button class="read-more-btn" aria-expanded="false">Lees verder ↓</button>` : ""}
