@@ -38,7 +38,7 @@ Zoek op en rapporteer:
 - Huidige competitiefase (bijv. 'Eredivisie speelronde 31', 'winterstop', 'interlandpauze')
 - Stand in de competitie (positie en punten uit aantal wedstrijden)
 - Meest recente PSV-wedstrijd: datum, tegenstander, uit/thuis, exacte uitslag, competitie
-- Eerstvolgende PSV-wedstrijd: datum, tegenstander, uit/thuis, competitie
+- Eerstvolgende PSV-wedstrijd: datum, tegenstander, uit/thuis, competitie, AANVANGSTIJD (HH:MM)
 - Bereken 'dagen_geleden' (hoeveel dagen tussen laatste wedstrijd en vandaag: {datum})
 - Bereken 'dagen_tot' (hoeveel dagen tussen vandaag: {datum} en volgende wedstrijd)
 - Benoem 3-6 actuele sleutelspelers of sleutelonderwerpen (specifieke namen/zaken die \
@@ -61,7 +61,9 @@ Schrijf voor ELKE verplichte sectie 2-4 concrete Google-zoekopdrachten. Eisen:
 - Benoem specifieke namen, datums EN HET JAAR {jaar} (géén vage termen als 'recent nieuws')
 - Meng algemene queries met site-specifieke queries (bijv. 'site:ed.nl PSV Veerman')
 - Voor terugblik: gebruik tegenstander-naam, wedstrijddatum én jaar {jaar}
-- Voor vooruitblik: gebruik volgende tegenstander-naam, datum van de wedstrijd én jaar {jaar}
+- Voor vooruitblik: gebruik volgende tegenstander-naam, datum én jaar {jaar}; voeg ook een
+  query toe voor de HUIDIGE STAND + RECENTE VORM van de tegenstander (bijv. 'PEC Zwolle
+  stand resultaten april {jaar}')
 - Voor ziekenboeg: noem spelersnamen expliciet (Schouten, Veerman, Til, etc.)
 - Voor transfers: noem concrete namen als die in geruchten zitten
 - ALLE queries moeten filteren op nieuws van maximaal 14 dagen oud
@@ -83,6 +85,7 @@ Geef je ANTWOORD UITSLUITEND als geldig JSON in dit exacte formaat:
     "tegenstander": "string of null",
     "thuis_uit": "thuis | uit | null",
     "competitie": "string of null",
+    "aanvangstijd": "HH:MM of null",
     "dagen_tot": 0
   }},
   "sleutelspelers_nu": ["naam1", "naam2", "onderwerp3"],
@@ -91,15 +94,16 @@ Geef je ANTWOORD UITSLUITEND als geldig JSON in dit exacte formaat:
   "research_queries": [
     {{"sectie": "terugblik",   "query": "PSV Sparta Rotterdam april {jaar} samenvatting uitslag"}},
     {{"sectie": "terugblik",   "query": "site:ed.nl PSV Sparta {jaar} analyse"}},
-    {{"sectie": "vooruitblik", "query": "PSV PEC Zwolle {jaar} voorbeschouwing opstelling"}},
+    {{"sectie": "vooruitblik", "query": "PSV PEC Zwolle {jaar} voorbeschouwing opstelling aanvangstijd"}},
     {{"sectie": "vooruitblik", "query": "Peter Bosz persconferentie PSV {jaar}"}},
+    {{"sectie": "vooruitblik", "query": "PEC Zwolle stand vorm {jaar} Eredivisie"}},
     {{"sectie": "ziekenboeg",  "query": "PSV blessures selectie {jaar} Veerman Schouten"}},
     {{"sectie": "ziekenboeg",  "query": "PSV schorsing {jaar}"}},
     {{"sectie": "transfers",   "query": "PSV transfer geruchten zomer {jaar}"}},
     {{"sectie": "achtergrond", "query": "Peter Bosz interview PSV {jaar}"}}
   ],
   "toon_advies": "string (2 zinnen): gewenste toon voor deze editie",
-  "min_woorden_per_sectie": 250
+  "min_woorden_per_sectie": 350
 }}
 
 Belangrijk:

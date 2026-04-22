@@ -362,6 +362,57 @@ footer {
   color: var(--border-soft);
 }
 
+/* ── Pull-quote (NRC-stijl) ──────────────────────────────── */
+
+.summary-body blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1.8rem 0 1.8rem 0;
+  padding: 0.2rem 0 0.2rem 1.4rem;
+}
+
+.summary-body blockquote p {
+  font-size: 1.13rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.summary-body blockquote p:last-child {
+  font-size: 0.82rem;
+  font-style: normal;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  margin-bottom: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Kader (duiding / grijs contextblok) ─────────────────── */
+
+.summary-body .kader {
+  background-color: var(--bg-subtle);
+  border-left: 2px solid var(--border-soft);
+  padding: 1rem 1.25rem;
+  margin: 1.8rem 0;
+  font-size: 0.91rem;
+  line-height: 1.65;
+}
+
+.summary-body .kader p:last-child {
+  margin-bottom: 0;
+}
+
+.summary-body .kader > p:first-child > strong:first-child {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
 /* ── Responsive Design (Geoptimaliseerd voor iPhone) ────── */
 
 @media (max-width: 600px) {

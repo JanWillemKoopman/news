@@ -37,7 +37,16 @@
   if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
   function renderMarkdown(text) {
-    return window.marked ? marked.parse(text) : "<p>" + text.replace(/\n\n/g, "</p><p>") + "</p>";
+    // Split op :::kader...:::  blokken en render elk deel apart
+    const parts = text.split(/(:::kader[\s\S]*?:::)/g);
+    return parts.map(function(part) {
+      if (part.startsWith(":::kader")) {
+        const inner = part.replace(/^:::kader\n?/, "").replace(/\n?:::$/, "").trim();
+        const html = window.marked ? marked.parse(inner) : "<p>" + inner + "</p>";
+        return '<div class="kader">' + html + "</div>";
+      }
+      return window.marked ? marked.parse(part) : "<p>" + part.replace(/\n\n/g, "</p><p>") + "</p>";
+    }).join("");
   }
 
   function escapeHtml(str) {
