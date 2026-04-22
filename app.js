@@ -32,7 +32,7 @@
   }
 
   const today = new Date();
-  headerDate.textContent = `${today.getDate()} ${NL_MONTHS[today.getMonth()]} ${today.getFullYear()}`;
+  if (headerDate) headerDate.textContent = `${today.getDate()} ${NL_MONTHS[today.getMonth()]} ${today.getFullYear()}`;
 
   if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
@@ -46,7 +46,7 @@
     return d.innerHTML;
   }
 
-  function createCard(item) {
+  function createCard(item, isFirst = false) {
     const card = document.createElement("article");
     card.className = "summary-card";
 
@@ -56,12 +56,12 @@
 
     const previewText = item.summary.slice(0, 400);
     const previewHtml = renderMarkdown(previewText + (item.summary.length > 400 ? "…" : ""));
-    const needsToggle = item.summary.length > 400;
+    const needsToggle = !isFirst && item.summary.length > 400;
 
     card.innerHTML = `
       <p class="summary-week">Week van ${weekLabel}</p>
       <h2 class="summary-title">${escapeHtml(item.title)}</h2>
-      <div class="summary-body" data-expanded="false">${previewHtml}</div>
+      <div class="summary-body" data-expanded="${isFirst ? "true" : "false"}">${isFirst ? fullHtml : previewHtml}</div>
       ${needsToggle ? `<button class="read-more-btn" aria-expanded="false">Lees verder ↓</button>` : ""}
       <div class="summary-meta">
         <span>Gepubliceerd ${pubDate}</span>
@@ -85,7 +85,7 @@
 
   function showMore() {
     const batch = allSummaries.slice(rendered, rendered + PAGE_SIZE);
-    batch.forEach(item => summariesList.appendChild(createCard(item)));
+    batch.forEach((item, i) => summariesList.appendChild(createCard(item, rendered === 0 && i === 0)));
     rendered += batch.length;
 
     if (rendered < allSummaries.length) {
@@ -124,4 +124,53 @@
 
   loadMoreBtn.addEventListener("click", showMore);
   init();
+
+  // ── Thema Toggle ──────────────────────────────────────────
+
+  const THEME_KEY      = "weekoverzicht-theme";
+  const themeToggleBtn = document.getElementById("theme-toggle-btn");
+
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    themeToggleBtn.setAttribute(
+      "aria-label",
+      theme === "dark" ? "Schakel naar licht thema" : "Schakel naar donker thema"
+    );
+  }
+
+  applyTheme(localStorage.getItem(THEME_KEY) || "light");
+
+  themeToggleBtn.addEventListener("click", function () {
+    const next = document.documentElement.hasAttribute("data-theme") ? "light" : "dark";
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+  });
+
+  // ── Hamburger Menu ────────────────────────────────────────
+
+  const hamburgerBtn  = document.getElementById("hamburger-btn");
+  const hamburgerMenu = document.getElementById("hamburger-menu");
+
+  hamburgerBtn.addEventListener("click", function () {
+    const isOpen = hamburgerMenu.classList.contains("is-open");
+    hamburgerMenu.classList.toggle("is-open", !isOpen);
+    hamburgerBtn.setAttribute("aria-expanded", String(!isOpen));
+    hamburgerMenu.setAttribute("aria-hidden", String(isOpen));
+  });
+
+  document.addEventListener("click", function (e) {
+    if (
+      hamburgerMenu.classList.contains("is-open") &&
+      !hamburgerBtn.contains(e.target) &&
+      !hamburgerMenu.contains(e.target)
+    ) {
+      hamburgerMenu.classList.remove("is-open");
+      hamburgerBtn.setAttribute("aria-expanded", "false");
+      hamburgerMenu.setAttribute("aria-hidden", "true");
+    }
+  });
 })();

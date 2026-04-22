@@ -2,6 +2,9 @@
    Weekoverzicht — Volledige NRC-geïnspireerde Stijl
    ============================================================ */
 
+/* ── Kleurthema: Licht (standaard) ─────────────────────────
+   Pas de waarden hieronder aan om het LICHTE thema te wijzigen.
+   ────────────────────────────────────────────────────────── */
 :root {
   /* Kleurenpalet */
   --accent:       #b30000;    /* NRC Rood */
@@ -10,15 +13,29 @@
   --text-light:   #757575;    /* Lichtgrijs voor meta-data */
   --border:       #121212;    /* Harde lijnen */
   --border-soft:  #e0ddd5;    /* Zachte scheidingslijnen */
-  
+
   /* Achtergrond: Het 'papieren' gevoel */
-  --bg:           #fcfaf5;    
+  --bg:           #fcfaf5;
   --bg-subtle:    #f5f2e9;
-  
+
   /* Layout */
   --max-width:    700px;
   --font-serif:   'Libre Baskerville', Georgia, "Times New Roman", serif;
   --font-sans:    'Inter', "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* ── Kleurthema: Donker ─────────────────────────────────────
+   Pas de waarden hieronder aan om het DONKERE thema te wijzigen.
+   ────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --accent:       #e05555;
+  --text:         #e8e6e1;
+  --text-muted:   #a0998f;
+  --text-light:   #6e6760;
+  --border:       #e8e6e1;
+  --border-soft:  #3a3730;
+  --bg:           #18171a;
+  --bg-subtle:    #211f24;
 }
 
 /* ── Basis Reset ────────────────────────────────────────── */
@@ -51,42 +68,108 @@ body {
 /* ── Header ─────────────────────────────────────────────── */
 
 header {
-  padding: 2.5rem 0 1.5rem;
-  border-bottom: 3px solid var(--border); /* De kenmerkende dikke lijn */
+  border-bottom: 3px solid var(--border);
   margin-bottom: 3rem;
+  position: relative;
 }
 
-.header-top {
+.header-bar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
+  padding: 0.75rem 0;
+}
+
+.header-logo {
+  flex: 1;
+  text-align: center;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.hamburger-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  margin: 3px 0;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Licht thema: toon maan, verberg zon */
+.icon-sun  { display: none; }
+.icon-moon { display: block; }
+
+/* Donker thema: toon zon, verberg maan */
+[data-theme="dark"] .icon-sun  { display: block; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+/* ── Hamburger Dropdown ──────────────────────────────────── */
+
+.hamburger-menu {
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-soft);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.hamburger-menu.is-open {
+  max-height: 300px;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0.5rem 0;
+}
+
+.menu-list li {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.menu-list li:last-child {
+  border-bottom: none;
+}
+
+.menu-list a {
+  display: block;
+  padding: 0.75rem 0;
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
-  margin-bottom: 1.5rem;
+  text-decoration: none;
 }
 
-.site-title {
-  font-family: var(--font-serif);
-  font-size: 3.2rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.site-sub {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 1.1rem;
-  text-align: center;
-  color: var(--text-muted);
-  max-width: 520px;
-  margin: 0 auto;
+.menu-list a:hover {
+  color: var(--accent);
 }
 
 /* ── Summary Card (Artikelen) ────────────────────────────── */
@@ -288,35 +371,15 @@ footer {
     font-size: 16px; 
   }
 
-  .site-title { 
-    /* De hoofdtitel mag op mobiel nog iets compacter */
-    font-size: 2.1rem; 
-    letter-spacing: -0.03em;
-  }
-
-  .site-sub {
-    /* Ondertitel iets kleiner voor een betere balans */
-    font-size: 0.95rem;
-    padding: 0 10px;
-  }
-
-  .summary-title { 
-    /* De koppen van de artikelen iets minder dominant */
-    font-size: 1.45rem; 
+  .summary-title {
+    font-size: 1.45rem;
   }
 
   .summary-card {
-    /* Iets minder witruimte tussen de artikelen op mobiel */
     padding: 1.8rem 0;
   }
 
-  .header-top { 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 0.4rem; 
-  }
-
-  .container { 
-    padding: 0 1rem; 
+  .container {
+    padding: 0 1rem;
   }
 }

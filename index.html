@@ -11,20 +11,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weekoverzicht</title>
   <link rel="stylesheet" href="style.css" />
+  <script>(function(){var t=localStorage.getItem('weekoverzicht-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
 </head>
 <body>
 
   <header>
     <div class="container">
-      <div class="header-top">
-        <span class="header-date" id="header-date"></span>
-        <span class="header-label">Wekelijks nieuwsoverzicht</span>
+      <div class="header-bar">
+        <button class="header-btn hamburger-btn" id="hamburger-btn" aria-label="Menu openen" aria-expanded="false">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="header-logo">
+          <!-- Voeg hier een <img src="logo.svg" alt="Weekoverzicht"> toe -->
+        </div>
+        <button class="header-btn theme-toggle-btn" id="theme-toggle-btn" aria-label="Schakel naar donker thema">
+          <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
       </div>
-      <div class="header-title-wrap">
-        <h1 class="site-title">Weekoverzicht</h1>
-      </div>
-      <p class="site-sub">Een wekelijkse samenvatting van het nieuws in Nederland en de wereld</p>
     </div>
+    <nav class="hamburger-menu" id="hamburger-menu" aria-hidden="true">
+      <div class="container">
+        <ul class="menu-list">
+          <li><a href="#">Archief</a></li>
+          <li><a href="#">Over</a></li>
+        </ul>
+      </div>
+    </nav>
   </header>
 
   <main class="container">
