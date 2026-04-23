@@ -4,7 +4,7 @@
    Principles: Minimalism, Typography, Authority
    ============================================================ */
 
-/* ── Design Tokens & Kleurenpalet ────────────────────────── */
+/* ── Design Tokens & Kleurenpalet ────────────────────────── */ 
 :root {
   /* Kleurenpalet */
   --accent:       #B10E0E;    /* NRC/PSV Dieprood */
