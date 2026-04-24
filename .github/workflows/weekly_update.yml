@@ -2,8 +2,8 @@ name: PSV Nieuwsbrief update
 
 on:
   schedule:
-    # Elke zondag 18:00 UTC = 20:00 CEST (zomertijd) / 19:00 CET (wintertijd)
-    - cron: '0 18 * * 0'
+    # Eenmalig: 24 april 2026 om 18:00 UTC = 20:00 CEST (feitelijke start net na 20:00 NL)
+    - cron: '0 18 24 4 *'
   workflow_dispatch:
     # Ook handmatig te starten via GitHub → Actions → "Run workflow"
 
