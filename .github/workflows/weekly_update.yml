@@ -1,11 +1,9 @@
 name: PSV Nieuwsbrief update
 
 on:
+  workflow_dispatch:      # <--- Voeg exact deze regel toe
   schedule:
-    # Eenmalig: 24 april 2026 om 18:00 UTC = 20:00 CEST (feitelijke start net na 20:00 NL)
-    - cron: '0 18 24 4 *'
-  workflow_dispatch:
-    # Ook handmatig te starten via GitHub → Actions → "Run workflow"
+    - cron: '0 18 * * *'
 
 permissions:
   contents: write
