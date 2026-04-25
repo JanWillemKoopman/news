@@ -1,5 +1,5 @@
 {
-  "fase": "Eredivisie, na speelronde 31",
+  "fase": "Eredivisie, speelronde 31",
   "stand": "1e plaats, 77 punten uit 31 wedstrijden",
   "laatste_wedstrijd": {
     "datum": "2026-04-23",
@@ -18,12 +18,12 @@
     "dagen_tot": 7
   },
   "sleutelspelers_nu": [
-    "Jerdy Schouten (langdurige blessure)",
-    "Ismael Saibari (blessure)",
-    "Sergiño Dest (blessure en transferwens)",
-    "Joey Veerman (verwachte zomertransfer)",
-    "Ricardo Pepi (twee goals tegen PEC Zwolle)",
-    "Esmir Bajraktarevic (uitblinker tegen PEC Zwolle)"
+    "Ismael Saibari (blessure, twijfelgeval voor Ajax-uit)",
+    "Joey Veerman (teruggekeerd in selectie)",
+    "Jerdy Schouten (langdurig geblesseerd)",
+    "Ricardo Pepi (prestaties en transfergeruchten)",
+    "Noah Fernandez (schorsing)",
+    "Sergiño Dest (op de weg terug, transfergeruchten)"
   ],
   "verplichte_secties": [
     "terugblik",
@@ -35,65 +35,53 @@
   "research_queries": [
     {
       "sectie": "terugblik",
-      "query": "analyse doelpunten PSV PEC Zwolle 23 april 2026"
+      "query": "analyse PSV - PEC Zwolle 23 april 2026"
     },
     {
       "sectie": "terugblik",
-      "query": "site:vi.nl reacties spelers PSV na 6-1 winst op PEC Zwolle 2026"
+      "query": "reacties spelers PSV na PEC Zwolle 23 april 2026"
     },
     {
       "sectie": "terugblik",
-      "query": "Peter Bosz persconferentie PSV PEC Zwolle 23 april 2026"
-    },
-    {
-      "sectie": "vooruitblik",
-      "query": "voorbeschouwing Ajax PSV 2 mei 2026"
-    },
-    {
-      "sectie": "vooruitblik",
-      "query": "site:ajax.nl nieuws blessures selectie Ajax april 2026"
-    },
-    {
-      "sectie": "vooruitblik",
-      "query": "stand en vorm Ajax Eredivisie april 2026"
+      "query": "site:vi.nl rapportcijfers PSV PEC Zwolle 2026"
     },
     {
       "sectie": "ziekenboeg",
-      "query": "PSV blessure update Ismael Saibari Anass Salah-Eddine april 2026"
+      "query": "PSV blessure update Ismael Saibari april 2026"
     },
     {
       "sectie": "ziekenboeg",
-      "query": "PSV schorsingen Noah Fernandez Paul Wanner Ajax 2 mei 2026"
+      "query": "PSV schorsingen Noah Fernandez Paul Wanner Ivan Perisic Ajax 2 mei 2026"
     },
     {
       "sectie": "ziekenboeg",
-      "query": "status langdurige blessure Jerdy Schouten PSV 2026"
+      "query": "herstel Jerdy Schouten Sergiño Dest PSV april 2026"
     },
     {
       "sectie": "transfers",
-      "query": "transfergeruchten PSV Joey Veerman Sergiño Dest zomer 2026"
+      "query": "transfergeruchten PSV Joey Veerman Ricardo Pepi zomer 2026"
     },
     {
       "sectie": "transfers",
-      "query": "site:ed.nl PSV transfer nieuws Earnest Stewart plannen 2026"
+      "query": "site:ed.nl PSV contractnieuws jeugdspelers april 2026"
     },
     {
       "sectie": "transfers",
-      "query": "contractverlenging PSV nieuws april 2026"
+      "query": "PSV interesse inkomende transfers Eredivisie 2026"
     },
     {
       "sectie": "achtergrond",
-      "query": "analyse tactiek Peter Bosz PSV seizoen 2025-2026"
+      "query": "interview Peter Bosz vooruitblik Ajax PSV mei 2026"
     },
     {
       "sectie": "achtergrond",
-      "query": "interview Esmir Bajraktarevic PSV april 2026"
+      "query": "analyse kampioensseizoen PSV 2025-2026"
     },
     {
       "sectie": "achtergrond",
-      "query": "PSV kampioensreis Ibiza april 2026"
+      "query": "ontwikkeling Esmir Bajraktarevic PSV 2026"
     }
   ],
-  "toon_advies": "De toon mag euforisch zijn na de ruime zege en met de titel in zicht. Focus op de teamprestatie en de aanstaande kampioenswedstrijd, met een scherp oog voor de vele blessures en transferontwikkelingen.",
+  "toon_advies": "De toon is overwegend positief en reflecterend, gezien de recente ruime overwinning en de comfortabele positie in de competitie. Focus op de sterke teamprestatie en de aanloop naar de kraker tegen Ajax, met een scherp oog voor de personele puzzel door blessures en schorsingen.",
   "min_woorden_per_sectie": 350
 }

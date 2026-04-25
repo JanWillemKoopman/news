@@ -2,9 +2,9 @@
   "score": 7,
   "approved": false,
   "scores_per_as": {
-    "sectiecompleetheid": 10,
-    "specificiteit": 7,
-    "feitelijkheid": 4,
+    "sectiecompleetheid": 9,
+    "specificiteit": 6,
+    "feitelijkheid": 2,
     "toon": 9,
     "structuur": 9,
     "leesbaarheid": 8
@@ -13,27 +13,37 @@
     {
       "sectie": "algemeen",
       "as": "feitelijkheid",
-      "verbeterpunt": "De nieuwsbrief staat vol met specifieke feiten (uitslagen, data, transferbedragen, blessureprognoses) die niet in de meegeleverde 'brondiepgang' staan. Volgens de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is de score hierop zeer laag. Zorg ervoor dat elk feit direct herleidbaar is naar de verstrekte broninformatie."
+      "verbeterpunt": "De nieuwsbrief negeert de brondiepgang bijna volledig. Secties als 'ziekenboeg' en 'transfers' zijn volledig verzonnen, aangezien de bron hiervoor leeg is. Dit is onacceptabel en schendt de journalistieke basisprincipes. De score is gekelderd door deze ernstige fout."
     },
     {
-      "sectie": "ziekenboeg",
+      "sectie": "terugblik",
       "as": "feitelijkheid",
-      "verbeterpunt": "De blessureprognoses bevatten data die ver in de toekomst liggen (18 augustus 2025, 1 juni 2026, 3 januari 2027). Dit is feitelijk onmogelijk en leest als een slordigheidsfout, wat de geloofwaardigheid van de hele sectie ondermijnt. Verifieer alle data op plausibiliteit en correctheid."
+      "verbeterpunt": "De uitslag (6-1), de doelpuntenmakers, de quotes van Bosz en Olij, en de gele kaart voor Perisic staan niet in de aangeleverde bron. Alle feiten moeten verifieerbaar zijn. Dit is pure fabricatie."
+    },
+    {
+      "sectie": "achtergrond",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De achtergrondsectie gaat over Esmir Bajraktarevic, terwijl de bron een analyse van de Champions League Vrouwen door Shanice van de Sanden bevat. Het onderwerp is onjuist en alle genoemde feiten en quotes zijn niet terug te vinden in de bron."
     },
     {
       "sectie": "terugblik",
       "as": "specificiteit",
-      "verbeterpunt": "Het wedstrijdverslag van PSV-PEC Zwolle (6-1) is incompleet. Er worden vijf doelpuntenmakers voor PSV genoemd (Pepi 2x, Bajraktarevic, Driouech, Perisic), maar de uitslag is 6-1. Zowel het zesde PSV-doelpunt als de tegentreffer van PEC Zwolle ontbreken. Maak het verslag compleet met alle doelpunten en bijbehorende minuten."
+      "verbeterpunt": "Het wedstrijdverslag mist een volledige lijst van doelpuntenmakers en het moment van scoren. Hoewel er enkele namen worden genoemd, is dit onvolledig. Vermeld alle doelpunten (incl. minuut) voor een compleet verslag."
     },
     {
       "sectie": "ziekenboeg",
       "as": "specificiteit",
-      "verbeterpunt": "Er is een interne contradictie over de prestatie van Esmir Bajraktarevic. De terugblik noemt één doelpunt, terwijl de ziekenboeg-sectie spreekt over 'twee doelpunten en drie assists'. Dit is verwarrend en slordig. Verifieer en uniformeer dit soort details over alle secties heen."
+      "verbeterpunt": "De genoemde statistieken van Saibari (19 goals, 9 assists) en de leeftijd van Perisic (37) zijn niet afkomstig uit de bron. Specificiteit moet gebaseerd zijn op feiten, geen verzinsels om concreet te lijken."
+    },
+    {
+      "sectie": "algemeen",
+      "as": "leesbaarheid",
+      "verbeterpunt": "Vermijd clichés zoals 'race tegen de klok' (ziekenboeg) en 'transfercarrousel' (transfers). Zoek naar originelere, krachtigere formuleringen die de tekst onderscheiden."
     },
     {
       "sectie": "algemeen",
       "as": "feitelijkheid",
-      "verbeterpunt": "Feitelijkheid scoort 4/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
+      "verbeterpunt": "Feitelijkheid scoort 2/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
     }
   ]
 }

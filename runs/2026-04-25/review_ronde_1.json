@@ -1,39 +1,34 @@
 {
-  "score": 8,
+  "score": 7,
   "approved": false,
   "scores_per_as": {
     "sectiecompleetheid": 9,
     "specificiteit": 8,
-    "feitelijkheid": 4,
+    "feitelijkheid": 2,
     "toon": 9,
-    "structuur": 8,
+    "structuur": 9,
     "leesbaarheid": 8
   },
   "feedback": [
     {
-      "sectie": "algemeen",
+      "sectie": "Algemeen",
       "as": "feitelijkheid",
-      "verbeterpunt": "De nieuwsbrief bevat meerdere quotes (Bosz over Bajraktarevic, Olij, Van den Berg) en feiten (wedstrijdverslag, transferdetails) die niet in de meegeleverde brondiepgang staan. Volgens de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is dit een zware overtreding. Baseer alle feiten, en met name directe quotes en cijfers, uitsluitend op de aangeleverde bron."
+      "verbeterpunt": "De nieuwsbrief negeert de aangeleverde brondiepgang bijna volledig. De vooruitblik gaat over Ajax-PSV terwijl de bron over Twente-NEC gaat. De terugblik, ziekenboeg en transfersecties bevatten talloze quotes, cijfers en feiten (o.a. de 6-1 uitslag, alle quotes, alle transferbedragen) die niet in de bronnen staan. Dit is onacceptabel en een schending van de basisprincipes. Baseer alle content 100% op de verstrekte bronnen."
+    },
+    {
+      "sectie": "achtergrond",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De achtergrondsectie is volledig verzonnen en gaat over Esmir Bajraktarevic, terwijl de bron een analyse van Shanice van de Sanden over de Champions League Vrouwen bevat. Het onderwerp is volledig gemist. Gebruik het aangeleverde materiaal als basis voor de content."
     },
     {
       "sectie": "terugblik",
       "as": "specificiteit",
-      "verbeterpunt": "Het wedstrijdverslag van de 6-1 zege benoemt slechts vijf doelpuntenmakers (Pepi x2, eigen doelpunt, Driouech, Bajraktarevic). De zesde doelpuntenmaker ontbreekt. Zorg dat wedstrijdverslagen statistisch compleet zijn."
-    },
-    {
-      "sectie": "transfers",
-      "as": "specificiteit",
-      "verbeterpunt": "De transfersectie noemt het seizoen 2026-2027, wat een typefout lijkt. Daarnaast zijn de genoemde contractduren (Veerman en Dest tot 2028) en leeftijden (Veerman 27) niet verifieerbaar via de bron en voelen speculatief. Veranker dergelijke details altijd in geverifieerde bronnen."
-    },
-    {
-      "sectie": "algemeen",
-      "as": "leesbaarheid",
-      "verbeterpunt": "De tekst bevat enkele clichés ('achilleshiel', 'medische staf draait overuren', 'hol van de rivaal'). Vervang deze door originelere formuleringen voor een scherpere, meer journalistieke stijl."
+      "verbeterpunt": "Hoewel de uitslag wordt genoemd, ontbreekt een volledige lijst van doelpuntenmakers en de minuten waarin de goals vielen. Dit zou het wedstrijdverslag feitelijker en completer maken, zelfs als de feiten uit de bron zouden komen."
     },
     {
       "sectie": "algemeen",
       "as": "feitelijkheid",
-      "verbeterpunt": "Feitelijkheid scoort 4/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
+      "verbeterpunt": "Feitelijkheid scoort 2/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
     }
   ]
 }
