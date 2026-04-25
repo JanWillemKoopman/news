@@ -1,0 +1,95 @@
+{
+  "fase": "Eredivisie speelronde 31",
+  "stand": "1e plaats, 77 punten uit 31 wedstrijden",
+  "laatste_wedstrijd": {
+    "datum": "2026-04-23",
+    "tegenstander": "PEC Zwolle",
+    "thuis_uit": "thuis",
+    "uitslag": "PSV 6-1 PEC Zwolle",
+    "competitie": "Eredivisie",
+    "dagen_geleden": 2
+  },
+  "volgende_wedstrijd": {
+    "datum": "2026-05-02",
+    "tegenstander": "Ajax",
+    "thuis_uit": "uit",
+    "competitie": "Eredivisie",
+    "aanvangstijd": "20:00",
+    "dagen_tot": 7
+  },
+  "sleutelspelers_nu": [
+    "Jerdy Schouten",
+    "Ismael Saibari",
+    "Sergiño Dest",
+    "Joey Veerman",
+    "Ricardo Pepi",
+    "Anass Salah-Eddine"
+  ],
+  "verplichte_secties": [
+    "terugblik",
+    "ziekenboeg",
+    "transfers",
+    "achtergrond"
+  ],
+  "requires_match_preview": false,
+  "research_queries": [
+    {
+      "sectie": "terugblik",
+      "query": "verslag analyse PSV - PEC Zwolle 23 april 2026"
+    },
+    {
+      "sectie": "terugblik",
+      "query": "site:ed.nl reacties spelers PSV na PEC Zwolle 23 april 2026"
+    },
+    {
+      "sectie": "terugblik",
+      "query": "opstelling en statistieken PSV PEC Zwolle 2026"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "voorbeschouwing Ajax PSV 2 mei 2026"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "persconferentie Peter Bosz vooruitblik Ajax PSV mei 2026"
+    },
+    {
+      "sectie": "vooruitblik",
+      "query": "stand en vorm Ajax Eredivisie april 2026"
+    },
+    {
+      "sectie": "ziekenboeg",
+      "query": "PSV blessure update Jerdy Schouten Ismael Saibari april 2026"
+    },
+    {
+      "sectie": "ziekenboeg",
+      "query": "schorsingen PSV Eredivisie mei 2026"
+    },
+    {
+      "sectie": "ziekenboeg",
+      "query": "site:vi.nl PSV ziekenboeg Anass Salah-Eddine Sergiño Dest"
+    },
+    {
+      "sectie": "transfers",
+      "query": "PSV transfergeruchten Joey Veerman Sergiño Dest zomer 2026"
+    },
+    {
+      "sectie": "transfers",
+      "query": "site:telegraaf.nl Earnest Stewart plannen transferwindow PSV 2026"
+    },
+    {
+      "sectie": "transfers",
+      "query": "analyse transferwaarde selectie PSV april 2026"
+    },
+    {
+      "sectie": "achtergrond",
+      "query": "interview Peter Bosz kampioenschap PSV 2026"
+    },
+    {
+      "sectie": "achtergrond",
+      "query": "ontwikkeling Jong PSV talenten seizoen 2025-2026"
+    }
+  ],
+  "toon_advies": "De toon is euforisch en zelfverzekerd. De recente 6-1 overwinning en de riante voorsprong in de competitie rechtvaardigen een triomfantelijke, maar toch scherpe blik op de komende kraker tegen Ajax.",
+  "min_woorden_per_sectie": 350
+}
