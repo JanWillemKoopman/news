@@ -1,0 +1,25 @@
+{
+  "sectievolgorde": [
+    "terugblik",
+    "vooruitblik",
+    "ziekenboeg"
+  ],
+  "sectie_hoeken": {
+    "terugblik": "De 6-1 overwinning op PEC Zwolle was geen gewone zege, maar een galavoorstelling die de status van de kersverse landskampioen onderstreepte.",
+    "vooruitblik": "Met de titel op zak reist PSV zonder druk maar met maximale eerzucht af naar Amsterdam om het kampioensseizoen extra glans te geven tegen de aartsrivaal.",
+    "achtergrond": "Een diepgaande analyse met architect Peter Bosz over de tactische meesterzetten en sleutelmomenten die leidden tot de overtuigende landstitel.",
+    "ziekenboeg": "De euforie wordt licht getemperd door de blessure van sleutelspeler Ivan Perisic, die de kraker tegen Ajax aan zich voorbij moet laten gaan.",
+    "transfers": "Nu het kampioenschap een feit is, verschuift de focus naar volgend seizoen en dient de concrete interesse in Esmir Bajraktarevic zich aan als eerste testcase."
+  },
+  "kopverhaal_sectie": "terugblik",
+  "sectie_labels": {
+    "terugblik": "Terugblik",
+    "vooruitblik": "Vooruitblik",
+    "ziekenboeg": "Ziekenboeg & Schorsingen"
+  },
+  "items_per_sectie_counts": {
+    "terugblik": 1,
+    "vooruitblik": 4,
+    "ziekenboeg": 3
+  }
+}
