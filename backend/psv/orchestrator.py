@@ -62,6 +62,23 @@ def run(dry_run: bool = False, stage: str = None) -> None:
     for sectie, items in scanner_items.items():
         research_per_sectie.setdefault(sectie, []).extend(items)
 
+    # Dedupliceer over alle secties heen op URL (researcher + scanner kunnen overlappen)
+    seen_urls: set = set()
+    for sectie in list(research_per_sectie.keys()):
+        unique = []
+        for item in research_per_sectie[sectie]:
+            url = item.get("bron_url", "")
+            if url and url in seen_urls:
+                continue
+            if url:
+                seen_urls.add(url)
+            unique.append(item)
+        research_per_sectie[sectie] = unique
+    logger.info(
+        f"Na dedup: {sum(len(v) for v in research_per_sectie.values())} unieke items "
+        f"({len(seen_urls)} unieke URLs)"
+    )
+
     # ── 3. Deep Reader ────────────────────────────────────────
     deep_per_sectie = deep_reader.run(research_per_sectie, scout_profile, run_dir)
     if stage == "deep_reader":

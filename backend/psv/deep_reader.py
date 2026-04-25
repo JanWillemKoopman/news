@@ -125,9 +125,12 @@ def run(research_per_sectie: dict, scout_profile: dict, run_dir: str) -> dict:
 
             if len(tekst) < _MIN_TEXT_LENGTH:
                 logger.warning(
-                    f"  → Tekst te kort ({len(tekst)} tekens, min {_MIN_TEXT_LENGTH}) "
-                    f"— paywall/cookiemuur? Volgende item wordt geprobeerd."
+                    f"  → Tekst te kort ({len(tekst)} tekens) — probeer Gemini-fallback"
                 )
+                tekst = _gemini_fetch(url, item.get("titel", ""))
+
+            if len(tekst) < _MIN_TEXT_LENGTH:
+                logger.warning(f"  → Ook Gemini-fallback onvoldoende — samenvatting als basis")
                 item["diepgang"] = _fallback_diepgang(item)
                 enriched_sectie.append(item)
                 continue
@@ -228,6 +231,32 @@ def _fetch_user_urls(research_per_sectie: dict, scout_profile: dict) -> dict:
             logger.error(f"  → Fout bij verwerken user-URL {url}: {e}")
 
     return result
+
+
+def _gemini_fetch(url: str, titel: str = "") -> str:
+    """Gebruik Gemini's web search als fallback voor JS-rendered of geblokkeerde pagina's."""
+    try:
+        zoekterm = titel or url
+        raw = llm.generate(
+            model=config.RESEARCHER_MODEL,
+            prompt=(
+                f"Haal de volledige inhoud op van dit artikel en geef de complete tekst terug:\n"
+                f"URL: {url}\n"
+                f"Titel (hint): {zoekterm}\n\n"
+                f"Geef uitsluitend de artikeltekst terug — inclusief quotes, cijfers en context. "
+                f"Geen samenvatting, geen commentaar van jezelf."
+            ),
+            system="Je bent een tekst-extractor. Geef de volledige ruwe artikeltekst terug.",
+            temperature=0.1,
+            tools=llm.GOOGLE_SEARCH_TOOL,
+        )
+        tekst = raw.strip() if raw else ""
+        if tekst:
+            logger.info(f"  → Gemini-fallback: {len(tekst)} tekens opgehaald")
+        return tekst
+    except Exception as e:
+        logger.warning(f"  → Gemini-fallback mislukt: {e}")
+        return ""
 
 
 def _recency(item: dict) -> float:
