@@ -24,7 +24,7 @@ jobs:
           python-version: '3.11'
 
       - name: Dependencies installeren
-        run: pip install python-dotenv pytz trafilatura
+        run: pip install python-dotenv pytz trafilatura google-genai requests
 
       - name: PSV Nieuwsbrief genereren
         env:
