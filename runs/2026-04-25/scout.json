@@ -1,5 +1,5 @@
 {
-  "fase": "Eredivisie speelronde 31",
+  "fase": "Eredivisie, na speelronde 31. PSV is op 5 april 2026 landskampioen geworden.",
   "stand": "1e plaats, 77 punten uit 31 wedstrijden",
   "laatste_wedstrijd": {
     "datum": "2026-04-23",
@@ -18,15 +18,15 @@
     "dagen_tot": 7
   },
   "sleutelspelers_nu": [
-    "Jerdy Schouten",
-    "Ismael Saibari",
-    "Sergiño Dest",
-    "Joey Veerman",
-    "Ricardo Pepi",
-    "Anass Salah-Eddine"
+    "Ivan Perisic (blessure)",
+    "Esmir Bajraktarevic (transfergerucht Everton)",
+    "Peter Bosz (analyse kampioensseizoen)",
+    "Analyse van de 6-1 zege op PEC Zwolle",
+    "Het behaalde landskampioenschap"
   ],
   "verplichte_secties": [
     "terugblik",
+    "vooruitblik",
     "ziekenboeg",
     "transfers",
     "achtergrond"
@@ -35,61 +35,57 @@
   "research_queries": [
     {
       "sectie": "terugblik",
-      "query": "verslag analyse PSV - PEC Zwolle 23 april 2026"
+      "query": "Analyse PSV - PEC Zwolle 23 april 2026"
     },
     {
       "sectie": "terugblik",
-      "query": "site:ed.nl reacties spelers PSV na PEC Zwolle 23 april 2026"
+      "query": "site:vi.nl reacties spelers PSV na 6-1 winst PEC Zwolle 2026"
     },
     {
       "sectie": "terugblik",
-      "query": "opstelling en statistieken PSV PEC Zwolle 2026"
+      "query": "Samenvatting PSV PEC Zwolle april 2026"
     },
     {
       "sectie": "vooruitblik",
-      "query": "voorbeschouwing Ajax PSV 2 mei 2026"
+      "query": "Voorbeschouwing Ajax - PSV 2 mei 2026"
     },
     {
       "sectie": "vooruitblik",
-      "query": "persconferentie Peter Bosz vooruitblik Ajax PSV mei 2026"
+      "query": "Persconferentie Peter Bosz vooruitblik Ajax PSV 2026"
     },
     {
       "sectie": "vooruitblik",
-      "query": "stand en vorm Ajax Eredivisie april 2026"
+      "query": "Stand en recente resultaten Ajax Eredivisie april 2026"
     },
     {
       "sectie": "ziekenboeg",
-      "query": "PSV blessure update Jerdy Schouten Ismael Saibari april 2026"
+      "query": "Blessure Ivan Perisic PSV afwezig tegen Ajax 2026"
     },
     {
       "sectie": "ziekenboeg",
-      "query": "schorsingen PSV Eredivisie mei 2026"
-    },
-    {
-      "sectie": "ziekenboeg",
-      "query": "site:vi.nl PSV ziekenboeg Anass Salah-Eddine Sergiño Dest"
+      "query": "PSV selectie nieuws blessures schorsingen april 2026"
     },
     {
       "sectie": "transfers",
-      "query": "PSV transfergeruchten Joey Veerman Sergiño Dest zomer 2026"
+      "query": "Esmir Bajraktarevic Everton transfergerucht PSV april 2026"
     },
     {
       "sectie": "transfers",
-      "query": "site:telegraaf.nl Earnest Stewart plannen transferwindow PSV 2026"
+      "query": "site:ed.nl PSV transfernieuws zomer 2026"
     },
     {
       "sectie": "transfers",
-      "query": "analyse transferwaarde selectie PSV april 2026"
+      "query": "Contractverlenging PSV spelers 2026"
     },
     {
       "sectie": "achtergrond",
-      "query": "interview Peter Bosz kampioenschap PSV 2026"
+      "query": "Analyse kampioenschap PSV seizoen 2025-2026"
     },
     {
       "sectie": "achtergrond",
-      "query": "ontwikkeling Jong PSV talenten seizoen 2025-2026"
+      "query": "Interview Peter Bosz over landstitel PSV 2026"
     }
   ],
-  "toon_advies": "De toon is euforisch en zelfverzekerd. De recente 6-1 overwinning en de riante voorsprong in de competitie rechtvaardigen een triomfantelijke, maar toch scherpe blik op de komende kraker tegen Ajax.",
+  "toon_advies": "De toon is euforisch en zelfverzekerd vanwege het behaalde kampioenschap. De nieuwsbrief viert de recente 6-1 overwinning en kijkt met vertrouwen vooruit naar de prestigieuze wedstrijd tegen aartsrivaal Ajax.",
   "min_woorden_per_sectie": 350
 }
