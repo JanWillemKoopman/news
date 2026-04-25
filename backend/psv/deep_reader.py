@@ -11,6 +11,7 @@ automatisch aan de juiste sectie toegewezen.
 import json
 import logging
 import os
+import re
 from datetime import datetime
 
 from backend.psv import config, llm, fetcher
@@ -237,13 +238,27 @@ def _recency(item: dict) -> float:
 
 
 def _fallback_diepgang(item: dict) -> dict:
+    samenvatting = item.get("samenvatting", "")
+    quotes = _extract_quotes_from_samenvatting(samenvatting)
     return {
-        "quotes": [],
+        "quotes": quotes,
         "cijfers": [],
-        "kernfeiten": [item.get("samenvatting", "")[:400]] if item.get("samenvatting") else [],
-        "context": item.get("samenvatting", ""),
+        "kernfeiten": [samenvatting[:400]] if samenvatting else [],
+        "context": samenvatting,
         "deep_fallback": True,
     }
+
+
+def _extract_quotes_from_samenvatting(tekst: str) -> list:
+    """Extraheer [QUOTE – Naam]: "tekst" patronen uit de researcher-samenvatting."""
+    pattern = re.compile(r'\[QUOTE\s*[–-]\s*([^\]]+)\]:\s*["“]([^"”]+)["”]')
+    results = []
+    for match in pattern.finditer(tekst):
+        spreker = match.group(1).strip()
+        quote = match.group(2).strip()
+        if spreker and quote:
+            results.append({"spreker": spreker, "quote": quote, "context": ""})
+    return results
 
 
 def _save(run_dir: str, data: dict) -> None:

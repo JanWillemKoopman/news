@@ -37,9 +37,9 @@ Geef je antwoord UITSLUITEND als geldig JSON-array (mag leeg zijn):
   {{
     "titel": "Titel van het artikel",
     "samenvatting": "10-15 zinnen met ALLE concrete feiten: namen, datums, uitslagen, \
-bedragen, letterlijke quotes (met spreker), statistieken, tactische details. \
-Zo volledig mogelijk — dit is de enige bron voor de Writer als de URL later niet \
-bereikbaar is.",
+bedragen, statistieken, tactische details. \
+Markeer letterlijke quotes ALTIJD in dit formaat: [QUOTE – Volledige naam]: \"letterlijke tekst\". \
+Zo volledig mogelijk — dit is de enige bron voor de Writer als de URL later niet bereikbaar is.",
     "bron_url": "https://volledige-url",
     "bron_naam": "bijv. 'ed.nl'",
     "datum": "YYYY-MM-DD (publicatiedatum)",

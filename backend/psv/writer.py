@@ -115,6 +115,12 @@ BRONMATERIAAL PER SECTIE:
 
 SCHRIJFINSTRUCTIES:
 
+0. TEASER (bulletlijst, staat helemaal bovenaan vóór de inleiding)
+   - Schrijf 3-5 korte bullets, één per sectie in de sectievolgorde.
+   - Elke bullet: max 12 woorden, pakkend en informatief. Noem concrete details.
+   - Formaat: "Sectienaam: de kern in één zin" — bijv. "Terugblik: 6-1 gala thuis tegen PEC Zwolle"
+   - Doel: lezer weet in 10 seconden wat er in deze editie staat.
+
 1. INLEIDING (2-3 alinea's, ~200 woorden)
    - Pakkend openen. Benoem de belangrijkste gebeurtenis(sen) van de week.
    - Plaats deze editie in het grotere plaatje van het seizoen (stand, fase).
@@ -132,17 +138,18 @@ SCHRIJFINSTRUCTIES:
    - Geen clichés (zie systeemprompt), geen placeholder-teksten.
 
 4. NRC-OPMAAK (gebruik dit in je secties):
-   - Voor opvallende, letterlijke quotes gebruik je blockquote-syntax:
+   - Voor letterlijke quotes gebruik je ALTIJD blockquote-syntax als de quote beschikbaar is:
      > "Letterlijke uitspraak van de persoon."
      > — *Volledige naam*, functie of club
+   - Gebruik ELKE beschikbare quote uit het bronmateriaal — niet spaarzaam, maar volledig.
+     Een quote die in de bronnen staat en wordt weggelaten is een gemiste kans.
    - Voor contextuele achtergrondinformatie die de lopende tekst zou onderbreken
      maar wél relevant is, gebruik je een kader-blok:
      :::kader
      **DUIDING:** Hier staat de contextuele toelichting in 2-4 zinnen.
      :::
-   - Gebruik blockquotes spaarzaam: maximaal 1-2 per sectie, alleen voor echt sterke quotes.
    - Gebruik kaders spaarzaam: maximaal 1 per sectie, alleen voor echte achtergrondduiding.
-   - Gebruik GEEN blockquote als je de quote al in de lopende tekst parafraserst.
+   - Gebruik GEEN blockquote als je de quote al in de lopende tekst parafraseert.
 
 5. ANTI-HALLUCINATION REGELS (HARD — overtreding maakt de nieuwsbrief onbruikbaar):
    - Schrijf UITSLUITEND feiten, quotes en cijfers die letterlijk in het bovenstaande \
@@ -165,6 +172,10 @@ SCHRIJFINSTRUCTIES:
 Geef je antwoord UITSLUITEND als geldig JSON (strict!):
 {{
   "titel": "Pakkende nieuwsbrieftitel (max 80 tekens)",
+  "teaser": [
+    "Terugblik: concrete samenvatting in max 12 woorden",
+    "Vooruitblik: concrete samenvatting in max 12 woorden"
+  ],
   "inleiding": "Markdown-tekst, 2-3 alinea's",
   "secties": [
     {{

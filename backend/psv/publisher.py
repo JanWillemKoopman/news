@@ -29,11 +29,17 @@ def run(
     dry_run: bool = False,
 ) -> dict:
     titel = writer_result.get("titel", "PSV Nieuwsbrief")
+    teaser = writer_result.get("teaser", [])
     inleiding = writer_result.get("inleiding", "")
     secties = writer_result.get("secties", [])
 
-    # Render naar markdown
-    markdown_delen = [inleiding.strip()] if inleiding else []
+    # Render naar markdown — teaser bovenaan als kader-blok
+    markdown_delen = []
+    if teaser:
+        bullets = "\n".join(f"- {t}" for t in teaser)
+        markdown_delen.append(f":::kader\n**In deze editie:**\n{bullets}\n:::")
+    if inleiding:
+        markdown_delen.append(inleiding.strip())
     for sectie in secties:
         sectie_id = sectie.get("sectie_id", "")
         kop = sectie.get("kop") or _SECTIE_LABELS.get(sectie_id, sectie_id.title())
