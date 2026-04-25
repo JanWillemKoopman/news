@@ -64,7 +64,7 @@ def run(scout_profile: dict, run_dir: str) -> dict:
     datum = now.strftime("%d %B %Y")
     jaar = now.year
     vorig_jaar = jaar - 1
-    cutoff_datum = (now - timedelta(days=14)).strftime("%d %B %Y")
+    cutoff_datum = (now - timedelta(days=7)).strftime("%d %B %Y")
 
     if not queries:
         logger.warning("Researcher: geen queries van Scout ontvangen")

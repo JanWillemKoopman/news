@@ -99,7 +99,7 @@ def run(scout_profile: dict, run_dir: str) -> dict:
     secties = scout_profile.get("secties", ["terugblik", "vooruitblik", "ziekenboeg", "transfers", "achtergrond"])
     now = datetime.now()
     datum = now.strftime("%d %B %Y")
-    cutoff_date = now - timedelta(days=14)
+    cutoff_date = now - timedelta(days=7)
     cutoff_datum = cutoff_date.strftime("%d %B %Y")
 
     per_sectie: dict = {}
