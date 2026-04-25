@@ -14,6 +14,7 @@ from backend.psv import (
     preflight,
     scout,
     researcher,
+    source_scanner,
     deep_reader,
     editor,
     writer,
@@ -55,6 +56,11 @@ def run(dry_run: bool = False, stage: str = None) -> None:
         sys.exit(1)
     if stage == "researcher":
         return
+
+    # ── 2b. Source Scanner ────────────────────────────────────
+    scanner_items = source_scanner.run(scout_profile, run_dir)
+    for sectie, items in scanner_items.items():
+        research_per_sectie.setdefault(sectie, []).extend(items)
 
     # ── 3. Deep Reader ────────────────────────────────────────
     deep_per_sectie = deep_reader.run(research_per_sectie, scout_profile, run_dir)

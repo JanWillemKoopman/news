@@ -17,8 +17,9 @@ EDITOR_MODEL      = os.getenv("EDITOR_MODEL",      "gemini-2.5-pro")
 WRITER_MODEL      = os.getenv("WRITER_MODEL",      "gemini-2.5-pro")
 REVIEWER_MODEL    = os.getenv("REVIEWER_MODEL",    "gemini-2.5-pro")
 
-SUMMARIES_FILE  = DATA_DIR / "summaries.json"
-SEEN_ITEMS_FILE = DATA_DIR / "seen_items.json"
-USER_URLS_FILE  = DATA_DIR / "user_urls.txt"
+SUMMARIES_FILE     = DATA_DIR / "summaries.json"
+SEEN_ITEMS_FILE    = DATA_DIR / "seen_items.json"
+USER_URLS_FILE     = DATA_DIR / "user_urls.txt"
+NEWS_SOURCES_FILE  = DATA_DIR / "news_sources.json"
 
 PAGE_SIZE = int(os.getenv("PAGE_SIZE", "5"))
