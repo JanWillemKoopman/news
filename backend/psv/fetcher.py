@@ -19,6 +19,17 @@ _SESSION.verify = False
 _SESSION.headers["User-Agent"] = _USER_AGENT
 
 
+def fetch_raw(url: str) -> bytes:
+    """Haal ruwe bytes op zonder text-extractie (voor RSS/XML feeds)."""
+    try:
+        response = _SESSION.get(url, timeout=15)
+        response.raise_for_status()
+        return response.content
+    except Exception as e:
+        logger.warning(f"fetch_raw mislukt voor {url}: {e}")
+        return b""
+
+
 def fetch_article(url: str) -> dict:
     for attempt in range(3):
         try:
