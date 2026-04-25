@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Disable double-tap zoom and enforce mobile viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <title>James' Wonder-App</title>
+
+  <!-- Friendly font for children -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1: Home — the big red button
+  ════════════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+    <div class="home-inner">
+      <p class="home-greeting">Hé James! 👋</p>
+      <p class="home-subtitle">Druk op de knop en leer iets bijzonders!</p>
+      <button id="btn-wonder" aria-label="Ontdek een wonder">
+        <span class="btn-label">ONTDEK!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 2: Transition — particle explosion
+  ════════════════════════════════════════════ -->
+  <div id="screen-transition" class="screen">
+    <canvas id="canvas-particles"></canvas>
+    <div id="zoom-overlay"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 3: Content — the wonder itself
+  ════════════════════════════════════════════ -->
+  <div id="screen-content" class="screen">
+    <div class="content-scroll">
+
+      <!-- Phase 1: Title + Intro -->
+      <div id="phase-1" class="phase hidden">
+        <h1 id="content-title"></h1>
+        <p id="content-intro"></p>
+      </div>
+
+      <!-- Phase 2: Philosophy question -->
+      <div id="phase-2" class="phase hidden">
+        <div class="philosophy-box">
+          <span class="philosophy-label">Vraag om over na te denken</span>
+          <p id="content-philosophy"></p>
+        </div>
+        <button id="btn-lees-verder" class="btn-secondary">
+          Lees verder ↓
+        </button>
+      </div>
+
+      <!-- Phase 3: Deep dive + reset -->
+      <div id="phase-3" class="phase hidden">
+        <p id="content-deepdive"></p>
+        <button id="btn-opnieuw" class="btn-reset">
+          🔄 Opnieuw!
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
