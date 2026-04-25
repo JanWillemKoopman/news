@@ -212,6 +212,11 @@ html, body {
   line-height: 1.65;
 }
 
+#content-intro p + p,
+#content-deepdive p + p {
+  margin-top: 12px;
+}
+
 /* ── Phase 2: Philosophy Question ─────────── */
 .philosophy-box {
   border-left: 5px solid #f5a623;
