@@ -1,0 +1,8 @@
+# URLs die elke week worden opgehaald als extra nieuwsbron.
+# Één URL per regel. Regels die beginnen met # worden genegeerd.
+# De pipeline bepaalt automatisch bij welke sectie elk artikel hoort.
+#
+# Voorbeelden:
+# https://www.psv.nl/nieuws/article/1234
+# https://www.ed.nl/sport/voetbal/psv/
+# https://vi.nl/nieuws/psv-transfernieuws

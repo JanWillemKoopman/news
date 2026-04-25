@@ -24,6 +24,10 @@ VERBODEN CLICHÉS — gebruik deze zinnen en woorden NOOIT:
 - "goed nieuws voor de fans", "op papier", "koploper met alles te verliezen"
 - "het team toonde veerkracht", "supporters dromen", "de geur van succes"
 - "laatste loodjes wegen het zwaarst", "verplicht nummer", "drie punten een must"
+- "hol van de leeuw", "voet van het gaspedaal", "een tandje bijzetten"
+- "volle bak", "het bloed kruipt waar het niet gaan kan", "mentale klik"
+- "de ploeg staat er goed voor", "op de gevels", "de strijd aangaan"
+- "vol gas", "nek uitsteken", "in een hogere versnelling"
 Vervang altijd door specifieke, concrete, originele bewoordingen die dit moment uniek maken.\
 """
 
@@ -141,6 +145,10 @@ SCHRIJFINSTRUCTIES:
    - Gebruik GEEN blockquote als je de quote al in de lopende tekst parafraserst.
 
 5. ANTI-HALLUCINATION REGELS (HARD — overtreding maakt de nieuwsbrief onbruikbaar):
+   - Schrijf UITSLUITEND feiten, quotes en cijfers die letterlijk in het bovenstaande \
+     bronmateriaal staan. Geen enkel detail mag uit algemene voetbalkennis komen.
+   - Ontbreekt een detail (aanvangstijdstip, tegenstander-statistieken, spelersnames)?  \
+     Schrijf dan expliciet "nog niet bevestigd" of laat het weg. NOOIT invullen.
    - Verzin NOOIT een uitslag, datum, spelersnaam, transferbedrag of quote die niet \
      expliciet in het bronmateriaal staat.
    - Als je voor een sectie weinig brondata hebt, schrijf dan een kortere eerlijke sectie \

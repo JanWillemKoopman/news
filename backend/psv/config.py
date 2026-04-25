@@ -19,5 +19,6 @@ REVIEWER_MODEL    = os.getenv("REVIEWER_MODEL",    "gemini-2.5-pro")
 
 SUMMARIES_FILE  = DATA_DIR / "summaries.json"
 SEEN_ITEMS_FILE = DATA_DIR / "seen_items.json"
+USER_URLS_FILE  = DATA_DIR / "user_urls.txt"
 
 PAGE_SIZE = int(os.getenv("PAGE_SIZE", "5"))

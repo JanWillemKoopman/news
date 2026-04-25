@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 _MAX_RONDES = 3
 _MIN_SCORE = 8
+_PER_AS_MINIMUM = {"feitelijkheid": 7}  # nieuwsbrief faalt ook als één as te laag scoort
 
 _SYSTEM = """\
 Je bent een kritische eindredacteur van de PSV Nieuwsbrief. Je beoordeelt streng \
@@ -148,6 +149,7 @@ def run_loop(
             continue
 
         review = _review(writer_result, deep_per_sectie, editor_result)
+        review = _apply_per_as_drempels(review)
         score = review.get("score", 0)
         approved = review.get("approved", False)
 
@@ -180,6 +182,25 @@ def run_loop(
         feedback = _format_feedback(review.get("feedback", []))
 
     return writer_result, review
+
+
+def _apply_per_as_drempels(review: dict) -> dict:
+    """Zet approved=False als een verplichte as onder de minimumdrempel scoort."""
+    scores = review.get("scores_per_as", {})
+    for as_naam, minimum in _PER_AS_MINIMUM.items():
+        score = scores.get(as_naam, 10)
+        if score < minimum:
+            review["approved"] = False
+            review.setdefault("feedback", []).append({
+                "sectie": "algemeen",
+                "as": as_naam,
+                "verbeterpunt": (
+                    f"{as_naam.capitalize()} scoort {score}/10, onder de minimumdrempel "
+                    f"van {minimum}/10. Verwijder alle feiten die niet letterlijk in het "
+                    f"bronmateriaal staan en vervang door brongebaseerde informatie."
+                ),
+            })
+    return review
 
 
 def _review(writer_result: dict, deep_per_sectie: dict, editor_result: dict) -> dict:
