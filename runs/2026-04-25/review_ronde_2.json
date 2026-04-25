@@ -1,44 +1,13 @@
 {
-  "score": 8,
+  "score": 0,
   "approved": false,
-  "scores_per_as": {
-    "sectiecompleetheid": 9,
-    "specificiteit": 9,
-    "feitelijkheid": 3,
-    "toon": 9,
-    "structuur": 9,
-    "leesbaarheid": 8
-  },
+  "scores_per_as": {},
   "feedback": [
     {
-      "sectie": "Algemeen",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De informatie in de secties 'terugblik', 'vooruitblik', 'ziekenboeg' en 'transfers' is niet terug te vinden in de aangeleverde brondiepgang. Dit is een fundamentele fout die de geloofwaardigheid ondermijnt. Houd je strikt aan de aangeleverde bronnen of eis geverifieerde aanvullende bronnen aan voor details als uitslagen, quotes en transfergeruchten."
-    },
-    {
-      "sectie": "Terugblik",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De quotes van Peter Bosz en Nick Olij, de exacte uitslag (6-1) en de doelpuntenmakers staan niet in de bron. Conform de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is dit onacceptabel. Verzin nooit quotes of feiten."
-    },
-    {
-      "sectie": "Vooruitblik",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De vooruitblik analyseert de wedstrijd Ajax-PSV, terwijl de bron een voorbeschouwing op FC Twente-NEC bevat. De inhoud van de sectie komt dus niet overeen met het onderwerp van de bron. Zorg ervoor dat de juiste wedstrijd wordt voorbeschouwd."
-    },
-    {
-      "sectie": "Ziekenboeg",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De brondiepgang voor de ziekenboeg is leeg. Alle genoemde spelers en hun status (Veerman, Saibari, Schouten, etc.) zijn dus niet geverifieerd. Rapporteer alleen blessuregevallen die door de bronnen worden bevestigd."
-    },
-    {
-      "sectie": "Transfers",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De brondiepgang voor transfers is leeg. Alle genoemde namen, bedragen, percentages en de quote van Ismaël El Ouahdi zijn niet gebaseerd op de aangeleverde informatie. Dit is speculatie die niet als feit gepresenteerd mag worden."
-    },
-    {
       "sectie": "algemeen",
-      "as": "feitelijkheid",
-      "verbeterpunt": "Feitelijkheid scoort 3/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
+      "as": "structuur",
+      "verbeterpunt": "Sectie 'vooruitblik' ontbreekt volledig"
     }
-  ]
+  ],
+  "pre_check_only": true
 }

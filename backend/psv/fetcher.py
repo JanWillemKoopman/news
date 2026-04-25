@@ -62,6 +62,19 @@ def fetch_article(url: str) -> dict:
     return {}
 
 
+def fetch_og_image(url: str) -> str | None:
+    """Haal alleen de og:image meta tag op van een URL (zonder volledige tekstextractie)."""
+    try:
+        html_bytes = fetch_raw(url)
+        if not html_bytes:
+            return None
+        html = html_bytes.decode("utf-8", errors="replace")
+        return _extract_og_image(html)
+    except Exception as e:
+        logger.warning(f"fetch_og_image mislukt voor {url}: {e}")
+        return None
+
+
 def _extract_og_image(html: str) -> str | None:
     for pattern in [
         r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',

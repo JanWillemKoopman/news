@@ -14,7 +14,7 @@ import os
 import re
 from datetime import datetime
 
-from backend.psv import config, llm, fetcher
+from backend.psv import config, llm, fetcher, image_finder
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +122,12 @@ def run(research_per_sectie: dict, scout_profile: dict, run_dir: str) -> dict:
             logger.info(f"  Ophalen: {url[:80]}")
             fetched = fetcher.fetch_article(url)
             tekst = fetched.get("text", "") or ""
-            if fetched.get("og_image") and not item.get("image_url"):
-                item["image_url"] = fetched["og_image"]
+            og_image = fetched.get("og_image")
+            if og_image and not item.get("image_url"):
+                if image_finder.is_psv_relevant_image(og_image, url, item.get("titel", "")):
+                    item["image_url"] = og_image
+                else:
+                    logger.debug(f"  → og:image overgeslagen (niet PSV-specifiek): {url[:60]}")
 
             if len(tekst) < _MIN_TEXT_LENGTH:
                 logger.warning(
@@ -220,7 +224,8 @@ def _fetch_user_urls(research_per_sectie: dict, scout_profile: dict) -> dict:
                 "datum": classified.get("datum") or datetime.now().strftime("%Y-%m-%d"),
                 "sectie": sectie,
                 "user_url": True,
-                **({"image_url": og_image} if og_image else {}),
+                **({"image_url": og_image} if og_image and image_finder.is_psv_relevant_image(
+                    og_image, url, classified.get("titel", "")) else {}),
                 "diepgang": {
                     "quotes": [],
                     "cijfers": [],

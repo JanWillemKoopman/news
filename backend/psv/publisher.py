@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-from backend.psv import dedup
+from backend.psv import dedup, image_finder
 from backend.storage import save_summary
 
 logger = logging.getLogger(__name__)
@@ -33,13 +33,23 @@ def run(
     inleiding = writer_result.get("inleiding", "")
     secties = writer_result.get("secties", [])
 
-    # Beste afbeelding per sectie (eerste artikel met image_url)
+    # Beste afbeelding per sectie (eerste PSV-relevant artikel met image_url)
     images = {}
     for s_id, items in deep_per_sectie.items():
         for itm in items:
             if itm.get("image_url"):
                 images[s_id] = itm["image_url"]
                 break
+
+    # Fallback: secties zonder afbeelding via Gemini Google Search invullen
+    secties_zonder_image = [s for s in deep_per_sectie if s not in images]
+    if secties_zonder_image:
+        logger.info(f"Publisher: image fallback voor {secties_zonder_image}")
+        for s_id in secties_zonder_image:
+            img = image_finder.find_section_image(s_id, scout_profile)
+            if img:
+                images[s_id] = img
+                logger.info(f"  → Fallback image [{s_id}]: {img[:80]}")
 
     # Render naar markdown — intro bovenaan als grotere inleidingstekst
     markdown_delen = []

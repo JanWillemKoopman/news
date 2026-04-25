@@ -1,31 +1,28 @@
 {
   "sectievolgorde": [
-    "terugblik",
     "vooruitblik",
     "ziekenboeg",
     "transfers",
     "achtergrond"
   ],
   "sectie_hoeken": {
-    "terugblik": "De klinkende 6-1 zege op PEC Zwolle was de perfecte generale repetitie en een duidelijke boodschap richting de concurrentie.",
-    "vooruitblik": "Met de titel in het vizier is de kraker in Amsterdam tegen Ajax de ultieme test en de mogelijke opmaat naar het kampioenschap.",
-    "ziekenboeg": "De personele puzzel richting de topper is complex, met de welkome terugkeer van Veerman tegenover de onzekerheid rond Saibari en de afwezigheid van Schouten.",
-    "transfers": "Terwijl de focus op het veld ligt, wordt achter de schermen al gebouwd aan de toekomst, met aanhoudende geruchten rondom sterkhouders als Pepi en Dest.",
-    "achtergrond": "Een diepere analyse van de factoren die dit seizoen tot een dominant succes hebben gemaakt, van tactische keuzes tot de onverzettelijke teamgeest."
+    "terugblik": "De klinkende 6-1 zege op PEC Zwolle was niet zomaar een overwinning, maar een krachtig statement en de perfecte generale repetitie voor de kraker in Amsterdam.",
+    "vooruitblik": "Alle ogen zijn gericht op de Johan Cruijff ArenA: de topper tegen Ajax is de ultieme test en de wedstrijd waarin een beslissende stap naar de landstitel gezet kan worden.",
+    "ziekenboeg": "Een mix van goed en slecht nieuws voor Peter Bosz: de cruciale terugkeer van sleutelspelers wordt overschaduwd door de impact van langdurige blessures op het middenveld.",
+    "transfers": "Terwijl de titelstrijd zijn climax nadert, wordt achter de schermen al gebouwd aan de selectie voor volgend seizoen om de hegemonie voort te zetten.",
+    "achtergrond": "Een diepere duik in de succesformule: hoe de tactische keuzes van de technische staf dit seizoen het verschil hebben gemaakt en cruciaal zullen zijn tegen Ajax."
   },
   "kopverhaal_sectie": "vooruitblik",
   "sectie_labels": {
-    "terugblik": "Terugblik",
     "vooruitblik": "Vooruitblik",
     "ziekenboeg": "Ziekenboeg & Schorsingen",
     "transfers": "Transfers & Geruchten",
     "achtergrond": "Achtergrond & Analyse"
   },
   "items_per_sectie_counts": {
-    "terugblik": 2,
     "ziekenboeg": 7,
     "transfers": 2,
-    "achtergrond": 3,
+    "achtergrond": 2,
     "vooruitblik": 1
   }
 }
