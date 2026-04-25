@@ -6,24 +6,29 @@
     "specificiteit": 8,
     "feitelijkheid": 4,
     "toon": 9,
-    "structuur": 9,
+    "structuur": 8,
     "leesbaarheid": 8
   },
   "feedback": [
     {
+      "sectie": "algemeen",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De nieuwsbrief bevat meerdere quotes (Bosz over Bajraktarevic, Olij, Van den Berg) en feiten (wedstrijdverslag, transferdetails) die niet in de meegeleverde brondiepgang staan. Volgens de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is dit een zware overtreding. Baseer alle feiten, en met name directe quotes en cijfers, uitsluitend op de aangeleverde bron."
+    },
+    {
       "sectie": "terugblik",
-      "as": "feitelijkheid",
-      "verbeterpunt": "Het toeschouwersaantal (35.000), Pepi's seizoentotaal (15) en de specifieke doelpuntenminuten (51e, 57e, etc.) zijn niet terug te vinden in de bronnen. Baseer alle cijfers en feiten strikt op de aangeleverde brondiepgang om verzinsels te voorkomen. Dit is een zware overtreding van de regels."
+      "as": "specificiteit",
+      "verbeterpunt": "Het wedstrijdverslag van de 6-1 zege benoemt slechts vijf doelpuntenmakers (Pepi x2, eigen doelpunt, Driouech, Bajraktarevic). De zesde doelpuntenmaker ontbreekt. Zorg dat wedstrijdverslagen statistisch compleet zijn."
     },
     {
-      "sectie": "ziekenboeg",
-      "as": "feitelijkheid",
-      "verbeterpunt": "De naam 'Ivan Perišić' en de status van Saibari als 'clubtopscorer' komen niet voor in de brondiepgang. Verwijder alle informatie die niet direct uit de bronnen te herleiden is. Dit is een harde eis voor publicatie."
+      "sectie": "transfers",
+      "as": "specificiteit",
+      "verbeterpunt": "De transfersectie noemt het seizoen 2026-2027, wat een typefout lijkt. Daarnaast zijn de genoemde contractduren (Veerman en Dest tot 2028) en leeftijden (Veerman 27) niet verifieerbaar via de bron en voelen speculatief. Veranker dergelijke details altijd in geverifieerde bronnen."
     },
     {
-      "sectie": "achtergrond",
+      "sectie": "algemeen",
       "as": "leesbaarheid",
-      "verbeterpunt": "De term 'De Bosz-doctrine' is een journalistiek cliché. Probeer de filosofie van de trainer te omschrijven met originelere bewoordingen, bijvoorbeeld 'Bosz' blauwdruk voor de toekomst', om de tekst scherper te maken."
+      "verbeterpunt": "De tekst bevat enkele clichés ('achilleshiel', 'medische staf draait overuren', 'hol van de rivaal'). Vervang deze door originelere formuleringen voor een scherpere, meer journalistieke stijl."
     },
     {
       "sectie": "algemeen",

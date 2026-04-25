@@ -1,34 +1,39 @@
 {
   "score": 8,
-  "approved": true,
+  "approved": false,
   "scores_per_as": {
     "sectiecompleetheid": 10,
     "specificiteit": 8,
-    "feitelijkheid": 7,
+    "feitelijkheid": 4,
     "toon": 9,
-    "structuur": 8,
-    "leesbaarheid": 8
+    "structuur": 10,
+    "leesbaarheid": 9
   },
   "feedback": [
     {
-      "sectie": "ziekenboeg",
+      "sectie": "algemeen",
       "as": "feitelijkheid",
-      "verbeterpunt": "De quote van Peter Bosz ('mindere medische update') en de opmerking dat het WK aan Schouten voorbijgaat, staan niet in de brondiepgang. Verzin geen quotes of feiten; baseer je strikt op de aangeleverde bronnen."
+      "verbeterpunt": "De nieuwsbrief bevat zeer veel feiten, quotes en cijfers die niet in de aangeleverde brondiepgang staan. Dit geldt voor de secties Terugblik, Vooruitblik, Transfers en Achtergrond. De harde scoringsregel stelt dat een verzonnen (niet-verifieerbaar) cijfer of quote de score voor Feitelijkheid maximeert op 4. Pas de inhoud aan zodat deze volledig is gebaseerd op de verstrekte bronnen, of lever de ontbrekende bronnen aan."
     },
     {
-      "sectie": "ziekenboeg",
-      "as": "structuur",
-      "verbeterpunt": "De opbouw is onlogisch. Spelers als Pléa en Dest worden dubbel genoemd (onder 'Terugkeer' én 'Blessures'). Hanteer een heldere structuur: een complete lijst van afwezigen met per speler de status, blessure/schorsing en verwachte terugkeer."
-    },
-    {
-      "sectie": "ziekenboeg",
-      "as": "leesbaarheid",
-      "verbeterpunt": "Vermijd sportclichés zoals 'race tegen de klok', 'medische staf draait overuren' en 'flinke aderlating'. Deze maken de tekst voorspelbaar. Formuleer scherper en origineler."
-    },
-    {
-      "sectie": "achtergrond",
+      "sectie": "transfers",
       "as": "feitelijkheid",
-      "verbeterpunt": "De bron noemt het talent 'Fabian', niet 'Fabian Merien'. Voeg geen achternamen toe die niet in de bron staan om de feitelijkheid te waarborgen."
+      "verbeterpunt": "De transferbedragen voor Veerman (€20m, €25.1m, €30m) en Dest (€25.3m) en de interesse van Juventus zijn niet terug te vinden in de brondiepgang. Verwijder deze specifieke, niet-onderbouwde claims om de feitelijke betrouwbaarheid te waarborgen."
+    },
+    {
+      "sectie": "terugblik",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De quotes van Nick Olij en Peter Bosz (over Olij en Van den Berg) staan niet in de bronnen. Verwijder deze quotes. Baseer de analyse van hun prestaties op observeerbare feiten in plaats van niet-geverifieerde citaten."
+    },
+    {
+      "sectie": "terugblik",
+      "as": "specificiteit",
+      "verbeterpunt": "Het wedstrijdverslag van de 6-1 zege is onvolledig. Er worden vier doelpuntenmakers voor PSV genoemd (Pepi 2x, Driouech, Bajraktarevic) en een eigen doelpunt. Dit verklaart vijf goals. Wie maakte de zesde? En wie scoorde voor PEC Zwolle? Voeg alle doelpuntenmakers en idealiter de minuut van scoren toe voor een compleet verslag."
+    },
+    {
+      "sectie": "algemeen",
+      "as": "feitelijkheid",
+      "verbeterpunt": "Feitelijkheid scoort 4/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
     }
   ]
 }

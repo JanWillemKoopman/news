@@ -1,0 +1,39 @@
+{
+  "score": 7,
+  "approved": false,
+  "scores_per_as": {
+    "sectiecompleetheid": 10,
+    "specificiteit": 7,
+    "feitelijkheid": 4,
+    "toon": 9,
+    "structuur": 9,
+    "leesbaarheid": 8
+  },
+  "feedback": [
+    {
+      "sectie": "algemeen",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De nieuwsbrief staat vol met specifieke feiten (uitslagen, data, transferbedragen, blessureprognoses) die niet in de meegeleverde 'brondiepgang' staan. Volgens de harde scoringsregel 'Verzonnen quote of cijfer → FEITELIJKHEID max 4' is de score hierop zeer laag. Zorg ervoor dat elk feit direct herleidbaar is naar de verstrekte broninformatie."
+    },
+    {
+      "sectie": "ziekenboeg",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De blessureprognoses bevatten data die ver in de toekomst liggen (18 augustus 2025, 1 juni 2026, 3 januari 2027). Dit is feitelijk onmogelijk en leest als een slordigheidsfout, wat de geloofwaardigheid van de hele sectie ondermijnt. Verifieer alle data op plausibiliteit en correctheid."
+    },
+    {
+      "sectie": "terugblik",
+      "as": "specificiteit",
+      "verbeterpunt": "Het wedstrijdverslag van PSV-PEC Zwolle (6-1) is incompleet. Er worden vijf doelpuntenmakers voor PSV genoemd (Pepi 2x, Bajraktarevic, Driouech, Perisic), maar de uitslag is 6-1. Zowel het zesde PSV-doelpunt als de tegentreffer van PEC Zwolle ontbreken. Maak het verslag compleet met alle doelpunten en bijbehorende minuten."
+    },
+    {
+      "sectie": "ziekenboeg",
+      "as": "specificiteit",
+      "verbeterpunt": "Er is een interne contradictie over de prestatie van Esmir Bajraktarevic. De terugblik noemt één doelpunt, terwijl de ziekenboeg-sectie spreekt over 'twee doelpunten en drie assists'. Dit is verwarrend en slordig. Verifieer en uniformeer dit soort details over alle secties heen."
+    },
+    {
+      "sectie": "algemeen",
+      "as": "feitelijkheid",
+      "verbeterpunt": "Feitelijkheid scoort 4/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
+    }
+  ]
+}

@@ -1,25 +1,31 @@
 {
   "sectievolgorde": [
     "terugblik",
+    "vooruitblik",
     "ziekenboeg",
+    "transfers",
     "achtergrond"
   ],
   "sectie_hoeken": {
-    "terugblik": "De 6-1 galavoorstelling tegen PEC Zwolle was de perfecte kroon op het kampioensjaar en een duidelijk signaal richting Amsterdam.",
-    "vooruitblik": "Met de schaal op zak reizen we naar Amsterdam voor de kers op de taart: de klassieker winnen en onze dominantie dit seizoen onderstrepen.",
-    "ziekenboeg": "Een update over de fitheid van de selectie nu de focus volledig op de prestigieuze kraker tegen Ajax ligt.",
-    "achtergrond": "Een diepgaande analyse van de factoren achter het kampioenschap: de meesterhand van Peter Bosz en de visie voor de toekomst.",
-    "transfers": "Nu het kampioenschap een feit is, wordt achter de schermen al gebouwd aan het PSV dat volgend seizoen de Champions League in gaat."
+    "terugblik": "De galavoorstelling tegen PEC Zwolle (6-1) als de perfecte generale repetitie voor de titel, met uitblinkers Pepi en Bajraktarevic die opstaan.",
+    "vooruitblik": "Alle ogen op Amsterdam: de kraker tegen Ajax als de eerste, en meest beladen, kans om het landskampioenschap veilig te stellen.",
+    "ziekenboeg": "De paradox van succes: hoe PSV met een overvolle ziekenboeg en het gemis van sterkhouders de beslissende fase van de competitie ingaat.",
+    "transfers": "Terwijl de titel lonkt, wordt achter de schermen al gebouwd aan de toekomst, met het naderende afscheid van bepalende spelers als Veerman en Dest.",
+    "achtergrond": "Spotlight op Esmir Bajraktarevic: de onverwachte smaakmaker die symbool staat voor de veerkracht en breedte van de kampioensploeg."
   },
-  "kopverhaal_sectie": "terugblik",
+  "kopverhaal_sectie": "vooruitblik",
   "sectie_labels": {
     "terugblik": "Terugblik",
+    "vooruitblik": "Vooruitblik",
     "ziekenboeg": "Ziekenboeg & Schorsingen",
+    "transfers": "Transfers & Geruchten",
     "achtergrond": "Achtergrond & Analyse"
   },
   "items_per_sectie_counts": {
-    "terugblik": 1,
-    "ziekenboeg": 2,
-    "achtergrond": 3
+    "terugblik": 2,
+    "vooruitblik": 2,
+    "ziekenboeg": 3,
+    "transfers": 2,
+    "achtergrond": 2
   }
 }
