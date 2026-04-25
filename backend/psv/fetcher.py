@@ -5,25 +5,31 @@ Geeft een dict terug met 'text' en 'url', of een leeg dict bij falen.
 import logging
 import time
 
+import requests
 import trafilatura
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
 _USER_AGENT = "Mozilla/5.0 (compatible; PSVNieuwsBot/1.0)"
+_SESSION = requests.Session()
+_SESSION.verify = False
+_SESSION.headers["User-Agent"] = _USER_AGENT
 
 
 def fetch_article(url: str) -> dict:
     for attempt in range(3):
         try:
-            downloaded = trafilatura.fetch_url(
-                url,
-                config=trafilatura.settings.use_config(),
-            )
-            if not downloaded:
+            response = _SESSION.get(url, timeout=15)
+            response.raise_for_status()
+            html = response.text
+            if not html:
                 raise ValueError("Leeg HTTP-antwoord")
 
             text = trafilatura.extract(
-                downloaded,
+                html,
                 include_comments=False,
                 include_tables=False,
                 no_fallback=False,
