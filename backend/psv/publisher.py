@@ -33,6 +33,14 @@ def run(
     inleiding = writer_result.get("inleiding", "")
     secties = writer_result.get("secties", [])
 
+    # Beste afbeelding per sectie (eerste artikel met image_url)
+    images = {}
+    for s_id, items in deep_per_sectie.items():
+        for itm in items:
+            if itm.get("image_url"):
+                images[s_id] = itm["image_url"]
+                break
+
     # Render naar markdown — intro bovenaan als grotere inleidingstekst
     markdown_delen = []
     if intro:
@@ -43,7 +51,8 @@ def run(
         sectie_id = sectie.get("sectie_id", "")
         kop = sectie.get("kop") or _SECTIE_LABELS.get(sectie_id, sectie_id.title())
         body = sectie.get("body", "")
-        markdown_delen.append(f"## {kop}\n\n{body.strip()}")
+        image_block = f":::image\n{images[sectie_id]}\n:::\n\n" if images.get(sectie_id) else ""
+        markdown_delen.append(f"## {kop}\n\n{image_block}{body.strip()}")
 
     summary_markdown = "\n\n".join(markdown_delen)
 
@@ -81,6 +90,7 @@ def run(
             week_start=week_start,
             week_end=week_end,
             sources=sources,
+            images=images,
         )
         dedup.mark_seen(alle_items)
         logger.info(f"Publisher: opgeslagen als ID {entry.get('id')}")

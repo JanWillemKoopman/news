@@ -37,8 +37,8 @@
   if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
   function renderMarkdown(text) {
-    // Split op :::intro en :::kader blokken
-    const parts = text.split(/(:::(?:intro|kader)[\s\S]*?:::)/g);
+    // Split op :::intro, :::kader en :::image blokken
+    const parts = text.split(/(:::(?:intro|kader|image)[\s\S]*?:::)/g);
     return parts.map(function(part) {
       if (part.startsWith(":::intro")) {
         const inner = part.replace(/^:::intro\n?/, "").replace(/\n?:::$/, "").trim();
@@ -49,6 +49,11 @@
         const inner = part.replace(/^:::kader\n?/, "").replace(/\n?:::$/, "").trim();
         const html = window.marked ? marked.parse(inner) : "<p>" + inner + "</p>";
         return '<div class="kader">' + html + "</div>";
+      }
+      if (part.startsWith(":::image")) {
+        const url = part.replace(/^:::image\n?/, "").replace(/\n?:::$/, "").trim();
+        if (!url.startsWith("http")) return "";
+        return '<div class="section-image-wrap"><img src="' + url + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>';
       }
       return window.marked ? marked.parse(part) : "<p>" + part.replace(/\n\n/g, "</p><p>") + "</p>";
     }).join("");

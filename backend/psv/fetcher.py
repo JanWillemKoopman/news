@@ -1,8 +1,9 @@
 """
 Artikel-fetcher op basis van trafilatura.
-Geeft een dict terug met 'text' en 'url', of een leeg dict bij falen.
+Geeft een dict terug met 'text', 'url' en 'og_image', of een leeg dict bij falen.
 """
 import logging
+import re
 import time
 
 import requests
@@ -50,7 +51,7 @@ def fetch_article(url: str) -> dict:
             if not text or len(text.strip()) < 100:
                 raise ValueError(f"Te weinig tekst ({len(text or '')} tekens)")
 
-            return {"text": text.strip(), "url": url}
+            return {"text": text.strip(), "url": url, "og_image": _extract_og_image(html)}
 
         except Exception as e:
             logger.warning(f"Fetch poging {attempt + 1}/3 mislukt voor {url}: {e}")
@@ -59,3 +60,14 @@ def fetch_article(url: str) -> dict:
 
     logger.error(f"Kon artikel niet ophalen: {url}")
     return {}
+
+
+def _extract_og_image(html: str) -> str | None:
+    for pattern in [
+        r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+    ]:
+        m = re.search(pattern, html, re.IGNORECASE)
+        if m:
+            return m.group(1)
+    return None

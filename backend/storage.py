@@ -24,6 +24,7 @@ def save_summary(
     week_start: str,
     week_end: str,
     sources: list,
+    images: dict = None,
 ) -> dict:
     data = _load()
     entry = {
@@ -34,6 +35,7 @@ def save_summary(
         "week_end": week_end,
         "published_at": datetime.now().isoformat(),
         "sources": sources,
+        "images": images or {},
     }
     data["summaries"].insert(0, entry)
     _save(data)

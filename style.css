@@ -796,6 +796,30 @@ footer {
   margin-bottom: 0;
 }
 
+.section-image-wrap {
+  position: relative;
+  overflow: hidden;
+  margin: 1.25rem 0 1.75rem;
+  line-height: 0;
+}
+
+.section-image-wrap img {
+  width: 100%;
+  display: block;
+  filter: grayscale(90%) contrast(1.08);
+}
+
+.section-image-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse 65% 85% at 0% 58%, rgba(179, 0, 0, 0.52) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+
+
 .summary-body .kader {
 
   background-color: var(--bg-subtle);
