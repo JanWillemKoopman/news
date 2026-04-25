@@ -1,0 +1,29 @@
+{
+  "score": 8,
+  "approved": true,
+  "scores_per_as": {
+    "sectiecompleetheid": 9,
+    "specificiteit": 7,
+    "feitelijkheid": 6,
+    "toon": 9,
+    "structuur": 9,
+    "leesbaarheid": 8
+  },
+  "feedback": [
+    {
+      "sectie": "vooruitblik",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De vooruitblik bevat specifieke informatie (Ajax's statistieken, de quote van Bosz over het 'kampioensreisje') die niet in de brondiepgang te vinden is. Baseer alle feiten strikt op de aangeleverde bronnen om de feitelijkheid te garanderen. Dit is een serieuze tekortkoming."
+    },
+    {
+      "sectie": "terugblik",
+      "as": "specificiteit",
+      "verbeterpunt": "Het wedstrijdverslag van PSV-PEC mist concrete details. Noem alle doelpuntenmakers en, indien mogelijk, de minuten. De huidige formulering ('werden genoemd als bepalende krachten') is te vaag voor een wedstrijdverslag."
+    },
+    {
+      "sectie": "algemeen",
+      "as": "leesbaarheid",
+      "verbeterpunt": "Vermijd sportclichés zoals 'hol van de leeuw' en 'voet van het gaspedaal'. Zoek naar originelere formuleringen om de tekst scherper en professioneler te maken."
+    }
+  ]
+}
