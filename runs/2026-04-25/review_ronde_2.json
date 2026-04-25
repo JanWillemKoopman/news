@@ -1,0 +1,34 @@
+{
+  "score": 8,
+  "approved": true,
+  "scores_per_as": {
+    "sectiecompleetheid": 10,
+    "specificiteit": 8,
+    "feitelijkheid": 7,
+    "toon": 9,
+    "structuur": 8,
+    "leesbaarheid": 8
+  },
+  "feedback": [
+    {
+      "sectie": "ziekenboeg",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De quote van Peter Bosz ('mindere medische update') en de opmerking dat het WK aan Schouten voorbijgaat, staan niet in de brondiepgang. Verzin geen quotes of feiten; baseer je strikt op de aangeleverde bronnen."
+    },
+    {
+      "sectie": "ziekenboeg",
+      "as": "structuur",
+      "verbeterpunt": "De opbouw is onlogisch. Spelers als Pléa en Dest worden dubbel genoemd (onder 'Terugkeer' én 'Blessures'). Hanteer een heldere structuur: een complete lijst van afwezigen met per speler de status, blessure/schorsing en verwachte terugkeer."
+    },
+    {
+      "sectie": "ziekenboeg",
+      "as": "leesbaarheid",
+      "verbeterpunt": "Vermijd sportclichés zoals 'race tegen de klok', 'medische staf draait overuren' en 'flinke aderlating'. Deze maken de tekst voorspelbaar. Formuleer scherper en origineler."
+    },
+    {
+      "sectie": "achtergrond",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De bron noemt het talent 'Fabian', niet 'Fabian Merien'. Voeg geen achternamen toe die niet in de bron staan om de feitelijkheid te waarborgen."
+    }
+  ]
+}

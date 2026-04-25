@@ -1,25 +1,25 @@
 {
   "sectievolgorde": [
     "terugblik",
-    "vooruitblik",
-    "ziekenboeg"
+    "ziekenboeg",
+    "achtergrond"
   ],
   "sectie_hoeken": {
-    "terugblik": "De 6-1 overwinning op PEC Zwolle was geen gewone zege, maar een galavoorstelling die de status van de kersverse landskampioen onderstreepte.",
-    "vooruitblik": "Met de titel op zak reist PSV zonder druk maar met maximale eerzucht af naar Amsterdam om het kampioensseizoen extra glans te geven tegen de aartsrivaal.",
-    "achtergrond": "Een diepgaande analyse met architect Peter Bosz over de tactische meesterzetten en sleutelmomenten die leidden tot de overtuigende landstitel.",
-    "ziekenboeg": "De euforie wordt licht getemperd door de blessure van sleutelspeler Ivan Perisic, die de kraker tegen Ajax aan zich voorbij moet laten gaan.",
-    "transfers": "Nu het kampioenschap een feit is, verschuift de focus naar volgend seizoen en dient de concrete interesse in Esmir Bajraktarevic zich aan als eerste testcase."
+    "terugblik": "De 6-1 galavoorstelling tegen PEC Zwolle was de perfecte kroon op het kampioensjaar en een duidelijk signaal richting Amsterdam.",
+    "vooruitblik": "Met de schaal op zak reizen we naar Amsterdam voor de kers op de taart: de klassieker winnen en onze dominantie dit seizoen onderstrepen.",
+    "ziekenboeg": "Een update over de fitheid van de selectie nu de focus volledig op de prestigieuze kraker tegen Ajax ligt.",
+    "achtergrond": "Een diepgaande analyse van de factoren achter het kampioenschap: de meesterhand van Peter Bosz en de visie voor de toekomst.",
+    "transfers": "Nu het kampioenschap een feit is, wordt achter de schermen al gebouwd aan het PSV dat volgend seizoen de Champions League in gaat."
   },
   "kopverhaal_sectie": "terugblik",
   "sectie_labels": {
     "terugblik": "Terugblik",
-    "vooruitblik": "Vooruitblik",
-    "ziekenboeg": "Ziekenboeg & Schorsingen"
+    "ziekenboeg": "Ziekenboeg & Schorsingen",
+    "achtergrond": "Achtergrond & Analyse"
   },
   "items_per_sectie_counts": {
     "terugblik": 1,
-    "vooruitblik": 4,
-    "ziekenboeg": 3
+    "ziekenboeg": 2,
+    "achtergrond": 3
   }
 }

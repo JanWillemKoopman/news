@@ -1,29 +1,34 @@
 {
   "score": 8,
-  "approved": true,
+  "approved": false,
   "scores_per_as": {
     "sectiecompleetheid": 9,
-    "specificiteit": 7,
-    "feitelijkheid": 6,
+    "specificiteit": 8,
+    "feitelijkheid": 4,
     "toon": 9,
     "structuur": 9,
     "leesbaarheid": 8
   },
   "feedback": [
     {
-      "sectie": "vooruitblik",
+      "sectie": "terugblik",
       "as": "feitelijkheid",
-      "verbeterpunt": "De vooruitblik bevat specifieke informatie (Ajax's statistieken, de quote van Bosz over het 'kampioensreisje') die niet in de brondiepgang te vinden is. Baseer alle feiten strikt op de aangeleverde bronnen om de feitelijkheid te garanderen. Dit is een serieuze tekortkoming."
+      "verbeterpunt": "Het toeschouwersaantal (35.000), Pepi's seizoentotaal (15) en de specifieke doelpuntenminuten (51e, 57e, etc.) zijn niet terug te vinden in de bronnen. Baseer alle cijfers en feiten strikt op de aangeleverde brondiepgang om verzinsels te voorkomen. Dit is een zware overtreding van de regels."
     },
     {
-      "sectie": "terugblik",
-      "as": "specificiteit",
-      "verbeterpunt": "Het wedstrijdverslag van PSV-PEC mist concrete details. Noem alle doelpuntenmakers en, indien mogelijk, de minuten. De huidige formulering ('werden genoemd als bepalende krachten') is te vaag voor een wedstrijdverslag."
+      "sectie": "ziekenboeg",
+      "as": "feitelijkheid",
+      "verbeterpunt": "De naam 'Ivan Perišić' en de status van Saibari als 'clubtopscorer' komen niet voor in de brondiepgang. Verwijder alle informatie die niet direct uit de bronnen te herleiden is. Dit is een harde eis voor publicatie."
+    },
+    {
+      "sectie": "achtergrond",
+      "as": "leesbaarheid",
+      "verbeterpunt": "De term 'De Bosz-doctrine' is een journalistiek cliché. Probeer de filosofie van de trainer te omschrijven met originelere bewoordingen, bijvoorbeeld 'Bosz' blauwdruk voor de toekomst', om de tekst scherper te maken."
     },
     {
       "sectie": "algemeen",
-      "as": "leesbaarheid",
-      "verbeterpunt": "Vermijd sportclichés zoals 'hol van de leeuw' en 'voet van het gaspedaal'. Zoek naar originelere formuleringen om de tekst scherper en professioneler te maken."
+      "as": "feitelijkheid",
+      "verbeterpunt": "Feitelijkheid scoort 4/10, onder de minimumdrempel van 7/10. Verwijder alle feiten die niet letterlijk in het bronmateriaal staan en vervang door brongebaseerde informatie."
     }
   ]
 }
