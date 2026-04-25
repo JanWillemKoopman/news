@@ -37,9 +37,14 @@
   if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
   function renderMarkdown(text) {
-    // Split op :::kader...:::  blokken en render elk deel apart
-    const parts = text.split(/(:::kader[\s\S]*?:::)/g);
+    // Split op :::intro en :::kader blokken
+    const parts = text.split(/(:::(?:intro|kader)[\s\S]*?:::)/g);
     return parts.map(function(part) {
+      if (part.startsWith(":::intro")) {
+        const inner = part.replace(/^:::intro\n?/, "").replace(/\n?:::$/, "").trim();
+        const html = window.marked ? marked.parse(inner) : "<p>" + inner + "</p>";
+        return '<div class="summary-intro">' + html + "</div>";
+      }
       if (part.startsWith(":::kader")) {
         const inner = part.replace(/^:::kader\n?/, "").replace(/\n?:::$/, "").trim();
         const html = window.marked ? marked.parse(inner) : "<p>" + inner + "</p>";

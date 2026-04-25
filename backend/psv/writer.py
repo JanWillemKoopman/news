@@ -115,12 +115,6 @@ BRONMATERIAAL PER SECTIE:
 
 SCHRIJFINSTRUCTIES:
 
-0. TEASER (bulletlijst, staat helemaal bovenaan vóór de inleiding)
-   - Schrijf 3-5 korte bullets, één per sectie in de sectievolgorde.
-   - Elke bullet: max 12 woorden, pakkend en informatief. Noem concrete details.
-   - Formaat: "Sectienaam: de kern in één zin" — bijv. "Terugblik: 6-1 gala thuis tegen PEC Zwolle"
-   - Doel: lezer weet in 10 seconden wat er in deze editie staat.
-
 1. INLEIDING (2-3 alinea's, ~200 woorden)
    - Pakkend openen. Benoem de belangrijkste gebeurtenis(sen) van de week.
    - Plaats deze editie in het grotere plaatje van het seizoen (stand, fase).
@@ -172,10 +166,6 @@ SCHRIJFINSTRUCTIES:
 Geef je antwoord UITSLUITEND als geldig JSON (strict!):
 {{
   "titel": "Pakkende nieuwsbrieftitel (max 80 tekens)",
-  "teaser": [
-    "Terugblik: concrete samenvatting in max 12 woorden",
-    "Vooruitblik: concrete samenvatting in max 12 woorden"
-  ],
   "inleiding": "Markdown-tekst, 2-3 alinea's",
   "secties": [
     {{
@@ -183,7 +173,13 @@ Geef je antwoord UITSLUITEND als geldig JSON (strict!):
       "kop": "Sectiekop die de inhoud samenvat",
       "body": "Volledige markdown-tekst voor deze sectie, minimaal {min_woorden} woorden"
     }}
-  ]
+  ],
+  "intro": "Vloeiende teaser-tekst van 5-10 regels die direct onder de titel verschijnt. \
+Schrijf dit ALS ALLERLAATSTE nadat je alle secties hebt uitgewerkt. \
+Toon: nieuwsgierig makend, journalistiek, geen opsomming. \
+Trek de lezer naar binnen met het grootste verhaal van deze editie en laat subtiel \
+doorschemeren wat er verder in de nieuwsbrief staat — zonder alles weg te geven. \
+Geen clichés. Geen bullets. Gewone lopende tekst in 1-2 alinea's."
 }}
 
 Lever ALLE {n_secties} secties in dezelfde volgorde als sectievolgorde.{feedback_sectie}\
