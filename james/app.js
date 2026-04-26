@@ -275,44 +275,44 @@ const THEMES = {
    Volgorde komt overeen met wonderLibrary (index 0–37)
 ──────────────────────────────────────────────────────────────── */
 const WONDER_META = [
-  { category: 'ruimte',       emoji: '🌕' }, // 1  Maanlanding
-  { category: 'geschiedenis', emoji: '🕊️' }, // 2  WWII
-  { category: 'wereld',       emoji: '💰' }, // 3  Rijkste persoon
-  { category: 'wetenschap',   emoji: '🕳️' }, // 4  Diepste gat
-  { category: 'wereld',       emoji: '🇪🇺' }, // 5  Europeaan
-  { category: 'geschiedenis', emoji: '🪙' }, // 6  Gulden
-  { category: 'wetenschap',   emoji: '🔬' }, // 7  Wetenschapper
-  { category: 'technologie',  emoji: '⚡' }, // 8  Pokémon
-  { category: 'natuur',       emoji: '🦖' }, // 9  T-Rex
-  { category: 'ruimte',       emoji: '🌌' }, // 10 Zwarte gaten
-  { category: 'geschiedenis', emoji: '🔺' }, // 11 Piramides
-  { category: 'natuur',       emoji: '🐋' }, // 12 Blauwe vinvis
-  { category: 'wetenschap',   emoji: '🌋' }, // 13 Vulkanen
-  { category: 'technologie',  emoji: '🧱' }, // 14 Lego
-  { category: 'geschiedenis', emoji: '🏰' }, // 15 Ridders en kastelen
-  { category: 'technologie',  emoji: '🌐' }, // 16 Internet
-  { category: 'natuur',       emoji: '🌊' }, // 17 Marianentrog
-  { category: 'ruimte',       emoji: '🔴' }, // 18 Mars
-  { category: 'menselijk',    emoji: '🧠' }, // 19 Brein
-  { category: 'natuur',       emoji: '🐝' }, // 20 Bijen
-  { category: 'wereld',       emoji: '❄️' }, // 21 Noordpool
-  { category: 'technologie',  emoji: '🤖' }, // 22 Robots
-  { category: 'technologie',  emoji: '✈️' }, // 23 Vliegtuigen
-  { category: 'wereld',       emoji: '💎' }, // 24 Goud en diamanten
-  { category: 'geschiedenis', emoji: '🏛️' }, // 25 Romeinen
-  { category: 'wetenschap',   emoji: '🌩️' }, // 26 Bliksem en donder
-  { category: 'natuur',       emoji: '🐜' }, // 27 Mieren
-  { category: 'menselijk',    emoji: '🤝' }, // 28 Vriendschap
-  { category: 'geschiedenis', emoji: '🚗' }, // 29 Eerste auto
-  { category: 'geschiedenis', emoji: '🏯' }, // 30 Chinese muur
-  { category: 'menselijk',    emoji: '💭' }, // 31 Dromen
-  { category: 'natuur',       emoji: '🦴' }, // 32 Fossielen
-  { category: 'wetenschap',   emoji: '🌤️' }, // 33 Lucht blauw
-  { category: 'wereld',       emoji: '💵' }, // 34 Geld
-  { category: 'natuur',       emoji: '🌿' }, // 35 Jungle
-  { category: 'wetenschap',   emoji: '⏱️' }, // 36 Tijdreizen
-  { category: 'natuur',       emoji: '🦑' }, // 37 Reuzeninktvissen
-  { category: 'ruimte',       emoji: '🚀' }, // 38 ISS
+  { category: 'ruimte',       emoji: '🌕', wiki: 'Apollo_11'                      }, // 1  Maanlanding
+  { category: 'geschiedenis', emoji: '🕊️', wiki: 'World_War_II'                   }, // 2  WWII
+  { category: 'wereld',       emoji: '💰', wiki: 'Elon_Musk'                       }, // 3  Rijkste persoon
+  { category: 'wetenschap',   emoji: '🕳️', wiki: 'Kola_Superdeep_Borehole'        }, // 4  Diepste gat
+  { category: 'wereld',       emoji: '🇪🇺', wiki: 'European_Union'                 }, // 5  Europeaan
+  { category: 'geschiedenis', emoji: '🪙', wiki: 'Dutch_guilder'                   }, // 6  Gulden
+  { category: 'wetenschap',   emoji: '🔬', wiki: 'Marie_Curie'                     }, // 7  Wetenschapper
+  { category: 'technologie',  emoji: '⚡', wiki: 'Pikachu'                         }, // 8  Pokémon
+  { category: 'natuur',       emoji: '🦖', wiki: 'Tyrannosaurus'                   }, // 9  T-Rex
+  { category: 'ruimte',       emoji: '🌌', wiki: 'Black_hole'                      }, // 10 Zwarte gaten
+  { category: 'geschiedenis', emoji: '🔺', wiki: 'Great_Pyramid_of_Giza'           }, // 11 Piramides
+  { category: 'natuur',       emoji: '🐋', wiki: 'Blue_whale'                      }, // 12 Blauwe vinvis
+  { category: 'wetenschap',   emoji: '🌋', wiki: 'Volcano'                         }, // 13 Vulkanen
+  { category: 'technologie',  emoji: '🧱', wiki: 'Lego'                            }, // 14 Lego
+  { category: 'geschiedenis', emoji: '🏰', wiki: 'Knight'                          }, // 15 Ridders en kastelen
+  { category: 'technologie',  emoji: '🌐', wiki: 'Internet'                        }, // 16 Internet
+  { category: 'natuur',       emoji: '🌊', wiki: 'Mariana_Trench'                  }, // 17 Marianentrog
+  { category: 'ruimte',       emoji: '🔴', wiki: 'Mars'                            }, // 18 Mars
+  { category: 'menselijk',    emoji: '🧠', wiki: 'Human_brain'                     }, // 19 Brein
+  { category: 'natuur',       emoji: '🐝', wiki: 'Honey_bee'                       }, // 20 Bijen
+  { category: 'wereld',       emoji: '❄️', wiki: 'Arctic'                          }, // 21 Noordpool
+  { category: 'technologie',  emoji: '🤖', wiki: 'Robot'                           }, // 22 Robots
+  { category: 'technologie',  emoji: '✈️', wiki: 'Airplane'                        }, // 23 Vliegtuigen
+  { category: 'wereld',       emoji: '💎', wiki: 'Diamond'                         }, // 24 Goud en diamanten
+  { category: 'geschiedenis', emoji: '🏛️', wiki: 'Ancient_Rome'                   }, // 25 Romeinen
+  { category: 'wetenschap',   emoji: '🌩️', wiki: 'Lightning'                      }, // 26 Bliksem en donder
+  { category: 'natuur',       emoji: '🐜', wiki: 'Ant'                             }, // 27 Mieren
+  { category: 'menselijk',    emoji: '🤝', wiki: 'Friendship'                      }, // 28 Vriendschap
+  { category: 'geschiedenis', emoji: '🚗', wiki: 'Benz_Patent-Motorwagen'          }, // 29 Eerste auto
+  { category: 'geschiedenis', emoji: '🏯', wiki: 'Great_Wall_of_China'             }, // 30 Chinese muur
+  { category: 'menselijk',    emoji: '💭', wiki: 'Dream'                           }, // 31 Dromen
+  { category: 'natuur',       emoji: '🦴', wiki: 'Fossil'                          }, // 32 Fossielen
+  { category: 'wetenschap',   emoji: '🌤️', wiki: 'Rayleigh_scattering'            }, // 33 Lucht blauw
+  { category: 'wereld',       emoji: '💵', wiki: 'Money'                           }, // 34 Geld
+  { category: 'natuur',       emoji: '🌿', wiki: 'Amazon_rainforest'               }, // 35 Jungle
+  { category: 'wetenschap',   emoji: '⏱️', wiki: 'Time_travel'                    }, // 36 Tijdreizen
+  { category: 'natuur',       emoji: '🦑', wiki: 'Giant_squid'                     }, // 37 Reuzeninktvissen
+  { category: 'ruimte',       emoji: '🚀', wiki: 'International_Space_Station'     }, // 38 ISS
 ];
 
 /* ── Badges ─────────────────────────────────────────────────────
@@ -499,6 +499,22 @@ function renderParagraphs(containerEl, text) {
     .filter(p => p.trim().length > 0)
     .map(p => `<p>${p.trim()}</p>`)
     .join('');
+}
+
+/* ── Wikipedia thumbnail loader (with localStorage cache) ──── */
+async function loadWikiThumb(wikiTitle) {
+  const key    = 'james_wiki_' + wikiTitle;
+  const cached = localStorage.getItem(key);
+  if (cached) return cached;
+  try {
+    const url  = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=700&titles=${encodeURIComponent(wikiTitle)}&origin=*`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    const page = Object.values(data.query.pages)[0];
+    const src  = page.thumbnail?.source || null;
+    if (src) localStorage.setItem(key, src);
+    return src;
+  } catch { return null; }
 }
 
 /* ── Apply per-category colour theme ───────────────────────── */
@@ -755,15 +771,38 @@ function startTransition() {
 /* ── Phase 1: Title + Intro ────────────────────────────────── */
 function showPhase1() {
   const meta = WONDER_META[currentWonderIndex];
+
+  // Reset photo state, show emoji immediately as placeholder
+  wonderHero.classList.remove('has-photo');
+  wonderHero.style.backgroundImage    = '';
+  wonderHero.style.backgroundSize     = '';
+  wonderHero.style.backgroundPosition = '';
+
   if (meta) {
     applyTheme(meta.category);
     const theme = THEMES[meta.category] || THEMES.wetenschap;
     categoryLabel.textContent = theme.label;
     categoryLabel.style.color = theme.accent;
-    wonderHero.textContent    = meta.emoji;
+    wonderHero.innerHTML      = `<span class="hero-emoji">${meta.emoji}</span>`;
+
+    // Asynchronously load the Wikipedia photo
+    if (meta.wiki) {
+      loadWikiThumb(meta.wiki).then(src => {
+        if (!src) return;
+        const img  = new Image();
+        img.onload = () => {
+          wonderHero.style.backgroundImage    = `url(${src})`;
+          wonderHero.style.backgroundSize     = 'cover';
+          wonderHero.style.backgroundPosition = 'center';
+          wonderHero.innerHTML = '';
+          wonderHero.classList.add('has-photo');
+        };
+        img.src = src;
+      });
+    }
   } else {
     categoryLabel.textContent = '';
-    wonderHero.textContent    = '✨';
+    wonderHero.innerHTML      = '<span class="hero-emoji">✨</span>';
   }
 
   contentTitle.textContent      = currentWonder.title;
