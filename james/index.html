@@ -2,31 +2,49 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <!-- Disable double-tap zoom and enforce mobile viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <title>James' Wonder-App</title>
-
-  <!-- Friendly font for children -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;900&display=swap" rel="stylesheet" />
-
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <!-- ═══════════════════════════════════════════
-       SCREEN 1: Home — the big red button
+       SCREEN 0: Name input — first visit only
   ════════════════════════════════════════════ -->
-  <div id="screen-home" class="screen active">
+  <div id="screen-name" class="screen">
+    <div class="name-inner">
+      <p class="name-prompt">Hé! Hoe heet jij? 👋</p>
+      <p class="name-sub">Dan maak ik de app speciaal voor jou!</p>
+      <input id="name-input" type="text" maxlength="20"
+             placeholder="Jouw naam..." autocomplete="off" />
+      <button id="btn-name-submit" class="btn-name">Klaar! →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1: Home
+  ════════════════════════════════════════════ -->
+  <div id="screen-home" class="screen">
     <div class="home-inner">
-      <p class="home-greeting">Hé James! 👋</p>
+      <div class="home-top-row">
+        <p class="home-greeting" id="home-greeting">Hé! 👋</p>
+        <button id="btn-settings" class="btn-settings" aria-label="Naam wijzigen">⚙️</button>
+      </div>
       <p class="home-subtitle">Druk op de knop en leer iets bijzonders!</p>
+      <p class="home-progress" id="home-progress"></p>
+      <p class="home-streak" id="home-streak"></p>
+      <div class="home-badges" id="home-badges"></div>
       <button id="btn-wonder" aria-label="Ontdek een wonder">
         <span class="btn-label">ONTDEK!</span>
+      </button>
+      <button id="btn-show-favorites" class="btn-favorites hidden">
+        ❤️ Mijn favorieten
       </button>
     </div>
   </div>
@@ -45,8 +63,11 @@
   <div id="screen-content" class="screen">
     <div class="content-scroll">
 
-      <!-- Phase 1: Title + Intro -->
+      <!-- Phase 1: Photo + Title + Intro -->
       <div id="phase-1" class="phase hidden">
+        <img id="wonder-photo" class="wonder-photo" alt="" loading="lazy"
+             onerror="this.style.display='none'" />
+        <p id="category-label" class="category-label"></p>
         <h1 id="content-title"></h1>
         <div id="content-intro"></div>
       </div>
@@ -62,14 +83,41 @@
         </button>
       </div>
 
-      <!-- Phase 3: Deep dive + reset -->
+      <!-- Phase 3: Deep dive + favorite + reset -->
       <div id="phase-3" class="phase hidden">
         <div id="content-deepdive"></div>
+        <button id="btn-favorite" class="btn-heart">♡ Bewaar als favoriet</button>
         <button id="btn-opnieuw" class="btn-reset">
           🔄 Opnieuw!
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 4: Favorites list
+  ════════════════════════════════════════════ -->
+  <div id="screen-favorites" class="screen">
+    <div class="favorites-inner">
+      <div class="favorites-header">
+        <p class="favorites-title">❤️ Mijn favorieten</p>
+        <button id="btn-favorites-back" class="btn-back">← Terug</button>
+      </div>
+      <div id="favorites-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       BADGE CELEBRATION OVERLAY
+  ════════════════════════════════════════════ -->
+  <div id="badge-overlay" class="badge-overlay hidden">
+    <div class="badge-card">
+      <p class="badge-new">🎉 Nieuwe badge!</p>
+      <p class="badge-icon" id="badge-icon"></p>
+      <p class="badge-name" id="badge-name"></p>
+      <p class="badge-desc" id="badge-desc"></p>
+      <button id="btn-badge-ok" class="btn-name">Geweldig! 🙌</button>
     </div>
   </div>
 
