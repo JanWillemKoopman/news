@@ -254,27 +254,61 @@ const wonderLibrary = [
   }
 ];
 
-/* ── State ─────────────────────────────────────────────────────
-   Simple state machine to track where James is in the flow.
+/* ── Storage keys ──────────────────────────────────────────────
 ──────────────────────────────────────────────────────────────── */
-let currentWonder = null;
-const STORAGE_KEY = 'james_wonder_index';
+const KEY_INDEX = 'james_wonder_index';
+const KEY_NAME  = 'james_name';
+const KEY_SEEN  = 'james_seen';
+const KEY_FAVS  = 'james_favorites';
 
+/* ── State ─────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────── */
+let currentWonder      = null;
+let currentWonderIndex = 0;
+
+/* ── Storage helpers ───────────────────────────────────────────
+──────────────────────────────────────────────────────────────── */
 function loadNextIndex() {
-  const saved = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+  const saved = parseInt(localStorage.getItem(KEY_INDEX) || '0', 10);
   return isNaN(saved) ? 0 : saved % wonderLibrary.length;
 }
+function saveIndex(i)  { localStorage.setItem(KEY_INDEX, String(i)); }
 
-function saveIndex(index) {
-  localStorage.setItem(STORAGE_KEY, String(index));
+function getName()     { return localStorage.getItem(KEY_NAME) || ''; }
+function saveName(n)   { localStorage.setItem(KEY_NAME, n.trim()); }
+
+function getSeen()     { return JSON.parse(localStorage.getItem(KEY_SEEN)  || '[]'); }
+function markSeen(i)   {
+  const s = getSeen();
+  if (!s.includes(i)) { s.push(i); localStorage.setItem(KEY_SEEN, JSON.stringify(s)); }
 }
 
+function getFavs()     { return JSON.parse(localStorage.getItem(KEY_FAVS)  || '[]'); }
+function toggleFav(i)  {
+  const f = getFavs();
+  const pos = f.indexOf(i);
+  if (pos === -1) f.push(i); else f.splice(pos, 1);
+  localStorage.setItem(KEY_FAVS, JSON.stringify(f));
+}
+function isFav(i)      { return getFavs().includes(i); }
+
 /* ── DOM References ────────────────────────────────────────────
-   Grabbed once at startup for performance.
 ──────────────────────────────────────────────────────────────── */
+const screenName       = document.getElementById('screen-name');
 const screenHome       = document.getElementById('screen-home');
 const screenTransition = document.getElementById('screen-transition');
 const screenContent    = document.getElementById('screen-content');
+const screenFavorites  = document.getElementById('screen-favorites');
+
+const nameInput        = document.getElementById('name-input');
+const btnNameSubmit    = document.getElementById('btn-name-submit');
+const homeGreeting     = document.getElementById('home-greeting');
+const homeProgress     = document.getElementById('home-progress');
+const btnSettings      = document.getElementById('btn-settings');
+const btnShowFavorites = document.getElementById('btn-show-favorites');
+const favoritesList    = document.getElementById('favorites-list');
+const btnFavoritesBack = document.getElementById('btn-favorites-back');
+
 const btnWonder        = document.getElementById('btn-wonder');
 const canvas           = document.getElementById('canvas-particles');
 const zoomOverlay      = document.getElementById('zoom-overlay');
@@ -285,6 +319,7 @@ const contentTitle     = document.getElementById('content-title');
 const contentIntro     = document.getElementById('content-intro');
 const contentPhilosophy= document.getElementById('content-philosophy');
 const contentDeepdive  = document.getElementById('content-deepdive');
+const btnFavorite      = document.getElementById('btn-favorite');
 const btnLeesveder     = document.getElementById('btn-lees-verder');
 const btnOpnieuw       = document.getElementById('btn-opnieuw');
 
@@ -299,10 +334,55 @@ function renderParagraphs(containerEl, text) {
 
 /* ── Utility: show / hide screens ──────────────────────────── */
 function showScreen(el) {
-  [screenHome, screenTransition, screenContent].forEach(s => {
+  [screenName, screenHome, screenTransition, screenContent, screenFavorites].forEach(s => {
     s.classList.remove('active');
   });
   el.classList.add('active');
+}
+
+/* ── Update home screen with personalized info ─────────────── */
+function updateHomeScreen() {
+  const name = getName();
+  homeGreeting.textContent = name ? `Hé ${name}! 👋` : 'Hé! 👋';
+
+  const seen = getSeen();
+  homeProgress.textContent = seen.length > 0
+    ? `Je hebt al ${seen.length} van de ${wonderLibrary.length} wonderen ontdekt! 🎉`
+    : '';
+
+  btnShowFavorites.classList.toggle('hidden', getFavs().length === 0);
+}
+
+/* ── Show favorites screen ─────────────────────────────────── */
+function showFavoritesScreen() {
+  const favs = getFavs();
+  favoritesList.innerHTML = favs.map(i => {
+    const w = wonderLibrary[i];
+    return `<button class="fav-item" data-index="${i}">${w.title}</button>`;
+  }).join('');
+  favoritesList.querySelectorAll('.fav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      launchWonder(parseInt(btn.dataset.index, 10));
+    });
+  });
+  showScreen(screenFavorites);
+}
+
+/* ── Launch a specific wonder (from favorites or normal flow) ─ */
+function launchWonder(specificIndex) {
+  const index = specificIndex !== undefined ? specificIndex : loadNextIndex();
+  currentWonderIndex = index;
+  currentWonder = wonderLibrary[index];
+  if (specificIndex === undefined) saveIndex((index + 1) % wonderLibrary.length);
+  markSeen(index);
+  showScreen(screenTransition);
+  runParticleExplosion(700, () => {
+    zoomOverlay.classList.add('zooming');
+    zoomOverlay.addEventListener('animationend', () => {
+      zoomOverlay.classList.remove('zooming');
+      showPhase1();
+    }, { once: true });
+  });
 }
 
 /* ── Utility: animate a phase in ──────────────────────────── */
@@ -321,12 +401,8 @@ function shakeButton(btn) {
   btn.addEventListener('animationend', () => btn.classList.remove('btn-shake'), { once: true });
 }
 
-/* ── Pick a Wonder ─────────────────────────────────────────── */
-function selectWonder() {
-  const index = loadNextIndex();
-  currentWonder = wonderLibrary[index];
-  saveIndex((index + 1) % wonderLibrary.length);
-}
+/* ── Pick a Wonder (kept for compatibility, now via launchWonder) */
+function selectWonder() { /* intentionally empty — see launchWonder */ }
 
 /* ── Canvas Particle Explosion ─────────────────────────────── */
 function runParticleExplosion(durationMs, onComplete) {
@@ -391,44 +467,36 @@ function runParticleExplosion(durationMs, onComplete) {
 
 /* ── Main Flow: Button Click → Transition ──────────────────── */
 function startTransition() {
-  // Haptic-style press feedback
   btnWonder.classList.add('pressed');
   setTimeout(() => btnWonder.classList.remove('pressed'), 180);
-
-  selectWonder();
-  showScreen(screenTransition);
-
-  // Run particles for 700ms, then trigger zoom
-  runParticleExplosion(700, () => {
-    zoomOverlay.classList.add('zooming');
-    zoomOverlay.addEventListener('animationend', () => {
-      zoomOverlay.classList.remove('zooming');
-      showPhase1();
-    }, { once: true });
-  });
+  launchWonder();
 }
 
 /* ── Phase 1: Title + Intro ────────────────────────────────── */
 function showPhase1() {
-  // Populate content
   contentTitle.textContent      = currentWonder.title;
   contentPhilosophy.textContent = currentWonder.philosophyQuestion;
   renderParagraphs(contentIntro,    currentWonder.intro);
   renderParagraphs(contentDeepdive, currentWonder.deepDive);
+  updateFavoriteButton();
 
-  // Reset phases to hidden
   phase1El.classList.add('hidden');
   phase2El.classList.add('hidden');
   phase3El.classList.add('hidden');
 
   showScreen(screenContent);
 
-  // Small delay before entering so the screen fade-in settles
   setTimeout(() => {
     enterPhase(phase1El);
-    // Phase 2 auto-advances after James has time to read
     setTimeout(showPhase2, 2800);
   }, 200);
+}
+
+/* ── Update the heart button state ─────────────────────────── */
+function updateFavoriteButton() {
+  const fav = isFav(currentWonderIndex);
+  btnFavorite.textContent = fav ? '❤️ Favoriet!' : '♡ Bewaar als favoriet';
+  btnFavorite.classList.toggle('is-favorite', fav);
 }
 
 /* ── Phase 2: Philosophy Question ──────────────────────────── */
@@ -452,10 +520,19 @@ function showPhase3() {
 function resetToHome() {
   shakeButton(btnOpnieuw);
   setTimeout(() => {
+    updateHomeScreen();
     showScreen(screenHome);
-    // Scroll content back to top for next round
     document.querySelector('.content-scroll').scrollTop = 0;
   }, 200);
+}
+
+/* ── Name screen: submit ───────────────────────────────────── */
+function submitName() {
+  const val = nameInput.value.trim();
+  if (!val) return;
+  saveName(val);
+  updateHomeScreen();
+  showScreen(screenHome);
 }
 
 /* ── Event Listeners ───────────────────────────────────────── */
@@ -463,6 +540,30 @@ btnWonder.addEventListener('click', startTransition);
 btnLeesveder.addEventListener('click', showPhase3);
 btnOpnieuw.addEventListener('click', resetToHome);
 
+btnFavorite.addEventListener('click', () => {
+  toggleFav(currentWonderIndex);
+  updateFavoriteButton();
+  updateHomeScreen();
+});
+
+btnNameSubmit.addEventListener('click', submitName);
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitName(); });
+
+btnSettings.addEventListener('click', () => {
+  nameInput.value = getName();
+  showScreen(screenName);
+});
+
+btnShowFavorites.addEventListener('click', showFavoritesScreen);
+btnFavoritesBack.addEventListener('click', () => {
+  updateHomeScreen();
+  showScreen(screenHome);
+});
+
 /* ── Initial State ─────────────────────────────────────────── */
-// Show the home screen when the page loads
-showScreen(screenHome);
+if (!getName()) {
+  showScreen(screenName);
+} else {
+  updateHomeScreen();
+  showScreen(screenHome);
+}
