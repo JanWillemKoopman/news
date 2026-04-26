@@ -38,7 +38,6 @@
       </div>
       <p class="home-subtitle">Druk op de knop en leer iets bijzonders!</p>
       <p class="home-progress" id="home-progress"></p>
-      <p class="home-streak" id="home-streak"></p>
       <div class="home-badges" id="home-badges"></div>
       <button id="btn-wonder" aria-label="Ontdek een wonder">
         <span class="btn-label">ONTDEK!</span>
@@ -63,10 +62,9 @@
   <div id="screen-content" class="screen">
     <div class="content-scroll">
 
-      <!-- Phase 1: Photo + Title + Intro -->
+      <!-- Phase 1: Emoji hero + Title + Intro -->
       <div id="phase-1" class="phase hidden">
-        <img id="wonder-photo" class="wonder-photo" alt="" loading="lazy"
-             onerror="this.style.display='none'" />
+        <div id="wonder-hero" class="wonder-hero"></div>
         <p id="category-label" class="category-label"></p>
         <h1 id="content-title"></h1>
         <div id="content-intro"></div>

@@ -275,69 +275,65 @@ const THEMES = {
    Volgorde komt overeen met wonderLibrary (index 0–37)
 ──────────────────────────────────────────────────────────────── */
 const WONDER_META = [
-  { category: 'ruimte',       photo: '1446776811953-b23d57bd21aa' }, // 1  Maanlanding
-  { category: 'geschiedenis', photo: '1524995997946-a1486f036c8a' }, // 2  WWII
-  { category: 'wereld',       photo: '1553545985-4bdf4c004264'    }, // 3  Rijkste persoon
-  { category: 'wetenschap',   photo: '1518837695005-2083093ee35b' }, // 4  Diepste gat
-  { category: 'wereld',       photo: '1485081669829-bacb8c7bb1f3' }, // 5  Europeaan
-  { category: 'geschiedenis', photo: '1589782182703-2aaa69037b5b' }, // 6  Gulden
-  { category: 'wetenschap',   photo: '1507413245164-6160d8298b31' }, // 7  Wetenschapper
-  { category: 'technologie',  photo: '1493711662062-fa541adb3fc8' }, // 8  Pokémon
-  { category: 'natuur',       photo: '1525877442103-5ddb2089b2bb' }, // 9  T-Rex
-  { category: 'ruimte',       photo: '1462331940025-496dfbfc7564' }, // 10 Zwarte gaten
-  { category: 'geschiedenis', photo: '1539768942893-69ba23f96e8d' }, // 11 Piramides
-  { category: 'natuur',       photo: '1518020382113-a7e8fc38eac9' }, // 12 Blauwe vinvis
-  { category: 'wetenschap',   photo: '1562016600-ece13e8ba570'    }, // 13 Vulkanen
-  { category: 'technologie',  photo: '1596854407944-bf87f6fdd49e' }, // 14 Lego
-  { category: 'geschiedenis', photo: '1535254973040-607b1cc8b7e8' }, // 15 Ridders en kastelen
-  { category: 'technologie',  photo: '1558494949-ef010cbdcc31'    }, // 16 Internet
-  { category: 'natuur',       photo: '1519944159945-9bb4a4aa5b04' }, // 17 Marianentrog
-  { category: 'ruimte',       photo: '1614726365952-510103b1bdb8' }, // 18 Mars
-  { category: 'menselijk',    photo: '1559757148-5c350d0d3c56'    }, // 19 Brein
-  { category: 'natuur',       photo: '1558618666-fcd25c85cd64'    }, // 20 Bijen
-  { category: 'wereld',       photo: '1516912481800-e2e73a81c2e9' }, // 21 Noordpool
-  { category: 'technologie',  photo: '1485827404703-89b55fcc595e' }, // 22 Robots
-  { category: 'technologie',  photo: '1436491865332-7a61a109cc05' }, // 23 Vliegtuigen
-  { category: 'wereld',       photo: '1610375461246-83df859d849d' }, // 24 Goud en diamanten
-  { category: 'geschiedenis', photo: '1529260830199-42c24126f198' }, // 25 Romeinen
-  { category: 'wetenschap',   photo: '1504370805625-d32c54b16100' }, // 26 Bliksem en donder
-  { category: 'natuur',       photo: '1548681616-4c3f6d444898'    }, // 27 Mieren
-  { category: 'menselijk',    photo: '1529156069898-49953e39b3ac' }, // 28 Vriendschap
-  { category: 'geschiedenis', photo: '1533143800-8e41a5a8a7a6'    }, // 29 Eerste auto
-  { category: 'geschiedenis', photo: '1508804185872-d7badad22c5f' }, // 30 Chinese muur
-  { category: 'menselijk',    photo: '1455642305367-68834a1da7ab' }, // 31 Dromen
-  { category: 'natuur',       photo: '1571948255-5f07ae2a0d3e'    }, // 32 Fossielen
-  { category: 'wetenschap',   photo: '1534088568595-a066f410bcda' }, // 33 Lucht blauw
-  { category: 'wereld',       photo: '1567427017947-545c5f8d16ad' }, // 34 Geld
-  { category: 'natuur',       photo: '1516026672322-1c2e6af6b8c9' }, // 35 Jungle
-  { category: 'wetenschap',   photo: '1501139083538-0139b6b90946' }, // 36 Tijdreizen
-  { category: 'natuur',       photo: '1484291470158-c3dc2f0b9e6b' }, // 37 Reuzeninktvissen
-  { category: 'ruimte',       photo: '1446776858070-70c3d5ed6758' }, // 38 ISS
+  { category: 'ruimte',       emoji: '🌕' }, // 1  Maanlanding
+  { category: 'geschiedenis', emoji: '🕊️' }, // 2  WWII
+  { category: 'wereld',       emoji: '💰' }, // 3  Rijkste persoon
+  { category: 'wetenschap',   emoji: '🕳️' }, // 4  Diepste gat
+  { category: 'wereld',       emoji: '🇪🇺' }, // 5  Europeaan
+  { category: 'geschiedenis', emoji: '🪙' }, // 6  Gulden
+  { category: 'wetenschap',   emoji: '🔬' }, // 7  Wetenschapper
+  { category: 'technologie',  emoji: '⚡' }, // 8  Pokémon
+  { category: 'natuur',       emoji: '🦖' }, // 9  T-Rex
+  { category: 'ruimte',       emoji: '🌌' }, // 10 Zwarte gaten
+  { category: 'geschiedenis', emoji: '🔺' }, // 11 Piramides
+  { category: 'natuur',       emoji: '🐋' }, // 12 Blauwe vinvis
+  { category: 'wetenschap',   emoji: '🌋' }, // 13 Vulkanen
+  { category: 'technologie',  emoji: '🧱' }, // 14 Lego
+  { category: 'geschiedenis', emoji: '🏰' }, // 15 Ridders en kastelen
+  { category: 'technologie',  emoji: '🌐' }, // 16 Internet
+  { category: 'natuur',       emoji: '🌊' }, // 17 Marianentrog
+  { category: 'ruimte',       emoji: '🔴' }, // 18 Mars
+  { category: 'menselijk',    emoji: '🧠' }, // 19 Brein
+  { category: 'natuur',       emoji: '🐝' }, // 20 Bijen
+  { category: 'wereld',       emoji: '❄️' }, // 21 Noordpool
+  { category: 'technologie',  emoji: '🤖' }, // 22 Robots
+  { category: 'technologie',  emoji: '✈️' }, // 23 Vliegtuigen
+  { category: 'wereld',       emoji: '💎' }, // 24 Goud en diamanten
+  { category: 'geschiedenis', emoji: '🏛️' }, // 25 Romeinen
+  { category: 'wetenschap',   emoji: '🌩️' }, // 26 Bliksem en donder
+  { category: 'natuur',       emoji: '🐜' }, // 27 Mieren
+  { category: 'menselijk',    emoji: '🤝' }, // 28 Vriendschap
+  { category: 'geschiedenis', emoji: '🚗' }, // 29 Eerste auto
+  { category: 'geschiedenis', emoji: '🏯' }, // 30 Chinese muur
+  { category: 'menselijk',    emoji: '💭' }, // 31 Dromen
+  { category: 'natuur',       emoji: '🦴' }, // 32 Fossielen
+  { category: 'wetenschap',   emoji: '🌤️' }, // 33 Lucht blauw
+  { category: 'wereld',       emoji: '💵' }, // 34 Geld
+  { category: 'natuur',       emoji: '🌿' }, // 35 Jungle
+  { category: 'wetenschap',   emoji: '⏱️' }, // 36 Tijdreizen
+  { category: 'natuur',       emoji: '🦑' }, // 37 Reuzeninktvissen
+  { category: 'ruimte',       emoji: '🚀' }, // 38 ISS
 ];
 
 /* ── Badges ─────────────────────────────────────────────────────
-   check(seenCount, favCount, streak) → boolean
+   check(seenCount, favCount) → boolean
 ──────────────────────────────────────────────────────────────── */
 const BADGES = [
-  { id: 'first',    icon: '⭐', name: 'Eerste Stap',          desc: 'Je eerste wonder ontdekt!',       check: (s)       => s >= 1  },
-  { id: 'explorer', icon: '🌟', name: 'Echte Ontdekker',      desc: '10 wonderen ontdekt!',            check: (s)       => s >= 10 },
-  { id: 'expert',   icon: '🏆', name: 'Wonder-Expert',        desc: '25 wonderen ontdekt!',            check: (s)       => s >= 25 },
-  { id: 'master',   icon: '👑', name: 'Meester der Wonderen', desc: 'Alle 38 wonderen ontdekt!',       check: (s)       => s >= 38 },
-  { id: 'fav1',     icon: '❤️', name: 'Eerste Favoriet',      desc: 'Je eerste wonder bewaard!',       check: (s, f)    => f >= 1  },
-  { id: 'fav5',     icon: '💝', name: 'Favorietenspaarder',   desc: '5 favorieten verzameld!',         check: (s, f)    => f >= 5  },
-  { id: 'streak3',  icon: '🔥', name: 'Op Stoom',             desc: '3 dagen op rij ontdekt!',         check: (s, f, k) => k >= 3  },
-  { id: 'streak7',  icon: '🌈', name: 'Week-Kampioen',        desc: '7 dagen op rij ontdekt!',         check: (s, f, k) => k >= 7  },
+  { id: 'first',    icon: '⭐', name: 'Eerste Stap',          desc: 'Je eerste wonder ontdekt!',  check: (s)    => s >= 1  },
+  { id: 'explorer', icon: '🌟', name: 'Echte Ontdekker',      desc: '10 wonderen ontdekt!',       check: (s)    => s >= 10 },
+  { id: 'expert',   icon: '🏆', name: 'Wonder-Expert',        desc: '25 wonderen ontdekt!',       check: (s)    => s >= 25 },
+  { id: 'master',   icon: '👑', name: 'Meester der Wonderen', desc: 'Alle 38 wonderen ontdekt!',  check: (s)    => s >= 38 },
+  { id: 'fav1',     icon: '❤️', name: 'Eerste Favoriet',      desc: 'Je eerste wonder bewaard!',  check: (s, f) => f >= 1  },
+  { id: 'fav5',     icon: '💝', name: 'Favorietenspaarder',   desc: '5 favorieten verzameld!',    check: (s, f) => f >= 5  },
 ];
 
 /* ── Storage keys ──────────────────────────────────────────────
 ──────────────────────────────────────────────────────────────── */
-const KEY_INDEX     = 'james_wonder_index';
-const KEY_NAME      = 'james_name';
-const KEY_SEEN      = 'james_seen';
-const KEY_FAVS      = 'james_favorites';
-const KEY_STREAK    = 'james_streak';
-const KEY_LAST_DATE = 'james_last_date';
-const KEY_BADGES    = 'james_badges';
+const KEY_INDEX  = 'james_wonder_index';
+const KEY_NAME   = 'james_name';
+const KEY_SEEN   = 'james_seen';
+const KEY_FAVS   = 'james_favorites';
+const KEY_BADGES = 'james_badges';
 
 /* ── State ─────────────────────────────────────────────────────
 ──────────────────────────────────────────────────────────────── */
@@ -401,9 +397,8 @@ const btnFavorite      = document.getElementById('btn-favorite');
 const btnLeesveder     = document.getElementById('btn-lees-verder');
 const btnOpnieuw       = document.getElementById('btn-opnieuw');
 
-const wonderPhoto      = document.getElementById('wonder-photo');
+const wonderHero       = document.getElementById('wonder-hero');
 const categoryLabel    = document.getElementById('category-label');
-const homeStreak       = document.getElementById('home-streak');
 const homeBadges       = document.getElementById('home-badges');
 const badgeOverlay     = document.getElementById('badge-overlay');
 const badgeIcon        = document.getElementById('badge-icon');
@@ -427,20 +422,6 @@ function applyTheme(category) {
   document.documentElement.style.setProperty('--theme-accent', theme.accent);
 }
 
-/* ── Daily streak helpers ───────────────────────────────────── */
-function getStreak()   { return parseInt(localStorage.getItem(KEY_STREAK) || '0', 10); }
-function getLastDate() { return localStorage.getItem(KEY_LAST_DATE) || ''; }
-
-function updateStreak() {
-  const today     = new Date().toISOString().slice(0, 10);
-  const last      = getLastDate();
-  if (last === today) return;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const streak    = (last === yesterday) ? getStreak() + 1 : 1;
-  localStorage.setItem(KEY_STREAK,    String(streak));
-  localStorage.setItem(KEY_LAST_DATE, today);
-}
-
 /* ── Badge helpers ──────────────────────────────────────────── */
 function getEarnedBadgeIds() {
   return JSON.parse(localStorage.getItem(KEY_BADGES) || '[]');
@@ -451,12 +432,11 @@ let badgeQueue = [];
 function checkAndAwardBadges() {
   const seenCount = getSeen().length;
   const favCount  = getFavs().length;
-  const streak    = getStreak();
   const earned    = getEarnedBadgeIds();
   const fresh     = [];
 
   BADGES.forEach(b => {
-    if (!earned.includes(b.id) && b.check(seenCount, favCount, streak)) {
+    if (!earned.includes(b.id) && b.check(seenCount, favCount)) {
       earned.push(b.id);
       fresh.push(b);
     }
@@ -539,9 +519,6 @@ function updateHomeScreen() {
     ? `Je hebt al ${seen.length} van de ${wonderLibrary.length} wonderen ontdekt! 🎉`
     : '';
 
-  const streak = getStreak();
-  homeStreak.textContent = streak >= 2 ? `🔥 ${streak} dagen op rij!` : '';
-
   const earned = getEarnedBadgeIds();
   homeBadges.innerHTML = earned.map(id => {
     const b = BADGES.find(x => x.id === id);
@@ -573,7 +550,6 @@ function launchWonder(specificIndex) {
   currentWonder = wonderLibrary[index];
   if (specificIndex === undefined) saveIndex((index + 1) % wonderLibrary.length);
   markSeen(index);
-  updateStreak();
   checkAndAwardBadges();
   playSound('whoosh');
   showScreen(screenTransition);
@@ -681,11 +657,10 @@ function showPhase1() {
     const theme = THEMES[meta.category] || THEMES.wetenschap;
     categoryLabel.textContent = theme.label;
     categoryLabel.style.color = theme.accent;
-    wonderPhoto.src           = `https://images.unsplash.com/photo-${meta.photo}?w=700&q=75&auto=format&fit=crop`;
-    wonderPhoto.style.display = '';
+    wonderHero.textContent    = meta.emoji;
   } else {
     categoryLabel.textContent = '';
-    wonderPhoto.style.display = 'none';
+    wonderHero.textContent    = '✨';
   }
 
   contentTitle.textContent      = currentWonder.title;
