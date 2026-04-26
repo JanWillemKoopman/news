@@ -14,6 +14,9 @@
 </head>
 <body>
 
+  <canvas id="canvas-bg"></canvas>
+  <div id="flash-overlay"></div>
+
   <!-- ═══════════════════════════════════════════
        SCREEN 0: Name input — first visit only
   ════════════════════════════════════════════ -->
@@ -38,10 +41,15 @@
       </div>
       <p class="home-subtitle">Druk op de knop en leer iets bijzonders!</p>
       <p class="home-progress" id="home-progress"></p>
-      <div class="home-badges" id="home-badges"></div>
-      <button id="btn-wonder" aria-label="Ontdek een wonder">
-        <span class="btn-label">ONTDEK!</span>
-      </button>
+      <div class="home-progress-bar-track">
+        <div class="home-progress-bar-fill" id="home-progress-bar"></div>
+      </div>
+      <div class="btn-wonder-wrap">
+        <div class="btn-halo"></div>
+        <button id="btn-wonder" aria-label="Ontdek een wonder">
+          <span class="btn-label">ONTDEK!</span>
+        </button>
+      </div>
       <button id="btn-show-favorites" class="btn-favorites hidden">
         ❤️ Mijn favorieten
       </button>

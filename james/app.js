@@ -397,14 +397,100 @@ const btnFavorite      = document.getElementById('btn-favorite');
 const btnLeesveder     = document.getElementById('btn-lees-verder');
 const btnOpnieuw       = document.getElementById('btn-opnieuw');
 
-const wonderHero       = document.getElementById('wonder-hero');
-const categoryLabel    = document.getElementById('category-label');
-const homeBadges       = document.getElementById('home-badges');
+const wonderHero        = document.getElementById('wonder-hero');
+const categoryLabel     = document.getElementById('category-label');
+const homeProgressBar   = document.getElementById('home-progress-bar');
+const flashOverlay      = document.getElementById('flash-overlay');
+const canvasBg          = document.getElementById('canvas-bg');
 const badgeOverlay     = document.getElementById('badge-overlay');
 const badgeIcon        = document.getElementById('badge-icon');
 const badgeName        = document.getElementById('badge-name');
 const badgeDesc        = document.getElementById('badge-desc');
 const btnBadgeOk       = document.getElementById('btn-badge-ok');
+
+/* ── Starfield background canvas ───────────────────────────── */
+(function initStarfield() {
+  const ctx = canvasBg.getContext('2d');
+  let W, H, stars, shooters;
+
+  function resize() {
+    W = canvasBg.width  = window.innerWidth;
+    H = canvasBg.height = window.innerHeight;
+  }
+
+  function mkStars() {
+    stars = Array.from({ length: 110 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + 0.3,
+      a: Math.random(),
+      da: (Math.random() - 0.5) * 0.008,
+      vx: (Math.random() - 0.5) * 0.12,
+      vy: (Math.random() - 0.5) * 0.12,
+    }));
+    shooters = [];
+  }
+
+  function mkShooter() {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H * 0.5,
+      vx: 6 + Math.random() * 6,
+      vy: 2 + Math.random() * 3,
+      len: 80 + Math.random() * 80,
+      a: 1,
+    };
+  }
+
+  resize();
+  mkStars();
+  window.addEventListener('resize', () => { resize(); mkStars(); });
+
+  let frame = 0;
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, W, H);
+
+    // Stars
+    stars.forEach(s => {
+      s.x  = (s.x + s.vx + W) % W;
+      s.y  = (s.y + s.vy + H) % H;
+      s.a  = Math.max(0.05, Math.min(1, s.a + s.da));
+      if (s.a <= 0.05 || s.a >= 1) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.a.toFixed(2)})`;
+      ctx.fill();
+    });
+
+    // Shooting stars
+    if (frame % 210 === 0 && Math.random() < 0.6) shooters.push(mkShooter());
+    shooters = shooters.filter(s => s.a > 0.02);
+    shooters.forEach(s => {
+      ctx.save();
+      const grad = ctx.createLinearGradient(s.x, s.y, s.x - s.len, s.y - s.len * 0.4);
+      grad.addColorStop(0, `rgba(255,255,255,${s.a.toFixed(2)})`);
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - s.len, s.y - s.len * 0.4);
+      ctx.stroke();
+      ctx.restore();
+      s.x += s.vx; s.y += s.vy; s.a -= 0.03;
+    });
+
+    frame++;
+  }
+  draw();
+})();
+
+/* ── Screen flash ──────────────────────────────────────────── */
+function flashScreen() {
+  flashOverlay.classList.add('active');
+  setTimeout(() => flashOverlay.classList.remove('active'), 80);
+}
 
 /* ── Utility: render multi-paragraph text ──────────────────── */
 function renderParagraphs(containerEl, text) {
@@ -514,16 +600,14 @@ function updateHomeScreen() {
   const name = getName();
   homeGreeting.textContent = name ? `Hé ${name}! 👋` : 'Hé! 👋';
 
-  const seen = getSeen();
-  homeProgress.textContent = seen.length > 0
-    ? `Je hebt al ${seen.length} van de ${wonderLibrary.length} wonderen ontdekt! 🎉`
-    : '';
+  const seen    = getSeen();
+  const total   = wonderLibrary.length;
+  const pct     = seen.length > 0 ? (seen.length / total) * 100 : 0;
 
-  const earned = getEarnedBadgeIds();
-  homeBadges.innerHTML = earned.map(id => {
-    const b = BADGES.find(x => x.id === id);
-    return b ? `<span class="badge-chip" title="${b.name}">${b.icon}</span>` : '';
-  }).join('');
+  homeProgress.textContent = seen.length > 0
+    ? `Je hebt al ${seen.length} van de ${total} wonderen ontdekt! 🎉`
+    : '';
+  homeProgressBar.style.width = `${pct}%`;
 
   btnShowFavorites.classList.toggle('hidden', getFavs().length === 0);
 }
@@ -584,59 +668,77 @@ function selectWonder() { /* intentionally empty — see launchWonder */ }
 /* ── Canvas Particle Explosion ─────────────────────────────── */
 function runParticleExplosion(durationMs, onComplete) {
   const ctx = canvas.getContext('2d');
-
-  // Match canvas to actual pixel size
   canvas.width  = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
 
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const start = performance.now();
-  const colors = ['#ff4444', '#ff8800', '#ffcc00', '#ffffff', '#ff2222', '#ffaaaa'];
+  const cx     = canvas.width  / 2;
+  const cy     = canvas.height / 2;
+  const start  = performance.now();
+  const colors = [
+    '#ff4444', '#ff6b00', '#ffcc00', '#ffffff',
+    '#ff2222', '#ffaaaa', '#ff88ff', '#88ccff', '#aaffaa',
+  ];
 
-  // Create 90 particles bursting from center
-  const particles = Array.from({ length: 90 }, () => {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 3 + Math.random() * 9;
+  const particles = Array.from({ length: 160 }, (_, i) => {
+    const angle  = Math.random() * Math.PI * 2;
+    const speed  = 2 + Math.random() * 13;
+    const isStar = i < 20; // first 20 are star-shaped
     return {
-      x: cx,
-      y: cy,
+      x: cx, y: cy,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 2 + Math.random() * 5,
+      radius: isStar ? 4 + Math.random() * 5 : 1.5 + Math.random() * 5,
       color: colors[Math.floor(Math.random() * colors.length)],
       alpha: 1,
-      decay: 0.012 + Math.random() * 0.018
+      decay: 0.009 + Math.random() * 0.016,
+      isStar,
+      rot: Math.random() * Math.PI,
+      rotV: (Math.random() - 0.5) * 0.2,
     };
   });
 
-  function frame(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / durationMs, 1);
+  function drawStar(ctx, x, y, r, rot) {
+    const spikes = 5;
+    const inner  = r * 0.4;
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const a   = rot + (i * Math.PI) / spikes;
+      const len = i % 2 === 0 ? r : inner;
+      i === 0 ? ctx.moveTo(x + Math.cos(a) * len, y + Math.sin(a) * len)
+              : ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
 
+  function frame(now) {
+    const progress = Math.min((now - start) / durationMs, 1);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     particles.forEach(p => {
       p.x  += p.vx;
       p.y  += p.vy;
-      p.vy += 0.18; // subtle gravity
+      p.vy += 0.14;
+      p.vx *= 0.99;
+      p.rot += p.rotV;
       p.alpha = Math.max(0, p.alpha - p.decay);
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
       ctx.globalAlpha = p.alpha;
-      ctx.fill();
+      ctx.fillStyle   = p.color;
+
+      if (p.isStar) {
+        drawStar(ctx, p.x, p.y, p.radius, p.rot);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
 
     ctx.globalAlpha = 1;
 
-    if (progress < 1) {
-      requestAnimationFrame(frame);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      onComplete();
-    }
+    if (progress < 1) requestAnimationFrame(frame);
+    else { ctx.clearRect(0, 0, canvas.width, canvas.height); onComplete(); }
   }
 
   requestAnimationFrame(frame);
@@ -645,6 +747,7 @@ function runParticleExplosion(durationMs, onComplete) {
 /* ── Main Flow: Button Click → Transition ──────────────────── */
 function startTransition() {
   btnWonder.classList.add('pressed');
+  flashScreen();
   setTimeout(() => btnWonder.classList.remove('pressed'), 180);
   launchWonder();
 }
