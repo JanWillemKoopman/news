@@ -258,7 +258,16 @@ const wonderLibrary = [
    Simple state machine to track where James is in the flow.
 ──────────────────────────────────────────────────────────────── */
 let currentWonder = null;
-let lastWonderIndex = -1; // Prevents showing the same wonder twice in a row
+const STORAGE_KEY = 'james_wonder_index';
+
+function loadNextIndex() {
+  const saved = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+  return isNaN(saved) ? 0 : saved % wonderLibrary.length;
+}
+
+function saveIndex(index) {
+  localStorage.setItem(STORAGE_KEY, String(index));
+}
 
 /* ── DOM References ────────────────────────────────────────────
    Grabbed once at startup for performance.
@@ -314,12 +323,9 @@ function shakeButton(btn) {
 
 /* ── Pick a Wonder ─────────────────────────────────────────── */
 function selectWonder() {
-  let index;
-  do {
-    index = Math.floor(Math.random() * wonderLibrary.length);
-  } while (index === lastWonderIndex && wonderLibrary.length > 1);
-  lastWonderIndex = index;
+  const index = loadNextIndex();
   currentWonder = wonderLibrary[index];
+  saveIndex((index + 1) % wonderLibrary.length);
 }
 
 /* ── Canvas Particle Explosion ─────────────────────────────── */
