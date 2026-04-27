@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verkopen — Vinted</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vinted/style.css">
+</head>
+<body>
+<div class="page-wrap-narrow">
+  <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:1.25rem">Nieuw artikel</h1>
+  <div class="card">
+    <form id="sell-form">
+      <div class="form-group">
+        <label>Foto's (max 5)</label>
+        <div class="upload-dropzone" id="dropzone">
+          <input type="file" id="img-input" accept="image/*" multiple>
+          <div>&#128247; Klik of sleep foto's hierheen</div>
+        </div>
+        <div class="image-preview-grid" id="preview-grid"></div>
+      </div>
+      <div class="form-group">
+        <label>Titel *</label>
+        <input type="text" id="f-title" placeholder="bijv. Nike Air Max maat 42" maxlength="100" required>
+      </div>
+      <div class="form-group">
+        <label>Beschrijving</label>
+        <textarea id="f-desc" placeholder="Beschrijf het artikel: materiaal, pasvorm, bijzonderheden…" maxlength="2000"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prijs (€) *</label>
+          <input type="number" id="f-price" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label>Merk</label>
+          <input type="text" id="f-brand" placeholder="bijv. Zara" maxlength="60">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categorie *</label>
+          <select id="f-category" required>
+            <option value="">Kies categorie</option>
+            <option value="tops">Tops</option>
+            <option value="bottoms">Broeken/Rokken</option>
+            <option value="dresses">Jurken</option>
+            <option value="outerwear">Jassen</option>
+            <option value="shoes">Schoenen</option>
+            <option value="accessories">Accessoires</option>
+            <option value="sportswear">Sport</option>
+            <option value="other">Overig</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Maat</label>
+          <select id="f-size">
+            <option value="">Geen maat</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+            <option>34</option><option>36</option><option>38</option><option>40</option><option>42</option><option>44</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Staat *</label>
+        <select id="f-condition" required>
+          <option value="">Kies staat</option>
+          <option value="new_with_tags">Nieuw met label</option>
+          <option value="like_new">Zo goed als nieuw</option>
+          <option value="good">Goed</option>
+          <option value="fair">Redelijk</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" id="btn-submit">Artikel plaatsen</button>
+    </form>
+  </div>
+</div>
+<script src="/vinted/app.js"></script>
+<script src="/vinted/sell.js"></script>
+</body>
+</html>

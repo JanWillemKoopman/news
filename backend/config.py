@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -7,6 +8,12 @@ load_dotenv()
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
 PROMPTS_DIR = BASE_DIR / "prompts"
+
+# Vinted
+VINTED_DB = DATA_DIR / "vinted.db"
+VINTED_UPLOAD_DIR = BASE_DIR / "uploads"
+SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8 MB
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 RESEARCHER_MODEL = os.getenv("RESEARCHER_MODEL", "gemini-2.0-flash")
