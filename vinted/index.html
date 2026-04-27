@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vinted — Tweedehands kleding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vinted/style.css">
+</head>
+<body>
+<div class="page-wrap">
+  <div class="browse-layout">
+    <aside class="filters-panel">
+      <h3>Filteren</h3>
+      <div class="filter-group">
+        <label>Categorie</label>
+        <select id="f-category">
+          <option value="">Alle categorieën</option>
+          <option value="tops">Tops</option>
+          <option value="bottoms">Broeken/Rokken</option>
+          <option value="dresses">Jurken</option>
+          <option value="outerwear">Jassen</option>
+          <option value="shoes">Schoenen</option>
+          <option value="accessories">Accessoires</option>
+          <option value="sportswear">Sport</option>
+          <option value="other">Overig</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Staat</label>
+        <select id="f-condition">
+          <option value="">Alle staten</option>
+          <option value="new_with_tags">Nieuw met label</option>
+          <option value="like_new">Zo goed als nieuw</option>
+          <option value="good">Goed</option>
+          <option value="fair">Redelijk</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Maat</label>
+        <select id="f-size">
+          <option value="">Alle maten</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+          <option>34</option><option>36</option><option>38</option><option>40</option><option>42</option><option>44</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Prijs (€)</label>
+        <div class="price-range">
+          <input type="number" id="f-min" placeholder="Min" min="0">
+          <input type="number" id="f-max" placeholder="Max" min="0">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary btn-sm" id="btn-apply">Toepassen</button>
+        <button class="btn btn-ghost btn-sm" id="btn-reset">Wissen</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="sort-bar">
+        <span id="result-count" class="text-muted"></span>
+        <select id="f-sort">
+          <option value="newest">Nieuwste eerst</option>
+          <option value="price_asc">Prijs: laag naar hoog</option>
+          <option value="price_desc">Prijs: hoog naar laag</option>
+        </select>
+      </div>
+      <div class="listing-grid" id="listing-grid"></div>
+      <div id="load-more-wrap" style="text-align:center;margin-top:1.5rem;"></div>
+    </main>
+  </div>
+</div>
+<script src="/vinted/app.js"></script>
+<script src="/vinted/static-api.js"></script>
+<script src="/vinted/browse.js"></script>
+</body>
+</html>

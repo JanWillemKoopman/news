@@ -1,17 +1,22 @@
 import logging
 import threading
+from datetime import timedelta
 from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from backend.storage import get_summaries
-from backend.config import PAGE_SIZE, TRIGGER_SECRET
+from backend.config import PAGE_SIZE, TRIGGER_SECRET, SECRET_KEY
+from backend.vinted.routes import vinted_bp
 
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent.parent  # project root: index.html, style.css, app.js
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
-CORS(app)
+app.secret_key = SECRET_KEY
+app.permanent_session_lifetime = timedelta(days=7)
+CORS(app, supports_credentials=True)
+app.register_blueprint(vinted_bp)
 
 
 @app.route("/")
