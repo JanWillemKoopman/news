@@ -61,6 +61,12 @@
         <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
       </div>
 
+      <!-- Quiz score counter (hidden until first quiz completed) -->
+      <div class="quiz-score-wrap" id="quiz-score-wrap" style="display:none" aria-live="polite">
+        <span class="quiz-score-icon" aria-hidden="true">🏆</span>
+        <span class="quiz-score-label">Quizzen gehaald: <strong id="quiz-score-num">0</strong></span>
+      </div>
+
     </div>
 
     <div class="hero-scroll-hint" aria-hidden="true">
@@ -128,6 +134,33 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 4: QUIZ
+  ═══════════════════════════════════════ -->
+  <div id="screen-quiz" class="screen" aria-live="polite">
+    <div class="quiz-wrap">
+      <div class="quiz-header">
+        <span class="quiz-badge" aria-hidden="true">⭐ QUIZ TIJD!</span>
+        <h2 class="quiz-title">Weet jij het nog?</h2>
+        <p class="quiz-progress">Vraag <span id="quiz-q-num">1</span> van 3</p>
+      </div>
+      <div class="quiz-card" id="quiz-card">
+        <p class="quiz-question" id="quiz-question"></p>
+        <div class="quiz-answers" id="quiz-answers" role="group" aria-label="Antwoordopties"></div>
+      </div>
+    </div>
+
+    <!-- Overlay: quiz completed -->
+    <div class="quiz-done-overlay" id="quiz-done" hidden>
+      <div class="quiz-done-card">
+        <div class="quiz-done-emoji" aria-hidden="true">🏆</div>
+        <h2 class="quiz-done-title">Geweldig gedaan!</h2>
+        <p class="quiz-done-sub">Je hebt de quiz gehaald!</p>
+        <button id="btn-quiz-done" class="btn-quiz-done">✦ Verder ontdekken</button>
+      </div>
     </div>
   </div>
 
