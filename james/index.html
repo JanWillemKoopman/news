@@ -26,7 +26,15 @@
   <div id="screen-hero" class="screen active">
     <div class="hero-inner">
 
-      <div class="hero-badge" aria-hidden="true">✦ DAGELIJKS WONDERAVONTUUR ✦</div>
+      <div class="hero-progress-wrap">
+        <div class="hero-progress-meta">
+          <span class="hero-progress-label">🌟 Ontdekt</span>
+          <span class="hero-progress-count" id="progress-text">0 / 15</span>
+        </div>
+        <div class="hero-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0" id="progress-bar">
+          <div class="hero-progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
 
       <h1 class="hero-title">
         <span>Hé James!</span>
@@ -61,6 +69,16 @@
         <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
       </div>
 
+      <!-- Category completion stats -->
+      <div class="cat-stats-row" id="cat-stats-row" aria-live="polite">
+        <span class="cat-stat" id="stat-space">🚀 <span>0/3</span></span>
+        <span class="cat-stat" id="stat-animals">🦁 <span>0/2</span></span>
+        <span class="cat-stat" id="stat-history">📜 <span>0/4</span></span>
+        <span class="cat-stat" id="stat-science">🔬 <span>0/3</span></span>
+        <span class="cat-stat" id="stat-technology">💡 <span>0/2</span></span>
+        <span class="cat-stat" id="stat-nature">🌿 <span>0/2</span></span>
+      </div>
+
       <!-- Quiz score counter (hidden until first quiz completed) -->
       <div class="quiz-score-wrap" id="quiz-score-wrap" style="display:none" aria-live="polite">
         <span class="quiz-score-icon" aria-hidden="true">🏆</span>
@@ -86,10 +104,6 @@
        SCREEN 3: WONDER REVEAL
   ═══════════════════════════════════════ -->
   <div id="screen-wonder" class="screen">
-
-    <button id="btn-back" class="btn-back" aria-label="Terug naar home">
-      <span aria-hidden="true">←</span> Home
-    </button>
 
     <div class="wonder-scroll" id="wonder-scroll">
 
