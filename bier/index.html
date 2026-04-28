@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Waar is mijn bier?</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #f0f0f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+    }
+
+    .screen {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    /* Start */
+    #start { gap: 20px; position: relative; }
+    .logo { font-size: 80px; }
+    .app-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .app-sub { color: #555; font-size: 15px; line-height: 1.5; }
+
+    .btn-primary {
+      background: #f5c518;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 50px;
+      padding: 18px 48px;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      margin-top: 8px;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .btn-primary:active { transform: scale(0.97); opacity: 0.85; }
+
+    .btn-settings {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      opacity: 0.4;
+      padding: 8px;
+    }
+    .btn-settings:active { opacity: 0.8; }
+
+    /* Setup (API key invoer) */
+    #setup { gap: 20px; }
+    .setup-logo { font-size: 52px; }
+    .setup-title { font-size: 22px; font-weight: 800; }
+    .setup-sub {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 300px;
+    }
+    .setup-sub a { color: #f5c518; text-decoration: none; }
+
+    .key-input {
+      width: 100%;
+      max-width: 340px;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      color: #f0f0f0;
+      font-size: 13px;
+      font-family: monospace;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .key-input:focus { border-color: #f5c518; }
+    .key-input::placeholder { color: #333; }
+
+    .btn-save {
+      background: #f5c518;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 50px;
+      padding: 15px 40px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      transition: opacity 0.1s;
+    }
+    .btn-save:active { opacity: 0.8; }
+
+    .setup-note {
+      font-size: 12px;
+      color: #333;
+      max-width: 300px;
+      line-height: 1.5;
+    }
+
+    /* Loading */
+    #loading { gap: 20px; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #1e1e1e;
+      border-top-color: #f5c518;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #status-text { color: #555; font-size: 15px; }
+
+    /* Result */
+    #result {
+      justify-content: flex-start;
+      padding-top: 52px;
+      padding-bottom: 52px;
+      gap: 0;
+    }
+
+    .loc-name {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      width: 100%;
+      text-align: left;
+    }
+    .loc-sub {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 22px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .ai-box {
+      background: #141414;
+      border-left: 3px solid #f5c518;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 16px;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #aaa;
+      text-align: left;
+      margin-bottom: 32px;
+      width: 100%;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .bar-list {
+      list-style: none;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .bar-item {
+      background: #141414;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+    }
+    .bar-icon { font-size: 24px; flex-shrink: 0; }
+    .bar-info { flex: 1; min-width: 0; }
+    .bar-name {
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-dist { font-size: 13px; color: #444; margin-top: 3px; }
+
+    .result-actions {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #444;
+      border: 1px solid #1e1e1e;
+      border-radius: 50px;
+      padding: 12px 28px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-secondary:active { color: #888; border-color: #444; }
+
+    .no-bars { color: #333; font-size: 14px; text-align: left; width: 100%; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- Eenmalige API key setup -->
+<div class="screen hidden" id="setup">
+  <div class="setup-logo">🔑</div>
+  <div class="setup-title">Eén keer instellen</div>
+  <div class="setup-sub">
+    Voer je gratis Gemini API key in.<br>
+    Ophalen via <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>
+  </div>
+  <input
+    class="key-input"
+    id="key-input"
+    type="password"
+    placeholder="AIza…"
+    autocomplete="off"
+    autocorrect="off"
+    spellcheck="false"
+  >
+  <button class="btn-save" onclick="saveKey()">Opslaan</button>
+  <div class="setup-note">
+    De key wordt alleen opgeslagen in de browser op dit apparaat.<br>
+    Nooit in de code, nooit op GitHub.
+  </div>
+</div>
+
+<!-- Start -->
+<div class="screen hidden" id="start">
+  <button class="btn-settings" onclick="showSetup()" title="API key wijzigen">⚙️</button>
+  <div class="logo">🍺</div>
+  <div class="app-title">Waar is mijn bier?</div>
+  <div class="app-sub">Weet waar je bent.<br>Weet waar je bier kunt drinken.</div>
+  <button class="btn-primary" onclick="start()">Vind mij</button>
+</div>
+
+<!-- Laden -->
+<div class="screen hidden" id="loading">
+  <div class="spinner"></div>
+  <div id="status-text">Locatie ophalen…</div>
+</div>
+
+<!-- Resultaat -->
+<div class="screen hidden" id="result">
+  <div class="loc-name" id="loc-name"></div>
+  <div class="loc-sub" id="loc-sub"></div>
+  <div class="ai-box" id="ai-text"></div>
+  <div class="section-title">🍺 Bier in de buurt</div>
+  <ul class="bar-list" id="bar-list"></ul>
+  <div class="result-actions">
+    <button class="btn-secondary" onclick="reset()">↩ Opnieuw</button>
+  </div>
+</div>
+
+<script>
+  const KEY_STORAGE = 'gemini_api_key';
+
+  function getKey() {
+    return localStorage.getItem(KEY_STORAGE) || '';
+  }
+
+  function show(id) {
+    ['setup', 'start', 'loading', 'result'].forEach(s =>
+      document.getElementById(s).classList.toggle('hidden', s !== id)
+    );
+  }
+
+  function setStatus(txt) {
+    document.getElementById('status-text').textContent = txt;
+  }
+
+  function init() {
+    if (getKey()) {
+      show('start');
+    } else {
+      show('setup');
+    }
+  }
+
+  function showSetup() {
+    document.getElementById('key-input').value = '';
+    show('setup');
+  }
+
+  function saveKey() {
+    const val = document.getElementById('key-input').value.trim();
+    if (!val.startsWith('AIza') || val.length < 30) {
+      document.getElementById('key-input').style.borderColor = '#e55';
+      setTimeout(() => document.getElementById('key-input').style.borderColor = '', 1200);
+      return;
+    }
+    localStorage.setItem(KEY_STORAGE, val);
+    document.getElementById('key-input').value = '';
+    show('start');
+  }
+
+  async function start() {
+    show('loading');
+    setStatus('Locatie ophalen…');
+
+    let coords;
+    try {
+      coords = await getLocation();
+    } catch (e) {
+      show('start');
+      alert('Locatie niet beschikbaar: ' + e.message);
+      return;
+    }
+
+    const { lat, lon } = coords;
+
+    setStatus('Adres opzoeken…');
+    const geo = await reverseGeocode(lat, lon);
+
+    setStatus('Cafés zoeken…');
+    const bars = await findBars(lat, lon);
+
+    setStatus('AI schrijft omschrijving…');
+    const aiText = await getAiDescription(lat, lon, geo);
+
+    renderResult(geo, aiText, bars);
+    show('result');
+  }
+
+  function getLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation wordt niet ondersteund door deze browser.'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        err => reject(new Error(err.message)),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }
+
+  async function reverseGeocode(lat, lon) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'nl' } });
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function findBars(lat, lon) {
+    const query = `
+      [out:json][timeout:25];
+      (
+        node["amenity"~"^(pub|bar|biergarten|cafe)$"](around:600,${lat},${lon});
+        way["amenity"~"^(pub|bar|biergarten|cafe)$"](around:600,${lat},${lon});
+      );
+      out center;
+    `;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        body: query
+      });
+      const data = await res.json();
+      return data.elements
+        .map(el => {
+          const elLat = el.lat ?? el.center?.lat;
+          const elLon = el.lon ?? el.center?.lon;
+          return {
+            name: el.tags?.name || 'Naamloos café',
+            type: el.tags?.amenity || 'cafe',
+            dist: Math.round(haversine(lat, lon, elLat, elLon))
+          };
+        })
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, 10);
+    } catch {
+      return [];
+    }
+  }
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  async function getAiDescription(lat, lon, geo) {
+    const key = getKey();
+    if (!key) return 'Geen API key ingesteld.';
+
+    const a = geo?.address || {};
+    const context = [a.road, a.suburb, a.neighbourhood, a.city_district, a.city, a.town, a.village, a.state, a.country]
+      .filter(Boolean).join(', ');
+    const fallback = geo?.display_name?.split(',').slice(0, 3).join(',') || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+    const prompt = `Je bent een eerlijke Nederlandse lokale gids met een droge humor. Beschrijf in 2-3 levendige zinnen de plek waar iemand staat: "${context || fallback}". Coördinaten: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Wees concreet en eerlijk — geen toeristen-onzin. Schrijf in het Nederlands.`;
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.9, maxOutputTokens: 200 }
+          })
+        }
+      );
+      const data = await res.json();
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Geen omschrijving beschikbaar.';
+    } catch {
+      return 'AI omschrijving tijdelijk niet beschikbaar.';
+    }
+  }
+
+  function typeIcon(type) {
+    return { pub: '🍺', bar: '🥃', biergarten: '🌿', cafe: '☕' }[type] || '🍻';
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderResult(geo, aiText, bars) {
+    const a = geo?.address || {};
+    const street = [a.road, a.house_number].filter(Boolean).join(' ');
+    const city = a.city || a.town || a.village || a.municipality || '';
+    const sub = [a.suburb, a.neighbourhood, a.city_district, city].filter(Boolean).join(' · ');
+
+    document.getElementById('loc-name').textContent =
+      street || city || geo?.display_name?.split(',')[0] || 'Onbekende locatie';
+    document.getElementById('loc-sub').textContent = sub;
+    document.getElementById('ai-text').textContent = aiText;
+
+    const ul = document.getElementById('bar-list');
+    ul.innerHTML = '';
+
+    if (bars.length === 0) {
+      ul.innerHTML = '<li class="no-bars">Geen cafés gevonden binnen 600m. Misschien tijd om verder te lopen?</li>';
+    } else {
+      bars.forEach(b => {
+        const li = document.createElement('li');
+        li.className = 'bar-item';
+        li.innerHTML = `
+          <span class="bar-icon">${typeIcon(b.type)}</span>
+          <div class="bar-info">
+            <div class="bar-name">${escHtml(b.name)}</div>
+            <div class="bar-dist">${b.dist} m</div>
+          </div>
+        `;
+        ul.appendChild(li);
+      });
+    }
+  }
+
+  function reset() {
+    show('start');
+  }
+
+  init();
+</script>
+</body>
+</html>
