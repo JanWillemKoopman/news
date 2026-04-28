@@ -3,130 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#04020c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <title>James' Wonder-App</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Ontdek elke dag iets nieuws en bijzonders met James' Wonder-App!" />
+  <title>James' Wonder-App ✦</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Lexend:wght@400;600;700;900&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <canvas id="canvas-bg"></canvas>
-  <div id="flash-overlay"></div>
+  <!-- Starfield canvas (behind everything) -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 0: Name input — first visit only
-  ════════════════════════════════════════════ -->
-  <div id="screen-name" class="screen">
-    <div class="name-inner">
-      <p class="name-prompt">Hé! Hoe heet jij? 👋</p>
-      <p class="name-sub">Dan maak ik de app speciaal voor jou!</p>
-      <input id="name-input" type="text" maxlength="20"
-             placeholder="Jouw naam..." autocomplete="off" />
-      <button id="btn-name-submit" class="btn-name">Klaar! →</button>
-    </div>
-  </div>
+  <!-- ══════════════════════════════════════
+       SCREEN 1: HERO
+  ═══════════════════════════════════════ -->
+  <div id="screen-hero" class="screen active">
+    <div class="hero-inner">
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 1: Home
-  ════════════════════════════════════════════ -->
-  <div id="screen-home" class="screen">
-    <div class="home-inner">
-      <div class="home-top-row">
-        <p class="home-greeting" id="home-greeting">Hé! 👋</p>
-        <button id="btn-settings" class="btn-settings" aria-label="Naam wijzigen">⚙️</button>
-      </div>
-      <p class="home-subtitle">Druk op de knop en leer iets bijzonders!</p>
-      <p class="home-progress" id="home-progress"></p>
-      <div class="home-progress-bar-track">
-        <div class="home-progress-bar-fill" id="home-progress-bar"></div>
-      </div>
-      <div class="btn-wonder-wrap">
-        <div class="btn-halo"></div>
-        <button id="btn-wonder" aria-label="Ontdek een wonder">
-          <span class="btn-label">ONTDEK!</span>
+      <div class="hero-badge" aria-hidden="true">✦ DAGELIJKS WONDERAVONTUUR ✦</div>
+
+      <h1 class="hero-title">
+        <span>Hé James!</span>
+        <span class="hero-wave" aria-hidden="true">👋</span>
+      </h1>
+
+      <p class="hero-sub">Druk op de knop<br>en ontdek iets bijzonders</p>
+
+      <!-- The cosmic discover button -->
+      <div class="btn-cosmos-wrap">
+        <button id="btn-wonder" class="btn-cosmos" aria-label="Ontdek een wonder">
+          <span class="cosmos-ring cosmos-ring-1" aria-hidden="true"></span>
+          <span class="cosmos-ring cosmos-ring-2" aria-hidden="true"></span>
+          <span class="cosmos-ring cosmos-ring-3" aria-hidden="true"></span>
+          <span class="cosmos-glow"               aria-hidden="true"></span>
+          <span class="cosmos-core"               aria-hidden="true">
+            <span class="cosmos-icon">✦</span>
+            <span class="cosmos-label">ONTDEK</span>
+            <span class="cosmos-hint">tik hier</span>
+          </span>
         </button>
       </div>
-      <button id="btn-show-favorites" class="btn-favorites hidden">
-        ❤️ Mijn favorieten
-      </button>
+
+      <!-- Category filter pills -->
+      <p class="worlds-label">Of kies een thema</p>
+      <div class="worlds-scroll" role="list" aria-label="Thema's">
+        <button class="world-pill" data-category="space"      role="listitem">🚀 Ruimte</button>
+        <button class="world-pill" data-category="animals"    role="listitem">🦁 Dieren</button>
+        <button class="world-pill" data-category="history"    role="listitem">📜 Geschiedenis</button>
+        <button class="world-pill" data-category="science"    role="listitem">🔬 Wetenschap</button>
+        <button class="world-pill" data-category="technology" role="listitem">💡 Technologie</button>
+        <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
+      </div>
+
+    </div>
+
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <span class="scroll-dot"></span>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 2: Transition — particle explosion
-  ════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════
+       SCREEN 2: TRANSITION BURST
+  ═══════════════════════════════════════ -->
   <div id="screen-transition" class="screen">
-    <canvas id="canvas-particles"></canvas>
-    <div id="zoom-overlay"></div>
+    <canvas id="canvas-burst" aria-hidden="true"></canvas>
+    <div id="portal-flash"    aria-hidden="true"></div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 3: Content — the wonder itself
-  ════════════════════════════════════════════ -->
-  <div id="screen-content" class="screen">
-    <div class="content-scroll">
+  <!-- ══════════════════════════════════════
+       SCREEN 3: WONDER REVEAL
+  ═══════════════════════════════════════ -->
+  <div id="screen-wonder" class="screen">
 
-      <!-- Phase 1: Emoji hero + Title + Intro -->
-      <div id="phase-1" class="phase hidden">
-        <div id="wonder-hero" class="wonder-hero"></div>
-        <p id="category-label" class="category-label"></p>
-        <h1 id="content-title"></h1>
-        <div id="content-intro"></div>
+    <button id="btn-back" class="btn-back" aria-label="Terug naar home">
+      <span aria-hidden="true">←</span> Home
+    </button>
+
+    <div class="wonder-scroll" id="wonder-scroll">
+
+      <!-- Phase 1: Title & Intro -->
+      <div id="phase-1" class="wonder-phase hidden">
+        <div class="wonder-top">
+          <span id="wonder-emoji" class="wonder-emoji" aria-hidden="true"></span>
+          <span class="wonder-category-tag" id="wonder-category-tag"></span>
+        </div>
+        <h1 id="content-title" class="wonder-title"></h1>
+        <p  id="content-intro" class="wonder-intro"></p>
       </div>
 
       <!-- Phase 2: Philosophy question -->
-      <div id="phase-2" class="phase hidden">
-        <div class="philosophy-box">
-          <span class="philosophy-label">Vraag om over na te denken</span>
-          <p id="content-philosophy"></p>
+      <div id="phase-2" class="wonder-phase hidden">
+        <div class="philosophy-card">
+          <div class="phil-header">
+            <span class="phil-icon" aria-hidden="true">💭</span>
+            <span class="phil-label">Vraag om over na te denken</span>
+          </div>
+          <blockquote id="content-philosophy" class="phil-question"></blockquote>
         </div>
-        <button id="btn-lees-verder" class="btn-secondary">
-          Lees verder ↓
+
+        <button id="btn-lees-verder" class="btn-continue">
+          Lees verder <span aria-hidden="true">↓</span>
         </button>
       </div>
 
-      <!-- Phase 3: Deep dive + favorite + reset -->
-      <div id="phase-3" class="phase hidden">
-        <div id="content-deepdive"></div>
-        <button id="btn-favorite" class="btn-heart">♡ Bewaar als favoriet</button>
-        <button id="btn-opnieuw" class="btn-reset">
-          ✨ Meer ontdekken!
+      <!-- Phase 3: Deep dive -->
+      <div id="phase-3" class="wonder-phase hidden">
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <span aria-hidden="true">🔍</span>
+            <span>Wist je dat...</span>
+          </div>
+          <p id="content-deepdive" class="deepdive-text"></p>
+        </div>
+
+        <button id="btn-opnieuw" class="btn-new-wonder">
+          <span aria-hidden="true">✦</span>
+          Nog een wonder!
         </button>
       </div>
 
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       SCREEN 4: Favorites list
-  ════════════════════════════════════════════ -->
-  <div id="screen-favorites" class="screen">
-    <div class="favorites-inner">
-      <div class="favorites-header">
-        <p class="favorites-title">❤️ Mijn favorieten</p>
-        <button id="btn-favorites-back" class="btn-back">← Terug</button>
-      </div>
-      <div id="favorites-list"></div>
-    </div>
-  </div>
+  <!-- Flash / transition overlay -->
+  <div id="flash-overlay" aria-hidden="true"></div>
 
-  <!-- ═══════════════════════════════════════════
-       BADGE CELEBRATION OVERLAY
-  ════════════════════════════════════════════ -->
-  <div id="badge-overlay" class="badge-overlay hidden">
-    <div class="badge-card">
-      <p class="badge-new">🎉 Nieuwe badge!</p>
-      <p class="badge-icon" id="badge-icon"></p>
-      <p class="badge-name" id="badge-name"></p>
-      <p class="badge-desc" id="badge-desc"></p>
-      <button id="btn-badge-ok" class="btn-name">Geweldig! 🙌</button>
-    </div>
-  </div>
-
+  <!-- GSAP from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>
