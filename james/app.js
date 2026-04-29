@@ -6,6 +6,15 @@
 'use strict';
 
 /* ─── Config ────────────────────────────────────────────── */
+const CATEGORY_INFO = {
+  space:      { emoji: '🚀', label: 'Ruimte' },
+  animals:    { emoji: '🦁', label: 'Dieren' },
+  history:    { emoji: '📜', label: 'Geschiedenis' },
+  science:    { emoji: '🔬', label: 'Wetenschap' },
+  technology: { emoji: '💡', label: 'Technologie' },
+  nature:     { emoji: '🌿', label: 'Natuur' },
+};
+
 const CFG = {
   STAR_COUNT:      200,   // ambient starfield particles
   BURST_COUNT:     90,    // transition burst particles
@@ -208,6 +217,23 @@ function updateCategoryStats() {
   });
 }
 
+function updateCategoryPills() {
+  const read = getReadSet();
+  document.querySelectorAll('.world-pill').forEach(pill => {
+    const cat   = pill.dataset.category;
+    const info  = CATEGORY_INFO[cat];
+    const total = WONDERS.filter(w => w.category === cat).length;
+    const done  = WONDERS.filter(w => w.category === cat && read.has(w.title)).length;
+    if (done >= total) {
+      pill.hidden = true;
+      if (activeCategory === cat) activeCategory = null;
+    } else {
+      pill.hidden = false;
+      pill.textContent = `${info.emoji} ${info.label} ${done}/${total}`;
+    }
+  });
+}
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -225,6 +251,7 @@ const screenQuiz       = document.getElementById('screen-quiz');
 const btnWonder        = document.getElementById('btn-wonder');
 const btnContinue      = document.getElementById('btn-lees-verder');
 const btnNew           = document.getElementById('btn-opnieuw');
+const btnHome          = document.getElementById('btn-home');
 const canvasBurst      = document.getElementById('canvas-burst');
 const portalFlash      = document.getElementById('portal-flash');
 const bgCanvas         = document.getElementById('bg-canvas');
@@ -525,6 +552,7 @@ function revealWonder() {
   markWonderRead(currentWonder);
   updateProgressBar();
   updateCategoryStats();
+  updateCategoryPills();
 
   showScreen(screenWonder);
 
@@ -576,6 +604,7 @@ function spawnRipple(x, y) {
 
 /* ─── Events ────────────────────────────────────────────── */
 btnWonder.addEventListener('click', () => startDiscovery(activeCategory));
+btnHome.addEventListener('click', goHome);
 btnContinue.addEventListener('click', showPhase3);
 btnNew.addEventListener('click', () => {
   completedWonders.push(currentWonder);
@@ -648,6 +677,7 @@ function animateHeroIn() {
 initStarfield();
 updateProgressBar();
 updateCategoryStats();
+updateCategoryPills();
 updateQuizScoreDisplay();
 showScreen(screenHero);
 
