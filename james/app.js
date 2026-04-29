@@ -29,6 +29,7 @@ const WONDERS = [
     category: 'space',
     emoji: '🌕',
     label: 'Ruimte',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/600px-Aldrin_Apollo_11_original.jpg',
     title: 'De Maanlanding',
     intro: 'Op 20 juli 1969 zette een mens voor het eerst voet op de maan. Dat was Neil Armstrong. Hij deed één kleine stap — maar het was een reuzenstap voor alle mensen op aarde. Miljoenen mensen keken live op televisie toe. Iedereen was stil van spanning. Zou het lukken? Zouden ze veilig landen? En daarna: zouden ze ook weer terug kunnen komen? Het antwoord op al die vragen was ja. De lancering was eerder die maand geweest, op 16 juli 1969. Het ruimteschip heette Apollo 11, en er zaten drie mannen in: Neil Armstrong, Buzz Aldrin en Michael Collins. Collins bleef in de ruimtecapsule cirkelen om de maan, terwijl Armstrong en Aldrin in een kleiner landingsvoertuig afdaalden. Dat voertuig heette de Eagle — de Adelaar. Toen ze bijna landden, begon er een alarm te piepen. Niemand wist precies wat er mis was. De vluchtleiders op aarde beslisten in een paar tellen: doorgaan. En het ging goed.',
     question: 'Als jij op de maan mocht staan en naar de aarde keek — wat zou je dan denken?',
@@ -39,6 +40,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🕊️',
     label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Anne_Frank_House_2013_%281%29.jpg/600px-Anne_Frank_House_2013_%281%29.jpg',
     title: 'De Tweede Wereldoorlog',
     intro: 'Tussen 1940 en 1945 was Nederland bezet door een land dat Duitsland heette. Mensen mochten niet meer vrij zijn. Joden, mensen met een handicap en anderen werden opgepakt en weggevoerd. Heel veel mensen zijn in die tijd gestorven — meer dan zes miljoen Joodse mensen alleen al. Op 10 mei 1940 vielen de Duitse soldaten Nederland binnen. Na vijf dagen moest Nederland zich overgeven. Daarna begon een periode van vijf jaar bezetting. De Duitsers maakten allerlei strenge regels. Joodse mensen moesten een gele ster dragen. Ze mochten niet meer naar school, niet meer naar de bioscoop, en ook niet meer op de fiets. Mensen die zich verzetten, riskeerden hun leven. Toch waren er veel Nederlanders die hielpen — door Joodse gezinnen te verstoppen, nep-papieren te maken of informatie door te geven aan de geallieerden. Die mensen noemden we de verzetsstrijders.',
     question: 'Waarom denk jij dat het zo belangrijk is dat mensen vrijheid hebben?',
@@ -49,6 +51,7 @@ const WONDERS = [
     category: 'history',
     emoji: '💰',
     label: 'Economie',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg/600px-Elon_Musk_Royal_Society_%28crop2%29.jpg',
     title: 'De Rijkste Persoon Ter Wereld',
     intro: 'Sommige mensen hebben zo veel geld dat je het bijna niet kunt tellen. De rijkste mensen ter wereld hebben meer geld dan hele landen. Maar hoe word je eigenlijk zo rijk? Bijna altijd begint het met een idee. Een simpel idee, vaak in een garage of een slaapkamer, dat uitgroeit tot iets gigantisch. Jeff Bezos begon in 1994 met verkopen van boeken via het internet vanuit zijn garage in Seattle. Niemand dacht dat het iets zou worden. Nu is Amazon het grootste online winkelplatform ter wereld, met meer dan 300 miljoen klanten. Elon Musk begon met een bedrijf dat online betalingen makkelijker maakte — dat werd later PayPal. Met het geld dat hij daarmee verdiende, startte hij Tesla (elektrische auto\'s) én SpaceX (raketten). Hij droomt ervan om mensen naar Mars te sturen. Mark Zuckerberg maakte op zijn zolderkamer een website voor zijn universiteit om vrienden te verbinden. Dat werd Facebook, nu Meta, met bijna drie miljard gebruikers.',
     question: 'Wat zou jij doen als je meer geld had dan je ooit kon uitgeven?',
@@ -59,6 +62,7 @@ const WONDERS = [
     category: 'science',
     emoji: '🕳️',
     label: 'Wetenschap',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Kola_superdeep_borehole_site.jpg/600px-Kola_superdeep_borehole_site.jpg',
     title: 'De Diepste Boring op Aarde',
     intro: 'In Rusland boorden mensen een gat in de grond — zo diep als 12 kilometer. Dat is het diepste gat dat mensen ooit hebben gemaakt. Ze stopten pas toen het te heet werd. Het project begon in 1970, tijdens de Koude Oorlog. De Sovjet-Unie wilde bewijzen dat ze verder konden graven dan de Amerikanen. Wetenschappers wilden ook weten wat er diep in de aarde zit. Is de grond harder of zachter? Warmer of kouder? Zitten er lagen die je aan de oppervlakte niet kunt zien? Ze ontdekten dingen die niemand had verwacht. Op grote diepte vonden ze water — ingesloten in rotslagen, vastgezet onder enorme druk. Ze vonden ook microscopisch kleine gefossiliseerde organismen, levende wezentjes die al miljarden jaren geleden gestorven waren. Maar het grootste probleem bleef de hitte. Hoe dieper ze kwamen, hoe heter het werd. Het boorgereedschap smolt bijna.',
     question: 'Wat denk jij dat er helemaal in het midden van de aarde zit?',
@@ -69,6 +73,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🇪🇺',
     label: 'Europa',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/600px-Flag_of_Europe.svg.png',
     title: 'Wat Is Europa?',
     intro: 'Europa is niet alleen een werelddeel — het is ook een samenwerking van landen die de Europese Unie heet. Ze helpen elkaar en hebben samen afspraken gemaakt over handel, vrede en rechten van mensen. Maar hoe is de EU eigenlijk ontstaan? Na de Tweede Wereldoorlog lag Europa in puin. Miljoenen mensen waren gestorven. Steden waren verwoest. De leiders van de landen vroegen zich af: hoe zorgen we dat dit nooit meer gebeurt? Hun antwoord was samenwerking. Als landen van elkaar afhankelijk zijn — als ze handel met elkaar drijven, dezelfde regels hanteren en met elkaar praten — is de kans op oorlog kleiner. Begonnen met zes landen (Nederland, België, Luxemburg, Frankrijk, West-Duitsland en Italië), groeide de samenwerking langzaam uit. Eerst ging het alleen over staal en kolen. Later ook over andere producten, en uiteindelijk over alles: van voedselregels tot het milieu, van mensenrechten tot de munt.',
     question: 'Als landen samenwerken, denk je dat dat de wereld beter of moeilijker maakt?',
@@ -79,6 +84,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🪙',
     label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Nederlanden_Gulden.jpg/600px-Nederlanden_Gulden.jpg',
     title: 'De Nederlandse Gulden',
     intro: 'Voordat Nederland de euro had, betaalden mensen hier met de gulden. Dat was het Nederlandse geld. Op 1 januari 2002 verdween de gulden voor altijd en kwamen de eerste euro\'s en eurocenten in omloop. Miljoenen Nederlanders wisselden hun oude munten en biljetten in. In één nacht veranderde het geld van een heel land. De gulden bestond al heel lang: bijna 600 jaar lang was het de munt van Nederland. De oudste gulden dateert uit 1380. In al die eeuwen veranderde het uiterlijk regelmatig. Op de biljetten stonden beroemde Nederlanders: schrijver Spinoza, schilder Rembrandt en zeeheld Michiel de Ruyter. Op de munten stond het profiel van de Nederlandse koning of koningin. Kinderen die spaarpotjes hadden met guldens vonden het soms moeilijk dat hun gespaarde geld ineens minder waard leek — al was de omrekening eerlijk: één euro was gelijk aan 2,20371 gulden.',
     question: 'Stel dat elk land zijn eigen geld heeft — wat zijn de voor- en nadelen daarvan?',
@@ -89,6 +95,7 @@ const WONDERS = [
     category: 'science',
     emoji: '🔬',
     label: 'Wetenschap',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Marie_Curie_c._1920s.jpg/600px-Marie_Curie_c._1920s.jpg',
     title: 'Wat Doet Een Wetenschapper?',
     intro: 'Wetenschappers stellen vragen over de wereld en zoeken antwoorden. Ze doen experimenten, schrijven alles op en delen hun ontdekkingen met anderen. Dankzij wetenschappers weten we zo ontzettend veel. Maar hoe werkt een wetenschapper eigenlijk? Het begint altijd met een vraag. Waarom valt een appel naar beneden? Hoe groeien cellen? Waarom is de lucht blauw? Daarna bedenk je een hypothese — een idee over het antwoord. Vervolgens doe je een experiment om te testen of je idee klopt. Als het klopt: geweldig. Als het niet klopt: ook geweldig, want je hebt iets nieuws geleerd. Isaac Newton zag een appel van een boom vallen en vroeg zich af waarom. Dat leidde tot zijn ontdekking van de zwaartekracht. Marie Curie onderzocht radioactieve straling — een onderwerp dat zo gevaarlijk was dat ze er uiteindelijk ziek van werd. Ze won twee Nobelprijzen, als eerste vrouw ooit.',
     question: 'Als jij wetenschapper was, welke vraag zou jij dan als eerste willen beantwoorden?',
@@ -99,6 +106,7 @@ const WONDERS = [
     category: 'technology',
     emoji: '⚡',
     label: 'Technologie',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/English_Pokemon_V_Style_logo.svg/600px-English_Pokemon_V_Style_logo.svg.png',
     title: 'Pokémon — Hoe Begon Het?',
     intro: 'Pokémon begon in 1996 in Japan als een spel voor de Game Boy. De maker, Satoshi Tajiri, was als kind dol op insecten vangen in de natuur. Hij wilde dat gevoel — het zoeken, vangen en verzamelen — omzetten in een spel. Het resultaat: een van de meest succesvolle speelgoedfranchises aller tijden. Tajiri werkte vijf jaar aan het spel, samen met zijn jeugdvriend Ken Sugimori, die alle Pokémon tekende. Ze hadden nauwelijks geld. Het spel was bijna failliet voordat het uitkwam. Maar toen het in Japan verscheen, werd het meteen een gigantisch succes. Kinderen ruilden hun Game Boy-cartridges op het schoolplein. Er was een rode versie en een blauwe versie, met kleine verschillen — zodat je vrienden nodig had om alles te verzamelen. Die slimme truc zorgde ervoor dat iedereen het speelde. Al snel kwamen er speelkaarten, een tekenfilmserie en films.',
     question: 'Wat zou jouw eigen Pokémon zijn, en welk bijzonder vermogen zou hij hebben?',
@@ -109,6 +117,7 @@ const WONDERS = [
     category: 'animals',
     emoji: '🐙',
     label: 'Dieren',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Octopus3.jpg/600px-Octopus3.jpg',
     title: 'De Octopus: Een Geniaal Dier',
     intro: 'Een octopus heeft drie harten, blauw bloed en negen hersenen! Elke arm heeft zijn eigen mini-brein dat zelfstandig besluiten kan nemen. Ze zijn zo slim dat ze potten kunnen openen, labyrinten kunnen oplossen en gezichten van mensen kunnen herkennen. Een octopus is eigenlijk een van de slimste dieren op aarde — al lijkt hij in niets op jou of op een hond of aap. Octopussen zijn weekdieren, verwant aan slakken en mosselen. Maar ergens in hun evolutie ontwikkelden ze een enorm brein. Ze hebben acht armen die elk honderden zuignappen bevatten — en die armen denken echt mee. Als je een arm wegsnijdt (wat in de natuur kan gebeuren), blijft die arm nog tijdelijk reageren op zijn omgeving. Elk van de acht armen kan onafhankelijk beslissingen nemen, terwijl het centrale brein de grote strategie bepaalt. Dat is alsof jij acht helpers hebt die elk hun eigen hoofd gebruiken.',
     question: 'Als jij negen hersenen had, wat zou je dan tegelijkertijd denken?',
@@ -119,6 +128,7 @@ const WONDERS = [
     category: 'space',
     emoji: '🪐',
     label: 'Ruimte',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/600px-Saturn_during_Equinox.jpg',
     title: 'Saturnus en Zijn Ringen',
     intro: 'Saturnus is de zesde planeet van de zon en heeft prachtige ringen van ijs en rotsblokken. De planeet is zo licht dat hij zou kunnen drijven op water — als je een bad had dat groot genoeg was! Saturnus is een gasreus: er is geen vaste grond om op te landen. De planeet bestaat bijna volledig uit waterstof en helium, net als de zon. De ringen van Saturnus zijn misschien wel het mooiste schouwspel in ons zonnestelsel. Ze bestaan uit miljarden brokken ijs en steen, variërend van zo klein als een zandkorrel tot zo groot als een huis. Die ringen zijn verrassend dun: gemiddeld maar één kilometer dik, terwijl ze 280.000 kilometer breed zijn. Toch zijn ze van de aarde zichtbaar met een gewone verrekijker. Galileo Galilei zag ze in 1610 al, maar dacht dat Saturnus drie planeten waren. Pas later begrepen wetenschappers dat het ringen waren.',
     question: 'Als er leven bestond op een maan van Saturnus — hoe zou dat er dan uitzien?',
@@ -129,6 +139,7 @@ const WONDERS = [
     category: 'nature',
     emoji: '🌳',
     label: 'Natuur',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/600px-24701-nature-natural-beauty.jpg',
     title: 'Bomen Praten Met Elkaar',
     intro: 'Bomen staan er stil bij, maar ze communiceren constant. Via een netwerk van schimmels in de grond sturen ze suikers en signalen naar elkaar — wetenschappers noemen dit het "Wood Wide Web". Dit klinkt als sciencefiction, maar het is bewezen wetenschap. Onder elk bos loopt een web van fijne schimmeldraden, dunner dan een mensenhaar, dat bomen letterlijk met elkaar verbindt. Bomen en schimmels werken samen: de boom geeft de schimmel suikers die hij met fotosynthese maakt. De schimmel geeft de boom water en mineralen terug. Maar het netwerk doet meer dan uitwisselen. Wetenschapper Suzanne Simard ontdekte in de jaren 90 dat bomen via dit netwerk ook berichten sturen. Ze spoot radioactief suiker in een berkenboom en zag hoe dat suiker via de schimmeldraden in een naburige spar belandde. De bomen deelden voedsel.',
     question: 'Als bomen konden praten, wat zouden ze dan het liefst aan ons vertellen?',
@@ -139,6 +150,7 @@ const WONDERS = [
     category: 'technology',
     emoji: '🌐',
     label: 'Technologie',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Submarine_cable_cross-section_3.svg/600px-Submarine_cable_cross-section_3.svg.png',
     title: 'Hoe Werkt Het Internet?',
     intro: 'Het internet is een enorm netwerk van computers die met elkaar praten. Als jij een filmpje bekijkt, reist die data in milliseconden van een computer ergens in de wereld naar jouw scherm. Maar hoe werkt dat precies? Stel: jij typt een adres in je browser, zoals youtube.com. Je computer stuurt een verzoek naar een server — een speciale computer die de website bewaart. Die server stuurt de data terug in kleine pakketjes. Die pakketjes reizen via kabels, soms dwars door oceanen heen. Er liggen meer dan 1,3 miljoen kilometer onderzeese kabels op de bodem van de zee. Die dunne kabels verbinden alle continenten met elkaar. De pakketjes komen aan bij jouw router thuis, die het signaal naar jouw apparaat stuurt. Dit alles gebeurt in minder dan een seconde. Het is eigenlijk een soort postkantoor dat miljarden brieven per seconde verwerkt, elk kleiner dan een duimnagel.',
     question: 'Stel je voor dat het internet één dag uitvalt — wat zou er dan op de wereld veranderen?',
@@ -149,6 +161,7 @@ const WONDERS = [
     category: 'animals',
     emoji: '🐋',
     label: 'Dieren',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg/600px-Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg',
     title: 'De Blauwe Vinvis: Het Grootste Dier Ooit',
     intro: 'De blauwe vinvis is het grootste dier dat ooit op aarde heeft geleefd — groter dan welke dinosaurus dan ook. Zijn hart is zo groot als een auto, en zijn bloedvaten zijn zo wijd dat een klein kind erdoorheen zou kunnen kruipen. Toch begint elk blauw vinvisje ter wereld als een babydier van "maar" zeven meter lang en 2.700 kilo bij de geboorte. Een pasgeboren blauw vinviskalf drinkt elke dag meer dan 400 liter moedermelk. Het groeit zo snel dat het elke dag 90 kilo aankomt — je ziet het bijna voor je ogen groeien. Blauwe vinvissen leven in alle oceanen van de wereld. Ze migreren enorme afstanden: in de zomer zwemmen ze naar koudere wateren om te eten, in de winter naar warmere wateren om jongen te krijgen. In hun eentje zwemmen ze honderden kilometers per week.',
     question: 'Hoe denk jij dat het voelt om zo groot te zijn dat niemand je kan negeren?',
@@ -159,6 +172,7 @@ const WONDERS = [
     category: 'science',
     emoji: '⚛️',
     label: 'Wetenschap',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Hydrogen_atom.svg/600px-Hydrogen_atom.svg.png',
     title: 'Wat Is Een Atoom?',
     intro: 'Alles om je heen — de lucht, jouw lichaam, dit scherm, de stoel waarop je zit — bestaat uit ontzettend kleine deeltjes die atomen heten. Ze zijn zo klein dat je er miljarden in een stofkorreltje kunt stoppen. Hoe klein is een atoom precies? Als jij zo groot was als de aarde, dan zou een atoom voor jou zo groot zijn als een knikker. Ze zijn onvoorstelbaar klein. Toch is een atoom zelf niet het kleinste wat er bestaat. Elk atoom bestaat uit nog kleinere deeltjes: protonen en neutronen in de kern, en elektronen die eromheen bewegen. En protonen en neutronen bestaan op hun beurt weer uit nog kleinere deeltjes: quarks. Er zijn zes soorten quarks, met namen als "up", "down", "charm" en "strange". Wetenschappers zijn er nog steeds niet zeker van of quarks zelf ook weer uit kleinere deeltjes bestaan. Het lijkt alsof de wereld kleiner en kleiner wordt, hoe verder je inzoomt.',
     question: 'Als jij het allerkleinste deeltje ter wereld was, waar zou je dan zijn?',
@@ -169,6 +183,7 @@ const WONDERS = [
     category: 'nature',
     emoji: '🌋',
     label: 'Natuur',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Pahoeoe_fountain_original.jpg/600px-Pahoeoe_fountain_original.jpg',
     title: 'Vulkanen en Het Vuur van de Aarde',
     intro: 'Vulkanen zijn openingen in de aardkorst waardoor gesmolten steen — magma — naar buiten komt. Ze zijn gevaarlijk, maar ze hebben ook nieuw land en vruchtbare grond gecreëerd. Zonder vulkanen had het leven op aarde er heel anders uitgezien. Vulkanen zijn er in veel soorten. Sommige spuiten rustig lava uit, als een trage rivier van vuur die langzaam naar de zee stroomt. Andere exploderen met enorme kracht: de beroemde uitbarsting van de Vesuvius in het jaar 79 na Christus bedolf de Romeinse stad Pompeii onder een laag as en steen in slechts een paar uur. De stad werd zo goed geconserveerd dat we vandaag nog precies kunnen zien hoe mensen er leefden — hun huizen, hun schilderijen, zelfs hun maaltijden. Wanneer een vulkaan uitbarst, spuit hij niet alleen lava. Hij gooit ook as, gas en rotsblokken de lucht in. Bij grote uitbarstingen kan de as de zon blokkeren voor maanden, waardoor het kouder wordt op aarde.',
     question: 'Als de aarde een levend wezen was, zouden vulkanen dan zijn ademhaling zijn?',
@@ -179,6 +194,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🧱',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Berlinermauer.jpg/600px-Berlinermauer.jpg',
     title: 'De Berlijnse Muur',
     intro: 'Op 13 augustus 1961 werden de mensen van Berlijn wakker in een stad die ineens in tweeën was gesneden. Soldaten hadden \'s nachts prikkeldraad gespannen dwars door straten, langs tuinen en midden door families heen. Daarna kwamen de betonblokken. De Berlijnse Muur was geboren. Berlijn was na de Tweede Wereldoorlog verdeeld tussen de geallieerde landen: het westen van de stad was vrij, het oosten werd gecontroleerd door de Sovjet-Unie. Steeds meer mensen vluchtten vanuit het arme, strenge Oost-Berlijn naar het rijke West-Berlijn — soms wel duizend mensen per dag. Om dat te stoppen bouwde de Oost-Duitse regering de muur. Van de ene op de andere dag konden mensen hun familie aan de andere kant niet meer zien. Sommige mensen werden midden in hun straat afgesneden van hun eigen huis.',
     question: 'Hoe zou jij je voelen als er morgen een muur voor je huis stond en je je vrienden niet meer mocht zien?',
@@ -189,6 +205,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🚧',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Checkpoint_charlie_2004.jpg/600px-Checkpoint_charlie_2004.jpg',
     title: 'Checkpoint Charlie',
     intro: 'Midden in het hart van Berlijn lag een klein wachtershuisje in de straat — maar dit was geen gewoon wachtershuisje. Dit was Checkpoint Charlie, het beroemdste grensovergangspunt ter wereld. Het was de enige plek in de Berlijnse Muur waar buitenlanders en diplomaten van West naar Oost mochten. Aan de westkant stond een Amerikaans bordje: "Je verlaat nu de Amerikaanse sector." Aan de oostkant stonden gewapende soldaten klaar die elk voertuig doorzochten. Mensen werden onder auto\'s gekeken met spiegels, koffers werden opengemaakt, soms werden passagiers urenlang vastgehouden. Checkpoint Charlie was ook het toneel van een van de gevaarlijkste momenten van de Koude Oorlog: in 1961 stonden er Amerikaans en Sovjet-tanks oog in oog, motoren aan, klaar voor de strijd. Gelukkig reden ze na een tijdje allebei achteruit.',
     question: 'Stel je voor dat je elke dag langs gewapende soldaten moet om naar school te gaan — hoe zou dat voelen?',
@@ -199,6 +216,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🎉',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Der_Fall_der_Mauer.jpg/600px-Der_Fall_der_Mauer.jpg',
     title: 'De Nacht dat de Muur Viel',
     intro: 'Op 9 november 1989 gebeurde iets wat niemand voor mogelijk had gehouden. Een Oost-Duitse woordvoerder las tijdens een persconferentie op televisie voor dat de grenzen opengesteld zouden worden. Een journalist vroeg: "Wanneer?" De man keek in zijn papieren en zei: "Onmiddellijk, zonder vertraging." Dat was niet de bedoeling — het was een vergissing, de beslissing was nog niet officieel. Maar het was al te laat. Het nieuws verspreidde zich als een lopend vuur. Duizenden Oost-Berlijners trokken naar de muur. De grensposten werden overspoeld. De soldaten, die geen orders kregen, wisten niet wat ze moesten doen. Uiteindelijk lieten ze de mensen door. Huilende families omhelsden elkaar voor het eerst in jaren. Op de muur klommen mensen en sloegen er stukken uit met hamers.',
     question: 'Als jij die avond in Berlijn was geweest, wat zou jij gedaan hebben?',
@@ -209,6 +227,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🏛️',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Brandenburg_Gate_2004.jpg/600px-Brandenburg_Gate_2004.jpg',
     title: 'De Brandenburger Tor',
     intro: 'Midden in Berlijn staat een enorme poort van steen — de Brandenburger Tor. Hij is meer dan 200 jaar oud en heeft alles meegemaakt: keizers, oorlogen, dictators, een gedeelde stad en uiteindelijk hereniging. De poort werd gebouwd in 1791, in opdracht van de Pruisische koning. Hij was bedoeld als symbool van vrede — en bovenop staat een beeld van een godin op een wagen getrokken door vier paarden, de Quadriga genaamd. Napoleon veroverde Berlijn in 1806 en nam de Quadriga mee naar Parijs als oorlogsbuit. Na zijn nederlaag in 1814 brachten de Pruisen het beeld triomfantelijk terug. Tijdens de Tweede Wereldoorlog werd de poort zwaar beschadigd door bombardementen. En toen de Berlijnse Muur werd gebouwd, stond de Brandenburger Tor exact op de grens — bereikbaar voor niemand, gevangen tussen twee werelden.',
     question: 'Als een poort een symbool van jouw leven was, wat zou er dan op de top staan?',
@@ -219,6 +238,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🐻',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/B%C3%A4renbrunnen_K%C3%B6llnischer_Park_-_Berlin.jpg/600px-B%C3%A4renbrunnen_K%C3%B6llnischer_Park_-_Berlin.jpg',
     title: 'Berlijn en de Beer',
     intro: 'Berlijn heeft een bijzonder stadswapen: een zwarte beer op een witte achtergrond. De beer staat overal in de stad — op borden, bruggen, in standbeelden en op souvenirs. Maar waarom een beer? De legende zegt dat de stad is gesticht door Albrecht de Beer, een markgraaf die in de twaalfde eeuw over het gebied heerste. Zijn naam betekent letterlijk "de beer", en zo kreeg de stad zijn symbool. Maar misschien is het gewoon een woordgrap: "Berlijn" klinkt een beetje als het woord voor beer in het Duits — "Bär". Hoe dan ook, de beer is al meer dan 700 jaar het symbool van Berlijn. In 2001 begon een kunstproject dat de beer wereldberoemd maakte: honderden levensgrote berenbeelden werden door kunstenaars beschilderd en door de hele stad geplaatst. Elke beer was anders, kleurrijk en creatief. Toeristen van overal kwamen kijken.',
     question: 'Als jij een dier mocht kiezen als symbool voor jouw stad of dorp, welk dier zou dat zijn en waarom?',
@@ -229,6 +249,7 @@ const WONDERS = [
     category: 'history',
     emoji: '✈️',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/C-47s_at_Tempelhof_Airport_Berlin_1948.jpg/600px-C-47s_at_Tempelhof_Airport_Berlin_1948.jpg',
     title: 'De Berlijnse Luchtbrug',
     intro: 'In 1948 deed de Sovjet-Unie iets heel gevaarlijks: ze blokkeerden alle wegen, spoorwegen en kanalen naar West-Berlijn. Twee miljoen mensen zaten ineens opgesloten in hun eigen stad, zonder eten, zonder brandstof, zonder medicijnen. De bedoeling was duidelijk: verhonger de stad totdat ze zich overgeeft. Maar het westen liet zich niet kisten. Amerika en Groot-Brittannië besloten iets wat niemand voor mogelijk hield: ze zouden de hele stad bevoorraden vanuit de lucht. Dag en nacht, elke dag, landden vliegtuigen op de vliegvelden van West-Berlijn. Op het hoogtepunt landde er elke drie minuten een toestel. Ze brachten bloem, kolen, medicijnen — alles wat een stad nodig heeft om te overleven. De Russen dachten dat het nooit zou lukken. Ze hadden het mis.',
     question: 'Als jij besliste of je een gevaarlijke missie zou uitvoeren om vreemden te helpen, wat zou je dan doen?',
@@ -239,6 +260,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🏅',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Jesse_Owens2.jpg/600px-Jesse_Owens2.jpg',
     title: 'Jesse Owens in Berlijn',
     intro: 'In 1936 organiseerde Adolf Hitler de Olympische Spelen in Berlijn. Hij wilde de wereld laten zien dat blonde, blauwe-ogige Duitsers de beste mensen ter wereld waren. Maar toen verscheen een jonge Amerikaanse atleet genaamd Jesse Owens — en hij verpestte Hitlers plannen volledig. Owens was Afrikaans-Amerikaans, opgegroeid in armoede in Alabama. Op de Olympische Spelen van Berlijn won hij vier gouden medailles: op de 100 meter, de 200 meter, de verspringen en de estafette. Vier keer de beste ter wereld, in de stad van een man die dacht dat mensen zoals hij minderwaardig waren. Het stadion, gevuld met honderdduizend mensen, explodeerde van enthousiasme. De menigte riep zijn naam: "Yesse! Yesse!" Hitler verliet boos het stadion.',
     question: 'Hoe denk jij dat Jesse Owens zich voelde toen hij zijn eerste gouden medaille won, in die stad, voor die menigte?',
@@ -249,6 +271,7 @@ const WONDERS = [
     category: 'technology',
     emoji: '📡',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Fernsehturm_Berlin_2006.jpg/600px-Fernsehturm_Berlin_2006.jpg',
     title: 'De Fernsehturm: Toren van Berlijn',
     intro: 'Midden in Berlijn prik je hem niet te missen: een naald van 368 meter hoog met een zilveren bol halverwege — de Fernsehturm, de televisietoren. Hij is het hoogste gebouw van Duitsland en zichtbaar vanuit bijna heel Berlijn. De toren werd gebouwd door Oost-Duitsland en geopend in 1969. Het was een statement aan de wereld: kijk hoe modern en krachtig de communistische staat is. Maar de toren werd snel een mikpunt van grappen. Wanneer de zon op de metalen bol schijnt, verschijnt er een spiegelend kruis van licht. De gelovige West-Berlijners noemden dit spottend "de wraak van de paus" — want de atheïstische Oost-Duitse regering had kerken verboden, maar kon het kruis op haar eigen trots niet vermijden. De bouwers probeerden het te verhelpen met een andere coating, maar het kruis bleef.',
     question: 'Als jij een toren mocht bouwen die jouw stad aan de wereld laat zien, hoe zou die er dan uitzien?',
@@ -259,6 +282,7 @@ const WONDERS = [
     category: 'history',
     emoji: '🕵️',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Stasi_Zentrale.jpg/600px-Stasi_Zentrale.jpg',
     title: 'De Stasi: De Geheime Politie',
     intro: 'In Oost-Duitsland was er een organisatie die iedereen angst inboezemde: de Stasi, de geheime politie. Ze hielden bijna elke burger in de gaten. Niet met camera\'s of computers zoals nu, maar met mensen — duizenden informanten die hun buren, vrienden, zelfs familieleden bespioneerden en alles doorgaven aan de Stasi. Op het hoogtepunt had de Stasi 91.000 medewerkers in dienst en meer dan 175.000 informanten. In een land van 16 miljoen mensen betekende dat: één spion op elke 63 inwoners. Ze lazen brieven open, luisterden telefoongesprekken af en plakten brieven zo zorgvuldig terug dat niemand het merkte. Ze hielden dossiers bij over miljoenen burgers. Als iemand een grapje maakte over de regering, kon hij de volgende dag zijn baan kwijt zijn of erger.',
     question: 'Hoe zou jij je gedragen als je wist dat iemand altijd meekeek en meeluisterde?',
@@ -269,6 +293,7 @@ const WONDERS = [
     category: 'technology',
     emoji: '🚗',
     label: 'Berlijn',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Trabant601.jpg/600px-Trabant601.jpg',
     title: 'De Trabant: Auto van het Volk',
     intro: 'In Oost-Duitsland reed bijna iedereen in hetzelfde autootje: de Trabant, of kortweg de "Trabi". Het was een kleine, ronkende auto met een carrosserie van geperst plastic en een tweetaktmotor die een enorme wolk blauwe rook uitspuugde. Je kon de Trabi al van verre horen — en ruiken. Maar voor Oost-Duitsers was de Trabi meer dan een auto: het was een statussymbool. Als je een Trabi wilde kopen, moest je je naam op een wachtlijst zetten. Hoe lang duurde het wachten? Gemiddeld dertien jaar. Je reserveerde de auto nog voor je kind geboren was, en tegen de tijd dat hij geleverd werd, was je kind al op de middelbare school. Na de val van de muur in 1989 reden honderden Oost-Duitsers in hun Trabi naar het westen — de wachtrijen bij benzinestations waren enorm.',
     question: 'Als jij 13 jaar moest wachten op iets wat je echt wou, zou je dan doorzetten of opgeven?',
@@ -364,6 +389,8 @@ const elQuestion       = document.getElementById('content-philosophy');
 const elDeepdive       = document.getElementById('content-deepdive');
 const elEmoji          = document.getElementById('wonder-emoji');
 const elCategoryTag    = document.getElementById('wonder-category-tag');
+const elPhoto          = document.getElementById('wonder-photo');
+const elPhotoWrap      = document.getElementById('wonder-photo-wrap');
 const wonderScroll     = document.getElementById('wonder-scroll');
 const elQuizNum        = document.getElementById('quiz-q-num');
 const elQuizQuestion   = document.getElementById('quiz-question');
@@ -635,12 +662,25 @@ function revealWonder() {
   screenWonder.className = `screen cat-${currentWonder.category}`;
 
   // Populate content
-  elTitle.textContent      = currentWonder.title;
-  elIntro.textContent      = currentWonder.intro;
-  elQuestion.textContent   = currentWonder.question;
-  elDeepdive.textContent   = currentWonder.deepdive;
-  elEmoji.textContent      = currentWonder.emoji;
+  elTitle.textContent       = currentWonder.title;
+  elIntro.textContent       = currentWonder.intro;
+  elQuestion.textContent    = currentWonder.question;
+  elDeepdive.textContent    = currentWonder.deepdive;
+  elEmoji.textContent       = currentWonder.emoji;
   elCategoryTag.textContent = currentWonder.label;
+
+  // Foto preloaden
+  elPhotoWrap.classList.remove('photo-loaded', 'photo-error');
+  elPhoto.classList.remove('photo-visible');
+  elPhoto.src = '';
+  const preloader = new Image();
+  preloader.onload = () => {
+    elPhoto.src = currentWonder.image;
+    elPhoto.classList.add('photo-visible');
+    elPhotoWrap.classList.add('photo-loaded');
+  };
+  preloader.onerror = () => elPhotoWrap.classList.add('photo-error');
+  preloader.src = currentWonder.image;
 
   // Reset phases
   [phase1, phase2, phase3].forEach(p => {
