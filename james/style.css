@@ -735,27 +735,29 @@ body::before {
 
 /* ─── 16. Ghost Button (terug naar start) ──────────────── */
 .btn-ghost {
-  min-height: 44px;
-  padding: 10px 24px;
-  border-radius: var(--radius-card);
-  border: 1px solid rgba(255,255,255,0.10);
-  background: transparent;
-  color: var(--text-4);
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 600;
+  min-height: 64px;
+  padding: 16px 32px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: linear-gradient(135deg, rgba(40,40,60,0.85) 0%, rgba(20,20,40,0.9) 100%);
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 3.8vw, 1.2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   touch-action: manipulation;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s var(--ease-spring), box-shadow 0.15s ease;
 }
 .btn-ghost:active {
-  background: rgba(255,255,255,0.05);
-  color: var(--text-3);
-  border-color: rgba(255,255,255,0.18);
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  background: linear-gradient(135deg, rgba(55,55,80,0.9) 0%, rgba(30,30,55,0.95) 100%);
 }
 
 /* ─── 17. Flash Overlay ─────────────────────────────────── */

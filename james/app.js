@@ -225,10 +225,10 @@ function updateCategoryPills() {
     const total = WONDERS.filter(w => w.category === cat).length;
     const done  = WONDERS.filter(w => w.category === cat && read.has(w.title)).length;
     if (done >= total) {
-      pill.hidden = true;
+      pill.style.display = 'none';
       if (activeCategory === cat) activeCategory = null;
     } else {
-      pill.hidden = false;
+      pill.style.display = '';
       pill.textContent = `${info.emoji} ${info.label} ${done}/${total}`;
     }
   });
