@@ -496,10 +496,10 @@ function startDiscovery(category) {
     portalFlash.classList.remove('flash-go');
     void portalFlash.offsetWidth;
     portalFlash.classList.add('flash-go');
-    portalFlash.addEventListener('animationend', () => {
+    setTimeout(() => {
       portalFlash.classList.remove('flash-go');
       revealWonder();
-    }, { once: true });
+    }, 650);
   });
 }
 
