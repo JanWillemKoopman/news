@@ -21,9 +21,51 @@
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- ══════════════════════════════════════
+       SCREEN 0: LOGIN / REGISTER
+  ═══════════════════════════════════════ -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-inner">
+      <div class="auth-badge" aria-hidden="true">✦ JAMES' WONDER-APP ✦</div>
+      <h1 class="auth-title">Hé James! 👋</h1>
+      <p class="auth-sub" id="auth-sub">Log in om je voortgang bij te houden</p>
+      <div class="auth-card">
+        <div id="auth-error" class="auth-error" style="display:none;"></div>
+        <div class="auth-field">
+          <label for="auth-username">Gebruikersnaam</label>
+          <input id="auth-username" type="text" autocomplete="username" placeholder="jouw naam" maxlength="30" />
+        </div>
+        <div class="auth-field">
+          <label for="auth-password">Wachtwoord</label>
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••" />
+        </div>
+        <div id="auth-register-fields" style="display:none; flex-direction:column; gap:16px;">
+          <div class="auth-field">
+            <label for="auth-security-question">Veiligheidsvraag</label>
+            <select id="auth-security-question" class="auth-select">
+              <option value="">Kies een vraag...</option>
+              <option>Wat is de naam van je eerste huisdier?</option>
+              <option>Wat is je favoriete dier?</option>
+              <option>In welke stad ben je geboren?</option>
+              <option>Wat is de naam van je beste vriend?</option>
+              <option>Wat is je lievelingskleur?</option>
+            </select>
+          </div>
+          <div class="auth-field">
+            <label for="auth-security-answer">Jouw antwoord</label>
+            <input id="auth-security-answer" type="text" autocomplete="off" placeholder="jouw antwoord" />
+          </div>
+        </div>
+        <button id="auth-submit-btn" class="btn-auth-submit">Inloggen</button>
+        <button id="auth-forgot-btn" class="btn-auth-toggle">Wachtwoord vergeten? <span>Klik hier</span></button>
+        <button id="auth-toggle-btn" class="btn-auth-toggle">Nog geen account? <span>Registreer je hier</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
        SCREEN 1: HERO
   ═══════════════════════════════════════ -->
-  <div id="screen-hero" class="screen active">
+  <div id="screen-hero" class="screen">
     <div class="hero-inner">
 
       <div class="hero-progress-wrap">
@@ -37,7 +79,7 @@
       </div>
 
       <h1 class="hero-title">
-        <span>Hé James!</span>
+        <span id="hero-greeting">Hé James!</span>
         <span class="hero-wave" aria-hidden="true">👋</span>
       </h1>
 
@@ -86,6 +128,8 @@
       </div>
 
     </div>
+
+    <button id="btn-logout" class="btn-logout" aria-label="Uitloggen">Uitloggen</button>
 
     <div class="hero-scroll-hint" aria-hidden="true">
       <span class="scroll-dot"></span>

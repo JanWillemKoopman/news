@@ -1,5 +1,6 @@
 import logging
 from backend.app import app
+from backend.database import init_db
 from backend.scheduler import create_scheduler
 from backend.config import PORT
 
@@ -10,6 +11,7 @@ logging.basicConfig(
 )
 
 if __name__ == "__main__":
+    init_db()
     scheduler = create_scheduler()
     scheduler.start()
     try:

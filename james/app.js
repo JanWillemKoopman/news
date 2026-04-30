@@ -168,25 +168,56 @@ const WONDERS = [
   },
 ];
 
+/* ─── API ────────────────────────────────────────────────── */
+const API = {
+  me:               '/api/auth/me',
+  login:            '/api/auth/login',
+  register:         '/api/auth/register',
+  logout:           '/api/auth/logout',
+  securityQuestion: '/api/auth/security-question',
+  resetPassword:    '/api/auth/reset-password',
+  wonder:           '/api/progress/wonder',
+  wonderReset:      '/api/progress/wonder/reset',
+  quiz:             '/api/progress/quiz',
+};
+
 /* ─── State ─────────────────────────────────────────────── */
 let currentWonder    = null;
 let lastWonder       = null;
 let activeCategory   = null;
-let completedWonders = []; // runtime: last 3 finished wonders (for quiz questions)
+let completedWonders = [];
 let quizQuestions    = [];
 let currentQuizQ     = 0;
+let currentUser      = null;
+let serverReadSet    = new Set();  // from server; authoritative when logged in
+let serverQuizCount  = 0;
+let forgotUsername   = '';
+let authMode         = 'login';
 
 const LS_WONDER_COUNT = 'jw_wonder_count';
 const LS_QUIZ_COUNT   = 'jw_quiz_count';
-const LS_READ_SET     = 'jw_read_set';   // JSON array of read wonder titles
+const LS_READ_SET     = 'jw_read_set';
 
 function getWonderCount() { return parseInt(localStorage.getItem(LS_WONDER_COUNT) || '0', 10); }
-function getQuizCount()   { return parseInt(localStorage.getItem(LS_QUIZ_COUNT)   || '0', 10); }
+function getQuizCount()   { return currentUser ? serverQuizCount : parseInt(localStorage.getItem(LS_QUIZ_COUNT) || '0', 10); }
 function setWonderCount(n){ localStorage.setItem(LS_WONDER_COUNT, String(n)); }
-function setQuizCount(n)  { localStorage.setItem(LS_QUIZ_COUNT,   String(n)); }
+function setQuizCount(n)  { if (!currentUser) localStorage.setItem(LS_QUIZ_COUNT, String(n)); else serverQuizCount = n; }
 
-function getReadSet()       { try { return new Set(JSON.parse(localStorage.getItem(LS_READ_SET) || '[]')); } catch { return new Set(); } }
-function markWonderRead(w)  { const s = getReadSet(); s.add(w.title); localStorage.setItem(LS_READ_SET, JSON.stringify([...s])); }
+function getReadSet() {
+  if (currentUser) return serverReadSet;
+  try { return new Set(JSON.parse(localStorage.getItem(LS_READ_SET) || '[]')); } catch { return new Set(); }
+}
+
+function markWonderRead(w) {
+  if (currentUser) {
+    serverReadSet.add(w.title);
+    fetch(API.wonder, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body: JSON.stringify({ title: w.title }) }).catch(() => {});
+  } else {
+    const s = getReadSet(); s.add(w.title);
+    localStorage.setItem(LS_READ_SET, JSON.stringify([...s]));
+  }
+}
 
 function updateProgressBar() {
   const total = WONDERS.length;
@@ -218,6 +249,7 @@ function shuffle(arr) {
 }
 
 /* ─── DOM References ────────────────────────────────────── */
+const screenAuth       = document.getElementById('screen-auth');
 const screenHero       = document.getElementById('screen-hero');
 const screenTransition = document.getElementById('screen-transition');
 const screenWonder     = document.getElementById('screen-wonder');
@@ -374,7 +406,7 @@ function runBurst(onComplete) {
 
 /* ─── Screen Management ─────────────────────────────────── */
 function showScreen(el) {
-  [screenHero, screenTransition, screenWonder, screenQuiz].forEach(s => s.classList.remove('active'));
+  [screenAuth, screenHero, screenTransition, screenWonder, screenQuiz].forEach(s => s.classList.remove('active'));
   el.classList.add('active');
 }
 
@@ -438,7 +470,12 @@ function advanceQuiz() {
 }
 
 function completeQuiz() {
-  setQuizCount(getQuizCount() + 1);
+  const newCount = getQuizCount() + 1;
+  setQuizCount(newCount);
+  if (currentUser) {
+    fetch(API.quiz, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body: JSON.stringify({ score: 3 }) }).catch(() => {});
+  }
   updateQuizScoreDisplay();
   quizDoneOverlay.hidden = false;
   if (typeof gsap !== 'undefined') {
@@ -644,15 +681,115 @@ function animateHeroIn() {
     .from('.hero-scroll-hint',{ opacity: 0, duration: 0.5                     }, '-=0.3');
 }
 
+/* ─── Auth ───────────────────────────────────────────────── */
+const authUsernameEl       = document.getElementById('auth-username');
+const authPasswordEl       = document.getElementById('auth-password');
+const authSubmitBtn        = document.getElementById('auth-submit-btn');
+const authToggleBtn        = document.getElementById('auth-toggle-btn');
+const authForgotBtn        = document.getElementById('auth-forgot-btn');
+const authErrorEl          = document.getElementById('auth-error');
+const authSubEl            = document.getElementById('auth-sub');
+const authRegisterFields   = document.getElementById('auth-register-fields');
+const authSecurityQuestion = document.getElementById('auth-security-question');
+const authSecurityAnswer   = document.getElementById('auth-security-answer');
+const btnLogout            = document.getElementById('btn-logout');
+
+function setAuthError(msg) { authErrorEl.textContent = msg; authErrorEl.style.display = msg ? 'block' : 'none'; }
+
+function setAuthMode(mode) {
+  authMode = mode;
+  setAuthError('');
+  const isLogin   = mode === 'login',  isReg = mode === 'register';
+  const isForgotU = mode === 'forgot-username', isForgotA = mode === 'forgot-answer';
+  authUsernameEl.style.display   = isForgotA ? 'none' : '';
+  authPasswordEl.style.display   = isForgotU ? 'none' : '';
+  authRegisterFields.style.display = (isReg||isForgotA) ? 'flex' : 'none';
+  authSecurityQuestion.style.display = isForgotA ? 'none' : '';
+  authForgotBtn.style.display    = isLogin ? '' : 'none';
+  authToggleBtn.style.display    = (isForgotU||isForgotA) ? 'none' : '';
+  if (isLogin)   { authSubEl.textContent='Log in om je voortgang bij te houden'; authSubmitBtn.textContent='Inloggen'; authToggleBtn.innerHTML='Nog geen account? <span>Registreer je hier</span>'; }
+  if (isReg)     { authSubEl.textContent='Maak een account aan'; authSubmitBtn.textContent='Account aanmaken'; authToggleBtn.innerHTML='Al een account? <span>Log hier in</span>'; authSecurityAnswer.placeholder='jouw antwoord'; }
+  if (isForgotU) { authSubEl.textContent='Vul je gebruikersnaam in'; authSubmitBtn.textContent='Beveiligingsvraag ophalen'; }
+  if (isForgotA) { authSubEl.textContent=`Beveiligingsvraag voor "${forgotUsername}"`; authSubmitBtn.textContent='Wachtwoord opnieuw instellen'; authPasswordEl.placeholder='nieuw wachtwoord'; authSecurityAnswer.placeholder='jouw antwoord op de beveiligingsvraag'; }
+}
+
+async function submitAuth() {
+  authSubmitBtn.disabled = true; setAuthError('');
+  try {
+    if (authMode==='login')            await doLogin();
+    else if (authMode==='register')    await doRegister();
+    else if (authMode==='forgot-username') await doForgotUsername();
+    else if (authMode==='forgot-answer')   await doForgotAnswer();
+  } catch(_) { setAuthError('Kan de server niet bereiken.'); }
+  finally { authSubmitBtn.disabled = false; }
+}
+
+async function doLogin() {
+  const username=authUsernameEl.value.trim(), password=authPasswordEl.value;
+  if (!username||!password) { setAuthError('Vul alle velden in.'); return; }
+  const res = await fetch(API.login,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({username,password})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Onjuiste gegevens.'); return; }
+  await loadUserAndEnter();
+}
+
+async function doRegister() {
+  const username=authUsernameEl.value.trim(), password=authPasswordEl.value;
+  const question=authSecurityQuestion.value, answer=authSecurityAnswer.value.trim();
+  if (!username||!password||!question||!answer) { setAuthError('Vul alle velden in.'); return; }
+  const res = await fetch(API.register,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({username,password,security_question:question,security_answer:answer})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Er ging iets mis.'); return; }
+  await loadUserAndEnter();
+}
+
+async function doForgotUsername() {
+  const username=authUsernameEl.value.trim();
+  if (!username) { setAuthError('Vul je gebruikersnaam in.'); return; }
+  const res = await fetch(`${API.securityQuestion}?username=${encodeURIComponent(username)}`);
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Gebruiker niet gevonden.'); return; }
+  forgotUsername=username; authSubEl.textContent=data.question; setAuthMode('forgot-answer');
+}
+
+async function doForgotAnswer() {
+  const answer=authSecurityAnswer.value.trim(), newPass=authPasswordEl.value;
+  if (!answer||!newPass) { setAuthError('Vul het antwoord en een nieuw wachtwoord in.'); return; }
+  const res = await fetch(API.resetPassword,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:forgotUsername,security_answer:answer,new_password:newPass})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Antwoord onjuist.'); return; }
+  authPasswordEl.value=''; authSecurityAnswer.value='';
+  authSubEl.textContent='Wachtwoord opnieuw ingesteld! Log nu in.'; setAuthMode('login');
+}
+
+async function loadUserAndEnter() {
+  try {
+    const res = await fetch(API.me,{credentials:'include'});
+    if (!res.ok) { showScreen(screenAuth); return; }
+    const data = await res.json();
+    currentUser     = {id:data.id, username:data.username};
+    serverReadSet   = new Set(data.seen_titles||[]);
+    serverQuizCount = data.quiz_count||0;
+    const heroGreeting = document.getElementById('hero-greeting');
+    if (heroGreeting) heroGreeting.textContent = `Hé ${data.username}!`;
+    updateProgressBar(); updateCategoryStats(); updateQuizScoreDisplay();
+    showScreen(screenHero); animateHeroIn();
+  } catch(_) { showScreen(screenAuth); }
+}
+
+async function logout() {
+  await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
+  currentUser=null; serverReadSet=new Set(); serverQuizCount=0;
+  authUsernameEl.value=''; authPasswordEl.value=''; setAuthError('');
+  setAuthMode('login'); showScreen(screenAuth);
+}
+
+authSubmitBtn.addEventListener('click', submitAuth);
+authToggleBtn.addEventListener('click', ()=>setAuthMode(authMode==='login'?'register':'login'));
+authForgotBtn.addEventListener('click', ()=>setAuthMode('forgot-username'));
+[authUsernameEl,authPasswordEl,authSecurityAnswer].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')submitAuth();}));
+btnLogout.addEventListener('click', logout);
+
 /* ─── Init ──────────────────────────────────────────────── */
 initStarfield();
-updateProgressBar();
-updateCategoryStats();
-updateQuizScoreDisplay();
-showScreen(screenHero);
-
-if (document.readyState === 'complete') {
-  animateHeroIn();
-} else {
-  window.addEventListener('load', animateHeroIn);
-}
+loadUserAndEnter();
