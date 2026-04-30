@@ -24,3 +24,4 @@ build/
 # Vinted uploads en database
 uploads/
 data/vinted.db
+data/users.db
