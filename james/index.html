@@ -71,9 +71,9 @@
       <div class="hero-progress-wrap">
         <div class="hero-progress-meta">
           <span class="hero-progress-label">🌟 Ontdekt</span>
-          <span class="hero-progress-count" id="progress-text">0 / 15</span>
+          <span class="hero-progress-count" id="progress-text">0 / 25</span>
         </div>
-        <div class="hero-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0" id="progress-bar">
+        <div class="hero-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="0" id="progress-bar">
           <div class="hero-progress-fill" id="progress-fill"></div>
         </div>
       </div>
@@ -109,16 +109,6 @@
         <button class="world-pill" data-category="science"    role="listitem">🔬 Wetenschap</button>
         <button class="world-pill" data-category="technology" role="listitem">💡 Technologie</button>
         <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
-      </div>
-
-      <!-- Category completion stats -->
-      <div class="cat-stats-row" id="cat-stats-row" aria-live="polite">
-        <span class="cat-stat" id="stat-space">🚀 <span>0/3</span></span>
-        <span class="cat-stat" id="stat-animals">🦁 <span>0/2</span></span>
-        <span class="cat-stat" id="stat-history">📜 <span>0/4</span></span>
-        <span class="cat-stat" id="stat-science">🔬 <span>0/3</span></span>
-        <span class="cat-stat" id="stat-technology">💡 <span>0/2</span></span>
-        <span class="cat-stat" id="stat-nature">🌿 <span>0/2</span></span>
       </div>
 
       <!-- Quiz score counter (hidden until first quiz completed) -->
@@ -157,6 +147,11 @@
           <span id="wonder-emoji" class="wonder-emoji" aria-hidden="true"></span>
           <span class="wonder-category-tag" id="wonder-category-tag"></span>
         </div>
+
+        <div class="wonder-photo-wrap" id="wonder-photo-wrap">
+          <img id="wonder-photo" class="wonder-photo" alt="" aria-hidden="true" decoding="async" />
+        </div>
+
         <h1 id="content-title" class="wonder-title"></h1>
         <p  id="content-intro" class="wonder-intro"></p>
       </div>
@@ -189,6 +184,10 @@
         <button id="btn-opnieuw" class="btn-new-wonder">
           <span aria-hidden="true">✦</span>
           Nog een wonder!
+        </button>
+
+        <button id="btn-home" class="btn-ghost">
+          <span aria-hidden="true">←</span> terug naar start
         </button>
       </div>
 
