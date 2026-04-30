@@ -41,7 +41,30 @@
           <input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••" />
         </div>
 
+        <!-- Extra velden alleen zichtbaar bij registratie -->
+        <div id="auth-register-fields" style="display:none; display:none; flex-direction:column; gap:16px;">
+          <div class="auth-field">
+            <label for="auth-security-question">Veiligheidsvraag</label>
+            <select id="auth-security-question" class="auth-select">
+              <option value="">Kies een vraag...</option>
+              <option>Wat is de naam van je eerste huisdier?</option>
+              <option>Wat is je favoriete dier?</option>
+              <option>In welke stad ben je geboren?</option>
+              <option>Wat is de naam van je beste vriend?</option>
+              <option>Wat is je lievelingskleur?</option>
+            </select>
+          </div>
+          <div class="auth-field">
+            <label for="auth-security-answer">Jouw antwoord</label>
+            <input id="auth-security-answer" type="text" autocomplete="off" placeholder="jouw antwoord" />
+          </div>
+        </div>
+
         <button id="auth-submit-btn" class="btn-auth-submit">Inloggen</button>
+
+        <button id="auth-forgot-btn" class="btn-auth-toggle">
+          Wachtwoord vergeten? <span>Klik hier</span>
+        </button>
 
         <button id="auth-toggle-btn" class="btn-auth-toggle">
           Nog geen account? <span>Registreer je hier</span>

@@ -10,6 +10,8 @@ from backend.database import (
     create_user,
     verify_user,
     get_user_by_id,
+    get_security_question,
+    reset_password,
     mark_wonder_seen,
     get_seen_wonders,
     reset_seen_wonders,
@@ -96,7 +98,12 @@ def api_register():
     if len(password) < 6:
         return jsonify({"error": "Wachtwoord moet minimaal 6 tekens zijn"}), 400
 
-    user = create_user(username, password)
+    security_question = (data.get("security_question") or "").strip()
+    security_answer   = (data.get("security_answer")   or "").strip()
+    if not security_question or not security_answer:
+        return jsonify({"error": "Veiligheidsvraag en antwoord zijn verplicht"}), 400
+
+    user = create_user(username, password, security_question, security_answer)
     if user is None:
         return jsonify({"error": "Gebruikersnaam is al in gebruik"}), 409
 
@@ -124,6 +131,32 @@ def api_login():
 def api_logout():
     session.clear()
     return jsonify({"status": "uitgelogd"})
+
+
+@app.route("/api/auth/security-question")
+def api_security_question():
+    username = request.args.get("username", "").strip()
+    if not username:
+        return jsonify({"error": "Gebruikersnaam ontbreekt"}), 400
+    question = get_security_question(username)
+    if question is None:
+        return jsonify({"error": "Gebruiker niet gevonden of geen veiligheidsvraag ingesteld"}), 404
+    return jsonify({"question": question})
+
+
+@app.route("/api/auth/reset-password", methods=["POST"])
+def api_reset_password():
+    data = request.get_json(silent=True) or {}
+    username        = (data.get("username")        or "").strip()
+    security_answer = (data.get("security_answer") or "").strip()
+    new_password    = (data.get("new_password")    or "")
+    if not username or not security_answer or not new_password:
+        return jsonify({"error": "Alle velden zijn verplicht"}), 400
+    if len(new_password) < 6:
+        return jsonify({"error": "Wachtwoord moet minimaal 6 tekens zijn"}), 400
+    if not reset_password(username, security_answer, new_password):
+        return jsonify({"error": "Antwoord onjuist"}), 401
+    return jsonify({"status": "wachtwoord opnieuw ingesteld"})
 
 
 @app.route("/api/auth/me")

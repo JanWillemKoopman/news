@@ -10,13 +10,15 @@ const CFG = {
 };
 
 const API = {
-  me:          '/api/auth/me',
-  login:       '/api/auth/login',
-  register:    '/api/auth/register',
-  logout:      '/api/auth/logout',
-  wonder:      '/api/progress/wonder',
-  wonderReset: '/api/progress/wonder/reset',
-  quiz:        '/api/progress/quiz',
+  me:               '/api/auth/me',
+  login:            '/api/auth/login',
+  register:         '/api/auth/register',
+  logout:           '/api/auth/logout',
+  securityQuestion: '/api/auth/security-question',
+  resetPassword:    '/api/auth/reset-password',
+  wonder:           '/api/progress/wonder',
+  wonderReset:      '/api/progress/wonder/reset',
+  quiz:             '/api/progress/quiz',
 };
 
 const WONDERS = [
@@ -162,12 +164,16 @@ const screenTransition = document.getElementById('screen-transition');
 const screenWonder     = document.getElementById('screen-wonder');
 const screenQuiz       = document.getElementById('screen-quiz');
 
-const authUsernameEl  = document.getElementById('auth-username');
-const authPasswordEl  = document.getElementById('auth-password');
-const authSubmitBtn   = document.getElementById('auth-submit-btn');
-const authToggleBtn   = document.getElementById('auth-toggle-btn');
-const authErrorEl     = document.getElementById('auth-error');
-const authSubEl       = document.getElementById('auth-sub');
+const authUsernameEl        = document.getElementById('auth-username');
+const authPasswordEl        = document.getElementById('auth-password');
+const authSubmitBtn         = document.getElementById('auth-submit-btn');
+const authToggleBtn         = document.getElementById('auth-toggle-btn');
+const authForgotBtn         = document.getElementById('auth-forgot-btn');
+const authErrorEl           = document.getElementById('auth-error');
+const authSubEl             = document.getElementById('auth-sub');
+const authRegisterFields    = document.getElementById('auth-register-fields');
+const authSecurityQuestion  = document.getElementById('auth-security-question');
+const authSecurityAnswer    = document.getElementById('auth-security-answer');
 
 const heroGreeting    = document.getElementById('hero-greeting');
 const statWonders     = document.getElementById('stat-wonders');
@@ -456,41 +462,125 @@ async function finishQuiz() {
 }
 
 /* ─── Auth ──────────────────────────────────────────────── */
+// authMode: 'login' | 'register' | 'forgot-username' | 'forgot-answer'
 let authMode = 'login';
+let forgotUsername = '';
 
 function setAuthError(msg) {
   authErrorEl.textContent = msg;
   authErrorEl.style.display = msg ? 'block' : 'none';
 }
 
-function toggleAuthMode() {
-  authMode = authMode==='login' ? 'register' : 'login';
-  const isLogin = authMode==='login';
-  authSubmitBtn.textContent  = isLogin ? 'Inloggen' : 'Account aanmaken';
-  authSubEl.textContent      = isLogin ? 'Log in om je voortgang bij te houden' : 'Maak een account aan';
-  authToggleBtn.innerHTML    = isLogin
-    ? 'Nog geen account? <span>Registreer je hier</span>'
-    : 'Al een account? <span>Log hier in</span>';
-  authPasswordEl.autocomplete = isLogin ? 'current-password' : 'new-password';
+function setAuthMode(mode) {
+  authMode = mode;
   setAuthError('');
+
+  const isLogin    = mode === 'login';
+  const isRegister = mode === 'register';
+  const isForgotU  = mode === 'forgot-username';
+  const isForgotA  = mode === 'forgot-answer';
+
+  authUsernameEl.style.display     = isForgotA ? 'none' : '';
+  authPasswordEl.style.display     = isForgotU  ? 'none' : '';
+  authRegisterFields.style.display = (isRegister||isForgotA) ? 'flex' : 'none';
+  authSecurityQuestion.style.display = isForgotA ? 'none' : '';
+  authForgotBtn.style.display      = isLogin ? '' : 'none';
+  authToggleBtn.style.display      = (isForgotU||isForgotA) ? 'none' : '';
+
+  if (isLogin) {
+    authSubEl.textContent = 'Log in om je voortgang bij te houden';
+    authSubmitBtn.textContent = 'Inloggen';
+    authToggleBtn.innerHTML = 'Nog geen account? <span>Registreer je hier</span>';
+    authPasswordEl.autocomplete = 'current-password';
+    authUsernameEl.placeholder = 'jouw naam';
+  } else if (isRegister) {
+    authSubEl.textContent = 'Maak een account aan';
+    authSubmitBtn.textContent = 'Account aanmaken';
+    authToggleBtn.innerHTML = 'Al een account? <span>Log hier in</span>';
+    authPasswordEl.autocomplete = 'new-password';
+    authUsernameEl.placeholder = 'jouw naam';
+  } else if (isForgotU) {
+    authSubEl.textContent = 'Vul je gebruikersnaam in';
+    authSubmitBtn.textContent = 'Beveiligingsvraag ophalen';
+    authUsernameEl.placeholder = 'jouw gebruikersnaam';
+  } else if (isForgotA) {
+    authSubEl.textContent = `Beantwoord de beveiligingsvraag voor "${forgotUsername}"`;
+    authSubmitBtn.textContent = 'Wachtwoord opnieuw instellen';
+    authPasswordEl.placeholder = 'nieuw wachtwoord';
+    authPasswordEl.autocomplete = 'new-password';
+    authSecurityAnswer.placeholder = 'jouw antwoord op de beveiligingsvraag';
+  }
+}
+
+function toggleAuthMode() {
+  setAuthMode(authMode === 'login' ? 'register' : 'login');
 }
 
 async function submitAuth() {
+  authSubmitBtn.disabled = true;
+  setAuthError('');
+  try {
+    if (authMode === 'login')          await doLogin();
+    else if (authMode === 'register')  await doRegister();
+    else if (authMode === 'forgot-username') await doForgotUsername();
+    else if (authMode === 'forgot-answer')   await doForgotAnswer();
+  } finally { authSubmitBtn.disabled = false; }
+}
+
+async function doLogin() {
   const username = authUsernameEl.value.trim();
   const password = authPasswordEl.value;
   if (!username || !password) { setAuthError('Vul alle velden in.'); return; }
+  const res = await fetch(API.login,{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({username,password})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Er ging iets mis.'); return; }
+  await loadUserAndEnter();
+}
 
-  authSubmitBtn.disabled = true;
+async function doRegister() {
+  const username = authUsernameEl.value.trim();
+  const password = authPasswordEl.value;
+  const question = authSecurityQuestion.value;
+  const answer   = authSecurityAnswer.value.trim();
+  if (!username || !password || !question || !answer) { setAuthError('Vul alle velden in.'); return; }
+  const res = await fetch(API.register,{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({username,password,security_question:question,security_answer:answer})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Er ging iets mis.'); return; }
+  await loadUserAndEnter();
+}
+
+async function doForgotUsername() {
+  const username = authUsernameEl.value.trim();
+  if (!username) { setAuthError('Vul je gebruikersnaam in.'); return; }
+  const res = await fetch(`${API.securityQuestion}?username=${encodeURIComponent(username)}`);
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Gebruiker niet gevonden.'); return; }
+  forgotUsername = username;
+  authSubEl.textContent = data.question;
+  setAuthMode('forgot-answer');
+}
+
+async function doForgotAnswer() {
+  const answer      = authPasswordEl.value.trim();
+  const newPassword = authPasswordEl.value;
+  // We repurpose the password field: first line is answer, but UX-wise let's use two separate prompts.
+  // Actually for simplicity: password field = security answer, then new password shown after.
+  // Better: use a dedicated sub-step. We'll use password field as new password and answer from a prompt.
+  // Simplest: reuse authSecurityAnswer input (show it for this step).
+  const secAnswer   = authSecurityAnswer.value.trim();
+  const newPass     = authPasswordEl.value;
+  if (!secAnswer || !newPass) { setAuthError('Vul het antwoord en een nieuw wachtwoord in.'); return; }
+  const res = await fetch(API.resetPassword,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username:forgotUsername, security_answer:secAnswer, new_password:newPass})});
+  const data = await res.json();
+  if (!res.ok) { setAuthError(data.error||'Antwoord onjuist.'); return; }
+  authPasswordEl.value = '';
+  authSecurityAnswer.value = '';
   setAuthError('');
-  const url = authMode==='login' ? API.login : API.register;
-  try {
-    const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-      credentials:'include', body:JSON.stringify({username,password})});
-    const data = await res.json();
-    if (!res.ok) { setAuthError(data.error||'Er ging iets mis.'); return; }
-    await loadUserAndEnter();
-  } catch(_) { setAuthError('Kan de server niet bereiken.'); }
-  finally { authSubmitBtn.disabled=false; }
+  authSubEl.textContent = 'Wachtwoord opnieuw ingesteld! Je kunt nu inloggen.';
+  setAuthMode('login');
 }
 
 async function loadUserAndEnter() {
@@ -547,7 +637,8 @@ function animateHeroIn() {
 /* ─── Event Listeners ───────────────────────────────────── */
 authSubmitBtn.addEventListener('click', submitAuth);
 authToggleBtn.addEventListener('click', toggleAuthMode);
-[authUsernameEl, authPasswordEl].forEach(el=>{
+authForgotBtn.addEventListener('click', ()=>setAuthMode('forgot-username'));
+[authUsernameEl, authPasswordEl, authSecurityAnswer].forEach(el=>{
   el.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAuth(); });
 });
 
