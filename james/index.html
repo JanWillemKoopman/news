@@ -21,19 +21,56 @@
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- ══════════════════════════════════════
+       SCREEN 0: LOGIN / REGISTER
+  ═══════════════════════════════════════ -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-inner">
+      <div class="auth-badge" aria-hidden="true">✦ JAMES' WONDER-APP ✦</div>
+      <h1 class="auth-title">Hé James! 👋</h1>
+      <p class="auth-sub" id="auth-sub">Log in om je voortgang bij te houden</p>
+
+      <div class="auth-card">
+        <div id="auth-error" class="auth-error" style="display:none;"></div>
+
+        <div class="auth-field">
+          <label for="auth-username">Gebruikersnaam</label>
+          <input id="auth-username" type="text" autocomplete="username" placeholder="jouw naam" maxlength="30" />
+        </div>
+        <div class="auth-field">
+          <label for="auth-password">Wachtwoord</label>
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="••••••" />
+        </div>
+
+        <button id="auth-submit-btn" class="btn-auth-submit">Inloggen</button>
+
+        <button id="auth-toggle-btn" class="btn-auth-toggle">
+          Nog geen account? <span>Registreer je hier</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
        SCREEN 1: HERO
   ═══════════════════════════════════════ -->
-  <div id="screen-hero" class="screen active">
+  <div id="screen-hero" class="screen">
     <div class="hero-inner">
 
       <div class="hero-badge" aria-hidden="true">✦ DAGELIJKS WONDERAVONTUUR ✦</div>
 
       <h1 class="hero-title">
-        <span>Hé James!</span>
+        <span id="hero-greeting">Hé James!</span>
         <span class="hero-wave" aria-hidden="true">👋</span>
       </h1>
 
       <p class="hero-sub">Druk op de knop<br>en ontdek iets bijzonders</p>
+
+      <!-- Stats badge -->
+      <div class="hero-stats" id="hero-stats" aria-live="polite">
+        <span id="stat-wonders">✦ 0 wonders</span>
+        <span class="stat-sep">·</span>
+        <span id="stat-quizzes">0 quizzen</span>
+      </div>
 
       <!-- The cosmic discover button -->
       <div class="btn-cosmos-wrap">
@@ -60,6 +97,8 @@
         <button class="world-pill" data-category="technology" role="listitem">💡 Technologie</button>
         <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
       </div>
+
+      <button id="btn-logout" class="btn-logout" aria-label="Uitloggen">Uitloggen</button>
 
     </div>
 
@@ -128,6 +167,44 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 4: QUIZ
+  ═══════════════════════════════════════ -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-inner">
+
+      <div class="quiz-header">
+        <span class="quiz-badge">🧠 QUIZ TIJD!</span>
+        <div class="quiz-progress-bar">
+          <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+        </div>
+        <p class="quiz-progress-label">Vraag <span id="quiz-q-num">1</span> van 3</p>
+      </div>
+
+      <div class="quiz-question-wrap">
+        <p id="quiz-question" class="quiz-question"></p>
+      </div>
+
+      <div id="quiz-answers" class="quiz-answers" role="list">
+        <!-- Filled by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       QUIZ COMPLETION OVERLAY
+  ═══════════════════════════════════════ -->
+  <div id="quiz-complete-overlay" class="quiz-complete-overlay" style="display:none;" aria-modal="true">
+    <div class="quiz-complete-inner">
+      <div class="quiz-trophy">🏆</div>
+      <h2 class="quiz-complete-title">Geweldig gedaan!</h2>
+      <p class="quiz-complete-sub" id="quiz-complete-sub">Je hebt de quiz afgerond!</p>
+      <div class="quiz-complete-stats" id="quiz-complete-stats"></div>
+      <button id="btn-quiz-done" class="btn-quiz-done">Verder ontdekken ✦</button>
     </div>
   </div>
 

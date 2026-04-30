@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,6 +26,9 @@ TRIGGER_SECRET = os.getenv("TRIGGER_SECRET", "")
 
 PAGE_SIZE = int(os.getenv("PAGE_SIZE", "5"))
 PORT = int(os.getenv("PORT", "5000"))
+
+SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
+DB_PATH = DATA_DIR / "users.db"
 
 NEWS_SOURCES = [
     s.strip()
