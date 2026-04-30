@@ -876,6 +876,7 @@ function setAuthMode(mode) {
   authSecurityQuestion.style.display = isForgotA ? 'none' : '';
   authForgotBtn.style.display    = isLogin ? '' : 'none';
   authToggleBtn.style.display    = (isForgotU||isForgotA) ? 'none' : '';
+  document.getElementById('auth-guest-btn').style.display = (isForgotU||isForgotA) ? 'none' : '';
   if (isLogin)   { authSubEl.textContent='Log in om je voortgang bij te houden'; authSubmitBtn.textContent='Inloggen'; authToggleBtn.innerHTML='Nog geen account? <span>Registreer je hier</span>'; }
   if (isReg)     { authSubEl.textContent='Maak een account aan'; authSubmitBtn.textContent='Account aanmaken'; authToggleBtn.innerHTML='Al een account? <span>Log hier in</span>'; authSecurityAnswer.placeholder='jouw antwoord'; }
   if (isForgotU) { authSubEl.textContent='Vul je gebruikersnaam in'; authSubmitBtn.textContent='Beveiligingsvraag ophalen'; }
@@ -931,6 +932,14 @@ async function doForgotAnswer() {
   authSubEl.textContent='Wachtwoord opnieuw ingesteld! Log nu in.'; setAuthMode('login');
 }
 
+function enterHero() {
+  const heroGreeting = document.getElementById('hero-greeting');
+  if (heroGreeting) heroGreeting.textContent = currentUser ? `Hé ${currentUser.username}!` : 'Hé James!';
+  btnLogout.textContent = currentUser ? 'Uitloggen' : '← Inloggen';
+  updateProgressBar(); updateCategoryStats(); updateCategoryPills(); updateQuizScoreDisplay();
+  showScreen(screenHero); animateHeroIn();
+}
+
 async function loadUserAndEnter() {
   try {
     const res = await fetch(API.me,{credentials:'include'});
@@ -939,15 +948,17 @@ async function loadUserAndEnter() {
     currentUser     = {id:data.id, username:data.username};
     serverReadSet   = new Set(data.seen_titles||[]);
     serverQuizCount = data.quiz_count||0;
-    const heroGreeting = document.getElementById('hero-greeting');
-    if (heroGreeting) heroGreeting.textContent = `Hé ${data.username}!`;
-    updateProgressBar(); updateCategoryStats(); updateCategoryPills(); updateQuizScoreDisplay();
-    showScreen(screenHero); animateHeroIn();
-  } catch(_) { showScreen(screenAuth); }
+    enterHero();
+  } catch(_) {
+    showScreen(screenAuth);
+    setAuthError('Server niet bereikbaar. Je kunt doorgaan als gast ↓');
+  }
 }
 
 async function logout() {
-  await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
+  if (currentUser) {
+    await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
+  }
   currentUser=null; serverReadSet=new Set(); serverQuizCount=0;
   authUsernameEl.value=''; authPasswordEl.value=''; setAuthError('');
   setAuthMode('login'); showScreen(screenAuth);
@@ -956,6 +967,7 @@ async function logout() {
 authSubmitBtn.addEventListener('click', submitAuth);
 authToggleBtn.addEventListener('click', ()=>setAuthMode(authMode==='login'?'register':'login'));
 authForgotBtn.addEventListener('click', ()=>setAuthMode('forgot-username'));
+document.getElementById('auth-guest-btn').addEventListener('click', ()=>{ currentUser=null; enterHero(); });
 [authUsernameEl,authPasswordEl,authSecurityAnswer].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')submitAuth();}));
 btnLogout.addEventListener('click', logout);
 
