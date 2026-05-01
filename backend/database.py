@@ -204,6 +204,9 @@ def add_quiz_completion(user_id: int, score: int, points: int = 0):
 
 
 def get_progress(user_id: int) -> dict:
+    today_start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).isoformat()
     with _connect() as conn:
         wonder_count = conn.execute(
             "SELECT COUNT(*) FROM seen_wonders WHERE user_id = ?", (user_id,)
@@ -222,10 +225,15 @@ def get_progress(user_id: int) -> dict:
         ).fetchone()
         streak = user_row["streak"] if user_row else 0
         total_points = user_row["total_points"] if user_row else 0
+        daily_count = conn.execute(
+            "SELECT COUNT(*) FROM seen_wonders WHERE user_id = ? AND seen_at >= ?",
+            (user_id, today_start),
+        ).fetchone()[0]
     return {
         "wonder_count": wonder_count,
         "quiz_count": quiz_count,
         "seen_titles": seen_titles,
         "streak": streak,
         "total_points": total_points,
+        "daily_count": daily_count,
     }

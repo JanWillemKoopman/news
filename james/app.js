@@ -428,6 +428,7 @@ let serverReadSet      = new Set();
 let serverQuizCount    = 0;
 let serverStreak       = 0;
 let serverPoints       = 0;
+let serverDailyCount   = 0;
 let forgotUsername     = '';
 let authMode           = 'login';
 
@@ -436,21 +437,111 @@ const LS_READ_SET    = 'jw_read_set';
 const LS_STREAK      = 'jw_streak';
 const LS_LAST_ACTIVE = 'jw_last_active';
 const LS_POINTS      = 'jw_points';
+const LS_DAILY_DATE  = 'jw_daily_date';
+const LS_DAILY_COUNT = 'jw_daily_count';
+
+const DAILY_LIMIT = 10;
+
+const LEVELS = [
+  { min: 0,    title: 'Sterrenreiziger', icon: '⭐' },
+  { min: 50,   title: 'Planeetkenner',   icon: '🌙' },
+  { min: 150,  title: 'Melkweggids',     icon: '🪐' },
+  { min: 300,  title: 'Ruimtekaptein',   icon: '🚀' },
+  { min: 500,  title: 'Sterrenkijker',   icon: '🔭' },
+  { min: 750,  title: 'Komeetrijder',    icon: '☄️' },
+  { min: 1000, title: 'Galaxiepionier',  icon: '🌌' },
+  { min: 1500, title: 'Kosmische Wijze', icon: '✨' },
+];
+
+function getLevel(pts) {
+  let lvl = LEVELS[0];
+  for (const l of LEVELS) { if (pts >= l.min) lvl = l; }
+  return lvl;
+}
 
 function getQuizCount() { return currentUser ? serverQuizCount : parseInt(localStorage.getItem(LS_QUIZ_COUNT) || '0', 10); }
 function setQuizCount(n){ if (!currentUser) localStorage.setItem(LS_QUIZ_COUNT, String(n)); else serverQuizCount = n; }
 function getPoints()    { return currentUser ? serverPoints : parseInt(localStorage.getItem(LS_POINTS) || '0', 10); }
 function addPoints(n)   {
+  const before = getPoints();
   if (currentUser) { serverPoints += n; }
-  else { localStorage.setItem(LS_POINTS, String(getPoints() + n)); }
+  else { localStorage.setItem(LS_POINTS, String(before + n)); }
+  const after = getPoints();
+  if (getLevel(after).min !== getLevel(before).min) {
+    showLevelUpBanner(getLevel(after));
+    playLevelUp();
+  }
   updatePointsDisplay(true);
+  updateLevelDisplay();
 }
 function updatePointsDisplay(animate) {
   const el = document.getElementById('points-num');
   if (!el) return;
-  el.textContent = getPoints();
+  const target = getPoints();
   if (animate && typeof gsap !== 'undefined') {
+    const obj = { n: parseInt(el.textContent || '0', 10) };
+    gsap.to(obj, {
+      n: target, duration: 0.85, ease: 'power2.out',
+      onUpdate() { el.textContent = Math.round(obj.n); },
+      onComplete() { el.textContent = target; },
+    });
     gsap.fromTo('#hero-points-wrap', { scale: 1.2 }, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' });
+  } else {
+    el.textContent = target;
+  }
+}
+
+function updateLevelDisplay() {
+  const lvl = getLevel(getPoints());
+  const iconEl  = document.getElementById('hero-level-icon');
+  const titleEl = document.getElementById('hero-level-title');
+  if (iconEl)  iconEl.textContent  = lvl.icon;
+  if (titleEl) titleEl.textContent = lvl.title;
+}
+
+function showLevelUpBanner(lvl) {
+  const el = document.getElementById('level-up-banner');
+  if (!el) return;
+  el.querySelector('.lub-icon').textContent  = lvl.icon;
+  el.querySelector('.lub-title').textContent = lvl.title;
+  el.classList.remove('lub-hide');
+  if (typeof gsap !== 'undefined') {
+    gsap.fromTo(el, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'elastic.out(1, 0.6)' });
+    gsap.to(el, { opacity: 0, y: -30, duration: 0.4, delay: 2.5, onComplete() { el.classList.add('lub-hide'); gsap.set(el, { clearProps: 'all' }); } });
+  } else {
+    setTimeout(() => el.classList.add('lub-hide'), 3000);
+  }
+}
+
+function getDailyCount() {
+  if (currentUser) return serverDailyCount;
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem(LS_DAILY_DATE) !== today) return 0;
+  return parseInt(localStorage.getItem(LS_DAILY_COUNT) || '0', 10);
+}
+
+function incrementGuestDailyCount() {
+  const today = new Date().toISOString().slice(0, 10);
+  const prev = getDailyCount();
+  localStorage.setItem(LS_DAILY_DATE, today);
+  localStorage.setItem(LS_DAILY_COUNT, String(prev + 1));
+}
+
+function updateDailyBar() {
+  const done = getDailyCount();
+  const pct  = Math.min(Math.round((done / DAILY_LIMIT) * 100), 100);
+  const fill = document.getElementById('daily-fill');
+  const text = document.getElementById('daily-text');
+  const bar  = document.getElementById('daily-bar');
+  if (fill) fill.style.width = pct + '%';
+  if (text) text.textContent = done + ' / ' + DAILY_LIMIT;
+  if (bar)  bar.setAttribute('aria-valuenow', done);
+  const atLimit = done >= DAILY_LIMIT;
+  if (btnWonder) {
+    btnWonder.disabled = atLimit;
+    btnWonder.classList.toggle('btn-cosmos--disabled', atLimit);
+    const hint = btnWonder.querySelector('.cosmos-hint');
+    if (hint) hint.textContent = atLimit ? 'morgen weer' : 'tik hier';
   }
 }
 
@@ -499,6 +590,10 @@ function markWonderRead(w) {
           const prev = serverStreak; serverStreak = data.streak;
           updateStreakDisplay(serverStreak > prev);
         }
+        if (data && data.daily_count != null) {
+          serverDailyCount = data.daily_count;
+          updateDailyBar();
+        }
       })
       .catch(() => {});
   } else {
@@ -507,6 +602,8 @@ function markWonderRead(w) {
     const prev = getStreak();
     const next = updateGuestStreak();
     updateStreakDisplay(next > prev);
+    incrementGuestDailyCount();
+    updateDailyBar();
   }
 }
 
@@ -554,6 +651,47 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/* ─── Audio ─────────────────────────────────────────────── */
+let _audioCtx = null;
+function _ac() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function _tone(freq, type, dur, vol, t) {
+  const ctx = _ac(), osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.start(t); osc.stop(t + dur + 0.05);
+}
+function playCorrect() {
+  const t = _ac().currentTime;
+  _tone(523, 'sine', 0.12, 0.3, t); _tone(784, 'sine', 0.2, 0.3, t + 0.1);
+}
+function playWrong() {
+  _tone(140, 'sawtooth', 0.22, 0.12, _ac().currentTime);
+}
+function playLevelUp() {
+  const t = _ac().currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => _tone(f, 'sine', 0.28, 0.35, t + i * 0.13));
+}
+function playWhoosh() {
+  const ctx = _ac(), n = Math.floor(ctx.sampleRate * 0.35);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const filt = ctx.createBiquadFilter();
+  filt.type = 'bandpass'; filt.Q.value = 0.4;
+  filt.frequency.setValueAtTime(150, ctx.currentTime);
+  filt.frequency.linearRampToValueAtTime(4500, ctx.currentTime + 0.35);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.35, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+  src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+  src.start();
 }
 
 /* ─── DOM References ────────────────────────────────────── */
@@ -751,11 +889,13 @@ function renderQuestion(index) {
 function handleAnswer(btn, isCorrect) {
   if (btn.disabled) return;
   if (isCorrect) {
+    playCorrect();
     if (quizFirstAttempts[currentQuizQ] === null) quizFirstAttempts[currentQuizQ] = true;
     btn.classList.add('correct');
     elQuizAnswers.querySelectorAll('.quiz-answer-btn').forEach(b => { b.disabled = true; });
     setTimeout(advanceQuiz, 900);
   } else {
+    playWrong();
     if (quizFirstAttempts[currentQuizQ] === null) quizFirstAttempts[currentQuizQ] = false;
     btn.classList.add('wrong');
     setTimeout(() => btn.classList.remove('wrong'), 650);
@@ -867,6 +1007,7 @@ function startDiscovery(category) {
 }
 
 function revealWonder() {
+  playWhoosh();
   // Set category theme
   screenWonder.className = `screen cat-${currentWonder.category}`;
 
@@ -952,7 +1093,10 @@ function spawnRipple(x, y) {
 }
 
 /* ─── Events ────────────────────────────────────────────── */
-btnWonder.addEventListener('click', () => startDiscovery(activeCategory));
+btnWonder.addEventListener('click', () => {
+  if (getDailyCount() >= DAILY_LIMIT) return;
+  startDiscovery(activeCategory);
+});
 btnHome.addEventListener('click', () => startQuiz(currentWonder, goHome));
 btnContinue.addEventListener('click', showPhase3);
 btnNew.addEventListener('click', () => startQuiz(currentWonder, () => startDiscovery(activeCategory)));
@@ -1099,7 +1243,9 @@ function enterHero() {
   if (heroGreeting) heroGreeting.textContent = currentUser ? `Hé ${currentUser.username}!` : 'Welkom!';
   btnLogout.textContent = currentUser ? 'Uitloggen' : '← Inloggen';
   updatePointsDisplay(false);
+  updateLevelDisplay();
   updateProgressBar(); updateStreakDisplay(false);
+  updateDailyBar();
   showScreen(screenHero); animateHeroIn();
 }
 
@@ -1108,11 +1254,12 @@ async function loadUserAndEnter() {
     const res = await fetch(API.me,{credentials:'include'});
     if (!res.ok) { showScreen(screenAuth); return; }
     const data = await res.json();
-    currentUser     = {id:data.id, username:data.username};
-    serverReadSet   = new Set(data.seen_titles||[]);
-    serverQuizCount = data.quiz_count||0;
-    serverStreak    = data.streak||0;
-    serverPoints    = data.total_points||0;
+    currentUser       = {id:data.id, username:data.username};
+    serverReadSet     = new Set(data.seen_titles||[]);
+    serverQuizCount   = data.quiz_count||0;
+    serverStreak      = data.streak||0;
+    serverPoints      = data.total_points||0;
+    serverDailyCount  = data.daily_count||0;
     enterHero();
   } catch(_) {
     showScreen(screenAuth);
@@ -1124,7 +1271,7 @@ async function logout() {
   if (currentUser) {
     await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
   }
-  currentUser=null; serverReadSet=new Set(); serverQuizCount=0; serverStreak=0; serverPoints=0;
+  currentUser=null; serverReadSet=new Set(); serverQuizCount=0; serverStreak=0; serverPoints=0; serverDailyCount=0;
   authUsernameEl.value=''; authPasswordEl.value=''; setAuthError('');
   setAuthMode('login'); showScreen(screenAuth);
 }

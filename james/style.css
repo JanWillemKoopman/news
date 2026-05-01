@@ -1150,3 +1150,25 @@ body::before {
 /* ─── Logout button ─────────────────────────────────────── */
 .btn-logout { background:none; border:1px solid var(--border); border-radius:var(--radius-pill); color:var(--text-4); cursor:pointer; font-family:var(--font-body); font-size:0.78rem; padding:6px 16px; transition:color .2s,border-color .2s; margin-top:4px; }
 .btn-logout:hover { color:var(--text-2); border-color:rgba(255,255,255,0.25); }
+
+/* ─── Level display (hero) ──────────────────────────────── */
+#hero-level-wrap { align-items:center; color:var(--accent-2); display:flex; font-family:var(--font-body); font-size:0.82rem; font-weight:600; gap:5px; justify-content:center; letter-spacing:0.04em; margin-bottom:6px; opacity:0.85; }
+
+/* ─── Level-up banner ───────────────────────────────────── */
+#level-up-banner { align-items:center; background:rgba(14,7,32,0.96); border:1px solid rgba(167,139,250,0.45); border-radius:20px; display:flex; flex-direction:column; gap:5px; left:50%; padding:22px 36px; pointer-events:none; position:fixed; top:50%; transform:translate(-50%,-50%); z-index:9000; }
+#level-up-banner.lub-hide { display:none; }
+.lub-icon  { font-size:2.4rem; line-height:1; }
+.lub-label { color:var(--accent-2); font-family:var(--font-body); font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; }
+.lub-title { color:#fff; font-family:var(--font-display); font-size:1.5rem; font-weight:700; }
+
+/* ─── Daily wonder bar ──────────────────────────────────── */
+.hero-daily-wrap { max-width:320px; margin:8px auto 0; width:100%; }
+.hero-daily-meta { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-3); margin-bottom:4px; }
+.hero-daily-count { color:var(--accent-2); font-weight:600; }
+.hero-daily-bar { background:rgba(255,255,255,0.07); border-radius:2px; height:4px; overflow:hidden; }
+.hero-daily-fill { background:linear-gradient(to right,#f59e0b,#ef4444); border-radius:2px; height:100%; transition:width .5s ease; width:0%; }
+
+/* ─── Disabled cosmos button (daily limit reached) ──────── */
+.btn-cosmos--disabled .cosmos-core { cursor:not-allowed; opacity:0.45; }
+.btn-cosmos--disabled .cosmos-ring { animation-play-state:paused; opacity:0.15; }
+.btn-cosmos--disabled .cosmos-glow { opacity:0; }

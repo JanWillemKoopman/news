@@ -21,7 +21,7 @@ build/
 .idea/
 *.swp
 
-# Vinted uploads en database
+# Uploads en database
 uploads/
-data/vinted.db
-data/users.db
+data/*.db
+*.db

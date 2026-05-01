@@ -175,6 +175,7 @@ def api_me():
         "seen_titles": progress["seen_titles"],
         "streak": progress["streak"],
         "total_points": progress["total_points"],
+        "daily_count": progress["daily_count"],
     })
 
 
@@ -198,6 +199,7 @@ def api_mark_wonder():
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
         "streak": streak,
+        "daily_count": progress["daily_count"],
     })
 
 
