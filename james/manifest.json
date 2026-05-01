@@ -1,14 +1,14 @@
 {
-  "name": "Wonder App",
-  "short_name": "Wonder App",
-  "description": "Ontdek elke dag iets nieuws en bijzonders!",
+  "name": "PSV Fan Challenge",
+  "short_name": "PSV Quiz",
+  "description": "Test jouw PSV-kennis elke dag en verdien punten!",
   "start_url": "/james/",
   "display": "standalone",
-  "background_color": "#04020c",
-  "theme_color": "#04020c",
+  "background_color": "#090004",
+  "theme_color": "#090004",
   "orientation": "portrait",
   "lang": "nl",
-  "categories": ["education", "games"],
+  "categories": ["sports", "games"],
   "icons": [
     {
       "src": "/james/icons/icon-192.png",

@@ -1,4 +1,4 @@
-const CACHE = 'wonder-v1';
+const CACHE = 'psv-v1';
 const SHELL = [
   '/james/',
   '/james/style.css',

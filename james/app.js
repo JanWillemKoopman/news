@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Wonder App — Immersive Experience
+   PSV Fan Challenge — Immersive Experience
    Vanilla JS · Canvas 2D starfield · GSAP animations
    No external JS dependencies beyond GSAP (loaded via CDN).
 ═══════════════════════════════════════════════════════════════ */
@@ -7,12 +7,11 @@
 
 /* ─── Config ────────────────────────────────────────────── */
 const CATEGORY_INFO = {
-  space:      { emoji: '🚀', label: 'Ruimte' },
-  animals:    { emoji: '🦁', label: 'Dieren' },
-  history:    { emoji: '📜', label: 'Geschiedenis' },
-  science:    { emoji: '🔬', label: 'Wetenschap' },
-  technology: { emoji: '💡', label: 'Technologie' },
-  nature:     { emoji: '🌿', label: 'Natuur' },
+  legendes:     { emoji: '🌟', label: 'Legendes' },
+  prijzen:      { emoji: '🏆', label: 'Prijzen' },
+  geschiedenis: { emoji: '📜', label: 'Geschiedenis' },
+  stadion:      { emoji: '🏟️', label: 'Stadion' },
+  records:      { emoji: '📊', label: 'Records' },
 };
 
 const CFG = {
@@ -25,379 +24,387 @@ const CFG = {
 
 /* ─── Wonder Library ────────────────────────────────────── */
 const WONDERS = [
+  /* ── LEGENDES ──────────────────────────────────────── */
   {
-    category: 'space',
-    emoji: '🌕',
-    label: 'Ruimte',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/600px-Aldrin_Apollo_11_original.jpg',
-    title: 'De Maanlanding',
-    intro: 'Op 20 juli 1969 zette een mens voor het eerst voet op de maan. Dat was Neil Armstrong. Hij deed één kleine stap — maar het was een reuzenstap voor alle mensen op aarde. Miljoenen mensen keken live op televisie toe. Iedereen was stil van spanning. Zou het lukken? Zouden ze veilig landen? En daarna: zouden ze ook weer terug kunnen komen? Het antwoord op al die vragen was ja. De lancering was eerder die maand geweest, op 16 juli 1969. Het ruimteschip heette Apollo 11, en er zaten drie mannen in: Neil Armstrong, Buzz Aldrin en Michael Collins. Collins bleef in de ruimtecapsule cirkelen om de maan, terwijl Armstrong en Aldrin in een kleiner landingsvoertuig afdaalden. Dat voertuig heette de Eagle — de Adelaar. Toen ze bijna landden, begon er een alarm te piepen. Niemand wist precies wat er mis was. De vluchtleiders op aarde beslisten in een paar tellen: doorgaan. En het ging goed.',
-    question: 'Als jij op de maan mocht staan en naar de aarde keek — wat zou je dan denken?',
-    deepdive: 'De reis naar de maan duurde vier dagen. De astronauten hadden niet eens een computer zo krachtig als jouw telefoon — en toch kwamen ze veilig terug. Er liepen maar 12 mensen op de maan. Nog niemand is er daarna naartoe gegaan. De eerste woorden op de maan waren: "De Adelaar is geland." Wat veel mensen niet weten: er staat een plaquette op de maan met de tekst "Hier kwamen mensen van de planeet Aarde voor het eerst voet op de Maan, juli 1969 na Chr. Wij kwamen in vrede voor alle mensen." De astronauten plantten ook een Amerikaanse vlag, maar die stond door de motorwind van de landing scheef. Op de maan is er geen wind, geen regen en geen erosie. De voetafdrukken van Armstrong en Aldrin liggen er vandaag de dag nog steeds, precies zoals ze ze achterlieten. Ze zullen er misschien miljoenen jaren blijven liggen.',
+    category: 'legendes',
+    emoji: '🌟',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'Willy van der Kuijlen — De Schicht van het Zuiden',
+    intro: 'Willy van der Kuijlen is de absolute topscorer aller tijden van PSV. In zijn carrière bij de club scoorde hij 308 Eredivisie-goals in 373 officiële wedstrijden — een record dat tot op de dag van vandaag staat. Van 1964 tot 1980 was hij het hart en de ziel van PSV, en werd hij door fans en tegenstanders gevreesd vanwege zijn explosieve snelheid en onnavolgbare schietkracht. Zijn bijnaam "De Schicht van het Zuiden" was dan ook volledig verdiend. Van der Kuijlen won met PSV liefst twaalf Eredivisie-titels. Hij was een man die in elke wedstrijd het verschil kon maken, die tegenstanders in hun hemd zette met een versnelling of een onverwacht schot. Ondanks zijn indrukwekkende statistieken speelde hij nooit een WK — iets wat tot op heden een pijnlijk gemis is in zijn glorieuze carrière.',
+    question: 'Waarom worden sommige spelers echte legendes, terwijl anderen met evenveel talent worden vergeten?',
+    deepdive: 'Van der Kuijlen scoorde zo veel dat hij in sommige seizoenen meer dan 30 competitiedoelpunten maakte. Hij speelde zijn hele topcarrière bij PSV — een zeldzame loyaliteit in een tijd dat spelers steeds vaker naar het buitenland trokken. Zijn record van 308 Eredivisie-goals voor één club staat nog altijd en zal vermoedelijk nooit worden gebroken. PSV eerde hem later met een standbeeld buiten het Philips Stadion. Als je ooit langs het stadion loopt, kijk dan goed: daar staat hij, in brons gegoten, voor eeuwig klaar om te schieten.',
     quiz: [
-      { question: 'Hoeveel mensen liepen er ooit op de maan?', answers: [{ text: '12 mensen', correct: true }, { text: '3 mensen' }, { text: '50 mensen' }] },
-      { question: 'Hoe heette het ruimteschip van de eerste maanlanding?', answers: [{ text: 'Apollo 11', correct: true }, { text: 'Apollo 7' }, { text: 'Gemini 5' }] },
-      { question: 'Wat waren de eerste woorden gesproken op de maan?', answers: [{ text: '"De Adelaar is geland"', correct: true }, { text: '"Eén kleine stap"' }, { text: '"Houston, we have a problem"' }] },
+      { question: 'Hoeveel Eredivisie-goals scoorde Willy van der Kuijlen voor PSV?', answers: [{ text: '308 goals', correct: true }, { text: '200 goals' }, { text: '150 goals' }] },
+      { question: 'Welke bijnaam had Willy van der Kuijlen?', answers: [{ text: '"De Schicht van het Zuiden"', correct: true }, { text: '"De Tornado van Brabant"' }, { text: '"De Vos van Eindhoven"' }] },
+      { question: 'Hoeveel Eredivisie-titels won Van der Kuijlen met PSV?', answers: [{ text: '12 titels', correct: true }, { text: '5 titels' }, { text: '20 titels' }] },
     ],
   },
   {
-    category: 'history',
-    emoji: '🕊️',
-    label: 'Geschiedenis',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Anne_Frank_House_2013_%281%29.jpg/600px-Anne_Frank_House_2013_%281%29.jpg',
-    title: 'De Tweede Wereldoorlog',
-    intro: 'Tussen 1940 en 1945 was Nederland bezet door een land dat Duitsland heette. Mensen mochten niet meer vrij zijn. Joden, mensen met een handicap en anderen werden opgepakt en weggevoerd. Heel veel mensen zijn in die tijd gestorven — meer dan zes miljoen Joodse mensen alleen al. Op 10 mei 1940 vielen de Duitse soldaten Nederland binnen. Na vijf dagen moest Nederland zich overgeven. Daarna begon een periode van vijf jaar bezetting. De Duitsers maakten allerlei strenge regels. Joodse mensen moesten een gele ster dragen. Ze mochten niet meer naar school, niet meer naar de bioscoop, en ook niet meer op de fiets. Mensen die zich verzetten, riskeerden hun leven. Toch waren er veel Nederlanders die hielpen — door Joodse gezinnen te verstoppen, nep-papieren te maken of informatie door te geven aan de geallieerden. Die mensen noemden we de verzetsstrijders.',
-    question: 'Waarom denk jij dat het zo belangrijk is dat mensen vrijheid hebben?',
-    deepdive: 'In Amsterdam verstopte een meisje van 13 jaar, Anne Frank, zich met haar familie twee jaar lang in een geheim huis achter een boekenkast. Ze schreef alles op in een dagboek. Dat dagboek kun je nu nog lezen. Op 5 mei 1945 was Nederland eindelijk vrij — dat vieren we elk jaar op Bevrijdingsdag. Anne Frank werd helaas ontdekt en stierf in een concentratiekamp. Haar dagboek overleefde wel, bewaard door haar vader Otto Frank, de enige van het gezin die de oorlog overleefde. Het dagboek is vertaald in meer dan 70 talen en is een van de meest gelezen boeken ter wereld. In Nederland staan veel monumenten om de slachtoffers te herdenken. Op 4 mei, de dag vóór Bevrijdingsdag, is er een nationale herdenking. Om 20:00 uur stopt heel Nederland met wat het doet — twee minuten stilte voor alle mensen die zijn gestorven.',
-    quiz: [
-      { question: 'Op welke dag werd Nederland bevrijd van de bezetting?', answers: [{ text: '5 mei 1945', correct: true }, { text: '8 mei 1940' }, { text: '1 september 1939' }] },
-      { question: 'Hoeveel jaar was Nederland bezet door Duitsland?', answers: [{ text: '5 jaar', correct: true }, { text: '2 jaar' }, { text: '10 jaar' }] },
-      { question: 'Wie schreef een beroemd dagboek tijdens de bezetting?', answers: [{ text: 'Anne Frank', correct: true }, { text: 'Corrie ten Boom' }, { text: 'Miep Gies' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '💰',
-    label: 'Economie',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg/600px-Elon_Musk_Royal_Society_%28crop2%29.jpg',
-    title: 'De Rijkste Persoon Ter Wereld',
-    intro: 'Sommige mensen hebben zo veel geld dat je het bijna niet kunt tellen. De rijkste mensen ter wereld hebben meer geld dan hele landen. Maar hoe word je eigenlijk zo rijk? Bijna altijd begint het met een idee. Een simpel idee, vaak in een garage of een slaapkamer, dat uitgroeit tot iets gigantisch. Jeff Bezos begon in 1994 met verkopen van boeken via het internet vanuit zijn garage in Seattle. Niemand dacht dat het iets zou worden. Nu is Amazon het grootste online winkelplatform ter wereld, met meer dan 300 miljoen klanten. Elon Musk begon met een bedrijf dat online betalingen makkelijker maakte — dat werd later PayPal. Met het geld dat hij daarmee verdiende, startte hij Tesla (elektrische auto\'s) én SpaceX (raketten). Hij droomt ervan om mensen naar Mars te sturen. Mark Zuckerberg maakte op zijn zolderkamer een website voor zijn universiteit om vrienden te verbinden. Dat werd Facebook, nu Meta, met bijna drie miljard gebruikers.',
-    question: 'Wat zou jij doen als je meer geld had dan je ooit kon uitgeven?',
-    deepdive: 'Elon Musk heeft zoveel geld dat hij zijn eigen raketbedrijf heeft gebouwd. Jeff Bezos begon met het verkopen van boeken vanuit zijn garage — nu koopt bijna de hele wereld bij zijn bedrijf Amazon. Geld geeft je macht, maar heel veel rijke mensen zeggen dat vrienden en familie hen gelukkiger maken. Wat interessant is: veel van de rijkste mensen ter wereld geven ook enorme bedragen weg. Bill Gates, de oprichter van Microsoft, heeft meer dan 50 miljard dollar weggegeven aan goede doelen, vooral voor vaccins en gezondheidszorg in arme landen. Warren Buffett, een van de rijkste beleggers ter wereld, woont nog steeds in hetzelfde bescheiden huis als 60 jaar geleden. Hij zei ooit: "Ik wil rijkdom geven aan de samenleving, want die heeft mij ook groot gemaakt." Rijk zijn gaat dus niet alleen over wat je hebt — maar ook over wat je ermee doet.',
-    quiz: [
-      { question: 'Waarmee begon Jeff Bezos zijn bedrijf Amazon?', answers: [{ text: 'Boeken verkopen', correct: true }, { text: 'Kleding verkopen' }, { text: "Auto's verkopen" }] },
-      { question: 'Wat maakte Elon Musk naast SpaceX ook?', answers: [{ text: 'Tesla', correct: true }, { text: 'Apple' }, { text: 'Amazon' }] },
-      { question: 'Hoeveel geld gaf Bill Gates weg aan goede doelen?', answers: [{ text: 'Meer dan 50 miljard dollar', correct: true }, { text: '1 miljard dollar' }, { text: '100 miljoen dollar' }] },
-    ],
-  },
-  {
-    category: 'science',
-    emoji: '🕳️',
-    label: 'Wetenschap',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Kola_superdeep_borehole_site.jpg/600px-Kola_superdeep_borehole_site.jpg',
-    title: 'De Diepste Boring op Aarde',
-    intro: 'In Rusland boorden mensen een gat in de grond — zo diep als 12 kilometer. Dat is het diepste gat dat mensen ooit hebben gemaakt. Ze stopten pas toen het te heet werd. Het project begon in 1970, tijdens de Koude Oorlog. De Sovjet-Unie wilde bewijzen dat ze verder konden graven dan de Amerikanen. Wetenschappers wilden ook weten wat er diep in de aarde zit. Is de grond harder of zachter? Warmer of kouder? Zitten er lagen die je aan de oppervlakte niet kunt zien? Ze ontdekten dingen die niemand had verwacht. Op grote diepte vonden ze water — ingesloten in rotslagen, vastgezet onder enorme druk. Ze vonden ook microscopisch kleine gefossiliseerde organismen, levende wezentjes die al miljarden jaren geleden gestorven waren. Maar het grootste probleem bleef de hitte. Hoe dieper ze kwamen, hoe heter het werd. Het boorgereedschap smolt bijna.',
-    question: 'Wat denk jij dat er helemaal in het midden van de aarde zit?',
-    deepdive: 'Op 12 kilometer diepte was het meer dan 180 graden Celsius — heter dan een oven! De boring heet de Kola Superdeep Borehole. Het project duurde 24 jaar. En toch hadden ze maar een klein stukje van de aardkorst bereikt. Het middelpunt van de aarde is nog 6.000 kilometer verder. De aarde bestaat uit lagen: eerst de korst (waar wij op leven), dan de mantel van gesmolten gesteente, dan de buitenkern van vloeibaar ijzer en nikkel, en helemaal in het midden de binnenkern — een enorme ijzeren bol zo groot als de maan, onder zo veel druk dat het ijzer vast is ondanks de enorme hitte van wel 5.400 graden. Hoe weten wetenschappers dit als niemand er ooit geweest is? Via aardbevingen. Geluidsgolven van aardbevingen reizen door de aarde en buigen afhankelijk van het materiaal. Door die buigingen te meten kunnen wetenschappers precies zien wat er van binnen zit — net als een röntgenfoto, maar dan van de hele planeet.',
-    quiz: [
-      { question: 'Hoe diep is het diepste gat dat mensen ooit hebben geboord?', answers: [{ text: '12 kilometer', correct: true }, { text: '5 kilometer' }, { text: '100 kilometer' }] },
-      { question: 'Hoe heet het project van de diepste boring op aarde?', answers: [{ text: 'Kola Superdeep Borehole', correct: true }, { text: 'Deep Earth Project' }, { text: 'Rusland Boring' }] },
-      { question: 'Hoe heet de buitenste laag van de aarde waarop wij leven?', answers: [{ text: 'De korst', correct: true }, { text: 'De mantel' }, { text: 'De kern' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🇪🇺',
-    label: 'Europa',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/600px-Flag_of_Europe.svg.png',
-    title: 'Wat Is Europa?',
-    intro: 'Europa is niet alleen een werelddeel — het is ook een samenwerking van landen die de Europese Unie heet. Ze helpen elkaar en hebben samen afspraken gemaakt over handel, vrede en rechten van mensen. Maar hoe is de EU eigenlijk ontstaan? Na de Tweede Wereldoorlog lag Europa in puin. Miljoenen mensen waren gestorven. Steden waren verwoest. De leiders van de landen vroegen zich af: hoe zorgen we dat dit nooit meer gebeurt? Hun antwoord was samenwerking. Als landen van elkaar afhankelijk zijn — als ze handel met elkaar drijven, dezelfde regels hanteren en met elkaar praten — is de kans op oorlog kleiner. Begonnen met zes landen (Nederland, België, Luxemburg, Frankrijk, West-Duitsland en Italië), groeide de samenwerking langzaam uit. Eerst ging het alleen over staal en kolen. Later ook over andere producten, en uiteindelijk over alles: van voedselregels tot het milieu, van mensenrechten tot de munt.',
-    question: 'Als landen samenwerken, denk je dat dat de wereld beter of moeilijker maakt?',
-    deepdive: 'Er zijn 27 landen lid van de Europese Unie. In veel landen betaal je met dezelfde munt: de euro. Mensen mogen vrij van land naar land reizen zonder paspoort. Vroeger hadden al die landen vaker oorlog met elkaar — nu werken ze samen. De EU heeft ook een eigen vlag (blauwe achtergrond met gele sterren) en een eigen volkslied (de Ode an die Freude van Beethoven). Elk land heeft vertegenwoordigers in het Europees Parlement in Brussel en Straatsburg. Daar stemmen ze over nieuwe wetten die voor alle landen gelden. Sommige landen doen wél mee met de EU maar niet met de euro, zoals Zweden en Polen. Groot-Brittannië deed jarenlang mee maar verliet de EU in 2020 — dat heette de Brexit. Het liet zien dat meedoen aan de EU een keuze is, geen verplichting.',
-    quiz: [
-      { question: 'Hoeveel landen zijn er lid van de Europese Unie?', answers: [{ text: '27 landen', correct: true }, { text: '15 landen' }, { text: '50 landen' }] },
-      { question: 'Welk land verliet de EU in 2020?', answers: [{ text: 'Groot-Brittannië', correct: true }, { text: 'Noorwegen' }, { text: 'Zwitserland' }] },
-      { question: 'Wat is het volkslied van de Europese Unie?', answers: [{ text: 'Ode an die Freude', correct: true }, { text: 'La Marseillaise' }, { text: 'Rule Britannia' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🪙',
-    label: 'Geschiedenis',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Nederlanden_Gulden.jpg/600px-Nederlanden_Gulden.jpg',
-    title: 'De Nederlandse Gulden',
-    intro: 'Voordat Nederland de euro had, betaalden mensen hier met de gulden. Dat was het Nederlandse geld. Op 1 januari 2002 verdween de gulden voor altijd en kwamen de eerste euro\'s en eurocenten in omloop. Miljoenen Nederlanders wisselden hun oude munten en biljetten in. In één nacht veranderde het geld van een heel land. De gulden bestond al heel lang: bijna 600 jaar lang was het de munt van Nederland. De oudste gulden dateert uit 1380. In al die eeuwen veranderde het uiterlijk regelmatig. Op de biljetten stonden beroemde Nederlanders: schrijver Spinoza, schilder Rembrandt en zeeheld Michiel de Ruyter. Op de munten stond het profiel van de Nederlandse koning of koningin. Kinderen die spaarpotjes hadden met guldens vonden het soms moeilijk dat hun gespaarde geld ineens minder waard leek — al was de omrekening eerlijk: één euro was gelijk aan 2,20371 gulden.',
-    question: 'Stel dat elk land zijn eigen geld heeft — wat zijn de voor- en nadelen daarvan?',
-    deepdive: 'Op een gulden stond het gezicht van koningin Beatrix. Er waren munten van 5 cent (stuiver), 10 cent (dubbeltje) en 25 cent (kwartje). Een brood kostte vroeger maar een paar gulden. Nu is het Nederlands geld de euro, gedeeld door inmiddels 20 landen. Sommige Nederlanders vonden het heel jammer dat de gulden verdween — ze voelden het als een stuk van hun identiteit dat verloren ging. Maar de euro heeft ook grote voordelen: als je naar Frankrijk, Duitsland of Spanje gaat, hoef je geen geld meer te wisselen. Bedrijven kunnen makkelijker handelen met andere EU-landen. En de prijs van spullen is makkelijker te vergelijken. Toch bewaren veel mensen thuis nog oude guldens als herinnering. Sommige zijn zelfs meer waard geworden als verzamelobject dan hun oorspronkelijke waarde.',
-    quiz: [
-      { question: 'Wanneer verdween de gulden en kregen we de euro?', answers: [{ text: '1 januari 2002', correct: true }, { text: '1 januari 2000' }, { text: '1 januari 2010' }] },
-      { question: 'Hoeveel gulden was één euro waard bij de invoering?', answers: [{ text: '2,20371 gulden', correct: true }, { text: '1 gulden' }, { text: '5 gulden' }] },
-      { question: 'Hoelang bestond de Nederlandse gulden al?', answers: [{ text: 'Bijna 600 jaar', correct: true }, { text: '100 jaar' }, { text: '50 jaar' }] },
-    ],
-  },
-  {
-    category: 'science',
-    emoji: '🔬',
-    label: 'Wetenschap',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Marie_Curie_c._1920s.jpg/600px-Marie_Curie_c._1920s.jpg',
-    title: 'Wat Doet Een Wetenschapper?',
-    intro: 'Wetenschappers stellen vragen over de wereld en zoeken antwoorden. Ze doen experimenten, schrijven alles op en delen hun ontdekkingen met anderen. Dankzij wetenschappers weten we zo ontzettend veel. Maar hoe werkt een wetenschapper eigenlijk? Het begint altijd met een vraag. Waarom valt een appel naar beneden? Hoe groeien cellen? Waarom is de lucht blauw? Daarna bedenk je een hypothese — een idee over het antwoord. Vervolgens doe je een experiment om te testen of je idee klopt. Als het klopt: geweldig. Als het niet klopt: ook geweldig, want je hebt iets nieuws geleerd. Isaac Newton zag een appel van een boom vallen en vroeg zich af waarom. Dat leidde tot zijn ontdekking van de zwaartekracht. Marie Curie onderzocht radioactieve straling — een onderwerp dat zo gevaarlijk was dat ze er uiteindelijk ziek van werd. Ze won twee Nobelprijzen, als eerste vrouw ooit.',
-    question: 'Als jij wetenschapper was, welke vraag zou jij dan als eerste willen beantwoorden?',
-    deepdive: 'Er zijn heel veel soorten wetenschappers. Een bioloog bestudeert dieren en planten. Een astronoom kijkt naar sterren en planeten. Albert Einstein ontdekte dat tijd sneller of langzamer kan gaan, afhankelijk van hoe snel je beweegt. Dat klinkt als magie — maar het is gewoon wetenschap! Einstein was als kind overigens niet de beste leerling. Hij was nieuwsgierig en eigenwijs, en leerde graag op zijn eigen manier. Zijn beroemdste formule is E=mc², wat betekent dat energie en massa hetzelfde zijn in een andere vorm. Dat idee ligt aan de basis van kernenergie en zelfs van het begrip van de oerknal. Wetenschap is ook niet altijd snel. Soms duurt een ontdekking tientallen jaren. De wetenschapper die DNA ontdekte, James Watson, werkte jarenlang samen met anderen voordat het grote geheim van het leven ontrafeld was. Wetenschap is geduldig zoeken — en soms plotseling een "Eureka!"-moment.',
-    quiz: [
-      { question: 'Wat ontdekte Albert Einstein?', answers: [{ text: 'Dat tijd sneller of langzamer kan gaan', correct: true }, { text: 'Dat de aarde rond de zon draait' }, { text: 'Dat water uit H2O bestaat' }] },
-      { question: 'Wie won twee Nobelprijzen voor onderzoek naar radioactiviteit?', answers: [{ text: 'Marie Curie', correct: true }, { text: 'Albert Einstein' }, { text: 'Isaac Newton' }] },
-      { question: 'Hoe noem je een idee dat je wilt testen in een experiment?', answers: [{ text: 'Een hypothese', correct: true }, { text: 'Een theorie' }, { text: 'Een formule' }] },
-    ],
-  },
-  {
-    category: 'technology',
+    category: 'legendes',
     emoji: '⚡',
-    label: 'Technologie',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/English_Pokemon_V_Style_logo.svg/600px-English_Pokemon_V_Style_logo.svg.png',
-    title: 'Pokémon — Hoe Begon Het?',
-    intro: 'Pokémon begon in 1996 in Japan als een spel voor de Game Boy. De maker, Satoshi Tajiri, was als kind dol op insecten vangen in de natuur. Hij wilde dat gevoel — het zoeken, vangen en verzamelen — omzetten in een spel. Het resultaat: een van de meest succesvolle speelgoedfranchises aller tijden. Tajiri werkte vijf jaar aan het spel, samen met zijn jeugdvriend Ken Sugimori, die alle Pokémon tekende. Ze hadden nauwelijks geld. Het spel was bijna failliet voordat het uitkwam. Maar toen het in Japan verscheen, werd het meteen een gigantisch succes. Kinderen ruilden hun Game Boy-cartridges op het schoolplein. Er was een rode versie en een blauwe versie, met kleine verschillen — zodat je vrienden nodig had om alles te verzamelen. Die slimme truc zorgde ervoor dat iedereen het speelde. Al snel kwamen er speelkaarten, een tekenfilmserie en films.',
-    question: 'Wat zou jouw eigen Pokémon zijn, en welk bijzonder vermogen zou hij hebben?',
-    deepdive: 'De naam Pokémon komt van "Pocket Monsters" — kleine monsters die je in je zak draagt. In het eerste spel waren er 151 Pokémon. Nu zijn er meer dan 1.000! Pikachu werd het gezicht van Pokémon, maar de echte starter-keuze was tussen Bulbasaur, Charmander en Squirtle. De Pokémon-franchise is inmiddels de meest winstgevende entertainment-franchise ooit — rijker dan Star Wars, Marvel en Disney. Elk jaar komen er nieuwe spellen, films en kaarten uit. De kaarten zijn zo populair dat sommige zeldzame exemplaren tienduizenden euro\'s waard zijn. Een eerste editie Charizard-kaart in perfecte staat werd ooit verkocht voor meer dan 400.000 dollar. Pokémon GO, uitgebracht in 2016, liet spelers Pokémon vangen in de echte wereld via hun telefoon. Op de eerste dag was het de meest gedownloade app ter wereld. Het bracht mensen letterlijk naar buiten en bewoog ze meer — iets wat de makers vast niet hadden verwacht.',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ruud_van_Nistelrooy.jpg/600px-Ruud_van_Nistelrooy.jpg',
+    title: 'Ruud van Nistelrooy — De Killer van de Eredivisie',
+    intro: 'Ruud van Nistelrooy is misschien wel de meest klinische doelpuntenmaker die PSV ooit heeft gehad. In slechts 67 Eredivisie-wedstrijden scoorde hij 62 keer — een buitengewone verhouding die hem snel in de kijker speelde van de grootste clubs ter wereld. PSV haalde hem in 1998 op nadat hij zijn kruisband had gescheurd bij Den Haag. Velen dachten dat zijn carrière al voorbij was voor ze begon. Maar Van Nistelrooy bewees het tegendeel. Na een pijnlijk revalidatietraject pakte hij door met een honger die misschien werd aangewakkerd door al die verloren maanden. Zijn goals waren zelden geflatteerd: hij was koelbloedig, raak en efficiënt. In 2001 vertrok hij naar Manchester United voor 19 miljoen euro — op dat moment een recordbedrag voor een Nederlandse speler.',
+    question: 'Is een speler die PSV verlaat voor een groot buitenlands avontuur een held of een verrader van de club?',
+    deepdive: 'Bij Manchester United scoorde Van Nistelrooy in zijn eerste vier seizoenen maar liefst 95 Premier League-goals. Hij won de Gouden Schoen als beste speler van Europa in 2002. Later speelde hij nog voor Real Madrid, Hamburg en Málaga. In 2023 keerde hij terug bij PSV — maar nu als hoofdcoach. Onder zijn leiding werd PSV in 2023 voor de 24e keer landskampioen. Van Nistelrooy is daarmee zowel als speler als als coach een groot PSV-icoon.',
     quiz: [
-      { question: 'Hoeveel Pokémon waren er in het allereerste Pokémon-spel?', answers: [{ text: '151', correct: true }, { text: '250' }, { text: '1000' }] },
-      { question: 'Wie bedacht het eerste Pokémon-spel?', answers: [{ text: 'Satoshi Tajiri', correct: true }, { text: 'Shigeru Miyamoto' }, { text: 'Ken Sugimori' }] },
-      { question: 'In welk jaar verscheen Pokémon GO?', answers: [{ text: '2016', correct: true }, { text: '2010' }, { text: '2020' }] },
+      { question: 'Hoeveel Eredivisie-goals scoorde Van Nistelrooy in 67 wedstrijden voor PSV?', answers: [{ text: '62 goals', correct: true }, { text: '40 goals' }, { text: '80 goals' }] },
+      { question: 'Voor welke club vertrok Van Nistelrooy in 2001?', answers: [{ text: 'Manchester United', correct: true }, { text: 'Real Madrid' }, { text: 'Barcelona' }] },
+      { question: 'In welke rol keerde Van Nistelrooy in 2022 terug bij PSV?', answers: [{ text: 'Als hoofdcoach', correct: true }, { text: 'Als technisch directeur' }, { text: 'Als assistent-trainer' }] },
     ],
   },
   {
-    category: 'animals',
-    emoji: '🐙',
-    label: 'Dieren',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Octopus3.jpg/600px-Octopus3.jpg',
-    title: 'De Octopus: Een Geniaal Dier',
-    intro: 'Een octopus heeft drie harten, blauw bloed en negen hersenen! Elke arm heeft zijn eigen mini-brein dat zelfstandig besluiten kan nemen. Ze zijn zo slim dat ze potten kunnen openen, labyrinten kunnen oplossen en gezichten van mensen kunnen herkennen. Een octopus is eigenlijk een van de slimste dieren op aarde — al lijkt hij in niets op jou of op een hond of aap. Octopussen zijn weekdieren, verwant aan slakken en mosselen. Maar ergens in hun evolutie ontwikkelden ze een enorm brein. Ze hebben acht armen die elk honderden zuignappen bevatten — en die armen denken echt mee. Als je een arm wegsnijdt (wat in de natuur kan gebeuren), blijft die arm nog tijdelijk reageren op zijn omgeving. Elk van de acht armen kan onafhankelijk beslissingen nemen, terwijl het centrale brein de grote strategie bepaalt. Dat is alsof jij acht helpers hebt die elk hun eigen hoofd gebruiken.',
-    question: 'Als jij negen hersenen had, wat zou je dan tegelijkertijd denken?',
-    deepdive: 'Octopussen leven maar 1 tot 3 jaar, maar in die tijd leren ze ontzettend veel. Ze kunnen van kleur en textuur veranderen om zich te camoufleren — zelfs als ze kleurenblind zijn! Wetenschappers ontdekten dat octopussen dromen: ze veranderen van kleur terwijl ze slapen, waarschijnlijk omdat ze beelden in hun hoofd zien. Hoe ze kleuren kunnen nabootsen terwijl ze ze niet kunnen zien, is nog steeds een mysterie. Wetenschappers denken dat ze licht waarnemen via speciale cellen in hun huid zelf, los van hun ogen. Octopussen zijn ook meesters in ontsnappen. In gevangenschap vinden ze altijd een manier om hun tank te verlaten, door de kamer te wandelen en terug te sluipen voor de verzorger terugkomt. Sommige octopussen dragen zelfs kokosschelpen met zich mee als draagbaar huis — een van de weinige voorbeelden van gereedschapsgebruik buiten zoogdieren. En hun inkt, die ze spuiten om roofdieren te verwarren, bevat stoffen die de zintuigen van aanvallers tijdelijk uitschakelen.',
+    category: 'legendes',
+    emoji: '🇧🇷',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Rom%C3%A1rio_de_Souza_Faria.jpg/600px-Rom%C3%A1rio_de_Souza_Faria.jpg',
+    title: 'Romário — De Braziliaanse Tovenaar',
+    intro: 'In 1988 arriveerde een jonge Braziliaan in Eindhoven die het Nederlandse voetbal voorgoed zou veranderen. Romário de Souza Faria was 22 jaar oud, klein van stuk, ongelooflijk snel en een doelpuntenmachine van het hoogste niveau. In zijn eerste periodes bij PSV (1988–1993) scoorde hij in totaal 165 goals voor de club — inclusief een seizoen waarin hij met PSV zowel de Eredivisie als de Europacup I won. Romário had een manier van bewegen die verdedigers gek maakte: hij leek traag, en dan opeens — weg. Zijn schijnbewegingen waren legendarisch. Buiten het veld had hij een reputatie als moeilijke persoonlijkheid, maar op het veld was hij puur magie. PSV-fans herinneren hem als een van de beste spelers die ooit het rood-wit droeg.',
+    question: 'Wat maakt een buitenlandse ster écht onderdeel van een Nederlandse club?',
+    deepdive: 'Romário won later de Wereldbeker met Brazilië in 1994, waarbij hij topscorer was en als beste speler van het toernooi werd uitgeroepen. Na zijn periode bij PSV speelde hij voor Barcelona, Flamengo en vele andere clubs. Hij scoorde in zijn loopbaan meer dan 1000 officiële goals — al is dat aantal controversieel. Wat zeker is: voor PSV was hij onbetaalbaar. Hij hielp de club aan twee landstitels en was medeverantwoordelijk voor de glorieperiode van de late jaren tachtig.',
     quiz: [
-      { question: 'Hoeveel harten heeft een octopus?', answers: [{ text: 'Drie harten', correct: true }, { text: 'Twee harten' }, { text: 'Één hart' }] },
-      { question: 'Hoeveel "hersenen" heeft een octopus in totaal?', answers: [{ text: 'Negen', correct: true }, { text: 'Drie' }, { text: 'Eén' }] },
-      { question: 'Welke kleur heeft het bloed van een octopus?', answers: [{ text: 'Blauw', correct: true }, { text: 'Rood' }, { text: 'Groen' }] },
+      { question: 'Hoeveel goals scoorde Romário in totaal voor PSV?', answers: [{ text: '165 goals', correct: true }, { text: '80 goals' }, { text: '220 goals' }] },
+      { question: 'Uit welk land komt Romário?', answers: [{ text: 'Brazilië', correct: true }, { text: 'Argentinië' }, { text: 'Uruguay' }] },
+      { question: 'In welk jaar kwam Romário voor het eerst bij PSV?', answers: [{ text: '1988', correct: true }, { text: '1985' }, { text: '1992' }] },
     ],
   },
   {
-    category: 'space',
-    emoji: '🪐',
-    label: 'Ruimte',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/600px-Saturn_during_Equinox.jpg',
-    title: 'Saturnus en Zijn Ringen',
-    intro: 'Saturnus is de zesde planeet van de zon en heeft prachtige ringen van ijs en rotsblokken. De planeet is zo licht dat hij zou kunnen drijven op water — als je een bad had dat groot genoeg was! Saturnus is een gasreus: er is geen vaste grond om op te landen. De planeet bestaat bijna volledig uit waterstof en helium, net als de zon. De ringen van Saturnus zijn misschien wel het mooiste schouwspel in ons zonnestelsel. Ze bestaan uit miljarden brokken ijs en steen, variërend van zo klein als een zandkorrel tot zo groot als een huis. Die ringen zijn verrassend dun: gemiddeld maar één kilometer dik, terwijl ze 280.000 kilometer breed zijn. Toch zijn ze van de aarde zichtbaar met een gewone verrekijker. Galileo Galilei zag ze in 1610 al, maar dacht dat Saturnus drie planeten waren. Pas later begrepen wetenschappers dat het ringen waren.',
-    question: 'Als er leven bestond op een maan van Saturnus — hoe zou dat er dan uitzien?',
-    deepdive: 'Saturnus heeft 146 bekende manen — meer dan welke andere planeet dan ook. Zijn grootste maan, Titan, heeft meren vol vloeibaar gas in plaats van water. Er is een atmosfeer van stikstof, net als op aarde. Sommige wetenschappers denken dat er misschien een primitieve vorm van leven mogelijk is op Titan, in de vloeibare gasmeren. Een andere maan, Enceladus, spuit enorme fonteinen van water de ruimte in vanuit een ondergrondse oceaan. Dat maakt Enceladus een van de meest veelbelovende plekken in ons zonnestelsel om naar leven te zoeken. De ruimtesonde Cassini onderzocht Saturnus en zijn manen van 2004 tot 2017. In 2017 stortte de sonde bewust in Saturnus, zodat hij geen bacteriën van de aarde zou overbrengen naar de manen. Een wetenschappelijk zelfopoffering voor de zuiverheid van toekomstig onderzoek.',
+    category: 'legendes',
+    emoji: '👑',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Ronaldo_com_a_camisa_do_Brasil_%281994%29.jpg/600px-Ronaldo_com_a_camisa_do_Brasil_%281994%29.jpg',
+    title: 'Ronaldo R9 — The Phenomenon bij PSV',
+    intro: 'Lang voor hij de wereld veroverde, speelde Ronaldo Luís Nazário de Lima — beter bekend als "The Phenomenon" of simpelweg R9 — één enkel seizoen bij PSV. Het was 1994. Hij was 17 jaar oud. En hij scoorde 35 goals in 37 wedstrijden. Voor PSV was dit seizoen een onverwacht geschenk: ze hadden de jonge Braziliaan voor 6 miljoen dollar gekocht van Cruzeiro, en niemand kon bevroeden dat ze in handen hadden wat later misschien wel de beste voetballer aller tijden zou worden. Ronaldo was explosief, technisch fenomenaal en had een killerinstinct voor doel. Na één seizoen in Eindhoven vertrok hij naar Barcelona voor bijna het drievoudige. PSV had geen keus — het aanbod was te groot.',
+    question: 'Als je weet dat iemand de allerbeste ter wereld gaat worden — herken je dat al als hij zeventien jaar oud is?',
+    deepdive: 'Na PSV speelde Ronaldo voor Barcelona, Inter Milan en Real Madrid. Hij won twee Wereldbekers met Brazilië (1994 en 2002) en werd driemaal verkozen tot beste speler ter wereld (FIFA World Player of the Year). Zijn knieoperaties en blessures maakten zijn verhaal extra schrijnend — maar ook extra indrukwekkend. PSV mag zich eeuwig gelukkig prijzen dat het één seizoen lang van zijn talent mocht genieten. Wie hem in 1994/95 in het Philips Stadion heeft zien spelen, praat er vandaag de dag nog over.',
     quiz: [
-      { question: 'Hoeveel bekende manen heeft Saturnus?', answers: [{ text: '146 manen', correct: true }, { text: '12 manen' }, { text: '27 manen' }] },
-      { question: 'Hoe heet de grootste maan van Saturnus?', answers: [{ text: 'Titan', correct: true }, { text: 'Europa' }, { text: 'Io' }] },
-      { question: 'Hoe dik zijn de ringen van Saturnus gemiddeld?', answers: [{ text: '1 kilometer', correct: true }, { text: '100 kilometer' }, { text: '1000 kilometer' }] },
+      { question: 'Hoeveel goals scoorde Ronaldo in zijn enige PSV-seizoen (1994/95)?', answers: [{ text: '35 goals', correct: true }, { text: '20 goals' }, { text: '50 goals' }] },
+      { question: 'Hoe oud was Ronaldo toen hij bij PSV speelde?', answers: [{ text: '17-18 jaar', correct: true }, { text: '22 jaar' }, { text: '25 jaar' }] },
+      { question: 'Naar welke club vertrok Ronaldo na zijn seizoen bij PSV?', answers: [{ text: 'Barcelona', correct: true }, { text: 'Real Madrid' }, { text: 'Juventus' }] },
     ],
   },
   {
-    category: 'nature',
-    emoji: '🌳',
-    label: 'Natuur',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/600px-24701-nature-natural-beauty.jpg',
-    title: 'Bomen Praten Met Elkaar',
-    intro: 'Bomen staan er stil bij, maar ze communiceren constant. Via een netwerk van schimmels in de grond sturen ze suikers en signalen naar elkaar — wetenschappers noemen dit het "Wood Wide Web". Dit klinkt als sciencefiction, maar het is bewezen wetenschap. Onder elk bos loopt een web van fijne schimmeldraden, dunner dan een mensenhaar, dat bomen letterlijk met elkaar verbindt. Bomen en schimmels werken samen: de boom geeft de schimmel suikers die hij met fotosynthese maakt. De schimmel geeft de boom water en mineralen terug. Maar het netwerk doet meer dan uitwisselen. Wetenschapper Suzanne Simard ontdekte in de jaren 90 dat bomen via dit netwerk ook berichten sturen. Ze spoot radioactief suiker in een berkenboom en zag hoe dat suiker via de schimmeldraden in een naburige spar belandde. De bomen deelden voedsel.',
-    question: 'Als bomen konden praten, wat zouden ze dan het liefst aan ons vertellen?',
-    deepdive: 'Moederbomen — de oudste, grootste bomen in een bos — herkennen hun eigen kinderen en sturen hen extra voedingsstoffen. Als een boom aangevallen wordt door insecten, stuurt hij via de schimmeldraden een waarschuwing naar zijn buren zodat ze zich kunnen verdedigen. Het bos is eigenlijk één groot levend netwerk. Bomen die gekapt worden, pompen soms hun laatste suikerreserves via het netwerk naar hun buren — alsof ze hun rijkdom weggeven voor ze sterven. Sommige wetenschappers noemen dit "altruïsme bij bomen". Of ze het echt bewust doen weten we niet, maar het effect is er wel. Bossen zonder dit schimmelnetwerk — bijvoorbeeld na een bosbrand — herstellen veel langzamer. Jonge boompjes die in zo\'n kaal gebied groeien hebben geen verbinding en moeten alles zelf doen. In gezonde bossen helpen de oudere bomen de jonge door ze langzaam op te nemen in het netwerk.',
+    category: 'legendes',
+    emoji: '🏆',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Philip_Cocu_Euro_2000.jpg/600px-Philip_Cocu_Euro_2000.jpg',
+    title: 'Philip Cocu — Mr. PSV',
+    intro: 'Als er één speler is die synoniem staat aan PSV-succes, is het Philip Cocu. In twee periodes (1995–1998 en 2000–2007) won hij maar liefst zeven Eredivisie-titels met de club — meer dan welke andere speler ooit. Cocu was geen luidruchtige ster, maar een stille kracht. Een middenvelder die overzicht had, de juiste pass gaf op het juiste moment, en nooit de snelste of de sterkste hoefde te zijn. Zijn voetbalgevoel en zijn leiderschap maakten het verschil. In totaal speelde hij 370 officiële wedstrijden voor PSV. Daartussenin speelde hij ook voor Barcelona, waarmee hij in 1999 de Champions League won, en voor Fenerbahçe en Villarreal. Maar hij keerde altijd terug naar Eindhoven.',
+    question: 'Wat is belangrijker voor een voetballer: persoonlijke glorie of teamtitels?',
+    deepdive: 'Na zijn spelerscarrière werd Cocu trainer. Hij coachte PSV van 2013 tot 2018 en won daarin meerdere Eredivisie-titels. Later trainde hij Derby County in Engeland, maar dat avontuur liep minder goed af. In Nederland wordt hij nog altijd gezien als een van de grootste PSV-figuren aller tijden — als speler én als coach. Zijn rustige stijl en tactisch inzicht maakten hem tot een gewaardeerde trainer, ook al leverde zijn buitenlandse avontuur minder succes op.',
     quiz: [
-      { question: 'Hoe noemen wetenschappers het netwerk waarmee bomen communiceren?', answers: [{ text: 'Wood Wide Web', correct: true }, { text: 'Boom Internet' }, { text: 'Groene Weg' }] },
-      { question: 'Wie ontdekte dat bomen via schimmeldraden communiceren?', answers: [{ text: 'Suzanne Simard', correct: true }, { text: 'David Attenborough' }, { text: 'Charles Darwin' }] },
-      { question: 'Wat geven bomen aan de schimmels in ruil voor water en mineralen?', answers: [{ text: 'Suikers', correct: true }, { text: 'Zuurstof' }, { text: 'Water' }] },
+      { question: 'Hoeveel Eredivisie-titels won Philip Cocu met PSV?', answers: [{ text: '7 titels', correct: true }, { text: '3 titels' }, { text: '10 titels' }] },
+      { question: 'Hoeveel officiële wedstrijden speelde Cocu voor PSV?', answers: [{ text: '370 wedstrijden', correct: true }, { text: '200 wedstrijden' }, { text: '500 wedstrijden' }] },
+      { question: 'Met welke buitenlandse club won Cocu de Champions League in 1999?', answers: [{ text: 'Barcelona', correct: true }, { text: 'Real Madrid' }, { text: 'Juventus' }] },
     ],
   },
   {
-    category: 'technology',
-    emoji: '🌐',
-    label: 'Technologie',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Submarine_cable_cross-section_3.svg/600px-Submarine_cable_cross-section_3.svg.png',
-    title: 'Hoe Werkt Het Internet?',
-    intro: 'Het internet is een enorm netwerk van computers die met elkaar praten. Als jij een filmpje bekijkt, reist die data in milliseconden van een computer ergens in de wereld naar jouw scherm. Maar hoe werkt dat precies? Stel: jij typt een adres in je browser, zoals youtube.com. Je computer stuurt een verzoek naar een server — een speciale computer die de website bewaart. Die server stuurt de data terug in kleine pakketjes. Die pakketjes reizen via kabels, soms dwars door oceanen heen. Er liggen meer dan 1,3 miljoen kilometer onderzeese kabels op de bodem van de zee. Die dunne kabels verbinden alle continenten met elkaar. De pakketjes komen aan bij jouw router thuis, die het signaal naar jouw apparaat stuurt. Dit alles gebeurt in minder dan een seconde. Het is eigenlijk een soort postkantoor dat miljarden brieven per seconde verwerkt, elk kleiner dan een duimnagel.',
-    question: 'Stel je voor dat het internet één dag uitvalt — wat zou er dan op de wereld veranderen?',
-    deepdive: 'Het internet werd uitgevonden door het Amerikaanse leger in de jaren \'60 als ARPANET. De bedoeling was een netwerk te maken dat zou blijven werken, zelfs als een deel ervan werd aangevallen. De eerste boodschap ooit op het internet was "lo" — het systeem crashte voor het woord "login" compleet was! Elke dag worden er meer dan 300 miljard e-mails verstuurd. Naast e-mail en video\'s draaien ook banken, ziekenhuizen, verkeerslichten en waterleidingen op het internet of erop aansluitende netwerken. Als het internet één dag volledig uitviel, zouden vluchten worden geannuleerd, geldautomaten stoppen, en supermarkten hun voorraden niet meer kunnen bijhouden. Een dag zonder internet zou de wereldeconomie naar schatting honderden miljarden euro\'s kosten. Toch is het internet ook kwetsbaar: die onderzeese kabels kunnen beschadigd raken door aardbevingen of ankers van schepen. In 2006 beschadigde een aardbeving bij Taiwan twee grote kabels — en grote delen van Azië hadden dagenlang minder snel internet.',
+    category: 'legendes',
+    emoji: '🇧🇪',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'Luc Nilis — De Belgische Spitsenlegende',
+    intro: 'Van 1994 tot 2000 was Luc Nilis de gevreesde spits van PSV. De Belgische aanvaller scoorde in zes seizoenen 154 goals in 219 wedstrijden — een ongelofelijke productiviteit. Nilis was niet groot, niet bijzonder snel, maar hij had een uitzonderlijk positioneringsgevoel en een technisch vermogen dat hem in staat stelde om goals te maken uit bijna niks. In elke wedstrijd lette hij op de ruimtes die anderen niet zagen. PSV betaalde destijds een recordbedrag voor een Belgische speler — en het was elke cent waard. Met PSV won Nilis meerdere Eredivisie-titels. Hij was een van de best betaalde en meest productieve spelers in de Eredivisie van de late jaren negentig.',
+    question: 'Luc Nilis speelde nooit een WK terwijl hij zo goed was — hoe kan zoiets in het voetbal bestaan?',
+    deepdive: 'In 2000 vertrok Nilis naar Aston Villa in de Premier League — een droomtransfer. Maar in zijn tweede wedstrijd voor de club brak hij zijn been op ernstige wijze na een botsing met de doelman. De blessure was zo erg dat hij nooit meer profvoetbal speelde. Het was een van de tragischste carrière-eindes in de voetbalgeschiedenis. In België en Nederland wordt Nilis herinnerd als een van de beste aanvallers die zijn generatie voortbracht — iemand die nooit het volle podium kreeg dat hij verdiende.',
     quiz: [
-      { question: 'Wat was de eerste boodschap ooit verstuurd op het internet?', answers: [{ text: '"lo"', correct: true }, { text: '"hello"' }, { text: '"start"' }] },
-      { question: 'Wanneer werd het internet uitgevonden als ARPANET?', answers: [{ text: 'Jaren \'60', correct: true }, { text: 'Jaren \'80' }, { text: 'Jaren \'90' }] },
-      { question: 'Hoeveel onderzeese kabels liggen er op de oceaanbodem?', answers: [{ text: 'Meer dan 1,3 miljoen kilometer', correct: true }, { text: '100.000 kilometer' }, { text: '500 kilometer' }] },
+      { question: 'Hoeveel goals scoorde Luc Nilis voor PSV?', answers: [{ text: '154 goals', correct: true }, { text: '80 goals' }, { text: '220 goals' }] },
+      { question: 'Uit welk land komt Luc Nilis?', answers: [{ text: 'België', correct: true }, { text: 'Nederland' }, { text: 'Brazilië' }] },
+      { question: 'Bij welke Engelse club eindigde zijn carrière vroegtijdig door een zware blessure?', answers: [{ text: 'Aston Villa', correct: true }, { text: 'Chelsea' }, { text: 'Manchester City' }] },
     ],
   },
   {
-    category: 'animals',
-    emoji: '🐋',
-    label: 'Dieren',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg/600px-Anim1754_-_Flickr_-_NOAA_Photo_Library.jpg',
-    title: 'De Blauwe Vinvis: Het Grootste Dier Ooit',
-    intro: 'De blauwe vinvis is het grootste dier dat ooit op aarde heeft geleefd — groter dan welke dinosaurus dan ook. Zijn hart is zo groot als een auto, en zijn bloedvaten zijn zo wijd dat een klein kind erdoorheen zou kunnen kruipen. Toch begint elk blauw vinvisje ter wereld als een babydier van "maar" zeven meter lang en 2.700 kilo bij de geboorte. Een pasgeboren blauw vinviskalf drinkt elke dag meer dan 400 liter moedermelk. Het groeit zo snel dat het elke dag 90 kilo aankomt — je ziet het bijna voor je ogen groeien. Blauwe vinvissen leven in alle oceanen van de wereld. Ze migreren enorme afstanden: in de zomer zwemmen ze naar koudere wateren om te eten, in de winter naar warmere wateren om jongen te krijgen. In hun eentje zwemmen ze honderden kilometers per week.',
-    question: 'Hoe denk jij dat het voelt om zo groot te zijn dat niemand je kan negeren?',
-    deepdive: 'Een blauwe vinvis kan tot 33 meter lang worden en 200.000 kilo wegen. Zijn tong weegt al meer dan een olifant. Het geluid dat ze maken is het luidst van elk dier op aarde — je kunt het op 800 kilometer afstand horen onder water. Toch zijn het stille, vredige dieren die leven van kleine garnaalachtigen die krill heten. Een blauwe vinvis eet elke dag tot 40 miljoen krill-diertjes — samen zo\'n 3.600 kilo. Ze filteren het water door enorme baleenplaten in hun bek, als een gigantische zeef. In de twintigste eeuw werden blauwe vinvissen bijna uitgestorven door de walvisjacht. Op het dieptepunt waren er nog maar een paar honderd. Nu, dankzij wereldwijde bescherming, zijn er weer zo\'n 10.000 tot 25.000 exemplaren — maar ze staan nog steeds op de lijst van bedreigde diersoorten. Wetenschappers volgen ze met satellietzenders om te begrijpen hoe ze leven en hoe we ze kunnen beschermen.',
+    category: 'legendes',
+    emoji: '💪',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Mark_van_Bommel.jpg/600px-Mark_van_Bommel.jpg',
+    title: 'Mark van Bommel — Captain Fantastic',
+    intro: 'Weinig PSV-spelers straalden zoveel leiderschap uit als Mark van Bommel. In twee periodes (2000–2005 en 2011–2012) was hij de onbetwiste aanvoerder van het team, de speler die ploeggenoten meesleepte en tegenstanders intimideerde. Van Bommel was geen technische tovenaar, maar een complete middenvelder: sterk in de duels, slim in positie, scherp in zijn passes en onvermoeibaar in zijn inzet. Met PSV won hij vier Eredivisie-titels. In 2005 won hij zijn eerste grote prijs buiten Eindhoven: hij won de Champions League met Barcelona. Daarna volgden periodes bij Bayern München, AC Milan en Manchester City, voor hij terugkeerde naar het Philips Stadion voor een laatste avontuur.',
+    question: 'Maakt een echte aanvoerder een team beter, of laat hij alleen zien hoe goed hijzelf is?',
+    deepdive: 'Na zijn spelerscarrière werd Van Bommel trainer. Hij coachte PSV in 2018-2019, maar zijn periode eindigde eerder dan verwacht. Daarna werd hij bondscoach van het Australische nationale elftal en later van het Nederlandse elftal (2023). Als bondscoach van Oranje leidde hij het team door de kwalificatiecampagne voor het EK. Van Bommel staat bekend om zijn directe stijl van coachen — net zo direct als hij op het veld was.',
     quiz: [
-      { question: 'Hoe lang kan een blauwe vinvis worden?', answers: [{ text: '33 meter', correct: true }, { text: '15 meter' }, { text: '50 meter' }] },
-      { question: 'Hoeveel krill eet een blauwe vinvis per dag?', answers: [{ text: '40 miljoen krill-diertjes', correct: true }, { text: '1.000' }, { text: '1 miljoen' }] },
-      { question: 'Op hoeveel kilometer afstand kun je een blauwe vinvis horen?', answers: [{ text: '800 kilometer', correct: true }, { text: '10 kilometer' }, { text: '50 kilometer' }] },
+      { question: 'Hoeveel Eredivisie-titels won Mark van Bommel met PSV?', answers: [{ text: '4 titels', correct: true }, { text: '2 titels' }, { text: '7 titels' }] },
+      { question: 'Met welke club won Van Bommel de Champions League?', answers: [{ text: 'Barcelona', correct: true }, { text: 'Bayern München' }, { text: 'AC Milan' }] },
+      { question: 'Welke nationale ploeg coachte Van Bommel na PSV als bondscoach?', answers: [{ text: 'Australië én later Nederland', correct: true }, { text: 'Alleen Nederland' }, { text: 'België' }] },
     ],
   },
   {
-    category: 'science',
-    emoji: '⚛️',
-    label: 'Wetenschap',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Hydrogen_atom.svg/600px-Hydrogen_atom.svg.png',
-    title: 'Wat Is Een Atoom?',
-    intro: 'Alles om je heen — de lucht, jouw lichaam, dit scherm, de stoel waarop je zit — bestaat uit ontzettend kleine deeltjes die atomen heten. Ze zijn zo klein dat je er miljarden in een stofkorreltje kunt stoppen. Hoe klein is een atoom precies? Als jij zo groot was als de aarde, dan zou een atoom voor jou zo groot zijn als een knikker. Ze zijn onvoorstelbaar klein. Toch is een atoom zelf niet het kleinste wat er bestaat. Elk atoom bestaat uit nog kleinere deeltjes: protonen en neutronen in de kern, en elektronen die eromheen bewegen. En protonen en neutronen bestaan op hun beurt weer uit nog kleinere deeltjes: quarks. Er zijn zes soorten quarks, met namen als "up", "down", "charm" en "strange". Wetenschappers zijn er nog steeds niet zeker van of quarks zelf ook weer uit kleinere deeltjes bestaan. Het lijkt alsof de wereld kleiner en kleiner wordt, hoe verder je inzoomt.',
-    question: 'Als jij het allerkleinste deeltje ter wereld was, waar zou je dan zijn?',
-    deepdive: 'Atomen bestaan voor het grootste deel uit leegte! De kern in het midden is klein en de elektronen die eromheen bewegen zijn enorm ver weg. Als een atoom zo groot was als een voetbalstadion, zou de kern ter grootte van een erwt in het midden liggen. Al die leegte betekent dat jijzelf ook voor het overgrote deel uit leegte bestaat. Als je alle leegte uit alle atomen in alle mensen op aarde zou halen, zou de hele mensheid in een suikerklontje passen. De energie die atomen bij elkaar houdt, is gigantisch. Dat is precies de energie die vrijkomt bij een kernbom of in een kerncentrale: door atoomkernen te splitsen of samen te voegen komt er enorme hoeveelheid energie vrij. Dezelfde energie die de zon laat branden, is kernenergie — maar dan op een schaal die wij mensen ons nauwelijks voor kunnen stellen.',
+    category: 'legendes',
+    emoji: '🎓',
+    label: 'Legendes',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Guus_Hiddink.jpg/600px-Guus_Hiddink.jpg',
+    title: 'Guus Hiddink — De Coach die Alles Won',
+    intro: 'Er zijn spelers die legendarisch zijn, maar Guus Hiddink is de coach die PSV zijn grootste prijs ooit bezorgde. In 1988 leidde hij de club naar de Europacup I — de voornaamste voetbalprijs van Europa. Hiddink was een tacticus met een uitzonderlijk gevoel voor hoe hij zijn spelers moest motiveren en positioneren. Hij bouwde een team dat aanvallend, snel en moeilijk te bespelen was. In Stuttgart sloeg PSV toe door Benfica op strafschoppen te verslaan. Het was Hiddinks meesterwerk als coach. Hij bleef na 1988 nog enkele jaren bij PSV, waarna hij zijn carrière uitbouwde op internationaal niveau.',
+    question: 'Wat maakt een trainer groter dan welke ster-speler ook?',
+    deepdive: 'Na PSV coachte Hiddink het Nederlands elftal (WK 1998, halve finale), Real Madrid, Valencia, en leidde hij Zuid-Korea naar de halve finale van het WK 2002 — een van de grootste verrassingen in WK-geschiedenis. Ook coachte hij Australië, Rusland en Turkije. Hiddink staat bekend om zijn vermogen om teams die als underdog worden beschouwd toch tot grote prestaties te inspireren. In 2006 werd hij verkozen tot de op drie na grootste Nederlander in een televisieprogramma — voor een coach een unieke eer.',
     quiz: [
-      { question: 'Waaruit bestaat een atoom voor het grootste deel?', answers: [{ text: 'Leegte', correct: true }, { text: 'Water' }, { text: 'Energie' }] },
-      { question: 'Hoe heten de kleinste deeltjes in een atoomkern?', answers: [{ text: 'Quarks', correct: true }, { text: 'Elektronen' }, { text: 'Fotonen' }] },
-      { question: 'Hoe groot zou de mensheid zijn als alle leegte uit atomen werd gehaald?', answers: [{ text: 'Een suikerklontje', correct: true }, { text: 'Een voetbal' }, { text: 'Een huis' }] },
+      { question: 'Welke Europese prijs won Hiddink als PSV-coach in 1988?', answers: [{ text: 'De Europacup I', correct: true }, { text: 'De UEFA Cup' }, { text: 'De Champions League' }] },
+      { question: 'Welk land coachte Hiddink naar de halve finale van het WK in 2002?', answers: [{ text: 'Zuid-Korea', correct: true }, { text: 'Australië' }, { text: 'Nederland' }] },
+      { question: 'Bij welke club was Hiddink coach na PSV (in de jaren \'90)?', answers: [{ text: 'Het Nederlands elftal', correct: true }, { text: 'Ajax' }, { text: 'Manchester United' }] },
+    ],
+  },
+
+  /* ── PRIJZEN ────────────────────────────────────────── */
+  {
+    category: 'prijzen',
+    emoji: '🏆',
+    label: 'Prijzen',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Philips_Stadion.jpg/600px-Philips_Stadion.jpg',
+    title: 'Europacup I 1988 — De Mooiste Avond',
+    intro: 'Op 25 mei 1988 speelde PSV de meest bijzondere wedstrijd in zijn clubgeschiedenis. In de Neckarstadion in Stuttgart nam het het op tegen het Portugese Benfica in de finale van de Europacup I — het belangrijkste Europese clubtoernooi, tegenwoordig de Champions League. Na 90 minuten en verlengingen stond het 0-0. Alles hing af van een strafschoppenserie. De zenuwen van de PSV-supporters, zowel in het stadion als thuis voor de televisie, waren tot het uiterste gespannen. PSV-doelman Hans van Breukelen stopte de beslissende strafschop van Benfica-speler Antonio Veloso. PSV was kampioen van Europa. Het was een moment dat generaties van PSV-fans met zich meedragen — een avond die nooit zal worden vergeten.',
+    question: 'Stel je was erbij in Stuttgart — hoe zou jij je gevoeld hebben na die laatste gestopte penalty?',
+    deepdive: 'PSV was in het seizoen 1987/88 de enige club ter wereld die zowel de nationale competitie als de Europacup I won. Ronald Koeman nam zijn beroemde huppelende aanloop voor een van de PSV-penalties — het beeld is iconisch geworden. Hans van Breukelen groeide uit tot held van de avond. De dag erna werden de spelers ingehaald in Eindhoven door tienduizenden juichende fans. De 25e mei wordt nog steeds herdacht als de grootste dag in de PSV-clubhistorie.',
+    quiz: [
+      { question: 'Welke club versloeg PSV in de finale van de Europacup I in 1988?', answers: [{ text: 'Benfica', correct: true }, { text: 'AC Milan' }, { text: 'Real Madrid' }] },
+      { question: 'Welke PSV-keeper was de held van de strafschoppenserie in 1988?', answers: [{ text: 'Hans van Breukelen', correct: true }, { text: 'Ronald Waterreus' }, { text: 'Patrick Lodewijks' }] },
+      { question: 'In welke stad werd de Europacup I-finale van 1988 gespeeld?', answers: [{ text: 'Stuttgart', correct: true }, { text: 'Parijs' }, { text: 'Milaan' }] },
     ],
   },
   {
-    category: 'nature',
-    emoji: '🌋',
-    label: 'Natuur',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Pahoeoe_fountain_original.jpg/600px-Pahoeoe_fountain_original.jpg',
-    title: 'Vulkanen en Het Vuur van de Aarde',
-    intro: 'Vulkanen zijn openingen in de aardkorst waardoor gesmolten steen — magma — naar buiten komt. Ze zijn gevaarlijk, maar ze hebben ook nieuw land en vruchtbare grond gecreëerd. Zonder vulkanen had het leven op aarde er heel anders uitgezien. Vulkanen zijn er in veel soorten. Sommige spuiten rustig lava uit, als een trage rivier van vuur die langzaam naar de zee stroomt. Andere exploderen met enorme kracht: de beroemde uitbarsting van de Vesuvius in het jaar 79 na Christus bedolf de Romeinse stad Pompeii onder een laag as en steen in slechts een paar uur. De stad werd zo goed geconserveerd dat we vandaag nog precies kunnen zien hoe mensen er leefden — hun huizen, hun schilderijen, zelfs hun maaltijden. Wanneer een vulkaan uitbarst, spuit hij niet alleen lava. Hij gooit ook as, gas en rotsblokken de lucht in. Bij grote uitbarstingen kan de as de zon blokkeren voor maanden, waardoor het kouder wordt op aarde.',
-    question: 'Als de aarde een levend wezen was, zouden vulkanen dan zijn ademhaling zijn?',
-    deepdive: 'Hawaii is volledig door vulkanen gemaakt! Het eiland bestaat uit gestolde lava die miljoenen jaren geleden uitstroomde vanuit de zeebodem. De grootste vulkaan op aarde is de Mauna Loa — gemeten vanaf de zeebodem is hij groter dan de Mount Everest. Op dit moment zijn er zo\'n 1.500 actieve vulkanen op aarde. De gevaarlijkste vulkaan ter wereld staat misschien niet waar je denkt: het is de Yellowstone supervulkaan in de Verenigde Staten. Die heeft al 640.000 jaar niet uitgebarsten, maar als hij dat ooit deed, zou het een wereldwijde catastrofe zijn. Gelukkig houden wetenschappers hem nauwlettend in de gaten. Vulkanen zijn ook op andere planeten gevonden. De Olympus Mons op Mars is de grootste vulkaan in het zonnestelsel — drie keer zo hoog als de Mount Everest en zo breed als heel Nederland. Op de maan Io van Jupiter zijn voortdurend vulkanen actief, wat het meest vulkanisch actieve object in ons zonnestelsel maakt.',
+    category: 'prijzen',
+    emoji: '🥇',
+    label: 'Prijzen',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/UEFA_Cup_trophy.jpg/600px-UEFA_Cup_trophy.jpg',
+    title: 'UEFA Cup 1978 — De Eerste Europese Prijs',
+    intro: 'Tien jaar voor de gloriedag in Stuttgart pakte PSV al zijn eerste Europese prijs. In 1978 won de club de UEFA Cup door in de finale het Franse Bastia over twee wedstrijden te verslaan. De eerste wedstrijd in Corsica eindigde doelpuntloos: 0-0. Thuis in Eindhoven maakte PSV er drie, en Bastia scoorde niet. Een totaalscore van 3-0 bracht PSV de Europa-prijs. Het was voor Nederland een historisch moment: PSV werd de eerste Nederlandse club die een Europese hoofdprijs won. Willy van der Kuijlen was in die periode nog actief en speelde een sleutelrol in de Europese campagne die uitmondde in het trofee-feest.',
+    question: 'Is een Europese prijs winnen moeilijker dan een landstitel, of juist makkelijker?',
+    deepdive: 'De UEFA Cup bestond pas een paar jaar toen PSV hem won — het was een relatief nieuw toernooi. Later zou PSV ook de Europacup I winnen (1988), waarmee ze de enige Nederlandse club werden die twee verschillende Europese hoofdprijzen op hun naam hebben staan. De trofee van 1978 staat permanent tentoongesteld in het clubmuseum van PSV. Het was het begin van een Europese reputatie die PSV ver buiten Nederland bekendheid gaf.',
     quiz: [
-      { question: 'Hoeveel actieve vulkanen zijn er op dit moment op aarde?', answers: [{ text: 'Ongeveer 1.500', correct: true }, { text: 'Ongeveer 100' }, { text: 'Ongeveer 10.000' }] },
-      { question: 'Hoe heet de grootste vulkaan in ons zonnestelsel?', answers: [{ text: 'Olympus Mons', correct: true }, { text: 'Mauna Loa' }, { text: 'Vesuvius' }] },
-      { question: 'Welke Romeinse stad werd bedolven door de Vesuvius?', answers: [{ text: 'Pompeii', correct: true }, { text: 'Rome' }, { text: 'Napels' }] },
+      { question: 'Welke club verloor de UEFA Cup-finale van 1978 van PSV?', answers: [{ text: 'Bastia', correct: true }, { text: 'Juventus' }, { text: 'Ajax' }] },
+      { question: 'Wat was de totaalscore van de UEFA Cup-finale van 1978?', answers: [{ text: '3-0 voor PSV', correct: true }, { text: '5-1 voor PSV' }, { text: '2-2 gelijkspel' }] },
+      { question: 'Uit welk land komt het tegenstaan Bastia?', answers: [{ text: 'Frankrijk', correct: true }, { text: 'Italië' }, { text: 'Spanje' }] },
     ],
   },
   {
-    category: 'history',
-    emoji: '🧱',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Berlinermauer.jpg/600px-Berlinermauer.jpg',
-    title: 'De Berlijnse Muur',
-    intro: 'Op 13 augustus 1961 werden de mensen van Berlijn wakker in een stad die ineens in tweeën was gesneden. Soldaten hadden \'s nachts prikkeldraad gespannen dwars door straten, langs tuinen en midden door families heen. Daarna kwamen de betonblokken. De Berlijnse Muur was geboren. Berlijn was na de Tweede Wereldoorlog verdeeld tussen de geallieerde landen: het westen van de stad was vrij, het oosten werd gecontroleerd door de Sovjet-Unie. Steeds meer mensen vluchtten vanuit het arme, strenge Oost-Berlijn naar het rijke West-Berlijn — soms wel duizend mensen per dag. Om dat te stoppen bouwde de Oost-Duitse regering de muur. Van de ene op de andere dag konden mensen hun familie aan de andere kant niet meer zien. Sommige mensen werden midden in hun straat afgesneden van hun eigen huis.',
-    question: 'Hoe zou jij je voelen als er morgen een muur voor je huis stond en je je vrienden niet meer mocht zien?',
-    deepdive: 'De Berlijnse Muur was uiteindelijk 155 kilometer lang en had meer dan 300 waaktorentjes. Meer dan 100 mensen stierven bij pogingen om over de muur te klimmen. Sommigen groeven tunnels, anderen bouwden luchtballonnen van gordijnstof, een man vloog er zelfs overheen in een zelfgemaakt vliegtuigje. De muur stond 28 jaar. Kinderen die in 1961 geboren werden kenden niets anders dan een verdeelde stad. Toen de muur in 1989 viel, huilden mensen van geluk op straat. Stukken van de muur werden meegenomen als souvenir. Vandaag kun je in Berlijn nog stukken van de originele muur zien staan — als herinnering dat vrijheid nooit vanzelfsprekend is.',
-    quiz: [
-      { question: 'In welk jaar werd de Berlijnse Muur gebouwd?', answers: [{ text: '1961', correct: true }, { text: '1945' }, { text: '1975' }] },
-      { question: 'Hoe lang was de Berlijnse Muur?', answers: [{ text: '155 kilometer', correct: true }, { text: '50 kilometer' }, { text: '500 kilometer' }] },
-      { question: 'Hoeveel waaktorentjes had de Berlijnse Muur?', answers: [{ text: 'Meer dan 300', correct: true }, { text: '10' }, { text: '1000' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🚧',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Checkpoint_charlie_2004.jpg/600px-Checkpoint_charlie_2004.jpg',
-    title: 'Checkpoint Charlie',
-    intro: 'Midden in het hart van Berlijn lag een klein wachtershuisje in de straat — maar dit was geen gewoon wachtershuisje. Dit was Checkpoint Charlie, het beroemdste grensovergangspunt ter wereld. Het was de enige plek in de Berlijnse Muur waar buitenlanders en diplomaten van West naar Oost mochten. Aan de westkant stond een Amerikaans bordje: "Je verlaat nu de Amerikaanse sector." Aan de oostkant stonden gewapende soldaten klaar die elk voertuig doorzochten. Mensen werden onder auto\'s gekeken met spiegels, koffers werden opengemaakt, soms werden passagiers urenlang vastgehouden. Checkpoint Charlie was ook het toneel van een van de gevaarlijkste momenten van de Koude Oorlog: in 1961 stonden er Amerikaans en Sovjet-tanks oog in oog, motoren aan, klaar voor de strijd. Gelukkig reden ze na een tijdje allebei achteruit.',
-    question: 'Stel je voor dat je elke dag langs gewapende soldaten moet om naar school te gaan — hoe zou dat voelen?',
-    deepdive: 'De naam "Charlie" komt niet van een persoon, maar gewoon van de letter C in het NATO-alfabet: Alpha, Bravo, Charlie. Er waren ook Checkpoint Alpha en Bravo, maar Charlie werd het bekendst. Spionnen werden hier geruild — gevangen genomen agenten van het westen werden uitgewisseld tegen agenten van het oosten. Die uitwisselingen vonden altijd \'s nachts plaats, in stilte, op een brug. Vandaag staat er een replica van het wachtershuisje als toeristische attractie. Meer dan drie miljoen mensen bezoeken de plek elk jaar. Het originele huisje staat in een museum. Checkpoint Charlie herinnert ons eraan dat er ooit een tijd was dat mensen niet vrij over straat mochten lopen in hun eigen stad.',
-    quiz: [
-      { question: 'Wat mocht er door Checkpoint Charlie?', answers: [{ text: 'Buitenlanders en diplomaten', correct: true }, { text: 'Alleen spionnen' }, { text: 'Iedereen' }] },
-      { question: 'Waar komt de naam "Charlie" vandaan?', answers: [{ text: 'De letter C in het NATO-alfabet', correct: true }, { text: 'Een bewaker genaamd Charlie' }, { text: 'Een geheime codenaam' }] },
-      { question: 'Hoeveel mensen bezoeken Checkpoint Charlie elk jaar?', answers: [{ text: 'Meer dan 3 miljoen', correct: true }, { text: '100.000' }, { text: '10 miljoen' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🎉',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Der_Fall_der_Mauer.jpg/600px-Der_Fall_der_Mauer.jpg',
-    title: 'De Nacht dat de Muur Viel',
-    intro: 'Op 9 november 1989 gebeurde iets wat niemand voor mogelijk had gehouden. Een Oost-Duitse woordvoerder las tijdens een persconferentie op televisie voor dat de grenzen opengesteld zouden worden. Een journalist vroeg: "Wanneer?" De man keek in zijn papieren en zei: "Onmiddellijk, zonder vertraging." Dat was niet de bedoeling — het was een vergissing, de beslissing was nog niet officieel. Maar het was al te laat. Het nieuws verspreidde zich als een lopend vuur. Duizenden Oost-Berlijners trokken naar de muur. De grensposten werden overspoeld. De soldaten, die geen orders kregen, wisten niet wat ze moesten doen. Uiteindelijk lieten ze de mensen door. Huilende families omhelsden elkaar voor het eerst in jaren. Op de muur klommen mensen en sloegen er stukken uit met hamers.',
-    question: 'Als jij die avond in Berlijn was geweest, wat zou jij gedaan hebben?',
-    deepdive: 'Die nacht dansten mensen op de Berlijnse Muur. Vreemden omhelsden elkaar. Champagne werd gedronken op straat. Oost- en West-Berlijners reden in oude Trabant-autootjes toeterend door de stad. Het was een feest dat de hele wereld live op televisie zag. De val van de muur luidde het einde in van de Koude Oorlog. Binnen een jaar, op 3 oktober 1990, was Duitsland officieel herenigd — voor het eerst in 45 jaar één land. De dag van de hereniging wordt elk jaar gevierd als nationale feestdag: de Dag van de Duitse Eenheid. Van de muur zelf is bijna niets meer over. Een dunne lijn van keien in het wegdek geeft aan waar hij ooit stond. Je kunt hem door heel Berlijn volgen — dwars door straten, pleinen en zelfs door gebouwen heen.',
-    quiz: [
-      { question: 'Op welke datum viel de Berlijnse Muur?', answers: [{ text: '9 november 1989', correct: true }, { text: '3 oktober 1990' }, { text: '13 augustus 1961' }] },
-      { question: 'Wanneer was Duitsland officieel herenigd?', answers: [{ text: '3 oktober 1990', correct: true }, { text: '9 november 1989' }, { text: '1 januari 1991' }] },
-      { question: 'Wat reed er toeterend door Berlijn op de nacht dat de muur viel?', answers: [{ text: 'Trabant-autootjes', correct: true }, { text: 'Tanks' }, { text: 'Fietsen' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🏛️',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Brandenburg_Gate_2004.jpg/600px-Brandenburg_Gate_2004.jpg',
-    title: 'De Brandenburger Tor',
-    intro: 'Midden in Berlijn staat een enorme poort van steen — de Brandenburger Tor. Hij is meer dan 200 jaar oud en heeft alles meegemaakt: keizers, oorlogen, dictators, een gedeelde stad en uiteindelijk hereniging. De poort werd gebouwd in 1791, in opdracht van de Pruisische koning. Hij was bedoeld als symbool van vrede — en bovenop staat een beeld van een godin op een wagen getrokken door vier paarden, de Quadriga genaamd. Napoleon veroverde Berlijn in 1806 en nam de Quadriga mee naar Parijs als oorlogsbuit. Na zijn nederlaag in 1814 brachten de Pruisen het beeld triomfantelijk terug. Tijdens de Tweede Wereldoorlog werd de poort zwaar beschadigd door bombardementen. En toen de Berlijnse Muur werd gebouwd, stond de Brandenburger Tor exact op de grens — bereikbaar voor niemand, gevangen tussen twee werelden.',
-    question: 'Als een poort een symbool van jouw leven was, wat zou er dan op de top staan?',
-    deepdive: 'Na de val van de muur in 1989 werd de Brandenburger Tor het middelpunt van de grootste viering die Berlijn ooit zag. Honderdduizenden mensen stroomden samen bij de poort om de hereniging te vieren. Sindsdien is het dé plek in Berlijn voor historische momenten: presidenten houden er toespraken, oud en nieuwfeesten worden er gevierd en marathons passeren eronder. In 1987 sprak de Amerikaanse president Ronald Reagan voor de poort de beroemde woorden: "Mr. Gorbachev, tear down this wall!" — "Haal deze muur neer!" Twee jaar later was de muur inderdaad weg. De Brandenburger Tor is het enige overgebleven stadspoort van Berlijn van de oorspronkelijke veertien. Hij staat er als stille getuige van alles wat de stad heeft doorgemaakt.',
-    quiz: [
-      { question: 'In welk jaar werd de Brandenburger Tor gebouwd?', answers: [{ text: '1791', correct: true }, { text: '1871' }, { text: '1945' }] },
-      { question: 'Wie nam de Quadriga mee als oorlogsbuit?', answers: [{ text: 'Napoleon', correct: true }, { text: 'Hitler' }, { text: 'Keizer Wilhelm' }] },
-      { question: 'Welke beroemde woorden sprak president Reagan voor de poort?', answers: [{ text: '"Haal deze muur neer!"', correct: true }, { text: '"Berlijn, ik ben vrij!"' }, { text: '"Ik ben een Berlijner"' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '🐻',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/B%C3%A4renbrunnen_K%C3%B6llnischer_Park_-_Berlin.jpg/600px-B%C3%A4renbrunnen_K%C3%B6llnischer_Park_-_Berlin.jpg',
-    title: 'Berlijn en de Beer',
-    intro: 'Berlijn heeft een bijzonder stadswapen: een zwarte beer op een witte achtergrond. De beer staat overal in de stad — op borden, bruggen, in standbeelden en op souvenirs. Maar waarom een beer? De legende zegt dat de stad is gesticht door Albrecht de Beer, een markgraaf die in de twaalfde eeuw over het gebied heerste. Zijn naam betekent letterlijk "de beer", en zo kreeg de stad zijn symbool. Maar misschien is het gewoon een woordgrap: "Berlijn" klinkt een beetje als het woord voor beer in het Duits — "Bär". Hoe dan ook, de beer is al meer dan 700 jaar het symbool van Berlijn. In 2001 begon een kunstproject dat de beer wereldberoemd maakte: honderden levensgrote berenbeelden werden door kunstenaars beschilderd en door de hele stad geplaatst. Elke beer was anders, kleurrijk en creatief. Toeristen van overal kwamen kijken.',
-    question: 'Als jij een dier mocht kiezen als symbool voor jouw stad of dorp, welk dier zou dat zijn en waarom?',
-    deepdive: 'Het kunstproject met de beschilderde beren heette "The Buddy Bears" en was zo\'n succes dat het de wereld over reisde — naar Parijs, Tokyo, New York en tientallen andere steden. Het idee was simpel: berendecoraties zetten de wereld op zijn kop. De opbrengst van de verkoop ging naar goede doelen. Inmiddels zijn er meer dan 140 landen die meededen. Vandaag de dag staat er bij de Brandenburger Tor altijd een grote beer als welkomstgeschenk voor bezoekers. De beer van Berlijn is zo geliefd dat hij zelfs zijn eigen verjaardag heeft: op 28 oktober viert Berlijn elk jaar de geboortedag van de stad, en de beer staat centraal. Berlijn is trots op zijn beer — net zoals een voetbalclub trots is op zijn mascotte.',
-    quiz: [
-      { question: 'Hoe heet het symbool (dier) van de stad Berlijn?', answers: [{ text: 'De beer', correct: true }, { text: 'De adelaar' }, { text: 'De wolf' }] },
-      { question: 'Hoe heette het kunstproject met de beschilderde beren?', answers: [{ text: 'The Buddy Bears', correct: true }, { text: 'Berlin Bears' }, { text: 'Street Art Bears' }] },
-      { question: 'Naar hoeveel landen reisde het beren-kunstproject?', answers: [{ text: 'Meer dan 140 landen', correct: true }, { text: '10 landen' }, { text: '50 landen' }] },
-    ],
-  },
-  {
-    category: 'history',
-    emoji: '✈️',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/C-47s_at_Tempelhof_Airport_Berlin_1948.jpg/600px-C-47s_at_Tempelhof_Airport_Berlin_1948.jpg',
-    title: 'De Berlijnse Luchtbrug',
-    intro: 'In 1948 deed de Sovjet-Unie iets heel gevaarlijks: ze blokkeerden alle wegen, spoorwegen en kanalen naar West-Berlijn. Twee miljoen mensen zaten ineens opgesloten in hun eigen stad, zonder eten, zonder brandstof, zonder medicijnen. De bedoeling was duidelijk: verhonger de stad totdat ze zich overgeeft. Maar het westen liet zich niet kisten. Amerika en Groot-Brittannië besloten iets wat niemand voor mogelijk hield: ze zouden de hele stad bevoorraden vanuit de lucht. Dag en nacht, elke dag, landden vliegtuigen op de vliegvelden van West-Berlijn. Op het hoogtepunt landde er elke drie minuten een toestel. Ze brachten bloem, kolen, medicijnen — alles wat een stad nodig heeft om te overleven. De Russen dachten dat het nooit zou lukken. Ze hadden het mis.',
-    question: 'Als jij besliste of je een gevaarlijke missie zou uitvoeren om vreemden te helpen, wat zou je dan doen?',
-    deepdive: 'De luchtbrug duurde 15 maanden — van juni 1948 tot september 1949. In totaal werden er meer dan 200.000 vluchten gemaakt en meer dan 2 miljoen ton aan goederen ingevlogen. De piloten werden helden. Een van hen, Gail Halvorsen, begon snoepjes uit zijn vliegtuig te gooien aan kleine kinderen die bij het vliegveld stonden te kijken. Hij bond de snoepjes vast aan kleine parachutjes van zakdoeken. Al snel deden andere piloten mee. Kinderen noemden hem "de rozijnenomber". Uiteindelijk gaven de Russen toe en heftten ze de blokkade op. West-Berlijn was vrij. De luchtbrug liet de wereld zien dat je een stad kunt redden met moed, organisatie en heel veel vliegtuigen.',
-    quiz: [
-      { question: 'Hoe lang duurde de Berlijnse Luchtbrug?', answers: [{ text: '15 maanden', correct: true }, { text: '3 maanden' }, { text: '5 jaar' }] },
-      { question: 'Hoeveel vluchten werden er gemaakt tijdens de luchtbrug?', answers: [{ text: 'Meer dan 200.000', correct: true }, { text: '1.000' }, { text: '50.000' }] },
-      { question: 'Hoe heette de piloot die snoepjes uit zijn vliegtuig gooide?', answers: [{ text: 'Gail Halvorsen', correct: true }, { text: 'Charles Lindbergh' }, { text: 'Buzz Aldrin' }] },
-    ],
-  },
-  {
-    category: 'history',
+    category: 'prijzen',
     emoji: '🏅',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Jesse_Owens2.jpg/600px-Jesse_Owens2.jpg',
-    title: 'Jesse Owens in Berlijn',
-    intro: 'In 1936 organiseerde Adolf Hitler de Olympische Spelen in Berlijn. Hij wilde de wereld laten zien dat blonde, blauwe-ogige Duitsers de beste mensen ter wereld waren. Maar toen verscheen een jonge Amerikaanse atleet genaamd Jesse Owens — en hij verpestte Hitlers plannen volledig. Owens was Afrikaans-Amerikaans, opgegroeid in armoede in Alabama. Op de Olympische Spelen van Berlijn won hij vier gouden medailles: op de 100 meter, de 200 meter, de verspringen en de estafette. Vier keer de beste ter wereld, in de stad van een man die dacht dat mensen zoals hij minderwaardig waren. Het stadion, gevuld met honderdduizend mensen, explodeerde van enthousiasme. De menigte riep zijn naam: "Yesse! Yesse!" Hitler verliet boos het stadion.',
-    question: 'Hoe denk jij dat Jesse Owens zich voelde toen hij zijn eerste gouden medaille won, in die stad, voor die menigte?',
-    deepdive: 'Jesse Owens had tijdens de Spelen ook een onverwachte vriend: de Duitse atleet Luz Long, zijn grootste concurrent op het verspringen. Long gaf Owens stiekem een tip waardoor hij zich kon plaatsen voor de finale. Ze omhelsden elkaar openlijk voor de ogen van Hitler — een zwarte Amerikaan en een blonde Duitser, vrienden. Long verloor de finale van Owens en feliciteerde hem als eerste. "Je kunt je leven lang zoeken naar een vriend als Luz Long", schreef Owens later. Terug in Amerika werd Owens niet als held ontvangen door president Roosevelt — de president nodigde de witte atleten wel uit naar het Witte Huis, maar Owens niet. Het duurde decennia voor Amerika zijn eigen held volledig erkende.',
+    label: 'Prijzen',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Eredivisie_Logo.png/600px-Eredivisie_Logo.png',
+    title: 'De 24 Eredivisie-titels — Recordkampioen',
+    intro: 'PSV Eindhoven is samen met Ajax de meest succesvolle club in de Nederlandse voetbalgeschiedenis als het gaat om landstitels. Met 24 Eredivisie-kampioenschappen staat de club in de absolute top. De eerste titel werd gewonnen in 1929 — nog voor de Eredivisie officieel bestond als profcompetitie. De meest recente titel werd veroverd in het seizoen 2022/23, onder leiding van trainer Ruud van Nistelrooy. PSV won in sommige tijdperken titels in series: vier op rij van 1986 tot 1989, en daarna zes op rij van 2000 tot 2003 onder Dick Advocaat. De consistentie over meer dan negentig jaar is een bewijs van de kracht van de club.',
+    question: 'Is 24 titels winnen een kwestie van superieure kwaliteit, of ook van geluk en gunstige omstandigheden?',
+    deepdive: 'In sommige seizoenen was PSV zo dominant dat er nauwelijks twijfel was over de uitkomst van de competitie. Maar er waren ook kampioenschappen die pas op de laatste speeldag werden beslist. De titel van 2006/07, voor de tweede keer onder Frank Arnesen en trainer Guus Hiddink, werd gewonnen met een punt voorsprong op Ajax. PSV en Ajax staan allebei op 24 titels — de vraag is wie er als eerste 25 haalt.',
     quiz: [
-      { question: 'Hoeveel gouden medailles won Jesse Owens op de Olympische Spelen van 1936?', answers: [{ text: '4', correct: true }, { text: '2' }, { text: '1' }] },
-      { question: 'Welke sport deed Jesse Owens NIET op de Spelen?', answers: [{ text: 'Zwemmen', correct: true }, { text: 'Sprinten' }, { text: 'Verspringen' }] },
-      { question: 'Wie was de vriend van Jesse Owens bij de Spelen van 1936?', answers: [{ text: 'Luz Long', correct: true }, { text: 'Jim Thorpe' }, { text: 'Carl Lewis' }] },
+      { question: 'Hoeveel Eredivisie-titels heeft PSV gewonnen?', answers: [{ text: '24 titels', correct: true }, { text: '18 titels' }, { text: '30 titels' }] },
+      { question: 'In welk jaar behaalde PSV zijn meest recente kampioenschap (2022/23)?', answers: [{ text: '2023', correct: true }, { text: '2019' }, { text: '2021' }] },
+      { question: 'Hoeveel titels op rij won PSV onder trainer Dick Advocaat (2000–2003)?', answers: [{ text: '4 titels op rij', correct: true }, { text: '2 titels op rij' }, { text: '6 titels op rij' }] },
     ],
   },
   {
-    category: 'technology',
-    emoji: '📡',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Fernsehturm_Berlin_2006.jpg/600px-Fernsehturm_Berlin_2006.jpg',
-    title: 'De Fernsehturm: Toren van Berlijn',
-    intro: 'Midden in Berlijn prik je hem niet te missen: een naald van 368 meter hoog met een zilveren bol halverwege — de Fernsehturm, de televisietoren. Hij is het hoogste gebouw van Duitsland en zichtbaar vanuit bijna heel Berlijn. De toren werd gebouwd door Oost-Duitsland en geopend in 1969. Het was een statement aan de wereld: kijk hoe modern en krachtig de communistische staat is. Maar de toren werd snel een mikpunt van grappen. Wanneer de zon op de metalen bol schijnt, verschijnt er een spiegelend kruis van licht. De gelovige West-Berlijners noemden dit spottend "de wraak van de paus" — want de atheïstische Oost-Duitse regering had kerken verboden, maar kon het kruis op haar eigen trots niet vermijden. De bouwers probeerden het te verhelpen met een andere coating, maar het kruis bleef.',
-    question: 'Als jij een toren mocht bouwen die jouw stad aan de wereld laat zien, hoe zou die er dan uitzien?',
-    deepdive: 'De Fernsehturm heeft een draaiend restaurant in de bol, op 207 meter hoogte. In precies 30 minuten draait het restaurant een volle ronde — terwijl je eet, verandert langzaam het uitzicht over de hele stad. Meer dan een miljoen mensen bezoeken de toren elk jaar. Bij helder weer kun je vanuit de toren tot 80 kilometer ver kijken. De toren zond oorspronkelijk televisieprogramma\'s uit voor heel Oost-Duitsland. Na de hereniging in 1990 bleef hij gewoon draaien — nu als toeristische attractie én als zendmast voor radio en televisie. De Berlijnse bijnamen voor de toren zijn talrijk: "de telespargel" (de televisie-asperge), "de Vadertje Walter" (naar de toenmalige Oost-Duitse leider), en altijd met een knipoog naar dat kruis.',
+    category: 'prijzen',
+    emoji: '⭐',
+    label: 'Prijzen',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/UEFA_Champions_League_logo_2.svg/600px-UEFA_Champions_League_logo_2.svg.png',
+    title: 'Champions League 2004/05 — De Halve Finale',
+    intro: 'In het seizoen 2004/05 schreef PSV een van de mooiste Europese verhalen in zijn recente geschiedenis. Onder coach Guus Hiddink bereikte de club de halve finale van de Champions League — het hoogste Europese clubtoernooi. In de kwartfinale schakelde PSV het sterke Olympique Lyon uit na een dramatische wedstrijd. In de halve finale was uiteindelijk titelverdediger AC Milan te sterk, maar het feit dat PSV zover was gekomen in de zwaarste competitie ter wereld, bewees dat Eindhoven op het allerhoogste niveau kon meedraaien. Het avontuur eindigde, maar de herinneringen bleven.',
+    question: 'Is een halve finale bereiken in de Champions League een succes, of smaakt het altijd naar meer?',
+    deepdive: 'De kwartfinale tegen Lyon was bijzonder: PSV verloor thuis maar won uit en ging door op doelsaldo. Keeper Ronald Waterreus, die eigenlijk reservekeeper was, speelde cruciale wedstrijden. In de halve finale scoorde Shevchenko de beslissende treffer voor Milan. Dat AC Milan uiteindelijk de Champions League won, maakte PSV\'s prestatie nog glansrijker — ze waren zo dicht bij de finale van het toernooi dat uiteindelijk door de beste club van Europa werd gewonnen.',
     quiz: [
-      { question: 'Hoe hoog is de Fernsehturm in Berlijn?', answers: [{ text: '368 meter', correct: true }, { text: '200 meter' }, { text: '500 meter' }] },
-      { question: 'Hoe lang duurt een volle ronde in het draaiende restaurant?', answers: [{ text: '30 minuten', correct: true }, { text: '1 uur' }, { text: '15 minuten' }] },
-      { question: 'Welke bijnaam gaven Berlijners aan het kruis op de toren?', answers: [{ text: 'Wraak van de paus', correct: true }, { text: 'Zonnebol' }, { text: 'Hemelteken' }] },
+      { question: 'Welke club elimineerde PSV in de halve finale van de Champions League 2005?', answers: [{ text: 'AC Milan', correct: true }, { text: 'Chelsea' }, { text: 'Liverpool' }] },
+      { question: 'Welke Franse club versloeg PSV bijna in de kwartfinale van de CL 2005?', answers: [{ text: 'Olympique Lyon', correct: true }, { text: 'Paris Saint-Germain' }, { text: 'Olympique Marseille' }] },
+      { question: 'Wie was de coach van PSV in het seizoen 2004/05?', answers: [{ text: 'Guus Hiddink', correct: true }, { text: 'Dick Advocaat' }, { text: 'Frank Arnesen' }] },
     ],
   },
   {
-    category: 'history',
-    emoji: '🕵️',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Stasi_Zentrale.jpg/600px-Stasi_Zentrale.jpg',
-    title: 'De Stasi: De Geheime Politie',
-    intro: 'In Oost-Duitsland was er een organisatie die iedereen angst inboezemde: de Stasi, de geheime politie. Ze hielden bijna elke burger in de gaten. Niet met camera\'s of computers zoals nu, maar met mensen — duizenden informanten die hun buren, vrienden, zelfs familieleden bespioneerden en alles doorgaven aan de Stasi. Op het hoogtepunt had de Stasi 91.000 medewerkers in dienst en meer dan 175.000 informanten. In een land van 16 miljoen mensen betekende dat: één spion op elke 63 inwoners. Ze lazen brieven open, luisterden telefoongesprekken af en plakten brieven zo zorgvuldig terug dat niemand het merkte. Ze hielden dossiers bij over miljoenen burgers. Als iemand een grapje maakte over de regering, kon hij de volgende dag zijn baan kwijt zijn of erger.',
-    question: 'Hoe zou jij je gedragen als je wist dat iemand altijd meekeek en meeluisterde?',
-    deepdive: 'De Stasi had een bizarre methode om mensen te volgen: ze bewaarden de geur van verdachten. Agenten namen stiekem stoelen waarop mensen hadden gezeten mee en sloten die op in glazen potten. Als ze iemand later wilden herkennen, lieten ze honden aan de pot snuffelen. Er zijn nog steeds duizenden van die potten bewaard in het Stasi-museum in Berlijn. Na de val van de muur probeerden Stasi-medewerkers snel hun dossiers te vernietigen. Ze verscheurden miljoenen pagina\'s. Maar burgers stormden de kantoren binnen voordat alles vernietigd was. Nu werken honderden mensen eraan om die papiersnippers — letterlijk miljoenen — met de hand terug in elkaar te puzzelen. Sommige Oost-Duitsers ontdekten pas tientallen jaren later dat hun eigen broer of vriendin hen had bespioneerd.',
+    category: 'prijzen',
+    emoji: '🥈',
+    label: 'Prijzen',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'De KNVB Beker — Negen Keer Nationale Kop',
+    intro: 'Naast zijn Eredivisie-successen won PSV ook negen keer de KNVB Beker — het nationale bekerkampioenschap. De beker is bijzonder omdat elk niveau van het Nederlandse voetbal meedoet: amateurs, tweedeklassers en Eredivisie-clubs spelen allemaal in hetzelfde toernooi. Dat maakt het ook onvoorspelbaar en spannend. PSV won zijn eerste beker in 1950. De meest recente bekerwinst dateert van 2012, toen PSV in een dramatische finale de trofee veroverde. Bekerwinst voelt voor veel PSV-fans anders dan een landstitel — intenser, gespannener, want de finale kan onverwacht verloren worden door één slechte dag.',
+    question: 'Een bekersysteem geeft underdogs een echte kans. Vind je dat mooi of maakt het de competitie minder eerlijk?',
+    deepdive: 'De KNVB Beker-finales worden gespeeld op een neutrale locatie: De Kuip in Rotterdam of de Johan Cruyff ArenA in Amsterdam. De sfeer in zo\'n finale is uniek — beide sets fans reizen af naar dezelfde stad, en de tribune is een zee van kleuren. PSV\'s negen bekerwinsten plaatsen het in de Europese middenmoot qua bekerrecord. In Nederland is Feyenoord recordhouder met dertien bekerwinsten, gevolgd door Ajax met twintig.',
     quiz: [
-      { question: 'Hoeveel informanten had de Stasi op het hoogtepunt?', answers: [{ text: 'Meer dan 175.000', correct: true }, { text: 'Ongeveer 500' }, { text: 'Meer dan 1 miljoen' }] },
-      { question: 'Hoe bewaarde de Stasi de "geur" van verdachten?', answers: [{ text: 'In glazen potten', correct: true }, { text: 'In plastic zakken' }, { text: 'Op papier' }] },
-      { question: 'Wat deden Stasi-medewerkers na de val van de muur?', answers: [{ text: 'Ze vernietigden dossiers', correct: true }, { text: 'Ze vluchtten het land uit' }, { text: 'Ze gaven zich over' }] },
+      { question: 'Hoe vaak won PSV de KNVB Beker?', answers: [{ text: '9 keer', correct: true }, { text: '5 keer' }, { text: '15 keer' }] },
+      { question: 'In welk jaar won PSV zijn eerste KNVB Beker?', answers: [{ text: '1950', correct: true }, { text: '1929' }, { text: '1965' }] },
+      { question: 'Waar worden KNVB Beker-finales gespeeld?', answers: [{ text: 'Op een neutrale locatie (De Kuip of Johan Cruyff ArenA)', correct: true }, { text: 'Altijd in Eindhoven' }, { text: 'Altijd in Amsterdam' }] },
+    ],
+  },
+
+  /* ── GESCHIEDENIS ───────────────────────────────────── */
+  {
+    category: 'geschiedenis',
+    emoji: '📜',
+    label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'PSV Opgericht in 1913 door Philips',
+    intro: 'PSV Eindhoven bestaat al meer dan 110 jaar. De club werd op 31 augustus 1913 opgericht door het bedrijf Philips als een sportvereniging voor zijn medewerkers. De naam zegt het al: Philips Sport Vereniging. Philips was in die tijd het snelst groeiende bedrijf van Nederland. De directie wilde zijn arbeiders gezond en actief houden en richtte een sportclub op voor voetbal, atletiek en andere sporten. Voetbal groeide al snel uit tot de populairste tak. In de beginjaren speelden PSV-teams op grasvelden in de directe omgeving van de fabriek. Niemand kon bevroeden dat dit kleine clubje ooit zou uitgroeien tot een van de meest succesvolle voetbalclubs van Europa.',
+    question: 'Wat betekent het voor een club dat die al meer dan een eeuw bestaat en door een bedrijf werd opgericht?',
+    deepdive: 'Philips groeide uit tot een multinational met vestigingen overal ter wereld, maar de band met PSV bleef sterk. Decennialang financierde Philips de club en stond het zijn naam aan het stadion af: het Philips Stadion. Pas in de jaren tachtig en negentig werd PSV geleidelijk meer onafhankelijk van zijn oprichter. De club heeft nooit faillissement gehad, is nooit gefuseerd met een andere club en speelt al meer dan zeventig jaar op het hoogste Nederlandse niveau. Een bijzondere continuteit in de wereld van het profvoetbal.',
+    quiz: [
+      { question: 'Wanneer werd PSV Eindhoven opgericht?', answers: [{ text: '31 augustus 1913', correct: true }, { text: '1 januari 1920' }, { text: '15 mei 1900' }] },
+      { question: 'Door wie werd PSV opgericht?', answers: [{ text: 'Het bedrijf Philips', correct: true }, { text: 'Lokale sporters' }, { text: 'De gemeente Eindhoven' }] },
+      { question: 'Wat staat de "P" in PSV voor?', answers: [{ text: 'Philips', correct: true }, { text: 'Professioneel' }, { text: 'Pioniers' }] },
     ],
   },
   {
-    category: 'technology',
-    emoji: '🚗',
-    label: 'Berlijn',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Trabant601.jpg/600px-Trabant601.jpg',
-    title: 'De Trabant: Auto van het Volk',
-    intro: 'In Oost-Duitsland reed bijna iedereen in hetzelfde autootje: de Trabant, of kortweg de "Trabi". Het was een kleine, ronkende auto met een carrosserie van geperst plastic en een tweetaktmotor die een enorme wolk blauwe rook uitspuugde. Je kon de Trabi al van verre horen — en ruiken. Maar voor Oost-Duitsers was de Trabi meer dan een auto: het was een statussymbool. Als je een Trabi wilde kopen, moest je je naam op een wachtlijst zetten. Hoe lang duurde het wachten? Gemiddeld dertien jaar. Je reserveerde de auto nog voor je kind geboren was, en tegen de tijd dat hij geleverd werd, was je kind al op de middelbare school. Na de val van de muur in 1989 reden honderden Oost-Duitsers in hun Trabi naar het westen — de wachtrijen bij benzinestations waren enorm.',
-    question: 'Als jij 13 jaar moest wachten op iets wat je echt wou, zou je dan doorzetten of opgeven?',
-    deepdive: 'De Trabant werd voor het eerst gebouwd in 1957 en nauwelijks veranderd in de 30 jaar daarna. Terwijl westerse auto\'s steeds veiliger, sneller en comfortabeler werden, bleef de Trabi precies hetzelfde. De motor was zo eenvoudig dat eigenaren hem zelf konden repareren met basale gereedschappen — wat ook nodig was, want onderdelen waren schaars. Na de hereniging werden er massaal Trabis gedumpt: mensen lieten ze gewoon op straat achter en stapten over op westerse auto\'s. Maar de Trabi is nooit echt verdwenen. Vandaag de dag zijn er Trabi-fans over de hele wereld die de autootjes restaureren en verzamelen. In Berlijn kun je toeristische rondritten boeken in een Trabant. Het stinkende, knetterende autootje is een geliefde herinnering aan een rare tijd geworden.',
+    category: 'geschiedenis',
+    emoji: '🎨',
+    label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'De Tricolore — Rood, Wit en Lichtblauw',
+    intro: 'PSV staat bekend om zijn rood-wit gestreept shirt, maar officieel heeft de club drie kleuren: rood, wit en lichtblauw. Die combinatie heet de "tricolore". Het lichtblauw is minder zichtbaar in het dagelijkse shirt, maar het zit verweven in het clubwapen en in een aantal historische uitshirts. De kleuren verwijzen naar de Nederlandse vlag (rood-wit-blauw), met een lichtere, meer PSV-eigen variant van het blauw. Het rood-wit gestreept thuis-shirt is al decennialang hetzelfde — een iconisch beeld in het Nederlandse voetbal. Supporters herkennen de PSV-kleuren wereldwijd.',
+    question: 'Kleuren geven een club haar identiteit. Welke kleur past het beste bij PSV en waarom?',
+    deepdive: 'Het clubwapen van PSV toont een adelaar met uitgespreide vleugels, omgeven door de drie clubkleuren. De keuze voor rood-wit als dominante combinatie in het shirt was in de beginjaren van de club al gemaakt en is sindsdien nooit drastisch veranderd. Sommige uitshirts hebben in de loop der jaren blauw of andere kleuren gebruikt, maar het rood-wit thuisshirt is heilig. PSV-supporters die het shirt dragen, voelen zich verbonden met meer dan een eeuw clubgeschiedenis.',
     quiz: [
-      { question: 'Hoe lang moest je gemiddeld wachten op een nieuwe Trabant?', answers: [{ text: '13 jaar', correct: true }, { text: '2 jaar' }, { text: '6 maanden' }] },
-      { question: 'In welk jaar werd de Trabant voor het eerst gebouwd?', answers: [{ text: '1957', correct: true }, { text: '1970' }, { text: '1945' }] },
-      { question: 'Hoe heet de verkorte naam voor de Trabant?', answers: [{ text: 'Trabi', correct: true }, { text: 'Trabbi' }, { text: 'Traab' }] },
+      { question: 'Welke drie kleuren heeft PSV officieel?', answers: [{ text: 'Rood, wit en lichtblauw', correct: true }, { text: 'Rood, wit en zwart' }, { text: 'Rood, oranje en wit' }] },
+      { question: 'Hoe heet de drie-kleurencombinatie van PSV officieel?', answers: [{ text: 'Tricolore', correct: true }, { text: 'Tricot' }, { text: 'Driekleur' }] },
+      { question: 'Welk dier staat er in het PSV-clubwapen?', answers: [{ text: 'Een adelaar', correct: true }, { text: 'Een leeuw' }, { text: 'Een stier' }] },
+    ],
+  },
+  {
+    category: 'geschiedenis',
+    emoji: '🏙️',
+    label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Eindhoven_luchtfoto.jpg/600px-Eindhoven_luchtfoto.jpg',
+    title: 'PSV en Eindhoven — Een Onlosmakelijke Band',
+    intro: 'PSV en de stad Eindhoven zijn onlosmakelijk met elkaar verbonden. De club groeide op met de stad: van een bescheiden industrieplaats naar de technologiehoofdstad van Nederland. Waar Philips groeide, groeide PSV mee. Eindhoven heeft vandaag de dag ruim 240.000 inwoners en is de vijfde stad van Nederland. Toch heeft het een voetbalclub die in Europa meekan met de groten der aarde. PSV is de trots van Brabant — supporters komen niet alleen uit Eindhoven maar uit de hele regio: uit Tilburg, Den Bosch, Breda en ver daarbuiten. De club is meer dan een sportclub: het is een identiteitssymbool voor een heel landsdeel.',
+    question: 'Kan een voetbalclub een hele stad iets geven wat een bedrijf of een politicus niet kan?',
+    deepdive: 'Eindhoven is de thuisstad van bedrijven als ASML, NXP en van design-evenementen als Dutch Design Week. Maar als er één ding is dat de stad internationaal bekendheid geeft buiten de technologiewereld, is het PSV. Wanneer de club in de Champions League speelt, kijkt de wereld even naar een middelgrote Brabantse stad. Die trots is niet te kopen — die ontstaat organisch, over generaties van supporters die week in week uit het rood-wit dragen.',
+    quiz: [
+      { question: 'Hoeveel inwoners heeft Eindhoven ongeveer?', answers: [{ text: 'Ruim 240.000', correct: true }, { text: '1 miljoen' }, { text: '80.000' }] },
+      { question: 'Hoe staat Eindhoven in Nederland bekend?', answers: [{ text: 'Als technologiehoofdstad', correct: true }, { text: 'Als havenstad' }, { text: 'Als studentenstad nummer 1' }] },
+      { question: 'In welke provincie ligt Eindhoven?', answers: [{ text: 'Noord-Brabant', correct: true }, { text: 'Limburg' }, { text: 'Gelderland' }] },
+    ],
+  },
+  {
+    category: 'geschiedenis',
+    emoji: '🌱',
+    label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'PSV Academie — Kraamkamer van Toptalent',
+    intro: 'De PSV Academie geldt als een van de beste jeugdopleidingen in Nederland. Van de honderden talenten die er door de jaren heen zijn gevormd, groeide een indrukwekkend aantal uit tot topprofessionals. Arjen Robben begon als kleine, flinke buitenspeler op de velden van De Herdgang. Memphis Depay tekende op zijn twaalfde een contract bij PSV en groeide uit tot de beste PSV-speler van zijn generatie. Cody Gakpo werd in de academie gevormd en scoorde vervolgens voor PSV en het Nederlands elftal op het WK 2022, waarna hij voor een recordbedrag naar Liverpool vertrok. De academie is het bewijs dat PSV niet alleen talent koopt, maar ook zelf creëert.',
+    question: 'Wat is waardevoller voor een club: zelf talent opleiden, of grote sterren kopen?',
+    deepdive: 'De PSV Academie werkt met meer dan 250 jonge talenten verdeeld over alle leeftijdsgroepen. De scouting is internationaal, maar de nadruk ligt op Brabants en Nederlands talent. Spelers krijgen op de academie niet alleen voetbaltraining, maar ook begeleiding op school en in hun persoonlijke ontwikkeling. PSV investeert jaarlijks miljoenen euro\'s in de opleiding, wetende dat een succes als Cody Gakpo — die voor 45 miljoen euro werd verkocht — de investering meervoudig terugverdient.',
+    quiz: [
+      { question: 'Welke topspeler werd opgeleid bij de PSV Academie?', answers: [{ text: 'Arjen Robben', correct: true }, { text: 'Johan Cruijff' }, { text: 'Marco van Basten' }] },
+      { question: 'Voor welk bedrag werd PSV-academieproduct Cody Gakpo verkocht?', answers: [{ text: 'Ongeveer 45 miljoen euro', correct: true }, { text: '5 miljoen euro' }, { text: '100 miljoen euro' }] },
+      { question: 'Naar welke Engelse club vertrok Cody Gakpo in januari 2023?', answers: [{ text: 'Liverpool', correct: true }, { text: 'Manchester City' }, { text: 'Arsenal' }] },
+    ],
+  },
+  {
+    category: 'geschiedenis',
+    emoji: '⚔️',
+    label: 'Geschiedenis',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'PSV vs Ajax — De Eeuwige Rivaliteit',
+    intro: 'In Nederland is er maar één club die PSV echt bedreigt als het gaat om de landstitel: Ajax. De twee clubs domineren de Eredivisie al meer dan vijftig jaar. Wedstrijden tussen PSV en Ajax — "De Topper" — zijn altijd beladen, emotioneel en van nationaal belang. Beide clubs staan op 24 Eredivisie-titels. In Europees verband presteerden beide clubs historisch hoog: Ajax won de Champions League viermaal (1971, 1972, 1973 en 1995), PSV de Europacup I eenmaal (1988). Het debat over wie de "ware" grootste club van Nederland is, wordt overal gevoerd — in kroegen, op tribunes, op schoolpleinen.',
+    question: 'Rivaliteit in sport: maakt het je als supporter beter of juist slechter?',
+    deepdive: 'PSV en Ajax kwamen in de strijd om de titel regelmatig tegenover elkaar te staan op de laatste speeldag van het seizoen. In 2018 won PSV de titel van Ajax op het nippertje. In 2022 draaide het om: Ajax pakte de titel, gevolgd door PSV. De volgorde op de ranglijst bepaalt telkens opnieuw wie het afgelopen seizoen de beste club van Nederland was — maar de eeuwige strijd gaat gewoon door.',
+    quiz: [
+      { question: 'Hoeveel Eredivisie-titels heeft Ajax gewonnen?', answers: [{ text: 'Evenveel als PSV: 24', correct: true }, { text: 'Meer: 36' }, { text: 'Minder: 18' }] },
+      { question: 'Hoeveel keer won Ajax de Champions League (of Europacup I)?', answers: [{ text: '4 keer', correct: true }, { text: '1 keer' }, { text: '7 keer' }] },
+      { question: 'Hoe wordt de wedstrijd PSV vs Ajax officieel in het voetbal aangeduid?', answers: [{ text: 'De Topper', correct: true }, { text: 'De Klassiekers van het Zuiden' }, { text: 'Het Noord-Zuidderby' }] },
+    ],
+  },
+
+  /* ── STADION ────────────────────────────────────────── */
+  {
+    category: 'stadion',
+    emoji: '🏟️',
+    label: 'Stadion',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Philips_Stadion.jpg/600px-Philips_Stadion.jpg',
+    title: 'Het Philips Stadion — Thuis van PSV',
+    intro: 'Het Philips Stadion in Eindhoven is het thuis van PSV. Met een capaciteit van 35.000 toeschouwers is het een van de grotere voetbalstadia van Nederland. Het stadion staat midden in de stad, op slechts tien minuten loopafstand van het Centraal Station, waardoor het uniek toegankelijk is voor fans uit heel het land. De eerste versie van het stadion werd in 1913 geopend — hetzelfde jaar dat PSV werd opgericht. Sindsdien is het meermaals verbouwd en uitgebreid. Het moderne Philips Stadion heeft moderne faciliteiten, comfortabele stoelen en een sfeer die tijdens thuiswedstrijden onmiskenbaar is. Elke thuiswedstrijd is nagenoeg uitverkocht.',
+    question: 'Wat maakt een stadion meer dan alleen een plek om voetbal te kijken?',
+    deepdive: 'Het Philips Stadion heeft ook een clubmuseum, een restaurant en kamers voor zakelijke gasten. PSV organiseert er niet alleen voetbalwedstrijden maar ook concerten en evenementen. De naam "Philips Stadion" is al tientallen jaren dezelfde — terwijl veel andere Nederlandse clubs hun stadion omdoopten voor sponsorgeld (zoals de Grolsch Veste of de Heineken ArenA). Het is een blijk van trots en stabiliteit die PSV-fans waarderen.',
+    quiz: [
+      { question: 'Hoeveel toeschouwers passen er in het Philips Stadion?', answers: [{ text: '35.000', correct: true }, { text: '60.000' }, { text: '20.000' }] },
+      { question: 'In welk jaar werd het Philips Stadion voor het eerst geopend?', answers: [{ text: '1913', correct: true }, { text: '1950' }, { text: '1975' }] },
+      { question: 'Hoe ver is het Philips Stadion verwijderd van het Centraal Station van Eindhoven?', answers: [{ text: 'Ongeveer 10 minuten lopen', correct: true }, { text: '30 minuten lopen' }, { text: 'Aan de rand van de stad' }] },
+    ],
+  },
+  {
+    category: 'stadion',
+    emoji: '🔥',
+    label: 'Stadion',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Philips_Stadion.jpg/600px-Philips_Stadion.jpg',
+    title: 'Vak P — De Ziel van het Stadion',
+    intro: 'Vak P is het hart van het Philips Stadion en de thuis van de meest gepassioneerde PSV-supporters. Het vak staat achter het doel en is het epicentrum van het lawaai, de spreekkoren en de sfeer. Hier staan de ultras — de fans die vroeg aanwezig zijn, de hele wedstrijd zingen en met tifos en spandoeken een visuele muur creëren. Op speciale avonden, zoals Champions League-wedstrijden, is het stadion versierd met rood-wit doeken over de hele tribune. Het is een spektakel dat bezoekers nooit vergeten. PSV-fans staan bekend als trouw, luid en loyaal — ook als het even minder gaat.',
+    question: 'Wat maakt supporters zo onmisbaar voor een voetbalwedstrijd — meer nog dan de spelers?',
+    deepdive: 'De naam "Vak P" verwijst simpelweg naar de sectieletter, maar het is een begrip geworden in het Nederlandse voetbal. Vak P organiseert ook buiten het stadion activiteiten: travellertrips, acties voor goede doelen en contact met andere supportersgroepen in Europa. Bij Europese uitwedstrijden reizen honderden PSV-fans mee en maken overal ter wereld een indruk. PSV heeft in de Europa League en Champions League supporters-awards gewonnen voor sfeer en organisatie.',
+    quiz: [
+      { question: 'Waar in het Philips Stadion staat Vak P?', answers: [{ text: 'Achter het doel', correct: true }, { text: 'Op de hoofdtribune' }, { text: 'In het uitvak' }] },
+      { question: 'Hoe worden de meest fanatieke fans in het Nederlandse voetbal ook wel aangeduid?', answers: [{ text: 'Ultras', correct: true }, { text: 'Hooligans' }, { text: 'Harde kern' }] },
+      { question: 'Welke kleuren domineren het Philips Stadion tijdens een PSV-thuiswedstrijd?', answers: [{ text: 'Rood en wit', correct: true }, { text: 'Oranje en zwart' }, { text: 'Blauw en wit' }] },
+    ],
+  },
+  {
+    category: 'stadion',
+    emoji: '🏋️',
+    label: 'Stadion',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/PSV_Eindhoven.svg/600px-PSV_Eindhoven.svg.png',
+    title: 'De Herdgang — Waar Kampioenen Worden Gemaakt',
+    intro: 'Buiten het schijnwerpers van het Philips Stadion traint PSV dagelijks op De Herdgang — een state-of-the-art trainingscomplex aan de rand van Eindhoven. Hier, ver van de camera\'s en het spektakel van wedstrijddagen, worden kampioenen gevormd. De Herdgang heeft meerdere grasmat- en kunstgrasvelden, een modern medisch centrum, een hotelaccommodatie voor internationals en geavanceerde technologische analysefaciliteiten. Spelers van het eerste elftal en de jeugdacademie trainen er samen. De rust en de professionaliteit van De Herdgang zijn een groot onderdeel van het PSV-DNA.',
+    question: 'Hoe belangrijk is dagelijkse training voor het bereiken van de absolute top in een sport?',
+    deepdive: 'PSV heeft de afgelopen jaren tientallen miljoenen euro\'s geïnvesteerd in De Herdgang. Nieuwe velden, betere technologie, een nieuw medisch centrum — de ambities zijn duidelijk. Op De Herdgang werken niet alleen trainers en spelers, maar ook data-analisten, sportpsychologen en conditiecoaches. Het is een kleine stad op zich, gewijd aan één doel: PSV zo goed mogelijk maken. Bezoekers die op een open dag De Herdgang bezoeken, zijn altijd onder de indruk van de professionaliteit.',
+    quiz: [
+      { question: 'Hoe heet het officiële trainingscomplex van PSV?', answers: [{ text: 'De Herdgang', correct: true }, { text: 'Het Sportveld' }, { text: 'PSV Campus' }] },
+      { question: 'Wat is er naast trainingsvelden te vinden op De Herdgang?', answers: [{ text: 'Een medisch centrum en hotelaccommodatie', correct: true }, { text: 'Alleen grasvelden' }, { text: 'Een museum' }] },
+      { question: 'Waar ligt De Herdgang?', answers: [{ text: 'Aan de rand van Eindhoven', correct: true }, { text: 'In Amsterdam' }, { text: 'Vlak naast het Philips Stadion' }] },
+    ],
+  },
+
+  /* ── RECORDS ────────────────────────────────────────── */
+  {
+    category: 'records',
+    emoji: '📊',
+    label: 'Records',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Eredivisie_Logo.png/600px-Eredivisie_Logo.png',
+    title: 'PSV\'s Doelpuntenrecord — 116 Goals in Één Seizoen',
+    intro: 'In het seizoen 1987/88 bereikte PSV een indrukwekkend record dat tot op heden stand houdt: de club scoorde 116 doelpunten in één Eredivisie-seizoen. Dat zijn gemiddeld ruim drie goals per wedstrijd. In datzelfde seizoen won PSV ook de Europacup I — het was een jaar van totale dominantie. De aanvalsdrang van dat PSV-elftal was ongekend: Romário aan de kant, een gevaarlijk middenveld, een rechtstreeks en aanvallend spelconcept onder coach Guus Hiddink. Verdedigers in de Eredivisie hadden gewoonweg geen antwoord op de combinatie van snelheid, techniek en scoringsdrift.',
+    question: 'Is aanvallend voetbal met veel doelpunten altijd beter dan defensief voetbal met weinig goals?',
+    deepdive: 'Willy van der Kuijlen, die in zijn carrière 308 Eredivisie-goals scoorde, staat nog steeds als topscorer aller tijden van PSV in de Eredivisie. Zijn record zal vermoedelijk nooit worden gebroken. De 116 goals uit 1987/88 zijn een bewijs van de aanvalskracht van dat specifieke PSV-elftal. Ter vergelijking: een doorsnee Eredivisie-team scoort 50 tot 60 goals per seizoen. PSV scoorde dus bijna het dubbele van wat als normaal geldt.',
+    quiz: [
+      { question: 'Hoeveel Eredivisie-doelpunten scoorde PSV in het recordseizoen 1987/88?', answers: [{ text: '116 goals', correct: true }, { text: '80 goals' }, { text: '50 goals' }] },
+      { question: 'Wie is de topscorer aller tijden van PSV in de Eredivisie?', answers: [{ text: 'Willy van der Kuijlen', correct: true }, { text: 'Ruud van Nistelrooy' }, { text: 'Romário' }] },
+      { question: 'In welk seizoen scoorde PSV het record aantal doelpunten in de Eredivisie?', answers: [{ text: '1987/88', correct: true }, { text: '2000/01' }, { text: '2022/23' }] },
+    ],
+  },
+  {
+    category: 'records',
+    emoji: '🌍',
+    label: 'Records',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/UEFA_Champions_League_logo_2.svg/600px-UEFA_Champions_League_logo_2.svg.png',
+    title: 'PSV in Europa — Twee Prijzen, Eén Club',
+    intro: 'PSV is de enige Nederlandse club die twee verschillende Europese hoofdprijzen heeft gewonnen: de UEFA Cup in 1978 en de Europacup I in 1988. Geen andere Nederlandse club heeft dat gepresteerd. Ajax won de Champions League viermaal, maar nooit de UEFA Cup. Feyenoord won de UEFA Cup in 2002, maar nooit de Europacup I. PSV combineerde beide — een unicum in de Nederlandse voetbalgeschiedenis. Daarmee staat PSV in het rijtje van Europese topclubs die zowel het hoogste als het tweede Europese toernooi hebben gewonnen.',
+    question: 'Betekent succes in Europa meer dan nationaal succes voor de reputatie van een club?',
+    deepdive: 'PSV speelde zijn eerste Europese wedstrijd in de jaren zestig. Sindsdien namen ze deel aan honderden Europese duels. In de Champions League bereikten ze de halve finale in 2005. PSV won ook meerdere voorronden van de Champions League van clubs als Arsenal en Manchester United, wat de internationale reputatie van Eindhoven versterkte. De twee Europese trofeeën staan permanent tentoongesteld in het clubmuseum van PSV.',
+    quiz: [{ question: 'Welke twee Europese hoofdprijzen won PSV?', answers: [{ text: 'De UEFA Cup (1978) en de Europacup I (1988)', correct: true }, { text: 'De Champions League en de UEFA Cup' }, { text: 'De Europa League en de Conference League' }] },
+      { question: 'Welke andere grote Nederlandse club won de UEFA Cup, maar nooit de Europacup I?', answers: [{ text: 'Feyenoord', correct: true }, { text: 'Ajax' }, { text: 'AZ Alkmaar' }] },
+      { question: 'Wanneer speelde PSV zijn eerste Europese wedstrijd?', answers: [{ text: 'In de jaren zestig', correct: true }, { text: 'In 1978' }, { text: 'In 1950' }] },
+    ],
+  },
+  {
+    category: 'records',
+    emoji: '🌐',
+    label: 'Records',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Soccerball.svg/600px-Soccerball.svg.png',
+    title: 'PSV Internationals — Trots van Oranje',
+    intro: 'PSV heeft door de jaren heen een indrukwekkend aantal internationals aan het Nederlands elftal geleverd. Spelers als Ruud van Nistelrooy, Philip Cocu, Mark van Bommel, Memphis Depay, Cody Gakpo en Denzel Dumfries speelden grote toernooien terwijl ze in dienst waren van PSV. Op het WK 1998 in Frankrijk bereikte het Nederlandse elftal — gecoacht door oud-PSV-coach Guus Hiddink — de halve finale. In de Nederlandse selectie zaten meerdere PSV-spelers die een hoofdrol speelden. PSV is daarmee een van de belangrijkste leveranciers van nationaal voetbaltalent in de Nederlandse geschiedenis.',
+    question: 'Is het een eer of een last voor een club als veel spelers bij het nationale team spelen?',
+    deepdive: 'Op het EK 2021 werd PSV-verdediger Denzel Dumfries een nationale held door beslissende goals te scoren in de groepsfase. Op het WK 2022 in Qatar scoorde Cody Gakpo drie doelpunten voor Nederland en vertrok daarna rechtstreeks naar Liverpool. In 2023 werd oud-PSV-icoon Mark van Bommel bondscoach van het Nederlands elftal. PSV en het nationale team zijn al meer dan een halve eeuw nauw met elkaar verweven.',
+    quiz: [
+      { question: 'Welke PSV-coach leidde ook het Nederlands elftal naar de WK-halve finale in 1998?', answers: [{ text: 'Guus Hiddink', correct: true }, { text: 'Dick Advocaat' }, { text: 'Louis van Gaal' }] },
+      { question: 'Welke PSV-speler scoorde drie WK-doelpunten in 2022 en vertrok daarna naar Liverpool?', answers: [{ text: 'Cody Gakpo', correct: true }, { text: 'Memphis Depay' }, { text: 'Donyell Malen' }] },
+      { question: 'Welke PSV-verdediger werd een EK-held voor Nederland in 2021?', answers: [{ text: 'Denzel Dumfries', correct: true }, { text: 'Matthijs de Ligt' }, { text: 'Virgil van Dijk' }] },
+    ],
+  },
+  {
+    category: 'records',
+    emoji: '🌟',
+    label: 'Records',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Philips_Stadion.jpg/600px-Philips_Stadion.jpg',
+    title: 'Het Dubbele Kampioenschap van 1988',
+    intro: 'Het seizoen 1987/88 was het beste seizoen in de PSV-clubgeschiedenis. PSV won de Eredivisie én de Europacup I in hetzelfde jaar — een combinatie die geen enkele andere Nederlandse club ooit heeft herhaald. Op het veld was PSV dat jaar ongekend sterk: Romário scoorde voor het plezier, Guus Hiddink had een systeem gebouwd dat aanvallend en moeilijk te stoppen was, en het hele team functioneerde als een geoliede machine. De Eredivisie werd gewonnen met 116 doelpunten in één seizoen. De Europacup I werd gewonnen op strafschoppen in Stuttgart. Het was een perfecte storm van talent, tactiek en geloof.',
+    question: 'Kan een club ooit echt het perfecte seizoen spelen, of is er altijd ruimte voor nog meer?',
+    deepdive: 'Romário en zijn aanvalsspeelstijl, gecombineerd met de tactische rust van Hiddink en de agressiviteit van de middenvelders, maakten dat PSV in 1987/88 bijna onverslaanbaar was. Hans van Breukelen speelde een foutloos EK en was dat jaar een van de beste keepers van Europa. Ronald Koeman nam zijn beroemde penalty in Stuttgart. Het was een elftal dat precies op het juiste moment alles klikte. Meer dan 35 jaar later spreekt iedereen in Eindhoven er nog steeds over.',
+    quiz: [
+      { question: 'Welke twee prijzen won PSV in het historische seizoen 1987/88?', answers: [{ text: 'Eredivisie én Europacup I', correct: true }, { text: 'Eredivisie én KNVB Beker' }, { text: 'Europacup I én UEFA Cup' }] },
+      { question: 'Wie was de coach van PSV in het kampioensseizoen 1987/88?', answers: [{ text: 'Guus Hiddink', correct: true }, { text: 'Rinus Michels' }, { text: 'Johan Cruyff' }] },
+      { question: 'Welke Braziliaanse topspeler was onderdeel van het kampioensteam van 1988?', answers: [{ text: 'Romário', correct: true }, { text: 'Ronaldo' }, { text: 'Kaká' }] },
     ],
   },
 ];
@@ -432,25 +439,25 @@ let serverDailyCount   = 0;
 let forgotUsername     = '';
 let authMode           = 'login';
 
-const LS_QUIZ_COUNT  = 'jw_quiz_count';
-const LS_READ_SET    = 'jw_read_set';
-const LS_STREAK      = 'jw_streak';
-const LS_LAST_ACTIVE = 'jw_last_active';
-const LS_POINTS      = 'jw_points';
-const LS_DAILY_DATE  = 'jw_daily_date';
-const LS_DAILY_COUNT = 'jw_daily_count';
+const LS_QUIZ_COUNT  = 'psv_quiz_count';
+const LS_READ_SET    = 'psv_read_set';
+const LS_STREAK      = 'psv_streak';
+const LS_LAST_ACTIVE = 'psv_last_active';
+const LS_POINTS      = 'psv_points';
+const LS_DAILY_DATE  = 'psv_daily_date';
+const LS_DAILY_COUNT = 'psv_daily_count';
 
 const DAILY_LIMIT = 10;
 
 const LEVELS = [
-  { min: 0,    title: 'Sterrenreiziger', icon: '⭐' },
-  { min: 50,   title: 'Planeetkenner',   icon: '🌙' },
-  { min: 150,  title: 'Melkweggids',     icon: '🪐' },
-  { min: 300,  title: 'Ruimtekaptein',   icon: '🚀' },
-  { min: 500,  title: 'Sterrenkijker',   icon: '🔭' },
-  { min: 750,  title: 'Komeetrijder',    icon: '☄️' },
-  { min: 1000, title: 'Galaxiepionier',  icon: '🌌' },
-  { min: 1500, title: 'Kosmische Wijze', icon: '✨' },
+  { min: 0,    title: 'Nieuwe Fan',          icon: '⚽' },
+  { min: 50,   title: 'PSV-supporter',       icon: '🔴' },
+  { min: 150,  title: 'Boer',                icon: '🏟️' },
+  { min: 300,  title: 'PSV-kenner',          icon: '🌟' },
+  { min: 500,  title: 'Eindhovense Trots',   icon: '🦁' },
+  { min: 750,  title: 'Kampioen-kenner',     icon: '🏆' },
+  { min: 1000, title: 'PSV-legende',         icon: '👑' },
+  { min: 1500, title: 'God van het Philips', icon: '⭐' },
 ];
 
 function getLevel(pts) {
@@ -618,7 +625,7 @@ function updateProgressBar() {
 
 function updateCategoryStats() {
   const read = getReadSet();
-  ['space','animals','history','science','technology','nature'].forEach(cat => {
+  ['legendes','prijzen','geschiedenis','stadion','records'].forEach(cat => {
     const total = WONDERS.filter(w => w.category === cat).length;
     const done  = WONDERS.filter(w => w.category === cat && read.has(w.title)).length;
     const el    = document.getElementById('stat-' + cat);
@@ -733,9 +740,9 @@ function initStarfield() {
 
   const COLORS = [
     null, null, null,           // mostly white
-    'hsl(260,60%,90%)',         // purple tint
-    'hsl(190,70%,90%)',         // teal tint
-    'hsl(30,80%,90%)',          // gold tint
+    'hsl(350,80%,80%)',         // PSV red tint
+    'hsl(38,90%,82%)',          // gold tint
+    'hsl(0,0%,96%)',            // pure white
   ];
 
   function resize() {
@@ -793,7 +800,7 @@ function runBurst(onComplete) {
       dist:  dist,
       speed: 0.04 + Math.random() * 0.05,
       r:     0.8 + Math.random() * 2.2,
-      color: ['#a78bfa','#7c3aed','#06b6d4','#67e8f9','#fff'][Math.floor(Math.random() * 5)],
+      color: ['#D50032','#FF1A47','#ffffff','#FFD166','#ff6680'][Math.floor(Math.random() * 5)],
     };
   });
 
@@ -807,8 +814,8 @@ function runBurst(onComplete) {
     const holeR = t * Math.max(W, H) * 0.55;
     const grad  = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(holeR, 1));
     grad.addColorStop(0,   'rgba(0,0,0,'   + Math.min(t * 2, 1) + ')');
-    grad.addColorStop(0.45,'rgba(4,2,12,'  + Math.min(t * 1.4, 0.95) + ')');
-    grad.addColorStop(1,   'rgba(4,2,12,0)');
+    grad.addColorStop(0.45,'rgba(9,0,4,'   + Math.min(t * 1.4, 0.95) + ')');
+    grad.addColorStop(1,   'rgba(9,0,4,0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
@@ -1183,8 +1190,8 @@ function setAuthMode(mode) {
   authForgotBtn.style.display    = isLogin ? '' : 'none';
   authToggleBtn.style.display    = (isForgotU||isForgotA) ? 'none' : '';
   document.getElementById('auth-guest-btn').style.display = (isForgotU||isForgotA) ? 'none' : '';
-  if (isLogin)   { authSubEl.textContent='Log in om je voortgang bij te houden'; authSubmitBtn.textContent='Inloggen'; authToggleBtn.innerHTML='Nog geen account? <span>Registreer je hier</span>'; }
-  if (isReg)     { authSubEl.textContent='Maak een account aan'; authSubmitBtn.textContent='Account aanmaken'; authToggleBtn.innerHTML='Al een account? <span>Log hier in</span>'; authSecurityAnswer.placeholder='jouw antwoord'; }
+  if (isLogin)   { authSubEl.textContent='Log in om je PSV-voortgang bij te houden'; authSubmitBtn.textContent='Inloggen'; authToggleBtn.innerHTML='Nog geen account? <span>Registreer je hier</span>'; }
+  if (isReg)     { authSubEl.textContent='Maak een PSV Fan Challenge account aan'; authSubmitBtn.textContent='Account aanmaken'; authToggleBtn.innerHTML='Al een account? <span>Log hier in</span>'; authSecurityAnswer.placeholder='jouw antwoord'; }
   if (isForgotU) { authSubEl.textContent='Vul je gebruikersnaam in'; authSubmitBtn.textContent='Beveiligingsvraag ophalen'; }
   if (isForgotA) { authSubEl.textContent=`Beveiligingsvraag voor "${forgotUsername}"`; authSubmitBtn.textContent='Wachtwoord opnieuw instellen'; authPasswordEl.placeholder='nieuw wachtwoord'; authSecurityAnswer.placeholder='jouw antwoord op de beveiligingsvraag'; }
 }
