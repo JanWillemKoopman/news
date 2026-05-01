@@ -13,7 +13,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Lexend:wght@400;600;700;900&display=swap" rel="stylesheet" />
 
+  <link rel="manifest" href="/james/manifest.json" />
+  <link rel="apple-touch-icon" href="/james/icons/icon-192.png" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/james/sw.js');
+    }
+  </script>
 </head>
 <body>
 
@@ -116,6 +123,12 @@
       <div class="quiz-score-wrap" id="quiz-score-wrap" style="display:none" aria-live="polite">
         <span class="quiz-score-icon" aria-hidden="true">🏆</span>
         <span class="quiz-score-label">Quizzen gehaald: <strong id="quiz-score-num">0</strong></span>
+      </div>
+
+      <!-- Streak counter (hidden until streak >= 1) -->
+      <div class="streak-wrap" id="streak-wrap" style="display:none" aria-live="polite">
+        <span class="streak-icon" aria-hidden="true">🔥</span>
+        <span class="streak-label"><strong id="streak-num">1</strong> dag<span id="streak-plural">en</span> op rij</span>
       </div>
 
     </div>

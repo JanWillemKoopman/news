@@ -325,17 +325,49 @@ let currentQuizQ     = 0;
 let currentUser      = null;
 let serverReadSet    = new Set();  // from server; authoritative when logged in
 let serverQuizCount  = 0;
+let serverStreak     = 0;
 let forgotUsername   = '';
 let authMode         = 'login';
 
 const LS_WONDER_COUNT = 'jw_wonder_count';
 const LS_QUIZ_COUNT   = 'jw_quiz_count';
 const LS_READ_SET     = 'jw_read_set';
+const LS_STREAK       = 'jw_streak';
+const LS_LAST_ACTIVE  = 'jw_last_active';
 
 function getWonderCount() { return parseInt(localStorage.getItem(LS_WONDER_COUNT) || '0', 10); }
 function getQuizCount()   { return currentUser ? serverQuizCount : parseInt(localStorage.getItem(LS_QUIZ_COUNT) || '0', 10); }
 function setWonderCount(n){ localStorage.setItem(LS_WONDER_COUNT, String(n)); }
 function setQuizCount(n)  { if (!currentUser) localStorage.setItem(LS_QUIZ_COUNT, String(n)); else serverQuizCount = n; }
+
+function getStreak() {
+  if (currentUser) return serverStreak;
+  return parseInt(localStorage.getItem(LS_STREAK) || '0', 10);
+}
+
+function updateGuestStreak() {
+  const today = new Date().toISOString().slice(0, 10);
+  const last  = localStorage.getItem(LS_LAST_ACTIVE) || '';
+  if (last === today) return parseInt(localStorage.getItem(LS_STREAK) || '0', 10);
+  const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const s = last === yest ? (parseInt(localStorage.getItem(LS_STREAK) || '0', 10) + 1) : 1;
+  localStorage.setItem(LS_STREAK, String(s));
+  localStorage.setItem(LS_LAST_ACTIVE, today);
+  return s;
+}
+
+function updateStreakDisplay(animate) {
+  const n = getStreak();
+  const wrap = document.getElementById('streak-wrap');
+  if (!wrap) return;
+  if (n < 1) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  document.getElementById('streak-num').textContent = n;
+  document.getElementById('streak-plural').textContent = n === 1 ? '' : 'en';
+  if (animate && typeof gsap !== 'undefined') {
+    gsap.fromTo('#streak-wrap', { scale: 1.25 }, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' });
+  }
+}
 
 function getReadSet() {
   if (currentUser) return serverReadSet;
@@ -346,10 +378,21 @@ function markWonderRead(w) {
   if (currentUser) {
     serverReadSet.add(w.title);
     fetch(API.wonder, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-      body: JSON.stringify({ title: w.title }) }).catch(() => {});
+      body: JSON.stringify({ title: w.title }) })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.streak != null) {
+          const prev = serverStreak; serverStreak = data.streak;
+          updateStreakDisplay(serverStreak > prev);
+        }
+      })
+      .catch(() => {});
   } else {
     const s = getReadSet(); s.add(w.title);
     localStorage.setItem(LS_READ_SET, JSON.stringify([...s]));
+    const prev = getStreak();
+    const next = updateGuestStreak();
+    updateStreakDisplay(next > prev);
   }
 }
 
@@ -936,7 +979,7 @@ function enterHero() {
   const heroGreeting = document.getElementById('hero-greeting');
   if (heroGreeting) heroGreeting.textContent = currentUser ? `Hé ${currentUser.username}!` : 'Hé James!';
   btnLogout.textContent = currentUser ? 'Uitloggen' : '← Inloggen';
-  updateProgressBar(); updateCategoryStats(); updateCategoryPills(); updateQuizScoreDisplay();
+  updateProgressBar(); updateCategoryStats(); updateCategoryPills(); updateQuizScoreDisplay(); updateStreakDisplay(false);
   showScreen(screenHero); animateHeroIn();
 }
 
@@ -948,6 +991,7 @@ async function loadUserAndEnter() {
     currentUser     = {id:data.id, username:data.username};
     serverReadSet   = new Set(data.seen_titles||[]);
     serverQuizCount = data.quiz_count||0;
+    serverStreak    = data.streak||0;
     enterHero();
   } catch(_) {
     showScreen(screenAuth);
@@ -959,7 +1003,7 @@ async function logout() {
   if (currentUser) {
     await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
   }
-  currentUser=null; serverReadSet=new Set(); serverQuizCount=0;
+  currentUser=null; serverReadSet=new Set(); serverQuizCount=0; serverStreak=0;
   authUsernameEl.value=''; authPasswordEl.value=''; setAuthError('');
   setAuthMode('login'); showScreen(screenAuth);
 }

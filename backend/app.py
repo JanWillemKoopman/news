@@ -173,6 +173,7 @@ def api_me():
         "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
+        "streak": progress["streak"],
     })
 
 
@@ -189,12 +190,13 @@ def api_mark_wonder():
     if not title:
         return jsonify({"error": "Titel ontbreekt"}), 400
 
-    mark_wonder_seen(user["id"], title)
+    streak = mark_wonder_seen(user["id"], title)
     progress = get_progress(user["id"])
     return jsonify({
         "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
+        "streak": streak,
     })
 
 
