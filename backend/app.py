@@ -174,6 +174,7 @@ def api_me():
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
         "streak": progress["streak"],
+        "total_points": progress["total_points"],
     })
 
 
@@ -221,9 +222,13 @@ def api_complete_quiz():
     if not isinstance(score, int):
         score = 0
 
-    add_quiz_completion(user["id"], score)
+    points = data.get("points", 0)
+    if not isinstance(points, int) or points < 0:
+        points = 0
+
+    add_quiz_completion(user["id"], score, points)
     progress = get_progress(user["id"])
     return jsonify({
-        "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
+        "total_points": progress["total_points"],
     })

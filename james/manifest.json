@@ -1,6 +1,6 @@
 {
-  "name": "James' Wonder-App",
-  "short_name": "Wonder-App",
+  "name": "Wonder App",
+  "short_name": "Wonder App",
   "description": "Ontdek elke dag iets nieuws en bijzonders!",
   "start_url": "/james/",
   "display": "standalone",

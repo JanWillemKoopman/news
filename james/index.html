@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#04020c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="Ontdek elke dag iets nieuws en bijzonders met James' Wonder-App!" />
-  <title>James' Wonder-App ✦</title>
+  <meta name="description" content="Ontdek elke dag iets nieuws en bijzonders met de Wonder App!" />
+  <title>Wonder App ✦</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,8 +32,8 @@
   ═══════════════════════════════════════ -->
   <div id="screen-auth" class="screen active">
     <div class="auth-inner">
-      <div class="auth-badge" aria-hidden="true">✦ JAMES' WONDER-APP ✦</div>
-      <h1 class="auth-title">Hé James! 👋</h1>
+      <div class="auth-badge" aria-hidden="true">✦ WONDER APP ✦</div>
+      <h1 class="auth-title">Wonder App ✦</h1>
       <p class="auth-sub" id="auth-sub">Log in om je voortgang bij te houden</p>
       <div class="auth-card">
         <div id="auth-error" class="auth-error" style="display:none;"></div>
@@ -76,18 +76,15 @@
   <div id="screen-hero" class="screen">
     <div class="hero-inner">
 
-      <div class="hero-progress-wrap">
-        <div class="hero-progress-meta">
-          <span class="hero-progress-label">🌟 Ontdekt</span>
-          <span class="hero-progress-count" id="progress-text">0 / 25</span>
-        </div>
-        <div class="hero-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="0" id="progress-bar">
-          <div class="hero-progress-fill" id="progress-fill"></div>
-        </div>
+      <!-- Points display — prominent -->
+      <div class="hero-points-wrap" id="hero-points-wrap">
+        <span class="hero-points-icon" aria-hidden="true">⭐</span>
+        <span class="hero-points-num" id="points-num">0</span>
+        <span class="hero-points-label">punten</span>
       </div>
 
       <h1 class="hero-title">
-        <span id="hero-greeting">Hé James!</span>
+        <span id="hero-greeting">Welkom!</span>
         <span class="hero-wave" aria-hidden="true">👋</span>
       </h1>
 
@@ -108,27 +105,21 @@
         </button>
       </div>
 
-      <!-- Category filter pills -->
-      <p class="worlds-label">Of kies een thema</p>
-      <div class="worlds-scroll" role="list" aria-label="Thema's">
-        <button class="world-pill" data-category="space"      role="listitem">🚀 Ruimte</button>
-        <button class="world-pill" data-category="animals"    role="listitem">🦁 Dieren</button>
-        <button class="world-pill" data-category="history"    role="listitem">📜 Geschiedenis</button>
-        <button class="world-pill" data-category="science"    role="listitem">🔬 Wetenschap</button>
-        <button class="world-pill" data-category="technology" role="listitem">💡 Technologie</button>
-        <button class="world-pill" data-category="nature"     role="listitem">🌿 Natuur</button>
-      </div>
-
-      <!-- Quiz score counter (hidden until first quiz completed) -->
-      <div class="quiz-score-wrap" id="quiz-score-wrap" style="display:none" aria-live="polite">
-        <span class="quiz-score-icon" aria-hidden="true">🏆</span>
-        <span class="quiz-score-label">Quizzen gehaald: <strong id="quiz-score-num">0</strong></span>
-      </div>
-
-      <!-- Streak counter (hidden until streak >= 1) -->
+      <!-- Streak badge (hidden until day 1) -->
       <div class="streak-wrap" id="streak-wrap" style="display:none" aria-live="polite">
         <span class="streak-icon" aria-hidden="true">🔥</span>
         <span class="streak-label"><strong id="streak-num">1</strong> dag<span id="streak-plural">en</span> op rij</span>
+      </div>
+
+      <!-- Wonders progress (subtle, below) -->
+      <div class="hero-progress-wrap">
+        <div class="hero-progress-meta">
+          <span class="hero-progress-label">Wonders ontdekt</span>
+          <span class="hero-progress-count" id="progress-text">0 / 25</span>
+        </div>
+        <div class="hero-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="0" id="progress-bar">
+          <div class="hero-progress-fill" id="progress-fill"></div>
+        </div>
       </div>
 
     </div>
@@ -229,8 +220,14 @@
       <div class="quiz-done-card">
         <div class="quiz-done-emoji" aria-hidden="true">🏆</div>
         <h2 class="quiz-done-title">Geweldig gedaan!</h2>
-        <p class="quiz-done-sub">Je hebt de quiz gehaald!</p>
-        <button id="btn-quiz-done" class="btn-quiz-done">✦ Verder ontdekken</button>
+        <div class="quiz-done-points-earned" id="quiz-done-points-earned">
+          <span class="qdpe-icon">⭐</span>
+          <span class="qdpe-num" id="qdpe-num">+0</span>
+          <span class="qdpe-label">punten verdiend!</span>
+        </div>
+        <div class="quiz-done-breakdown" id="quiz-done-breakdown"></div>
+        <div class="quiz-done-total">Totaal: <strong id="qdpe-total">0</strong> punten</div>
+        <button id="btn-quiz-done" class="btn-quiz-done">✦ Verder!</button>
       </div>
     </div>
   </div>

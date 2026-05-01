@@ -45,6 +45,7 @@ def init_db():
             ("security_answer_salt", "TEXT NOT NULL DEFAULT ''"),
             ("streak",               "INTEGER NOT NULL DEFAULT 0"),
             ("last_activity_date",   "TEXT NOT NULL DEFAULT ''"),
+            ("total_points",         "INTEGER NOT NULL DEFAULT 0"),
         ]:
             try:
                 conn.execute(f"ALTER TABLE users ADD COLUMN {col} {definition}")
@@ -188,13 +189,18 @@ def reset_seen_wonders(user_id: int):
         conn.execute("DELETE FROM seen_wonders WHERE user_id = ?", (user_id,))
 
 
-def add_quiz_completion(user_id: int, score: int):
+def add_quiz_completion(user_id: int, score: int, points: int = 0):
     now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         conn.execute(
             "INSERT INTO quiz_completions (user_id, score, completed_at) VALUES (?, ?, ?)",
             (user_id, score, now),
         )
+        if points > 0:
+            conn.execute(
+                "UPDATE users SET total_points = total_points + ? WHERE id = ?",
+                (points, user_id),
+            )
 
 
 def get_progress(user_id: int) -> dict:
@@ -212,12 +218,14 @@ def get_progress(user_id: int) -> dict:
             ).fetchall()
         ]
         user_row = conn.execute(
-            "SELECT streak FROM users WHERE id = ?", (user_id,)
+            "SELECT streak, total_points FROM users WHERE id = ?", (user_id,)
         ).fetchone()
         streak = user_row["streak"] if user_row else 0
+        total_points = user_row["total_points"] if user_row else 0
     return {
         "wonder_count": wonder_count,
         "quiz_count": quiz_count,
         "seen_titles": seen_titles,
         "streak": streak,
+        "total_points": total_points,
     }

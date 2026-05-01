@@ -1126,11 +1126,26 @@ body::before {
 .auth-select option { background:#1e1b4b; color:var(--text-1); }
 .auth-select:focus { border-color:var(--purple-l); box-shadow:0 0 0 3px rgba(124,58,237,0.25); }
 
+/* ─── Points display (hero) ─────────────────────────────── */
+.hero-points-wrap { align-items:baseline; display:flex; gap:8px; justify-content:center; margin-bottom:8px; }
+.hero-points-icon { font-size:1.6rem; }
+.hero-points-num  { color:#fff; font-family:var(--font-display); font-size:3rem; font-weight:900; letter-spacing:-0.02em; line-height:1; text-shadow:0 0 32px rgba(167,139,250,0.7); }
+.hero-points-label{ color:var(--text-3); font-family:var(--font-body); font-size:1rem; }
+
 /* ─── Streak badge ──────────────────────────────────────── */
-.streak-wrap { align-items:center; background:rgba(251,146,60,0.12); border:1px solid rgba(251,146,60,0.3); border-radius:var(--radius-pill); display:flex; gap:6px; margin-top:4px; padding:6px 18px; }
+.streak-wrap { align-items:center; background:rgba(251,146,60,0.12); border:1px solid rgba(251,146,60,0.3); border-radius:var(--radius-pill); display:flex; gap:6px; margin-top:8px; padding:6px 18px; }
 .streak-icon { font-size:1.1rem; }
 .streak-label { color:rgba(251,146,60,0.9); font-family:var(--font-body); font-size:0.88rem; }
 .streak-label strong { color:#fb923c; font-weight:700; }
+
+/* ─── Quiz reward overlay ───────────────────────────────── */
+.quiz-done-points-earned { align-items:center; display:flex; gap:8px; justify-content:center; margin:12px 0 4px; }
+.qdpe-icon  { font-size:1.8rem; }
+.qdpe-num   { color:#fbbf24; font-family:var(--font-display); font-size:2.4rem; font-weight:900; line-height:1; text-shadow:0 0 20px rgba(251,191,36,0.6); }
+.qdpe-label { color:var(--text-2); font-size:1rem; }
+.quiz-done-breakdown { color:var(--text-3); font-size:0.82rem; margin:4px 0 10px; text-align:center; }
+.quiz-done-total { color:var(--text-2); font-family:var(--font-body); font-size:0.95rem; margin-bottom:16px; }
+.quiz-done-total strong { color:#fff; font-weight:700; }
 
 /* ─── Logout button ─────────────────────────────────────── */
 .btn-logout { background:none; border:1px solid var(--border); border-radius:var(--radius-pill); color:var(--text-4); cursor:pointer; font-family:var(--font-body); font-size:0.78rem; padding:6px 16px; transition:color .2s,border-color .2s; margin-top:4px; }

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   James' Wonder-App — Immersive Experience
+   Wonder App — Immersive Experience
    Vanilla JS · Canvas 2D starfield · GSAP animations
    No external JS dependencies beyond GSAP (loaded via CDN).
 ═══════════════════════════════════════════════════════════════ */
@@ -34,7 +34,11 @@ const WONDERS = [
     intro: 'Op 20 juli 1969 zette een mens voor het eerst voet op de maan. Dat was Neil Armstrong. Hij deed één kleine stap — maar het was een reuzenstap voor alle mensen op aarde. Miljoenen mensen keken live op televisie toe. Iedereen was stil van spanning. Zou het lukken? Zouden ze veilig landen? En daarna: zouden ze ook weer terug kunnen komen? Het antwoord op al die vragen was ja. De lancering was eerder die maand geweest, op 16 juli 1969. Het ruimteschip heette Apollo 11, en er zaten drie mannen in: Neil Armstrong, Buzz Aldrin en Michael Collins. Collins bleef in de ruimtecapsule cirkelen om de maan, terwijl Armstrong en Aldrin in een kleiner landingsvoertuig afdaalden. Dat voertuig heette de Eagle — de Adelaar. Toen ze bijna landden, begon er een alarm te piepen. Niemand wist precies wat er mis was. De vluchtleiders op aarde beslisten in een paar tellen: doorgaan. En het ging goed.',
     question: 'Als jij op de maan mocht staan en naar de aarde keek — wat zou je dan denken?',
     deepdive: 'De reis naar de maan duurde vier dagen. De astronauten hadden niet eens een computer zo krachtig als jouw telefoon — en toch kwamen ze veilig terug. Er liepen maar 12 mensen op de maan. Nog niemand is er daarna naartoe gegaan. De eerste woorden op de maan waren: "De Adelaar is geland." Wat veel mensen niet weten: er staat een plaquette op de maan met de tekst "Hier kwamen mensen van de planeet Aarde voor het eerst voet op de Maan, juli 1969 na Chr. Wij kwamen in vrede voor alle mensen." De astronauten plantten ook een Amerikaanse vlag, maar die stond door de motorwind van de landing scheef. Op de maan is er geen wind, geen regen en geen erosie. De voetafdrukken van Armstrong en Aldrin liggen er vandaag de dag nog steeds, precies zoals ze ze achterlieten. Ze zullen er misschien miljoenen jaren blijven liggen.',
-    quiz: { question: 'Hoeveel mensen liepen er ooit op de maan?', answers: [{ text: '12 mensen', correct: true }, { text: '3 mensen' }, { text: '50 mensen' }] },
+    quiz: [
+      { question: 'Hoeveel mensen liepen er ooit op de maan?', answers: [{ text: '12 mensen', correct: true }, { text: '3 mensen' }, { text: '50 mensen' }] },
+      { question: 'Hoe heette het ruimteschip van de eerste maanlanding?', answers: [{ text: 'Apollo 11', correct: true }, { text: 'Apollo 7' }, { text: 'Gemini 5' }] },
+      { question: 'Wat waren de eerste woorden gesproken op de maan?', answers: [{ text: '"De Adelaar is geland"', correct: true }, { text: '"Eén kleine stap"' }, { text: '"Houston, we have a problem"' }] },
+    ],
   },
   {
     category: 'history',
@@ -45,7 +49,11 @@ const WONDERS = [
     intro: 'Tussen 1940 en 1945 was Nederland bezet door een land dat Duitsland heette. Mensen mochten niet meer vrij zijn. Joden, mensen met een handicap en anderen werden opgepakt en weggevoerd. Heel veel mensen zijn in die tijd gestorven — meer dan zes miljoen Joodse mensen alleen al. Op 10 mei 1940 vielen de Duitse soldaten Nederland binnen. Na vijf dagen moest Nederland zich overgeven. Daarna begon een periode van vijf jaar bezetting. De Duitsers maakten allerlei strenge regels. Joodse mensen moesten een gele ster dragen. Ze mochten niet meer naar school, niet meer naar de bioscoop, en ook niet meer op de fiets. Mensen die zich verzetten, riskeerden hun leven. Toch waren er veel Nederlanders die hielpen — door Joodse gezinnen te verstoppen, nep-papieren te maken of informatie door te geven aan de geallieerden. Die mensen noemden we de verzetsstrijders.',
     question: 'Waarom denk jij dat het zo belangrijk is dat mensen vrijheid hebben?',
     deepdive: 'In Amsterdam verstopte een meisje van 13 jaar, Anne Frank, zich met haar familie twee jaar lang in een geheim huis achter een boekenkast. Ze schreef alles op in een dagboek. Dat dagboek kun je nu nog lezen. Op 5 mei 1945 was Nederland eindelijk vrij — dat vieren we elk jaar op Bevrijdingsdag. Anne Frank werd helaas ontdekt en stierf in een concentratiekamp. Haar dagboek overleefde wel, bewaard door haar vader Otto Frank, de enige van het gezin die de oorlog overleefde. Het dagboek is vertaald in meer dan 70 talen en is een van de meest gelezen boeken ter wereld. In Nederland staan veel monumenten om de slachtoffers te herdenken. Op 4 mei, de dag vóór Bevrijdingsdag, is er een nationale herdenking. Om 20:00 uur stopt heel Nederland met wat het doet — twee minuten stilte voor alle mensen die zijn gestorven.',
-    quiz: { question: 'Op welke dag werd Nederland bevrijd van de bezetting?', answers: [{ text: '5 mei 1945', correct: true }, { text: '8 mei 1940' }, { text: '1 september 1939' }] },
+    quiz: [
+      { question: 'Op welke dag werd Nederland bevrijd van de bezetting?', answers: [{ text: '5 mei 1945', correct: true }, { text: '8 mei 1940' }, { text: '1 september 1939' }] },
+      { question: 'Hoeveel jaar was Nederland bezet door Duitsland?', answers: [{ text: '5 jaar', correct: true }, { text: '2 jaar' }, { text: '10 jaar' }] },
+      { question: 'Wie schreef een beroemd dagboek tijdens de bezetting?', answers: [{ text: 'Anne Frank', correct: true }, { text: 'Corrie ten Boom' }, { text: 'Miep Gies' }] },
+    ],
   },
   {
     category: 'history',
@@ -56,7 +64,11 @@ const WONDERS = [
     intro: 'Sommige mensen hebben zo veel geld dat je het bijna niet kunt tellen. De rijkste mensen ter wereld hebben meer geld dan hele landen. Maar hoe word je eigenlijk zo rijk? Bijna altijd begint het met een idee. Een simpel idee, vaak in een garage of een slaapkamer, dat uitgroeit tot iets gigantisch. Jeff Bezos begon in 1994 met verkopen van boeken via het internet vanuit zijn garage in Seattle. Niemand dacht dat het iets zou worden. Nu is Amazon het grootste online winkelplatform ter wereld, met meer dan 300 miljoen klanten. Elon Musk begon met een bedrijf dat online betalingen makkelijker maakte — dat werd later PayPal. Met het geld dat hij daarmee verdiende, startte hij Tesla (elektrische auto\'s) én SpaceX (raketten). Hij droomt ervan om mensen naar Mars te sturen. Mark Zuckerberg maakte op zijn zolderkamer een website voor zijn universiteit om vrienden te verbinden. Dat werd Facebook, nu Meta, met bijna drie miljard gebruikers.',
     question: 'Wat zou jij doen als je meer geld had dan je ooit kon uitgeven?',
     deepdive: 'Elon Musk heeft zoveel geld dat hij zijn eigen raketbedrijf heeft gebouwd. Jeff Bezos begon met het verkopen van boeken vanuit zijn garage — nu koopt bijna de hele wereld bij zijn bedrijf Amazon. Geld geeft je macht, maar heel veel rijke mensen zeggen dat vrienden en familie hen gelukkiger maken. Wat interessant is: veel van de rijkste mensen ter wereld geven ook enorme bedragen weg. Bill Gates, de oprichter van Microsoft, heeft meer dan 50 miljard dollar weggegeven aan goede doelen, vooral voor vaccins en gezondheidszorg in arme landen. Warren Buffett, een van de rijkste beleggers ter wereld, woont nog steeds in hetzelfde bescheiden huis als 60 jaar geleden. Hij zei ooit: "Ik wil rijkdom geven aan de samenleving, want die heeft mij ook groot gemaakt." Rijk zijn gaat dus niet alleen over wat je hebt — maar ook over wat je ermee doet.',
-    quiz: { question: 'Waarmee begon Jeff Bezos zijn bedrijf Amazon?', answers: [{ text: 'Boeken verkopen', correct: true }, { text: 'Kleding verkopen' }, { text: "Auto's verkopen" }] },
+    quiz: [
+      { question: 'Waarmee begon Jeff Bezos zijn bedrijf Amazon?', answers: [{ text: 'Boeken verkopen', correct: true }, { text: 'Kleding verkopen' }, { text: "Auto's verkopen" }] },
+      { question: 'Wat maakte Elon Musk naast SpaceX ook?', answers: [{ text: 'Tesla', correct: true }, { text: 'Apple' }, { text: 'Amazon' }] },
+      { question: 'Hoeveel geld gaf Bill Gates weg aan goede doelen?', answers: [{ text: 'Meer dan 50 miljard dollar', correct: true }, { text: '1 miljard dollar' }, { text: '100 miljoen dollar' }] },
+    ],
   },
   {
     category: 'science',
@@ -67,7 +79,11 @@ const WONDERS = [
     intro: 'In Rusland boorden mensen een gat in de grond — zo diep als 12 kilometer. Dat is het diepste gat dat mensen ooit hebben gemaakt. Ze stopten pas toen het te heet werd. Het project begon in 1970, tijdens de Koude Oorlog. De Sovjet-Unie wilde bewijzen dat ze verder konden graven dan de Amerikanen. Wetenschappers wilden ook weten wat er diep in de aarde zit. Is de grond harder of zachter? Warmer of kouder? Zitten er lagen die je aan de oppervlakte niet kunt zien? Ze ontdekten dingen die niemand had verwacht. Op grote diepte vonden ze water — ingesloten in rotslagen, vastgezet onder enorme druk. Ze vonden ook microscopisch kleine gefossiliseerde organismen, levende wezentjes die al miljarden jaren geleden gestorven waren. Maar het grootste probleem bleef de hitte. Hoe dieper ze kwamen, hoe heter het werd. Het boorgereedschap smolt bijna.',
     question: 'Wat denk jij dat er helemaal in het midden van de aarde zit?',
     deepdive: 'Op 12 kilometer diepte was het meer dan 180 graden Celsius — heter dan een oven! De boring heet de Kola Superdeep Borehole. Het project duurde 24 jaar. En toch hadden ze maar een klein stukje van de aardkorst bereikt. Het middelpunt van de aarde is nog 6.000 kilometer verder. De aarde bestaat uit lagen: eerst de korst (waar wij op leven), dan de mantel van gesmolten gesteente, dan de buitenkern van vloeibaar ijzer en nikkel, en helemaal in het midden de binnenkern — een enorme ijzeren bol zo groot als de maan, onder zo veel druk dat het ijzer vast is ondanks de enorme hitte van wel 5.400 graden. Hoe weten wetenschappers dit als niemand er ooit geweest is? Via aardbevingen. Geluidsgolven van aardbevingen reizen door de aarde en buigen afhankelijk van het materiaal. Door die buigingen te meten kunnen wetenschappers precies zien wat er van binnen zit — net als een röntgenfoto, maar dan van de hele planeet.',
-    quiz: { question: 'Hoe diep is het diepste gat dat mensen ooit hebben geboord?', answers: [{ text: '12 kilometer', correct: true }, { text: '5 kilometer' }, { text: '100 kilometer' }] },
+    quiz: [
+      { question: 'Hoe diep is het diepste gat dat mensen ooit hebben geboord?', answers: [{ text: '12 kilometer', correct: true }, { text: '5 kilometer' }, { text: '100 kilometer' }] },
+      { question: 'Hoe heet het project van de diepste boring op aarde?', answers: [{ text: 'Kola Superdeep Borehole', correct: true }, { text: 'Deep Earth Project' }, { text: 'Rusland Boring' }] },
+      { question: 'Hoe heet de buitenste laag van de aarde waarop wij leven?', answers: [{ text: 'De korst', correct: true }, { text: 'De mantel' }, { text: 'De kern' }] },
+    ],
   },
   {
     category: 'history',
@@ -78,7 +94,11 @@ const WONDERS = [
     intro: 'Europa is niet alleen een werelddeel — het is ook een samenwerking van landen die de Europese Unie heet. Ze helpen elkaar en hebben samen afspraken gemaakt over handel, vrede en rechten van mensen. Maar hoe is de EU eigenlijk ontstaan? Na de Tweede Wereldoorlog lag Europa in puin. Miljoenen mensen waren gestorven. Steden waren verwoest. De leiders van de landen vroegen zich af: hoe zorgen we dat dit nooit meer gebeurt? Hun antwoord was samenwerking. Als landen van elkaar afhankelijk zijn — als ze handel met elkaar drijven, dezelfde regels hanteren en met elkaar praten — is de kans op oorlog kleiner. Begonnen met zes landen (Nederland, België, Luxemburg, Frankrijk, West-Duitsland en Italië), groeide de samenwerking langzaam uit. Eerst ging het alleen over staal en kolen. Later ook over andere producten, en uiteindelijk over alles: van voedselregels tot het milieu, van mensenrechten tot de munt.',
     question: 'Als landen samenwerken, denk je dat dat de wereld beter of moeilijker maakt?',
     deepdive: 'Er zijn 27 landen lid van de Europese Unie. In veel landen betaal je met dezelfde munt: de euro. Mensen mogen vrij van land naar land reizen zonder paspoort. Vroeger hadden al die landen vaker oorlog met elkaar — nu werken ze samen. De EU heeft ook een eigen vlag (blauwe achtergrond met gele sterren) en een eigen volkslied (de Ode an die Freude van Beethoven). Elk land heeft vertegenwoordigers in het Europees Parlement in Brussel en Straatsburg. Daar stemmen ze over nieuwe wetten die voor alle landen gelden. Sommige landen doen wél mee met de EU maar niet met de euro, zoals Zweden en Polen. Groot-Brittannië deed jarenlang mee maar verliet de EU in 2020 — dat heette de Brexit. Het liet zien dat meedoen aan de EU een keuze is, geen verplichting.',
-    quiz: { question: 'Hoeveel landen zijn er lid van de Europese Unie?', answers: [{ text: '27 landen', correct: true }, { text: '15 landen' }, { text: '50 landen' }] },
+    quiz: [
+      { question: 'Hoeveel landen zijn er lid van de Europese Unie?', answers: [{ text: '27 landen', correct: true }, { text: '15 landen' }, { text: '50 landen' }] },
+      { question: 'Welk land verliet de EU in 2020?', answers: [{ text: 'Groot-Brittannië', correct: true }, { text: 'Noorwegen' }, { text: 'Zwitserland' }] },
+      { question: 'Wat is het volkslied van de Europese Unie?', answers: [{ text: 'Ode an die Freude', correct: true }, { text: 'La Marseillaise' }, { text: 'Rule Britannia' }] },
+    ],
   },
   {
     category: 'history',
@@ -89,7 +109,11 @@ const WONDERS = [
     intro: 'Voordat Nederland de euro had, betaalden mensen hier met de gulden. Dat was het Nederlandse geld. Op 1 januari 2002 verdween de gulden voor altijd en kwamen de eerste euro\'s en eurocenten in omloop. Miljoenen Nederlanders wisselden hun oude munten en biljetten in. In één nacht veranderde het geld van een heel land. De gulden bestond al heel lang: bijna 600 jaar lang was het de munt van Nederland. De oudste gulden dateert uit 1380. In al die eeuwen veranderde het uiterlijk regelmatig. Op de biljetten stonden beroemde Nederlanders: schrijver Spinoza, schilder Rembrandt en zeeheld Michiel de Ruyter. Op de munten stond het profiel van de Nederlandse koning of koningin. Kinderen die spaarpotjes hadden met guldens vonden het soms moeilijk dat hun gespaarde geld ineens minder waard leek — al was de omrekening eerlijk: één euro was gelijk aan 2,20371 gulden.',
     question: 'Stel dat elk land zijn eigen geld heeft — wat zijn de voor- en nadelen daarvan?',
     deepdive: 'Op een gulden stond het gezicht van koningin Beatrix. Er waren munten van 5 cent (stuiver), 10 cent (dubbeltje) en 25 cent (kwartje). Een brood kostte vroeger maar een paar gulden. Nu is het Nederlands geld de euro, gedeeld door inmiddels 20 landen. Sommige Nederlanders vonden het heel jammer dat de gulden verdween — ze voelden het als een stuk van hun identiteit dat verloren ging. Maar de euro heeft ook grote voordelen: als je naar Frankrijk, Duitsland of Spanje gaat, hoef je geen geld meer te wisselen. Bedrijven kunnen makkelijker handelen met andere EU-landen. En de prijs van spullen is makkelijker te vergelijken. Toch bewaren veel mensen thuis nog oude guldens als herinnering. Sommige zijn zelfs meer waard geworden als verzamelobject dan hun oorspronkelijke waarde.',
-    quiz: { question: 'Wanneer verdween de gulden en kregen we de euro?', answers: [{ text: '1 januari 2002', correct: true }, { text: '1 januari 2000' }, { text: '1 januari 2010' }] },
+    quiz: [
+      { question: 'Wanneer verdween de gulden en kregen we de euro?', answers: [{ text: '1 januari 2002', correct: true }, { text: '1 januari 2000' }, { text: '1 januari 2010' }] },
+      { question: 'Hoeveel gulden was één euro waard bij de invoering?', answers: [{ text: '2,20371 gulden', correct: true }, { text: '1 gulden' }, { text: '5 gulden' }] },
+      { question: 'Hoelang bestond de Nederlandse gulden al?', answers: [{ text: 'Bijna 600 jaar', correct: true }, { text: '100 jaar' }, { text: '50 jaar' }] },
+    ],
   },
   {
     category: 'science',
@@ -100,7 +124,11 @@ const WONDERS = [
     intro: 'Wetenschappers stellen vragen over de wereld en zoeken antwoorden. Ze doen experimenten, schrijven alles op en delen hun ontdekkingen met anderen. Dankzij wetenschappers weten we zo ontzettend veel. Maar hoe werkt een wetenschapper eigenlijk? Het begint altijd met een vraag. Waarom valt een appel naar beneden? Hoe groeien cellen? Waarom is de lucht blauw? Daarna bedenk je een hypothese — een idee over het antwoord. Vervolgens doe je een experiment om te testen of je idee klopt. Als het klopt: geweldig. Als het niet klopt: ook geweldig, want je hebt iets nieuws geleerd. Isaac Newton zag een appel van een boom vallen en vroeg zich af waarom. Dat leidde tot zijn ontdekking van de zwaartekracht. Marie Curie onderzocht radioactieve straling — een onderwerp dat zo gevaarlijk was dat ze er uiteindelijk ziek van werd. Ze won twee Nobelprijzen, als eerste vrouw ooit.',
     question: 'Als jij wetenschapper was, welke vraag zou jij dan als eerste willen beantwoorden?',
     deepdive: 'Er zijn heel veel soorten wetenschappers. Een bioloog bestudeert dieren en planten. Een astronoom kijkt naar sterren en planeten. Albert Einstein ontdekte dat tijd sneller of langzamer kan gaan, afhankelijk van hoe snel je beweegt. Dat klinkt als magie — maar het is gewoon wetenschap! Einstein was als kind overigens niet de beste leerling. Hij was nieuwsgierig en eigenwijs, en leerde graag op zijn eigen manier. Zijn beroemdste formule is E=mc², wat betekent dat energie en massa hetzelfde zijn in een andere vorm. Dat idee ligt aan de basis van kernenergie en zelfs van het begrip van de oerknal. Wetenschap is ook niet altijd snel. Soms duurt een ontdekking tientallen jaren. De wetenschapper die DNA ontdekte, James Watson, werkte jarenlang samen met anderen voordat het grote geheim van het leven ontrafeld was. Wetenschap is geduldig zoeken — en soms plotseling een "Eureka!"-moment.',
-    quiz: { question: 'Wat ontdekte Albert Einstein?', answers: [{ text: 'Dat tijd sneller of langzamer kan gaan', correct: true }, { text: 'Dat de aarde rond de zon draait' }, { text: 'Dat water uit H2O bestaat' }] },
+    quiz: [
+      { question: 'Wat ontdekte Albert Einstein?', answers: [{ text: 'Dat tijd sneller of langzamer kan gaan', correct: true }, { text: 'Dat de aarde rond de zon draait' }, { text: 'Dat water uit H2O bestaat' }] },
+      { question: 'Wie won twee Nobelprijzen voor onderzoek naar radioactiviteit?', answers: [{ text: 'Marie Curie', correct: true }, { text: 'Albert Einstein' }, { text: 'Isaac Newton' }] },
+      { question: 'Hoe noem je een idee dat je wilt testen in een experiment?', answers: [{ text: 'Een hypothese', correct: true }, { text: 'Een theorie' }, { text: 'Een formule' }] },
+    ],
   },
   {
     category: 'technology',
@@ -111,7 +139,11 @@ const WONDERS = [
     intro: 'Pokémon begon in 1996 in Japan als een spel voor de Game Boy. De maker, Satoshi Tajiri, was als kind dol op insecten vangen in de natuur. Hij wilde dat gevoel — het zoeken, vangen en verzamelen — omzetten in een spel. Het resultaat: een van de meest succesvolle speelgoedfranchises aller tijden. Tajiri werkte vijf jaar aan het spel, samen met zijn jeugdvriend Ken Sugimori, die alle Pokémon tekende. Ze hadden nauwelijks geld. Het spel was bijna failliet voordat het uitkwam. Maar toen het in Japan verscheen, werd het meteen een gigantisch succes. Kinderen ruilden hun Game Boy-cartridges op het schoolplein. Er was een rode versie en een blauwe versie, met kleine verschillen — zodat je vrienden nodig had om alles te verzamelen. Die slimme truc zorgde ervoor dat iedereen het speelde. Al snel kwamen er speelkaarten, een tekenfilmserie en films.',
     question: 'Wat zou jouw eigen Pokémon zijn, en welk bijzonder vermogen zou hij hebben?',
     deepdive: 'De naam Pokémon komt van "Pocket Monsters" — kleine monsters die je in je zak draagt. In het eerste spel waren er 151 Pokémon. Nu zijn er meer dan 1.000! Pikachu werd het gezicht van Pokémon, maar de echte starter-keuze was tussen Bulbasaur, Charmander en Squirtle. De Pokémon-franchise is inmiddels de meest winstgevende entertainment-franchise ooit — rijker dan Star Wars, Marvel en Disney. Elk jaar komen er nieuwe spellen, films en kaarten uit. De kaarten zijn zo populair dat sommige zeldzame exemplaren tienduizenden euro\'s waard zijn. Een eerste editie Charizard-kaart in perfecte staat werd ooit verkocht voor meer dan 400.000 dollar. Pokémon GO, uitgebracht in 2016, liet spelers Pokémon vangen in de echte wereld via hun telefoon. Op de eerste dag was het de meest gedownloade app ter wereld. Het bracht mensen letterlijk naar buiten en bewoog ze meer — iets wat de makers vast niet hadden verwacht.',
-    quiz: { question: 'Hoeveel Pokémon waren er in het allereerste Pokémon-spel?', answers: [{ text: '151', correct: true }, { text: '250' }, { text: '1000' }] },
+    quiz: [
+      { question: 'Hoeveel Pokémon waren er in het allereerste Pokémon-spel?', answers: [{ text: '151', correct: true }, { text: '250' }, { text: '1000' }] },
+      { question: 'Wie bedacht het eerste Pokémon-spel?', answers: [{ text: 'Satoshi Tajiri', correct: true }, { text: 'Shigeru Miyamoto' }, { text: 'Ken Sugimori' }] },
+      { question: 'In welk jaar verscheen Pokémon GO?', answers: [{ text: '2016', correct: true }, { text: '2010' }, { text: '2020' }] },
+    ],
   },
   {
     category: 'animals',
@@ -122,7 +154,11 @@ const WONDERS = [
     intro: 'Een octopus heeft drie harten, blauw bloed en negen hersenen! Elke arm heeft zijn eigen mini-brein dat zelfstandig besluiten kan nemen. Ze zijn zo slim dat ze potten kunnen openen, labyrinten kunnen oplossen en gezichten van mensen kunnen herkennen. Een octopus is eigenlijk een van de slimste dieren op aarde — al lijkt hij in niets op jou of op een hond of aap. Octopussen zijn weekdieren, verwant aan slakken en mosselen. Maar ergens in hun evolutie ontwikkelden ze een enorm brein. Ze hebben acht armen die elk honderden zuignappen bevatten — en die armen denken echt mee. Als je een arm wegsnijdt (wat in de natuur kan gebeuren), blijft die arm nog tijdelijk reageren op zijn omgeving. Elk van de acht armen kan onafhankelijk beslissingen nemen, terwijl het centrale brein de grote strategie bepaalt. Dat is alsof jij acht helpers hebt die elk hun eigen hoofd gebruiken.',
     question: 'Als jij negen hersenen had, wat zou je dan tegelijkertijd denken?',
     deepdive: 'Octopussen leven maar 1 tot 3 jaar, maar in die tijd leren ze ontzettend veel. Ze kunnen van kleur en textuur veranderen om zich te camoufleren — zelfs als ze kleurenblind zijn! Wetenschappers ontdekten dat octopussen dromen: ze veranderen van kleur terwijl ze slapen, waarschijnlijk omdat ze beelden in hun hoofd zien. Hoe ze kleuren kunnen nabootsen terwijl ze ze niet kunnen zien, is nog steeds een mysterie. Wetenschappers denken dat ze licht waarnemen via speciale cellen in hun huid zelf, los van hun ogen. Octopussen zijn ook meesters in ontsnappen. In gevangenschap vinden ze altijd een manier om hun tank te verlaten, door de kamer te wandelen en terug te sluipen voor de verzorger terugkomt. Sommige octopussen dragen zelfs kokosschelpen met zich mee als draagbaar huis — een van de weinige voorbeelden van gereedschapsgebruik buiten zoogdieren. En hun inkt, die ze spuiten om roofdieren te verwarren, bevat stoffen die de zintuigen van aanvallers tijdelijk uitschakelen.',
-    quiz: { question: 'Hoeveel harten heeft een octopus?', answers: [{ text: 'Drie harten', correct: true }, { text: 'Twee harten' }, { text: 'Één hart' }] },
+    quiz: [
+      { question: 'Hoeveel harten heeft een octopus?', answers: [{ text: 'Drie harten', correct: true }, { text: 'Twee harten' }, { text: 'Één hart' }] },
+      { question: 'Hoeveel "hersenen" heeft een octopus in totaal?', answers: [{ text: 'Negen', correct: true }, { text: 'Drie' }, { text: 'Eén' }] },
+      { question: 'Welke kleur heeft het bloed van een octopus?', answers: [{ text: 'Blauw', correct: true }, { text: 'Rood' }, { text: 'Groen' }] },
+    ],
   },
   {
     category: 'space',
@@ -133,7 +169,11 @@ const WONDERS = [
     intro: 'Saturnus is de zesde planeet van de zon en heeft prachtige ringen van ijs en rotsblokken. De planeet is zo licht dat hij zou kunnen drijven op water — als je een bad had dat groot genoeg was! Saturnus is een gasreus: er is geen vaste grond om op te landen. De planeet bestaat bijna volledig uit waterstof en helium, net als de zon. De ringen van Saturnus zijn misschien wel het mooiste schouwspel in ons zonnestelsel. Ze bestaan uit miljarden brokken ijs en steen, variërend van zo klein als een zandkorrel tot zo groot als een huis. Die ringen zijn verrassend dun: gemiddeld maar één kilometer dik, terwijl ze 280.000 kilometer breed zijn. Toch zijn ze van de aarde zichtbaar met een gewone verrekijker. Galileo Galilei zag ze in 1610 al, maar dacht dat Saturnus drie planeten waren. Pas later begrepen wetenschappers dat het ringen waren.',
     question: 'Als er leven bestond op een maan van Saturnus — hoe zou dat er dan uitzien?',
     deepdive: 'Saturnus heeft 146 bekende manen — meer dan welke andere planeet dan ook. Zijn grootste maan, Titan, heeft meren vol vloeibaar gas in plaats van water. Er is een atmosfeer van stikstof, net als op aarde. Sommige wetenschappers denken dat er misschien een primitieve vorm van leven mogelijk is op Titan, in de vloeibare gasmeren. Een andere maan, Enceladus, spuit enorme fonteinen van water de ruimte in vanuit een ondergrondse oceaan. Dat maakt Enceladus een van de meest veelbelovende plekken in ons zonnestelsel om naar leven te zoeken. De ruimtesonde Cassini onderzocht Saturnus en zijn manen van 2004 tot 2017. In 2017 stortte de sonde bewust in Saturnus, zodat hij geen bacteriën van de aarde zou overbrengen naar de manen. Een wetenschappelijk zelfopoffering voor de zuiverheid van toekomstig onderzoek.',
-    quiz: { question: 'Hoeveel bekende manen heeft Saturnus?', answers: [{ text: '146 manen', correct: true }, { text: '12 manen' }, { text: '27 manen' }] },
+    quiz: [
+      { question: 'Hoeveel bekende manen heeft Saturnus?', answers: [{ text: '146 manen', correct: true }, { text: '12 manen' }, { text: '27 manen' }] },
+      { question: 'Hoe heet de grootste maan van Saturnus?', answers: [{ text: 'Titan', correct: true }, { text: 'Europa' }, { text: 'Io' }] },
+      { question: 'Hoe dik zijn de ringen van Saturnus gemiddeld?', answers: [{ text: '1 kilometer', correct: true }, { text: '100 kilometer' }, { text: '1000 kilometer' }] },
+    ],
   },
   {
     category: 'nature',
@@ -144,7 +184,11 @@ const WONDERS = [
     intro: 'Bomen staan er stil bij, maar ze communiceren constant. Via een netwerk van schimmels in de grond sturen ze suikers en signalen naar elkaar — wetenschappers noemen dit het "Wood Wide Web". Dit klinkt als sciencefiction, maar het is bewezen wetenschap. Onder elk bos loopt een web van fijne schimmeldraden, dunner dan een mensenhaar, dat bomen letterlijk met elkaar verbindt. Bomen en schimmels werken samen: de boom geeft de schimmel suikers die hij met fotosynthese maakt. De schimmel geeft de boom water en mineralen terug. Maar het netwerk doet meer dan uitwisselen. Wetenschapper Suzanne Simard ontdekte in de jaren 90 dat bomen via dit netwerk ook berichten sturen. Ze spoot radioactief suiker in een berkenboom en zag hoe dat suiker via de schimmeldraden in een naburige spar belandde. De bomen deelden voedsel.',
     question: 'Als bomen konden praten, wat zouden ze dan het liefst aan ons vertellen?',
     deepdive: 'Moederbomen — de oudste, grootste bomen in een bos — herkennen hun eigen kinderen en sturen hen extra voedingsstoffen. Als een boom aangevallen wordt door insecten, stuurt hij via de schimmeldraden een waarschuwing naar zijn buren zodat ze zich kunnen verdedigen. Het bos is eigenlijk één groot levend netwerk. Bomen die gekapt worden, pompen soms hun laatste suikerreserves via het netwerk naar hun buren — alsof ze hun rijkdom weggeven voor ze sterven. Sommige wetenschappers noemen dit "altruïsme bij bomen". Of ze het echt bewust doen weten we niet, maar het effect is er wel. Bossen zonder dit schimmelnetwerk — bijvoorbeeld na een bosbrand — herstellen veel langzamer. Jonge boompjes die in zo\'n kaal gebied groeien hebben geen verbinding en moeten alles zelf doen. In gezonde bossen helpen de oudere bomen de jonge door ze langzaam op te nemen in het netwerk.',
-    quiz: { question: 'Hoe noemen wetenschappers het netwerk waarmee bomen communiceren?', answers: [{ text: 'Wood Wide Web', correct: true }, { text: 'Boom Internet' }, { text: 'Groene Weg' }] },
+    quiz: [
+      { question: 'Hoe noemen wetenschappers het netwerk waarmee bomen communiceren?', answers: [{ text: 'Wood Wide Web', correct: true }, { text: 'Boom Internet' }, { text: 'Groene Weg' }] },
+      { question: 'Wie ontdekte dat bomen via schimmeldraden communiceren?', answers: [{ text: 'Suzanne Simard', correct: true }, { text: 'David Attenborough' }, { text: 'Charles Darwin' }] },
+      { question: 'Wat geven bomen aan de schimmels in ruil voor water en mineralen?', answers: [{ text: 'Suikers', correct: true }, { text: 'Zuurstof' }, { text: 'Water' }] },
+    ],
   },
   {
     category: 'technology',
@@ -155,7 +199,11 @@ const WONDERS = [
     intro: 'Het internet is een enorm netwerk van computers die met elkaar praten. Als jij een filmpje bekijkt, reist die data in milliseconden van een computer ergens in de wereld naar jouw scherm. Maar hoe werkt dat precies? Stel: jij typt een adres in je browser, zoals youtube.com. Je computer stuurt een verzoek naar een server — een speciale computer die de website bewaart. Die server stuurt de data terug in kleine pakketjes. Die pakketjes reizen via kabels, soms dwars door oceanen heen. Er liggen meer dan 1,3 miljoen kilometer onderzeese kabels op de bodem van de zee. Die dunne kabels verbinden alle continenten met elkaar. De pakketjes komen aan bij jouw router thuis, die het signaal naar jouw apparaat stuurt. Dit alles gebeurt in minder dan een seconde. Het is eigenlijk een soort postkantoor dat miljarden brieven per seconde verwerkt, elk kleiner dan een duimnagel.',
     question: 'Stel je voor dat het internet één dag uitvalt — wat zou er dan op de wereld veranderen?',
     deepdive: 'Het internet werd uitgevonden door het Amerikaanse leger in de jaren \'60 als ARPANET. De bedoeling was een netwerk te maken dat zou blijven werken, zelfs als een deel ervan werd aangevallen. De eerste boodschap ooit op het internet was "lo" — het systeem crashte voor het woord "login" compleet was! Elke dag worden er meer dan 300 miljard e-mails verstuurd. Naast e-mail en video\'s draaien ook banken, ziekenhuizen, verkeerslichten en waterleidingen op het internet of erop aansluitende netwerken. Als het internet één dag volledig uitviel, zouden vluchten worden geannuleerd, geldautomaten stoppen, en supermarkten hun voorraden niet meer kunnen bijhouden. Een dag zonder internet zou de wereldeconomie naar schatting honderden miljarden euro\'s kosten. Toch is het internet ook kwetsbaar: die onderzeese kabels kunnen beschadigd raken door aardbevingen of ankers van schepen. In 2006 beschadigde een aardbeving bij Taiwan twee grote kabels — en grote delen van Azië hadden dagenlang minder snel internet.',
-    quiz: { question: 'Wat was de eerste boodschap ooit verstuurd op het internet?', answers: [{ text: '"lo"', correct: true }, { text: '"hello"' }, { text: '"start"' }] },
+    quiz: [
+      { question: 'Wat was de eerste boodschap ooit verstuurd op het internet?', answers: [{ text: '"lo"', correct: true }, { text: '"hello"' }, { text: '"start"' }] },
+      { question: 'Wanneer werd het internet uitgevonden als ARPANET?', answers: [{ text: 'Jaren \'60', correct: true }, { text: 'Jaren \'80' }, { text: 'Jaren \'90' }] },
+      { question: 'Hoeveel onderzeese kabels liggen er op de oceaanbodem?', answers: [{ text: 'Meer dan 1,3 miljoen kilometer', correct: true }, { text: '100.000 kilometer' }, { text: '500 kilometer' }] },
+    ],
   },
   {
     category: 'animals',
@@ -166,7 +214,11 @@ const WONDERS = [
     intro: 'De blauwe vinvis is het grootste dier dat ooit op aarde heeft geleefd — groter dan welke dinosaurus dan ook. Zijn hart is zo groot als een auto, en zijn bloedvaten zijn zo wijd dat een klein kind erdoorheen zou kunnen kruipen. Toch begint elk blauw vinvisje ter wereld als een babydier van "maar" zeven meter lang en 2.700 kilo bij de geboorte. Een pasgeboren blauw vinviskalf drinkt elke dag meer dan 400 liter moedermelk. Het groeit zo snel dat het elke dag 90 kilo aankomt — je ziet het bijna voor je ogen groeien. Blauwe vinvissen leven in alle oceanen van de wereld. Ze migreren enorme afstanden: in de zomer zwemmen ze naar koudere wateren om te eten, in de winter naar warmere wateren om jongen te krijgen. In hun eentje zwemmen ze honderden kilometers per week.',
     question: 'Hoe denk jij dat het voelt om zo groot te zijn dat niemand je kan negeren?',
     deepdive: 'Een blauwe vinvis kan tot 33 meter lang worden en 200.000 kilo wegen. Zijn tong weegt al meer dan een olifant. Het geluid dat ze maken is het luidst van elk dier op aarde — je kunt het op 800 kilometer afstand horen onder water. Toch zijn het stille, vredige dieren die leven van kleine garnaalachtigen die krill heten. Een blauwe vinvis eet elke dag tot 40 miljoen krill-diertjes — samen zo\'n 3.600 kilo. Ze filteren het water door enorme baleenplaten in hun bek, als een gigantische zeef. In de twintigste eeuw werden blauwe vinvissen bijna uitgestorven door de walvisjacht. Op het dieptepunt waren er nog maar een paar honderd. Nu, dankzij wereldwijde bescherming, zijn er weer zo\'n 10.000 tot 25.000 exemplaren — maar ze staan nog steeds op de lijst van bedreigde diersoorten. Wetenschappers volgen ze met satellietzenders om te begrijpen hoe ze leven en hoe we ze kunnen beschermen.',
-    quiz: { question: 'Hoe lang kan een blauwe vinvis worden?', answers: [{ text: '33 meter', correct: true }, { text: '15 meter' }, { text: '50 meter' }] },
+    quiz: [
+      { question: 'Hoe lang kan een blauwe vinvis worden?', answers: [{ text: '33 meter', correct: true }, { text: '15 meter' }, { text: '50 meter' }] },
+      { question: 'Hoeveel krill eet een blauwe vinvis per dag?', answers: [{ text: '40 miljoen krill-diertjes', correct: true }, { text: '1.000' }, { text: '1 miljoen' }] },
+      { question: 'Op hoeveel kilometer afstand kun je een blauwe vinvis horen?', answers: [{ text: '800 kilometer', correct: true }, { text: '10 kilometer' }, { text: '50 kilometer' }] },
+    ],
   },
   {
     category: 'science',
@@ -177,7 +229,11 @@ const WONDERS = [
     intro: 'Alles om je heen — de lucht, jouw lichaam, dit scherm, de stoel waarop je zit — bestaat uit ontzettend kleine deeltjes die atomen heten. Ze zijn zo klein dat je er miljarden in een stofkorreltje kunt stoppen. Hoe klein is een atoom precies? Als jij zo groot was als de aarde, dan zou een atoom voor jou zo groot zijn als een knikker. Ze zijn onvoorstelbaar klein. Toch is een atoom zelf niet het kleinste wat er bestaat. Elk atoom bestaat uit nog kleinere deeltjes: protonen en neutronen in de kern, en elektronen die eromheen bewegen. En protonen en neutronen bestaan op hun beurt weer uit nog kleinere deeltjes: quarks. Er zijn zes soorten quarks, met namen als "up", "down", "charm" en "strange". Wetenschappers zijn er nog steeds niet zeker van of quarks zelf ook weer uit kleinere deeltjes bestaan. Het lijkt alsof de wereld kleiner en kleiner wordt, hoe verder je inzoomt.',
     question: 'Als jij het allerkleinste deeltje ter wereld was, waar zou je dan zijn?',
     deepdive: 'Atomen bestaan voor het grootste deel uit leegte! De kern in het midden is klein en de elektronen die eromheen bewegen zijn enorm ver weg. Als een atoom zo groot was als een voetbalstadion, zou de kern ter grootte van een erwt in het midden liggen. Al die leegte betekent dat jijzelf ook voor het overgrote deel uit leegte bestaat. Als je alle leegte uit alle atomen in alle mensen op aarde zou halen, zou de hele mensheid in een suikerklontje passen. De energie die atomen bij elkaar houdt, is gigantisch. Dat is precies de energie die vrijkomt bij een kernbom of in een kerncentrale: door atoomkernen te splitsen of samen te voegen komt er enorme hoeveelheid energie vrij. Dezelfde energie die de zon laat branden, is kernenergie — maar dan op een schaal die wij mensen ons nauwelijks voor kunnen stellen.',
-    quiz: { question: 'Waaruit bestaat een atoom voor het grootste deel?', answers: [{ text: 'Leegte', correct: true }, { text: 'Water' }, { text: 'Energie' }] },
+    quiz: [
+      { question: 'Waaruit bestaat een atoom voor het grootste deel?', answers: [{ text: 'Leegte', correct: true }, { text: 'Water' }, { text: 'Energie' }] },
+      { question: 'Hoe heten de kleinste deeltjes in een atoomkern?', answers: [{ text: 'Quarks', correct: true }, { text: 'Elektronen' }, { text: 'Fotonen' }] },
+      { question: 'Hoe groot zou de mensheid zijn als alle leegte uit atomen werd gehaald?', answers: [{ text: 'Een suikerklontje', correct: true }, { text: 'Een voetbal' }, { text: 'Een huis' }] },
+    ],
   },
   {
     category: 'nature',
@@ -188,7 +244,11 @@ const WONDERS = [
     intro: 'Vulkanen zijn openingen in de aardkorst waardoor gesmolten steen — magma — naar buiten komt. Ze zijn gevaarlijk, maar ze hebben ook nieuw land en vruchtbare grond gecreëerd. Zonder vulkanen had het leven op aarde er heel anders uitgezien. Vulkanen zijn er in veel soorten. Sommige spuiten rustig lava uit, als een trage rivier van vuur die langzaam naar de zee stroomt. Andere exploderen met enorme kracht: de beroemde uitbarsting van de Vesuvius in het jaar 79 na Christus bedolf de Romeinse stad Pompeii onder een laag as en steen in slechts een paar uur. De stad werd zo goed geconserveerd dat we vandaag nog precies kunnen zien hoe mensen er leefden — hun huizen, hun schilderijen, zelfs hun maaltijden. Wanneer een vulkaan uitbarst, spuit hij niet alleen lava. Hij gooit ook as, gas en rotsblokken de lucht in. Bij grote uitbarstingen kan de as de zon blokkeren voor maanden, waardoor het kouder wordt op aarde.',
     question: 'Als de aarde een levend wezen was, zouden vulkanen dan zijn ademhaling zijn?',
     deepdive: 'Hawaii is volledig door vulkanen gemaakt! Het eiland bestaat uit gestolde lava die miljoenen jaren geleden uitstroomde vanuit de zeebodem. De grootste vulkaan op aarde is de Mauna Loa — gemeten vanaf de zeebodem is hij groter dan de Mount Everest. Op dit moment zijn er zo\'n 1.500 actieve vulkanen op aarde. De gevaarlijkste vulkaan ter wereld staat misschien niet waar je denkt: het is de Yellowstone supervulkaan in de Verenigde Staten. Die heeft al 640.000 jaar niet uitgebarsten, maar als hij dat ooit deed, zou het een wereldwijde catastrofe zijn. Gelukkig houden wetenschappers hem nauwlettend in de gaten. Vulkanen zijn ook op andere planeten gevonden. De Olympus Mons op Mars is de grootste vulkaan in het zonnestelsel — drie keer zo hoog als de Mount Everest en zo breed als heel Nederland. Op de maan Io van Jupiter zijn voortdurend vulkanen actief, wat het meest vulkanisch actieve object in ons zonnestelsel maakt.',
-    quiz: { question: 'Hoeveel actieve vulkanen zijn er op dit moment op aarde?', answers: [{ text: 'Ongeveer 1.500', correct: true }, { text: 'Ongeveer 100' }, { text: 'Ongeveer 10.000' }] },
+    quiz: [
+      { question: 'Hoeveel actieve vulkanen zijn er op dit moment op aarde?', answers: [{ text: 'Ongeveer 1.500', correct: true }, { text: 'Ongeveer 100' }, { text: 'Ongeveer 10.000' }] },
+      { question: 'Hoe heet de grootste vulkaan in ons zonnestelsel?', answers: [{ text: 'Olympus Mons', correct: true }, { text: 'Mauna Loa' }, { text: 'Vesuvius' }] },
+      { question: 'Welke Romeinse stad werd bedolven door de Vesuvius?', answers: [{ text: 'Pompeii', correct: true }, { text: 'Rome' }, { text: 'Napels' }] },
+    ],
   },
   {
     category: 'history',
@@ -199,7 +259,11 @@ const WONDERS = [
     intro: 'Op 13 augustus 1961 werden de mensen van Berlijn wakker in een stad die ineens in tweeën was gesneden. Soldaten hadden \'s nachts prikkeldraad gespannen dwars door straten, langs tuinen en midden door families heen. Daarna kwamen de betonblokken. De Berlijnse Muur was geboren. Berlijn was na de Tweede Wereldoorlog verdeeld tussen de geallieerde landen: het westen van de stad was vrij, het oosten werd gecontroleerd door de Sovjet-Unie. Steeds meer mensen vluchtten vanuit het arme, strenge Oost-Berlijn naar het rijke West-Berlijn — soms wel duizend mensen per dag. Om dat te stoppen bouwde de Oost-Duitse regering de muur. Van de ene op de andere dag konden mensen hun familie aan de andere kant niet meer zien. Sommige mensen werden midden in hun straat afgesneden van hun eigen huis.',
     question: 'Hoe zou jij je voelen als er morgen een muur voor je huis stond en je je vrienden niet meer mocht zien?',
     deepdive: 'De Berlijnse Muur was uiteindelijk 155 kilometer lang en had meer dan 300 waaktorentjes. Meer dan 100 mensen stierven bij pogingen om over de muur te klimmen. Sommigen groeven tunnels, anderen bouwden luchtballonnen van gordijnstof, een man vloog er zelfs overheen in een zelfgemaakt vliegtuigje. De muur stond 28 jaar. Kinderen die in 1961 geboren werden kenden niets anders dan een verdeelde stad. Toen de muur in 1989 viel, huilden mensen van geluk op straat. Stukken van de muur werden meegenomen als souvenir. Vandaag kun je in Berlijn nog stukken van de originele muur zien staan — als herinnering dat vrijheid nooit vanzelfsprekend is.',
-    quiz: { question: 'In welk jaar werd de Berlijnse Muur gebouwd?', answers: [{ text: '1961', correct: true }, { text: '1945' }, { text: '1975' }] },
+    quiz: [
+      { question: 'In welk jaar werd de Berlijnse Muur gebouwd?', answers: [{ text: '1961', correct: true }, { text: '1945' }, { text: '1975' }] },
+      { question: 'Hoe lang was de Berlijnse Muur?', answers: [{ text: '155 kilometer', correct: true }, { text: '50 kilometer' }, { text: '500 kilometer' }] },
+      { question: 'Hoeveel waaktorentjes had de Berlijnse Muur?', answers: [{ text: 'Meer dan 300', correct: true }, { text: '10' }, { text: '1000' }] },
+    ],
   },
   {
     category: 'history',
@@ -210,7 +274,11 @@ const WONDERS = [
     intro: 'Midden in het hart van Berlijn lag een klein wachtershuisje in de straat — maar dit was geen gewoon wachtershuisje. Dit was Checkpoint Charlie, het beroemdste grensovergangspunt ter wereld. Het was de enige plek in de Berlijnse Muur waar buitenlanders en diplomaten van West naar Oost mochten. Aan de westkant stond een Amerikaans bordje: "Je verlaat nu de Amerikaanse sector." Aan de oostkant stonden gewapende soldaten klaar die elk voertuig doorzochten. Mensen werden onder auto\'s gekeken met spiegels, koffers werden opengemaakt, soms werden passagiers urenlang vastgehouden. Checkpoint Charlie was ook het toneel van een van de gevaarlijkste momenten van de Koude Oorlog: in 1961 stonden er Amerikaans en Sovjet-tanks oog in oog, motoren aan, klaar voor de strijd. Gelukkig reden ze na een tijdje allebei achteruit.',
     question: 'Stel je voor dat je elke dag langs gewapende soldaten moet om naar school te gaan — hoe zou dat voelen?',
     deepdive: 'De naam "Charlie" komt niet van een persoon, maar gewoon van de letter C in het NATO-alfabet: Alpha, Bravo, Charlie. Er waren ook Checkpoint Alpha en Bravo, maar Charlie werd het bekendst. Spionnen werden hier geruild — gevangen genomen agenten van het westen werden uitgewisseld tegen agenten van het oosten. Die uitwisselingen vonden altijd \'s nachts plaats, in stilte, op een brug. Vandaag staat er een replica van het wachtershuisje als toeristische attractie. Meer dan drie miljoen mensen bezoeken de plek elk jaar. Het originele huisje staat in een museum. Checkpoint Charlie herinnert ons eraan dat er ooit een tijd was dat mensen niet vrij over straat mochten lopen in hun eigen stad.',
-    quiz: { question: 'Wat mocht er door Checkpoint Charlie?', answers: [{ text: 'Buitenlanders en diplomaten', correct: true }, { text: 'Alleen spionnen' }, { text: 'Iedereen' }] },
+    quiz: [
+      { question: 'Wat mocht er door Checkpoint Charlie?', answers: [{ text: 'Buitenlanders en diplomaten', correct: true }, { text: 'Alleen spionnen' }, { text: 'Iedereen' }] },
+      { question: 'Waar komt de naam "Charlie" vandaan?', answers: [{ text: 'De letter C in het NATO-alfabet', correct: true }, { text: 'Een bewaker genaamd Charlie' }, { text: 'Een geheime codenaam' }] },
+      { question: 'Hoeveel mensen bezoeken Checkpoint Charlie elk jaar?', answers: [{ text: 'Meer dan 3 miljoen', correct: true }, { text: '100.000' }, { text: '10 miljoen' }] },
+    ],
   },
   {
     category: 'history',
@@ -221,7 +289,11 @@ const WONDERS = [
     intro: 'Op 9 november 1989 gebeurde iets wat niemand voor mogelijk had gehouden. Een Oost-Duitse woordvoerder las tijdens een persconferentie op televisie voor dat de grenzen opengesteld zouden worden. Een journalist vroeg: "Wanneer?" De man keek in zijn papieren en zei: "Onmiddellijk, zonder vertraging." Dat was niet de bedoeling — het was een vergissing, de beslissing was nog niet officieel. Maar het was al te laat. Het nieuws verspreidde zich als een lopend vuur. Duizenden Oost-Berlijners trokken naar de muur. De grensposten werden overspoeld. De soldaten, die geen orders kregen, wisten niet wat ze moesten doen. Uiteindelijk lieten ze de mensen door. Huilende families omhelsden elkaar voor het eerst in jaren. Op de muur klommen mensen en sloegen er stukken uit met hamers.',
     question: 'Als jij die avond in Berlijn was geweest, wat zou jij gedaan hebben?',
     deepdive: 'Die nacht dansten mensen op de Berlijnse Muur. Vreemden omhelsden elkaar. Champagne werd gedronken op straat. Oost- en West-Berlijners reden in oude Trabant-autootjes toeterend door de stad. Het was een feest dat de hele wereld live op televisie zag. De val van de muur luidde het einde in van de Koude Oorlog. Binnen een jaar, op 3 oktober 1990, was Duitsland officieel herenigd — voor het eerst in 45 jaar één land. De dag van de hereniging wordt elk jaar gevierd als nationale feestdag: de Dag van de Duitse Eenheid. Van de muur zelf is bijna niets meer over. Een dunne lijn van keien in het wegdek geeft aan waar hij ooit stond. Je kunt hem door heel Berlijn volgen — dwars door straten, pleinen en zelfs door gebouwen heen.',
-    quiz: { question: 'Op welke datum viel de Berlijnse Muur?', answers: [{ text: '9 november 1989', correct: true }, { text: '3 oktober 1990' }, { text: '13 augustus 1961' }] },
+    quiz: [
+      { question: 'Op welke datum viel de Berlijnse Muur?', answers: [{ text: '9 november 1989', correct: true }, { text: '3 oktober 1990' }, { text: '13 augustus 1961' }] },
+      { question: 'Wanneer was Duitsland officieel herenigd?', answers: [{ text: '3 oktober 1990', correct: true }, { text: '9 november 1989' }, { text: '1 januari 1991' }] },
+      { question: 'Wat reed er toeterend door Berlijn op de nacht dat de muur viel?', answers: [{ text: 'Trabant-autootjes', correct: true }, { text: 'Tanks' }, { text: 'Fietsen' }] },
+    ],
   },
   {
     category: 'history',
@@ -232,7 +304,11 @@ const WONDERS = [
     intro: 'Midden in Berlijn staat een enorme poort van steen — de Brandenburger Tor. Hij is meer dan 200 jaar oud en heeft alles meegemaakt: keizers, oorlogen, dictators, een gedeelde stad en uiteindelijk hereniging. De poort werd gebouwd in 1791, in opdracht van de Pruisische koning. Hij was bedoeld als symbool van vrede — en bovenop staat een beeld van een godin op een wagen getrokken door vier paarden, de Quadriga genaamd. Napoleon veroverde Berlijn in 1806 en nam de Quadriga mee naar Parijs als oorlogsbuit. Na zijn nederlaag in 1814 brachten de Pruisen het beeld triomfantelijk terug. Tijdens de Tweede Wereldoorlog werd de poort zwaar beschadigd door bombardementen. En toen de Berlijnse Muur werd gebouwd, stond de Brandenburger Tor exact op de grens — bereikbaar voor niemand, gevangen tussen twee werelden.',
     question: 'Als een poort een symbool van jouw leven was, wat zou er dan op de top staan?',
     deepdive: 'Na de val van de muur in 1989 werd de Brandenburger Tor het middelpunt van de grootste viering die Berlijn ooit zag. Honderdduizenden mensen stroomden samen bij de poort om de hereniging te vieren. Sindsdien is het dé plek in Berlijn voor historische momenten: presidenten houden er toespraken, oud en nieuwfeesten worden er gevierd en marathons passeren eronder. In 1987 sprak de Amerikaanse president Ronald Reagan voor de poort de beroemde woorden: "Mr. Gorbachev, tear down this wall!" — "Haal deze muur neer!" Twee jaar later was de muur inderdaad weg. De Brandenburger Tor is het enige overgebleven stadspoort van Berlijn van de oorspronkelijke veertien. Hij staat er als stille getuige van alles wat de stad heeft doorgemaakt.',
-    quiz: { question: 'In welk jaar werd de Brandenburger Tor gebouwd?', answers: [{ text: '1791', correct: true }, { text: '1871' }, { text: '1945' }] },
+    quiz: [
+      { question: 'In welk jaar werd de Brandenburger Tor gebouwd?', answers: [{ text: '1791', correct: true }, { text: '1871' }, { text: '1945' }] },
+      { question: 'Wie nam de Quadriga mee als oorlogsbuit?', answers: [{ text: 'Napoleon', correct: true }, { text: 'Hitler' }, { text: 'Keizer Wilhelm' }] },
+      { question: 'Welke beroemde woorden sprak president Reagan voor de poort?', answers: [{ text: '"Haal deze muur neer!"', correct: true }, { text: '"Berlijn, ik ben vrij!"' }, { text: '"Ik ben een Berlijner"' }] },
+    ],
   },
   {
     category: 'history',
@@ -243,7 +319,11 @@ const WONDERS = [
     intro: 'Berlijn heeft een bijzonder stadswapen: een zwarte beer op een witte achtergrond. De beer staat overal in de stad — op borden, bruggen, in standbeelden en op souvenirs. Maar waarom een beer? De legende zegt dat de stad is gesticht door Albrecht de Beer, een markgraaf die in de twaalfde eeuw over het gebied heerste. Zijn naam betekent letterlijk "de beer", en zo kreeg de stad zijn symbool. Maar misschien is het gewoon een woordgrap: "Berlijn" klinkt een beetje als het woord voor beer in het Duits — "Bär". Hoe dan ook, de beer is al meer dan 700 jaar het symbool van Berlijn. In 2001 begon een kunstproject dat de beer wereldberoemd maakte: honderden levensgrote berenbeelden werden door kunstenaars beschilderd en door de hele stad geplaatst. Elke beer was anders, kleurrijk en creatief. Toeristen van overal kwamen kijken.',
     question: 'Als jij een dier mocht kiezen als symbool voor jouw stad of dorp, welk dier zou dat zijn en waarom?',
     deepdive: 'Het kunstproject met de beschilderde beren heette "The Buddy Bears" en was zo\'n succes dat het de wereld over reisde — naar Parijs, Tokyo, New York en tientallen andere steden. Het idee was simpel: berendecoraties zetten de wereld op zijn kop. De opbrengst van de verkoop ging naar goede doelen. Inmiddels zijn er meer dan 140 landen die meededen. Vandaag de dag staat er bij de Brandenburger Tor altijd een grote beer als welkomstgeschenk voor bezoekers. De beer van Berlijn is zo geliefd dat hij zelfs zijn eigen verjaardag heeft: op 28 oktober viert Berlijn elk jaar de geboortedag van de stad, en de beer staat centraal. Berlijn is trots op zijn beer — net zoals een voetbalclub trots is op zijn mascotte.',
-    quiz: { question: 'Hoe heet het symbool (dier) van de stad Berlijn?', answers: [{ text: 'De beer', correct: true }, { text: 'De adelaar' }, { text: 'De wolf' }] },
+    quiz: [
+      { question: 'Hoe heet het symbool (dier) van de stad Berlijn?', answers: [{ text: 'De beer', correct: true }, { text: 'De adelaar' }, { text: 'De wolf' }] },
+      { question: 'Hoe heette het kunstproject met de beschilderde beren?', answers: [{ text: 'The Buddy Bears', correct: true }, { text: 'Berlin Bears' }, { text: 'Street Art Bears' }] },
+      { question: 'Naar hoeveel landen reisde het beren-kunstproject?', answers: [{ text: 'Meer dan 140 landen', correct: true }, { text: '10 landen' }, { text: '50 landen' }] },
+    ],
   },
   {
     category: 'history',
@@ -254,7 +334,11 @@ const WONDERS = [
     intro: 'In 1948 deed de Sovjet-Unie iets heel gevaarlijks: ze blokkeerden alle wegen, spoorwegen en kanalen naar West-Berlijn. Twee miljoen mensen zaten ineens opgesloten in hun eigen stad, zonder eten, zonder brandstof, zonder medicijnen. De bedoeling was duidelijk: verhonger de stad totdat ze zich overgeeft. Maar het westen liet zich niet kisten. Amerika en Groot-Brittannië besloten iets wat niemand voor mogelijk hield: ze zouden de hele stad bevoorraden vanuit de lucht. Dag en nacht, elke dag, landden vliegtuigen op de vliegvelden van West-Berlijn. Op het hoogtepunt landde er elke drie minuten een toestel. Ze brachten bloem, kolen, medicijnen — alles wat een stad nodig heeft om te overleven. De Russen dachten dat het nooit zou lukken. Ze hadden het mis.',
     question: 'Als jij besliste of je een gevaarlijke missie zou uitvoeren om vreemden te helpen, wat zou je dan doen?',
     deepdive: 'De luchtbrug duurde 15 maanden — van juni 1948 tot september 1949. In totaal werden er meer dan 200.000 vluchten gemaakt en meer dan 2 miljoen ton aan goederen ingevlogen. De piloten werden helden. Een van hen, Gail Halvorsen, begon snoepjes uit zijn vliegtuig te gooien aan kleine kinderen die bij het vliegveld stonden te kijken. Hij bond de snoepjes vast aan kleine parachutjes van zakdoeken. Al snel deden andere piloten mee. Kinderen noemden hem "de rozijnenomber". Uiteindelijk gaven de Russen toe en heftten ze de blokkade op. West-Berlijn was vrij. De luchtbrug liet de wereld zien dat je een stad kunt redden met moed, organisatie en heel veel vliegtuigen.',
-    quiz: { question: 'Hoe lang duurde de Berlijnse Luchtbrug?', answers: [{ text: '15 maanden', correct: true }, { text: '3 maanden' }, { text: '5 jaar' }] },
+    quiz: [
+      { question: 'Hoe lang duurde de Berlijnse Luchtbrug?', answers: [{ text: '15 maanden', correct: true }, { text: '3 maanden' }, { text: '5 jaar' }] },
+      { question: 'Hoeveel vluchten werden er gemaakt tijdens de luchtbrug?', answers: [{ text: 'Meer dan 200.000', correct: true }, { text: '1.000' }, { text: '50.000' }] },
+      { question: 'Hoe heette de piloot die snoepjes uit zijn vliegtuig gooide?', answers: [{ text: 'Gail Halvorsen', correct: true }, { text: 'Charles Lindbergh' }, { text: 'Buzz Aldrin' }] },
+    ],
   },
   {
     category: 'history',
@@ -265,7 +349,11 @@ const WONDERS = [
     intro: 'In 1936 organiseerde Adolf Hitler de Olympische Spelen in Berlijn. Hij wilde de wereld laten zien dat blonde, blauwe-ogige Duitsers de beste mensen ter wereld waren. Maar toen verscheen een jonge Amerikaanse atleet genaamd Jesse Owens — en hij verpestte Hitlers plannen volledig. Owens was Afrikaans-Amerikaans, opgegroeid in armoede in Alabama. Op de Olympische Spelen van Berlijn won hij vier gouden medailles: op de 100 meter, de 200 meter, de verspringen en de estafette. Vier keer de beste ter wereld, in de stad van een man die dacht dat mensen zoals hij minderwaardig waren. Het stadion, gevuld met honderdduizend mensen, explodeerde van enthousiasme. De menigte riep zijn naam: "Yesse! Yesse!" Hitler verliet boos het stadion.',
     question: 'Hoe denk jij dat Jesse Owens zich voelde toen hij zijn eerste gouden medaille won, in die stad, voor die menigte?',
     deepdive: 'Jesse Owens had tijdens de Spelen ook een onverwachte vriend: de Duitse atleet Luz Long, zijn grootste concurrent op het verspringen. Long gaf Owens stiekem een tip waardoor hij zich kon plaatsen voor de finale. Ze omhelsden elkaar openlijk voor de ogen van Hitler — een zwarte Amerikaan en een blonde Duitser, vrienden. Long verloor de finale van Owens en feliciteerde hem als eerste. "Je kunt je leven lang zoeken naar een vriend als Luz Long", schreef Owens later. Terug in Amerika werd Owens niet als held ontvangen door president Roosevelt — de president nodigde de witte atleten wel uit naar het Witte Huis, maar Owens niet. Het duurde decennia voor Amerika zijn eigen held volledig erkende.',
-    quiz: { question: 'Hoeveel gouden medailles won Jesse Owens op de Olympische Spelen van 1936?', answers: [{ text: '4', correct: true }, { text: '2' }, { text: '1' }] },
+    quiz: [
+      { question: 'Hoeveel gouden medailles won Jesse Owens op de Olympische Spelen van 1936?', answers: [{ text: '4', correct: true }, { text: '2' }, { text: '1' }] },
+      { question: 'Welke sport deed Jesse Owens NIET op de Spelen?', answers: [{ text: 'Zwemmen', correct: true }, { text: 'Sprinten' }, { text: 'Verspringen' }] },
+      { question: 'Wie was de vriend van Jesse Owens bij de Spelen van 1936?', answers: [{ text: 'Luz Long', correct: true }, { text: 'Jim Thorpe' }, { text: 'Carl Lewis' }] },
+    ],
   },
   {
     category: 'technology',
@@ -276,7 +364,11 @@ const WONDERS = [
     intro: 'Midden in Berlijn prik je hem niet te missen: een naald van 368 meter hoog met een zilveren bol halverwege — de Fernsehturm, de televisietoren. Hij is het hoogste gebouw van Duitsland en zichtbaar vanuit bijna heel Berlijn. De toren werd gebouwd door Oost-Duitsland en geopend in 1969. Het was een statement aan de wereld: kijk hoe modern en krachtig de communistische staat is. Maar de toren werd snel een mikpunt van grappen. Wanneer de zon op de metalen bol schijnt, verschijnt er een spiegelend kruis van licht. De gelovige West-Berlijners noemden dit spottend "de wraak van de paus" — want de atheïstische Oost-Duitse regering had kerken verboden, maar kon het kruis op haar eigen trots niet vermijden. De bouwers probeerden het te verhelpen met een andere coating, maar het kruis bleef.',
     question: 'Als jij een toren mocht bouwen die jouw stad aan de wereld laat zien, hoe zou die er dan uitzien?',
     deepdive: 'De Fernsehturm heeft een draaiend restaurant in de bol, op 207 meter hoogte. In precies 30 minuten draait het restaurant een volle ronde — terwijl je eet, verandert langzaam het uitzicht over de hele stad. Meer dan een miljoen mensen bezoeken de toren elk jaar. Bij helder weer kun je vanuit de toren tot 80 kilometer ver kijken. De toren zond oorspronkelijk televisieprogramma\'s uit voor heel Oost-Duitsland. Na de hereniging in 1990 bleef hij gewoon draaien — nu als toeristische attractie én als zendmast voor radio en televisie. De Berlijnse bijnamen voor de toren zijn talrijk: "de telespargel" (de televisie-asperge), "de Vadertje Walter" (naar de toenmalige Oost-Duitse leider), en altijd met een knipoog naar dat kruis.',
-    quiz: { question: 'Hoe hoog is de Fernsehturm in Berlijn?', answers: [{ text: '368 meter', correct: true }, { text: '200 meter' }, { text: '500 meter' }] },
+    quiz: [
+      { question: 'Hoe hoog is de Fernsehturm in Berlijn?', answers: [{ text: '368 meter', correct: true }, { text: '200 meter' }, { text: '500 meter' }] },
+      { question: 'Hoe lang duurt een volle ronde in het draaiende restaurant?', answers: [{ text: '30 minuten', correct: true }, { text: '1 uur' }, { text: '15 minuten' }] },
+      { question: 'Welke bijnaam gaven Berlijners aan het kruis op de toren?', answers: [{ text: 'Wraak van de paus', correct: true }, { text: 'Zonnebol' }, { text: 'Hemelteken' }] },
+    ],
   },
   {
     category: 'history',
@@ -287,7 +379,11 @@ const WONDERS = [
     intro: 'In Oost-Duitsland was er een organisatie die iedereen angst inboezemde: de Stasi, de geheime politie. Ze hielden bijna elke burger in de gaten. Niet met camera\'s of computers zoals nu, maar met mensen — duizenden informanten die hun buren, vrienden, zelfs familieleden bespioneerden en alles doorgaven aan de Stasi. Op het hoogtepunt had de Stasi 91.000 medewerkers in dienst en meer dan 175.000 informanten. In een land van 16 miljoen mensen betekende dat: één spion op elke 63 inwoners. Ze lazen brieven open, luisterden telefoongesprekken af en plakten brieven zo zorgvuldig terug dat niemand het merkte. Ze hielden dossiers bij over miljoenen burgers. Als iemand een grapje maakte over de regering, kon hij de volgende dag zijn baan kwijt zijn of erger.',
     question: 'Hoe zou jij je gedragen als je wist dat iemand altijd meekeek en meeluisterde?',
     deepdive: 'De Stasi had een bizarre methode om mensen te volgen: ze bewaarden de geur van verdachten. Agenten namen stiekem stoelen waarop mensen hadden gezeten mee en sloten die op in glazen potten. Als ze iemand later wilden herkennen, lieten ze honden aan de pot snuffelen. Er zijn nog steeds duizenden van die potten bewaard in het Stasi-museum in Berlijn. Na de val van de muur probeerden Stasi-medewerkers snel hun dossiers te vernietigen. Ze verscheurden miljoenen pagina\'s. Maar burgers stormden de kantoren binnen voordat alles vernietigd was. Nu werken honderden mensen eraan om die papiersnippers — letterlijk miljoenen — met de hand terug in elkaar te puzzelen. Sommige Oost-Duitsers ontdekten pas tientallen jaren later dat hun eigen broer of vriendin hen had bespioneerd.',
-    quiz: { question: 'Hoeveel informanten had de Stasi op het hoogtepunt?', answers: [{ text: 'Meer dan 175.000', correct: true }, { text: 'Ongeveer 500' }, { text: 'Meer dan 1 miljoen' }] },
+    quiz: [
+      { question: 'Hoeveel informanten had de Stasi op het hoogtepunt?', answers: [{ text: 'Meer dan 175.000', correct: true }, { text: 'Ongeveer 500' }, { text: 'Meer dan 1 miljoen' }] },
+      { question: 'Hoe bewaarde de Stasi de "geur" van verdachten?', answers: [{ text: 'In glazen potten', correct: true }, { text: 'In plastic zakken' }, { text: 'Op papier' }] },
+      { question: 'Wat deden Stasi-medewerkers na de val van de muur?', answers: [{ text: 'Ze vernietigden dossiers', correct: true }, { text: 'Ze vluchtten het land uit' }, { text: 'Ze gaven zich over' }] },
+    ],
   },
   {
     category: 'technology',
@@ -298,7 +394,11 @@ const WONDERS = [
     intro: 'In Oost-Duitsland reed bijna iedereen in hetzelfde autootje: de Trabant, of kortweg de "Trabi". Het was een kleine, ronkende auto met een carrosserie van geperst plastic en een tweetaktmotor die een enorme wolk blauwe rook uitspuugde. Je kon de Trabi al van verre horen — en ruiken. Maar voor Oost-Duitsers was de Trabi meer dan een auto: het was een statussymbool. Als je een Trabi wilde kopen, moest je je naam op een wachtlijst zetten. Hoe lang duurde het wachten? Gemiddeld dertien jaar. Je reserveerde de auto nog voor je kind geboren was, en tegen de tijd dat hij geleverd werd, was je kind al op de middelbare school. Na de val van de muur in 1989 reden honderden Oost-Duitsers in hun Trabi naar het westen — de wachtrijen bij benzinestations waren enorm.',
     question: 'Als jij 13 jaar moest wachten op iets wat je echt wou, zou je dan doorzetten of opgeven?',
     deepdive: 'De Trabant werd voor het eerst gebouwd in 1957 en nauwelijks veranderd in de 30 jaar daarna. Terwijl westerse auto\'s steeds veiliger, sneller en comfortabeler werden, bleef de Trabi precies hetzelfde. De motor was zo eenvoudig dat eigenaren hem zelf konden repareren met basale gereedschappen — wat ook nodig was, want onderdelen waren schaars. Na de hereniging werden er massaal Trabis gedumpt: mensen lieten ze gewoon op straat achter en stapten over op westerse auto\'s. Maar de Trabi is nooit echt verdwenen. Vandaag de dag zijn er Trabi-fans over de hele wereld die de autootjes restaureren en verzamelen. In Berlijn kun je toeristische rondritten boeken in een Trabant. Het stinkende, knetterende autootje is een geliefde herinnering aan een rare tijd geworden.',
-    quiz: { question: 'Hoe lang moest je gemiddeld wachten op een nieuwe Trabant?', answers: [{ text: '13 jaar', correct: true }, { text: '2 jaar' }, { text: '6 maanden' }] },
+    quiz: [
+      { question: 'Hoe lang moest je gemiddeld wachten op een nieuwe Trabant?', answers: [{ text: '13 jaar', correct: true }, { text: '2 jaar' }, { text: '6 maanden' }] },
+      { question: 'In welk jaar werd de Trabant voor het eerst gebouwd?', answers: [{ text: '1957', correct: true }, { text: '1970' }, { text: '1945' }] },
+      { question: 'Hoe heet de verkorte naam voor de Trabant?', answers: [{ text: 'Trabi', correct: true }, { text: 'Trabbi' }, { text: 'Traab' }] },
+    ],
   },
 ];
 
@@ -316,29 +416,43 @@ const API = {
 };
 
 /* ─── State ─────────────────────────────────────────────── */
-let currentWonder    = null;
-let lastWonder       = null;
-let activeCategory   = null;
-let completedWonders = [];
-let quizQuestions    = [];
-let currentQuizQ     = 0;
-let currentUser      = null;
-let serverReadSet    = new Set();  // from server; authoritative when logged in
-let serverQuizCount  = 0;
-let serverStreak     = 0;
-let forgotUsername   = '';
-let authMode         = 'login';
+let currentWonder      = null;
+let lastWonder         = null;
+let activeCategory     = null;
+let quizQuestions      = [];
+let currentQuizQ       = 0;
+let quizFirstAttempts  = [];   // true = first attempt correct
+let quizReturnFn       = null; // what to do after quiz completes
+let currentUser        = null;
+let serverReadSet      = new Set();
+let serverQuizCount    = 0;
+let serverStreak       = 0;
+let serverPoints       = 0;
+let forgotUsername     = '';
+let authMode           = 'login';
 
-const LS_WONDER_COUNT = 'jw_wonder_count';
-const LS_QUIZ_COUNT   = 'jw_quiz_count';
-const LS_READ_SET     = 'jw_read_set';
-const LS_STREAK       = 'jw_streak';
-const LS_LAST_ACTIVE  = 'jw_last_active';
+const LS_QUIZ_COUNT  = 'jw_quiz_count';
+const LS_READ_SET    = 'jw_read_set';
+const LS_STREAK      = 'jw_streak';
+const LS_LAST_ACTIVE = 'jw_last_active';
+const LS_POINTS      = 'jw_points';
 
-function getWonderCount() { return parseInt(localStorage.getItem(LS_WONDER_COUNT) || '0', 10); }
-function getQuizCount()   { return currentUser ? serverQuizCount : parseInt(localStorage.getItem(LS_QUIZ_COUNT) || '0', 10); }
-function setWonderCount(n){ localStorage.setItem(LS_WONDER_COUNT, String(n)); }
-function setQuizCount(n)  { if (!currentUser) localStorage.setItem(LS_QUIZ_COUNT, String(n)); else serverQuizCount = n; }
+function getQuizCount() { return currentUser ? serverQuizCount : parseInt(localStorage.getItem(LS_QUIZ_COUNT) || '0', 10); }
+function setQuizCount(n){ if (!currentUser) localStorage.setItem(LS_QUIZ_COUNT, String(n)); else serverQuizCount = n; }
+function getPoints()    { return currentUser ? serverPoints : parseInt(localStorage.getItem(LS_POINTS) || '0', 10); }
+function addPoints(n)   {
+  if (currentUser) { serverPoints += n; }
+  else { localStorage.setItem(LS_POINTS, String(getPoints() + n)); }
+  updatePointsDisplay(true);
+}
+function updatePointsDisplay(animate) {
+  const el = document.getElementById('points-num');
+  if (!el) return;
+  el.textContent = getPoints();
+  if (animate && typeof gsap !== 'undefined') {
+    gsap.fromTo('#hero-points-wrap', { scale: 1.2 }, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' });
+  }
+}
 
 function getStreak() {
   if (currentUser) return serverStreak;
@@ -473,8 +587,6 @@ const elQuizAnswers    = document.getElementById('quiz-answers');
 const elQuizCard       = document.getElementById('quiz-card');
 const quizDoneOverlay  = document.getElementById('quiz-done');
 const btnQuizDone      = document.getElementById('btn-quiz-done');
-const quizScoreWrap    = document.getElementById('quiz-score-wrap');
-const elQuizScoreNum   = document.getElementById('quiz-score-num');
 
 /* ─── Starfield ─────────────────────────────────────────── */
 function initStarfield() {
@@ -609,17 +721,14 @@ function showScreen(el) {
 
 /* ─── Quiz ──────────────────────────────────────────────── */
 function updateQuizScoreDisplay() {
-  const count = getQuizCount();
-  elQuizScoreNum.textContent = count;
-  quizScoreWrap.style.display = count > 0 ? 'flex' : 'none';
+  // quiz-score-wrap removed from UI; kept as no-op to avoid reference errors
 }
 
-function startQuiz() {
-  const sources = completedWonders.length >= 3
-    ? completedWonders.slice(-3)
-    : [...completedWonders, ...shuffle(WONDERS.filter(w => !completedWonders.includes(w)))].slice(0, 3);
-  quizQuestions = sources.map(w => w.quiz);
-  currentQuizQ  = 0;
+function startQuiz(wonder, returnFn) {
+  quizQuestions     = wonder.quiz;          // array of 3 question objects
+  currentQuizQ      = 0;
+  quizFirstAttempts = [null, null, null];   // null = not yet answered
+  quizReturnFn      = returnFn || null;
   quizDoneOverlay.hidden = true;
   showScreen(screenQuiz);
   renderQuestion(0);
@@ -642,10 +751,12 @@ function renderQuestion(index) {
 function handleAnswer(btn, isCorrect) {
   if (btn.disabled) return;
   if (isCorrect) {
+    if (quizFirstAttempts[currentQuizQ] === null) quizFirstAttempts[currentQuizQ] = true;
     btn.classList.add('correct');
     elQuizAnswers.querySelectorAll('.quiz-answer-btn').forEach(b => { b.disabled = true; });
     setTimeout(advanceQuiz, 900);
   } else {
+    if (quizFirstAttempts[currentQuizQ] === null) quizFirstAttempts[currentQuizQ] = false;
     btn.classList.add('wrong');
     setTimeout(() => btn.classList.remove('wrong'), 650);
   }
@@ -667,13 +778,31 @@ function advanceQuiz() {
 }
 
 function completeQuiz() {
-  const newCount = getQuizCount() + 1;
-  setQuizCount(newCount);
+  setQuizCount(getQuizCount() + 1);
+
+  const correct = quizFirstAttempts.filter(Boolean).length;
+  const bonus   = quizFirstAttempts.every(Boolean) ? 20 : 0;
+  const earned  = correct * 10 + bonus;
+
+  addPoints(earned);
+
   if (currentUser) {
     fetch(API.quiz, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-      body: JSON.stringify({ score: 3 }) }).catch(() => {});
+      body: JSON.stringify({ score: correct, points: earned }) })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && data.total_points != null) serverPoints = data.total_points; })
+      .catch(() => {});
   }
-  updateQuizScoreDisplay();
+
+  // Show reward overlay
+  document.getElementById('qdpe-num').textContent    = '+' + earned;
+  document.getElementById('qdpe-total').textContent  = getPoints();
+  const breakdown = document.getElementById('quiz-done-breakdown');
+  const parts = [];
+  if (correct > 0) parts.push(`${correct} × 10 punten`);
+  if (bonus > 0)   parts.push(`🎯 bonuspunten: +${bonus}`);
+  breakdown.textContent = parts.join('  •  ');
+
   quizDoneOverlay.hidden = false;
   if (typeof gsap !== 'undefined') {
     gsap.fromTo('.quiz-done-card',
@@ -824,23 +953,13 @@ function spawnRipple(x, y) {
 
 /* ─── Events ────────────────────────────────────────────── */
 btnWonder.addEventListener('click', () => startDiscovery(activeCategory));
-btnHome.addEventListener('click', goHome);
+btnHome.addEventListener('click', () => startQuiz(currentWonder, goHome));
 btnContinue.addEventListener('click', showPhase3);
-btnNew.addEventListener('click', () => {
-  completedWonders.push(currentWonder);
-  if (completedWonders.length > 3) completedWonders.shift();
-  const newCount = getWonderCount() + 1;
-  if (newCount >= 3) {
-    setWonderCount(0);
-    startQuiz();
-  } else {
-    setWonderCount(newCount);
-    startDiscovery(activeCategory);
-  }
-});
+btnNew.addEventListener('click', () => startQuiz(currentWonder, () => startDiscovery(activeCategory)));
 btnQuizDone.addEventListener('click', () => {
   quizDoneOverlay.hidden = true;
-  startDiscovery(activeCategory);
+  updatePointsDisplay(false);
+  if (quizReturnFn) quizReturnFn();
 });
 
 // Prevent navigating away from quiz with hardware back button
@@ -977,9 +1096,10 @@ async function doForgotAnswer() {
 
 function enterHero() {
   const heroGreeting = document.getElementById('hero-greeting');
-  if (heroGreeting) heroGreeting.textContent = currentUser ? `Hé ${currentUser.username}!` : 'Hé James!';
+  if (heroGreeting) heroGreeting.textContent = currentUser ? `Hé ${currentUser.username}!` : 'Welkom!';
   btnLogout.textContent = currentUser ? 'Uitloggen' : '← Inloggen';
-  updateProgressBar(); updateCategoryStats(); updateCategoryPills(); updateQuizScoreDisplay(); updateStreakDisplay(false);
+  updatePointsDisplay(false);
+  updateProgressBar(); updateStreakDisplay(false);
   showScreen(screenHero); animateHeroIn();
 }
 
@@ -992,6 +1112,7 @@ async function loadUserAndEnter() {
     serverReadSet   = new Set(data.seen_titles||[]);
     serverQuizCount = data.quiz_count||0;
     serverStreak    = data.streak||0;
+    serverPoints    = data.total_points||0;
     enterHero();
   } catch(_) {
     showScreen(screenAuth);
@@ -1003,7 +1124,7 @@ async function logout() {
   if (currentUser) {
     await fetch(API.logout,{method:'POST',credentials:'include'}).catch(()=>{});
   }
-  currentUser=null; serverReadSet=new Set(); serverQuizCount=0; serverStreak=0;
+  currentUser=null; serverReadSet=new Set(); serverQuizCount=0; serverStreak=0; serverPoints=0;
   authUsernameEl.value=''; authPasswordEl.value=''; setAuthError('');
   setAuthMode('login'); showScreen(screenAuth);
 }
