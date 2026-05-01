@@ -86,6 +86,11 @@
         <span class="hero-wave" aria-hidden="true">👋</span>
       </h1>
 
+      <div id="hero-level-wrap">
+        <span id="hero-level-icon"></span>
+        <span id="hero-level-title"></span>
+      </div>
+
       <p class="hero-sub">Druk op de knop<br>en ontdek iets bijzonders</p>
 
       <!-- Stats badge -->
@@ -122,6 +127,17 @@
       </div>
 
       <button id="btn-logout" class="btn-logout" aria-label="Uitloggen">Uitloggen</button>
+
+      <!-- Daily wonder limit bar -->
+      <div class="hero-daily-wrap">
+        <div class="hero-daily-meta">
+          <span class="hero-daily-label">Vandaag</span>
+          <span class="hero-daily-count" id="daily-text">0 / 10</span>
+        </div>
+        <div class="hero-daily-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0" id="daily-bar">
+          <div class="hero-daily-fill" id="daily-fill"></div>
+        </div>
+      </div>
 
     </div>
 
@@ -229,6 +245,13 @@
       <div class="quiz-complete-stats" id="quiz-complete-stats"></div>
       <button id="btn-quiz-done" class="btn-quiz-done">Verder ontdekken ✦</button>
     </div>
+  </div>
+
+  <!-- Level-up banner -->
+  <div id="level-up-banner" class="lub-hide" aria-live="assertive">
+    <span class="lub-icon"></span>
+    <span class="lub-label">Nieuw niveau!</span>
+    <span class="lub-title"></span>
   </div>
 
   <!-- Flash / transition overlay -->

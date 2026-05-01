@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 
 from backend.config import DB_PATH
 
@@ -38,10 +38,17 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
         """)
-        # Migrate existing databases that lack security question columns
-        for col in ("security_question", "security_answer_hash", "security_answer_salt"):
+        # Migrate existing databases
+        for col, definition in [
+            ("security_question",    "TEXT NOT NULL DEFAULT ''"),
+            ("security_answer_hash", "TEXT NOT NULL DEFAULT ''"),
+            ("security_answer_salt", "TEXT NOT NULL DEFAULT ''"),
+            ("streak",               "INTEGER NOT NULL DEFAULT 0"),
+            ("last_activity_date",   "TEXT NOT NULL DEFAULT ''"),
+            ("total_points",         "INTEGER NOT NULL DEFAULT 0"),
+        ]:
             try:
-                conn.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
+                conn.execute(f"ALTER TABLE users ADD COLUMN {col} {definition}")
             except sqlite3.OperationalError:
                 pass  # column already exists
 
@@ -135,13 +142,38 @@ def get_user_by_id(user_id: int) -> dict | None:
     return {"id": row["id"], "username": row["username"]}
 
 
-def mark_wonder_seen(user_id: int, wonder_title: str):
+def update_streak(user_id: int, conn) -> int:
+    today = date.today().isoformat()
+    row = conn.execute(
+        "SELECT streak, last_activity_date FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    last = row["last_activity_date"] if row else ""
+    streak = row["streak"] if row else 0
+
+    if last == today:
+        return streak  # already counted today
+
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    if last == yesterday:
+        streak += 1
+    else:
+        streak = 1  # missed a day or first time
+
+    conn.execute(
+        "UPDATE users SET streak = ?, last_activity_date = ? WHERE id = ?",
+        (streak, today, user_id),
+    )
+    return streak
+
+
+def mark_wonder_seen(user_id: int, wonder_title: str) -> int:
     now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         conn.execute(
             "INSERT OR IGNORE INTO seen_wonders (user_id, wonder_title, seen_at) VALUES (?, ?, ?)",
             (user_id, wonder_title, now),
         )
+        return update_streak(user_id, conn)
 
 
 def get_seen_wonders(user_id: int) -> list[str]:
@@ -157,16 +189,24 @@ def reset_seen_wonders(user_id: int):
         conn.execute("DELETE FROM seen_wonders WHERE user_id = ?", (user_id,))
 
 
-def add_quiz_completion(user_id: int, score: int):
+def add_quiz_completion(user_id: int, score: int, points: int = 0):
     now = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
         conn.execute(
             "INSERT INTO quiz_completions (user_id, score, completed_at) VALUES (?, ?, ?)",
             (user_id, score, now),
         )
+        if points > 0:
+            conn.execute(
+                "UPDATE users SET total_points = total_points + ? WHERE id = ?",
+                (points, user_id),
+            )
 
 
 def get_progress(user_id: int) -> dict:
+    today_start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).isoformat()
     with _connect() as conn:
         wonder_count = conn.execute(
             "SELECT COUNT(*) FROM seen_wonders WHERE user_id = ?", (user_id,)
@@ -180,8 +220,20 @@ def get_progress(user_id: int) -> dict:
                 "SELECT wonder_title FROM seen_wonders WHERE user_id = ?", (user_id,)
             ).fetchall()
         ]
+        user_row = conn.execute(
+            "SELECT streak, total_points FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        streak = user_row["streak"] if user_row else 0
+        total_points = user_row["total_points"] if user_row else 0
+        daily_count = conn.execute(
+            "SELECT COUNT(*) FROM seen_wonders WHERE user_id = ? AND seen_at >= ?",
+            (user_id, today_start),
+        ).fetchone()[0]
     return {
         "wonder_count": wonder_count,
         "quiz_count": quiz_count,
         "seen_titles": seen_titles,
+        "streak": streak,
+        "total_points": total_points,
+        "daily_count": daily_count,
     }

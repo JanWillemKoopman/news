@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from backend.storage import get_summaries
 from backend.config import PAGE_SIZE, TRIGGER_SECRET, SECRET_KEY
+from backend.vinted.routes import vinted_bp
 from backend.database import (
     create_user,
     verify_user,
@@ -21,12 +22,13 @@ from backend.database import (
 
 logger = logging.getLogger(__name__)
 
-STATIC_DIR = Path(__file__).parent.parent  # project root: index.html, style.css, app.js
+STATIC_DIR = Path(__file__).parent.parent
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
 app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(days=30)
 CORS(app, supports_credentials=True)
+app.register_blueprint(vinted_bp)
 
 
 def _current_user():
@@ -171,6 +173,9 @@ def api_me():
         "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
+        "streak": progress["streak"],
+        "total_points": progress["total_points"],
+        "daily_count": progress["daily_count"],
     })
 
 
@@ -187,12 +192,14 @@ def api_mark_wonder():
     if not title:
         return jsonify({"error": "Titel ontbreekt"}), 400
 
-    mark_wonder_seen(user["id"], title)
+    streak = mark_wonder_seen(user["id"], title)
     progress = get_progress(user["id"])
     return jsonify({
         "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
         "seen_titles": progress["seen_titles"],
+        "streak": streak,
+        "daily_count": progress["daily_count"],
     })
 
 
@@ -217,9 +224,13 @@ def api_complete_quiz():
     if not isinstance(score, int):
         score = 0
 
-    add_quiz_completion(user["id"], score)
+    points = data.get("points", 0)
+    if not isinstance(points, int) or points < 0:
+        points = 0
+
+    add_quiz_completion(user["id"], score, points)
     progress = get_progress(user["id"])
     return jsonify({
-        "wonder_count": progress["wonder_count"],
         "quiz_count": progress["quiz_count"],
+        "total_points": progress["total_points"],
     })
