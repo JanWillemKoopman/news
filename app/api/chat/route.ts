@@ -36,7 +36,7 @@ async function handleModerate(body: {
   messages: ConversationEntry[]
 }) {
   const { selectedAgents, messages } = body
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const agentNames = selectedAgents.map((id) => AGENT_ID_TO_NAME[id])
   const conversation = messages
@@ -87,7 +87,7 @@ async function handleAskAgent(body: {
   }
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     systemInstruction: AGENT_SYSTEM_PROMPTS[agentId],
   })
 
@@ -132,7 +132,7 @@ async function handleFinalAdvice(body: {
   const agentPromises = selectedAgents.map(async (agentId) => {
     const agentName = AGENT_ID_TO_NAME[agentId]
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction: AGENT_SYSTEM_PROMPTS[agentId],
     })
 
@@ -145,7 +145,7 @@ async function handleFinalAdvice(body: {
   const agentAdvices = await Promise.all(agentPromises)
 
   // Moderator synthesizes all advice into one final response
-  const synthModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const synthModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
   const expertSummary = agentAdvices
     .map((a) => `**${a.agentName}**:\n${a.advice}`)
     .join('\n\n---\n\n')
