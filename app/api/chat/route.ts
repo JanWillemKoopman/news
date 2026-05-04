@@ -8,21 +8,64 @@ import {
 } from '@/lib/agents'
 import type { AgentId, ConversationEntry } from '@/types'
 
+const WHITELIST_IPS = ['62.45.137.45', '178.230.94.23']
+const DAILY_LIMIT = 8
+
+const requestCounts = new Map<string, { count: number; date: string }>()
+
+function getTodayString() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+
+  if (!WHITELIST_IPS.includes(ip)) {
+    const today = getTodayString()
+    const entry = requestCounts.get(ip)
+
+    if (entry && entry.date === today && entry.count >= DAILY_LIMIT) {
+      return NextResponse.json(
+        { error: 'Je dagelijkse limiet is bereikt. Morgen ben je weer welkom!' },
+        { status: 429 }
+      )
+    }
+  }
+
   try {
     const body = await req.json()
+    let response: NextResponse
+
     switch (body.action) {
       case 'moderate':
-        return handleModerate(body)
+        response = await handleModerate(body)
+        break
       case 'ask_agent':
-        return handleAskAgent(body)
+        response = await handleAskAgent(body)
+        break
       case 'final_advice':
-        return handleFinalAdvice(body)
+        response = await handleFinalAdvice(body)
+        break
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
+
+    if (
+      !WHITELIST_IPS.includes(ip) &&
+      (body.action === 'moderate' || body.action === 'ask_agent')
+    ) {
+      const today = getTodayString()
+      const entry = requestCounts.get(ip)
+      if (!entry || entry.date !== today) {
+        requestCounts.set(ip, { count: 1, date: today })
+      } else {
+        requestCounts.set(ip, { count: entry.count + 1, date: today })
+      }
+    }
+
+    return response
   } catch (err) {
     console.error('[API /chat]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
