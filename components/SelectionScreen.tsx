@@ -26,7 +26,7 @@ export default function SelectionScreen() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Kies je Adviseurs
+            Stel je team samen
           </h1>
           <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-lg">
             Selecteer 1 tot 3 experts. Het AI-systeem orkestreert gerichte vragen en
