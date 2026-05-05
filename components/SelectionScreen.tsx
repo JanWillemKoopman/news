@@ -26,7 +26,7 @@ export default function SelectionScreen() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            Kies je Adviseurs
+            Stel je team samen
           </h1>
           <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-lg">
             Selecteer 1 tot 3 experts. Het AI-systeem orkestreert gerichte vragen en
@@ -38,7 +38,7 @@ export default function SelectionScreen() {
       {/* Grid */}
       <main className="flex-1 px-4 pb-8">
         <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {AGENT_IDS.map((id) => (
               <AgentCard
                 key={id}
