@@ -13,7 +13,7 @@ export default function SelectionScreen() {
   const canStart = selectedAgents.length >= 1
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-dvh flex flex-col">
       {/* Header */}
       <header className="px-4 pt-10 pb-6">
         <div className="max-w-4xl mx-auto">
@@ -36,7 +36,7 @@ export default function SelectionScreen() {
       </header>
 
       {/* Grid */}
-      <main className="flex-1 px-4 pb-8">
+      <main className="flex-1 overflow-y-auto px-4 pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {AGENT_IDS.map((id) => (
@@ -59,7 +59,7 @@ export default function SelectionScreen() {
       </main>
 
       {/* Sticky footer CTA */}
-      <footer className="sticky bottom-0 border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-4">
+      <footer className="border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <Users size={15} className="text-slate-500" />
