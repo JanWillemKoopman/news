@@ -59,6 +59,7 @@ export default function ChatScreen() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (messages.length <= 1 && !isTyping) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
@@ -217,7 +218,7 @@ export default function ChatScreen() {
   const agentList = selectedAgents.map((id) => AGENTS[id])
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
+    <div className="h-screen flex flex-col bg-slate-950">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
