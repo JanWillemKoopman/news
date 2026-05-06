@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AgentId, Message } from '@/types'
+import type { AgentId, Message, Phase } from '@/types'
 
 interface ChatState {
   selectedAgents: AgentId[]
@@ -8,8 +8,8 @@ interface ChatState {
   screen: 'selection' | 'chat'
   isTyping: boolean
   typingAgent: string | null
-  questionCount: number
-  sessionComplete: boolean
+  phase: Phase
+  debateTurnCount: number
   error: string | null
 }
 
@@ -19,8 +19,9 @@ interface ChatActions {
   addMessage: (message: Message) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
   setError: (error: string | null) => void
-  incrementQuestionCount: () => void
-  completeSession: () => void
+  setPhase: (phase: Phase) => void
+  incrementDebateTurn: () => void
+  resetDebateTurns: () => void
   resetSession: () => void
 }
 
@@ -30,8 +31,8 @@ const initialState: ChatState = {
   screen: 'selection',
   isTyping: false,
   typingAgent: null,
-  questionCount: 0,
-  sessionComplete: false,
+  phase: 'intake',
+  debateTurnCount: 0,
   error: null,
 }
 
@@ -53,8 +54,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
         set({
           screen: 'chat',
           messages: [],
-          questionCount: 0,
-          sessionComplete: false,
+          phase: 'intake',
+          debateTurnCount: 0,
           error: null,
         }),
 
@@ -66,21 +67,23 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       setError: (error) => set({ error }),
 
-      incrementQuestionCount: () =>
-        set((state) => ({ questionCount: state.questionCount + 1 })),
+      setPhase: (phase) => set({ phase }),
 
-      completeSession: () => set({ sessionComplete: true }),
+      incrementDebateTurn: () =>
+        set((state) => ({ debateTurnCount: state.debateTurnCount + 1 })),
+
+      resetDebateTurns: () => set({ debateTurnCount: 0 }),
 
       resetSession: () => set(initialState),
     }),
     {
-      name: 'multi-agent-advisor-v1',
+      name: 'multi-agent-advisor-v2',
       partialize: (state) => ({
         selectedAgents: state.selectedAgents,
         messages: state.messages,
         screen: state.screen,
-        questionCount: state.questionCount,
-        sessionComplete: state.sessionComplete,
+        phase: state.phase,
+        debateTurnCount: state.debateTurnCount,
       }),
     }
   )

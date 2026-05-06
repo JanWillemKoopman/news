@@ -11,13 +11,16 @@ export interface Agent {
   glowColor: string
 }
 
+export type Phase = 'intake' | 'debate' | 'free'
+
 export interface Message {
   id: string
-  role: 'user' | 'agent' | 'moderator' | 'final'
+  role: 'user' | 'agent' | 'moderator' | 'final' | 'synthesis'
   agentId?: AgentId
   agentName?: string
   content: string
   timestamp: number
+  phase?: Phase
 }
 
 export interface ConversationEntry {

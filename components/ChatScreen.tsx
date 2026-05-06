@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlertCircle, ArrowLeft, RefreshCw, Send } from 'lucide-react'
-import { AGENTS } from '@/lib/agents'
+import { AGENTS, AGENT_NAME_TO_ID } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
-import type { AgentId, ConversationEntry, Message } from '@/types'
+import type { AgentId, ConversationEntry, Message, Phase } from '@/types'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
+
+const PHASE_LABELS: Record<Phase, string> = {
+  intake: 'Intake',
+  debate: 'Debat',
+  free: 'Vrije modus',
+}
 
 export default function ChatScreen() {
   const {
@@ -14,14 +20,14 @@ export default function ChatScreen() {
     messages,
     isTyping,
     typingAgent,
-    questionCount,
-    sessionComplete,
+    phase,
     error,
     addMessage,
     setTyping,
     setError,
-    incrementQuestionCount,
-    completeSession,
+    setPhase,
+    incrementDebateTurn,
+    resetDebateTurns,
     resetSession,
   } = useChatStore()
 
@@ -53,7 +59,7 @@ export default function ChatScreen() {
     addMessage({
       id: crypto.randomUUID(),
       role: 'moderator',
-      content: `Welkom bij jouw persoonlijke adviesgesprek. Ik heb ${nameList} geselecteerd als adviseurs. Beschrijf je businessidee of vraagstuk zo concreet mogelijk — dan stel ik gerichte vervolgvragen voor maximaal diepgaand advies.`,
+      content: `Welkom bij jouw persoonlijke adviesgesprek. Ik heb ${nameList} geselecteerd als adviseurs. Beschrijf je businessidee of vraagstuk zo concreet mogelijk — dan stel ik gerichte vragen voor een scherp debat.`,
       timestamp: Date.now(),
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -62,15 +68,22 @@ export default function ChatScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  // ── Orchestration helpers ────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
+  // Build history with [AgentName]: prefix so debate agents know who said what
   const buildHistory = (msgs: Message[]): ConversationEntry[] =>
     msgs
-      .filter((m) => m.role !== 'moderator')
-      .map((m) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        content: m.content,
-      }))
+      .filter((m) => m.role !== 'moderator' && m.role !== 'synthesis')
+      .map((m) => {
+        if (m.role === 'user') return { role: 'user' as const, content: m.content }
+        if (m.role === 'agent' && m.agentName)
+          return { role: 'model' as const, content: `[${m.agentName}]: ${m.content}` }
+        return { role: 'model' as const, content: m.content }
+      })
+
+  const allAgentNames = selectedAgents.map((id) => AGENTS[id].name)
+
+  // ── Intake phase helpers ──────────────────────────────────────────────────
 
   const askAgent = useCallback(
     async (agentName: string, history: ConversationEntry[]) => {
@@ -93,48 +106,113 @@ export default function ChatScreen() {
         agentName: name,
         content: response,
         timestamp: Date.now(),
+        phase: 'intake',
       })
-      incrementQuestionCount()
     },
-    [selectedAgents, addMessage, setTyping, incrementQuestionCount]
+    [selectedAgents, addMessage, setTyping]
   )
 
-  const generateFinalAdvice = useCallback(
-    async (history: ConversationEntry[]) => {
-      setTyping(true, 'Alle adviseurs')
+  // ── Debate phase helpers ──────────────────────────────────────────────────
 
-      const res = await fetch('/api/chat', {
+  const runDebateLoop = useCallback(
+    async (history: ConversationEntry[]) => {
+      setPhase('debate')
+
+      // Get debate order and angles from moderator
+      setTyping(true, 'Moderator')
+      const modRes = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'final_advice', selectedAgents, messages: history }),
+        body: JSON.stringify({ action: 'debate_moderate', selectedAgents, messages: history }),
       })
-      if (!res.ok) throw new Error(`Eindadvies generatie mislukt (${res.status})`)
+      if (!modRes.ok) throw new Error(`Debat moderatie mislukt (${modRes.status})`)
 
-      const { agentAdvices, finalAdvice } = await res.json()
+      const { plan } = await modRes.json()
       setTyping(false)
 
-      for (const a of agentAdvices) {
-        addMessage({
-          id: crypto.randomUUID(),
-          role: 'agent',
-          agentId: a.agentId as AgentId,
-          agentName: a.agentName,
-          content: a.advice,
-          timestamp: Date.now(),
-        })
+      const debateOrder: string[] = plan.debate_order ?? allAgentNames
+      const angles: Record<string, string> = plan.angles ?? {}
+
+      const MAX_TURNS = selectedAgents.length * 3
+      let turnCount = 0
+
+      // Run rounds until max turns
+      outer: for (let round = 0; round < 3; round++) {
+        for (const agentName of debateOrder) {
+          if (turnCount >= MAX_TURNS) break outer
+
+          const agentId = AGENT_NAME_TO_ID[agentName]
+          if (!agentId) continue
+
+          // Get fresh history so each agent sees what the previous agent just said
+          const currentMsgs = useChatStore.getState().messages
+          const currentHistory = buildHistory(currentMsgs)
+
+          setTyping(true, agentName)
+
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'debate_turn',
+              agentId,
+              agentName,
+              angle: angles[agentName] ?? '',
+              messages: currentHistory,
+              allAgentNames,
+            }),
+          })
+          if (!res.ok) throw new Error(`Debatronde mislukt voor ${agentName} (${res.status})`)
+
+          const { response, agentId: respAgentId, agentName: respName } = await res.json()
+          setTyping(false)
+
+          addMessage({
+            id: crypto.randomUUID(),
+            role: 'agent',
+            agentId: respAgentId as AgentId,
+            agentName: respName,
+            content: response,
+            timestamp: Date.now(),
+            phase: 'debate',
+          })
+
+          incrementDebateTurn()
+          turnCount++
+
+          // Yield to event loop so React can render before next typing indicator
+          await new Promise((r) => setTimeout(r, 80))
+        }
       }
+
+      // Synthesize after debate
+      const finalMsgs = useChatStore.getState().messages
+      const finalHistory = buildHistory(finalMsgs)
+
+      setTyping(true, 'Synthese')
+      const synthRes = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'synthesize', messages: finalHistory }),
+      })
+      if (!synthRes.ok) throw new Error(`Synthese mislukt (${synthRes.status})`)
+
+      const { synthesis } = await synthRes.json()
+      setTyping(false)
 
       addMessage({
         id: crypto.randomUUID(),
-        role: 'final',
-        content: finalAdvice,
+        role: 'synthesis',
+        content: synthesis,
         timestamp: Date.now(),
       })
 
-      completeSession()
+      setPhase('free')
     },
-    [selectedAgents, addMessage, setTyping, completeSession]
+    [selectedAgents, allAgentNames, addMessage, setTyping, setPhase, incrementDebateTurn]
   )
+
+  // ── Main orchestration ────────────────────────────────────────────────────
 
   const runOrchestration = useCallback(
     async (userMessage: string, snapshotMessages: Message[]) => {
@@ -142,18 +220,21 @@ export default function ChatScreen() {
       setError(null)
 
       try {
-        const currentCount = useChatStore.getState().questionCount
+        const currentPhase = useChatStore.getState().phase
         const history = buildHistory(snapshotMessages)
         const fullHistory: ConversationEntry[] = [
           ...history,
           { role: 'user', content: userMessage },
         ]
 
-        if (currentCount >= 3) {
-          await generateFinalAdvice(fullHistory)
+        if (currentPhase === 'free') {
+          // New debate cycle after synthesis
+          resetDebateTurns()
+          await runDebateLoop(fullHistory)
           return
         }
 
+        // Intake phase: ask moderator
         setTyping(true, 'Moderator')
         const modRes = await fetch('/api/chat', {
           method: 'POST',
@@ -165,9 +246,10 @@ export default function ChatScreen() {
         const { decision } = await modRes.json()
         setTyping(false)
 
-        if (decision.action === 'final_advice') {
-          await generateFinalAdvice(fullHistory)
+        if (decision.action === 'start_debate') {
+          await runDebateLoop(fullHistory)
         } else {
+          // continue_intake: ask selected agent
           await askAgent(decision.selected_agent, fullHistory)
         }
       } catch (err) {
@@ -179,7 +261,7 @@ export default function ChatScreen() {
         setIsLoading(false)
       }
     },
-    [selectedAgents, askAgent, generateFinalAdvice, setTyping, setError]
+    [selectedAgents, askAgent, runDebateLoop, setTyping, setError, resetDebateTurns]
   )
 
   // ── Event handlers ────────────────────────────────────────────────────────
@@ -187,7 +269,7 @@ export default function ChatScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const text = inputValue.trim()
-    if (!text || isLoading || sessionComplete) return
+    if (!text || isLoading) return
 
     setInputValue('')
     setRetryPayload(null)
@@ -207,6 +289,7 @@ export default function ChatScreen() {
 
   const handleRetry = async () => {
     if (!retryPayload) return
+    resetDebateTurns()
     const payload = retryPayload
     setRetryPayload(null)
     await runOrchestration(payload.userMessage, payload.snapshotMessages)
@@ -243,15 +326,8 @@ export default function ChatScreen() {
             </div>
           </div>
 
-          <div
-            className={[
-              'text-xs font-mono px-2 py-1 rounded-lg border flex-shrink-0',
-              questionCount >= 3
-                ? 'text-red-400 bg-red-500/10 border-red-500/20'
-                : 'text-slate-400 bg-slate-800/60 border-slate-700/50',
-            ].join(' ')}
-          >
-            {questionCount}/3
+          <div className="text-xs font-mono px-2 py-1 rounded-lg border flex-shrink-0 text-slate-400 bg-slate-800/60 border-slate-700/50">
+            {PHASE_LABELS[phase]}
           </div>
         </div>
       </header>
@@ -287,41 +363,44 @@ export default function ChatScreen() {
         </div>
       </main>
 
-      {/* Input / Session complete */}
+      {/* Input — always available */}
       <footer className="sticky bottom-0 border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-4">
         <div className="max-w-2xl mx-auto">
-          {sessionComplete ? (
+          <form onSubmit={handleSubmit} className="flex items-end gap-3">
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={
+                phase === 'free'
+                  ? 'Stel een vervolgvraag...'
+                  : messages.length <= 1
+                  ? 'Beschrijf je businessidee...'
+                  : 'Jouw antwoord...'
+              }
+              disabled={isLoading}
+              maxLength={2000}
+              className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 transition-all disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || isLoading}
+              className="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 flex items-center justify-center transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
+            >
+              <Send
+                size={15}
+                className={inputValue.trim() && !isLoading ? 'text-white' : 'text-slate-500'}
+              />
+            </button>
+          </form>
+          {phase === 'free' && !isLoading && (
             <button
               onClick={resetSession}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-blue-500/20"
+              className="mt-2 w-full flex items-center justify-center gap-2 py-2 text-xs text-slate-500 hover:text-slate-400 transition-colors"
             >
-              <RefreshCw size={15} />
-              Start Nieuwe Sessie
+              <RefreshCw size={11} />
+              Start nieuwe sessie
             </button>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex items-end gap-3">
-              <input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={
-                  messages.length <= 1 ? 'Beschrijf je businessidee...' : 'Jouw antwoord...'
-                }
-                disabled={isLoading}
-                maxLength={2000}
-                className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 transition-all disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 flex items-center justify-center transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
-              >
-                <Send
-                  size={15}
-                  className={inputValue.trim() && !isLoading ? 'text-white' : 'text-slate-500'}
-                />
-              </button>
-            </form>
           )}
         </div>
       </footer>
