@@ -1,4 +1,4 @@
-import { Bot, Crown } from 'lucide-react'
+import { Bot, Crown, Sparkles } from 'lucide-react'
 import { AGENTS } from '@/lib/agents'
 import type { Message } from '@/types'
 import AgentIcon from './AgentIcon'
@@ -64,6 +64,25 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <div className="flex-1 h-px bg-yellow-500/20" />
         </div>
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/60 border border-yellow-500/20 rounded-2xl p-5 shadow-lg shadow-yellow-500/5">
+          <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+            <RichText content={message.content} />
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (message.role === 'synthesis') {
+    return (
+      <div className="animate-slide-up">
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <Sparkles size={15} className="text-blue-400" />
+          <span className="text-xs font-semibold text-blue-400 uppercase tracking-widest">
+            Debat Synthese
+          </span>
+          <div className="flex-1 h-px bg-blue-500/20" />
+        </div>
+        <div className="bg-gradient-to-br from-slate-900 to-slate-900/60 border border-blue-500/20 rounded-2xl p-5 shadow-lg shadow-blue-500/5">
           <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
             <RichText content={message.content} />
           </p>
