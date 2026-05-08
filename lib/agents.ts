@@ -1,6 +1,11 @@
 import type { Agent, AgentId } from '@/types'
 
 // ─── Specialisten van het bureau ───────────────────────────────────────────────
+// Aardetinten op cream-achtergrond. Per agent:
+//  color       — tekstkleur (donker genoeg voor goede leesbaarheid)
+//  bgColor     — zachte tint voor kaartachtergrond
+//  borderColor — iets sterkere tint voor randen
+//  glowColor   — schaduw bij hover/selectie
 export const AGENTS: Record<AgentId, Agent> = {
   brand: {
     id: 'brand',
@@ -8,10 +13,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Brand Marketeer',
     description:
       'Bewaakt de A-laag van de funnel: naamsbekendheid, merkpropositie, positionering en tone of voice.',
-    color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/30',
-    glowColor: 'shadow-violet-500/10',
+    color: 'text-[#9c4a3a]',
+    bgColor: 'bg-[#9c4a3a]/10',
+    borderColor: 'border-[#9c4a3a]/30',
+    glowColor: 'shadow-[#9c4a3a]/10',
   },
   content: {
     id: 'content',
@@ -19,10 +24,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Content Marketeer',
     description:
       'Verantwoordelijk voor de B-laag: contentstrategie voor website, blog, video en social media.',
-    color: 'text-pink-400',
-    bgColor: 'bg-pink-500/10',
-    borderColor: 'border-pink-500/30',
-    glowColor: 'shadow-pink-500/10',
+    color: 'text-[#a8466b]',
+    bgColor: 'bg-[#a8466b]/10',
+    borderColor: 'border-[#a8466b]/30',
+    glowColor: 'shadow-[#a8466b]/10',
   },
   performance: {
     id: 'performance',
@@ -30,10 +35,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Performance Marketeer',
     description:
       'Stuurt de C-laag: conversie, funnel-optimalisatie, CRO en ROAS op alle kanalen.',
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-    glowColor: 'shadow-emerald-500/10',
+    color: 'text-[#4d7a4b]',
+    bgColor: 'bg-[#4d7a4b]/10',
+    borderColor: 'border-[#4d7a4b]/30',
+    glowColor: 'shadow-[#4d7a4b]/10',
   },
   crm: {
     id: 'crm',
@@ -41,10 +46,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'CRM Marketeer',
     description:
       'Bewaakt de D-laag: retentie, loyalty, e-mail/marketing automation en customer lifetime value.',
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-    glowColor: 'shadow-amber-500/10',
+    color: 'text-[#a07823]',
+    bgColor: 'bg-[#a07823]/10',
+    borderColor: 'border-[#a07823]/30',
+    glowColor: 'shadow-[#a07823]/10',
   },
   ads: {
     id: 'ads',
@@ -52,10 +57,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Advertisement Specialist',
     description:
       'Verdeelt het mediabudget voor maximale ROI: Google Ads, Meta, programmatic, OOH, radio en print.',
-    color: 'text-cyan-400',
-    bgColor: 'bg-cyan-500/10',
-    borderColor: 'border-cyan-500/30',
-    glowColor: 'shadow-cyan-500/10',
+    color: 'text-[#2f7373]',
+    bgColor: 'bg-[#2f7373]/10',
+    borderColor: 'border-[#2f7373]/30',
+    glowColor: 'shadow-[#2f7373]/10',
   },
   data: {
     id: 'data',
@@ -63,10 +68,10 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Data Analist',
     description:
       'Zorgt voor meetbaarheid: KPI-framework, tracking, dashboards en datagedreven beslissingen.',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
-    glowColor: 'shadow-blue-500/10',
+    color: 'text-[#5b4f8e]',
+    bgColor: 'bg-[#5b4f8e]/10',
+    borderColor: 'border-[#5b4f8e]/30',
+    glowColor: 'shadow-[#5b4f8e]/10',
   },
 }
 
