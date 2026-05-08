@@ -4,7 +4,6 @@ import {
   AGENTS,
   AGENT_SYSTEM_PROMPTS,
   AGENT_NAME_TO_ID,
-  AGENT_ID_TO_NAME,
   ALL_AGENT_IDS,
   MANAGER_NAME,
   MANAGER_SYSTEM_PROMPT,
@@ -146,9 +145,14 @@ Regels:
 
 async function handlePlanningKickoff(body: {
   messages: ConversationEntry[]
+  selectedAgents?: AgentId[]
 }) {
-  const { messages } = body
+  const { messages, selectedAgents } = body
   const conversation = formatConversation(messages)
+
+  const activeIds: AgentId[] =
+    selectedAgents && selectedAgents.length > 0 ? selectedAgents : ALL_AGENT_IDS
+  const activeNames = activeIds.map((id) => AGENTS[id].name)
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
@@ -156,6 +160,9 @@ async function handlePlanningKickoff(body: {
   })
 
   const prompt = `${PLANNING_ORCHESTRATOR_PROMPT}
+
+INGESCHAKELDE SPECIALISTEN voor deze campagne (gebruik UITSLUITEND deze namen, ongeacht eerdere instructies):
+${activeNames.map((n) => `- ${n}`).join('\n')}
 
 Klantcontext (volledige intake):
 ${conversation}
@@ -165,11 +172,9 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
   const res = await model.generateContent(prompt)
 
   const fallbackPlan = {
-    speaking_order: ALL_AGENT_IDS.map((id) => AGENTS[id].name),
-    briefings: Object.fromEntries(
-      ALL_AGENT_IDS.map((id) => [AGENTS[id].name, ''])
-    ),
-    kickoff_message: `Top, ik heb genoeg context om met het team aan de slag te gaan. We werken het plan op funnel-volgorde uit, beginnend met ${AGENTS.brand.name}. Daarna pakken de anderen het op.`,
+    speaking_order: activeNames,
+    briefings: Object.fromEntries(activeNames.map((n) => [n, ''])),
+    kickoff_message: `Top, ik heb genoeg context om met het team aan de slag te gaan. We werken het plan uit, beginnend met ${activeNames[0]}. Daarna pakken de anderen het op.`,
   }
 
   const plan = safeJSON<{
@@ -178,12 +183,11 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
     kickoff_message: string
   }>(res.response.text(), fallbackPlan)
 
-  // sanity check: filter to known agent names
-  const known = new Set(Object.values(AGENT_ID_TO_NAME))
-  const filtered = (plan.speaking_order || []).filter((n) => known.has(n))
-  // ensure all six agents appear (append missing in canonical order)
-  for (const id of ALL_AGENT_IDS) {
-    const name = AGENTS[id].name
+  // Filter naar alleen de geselecteerde specialisten
+  const activeNameSet = new Set(activeNames)
+  const filtered = (plan.speaking_order || []).filter((n) => activeNameSet.has(n))
+  // Zorg dat elke geselecteerde specialist één keer voorkomt
+  for (const name of activeNames) {
     if (!filtered.includes(name)) filtered.push(name)
   }
   plan.speaking_order = filtered
@@ -244,10 +248,15 @@ Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
 
 async function handleManagerCheck(body: {
   messages: ConversationEntry[]
+  selectedAgents?: AgentId[]
   round: number
 }) {
-  const { messages, round } = body
+  const { messages, selectedAgents, round } = body
   const conversation = formatConversation(messages)
+
+  const activeIds: AgentId[] =
+    selectedAgents && selectedAgents.length > 0 ? selectedAgents : ALL_AGENT_IDS
+  const activeNames = activeIds.map((id) => AGENTS[id].name)
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
@@ -255,6 +264,9 @@ async function handleManagerCheck(body: {
   })
 
   const prompt = `${PLANNING_MANAGER_CHECK_PROMPT}
+
+INGESCHAKELDE SPECIALISTEN (gebruik alleen deze namen in follow_up):
+${activeNames.map((n) => `- ${n}`).join('\n')}
 
 Huidige planningsronde: ${round} (na 2 rondes verplicht "finalize").
 
@@ -272,10 +284,10 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
 
   if (round >= 2) decision.action = 'finalize'
 
-  // sanity: only known agents
-  const known = new Set(Object.values(AGENT_ID_TO_NAME))
+  // sanity: alleen geselecteerde specialisten
+  const activeNameSet = new Set(activeNames)
   decision.follow_up = (decision.follow_up || []).filter((f) =>
-    known.has(f.agent)
+    activeNameSet.has(f.agent)
   )
 
   return NextResponse.json({ decision })
