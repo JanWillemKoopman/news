@@ -1,38 +1,38 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AgentId, Message, Phase } from '@/types'
+import { ALL_AGENT_IDS } from '@/lib/agents'
+import type { Message, Phase } from '@/types'
 
 interface ChatState {
-  selectedAgents: AgentId[]
   messages: Message[]
   screen: 'selection' | 'chat'
   isTyping: boolean
   typingAgent: string | null
   phase: Phase
-  debateTurnCount: number
+  intakeRound: number
+  planningRound: number
   error: string | null
 }
 
 interface ChatActions {
-  toggleAgent: (id: AgentId) => void
   startSession: () => void
   addMessage: (message: Message) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
   setError: (error: string | null) => void
   setPhase: (phase: Phase) => void
-  incrementDebateTurn: () => void
-  resetDebateTurns: () => void
+  incrementIntakeRound: () => void
+  incrementPlanningRound: () => void
   resetSession: () => void
 }
 
 const initialState: ChatState = {
-  selectedAgents: [],
   messages: [],
   screen: 'selection',
   isTyping: false,
   typingAgent: null,
   phase: 'intake',
-  debateTurnCount: 0,
+  intakeRound: 0,
+  planningRound: 0,
   error: null,
 }
 
@@ -41,21 +41,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
     (set) => ({
       ...initialState,
 
-      toggleAgent: (id) =>
-        set((state) => {
-          if (state.selectedAgents.includes(id)) {
-            return { selectedAgents: state.selectedAgents.filter((a) => a !== id) }
-          }
-          if (state.selectedAgents.length >= 3) return state
-          return { selectedAgents: [...state.selectedAgents, id] }
-        }),
-
       startSession: () =>
         set({
           screen: 'chat',
           messages: [],
           phase: 'intake',
-          debateTurnCount: 0,
+          intakeRound: 0,
+          planningRound: 0,
           error: null,
         }),
 
@@ -69,22 +61,26 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       setPhase: (phase) => set({ phase }),
 
-      incrementDebateTurn: () =>
-        set((state) => ({ debateTurnCount: state.debateTurnCount + 1 })),
+      incrementIntakeRound: () =>
+        set((state) => ({ intakeRound: state.intakeRound + 1 })),
 
-      resetDebateTurns: () => set({ debateTurnCount: 0 }),
+      incrementPlanningRound: () =>
+        set((state) => ({ planningRound: state.planningRound + 1 })),
 
       resetSession: () => set(initialState),
     }),
     {
-      name: 'multi-agent-advisor-v2',
+      name: 'marketing-bureau-v1',
       partialize: (state) => ({
-        selectedAgents: state.selectedAgents,
         messages: state.messages,
         screen: state.screen,
         phase: state.phase,
-        debateTurnCount: state.debateTurnCount,
+        intakeRound: state.intakeRound,
+        planningRound: state.planningRound,
       }),
     }
   )
 )
+
+// Voor backwards compat / informatieve UI: het bureau-team is altijd compleet.
+export const BUREAU_TEAM = ALL_AGENT_IDS

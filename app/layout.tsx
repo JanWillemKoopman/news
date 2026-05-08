@@ -5,8 +5,9 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Multi-Agent Advisor',
-  description: 'Krijg business advies van legendarische ondernemers via AI',
+  title: 'Online Marketingbureau',
+  description:
+    'Schakel een compleet AI-marketingbureau in: een Campagne Manager en zes specialisten bouwen samen jouw campagneplan.',
 }
 
 export const viewport: Viewport = {

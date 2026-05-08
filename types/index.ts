@@ -1,4 +1,10 @@
-export type AgentId = 'jobs' | 'musk' | 'gates' | 'bezos' | 'buffett' | 'zuckerberg'
+export type AgentId =
+  | 'brand'
+  | 'content'
+  | 'performance'
+  | 'crm'
+  | 'ads'
+  | 'data'
 
 export interface Agent {
   id: AgentId
@@ -11,11 +17,14 @@ export interface Agent {
   glowColor: string
 }
 
-export type Phase = 'intake' | 'debate' | 'free'
+// 'intake'   = Campagne Manager interviewt de klant
+// 'planning' = Specialisten werken samen aan het plan
+// 'final'    = Compleet plan opgeleverd, klant kan bijsturen
+export type Phase = 'intake' | 'planning' | 'final'
 
 export interface Message {
   id: string
-  role: 'user' | 'agent' | 'moderator' | 'final' | 'synthesis'
+  role: 'user' | 'agent' | 'manager' | 'plan'
   agentId?: AgentId
   agentName?: string
   content: string
