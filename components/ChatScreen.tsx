@@ -21,6 +21,7 @@ const PHASE_LABELS: Record<Phase, string> = {
 
 export default function ChatScreen() {
   const {
+    selectedAgents,
     messages,
     isTyping,
     typingAgent,
@@ -157,6 +158,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
       }
     }>('planning_kickoff', {
       messages: buildHistory(useChatStore.getState().messages),
+      selectedAgents: useChatStore.getState().selectedAgents,
     })
     setTyping(false)
 
@@ -187,6 +189,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
       }
     }>('manager_check', {
       messages: buildHistory(useChatStore.getState().messages),
+      selectedAgents: useChatStore.getState().selectedAgents,
       round: 1,
     })
     setTyping(false)
@@ -338,7 +341,9 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const teamList = ALL_AGENT_IDS.map((id) => AGENTS[id])
+  const teamList = (selectedAgents.length > 0 ? selectedAgents : ALL_AGENT_IDS).map(
+    (id) => AGENTS[id]
+  )
 
   return (
     <div className="h-screen flex flex-col bg-slate-950">
