@@ -346,33 +346,33 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
   )
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950">
+    <div className="h-screen flex flex-col bg-cream-200">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-3">
+      <header className="sticky top-0 z-10 border-b border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button
             onClick={resetSession}
             aria-label="Terug naar bureau-overzicht"
-            className="w-9 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center transition-colors flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-cream-400 hover:bg-cream-500 border border-cream-500 flex items-center justify-center transition-colors flex-shrink-0"
           >
-            <ArrowLeft size={15} className="text-slate-400" />
+            <ArrowLeft size={15} className="text-ink-600" />
           </button>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">
+            <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em] mb-0.5">
               Campagne-bureau · {MANAGER_NAME}
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
               {teamList.map((agent, i) => (
                 <span key={agent.id} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="text-slate-700">·</span>}
-                  <span className={`text-xs font-semibold ${agent.color}`}>{agent.name}</span>
+                  {i > 0 && <span className="text-cream-600">·</span>}
+                  <span className={`text-xs font-medium ${agent.color}`}>{agent.name}</span>
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="text-xs font-mono px-2 py-1 rounded-lg border flex-shrink-0 text-slate-400 bg-slate-800/60 border-slate-700/50">
+          <div className="text-[11px] px-2.5 py-1 rounded-full border flex-shrink-0 text-ink-600 bg-cream-50 border-cream-500">
             {PHASE_LABELS[phase]}
           </div>
         </div>
@@ -388,14 +388,14 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
           {isTyping && <TypingIndicator agentName={typingAgent ?? 'Bureau'} />}
 
           {error && (
-            <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-fade-in">
-              <AlertCircle size={17} className="text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-4 bg-clay-500/10 border border-clay-500/30 rounded-2xl animate-fade-in">
+              <AlertCircle size={17} className="text-clay-700 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm text-red-300 leading-relaxed">{error}</p>
+                <p className="text-sm text-ink-700 leading-relaxed">{error}</p>
                 {retryPayload && (
                   <button
                     onClick={handleRetry}
-                    className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
+                    className="mt-2 flex items-center gap-1.5 text-xs font-medium text-clay-700 hover:text-clay-600 transition-colors"
                   >
                     <RefreshCw size={11} />
                     Probeer opnieuw
@@ -410,7 +410,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
       </main>
 
       {/* Input */}
-      <footer className="sticky bottom-0 border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-4">
+      <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
         <div className="max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="flex items-end gap-3">
             <input
@@ -428,23 +428,23 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
               }
               disabled={isLoading}
               maxLength={4000}
-              className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 transition-all disabled:opacity-50"
+              className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 flex items-center justify-center transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
+              className="w-11 h-11 rounded-full bg-clay-500 hover:bg-clay-600 disabled:bg-cream-400 flex items-center justify-center transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed shadow-sm"
             >
               <Send
                 size={15}
-                className={inputValue.trim() && !isLoading ? 'text-white' : 'text-slate-500'}
+                className={inputValue.trim() && !isLoading ? 'text-white' : 'text-ink-400'}
               />
             </button>
           </form>
           {phase === 'final' && !isLoading && (
             <button
               onClick={resetSession}
-              className="mt-2 w-full flex items-center justify-center gap-2 py-2 text-xs text-slate-500 hover:text-slate-400 transition-colors"
+              className="mt-2 w-full flex items-center justify-center gap-2 py-2 text-xs text-ink-500 hover:text-ink-700 transition-colors"
             >
               <RefreshCw size={11} />
               Start nieuwe campagne

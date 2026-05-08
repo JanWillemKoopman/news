@@ -11,49 +11,53 @@ export default function SelectionScreen() {
   const canStart = selectedAgents.length >= 1
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-cream-200">
       {/* Header */}
-      <header className="px-4 pt-10 pb-6">
+      <header className="px-4 pt-12 pb-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-              <Briefcase size={14} className="text-blue-400" />
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
+              <Briefcase size={14} className="text-clay-600" />
             </div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
               Online Marketingbureau
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+          <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
             Stel je bureau-team samen
           </h1>
-          <p className="text-slate-400 mt-2 text-sm sm:text-base max-w-lg">
+          <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
             {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
-            welke specialisten je wilt inschakelen voor jouw campagne. Standaard staat
-            het volledige team aan voor een compleet plan.
+            welke specialisten je wilt inschakelen voor jouw campagne. Standaard staat het
+            volledige team aan voor een compleet plan.
           </p>
         </div>
       </header>
 
       {/* Team grid */}
-      <main className="flex-1 px-4 pb-8">
+      <main className="flex-1 px-4 pb-10">
         <div className="max-w-4xl mx-auto">
           {/* Manager card (separate, prominent, niet selecteerbaar) */}
-          <div className="mb-6">
-            <div className="relative p-5 rounded-2xl border bg-blue-500/10 border-blue-500/30 shadow-lg">
-              <span className="absolute top-4 right-4 text-[10px] font-semibold uppercase tracking-widest text-blue-300">
+          <div className="mb-8">
+            <div className="relative p-6 rounded-2xl border bg-cream-50 border-clay-500/30 shadow-sm">
+              <span className="absolute top-5 right-5 text-[10px] font-medium uppercase tracking-[0.15em] text-clay-600">
                 Altijd aan
               </span>
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center border bg-blue-500/20 border-blue-500/40 flex-shrink-0">
-                  <Briefcase size={20} className="text-blue-300" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center border bg-clay-500/15 border-clay-500/30 flex-shrink-0">
+                  <Briefcase size={20} className="text-clay-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-blue-300 uppercase tracking-widest mb-1">
+                  <p className="text-[10px] font-medium text-clay-600 uppercase tracking-[0.15em] mb-1.5">
                     Jouw dirigent
                   </p>
-                  <h3 className="font-semibold text-base text-white">{MANAGER_NAME}</h3>
-                  <p className="text-xs font-medium text-blue-300 mb-2">{MANAGER_TITLE}</p>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <h3 className="font-serif font-medium text-xl text-ink-900 leading-tight">
+                    {MANAGER_NAME}
+                  </h3>
+                  <p className="text-sm font-medium text-clay-600 mb-2.5 mt-0.5">
+                    {MANAGER_TITLE}
+                  </p>
+                  <p className="text-sm text-ink-500 leading-relaxed">
                     Doet de intake, bewaakt de regie en bouwt aan het eind het complete plan
                     op basis van álle input van jou en het team.
                   </p>
@@ -62,7 +66,7 @@ export default function SelectionScreen() {
             </div>
           </div>
 
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3 px-1">
+          <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em] mb-3 px-1">
             Specialisten — tik om te (de)selecteren
           </p>
 
@@ -78,8 +82,8 @@ export default function SelectionScreen() {
                   className={[
                     'relative p-5 rounded-2xl border text-left w-full transition-all duration-200 group',
                     isSelected
-                      ? `${agent.bgColor} ${agent.borderColor} shadow-lg`
-                      : 'bg-slate-900/80 border-slate-800 hover:border-slate-600 hover:bg-slate-800/70',
+                      ? `bg-cream-50 ${agent.borderColor} shadow-sm`
+                      : 'bg-cream-100 border-cream-500 hover:border-cream-600 hover:bg-cream-50',
                   ].join(' ')}
                 >
                   {isSelected && (
@@ -95,32 +99,32 @@ export default function SelectionScreen() {
                       'w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-all duration-200 border',
                       isSelected
                         ? `${agent.bgColor} ${agent.borderColor}`
-                        : 'bg-slate-800 border-slate-700 group-hover:border-slate-600',
+                        : 'bg-cream-200 border-cream-500 group-hover:border-cream-600',
                     ].join(' ')}
                   >
                     <AgentIcon
                       agentId={agent.id}
                       className={`w-5 h-5 transition-colors ${
-                        isSelected ? agent.color : 'text-slate-400 group-hover:text-slate-300'
+                        isSelected ? agent.color : 'text-ink-400 group-hover:text-ink-500'
                       }`}
                     />
                   </div>
 
                   <h3
-                    className={`font-semibold text-sm mb-0.5 ${
-                      isSelected ? 'text-white' : 'text-slate-200'
+                    className={`font-serif text-lg leading-tight mb-0.5 ${
+                      isSelected ? 'text-ink-900' : 'text-ink-700'
                     }`}
                   >
                     {agent.name}
                   </h3>
                   <p
                     className={`text-xs font-medium mb-2 ${
-                      isSelected ? agent.color : 'text-slate-500'
+                      isSelected ? agent.color : 'text-ink-400'
                     }`}
                   >
                     {agent.title}
                   </p>
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                  <p className="text-xs text-ink-500 leading-relaxed line-clamp-3">
                     {agent.description}
                   </p>
                 </button>
@@ -129,7 +133,7 @@ export default function SelectionScreen() {
           </div>
 
           {selectedAgents.length === 0 && (
-            <p className="text-center text-xs text-amber-400/80 mt-4 animate-fade-in">
+            <p className="text-center text-xs text-clay-700 mt-4 animate-fade-in">
               Selecteer minstens één specialist om te starten.
             </p>
           )}
@@ -137,19 +141,19 @@ export default function SelectionScreen() {
       </main>
 
       {/* Sticky footer CTA */}
-      <footer className="sticky bottom-0 border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md px-4 py-4">
+      <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Users size={15} className="text-slate-500" />
+          <div className="flex items-center gap-2 text-sm text-ink-500">
+            <Users size={15} className="text-ink-400" />
             <span>
               <span
-                className={`font-semibold ${
-                  selectedAgents.length > 0 ? 'text-white' : ''
+                className={`font-medium ${
+                  selectedAgents.length > 0 ? 'text-ink-900' : ''
                 }`}
               >
                 {selectedAgents.length}
               </span>
-              <span className="text-slate-500"> / {ALL_AGENT_IDS.length} specialisten</span>
+              <span className="text-ink-400"> / {ALL_AGENT_IDS.length} specialisten</span>
             </span>
           </div>
 
@@ -157,10 +161,10 @@ export default function SelectionScreen() {
             onClick={startSession}
             disabled={!canStart}
             className={[
-              'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200',
+              'flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm transition-all duration-200',
               canStart
-                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed',
+                ? 'bg-clay-500 hover:bg-clay-600 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5'
+                : 'bg-cream-400 text-ink-400 cursor-not-allowed',
             ].join(' ')}
           >
             Start campagne-briefing

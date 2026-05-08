@@ -1,8 +1,19 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Fraunces } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-styrene',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fraunces',
+  axes: ['SOFT', 'WONK', 'opsz'],
+})
 
 export const metadata: Metadata = {
   title: 'Online Marketingbureau',
@@ -14,13 +25,13 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#0a0f1e',
+  themeColor: '#f0eee6',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen`}>
+    <html lang="nl" className={`${inter.variable} ${fraunces.variable}`}>
+      <body className="font-sans bg-cream-200 text-ink-700 min-h-screen">
         {children}
       </body>
     </html>

@@ -9,6 +9,12 @@
   body {
     @apply antialiased;
   }
+  /* Sierlijke serif voor display-koppen */
+  .font-display,
+  .font-serif {
+    font-feature-settings: 'liga', 'kern', 'ss01';
+    letter-spacing: -0.01em;
+  }
 }
 
 @layer utilities {
