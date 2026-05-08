@@ -96,18 +96,11 @@ export default function SelectionScreen() {
 
                   <div
                     className={[
-                      'w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-all duration-200 border',
-                      isSelected
-                        ? `${agent.bgColor} ${agent.borderColor}`
-                        : 'bg-cream-200 border-cream-500 group-hover:border-cream-600',
+                      'w-12 h-12 rounded-full overflow-hidden mb-4 ring-2 ring-offset-2 ring-offset-cream-50 transition-all duration-200',
+                      isSelected ? agent.borderColor.replace('border-', 'ring-') : 'ring-cream-500',
                     ].join(' ')}
                   >
-                    <AgentIcon
-                      agentId={agent.id}
-                      className={`w-5 h-5 transition-colors ${
-                        isSelected ? agent.color : 'text-ink-400 group-hover:text-ink-500'
-                      }`}
-                    />
+                    <AgentIcon agentId={agent.id} size={48} />
                   </div>
 
                   <h3

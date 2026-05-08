@@ -146,17 +146,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <div className="flex items-start gap-3 animate-fade-in">
-      <div
-        className={[
-          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border',
-          agent ? `${agent.bgColor} ${agent.borderColor}` : 'bg-cream-400 border-cream-500',
-        ].join(' ')}
-      >
+      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-0.5 ring-1 ring-cream-500">
         {message.agentId && (
-          <AgentIcon
-            agentId={message.agentId}
-            className={`w-4 h-4 ${agent?.color ?? 'text-ink-500'}`}
-          />
+          <AgentIcon agentId={message.agentId} size={32} />
         )}
       </div>
       <div className="flex-1 min-w-0">
