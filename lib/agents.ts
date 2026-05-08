@@ -1,4 +1,4 @@
-import type { Agent, AgentId } from '@/types'
+import type { Agent, AgentId, CompanyProfile } from '@/types'
 
 // ─── Specialisten van het bureau ───────────────────────────────────────────────
 // Aardetinten op cream-achtergrond. Per agent:
@@ -95,6 +95,41 @@ export const AGENT_NAME_TO_ID: Record<string, AgentId> = Object.fromEntries(
 export const AGENT_NAME_TO_TITLE: Record<string, string> = Object.fromEntries(
   ALL_AGENT_IDS.map((id) => [AGENTS[id].name, AGENTS[id].title])
 )
+
+// ─── Bedrijfsprofiel-context voor prompts ──────────────────────────────────────
+// Bouwt een markdown-blok met alleen de ingevulde velden van het profiel.
+// Lege velden worden overgeslagen zodat we geen ruis aan het model voeren.
+export function briefCompanyContext(profile: CompanyProfile | null | undefined): string {
+  if (!profile) return ''
+  const lines: string[] = []
+  const push = (label: string, value?: string | string[] | null) => {
+    if (!value) return
+    if (Array.isArray(value)) {
+      if (value.length === 0) return
+      lines.push(`- **${label}:** ${value.join(', ')}`)
+    } else {
+      const trimmed = value.trim()
+      if (!trimmed) return
+      lines.push(`- **${label}:** ${trimmed}`)
+    }
+  }
+  push('Bedrijfsnaam', profile.name)
+  push('Branche', profile.industry)
+  push('Omschrijving', profile.description)
+  push('Marketingkanalen in gebruik', profile.channels)
+  push('Expertise in huis', profile.expertise)
+  push('Website', profile.website)
+  push('Doelgroep', profile.audience)
+  push('USP / positionering', profile.usp)
+  push('Tools / stack', profile.tools)
+  push('Budget-richting', profile.budget)
+  push('Tone of voice', profile.tone_of_voice)
+  push('Concurrenten', profile.competitors)
+  push('Business-doelen', profile.goals)
+
+  if (lines.length === 0) return ''
+  return `\n\nBEDRIJFSPROFIEL VAN DE KLANT (al bekend — sla deze info NIET opnieuw uit als intake-vraag):\n${lines.join('\n')}\n`
+}
 
 // ─── Persona prompts ───────────────────────────────────────────────────────────
 
@@ -199,7 +234,9 @@ Jouw rol:
 4. Aan het eind stel je het complete campagneplan op basis van álle input van klant + specialisten.
 5. Je vraagt de klant om het plan bij te sturen.
 
-Schrijf ALTIJD in het Nederlands. Toon: vriendelijk-zakelijk, in de jij-vorm tegen de klant, helder en gestructureerd. Geen jargon zonder uitleg. Wees beknopt en doelgericht.`
+Schrijf ALTIJD in het Nederlands. Toon: vriendelijk-zakelijk, in de jij-vorm tegen de klant, helder en gestructureerd. Geen jargon zonder uitleg. Wees beknopt en doelgericht.
+
+Als er een BEDRIJFSPROFIEL bekend is bij de klant, sla dan algemene intake-vragen (branche, kanalen, expertise, USP, etc.) over en vraag direct door naar het concrete campagne-doel, doelgroep van déze campagne, looptijd en budget. Verwijs in je eerste reactie kort naar de bedrijfsnaam zodat de klant ziet dat je hem/haar al kent.`
 
 // ─── Intake-router prompt ──────────────────────────────────────────────────────
 
