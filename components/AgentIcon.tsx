@@ -1,13 +1,20 @@
-import { Layers, Rocket, BarChart2, ShoppingCart, TrendingUp, Share2 } from 'lucide-react'
+import {
+  Sparkles,
+  PenLine,
+  Target,
+  HeartHandshake,
+  Megaphone,
+  LineChart,
+} from 'lucide-react'
 import type { AgentId } from '@/types'
 
 const ICON_MAP: Record<AgentId, React.ElementType> = {
-  jobs: Layers,
-  musk: Rocket,
-  gates: BarChart2,
-  bezos: ShoppingCart,
-  buffett: TrendingUp,
-  zuckerberg: Share2,
+  brand: Sparkles,
+  content: PenLine,
+  performance: Target,
+  crm: HeartHandshake,
+  ads: Megaphone,
+  data: LineChart,
 }
 
 interface AgentIconProps {
