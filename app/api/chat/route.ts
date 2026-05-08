@@ -12,8 +12,10 @@ import {
   PLANNING_MANAGER_CHECK_PROMPT,
   SPECIALIST_TURN_INSTRUCTIONS,
   FINAL_PLAN_PROMPT,
+  briefCompanyContext,
 } from '@/lib/agents'
-import type { AgentId, ConversationEntry } from '@/types'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import type { AgentId, CompanyProfile, ConversationEntry } from '@/types'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const MODEL = 'gemini-2.5-flash'
@@ -40,22 +42,45 @@ function formatConversation(messages: ConversationEntry[]): string {
     .join('\n\n')
 }
 
+async function loadCompanyProfile(): Promise<CompanyProfile | null> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return null
+  }
+  try {
+    const supabase = createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return null
+    const { data } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    return (data as CompanyProfile | null) ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const profile = await loadCompanyProfile()
+    const profileContext = briefCompanyContext(profile)
     switch (body.action) {
       case 'intake_turn':
-        return handleIntakeTurn(body)
+        return handleIntakeTurn(body, profileContext)
       case 'planning_kickoff':
-        return handlePlanningKickoff(body)
+        return handlePlanningKickoff(body, profileContext)
       case 'specialist_turn':
-        return handleSpecialistTurn(body)
+        return handleSpecialistTurn(body, profileContext)
       case 'manager_check':
-        return handleManagerCheck(body)
+        return handleManagerCheck(body, profileContext)
       case 'finalize':
-        return handleFinalize(body)
+        return handleFinalize(body, profileContext)
       case 'iterate_plan':
-        return handleIteratePlan(body)
+        return handleIteratePlan(body, profileContext)
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
@@ -67,17 +92,17 @@ export async function POST(req: NextRequest) {
 
 // ─── 1. Intake: Campagne Manager beslist + reageert ────────────────────────────
 
-async function handleIntakeTurn(body: {
-  messages: ConversationEntry[]
-  intakeRound: number
-}) {
+async function handleIntakeTurn(
+  body: { messages: ConversationEntry[]; intakeRound: number },
+  profileContext: string
+) {
   const { messages, intakeRound } = body
   const conversation = formatConversation(messages)
 
   // Step 1: router decides whether to keep asking or move to planning
   const routerModel = genAI.getGenerativeModel({ model: MODEL })
   const routerPrompt = `${INTAKE_ROUTER_PROMPT}
-
+${profileContext}
 Huidige intake-ronde: ${intakeRound} (ronde 5 dwingt automatisch start_planning)
 
 Gespreksgeschiedenis:
@@ -104,7 +129,7 @@ Geef je JSON-beslissing.`
   // Step 2: manager asks a follow-up question
   const managerModel = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT,
+    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
   const isFirstTurn = messages.filter((m) => m.role === 'user').length <= 1
@@ -143,10 +168,10 @@ Regels:
 
 // ─── 2. Planning kickoff: order + briefings + intro-bericht ────────────────────
 
-async function handlePlanningKickoff(body: {
-  messages: ConversationEntry[]
-  selectedAgents?: AgentId[]
-}) {
+async function handlePlanningKickoff(
+  body: { messages: ConversationEntry[]; selectedAgents?: AgentId[] },
+  profileContext: string
+) {
   const { messages, selectedAgents } = body
   const conversation = formatConversation(messages)
 
@@ -156,11 +181,11 @@ async function handlePlanningKickoff(body: {
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT,
+    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
   const prompt = `${PLANNING_ORCHESTRATOR_PROMPT}
-
+${profileContext}
 INGESCHAKELDE SPECIALISTEN voor deze campagne (gebruik UITSLUITEND deze namen, ongeacht eerdere instructies):
 ${activeNames.map((n) => `- ${n}`).join('\n')}
 
@@ -199,12 +224,15 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
 
 // ─── 3. Specialist beurt ──────────────────────────────────────────────────────
 
-async function handleSpecialistTurn(body: {
-  agentName: string
-  briefing: string
-  messages: ConversationEntry[]
-  round: number
-}) {
+async function handleSpecialistTurn(
+  body: {
+    agentName: string
+    briefing: string
+    messages: ConversationEntry[]
+    round: number
+  },
+  profileContext: string
+) {
   const { agentName, briefing, messages, round } = body
   const agentId = AGENT_NAME_TO_ID[agentName] as AgentId | undefined
 
@@ -220,7 +248,7 @@ async function handleSpecialistTurn(body: {
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: AGENT_SYSTEM_PROMPTS[agentId],
+    systemInstruction: AGENT_SYSTEM_PROMPTS[agentId] + profileContext,
   })
 
   const prompt = `Klant- en planningcontext tot nu toe:
@@ -246,11 +274,14 @@ Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
 
 // ─── 4. Manager-check tussen rondes ───────────────────────────────────────────
 
-async function handleManagerCheck(body: {
-  messages: ConversationEntry[]
-  selectedAgents?: AgentId[]
-  round: number
-}) {
+async function handleManagerCheck(
+  body: {
+    messages: ConversationEntry[]
+    selectedAgents?: AgentId[]
+    round: number
+  },
+  profileContext: string
+) {
   const { messages, selectedAgents, round } = body
   const conversation = formatConversation(messages)
 
@@ -260,11 +291,11 @@ async function handleManagerCheck(body: {
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT,
+    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
   const prompt = `${PLANNING_MANAGER_CHECK_PROMPT}
-
+${profileContext}
 INGESCHAKELDE SPECIALISTEN (gebruik alleen deze namen in follow_up):
 ${activeNames.map((n) => `- ${n}`).join('\n')}
 
@@ -295,17 +326,20 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
 
 // ─── 5. Finalize: manager schrijft het volledige plan ─────────────────────────
 
-async function handleFinalize(body: { messages: ConversationEntry[] }) {
+async function handleFinalize(
+  body: { messages: ConversationEntry[] },
+  profileContext: string
+) {
   const { messages } = body
   const conversation = formatConversation(messages)
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT,
+    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
   const prompt = `${FINAL_PLAN_PROMPT}
-
+${profileContext}
 Volledige input van klant + specialisten:
 ${conversation}
 
@@ -317,13 +351,16 @@ Schrijf nu het volledige campagneplan volgens het exacte formaat. Begin direct m
 
 // ─── 6. Bijsturen na finalize: manager past plan aan ──────────────────────────
 
-async function handleIteratePlan(body: { messages: ConversationEntry[] }) {
+async function handleIteratePlan(
+  body: { messages: ConversationEntry[] },
+  profileContext: string
+) {
   const { messages } = body
   const conversation = formatConversation(messages)
 
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT,
+    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
   const prompt = `Je bent ${MANAGER_NAME}, Campagne Manager. Je hebt al een compleet campagneplan opgeleverd. De klant geeft nu bijstuur-feedback.

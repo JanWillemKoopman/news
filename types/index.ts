@@ -36,3 +36,44 @@ export interface ConversationEntry {
   role: 'user' | 'model'
   content: string
 }
+
+export interface CompanyProfile {
+  user_id?: string
+  name: string
+  industry: string
+  description: string
+  channels: string[]
+  expertise: string[]
+  website?: string | null
+  audience?: string | null
+  usp?: string | null
+  tools?: string | null
+  budget?: string | null
+  tone_of_voice?: string | null
+  competitors?: string | null
+  goals?: string | null
+  updated_at?: string
+}
+
+export const CHANNEL_OPTIONS = [
+  'Meta Ads',
+  'Google Ads',
+  'LinkedIn',
+  'E-mail',
+  'SEO',
+  'Content / blog',
+  'Organic social',
+  'Events',
+  'Podcast',
+  'Anders',
+] as const
+
+export const EXPERTISE_OPTIONS = [
+  'Ontwerp',
+  'Copywriting',
+  'Video',
+  'Web-development',
+  'Performance marketing',
+  'Data / analytics',
+  'Anders',
+] as const

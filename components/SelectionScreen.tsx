@@ -1,28 +1,33 @@
 'use client'
 
-import { ArrowRight, Briefcase, Check, Users } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, Briefcase, Check, Pencil, Users } from 'lucide-react'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
 import type { AgentId } from '@/types'
 import AgentIcon from './AgentIcon'
+import AuthHeader from './AuthHeader'
 
 export default function SelectionScreen() {
-  const { selectedAgents, toggleAgent, selectAll, startSession } = useChatStore()
+  const { selectedAgents, toggleAgent, selectAll, startSession, companyProfile } = useChatStore()
   const allSelected = selectedAgents.length === ALL_AGENT_IDS.length
   const canStart = selectedAgents.length >= 1
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-200">
       {/* Header */}
-      <header className="px-4 pt-12 pb-8">
+      <header className="px-4 pt-6 pb-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
-              <Briefcase size={14} className="text-clay-600" />
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
+                <Briefcase size={14} className="text-clay-600" />
+              </div>
+              <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
+                Online Marketingbureau
+              </span>
             </div>
-            <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
-              Online Marketingbureau
-            </span>
+            <AuthHeader />
           </div>
           <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
             Stel je bureau-team samen
@@ -32,6 +37,23 @@ export default function SelectionScreen() {
             welke specialisten je wilt inschakelen voor jouw campagne. Standaard staat het
             volledige team aan voor een compleet plan.
           </p>
+
+          {companyProfile && (
+            <div className="mt-6 inline-flex items-center gap-3 px-4 py-2.5 rounded-full bg-cream-50 border border-cream-500 text-sm">
+              <span className="text-ink-500">
+                Werkt namens{' '}
+                <span className="font-medium text-ink-900">{companyProfile.name}</span>
+                <span className="text-ink-400"> · {companyProfile.industry}</span>
+              </span>
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 text-clay-600 hover:text-clay-700 font-medium text-xs transition-colors"
+              >
+                <Pencil size={11} />
+                Wijzigen
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

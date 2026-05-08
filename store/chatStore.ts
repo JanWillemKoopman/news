@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ALL_AGENT_IDS } from '@/lib/agents'
-import type { AgentId, Message, Phase } from '@/types'
+import type { AgentId, CompanyProfile, Message, Phase } from '@/types'
 
 interface ChatState {
   selectedAgents: AgentId[]
@@ -13,6 +13,7 @@ interface ChatState {
   intakeRound: number
   planningRound: number
   error: string | null
+  companyProfile: CompanyProfile | null
 }
 
 interface ChatActions {
@@ -26,6 +27,7 @@ interface ChatActions {
   incrementIntakeRound: () => void
   incrementPlanningRound: () => void
   resetSession: () => void
+  setCompanyProfile: (profile: CompanyProfile | null) => void
 }
 
 const initialState: ChatState = {
@@ -39,6 +41,7 @@ const initialState: ChatState = {
   intakeRound: 0,
   planningRound: 0,
   error: null,
+  companyProfile: null,
 }
 
 export const useChatStore = create<ChatState & ChatActions>()(
@@ -83,11 +86,14 @@ export const useChatStore = create<ChatState & ChatActions>()(
         set((state) => ({ planningRound: state.planningRound + 1 })),
 
       resetSession: () =>
-        set({
+        set((state) => ({
           ...initialState,
-          // bewaar selectie zodat een nieuwe sessie dezelfde keuze houdt
+          // bewaar selectie en profiel zodat een nieuwe sessie context behoudt
           selectedAgents: [...ALL_AGENT_IDS],
-        }),
+          companyProfile: state.companyProfile,
+        })),
+
+      setCompanyProfile: (companyProfile) => set({ companyProfile }),
     }),
     {
       name: 'marketing-bureau-v1',
