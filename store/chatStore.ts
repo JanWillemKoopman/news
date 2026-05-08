@@ -17,6 +17,7 @@ interface ChatState {
 
 interface ChatActions {
   toggleAgent: (id: AgentId) => void
+  selectAll: () => void
   startSession: () => void
   addMessage: (message: Message) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
@@ -52,6 +53,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
           }
           return { selectedAgents: [...state.selectedAgents, id] }
         }),
+
+      selectAll: () => set({ selectedAgents: [...ALL_AGENT_IDS] }),
 
       startSession: () =>
         set({

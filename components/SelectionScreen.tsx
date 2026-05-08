@@ -7,7 +7,8 @@ import type { AgentId } from '@/types'
 import AgentIcon from './AgentIcon'
 
 export default function SelectionScreen() {
-  const { selectedAgents, toggleAgent, startSession } = useChatStore()
+  const { selectedAgents, toggleAgent, selectAll, startSession } = useChatStore()
+  const allSelected = selectedAgents.length === ALL_AGENT_IDS.length
   const canStart = selectedAgents.length >= 1
 
   return (
@@ -48,9 +49,6 @@ export default function SelectionScreen() {
                   <Briefcase size={20} className="text-clay-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium text-clay-600 uppercase tracking-[0.15em] mb-1.5">
-                    Jouw dirigent
-                  </p>
                   <h3 className="font-serif font-medium text-xl text-ink-900 leading-tight">
                     {MANAGER_NAME}
                   </h3>
@@ -66,9 +64,20 @@ export default function SelectionScreen() {
             </div>
           </div>
 
-          <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em] mb-3 px-1">
-            Specialisten — tik om te (de)selecteren
-          </p>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">
+              Kies specialist(en)
+            </p>
+            {!allSelected && (
+              <button
+                type="button"
+                onClick={selectAll}
+                className="text-[11px] font-medium text-clay-600 hover:text-clay-700 transition-colors"
+              >
+                Alles selecteren
+              </button>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {ALL_AGENT_IDS.map((id: AgentId) => {
