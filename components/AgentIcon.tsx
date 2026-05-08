@@ -2,12 +2,12 @@ import Image from 'next/image'
 import type { AgentId } from '@/types'
 
 const PHOTO_MAP: Record<AgentId, string> = {
-  brand: '/agents/daan_hofstra.jpg',
-  content: '/agents/daan_hofstra.jpg',
-  performance: '/agents/daan_hofstra.jpg',
-  crm: '/agents/daan_hofstra.jpg',
-  ads: '/agents/daan_hofstra.jpg',
-  data: '/agents/daan_hofstra.jpg',
+  brand: '/agents/daan_hofstra.png',
+  content: '/agents/daan_hofstra.png',
+  performance: '/agents/daan_hofstra.png',
+  crm: '/agents/daan_hofstra.png',
+  ads: '/agents/daan_hofstra.png',
+  data: '/agents/daan_hofstra.png',
 }
 
 interface AgentIconProps {
