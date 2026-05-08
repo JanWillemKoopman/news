@@ -83,7 +83,7 @@ export default function SelectionScreen() {
                     'relative p-5 rounded-2xl border text-left w-full transition-all duration-200 group',
                     isSelected
                       ? `bg-cream-50 ${agent.borderColor} shadow-sm`
-                      : 'bg-cream-100 border-cream-500 hover:border-cream-600 hover:bg-cream-50',
+                      : 'bg-cream-300 border-cream-500 hover:border-cream-600 hover:bg-cream-400 opacity-70',
                   ].join(' ')}
                 >
                   {isSelected && (
@@ -96,8 +96,10 @@ export default function SelectionScreen() {
 
                   <div
                     className={[
-                      'w-12 h-12 rounded-full overflow-hidden mb-4 ring-2 ring-offset-2 ring-offset-cream-50 transition-all duration-200',
-                      isSelected ? agent.borderColor.replace('border-', 'ring-') : 'ring-cream-500',
+                      'w-12 h-12 rounded-full overflow-hidden mb-4 ring-2 ring-offset-2 transition-all duration-200',
+                      isSelected
+                        ? `${agent.borderColor.replace('border-', 'ring-')} ring-offset-cream-50`
+                        : 'ring-cream-500 ring-offset-cream-300',
                     ].join(' ')}
                   >
                     <AgentIcon agentId={agent.id} size={48} />
