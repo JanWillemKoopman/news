@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Briefcase, Check, Pencil, Users } from 'lucide-react'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
@@ -12,6 +13,10 @@ export default function SelectionScreen() {
   const { selectedAgents, toggleAgent, selectAll, startSession, companyProfile } = useChatStore()
   const allSelected = selectedAgents.length === ALL_AGENT_IDS.length
   const canStart = selectedAgents.length >= 1
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-200">
@@ -193,7 +198,7 @@ export default function SelectionScreen() {
                 : 'bg-cream-400 text-ink-400 cursor-not-allowed',
             ].join(' ')}
           >
-            Start campagne-briefing
+            Start sessie
             <ArrowRight size={15} />
           </button>
         </div>

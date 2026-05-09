@@ -78,6 +78,18 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
+  // Reset window scroll bij entry zodat sticky header/footer correct uitlijnen
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  // Geef focus terug aan de input zodra een verzoek klaar is
+  useEffect(() => {
+    if (!isLoading) {
+      inputRef.current?.focus()
+    }
+  }, [isLoading])
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const buildHistory = (msgs: Message[]): ConversationEntry[] =>
@@ -395,6 +407,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
                 {retryPayload && (
                   <button
                     onClick={handleRetry}
+                    aria-label="Probeer opnieuw bericht te versturen"
                     className="mt-2 flex items-center gap-1.5 text-xs font-medium text-clay-700 hover:text-clay-600 transition-colors"
                   >
                     <RefreshCw size={11} />
@@ -426,6 +439,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
                   ? 'Beschrijf je gewenste campagne...'
                   : 'Jouw antwoord aan de Campagne Manager...'
               }
+              aria-label="Jouw bericht aan de Campagne Manager"
               disabled={isLoading}
               maxLength={4000}
               className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50"
@@ -433,6 +447,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
             <button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
+              aria-label="Bericht verzenden"
               className="w-11 h-11 rounded-full bg-clay-500 hover:bg-clay-600 disabled:bg-cream-400 flex items-center justify-center transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed shadow-sm"
             >
               <Send
