@@ -198,7 +198,7 @@ export default function SelectionScreen() {
                 : 'bg-cream-400 text-ink-400 cursor-not-allowed',
             ].join(' ')}
           >
-            Start campagne-briefing
+            Start sessie
             <ArrowRight size={15} />
           </button>
         </div>
