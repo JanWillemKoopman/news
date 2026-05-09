@@ -36,6 +36,7 @@ export default function ChatScreen() {
   } = useChatStore()
 
   const [inputValue, setInputValue] = useState('')
+  const [inputFocused, setInputFocused] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [retryPayload, setRetryPayload] = useState<{
     userMessage: string
@@ -417,8 +418,10 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
           <form onSubmit={handleSubmit} className="flex items-end gap-3">
             <textarea
               ref={inputRef}
-              rows={4}
+              rows={inputFocused ? 4 : 1}
               value={inputValue}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
