@@ -97,7 +97,7 @@ function formatConversation(messages: ConversationEntry[]): string {
     .join('\n\n')
 }
 
-async function loadCompanyProfile(): Promise<CompanyProfile | null> {
+async function loadCompanyProfile(sessionId?: string): Promise<CompanyProfile | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return null
   }
@@ -107,6 +107,21 @@ async function loadCompanyProfile(): Promise<CompanyProfile | null> {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return null
+
+    // Als de oproep bij een specifieke sessie hoort: gebruik de bevroren snapshot
+    // zodat een latere wijziging van het bedrijfsprofiel oude sessies niet vervuilt.
+    if (sessionId) {
+      const { data: session } = await supabase
+        .from('chat_sessions')
+        .select('company_profile_snapshot')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (session) {
+        return (session.company_profile_snapshot as CompanyProfile | null) ?? null
+      }
+    }
+
     const { data } = await supabase
       .from('company_profiles')
       .select('*')
@@ -121,7 +136,9 @@ async function loadCompanyProfile(): Promise<CompanyProfile | null> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const profile = await loadCompanyProfile()
+    const sessionId =
+      typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : undefined
+    const profile = await loadCompanyProfile(sessionId)
     const profileContext = briefCompanyContext(profile)
     switch (body.action) {
       case 'intake_turn':
