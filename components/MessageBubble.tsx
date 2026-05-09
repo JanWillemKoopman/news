@@ -2,6 +2,7 @@ import { Briefcase, FileText } from 'lucide-react'
 import { AGENTS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 import type { Message } from '@/types'
 import AgentIcon from './AgentIcon'
+import PlanActions from './PlanActions'
 
 interface MessageBubbleProps {
   message: Message
@@ -136,6 +137,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         </div>
         <div className="bg-cream-50 border border-clay-500/30 rounded-2xl p-6 shadow-sm">
           <RichText content={message.content} />
+          <PlanActions content={message.content} />
         </div>
       </div>
     )

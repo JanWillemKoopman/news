@@ -36,13 +36,68 @@ function safeJSON<T>(text: string, fallback: T): T {
   }
 }
 
+// ─── NDJSON streaming helpers ────────────────────────────────────────────────
+
+type StreamWriter = {
+  send: (event: Record<string, unknown>) => void
+  close: () => void
+  fail: (message: string) => void
+}
+
+function ndjsonResponse(
+  run: (writer: StreamWriter) => Promise<void>
+): Response {
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const writer: StreamWriter = {
+        send: (event) =>
+          controller.enqueue(encoder.encode(JSON.stringify(event) + '\n')),
+        close: () => controller.close(),
+        fail: (message) => {
+          controller.enqueue(
+            encoder.encode(JSON.stringify({ type: 'error', message }) + '\n')
+          )
+          controller.close()
+        },
+      }
+      try {
+        await run(writer)
+        writer.send({ type: 'done' })
+        writer.close()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Onbekende fout'
+        console.error('[stream]', err)
+        writer.fail(message)
+      }
+    },
+  })
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'X-Content-Type-Options': 'nosniff',
+      'Cache-Control': 'no-store',
+    },
+  })
+}
+
+async function pumpModelStream(
+  writer: StreamWriter,
+  result: { stream: AsyncIterable<{ text: () => string }> }
+): Promise<void> {
+  for await (const chunk of result.stream) {
+    const text = chunk.text()
+    if (text) writer.send({ type: 'chunk', text })
+  }
+}
+
 function formatConversation(messages: ConversationEntry[]): string {
   return messages
     .map((m) => (m.role === 'user' ? `Klant: ${m.content}` : m.content))
     .join('\n\n')
 }
 
-async function loadCompanyProfile(): Promise<CompanyProfile | null> {
+async function loadCompanyProfile(sessionId?: string): Promise<CompanyProfile | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return null
   }
@@ -52,6 +107,21 @@ async function loadCompanyProfile(): Promise<CompanyProfile | null> {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return null
+
+    // Als de oproep bij een specifieke sessie hoort: gebruik de bevroren snapshot
+    // zodat een latere wijziging van het bedrijfsprofiel oude sessies niet vervuilt.
+    if (sessionId) {
+      const { data: session } = await supabase
+        .from('chat_sessions')
+        .select('company_profile_snapshot')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (session) {
+        return (session.company_profile_snapshot as CompanyProfile | null) ?? null
+      }
+    }
+
     const { data } = await supabase
       .from('company_profiles')
       .select('*')
@@ -66,7 +136,9 @@ async function loadCompanyProfile(): Promise<CompanyProfile | null> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const profile = await loadCompanyProfile()
+    const sessionId =
+      typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : undefined
+    const profile = await loadCompanyProfile(sessionId)
     const profileContext = briefCompanyContext(profile)
     switch (body.action) {
       case 'intake_turn':
@@ -92,16 +164,17 @@ export async function POST(req: NextRequest) {
 
 // ─── 1. Intake: Campagne Manager beslist + reageert ────────────────────────────
 
-async function handleIntakeTurn(
+function handleIntakeTurn(
   body: { messages: ConversationEntry[]; intakeRound: number },
   profileContext: string
 ) {
   const { messages, intakeRound } = body
   const conversation = formatConversation(messages)
 
-  // Step 1: router decides whether to keep asking or move to planning
-  const routerModel = genAI.getGenerativeModel({ model: MODEL })
-  const routerPrompt = `${INTAKE_ROUTER_PROMPT}
+  return ndjsonResponse(async (writer) => {
+    // Step 1: router decides whether to keep asking or move to planning
+    const routerModel = genAI.getGenerativeModel({ model: MODEL })
+    const routerPrompt = `${INTAKE_ROUTER_PROMPT}
 ${profileContext}
 Huidige intake-ronde: ${intakeRound} (ronde 5 dwingt automatisch start_planning)
 
@@ -110,32 +183,31 @@ ${conversation}
 
 Geef je JSON-beslissing.`
 
-  const routerRes = await routerModel.generateContent(routerPrompt)
-  const decision = safeJSON<{ action: 'ask_followup' | 'start_planning'; reason?: string }>(
-    routerRes.response.text(),
-    { action: intakeRound >= 5 ? 'start_planning' : 'ask_followup' }
-  )
+    const routerRes = await routerModel.generateContent(routerPrompt)
+    const decision = safeJSON<{ action: 'ask_followup' | 'start_planning'; reason?: string }>(
+      routerRes.response.text(),
+      { action: intakeRound >= 5 ? 'start_planning' : 'ask_followup' }
+    )
 
-  // Force planning after 5 rounds
-  if (intakeRound >= 5) decision.action = 'start_planning'
+    if (intakeRound >= 5) decision.action = 'start_planning'
 
-  if (decision.action === 'start_planning') {
-    return NextResponse.json({
-      decision: 'start_planning',
-      managerMessage: null,
+    if (decision.action === 'start_planning') {
+      writer.send({ type: 'decision', action: 'start_planning' })
+      return
+    }
+
+    writer.send({ type: 'decision', action: 'ask_followup' })
+
+    // Step 2: manager asks a follow-up question
+    const managerModel = genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
     })
-  }
 
-  // Step 2: manager asks a follow-up question
-  const managerModel = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
-  })
+    const isFirstTurn = messages.filter((m) => m.role === 'user').length <= 1
 
-  const isFirstTurn = messages.filter((m) => m.role === 'user').length <= 1
-
-  const managerPrompt = isFirstTurn
-    ? `De klant heeft zojuist zijn/haar campagne-aanvraag ingediend. Dit is je eerste reactie.
+    const managerPrompt = isFirstTurn
+      ? `De klant heeft zojuist zijn/haar campagne-aanvraag ingediend. Dit is je eerste reactie.
 
 Briefing van de klant:
 ${conversation}
@@ -147,7 +219,7 @@ Schrijf je antwoord:
 - Sluit af met een uitnodigende zin om de antwoorden te delen.
 
 Hou het strak: geen overdaad aan tekst. Schrijf in het Nederlands, jij-vorm.`
-    : `De klant heeft net gereageerd. Stel als ${MANAGER_NAME} de volgende set gerichte vervolgvragen om de intake compleet te maken.
+      : `De klant heeft net gereageerd. Stel als ${MANAGER_NAME} de volgende set gerichte vervolgvragen om de intake compleet te maken.
 
 Gespreksgeschiedenis:
 ${conversation}
@@ -159,10 +231,8 @@ Regels:
 - Eventueel 1 korte zin van bevestiging vooraf, daarna direct de vragen.
 - Schrijf in het Nederlands, jij-vorm.`
 
-  const managerRes = await managerModel.generateContent(managerPrompt)
-  return NextResponse.json({
-    decision: 'ask_followup',
-    managerMessage: managerRes.response.text().trim(),
+    const managerRes = await managerModel.generateContentStream(managerPrompt)
+    await pumpModelStream(writer, managerRes)
   })
 }
 
@@ -224,7 +294,7 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
 
 // ─── 3. Specialist beurt ──────────────────────────────────────────────────────
 
-async function handleSpecialistTurn(
+function handleSpecialistTurn(
   body: {
     agentName: string
     briefing: string
@@ -264,11 +334,10 @@ ${SPECIALIST_TURN_INSTRUCTIONS}
 
 Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
 
-  const res = await model.generateContent(prompt)
-  return NextResponse.json({
-    response: res.response.text().trim(),
-    agentId,
-    agentName,
+  return ndjsonResponse(async (writer) => {
+    writer.send({ type: 'meta', agentId, agentName })
+    const res = await model.generateContentStream(prompt)
+    await pumpModelStream(writer, res)
   })
 }
 
@@ -326,7 +395,7 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
 
 // ─── 5. Finalize: manager schrijft het volledige plan ─────────────────────────
 
-async function handleFinalize(
+function handleFinalize(
   body: { messages: ConversationEntry[] },
   profileContext: string
 ) {
@@ -345,13 +414,15 @@ ${conversation}
 
 Schrijf nu het volledige campagneplan volgens het exacte formaat. Begin direct met "# Campagneplan" — geen voorwoord.`
 
-  const res = await model.generateContent(prompt)
-  return NextResponse.json({ plan: res.response.text().trim() })
+  return ndjsonResponse(async (writer) => {
+    const res = await model.generateContentStream(prompt)
+    await pumpModelStream(writer, res)
+  })
 }
 
 // ─── 6. Bijsturen na finalize: manager past plan aan ──────────────────────────
 
-async function handleIteratePlan(
+function handleIteratePlan(
   body: { messages: ConversationEntry[] },
   profileContext: string
 ) {
@@ -376,6 +447,8 @@ TAAK:
 
 Schrijf in het Nederlands, jij-vorm. Begin direct met de wijzigingsregel en daarna het plan. Geen voorwoord.`
 
-  const res = await model.generateContent(prompt)
-  return NextResponse.json({ plan: res.response.text().trim() })
+  return ndjsonResponse(async (writer) => {
+    const res = await model.generateContentStream(prompt)
+    await pumpModelStream(writer, res)
+  })
 }

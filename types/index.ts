@@ -78,3 +78,22 @@ export const EXPERTISE_OPTIONS = [
   'Data / analytics',
   'Anders',
 ] as const
+
+export interface ChatSession {
+  id: string
+  title: string
+  preview: string | null
+  phase: Phase
+  intake_round: number
+  planning_round: number
+  selected_agents: AgentId[]
+  messages: Message[]
+  company_profile_snapshot: CompanyProfile | null
+  created_at: string
+  updated_at: string
+}
+
+export type ChatSessionSummary = Pick<
+  ChatSession,
+  'id' | 'title' | 'preview' | 'phase' | 'updated_at' | 'created_at'
+>
