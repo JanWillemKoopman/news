@@ -11,6 +11,7 @@ export interface Agent {
   name: string
   title: string
   description: string
+  longDescription: string
   color: string
   bgColor: string
   borderColor: string
