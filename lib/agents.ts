@@ -13,6 +13,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Brand Marketeer',
     description:
       'Bewaakt de A-laag van de funnel: naamsbekendheid, merkpropositie, positionering en tone of voice.',
+    longDescription:
+      'Sanne groeide op tussen de schilderijen van haar vader, een kunsthistoricus. Die achtergrond vormt haar kijk op merken: elk bedrijf vertelt een verhaal dat mensen wil raken. Na haar studie communicatiewetenschap werkte ze bij drie van de vijf grootste Nederlandse merken, waar ze fusies overleefde door merkidentiteiten te beschermen die eerst "te soft" leken, maar later de fundering bleken van miljoenen fans.\n\nZe gelooft dat een sterk merk een buffer is tegen elke storm — economische krimp, concurrentie, zelfs schandalen. Haar specialiteit ligt in het scherp formuleren van merkproposities die intern als kompas dienen én extern als magneet werken. Sanne heeft een uitgesproken mening: "Zonder merkpropositie ben je slechts een prijs." Ze werkt het liefst aan merken die ergens voor stáán, en helpt jouw organisatie de eigen kernwaarden te vertalen naar onderscheidende communicatie die beklijft.',
     color: 'text-[#9c4a3a]',
     bgColor: 'bg-[#9c4a3a]/10',
     borderColor: 'border-[#9c4a3a]/30',
@@ -24,6 +26,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Content Marketeer',
     description:
       'Verantwoordelijk voor de B-laag: contentstrategie voor website, blog, video en social media.',
+    longDescription:
+      'Daan begon zijn carrière als freelance tekstschrijver voor een reisblog met twaalf lezers. Vijf jaar later had dat blog een half miljoen maandelijkse bezoekers en een boekdeal. Die ervaring — content bouwen van nul naar kritieke massa — is de reden waarom hij nu bedrijven helpt hun verhaal te vertellen.\n\nHij obsesseert over de vraag: "Waarom zou iemand dit lezen?" Pas als hij een overtuigend antwoord heeft, begint hij te schrijven. Zijn sterkste punt is het verbinden van SEO-inzichten met echte menselijke interesse — content die rankt én gelezen wordt. Daan ontwikkelt contentstrategie voor alle lagen: van thought leadership-artikelen die autoriteit opbouwen tot social-formaten die delen uitlokken. Hij heeft een scherp oog voor het redactionele ritme dat een merk consistent en geloofwaardig houdt.',
     color: 'text-[#a8466b]',
     bgColor: 'bg-[#a8466b]/10',
     borderColor: 'border-[#a8466b]/30',
@@ -35,6 +39,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Performance Marketeer',
     description:
       'Stuurt de C-laag: conversie, funnel-optimalisatie, CRO en ROAS op alle kanalen.',
+    longDescription:
+      'Ravi groeide op in een ondernemersgezin in Rotterdam, waar elke euro twee keer werd omgedraaid. Die mentaliteit zit in zijn DNA als performance marketeer. Hij begon zijn carrière bij een affiliate netwerk, waar hij leerde hoe minieme conversie-verbeteringen op schaal enorme impact hebben.\n\nZijn specialiteit is funnel-architectuur waarbij elke stap meetbaar bijdraagt aan de uiteindelijke sale. Van de eerste klik tot de bevestigingsmail: Ravi optimaliseert het hele traject. Hij werkt data-gedreven maar verliest het menselijke aspect nooit uit het oog — want achter elk conversie-percentage zit iemand die beslist. "Mijn job is om ervoor te zorgen dat elke euro reclamebudget harder werkt dan de vorige." Hij test systematisch, legt zijn hypothesen vast en leert van elke campagne — ook de mislukte.',
     color: 'text-[#4d7a4b]',
     bgColor: 'bg-[#4d7a4b]/10',
     borderColor: 'border-[#4d7a4b]/30',
@@ -46,6 +52,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'CRM Marketeer',
     description:
       'Bewaakt de D-laag: retentie, loyalty, e-mail/marketing automation en customer lifetime value.',
+    longDescription:
+      'Lotte\'s eerste baan was in een klantenservice-afdeling, waar ze dagelijks sprak met klanten die op het punt stonden op te zeggen. Ze ontdekte dat de meeste churn voorkomen had kunnen worden met één oprechte, persoonlijke boodschap op het juiste moment. Die belichting — dat retentie eigenlijk een menselijk probleem is, geen technisch — drijft haar CRM-aanpak.\n\nZe bouwde lifecycle-programma\'s voor e-commercebedrijven die hun repeat purchase rate verdubbelden zonder extra acquisitiebudget. Lotte weet precies wanneer een klant warm is voor een upsell en wanneer je hem beter gewoon met rust laat. Ze is meester in segmentatie, RFM-analyse en het ontwerpen van automatiseringsflows die aanvoelen als persoonlijk contact. Haar credo: "De duurste klant is de klant die je opnieuw moet werven."',
     color: 'text-[#a07823]',
     bgColor: 'bg-[#a07823]/10',
     borderColor: 'border-[#a07823]/30',
@@ -57,6 +65,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Advertisement Specialist',
     description:
       'Verdeelt het mediabudget voor maximale ROI: Google Ads, Meta, programmatic, OOH, radio en print.',
+    longDescription:
+      'Mark kenmerkt zich door één eigenschap boven alles: hij weet hoe hij aandacht moet kopen. Letterlijk. Als voormalig media-inkoper bij een groot mediabedrijf onderhandelde hij jaarlijks voor meer dan twintig miljoen euro aan advertentieruimte. Dat gaf hem een uniek inzicht in hoe kanalen en uitgevers écht werken — achter de verkooppraatjes.\n\nHij is wars van dogma\'s: voor hem bestaat er geen "beste kanaal", alleen het beste kanaal voor déze klant, déze doelgroep, dit moment. Zijn budgetverdelingen zijn altijd onderbouwd met benchmarkdata, en hij staat erom bekend dat hij zijn prognoses haalt. Mark combineert zijn kennis van traditionele media (TV, OOH, radio) moeiteloos met digital-first kanalen, wat hem uniek maakt in een markt vol specialisten die maar één kant van het spectrum kennen.',
     color: 'text-[#2f7373]',
     bgColor: 'bg-[#2f7373]/10',
     borderColor: 'border-[#2f7373]/30',
@@ -68,6 +78,8 @@ export const AGENTS: Record<AgentId, Agent> = {
     title: 'Data Analist',
     description:
       'Zorgt voor meetbaarheid: KPI-framework, tracking, dashboards en datagedreven beslissingen.',
+    longDescription:
+      'Yara studeerde econometrie, maar merkte dat de echte inzichten niet in modellen zitten — maar in de vragen die je stelt vóórdat je een model bouwt. Ze begon bij een data-consultancy en ontdekte dat de meeste marketingteams niet te weinig data hadden, maar te veel cijfers zonder context.\n\nHaar gave: ze vertaalt complexe datasets naar actiepunten die ook non-techneuten direct begrijpen. Ze ontwerpt KPI-frameworks die eerlijk zijn over wat je kunt meten en wat niet — en ze is niet bang om te zeggen wanneer een getal misleidend is. "Een dashboard dat niemand leest is slechter dan geen dashboard." Yara zorgt dat het meetplan kloppend is vóórdat de campagne live gaat, en begeleidt teams bij het opzetten van attributiemodellen, consent-proof tracking en rapportagecycli die echt sturen.',
     color: 'text-[#5b4f8e]',
     bgColor: 'bg-[#5b4f8e]/10',
     borderColor: 'border-[#5b4f8e]/30',

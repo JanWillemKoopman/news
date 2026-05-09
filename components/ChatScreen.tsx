@@ -5,7 +5,6 @@ import { AlertCircle, ArrowLeft, RefreshCw, Send } from 'lucide-react'
 import {
   AGENTS,
   AGENT_NAME_TO_ID,
-  ALL_AGENT_IDS,
   MANAGER_NAME,
 } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
@@ -44,7 +43,8 @@ export default function ChatScreen() {
   } | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const prevLoading = useRef(false)
   const initialized = useRef(false)
 
   // Welkomstbericht van de Campagne Manager bij eerste mount
@@ -83,11 +83,12 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
     window.scrollTo(0, 0)
   }, [])
 
-  // Geef focus terug aan de input zodra een verzoek klaar is
+  // Geef focus terug aan de input nadat een verzoek klaar is (niet bij initieel laden)
   useEffect(() => {
-    if (!isLoading) {
+    if (prevLoading.current && !isLoading) {
       inputRef.current?.focus()
     }
+    prevLoading.current = isLoading
   }, [isLoading])
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -353,10 +354,6 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const teamList = (selectedAgents.length > 0 ? selectedAgents : ALL_AGENT_IDS).map(
-    (id) => AGENTS[id]
-  )
-
   return (
     <div className="h-screen flex flex-col bg-cream-200">
       {/* Header */}
@@ -371,17 +368,9 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
           </button>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em] mb-0.5">
+            <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">
               Campagne-bureau · {MANAGER_NAME}
             </p>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {teamList.map((agent, i) => (
-                <span key={agent.id} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="text-cream-600">·</span>}
-                  <span className={`text-xs font-medium ${agent.color}`}>{agent.name}</span>
-                </span>
-              ))}
-            </div>
           </div>
 
           <div className="text-[11px] px-2.5 py-1 rounded-full border flex-shrink-0 text-ink-600 bg-cream-50 border-cream-500">
@@ -426,10 +415,17 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
       <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
         <div className="max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="flex items-end gap-3">
-            <input
+            <textarea
               ref={inputRef}
+              rows={4}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSubmit(e as unknown as React.FormEvent)
+                }
+              }}
               placeholder={
                 phase === 'final'
                   ? 'Geef bijstuur-feedback op het plan...'
@@ -442,7 +438,7 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
               aria-label="Jouw bericht aan de Campagne Manager"
               disabled={isLoading}
               maxLength={4000}
-              className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50"
+              className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
             />
             <button
               type="submit"

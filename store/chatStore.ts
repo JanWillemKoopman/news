@@ -31,8 +31,7 @@ interface ChatActions {
 }
 
 const initialState: ChatState = {
-  // Standaard staat het volledige bureau aan; de klant kan specialisten uitvinken.
-  selectedAgents: [...ALL_AGENT_IDS],
+  selectedAgents: [],
   messages: [],
   screen: 'selection',
   isTyping: false,
@@ -88,8 +87,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
       resetSession: () =>
         set((state) => ({
           ...initialState,
-          // bewaar selectie en profiel zodat een nieuwe sessie context behoudt
-          selectedAgents: [...ALL_AGENT_IDS],
           companyProfile: state.companyProfile,
         })),
 
@@ -98,7 +95,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
     {
       name: 'marketing-bureau-v1',
       partialize: (state) => ({
-        selectedAgents: state.selectedAgents,
         messages: state.messages,
         screen: state.screen,
         phase: state.phase,

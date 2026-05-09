@@ -1,18 +1,20 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Briefcase, Check, Pencil, Users } from 'lucide-react'
+import { ArrowRight, Briefcase, Check, Info, Pencil, Users } from 'lucide-react'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
-import type { AgentId } from '@/types'
+import type { Agent, AgentId } from '@/types'
 import AgentIcon from './AgentIcon'
+import AgentInfoModal from './AgentInfoModal'
 import AuthHeader from './AuthHeader'
 
 export default function SelectionScreen() {
   const { selectedAgents, toggleAgent, selectAll, startSession, companyProfile } = useChatStore()
   const allSelected = selectedAgents.length === ALL_AGENT_IDS.length
   const canStart = selectedAgents.length >= 1
+  const [infoAgent, setInfoAgent] = useState<Agent | null>(null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -39,8 +41,7 @@ export default function SelectionScreen() {
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
             {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
-            welke specialisten je wilt inschakelen voor jouw campagne. Standaard staat het
-            volledige team aan voor een compleet plan.
+            welke specialisten je wilt inschakelen voor jouw campagne.
           </p>
 
           {companyProfile && (
@@ -111,15 +112,17 @@ export default function SelectionScreen() {
               const agent = AGENTS[id]
               const isSelected = selectedAgents.includes(id)
               return (
-                <button
+                <div
                   key={agent.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleAgent(id)}
-                  type="button"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleAgent(id) }}
                   className={[
-                    'relative p-5 rounded-2xl border text-left w-full transition-all duration-200 group',
+                    'relative p-5 rounded-2xl border text-left w-full transition-all duration-200 group cursor-pointer',
                     isSelected
                       ? `bg-cream-50 ${agent.borderColor} shadow-sm`
-                      : 'bg-cream-300 border-cream-500 hover:border-cream-600 hover:bg-cream-400 opacity-70',
+                      : 'bg-cream-300 border-cream-500 hover:border-cream-600 hover:bg-cream-400 opacity-90',
                   ].join(' ')}
                 >
                   {isSelected && (
@@ -129,6 +132,20 @@ export default function SelectionScreen() {
                       <Check size={10} className={agent.color} strokeWidth={3} />
                     </span>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setInfoAgent(agent) }}
+                    aria-label={`Meer info over ${agent.name}`}
+                    className={[
+                      'absolute bottom-4 right-4 w-6 h-6 rounded-full flex items-center justify-center border transition-colors',
+                      isSelected
+                        ? `${agent.bgColor} ${agent.borderColor} hover:opacity-80`
+                        : 'bg-cream-200 border-cream-500 hover:bg-cream-300',
+                    ].join(' ')}
+                  >
+                    <Info size={11} className={isSelected ? agent.color : 'text-ink-500'} />
+                  </button>
 
                   <div
                     className={[
@@ -155,10 +172,10 @@ export default function SelectionScreen() {
                   >
                     {agent.title}
                   </p>
-                  <p className="text-xs text-ink-500 leading-relaxed line-clamp-3">
+                  <p className="text-xs text-ink-500 leading-relaxed line-clamp-3 pr-2">
                     {agent.description}
                   </p>
-                </button>
+                </div>
               )
             })}
           </div>
@@ -170,6 +187,10 @@ export default function SelectionScreen() {
           )}
         </div>
       </main>
+
+      {infoAgent && (
+        <AgentInfoModal agent={infoAgent} onClose={() => setInfoAgent(null)} />
+      )}
 
       {/* Sticky footer CTA */}
       <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
