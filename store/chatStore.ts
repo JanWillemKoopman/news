@@ -21,6 +21,7 @@ interface ChatActions {
   selectAll: () => void
   startSession: () => void
   addMessage: (message: Message) => void
+  updateMessageContent: (id: string, content: string) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
   setError: (error: string | null) => void
   setPhase: (phase: Phase) => void
@@ -70,6 +71,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       addMessage: (message) =>
         set((state) => ({ messages: [...state.messages, message] })),
+
+      updateMessageContent: (id, content) =>
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.id === id ? { ...m, content } : m
+          ),
+        })),
 
       setTyping: (isTyping, agentName) =>
         set({ isTyping, typingAgent: agentName ?? null }),

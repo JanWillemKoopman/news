@@ -27,6 +27,7 @@ export default function ChatScreen() {
     phase,
     error,
     addMessage,
+    updateMessageContent,
     setTyping,
     setError,
     setPhase,
@@ -121,6 +122,56 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
     return res.json() as Promise<T>
   }
 
+  // NDJSON stream-events van de backend
+  type StreamEvent =
+    | { type: 'meta'; agentId?: AgentId; agentName?: string }
+    | { type: 'decision'; action: 'ask_followup' | 'start_planning' }
+    | { type: 'chunk'; text: string }
+    | { type: 'done' }
+    | { type: 'error'; message: string }
+
+  async function* streamApi(
+    action: string,
+    payload: object
+  ): AsyncGenerator<StreamEvent> {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload }),
+    })
+    if (!res.ok || !res.body) throw new Error(`Verzoek mislukt (${res.status})`)
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    const parseLine = (line: string): StreamEvent | null => {
+      const trimmed = line.trim()
+      if (!trimmed) return null
+      try {
+        return JSON.parse(trimmed) as StreamEvent
+      } catch {
+        return null
+      }
+    }
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let nl = buffer.indexOf('\n')
+      while (nl !== -1) {
+        const line = buffer.slice(0, nl)
+        buffer = buffer.slice(nl + 1)
+        const event = parseLine(line)
+        if (event) yield event
+        nl = buffer.indexOf('\n')
+      }
+    }
+    const tail = parseLine(buffer)
+    if (tail) yield tail
+  }
+
   // ── Specialist beurt afhandelen ──────────────────────────────────────────
 
   const runSpecialistTurn = useCallback(
@@ -130,32 +181,53 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
 
       setTyping(true, agentName)
 
-      const { response, agentId } = await callApi<{
-        response: string
-        agentId: AgentId
-        agentName: string
-      }>('specialist_turn', {
+      const messageId = crypto.randomUUID()
+      let buffer = ''
+      let added = false
+      let agentId: AgentId | undefined =
+        AGENT_NAME_TO_ID[agentName] as AgentId | undefined
+
+      for await (const event of streamApi('specialist_turn', {
         agentName,
         briefing,
         messages: history,
         round,
-      })
+      })) {
+        if (event.type === 'meta') {
+          if (event.agentId) agentId = event.agentId
+        } else if (event.type === 'chunk') {
+          buffer += event.text
+          if (!added) {
+            setTyping(false)
+            addMessage({
+              id: messageId,
+              role: 'agent',
+              agentId,
+              agentName,
+              content: buffer,
+              timestamp: Date.now(),
+              phase: 'planning',
+            })
+            added = true
+          } else {
+            updateMessageContent(messageId, buffer)
+          }
+        } else if (event.type === 'error') {
+          throw new Error(event.message)
+        }
+      }
 
       setTyping(false)
-      addMessage({
-        id: crypto.randomUUID(),
-        role: 'agent',
-        agentId,
-        agentName,
-        content: response,
-        timestamp: Date.now(),
-        phase: 'planning',
-      })
+      if (added) {
+        // Trim eventuele trailing whitespace voor nette opslag
+        const trimmed = buffer.trim()
+        if (trimmed !== buffer) updateMessageContent(messageId, trimmed)
+      }
 
       // Korte pauze voor render-rust
       await new Promise((r) => setTimeout(r, 90))
     },
-    [addMessage, setTyping]
+    [addMessage, updateMessageContent, setTyping]
   )
 
   // ── Planning loop: kickoff → ronde 1 → manager check → eventueel ronde 2 → finalize
@@ -227,23 +299,49 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
       }
     }
 
-    // Finalize: manager schrijft compleet plan
+    // Finalize: manager schrijft compleet plan (streamend)
     setTyping(true, MANAGER_NAME)
-    const { plan: finalPlan } = await callApi<{ plan: string }>('finalize', {
-      messages: buildHistory(useChatStore.getState().messages),
-    })
-    setTyping(false)
+    const finalId = crypto.randomUUID()
+    let finalBuffer = ''
+    let finalAdded = false
 
-    addMessage({
-      id: crypto.randomUUID(),
-      role: 'plan',
-      content: finalPlan,
-      timestamp: Date.now(),
-      phase: 'final',
-    })
+    for await (const event of streamApi('finalize', {
+      messages: buildHistory(useChatStore.getState().messages),
+    })) {
+      if (event.type === 'chunk') {
+        finalBuffer += event.text
+        if (!finalAdded) {
+          setTyping(false)
+          addMessage({
+            id: finalId,
+            role: 'plan',
+            content: finalBuffer,
+            timestamp: Date.now(),
+            phase: 'final',
+          })
+          finalAdded = true
+        } else {
+          updateMessageContent(finalId, finalBuffer)
+        }
+      } else if (event.type === 'error') {
+        throw new Error(event.message)
+      }
+    }
+    setTyping(false)
+    if (finalAdded) {
+      const trimmed = finalBuffer.trim()
+      if (trimmed !== finalBuffer) updateMessageContent(finalId, trimmed)
+    }
 
     setPhase('final')
-  }, [addMessage, setTyping, setPhase, incrementPlanningRound, runSpecialistTurn])
+  }, [
+    addMessage,
+    updateMessageContent,
+    setTyping,
+    setPhase,
+    incrementPlanningRound,
+    runSpecialistTurn,
+  ])
 
   // ── Intake loop: manager beslist of doorvragen of starten ────────────────
 
@@ -252,47 +350,91 @@ Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
     const history = buildHistory(useChatStore.getState().messages)
     const round = useChatStore.getState().intakeRound + 1
 
-    const { decision, managerMessage } = await callApi<{
-      decision: 'ask_followup' | 'start_planning'
-      managerMessage: string | null
-    }>('intake_turn', { messages: history, intakeRound: round })
+    let decision: 'ask_followup' | 'start_planning' | null = null
+    const messageId = crypto.randomUUID()
+    let buffer = ''
+    let added = false
 
+    for await (const event of streamApi('intake_turn', {
+      messages: history,
+      intakeRound: round,
+    })) {
+      if (event.type === 'decision') {
+        decision = event.action
+      } else if (event.type === 'chunk') {
+        buffer += event.text
+        if (!added) {
+          setTyping(false)
+          addMessage({
+            id: messageId,
+            role: 'manager',
+            content: buffer,
+            timestamp: Date.now(),
+            phase: 'intake',
+          })
+          added = true
+        } else {
+          updateMessageContent(messageId, buffer)
+        }
+      } else if (event.type === 'error') {
+        throw new Error(event.message)
+      }
+    }
     setTyping(false)
+    if (added) {
+      const trimmed = buffer.trim()
+      if (trimmed !== buffer) updateMessageContent(messageId, trimmed)
+    }
 
     if (decision === 'start_planning') {
       await runPlanningLoop()
       return
     }
-
-    if (managerMessage) {
-      addMessage({
-        id: crypto.randomUUID(),
-        role: 'manager',
-        content: managerMessage,
-        timestamp: Date.now(),
-        phase: 'intake',
-      })
-    }
     incrementIntakeRound()
-  }, [addMessage, setTyping, runPlanningLoop, incrementIntakeRound])
+  }, [
+    addMessage,
+    updateMessageContent,
+    setTyping,
+    runPlanningLoop,
+    incrementIntakeRound,
+  ])
 
   // ── Bijsturen: manager past plan aan ─────────────────────────────────────
 
   const runIteration = useCallback(async () => {
     setTyping(true, MANAGER_NAME)
-    const { plan } = await callApi<{ plan: string }>('iterate_plan', {
-      messages: buildHistory(useChatStore.getState().messages),
-    })
-    setTyping(false)
+    const messageId = crypto.randomUUID()
+    let buffer = ''
+    let added = false
 
-    addMessage({
-      id: crypto.randomUUID(),
-      role: 'plan',
-      content: plan,
-      timestamp: Date.now(),
-      phase: 'final',
-    })
-  }, [addMessage, setTyping])
+    for await (const event of streamApi('iterate_plan', {
+      messages: buildHistory(useChatStore.getState().messages),
+    })) {
+      if (event.type === 'chunk') {
+        buffer += event.text
+        if (!added) {
+          setTyping(false)
+          addMessage({
+            id: messageId,
+            role: 'plan',
+            content: buffer,
+            timestamp: Date.now(),
+            phase: 'final',
+          })
+          added = true
+        } else {
+          updateMessageContent(messageId, buffer)
+        }
+      } else if (event.type === 'error') {
+        throw new Error(event.message)
+      }
+    }
+    setTyping(false)
+    if (added) {
+      const trimmed = buffer.trim()
+      if (trimmed !== buffer) updateMessageContent(messageId, trimmed)
+    }
+  }, [addMessage, updateMessageContent, setTyping])
 
   // ── Main orchestratie na elk gebruikersbericht ───────────────────────────
 
