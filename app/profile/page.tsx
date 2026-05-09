@@ -39,6 +39,7 @@ export default function ProfilePage() {
         // negeer — formulier kan vanaf nul gestart
       }
       setLoading(false)
+      window.scrollTo(0, 0)
     }
     load()
     return () => {
