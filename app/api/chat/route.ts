@@ -15,7 +15,7 @@ import {
   briefCompanyContext,
 } from '@/lib/agents'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { AgentId, CompanyProfile, ConversationEntry } from '@/types'
+import type { AgentId, ClientProfile, ConversationEntry } from '@/types'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const MODEL = 'gemini-2.5-flash'
@@ -97,7 +97,10 @@ function formatConversation(messages: ConversationEntry[]): string {
     .join('\n\n')
 }
 
-async function loadCompanyProfile(sessionId?: string): Promise<CompanyProfile | null> {
+async function loadClientProfile(
+  sessionId?: string,
+  clientProfileId?: string
+): Promise<ClientProfile | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return null
   }
@@ -109,7 +112,7 @@ async function loadCompanyProfile(sessionId?: string): Promise<CompanyProfile | 
     if (!user) return null
 
     // Als de oproep bij een specifieke sessie hoort: gebruik de bevroren snapshot
-    // zodat een latere wijziging van het bedrijfsprofiel oude sessies niet vervuilt.
+    // zodat een latere wijziging van het klantprofiel oude sessies niet vervuilt.
     if (sessionId) {
       const { data: session } = await supabase
         .from('chat_sessions')
@@ -117,17 +120,24 @@ async function loadCompanyProfile(sessionId?: string): Promise<CompanyProfile | 
         .eq('id', sessionId)
         .eq('user_id', user.id)
         .maybeSingle()
-      if (session) {
-        return (session.company_profile_snapshot as CompanyProfile | null) ?? null
+      if (session?.company_profile_snapshot) {
+        return session.company_profile_snapshot as ClientProfile
       }
     }
 
-    const { data } = await supabase
-      .from('company_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    return (data as CompanyProfile | null) ?? null
+    // Fallback: race-window tussen sessie-aanmaak en eerste chat-call.
+    // De client stuurt het gekozen klantprofiel-id mee zodat we toch context hebben.
+    if (clientProfileId) {
+      const { data } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', clientProfileId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      return (data as ClientProfile | null) ?? null
+    }
+
+    return null
   } catch {
     return null
   }
@@ -138,7 +148,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const sessionId =
       typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : undefined
-    const profile = await loadCompanyProfile(sessionId)
+    const clientProfileId =
+      typeof body.clientProfileId === 'string' && body.clientProfileId
+        ? body.clientProfileId
+        : undefined
+    const profile = await loadClientProfile(sessionId, clientProfileId)
     const profileContext = briefCompanyContext(profile)
     switch (body.action) {
       case 'intake_turn':

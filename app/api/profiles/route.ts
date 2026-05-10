@@ -1,36 +1,36 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { CompanyProfile } from '@/types'
+import type { ClientProfile, ClientProfileSummary } from '@/types'
 
 export async function GET() {
   const supabase = createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ profile: null }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
 
   const { data, error } = await supabase
-    .from('company_profiles')
-    .select('*')
+    .from('client_profiles')
+    .select('id, name, industry, updated_at')
     .eq('user_id', user.id)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ profile: data ?? null })
+  return NextResponse.json({ profiles: (data ?? []) as ClientProfileSummary[] })
 }
 
-export async function PUT(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const supabase = createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
 
-  const body = (await request.json()) as Partial<CompanyProfile>
+  const body = (await request.json()) as Partial<ClientProfile>
 
   if (!body.name?.trim() || !body.industry?.trim() || !body.description?.trim()) {
     return NextResponse.json(
-      { error: 'Bedrijfsnaam, branche en omschrijving zijn verplicht.' },
+      { error: 'Klantnaam, branche en omschrijving zijn verplicht.' },
       { status: 400 }
     )
   }
@@ -50,15 +50,14 @@ export async function PUT(request: NextRequest) {
     tone_of_voice: body.tone_of_voice || null,
     competitors: body.competitors || null,
     goals: body.goals || null,
-    updated_at: new Date().toISOString(),
   }
 
   const { data, error } = await supabase
-    .from('company_profiles')
-    .upsert(payload, { onConflict: 'user_id' })
+    .from('client_profiles')
+    .insert(payload)
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ profile: data })
+  return NextResponse.json({ profile: data as ClientProfile })
 }

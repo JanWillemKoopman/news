@@ -1,4 +1,4 @@
-import type { Agent, AgentId, CompanyProfile } from '@/types'
+import type { Agent, AgentId, ClientProfile } from '@/types'
 
 // ─── Specialisten van het bureau ───────────────────────────────────────────────
 // Aardetinten op cream-achtergrond. Per agent:
@@ -108,10 +108,10 @@ export const AGENT_NAME_TO_TITLE: Record<string, string> = Object.fromEntries(
   ALL_AGENT_IDS.map((id) => [AGENTS[id].name, AGENTS[id].title])
 )
 
-// ─── Bedrijfsprofiel-context voor prompts ──────────────────────────────────────
+// ─── Klantprofiel-context voor prompts ─────────────────────────────────────────
 // Bouwt een markdown-blok met alleen de ingevulde velden van het profiel.
 // Lege velden worden overgeslagen zodat we geen ruis aan het model voeren.
-export function briefCompanyContext(profile: CompanyProfile | null | undefined): string {
+export function briefCompanyContext(profile: ClientProfile | null | undefined): string {
   if (!profile) return ''
   const lines: string[] = []
   const push = (label: string, value?: string | string[] | null) => {
@@ -125,7 +125,7 @@ export function briefCompanyContext(profile: CompanyProfile | null | undefined):
       lines.push(`- **${label}:** ${trimmed}`)
     }
   }
-  push('Bedrijfsnaam', profile.name)
+  push('Klantnaam', profile.name)
   push('Branche', profile.industry)
   push('Omschrijving', profile.description)
   push('Marketingkanalen in gebruik', profile.channels)
@@ -140,7 +140,7 @@ export function briefCompanyContext(profile: CompanyProfile | null | undefined):
   push('Business-doelen', profile.goals)
 
   if (lines.length === 0) return ''
-  return `\n\nBEDRIJFSPROFIEL VAN DE KLANT (al bekend — sla deze info NIET opnieuw uit als intake-vraag):\n${lines.join('\n')}\n`
+  return `\n\nKLANTPROFIEL (al bekend — sla deze info NIET opnieuw uit als intake-vraag):\n${lines.join('\n')}\n`
 }
 
 // ─── Persona prompts ───────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ Jouw rol:
 
 Schrijf ALTIJD in het Nederlands. Toon: vriendelijk-zakelijk, in de jij-vorm tegen de klant, helder en gestructureerd. Geen jargon zonder uitleg. Wees beknopt en doelgericht.
 
-Als er een BEDRIJFSPROFIEL bekend is bij de klant, sla dan algemene intake-vragen (branche, kanalen, expertise, USP, etc.) over en vraag direct door naar het concrete campagne-doel, doelgroep van déze campagne, looptijd en budget. Verwijs in je eerste reactie kort naar de bedrijfsnaam zodat de klant ziet dat je hem/haar al kent.`
+Als er een KLANTPROFIEL bekend is, sla dan algemene intake-vragen (branche, kanalen, expertise, USP, etc.) over en vraag direct door naar het concrete campagne-doel, doelgroep van déze campagne, looptijd en budget. Verwijs in je eerste reactie kort naar de klantnaam zodat de klant ziet dat je hem/haar al kent.`
 
 // ─── Intake-router prompt ──────────────────────────────────────────────────────
 

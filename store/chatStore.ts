@@ -4,7 +4,7 @@ import { ALL_AGENT_IDS, MANAGER_NAME } from '@/lib/agents'
 import type {
   AgentId,
   ChatSession,
-  CompanyProfile,
+  ClientProfile,
   Message,
   Phase,
 } from '@/types'
@@ -41,14 +41,14 @@ interface ChatState {
   intakeRound: number
   planningRound: number
   error: string | null
-  companyProfile: CompanyProfile | null
+  currentClientProfile: ClientProfile | null
   currentSessionId: string | null
 }
 
 interface ChatActions {
   toggleAgent: (id: AgentId) => void
   selectAll: () => void
-  startSession: () => void
+  startSession: (clientProfile?: ClientProfile | null) => void
   addMessage: (message: Message) => void
   updateMessageContent: (id: string, content: string) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
@@ -57,7 +57,7 @@ interface ChatActions {
   incrementIntakeRound: () => void
   incrementPlanningRound: () => void
   resetSession: () => void
-  setCompanyProfile: (profile: CompanyProfile | null) => void
+  setCurrentClientProfile: (profile: ClientProfile | null) => void
   setCurrentSessionId: (id: string | null) => void
   hydrateFromSession: (session: ChatSession) => void
 }
@@ -72,7 +72,7 @@ const initialState: ChatState = {
   intakeRound: 0,
   planningRound: 0,
   error: null,
-  companyProfile: null,
+  currentClientProfile: null,
   currentSessionId: null,
 }
 
@@ -91,7 +91,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       selectAll: () => set({ selectedAgents: [...ALL_AGENT_IDS] }),
 
-      startSession: () =>
+      startSession: (clientProfile) =>
         set({
           screen: 'chat',
           messages: [buildWelcomeMessage()],
@@ -100,6 +100,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
           planningRound: 0,
           error: null,
           currentSessionId: null,
+          currentClientProfile: clientProfile ?? null,
         }),
 
       addMessage: (message) =>
@@ -125,13 +126,9 @@ export const useChatStore = create<ChatState & ChatActions>()(
       incrementPlanningRound: () =>
         set((state) => ({ planningRound: state.planningRound + 1 })),
 
-      resetSession: () =>
-        set((state) => ({
-          ...initialState,
-          companyProfile: state.companyProfile,
-        })),
+      resetSession: () => set({ ...initialState }),
 
-      setCompanyProfile: (companyProfile) => set({ companyProfile }),
+      setCurrentClientProfile: (currentClientProfile) => set({ currentClientProfile }),
 
       setCurrentSessionId: (currentSessionId) => set({ currentSessionId }),
 
@@ -144,6 +141,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
           planningRound: session.planning_round,
           selectedAgents: session.selected_agents ?? [],
           currentSessionId: session.id,
+          currentClientProfile: session.company_profile_snapshot ?? null,
           isTyping: false,
           typingAgent: null,
           error: null,
@@ -158,6 +156,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         intakeRound: state.intakeRound,
         planningRound: state.planningRound,
         currentSessionId: state.currentSessionId,
+        currentClientProfile: state.currentClientProfile,
       }),
     }
   )

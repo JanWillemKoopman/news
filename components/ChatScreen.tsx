@@ -45,6 +45,7 @@ export default function ChatScreen() {
     resetSession,
     currentSessionId,
     setCurrentSessionId,
+    currentClientProfile,
   } = useChatStore()
 
   const [inputValue, setInputValue] = useState('')
@@ -107,7 +108,7 @@ export default function ChatScreen() {
   }, [])
 
   // Maak een nieuwe sessie aan zodra een ingelogde gebruiker op het chatscherm
-  // komt zonder bestaande sessie. Snapshot van het profiel gebeurt server-side.
+  // komt zonder bestaande sessie. Snapshot van het klantprofiel gebeurt server-side.
   useEffect(() => {
     if (!isAuthenticated) return
     if (currentSessionId) return
@@ -122,6 +123,7 @@ export default function ChatScreen() {
             messages,
             selectedAgents,
             phase,
+            clientProfileId: currentClientProfile?.id ?? null,
           }),
         })
         if (!res.ok) return
@@ -217,11 +219,16 @@ export default function ChatScreen() {
   // ── API helpers ──────────────────────────────────────────────────────────
 
   const callApi = async <T,>(action: string, payload: object): Promise<T> => {
-    const sessionId = useChatStore.getState().currentSessionId
+    const state = useChatStore.getState()
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, sessionId, ...payload }),
+      body: JSON.stringify({
+        action,
+        sessionId: state.currentSessionId,
+        clientProfileId: state.currentClientProfile?.id ?? null,
+        ...payload,
+      }),
     })
     if (!res.ok) throw new Error(`Verzoek mislukt (${res.status})`)
     return res.json() as Promise<T>
@@ -239,11 +246,16 @@ export default function ChatScreen() {
     action: string,
     payload: object
   ): AsyncGenerator<StreamEvent> {
-    const sessionId = useChatStore.getState().currentSessionId
+    const state = useChatStore.getState()
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, sessionId, ...payload }),
+      body: JSON.stringify({
+        action,
+        sessionId: state.currentSessionId,
+        clientProfileId: state.currentClientProfile?.id ?? null,
+        ...payload,
+      }),
     })
     if (!res.ok || !res.body) throw new Error(`Verzoek mislukt (${res.status})`)
 
@@ -639,6 +651,11 @@ export default function ChatScreen() {
               <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">
                 Campagne-bureau · {MANAGER_NAME}
               </p>
+              {currentClientProfile?.name && (
+                <p className="text-xs text-ink-700 truncate mt-0.5">
+                  Klant: <span className="font-medium">{currentClientProfile.name}</span>
+                </p>
+              )}
             </div>
 
             <div className="text-[11px] px-2.5 py-1 rounded-full border flex-shrink-0 text-ink-600 bg-cream-50 border-cream-500">

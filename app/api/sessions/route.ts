@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { AgentId, ChatSession, ChatSessionSummary, CompanyProfile, Message, Phase } from '@/types'
+import type {
+  AgentId,
+  ChatSession,
+  ChatSessionSummary,
+  ClientProfile,
+  Message,
+  Phase,
+} from '@/types'
 
 const VALID_PHASES: Phase[] = ['intake', 'planning', 'final']
 
@@ -38,6 +45,7 @@ interface CreateSessionBody {
   selectedAgents?: AgentId[]
   messages?: Message[]
   phase?: Phase
+  clientProfileId?: string | null
 }
 
 export async function POST(request: NextRequest) {
@@ -57,16 +65,23 @@ export async function POST(request: NextRequest) {
   const messages = Array.isArray(body.messages) ? body.messages : []
   const selected = Array.isArray(body.selectedAgents) ? body.selectedAgents : []
   const phase: Phase = body.phase && VALID_PHASES.includes(body.phase) ? body.phase : 'intake'
+  const clientProfileId =
+    typeof body.clientProfileId === 'string' && body.clientProfileId
+      ? body.clientProfileId
+      : null
 
-  // Snapshot the user's current company profile so latere wijzigingen het plan
-  // van een oudere sessie niet vervuilen.
-  const { data: profileRow } = await supabase
-    .from('company_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  const snapshot = (profileRow ?? null) as CompanyProfile | null
+  // Snapshot het gekozen klantprofiel zodat latere wijzigingen oude sessies
+  // niet vervuilen. Als geen klantprofiel is meegegeven: geen snapshot.
+  let snapshot: ClientProfile | null = null
+  if (clientProfileId) {
+    const { data: profileRow } = await supabase
+      .from('client_profiles')
+      .select('*')
+      .eq('id', clientProfileId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    snapshot = (profileRow ?? null) as ClientProfile | null
+  }
 
   const insertPayload = {
     user_id: user.id,
@@ -77,6 +92,7 @@ export async function POST(request: NextRequest) {
     planning_round: 0,
     selected_agents: selected,
     messages,
+    client_profile_id: snapshot ? clientProfileId : null,
     company_profile_snapshot: snapshot,
   }
 
