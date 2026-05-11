@@ -1,4 +1,4 @@
-// Acties op een opgeleverd campagneplan: downloaden (.md), kopieren als
+// Acties op een opgeleverd leveringsstuk: downloaden (.md), kopieren als
 // geformatteerde tekst en printen / opslaan als PDF.
 
 function escapeHtml(s: string): string {
@@ -62,14 +62,14 @@ export function planMarkdownToHtml(md: string): string {
 
 function suggestedFilename(md: string, ext: 'md'): string {
   const titleMatch = md.match(/^#\s+(.+)$/m)
-  const title = (titleMatch?.[1] ?? 'campagneplan').trim()
+  const title = (titleMatch?.[1] ?? 'leveringsstuk').trim()
   const slug = title
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 60) || 'campagneplan'
+    .slice(0, 60) || 'leveringsstuk'
   const date = new Date().toISOString().slice(0, 10)
   return `${slug}-${date}.${ext}`
 }
@@ -146,7 +146,7 @@ export function printPlan(md: string): void {
   doc.open()
   doc.write(`<!doctype html><html lang="nl"><head>
 <meta charset="utf-8">
-<title>Campagneplan</title>
+<title>Leveringsstuk</title>
 <style>
   @page { margin: 18mm; }
   html, body { background: #fff; color: #2a2a2a; }

@@ -66,8 +66,8 @@ export default function NewClientProfilePage() {
           </h1>
           <p className="text-ink-500 mt-3 text-base leading-relaxed">
             Eenmalig invullen — daarna kent het hele bureau de context. Iris en de
-            specialisten slaan algemene intake-vragen over en springen direct naar de
-            strategie voor déze klant.
+            specialisten slaan algemene profielvragen over en richten zich direct
+            op de vragen voor déze klant.
           </p>
         </div>
       </header>

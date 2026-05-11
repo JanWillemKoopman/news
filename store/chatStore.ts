@@ -16,16 +16,11 @@ function buildWelcomeMessage(): Message {
         ? crypto.randomUUID()
         : `welcome-${Date.now()}`,
     role: 'manager',
-    content: `Welkom bij het bureau! Ik ben ${MANAGER_NAME}, je Campagne Manager. Ik begeleid je vandaag samen met de specialisten om een ijzersterk campagneplan voor je neer te zetten.
+    content: `Welkom — fijn dat je er bent! Ik ben ${MANAGER_NAME}, je Marketing Manager bij het bureau. Het team en ik staan klaar als je collega's voor alles rondom online marketing: campagnes, Google Ads, meetplannen, websites, e-mailflows, CRM, SEO, content — wat er ook speelt.
 
-Vertel me om te beginnen zo concreet mogelijk over je campagne. Denk bijvoorbeeld aan:
-• Wat is het doel van de campagne?
-• Wat voor product of dienst gaat het om en wat maakt het bijzonder?
-• Wie is je doelgroep en waar zijn jullie gevestigd?
-• Wat is je beschikbare budget en gewenste looptijd?
-• Heb je al een website of bestaande kanalen?
+Vertel: waar kunnen we je vandaag mee helpen?
 
-Hoe meer context, hoe scherper het plan dat we voor je bouwen.`,
+Tip: hoe concreter de vraag — denk aan doel, doelgroep, context — hoe scherper het advies van het team.`,
     timestamp: Date.now(),
     phase: 'intake',
   }

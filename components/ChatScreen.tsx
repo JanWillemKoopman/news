@@ -20,8 +20,8 @@ import TypingIndicator from './TypingIndicator'
 import SessionSidebar from './SessionSidebar'
 
 const PHASE_LABELS: Record<Phase, string> = {
-  intake: 'Intake',
-  planning: 'Planning',
+  intake: 'Gesprek',
+  planning: 'Uitwerking',
   final: 'Bijsturen',
 }
 
@@ -205,14 +205,14 @@ export default function ChatScreen() {
     msgs.map((m) => {
       if (m.role === 'user') return { role: 'user' as const, content: m.content }
       if (m.role === 'manager')
-        return { role: 'model' as const, content: `[${MANAGER_NAME} — Campagne Manager]: ${m.content}` }
+        return { role: 'model' as const, content: `[${MANAGER_NAME} — Marketing Manager]: ${m.content}` }
       if (m.role === 'agent' && m.agentName) {
         const agent = m.agentId ? AGENTS[m.agentId] : null
         const title = agent ? agent.title : 'Specialist'
         return { role: 'model' as const, content: `[${m.agentName} — ${title}]: ${m.content}` }
       }
       if (m.role === 'plan')
-        return { role: 'model' as const, content: `[Campagneplan opgeleverd door ${MANAGER_NAME}]:\n${m.content}` }
+        return { role: 'model' as const, content: `[Leveringsstuk opgeleverd door ${MANAGER_NAME}]:\n${m.content}` }
       return { role: 'model' as const, content: m.content }
     })
 
@@ -235,9 +235,19 @@ export default function ChatScreen() {
   }
 
   // NDJSON stream-events van de backend
+  type RouterAction =
+    | 'ask_followup'
+    | 'answer_directly'
+    | 'consult_specialist'
+    | 'start_workout'
   type StreamEvent =
     | { type: 'meta'; agentId?: AgentId; agentName?: string }
-    | { type: 'decision'; action: 'ask_followup' | 'start_planning' }
+    | {
+        type: 'decision'
+        action: RouterAction
+        specialist?: string
+        briefing?: string
+      }
     | { type: 'chunk'; text: string }
     | { type: 'done' }
     | { type: 'error'; message: string }
@@ -305,6 +315,10 @@ export default function ChatScreen() {
       let agentId: AgentId | undefined =
         AGENT_NAME_TO_ID[agentName] as AgentId | undefined
 
+      // Gebruik de huidige store-fase als message-fase: 'planning' tijdens een
+      // uitwerking, 'intake' bij een ad-hoc consult tijdens het gesprek.
+      const messagePhase = useChatStore.getState().phase
+
       for await (const event of streamApi('specialist_turn', {
         agentName,
         briefing,
@@ -324,7 +338,7 @@ export default function ChatScreen() {
               agentName,
               content: buffer,
               timestamp: Date.now(),
-              phase: 'planning',
+              phase: messagePhase,
             })
             added = true
           } else {
@@ -352,10 +366,11 @@ export default function ChatScreen() {
   const runPlanningLoop = useCallback(async () => {
     setPhase('planning')
 
-    // Kickoff: volgorde + briefings + intro-bericht
+    // Kickoff: type leveringsstuk + volgorde + briefings + intro-bericht
     setTyping(true, MANAGER_NAME)
     const { plan } = await callApi<{
       plan: {
+        deliverable_type?: string
         speaking_order: string[]
         briefings: Record<string, string>
         kickoff_message: string
@@ -417,7 +432,7 @@ export default function ChatScreen() {
       }
     }
 
-    // Finalize: manager schrijft compleet plan (streamend)
+    // Finalize: manager schrijft het leveringsstuk in passend format (streamend)
     setTyping(true, MANAGER_NAME)
     const finalId = crypto.randomUUID()
     let finalBuffer = ''
@@ -425,6 +440,7 @@ export default function ChatScreen() {
 
     for await (const event of streamApi('finalize', {
       messages: buildHistory(useChatStore.getState().messages),
+      deliverableType: plan.deliverable_type,
     })) {
       if (event.type === 'chunk') {
         finalBuffer += event.text
@@ -461,14 +477,20 @@ export default function ChatScreen() {
     runSpecialistTurn,
   ])
 
-  // ── Intake loop: manager beslist of doorvragen of starten ────────────────
+  // ── Gespreks-loop: manager kiest per beurt actie ─────────────────────────
+  // De backend stuurt eerst een 'decision' event met één van vier acties.
+  // Daarna stromen optioneel manager-tekst-chunks binnen. Bij consult_specialist
+  // volgt na de manager-aankondiging direct een specialist-beurt; bij
+  // start_workout slaan we de manager-tekst over en gaan we naar de uitwerking.
 
   const runIntake = useCallback(async () => {
     setTyping(true, MANAGER_NAME)
     const history = buildHistory(useChatStore.getState().messages)
     const round = useChatStore.getState().intakeRound + 1
 
-    let decision: 'ask_followup' | 'start_planning' | null = null
+    let decision: RouterAction | null = null
+    let consultSpecialist: string | undefined
+    let consultBriefing: string | undefined
     const messageId = crypto.randomUUID()
     let buffer = ''
     let added = false
@@ -479,6 +501,10 @@ export default function ChatScreen() {
     })) {
       if (event.type === 'decision') {
         decision = event.action
+        if (event.action === 'consult_specialist') {
+          consultSpecialist = event.specialist
+          consultBriefing = event.briefing
+        }
       } else if (event.type === 'chunk') {
         buffer += event.text
         if (!added) {
@@ -504,8 +530,24 @@ export default function ChatScreen() {
       if (trimmed !== buffer) updateMessageContent(messageId, trimmed)
     }
 
-    if (decision === 'start_planning') {
+    // Vervolgactie op basis van decision
+    if (decision === 'start_workout') {
       await runPlanningLoop()
+      return
+    }
+    if (
+      decision === 'consult_specialist' &&
+      consultSpecialist &&
+      AGENT_NAME_TO_ID[consultSpecialist]
+    ) {
+      // Kleine pauze voor render-rust tussen manager-aankondiging en specialist
+      await new Promise((r) => setTimeout(r, 120))
+      await runSpecialistTurn(
+        consultSpecialist,
+        consultBriefing ?? '',
+        round
+      )
+      incrementIntakeRound()
       return
     }
     incrementIntakeRound()
@@ -514,6 +556,7 @@ export default function ChatScreen() {
     updateMessageContent,
     setTyping,
     runPlanningLoop,
+    runSpecialistTurn,
     incrementIntakeRound,
   ])
 
@@ -649,7 +692,7 @@ export default function ChatScreen() {
 
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">
-                Campagne-bureau · {MANAGER_NAME}
+                Marketingbureau · {MANAGER_NAME}
               </p>
               {currentClientProfile?.name && (
                 <p className="text-xs text-ink-700 truncate mt-0.5">
@@ -720,14 +763,14 @@ export default function ChatScreen() {
                 }}
                 placeholder={
                   phase === 'final'
-                    ? 'Geef bijstuur-feedback op het plan...'
+                    ? 'Geef bijstuur-feedback op het stuk...'
                     : phase === 'planning'
                     ? 'Aanvulling of vraag tijdens de uitwerking...'
                     : messages.length <= 1
-                    ? 'Beschrijf je gewenste campagne...'
-                    : 'Jouw antwoord aan de Campagne Manager...'
+                    ? 'Stel je vraag aan het team...'
+                    : 'Jouw antwoord aan de Marketing Manager...'
                 }
-                aria-label="Jouw bericht aan de Campagne Manager"
+                aria-label="Jouw bericht aan de Marketing Manager"
                 disabled={isLoading}
                 maxLength={4000}
                 className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
@@ -750,7 +793,7 @@ export default function ChatScreen() {
                 className="mt-2 w-full flex items-center justify-center gap-2 py-2 text-xs text-ink-500 hover:text-ink-700 transition-colors"
               >
                 <RefreshCw size={11} />
-                Start nieuwe campagne
+                Start nieuwe sessie
               </button>
             )}
           </div>
