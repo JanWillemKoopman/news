@@ -38,7 +38,8 @@ export interface ConversationEntry {
   content: string
 }
 
-export interface CompanyProfile {
+export interface ClientProfile {
+  id?: string
   user_id?: string
   name: string
   industry: string
@@ -53,8 +54,14 @@ export interface CompanyProfile {
   tone_of_voice?: string | null
   competitors?: string | null
   goals?: string | null
+  created_at?: string
   updated_at?: string
 }
+
+export type ClientProfileSummary = Pick<
+  ClientProfile,
+  'id' | 'name' | 'industry' | 'updated_at'
+>
 
 export const CHANNEL_OPTIONS = [
   'Meta Ads',
@@ -88,7 +95,8 @@ export interface ChatSession {
   planning_round: number
   selected_agents: AgentId[]
   messages: Message[]
-  company_profile_snapshot: CompanyProfile | null
+  client_profile_id: string | null
+  company_profile_snapshot: ClientProfile | null
   created_at: string
   updated_at: string
 }

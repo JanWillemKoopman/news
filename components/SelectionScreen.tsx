@@ -1,24 +1,82 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { ArrowRight, Briefcase, Check, Info, Pencil, Users } from 'lucide-react'
+import { ArrowRight, Briefcase, Check, Clock, Info, Users } from 'lucide-react'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
-import type { Agent, AgentId } from '@/types'
+import type { Agent, AgentId, ClientProfile } from '@/types'
 import AgentIcon from './AgentIcon'
 import AgentInfoModal from './AgentInfoModal'
 import AuthHeader from './AuthHeader'
+import ClientProfilePicker from './ClientProfilePicker'
+import SessionSidebar from './SessionSidebar'
 
 export default function SelectionScreen() {
-  const { selectedAgents, toggleAgent, selectAll, startSession, companyProfile } = useChatStore()
+  const { selectedAgents, toggleAgent, selectAll, startSession } = useChatStore()
   const allSelected = selectedAgents.length === ALL_AGENT_IDS.length
   const canStart = selectedAgents.length >= 1
   const [infoAgent, setInfoAgent] = useState<Agent | null>(null)
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0)
+  const [selectingProfile, setSelectingProfile] = useState(false)
+  const [pickerError, setPickerError] = useState<string | null>(null)
+
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const { createSupabaseBrowserClient } = await import(
+          '@/lib/supabase/client'
+        )
+        const supabase = createSupabaseBrowserClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!cancelled) setIsAuthenticated(Boolean(user))
+      } catch {
+        if (!cancelled) setIsAuthenticated(false)
+      }
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function handleStart() {
+    if (!canStart) return
+    setPickerError(null)
+    if (isAuthenticated === false) {
+      // Gast: meteen door zonder klantprofiel.
+      startSession(null)
+      return
+    }
+    // Ingelogd: open picker (laadt zelf de lijst, toont fallback bij 0 profielen).
+    setPickerOpen(true)
+  }
+
+  async function handlePickerConfirm(profileId: string) {
+    setSelectingProfile(true)
+    setPickerError(null)
+    try {
+      const res = await fetch(`/api/profiles/${profileId}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Kon klantprofiel niet laden')
+      const data = (await res.json()) as { profile: ClientProfile }
+      startSession(data.profile)
+      setPickerOpen(false)
+    } catch (err) {
+      setPickerError(err instanceof Error ? err.message : 'Kon sessie niet starten')
+    } finally {
+      setSelectingProfile(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-200">
@@ -34,7 +92,20 @@ export default function SelectionScreen() {
                 Online Marketingbureau
               </span>
             </div>
-            <AuthHeader />
+            <div className="flex items-center gap-3">
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Bekijk eerdere sessies"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-50 border border-cream-500 hover:border-cream-600 text-xs font-medium text-ink-600 hover:text-ink-700 transition-colors"
+                >
+                  <Clock size={12} />
+                  Geschiedenis
+                </button>
+              )}
+              <AuthHeader />
+            </div>
           </div>
           <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
             Stel je bureau-team samen
@@ -43,23 +114,6 @@ export default function SelectionScreen() {
             {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
             welke specialisten je wilt inschakelen voor jouw campagne.
           </p>
-
-          {companyProfile && (
-            <div className="mt-6 inline-flex items-center gap-3 px-4 py-2.5 rounded-full bg-cream-50 border border-cream-500 text-sm">
-              <span className="text-ink-500">
-                Werkt namens{' '}
-                <span className="font-medium text-ink-900">{companyProfile.name}</span>
-                <span className="text-ink-400"> · {companyProfile.industry}</span>
-              </span>
-              <Link
-                href="/profile"
-                className="inline-flex items-center gap-1 text-clay-600 hover:text-clay-700 font-medium text-xs transition-colors"
-              >
-                <Pencil size={11} />
-                Wijzigen
-              </Link>
-            </div>
-          )}
         </div>
       </header>
 
@@ -192,6 +246,30 @@ export default function SelectionScreen() {
         <AgentInfoModal agent={infoAgent} onClose={() => setInfoAgent(null)} />
       )}
 
+      <ClientProfilePicker
+        open={pickerOpen}
+        onClose={() => {
+          if (!selectingProfile) setPickerOpen(false)
+        }}
+        onConfirm={handlePickerConfirm}
+      />
+
+      {pickerError && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-clay-500 text-white text-xs shadow-lg">
+          {pickerError}
+        </div>
+      )}
+
+      {isAuthenticated && (
+        <SessionSidebar
+          variant="drawer"
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          refreshKey={sessionsRefreshKey}
+          onMutate={() => setSessionsRefreshKey((k) => k + 1)}
+        />
+      )}
+
       {/* Sticky footer CTA */}
       <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
@@ -210,7 +288,7 @@ export default function SelectionScreen() {
           </div>
 
           <button
-            onClick={startSession}
+            onClick={handleStart}
             disabled={!canStart}
             className={[
               'flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm transition-all duration-200',

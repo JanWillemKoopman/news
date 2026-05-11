@@ -1,20 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Loader2, Save, ArrowRight } from 'lucide-react'
+import { ChevronDown, Loader2, Save } from 'lucide-react'
 import {
   CHANNEL_OPTIONS,
   EXPERTISE_OPTIONS,
-  type CompanyProfile,
+  type ClientProfile,
 } from '@/types'
 
 interface Props {
-  initial?: Partial<CompanyProfile> | null
-  onSaved: (profile: CompanyProfile) => void
-  onSkip?: () => void
+  initial?: Partial<ClientProfile> | null
+  // Wanneer id meegegeven wordt: PUT op die specifieke klant. Anders: POST nieuw.
+  id?: string
+  onSaved: (profile: ClientProfile) => void
+  onCancel?: () => void
 }
 
-const EMPTY: CompanyProfile = {
+const EMPTY: ClientProfile = {
   name: '',
   industry: '',
   description: '',
@@ -30,13 +32,13 @@ const EMPTY: CompanyProfile = {
   goals: '',
 }
 
-export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) {
-  const [profile, setProfile] = useState<CompanyProfile>({ ...EMPTY, ...initial })
+export default function ClientProfileForm({ initial, id, onSaved, onCancel }: Props) {
+  const [profile, setProfile] = useState<ClientProfile>({ ...EMPTY, ...initial })
   const [moreOpen, setMoreOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function update<K extends keyof CompanyProfile>(key: K, value: CompanyProfile[K]) {
+  function update<K extends keyof ClientProfile>(key: K, value: ClientProfile[K]) {
     setProfile((p) => ({ ...p, [key]: value }))
   }
 
@@ -54,13 +56,15 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
     e.preventDefault()
     setError(null)
     if (!profile.name.trim() || !profile.industry.trim() || !profile.description.trim()) {
-      setError('Vul minimaal bedrijfsnaam, branche en korte omschrijving in.')
+      setError('Vul minimaal klantnaam, branche en korte omschrijving in.')
       return
     }
     setBusy(true)
     try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
+      const url = id ? `/api/profiles/${id}` : '/api/profiles'
+      const method = id ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       })
@@ -69,7 +73,7 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
         throw new Error(data.error || 'Opslaan mislukt')
       }
       const data = await res.json()
-      onSaved(data.profile as CompanyProfile)
+      onSaved(data.profile as ClientProfile)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Opslaan mislukt')
     } finally {
@@ -80,7 +84,7 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Field
-        label="Bedrijfsnaam"
+        label="Klantnaam"
         required
         value={profile.name}
         onChange={(v) => update('name', v)}
@@ -98,18 +102,18 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
         required
         value={profile.description}
         onChange={(v) => update('description', v)}
-        placeholder="In 1-2 zinnen: wat doet je bedrijf en voor wie?"
+        placeholder="In 1-2 zinnen: wat doet deze klant en voor wie?"
         rows={2}
       />
 
       <ChipGroup
-        label="Marketingkanalen die je nu inzet"
+        label="Marketingkanalen die de klant nu inzet"
         options={CHANNEL_OPTIONS as readonly string[]}
         selected={profile.channels}
         onToggle={(v) => toggleArr('channels', v)}
       />
       <ChipGroup
-        label="Expertise in huis"
+        label="Expertise in huis bij de klant"
         options={EXPERTISE_OPTIONS as readonly string[]}
         selected={profile.expertise}
         onToggle={(v) => toggleArr('expertise', v)}
@@ -139,13 +143,13 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
             label="Doelgroep(en)"
             value={profile.audience || ''}
             onChange={(v) => update('audience', v)}
-            placeholder="Wie wil je bereiken? Demografie, gedrag, segmenten."
+            placeholder="Wie wil de klant bereiken? Demografie, gedrag, segmenten."
           />
           <Textarea
             label="USP / positionering"
             value={profile.usp || ''}
             onChange={(v) => update('usp', v)}
-            placeholder="Waarom kiezen klanten voor jullie?"
+            placeholder="Waarom kiezen klanten van de klant voor háár/hem?"
           />
           <Textarea
             label="Tools / stack"
@@ -169,13 +173,13 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
             label="Belangrijkste concurrenten"
             value={profile.competitors || ''}
             onChange={(v) => update('competitors', v)}
-            placeholder="Met wie vergelijken klanten jullie?"
+            placeholder="Met wie vergelijken (eind)klanten ze?"
           />
           <Textarea
             label="Algemene business-doelen"
             value={profile.goals || ''}
             onChange={(v) => update('goals', v)}
-            placeholder="Waar wil het bedrijf de komende 12 maanden naartoe?"
+            placeholder="Waar wil deze klant de komende 12 maanden naartoe?"
           />
         </div>
       )}
@@ -187,13 +191,13 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
       )}
 
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
-        {onSkip && (
+        {onCancel && (
           <button
             type="button"
-            onClick={onSkip}
+            onClick={onCancel}
             className="text-sm text-ink-500 hover:text-ink-700 transition-colors"
           >
-            Overslaan voor nu →
+            Annuleren
           </button>
         )}
         <button
@@ -207,7 +211,7 @@ export default function CompanyProfileForm({ initial, onSaved, onSkip }: Props) 
           ].join(' ')}
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          Profiel opslaan
+          {id ? 'Wijzigingen opslaan' : 'Klantprofiel aanmaken'}
         </button>
       </div>
     </form>

@@ -3,16 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LogOut, User as UserIcon } from 'lucide-react'
+import { LogOut, Users } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { useChatStore } from '@/store/chatStore'
-import type { CompanyProfile } from '@/types'
 
 type AuthState = 'loading' | 'guest' | 'authed' | 'anon'
 
 export default function AuthHeader() {
   const router = useRouter()
-  const setCompanyProfile = useChatStore((s) => s.setCompanyProfile)
   const [state, setState] = useState<AuthState>('loading')
   const [email, setEmail] = useState<string | null>(null)
 
@@ -29,28 +26,18 @@ export default function AuthHeader() {
       if (user) {
         setEmail(user.email ?? null)
         setState('authed')
-        try {
-          const res = await fetch('/api/profile')
-          if (res.ok) {
-            const data = await res.json()
-            if (!cancelled) setCompanyProfile((data.profile as CompanyProfile | null) ?? null)
-          }
-        } catch {
-          // negeer — profiel-load is best-effort
-        }
         return
       }
 
       const guest =
         typeof window !== 'undefined' && localStorage.getItem('marketing-bureau-guest') === 'true'
       setState(guest ? 'guest' : 'anon')
-      setCompanyProfile(null)
     }
     init()
     return () => {
       cancelled = true
     }
-  }, [setCompanyProfile])
+  }, [])
 
   async function handleLogout() {
     if (typeof window !== 'undefined') localStorage.removeItem('marketing-bureau-guest')
@@ -103,8 +90,8 @@ export default function AuthHeader() {
         className="inline-flex items-center gap-1.5 text-ink-500 hover:text-ink-700 transition-colors"
         title={email ?? undefined}
       >
-        <UserIcon size={13} />
-        <span>Profiel</span>
+        <Users size={13} />
+        <span>Klanten</span>
       </Link>
       <span className="text-ink-400">·</span>
       <button
