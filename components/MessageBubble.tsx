@@ -126,12 +126,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   if (message.role === 'plan') {
+    // Lees de H1-titel van het stuk om hem ook bovenaan als label te tonen.
+    // Vangnet: als de H1 ontbreekt of nog niet binnen is, valt het terug op
+    // "Leveringsstuk".
+    const h1Match = message.content.match(/^#\s+(.+?)\s*$/m)
+    const label = h1Match?.[1]?.trim() || 'Leveringsstuk'
     return (
       <div className="animate-slide-up">
         <div className="flex items-center gap-2 mb-3 px-1">
           <FileText size={15} className="text-clay-600" />
           <span className="text-[10px] font-medium text-clay-700 uppercase tracking-[0.2em]">
-            Campagneplan
+            {label}
           </span>
           <div className="flex-1 h-px bg-clay-500/30" />
         </div>

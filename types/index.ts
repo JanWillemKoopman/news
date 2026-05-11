@@ -18,9 +18,10 @@ export interface Agent {
   glowColor: string
 }
 
-// 'intake'   = Campagne Manager interviewt de klant
-// 'planning' = Specialisten werken samen aan het plan
-// 'final'    = Compleet plan opgeleverd, klant kan bijsturen
+// 'intake'   = Gesprek — Marketing Manager regisseert (vragen, zelf antwoorden,
+//              specialist consulteren of uitwerking starten)
+// 'planning' = Uitwerking — specialisten bouwen samen aan een leveringsstuk
+// 'final'    = Leveringsstuk opgeleverd, klant kan bijsturen
 export type Phase = 'intake' | 'planning' | 'final'
 
 export interface Message {

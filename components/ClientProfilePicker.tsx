@@ -103,7 +103,7 @@ export default function ClientProfilePicker({ open, onClose, onConfirm }: Props)
               <p className="text-sm text-ink-500 leading-relaxed mb-5">
                 Het bureau werkt het beste als het weet voor wie het werkt. Maak eerst
                 een klantprofiel aan met de basics (naam, branche, korte omschrijving)
-                en kom dan terug om de campagne te starten.
+                en kom dan terug om de sessie te starten.
               </p>
               <Link
                 href="/profile/new"

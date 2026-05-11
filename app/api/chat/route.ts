@@ -7,7 +7,7 @@ import {
   ALL_AGENT_IDS,
   MANAGER_NAME,
   MANAGER_SYSTEM_PROMPT,
-  INTAKE_ROUTER_PROMPT,
+  MANAGER_ROUTER_PROMPT,
   PLANNING_ORCHESTRATOR_PROMPT,
   PLANNING_MANAGER_CHECK_PROMPT,
   SPECIALIST_TURN_INSTRUCTIONS,
@@ -176,7 +176,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── 1. Intake: Campagne Manager beslist + reageert ────────────────────────────
+// ─── 1. Gesprek: Marketing Manager regisseert de beurt ────────────────────────
+// De manager-router beslist per beurt of ze (a) doorvraagt, (b) zelf antwoordt,
+// (c) één specialist erbij haalt voor een korte expert-bijdrage, of (d) een
+// uitwerking start waarbij meerdere specialisten een leveringsstuk bouwen.
+
+type RouterAction =
+  | 'ask_followup'
+  | 'answer_directly'
+  | 'consult_specialist'
+  | 'start_workout'
 
 function handleIntakeTurn(
   body: { messages: ConversationEntry[]; intakeRound: number },
@@ -186,11 +195,12 @@ function handleIntakeTurn(
   const conversation = formatConversation(messages)
 
   return ndjsonResponse(async (writer) => {
-    // Step 1: router decides whether to keep asking or move to planning
+    // Step 1: router kiest tussen 4 acties
     const routerModel = genAI.getGenerativeModel({ model: MODEL })
-    const routerPrompt = `${INTAKE_ROUTER_PROMPT}
+    const allowedSpecialists = ALL_AGENT_IDS.map((id) => AGENTS[id].name)
+    const routerPrompt = `${MANAGER_ROUTER_PROMPT}
 ${profileContext}
-Huidige intake-ronde: ${intakeRound} (ronde 5 dwingt automatisch start_planning)
+Huidige gespreksronde: ${intakeRound}
 
 Gespreksgeschiedenis:
 ${conversation}
@@ -198,49 +208,112 @@ ${conversation}
 Geef je JSON-beslissing.`
 
     const routerRes = await routerModel.generateContent(routerPrompt)
-    const decision = safeJSON<{ action: 'ask_followup' | 'start_planning'; reason?: string }>(
-      routerRes.response.text(),
-      { action: intakeRound >= 5 ? 'start_planning' : 'ask_followup' }
-    )
+    const decision = safeJSON<{
+      action: RouterAction
+      specialist?: string
+      briefing?: string
+      reason?: string
+    }>(routerRes.response.text(), { action: 'ask_followup' })
 
-    if (intakeRound >= 5) decision.action = 'start_planning'
+    // Sanity checks
+    const validActions: RouterAction[] = [
+      'ask_followup',
+      'answer_directly',
+      'consult_specialist',
+      'start_workout',
+    ]
+    if (!validActions.includes(decision.action)) decision.action = 'ask_followup'
+    if (
+      decision.action === 'consult_specialist' &&
+      (!decision.specialist || !allowedSpecialists.includes(decision.specialist))
+    ) {
+      // Vangnet: ongeldige specialist → laat manager zelf antwoorden
+      decision.action = 'answer_directly'
+    }
 
-    if (decision.action === 'start_planning') {
-      writer.send({ type: 'decision', action: 'start_planning' })
+    // Branch 1: start_workout — geen manager-tekst, alleen signaal naar FE
+    if (decision.action === 'start_workout') {
+      writer.send({ type: 'decision', action: 'start_workout' })
       return
     }
 
+    // Branch 2: consult_specialist — manager kondigt kort aan + stuurt FE-signaal
+    if (decision.action === 'consult_specialist') {
+      writer.send({
+        type: 'decision',
+        action: 'consult_specialist',
+        specialist: decision.specialist,
+        briefing: decision.briefing ?? '',
+      })
+
+      const managerModel = genAI.getGenerativeModel({
+        model: MODEL,
+        systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
+      })
+      const announcePrompt = `De klant heeft net iets gevraagd. Jij hebt zojuist besloten om ${decision.specialist} erbij te halen omdat die de juiste expertise heeft.
+
+Briefing aan de specialist (intern): ${decision.briefing ?? ''}
+
+Gespreksgeschiedenis:
+${conversation}
+
+Schrijf nu een korte aankondiging (1–2 zinnen) aan de klant waarin je vertelt waarom je ${decision.specialist} erbij haalt en wat de klant van hem/haar mag verwachten. Geen vervolgvragen, geen samenvatting van de specialist zijn antwoord — alleen de aankondiging. Nederlands, jij-vorm.`
+      const res = await managerModel.generateContentStream(announcePrompt)
+      await pumpModelStream(writer, res)
+      return
+    }
+
+    // Branch 3: answer_directly — manager beantwoordt zelf
+    if (decision.action === 'answer_directly') {
+      writer.send({ type: 'decision', action: 'answer_directly' })
+      const managerModel = genAI.getGenerativeModel({
+        model: MODEL,
+        systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
+      })
+      const answerPrompt = `De klant heeft net iets gevraagd waar je als Marketing Manager zelf goed antwoord op kunt geven (zonder specialist erbij). Beantwoord de vraag of geef het gevraagde advies.
+
+Gespreksgeschiedenis:
+${conversation}
+
+Schrijf een beknopt, concreet antwoord:
+- Direct ter zake, geen "Goede vraag"-openers.
+- Maximaal 5–7 zinnen of een korte bullet-lijst (max 5 bullets) waar dat helpt.
+- Sluit af met een open uitnodiging om door te vragen of te zeggen waar de klant verder mee geholpen wil worden — alleen als dat natuurlijk past, niet geforceerd.
+- Schrijf in het Nederlands, jij-vorm.`
+      const res = await managerModel.generateContentStream(answerPrompt)
+      await pumpModelStream(writer, res)
+      return
+    }
+
+    // Branch 4: ask_followup — manager stelt gerichte vervolgvragen
     writer.send({ type: 'decision', action: 'ask_followup' })
 
-    // Step 2: manager asks a follow-up question
     const managerModel = genAI.getGenerativeModel({
       model: MODEL,
       systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
     })
-
     const isFirstTurn = messages.filter((m) => m.role === 'user').length <= 1
-
     const managerPrompt = isFirstTurn
-      ? `De klant heeft zojuist zijn/haar campagne-aanvraag ingediend. Dit is je eerste reactie.
+      ? `De klant heeft zojuist zijn/haar eerste bericht gestuurd. Dit is je eerste reactie als ${MANAGER_NAME}.
 
 Briefing van de klant:
 ${conversation}
 
 Schrijf je antwoord:
-- Begin met een korte, warme bevestiging (1-2 zinnen) dat je de aanvraag hebt ontvangen.
-- Vat in 2-3 bullets samen wat je hebt begrepen (doel, product/dienst, eventueel doelgroep/budget).
-- Stel daarna 2 tot 4 GERICHTE vervolgvragen die nog ontbreken voor een sterk plan (denk aan: doelgroep details, budget, locatie/regio, website/kanalen, eerdere campagnes, succescriteria, looptijd).
-- Sluit af met een uitnodigende zin om de antwoorden te delen.
+- Begin met een korte, warme bevestiging (1–2 zinnen) dat je het bericht hebt ontvangen.
+- Vat in 2–3 bullets samen wat je hebt begrepen.
+- Stel daarna 2 tot 4 GERICHTE vervolgvragen die nodig zijn om de klant goed verder te helpen.
+- Sluit af met een uitnodigende zin.
 
 Hou het strak: geen overdaad aan tekst. Schrijf in het Nederlands, jij-vorm.`
-      : `De klant heeft net gereageerd. Stel als ${MANAGER_NAME} de volgende set gerichte vervolgvragen om de intake compleet te maken.
+      : `De klant heeft net gereageerd. Stel als ${MANAGER_NAME} 1–3 gerichte vervolgvragen om de vraag scherper te krijgen.
 
 Gespreksgeschiedenis:
 ${conversation}
 
 Regels:
 - Maximaal 3 vragen.
-- Vraag alleen naar wat nog ontbreekt of vaag is voor een goed plan.
+- Vraag alleen naar wat nog ontbreekt of vaag is.
 - Geen herhaling van wat al duidelijk is.
 - Eventueel 1 korte zin van bevestiging vooraf, daarna direct de vragen.
 - Schrijf in het Nederlands, jij-vorm.`
@@ -270,10 +343,10 @@ async function handlePlanningKickoff(
 
   const prompt = `${PLANNING_ORCHESTRATOR_PROMPT}
 ${profileContext}
-INGESCHAKELDE SPECIALISTEN voor deze campagne (gebruik UITSLUITEND deze namen, ongeacht eerdere instructies):
+DOOR DE KLANT GESELECTEERDE SPECIALISTEN (kies hieruit alleen wie écht relevant is voor déze uitwerking — niet automatisch allemaal):
 ${activeNames.map((n) => `- ${n}`).join('\n')}
 
-Klantcontext (volledige intake):
+Klantcontext (volledige gespreksgeschiedenis):
 ${conversation}
 
 Geef je JSON-beslissing. Uitsluitend JSON.`
@@ -281,27 +354,33 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
   const res = await model.generateContent(prompt)
 
   const fallbackPlan = {
+    deliverable_type: 'Uitwerking',
     speaking_order: activeNames,
     briefings: Object.fromEntries(activeNames.map((n) => [n, ''])),
-    kickoff_message: `Top, ik heb genoeg context om met het team aan de slag te gaan. We werken het plan uit, beginnend met ${activeNames[0]}. Daarna pakken de anderen het op.`,
+    kickoff_message: `Top, ik heb genoeg context om met het team aan de slag te gaan. We bouwen dit nu uit, beginnend met ${activeNames[0]}.`,
   }
 
   const plan = safeJSON<{
+    deliverable_type?: string
     speaking_order: string[]
     briefings: Record<string, string>
     kickoff_message: string
   }>(res.response.text(), fallbackPlan)
 
-  // Filter naar alleen de geselecteerde specialisten
+  // Filter naar alleen de door de klant geselecteerde specialisten — manager mag
+  // een subset kiezen, maar mag geen specialisten activeren die de klant uitvinkte.
   const activeNameSet = new Set(activeNames)
   const filtered = (plan.speaking_order || []).filter((n) => activeNameSet.has(n))
-  // Zorg dat elke geselecteerde specialist één keer voorkomt
-  for (const name of activeNames) {
-    if (!filtered.includes(name)) filtered.push(name)
+  // Vangnet: als de manager helemaal niemand activeerde, valt het terug op alle
+  // geselecteerden zodat we niet vastlopen.
+  if (filtered.length === 0) {
+    plan.speaking_order = activeNames
+  } else {
+    plan.speaking_order = filtered
   }
-  plan.speaking_order = filtered
   plan.briefings = plan.briefings || {}
   if (!plan.kickoff_message) plan.kickoff_message = fallbackPlan.kickoff_message
+  if (!plan.deliverable_type) plan.deliverable_type = fallbackPlan.deliverable_type
 
   return NextResponse.json({ plan })
 }
@@ -335,11 +414,11 @@ function handleSpecialistTurn(
     systemInstruction: AGENT_SYSTEM_PROMPTS[agentId] + profileContext,
   })
 
-  const prompt = `Klant- en planningcontext tot nu toe:
+  const prompt = `Klant- en gespreks-context tot nu toe:
 ${conversation}
 
 JOUW BRIEFING van ${MANAGER_NAME} voor deze beurt:
-${briefing || `Geef je bijdrage aan het plan vanuit jouw expertise.`}
+${briefing || `Geef je bijdrage aan de vraag van de klant vanuit jouw expertise.`}
 
 Mede-specialisten in dit team: ${otherAgents}.
 Dit is ronde ${round}.
@@ -407,13 +486,13 @@ Geef je JSON-beslissing. Uitsluitend JSON.`
   return NextResponse.json({ decision })
 }
 
-// ─── 5. Finalize: manager schrijft het volledige plan ─────────────────────────
+// ─── 5. Finalize: manager schrijft het leveringsstuk in passend format ─────────
 
 function handleFinalize(
-  body: { messages: ConversationEntry[] },
+  body: { messages: ConversationEntry[]; deliverableType?: string },
   profileContext: string
 ) {
-  const { messages } = body
+  const { messages, deliverableType } = body
   const conversation = formatConversation(messages)
 
   const model = genAI.getGenerativeModel({
@@ -421,12 +500,16 @@ function handleFinalize(
     systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
+  const deliverableHint = deliverableType
+    ? `\nHet eerder aangekondigde type leveringsstuk is: **${deliverableType}**. Houd dat aan, tenzij de vraag onmiskenbaar iets anders verlangt.\n`
+    : ''
+
   const prompt = `${FINAL_PLAN_PROMPT}
-${profileContext}
+${profileContext}${deliverableHint}
 Volledige input van klant + specialisten:
 ${conversation}
 
-Schrijf nu het volledige campagneplan volgens het exacte formaat. Begin direct met "# Campagneplan" — geen voorwoord.`
+Schrijf nu het volledige leveringsstuk volgens de regels. Begin direct met de H1-titel ("# {Type stuk} — {Onderwerp}") — geen voorwoord.`
 
   return ndjsonResponse(async (writer) => {
     const res = await model.generateContentStream(prompt)
@@ -434,7 +517,7 @@ Schrijf nu het volledige campagneplan volgens het exacte formaat. Begin direct m
   })
 }
 
-// ─── 6. Bijsturen na finalize: manager past plan aan ──────────────────────────
+// ─── 6. Bijsturen na finalize: manager past leveringsstuk aan ─────────────────
 
 function handleIteratePlan(
   body: { messages: ConversationEntry[] },
@@ -448,18 +531,18 @@ function handleIteratePlan(
     systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
   })
 
-  const prompt = `Je bent ${MANAGER_NAME}, Campagne Manager. Je hebt al een compleet campagneplan opgeleverd. De klant geeft nu bijstuur-feedback.
+  const prompt = `Je bent ${MANAGER_NAME}, Marketing Manager. Je hebt al een compleet leveringsstuk opgeleverd. De klant geeft nu bijstuur-feedback.
 
-Volledige conversatie inclusief plan en feedback:
+Volledige conversatie inclusief het stuk en feedback:
 ${conversation}
 
 TAAK:
 - Lees de feedback van de klant goed.
-- Lever een aangepaste versie van het plan in DEZELFDE structuur als het oorspronkelijke plan (zelfde 9 secties met markdown headings).
+- Lever een aangepaste versie van het stuk in DEZELFDE structuur als het oorspronkelijke (zelfde H1-titel en dezelfde ## secties).
 - Pas alléén aan wat geraakt wordt door de feedback; behoud de rest. Wees expliciet over wat is gewijzigd in een korte regel bovenaan ("**Wijzigingen op basis van je feedback:** ...").
 - Sluit af met de uitnodiging om verder bij te sturen.
 
-Schrijf in het Nederlands, jij-vorm. Begin direct met de wijzigingsregel en daarna het plan. Geen voorwoord.`
+Schrijf in het Nederlands, jij-vorm. Begin direct met de wijzigingsregel en daarna het stuk. Geen voorwoord.`
 
   return ndjsonResponse(async (writer) => {
     const res = await model.generateContentStream(prompt)

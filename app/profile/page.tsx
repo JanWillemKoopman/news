@@ -107,8 +107,8 @@ export default function ProfileListPage() {
             Jouw klanten
           </h1>
           <p className="text-ink-500 mt-3 text-base leading-relaxed">
-            Maak een klantprofiel aan per klant waarvoor je campagnes ontwikkelt. Bij
-            elke nieuwe sessie kies je voor welke klant het bureau aan de slag gaat.
+            Maak een klantprofiel aan per klant waarvoor je werkt. Bij elke nieuwe
+            sessie kies je voor welke klant het bureau aan de slag gaat.
           </p>
         </div>
       </header>

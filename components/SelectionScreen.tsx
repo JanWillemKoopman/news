@@ -112,7 +112,7 @@ export default function SelectionScreen() {
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
             {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
-            welke specialisten je wilt inschakelen voor jouw campagne.
+            welke specialisten beschikbaar zijn voor jouw vragen rondom online marketing.
           </p>
         </div>
       </header>
@@ -138,8 +138,9 @@ export default function SelectionScreen() {
                     {MANAGER_TITLE}
                   </p>
                   <p className="text-sm text-ink-500 leading-relaxed">
-                    Doet de intake, bewaakt de regie en bouwt aan het eind het complete plan
-                    op basis van álle input van jou en het team.
+                    Jouw eerste aanspreekpunt voor alle marketingvragen. Beantwoordt zelf,
+                    haalt de juiste specialist erbij of laat het team een volledige uitwerking
+                    maken — afhankelijk van wat de vraag verdient.
                   </p>
                 </div>
               </div>

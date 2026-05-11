@@ -111,8 +111,8 @@ function LoginInner() {
         </h1>
         <p className="text-ink-500 mt-3 text-base leading-relaxed text-center">
           {mode === 'signin'
-            ? 'Log in om je klantprofielen en eerdere campagnes terug te vinden.'
-            : 'Bewaar klantprofielen en sessies zodat het bureau je elke campagne meteen kent.'}
+            ? 'Log in om je klantprofielen en eerdere sessies terug te vinden.'
+            : 'Bewaar klantprofielen en sessies zodat het bureau je elke vraag meteen kent.'}
         </p>
 
         <div className="mt-8 inline-flex w-full p-1 rounded-full border border-cream-500 bg-cream-100">
