@@ -250,14 +250,14 @@ Geef je JSON-beslissing.`
         model: MODEL,
         systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
       })
-      const announcePrompt = `De klant heeft net iets gevraagd. Jij hebt zojuist besloten om ${decision.specialist} erbij te halen omdat die de juiste expertise heeft.
+      const announcePrompt = `Jij hebt zojuist besloten om ${decision.specialist} erbij te halen voor deze specifieke vraag.
 
-Briefing aan de specialist (intern): ${decision.briefing ?? ''}
+Briefing aan de specialist (intern, niet herhalen aan klant): ${decision.briefing ?? ''}
 
 Gespreksgeschiedenis:
 ${conversation}
 
-Schrijf nu een korte aankondiging (1–2 zinnen) aan de klant waarin je vertelt waarom je ${decision.specialist} erbij haalt en wat de klant van hem/haar mag verwachten. Geen vervolgvragen, geen samenvatting van de specialist zijn antwoord — alleen de aankondiging. Nederlands, jij-vorm.`
+Schrijf nu één zin aan de klant. Vertel concreet waarom ${decision.specialist} de juiste persoon is voor dit specifieke vraagstuk — niet generiek ("heeft de juiste expertise"), maar inhoudelijk ("kan de exacte campagne-structuur uitdenken" / "weet hoe je dit tracking-probleem oplost"). Geen groet, geen vervolgvraag, geen samenvatting. Gewoon de aankondiging. Nederlands, jij-vorm.`
       const res = await managerModel.generateContentStream(announcePrompt)
       await pumpModelStream(writer, res)
       return
