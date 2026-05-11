@@ -18,6 +18,7 @@ export default function SelectionScreen() {
   const [infoAgent, setInfoAgent] = useState<Agent | null>(null)
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [userFirstName, setUserFirstName] = useState<string | undefined>(undefined)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0)
@@ -39,7 +40,10 @@ export default function SelectionScreen() {
         const {
           data: { user },
         } = await supabase.auth.getUser()
-        if (!cancelled) setIsAuthenticated(Boolean(user))
+        if (!cancelled) {
+          setIsAuthenticated(Boolean(user))
+          setUserFirstName(user?.user_metadata?.first_name as string | undefined)
+        }
       } catch {
         if (!cancelled) setIsAuthenticated(false)
       }
@@ -55,7 +59,7 @@ export default function SelectionScreen() {
     setPickerError(null)
     if (isAuthenticated === false) {
       // Gast: meteen door zonder klantprofiel.
-      startSession(null)
+      startSession(null, undefined)
       return
     }
     // Ingelogd: open picker (laadt zelf de lijst, toont fallback bij 0 profielen).
@@ -69,7 +73,7 @@ export default function SelectionScreen() {
       const res = await fetch(`/api/profiles/${profileId}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('Kon klantprofiel niet laden')
       const data = (await res.json()) as { profile: ClientProfile }
-      startSession(data.profile)
+      startSession(data.profile, userFirstName)
       setPickerOpen(false)
     } catch (err) {
       setPickerError(err instanceof Error ? err.message : 'Kon sessie niet starten')

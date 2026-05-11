@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowRight, Briefcase, Mail, Lock, Loader2 } from 'lucide-react'
+import { ArrowRight, Briefcase, Mail, Lock, Loader2, UserRound } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type Mode = 'signin' | 'signup'
@@ -27,6 +27,7 @@ function LoginInner() {
   const initialMode: Mode = params.get('mode') === 'signup' ? 'signup' : 'signin'
 
   const [mode, setMode] = useState<Mode>(initialMode)
+  const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -44,6 +45,10 @@ function LoginInner() {
       return
     }
     if (mode === 'signup') {
+      if (!firstName.trim()) {
+        setError('Vul je voornaam in.')
+        return
+      }
       if (password.length < 8) {
         setError('Kies een wachtwoord van minimaal 8 tekens.')
         return
@@ -63,6 +68,7 @@ function LoginInner() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+            data: { first_name: firstName.trim() },
           },
         })
         if (error) throw error
@@ -143,6 +149,18 @@ function LoginInner() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {mode === 'signup' && (
+            <Field
+              id="firstName"
+              type="text"
+              label="Voornaam"
+              value={firstName}
+              onChange={setFirstName}
+              icon={<UserRound size={16} className="text-ink-400" />}
+              placeholder="Jouw voornaam"
+              autoComplete="given-name"
+            />
+          )}
           <Field
             id="email"
             type="email"
