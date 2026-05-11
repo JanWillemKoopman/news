@@ -111,8 +111,7 @@ export default function SelectionScreen() {
             Stel je team samen
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
-            {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
-            welke specialisten beschikbaar zijn voor jouw vragen rondom online marketing.
+            Start je marketingsessie en laat je helpen door ons team van online marketingspecialisten. Stel je team samen en onder begeleiding van onze marketingmanager werken we samen je online marketingvraagstukken uit.
           </p>
         </div>
       </header>
@@ -138,9 +137,7 @@ export default function SelectionScreen() {
                     {MANAGER_TITLE}
                   </p>
                   <p className="text-sm text-ink-500 leading-relaxed">
-                    Jouw eerste aanspreekpunt voor alle marketingvragen. Beantwoordt zelf,
-                    haalt de juiste specialist erbij of laat het team een volledige uitwerking
-                    maken — afhankelijk van wat de vraag verdient.
+                    Scott is jouw strategische partner. Hij vertaalt jouw ambities naar de juiste inzet van ons team. Van een snelle vraag tot een volledige campagne: Scott zorgt dat het geregeld wordt.
                   </p>
                 </div>
               </div>

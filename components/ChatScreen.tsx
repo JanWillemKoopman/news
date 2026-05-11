@@ -58,6 +58,7 @@ export default function ChatScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0)
+  const [showAuthWall, setShowAuthWall] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -106,6 +107,21 @@ export default function ChatScreen() {
       cancelled = true
     }
   }, [])
+
+  // Toon auth-wall na 10 berichten voor niet-ingelogde gebruikers
+  useEffect(() => {
+    if (isAuthenticated === null || isAuthenticated) return
+    const userMsgCount = messages.filter((m) => m.role === 'user').length
+    const stored = parseInt(
+      (typeof window !== 'undefined' && localStorage.getItem('marketing-bureau-msg-count')) || '0',
+      10
+    )
+    const count = Math.max(stored, userMsgCount)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('marketing-bureau-msg-count', String(count))
+    }
+    if (count >= 10) setShowAuthWall(true)
+  }, [messages, isAuthenticated])
 
   // Maak een nieuwe sessie aan zodra een ingelogde gebruiker op het chatscherm
   // komt zonder bestaande sessie. Snapshot van het klantprofiel gebeurt server-side.
@@ -799,6 +815,35 @@ export default function ChatScreen() {
           </div>
         </footer>
       </div>
+
+      {/* Auth wall — blokkade na 10 berichten voor niet-ingelogde gebruikers */}
+      {showAuthWall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-cream-100/80 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm bg-cream-50 border border-cream-500 rounded-3xl p-8 shadow-xl text-center">
+            <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em] mb-4">Sessielimiet bereikt</p>
+            <h2 className="font-serif font-medium text-2xl text-ink-900 leading-snug mb-3">
+              Maak een account aan om verder te gaan
+            </h2>
+            <p className="text-sm text-ink-500 leading-relaxed mb-6">
+              Je hebt 10 berichten verstuurd als gast. Log in of maak een gratis account aan om onbeperkt te chatten en je gesprekken op te slaan.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href="/login?mode=signup"
+                className="w-full px-4 py-3 rounded-2xl bg-clay-500 hover:bg-clay-600 text-white font-medium text-sm transition-colors"
+              >
+                Account aanmaken
+              </a>
+              <a
+                href="/login"
+                className="w-full px-4 py-3 rounded-2xl border border-cream-500 hover:border-clay-500 text-ink-700 font-medium text-sm transition-colors"
+              >
+                Inloggen
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
