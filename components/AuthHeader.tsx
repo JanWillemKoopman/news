@@ -51,8 +51,8 @@ export default function AuthHeader() {
 
   if (state === 'guest') {
     return (
-      <div className="hidden sm:flex items-center gap-3 text-xs">
-        <span className="px-2 py-0.5 rounded-full bg-cream-400 border border-cream-500 text-ink-500">Gast</span>
+      <div className="flex items-center gap-3 text-xs">
+        <span className="hidden sm:inline px-2 py-0.5 rounded-full bg-cream-400 border border-cream-500 text-ink-500">Gast</span>
         <Link
           href="/login"
           className="text-clay-600 hover:text-clay-700 font-medium transition-colors"
