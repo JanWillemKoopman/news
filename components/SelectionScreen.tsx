@@ -84,7 +84,7 @@ export default function SelectionScreen() {
       <header className="px-4 pt-6 pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
                 <Briefcase size={14} className="text-clay-600" />
               </div>
@@ -108,7 +108,7 @@ export default function SelectionScreen() {
             </div>
           </div>
           <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
-            Stel je bureau-team samen
+            Stel je team samen
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
             {MANAGER_NAME} — jouw {MANAGER_TITLE} — neemt altijd de regie. Kies daarnaast
@@ -124,7 +124,7 @@ export default function SelectionScreen() {
           <div className="mb-8">
             <div className="relative p-6 rounded-2xl border bg-cream-50 border-clay-500/30 shadow-sm">
               <span className="absolute top-5 right-5 text-[10px] font-medium uppercase tracking-[0.15em] text-clay-600">
-                Altijd aan
+                Altijd aanwezig
               </span>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center border bg-clay-500/15 border-clay-500/30 flex-shrink-0">

@@ -692,7 +692,7 @@ export default function ChatScreen() {
 
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">
-                Marketingbureau · {MANAGER_NAME}
+                Marketing sessie
               </p>
               {currentClientProfile?.name && (
                 <p className="text-xs text-ink-700 truncate mt-0.5">
@@ -712,7 +712,7 @@ export default function ChatScreen() {
           <div className="max-w-2xl mx-auto space-y-5">
             {isAuthenticated === false && (
               <div className="px-4 py-3 bg-clay-500/10 border border-clay-500/30 rounded-2xl text-xs text-ink-700 leading-relaxed">
-                Je werkt in demo-modus. <a href="/login" className="font-medium text-clay-700 underline">Maak een account aan</a> om je sessies te bewaren en later te hervatten.
+                Je bent momenteel niet ingelogd. <a href="/login" className="font-medium text-clay-700 underline">Log in</a> of <a href="/login?signup=true" className="font-medium text-clay-700 underline">maak een account aan</a> om alle functionaliteiten van deze app te ontgrendelen. Zo krijg je toegang tot je gespreksgeschiedenis en kun je jouw klantprofiel(en) personaliseren.
               </div>
             )}
             {messages.map((m) => (
