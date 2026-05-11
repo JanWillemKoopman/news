@@ -9,18 +9,17 @@ import type {
   Phase,
 } from '@/types'
 
-function buildWelcomeMessage(): Message {
+function buildWelcomeMessage(firstName?: string): Message {
+  const greeting = firstName
+    ? `Hoi ${firstName}! Wij helpen je graag verder met je online marketing. Waar kunnen we je mee helpen?`
+    : `Hoi! Wij helpen je graag verder met je online marketing. Waar kunnen we je mee helpen?`
   return {
     id:
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : `welcome-${Date.now()}`,
     role: 'manager',
-    content: `Welkom — fijn dat je er bent! Ik ben ${MANAGER_NAME}, je Marketing Manager bij het bureau. Het team en ik staan klaar als je collega's voor alles rondom online marketing: campagnes, Google Ads, meetplannen, websites, e-mailflows, CRM, SEO, content — wat er ook speelt.
-
-Vertel: waar kunnen we je vandaag mee helpen?
-
-Tip: hoe concreter de vraag — denk aan doel, doelgroep, context — hoe scherper het advies van het team.`,
+    content: greeting,
     timestamp: Date.now(),
     phase: 'intake',
   }
@@ -43,7 +42,7 @@ interface ChatState {
 interface ChatActions {
   toggleAgent: (id: AgentId) => void
   selectAll: () => void
-  startSession: (clientProfile?: ClientProfile | null) => void
+  startSession: (clientProfile?: ClientProfile | null, firstName?: string) => void
   addMessage: (message: Message) => void
   updateMessageContent: (id: string, content: string) => void
   setTyping: (isTyping: boolean, agentName?: string | null) => void
@@ -86,10 +85,10 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       selectAll: () => set({ selectedAgents: [...ALL_AGENT_IDS] }),
 
-      startSession: (clientProfile) =>
+      startSession: (clientProfile, firstName) =>
         set({
           screen: 'chat',
-          messages: [buildWelcomeMessage()],
+          messages: [buildWelcomeMessage(firstName)],
           phase: 'intake',
           intakeRound: 0,
           planningRound: 0,
