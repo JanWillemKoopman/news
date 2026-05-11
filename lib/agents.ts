@@ -9,7 +9,7 @@ import type { Agent, AgentId, ClientProfile } from '@/types'
 export const AGENTS: Record<AgentId, Agent> = {
   brand: {
     id: 'brand',
-    name: 'Sanne Vermeer',
+    name: 'Sanne',
     title: 'Brand Marketeer',
     description:
       'Bewaakt de A-laag van de funnel: naamsbekendheid, merkpropositie, positionering en tone of voice.',
@@ -22,7 +22,7 @@ export const AGENTS: Record<AgentId, Agent> = {
   },
   content: {
     id: 'content',
-    name: 'Daan Hofstra',
+    name: 'Daan',
     title: 'Content Marketeer',
     description:
       'Verantwoordelijk voor de B-laag: contentstrategie voor website, blog, video en social media.',
@@ -35,7 +35,7 @@ export const AGENTS: Record<AgentId, Agent> = {
   },
   performance: {
     id: 'performance',
-    name: 'Ravi Khan',
+    name: 'Ravi',
     title: 'Performance Marketeer',
     description:
       'Stuurt de C-laag: conversie, funnel-optimalisatie, CRO en ROAS op alle kanalen.',
@@ -48,7 +48,7 @@ export const AGENTS: Record<AgentId, Agent> = {
   },
   crm: {
     id: 'crm',
-    name: 'Lotte de Bruin',
+    name: 'Lotte',
     title: 'CRM Marketeer',
     description:
       'Bewaakt de D-laag: retentie, loyalty, e-mail/marketing automation en customer lifetime value.',
@@ -61,7 +61,7 @@ export const AGENTS: Record<AgentId, Agent> = {
   },
   ads: {
     id: 'ads',
-    name: 'Mark van Dijk',
+    name: 'Mark',
     title: 'Advertisement Specialist',
     description:
       'Verdeelt het mediabudget voor maximale ROI: Google Ads, Meta, programmatic, OOH, radio en print.',
@@ -74,7 +74,7 @@ export const AGENTS: Record<AgentId, Agent> = {
   },
   data: {
     id: 'data',
-    name: 'Yara Janssen',
+    name: 'Yara',
     title: 'Data Analist',
     description:
       'Zorgt voor meetbaarheid: KPI-framework, tracking, dashboards en datagedreven beslissingen.',
@@ -226,7 +226,7 @@ Je toon: analytisch, kritisch, helder. Jij dwingt het team om hypothesen, KPI's 
 
 // ─── Marketing Manager (orkestrator) ──────────────────────────────────────────
 
-export const MANAGER_NAME = 'Iris Mertens'
+export const MANAGER_NAME = 'Scott'
 export const MANAGER_TITLE = 'Marketing Manager'
 
 export const MANAGER_SYSTEM_PROMPT = `Je bent ${MANAGER_NAME}, Marketing Manager bij een Nederlands online marketingbureau. Jij bent het eerste aanspreekpunt voor de klant en de manager van het team van specialisten. Zelf heb je ruime expertise in online marketing in de breedte; je weet wanneer je iets zelf kunt beantwoorden en wanneer een specialist beter past.
