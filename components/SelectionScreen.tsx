@@ -111,7 +111,7 @@ export default function SelectionScreen() {
             Stel je team samen
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
-            Start je marketingsessie en laat je helpen door ons team van online marketingspecialisten. Stel je team samen en onder begeleiding van onze marketingmanager werken we samen je online marketingvraagstukken uit.
+            Start je marketingsessie en laat je helpen door ons team van online marketingspecialisten. Stel je team samen en onder begeleiding van onze marketingmanager Scott werken we samen je online marketingvraagstukken uit.
           </p>
         </div>
       </header>
