@@ -297,7 +297,7 @@ export default function ChatScreen() {
       }),
     })
     if (!res.ok || !res.body) {
-      const body = !res.body ? null : await res.clone().json().catch(() => null)
+      const body = res.body ? await res.json().catch(() => null) : null
       const msg = body?.message ?? 'Er ging iets mis. Controleer je verbinding en probeer het opnieuw.'
       const err = new Error(msg) as Error & { code?: string }
       if (body?.error) err.code = body.error
@@ -652,7 +652,11 @@ export default function ChatScreen() {
   // ── Main orchestratie na elk gebruikersbericht ───────────────────────────
 
   const runOrchestration = useCallback(
-    async (userMessage: string, snapshotMessages: Message[]) => {
+    async (
+      userMessage: string,
+      snapshotMessages: Message[],
+      onTooLong?: (text: string) => void
+    ) => {
       setIsLoading(true)
       setError(null)
 
@@ -671,6 +675,7 @@ export default function ChatScreen() {
         const typedErr = err as Error & { code?: string }
         if (typedErr.code === 'too_long') {
           setInputError(typedErr.message)
+          onTooLong?.(userMessage)
           return
         }
         const msg = typedErr.message ?? 'Onbekende fout'
@@ -703,7 +708,7 @@ export default function ChatScreen() {
       timestamp: Date.now(),
     })
 
-    await runOrchestration(text, snapshot)
+    await runOrchestration(text, snapshot, (original) => setInputValue(original))
   }
 
   const handleRetry = async () => {
@@ -803,7 +808,10 @@ export default function ChatScreen() {
           const stepLabel = activeAgent
             ? `Stap ${currentPlanStep + 1} van ${planSteps.length} — ${activeAgent} werkt bij`
             : `${typingAgent ?? 'Manager'} coördineert`
-          const barColor = agentConfig ? agentConfig.borderColor.replace('border-', 'bg-').replace('/30', '') : 'bg-clay-500'
+          // Extract hex from e.g. "border-[#9c4a3a]/30" → "#9c4a3a"
+          const hexMatch = agentConfig?.borderColor.match(/#[0-9a-fA-F]{3,6}/)
+          const barBg = hexMatch ? hexMatch[0] : '#b87f6a'
+          const pct = Math.min(100, Math.round(((currentPlanStep + 1) / planSteps.length) * 100))
           return (
             <div className="px-4 py-2 bg-cream-50 border-b border-cream-500">
               <div className="max-w-2xl mx-auto">
@@ -813,8 +821,8 @@ export default function ChatScreen() {
                 </div>
                 <div className="h-1 w-full bg-cream-400 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${barColor} animate-pulse`}
-                    style={{ width: `${Math.round(((currentPlanStep + 1) / planSteps.length) * 100)}%` }}
+                    className="h-full rounded-full transition-all duration-500 animate-pulse"
+                    style={{ width: `${pct}%`, backgroundColor: barBg }}
                   />
                 </div>
               </div>
