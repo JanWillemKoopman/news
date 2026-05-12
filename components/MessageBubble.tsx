@@ -1,4 +1,5 @@
-import { Briefcase, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import Image from 'next/image'
 import { AGENTS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 import type { Message } from '@/types'
 import AgentIcon from './AgentIcon'
@@ -109,8 +110,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   if (message.role === 'manager') {
     return (
       <div className="flex items-start gap-3 animate-fade-in">
-        <div className="w-8 h-8 rounded-full bg-clay-500/15 border border-clay-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Briefcase size={14} className="text-clay-600" />
+        <div className="w-8 h-8 rounded-full overflow-hidden border border-clay-500/30 flex-shrink-0 mt-0.5">
+          <Image src="/agents/jeroen.png" alt={MANAGER_NAME} width={32} height={32} className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium mb-1.5">

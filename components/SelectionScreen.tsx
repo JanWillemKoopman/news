@@ -90,11 +90,11 @@ export default function SelectionScreen() {
       <header className="px-4 pt-6 pb-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-6">
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-ink-900/8 border border-ink-900/15 flex items-center justify-center">
                 <BrandLogo size={14} className="text-ink-900" />
               </div>
-              <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
+              <span className="hidden sm:inline text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
                 Marketing Sessie
               </span>
             </div>
@@ -117,7 +117,7 @@ export default function SelectionScreen() {
             Stel je team samen
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
-            Kies je specialisten en ga aan de slag. Onder begeleiding van marketingmanager Jan-Willem pakken we jouw marketingvraagstuk samen aan.
+            Kies je specialisten en ga aan de slag. Onder begeleiding van marketingmanager Jeroen pakken we jouw marketingvraagstuk samen aan.
           </p>
         </div>
       </header>
@@ -134,7 +134,7 @@ export default function SelectionScreen() {
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl overflow-hidden border border-clay-500/30 flex-shrink-0">
                   <Image
-                    src="/agents/daan_hofstra.png"
+                    src="/agents/jeroen.png"
                     alt={MANAGER_NAME}
                     width={48}
                     height={48}

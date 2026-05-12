@@ -35,6 +35,7 @@ export async function GET() {
     .from('chat_sessions')
     .select('id, title, preview, phase, created_at, updated_at, company_profile_snapshot')
     .eq('user_id', user.id)
+    .not('preview', 'is', null)
     .order('updated_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
