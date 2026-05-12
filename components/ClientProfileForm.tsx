@@ -241,7 +241,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-all"
+        className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl px-4 py-3 text-base text-ink-900 placeholder:text-ink-400 transition-all"
       />
     </div>
   )
@@ -272,7 +272,7 @@ function Textarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-all resize-none leading-relaxed"
+        className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl px-4 py-3 text-base text-ink-900 placeholder:text-ink-400 transition-all resize-none leading-relaxed"
       />
     </div>
   )
