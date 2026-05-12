@@ -248,7 +248,7 @@ export default function SessionSidebar({
                           if (e.key === 'Escape') cancelRename()
                         }}
                         maxLength={120}
-                        className="flex-1 min-w-0 bg-cream-200 border border-cream-500 focus:border-clay-500 outline-none rounded-lg px-2 py-1 text-sm text-ink-900"
+                        className="flex-1 min-w-0 bg-cream-200 border border-cream-500 focus:border-clay-500 outline-none rounded-lg px-2 py-1 text-base text-ink-900"
                       />
                       <button
                         type="button"

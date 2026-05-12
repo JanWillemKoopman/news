@@ -276,7 +276,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl pl-10 pr-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-all"
+          className="w-full bg-cream-50 border border-cream-500 focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 outline-none rounded-xl pl-10 pr-4 py-3 text-base text-ink-900 placeholder:text-ink-400 transition-all"
         />
       </div>
     </div>

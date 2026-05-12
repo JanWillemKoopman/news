@@ -111,7 +111,7 @@ export default function AccountPage() {
   }
 
   const inputClass =
-    'w-full bg-cream-50 border border-cream-500 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50'
+    'w-full bg-cream-50 border border-cream-500 rounded-xl px-3.5 py-2.5 text-base text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50'
   const btnPrimary =
     'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-clay-500 hover:bg-clay-600 disabled:bg-cream-400 text-white font-medium text-sm transition-colors disabled:cursor-not-allowed'
   const card = 'bg-cream-50 border border-cream-500 rounded-2xl p-6 space-y-4'

@@ -917,7 +917,7 @@ export default function ChatScreen() {
                 aria-label="Jouw bericht aan de Marketing Manager"
                 disabled={isLoading}
                 maxLength={2000}
-                className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
+                className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-base text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
               />
               <button
                 type="submit"
