@@ -87,9 +87,9 @@ export default function SelectionScreen() {
   return (
     <div className="min-h-screen flex flex-col bg-cream-200">
       {/* Header */}
-      <header className="px-4 pt-6 pb-8">
+      <header className="sticky top-0 z-20 bg-cream-200 border-b border-cream-500/60 px-4 py-3">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-ink-900/8 border border-ink-900/15 flex items-center justify-center">
                 <BrandLogo size={14} className="text-ink-900" />
@@ -113,26 +113,26 @@ export default function SelectionScreen() {
               <AuthHeader />
             </div>
           </div>
-          <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
-            Stel je team samen
-          </h1>
-          <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
-            Kies je specialisten en ga aan de slag. Onder begeleiding van marketingmanager Jeroen pakken we jouw marketingvraagstuk samen aan.
-          </p>
         </div>
       </header>
 
       {/* Team grid */}
-      <main className="flex-1 px-4 pb-10">
+      <main className="flex-1 px-4 pt-8 pb-28">
         <div className="max-w-4xl mx-auto">
+          <h1 className="font-serif font-medium text-4xl sm:text-5xl text-ink-900 tracking-tight leading-[1.05]">
+            Stel je team samen
+          </h1>
+          <p className="text-ink-500 mt-4 mb-8 text-base sm:text-lg max-w-xl leading-relaxed">
+            Kies je specialisten en ga aan de slag. Onder begeleiding van marketingmanager Jeroen pakken we jouw marketingvraagstuk samen aan.
+          </p>
           {/* Manager card (separate, prominent, niet selecteerbaar) */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="relative p-6 rounded-2xl border bg-cream-50 border-clay-500/30 shadow-sm">
               <span className="absolute top-5 right-5 text-[10px] font-medium uppercase tracking-[0.15em] text-clay-600">
                 Altijd aanwezig
               </span>
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl overflow-hidden border border-clay-500/30 flex-shrink-0">
+                <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-clay-500/40 ring-offset-2 ring-offset-cream-50 flex-shrink-0">
                   <Image
                     src="/agents/jeroen.png"
                     alt={MANAGER_NAME}
@@ -280,8 +280,8 @@ export default function SelectionScreen() {
         />
       )}
 
-      {/* Sticky footer CTA */}
-      <footer className="sticky bottom-0 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
+      {/* Fixed footer CTA */}
+      <footer className="fixed bottom-0 left-0 right-0 z-10 border-t border-cream-500 bg-cream-200/95 backdrop-blur-md px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-ink-500">
             <Users size={15} className="text-ink-400" />
