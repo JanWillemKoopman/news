@@ -46,6 +46,8 @@ export default function ChatScreen() {
     currentSessionId,
     setCurrentSessionId,
     currentClientProfile,
+    sessionTitle,
+    isResumed,
   } = useChatStore()
 
   const [inputValue, setInputValue] = useState('')
@@ -59,6 +61,11 @@ export default function ChatScreen() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sessionsRefreshKey, setSessionsRefreshKey] = useState(0)
   const [showAuthWall, setShowAuthWall] = useState(false)
+  const [softNudgeDismissed, setSoftNudgeDismissed] = useState(false)
+  const [resumeBannerDismissed, setResumeBannerDismissed] = useState(false)
+  const [planSteps, setPlanSteps] = useState<string[]>([])
+  const [currentPlanStep, setCurrentPlanStep] = useState(0)
+  const [inputError, setInputError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -246,7 +253,13 @@ export default function ChatScreen() {
         ...payload,
       }),
     })
-    if (!res.ok) throw new Error(`Verzoek mislukt (${res.status})`)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      const msg = body?.message ?? 'Er ging iets mis. Controleer je verbinding en probeer het opnieuw.'
+      const err = new Error(msg) as Error & { code?: string }
+      if (body?.error) err.code = body.error
+      throw err
+    }
     return res.json() as Promise<T>
   }
 
@@ -283,7 +296,13 @@ export default function ChatScreen() {
         ...payload,
       }),
     })
-    if (!res.ok || !res.body) throw new Error(`Verzoek mislukt (${res.status})`)
+    if (!res.ok || !res.body) {
+      const body = res.body ? await res.json().catch(() => null) : null
+      const msg = body?.message ?? 'Er ging iets mis. Controleer je verbinding en probeer het opnieuw.'
+      const err = new Error(msg) as Error & { code?: string }
+      if (body?.error) err.code = body.error
+      throw err
+    }
 
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
@@ -381,6 +400,8 @@ export default function ChatScreen() {
   // ── Planning loop: kickoff → ronde 1 → manager check → eventueel ronde 2 → finalize
   const runPlanningLoop = useCallback(async () => {
     setPhase('planning')
+    setPlanSteps([])
+    setCurrentPlanStep(0)
 
     // Kickoff: type leveringsstuk + volgorde + briefings + intro-bericht
     setTyping(true, MANAGER_NAME)
@@ -397,6 +418,9 @@ export default function ChatScreen() {
     })
     setTyping(false)
 
+    // Zet de stappen nu we de speaking_order kennen
+    setPlanSteps(plan.speaking_order.filter((n) => AGENT_NAME_TO_ID[n]))
+
     addMessage({
       id: crypto.randomUUID(),
       role: 'manager',
@@ -408,8 +432,10 @@ export default function ChatScreen() {
     incrementPlanningRound() // ronde 1
 
     // Ronde 1: alle specialisten in opgegeven volgorde
-    for (const agentName of plan.speaking_order) {
+    for (let i = 0; i < plan.speaking_order.length; i++) {
+      const agentName = plan.speaking_order[i]
       if (!AGENT_NAME_TO_ID[agentName]) continue
+      setCurrentPlanStep(i)
       const briefing = plan.briefings[agentName] ?? ''
       await runSpecialistTurn(agentName, briefing, 1)
     }
@@ -441,9 +467,17 @@ export default function ChatScreen() {
         phase: 'planning',
       })
 
+      // Voeg tweede-ronde stappen toe aan de lijst
+      const r2names = decision.follow_up
+        .filter((f) => AGENT_NAME_TO_ID[f.agent])
+        .map((f) => f.agent)
+      setPlanSteps((prev) => [...prev, ...r2names])
+
       incrementPlanningRound() // ronde 2
-      for (const item of decision.follow_up) {
+      for (let i = 0; i < decision.follow_up.length; i++) {
+        const item = decision.follow_up[i]
         if (!AGENT_NAME_TO_ID[item.agent]) continue
+        setCurrentPlanStep(plan.speaking_order.length + i)
         await runSpecialistTurn(item.agent, item.briefing, 2)
       }
     }
@@ -483,6 +517,8 @@ export default function ChatScreen() {
       if (trimmed !== finalBuffer) updateMessageContent(finalId, trimmed)
     }
 
+    setPlanSteps([])
+    setCurrentPlanStep(0)
     setPhase('final')
   }, [
     addMessage,
@@ -616,7 +652,11 @@ export default function ChatScreen() {
   // ── Main orchestratie na elk gebruikersbericht ───────────────────────────
 
   const runOrchestration = useCallback(
-    async (userMessage: string, snapshotMessages: Message[]) => {
+    async (
+      userMessage: string,
+      snapshotMessages: Message[],
+      onTooLong?: (text: string) => void
+    ) => {
       setIsLoading(true)
       setError(null)
 
@@ -632,7 +672,13 @@ export default function ChatScreen() {
         await runIntake()
       } catch (err) {
         setTyping(false)
-        const msg = err instanceof Error ? err.message : 'Onbekende fout'
+        const typedErr = err as Error & { code?: string }
+        if (typedErr.code === 'too_long') {
+          setInputError(typedErr.message)
+          onTooLong?.(userMessage)
+          return
+        }
+        const msg = typedErr.message ?? 'Onbekende fout'
         setError(msg)
         setRetryPayload({ userMessage, snapshotMessages })
       } finally {
@@ -662,7 +708,7 @@ export default function ChatScreen() {
       timestamp: Date.now(),
     })
 
-    await runOrchestration(text, snapshot)
+    await runOrchestration(text, snapshot, (original) => setInputValue(original))
   }
 
   const handleRetry = async () => {
@@ -723,6 +769,67 @@ export default function ChatScreen() {
           </div>
         </header>
 
+        {/* Session resume banner */}
+        {isResumed && !resumeBannerDismissed && (() => {
+          const phaseHint: Record<string, string> = {
+            intake: 'Het team is nog bezig met de intake.',
+            planning: 'De uitwerking is in gang.',
+            final: 'Het plan is klaar — geef feedback of start een nieuwe sessie.',
+          }
+          const title = sessionTitle ?? messages.find((m) => m.role === 'manager')?.content?.slice(0, 60)
+          return (
+            <div className="relative px-4 py-3 bg-cream-50 border-l-4 border-clay-500/20 text-xs text-ink-700 leading-relaxed">
+              <button
+                onClick={() => setResumeBannerDismissed(true)}
+                aria-label="Sluit sessie-banner"
+                className="absolute top-2 right-3 text-ink-400 hover:text-ink-600 transition-colors text-sm leading-none"
+              >
+                ✕
+              </button>
+              <div className="pr-5 space-y-0.5">
+                {title && <p className="font-medium text-ink-800 truncate">{title}{title.length >= 60 ? '…' : ''}</p>}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-ink-500">
+                  {currentClientProfile?.name && <span>Klant: <span className="text-ink-700">{currentClientProfile.name}</span></span>}
+                  {currentClientProfile?.name && <span aria-hidden>·</span>}
+                  <span>{PHASE_LABELS[phase]}</span>
+                  <span aria-hidden>·</span>
+                  <span>{phaseHint[phase]}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Planning progress indicator */}
+        {phase === 'planning' && isTyping && planSteps.length > 0 && (() => {
+          const activeAgent = typingAgent && typingAgent !== MANAGER_NAME ? typingAgent : null
+          const activeAgentId = activeAgent ? AGENT_NAME_TO_ID[activeAgent] as AgentId | undefined : undefined
+          const agentConfig = activeAgentId ? AGENTS[activeAgentId] : null
+          const stepLabel = activeAgent
+            ? `Stap ${currentPlanStep + 1} van ${planSteps.length} — ${activeAgent} werkt bij`
+            : `${typingAgent ?? 'Manager'} coördineert`
+          // Extract hex from e.g. "border-[#9c4a3a]/30" → "#9c4a3a"
+          const hexMatch = agentConfig?.borderColor.match(/#[0-9a-fA-F]{3,6}/)
+          const barBg = hexMatch ? hexMatch[0] : '#b87f6a'
+          const pct = Math.min(100, Math.round(((currentPlanStep + 1) / planSteps.length) * 100))
+          return (
+            <div className="px-4 py-2 bg-cream-50 border-b border-cream-500">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[11px] text-ink-600 font-medium">{stepLabel}</p>
+                  <p className="text-[10px] text-ink-400 tabular-nums">{currentPlanStep + 1}/{planSteps.length}</p>
+                </div>
+                <div className="h-1 w-full bg-cream-400 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 animate-pulse"
+                    style={{ width: `${pct}%`, backgroundColor: barBg }}
+                  />
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Messages */}
         <main className="flex-1 overflow-y-auto px-4 py-6 scrollbar-hide">
           <div className="max-w-2xl mx-auto space-y-5">
@@ -735,24 +842,45 @@ export default function ChatScreen() {
               <MessageBubble key={m.id} message={m} />
             ))}
 
+            {/* Zachte aankondiging bij 5 berichten voor gasten */}
+            {isAuthenticated === false && !softNudgeDismissed && !showAuthWall && (() => {
+              const userMsgCount = messages.filter((m) => m.role === 'user').length
+              const remaining = 10 - userMsgCount
+              if (userMsgCount < 5 || remaining <= 0) return null
+              return (
+                <div className="relative px-4 py-3 bg-cream-50 border-l-4 border-clay-500/30 rounded-r-2xl text-xs text-ink-700 leading-relaxed animate-fade-in">
+                  <button
+                    onClick={() => setSoftNudgeDismissed(true)}
+                    aria-label="Sluiten"
+                    className="absolute top-2 right-2 text-ink-400 hover:text-ink-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                  <span className="font-medium text-clay-700">Nog {remaining} {remaining === 1 ? 'bericht' : 'berichten'} als gast.</span>{' '}
+                  <a href="/login?mode=signup" className="font-medium text-clay-700 underline">Maak een gratis account aan</a> of{' '}
+                  <a href="/login" className="font-medium text-clay-700 underline">log in</a> om onbeperkt te chatten en je gesprekken op te slaan.
+                </div>
+              )
+            })()}
+
             {isTyping && <TypingIndicator agentName={typingAgent ?? 'Bureau'} />}
 
             {error && (
-              <div className="flex items-start gap-3 p-4 bg-clay-500/10 border border-clay-500/30 rounded-2xl animate-fade-in">
-                <AlertCircle size={17} className="text-clay-700 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
+              <div className="p-4 bg-clay-500/10 border border-clay-500/30 rounded-2xl animate-fade-in">
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={17} className="text-clay-700 mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-ink-700 leading-relaxed">{error}</p>
-                  {retryPayload && (
-                    <button
-                      onClick={handleRetry}
-                      aria-label="Probeer opnieuw bericht te versturen"
-                      className="mt-2 flex items-center gap-1.5 text-xs font-medium text-clay-700 hover:text-clay-600 transition-colors"
-                    >
-                      <RefreshCw size={11} />
-                      Probeer opnieuw
-                    </button>
-                  )}
                 </div>
+                {retryPayload && (
+                  <button
+                    onClick={handleRetry}
+                    aria-label="Probeer opnieuw bericht te versturen"
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-clay-500 hover:bg-clay-600 text-white font-medium text-sm transition-colors"
+                  >
+                    <RefreshCw size={13} />
+                    Probeer opnieuw
+                  </button>
+                )}
               </div>
             )}
 
@@ -770,7 +898,7 @@ export default function ChatScreen() {
                 value={inputValue}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => { setInputValue(e.target.value); setInputError(null) }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault()
@@ -788,7 +916,7 @@ export default function ChatScreen() {
                 }
                 aria-label="Jouw bericht aan de Marketing Manager"
                 disabled={isLoading}
-                maxLength={4000}
+                maxLength={3500}
                 className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
               />
               <button
@@ -803,6 +931,19 @@ export default function ChatScreen() {
                 />
               </button>
             </form>
+            {/* Character counter + inline input errors */}
+            <div className="flex items-center justify-between mt-1 px-1">
+              {inputError ? (
+                <p className="text-[11px] text-clay-700 bg-clay-500/10 px-2.5 py-1 rounded-xl border border-clay-500/20">
+                  {inputError}
+                </p>
+              ) : <span />}
+              {inputValue.length > 0 && (
+                <p className={`text-xs tabular-nums ${3500 - inputValue.length < 500 ? 'text-clay-700 font-medium' : 'text-ink-400'}`}>
+                  {inputValue.length.toLocaleString('nl')} / 3.500
+                </p>
+              )}
+            </div>
             {phase === 'final' && !isLoading && (
               <button
                 onClick={resetSession}

@@ -154,6 +154,26 @@ export async function POST(req: NextRequest) {
         : undefined
     const profile = await loadClientProfile(sessionId, clientProfileId)
     const profileContext = briefCompanyContext(profile)
+
+    // Token-check op het laatste gebruikersbericht voor acties die directe input verwerken
+    const userTriggerActions = ['intake_turn', 'iterate_plan']
+    if (userTriggerActions.includes(body.action)) {
+      const msgs: { role: string; content: string }[] = body.messages ?? []
+      const lastUser = [...msgs].reverse().find((m) => m.role === 'user')
+      if (lastUser?.content) {
+        const countModel = genAI.getGenerativeModel({ model: MODEL })
+        const countRes = await countModel.countTokens({
+          contents: [{ role: 'user', parts: [{ text: lastUser.content }] }],
+        })
+        if (countRes.totalTokens > 1000) {
+          return NextResponse.json(
+            { error: 'too_long', message: 'Je bericht is te lang. Probeer het korter te formuleren (max. ~1000 tokens).' },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
     switch (body.action) {
       case 'intake_turn':
         return handleIntakeTurn(body, profileContext)

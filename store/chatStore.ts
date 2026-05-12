@@ -37,6 +37,8 @@ interface ChatState {
   error: string | null
   currentClientProfile: ClientProfile | null
   currentSessionId: string | null
+  sessionTitle: string | null
+  isResumed: boolean
 }
 
 interface ChatActions {
@@ -68,6 +70,8 @@ const initialState: ChatState = {
   error: null,
   currentClientProfile: null,
   currentSessionId: null,
+  sessionTitle: null,
+  isResumed: false,
 }
 
 export const useChatStore = create<ChatState & ChatActions>()(
@@ -95,6 +99,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
           error: null,
           currentSessionId: null,
           currentClientProfile: clientProfile ?? null,
+          sessionTitle: null,
+          isResumed: false,
         }),
 
       addMessage: (message) =>
@@ -136,6 +142,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
           selectedAgents: session.selected_agents ?? [],
           currentSessionId: session.id,
           currentClientProfile: session.company_profile_snapshot ?? null,
+          sessionTitle: session.title ?? null,
+          isResumed: true,
           isTyping: false,
           typingAgent: null,
           error: null,
