@@ -2,16 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { LogOut, Users } from 'lucide-react'
+import { Settings, Users } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type AuthState = 'loading' | 'guest' | 'authed' | 'anon'
 
 export default function AuthHeader() {
-  const router = useRouter()
   const [state, setState] = useState<AuthState>('loading')
-  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -24,7 +21,6 @@ export default function AuthHeader() {
       if (cancelled) return
 
       if (user) {
-        setEmail(user.email ?? null)
         setState('authed')
         return
       }
@@ -38,14 +34,6 @@ export default function AuthHeader() {
       cancelled = true
     }
   }, [])
-
-  async function handleLogout() {
-    if (typeof window !== 'undefined') localStorage.removeItem('marketing-bureau-guest')
-    const supabase = createSupabaseBrowserClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   if (state === 'loading') return <div className="h-7" />
 
@@ -87,19 +75,18 @@ export default function AuthHeader() {
       <Link
         href="/profile"
         className="inline-flex items-center gap-1.5 text-ink-500 hover:text-ink-700 transition-colors"
-        title={email ?? undefined}
       >
         <Users size={13} />
         <span>Klanten</span>
       </Link>
       <span className="text-ink-400">·</span>
-      <button
-        onClick={handleLogout}
+      <Link
+        href="/account"
         className="inline-flex items-center gap-1.5 text-ink-500 hover:text-ink-700 transition-colors"
       >
-        <LogOut size={13} />
-        Uitloggen
-      </button>
+        <Settings size={13} />
+        <span>Account</span>
+      </Link>
     </div>
   )
 }

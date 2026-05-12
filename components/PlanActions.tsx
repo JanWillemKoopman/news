@@ -15,6 +15,7 @@ interface PlanActionsProps {
 export default function PlanActions({ content }: PlanActionsProps) {
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState<string | null>(null)
+  const [printError, setPrintError] = useState(false)
 
   const handleCopy = async () => {
     setCopyError(null)
@@ -28,6 +29,15 @@ export default function PlanActions({ content }: PlanActionsProps) {
     }
   }
 
+  const handlePrint = () => {
+    setPrintError(false)
+    const ok = printPlan(content)
+    if (!ok) {
+      setPrintError(true)
+      setTimeout(() => setPrintError(false), 8000)
+    }
+  }
+
   const baseBtn =
     'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-medium transition-colors'
   const idleBtn =
@@ -36,36 +46,48 @@ export default function PlanActions({ content }: PlanActionsProps) {
     'bg-clay-500/10 border-clay-500/30 text-clay-700'
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => downloadPlanAsMarkdown(content)}
-        className={`${baseBtn} ${idleBtn}`}
-        aria-label="Plan downloaden als markdown-bestand"
-      >
-        <Download size={11} />
-        Download (.md)
-      </button>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={`${baseBtn} ${copied ? successBtn : idleBtn}`}
-        aria-label="Plan kopieren als geformatteerde tekst"
-      >
-        {copied ? <Check size={11} /> : <Copy size={11} />}
-        {copied ? 'Gekopieerd' : 'Kopieer'}
-      </button>
-      <button
-        type="button"
-        onClick={() => printPlan(content)}
-        className={`${baseBtn} ${idleBtn}`}
-        aria-label="Plan afdrukken of opslaan als PDF"
-      >
-        <Printer size={11} />
-        Print / PDF
-      </button>
+    <div className="mt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => downloadPlanAsMarkdown(content)}
+          className={`${baseBtn} ${idleBtn}`}
+          title="Download het plan als tekstbestand (.md)"
+          aria-label="Plan downloaden als tekstbestand"
+        >
+          <Download size={11} />
+          Download als tekst
+        </button>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={`${baseBtn} ${copied ? successBtn : idleBtn}`}
+          title="Kopieer het plan als opgemaakte tekst"
+          aria-label="Plan kopieren als geformatteerde tekst"
+        >
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? 'Gekopieerd' : 'Kopieer'}
+        </button>
+        <button
+          type="button"
+          onClick={handlePrint}
+          className={`${baseBtn} ${idleBtn}`}
+          title="Druk het plan af of sla het op als PDF"
+          aria-label="Plan afdrukken of opslaan als PDF"
+        >
+          <Printer size={11} />
+          Print / PDF
+        </button>
+      </div>
       {copyError && (
-        <span className="text-[11px] text-clay-700">{copyError}</span>
+        <p className="mt-2 text-[11px] text-clay-700 bg-clay-500/10 px-2.5 py-1.5 rounded-xl border border-clay-500/20">
+          {copyError}
+        </p>
+      )}
+      {printError && (
+        <p className="mt-2 text-[11px] text-clay-700 bg-clay-500/10 px-2.5 py-1.5 rounded-xl border border-clay-500/20">
+          Printen werkt niet in deze browser. Kopieer de tekst en plak hem in Word of Google Docs.
+        </p>
       )}
     </div>
   )

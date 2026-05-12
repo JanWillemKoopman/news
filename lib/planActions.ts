@@ -124,7 +124,7 @@ export async function copyPlanAsRichText(md: string): Promise<boolean> {
   return false
 }
 
-export function printPlan(md: string): void {
+export function printPlan(md: string): boolean {
   const html = planMarkdownToHtml(md)
   const iframe = document.createElement('iframe')
   iframe.setAttribute('aria-hidden', 'true')
@@ -141,7 +141,7 @@ export function printPlan(md: string): void {
   const doc = iframe.contentDocument
   if (!doc) {
     document.body.removeChild(iframe)
-    return
+    return false
   }
   doc.open()
   doc.write(`<!doctype html><html lang="nl"><head>
@@ -173,9 +173,8 @@ export function printPlan(md: string): void {
   const win = iframe.contentWindow
   if (!win) {
     document.body.removeChild(iframe)
-    return
+    return false
   }
-  // Wacht tot fonts/layout klaar zijn voor we printen.
   const doPrint = () => {
     try {
       win.focus()
@@ -191,4 +190,5 @@ export function printPlan(md: string): void {
   } else {
     win.addEventListener('load', doPrint)
   }
+  return true
 }
