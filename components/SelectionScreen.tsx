@@ -87,7 +87,7 @@ export default function SelectionScreen() {
   return (
     <div className="min-h-screen flex flex-col bg-cream-200">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-cream-200 border-b border-cream-500/60 px-4 py-3">
+      <header className="bg-cream-200 border-b border-cream-500/60 px-4 py-3">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">

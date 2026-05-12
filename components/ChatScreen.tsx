@@ -721,7 +721,7 @@ export default function ChatScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-[100dvh] flex bg-cream-200">
+    <div className="fixed inset-0 flex bg-cream-200">
       {isAuthenticated && (
         <SessionSidebar
           open={sidebarOpen}
