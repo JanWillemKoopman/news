@@ -79,10 +79,10 @@ export default function ChatScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  // Reset window scroll bij entry zodat sticky header/footer correct uitlijnen
+  // Reset window scroll bij entry en bij sessiewisseling zodat sticky header correct uitlijnt
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [])
+  }, [currentSessionId])
 
   // Geef focus terug aan de input nadat een verzoek klaar is (niet bij initieel laden)
   useEffect(() => {
@@ -721,7 +721,7 @@ export default function ChatScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex bg-cream-200">
+    <div className="h-[100dvh] flex bg-cream-200">
       {isAuthenticated && (
         <SessionSidebar
           open={sidebarOpen}
@@ -916,7 +916,7 @@ export default function ChatScreen() {
                 }
                 aria-label="Jouw bericht aan de Marketing Manager"
                 disabled={isLoading}
-                maxLength={3500}
+                maxLength={2000}
                 className="flex-1 bg-cream-50 border border-cream-500 rounded-2xl px-4 py-3 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:border-clay-500 focus:ring-2 focus:ring-clay-500/20 transition-all disabled:opacity-50 resize-none"
               />
               <button
@@ -931,19 +931,12 @@ export default function ChatScreen() {
                 />
               </button>
             </form>
-            {/* Character counter + inline input errors */}
-            <div className="flex items-center justify-between mt-1 px-1">
-              {inputError ? (
-                <p className="text-[11px] text-clay-700 bg-clay-500/10 px-2.5 py-1 rounded-xl border border-clay-500/20">
-                  {inputError}
-                </p>
-              ) : <span />}
-              {inputValue.length > 0 && (
-                <p className={`text-xs tabular-nums ${3500 - inputValue.length < 500 ? 'text-clay-700 font-medium' : 'text-ink-400'}`}>
-                  {inputValue.length.toLocaleString('nl')} / 3.500
-                </p>
-              )}
-            </div>
+            {/* Inline input errors */}
+            {inputError && (
+              <p className="mt-1 px-1 text-[11px] text-clay-700 bg-clay-500/10 px-2.5 py-1 rounded-xl border border-clay-500/20">
+                {inputError}
+              </p>
+            )}
             {phase === 'final' && !isLoading && (
               <button
                 onClick={resetSession}
