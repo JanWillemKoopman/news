@@ -33,7 +33,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('chat_sessions')
-    .select('id, title, preview, phase, created_at, updated_at')
+    .select('id, title, preview, phase, created_at, updated_at, company_profile_snapshot')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 

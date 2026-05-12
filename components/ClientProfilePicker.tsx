@@ -118,9 +118,7 @@ export default function ClientProfilePicker({ open, onClose, onConfirm }: Props)
           {!loading && profiles.length > 0 && (
             <>
               <p className="text-sm text-ink-500 leading-relaxed mb-4">
-                De gekozen klant levert context aan Iris en het team. Snapshot wordt
-                bevroren in deze sessie — latere wijzigingen aan het klantprofiel
-                vervuilen oude sessies niet.
+                De gekozen klant levert context aan het team.
               </p>
               <ul className="space-y-2 mb-2">
                 {profiles.map((p) => {

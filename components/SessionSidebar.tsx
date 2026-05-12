@@ -306,9 +306,9 @@ export default function SessionSidebar({
                         <MoreVertical size={12} className="text-ink-500" />
                       </span>
                     </div>
-                    {s.preview && (
+                    {s.company_profile_snapshot?.name && (
                       <p className="mt-1 text-[11px] text-ink-500 line-clamp-1">
-                        {s.preview}
+                        {s.company_profile_snapshot.name}
                       </p>
                     )}
                     <div className="mt-1 flex items-center gap-2 text-[10px] text-ink-400">
