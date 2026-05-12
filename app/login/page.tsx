@@ -2,7 +2,8 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowRight, Briefcase, Mail, Lock, Loader2, UserRound } from 'lucide-react'
+import { ArrowRight, Mail, Lock, Loader2, UserRound } from 'lucide-react'
+import BrandLogo from '@/components/BrandLogo'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type Mode = 'signin' | 'signup'
@@ -104,20 +105,20 @@ function LoginInner() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-cream-200">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
-            <Briefcase size={14} className="text-clay-600" />
+          <div className="w-7 h-7 rounded-lg bg-ink-900/8 border border-ink-900/15 flex items-center justify-center">
+            <BrandLogo size={14} className="text-ink-900" />
           </div>
           <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
-            Online Marketingbureau
+            Marketing Sessie
           </span>
         </div>
 
         <h1 className="font-serif font-medium text-3xl sm:text-4xl text-ink-900 tracking-tight leading-[1.1] text-center">
-          {mode === 'signin' ? 'Welkom terug' : 'Maak een account'}
+          {mode === 'signin' ? 'Welkom' : 'Maak een account'}
         </h1>
         <p className="text-ink-500 mt-3 text-base leading-relaxed text-center">
           {mode === 'signin'
-            ? 'Log in om je klantprofielen en eerdere sessies terug te vinden.'
+            ? 'Log in of maak een account aan om alle functionaliteiten van deze app te ontgrendelen.'
             : 'Bewaar klantprofielen en sessies zodat het bureau je elke vraag meteen kent.'}
         </p>
 

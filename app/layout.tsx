@@ -16,9 +16,9 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: 'Online Marketingbureau',
+  title: 'Marketing Sessie',
   description:
-    'Schakel een compleet AI-marketingbureau in: een Marketing Manager en zes specialisten helpen je met al je online marketing vraagstukken.',
+    'Schakel een compleet AI-marketingteam in. Een Marketing Manager en zes specialisten helpen je met al je online marketingvraagstukken.',
 }
 
 export const viewport: Viewport = {

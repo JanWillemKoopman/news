@@ -104,5 +104,5 @@ export interface ChatSession {
 
 export type ChatSessionSummary = Pick<
   ChatSession,
-  'id' | 'title' | 'preview' | 'phase' | 'updated_at' | 'created_at'
+  'id' | 'title' | 'preview' | 'phase' | 'updated_at' | 'created_at' | 'company_profile_snapshot'
 >

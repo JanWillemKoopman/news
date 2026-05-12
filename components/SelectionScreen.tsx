@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowRight, Briefcase, Check, Clock, Info, Users } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowRight, Check, Clock, Info, Users } from 'lucide-react'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
+import BrandLogo from './BrandLogo'
 import { useChatStore } from '@/store/chatStore'
 import type { Agent, AgentId, ClientProfile } from '@/types'
 import AgentIcon from './AgentIcon'
@@ -89,11 +91,11 @@ export default function SelectionScreen() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-6">
             <div className="hidden sm:flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-clay-500/15 border border-clay-500/30 flex items-center justify-center">
-                <Briefcase size={14} className="text-clay-600" />
+              <div className="w-7 h-7 rounded-lg bg-ink-900/8 border border-ink-900/15 flex items-center justify-center">
+                <BrandLogo size={14} className="text-ink-900" />
               </div>
               <span className="text-[11px] font-medium text-ink-500 uppercase tracking-[0.18em]">
-                Online Marketingbureau
+                Marketing Sessie
               </span>
             </div>
             <div className="flex items-center gap-3 ml-auto">
@@ -115,7 +117,7 @@ export default function SelectionScreen() {
             Stel je team samen
           </h1>
           <p className="text-ink-500 mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
-            Start je marketingsessie en laat je helpen door ons team van online marketingspecialisten. Stel je team samen en onder begeleiding van onze marketingmanager Scott werken we samen je online marketingvraagstukken uit.
+            Kies je specialisten en ga aan de slag. Onder begeleiding van marketingmanager Jan-Willem pakken we jouw marketingvraagstuk samen aan.
           </p>
         </div>
       </header>
@@ -130,8 +132,14 @@ export default function SelectionScreen() {
                 Altijd aanwezig
               </span>
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center border bg-clay-500/15 border-clay-500/30 flex-shrink-0">
-                  <Briefcase size={20} className="text-clay-600" />
+                <div className="w-12 h-12 rounded-xl overflow-hidden border border-clay-500/30 flex-shrink-0">
+                  <Image
+                    src="/agents/daan_hofstra.png"
+                    alt={MANAGER_NAME}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-serif font-medium text-xl text-ink-900 leading-tight">
@@ -141,7 +149,7 @@ export default function SelectionScreen() {
                     {MANAGER_TITLE}
                   </p>
                   <p className="text-sm text-ink-500 leading-relaxed">
-                    Scott is jouw strategische partner. Hij vertaalt jouw ambities naar de juiste inzet van ons team. Van een snelle vraag tot een volledige campagne: Scott zorgt dat het geregeld wordt.
+                    {MANAGER_NAME} is jouw strategische partner. Hij vertaalt jouw marketingvraagstukken naar de juiste inzet van het team. Of het nu gaat om een snelle vraag of een volledig campagneplan, hij zorgt dat het geregeld wordt.
                   </p>
                 </div>
               </div>
