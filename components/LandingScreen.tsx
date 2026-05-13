@@ -6,10 +6,6 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 import BrandLogo from './BrandLogo'
 import { AGENTS, ALL_AGENT_IDS, MANAGER_NAME, MANAGER_TITLE } from '@/lib/agents'
 
-type Props = {
-  onStartGuest: () => void
-}
-
 const MANAGER_IMG = '/agents/jeroen.png'
 const AGENT_IMG: Record<string, string> = {
   brand: '/agents/sanne.png',
@@ -20,7 +16,7 @@ const AGENT_IMG: Record<string, string> = {
   data: '/agents/yara.png',
 }
 
-export default function LandingScreen({ onStartGuest }: Props) {
+export default function LandingScreen() {
   return (
     <main className="min-h-screen bg-cream-200 text-ink-700">
       {/* Top bar */}
@@ -60,13 +56,13 @@ export default function LandingScreen({ onStartGuest }: Props) {
             </p>
 
             <div className="mt-9 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              <button
-                onClick={onStartGuest}
+              <Link
+                href="/login?mode=signup"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-clay-500 hover:bg-clay-600 text-white font-medium shadow-sm transition-colors"
               >
-                Begin een sessie
+                Account aanmaken
                 <ArrowRight size={18} />
-              </button>
+              </Link>
               <Link
                 href="/login"
                 className="text-sm text-ink-600 hover:text-ink-800 underline decoration-cream-500 hover:decoration-ink-500 underline-offset-4 transition-colors"
@@ -74,10 +70,6 @@ export default function LandingScreen({ onStartGuest }: Props) {
                 Ik heb al een account
               </Link>
             </div>
-
-            <p className="mt-4 text-xs text-ink-400">
-              Geen account nodig · direct aan tafel
-            </p>
           </div>
 
           {/* Team fan */}
@@ -101,7 +93,6 @@ export default function LandingScreen({ onStartGuest }: Props) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {/* Manager kaart, prominent */}
           <SpecialistCard
             img={MANAGER_IMG}
             name={MANAGER_NAME}
@@ -158,13 +149,13 @@ export default function LandingScreen({ onStartGuest }: Props) {
           </div>
 
           <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-5">
-            <button
-              onClick={onStartGuest}
+            <Link
+              href="/login?mode=signup"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-clay-500 hover:bg-clay-600 text-white font-medium shadow-sm transition-colors"
             >
-              Begin een sessie
+              Account aanmaken
               <ArrowRight size={18} />
-            </button>
+            </Link>
             <Link
               href="/login"
               className="text-sm text-ink-600 hover:text-ink-800 underline decoration-cream-500 hover:decoration-ink-500 underline-offset-4 transition-colors"
@@ -237,7 +228,6 @@ function StepCard({ n, title, body }: { n: string; title: string; body: string }
 }
 
 function TeamFan() {
-  // Decoratieve waaier: manager centraal, specialisten eromheen.
   const items: Array<{ src: string; name: string; style: string; ring: string }> = [
     { src: AGENT_IMG.brand, name: 'Sanne', style: 'top-0 left-2 -rotate-[10deg]', ring: 'ring-[#9c4a3a]/30' },
     { src: AGENT_IMG.content, name: 'Daan', style: 'top-4 right-2 rotate-[8deg]', ring: 'ring-[#a8466b]/30' },
@@ -249,10 +239,8 @@ function TeamFan() {
 
   return (
     <div className="relative w-full aspect-square max-w-md mx-auto">
-      {/* Achtergrond cirkel */}
       <div className="absolute inset-6 rounded-full bg-cream-50 border border-cream-500" />
 
-      {/* Manager in het midden */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-cream-50 shadow-lg ring-2 ring-clay-300/40">
@@ -271,7 +259,6 @@ function TeamFan() {
         </div>
       </div>
 
-      {/* Specialisten eromheen */}
       {items.map((it) => (
         <div key={it.name} className={`absolute ${it.style}`}>
           <div className="flex flex-col items-center">
