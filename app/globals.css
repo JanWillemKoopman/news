@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Licht thema — RGB-kanalen (geen rgb()-wrapper, zodat Tailwind opacity-modifiers werken) */
+  --color-cream-50:  250 249 245;
+  --color-cream-100: 245 241 232;
+  --color-cream-200: 240 238 230;
+  --color-cream-300: 235 229 215;
+  --color-cream-400: 227 218 204;
+  --color-cream-500: 216 207 191;
+  --color-cream-600: 189 179 161;
+
+  --color-ink-400: 128 125 118;
+  --color-ink-500:  94  93  89;
+  --color-ink-600:  63  62  58;
+  --color-ink-700:  44  43  39;
+  --color-ink-800:  31  30  28;
+  --color-ink-900:  20  20  19;
+}
+
+:root.dark {
+  /* Donker thema — warm donker palet */
+  --color-cream-50:   37  36  32;
+  --color-cream-100:  31  30  27;
+  --color-cream-200:  26  25  24;
+  --color-cream-300:  31  30  27;
+  --color-cream-400:  41  40  33;
+  --color-cream-500:  58  56  48;
+  --color-cream-600:  80  77  67;
+
+  --color-ink-400: 112 109 102;
+  --color-ink-500: 138 135 128;
+  --color-ink-600: 170 167 159;
+  --color-ink-700: 204 201 192;
+  --color-ink-800: 222 218 210;
+  --color-ink-900: 236 234 226;
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;

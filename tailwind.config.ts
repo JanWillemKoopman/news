@@ -6,6 +6,7 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -14,15 +15,15 @@ const config: Config = {
         display: ['var(--font-fraunces)', 'Georgia', 'serif'],
       },
       colors: {
-        // Anthropic-geïnspireerd warm palet
+        // Warm palet via CSS-variabelen — wisselt automatisch met .dark op <html>
         cream: {
-          50: '#faf9f5',   // bijna-wit ivoor (lichte kaarten / hover)
-          100: '#f5f1e8',  // zacht ivoor
-          200: '#f0eee6',  // 'book' — primaire chat-achtergrond
-          300: '#ebe5d7',
-          400: '#e3dacc',  // verhoogd vlak / panel
-          500: '#d8cfbf',  // randen
-          600: '#bdb3a1',  // muted iconen
+          50:  'rgb(var(--color-cream-50)  / <alpha-value>)',
+          100: 'rgb(var(--color-cream-100) / <alpha-value>)',
+          200: 'rgb(var(--color-cream-200) / <alpha-value>)',
+          300: 'rgb(var(--color-cream-300) / <alpha-value>)',
+          400: 'rgb(var(--color-cream-400) / <alpha-value>)',
+          500: 'rgb(var(--color-cream-500) / <alpha-value>)',
+          600: 'rgb(var(--color-cream-600) / <alpha-value>)',
         },
         clay: {
           50:  '#fbf3ee',
@@ -35,12 +36,12 @@ const config: Config = {
           700: '#a85029',
         },
         ink: {
-          400: '#807d76',
-          500: '#5e5d59',  // muted body
-          600: '#3f3e3a',
-          700: '#2c2b27',  // body
-          800: '#1f1e1c',
-          900: '#141413',  // koppen
+          400: 'rgb(var(--color-ink-400) / <alpha-value>)',
+          500: 'rgb(var(--color-ink-500) / <alpha-value>)',
+          600: 'rgb(var(--color-ink-600) / <alpha-value>)',
+          700: 'rgb(var(--color-ink-700) / <alpha-value>)',
+          800: 'rgb(var(--color-ink-800) / <alpha-value>)',
+          900: 'rgb(var(--color-ink-900) / <alpha-value>)',
         },
       },
       animation: {

@@ -29,7 +29,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="nl" className={`${inter.variable} ${fraunces.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Stel dark class in vóór eerste render om Flash of Wrong Theme te voorkomen */}
+        <script dangerouslySetInnerHTML={{ __html:
+          `try{if(localStorage.getItem('marketing-bureau-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`
+        }} />
+      </head>
       <body className="font-sans bg-cream-200 text-ink-700 min-h-screen">
         {children}
       </body>
