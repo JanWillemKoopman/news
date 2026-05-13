@@ -261,6 +261,7 @@ export default function ChatScreen() {
         briefing?: string
       }
     | { type: 'chunk'; text: string }
+    | { type: 'tool_call'; status: 'start' | 'done'; tool?: string; label?: string; count?: number; row_count?: number }
     | { type: 'done' }
     | { type: 'error'; message: string }
 
@@ -345,6 +346,11 @@ export default function ChatScreen() {
       })) {
         if (event.type === 'meta') {
           if (event.agentId) agentId = event.agentId
+        } else if (event.type === 'tool_call') {
+          if (event.status === 'start') {
+            setTyping(true, event.label || `${agentName} raadpleegt data…`)
+          }
+          // status 'done' wordt impliciet opgevolgd door de eerstvolgende chunk
         } else if (event.type === 'chunk') {
           buffer += event.text
           if (!added) {

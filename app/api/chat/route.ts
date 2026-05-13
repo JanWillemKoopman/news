@@ -15,7 +15,9 @@ import {
   briefCompanyContext,
 } from '@/lib/agents'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { YARA_TOOL_DECLARATIONS, YARA_TOOL_EXECUTORS } from '@/lib/yaraTools'
 import type { AgentId, ClientProfile, ConversationEntry } from '@/types'
+import type { Content, FunctionCall, GenerativeModel } from '@google/generative-ai'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const MODEL = 'gemini-2.5-flash'
@@ -89,6 +91,84 @@ async function pumpModelStream(
     const text = chunk.text()
     if (text) writer.send({ type: 'chunk', text })
   }
+}
+
+// Stream-loop met function-calling. De helper voert Gemini-functies uit zolang
+// het model erom vraagt (max iterations), en streamt tekst-chunks direct door.
+async function pumpChatWithTools(
+  writer: StreamWriter,
+  model: GenerativeModel,
+  initialPrompt: string,
+  executors: Record<string, (args: Record<string, unknown>) => Promise<Record<string, unknown>>>,
+  maxIterations = 4
+): Promise<void> {
+  const contents: Content[] = [
+    { role: 'user', parts: [{ text: initialPrompt }] },
+  ]
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const result = await model.generateContentStream({ contents })
+    let textBuffered = ''
+    for await (const chunk of result.stream) {
+      const text = chunk.text()
+      if (text) {
+        textBuffered += text
+        writer.send({ type: 'chunk', text })
+      }
+    }
+    const response = await result.response
+    const calls: FunctionCall[] = response.functionCalls() ?? []
+
+    if (calls.length === 0) return
+
+    if (!textBuffered) {
+      writer.send({
+        type: 'tool_call',
+        status: 'start',
+        tool: calls[0]?.name ?? 'rdw',
+        label: 'Yara raadpleegt RDW open data…',
+      })
+    }
+
+    // Voer alle function calls uit deze beurt parallel uit.
+    const toolResponses = await Promise.all(
+      calls.map(async (call) => {
+        const exec = executors[call.name]
+        const args = (call.args ?? {}) as Record<string, unknown>
+        const response = exec
+          ? await exec(args)
+          : { error: `Onbekende tool: ${call.name}` }
+        return { name: call.name, response }
+      })
+    )
+
+    writer.send({
+      type: 'tool_call',
+      status: 'done',
+      count: calls.length,
+      row_count: toolResponses.reduce(
+        (n, r) => n + (typeof r.response.row_count_returned === 'number' ? r.response.row_count_returned : 0),
+        0
+      ),
+    })
+
+    // Voeg model-beurt + tool-responses toe aan history voor de volgende iteratie.
+    contents.push({
+      role: 'model',
+      parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+    })
+    contents.push({
+      role: 'user',
+      parts: toolResponses.map((r) => ({
+        functionResponse: { name: r.name, response: r.response },
+      })),
+    })
+  }
+
+  writer.send({
+    type: 'chunk',
+    text: '\n\n(Maximaal aantal data-queries bereikt — ik werk verder met wat ik heb.)',
+  })
 }
 
 function formatConversation(messages: ConversationEntry[]): string {
@@ -429,9 +509,14 @@ function handleSpecialistTurn(
 
   const conversation = formatConversation(messages)
 
+  const useRdwTools = agentId === 'data'
+
   const model = genAI.getGenerativeModel({
     model: MODEL,
     systemInstruction: AGENT_SYSTEM_PROMPTS[agentId] + profileContext,
+    ...(useRdwTools
+      ? { tools: [{ functionDeclarations: YARA_TOOL_DECLARATIONS }] }
+      : {}),
   })
 
   const prompt = `Klant- en gespreks-context tot nu toe:
@@ -449,8 +534,12 @@ Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
 
   return ndjsonResponse(async (writer) => {
     writer.send({ type: 'meta', agentId, agentName })
-    const res = await model.generateContentStream(prompt)
-    await pumpModelStream(writer, res)
+    if (useRdwTools) {
+      await pumpChatWithTools(writer, model, prompt, YARA_TOOL_EXECUTORS)
+    } else {
+      const res = await model.generateContentStream(prompt)
+      await pumpModelStream(writer, res)
+    }
   })
 }
 
