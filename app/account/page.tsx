@@ -25,6 +25,27 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const [theme, setThemeState] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('marketing-bureau-theme')
+      if (stored === 'dark') setThemeState('dark')
+    } catch { /* ignore */ }
+  }, [])
+
+  function handleTheme(value: 'light' | 'dark') {
+    setThemeState(value)
+    try {
+      localStorage.setItem('marketing-bureau-theme', value)
+      if (value === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -229,6 +250,28 @@ export default function AccountPage() {
             <LogOut size={14} />
             Uitloggen
           </button>
+        </div>
+
+        {/* ── Weergave ── */}
+        <div className={card}>
+          <h2 className="text-[10px] font-medium text-ink-500 uppercase tracking-[0.18em]">Weergave</h2>
+          <div className="flex gap-3">
+            {(['light', 'dark'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => handleTheme(t)}
+                className={[
+                  'flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors',
+                  theme === t
+                    ? 'bg-clay-500 border-clay-500 text-white'
+                    : 'bg-cream-50 border-cream-500 text-ink-600 hover:border-clay-500',
+                ].join(' ')}
+              >
+                {t === 'light' ? 'Licht' : 'Donker'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Danger zone ── */}
