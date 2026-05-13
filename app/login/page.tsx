@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowRight, Mail, Lock, Loader2, UserRound } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { useChatStore } from '@/store/chatStore'
 
 type Mode = 'signin' | 'signup'
 
@@ -82,7 +83,7 @@ function LoginInner() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        if (typeof window !== 'undefined') localStorage.removeItem('marketing-bureau-guest')
+        useChatStore.getState().resetSession()
         router.push('/')
         router.refresh()
       }
@@ -92,13 +93,6 @@ function LoginInner() {
     } finally {
       setBusy(false)
     }
-  }
-
-  function continueAsGuest() {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('marketing-bureau-guest', 'true')
-    }
-    router.push('/')
   }
 
   return (
@@ -222,18 +216,6 @@ function LoginInner() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-cream-500 text-center">
-          <button
-            type="button"
-            onClick={continueAsGuest}
-            className="text-sm text-ink-500 hover:text-clay-600 transition-colors"
-          >
-            Liever niet inloggen? Doorgaan als gast →
-          </button>
-          <p className="mt-2 text-xs text-ink-400 leading-relaxed">
-            Als gast kun je het bureau gebruiken, maar je profiel wordt niet bewaard.
-          </p>
-        </div>
       </div>
     </div>
   )

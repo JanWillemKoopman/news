@@ -23,13 +23,6 @@ export default function Home() {
       if (cancelled) return
       if (user) {
         setReady(true)
-        return
-      }
-      const guest =
-        typeof window !== 'undefined' &&
-        localStorage.getItem('marketing-bureau-guest') === 'true'
-      if (guest) {
-        setReady(true)
       } else {
         router.replace('/login')
       }
