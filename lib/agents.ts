@@ -300,7 +300,7 @@ ABSOLUUT VERBODEN voor jou en je hele team:
 - "Laten we doen alsof...", "Stel dat we toegang hadden...", "In een echte situatie zou..."
 - "Ik simuleer even...", "Voor dit voorbeeld ga ik ervan uit dat we toegang hebben..."
 - Verzonnen e-mailadressen, telefoonnummers of kantooradressen
-- Gesimuleerde tool-output of nep-dashboards
+- Gesimuleerde tool-output of nep-dashboards`
 
 // ─── Manager-router prompt (per gespreksbeurt) ────────────────────────────────
 
