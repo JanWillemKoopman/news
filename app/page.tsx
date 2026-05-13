@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useChatStore } from '@/store/chatStore'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import SelectionScreen from '@/components/SelectionScreen'
 import ChatScreen from '@/components/ChatScreen'
+import LandingScreen from '@/components/LandingScreen'
+
+type Gate = 'loading' | 'landing' | 'app'
 
 export default function Home() {
-  const router = useRouter()
   const screen = useChatStore((s) => s.screen)
-  const [ready, setReady] = useState(false)
+  const [gate, setGate] = useState<Gate>('loading')
 
   useEffect(() => {
     let cancelled = false
@@ -21,24 +22,43 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser()
       if (cancelled) return
+
       if (user) {
-        setReady(true)
-      } else {
-        router.replace('/login')
+        setGate('app')
+        return
       }
+
+      const guest =
+        typeof window !== 'undefined' &&
+        localStorage.getItem('marketing-bureau-guest') === 'true'
+
+      setGate(guest ? 'app' : 'landing')
     }
     check()
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [])
 
-  if (!ready) {
+  function handleStartGuest() {
+    try {
+      localStorage.setItem('marketing-bureau-guest', 'true')
+    } catch {
+      // localStorage kan in private mode falen — laat de gast alsnog door.
+    }
+    setGate('app')
+  }
+
+  if (gate === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream-200">
         <Loader2 size={20} className="animate-spin text-ink-400" />
       </div>
     )
+  }
+
+  if (gate === 'landing') {
+    return <LandingScreen onStartGuest={handleStartGuest} />
   }
 
   return screen === 'selection' ? <SelectionScreen /> : <ChatScreen />
