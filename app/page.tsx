@@ -22,32 +22,13 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser()
       if (cancelled) return
-
-      if (user) {
-        setGate('app')
-        return
-      }
-
-      const guest =
-        typeof window !== 'undefined' &&
-        localStorage.getItem('marketing-bureau-guest') === 'true'
-
-      setGate(guest ? 'app' : 'landing')
+      setGate(user ? 'app' : 'landing')
     }
     check()
     return () => {
       cancelled = true
     }
   }, [])
-
-  function handleStartGuest() {
-    try {
-      localStorage.setItem('marketing-bureau-guest', 'true')
-    } catch {
-      // localStorage kan in private mode falen — laat de gast alsnog door.
-    }
-    setGate('app')
-  }
 
   if (gate === 'loading') {
     return (
@@ -58,7 +39,7 @@ export default function Home() {
   }
 
   if (gate === 'landing') {
-    return <LandingScreen onStartGuest={handleStartGuest} />
+    return <LandingScreen />
   }
 
   return screen === 'selection' ? <SelectionScreen /> : <ChatScreen />

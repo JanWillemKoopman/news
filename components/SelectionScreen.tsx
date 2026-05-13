@@ -59,12 +59,6 @@ export default function SelectionScreen() {
   async function handleStart() {
     if (!canStart) return
     setPickerError(null)
-    if (isAuthenticated === false) {
-      // Gast: meteen door zonder klantprofiel.
-      startSession(null, undefined)
-      return
-    }
-    // Ingelogd: open picker (laadt zelf de lijst, toont fallback bij 0 profielen).
     setPickerOpen(true)
   }
 
