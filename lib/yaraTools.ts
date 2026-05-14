@@ -3,6 +3,7 @@
 
 import { type FunctionDeclaration, SchemaType } from '@google/generative-ai'
 import { executeRdwQuery, RDW_FIELDS, type RdwFilter, type RdwOp, type RdwQueryParams } from './rdw'
+import { findMerkKandidaten } from './rdwMerken'
 
 const FIELD_NAMES = Object.keys(RDW_FIELDS)
 const FIELD_DESCRIPTIONS = Object.entries(RDW_FIELDS)
@@ -123,7 +124,34 @@ export const QUERY_RDW_VOERTUIGEN: FunctionDeclaration = {
   },
 }
 
-export const YARA_TOOL_DECLARATIONS: FunctionDeclaration[] = [QUERY_RDW_VOERTUIGEN]
+export const LOOKUP_MERK_KANDIDATEN: FunctionDeclaration = {
+  name: 'lookup_merk_kandidaten',
+  description:
+    'Zoekt in de lijst van bekende RDW-merken naar kandidaten die lijken op de zoekterm van de klant. ' +
+    'Gebruik dit ALTIJD eerst wanneer de klant een merk noemt waarvan je de exacte RDW-spelling niet zeker weet ' +
+    '(zoals "Lynk & Co", "Zeekr", merken met &/spaties/leestekens, of mogelijke typefouten). ' +
+    'Geeft kandidaten terug met een score (0-100): 100 exact, 90 prefix, 80 substring, 65-79 typo-afstand. ' +
+    'Met score >= 80 kun je direct doorgaan met een query op de canonieke merk-naam.',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      zoekterm: {
+        type: SchemaType.STRING,
+        description: 'De merk-naam zoals de klant hem schreef. Hoofdletters/spaties/leestekens maken niet uit.',
+      },
+      limit: {
+        type: SchemaType.INTEGER,
+        description: 'Maximaal aantal kandidaten (default 5, max 20).',
+      },
+    },
+    required: ['zoekterm'],
+  },
+}
+
+export const YARA_TOOL_DECLARATIONS: FunctionDeclaration[] = [
+  QUERY_RDW_VOERTUIGEN,
+  LOOKUP_MERK_KANDIDATEN,
+]
 
 type RawArgs = {
   filters?: Array<{
@@ -188,15 +216,40 @@ export const YARA_TOOL_EXECUTORS: Record<
     try {
       const params = coerceArgs(args as RawArgs)
       const result = await executeRdwQuery(params)
-      // Output minimaal en functioneel voor Gemini:
-      return {
+      const out: Record<string, unknown> = {
         rows: result.rows,
         row_count_returned: result.row_count_returned,
         truncated: result.truncated,
         error: result.error,
       }
+      if (result.row_count_returned === 0 && !result.error) {
+        const merkEq = params.filters?.find((f) => f.field === 'merk' && f.op === 'eq')
+        if (merkEq && typeof merkEq.value === 'string') {
+          out.hint =
+            `Geen records voor merk='${merkEq.value}'. Roep eerst lookup_merk_kandidaten met deze zoekterm aan ` +
+            `om de juiste RDW-spelling te achterhalen, en herhaal daarna de query met de canonieke naam. ` +
+            `Pas als er ook met fuzzy match geen kandidaat is, mag je de klant melden dat het merk niet voorkomt.`
+        }
+      }
+      return out
     } catch (err) {
       return { error: err instanceof Error ? err.message : String(err), rows: [] }
+    }
+  },
+  lookup_merk_kandidaten: async (args) => {
+    const zoekterm = typeof args.zoekterm === 'string' ? args.zoekterm : ''
+    const limit = typeof args.limit === 'number' ? args.limit : 5
+    if (!zoekterm.trim()) {
+      return { kandidaten: [], totaal_bekend: 0, error: 'zoekterm is verplicht' }
+    }
+    try {
+      return await findMerkKandidaten(zoekterm, limit)
+    } catch (err) {
+      return {
+        kandidaten: [],
+        totaal_bekend: 0,
+        error: err instanceof Error ? err.message : String(err),
+      }
     }
   },
 }

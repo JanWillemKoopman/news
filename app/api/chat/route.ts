@@ -337,7 +337,8 @@ Geef je JSON-beslissing.`
       return
     }
 
-    // Branch 2: consult_specialist — manager kondigt kort aan + stuurt FE-signaal
+    // Branch 2: consult_specialist — alleen FE-signaal, geen aankondigings-bubble.
+    // De typing-indicator in de FE overbrugt de stilte tot de specialist begint te streamen.
     if (decision.action === 'consult_specialist') {
       writer.send({
         type: 'decision',
@@ -345,21 +346,6 @@ Geef je JSON-beslissing.`
         specialist: decision.specialist,
         briefing: decision.briefing ?? '',
       })
-
-      const managerModel = genAI.getGenerativeModel({
-        model: MODEL,
-        systemInstruction: MANAGER_SYSTEM_PROMPT + profileContext,
-      })
-      const announcePrompt = `Jij hebt zojuist besloten om ${decision.specialist} erbij te halen voor deze specifieke vraag.
-
-Briefing aan de specialist (intern, niet herhalen aan klant): ${decision.briefing ?? ''}
-
-Gespreksgeschiedenis:
-${conversation}
-
-Schrijf nu één zin aan de klant. Vertel concreet waarom ${decision.specialist} de juiste persoon is voor dit specifieke vraagstuk — niet generiek ("heeft de juiste expertise"), maar inhoudelijk ("kan de exacte campagne-structuur uitdenken" / "weet hoe je dit tracking-probleem oplost"). Geen groet, geen vervolgvraag, geen samenvatting. Gewoon de aankondiging. Nederlands, jij-vorm.`
-      const res = await managerModel.generateContentStream(announcePrompt)
-      await pumpModelStream(writer, res)
       return
     }
 
@@ -535,7 +521,7 @@ Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
   return ndjsonResponse(async (writer) => {
     writer.send({ type: 'meta', agentId, agentName })
     if (useRdwTools) {
-      await pumpChatWithTools(writer, model, prompt, YARA_TOOL_EXECUTORS)
+      await pumpChatWithTools(writer, model, prompt, YARA_TOOL_EXECUTORS, 6)
     } else {
       const res = await model.generateContentStream(prompt)
       await pumpModelStream(writer, res)
