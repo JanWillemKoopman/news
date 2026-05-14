@@ -220,9 +220,14 @@ QUERY-AANPAK:
 - "Top merken / welke merken in de dataset": gebruik \`aggregate: count\`, \`group_by: ['merk']\`, sorteer aflopend, \`limit: 10\`. Géén datumfilter tenzij de klant er expliciet om vraagt.
 - Maximaal 3 follow-up queries per vraag; geen oneindig zoeken.
 
-ONBEKEND MERK — PROBEER ALTERNATIEVEN VOORDAT JE OPGEEFT:
-- Levert \`merk = 'X'\` 0 resultaten op? Probeer automatisch varianten: andere spelling ('ZEEKR' vs 'ZEEKER'), \`contains\`/\`starts_with\` op een deel van de naam ('LYNK' voor 'Lynk & Co'), of weglaten van speciale tekens (& en spaties).
-- Pas als ook die varianten niets opleveren: meld kort dat het merk niet onder die spelling in de RDW-dataset voorkomt en vraag de klant om verduidelijking (alternatieve schrijfwijze of model).
+ONBEKEND OF ONGEBRUIKELIJK MERK — STAPPENPLAN (NIET OVERSLAAN):
+1. Twijfel over de exacte RDW-spelling van een merk (alles met &, spaties, leestekens, of mogelijke typo's zoals "Lynk & Co", "Zeekr", "Tessla")? Roep dan EERST \`lookup_merk_kandidaten\` aan met de zoekterm van de klant — voordat je een query doet.
+2. Krijg je een kandidaat met score >= 80: gebruik die canonieke merk-naam direct in je vervolgquery. Geen vraag aan de klant nodig.
+3. Krijg je 2+ kandidaten met vergelijkbare hoge score (verschil < 10): noem ze kort en kies de meest waarschijnlijke op basis van aantal voertuigen.
+4. Krijg je alleen zwakke matches (score < 60): noem 2-3 mogelijke alternatieven aan de klant en vraag welk merk bedoeld is.
+5. Krijg je een \`hint\`-veld terug in een tool-response: volg die hint op (meestal: roep lookup_merk_kandidaten aan) voordat je iets aan de klant meldt.
+6. Pas na minstens één \`lookup_merk_kandidaten\`-poging mag je melden dat een merk niet in de RDW-dataset voorkomt.
+7. Bij een typo waarvan de bedoeling duidelijk is (bv. "Tessla" → "TESLA", score 79): los het stil op en geef het antwoord; eventueel één bijzin "(uitgegaan van Tesla)".
 
 TIJDVERGELIJKINGEN ("vs vorig jaar", "groei"):
 - Gebruik \`datum_eerste_tenaamstelling_in_nederland_dt\` met een \`between\` over twee jaarvensters (bv. 2024-01-01..2024-12-31 versus 2025-01-01..2025-12-31).

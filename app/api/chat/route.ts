@@ -521,7 +521,7 @@ Geef alleen je bijdrage. Geen inleiding ("Hallo team"), geen afsluiting.`
   return ndjsonResponse(async (writer) => {
     writer.send({ type: 'meta', agentId, agentName })
     if (useRdwTools) {
-      await pumpChatWithTools(writer, model, prompt, YARA_TOOL_EXECUTORS)
+      await pumpChatWithTools(writer, model, prompt, YARA_TOOL_EXECUTORS, 6)
     } else {
       const res = await model.generateContentStream(prompt)
       await pumpModelStream(writer, res)
