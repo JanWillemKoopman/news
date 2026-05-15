@@ -337,3 +337,84 @@ JSON:"""
         "signalen": patterns,
         "bronnenkritiek": [],
     }
+
+
+def generate_technology_deepdive(tactical_messages: list[dict], date: str) -> dict:
+    """Genereer een uitputtende technologie-analyse via MODEL_PRO."""
+    messages_text = "\n\n".join(
+        f"[{m['channel_slug']}|{m['channel_side']}|datum:{m.get('message_date','?')}]\n"
+        f"Type: {m.get('event_type','?')} | Locatie: {m.get('location','?')}\n"
+        f"Feiten: {m.get('key_facts', '')}"
+        for m in tactical_messages[:80]
+    )
+
+    prompt = f"""Je bent een defensie-technologie expert en onderzoeksjournalist gespecialiseerd in militaire innovatie.
+Schrijf een UITPUTTENDE, DIEPGAANDE analyse van alle technologische ontwikkelingen in het conflict in Oekraïne.
+Schrijf VOLLEDIG IN HET NEDERLANDS. Wees zeer gedetailleerd en technisch.
+
+Datum: {date}
+Brondata:
+{messages_text}
+
+Genereer UITSLUITEND dit JSON-object:
+{{
+  "tech_kop": "Journalistieke krantenkop over de technologische situatie, max 10 woorden",
+  "tech_intro": "Openingsalinea van 4-5 zinnen over de technologische dimensie van het conflict vandaag. Beschrijf hoe technologie het slagveld vormt.",
+  "categorieën": [
+    {{
+      "naam": "Categorie naam (bijv. FPV-drones & Zwermtactiek)",
+      "icoon": "één relevant emoji",
+      "introductie": "2-3 zinnen die de rol van deze technologie in het conflict beschrijven",
+      "ontwikkelingen": [
+        {{
+          "titel": "Naam van het systeem of de tactiek",
+          "beschrijving": "Uitgebreide technische beschrijving van 3-5 zinnen. Beschrijf het systeem, hoe het wordt ingezet, wat het effect is op het slagveld en wat er nieuw aan is.",
+          "kant": "UA|RU|beide",
+          "impact": "hoog|middel|laag",
+          "bronnen": ["kanaalslug"],
+          "gemeld_op": "datum uit de brondata of null"
+        }}
+      ]
+    }}
+  ],
+  "innovatie_vergelijking": {{
+    "ua_sterktepunten": ["specifiek technologisch voordeel of innovatie van Oekraïne 1", "punt 2", "punt 3"],
+    "ru_sterktepunten": ["specifiek technologisch voordeel of innovatie van Rusland 1", "punt 2", "punt 3"],
+    "technologische_balans": "Analytische conclusie in 3-4 zinnen: welke kant heeft technologisch de overhand en waarom? Waar liggen de kritieke asymmetrieën?"
+  }},
+  "tech_signalen": [
+    "Een technologisch patroon of innovatietrend die over meerdere bronnen zichtbaar is — uitgeschreven als volledige Nederlandse zin met implicaties"
+  ]
+}}
+
+VEREISTEN:
+- Gebruik minimaal 4 categorieën: FPV-drones, Elektronische Oorlogsvoering, Loitering Munition, Maritieme Technologie
+- Voeg extra categorieën toe als de data dit rechtvaardigt (bijv. AI-targeting, Luchtafweer, Pantservoertuigen, Communicatie)
+- Elke categorie: minimaal 2 concrete ontwikkelingen met specifieke systeemnamen
+- Noem specifieke wapensystemen bij naam (Lancet-3M, Shahed-136, FPV Mavic, Krasukha-4, etc.)
+- Geef bij elke ontwikkeling aan wanneer het gemeld werd (datum uit de data)
+- "kant": UA = Oekraïne, RU = Rusland, beide = beide partijen
+- Schrijf alsof je een expert-lezer hebt die technische details waardeert
+
+JSON:"""
+
+    response = _call(prompt, model=MODEL_PRO, max_tokens=8192)
+    result = _extract_json(response)
+
+    if isinstance(result, dict):
+        result.setdefault('tech_kop', 'Technologische Oorlogsvoering')
+        result.setdefault('tech_intro', 'Technologische analyse niet volledig beschikbaar.')
+        result.setdefault('categorieën', [])
+        result.setdefault('innovatie_vergelijking', {
+            'ua_sterktepunten': [], 'ru_sterktepunten': [], 'technologische_balans': ''
+        })
+        result.setdefault('tech_signalen', [])
+        return result
+
+    return {
+        "tech_kop": "Technologie-analyse niet beschikbaar",
+        "tech_intro": response[:400] if response else "Geen data.",
+        "categorieën": [],
+        "innovatie_vergelijking": {"ua_sterktepunten": [], "ru_sterktepunten": [], "technologische_balans": ""},
+        "tech_signalen": [],
+    }

@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """
 FRONTLIJN BRIEFING — Dagelijkse OSINT-bulletingenerator
-"The Dirt and the Steel"
-
-Gebruik:
-  python run.py                    # volledig run: verzamel + verwerk + genereer
-  python run.py --collect-only     # alleen Telegram scrapen
-  python run.py --generate-only    # alleen briefing genereren (gebruikt bestaande data)
-  python run.py --hours 48         # kijk 48 uur terug i.p.v. 24
-  python run.py --test             # test met 2 kanalen, sla niet op
 """
 import argparse
 import logging
@@ -27,23 +19,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def fmt_date_nl(iso_date_str: str) -> str:
+    """Zet ISO-datumstring om naar leesbaar Nederlands formaat."""
+    if not iso_date_str:
+        return ''
+    try:
+        dt = datetime.fromisoformat(iso_date_str.replace('Z', '+00:00'))
+        maanden = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun',
+                   'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+        return f"{dt.day} {maanden[dt.month - 1]} {dt.strftime('%H:%M')}"
+    except Exception:
+        return iso_date_str[:16]
+
+
 def main():
     parser = argparse.ArgumentParser(description='FRONTLIJN BRIEFING generator')
-    parser.add_argument('--collect-only', action='store_true', help='Alleen data verzamelen')
-    parser.add_argument('--generate-only', action='store_true', help='Alleen briefing genereren')
-    parser.add_argument('--hours', type=int, default=24, help='Uren terug kijken (standaard: 24)')
-    parser.add_argument('--test', action='store_true', help='Testrun met beperkte data')
+    parser.add_argument('--collect-only', action='store_true')
+    parser.add_argument('--generate-only', action='store_true')
+    parser.add_argument('--hours', type=int, default=24)
+    parser.add_argument('--test', action='store_true')
     args = parser.parse_args()
 
     today = str(date.today())
     now = datetime.now().strftime('%d-%m-%Y %H:%M')
 
-    # Database initialiseren
     from storage.db import init_db
     init_db()
     logger.info("Database geïnitialiseerd")
 
-    # Gemini setup
     if not args.collect_only:
         from processors import gemini
         try:
@@ -51,7 +54,6 @@ def main():
             logger.info("Gemini API verbonden")
         except EnvironmentError as e:
             logger.error(str(e))
-            logger.error("Maak een .env bestand aan op basis van .env.example")
             sys.exit(1)
 
     # === FASE 1: DATA VERZAMELEN ===
@@ -65,23 +67,19 @@ def main():
         from channels import CHANNELS
 
         if args.test:
-            # Testmodus: alleen eerste 2 kanalen
             test_channels = CHANNELS[:2]
-            logger.info(f"TESTMODUS: verwerk {len(test_channels)} kanalen")
             total = 0
             for ch in test_channels:
                 msgs = scrape_channel(ch, limit=10)
                 if msgs:
                     saved = save_messages(msgs)
                     total += saved
-                    logger.info(f"  {ch['name']}: {saved} berichten opgeslagen")
         else:
             total = collect_all_channels(max_per_channel=25)
 
         logger.info(f"Verzameling klaar: {total} nieuwe berichten opgeslagen")
 
     if args.collect_only:
-        logger.info("--collect-only: gestopt na verzameling")
         return
 
     # === FASE 2: AI VERWERKING ===
@@ -93,30 +91,35 @@ def main():
     tactical = run_pipeline(hours=args.hours)
 
     if not tactical:
-        logger.warning("Geen tactische berichten gevonden. Bulletin wordt niet gegenereerd.")
-        logger.info("Tip: controleer of de kanalen bereikbaar zijn en run opnieuw.")
+        logger.warning("Geen tactische berichten gevonden.")
         return
 
     logger.info(f"{len(tactical)} tactische berichten klaar voor bulletingeneratie")
 
-    # === FASE 3: BULLETINGENERATIE ===
+    # === FASE 3: NIEUWS BRIEFING ===
     logger.info("=" * 50)
-    logger.info("FASE 3: Briefing genereren")
+    logger.info("FASE 3: Nieuws-briefing genereren (Gemini 3.1 Pro)")
     logger.info("=" * 50)
 
-    from processors.gemini import detect_patterns, generate_bulletin
+    from processors.gemini import detect_patterns, generate_bulletin, generate_technology_deepdive
 
     logger.info("Patroonherkenning...")
     patterns = detect_patterns(tactical)
     if patterns:
         logger.info(f"  → {len(patterns)} signalen gedetecteerd")
-        for p in patterns:
-            logger.info(f"    ⬥ {p}")
 
-    logger.info("Briefing genereren...")
+    logger.info("Nieuws-briefing genereren...")
     bulletin_data = generate_bulletin(tactical, patterns, today)
 
-    # === FASE 4: HTML OPSLAAN ===
+    # === FASE 4: TECHNOLOGIE DEEP-DIVE ===
+    logger.info("=" * 50)
+    logger.info("FASE 4: Technologie deep-dive genereren (Gemini 3.1 Pro)")
+    logger.info("=" * 50)
+
+    tech_data = generate_technology_deepdive(tactical, today)
+    logger.info(f"  → {len(tech_data.get('categorieën', []))} technologie-categorieën gegenereerd")
+
+    # === FASE 5: HTML OPSLAAN ===
     from jinja2 import Environment, FileSystemLoader
     from storage.db import save_bulletin
     from channels import CHANNELS, CHANNEL_LOOKUP
@@ -126,17 +129,25 @@ def main():
     template = env.get_template('bulletin.html')
 
     unique_channels = len(set(m['channel_slug'] for m in tactical))
+
+    # Bereken tijdstempelstatistieken voor de template
+    dates = [m.get('message_date') for m in tactical if m.get('message_date')]
+    oldest = min(dates) if dates else None
+    newest = max(dates) if dates else None
+
     html = template.render(
         date=today,
         generated_at=now,
         message_count=len(tactical),
         channel_count=unique_channels,
         data=bulletin_data,
+        tech_data=tech_data,
         channels_list=CHANNELS,
         channel_lookup=CHANNEL_LOOKUP,
+        oldest_message=fmt_date_nl(oldest),
+        newest_message=fmt_date_nl(newest),
     )
 
-    # Sla op als versie-bestand in output/
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'briefing-{today}.html')
@@ -144,23 +155,19 @@ def main():
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
 
-    # Sla ook op als index.html (meest recente briefing, publiek toegankelijk)
     index_path = os.path.join(os.path.dirname(__file__), 'index.html')
     with open(index_path, 'w', encoding='utf-8') as f:
         f.write(html)
 
-    # Sla ook op in database
     if not args.test:
         save_bulletin(today, html, len(tactical), unique_channels)
 
     logger.info("=" * 50)
     logger.info(f"✓ BRIEFING GEGENEREERD: {output_path}")
     logger.info(f"  Ook opgeslagen als: {index_path}")
-    logger.info(f"  Bronberichten: {len(tactical)}")
-    logger.info(f"  Kanalen: {unique_channels}")
-    logger.info(f"  Signalen: {len(patterns)}")
+    logger.info(f"  Bronberichten: {len(tactical)} | Kanalen: {unique_channels}")
+    logger.info(f"  Technologie-categorieën: {len(tech_data.get('categorieën', []))}")
     logger.info("=" * 50)
-    logger.info(f"Open het bestand in je browser om de briefing te lezen.")
 
 
 if __name__ == '__main__':
