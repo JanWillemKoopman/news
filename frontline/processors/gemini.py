@@ -1,6 +1,5 @@
 """
 Gemini API via directe HTTP-aanroepen (geen google-generativeai dependency).
-Werkt met elke Python-omgeving die `requests` heeft.
 """
 import os
 import json
@@ -12,7 +11,8 @@ import requests
 logger = logging.getLogger(__name__)
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-MODEL = "gemini-2.0-flash"
+MODEL_FAST = "gemini-2.0-flash"        # filter, vertalen, per-bericht analyse
+MODEL_PRO  = "gemini-3.1-pro-preview"  # patroonherkenning + briefinggeneratie
 
 _api_key: str = ""
 
@@ -22,40 +22,45 @@ def setup():
     _api_key = os.environ.get('GEMINI_API_KEY', '')
     if not _api_key:
         raise EnvironmentError("GEMINI_API_KEY niet ingesteld in .env")
-    logger.info(f"Gemini API geconfigureerd (model: {MODEL})")
+    logger.info(f"Gemini API geconfigureerd (snel: {MODEL_FAST} | pro: {MODEL_PRO})")
 
 
-def _call(prompt: str, retries: int = 3) -> str:
+def _call(prompt: str, model: str = MODEL_FAST, max_tokens: int = 4096, retries: int = 3) -> str:
     if not _api_key:
         raise RuntimeError("Roep eerst gemini.setup() aan")
 
-    url = f"{GEMINI_API_BASE}/{MODEL}:generateContent?key={_api_key}"
+    url = f"{GEMINI_API_BASE}/{model}:generateContent?key={_api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.2,
-            "maxOutputTokens": 4096,
+            "maxOutputTokens": max_tokens,
         }
     }
 
     for attempt in range(retries):
         try:
-            resp = requests.post(url, json=payload, timeout=60)
+            resp = requests.post(url, json=payload, timeout=120)
             if resp.status_code == 200:
                 data = resp.json()
-                return data['candidates'][0]['content']['parts'][0]['text'].strip()
+                parts = data.get('candidates', [{}])[0].get('content', {}).get('parts', [])
+                if parts:
+                    return parts[0].get('text', '').strip()
+                finish = data.get('candidates', [{}])[0].get('finishReason', '?')
+                logger.warning(f"Lege response van {model}, finishReason={finish}")
+                return ""
             elif resp.status_code == 429:
                 wait = 2 ** (attempt + 2)
-                logger.warning(f"Rate limit (429). Wacht {wait}s...")
+                logger.warning(f"Rate limit (429) op {model}. Wacht {wait}s...")
                 time.sleep(wait)
             else:
-                logger.error(f"Gemini HTTP {resp.status_code}: {resp.text[:200]}")
+                logger.error(f"Gemini HTTP {resp.status_code} ({model}): {resp.text[:200]}")
                 if attempt == retries - 1:
                     return ""
                 time.sleep(2)
         except requests.RequestException as e:
             if attempt == retries - 1:
-                logger.error(f"Gemini request mislukt: {e}")
+                logger.error(f"Gemini request mislukt ({model}): {e}")
                 return ""
             time.sleep(2 ** attempt)
 
@@ -69,7 +74,6 @@ def _extract_json(text: str) -> dict | list | None:
     try:
         return json.loads(text.strip())
     except json.JSONDecodeError:
-        # Probeer ook ruwe JSON zonder backticks
         try:
             start = text.find('[') if text.find('[') != -1 and (text.find('{') == -1 or text.find('[') < text.find('{')) else text.find('{')
             if start != -1:
@@ -116,7 +120,7 @@ Berichten:
 
 JSON-array:"""
 
-        response = _call(prompt)
+        response = _call(prompt, model=MODEL_FAST)
         parsed = _extract_json(response)
 
         if isinstance(parsed, list) and len(parsed) == len(batch):
@@ -156,7 +160,7 @@ Gebruik dezelfde nummering [0], [1], etc.
 
 Vertalingen:"""
 
-        response = _call(prompt)
+        response = _call(prompt, model=MODEL_FAST, max_tokens=4096)
         parts = re.split(r'===VERTALING===', response)
 
         for j, (orig_idx, msg) in enumerate(batch):
@@ -196,7 +200,7 @@ Geef een JSON-object:
 
 JSON:"""
 
-    response = _call(prompt)
+    response = _call(prompt, model=MODEL_FAST, max_tokens=512)
     result = _extract_json(response)
 
     if isinstance(result, dict):
@@ -211,32 +215,33 @@ JSON:"""
 
 
 def detect_patterns(tactical_messages: list[dict]) -> list[str]:
-    """Detecteer terugkerende thema's in meerdere onafhankelijke bronnen."""
+    """Detecteer terugkerende thema's in meerdere onafhankelijke bronnen (MODEL_PRO)."""
     if len(tactical_messages) < 5:
         return []
 
     summary = "\n".join(
-        f"[{m['channel_slug']}|{m['channel_side']}] {m.get('key_facts', '')[:180]}"
-        for m in tactical_messages[:55]
+        f"[{m['channel_slug']}|{m['channel_side']}] {m.get('key_facts', '')[:200]}"
+        for m in tactical_messages[:60]
     )
 
-    prompt = f"""Je bent een patroonherkenner bij een inlichtingsdienst.
+    prompt = f"""Je bent een senior inlichtinganalist gespecialiseerd in patroonherkenning.
 
-Zoek in onderstaande berichten van MEERDERE ONAFHANKELIJKE bronnen naar fenomenen
-die door 3+ VERSCHILLENDE kanalen worden gemeld — dat zijn signalen, geen ruis.
+Analyseer onderstaande berichten van meerdere onafhankelijke bronnen. Zoek naar fenomenen
+die door 3 of meer VERSCHILLENDE kanalen worden gerapporteerd — dat zijn signalen, geen ruis.
 
-Focus op: munitietekorten, nieuwe drone/EW-tactieken, troepenrotaties, weersomstandigheden,
-aanvalspatronen die zich herhalen.
+Focus op: munitietekorten, nieuwe drone/EW-tactieken, troepenrotaties, aanvalspatronen,
+logistieke knelpunten, weersomstandigheden die operaties beïnvloeden.
 
-Geef maximaal 5 patronen als JSON-array van Nederlandse strings.
+Schrijf elk signaal als een complete Nederlandse zin die het fenomeen en de frequentie beschrijft.
+Geef maximaal 5 patronen als JSON-array van strings.
 Leeg array als er geen duidelijke patronen zijn.
 
 Berichten:
 {summary}
 
-Patronen (JSON-array van strings):"""
+Patronen (JSON-array van Nederlandse strings):"""
 
-    response = _call(prompt)
+    response = _call(prompt, model=MODEL_PRO, max_tokens=2048)
     result = _extract_json(response)
     if isinstance(result, list):
         return [str(p) for p in result[:5]]
@@ -244,66 +249,91 @@ Patronen (JSON-array van strings):"""
 
 
 def generate_bulletin(tactical_messages: list[dict], patterns: list[str], date: str) -> dict:
-    """Genereer de volledige dagelijkse briefing als gestructureerde JSON."""
+    """Genereer de volledige dagelijkse briefing via MODEL_PRO (gemini-3.1-pro-preview)."""
     messages_text = "\n\n".join(
         f"[{m['channel_slug']}|{m['channel_side']}|{m.get('event_type','?')}]\n"
         f"Locatie: {m.get('location', 'onbekend')}\n"
         f"Feiten: {m.get('key_facts', '')}\n"
         f"Propaganda: {m.get('propaganda_markers', 'geen')}"
-        for m in tactical_messages[:50]
+        for m in tactical_messages[:60]
     )
 
     patterns_text = "\n".join(f"- {p}" for p in patterns) if patterns else "Geen."
 
-    prompt = f"""Je bent een inlichtingenofficier die een frontlijnbriefing schrijft.
-Stijl: technisch, nuchter, dicht bij de realiteit. Geen sensatiezucht. Geen politieke duiding.
+    prompt = f"""Je bent een senior oorlogsverslaggever en inlichtingsofficier die een dagelijkse frontlijnbriefing schrijft.
+
+Stijl: journalistiek scherp, analytisch, nuchter. Schrijf zoals de beste correspondenten van NRC of de Volkskrant.
+Geen sensatiezucht. Geen politieke stellingname. Wees concreet over locaties, eenheden en feiten.
 Schrijf VOLLEDIG IN HET NEDERLANDS.
 
 Datum: {date}
-Bronberichten verwerkt: {len(tactical_messages)}
-Gedetecteerde patronen:
+Verwerkte bronberichten: {len(tactical_messages)}
+Gedetecteerde patronen over meerdere bronnen:
 {patterns_text}
 
-Tactische data:
+Tactische brondata:
 {messages_text}
 
-Genereer ALLEEN dit JSON-object (geen uitleg eromheen):
+Genereer UITSLUITEND het volgende JSON-object, niets anders:
 {{
-  "samenvatting": "3 zinnen over de meest kritische ontwikkelingen van vandaag",
+  "krantenkop": "Kernachtige journalistieke krantenkop, max 10 woorden, geen punt aan het einde",
+  "subtitel": "Concretiserende ondertitel van max 20 woorden die de kop aanvult",
+  "lede": "Openingsparagraaf van 3-4 zinnen in journalistieke stijl. Dit is het meest significante feit van de dag, met context en implicatie. Schrijf alsof dit de eerste alinea is van een NRC-artikel.",
   "sectoren": [
     {{
-      "naam": "naam van frontsector",
-      "samenvatting": "1-2 zinnen wat er bewoog",
-      "details": ["concreet feit 1", "concreet feit 2"],
-      "ua_claim": "Oekraïense claim of null",
-      "ua_source": "kanaalslug die de UA-claim meldde, of null",
-      "ru_claim": "Russische claim of null",
-      "ru_source": "kanaalslug die de RU-claim meldde, of null",
+      "naam": "naam van frontsector of stad",
+      "samenvatting": "1-2 zinnen die de essentie van de situatie in deze sector grijpen",
+      "bevestigd": ["feit dat door meerdere onafhankelijke bronnen bevestigd is — concreet en locatiespecifiek"],
+      "onzeker": ["claim van één partij die niet onafhankelijk bevestigd is — wees expliciet over de bron"],
+      "ua_claim": "de Oekraïense claim over deze sector, of null",
+      "ua_source": "kanaalslug van de UA-bron, of null",
+      "ru_claim": "de Russische claim over deze sector, of null",
+      "ru_source": "kanaalslug van de RU-bron, of null",
       "sources_used": ["kanaalslug1", "kanaalslug2"],
       "betrouwbaarheid": "hoog|middel|laag|tegenstrijdig"
     }}
   ],
-  "technologie_ew": ["drone/EW-ontwikkeling 1 (bron: kanaalslug)", "drone/EW-ontwikkeling 2 (bron: kanaalslug)"],
-  "menselijke_factor": "sfeer, moraal, logistiek, weer — de atmosfeer aan het front",
-  "signalen": ["patroon 1", "patroon 2"],
-  "bronnenkritiek": ["tegenstrijdigheid of propagandapunt 1 (bron: kanaalslug)"]
+  "strategische_context": "2-3 zinnen: wat betekenen de ontwikkelingen van vandaag voor het grotere strategische plaatje? Verbind de losse feiten tot een coherent beeld van de richting van het conflict.",
+  "morgen_verwacht": ["Concrete verwachting of aandachtspunt voor de komende 24-48 uur — punt 1", "punt 2", "punt 3"],
+  "technologie_ew": ["Beschrijving drone- of EW-ontwikkeling met bron tussen haakjes", "tweede ontwikkeling"],
+  "menselijke_factor": "Een alinea van 3-4 zinnen over de sfeer, het moraal, de logistieke realiteit en de menselijke kant aan het front. Put uit soldatenverhalen en veldrapporten.",
+  "signalen": ["patroon dat over meerdere bronnen zichtbaar is — schrijf als volledige zin"],
+  "bronnenkritiek": ["Specifieke tegenstrijdigheid of propagandapoging met naam van bron"]
 }}
 
-BELANGRIJK: Vul "ua_source" en "ru_source" in met de exacte kanaalslug uit de bronberichten die de claim onderbouwen.
+REGELS:
+- Stel "bevestigd" feiten alleen in als ze door 2+ onafhankelijke bronnen worden ondersteund
+- Gebruik "onzeker" voor eenzijdige claims — benoem expliciet van welke kant
+- "ua_source" en "ru_source": vul de exacte kanaalslug in uit de brondata
+- Wees journalistiek precies: vermijd vage termen als "sommige bronnen" — noem de kanalen
+- Maximaal 5 sectoren, kies de meest significante
 
 JSON:"""
 
-    response = _call(prompt)
+    response = _call(prompt, model=MODEL_PRO, max_tokens=8192)
     result = _extract_json(response)
 
     if isinstance(result, dict):
+        # Zorg dat nieuwe velden bestaan voor backwards-compatibiliteit
+        result.setdefault('krantenkop', 'Frontlijnrapport')
+        result.setdefault('subtitel', '')
+        result.setdefault('lede', result.pop('samenvatting', ''))
+        result.setdefault('strategische_context', '')
+        result.setdefault('morgen_verwacht', [])
+        for sector in result.get('sectoren', []):
+            sector.setdefault('bevestigd', sector.get('details', []))
+            sector.setdefault('onzeker', [])
         return result
 
     return {
-        "samenvatting": "Bulletingeneratie deels mislukt. Ruwe data beschikbaar.",
+        "krantenkop": "Briefinggeneratie deels mislukt",
+        "subtitel": "Ruwe data beschikbaar in de sectoren hieronder",
+        "lede": response[:500] if response else "Geen data beschikbaar.",
         "sectoren": [],
+        "strategische_context": "",
+        "morgen_verwacht": [],
         "technologie_ew": [],
-        "menselijke_factor": response[:500] if response else "Geen data.",
+        "menselijke_factor": "Geen data.",
         "signalen": patterns,
         "bronnenkritiek": [],
     }

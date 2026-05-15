@@ -1,738 +1,376 @@
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frontlijn Briefing — 2026-05-15</title>
+<title>Wederzijdse massale drone-aanvallen en strategische dreiging vanuit Belarus — Frontlijn 2026-05-15</title>
 
-<!-- Leaflet.js kaart -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLEg=" crossorigin=""></script>
-
-<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-  /* ===== RESET & BASIS ===== */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --rood: #c0001a;
-    --donkerblauw: #003366;
-    --ua-blauw: #005BBB;
-    --ru-rood: #c0001a;
-    --groen: #2e7d32;
-    --geel: #e65100;
-    --wit: #ffffff;
-    --lichtgrijs: #f7f7f7;
-    --randgrijs: #e0e0e0;
-    --tekstgrijs: #5a5a5a;
-    --tekst: #1a1a1a;
-    --scheidingslijn: #d0d0d0;
-  }
+:root {
+  --rood: #c0001a;
+  --donkerblauw: #003366;
+  --ua-blauw: #005BBB;
+  --ru-rood: #c62828;
+  --groen: #2e7d32;
+  --oranje: #e65100;
+  --wit: #ffffff;
+  --lichtgrijs: #f7f7f7;
+  --midgrijs: #eeeeee;
+  --randgrijs: #e0e0e0;
+  --tekstgrijs: #5a5a5a;
+  --tekst: #111111;
+  --scheidingslijn: #d0d0d0;
+}
 
-  html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--wit);
+  color: var(--tekst);
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.65;
+}
+a { color: var(--rood); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-  body {
-    background: var(--wit);
-    color: var(--tekst);
-    font-family: 'Source Serif 4', Georgia, serif;
-    font-size: 17px;
-    line-height: 1.65;
-  }
+/* TOP */
+.topbalk { background: var(--rood); height: 4px; }
 
-  a { color: var(--rood); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+/* MASTHEAD */
+.masthead { border-bottom: 1px solid var(--scheidingslijn); padding: 18px 0 14px; }
+.masthead-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 24px;
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.krant-naam {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; color: var(--tekst);
+}
+.krant-naam span { color: var(--rood); }
+.krant-meta {
+  font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--tekstgrijs);
+  text-align: right; line-height: 1.6;
+}
 
-  /* ===== TOPBALK ===== */
-  .topbalk {
-    background: var(--rood);
-    height: 4px;
-    width: 100%;
-  }
+/* NAV */
+.nav-balk { background: var(--tekst); }
+.nav-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 24px;
+  display: flex; gap: 0; flex-wrap: wrap;
+}
+.nav-inner a {
+  color: #bbb; font-family: 'Inter', sans-serif; font-size: 0.75rem;
+  font-weight: 500; padding: 9px 14px; display: block;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-inner a:hover { background: var(--rood); color: var(--wit); text-decoration: none; }
 
-  /* ===== MASTHEAD ===== */
-  .masthead {
-    border-bottom: 1px solid var(--scheidingslijn);
-    padding: 20px 0 14px;
-  }
-  .masthead-inner {
-    max-width: 1060px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .krant-naam {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    color: var(--tekst);
-    line-height: 1;
-  }
-  .krant-naam span { color: var(--rood); }
-  .krant-meta {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    color: var(--tekstgrijs);
-    text-align: right;
-    line-height: 1.5;
-  }
+/* CONTAINER */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-  /* ===== NAVIGATIE ===== */
-  .nav-balk {
-    background: var(--tekst);
-    padding: 0;
-  }
-  .nav-inner {
-    max-width: 1060px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    gap: 0;
-  }
-  .nav-inner a {
-    color: #ccc;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-    padding: 9px 14px;
-    display: block;
-    transition: background 0.15s, color 0.15s;
-  }
-  .nav-inner a:hover, .nav-inner a.actief {
-    background: var(--rood);
-    color: var(--wit);
-    text-decoration: none;
-  }
+/* HERO */
+.hero {
+  padding: 40px 0 32px;
+  border-bottom: 1px solid var(--randgrijs);
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 40px;
+  align-items: start;
+}
+.hero-links {}
+.hero-label {
+  font-family: 'Inter', sans-serif; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--rood); margin-bottom: 10px;
+}
+.hero-kop {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem; font-weight: 700; line-height: 1.15;
+  color: var(--tekst); margin-bottom: 10px;
+}
+.hero-subtitel {
+  font-family: 'Source Serif 4', serif;
+  font-size: 1.15rem; font-weight: 400; font-style: italic;
+  color: var(--tekstgrijs); margin-bottom: 18px; line-height: 1.4;
+}
+.hero-lede {
+  font-size: 1.05rem; line-height: 1.8; color: #1a1a1a;
+  border-left: 3px solid var(--rood); padding-left: 16px;
+}
+.hero-meta {
+  display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap;
+}
+.hero-meta-item {
+  font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--tekstgrijs);
+}
+.hero-meta-item strong { color: var(--tekst); }
 
-  /* ===== CONTAINER ===== */
-  .container {
-    max-width: 1060px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+/* HERO RECHTS: kaartpreview */
+.hero-kaart-wrapper {
+  border: 1px solid var(--randgrijs);
+  overflow: hidden;
+  position: sticky;
+  top: 16px;
+}
+#overzichtskaart { height: 260px; background: #eee; }
+.kaart-onderschrift {
+  background: var(--lichtgrijs); padding: 6px 12px;
+  font-family: 'Inter', sans-serif; font-size: 0.7rem; color: var(--tekstgrijs);
+  border-top: 1px solid var(--randgrijs);
+}
 
-  /* ===== HERO / SAMENVATTING ===== */
-  .hero {
-    border-bottom: 1px solid var(--randgrijs);
-    padding: 36px 0 30px;
-  }
-  .hero-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--rood);
-    margin-bottom: 10px;
-  }
-  .hero-titel {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.1rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--tekst);
-    margin-bottom: 16px;
-    max-width: 760px;
-  }
-  .hero-tekst {
-    font-size: 1.12rem;
-    line-height: 1.75;
-    color: #2a2a2a;
-    max-width: 720px;
-  }
-  .hero-meta {
-    display: flex;
-    gap: 20px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-  }
-  .hero-meta-item {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    color: var(--tekstgrijs);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .hero-meta-item strong {
-    color: var(--tekst);
-    font-weight: 600;
-  }
+/* SECTIE-HEADERS */
+.sectie-header {
+  display: flex; align-items: center; gap: 12px;
+  margin: 40px 0 20px; padding-bottom: 10px;
+  border-bottom: 2px solid var(--tekst);
+}
+.sectie-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem; font-weight: 700; color: var(--tekst);
+}
+.sectie-nr {
+  font-family: 'Inter', sans-serif; font-size: 0.68rem; font-weight: 700;
+  color: var(--wit); background: var(--rood); padding: 2px 7px;
+}
 
-  /* ===== SECTIE-HEADERS ===== */
-  .sectie-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 36px 0 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--tekst);
-  }
-  .sectie-header h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: var(--tekst);
-    line-height: 1;
-  }
-  .sectie-nummer {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--wit);
-    background: var(--rood);
-    padding: 2px 7px;
-    letter-spacing: 0.5px;
-  }
+/* SECTOREN */
+.sectoren-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1px;
+  background: var(--randgrijs);
+  border: 1px solid var(--randgrijs);
+  margin-bottom: 2px;
+}
+.sector-kaart {
+  background: var(--wit); padding: 20px 20px 16px;
+  transition: background 0.12s;
+}
+.sector-kaart:hover { background: var(--lichtgrijs); }
 
-  /* ===== KAART ===== */
-  #kaart-container {
-    margin: 0 0 32px;
-    border: 1px solid var(--randgrijs);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  #overzichtskaart {
-    height: 420px;
-    background: #eee;
-  }
-  .kaart-onderschrift {
-    background: var(--lichtgrijs);
-    padding: 8px 14px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    color: var(--tekstgrijs);
-    border-top: 1px solid var(--randgrijs);
-  }
+.sector-top { margin-bottom: 10px; }
+.sector-naam {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem; font-weight: 700; color: var(--tekst);
+  margin-bottom: 2px;
+}
+.betrouwbaarheid-badge {
+  font-family: 'Inter', sans-serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; padding: 1px 7px; border-radius: 2px;
+  display: inline-block; margin-bottom: 6px;
+}
+.badge-hoog { background: #e8f5e9; color: #2e7d32; }
+.badge-middel { background: #fff3e0; color: #e65100; }
+.badge-laag { background: #ffebee; color: #c62828; }
+.badge-tegenstrijdig { background: #f5f5f5; color: #757575; }
 
-  /* ===== SECTOREN GRID ===== */
-  .sectoren-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 12px;
-  }
+.sector-samenvatting {
+  font-size: 0.93rem; color: var(--tekstgrijs); line-height: 1.5; margin-bottom: 12px;
+}
 
-  .sector-kaart {
-    border: 1px solid var(--randgrijs);
-    background: var(--wit);
-    transition: box-shadow 0.15s;
-  }
-  .sector-kaart:hover {
-    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
-  }
+/* Bevestigd / Onzeker */
+.feiten-blokken { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.feiten-blok { padding: 10px 12px; background: var(--lichtgrijs); }
+.feiten-blok-bevestigd { border-top: 2px solid var(--groen); }
+.feiten-blok-onzeker { border-top: 2px solid var(--oranje); }
+.feiten-label {
+  font-family: 'Inter', sans-serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px;
+}
+.feiten-label-bevestigd { color: var(--groen); }
+.feiten-label-onzeker { color: var(--oranje); }
+.feiten-lijst { list-style: none; padding: 0; }
+.feiten-lijst li {
+  font-size: 0.83rem; line-height: 1.45; color: #1a1a1a;
+  padding: 3px 0 3px 10px; border-left: 1px solid var(--randgrijs); margin-bottom: 4px;
+}
 
-  .sector-top {
-    display: flex;
-    align-items: stretch;
-    border-bottom: 1px solid var(--randgrijs);
-  }
-  .sector-kleur-balk {
-    width: 5px;
-    flex-shrink: 0;
-  }
-  .balk-hoog { background: var(--groen); }
-  .balk-middel { background: var(--geel); }
-  .balk-laag { background: var(--rood); }
-  .balk-tegenstrijdig { background: #9e9e9e; }
+/* Claims */
+.claims-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.claim-blok { background: var(--lichtgrijs); border-top: 3px solid; padding: 8px 10px; font-size: 0.83rem; line-height: 1.45; }
+.claim-blok-ua { border-color: var(--ua-blauw); }
+.claim-blok-ru { border-color: var(--ru-rood); }
+.claim-label {
+  font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+}
+.claim-label-ua { color: var(--ua-blauw); }
+.claim-label-ru { color: var(--ru-rood); }
+.claim-source {
+  font-family: 'Inter', sans-serif; font-size: 0.68rem; color: var(--tekstgrijs); margin-top: 5px;
+}
+.claim-source a { color: var(--rood); font-weight: 500; }
 
-  .sector-hoofd {
-    padding: 14px 16px;
-    flex: 1;
-  }
-  .sector-naam {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--tekst);
-    margin-bottom: 4px;
-  }
-  .sector-samenvatting {
-    font-size: 0.92rem;
-    color: var(--tekstgrijs);
-    line-height: 1.5;
-  }
+.sector-bronnen {
+  padding-top: 8px; border-top: 1px solid var(--randgrijs);
+  font-family: 'Inter', sans-serif; font-size: 0.7rem; color: var(--tekstgrijs);
+}
+.bron-chip {
+  display: inline-block; background: var(--midgrijs); border: 1px solid var(--randgrijs);
+  border-radius: 2px; padding: 1px 6px; margin: 2px 2px 2px 0; font-size: 0.68rem;
+}
+.bron-chip.zijde-UA { border-left: 2px solid var(--ua-blauw); }
+.bron-chip.zijde-RU { border-left: 2px solid var(--ru-rood); }
+.bron-chip.zijde-neutral { border-left: 2px solid var(--groen); }
 
-  .betrouwbaarheid-badge {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 2px;
-    display: inline-block;
-    margin-bottom: 6px;
-  }
-  .badge-hoog { background: #e8f5e9; color: var(--groen); }
-  .badge-middel { background: #fff3e0; color: var(--geel); }
-  .badge-laag { background: #ffebee; color: var(--rood); }
-  .badge-tegenstrijdig { background: #f5f5f5; color: #757575; }
+/* STRATEGISCHE CONTEXT */
+.strategie-blok {
+  background: #f0f4ff;
+  border-left: 4px solid var(--donkerblauw);
+  padding: 20px 24px;
+  font-size: 1.02rem; line-height: 1.75; color: #1a1a1a;
+}
 
-  .sector-body {
-    padding: 12px 16px;
-  }
+/* MORGEN VERWACHT */
+.morgen-lijst { list-style: none; padding: 0; counter-reset: morgen; }
+.morgen-lijst li {
+  counter-increment: morgen;
+  padding: 12px 16px 12px 52px;
+  background: var(--lichtgrijs);
+  border-bottom: 1px solid var(--randgrijs);
+  font-size: 0.95rem; line-height: 1.55; color: #1a1a1a;
+  position: relative;
+}
+.morgen-lijst li::before {
+  content: counter(morgen);
+  position: absolute; left: 16px; top: 11px;
+  font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
+  color: var(--rood); width: 24px; text-align: center;
+}
+.morgen-lijst li:last-child { border-bottom: none; }
 
-  .sector-details {
-    list-style: none;
-    padding: 0;
-    margin: 8px 0 12px;
-  }
-  .sector-details li {
-    font-size: 0.88rem;
-    padding: 5px 0 5px 14px;
-    border-left: 2px solid var(--randgrijs);
-    margin-bottom: 4px;
-    color: #333;
-    line-height: 1.45;
-  }
+/* TECHNOLOGIE */
+.ew-lijst { list-style: none; padding: 0; }
+.ew-lijst li {
+  padding: 12px 16px; border-left: 3px solid #455a64;
+  background: var(--lichtgrijs); margin-bottom: 10px;
+  font-size: 0.95rem; line-height: 1.55;
+}
+.ew-lijst li::before { content: '◈ '; color: #455a64; }
 
-  .claims-rij {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .claim-blok {
-    background: var(--lichtgrijs);
-    border-top: 3px solid;
-    padding: 8px 10px;
-    font-size: 0.82rem;
-    line-height: 1.45;
-  }
-  .claim-blok-ua { border-color: var(--ua-blauw); }
-  .claim-blok-ru { border-color: var(--ru-rood); }
-  .claim-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .claim-label-ua { color: var(--ua-blauw); }
-  .claim-label-ru { color: var(--ru-rood); }
-  .claim-source {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.68rem;
-    color: var(--tekstgrijs);
-    margin-top: 5px;
-  }
-  .claim-source a {
-    color: var(--rood);
-    font-weight: 500;
-  }
+/* MENSELIJKE FACTOR */
+.menselijk-blok {
+  background: var(--lichtgrijs); border-left: 4px solid #795548;
+  padding: 20px 24px; font-style: italic; font-size: 1.02rem; line-height: 1.85; color: #1a1a1a;
+}
 
-  .sector-bronnen {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--randgrijs);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    color: var(--tekstgrijs);
-  }
-  .bron-chip {
-    display: inline-block;
-    background: var(--lichtgrijs);
-    border: 1px solid var(--randgrijs);
-    border-radius: 2px;
-    padding: 1px 6px;
-    margin: 2px 3px 2px 0;
-    font-size: 0.7rem;
-  }
-  .bron-chip.zijde-UA { border-left: 2px solid var(--ua-blauw); }
-  .bron-chip.zijde-RU { border-left: 2px solid var(--ru-rood); }
-  .bron-chip.zijde-neutral { border-left: 2px solid var(--groen); }
+/* SIGNALEN */
+.signalen-lijst { list-style: none; padding: 0; }
+.signalen-lijst li {
+  padding: 12px 16px 12px 48px; background: #f0f7f0;
+  border-left: 3px solid var(--groen); margin-bottom: 10px;
+  font-size: 0.95rem; line-height: 1.55; position: relative;
+}
+.signalen-lijst li::before {
+  content: '⬥'; color: var(--groen); font-size: 1rem;
+  position: absolute; left: 16px; top: 12px;
+}
 
-  /* ===== TECHNOLOGIE & EW ===== */
-  .ew-lijst {
-    list-style: none;
-    padding: 0;
-  }
-  .ew-lijst li {
-    padding: 12px 16px;
-    border-left: 3px solid #455a64;
-    background: var(--lichtgrijs);
-    margin-bottom: 10px;
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: #1a1a1a;
-  }
-  .ew-lijst li::before {
-    content: '◈ ';
-    color: #455a64;
-    font-size: 0.8rem;
-  }
+/* BRONNENKRITIEK */
+.kritiek-lijst { list-style: none; padding: 0; }
+.kritiek-lijst li {
+  padding: 12px 16px 12px 48px; background: #fff8f0;
+  border-left: 3px solid var(--oranje); margin-bottom: 10px;
+  font-size: 0.95rem; line-height: 1.55; position: relative;
+}
+.kritiek-lijst li::before {
+  content: '⚠'; color: var(--oranje); position: absolute; left: 16px; top: 12px;
+}
 
-  /* ===== MENSELIJKE FACTOR ===== */
-  .menselijk-blok {
-    background: var(--lichtgrijs);
-    border-left: 4px solid #795548;
-    padding: 20px 22px;
-    font-style: italic;
-    font-size: 1.02rem;
-    line-height: 1.8;
-    color: #2a2a2a;
-  }
+.leeg { color: var(--tekstgrijs); font-style: italic; padding: 12px 0; }
 
-  /* ===== SIGNALEN ===== */
-  .signalen-lijst {
-    list-style: none;
-    padding: 0;
-  }
-  .signalen-lijst li {
-    padding: 12px 16px 12px 46px;
-    background: #f0f7f0;
-    border-left: 3px solid var(--groen);
-    margin-bottom: 10px;
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: #1a1a1a;
-    position: relative;
-  }
-  .signalen-lijst li::before {
-    content: '⬥';
-    color: var(--groen);
-    font-size: 1.1rem;
-    position: absolute;
-    left: 16px;
-    top: 11px;
-  }
+/* FOOTER */
+.footer { margin-top: 48px; padding: 20px 0; border-top: 2px solid var(--tekst); }
+.footer-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 24px;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+}
+.footer-links {
+  font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--tekstgrijs); line-height: 2;
+}
+.footer-disclaimer {
+  max-width: 520px; font-family: 'Inter', sans-serif;
+  font-size: 0.73rem; color: var(--tekstgrijs); line-height: 1.65;
+}
 
-  /* ===== BRONNENKRITIEK ===== */
-  .kritiek-lijst {
-    list-style: none;
-    padding: 0;
-  }
-  .kritiek-lijst li {
-    padding: 12px 16px 12px 46px;
-    background: #fff8f0;
-    border-left: 3px solid #e65100;
-    margin-bottom: 10px;
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: #1a1a1a;
-    position: relative;
-  }
-  .kritiek-lijst li::before {
-    content: '⚠';
-    color: #e65100;
-    font-size: 1rem;
-    position: absolute;
-    left: 16px;
-    top: 12px;
-  }
-
-  /* ===== KANALEN DIRECTORY ===== */
-  .kanalen-uitleg {
-    background: var(--lichtgrijs);
-    border: 1px solid var(--randgrijs);
-    padding: 18px 22px;
-    margin-bottom: 28px;
-    font-size: 0.93rem;
-    line-height: 1.6;
-    color: #2a2a2a;
-  }
-  .kanalen-uitleg p + p { margin-top: 8px; }
-
-  .kanalen-tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 2px solid var(--randgrijs);
-    margin-bottom: 22px;
-  }
-  .tab-knop {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 9px 18px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: none;
-    cursor: pointer;
-    color: var(--tekstgrijs);
-    margin-bottom: -2px;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .tab-knop.actief, .tab-knop:hover {
-    color: var(--rood);
-    border-bottom-color: var(--rood);
-  }
-
-  .tab-inhoud { display: none; }
-  .tab-inhoud.actief { display: block; }
-
-  .kanalen-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 18px;
-  }
-
-  .kanaal-kaart {
-    border: 1px solid var(--randgrijs);
-    background: var(--wit);
-  }
-  .kanaal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--randgrijs);
-    background: var(--lichtgrijs);
-  }
-  .kanaal-naam {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.92rem;
-    color: var(--tekst);
-  }
-  .kanaal-badges {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-  }
-  .zijde-badge {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 1px 6px;
-    border-radius: 2px;
-  }
-  .zijde-UA { background: #e3f2fd; color: var(--ua-blauw); }
-  .zijde-RU { background: #ffebee; color: var(--ru-rood); }
-  .zijde-neutral { background: #e8f5e9; color: var(--groen); }
-  .betrb-badge {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    padding: 1px 6px;
-    border-radius: 2px;
-  }
-  .betrb-high { background: #e8f5e9; color: #2e7d32; }
-  .betrb-medium { background: #fff3e0; color: #e65100; }
-  .betrb-low { background: #ffebee; color: #c62828; }
-
-  .kanaal-body {
-    padding: 12px 16px;
-    font-size: 0.86rem;
-    line-height: 1.55;
-    color: #2a2a2a;
-  }
-  .kanaal-wie {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.8rem;
-    color: var(--tekstgrijs);
-    margin-bottom: 6px;
-  }
-  .kanaal-focus {
-    font-style: italic;
-    color: var(--tekstgrijs);
-    font-size: 0.82rem;
-    margin-bottom: 8px;
-  }
-  .kanaal-achtergrond {
-    margin-bottom: 10px;
-  }
-  .kanaal-tabel {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
-  }
-  .kanaal-tabel td {
-    padding: 3px 0;
-    vertical-align: top;
-  }
-  .kanaal-tabel td:first-child {
-    color: var(--tekstgrijs);
-    width: 80px;
-    font-weight: 500;
-  }
-  .kanaal-link {
-    display: inline-block;
-    margin-top: 10px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--rood);
-    padding: 4px 10px;
-    border: 1px solid var(--rood);
-    transition: background 0.15s, color 0.15s;
-  }
-  .kanaal-link:hover {
-    background: var(--rood);
-    color: var(--wit);
-    text-decoration: none;
-  }
-
-  /* ===== LEESMETHODE INFOBOX ===== */
-  .leesmethode {
-    background: #f0f4ff;
-    border: 1px solid #c5cae9;
-    border-left: 4px solid var(--donkerblauw);
-    padding: 18px 22px;
-    margin-top: 10px;
-  }
-  .leesmethode h3 {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--donkerblauw);
-    margin-bottom: 10px;
-  }
-  .leesmethode ul {
-    padding-left: 18px;
-    font-size: 0.88rem;
-    line-height: 1.7;
-    color: #2a2a2a;
-  }
-
-  /* ===== LEGE STAAT ===== */
-  .leeg {
-    color: var(--tekstgrijs);
-    font-style: italic;
-    padding: 12px 0;
-  }
-
-  /* ===== FOOTER ===== */
-  .footer {
-    margin-top: 48px;
-    padding: 20px 0;
-    border-top: 2px solid var(--tekst);
-  }
-  .footer-inner {
-    max-width: 1060px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .footer-links {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    color: var(--tekstgrijs);
-    line-height: 2;
-  }
-  .footer-disclaimer {
-    max-width: 520px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    color: var(--tekstgrijs);
-    line-height: 1.6;
-  }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 640px) {
-    .claims-rij { grid-template-columns: 1fr; }
-    .sectoren-grid { grid-template-columns: 1fr; }
-    .kanalen-grid { grid-template-columns: 1fr; }
-    .hero-titel { font-size: 1.5rem; }
-    .masthead-inner { flex-direction: column; gap: 4px; }
-    .krant-meta { text-align: left; }
-    #overzichtskaart { height: 260px; }
-    .nav-inner { flex-wrap: wrap; }
-    .footer-inner { flex-direction: column; }
-  }
+@media (max-width: 800px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-kaart-wrapper { position: static; }
+  #overzichtskaart { height: 220px; }
+  .feiten-blokken { grid-template-columns: 1fr; }
+  .claims-rij { grid-template-columns: 1fr; }
+  .sectoren-grid { grid-template-columns: 1fr; }
+  .hero-kop { font-size: 1.7rem; }
+  .nav-inner a { padding: 8px 10px; }
+}
 </style>
 </head>
 <body>
 
 <div class="topbalk"></div>
 
-<!-- ===== MASTHEAD ===== -->
 <header class="masthead">
   <div class="masthead-inner">
     <div class="krant-naam">FRONTLIJN<span>.</span></div>
     <div class="krant-meta">
       Dagelijkse OSINT-briefing · 2026-05-15<br>
-      11 bronkanalen · 88 verwerkte berichten · 15-05-2026 08:34
+      11 bronkanalen · 217 berichten · 15-05-2026 16:17
     </div>
   </div>
 </header>
 
-<!-- ===== NAVIGATIE ===== -->
 <nav class="nav-balk">
   <div class="nav-inner">
-    <a href="#samenvatting" class="actief">Samenvatting</a>
-    <a href="#kaart">Kaart</a>
+    <a href="#hero">Samenvatting</a>
     <a href="#sectoren">Frontsectoren</a>
+    <a href="#strategie">Strategisch</a>
+    <a href="#morgen">Morgen</a>
     <a href="#technologie">Technologie</a>
-    <a href="#menselijk">Menselijke Factor</a>
+    <a href="#menselijk">Menselijk</a>
     <a href="#signalen">Signalen</a>
     <a href="#kritiek">Bronnenkritiek</a>
-    <a href="#kanalen">Kanalen & Auteurs</a>
   </div>
 </nav>
 
-<!-- ===== HOOFDINHOUD ===== -->
 <main class="container">
 
-  <!-- HERO / SAMENVATTING -->
-  <section id="samenvatting" class="hero">
-    <div class="hero-label">Executieve samenvatting</div>
-    <h1 class="hero-titel">Frontlijnrapport 2026-05-15</h1>
-    <p class="hero-tekst">Drone-aanvallen op energie-infrastructuur in zowel Rusland als Oekraïne zijn toegenomen, met name gericht op olieraffinaderijen. Russische troepen voeren aanvallen uit met kleine groepen in de regio Sumy, ondanks Oekraïense tegenaanvallen. Anti-drone netten worden ingezet op strategische locaties, zoals nucleaire onderzeeërs, als defensieve maatregel.</p>
-    <div class="hero-meta">
-      <div class="hero-meta-item">
-        <span>📡</span>
-        <span><strong>11</strong> bronkanalen</span>
-      </div>
-      <div class="hero-meta-item">
-        <span>📨</span>
-        <span><strong>88</strong> berichten geanalyseerd</span>
-      </div>
+  <!-- HERO -->
+  <section id="hero" class="hero">
+    <div class="hero-links">
+      <div class="hero-label">Frontlijn OSINT-briefing · 2026-05-15</div>
+      <h1 class="hero-kop">Wederzijdse massale drone-aanvallen en strategische dreiging vanuit Belarus</h1>
       
-      <div class="hero-meta-item">
-        <span>📍</span>
-        <span><strong>4</strong> frontsectoren gedekt</span>
+      <div class="hero-subtitel">Diepe Oekraïense aanvallen op Russische infrastructuur vallen samen met hernieuwde noordelijke spanningen.</div>
+      
+      <p class="hero-lede">De oorlog is een fase van ongekende wederzijdse luchtbombardementen ingegaan, waarbij beide partijen honderden drones inzetten gericht op kritieke infrastructuur. Terwijl Oekraïne succesvolle treffers meldt op een raffinaderij in Ryazan en een marinebasis in Kaspiysk, waarschuwt president Zelensky voor een mogelijke nieuwe Russische opmars vanuit Belarus. Deze escalatie in de diepte suggereert een poging van beide kanten om de logistieke ruggengraat van de tegenstander te breken voorafgaand aan zomerse grondoffensieven.</p>
+      <div class="hero-meta">
+        <span class="hero-meta-item">📡 <strong>11</strong> kanalen</span>
+        <span class="hero-meta-item">📨 <strong>217</strong> berichten</span>
+        
+        <span class="hero-meta-item">📍 <strong>5</strong> sectoren</span>
+        
+        
+        <span class="hero-meta-item">⬥ <strong>1</strong> signalen</span>
+        
       </div>
-      
-      
-      <div class="hero-meta-item">
-        <span>⬥</span>
-        <span><strong>2</strong> signalen gedetecteerd</span>
-      </div>
-      
     </div>
-  </section>
-
-  <!-- KAART -->
-  <section id="kaart">
-    <div class="sectie-header">
-      <span class="sectie-nummer">01</span>
-      <h2>Overzichtskaart</h2>
-    </div>
-    <div id="kaart-container">
+    <div class="hero-kaart-wrapper">
       <div id="overzichtskaart"></div>
-      <div class="kaart-onderschrift">
-        Frontlijn Oekraïne — markers tonen sectoren uit dit rapport. Klik op een marker voor details.
-        Kaartdata © OpenStreetMap-bijdragers.
-      </div>
+      <div class="kaart-onderschrift">Klik op een marker voor sectordetails · © OpenStreetMap</div>
     </div>
   </section>
 
   <!-- FRONTSECTOREN -->
   <section id="sectoren">
     <div class="sectie-header">
-      <span class="sectie-nummer">02</span>
+      <span class="sectie-nr">01</span>
       <h2>Frontsectoren</h2>
     </div>
     
@@ -740,285 +378,437 @@
       
       <div class="sector-kaart">
         <div class="sector-top">
-          <div class="sector-kleur-balk balk-middel"></div>
-          <div class="sector-hoofd">
-            <span class="betrouwbaarheid-badge badge-middel">
-              MIDDEL
-            </span>
-            <div class="sector-naam">Ryazan</div>
-            <div class="sector-samenvatting">De Ryazan olieraffinaderij is aangevallen met drones, wat leidde tot branden en schade aan woongebouwen. Er zijn burgerdoden en gewonden gemeld.</div>
-          </div>
+          <span class="betrouwbaarheid-badge badge-middel">
+            MIDDEL
+          </span>
+          <div class="sector-naam">Ryazan & Russisch Achterland</div>
+          <div class="sector-samenvatting">Oekraïense drones hebben diep in Rusland toegeslagen, met aanzienlijke schade aan industriële en mogelijk militaire doelen.</div>
         </div>
-        <div class="sector-body">
-          
-          <ul class="sector-details">
-            
-            <li>Drone-aanval op de Ryazan olieraffinaderij veroorzaakte branden.</li>
-            
-            <li>Luchtafweergeschut raakte woongebouwen in Ryazan, wat leidde tot slachtoffers.</li>
-            
-            <li>Drie doden en twaalf gewonden als gevolg van drone-aanval op woongebouwen in Ryazan.</li>
-            
-          </ul>
-          
 
+        
+        <div class="feiten-blokken">
           
-          <div class="claims-rij">
-            
-            <div class="claim-blok claim-blok-ua">
-              <div class="claim-label claim-label-ua">🇺🇦 Oekraïense claim</div>
-              355 UAVs were shot down in Russia overnight.
+          <div class="feiten-blok feiten-blok-bevestigd">
+            <div class="feiten-label feiten-label-bevestigd">✓ Bevestigd</div>
+            <ul class="feiten-lijst">
               
-              <div class="claim-source">
-                Bron:
-                
-                
-                  <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener">@operativnoZSU</a>
-                  (Oekraïens kanaal gelieerd aan ZSU-netwerk (Zbrojn…)
-                
-              </div>
+              <li>Een drone-aanval op de olieraffinaderij in Ryazan leidde tot grote branden; luchtafweer raakte woongebouwen met burgerslachtoffers tot gevolg.</li>
               
-            </div>
-            
-            
-            <div class="claim-blok claim-blok-ru">
-              <div class="claim-label claim-label-ru">🇷🇺 Russische claim</div>
-              Drone-aanval op Ryazan heeft geleid tot de dood van drie burgers en verwondingen bij twaalf anderen.
+            </ul>
+          </div>
+          
+          
+          <div class="feiten-blok feiten-blok-onzeker">
+            <div class="feiten-label feiten-label-onzeker">? Onzeker</div>
+            <ul class="feiten-lijst">
               
-              <div class="claim-source">
-                Bron:
-                
-                
-                  <a href="https://t.me/s/wargonzo" target="_blank" rel="noopener">@wargonzo</a>
-                  (Semyon Pegov, Russisch oorlogsverslaggever)
-                
-              </div>
+              <li>Oekraïense claim van 55 aanvallen op 23 doelen (inclusief een Be-200 vliegtuig) en een grote explosie in Kaspiysk met tientallen Russische slachtoffers.</li>
+              
+            </ul>
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="claims-rij">
+          
+          <div class="claim-blok claim-blok-ua">
+            <div class="claim-label claim-label-ua">🇺🇦 Oekraïne claimt</div>
+            Succesvolle vernietiging van hoogwaardige Russische militaire luchtvaart en marine-infrastructuur.
+            
+            <div class="claim-source">
+              Bron:
+              
+                <a href="https://t.me/s/UkraineNow" target="_blank" rel="noopener">@UkraineNow</a>
               
             </div>
             
           </div>
           
-
           
-          <div class="sector-bronnen">
-            Gebruikte bronnen:
+          <div class="claim-blok claim-blok-ru">
+            <div class="claim-label claim-label-ru">🇷🇺 Rusland claimt</div>
+            Onderschepping van 355 Oekraïense drones over diverse regio's; schade in Ryazan is deels te wijten aan neerstortend puin.
             
+            <div class="claim-source">
+              Bron:
               
-                <span class="bron-chip zijde-neutral">@wartranslated</span>
+                <a href="https://t.me/s/two_majors" target="_blank" rel="noopener">@two_majors</a>
               
-            
-              
-                <span class="bron-chip zijde-RU">@Slavyangrad</span>
-              
-            
-              
-                <span class="bron-chip zijde-RU">@wargonzo</span>
-              
-            
-              
-                <span class="bron-chip zijde-RU">@two_majors</span>
-              
-            
-              
-                <span class="bron-chip zijde-RU">@rybar</span>
-              
-            
-              
-                <span class="bron-chip zijde-UA">@operativnoZSU</span>
-              
-            
-              
-                <span class="bron-chip zijde-UA">@UkraineNow</span>
-              
+            </div>
             
           </div>
           
         </div>
+        
+
+        
+        <div class="sector-bronnen">
+          Bronnen:
+          
+            
+<span class="bron-chip zijde-UA">@UkraineNow</span>
+          
+            
+<span class="bron-chip zijde-neutral">@wartranslated</span>
+          
+            
+<span class="bron-chip zijde-RU">@two_majors</span>
+          
+            
+<span class="bron-chip zijde-RU">@wargonzo</span>
+          
+            
+<span class="bron-chip zijde-RU">@Slavyangrad</span>
+          
+        </div>
+        
       </div>
       
       <div class="sector-kaart">
         <div class="sector-top">
-          <div class="sector-kleur-balk balk-middel"></div>
-          <div class="sector-hoofd">
-            <span class="betrouwbaarheid-badge badge-middel">
-              MIDDEL
-            </span>
-            <div class="sector-naam">Zaporozhye</div>
-            <div class="sector-samenvatting">Er zijn herhaalde drone-aanvallen op Zaporozhye, vaak gericht op brandstof- en smeermiddelopslag. Er zijn meldingen van explosies en branden.</div>
-          </div>
+          <span class="betrouwbaarheid-badge badge-middel">
+            MIDDEL
+          </span>
+          <div class="sector-naam">Kharkiv & Sumy Grensgebied</div>
+          <div class="sector-samenvatting">Aanhoudende grensschermutselingen en Russische pogingen om een bufferzone te creëren in het noordoosten.</div>
         </div>
-        <div class="sector-body">
-          
-          <ul class="sector-details">
-            
-            <li>Aanval op een tank met brandstof en smeermiddelen in Zaporozhye.</li>
-            
-            <li>Een voorstadstrein in de regio Zaporizhia is aangevallen door een UAV, waarbij twee passagiers gewond raakten.</li>
-            
-            <li>Twee medewerkers van de ZNPP raakten gewond bij een drone-aanval in de buurt van de ZNPP.</li>
-            
-          </ul>
-          
 
+        
+        <div class="feiten-blokken">
           
-          <div class="claims-rij">
-            
-            
-            <div class="claim-blok claim-blok-ru">
-              <div class="claim-label claim-label-ru">🇷🇺 Russische claim</div>
-              Aanval op doelen in Zaporozhye, brand uitgebroken.
+          <div class="feiten-blok feiten-blok-bevestigd">
+            <div class="feiten-label feiten-label-bevestigd">✓ Bevestigd</div>
+            <ul class="feiten-lijst">
               
-              <div class="claim-source">
-                Bron:
-                
-                
-                  <a href="https://t.me/s/Slavyangrad" target="_blank" rel="noopener">@Slavyangrad</a>
-                  (Pro-Russisch propagandakanaal)
-                
-              </div>
+              <li>Gevangenname van militairen aan beide zijden, waaronder een Colombiaanse strijder in Oekraïense dienst nabij Starytsa.</li>
+              
+            </ul>
+          </div>
+          
+          
+          <div class="feiten-blok feiten-blok-onzeker">
+            <div class="feiten-label feiten-label-onzeker">? Onzeker</div>
+            <ul class="feiten-lijst">
+              
+              <li>Russische inname van het dorp Chaikovka en de exacte status van 13 Oekraïense krijgsgevangenen in Hrabovske.</li>
+              
+            </ul>
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="claims-rij">
+          
+          <div class="claim-blok claim-blok-ua">
+            <div class="claim-label claim-label-ua">🇺🇦 Oekraïne claimt</div>
+            Oekraïense artillerie en drones houden de vijand succesvol op afstand in de Sumy-regio.
+            
+            <div class="claim-source">
+              Bron:
+              
+                <a href="https://t.me/s/UkraineNow" target="_blank" rel="noopener">@UkraineNow</a>
               
             </div>
             
           </div>
           
-
           
-          <div class="sector-bronnen">
-            Gebruikte bronnen:
+          <div class="claim-blok claim-blok-ru">
+            <div class="claim-label claim-label-ru">🇷🇺 Rusland claimt</div>
+            Verovering van Chaikovka door de 'Noord' troepengroep en eliminatie van buitenlandse eenheden.
             
+            <div class="claim-source">
+              Bron:
               
-                <span class="bron-chip zijde-RU">@Slavyangrad</span>
-              
-            
-              
-                <span class="bron-chip zijde-UA">@UkraineNow</span>
-              
-            
-              
-                <span class="bron-chip zijde-RU">@two_majors</span>
-              
-            
-          </div>
-          
-        </div>
-      </div>
-      
-      <div class="sector-kaart">
-        <div class="sector-top">
-          <div class="sector-kleur-balk balk-middel"></div>
-          <div class="sector-hoofd">
-            <span class="betrouwbaarheid-badge badge-middel">
-              MIDDEL
-            </span>
-            <div class="sector-naam">Kharkiv</div>
-            <div class="sector-samenvatting">Oekraïense troepen claimen de controle over Odradne en omgeving in de regio Kharkiv te hebben herwonnen. Er zijn meldingen van beschadigde woongebouwen in Kharkiv.</div>
-          </div>
-        </div>
-        <div class="sector-body">
-          
-          <ul class="sector-details">
-            
-            <li>Oekraïense troepen van de 129e OVMBR hebben naar verluidt de controle over Odradne en omgeving in de regio Kharkiv herwonnen.</li>
-            
-            <li>Woongebouwen in Kharkiv zijn beschadigd bij een aanval, waarbij 28 mensen gewond raakten.</li>
-            
-          </ul>
-          
-
-          
-          <div class="claims-rij">
-            
-            <div class="claim-blok claim-blok-ua">
-              <div class="claim-label claim-label-ua">🇺🇦 Oekraïense claim</div>
-              Oekraïense troepen hebben de controle over Odradne en omgeving in de regio Kharkiv herwonnen.
-              
-              <div class="claim-source">
-                Bron:
-                
-                
-                  <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener">@operativnoZSU</a>
-                  (Oekraïens kanaal gelieerd aan ZSU-netwerk (Zbrojn…)
-                
-              </div>
+                <a href="https://t.me/s/Slavyangrad" target="_blank" rel="noopener">@Slavyangrad</a>
               
             </div>
             
-            
-          </div>
-          
-
-          
-          <div class="sector-bronnen">
-            Gebruikte bronnen:
-            
-              
-                <span class="bron-chip zijde-UA">@operativnoZSU</span>
-              
-            
-              
-                <span class="bron-chip zijde-UA">@DeepStateUA</span>
-              
-            
-              
-                <span class="bron-chip zijde-neutral">@wartranslated</span>
-              
-            
           </div>
           
         </div>
+        
+
+        
+        <div class="sector-bronnen">
+          Bronnen:
+          
+            
+<span class="bron-chip zijde-UA">@UkraineNow</span>
+          
+            
+<span class="bron-chip zijde-RU">@two_majors</span>
+          
+            
+<span class="bron-chip zijde-RU">@rybar</span>
+          
+            
+<span class="bron-chip zijde-RU">@Slavyangrad</span>
+          
+        </div>
+        
       </div>
       
       <div class="sector-kaart">
         <div class="sector-top">
-          <div class="sector-kleur-balk balk-middel"></div>
-          <div class="sector-hoofd">
-            <span class="betrouwbaarheid-badge badge-middel">
-              MIDDEL
-            </span>
-            <div class="sector-naam">Sumy</div>
-            <div class="sector-samenvatting">Russische troepen voeren aanvallen uit met kleine groepen in de regio Sumy, ondanks Oekraïense tegenaanvallen.</div>
-          </div>
+          <span class="betrouwbaarheid-badge badge-tegenstrijdig">
+            TEGENSTRIJDIG
+          </span>
+          <div class="sector-naam">Zaporizhia Front</div>
+          <div class="sector-samenvatting">Positionele gevechten waarbij drones infanteriebewegingen vrijwel onmogelijk maken.</div>
         </div>
-        <div class="sector-body">
-          
-          <ul class="sector-details">
-            
-            <li>Russische eenheden rukken op met kleine groepen in verschillende tactische gebieden in de regio Sumy.</li>
-            
-          </ul>
-          
 
+        
+        <div class="feiten-blokken">
           
-
-          
-          <div class="sector-bronnen">
-            Gebruikte bronnen:
-            
+          <div class="feiten-blok feiten-blok-bevestigd">
+            <div class="feiten-label feiten-label-bevestigd">✓ Bevestigd</div>
+            <ul class="feiten-lijst">
               
-                <span class="bron-chip zijde-RU">@rybar</span>
+              <li>Aanvallen op industriële en transportinfrastructuur in de regio Zaporizhia met burgerslachtoffers.</li>
               
-            
+            </ul>
           </div>
           
+          
+          <div class="feiten-blok feiten-blok-onzeker">
+            <div class="feiten-label feiten-label-onzeker">? Onzeker</div>
+            <ul class="feiten-lijst">
+              
+              <li>Russische claim over de volledige controle over het dorp Charyvne en de vernietiging van een Oekraïense compagnie.</li>
+              
+            </ul>
+          </div>
+          
         </div>
+        
+
+        
+        <div class="claims-rij">
+          
+          
+          <div class="claim-blok claim-blok-ru">
+            <div class="claim-label claim-label-ru">🇷🇺 Rusland claimt</div>
+            De 38e Gemotoriseerde Brigade heeft Charyvne ingenomen en zware verliezen toegebracht aan de 225e Oekraïense Brigade.
+            
+            <div class="claim-source">
+              Bron:
+              
+                <a href="https://t.me/s/two_majors" target="_blank" rel="noopener">@two_majors</a>
+              
+            </div>
+            
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="sector-bronnen">
+          Bronnen:
+          
+            
+<span class="bron-chip zijde-RU">@two_majors</span>
+          
+            
+<span class="bron-chip zijde-UA">@UkraineNow</span>
+          
+            
+<span class="bron-chip zijde-RU">@Slavyangrad</span>
+          
+        </div>
+        
+      </div>
+      
+      <div class="sector-kaart">
+        <div class="sector-top">
+          <span class="betrouwbaarheid-badge badge-hoog">
+            HOOG
+          </span>
+          <div class="sector-naam">Kinburn-schiereiland</div>
+          <div class="sector-samenvatting">Oekraïne voert de druk op Russische kustposities op met innovatieve maritieme drones.</div>
+        </div>
+
+        
+        <div class="feiten-blokken">
+          
+          <div class="feiten-blok feiten-blok-bevestigd">
+            <div class="feiten-label feiten-label-bevestigd">✓ Bevestigd</div>
+            <ul class="feiten-lijst">
+              
+              <li>Toenemende Oekraïense aanvallen op het schiereiland met behulp van onbemande systemen.</li>
+              
+            </ul>
+          </div>
+          
+          
+          <div class="feiten-blok feiten-blok-onzeker">
+            <div class="feiten-label feiten-label-onzeker">? Onzeker</div>
+            <ul class="feiten-lijst">
+              
+              <li>Het specifieke gebruik van onbemande boten uitgerust met 'Shmel' vlammenwerpers door Oekraïense eenheden.</li>
+              
+            </ul>
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="claims-rij">
+          
+          
+          <div class="claim-blok claim-blok-ru">
+            <div class="claim-label claim-label-ru">🇷🇺 Rusland claimt</div>
+            Oekraïense troepen intensiveren aanvallen met FPV-drones en onbemande vaartuigen gelanceerd vanuit de Zuidelijke Boeg.
+            
+            <div class="claim-source">
+              Bron:
+              
+                <a href="https://t.me/s/two_majors" target="_blank" rel="noopener">@two_majors</a>
+              
+            </div>
+            
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="sector-bronnen">
+          Bronnen:
+          
+            
+<span class="bron-chip zijde-neutral">@wartranslated</span>
+          
+            
+<span class="bron-chip zijde-RU">@two_majors</span>
+          
+        </div>
+        
+      </div>
+      
+      <div class="sector-kaart">
+        <div class="sector-top">
+          <span class="betrouwbaarheid-badge badge-middel">
+            MIDDEL
+          </span>
+          <div class="sector-naam">Kyiv & Noordelijke As</div>
+          <div class="sector-samenvatting">Hernieuwde dreiging van een noordelijk front en aanhoudende luchtaanvallen op de hoofdstad.</div>
+        </div>
+
+        
+        <div class="feiten-blokken">
+          
+          <div class="feiten-blok feiten-blok-bevestigd">
+            <div class="feiten-label feiten-label-bevestigd">✓ Bevestigd</div>
+            <ul class="feiten-lijst">
+              
+              <li>Luchtalarm en actieve luchtafweer in de regio Kyiv; inslag van een Kh-101 raket in het Darnytskyi-district.</li>
+              
+            </ul>
+          </div>
+          
+          
+          <div class="feiten-blok feiten-blok-onzeker">
+            <div class="feiten-label feiten-label-onzeker">? Onzeker</div>
+            <ul class="feiten-lijst">
+              
+              <li>Concrete Russische operationele plannen voor een grondoffensief vanuit Belarus richting Chernihiv of Kyiv.</li>
+              
+            </ul>
+          </div>
+          
+        </div>
+        
+
+        
+        <div class="claims-rij">
+          
+          <div class="claim-blok claim-blok-ua">
+            <div class="claim-label claim-label-ua">🇺🇦 Oekraïne claimt</div>
+            Rusland probeert Belarus actief in de oorlog te betrekken en bereidt aanvallen op besluitvormingscentra voor.
+            
+            <div class="claim-source">
+              Bron:
+              
+                <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener">@operativnoZSU</a>
+              
+            </div>
+            
+          </div>
+          
+          
+        </div>
+        
+
+        
+        <div class="sector-bronnen">
+          Bronnen:
+          
+            
+<span class="bron-chip zijde-UA">@operativnoZSU</span>
+          
+            
+<span class="bron-chip zijde-UA">@UkraineNow</span>
+          
+            
+<span class="bron-chip zijde-neutral">@wartranslated</span>
+          
+        </div>
+        
       </div>
       
     </div>
     
   </section>
 
+  <!-- STRATEGISCHE CONTEXT -->
+  <section id="strategie">
+    <div class="sectie-header">
+      <span class="sectie-nr">02</span>
+      <h2>Strategische context</h2>
+    </div>
+    
+    <div class="strategie-blok">De massale inzet van langeafstandswapens door beide partijen duidt op een uitputtingsslag gericht op logistiek en energie, bedoeld om het operationele tempo van de tegenstander te vertragen. Tegelijkertijd dwingt de politieke retoriek rondom Belarus Oekraïne om schaarse reserves in het noorden te houden, wat de verdediging in de Donbas en Kharkiv verzwakt.</div>
+    
+  </section>
+
+  <!-- MORGEN VERWACHT -->
+  <section id="morgen">
+    <div class="sectie-header">
+      <span class="sectie-nr">03</span>
+      <h2>Kijk morgen naar…</h2>
+    </div>
+    
+    <ol class="morgen-lijst">
+      
+      <li>Verdere verduidelijking van de schade aan de Russische marinebasis in Kaspiysk en de raffinaderij in Ryazan via onafhankelijke satellietbeelden.</li>
+      
+      <li>Aanhoudende Russische luchtaanvallen op Oekraïense spoorweginfrastructuur om troepenverplaatsingen naar het oosten te hinderen.</li>
+      
+      <li>Mogelijke diplomatieke en militaire reacties vanuit NAVO-landen op de vermeende Russische plannen voor operaties vanuit Belarus.</li>
+      
+    </ol>
+    
+  </section>
+
   <!-- TECHNOLOGIE & EW -->
   <section id="technologie">
     <div class="sectie-header">
-      <span class="sectie-nummer">03</span>
+      <span class="sectie-nr">04</span>
       <h2>Technologie &amp; Elektronische Oorlogsvoering</h2>
     </div>
     
     <ul class="ew-lijst">
       
-      <li>Russische troepen zetten anti-drone netten in op strategische locaties, zoals nucleaire onderzeeërs (bron: rybar)</li>
+      <li>Oekraïense troepen zetten onbemande oppervlaktevaartuigen (USV's) in die zijn uitgerust met 'Shmel' vlammenwerpers voor kustbombardementen op het Kinburn-schiereiland (wartranslated).</li>
       
-      <li>FPV drones van de 'Sparta' eenheid hebben naar verluidt meerdere voertuigen vernietigd die op weg waren naar de frontlinie (bron: Slavyangrad)</li>
+      <li>Russische eenheden melden dat drone-oorlogvoering in de regio Kamyshivaha zo dominant is geworden dat reguliere infanteriebewegingen overdag vrijwel suïcidaal zijn (two_majors).</li>
       
     </ul>
     
@@ -1027,24 +817,22 @@
   <!-- MENSELIJKE FACTOR -->
   <section id="menselijk">
     <div class="sectie-header">
-      <span class="sectie-nummer">04</span>
+      <span class="sectie-nr">05</span>
       <h2>De Menselijke Factor</h2>
     </div>
-    <div class="menselijk-blok">De situatie is gespannen, met toenemende burgerdoden en schade aan infrastructuur. De logistieke uitdagingen blijven groot, met name door de drone-aanvallen op bevoorradingsroutes.</div>
+    <div class="menselijk-blok">Oondanks een succesvolle gevangenenruil van 205 militairen aan beide zijden, blijft de realiteit in de loopgraven grimmig. Gevangengenomen Russische soldaten klagen over wijdverbreide corruptie, het ontbreken van medische evacuaties en posities bezaaid met lijken. Aan Oekraïense zijde illustreert de inzet van buitenlandse vrijwilligers, zoals de gevangengenomen Colombiaan in Kharkiv, de voortdurende behoefte aan mankracht om de verliezen op te vangen.</div>
   </section>
 
   <!-- SIGNALEN -->
   <section id="signalen">
     <div class="sectie-header">
-      <span class="sectie-nummer">05</span>
+      <span class="sectie-nr">06</span>
       <h2>Signalen — Patronen over meerdere bronnen</h2>
     </div>
     
     <ul class="signalen-lijst">
       
-      <li>Toename van drone-aanvallen op energie-infrastructuur in zowel Rusland als Oekraïne.</li>
-      
-      <li>Russische troepen zetten anti-drone netten in op strategische locaties.</li>
+      <li>Beide partijen richten zich systematisch op de energie- en transportinfrastructuur van de tegenstander om de logistieke ketens voor de zomer te verlammen.</li>
       
     </ul>
     
@@ -1053,1284 +841,108 @@
   <!-- BRONNENKRITIEK -->
   <section id="kritiek">
     <div class="sectie-header">
-      <span class="sectie-nummer">06</span>
+      <span class="sectie-nr">07</span>
       <h2>Bronnenkritiek — Mist van Oorlog</h2>
     </div>
     
     <ul class="kritiek-lijst">
       
-      <li>Slavyangrad minimaliseert vaak eigen verliezen en overdrijft successen.</li>
+      <li>De Russische claim (two_majors) van 355 onderschepte Oekraïense drones in één nacht is hoogstwaarschijnlijk sterk overdreven om de succesvolle inslagen in Ryazan te maskeren.</li>
       
-      <li>UkraineNow kan Russische verliezen overdrijven en emotionele taal gebruiken.</li>
+      <li>Oekraïense claims (UkraineNow) over de vernietiging van zeldzame Russische vliegtuigen zoals de Be-200 worden gepresenteerd zonder visueel bewijs en dragen kenmerken van moreelverhogende propaganda.</li>
       
     </ul>
     
   </section>
 
-  <!-- KANALEN & AUTEURS -->
-  <section id="kanalen">
-    <div class="sectie-header">
-      <span class="sectie-nummer">07</span>
-      <h2>Kanalen &amp; Auteurs</h2>
-    </div>
-
-    <div class="kanalen-uitleg">
-      <p>
-        Dit rapport is gebaseerd op publieke Telegram-kanalen die door soldaten, oorlogsjournalisten
-        en OSINT-analisten worden beheerd. Elk kanaal heeft een eigen perspectief, bias en betrouwbaarheidsprofiel.
-        Hieronder vindt u achtergrondinformatie over de meest gebruikte bronnen — zodat u zelf kunt beoordelen
-        wie wat zegt en waarom.
-      </p>
-      <p>
-        <strong>Lees deze informatie als een mediabriefing:</strong> een Oekraïense bron overdrijft
-        Russische verliezen; een Russische bron minimaliseert die. Ons rapport probeert beide perspectieven
-        naast elkaar te zetten en tegenstrijdigheden expliciet te benoemen.
-      </p>
-    </div>
-
-    <div class="leesmethode">
-      <h3>Hoe leest u de bronlabels?</h3>
-      <ul>
-        <li><strong>Betrouwbaarheid hoog</strong>: Kanaal heeft aantoonbaar sterke verificatie-methodologie, weinig foutieve meldingen in het verleden.</li>
-        <li><strong>Betrouwbaarheid middel</strong>: Doorgaans redelijk accurate informatie, maar selectief in wat gerapporteerd wordt.</li>
-        <li><strong>Betrouwbaarheid laag</strong>: Hoge propagandadichtheid, frequent ongeverifieerde claims of aangetoonde desinformatie.</li>
-        <li><strong>UA / RU / Neutraal</strong>: Politieke oriëntatie van het kanaal, niet de nationaliteit van de auteur.</li>
-      </ul>
-    </div>
-
-    <!-- TABS -->
-    <div class="kanalen-tabs" style="margin-top: 22px;">
-      <button class="tab-knop actief" onclick="wisselTab('alle', this)">Alle kanalen</button>
-      <button class="tab-knop" onclick="wisselTab('ua', this)">Oekraïns / Neutraal</button>
-      <button class="tab-knop" onclick="wisselTab('ru', this)">Russisch</button>
-    </div>
-
-    <!-- Tab: Alle -->
-    <div id="tab-alle" class="tab-inhoud actief">
-      <div class="kanalen-grid">
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">DeepState</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Collectief van Oekraïense OSINT-analisten en cartografen</div>
-    <div class="kanaal-focus">Focus: kaarten, tactische verschuivingen</div>
-    <div class="kanaal-achtergrond">DeepState is een analytisch project dat de frontlijn real-time bijhoudt via satellietbeelden, geolocated video's en veldrapporten. Ze publiceren interactieve kaarten op deepstatemap.live en zijn een van de meest geciteerde tactische trackingsystemen in westers mediagebruik.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, maar doorgaans feitelijk-analytisch in kaartupdates</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Nauwkeurige kaartwijzigingen, bevestigde terreinverschuivingen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Soms vertraagd publiceren om verifiëring; minder nieuws over eigen verliezen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/DeepStateUA" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Труха Украина</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Anoniem Oekraïens kanaal</div>
-    <div class="kanaal-focus">Focus: actueel frontnieuws</div>
-    <div class="kanaal-achtergrond">Een van de grootste Oekraïense Telegram-kanalen met meer dan 4 miljoen abonnees. Publiceert snel breaking news, maar verificatie is soms ondergeschikt aan snelheid. Veel gebruikt door gewone Oekraïners voor actuele berichten over aanvallen en frontbewegingen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2020</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, emotioneel taalgebruik, soms geneigd tot overdrijving</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Snelheid, brede dekking van aanvallen op burgerdoelen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onvoldoende verificatie, soms foutieve eerste meldingen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/truexanew" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Ukraine Weapons Tracker</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Onafhankelijk OSINT-team, primair westerse analisten</div>
-    <div class="kanaal-focus">Focus: wapensystemen, technologie</div>
-    <div class="kanaal-achtergrond">Gespecialiseerd in het documenteren en verifiëren van wapensystemen die in het conflict worden ingezet. Publiceert uitsluitend beeldgestaafd: elk wapensysteem wordt geïdentificeerd via video of foto. Sterk geciteerd door internationale defensie-analisten en journalisten.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Neutraal t.a.v. documentatie; focus op feiten niet narratief</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Identificatie wapensystemen, betrouwbare geolocatie van videobewijzen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen tactische analyse, puur documentair</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/UAWeapons" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">War Translated</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-neutral">neutral</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Meertalig vertalerscollectief (Oekraïens, Russisch → Engels)</div>
-    <div class="kanaal-focus">Focus: vertalingen frontlijnberichten</div>
-    <div class="kanaal-achtergrond">Vertaalt en cureert berichten van Oekraïense soldaten, militaire blogs en officiele kanalen voor een Engelstalig publiek. Brengt de menselijke kant van het conflict: dagboekfragmenten, brieven, veldobservaties. Unieke waarde zit in het doorgeven van de 'stem van de loopgraaf'.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Licht pro-Oekraïens in selectie, maar transparant over bronkeuze</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Menselijke factor, primaire bronnen van soldaten zelf</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen tactische analyse, selectief in keuze van te vertalen content</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/wartranslated" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Ukraine Now</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Oekraïens nieuwskanaal, commercieel/mediagelieerd</div>
-    <div class="kanaal-focus">Focus: actueel nieuws</div>
-    <div class="kanaal-achtergrond">Breed Oekraïens nieuwskanaal met snelle updates over aanvallen, politieke ontwikkelingen en frontnieuws. Minder analytisch diepgaand dan DeepState, maar nuttig voor actueel nieuws en burgerperspectief.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, officieuze toon</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Breedte van dekking, snel op luchtaanvallen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Beperkte tactische diepgang</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/UkraineNow" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">OSINT Ukraine</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-neutral">neutral</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Internationaal OSINT-collectief</div>
-    <div class="kanaal-focus">Focus: open source intelligence</div>
-    <div class="kanaal-achtergrond">Aggregeert en verifieert open-bronsinformatie over het conflict. Publiceert geolocated beelden, satellietanalyses en cross-referenties van claims van beide kanten. Methodologisch streng.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Methodologisch neutraal, feitengericht</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Verificatie, geolocatie, satellietanalyse</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Kleine output, niet dagelijks actief</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/OSINTua" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Рыбарь</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Mikhail Zvinchuk, voormalig FSB-officier en mediamedewerker Russisch MoD</div>
-    <div class="kanaal-focus">Focus: tactische analyse, frontlijn</div>
-    <div class="kanaal-achtergrond">Verreweg het invloedrijkste Russische militaire Telegram-kanaal met meer dan 1,3 miljoen abonnees. Opgericht door Mikhail Zvinchuk, die eerder voor de FSB werkte. Staat bekend om gedetailleerde tactische kaarten en militaire analyses. Ondanks pro-Kremlin positie geldt Rybar als relatief betrouwbaar voor tactische data — hij publiceerde ook kritiek op de Russische legerleiding. Heeft toegang tot officieuze Russische militaire bronnen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2019</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch staatsbelang, maar soms openhartig over Russische tekortkomingen</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Russisch perspectief op tactiek, kaarten, militaire analyse</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Minimaliseert Russische verliezen, overdrijft Oekraïense</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/rybar" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">War Gonzo</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Semyon Pegov, Russisch oorlogsverslaggever</div>
-    <div class="kanaal-focus">Focus: frontlijnverslaggeving</div>
-    <div class="kanaal-achtergrond">Semyon Pegov is een van de bekendste Russische oorlogsjournalisten, actief aan het front sinds de Donbas-oorlog van 2014-2015. Bekend om ingelijfde frontlijnreportages met video-materiaal. Ontving Russische staatsprijzen. Zijn verslaggeving geeft een direct beeld van Russische frontomstandigheden, maar is doordrenkt van nationalistisch narratief.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2014</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Sterk pro-Russisch, emotioneel-nationalistisch taalgebruik</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Authentieke frontbeelden, soldatenperspectief Russische zijde</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen kritische analyse, propaganda-elementen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/wargonzo" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Серая Зона</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Anoniem Russisch kanaal, historisch gelieerd aan Wagner-netwerk</div>
-    <div class="kanaal-focus">Focus: tactisch, loopgraven</div>
-    <div class="kanaal-achtergrond">Actief frontlijnkanaal dat gedetailleerde tactische updates publiceert, inclusief verliesrapporten die de officiële Russische lijn soms tegenspreken. In de Wagner-periode (2022-2023) gold het als een van de centrale Prigozhin-gelieerde kanalen. Na de Wagner-opstand veranderde de toon. Brengt soms eerlijker nieuws over Russische situatie dan officiële kanalen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch, maar bereid eigen verliezen te erkennen</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Frontlijndetails, eerlijker over Russische situatie dan MoD</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onzekere bronidentiteit, anoniem</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/grey_zone" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Два Майора</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Twee anonieme personen die beweren (voormalig) Russische militaire officieren te zijn</div>
-    <div class="kanaal-focus">Focus: frontlijn, logistiek</div>
-    <div class="kanaal-achtergrond">Anoniem kanaal dat claimt te worden gerund door twee Russische majoors met actieve of voormalige militaire achtergrond. Publiceert tactische samenvattingen en logistieke analyses. Wordt binnen Russische militaire OSINT-gemeenschap als relatief betrouwbaar beschouwd voor operationele details. Identiteit niet onafhankelijk geverifieerd.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch, maar analytisch van toon</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Logistieke analyses, operationele samenvattingen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onverifieerbare identiteit, selectieve informatiedeling</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/two_majors" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Оперативний ЗСУ</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Oekraïens kanaal gelieerd aan ZSU-netwerk (Zbrojni Syly Ukrayiny)</div>
-    <div class="kanaal-focus">Focus: operationele ZSU-updates</div>
-    <div class="kanaal-achtergrond">Publiceert operationele updates van de Oekraïense Strijdkrachten (ZSU). Mengt officiële mededelingen met informele frontberichten. Nuttig als indicatie van wat de Oekraïense militaire structuur naar buiten brengt, maar onderhevig aan institutionele selectiviteit.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, institutionele invalshoek</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Officieuze ZSU-positie, eenheidsupdates</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Institutionele filtering, beperkte zelfkritiek</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Slavyangrad</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-low">low</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Pro-Russisch propagandakanaal</div>
-    <div class="kanaal-focus">Focus: Russisch narratief</div>
-    <div class="kanaal-achtergrond">Sterk pro-Russisch kanaal met laag informatief gehalte en hoge propagandadichtheid. Herhaalt voornamelijk het officiële Russische narratief. Opgenomen voor volledigheid van het propagandaspectrum, maar berichten vereisen hoge mate van kritisch onderscheid. Weinig onafhankelijke tactische waarde.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>Onbekend</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Uitgesproken pro-Russisch propaganda</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Inzicht in Russisch propagandanarrativ</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Lage feitelijke betrouwbaarheid, misleidend taalgebruik</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/Slavyangrad" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-      </div>
-    </div>
-
-    <!-- Tab: UA/Neutraal -->
-    <div id="tab-ua" class="tab-inhoud">
-      <div class="kanalen-grid">
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">DeepState</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Collectief van Oekraïense OSINT-analisten en cartografen</div>
-    <div class="kanaal-focus">Focus: kaarten, tactische verschuivingen</div>
-    <div class="kanaal-achtergrond">DeepState is een analytisch project dat de frontlijn real-time bijhoudt via satellietbeelden, geolocated video's en veldrapporten. Ze publiceren interactieve kaarten op deepstatemap.live en zijn een van de meest geciteerde tactische trackingsystemen in westers mediagebruik.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, maar doorgaans feitelijk-analytisch in kaartupdates</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Nauwkeurige kaartwijzigingen, bevestigde terreinverschuivingen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Soms vertraagd publiceren om verifiëring; minder nieuws over eigen verliezen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/DeepStateUA" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Труха Украина</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Anoniem Oekraïens kanaal</div>
-    <div class="kanaal-focus">Focus: actueel frontnieuws</div>
-    <div class="kanaal-achtergrond">Een van de grootste Oekraïense Telegram-kanalen met meer dan 4 miljoen abonnees. Publiceert snel breaking news, maar verificatie is soms ondergeschikt aan snelheid. Veel gebruikt door gewone Oekraïners voor actuele berichten over aanvallen en frontbewegingen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2020</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, emotioneel taalgebruik, soms geneigd tot overdrijving</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Snelheid, brede dekking van aanvallen op burgerdoelen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onvoldoende verificatie, soms foutieve eerste meldingen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/truexanew" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Ukraine Weapons Tracker</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Onafhankelijk OSINT-team, primair westerse analisten</div>
-    <div class="kanaal-focus">Focus: wapensystemen, technologie</div>
-    <div class="kanaal-achtergrond">Gespecialiseerd in het documenteren en verifiëren van wapensystemen die in het conflict worden ingezet. Publiceert uitsluitend beeldgestaafd: elk wapensysteem wordt geïdentificeerd via video of foto. Sterk geciteerd door internationale defensie-analisten en journalisten.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Neutraal t.a.v. documentatie; focus op feiten niet narratief</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Identificatie wapensystemen, betrouwbare geolocatie van videobewijzen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen tactische analyse, puur documentair</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/UAWeapons" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">War Translated</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-neutral">neutral</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Meertalig vertalerscollectief (Oekraïens, Russisch → Engels)</div>
-    <div class="kanaal-focus">Focus: vertalingen frontlijnberichten</div>
-    <div class="kanaal-achtergrond">Vertaalt en cureert berichten van Oekraïense soldaten, militaire blogs en officiele kanalen voor een Engelstalig publiek. Brengt de menselijke kant van het conflict: dagboekfragmenten, brieven, veldobservaties. Unieke waarde zit in het doorgeven van de 'stem van de loopgraaf'.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Licht pro-Oekraïens in selectie, maar transparant over bronkeuze</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Menselijke factor, primaire bronnen van soldaten zelf</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen tactische analyse, selectief in keuze van te vertalen content</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/wartranslated" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Ukraine Now</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Oekraïens nieuwskanaal, commercieel/mediagelieerd</div>
-    <div class="kanaal-focus">Focus: actueel nieuws</div>
-    <div class="kanaal-achtergrond">Breed Oekraïens nieuwskanaal met snelle updates over aanvallen, politieke ontwikkelingen en frontnieuws. Minder analytisch diepgaand dan DeepState, maar nuttig voor actueel nieuws en burgerperspectief.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, officieuze toon</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Breedte van dekking, snel op luchtaanvallen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Beperkte tactische diepgang</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/UkraineNow" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">OSINT Ukraine</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-neutral">neutral</span>
-      <span class="betrb-badge betrb-high">high</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Internationaal OSINT-collectief</div>
-    <div class="kanaal-focus">Focus: open source intelligence</div>
-    <div class="kanaal-achtergrond">Aggregeert en verifieert open-bronsinformatie over het conflict. Publiceert geolocated beelden, satellietanalyses en cross-referenties van claims van beide kanten. Methodologisch streng.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Methodologisch neutraal, feitengericht</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Verificatie, geolocatie, satellietanalyse</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Kleine output, niet dagelijks actief</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/OSINTua" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Оперативний ЗСУ</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-UA">UA</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Oekraïens kanaal gelieerd aan ZSU-netwerk (Zbrojni Syly Ukrayiny)</div>
-    <div class="kanaal-focus">Focus: operationele ZSU-updates</div>
-    <div class="kanaal-achtergrond">Publiceert operationele updates van de Oekraïense Strijdkrachten (ZSU). Mengt officiële mededelingen met informele frontberichten. Nuttig als indicatie van wat de Oekraïense militaire structuur naar buiten brengt, maar onderhevig aan institutionele selectiviteit.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Oekraïens, institutionele invalshoek</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Officieuze ZSU-positie, eenheidsupdates</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Institutionele filtering, beperkte zelfkritiek</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-      </div>
-    </div>
-
-    <!-- Tab: RU -->
-    <div id="tab-ru" class="tab-inhoud">
-      <div class="kanalen-grid">
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Рыбарь</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Mikhail Zvinchuk, voormalig FSB-officier en mediamedewerker Russisch MoD</div>
-    <div class="kanaal-focus">Focus: tactische analyse, frontlijn</div>
-    <div class="kanaal-achtergrond">Verreweg het invloedrijkste Russische militaire Telegram-kanaal met meer dan 1,3 miljoen abonnees. Opgericht door Mikhail Zvinchuk, die eerder voor de FSB werkte. Staat bekend om gedetailleerde tactische kaarten en militaire analyses. Ondanks pro-Kremlin positie geldt Rybar als relatief betrouwbaar voor tactische data — hij publiceerde ook kritiek op de Russische legerleiding. Heeft toegang tot officieuze Russische militaire bronnen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2019</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch staatsbelang, maar soms openhartig over Russische tekortkomingen</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Russisch perspectief op tactiek, kaarten, militaire analyse</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Minimaliseert Russische verliezen, overdrijft Oekraïense</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/rybar" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">War Gonzo</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Semyon Pegov, Russisch oorlogsverslaggever</div>
-    <div class="kanaal-focus">Focus: frontlijnverslaggeving</div>
-    <div class="kanaal-achtergrond">Semyon Pegov is een van de bekendste Russische oorlogsjournalisten, actief aan het front sinds de Donbas-oorlog van 2014-2015. Bekend om ingelijfde frontlijnreportages met video-materiaal. Ontving Russische staatsprijzen. Zijn verslaggeving geeft een direct beeld van Russische frontomstandigheden, maar is doordrenkt van nationalistisch narratief.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2014</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Nee</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Sterk pro-Russisch, emotioneel-nationalistisch taalgebruik</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Authentieke frontbeelden, soldatenperspectief Russische zijde</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Geen kritische analyse, propaganda-elementen</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/wargonzo" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Серая Зона</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Anoniem Russisch kanaal, historisch gelieerd aan Wagner-netwerk</div>
-    <div class="kanaal-focus">Focus: tactisch, loopgraven</div>
-    <div class="kanaal-achtergrond">Actief frontlijnkanaal dat gedetailleerde tactische updates publiceert, inclusief verliesrapporten die de officiële Russische lijn soms tegenspreken. In de Wagner-periode (2022-2023) gold het als een van de centrale Prigozhin-gelieerde kanalen. Na de Wagner-opstand veranderde de toon. Brengt soms eerlijker nieuws over Russische situatie dan officiële kanalen.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch, maar bereid eigen verliezen te erkennen</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Frontlijndetails, eerlijker over Russische situatie dan MoD</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onzekere bronidentiteit, anoniem</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/grey_zone" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Два Майора</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-medium">medium</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Twee anonieme personen die beweren (voormalig) Russische militaire officieren te zijn</div>
-    <div class="kanaal-focus">Focus: frontlijn, logistiek</div>
-    <div class="kanaal-achtergrond">Anoniem kanaal dat claimt te worden gerund door twee Russische majoors met actieve of voormalige militaire achtergrond. Publiceert tactische samenvattingen en logistieke analyses. Wordt binnen Russische militaire OSINT-gemeenschap als relatief betrouwbaar beschouwd voor operationele details. Identiteit niet onafhankelijk geverifieerd.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>2022</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Pro-Russisch, maar analytisch van toon</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Logistieke analyses, operationele samenvattingen</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Onverifieerbare identiteit, selectieve informatiedeling</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/two_majors" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-        
-<div class="kanaal-kaart">
-  <div class="kanaal-header">
-    <div class="kanaal-naam">Slavyangrad</div>
-    <div class="kanaal-badges">
-      <span class="zijde-badge zijde-RU">RU</span>
-      <span class="betrb-badge betrb-low">low</span>
-    </div>
-  </div>
-  <div class="kanaal-body">
-    
-    <div class="kanaal-wie">Pro-Russisch propagandakanaal</div>
-    <div class="kanaal-focus">Focus: Russisch narratief</div>
-    <div class="kanaal-achtergrond">Sterk pro-Russisch kanaal met laag informatief gehalte en hoge propagandadichtheid. Herhaalt voornamelijk het officiële Russische narratief. Opgenomen voor volledigheid van het propagandaspectrum, maar berichten vereisen hoge mate van kritisch onderscheid. Weinig onafhankelijke tactische waarde.</div>
-    <table class="kanaal-tabel">
-      
-      <tr>
-        <td>Opgericht</td>
-        <td>Onbekend</td>
-      </tr>
-      
-      <tr>
-        <td>Anoniem</td>
-        <td>Ja</td>
-      </tr>
-      <tr>
-        <td>Bias</td>
-        <td>Uitgesproken pro-Russisch propaganda</td>
-      </tr>
-      <tr>
-        <td>Sterk in</td>
-        <td>Inzicht in Russisch propagandanarrativ</td>
-      </tr>
-      <tr>
-        <td>Zwak in</td>
-        <td>Lage feitelijke betrouwbaarheid, misleidend taalgebruik</td>
-      </tr>
-    </table>
-    <a href="https://t.me/s/Slavyangrad" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
-    
-  </div>
-</div>
-        
-      </div>
-    </div>
-  </section>
-
 </main>
 
-<!-- ===== FOOTER ===== -->
 <footer class="footer">
   <div class="footer-inner">
     <div class="footer-links">
       <strong>FRONTLIJN</strong> — Dagelijkse OSINT-briefing<br>
-      Gebaseerd op publieke Telegram-kanalen<br>
-      Analyse: Gemini AI · Datum: 2026-05-15
+      Analyse: Gemini 3.1 Pro Preview · 2026-05-15
     </div>
     <div class="footer-disclaimer">
-      Dit rapport is uitsluitend gebaseerd op openbaar beschikbare informatie (OSINT).
-      Het bevat geen geclassificeerde of officiële inlichtingen. Verifieer altijd onafhankelijk
-      voordat u conclusies trekt. Berichten van betrokken partijen bevatten inherente bias.
+      Uitsluitend gebaseerd op openbaar beschikbare informatie (OSINT).
+      Geen officiële inlichtingen. Verifieer altijd onafhankelijk.
+      Berichten van betrokken partijen bevatten inherente bias.
     </div>
   </div>
 </footer>
 
-<!-- ===== LEAFLET KAART INITIALISATIE ===== -->
 <script>
-// Coördinaten van bekende frontsectoren
 const COORDS = {
-  // Zaporizka / Midden-Oekraïne
-  'zaporizka': [47.5, 35.8],
-  'zaporizha': [47.5, 35.8],
-  'zaporizhzhia': [47.838, 35.144],
-  'zaporizzia': [47.838, 35.144],
-  'zaporizhia': [47.838, 35.144],
-  'orikhiv': [47.563, 35.779],
-  'robotyne': [47.464, 36.095],
-  'huliaipole': [47.654, 36.255],
-  // Donetsk / Donbas
-  'donetsk': [48.0, 37.8],
-  'donbas': [48.2, 37.7],
-  'avdiivka': [48.141, 37.748],
-  'toretsk': [48.016, 37.833],
-  'horlivka': [48.336, 38.043],
-  'bakhmut': [48.596, 37.999],
-  'chasiv yar': [48.574, 37.857],
-  'chasivyar': [48.574, 37.857],
-  'klishchiivka': [48.520, 38.025],
-  'kostiantynivka': [48.529, 37.712],
-  'pokrovsk': [48.283, 37.183],
-  'myrnograd': [48.312, 37.249],
-  'kurakhove': [47.985, 37.273],
-  'marinka': [47.954, 37.504],
-  'vuhledar': [47.773, 37.235],
-  'velyka novosilka': [47.839, 36.900],
-  'siversk': [48.874, 38.101],
-  'lyman': [49.021, 37.815],
-  // Luhansk
-  'kreminna': [48.959, 38.218],
-  'lysychansk': [48.906, 38.431],
-  'sloviansk': [48.862, 37.612],
-  // Kharkiv
-  'kharkiv': [49.993, 36.230],
-  'vovchansk': [50.287, 36.942],
-  'kupiansk': [49.712, 37.601],
-  // Kherson
-  'kherson': [46.636, 32.617],
-  'khersonska': [46.636, 32.617],
-  // Sumy / Kursk
-  'sumy': [50.910, 34.798],
-  'kursk': [51.730, 36.193],
+  'zaporizka': [47.5, 35.8], 'zaporizha': [47.5, 35.8],
+  'zaporizhzhia': [47.838, 35.144], 'zaporizzia': [47.838, 35.144],
+  'orikhiv': [47.563, 35.779], 'robotyne': [47.464, 36.095],
+  'huliaipole': [47.654, 36.255], 'donetsk': [48.0, 37.8],
+  'donbas': [48.2, 37.7], 'avdiivka': [48.141, 37.748],
+  'toretsk': [48.016, 37.833], 'horlivka': [48.336, 38.043],
+  'bakhmut': [48.596, 37.999], 'chasiv yar': [48.574, 37.857],
+  'chasivyar': [48.574, 37.857], 'klishchiivka': [48.520, 38.025],
+  'kostiantynivka': [48.529, 37.712], 'pokrovsk': [48.283, 37.183],
+  'myrnograd': [48.312, 37.249], 'kurakhove': [47.985, 37.273],
+  'marinka': [47.954, 37.504], 'vuhledar': [47.773, 37.235],
+  'velyka novosilka': [47.839, 36.900], 'siversk': [48.874, 38.101],
+  'lyman': [49.021, 37.815], 'kreminna': [48.959, 38.218],
+  'lysychansk': [48.906, 38.431], 'sloviansk': [48.862, 37.612],
+  'kharkiv': [49.993, 36.230], 'vovchansk': [50.287, 36.942],
+  'kupiansk': [49.712, 37.601], 'kherson': [46.636, 32.617],
+  'sumy': [50.910, 34.798], 'kursk': [51.730, 36.193],
+  'ryazan': [54.630, 39.742], 'zaporizhia': [47.838, 35.144],
 };
 
 function vindCoords(naam) {
   if (!naam) return null;
-  const key = naam.toLowerCase().trim();
-  if (COORDS[key]) return COORDS[key];
-  for (const [k, v] of Object.entries(COORDS)) {
-    if (key.includes(k) || k.includes(key)) return v;
+  const k = naam.toLowerCase().trim();
+  if (COORDS[k]) return COORDS[k];
+  for (const [key, val] of Object.entries(COORDS)) {
+    if (k.includes(key) || key.includes(k)) return val;
   }
   return null;
 }
 
-// Sectoren uit het rapport
 const sectoren = [
   
-  {
-    naam: "Ryazan",
-    samenvatting: "De Ryazan olieraffinaderij is aangevallen met drones, wat leidde tot branden en schade aan woongebouwen. Er zijn burgerdoden en gewonden gemeld.",
-    betrouwbaarheid: "middel",
-  },
+  { naam: "Ryazan \u0026 Russisch Achterland", samenvatting: "Oekra\u00efense drones hebben diep in Rusland toegeslagen, met aanzienlijke schade aan industri\u00eble en mogelijk militaire doelen.", betrouwbaarheid: "middel" },
   
-  {
-    naam: "Zaporozhye",
-    samenvatting: "Er zijn herhaalde drone-aanvallen op Zaporozhye, vaak gericht op brandstof- en smeermiddelopslag. Er zijn meldingen van explosies en branden.",
-    betrouwbaarheid: "middel",
-  },
+  { naam: "Kharkiv \u0026 Sumy Grensgebied", samenvatting: "Aanhoudende grensschermutselingen en Russische pogingen om een bufferzone te cre\u00ebren in het noordoosten.", betrouwbaarheid: "middel" },
   
-  {
-    naam: "Kharkiv",
-    samenvatting: "Oekra\u00efense troepen claimen de controle over Odradne en omgeving in de regio Kharkiv te hebben herwonnen. Er zijn meldingen van beschadigde woongebouwen in Kharkiv.",
-    betrouwbaarheid: "middel",
-  },
+  { naam: "Zaporizhia Front", samenvatting: "Positionele gevechten waarbij drones infanteriebewegingen vrijwel onmogelijk maken.", betrouwbaarheid: "tegenstrijdig" },
   
-  {
-    naam: "Sumy",
-    samenvatting: "Russische troepen voeren aanvallen uit met kleine groepen in de regio Sumy, ondanks Oekra\u00efense tegenaanvallen.",
-    betrouwbaarheid: "middel",
-  },
+  { naam: "Kinburn-schiereiland", samenvatting: "Oekra\u00efne voert de druk op Russische kustposities op met innovatieve maritieme drones.", betrouwbaarheid: "hoog" },
+  
+  { naam: "Kyiv \u0026 Noordelijke As", samenvatting: "Hernieuwde dreiging van een noordelijk front en aanhoudende luchtaanvallen op de hoofdstad.", betrouwbaarheid: "middel" },
   
 ];
 
-// Kaart initialiseren
-const kaart = L.map('overzichtskaart', {
-  center: [48.5, 37.5],
-  zoom: 7,
-  zoomControl: true,
-});
-
+const kaart = L.map('overzichtskaart', { center: [48.5, 37.0], zoom: 7 });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 15,
 }).addTo(kaart);
 
-// Kleur per betrouwbaarheidsniveau
-function markerKleur(betrb) {
-  const map = {
-    'hoog': '#2e7d32',
-    'middel': '#e65100',
-    'laag': '#c0001a',
-    'tegenstrijdig': '#9e9e9e',
-  };
-  return map[betrb] || '#455a64';
-}
+const kleuren = { hoog: '#2e7d32', middel: '#e65100', laag: '#c62828', tegenstrijdig: '#9e9e9e' };
+const bounds = [];
 
-// Markers plaatsen
-const markerBounds = [];
 sectoren.forEach(s => {
-  const coords = vindCoords(s.naam);
-  if (!coords) return;
-  markerBounds.push(coords);
-
-  const kleur = markerKleur(s.betrouwbaarheid);
+  const c = vindCoords(s.naam);
+  if (!c) return;
+  bounds.push(c);
+  const kleur = kleuren[s.betrouwbaarheid] || '#455a64';
   const icon = L.divIcon({
     className: '',
-    html: `<div style="
-      width:14px; height:14px;
-      border-radius:50%;
-      background:${kleur};
-      border:2px solid white;
-      box-shadow:0 1px 4px rgba(0,0,0,0.4);
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    html: `<div style="width:13px;height:13px;border-radius:50%;background:${kleur};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+    iconSize: [13,13], iconAnchor: [6,6],
   });
-
-  L.marker(coords, { icon })
-    .addTo(kaart)
-    .bindPopup(`
-      <strong style="font-family:sans-serif;font-size:13px">${s.naam}</strong><br>
-      <span style="font-family:sans-serif;font-size:11px;color:#555">${s.samenvatting}</span><br>
-      <span style="font-family:sans-serif;font-size:10px;color:${kleur};text-transform:uppercase;font-weight:600">
-        Betrouwbaarheid: ${s.betrouwbaarheid}
-      </span>
-    `);
+  L.marker(c, { icon }).addTo(kaart).bindPopup(
+    `<b style="font-family:sans-serif;font-size:13px">${s.naam}</b><br>
+     <span style="font-family:sans-serif;font-size:11px;color:#555">${s.samenvatting}</span>`
+  );
 });
 
-if (markerBounds.length > 0) {
-  kaart.fitBounds(markerBounds, { padding: [40, 40], maxZoom: 9 });
-}
-
-// Tab wisselen
-function wisselTab(id, knop) {
-  document.querySelectorAll('.tab-inhoud').forEach(el => el.classList.remove('actief'));
-  document.querySelectorAll('.tab-knop').forEach(el => el.classList.remove('actief'));
-  document.getElementById('tab-' + id).classList.add('actief');
-  knop.classList.add('actief');
-}
+if (bounds.length) kaart.fitBounds(bounds, { padding: [40,40], maxZoom: 9 });
 </script>
-
 </body>
 </html>
