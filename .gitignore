@@ -27,3 +27,10 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Frontline app
+frontline/frontline.db
+frontline/.env
+frontline/output/
+frontline/__pycache__/
+frontline/**/__pycache__/

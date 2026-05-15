@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRONTLIJN BRIEFING — {{ date }}</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --border: #222;
+    --accent: #c8a84b;
+    --accent-dim: #7a6530;
+    --text: #c8c8c8;
+    --text-dim: #666;
+    --text-strong: #e8e8e8;
+    --green: #3a7d44;
+    --red: #8b2020;
+    --yellow: #7a6530;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+  .classification {
+    color: var(--accent);
+    font-size: 0.7em;
+    letter-spacing: 6px;
+    margin-bottom: 0.5rem;
+  }
+  .title {
+    color: var(--text-strong);
+    font-size: 1.6em;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+  .meta {
+    color: var(--text-dim);
+    font-size: 0.8em;
+    margin-top: 0.4rem;
+  }
+  .meta span { margin-right: 1.5rem; }
+
+  /* Sections */
+  section { margin-bottom: 2.5rem; }
+
+  h2 {
+    color: var(--accent);
+    font-size: 0.75em;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Samenvatting */
+  .summary {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.2rem;
+    color: var(--text-strong);
+    font-size: 1.05em;
+    line-height: 1.8;
+  }
+
+  /* Sectoren */
+  .sector {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+    padding: 1rem 1.2rem;
+  }
+  .sector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.6rem;
+  }
+  .sector-name {
+    color: var(--text-strong);
+    font-weight: bold;
+    font-size: 1em;
+    letter-spacing: 1px;
+  }
+  .badge {
+    font-size: 0.65em;
+    letter-spacing: 2px;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid;
+  }
+  .badge-hoog { color: var(--green); border-color: var(--green); }
+  .badge-middel { color: var(--accent); border-color: var(--accent-dim); }
+  .badge-laag { color: var(--red); border-color: var(--red); }
+  .badge-tegenstrijdig { color: #888; border-color: #444; }
+
+  .sector-summary { color: var(--text); margin-bottom: 0.6rem; }
+
+  .sector-details { list-style: none; padding: 0; }
+  .sector-details li {
+    padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 2px solid var(--border);
+    margin-bottom: 0.3rem;
+    color: var(--text-dim);
+    font-size: 0.9em;
+  }
+  .sector-details li:before { content: '▸ '; color: var(--accent-dim); }
+
+  .claims {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+  .claim {
+    background: var(--bg);
+    padding: 0.5rem 0.8rem;
+    border-top: 2px solid;
+    font-size: 0.8em;
+  }
+  .claim-ua { border-color: #2a4d8c; }
+  .claim-ru { border-color: #8b1a1a; }
+  .claim-label {
+    font-size: 0.7em;
+    letter-spacing: 2px;
+    margin-bottom: 0.2rem;
+    opacity: 0.7;
+  }
+
+  /* Lijst-items algemeen */
+  .item-list { list-style: none; padding: 0; }
+  .item-list li {
+    padding: 0.5rem 0.8rem;
+    border-left: 2px solid var(--accent-dim);
+    margin-bottom: 0.5rem;
+    background: var(--surface);
+    font-size: 0.95em;
+  }
+
+  /* Signalen */
+  .signal-item {
+    background: var(--surface);
+    border-left: 3px solid #3a7d44;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .signal-item:before { content: '⬥ SIGNAAL: '; color: #3a7d44; font-size: 0.75em; letter-spacing: 2px; }
+
+  /* Bronnenkritiek */
+  .critique-item {
+    background: var(--surface);
+    border-left: 3px solid #8b2020;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .critique-item:before { content: '⚠ '; color: #8b2020; }
+
+  /* Menselijke factor */
+  .human-factor {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.9;
+  }
+
+  /* Leeg bericht */
+  .empty { color: var(--text-dim); font-style: italic; }
+
+  /* Footer */
+  footer {
+    margin-top: 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    font-size: 0.7em;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    line-height: 2;
+  }
+
+  @media (max-width: 600px) {
+    .claims { grid-template-columns: 1fr; }
+    body { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="classification">OSINT — OPEN SOURCE ANALYTISCH PRODUCT — NIET GECLASSIFICEERD</div>
+  <div class="title">FRONTLIJN BRIEFING</div>
+  <div class="meta">
+    <span>📅 {{ date }}</span>
+    <span>📡 {{ channel_count }} kanalen</span>
+    <span>📨 {{ message_count }} bronberichten</span>
+    <span>🕐 {{ generated_at }}</span>
+  </div>
+</header>
+
+<!-- SAMENVATTING -->
+<section>
+  <h2>Executieve samenvatting</h2>
+  <div class="summary">{{ data.samenvatting }}</div>
+</section>
+
+<!-- FRONTSECTOREN -->
+<section>
+  <h2>Frontsectoren</h2>
+  {% if data.sectoren %}
+    {% for sector in data.sectoren %}
+    <div class="sector">
+      <div class="sector-header">
+        <div class="sector-name">{{ sector.naam }}</div>
+        <div class="badge badge-{{ sector.betrouwbaarheid | lower }}">
+          {{ sector.betrouwbaarheid | upper }}
+        </div>
+      </div>
+      <div class="sector-summary">{{ sector.samenvatting }}</div>
+      {% if sector.details %}
+      <ul class="sector-details">
+        {% for detail in sector.details %}
+        <li>{{ detail }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if sector.ua_claim or sector.ru_claim %}
+      <div class="claims">
+        {% if sector.ua_claim %}
+        <div class="claim claim-ua">
+          <div class="claim-label">🇺🇦 OEKRAÏNE</div>
+          {{ sector.ua_claim }}
+        </div>
+        {% endif %}
+        {% if sector.ru_claim %}
+        <div class="claim claim-ru">
+          <div class="claim-label">🇷🇺 RUSLAND</div>
+          {{ sector.ru_claim }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">Geen sectordata beschikbaar voor deze periode.</p>
+  {% endif %}
+</section>
+
+<!-- TECHNOLOGIE & EW -->
+<section>
+  <h2>Technologie &amp; Elektronische Oorlogsvoering</h2>
+  {% if data.technologie_ew %}
+    <ul class="item-list">
+    {% for item in data.technologie_ew %}
+      <li>{{ item }}</li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">Geen significante technologische meldingen vandaag.</p>
+  {% endif %}
+</section>
+
+<!-- MENSELIJKE FACTOR -->
+<section>
+  <h2>De Menselijke Factor — Sfeer aan het Front</h2>
+  <div class="human-factor">{{ data.menselijke_factor }}</div>
+</section>
+
+<!-- SIGNALEN -->
+<section>
+  <h2>Signalen — Patronen over meerdere bronnen</h2>
+  {% if data.signalen %}
+    {% for signaal in data.signalen %}
+    <div class="signal-item">{{ signaal }}</div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">Geen convergerende signalen gedetecteerd.</div>
+  {% endif %}
+</section>
+
+<!-- BRONNENKRITIEK -->
+<section>
+  <h2>Bronnenkritiek — Mist van Oorlog</h2>
+  {% if data.bronnenkritiek %}
+    {% for punt in data.bronnenkritiek %}
+    <div class="critique-item">{{ punt }}</div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">Geen significante tegenstrijdigheden gedetecteerd.</p>
+  {% endif %}
+</section>
+
+<footer>
+  FRONTLIJN BRIEFING — Gebaseerd uitsluitend op open bronnen (OSINT).<br>
+  Geen officiële inlichtingen. Verifieer altijd onafhankelijk voor besluitvorming.<br>
+  Bronnen: {{ channel_count }} publieke Telegram-kanalen | Analyse: Gemini AI<br>
+  Gegenereerd: {{ generated_at }}
+</footer>
+
+</body>
+</html>
