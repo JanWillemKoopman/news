@@ -119,6 +119,7 @@ def main():
     # === FASE 4: HTML OPSLAAN ===
     from jinja2 import Environment, FileSystemLoader
     from storage.db import save_bulletin
+    from channels import CHANNELS, CHANNEL_LOOKUP
 
     template_dir = os.path.join(os.path.dirname(__file__), 'templates')
     env = Environment(loader=FileSystemLoader(template_dir))
@@ -131,14 +132,21 @@ def main():
         message_count=len(tactical),
         channel_count=unique_channels,
         data=bulletin_data,
+        channels_list=CHANNELS,
+        channel_lookup=CHANNEL_LOOKUP,
     )
 
-    # Sla op als bestand
+    # Sla op als versie-bestand in output/
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'briefing-{today}.html')
 
     with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+    # Sla ook op als index.html (meest recente briefing, publiek toegankelijk)
+    index_path = os.path.join(os.path.dirname(__file__), 'index.html')
+    with open(index_path, 'w', encoding='utf-8') as f:
         f.write(html)
 
     # Sla ook op in database
@@ -147,6 +155,7 @@ def main():
 
     logger.info("=" * 50)
     logger.info(f"✓ BRIEFING GEGENEREERD: {output_path}")
+    logger.info(f"  Ook opgeslagen als: {index_path}")
     logger.info(f"  Bronberichten: {len(tactical)}")
     logger.info(f"  Kanalen: {unique_channels}")
     logger.info(f"  Signalen: {len(patterns)}")

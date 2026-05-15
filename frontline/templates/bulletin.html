@@ -1,318 +1,1149 @@
+{%- macro render_channel_card(ch) %}
+<div class="kanaal-kaart">
+  <div class="kanaal-header">
+    <div class="kanaal-naam">{{ ch.name }}</div>
+    <div class="kanaal-badges">
+      <span class="zijde-badge zijde-{{ ch.side }}">{{ ch.side }}</span>
+      <span class="betrb-badge betrb-{{ ch.reliability }}">{{ ch.reliability }}</span>
+    </div>
+  </div>
+  <div class="kanaal-body">
+    {% if ch.profile %}
+    <div class="kanaal-wie">{{ ch.profile.wie }}</div>
+    <div class="kanaal-focus">Focus: {{ ch.focus }}</div>
+    <div class="kanaal-achtergrond">{{ ch.profile.achtergrond }}</div>
+    <table class="kanaal-tabel">
+      {% if ch.profile.opgericht %}
+      <tr>
+        <td>Opgericht</td>
+        <td>{{ ch.profile.opgericht }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td>Anoniem</td>
+        <td>{{ 'Ja' if ch.profile.anoniem else 'Nee' }}</td>
+      </tr>
+      <tr>
+        <td>Bias</td>
+        <td>{{ ch.profile.bias }}</td>
+      </tr>
+      <tr>
+        <td>Sterk in</td>
+        <td>{{ ch.profile.sterk_in }}</td>
+      </tr>
+      <tr>
+        <td>Zwak in</td>
+        <td>{{ ch.profile.zwak_in }}</td>
+      </tr>
+    </table>
+    <a href="{{ ch.profile.url }}" target="_blank" rel="noopener" class="kanaal-link">Bekijk op Telegram →</a>
+    {% else %}
+    <div class="kanaal-focus">{{ ch.focus }}</div>
+    {% endif %}
+  </div>
+</div>
+{%- endmacro %}
 <!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FRONTLIJN BRIEFING — {{ date }}</title>
+<title>Frontlijn Briefing — {{ date }}</title>
+
+<!-- Leaflet.js kaart -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLEg=" crossorigin=""></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
+  /* ===== RESET & BASIS ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --bg: #0d0d0d;
-    --surface: #141414;
-    --border: #222;
-    --accent: #c8a84b;
-    --accent-dim: #7a6530;
-    --text: #c8c8c8;
-    --text-dim: #666;
-    --text-strong: #e8e8e8;
-    --green: #3a7d44;
-    --red: #8b2020;
-    --yellow: #7a6530;
+    --rood: #c0001a;
+    --donkerblauw: #003366;
+    --ua-blauw: #005BBB;
+    --ru-rood: #c0001a;
+    --groen: #2e7d32;
+    --geel: #e65100;
+    --wit: #ffffff;
+    --lichtgrijs: #f7f7f7;
+    --randgrijs: #e0e0e0;
+    --tekstgrijs: #5a5a5a;
+    --tekst: #1a1a1a;
+    --scheidingslijn: #d0d0d0;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
-    line-height: 1.7;
-    max-width: 860px;
+    background: var(--wit);
+    color: var(--tekst);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  a { color: var(--rood); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ===== TOPBALK ===== */
+  .topbalk {
+    background: var(--rood);
+    height: 4px;
+    width: 100%;
+  }
+
+  /* ===== MASTHEAD ===== */
+  .masthead {
+    border-bottom: 1px solid var(--scheidingslijn);
+    padding: 20px 0 14px;
+  }
+  .masthead-inner {
+    max-width: 1060px;
     margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-  }
-
-  /* Header */
-  .header {
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 1rem;
-    margin-bottom: 2rem;
-  }
-  .classification {
-    color: var(--accent);
-    font-size: 0.7em;
-    letter-spacing: 6px;
-    margin-bottom: 0.5rem;
-  }
-  .title {
-    color: var(--text-strong);
-    font-size: 1.6em;
-    font-weight: bold;
-    letter-spacing: 2px;
-  }
-  .meta {
-    color: var(--text-dim);
-    font-size: 0.8em;
-    margin-top: 0.4rem;
-  }
-  .meta span { margin-right: 1.5rem; }
-
-  /* Sections */
-  section { margin-bottom: 2.5rem; }
-
-  h2 {
-    color: var(--accent);
-    font-size: 0.75em;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.4rem;
-    margin-bottom: 1rem;
-  }
-
-  /* Samenvatting */
-  .summary {
-    background: var(--surface);
-    border-left: 3px solid var(--accent);
-    padding: 1rem 1.2rem;
-    color: var(--text-strong);
-    font-size: 1.05em;
-    line-height: 1.8;
-  }
-
-  /* Sectoren */
-  .sector {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    margin-bottom: 1rem;
-    padding: 1rem 1.2rem;
-  }
-  .sector-header {
+    padding: 0 24px;
     display: flex;
-    justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 0.6rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
   }
-  .sector-name {
-    color: var(--text-strong);
-    font-weight: bold;
-    font-size: 1em;
-    letter-spacing: 1px;
+  .krant-naam {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--tekst);
+    line-height: 1;
   }
-  .badge {
-    font-size: 0.65em;
-    letter-spacing: 2px;
-    padding: 0.1rem 0.5rem;
-    border: 1px solid;
+  .krant-naam span { color: var(--rood); }
+  .krant-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: var(--tekstgrijs);
+    text-align: right;
+    line-height: 1.5;
   }
-  .badge-hoog { color: var(--green); border-color: var(--green); }
-  .badge-middel { color: var(--accent); border-color: var(--accent-dim); }
-  .badge-laag { color: var(--red); border-color: var(--red); }
-  .badge-tegenstrijdig { color: #888; border-color: #444; }
 
-  .sector-summary { color: var(--text); margin-bottom: 0.6rem; }
+  /* ===== NAVIGATIE ===== */
+  .nav-balk {
+    background: var(--tekst);
+    padding: 0;
+  }
+  .nav-inner {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 0;
+  }
+  .nav-inner a {
+    color: #ccc;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 9px 14px;
+    display: block;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-inner a:hover, .nav-inner a.actief {
+    background: var(--rood);
+    color: var(--wit);
+    text-decoration: none;
+  }
 
-  .sector-details { list-style: none; padding: 0; }
+  /* ===== CONTAINER ===== */
+  .container {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ===== HERO / SAMENVATTING ===== */
+  .hero {
+    border-bottom: 1px solid var(--randgrijs);
+    padding: 36px 0 30px;
+  }
+  .hero-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--rood);
+    margin-bottom: 10px;
+  }
+  .hero-titel {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--tekst);
+    margin-bottom: 16px;
+    max-width: 760px;
+  }
+  .hero-tekst {
+    font-size: 1.12rem;
+    line-height: 1.75;
+    color: #2a2a2a;
+    max-width: 720px;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 20px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: var(--tekstgrijs);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hero-meta-item strong {
+    color: var(--tekst);
+    font-weight: 600;
+  }
+
+  /* ===== SECTIE-HEADERS ===== */
+  .sectie-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 36px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--tekst);
+  }
+  .sectie-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--tekst);
+    line-height: 1;
+  }
+  .sectie-nummer {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--wit);
+    background: var(--rood);
+    padding: 2px 7px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== KAART ===== */
+  #kaart-container {
+    margin: 0 0 32px;
+    border: 1px solid var(--randgrijs);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #overzichtskaart {
+    height: 420px;
+    background: #eee;
+  }
+  .kaart-onderschrift {
+    background: var(--lichtgrijs);
+    padding: 8px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    color: var(--tekstgrijs);
+    border-top: 1px solid var(--randgrijs);
+  }
+
+  /* ===== SECTOREN GRID ===== */
+  .sectoren-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 12px;
+  }
+
+  .sector-kaart {
+    border: 1px solid var(--randgrijs);
+    background: var(--wit);
+    transition: box-shadow 0.15s;
+  }
+  .sector-kaart:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+  }
+
+  .sector-top {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--randgrijs);
+  }
+  .sector-kleur-balk {
+    width: 5px;
+    flex-shrink: 0;
+  }
+  .balk-hoog { background: var(--groen); }
+  .balk-middel { background: var(--geel); }
+  .balk-laag { background: var(--rood); }
+  .balk-tegenstrijdig { background: #9e9e9e; }
+
+  .sector-hoofd {
+    padding: 14px 16px;
+    flex: 1;
+  }
+  .sector-naam {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--tekst);
+    margin-bottom: 4px;
+  }
+  .sector-samenvatting {
+    font-size: 0.92rem;
+    color: var(--tekstgrijs);
+    line-height: 1.5;
+  }
+
+  .betrouwbaarheid-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+  .badge-hoog { background: #e8f5e9; color: var(--groen); }
+  .badge-middel { background: #fff3e0; color: var(--geel); }
+  .badge-laag { background: #ffebee; color: var(--rood); }
+  .badge-tegenstrijdig { background: #f5f5f5; color: #757575; }
+
+  .sector-body {
+    padding: 12px 16px;
+  }
+
+  .sector-details {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 12px;
+  }
   .sector-details li {
-    padding: 0.2rem 0 0.2rem 1rem;
-    border-left: 2px solid var(--border);
-    margin-bottom: 0.3rem;
-    color: var(--text-dim);
-    font-size: 0.9em;
+    font-size: 0.88rem;
+    padding: 5px 0 5px 14px;
+    border-left: 2px solid var(--randgrijs);
+    margin-bottom: 4px;
+    color: #333;
+    line-height: 1.45;
   }
-  .sector-details li:before { content: '▸ '; color: var(--accent-dim); }
 
-  .claims {
+  .claims-rij {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    margin-top: 0.8rem;
+    gap: 8px;
+    margin-top: 10px;
   }
-  .claim {
-    background: var(--bg);
-    padding: 0.5rem 0.8rem;
-    border-top: 2px solid;
-    font-size: 0.8em;
+  .claim-blok {
+    background: var(--lichtgrijs);
+    border-top: 3px solid;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    line-height: 1.45;
   }
-  .claim-ua { border-color: #2a4d8c; }
-  .claim-ru { border-color: #8b1a1a; }
+  .claim-blok-ua { border-color: var(--ua-blauw); }
+  .claim-blok-ru { border-color: var(--ru-rood); }
   .claim-label {
-    font-size: 0.7em;
-    letter-spacing: 2px;
-    margin-bottom: 0.2rem;
-    opacity: 0.7;
-  }
-
-  /* Lijst-items algemeen */
-  .item-list { list-style: none; padding: 0; }
-  .item-list li {
-    padding: 0.5rem 0.8rem;
-    border-left: 2px solid var(--accent-dim);
-    margin-bottom: 0.5rem;
-    background: var(--surface);
-    font-size: 0.95em;
-  }
-
-  /* Signalen */
-  .signal-item {
-    background: var(--surface);
-    border-left: 3px solid #3a7d44;
-    padding: 0.6rem 1rem;
-    margin-bottom: 0.5rem;
-  }
-  .signal-item:before { content: '⬥ SIGNAAL: '; color: #3a7d44; font-size: 0.75em; letter-spacing: 2px; }
-
-  /* Bronnenkritiek */
-  .critique-item {
-    background: var(--surface);
-    border-left: 3px solid #8b2020;
-    padding: 0.6rem 1rem;
-    margin-bottom: 0.5rem;
-  }
-  .critique-item:before { content: '⚠ '; color: #8b2020; }
-
-  /* Menselijke factor */
-  .human-factor {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 1rem 1.2rem;
-    font-style: italic;
-    color: var(--text);
-    line-height: 1.9;
-  }
-
-  /* Leeg bericht */
-  .empty { color: var(--text-dim); font-style: italic; }
-
-  /* Footer */
-  footer {
-    margin-top: 3rem;
-    border-top: 1px solid var(--border);
-    padding-top: 1rem;
-    font-size: 0.7em;
-    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
     letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .claim-label-ua { color: var(--ua-blauw); }
+  .claim-label-ru { color: var(--ru-rood); }
+  .claim-source {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    color: var(--tekstgrijs);
+    margin-top: 5px;
+  }
+  .claim-source a {
+    color: var(--rood);
+    font-weight: 500;
+  }
+
+  .sector-bronnen {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--randgrijs);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    color: var(--tekstgrijs);
+  }
+  .bron-chip {
+    display: inline-block;
+    background: var(--lichtgrijs);
+    border: 1px solid var(--randgrijs);
+    border-radius: 2px;
+    padding: 1px 6px;
+    margin: 2px 3px 2px 0;
+    font-size: 0.7rem;
+  }
+  .bron-chip.zijde-UA { border-left: 2px solid var(--ua-blauw); }
+  .bron-chip.zijde-RU { border-left: 2px solid var(--ru-rood); }
+  .bron-chip.zijde-neutral { border-left: 2px solid var(--groen); }
+
+  /* ===== TECHNOLOGIE & EW ===== */
+  .ew-lijst {
+    list-style: none;
+    padding: 0;
+  }
+  .ew-lijst li {
+    padding: 12px 16px;
+    border-left: 3px solid #455a64;
+    background: var(--lichtgrijs);
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #1a1a1a;
+  }
+  .ew-lijst li::before {
+    content: '◈ ';
+    color: #455a64;
+    font-size: 0.8rem;
+  }
+
+  /* ===== MENSELIJKE FACTOR ===== */
+  .menselijk-blok {
+    background: var(--lichtgrijs);
+    border-left: 4px solid #795548;
+    padding: 20px 22px;
+    font-style: italic;
+    font-size: 1.02rem;
+    line-height: 1.8;
+    color: #2a2a2a;
+  }
+
+  /* ===== SIGNALEN ===== */
+  .signalen-lijst {
+    list-style: none;
+    padding: 0;
+  }
+  .signalen-lijst li {
+    padding: 12px 16px 12px 46px;
+    background: #f0f7f0;
+    border-left: 3px solid var(--groen);
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #1a1a1a;
+    position: relative;
+  }
+  .signalen-lijst li::before {
+    content: '⬥';
+    color: var(--groen);
+    font-size: 1.1rem;
+    position: absolute;
+    left: 16px;
+    top: 11px;
+  }
+
+  /* ===== BRONNENKRITIEK ===== */
+  .kritiek-lijst {
+    list-style: none;
+    padding: 0;
+  }
+  .kritiek-lijst li {
+    padding: 12px 16px 12px 46px;
+    background: #fff8f0;
+    border-left: 3px solid #e65100;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #1a1a1a;
+    position: relative;
+  }
+  .kritiek-lijst li::before {
+    content: '⚠';
+    color: #e65100;
+    font-size: 1rem;
+    position: absolute;
+    left: 16px;
+    top: 12px;
+  }
+
+  /* ===== KANALEN DIRECTORY ===== */
+  .kanalen-uitleg {
+    background: var(--lichtgrijs);
+    border: 1px solid var(--randgrijs);
+    padding: 18px 22px;
+    margin-bottom: 28px;
+    font-size: 0.93rem;
+    line-height: 1.6;
+    color: #2a2a2a;
+  }
+  .kanalen-uitleg p + p { margin-top: 8px; }
+
+  .kanalen-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--randgrijs);
+    margin-bottom: 22px;
+  }
+  .tab-knop {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    color: var(--tekstgrijs);
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-knop.actief, .tab-knop:hover {
+    color: var(--rood);
+    border-bottom-color: var(--rood);
+  }
+
+  .tab-inhoud { display: none; }
+  .tab-inhoud.actief { display: block; }
+
+  .kanalen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .kanaal-kaart {
+    border: 1px solid var(--randgrijs);
+    background: var(--wit);
+  }
+  .kanaal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--randgrijs);
+    background: var(--lichtgrijs);
+  }
+  .kanaal-naam {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--tekst);
+  }
+  .kanaal-badges {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .zijde-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .zijde-UA { background: #e3f2fd; color: var(--ua-blauw); }
+  .zijde-RU { background: #ffebee; color: var(--ru-rood); }
+  .zijde-neutral { background: #e8f5e9; color: var(--groen); }
+  .betrb-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .betrb-high { background: #e8f5e9; color: #2e7d32; }
+  .betrb-medium { background: #fff3e0; color: #e65100; }
+  .betrb-low { background: #ffebee; color: #c62828; }
+
+  .kanaal-body {
+    padding: 12px 16px;
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: #2a2a2a;
+  }
+  .kanaal-wie {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--tekstgrijs);
+    margin-bottom: 6px;
+  }
+  .kanaal-focus {
+    font-style: italic;
+    color: var(--tekstgrijs);
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+  }
+  .kanaal-achtergrond {
+    margin-bottom: 10px;
+  }
+  .kanaal-tabel {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  .kanaal-tabel td {
+    padding: 3px 0;
+    vertical-align: top;
+  }
+  .kanaal-tabel td:first-child {
+    color: var(--tekstgrijs);
+    width: 80px;
+    font-weight: 500;
+  }
+  .kanaal-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--rood);
+    padding: 4px 10px;
+    border: 1px solid var(--rood);
+    transition: background 0.15s, color 0.15s;
+  }
+  .kanaal-link:hover {
+    background: var(--rood);
+    color: var(--wit);
+    text-decoration: none;
+  }
+
+  /* ===== LEESMETHODE INFOBOX ===== */
+  .leesmethode {
+    background: #f0f4ff;
+    border: 1px solid #c5cae9;
+    border-left: 4px solid var(--donkerblauw);
+    padding: 18px 22px;
+    margin-top: 10px;
+  }
+  .leesmethode h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--donkerblauw);
+    margin-bottom: 10px;
+  }
+  .leesmethode ul {
+    padding-left: 18px;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #2a2a2a;
+  }
+
+  /* ===== LEGE STAAT ===== */
+  .leeg {
+    color: var(--tekstgrijs);
+    font-style: italic;
+    padding: 12px 0;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    margin-top: 48px;
+    padding: 20px 0;
+    border-top: 2px solid var(--tekst);
+  }
+  .footer-inner {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-links {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: var(--tekstgrijs);
     line-height: 2;
   }
+  .footer-disclaimer {
+    max-width: 520px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    color: var(--tekstgrijs);
+    line-height: 1.6;
+  }
 
-  @media (max-width: 600px) {
-    .claims { grid-template-columns: 1fr; }
-    body { padding: 1rem; }
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    .claims-rij { grid-template-columns: 1fr; }
+    .sectoren-grid { grid-template-columns: 1fr; }
+    .kanalen-grid { grid-template-columns: 1fr; }
+    .hero-titel { font-size: 1.5rem; }
+    .masthead-inner { flex-direction: column; gap: 4px; }
+    .krant-meta { text-align: left; }
+    #overzichtskaart { height: 260px; }
+    .nav-inner { flex-wrap: wrap; }
+    .footer-inner { flex-direction: column; }
   }
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="classification">OSINT — OPEN SOURCE ANALYTISCH PRODUCT — NIET GECLASSIFICEERD</div>
-  <div class="title">FRONTLIJN BRIEFING</div>
-  <div class="meta">
-    <span>📅 {{ date }}</span>
-    <span>📡 {{ channel_count }} kanalen</span>
-    <span>📨 {{ message_count }} bronberichten</span>
-    <span>🕐 {{ generated_at }}</span>
+<div class="topbalk"></div>
+
+<!-- ===== MASTHEAD ===== -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="krant-naam">FRONTLIJN<span>.</span></div>
+    <div class="krant-meta">
+      Dagelijkse OSINT-briefing · {{ date }}<br>
+      {{ channel_count }} bronkanalen · {{ message_count }} verwerkte berichten · {{ generated_at }}
+    </div>
   </div>
 </header>
 
-<!-- SAMENVATTING -->
-<section>
-  <h2>Executieve samenvatting</h2>
-  <div class="summary">{{ data.samenvatting }}</div>
-</section>
+<!-- ===== NAVIGATIE ===== -->
+<nav class="nav-balk">
+  <div class="nav-inner">
+    <a href="#samenvatting" class="actief">Samenvatting</a>
+    <a href="#kaart">Kaart</a>
+    <a href="#sectoren">Frontsectoren</a>
+    <a href="#technologie">Technologie</a>
+    <a href="#menselijk">Menselijke Factor</a>
+    <a href="#signalen">Signalen</a>
+    <a href="#kritiek">Bronnenkritiek</a>
+    <a href="#kanalen">Kanalen & Auteurs</a>
+  </div>
+</nav>
 
-<!-- FRONTSECTOREN -->
-<section>
-  <h2>Frontsectoren</h2>
-  {% if data.sectoren %}
-    {% for sector in data.sectoren %}
-    <div class="sector">
-      <div class="sector-header">
-        <div class="sector-name">{{ sector.naam }}</div>
-        <div class="badge badge-{{ sector.betrouwbaarheid | lower }}">
-          {{ sector.betrouwbaarheid | upper }}
-        </div>
+<!-- ===== HOOFDINHOUD ===== -->
+<main class="container">
+
+  <!-- HERO / SAMENVATTING -->
+  <section id="samenvatting" class="hero">
+    <div class="hero-label">Executieve samenvatting</div>
+    <h1 class="hero-titel">Frontlijnrapport {{ date }}</h1>
+    <p class="hero-tekst">{{ data.samenvatting }}</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span>📡</span>
+        <span><strong>{{ channel_count }}</strong> bronkanalen</span>
       </div>
-      <div class="sector-summary">{{ sector.samenvatting }}</div>
-      {% if sector.details %}
-      <ul class="sector-details">
-        {% for detail in sector.details %}
-        <li>{{ detail }}</li>
-        {% endfor %}
-      </ul>
+      <div class="hero-meta-item">
+        <span>📨</span>
+        <span><strong>{{ message_count }}</strong> berichten geanalyseerd</span>
+      </div>
+      {% if data.sectoren %}
+      <div class="hero-meta-item">
+        <span>📍</span>
+        <span><strong>{{ data.sectoren | length }}</strong> frontsectoren gedekt</span>
+      </div>
       {% endif %}
-      {% if sector.ua_claim or sector.ru_claim %}
-      <div class="claims">
-        {% if sector.ua_claim %}
-        <div class="claim claim-ua">
-          <div class="claim-label">🇺🇦 OEKRAÏNE</div>
-          {{ sector.ua_claim }}
-        </div>
-        {% endif %}
-        {% if sector.ru_claim %}
-        <div class="claim claim-ru">
-          <div class="claim-label">🇷🇺 RUSLAND</div>
-          {{ sector.ru_claim }}
-        </div>
-        {% endif %}
+      {% if data.signalen %}
+      <div class="hero-meta-item">
+        <span>⬥</span>
+        <span><strong>{{ data.signalen | length }}</strong> signalen gedetecteerd</span>
       </div>
       {% endif %}
     </div>
-    {% endfor %}
-  {% else %}
-    <p class="empty">Geen sectordata beschikbaar voor deze periode.</p>
-  {% endif %}
-</section>
+  </section>
 
-<!-- TECHNOLOGIE & EW -->
-<section>
-  <h2>Technologie &amp; Elektronische Oorlogsvoering</h2>
-  {% if data.technologie_ew %}
-    <ul class="item-list">
-    {% for item in data.technologie_ew %}
+  <!-- KAART -->
+  <section id="kaart">
+    <div class="sectie-header">
+      <span class="sectie-nummer">01</span>
+      <h2>Overzichtskaart</h2>
+    </div>
+    <div id="kaart-container">
+      <div id="overzichtskaart"></div>
+      <div class="kaart-onderschrift">
+        Frontlijn Oekraïne — markers tonen sectoren uit dit rapport. Klik op een marker voor details.
+        Kaartdata © OpenStreetMap-bijdragers.
+      </div>
+    </div>
+  </section>
+
+  <!-- FRONTSECTOREN -->
+  <section id="sectoren">
+    <div class="sectie-header">
+      <span class="sectie-nummer">02</span>
+      <h2>Frontsectoren</h2>
+    </div>
+    {% if data.sectoren %}
+    <div class="sectoren-grid">
+      {% for sector in data.sectoren %}
+      <div class="sector-kaart">
+        <div class="sector-top">
+          <div class="sector-kleur-balk balk-{{ sector.betrouwbaarheid | lower | replace(' ', '-') }}"></div>
+          <div class="sector-hoofd">
+            <span class="betrouwbaarheid-badge badge-{{ sector.betrouwbaarheid | lower | replace(' ', '-') }}">
+              {{ sector.betrouwbaarheid | upper }}
+            </span>
+            <div class="sector-naam">{{ sector.naam }}</div>
+            <div class="sector-samenvatting">{{ sector.samenvatting }}</div>
+          </div>
+        </div>
+        <div class="sector-body">
+          {% if sector.details %}
+          <ul class="sector-details">
+            {% for detail in sector.details %}
+            <li>{{ detail }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+          {% if sector.ua_claim or sector.ru_claim %}
+          <div class="claims-rij">
+            {% if sector.ua_claim %}
+            <div class="claim-blok claim-blok-ua">
+              <div class="claim-label claim-label-ua">🇺🇦 Oekraïense claim</div>
+              {{ sector.ua_claim }}
+              {% if sector.ua_source %}
+              <div class="claim-source">
+                Bron:
+                {% set src_slug = sector.ua_source %}
+                {% if src_slug in channel_lookup %}
+                  <a href="{{ channel_lookup[src_slug].profile.url }}" target="_blank" rel="noopener">@{{ src_slug }}</a>
+                  ({{ channel_lookup[src_slug].profile.wie | truncate(50, True, '…') }})
+                {% else %}
+                  @{{ src_slug }}
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% if sector.ru_claim %}
+            <div class="claim-blok claim-blok-ru">
+              <div class="claim-label claim-label-ru">🇷🇺 Russische claim</div>
+              {{ sector.ru_claim }}
+              {% if sector.ru_source %}
+              <div class="claim-source">
+                Bron:
+                {% set src_slug = sector.ru_source %}
+                {% if src_slug in channel_lookup %}
+                  <a href="{{ channel_lookup[src_slug].profile.url }}" target="_blank" rel="noopener">@{{ src_slug }}</a>
+                  ({{ channel_lookup[src_slug].profile.wie | truncate(50, True, '…') }})
+                {% else %}
+                  @{{ src_slug }}
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if sector.sources_used %}
+          <div class="sector-bronnen">
+            Gebruikte bronnen:
+            {% for slug in sector.sources_used %}
+              {% if slug in channel_lookup %}
+                <span class="bron-chip zijde-{{ channel_lookup[slug].side }}">@{{ slug }}</span>
+              {% else %}
+                <span class="bron-chip">@{{ slug }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="leeg">Geen sectordata beschikbaar voor deze periode.</p>
+    {% endif %}
+  </section>
+
+  <!-- TECHNOLOGIE & EW -->
+  <section id="technologie">
+    <div class="sectie-header">
+      <span class="sectie-nummer">03</span>
+      <h2>Technologie &amp; Elektronische Oorlogsvoering</h2>
+    </div>
+    {% if data.technologie_ew %}
+    <ul class="ew-lijst">
+      {% for item in data.technologie_ew %}
       <li>{{ item }}</li>
-    {% endfor %}
+      {% endfor %}
     </ul>
-  {% else %}
-    <p class="empty">Geen significante technologische meldingen vandaag.</p>
-  {% endif %}
-</section>
+    {% else %}
+    <p class="leeg">Geen significante technologische meldingen in dit rapport.</p>
+    {% endif %}
+  </section>
 
-<!-- MENSELIJKE FACTOR -->
-<section>
-  <h2>De Menselijke Factor — Sfeer aan het Front</h2>
-  <div class="human-factor">{{ data.menselijke_factor }}</div>
-</section>
+  <!-- MENSELIJKE FACTOR -->
+  <section id="menselijk">
+    <div class="sectie-header">
+      <span class="sectie-nummer">04</span>
+      <h2>De Menselijke Factor</h2>
+    </div>
+    <div class="menselijk-blok">{{ data.menselijke_factor }}</div>
+  </section>
 
-<!-- SIGNALEN -->
-<section>
-  <h2>Signalen — Patronen over meerdere bronnen</h2>
-  {% if data.signalen %}
-    {% for signaal in data.signalen %}
-    <div class="signal-item">{{ signaal }}</div>
-    {% endfor %}
-  {% else %}
-    <div class="empty">Geen convergerende signalen gedetecteerd.</div>
-  {% endif %}
-</section>
+  <!-- SIGNALEN -->
+  <section id="signalen">
+    <div class="sectie-header">
+      <span class="sectie-nummer">05</span>
+      <h2>Signalen — Patronen over meerdere bronnen</h2>
+    </div>
+    {% if data.signalen %}
+    <ul class="signalen-lijst">
+      {% for signaal in data.signalen %}
+      <li>{{ signaal }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="leeg">Geen convergerende signalen gedetecteerd in dit rapport.</p>
+    {% endif %}
+  </section>
 
-<!-- BRONNENKRITIEK -->
-<section>
-  <h2>Bronnenkritiek — Mist van Oorlog</h2>
-  {% if data.bronnenkritiek %}
-    {% for punt in data.bronnenkritiek %}
-    <div class="critique-item">{{ punt }}</div>
-    {% endfor %}
-  {% else %}
-    <p class="empty">Geen significante tegenstrijdigheden gedetecteerd.</p>
-  {% endif %}
-</section>
+  <!-- BRONNENKRITIEK -->
+  <section id="kritiek">
+    <div class="sectie-header">
+      <span class="sectie-nummer">06</span>
+      <h2>Bronnenkritiek — Mist van Oorlog</h2>
+    </div>
+    {% if data.bronnenkritiek %}
+    <ul class="kritiek-lijst">
+      {% for punt in data.bronnenkritiek %}
+      <li>{{ punt }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="leeg">Geen significante tegenstrijdigheden gedetecteerd.</p>
+    {% endif %}
+  </section>
 
-<footer>
-  FRONTLIJN BRIEFING — Gebaseerd uitsluitend op open bronnen (OSINT).<br>
-  Geen officiële inlichtingen. Verifieer altijd onafhankelijk voor besluitvorming.<br>
-  Bronnen: {{ channel_count }} publieke Telegram-kanalen | Analyse: Gemini AI<br>
-  Gegenereerd: {{ generated_at }}
+  <!-- KANALEN & AUTEURS -->
+  <section id="kanalen">
+    <div class="sectie-header">
+      <span class="sectie-nummer">07</span>
+      <h2>Kanalen &amp; Auteurs</h2>
+    </div>
+
+    <div class="kanalen-uitleg">
+      <p>
+        Dit rapport is gebaseerd op publieke Telegram-kanalen die door soldaten, oorlogsjournalisten
+        en OSINT-analisten worden beheerd. Elk kanaal heeft een eigen perspectief, bias en betrouwbaarheidsprofiel.
+        Hieronder vindt u achtergrondinformatie over de meest gebruikte bronnen — zodat u zelf kunt beoordelen
+        wie wat zegt en waarom.
+      </p>
+      <p>
+        <strong>Lees deze informatie als een mediabriefing:</strong> een Oekraïense bron overdrijft
+        Russische verliezen; een Russische bron minimaliseert die. Ons rapport probeert beide perspectieven
+        naast elkaar te zetten en tegenstrijdigheden expliciet te benoemen.
+      </p>
+    </div>
+
+    <div class="leesmethode">
+      <h3>Hoe leest u de bronlabels?</h3>
+      <ul>
+        <li><strong>Betrouwbaarheid hoog</strong>: Kanaal heeft aantoonbaar sterke verificatie-methodologie, weinig foutieve meldingen in het verleden.</li>
+        <li><strong>Betrouwbaarheid middel</strong>: Doorgaans redelijk accurate informatie, maar selectief in wat gerapporteerd wordt.</li>
+        <li><strong>Betrouwbaarheid laag</strong>: Hoge propagandadichtheid, frequent ongeverifieerde claims of aangetoonde desinformatie.</li>
+        <li><strong>UA / RU / Neutraal</strong>: Politieke oriëntatie van het kanaal, niet de nationaliteit van de auteur.</li>
+      </ul>
+    </div>
+
+    <!-- TABS -->
+    <div class="kanalen-tabs" style="margin-top: 22px;">
+      <button class="tab-knop actief" onclick="wisselTab('alle', this)">Alle kanalen</button>
+      <button class="tab-knop" onclick="wisselTab('ua', this)">Oekraïns / Neutraal</button>
+      <button class="tab-knop" onclick="wisselTab('ru', this)">Russisch</button>
+    </div>
+
+    <!-- Tab: Alle -->
+    <div id="tab-alle" class="tab-inhoud actief">
+      <div class="kanalen-grid">
+        {% for ch in channels_list %}
+        {{ render_channel_card(ch) }}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Tab: UA/Neutraal -->
+    <div id="tab-ua" class="tab-inhoud">
+      <div class="kanalen-grid">
+        {% for ch in channels_list if ch.side in ['UA', 'neutral'] %}
+        {{ render_channel_card(ch) }}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Tab: RU -->
+    <div id="tab-ru" class="tab-inhoud">
+      <div class="kanalen-grid">
+        {% for ch in channels_list if ch.side == 'RU' %}
+        {{ render_channel_card(ch) }}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <strong>FRONTLIJN</strong> — Dagelijkse OSINT-briefing<br>
+      Gebaseerd op publieke Telegram-kanalen<br>
+      Analyse: Gemini AI · Datum: {{ date }}
+    </div>
+    <div class="footer-disclaimer">
+      Dit rapport is uitsluitend gebaseerd op openbaar beschikbare informatie (OSINT).
+      Het bevat geen geclassificeerde of officiële inlichtingen. Verifieer altijd onafhankelijk
+      voordat u conclusies trekt. Berichten van betrokken partijen bevatten inherente bias.
+    </div>
+  </div>
 </footer>
+
+<!-- ===== LEAFLET KAART INITIALISATIE ===== -->
+<script>
+// Coördinaten van bekende frontsectoren
+const COORDS = {
+  // Zaporizka / Midden-Oekraïne
+  'zaporizka': [47.5, 35.8],
+  'zaporizha': [47.5, 35.8],
+  'zaporizhzhia': [47.838, 35.144],
+  'zaporizzia': [47.838, 35.144],
+  'zaporizhia': [47.838, 35.144],
+  'orikhiv': [47.563, 35.779],
+  'robotyne': [47.464, 36.095],
+  'huliaipole': [47.654, 36.255],
+  // Donetsk / Donbas
+  'donetsk': [48.0, 37.8],
+  'donbas': [48.2, 37.7],
+  'avdiivka': [48.141, 37.748],
+  'toretsk': [48.016, 37.833],
+  'horlivka': [48.336, 38.043],
+  'bakhmut': [48.596, 37.999],
+  'chasiv yar': [48.574, 37.857],
+  'chasivyar': [48.574, 37.857],
+  'klishchiivka': [48.520, 38.025],
+  'kostiantynivka': [48.529, 37.712],
+  'pokrovsk': [48.283, 37.183],
+  'myrnograd': [48.312, 37.249],
+  'kurakhove': [47.985, 37.273],
+  'marinka': [47.954, 37.504],
+  'vuhledar': [47.773, 37.235],
+  'velyka novosilka': [47.839, 36.900],
+  'siversk': [48.874, 38.101],
+  'lyman': [49.021, 37.815],
+  // Luhansk
+  'kreminna': [48.959, 38.218],
+  'lysychansk': [48.906, 38.431],
+  'sloviansk': [48.862, 37.612],
+  // Kharkiv
+  'kharkiv': [49.993, 36.230],
+  'vovchansk': [50.287, 36.942],
+  'kupiansk': [49.712, 37.601],
+  // Kherson
+  'kherson': [46.636, 32.617],
+  'khersonska': [46.636, 32.617],
+  // Sumy / Kursk
+  'sumy': [50.910, 34.798],
+  'kursk': [51.730, 36.193],
+};
+
+function vindCoords(naam) {
+  if (!naam) return null;
+  const key = naam.toLowerCase().trim();
+  if (COORDS[key]) return COORDS[key];
+  for (const [k, v] of Object.entries(COORDS)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  return null;
+}
+
+// Sectoren uit het rapport
+const sectoren = [
+  {% for sector in data.sectoren %}
+  {
+    naam: {{ sector.naam | tojson }},
+    samenvatting: {{ sector.samenvatting | tojson }},
+    betrouwbaarheid: {{ sector.betrouwbaarheid | tojson }},
+  },
+  {% endfor %}
+];
+
+// Kaart initialiseren
+const kaart = L.map('overzichtskaart', {
+  center: [48.5, 37.5],
+  zoom: 7,
+  zoomControl: true,
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 15,
+}).addTo(kaart);
+
+// Kleur per betrouwbaarheidsniveau
+function markerKleur(betrb) {
+  const map = {
+    'hoog': '#2e7d32',
+    'middel': '#e65100',
+    'laag': '#c0001a',
+    'tegenstrijdig': '#9e9e9e',
+  };
+  return map[betrb] || '#455a64';
+}
+
+// Markers plaatsen
+const markerBounds = [];
+sectoren.forEach(s => {
+  const coords = vindCoords(s.naam);
+  if (!coords) return;
+  markerBounds.push(coords);
+
+  const kleur = markerKleur(s.betrouwbaarheid);
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="
+      width:14px; height:14px;
+      border-radius:50%;
+      background:${kleur};
+      border:2px solid white;
+      box-shadow:0 1px 4px rgba(0,0,0,0.4);
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+
+  L.marker(coords, { icon })
+    .addTo(kaart)
+    .bindPopup(`
+      <strong style="font-family:sans-serif;font-size:13px">${s.naam}</strong><br>
+      <span style="font-family:sans-serif;font-size:11px;color:#555">${s.samenvatting}</span><br>
+      <span style="font-family:sans-serif;font-size:10px;color:${kleur};text-transform:uppercase;font-weight:600">
+        Betrouwbaarheid: ${s.betrouwbaarheid}
+      </span>
+    `);
+});
+
+if (markerBounds.length > 0) {
+  kaart.fitBounds(markerBounds, { padding: [40, 40], maxZoom: 9 });
+}
+
+// Tab wisselen
+function wisselTab(id, knop) {
+  document.querySelectorAll('.tab-inhoud').forEach(el => el.classList.remove('actief'));
+  document.querySelectorAll('.tab-knop').forEach(el => el.classList.remove('actief'));
+  document.getElementById('tab-' + id).classList.add('actief');
+  knop.classList.add('actief');
+}
+</script>
 
 </body>
 </html>

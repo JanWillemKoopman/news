@@ -276,15 +276,20 @@ Genereer ALLEEN dit JSON-object (geen uitleg eromheen):
       "samenvatting": "1-2 zinnen wat er bewoog",
       "details": ["concreet feit 1", "concreet feit 2"],
       "ua_claim": "Oekraïense claim of null",
+      "ua_source": "kanaalslug die de UA-claim meldde, of null",
       "ru_claim": "Russische claim of null",
+      "ru_source": "kanaalslug die de RU-claim meldde, of null",
+      "sources_used": ["kanaalslug1", "kanaalslug2"],
       "betrouwbaarheid": "hoog|middel|laag|tegenstrijdig"
     }}
   ],
-  "technologie_ew": ["drone/EW-ontwikkeling 1", "drone/EW-ontwikkeling 2"],
+  "technologie_ew": ["drone/EW-ontwikkeling 1 (bron: kanaalslug)", "drone/EW-ontwikkeling 2 (bron: kanaalslug)"],
   "menselijke_factor": "sfeer, moraal, logistiek, weer — de atmosfeer aan het front",
   "signalen": ["patroon 1", "patroon 2"],
-  "bronnenkritiek": ["tegenstrijdigheid of propagandapunt 1"]
+  "bronnenkritiek": ["tegenstrijdigheid of propagandapunt 1 (bron: kanaalslug)"]
 }}
+
+BELANGRIJK: Vul "ua_source" en "ru_source" in met de exacte kanaalslug uit de bronberichten die de claim onderbouwen.
 
 JSON:"""
 
