@@ -1,0 +1,939 @@
+{%- macro bron_chip(slug, channel_lookup) -%}
+{%- if slug in channel_lookup -%}<span class="chip chip--{{ channel_lookup[slug].side | lower }}">@{{ slug }}</span>
+{%- else -%}<span class="chip">@{{ slug }}</span>{%- endif -%}
+{%- endmacro -%}
+{%- macro kant_badge(kant) -%}
+{%- if kant == 'UA' -%}<span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span>
+{%- elif kant == 'RU' -%}<span class="kbadge kbadge--ru">🇷🇺 Rusland</span>
+{%- else -%}<span class="kbadge kbadge--beide">Beide</span>{%- endif -%}
+{%- endmacro -%}
+{%- macro impact_pip(impact) -%}
+{%- if impact == 'hoog' -%}<span class="impact impact--hoog">● Hoog</span>
+{%- elif impact == 'middel' -%}<span class="impact impact--middel">● Middel</span>
+{%- else -%}<span class="impact impact--laag">● Laag</span>{%- endif -%}
+{%- endmacro -%}
+{%- macro media_thumb(item, extra_class='') -%}
+{% if item.type == 'video' %}
+<a href="{{ item.msg_url }}" target="_blank" rel="noopener" class="media-thumb media-thumb--video {{ extra_class }}"
+   style="background-image:url('{{ item.url }}')" title="Video · @{{ item.channel }} · {{ item.date }}">
+  <div class="media-play">▶</div>
+  <div class="media-overlay">
+    <span class="media-meta">@{{ item.channel }} · {{ item.date }}</span>
+  </div>
+</a>
+{% else %}
+<a href="{{ item.msg_url }}" target="_blank" rel="noopener" class="media-thumb {{ extra_class }}"
+   style="background-image:url('{{ item.url }}')" title="@{{ item.channel }} · {{ item.date }}">
+  <div class="media-overlay">
+    <span class="media-meta">@{{ item.channel }} · {{ item.date }}</span>
+  </div>
+</a>
+{% endif %}
+{%- endmacro -%}
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Frontlijn — {{ date }}</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── DESIGN TOKENS — Anthropic dark palette ── */
+:root {
+  --bg:          #0D0D0C;
+  --bg-2:        #161614;
+  --bg-3:        #1E1D1B;
+  --bg-4:        #262420;
+  --bg-5:        #2E2B27;
+  --border:      #332F2A;
+  --border-2:    #3D3A35;
+  --text-1:      #F0EDE8;
+  --text-2:      #C4BFB8;
+  --text-3:      #8A8580;
+  --text-4:      #5C5955;
+  --coral:       #D97757;
+  --coral-dim:   #A8573A;
+  --coral-glow:  rgba(217,119,87,.15);
+  --ua:          #60A5FA;
+  --ua-dim:      #1E40AF;
+  --ua-bg:       rgba(96,165,250,.12);
+  --ru:          #F87171;
+  --ru-dim:      #991B1B;
+  --ru-bg:       rgba(248,113,113,.12);
+  --groen:       #4ADE80;
+  --groen-bg:    rgba(74,222,128,.10);
+  --oranje:      #FB923C;
+  --oranje-bg:   rgba(251,146,60,.10);
+  --geel:        #FCD34D;
+  --geel-bg:     rgba(252,211,77,.10);
+  --paars:       #A78BFA;
+  --paars-bg:    rgba(167,139,250,.10);
+  --font-serif:  'Fraunces','Georgia',serif;
+  --font-sans:   'DM Sans',system-ui,-apple-system,sans-serif;
+  --r-sm:        8px;
+  --r-md:        12px;
+  --r-lg:        18px;
+  --r-full:      9999px;
+  --sh:          0 2px 12px rgba(0,0,0,.4);
+  --sh-lg:       0 8px 32px rgba(0,0,0,.55);
+  --nav-h:       56px;
+  --max-w:       740px;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { -webkit-tap-highlight-color:transparent; scroll-behavior:smooth; }
+body {
+  background:var(--bg);
+  color:var(--text-2);
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:1.6;
+  overscroll-behavior:none;
+  min-height:100dvh;
+}
+a { color:var(--coral); text-decoration:none; }
+a:hover { text-decoration:underline; }
+
+/* ── APP SHELL ── */
+.app-shell { display:flex; flex-direction:column; height:100dvh; }
+
+.app-header {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  height:var(--nav-h);
+  background:rgba(13,13,12,.92);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 16px; gap:10px;
+}
+.app-logo {
+  font-family:var(--font-serif);
+  font-size:1.2rem; font-weight:700;
+  color:var(--text-1); flex:1;
+}
+.app-logo span { color:var(--coral); }
+.header-live {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.68rem; color:var(--text-4);
+}
+.live-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--coral);
+  animation:livepulse 2s ease-in-out infinite;
+}
+@keyframes livepulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:.4; transform:scale(.8); }
+}
+
+.tab-switcher {
+  display:flex; background:var(--bg-4);
+  border:1px solid var(--border);
+  border-radius:var(--r-full);
+  padding:3px; gap:2px;
+}
+.tab-btn {
+  font-family:var(--font-sans); font-size:0.72rem; font-weight:600;
+  border:none; background:transparent; color:var(--text-3);
+  padding:5px 14px; border-radius:var(--r-full);
+  cursor:pointer; transition:background .15s,color .15s;
+  white-space:nowrap;
+}
+.tab-btn.active { background:var(--coral); color:#fff; }
+
+.app-body { flex:1; margin-top:var(--nav-h); overflow:hidden; position:relative; }
+
+.page {
+  position:absolute; inset:0;
+  overflow-y:auto; overflow-x:hidden;
+  padding-bottom:24px;
+  -webkit-overflow-scrolling:touch;
+  transition:opacity .2s,transform .2s;
+}
+.page:not(.active) { opacity:0; pointer-events:none; transform:translateX(20px); }
+.page.active { opacity:1; transform:translateX(0); }
+
+.wrap { max-width:var(--max-w); margin:0 auto; padding:0 16px; }
+
+/* ── TYPOGRAFIE ── */
+.serif { font-family:var(--font-serif); }
+.label-up {
+  font-size:0.65rem; font-weight:700;
+  letter-spacing:1.8px; text-transform:uppercase;
+}
+
+/* ── SECTIE DIVIDER ── */
+.sec {
+  display:flex; align-items:center; gap:10px;
+  margin:28px 0 16px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.sec h2 {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:500; color:var(--text-1);
+}
+.sec-nr {
+  font-size:0.62rem; font-weight:700;
+  color:#fff; background:var(--coral);
+  padding:2px 8px; border-radius:var(--r-full);
+  flex-shrink:0;
+}
+.sec::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── HERO NIEUWS ── */
+.hero {
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  padding:24px 16px 20px;
+  position:relative; overflow:hidden;
+}
+.hero::before {
+  content:''; position:absolute;
+  top:-80px; right:-60px;
+  width:300px; height:300px; border-radius:50%;
+  background:radial-gradient(circle,var(--coral-glow) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-inner { max-width:var(--max-w); margin:0 auto; position:relative; }
+.hero-eyebrow {
+  display:flex; align-items:center; gap:8px; margin-bottom:12px;
+}
+.hero-eyebrow .label-up { color:var(--coral); }
+.hero-sep { color:var(--text-4); font-size:0.75rem; }
+.hero-time { font-size:0.75rem; color:var(--text-4); }
+.hero-kop {
+  font-family:var(--font-serif);
+  font-size:clamp(1.55rem,5vw,2.3rem);
+  font-weight:700; line-height:1.1;
+  color:var(--text-1); margin-bottom:8px;
+}
+.hero-sub {
+  font-size:0.97rem; font-style:italic;
+  color:var(--text-3); margin-bottom:14px; line-height:1.5;
+}
+.hero-lede {
+  font-size:0.95rem; line-height:1.8;
+  color:var(--text-2);
+  border-left:3px solid var(--coral);
+  padding-left:14px; margin-bottom:18px;
+}
+.hero-stats { display:flex; gap:18px; flex-wrap:wrap; }
+.stat { font-size:0.7rem; color:var(--text-4); }
+.stat strong { color:var(--text-3); }
+
+/* ── KAART ── */
+.kaart-wrap {
+  border-radius:var(--r-md); overflow:hidden;
+  border:1px solid var(--border); margin-bottom:4px;
+  box-shadow:var(--sh);
+}
+#overzichtskaart { height:210px; background:var(--bg-3); }
+.kaart-cap {
+  background:var(--bg-3); padding:5px 12px;
+  font-size:0.68rem; color:var(--text-4);
+  border-top:1px solid var(--border);
+}
+
+/* ── MEDIA THUMBS ── */
+.media-thumb {
+  display:block; position:relative;
+  background-size:cover; background-position:center;
+  border-radius:var(--r-sm); overflow:hidden;
+  cursor:pointer;
+}
+.media-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 55%);
+  opacity:0; transition:opacity .2s;
+  display:flex; align-items:flex-end; padding:8px;
+}
+.media-thumb:hover .media-overlay { opacity:1; }
+.media-meta { font-size:0.68rem; color:rgba(255,255,255,.85); line-height:1.3; }
+.media-thumb--video::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(0,0,0,.25);
+}
+.media-play {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) translateZ(0);
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(0,0,0,.6);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.9rem; color:#fff; z-index:2;
+  backdrop-filter:blur(4px);
+}
+
+/* Media in sector-kaart */
+.sector-media {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+  gap:4px; margin-bottom:12px;
+}
+.sector-media .media-thumb { height:90px; }
+
+/* Fotoreportage raster */
+.foto-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
+}
+.foto-grid .media-thumb { height:140px; }
+.foto-grid .media-thumb:first-child {
+  grid-column:span 2; height:200px;
+}
+@media(max-width:480px) {
+  .foto-grid { grid-template-columns:repeat(2,1fr); }
+  .foto-grid .media-thumb { height:110px; }
+  .foto-grid .media-thumb:first-child { height:150px; }
+}
+
+/* ── SECTOR KAARTEN ── */
+.sectoren { display:flex; flex-direction:column; gap:10px; }
+.skaart {
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  overflow:hidden; box-shadow:var(--sh);
+}
+.skaart-accent { height:3px; }
+.acc-hoog { background:var(--groen); }
+.acc-middel { background:var(--geel); }
+.acc-laag { background:var(--ru); }
+.acc-tegenstrijdig { background:var(--text-4); }
+
+.skaart-body { padding:14px; }
+.skaart-top {
+  display:flex; align-items:flex-start;
+  justify-content:space-between; gap:8px; margin-bottom:6px;
+}
+.skaart-naam {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:500; color:var(--text-1);
+}
+.betr {
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase;
+  padding:2px 8px; border-radius:var(--r-full);
+  white-space:nowrap; flex-shrink:0;
+}
+.betr-hoog { background:var(--groen-bg); color:var(--groen); }
+.betr-middel { background:var(--geel-bg); color:var(--geel); }
+.betr-laag { background:var(--ru-bg); color:var(--ru); }
+.betr-tegenstrijdig { background:var(--bg-4); color:var(--text-3); }
+
+.skaart-sum {
+  font-size:0.88rem; color:var(--text-3); line-height:1.5; margin-bottom:10px;
+}
+
+.feiten-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.fvak {
+  background:var(--bg-3); border-radius:var(--r-sm);
+  padding:9px 11px; border-top:2px solid;
+}
+.fvak--ok { border-color:var(--groen); }
+.fvak--? { border-color:var(--oranje); }
+.fvak-label {
+  font-size:0.6rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; margin-bottom:4px;
+}
+.fvak--ok .fvak-label { color:var(--groen); }
+.fvak--? .fvak-label { color:var(--oranje); }
+.fvak-list { list-style:none; }
+.fvak-list li {
+  font-size:0.8rem; line-height:1.45; color:var(--text-2);
+  padding:2px 0 2px 8px; border-left:1px solid var(--border);
+  margin-bottom:3px;
+}
+
+.claims-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.cvak {
+  background:var(--bg-3); border-radius:var(--r-sm);
+  padding:9px 11px; border-top:2px solid;
+  font-size:0.81rem; line-height:1.5; color:var(--text-2);
+}
+.cvak--ua { border-color:var(--ua); }
+.cvak--ru { border-color:var(--ru); }
+.cvak-label {
+  font-size:0.58rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; margin-bottom:4px;
+}
+.cvak--ua .cvak-label { color:var(--ua); }
+.cvak--ru .cvak-label { color:var(--ru); }
+.cvak-bron { margin-top:5px; font-size:0.65rem; color:var(--text-4); }
+.cvak-bron a { color:var(--coral); font-weight:500; }
+
+.skaart-footer {
+  padding-top:8px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+}
+.skaart-footer-lbl { font-size:0.62rem; color:var(--text-4); }
+
+/* ── CHIPS ── */
+.chip {
+  display:inline-block; font-size:0.65rem; font-weight:500;
+  padding:2px 7px; border-radius:var(--r-full);
+  background:var(--bg-4); border:1px solid var(--border);
+  color:var(--text-3);
+}
+.chip--ua { border-left:3px solid var(--ua); }
+.chip--ru { border-left:3px solid var(--ru); }
+.chip--neutral { border-left:3px solid var(--groen); }
+
+/* ── KANT / IMPACT BADGES ── */
+.kbadge {
+  font-size:0.58rem; font-weight:700; letter-spacing:.5px;
+  text-transform:uppercase; padding:2px 8px; border-radius:var(--r-full);
+}
+.kbadge--ua { background:var(--ua-bg); color:var(--ua); }
+.kbadge--ru { background:var(--ru-bg); color:var(--ru); }
+.kbadge--beide { background:var(--bg-4); color:var(--text-3); }
+.impact { font-size:0.62rem; font-weight:600; padding:2px 8px; border-radius:var(--r-full); }
+.impact--hoog { background:var(--ru-bg); color:var(--ru); }
+.impact--middel { background:var(--geel-bg); color:var(--geel); }
+.impact--laag { background:var(--bg-4); color:var(--text-3); }
+
+/* ── DIVERSE BLOKKEN ── */
+.strategie-blok {
+  background:var(--bg-3);
+  border:1px solid var(--border);
+  border-left:3px solid var(--paars);
+  border-radius:0 var(--r-md) var(--r-md) 0;
+  padding:18px; color:var(--text-2);
+  font-size:0.95rem; line-height:1.75;
+}
+.strategie-blok .label-up { color:var(--paars); display:block; margin-bottom:8px; }
+
+.morgen-wrap {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); overflow:hidden;
+}
+.morgen-item {
+  display:flex; align-items:flex-start; gap:14px;
+  padding:13px 14px;
+  border-bottom:1px solid var(--border);
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+}
+.morgen-item:last-child { border-bottom:none; }
+.morgen-num {
+  font-family:var(--font-serif); font-size:1.15rem;
+  font-weight:700; color:var(--coral); line-height:1; min-width:20px;
+}
+
+.signaal-item {
+  display:flex; gap:10px; padding:11px 14px;
+  background:var(--groen-bg); border-left:3px solid var(--groen);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+}
+.kritiek-item {
+  display:flex; gap:10px; padding:11px 14px;
+  background:var(--oranje-bg); border-left:3px solid var(--oranje);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+}
+.ew-item {
+  padding:11px 14px; background:var(--bg-2);
+  border:1px solid var(--border); border-left:3px solid var(--paars);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+}
+.menselijk-blok {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:18px;
+  font-style:italic; font-size:0.95rem;
+  line-height:1.85; color:var(--text-2);
+}
+
+.leeg { color:var(--text-4); font-style:italic; padding:12px 0; font-size:0.9rem; }
+
+.app-footer {
+  background:var(--bg-2); border-top:1px solid var(--border);
+  margin:32px -16px -24px; padding:18px 16px;
+}
+.footer-title { font-family:var(--font-serif); font-size:0.95rem; font-weight:500; color:var(--text-2); }
+.footer-sub { font-size:0.7rem; color:var(--text-4); line-height:1.6; margin-top:4px; }
+
+/* ── TECH TAB ── */
+.tech-hero {
+  background:var(--bg-2); border-bottom:1px solid var(--border);
+  padding:24px 16px 20px; position:relative; overflow:hidden;
+}
+.tech-hero::before {
+  content:''; position:absolute; top:-80px; left:-60px;
+  width:320px; height:320px; border-radius:50%;
+  background:radial-gradient(circle,var(--paars-bg) 0%,transparent 70%);
+  pointer-events:none;
+}
+.tech-hero-inner { max-width:var(--max-w); margin:0 auto; position:relative; }
+.tech-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.tech-eyebrow .label-up { color:var(--paars); }
+.tech-kop {
+  font-family:var(--font-serif);
+  font-size:clamp(1.45rem,5vw,2.1rem);
+  font-weight:700; line-height:1.1; color:var(--text-1); margin-bottom:12px;
+}
+.tech-intro {
+  font-size:0.93rem; line-height:1.8; color:var(--text-2);
+  border-left:3px solid var(--paars); padding-left:14px;
+}
+
+.tech-cat { margin-bottom:24px; }
+.tech-cat-hdr {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+  background:var(--bg-3); border:1px solid var(--border);
+  border-radius:var(--r-md) var(--r-md) 0 0;
+}
+.tech-cat-icon { font-size:1.25rem; }
+.tech-cat-naam {
+  font-family:var(--font-serif); font-size:1rem;
+  font-weight:500; color:var(--text-1); flex:1;
+}
+.tech-cat-count {
+  font-size:0.65rem; color:var(--text-4);
+  background:var(--bg-5); padding:2px 8px; border-radius:var(--r-full);
+}
+.tech-cat-intro {
+  background:var(--bg-4); border-left:1px solid var(--border);
+  border-right:1px solid var(--border);
+  padding:9px 14px; font-size:0.8rem;
+  line-height:1.6; color:var(--text-3); font-style:italic;
+}
+.tech-items {
+  border:1px solid var(--border); border-top:none;
+  border-radius:0 0 var(--r-md) var(--r-md); overflow:hidden;
+  background:var(--bg-2);
+}
+.tech-item {
+  padding:14px; border-bottom:1px solid var(--border);
+}
+.tech-item:last-child { border-bottom:none; }
+.tech-item-top {
+  display:flex; align-items:flex-start;
+  justify-content:space-between; gap:8px; margin-bottom:6px;
+}
+.tech-item-titel {
+  font-family:var(--font-serif); font-size:0.98rem;
+  font-weight:500; color:var(--text-1); line-height:1.3;
+}
+.tech-badges { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; flex-shrink:0; }
+.tech-desc {
+  font-size:0.86rem; line-height:1.65; color:var(--text-2); margin-bottom:8px;
+}
+.tech-item-media { margin-bottom:8px; }
+.tech-item-media .media-thumb { height:160px; width:100%; border-radius:var(--r-sm); }
+.tech-foot {
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+}
+.tech-datum {
+  font-size:0.65rem; color:var(--text-4);
+  display:flex; align-items:center; gap:3px;
+}
+.tech-datum::before { content:'🕐'; font-size:0.62rem; }
+
+.vergelijk {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); overflow:hidden;
+}
+.vergelijk-hdr {
+  padding:12px 14px; background:var(--bg-3);
+  border-bottom:1px solid var(--border);
+  font-family:var(--font-serif); font-size:0.97rem;
+  font-weight:500; color:var(--text-1);
+}
+.vergelijk-grid { display:grid; grid-template-columns:1fr 1fr; }
+.vkol { padding:14px; border-top:2px solid; }
+.vkol--ua { border-color:var(--ua); border-right:1px solid var(--border); }
+.vkol--ru { border-color:var(--ru); }
+.vkol-titel { font-size:0.62rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.vkol--ua .vkol-titel { color:var(--ua); }
+.vkol--ru .vkol-titel { color:var(--ru); }
+.vkol-list { list-style:none; }
+.vkol-list li {
+  font-size:0.81rem; line-height:1.5; color:var(--text-2);
+  padding:3px 0 3px 9px; border-left:1px solid var(--border); margin-bottom:4px;
+}
+.vergelijk-concl {
+  padding:14px; border-top:1px solid var(--border);
+  background:var(--bg-3); font-size:0.86rem;
+  line-height:1.65; color:var(--text-2); font-style:italic;
+}
+.tech-sig {
+  padding:11px 14px 11px 40px; background:var(--paars-bg);
+  border-left:3px solid var(--paars);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+  position:relative;
+}
+.tech-sig::before { content:'◆'; color:var(--paars); position:absolute; left:13px; top:12px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px) {
+  .feiten-grid { grid-template-columns:1fr; }
+  .claims-grid { grid-template-columns:1fr; }
+  .vergelijk-grid { grid-template-columns:1fr; }
+  .vkol--ua { border-right:none; border-bottom:1px solid var(--border); }
+  .tab-btn { padding:5px 10px; font-size:0.68rem; }
+  .hero-kop { font-size:1.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="app-logo">Frontlijn<span>.</span></div>
+  <div class="header-live">
+    <div class="live-dot"></div>
+    <span>{{ date }}</span>
+  </div>
+  <div class="tab-switcher">
+    <button class="tab-btn active" onclick="showTab('nieuws',this)">Nieuws</button>
+    <button class="tab-btn" onclick="showTab('tech',this)">Technologie</button>
+  </div>
+</header>
+
+<div class="app-body">
+
+<!-- ═══════════════ TAB 1 — NIEUWS ═══════════════ -->
+<div id="page-nieuws" class="page active">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        <span class="label-up">Frontlijn OSINT</span>
+        <span class="hero-sep">·</span>
+        <span class="hero-time">{{ date }}{% if newest_message %} — {{ newest_message }}{% endif %}</span>
+      </div>
+      <h1 class="hero-kop">{{ data.krantenkop }}</h1>
+      {% if data.subtitel %}<div class="hero-sub">{{ data.subtitel }}</div>{% endif %}
+      <p class="hero-lede">{{ data.lede }}</p>
+      <div class="hero-stats">
+        <span class="stat">📡 <strong>{{ channel_count }}</strong> kanalen</span>
+        <span class="stat">📨 <strong>{{ message_count }}</strong> berichten</span>
+        {% if data.sectoren %}<span class="stat">📍 <strong>{{ data.sectoren|length }}</strong> sectoren</span>{% endif %}
+        {% if oldest_message %}<span class="stat">📅 Oudste: {{ oldest_message }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- KAART -->
+    <div class="sec"><span class="sec-nr">01</span><h2>Overzichtskaart</h2></div>
+    <div class="kaart-wrap">
+      <div id="overzichtskaart"></div>
+      <div class="kaart-cap">Klik op een marker voor sectordetails · © OpenStreetMap</div>
+    </div>
+
+    <!-- FOTOREPORTAGE -->
+    {% if all_media %}
+    <div class="sec"><span class="sec-nr">02</span><h2>Fotoreportage</h2></div>
+    <div class="foto-grid">
+      {% for item in all_media[:9] %}
+      {{ media_thumb(item) }}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- FRONTSECTOREN -->
+    <div class="sec"><span class="sec-nr">0{{ '3' if all_media else '2' }}</span><h2>Frontsectoren</h2></div>
+    {% if data.sectoren %}
+    <div class="sectoren">
+      {% for s in data.sectoren %}
+      {% set sloc = s.naam | lower %}
+      {% set loc_media = [] %}
+      {% for key in media_by_location %}
+        {% if key in sloc or sloc in key %}
+          {% for m in media_by_location[key] %}{% if loc_media.append(m) %}{% endif %}{% endfor %}
+        {% endif %}
+      {% endfor %}
+      <div class="skaart">
+        <div class="skaart-accent acc-{{ s.betrouwbaarheid|lower|replace(' ','-') }}"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">{{ s.naam }}</div>
+            <span class="betr betr-{{ s.betrouwbaarheid|lower|replace(' ','-') }}">{{ s.betrouwbaarheid }}</span>
+          </div>
+          <div class="skaart-sum">{{ s.samenvatting }}</div>
+
+          {% if loc_media %}
+          <div class="sector-media">
+            {% for item in loc_media[:4] %}{{ media_thumb(item) }}{% endfor %}
+          </div>
+          {% endif %}
+
+          {% if s.bevestigd or s.onzeker %}
+          <div class="feiten-grid">
+            {% if s.bevestigd %}
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list">{% for f in s.bevestigd %}<li>{{ f }}</li>{% endfor %}</ul>
+            </div>
+            {% endif %}
+            {% if s.onzeker %}
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list">{% for f in s.onzeker %}<li>{{ f }}</li>{% endfor %}</ul>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if s.ua_claim or s.ru_claim %}
+          <div class="claims-grid">
+            {% if s.ua_claim %}
+            <div class="cvak cvak--ua">
+              <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
+              {{ s.ua_claim }}
+              {% if s.ua_source %}<div class="cvak-bron">Bron:
+                {% if s.ua_source in channel_lookup %}<a href="{{ channel_lookup[s.ua_source].profile.url }}" target="_blank">@{{ s.ua_source }}</a>
+                {% else %}@{{ s.ua_source }}{% endif %}</div>{% endif %}
+            </div>
+            {% endif %}
+            {% if s.ru_claim %}
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              {{ s.ru_claim }}
+              {% if s.ru_source %}<div class="cvak-bron">Bron:
+                {% if s.ru_source in channel_lookup %}<a href="{{ channel_lookup[s.ru_source].profile.url }}" target="_blank">@{{ s.ru_source }}</a>
+                {% else %}@{{ s.ru_source }}{% endif %}</div>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if s.sources_used %}
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            {% for slug in s.sources_used %}{{ bron_chip(slug, channel_lookup) }}{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="leeg">Geen sectordata beschikbaar.</p>{% endif %}
+
+    <!-- STRATEGIE -->
+    <div class="sec"><span class="sec-nr">04</span><h2>Strategische context</h2></div>
+    {% if data.strategische_context %}
+    <div class="strategie-blok">
+      <span class="label-up">Analytische duiding</span>{{ data.strategische_context }}
+    </div>
+    {% else %}<p class="leeg">Geen duiding beschikbaar.</p>{% endif %}
+
+    <!-- MORGEN -->
+    <div class="sec"><span class="sec-nr">05</span><h2>Kijk morgen naar…</h2></div>
+    {% if data.morgen_verwacht %}
+    <div class="morgen-wrap">
+      {% for p in data.morgen_verwacht %}
+      <div class="morgen-item"><div class="morgen-num">{{ loop.index }}</div><div>{{ p }}</div></div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="leeg">Geen verwachtingen.</p>{% endif %}
+
+    <!-- EW -->
+    <div class="sec"><span class="sec-nr">06</span><h2>Technologie &amp; EW</h2></div>
+    {% if data.technologie_ew %}
+      {% for i in data.technologie_ew %}<div class="ew-item">{{ i }}</div>{% endfor %}
+    {% else %}<p class="leeg">Geen EW-meldingen.</p>{% endif %}
+
+    <!-- MENSELIJK -->
+    <div class="sec"><span class="sec-nr">07</span><h2>De Menselijke Factor</h2></div>
+    <div class="menselijk-blok">{{ data.menselijke_factor }}</div>
+
+    <!-- SIGNALEN -->
+    <div class="sec"><span class="sec-nr">08</span><h2>Signalen</h2></div>
+    {% if data.signalen %}
+      {% for s in data.signalen %}<div class="signaal-item"><div>⬥</div><div>{{ s }}</div></div>{% endfor %}
+    {% else %}<p class="leeg">Geen convergerende signalen.</p>{% endif %}
+
+    <!-- KRITIEK -->
+    <div class="sec"><span class="sec-nr">09</span><h2>Bronnenkritiek</h2></div>
+    {% if data.bronnenkritiek %}
+      {% for p in data.bronnenkritiek %}<div class="kritiek-item"><div>⚠</div><div>{{ p }}</div></div>{% endfor %}
+    {% else %}<p class="leeg">Geen tegenstrijdigheden.</p>{% endif %}
+
+    <footer class="app-footer">
+      <div class="footer-title">Frontlijn — Dagelijkse OSINT-briefing</div>
+      <div class="footer-sub">Open source intelligence · Geen officiële inlichtingen<br>
+        Analyse: Gemini 3.1 Pro Preview · {{ generated_at }}</div>
+    </footer>
+
+  </div><!-- /wrap -->
+</div><!-- /page-nieuws -->
+
+
+<!-- ═══════════════ TAB 2 — TECHNOLOGIE ═══════════════ -->
+<div id="page-tech" class="page">
+
+  <div class="tech-hero">
+    <div class="tech-hero-inner">
+      <div class="tech-eyebrow">
+        <span class="label-up">⚙ Technologische Innovatie</span>
+        <span class="hero-sep">·</span>
+        <span style="font-size:.75rem;color:var(--text-4)">{{ date }}</span>
+      </div>
+      <h1 class="tech-kop">{{ tech_data.tech_kop }}</h1>
+      <p class="tech-intro">{{ tech_data.tech_intro }}</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    {% if tech_data.categorieën %}
+    {% for cat in tech_data.categorieën %}
+    <div class="sec">
+      <span class="sec-nr">{{ '%02d' | format(loop.index) }}</span>
+      <h2>{{ cat.icoon }} {{ cat.naam }}</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">{{ cat.icoon }}</span>
+        <span class="tech-cat-naam">{{ cat.naam }}</span>
+        <span class="tech-cat-count">{{ cat.ontwikkelingen|length }} systemen</span>
+      </div>
+      <div class="tech-cat-intro">{{ cat.introductie }}</div>
+      <div class="tech-items">
+        {% for onw in cat.ontwikkelingen %}
+        {% set onw_loc = (onw.titel + ' ' + onw.beschrijving)|lower %}
+        {% set onw_media = [] %}
+        {% for key in media_by_location %}
+          {% if key in onw_loc %}
+            {% for m in media_by_location[key][:2] %}{% if onw_media.append(m) %}{% endif %}{% endfor %}
+          {% endif %}
+        {% endfor %}
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">{{ onw.titel }}</div>
+            <div class="tech-badges">{{ kant_badge(onw.kant) }}{{ impact_pip(onw.impact) }}</div>
+          </div>
+          <div class="tech-desc">{{ onw.beschrijving }}</div>
+          {% if onw_media %}
+          <div class="tech-item-media">{{ media_thumb(onw_media[0]) }}</div>
+          {% endif %}
+          <div class="tech-foot">
+            {% if onw.gemeld_op %}<span class="tech-datum">{{ onw.gemeld_op }}</span>{% endif %}
+            {% if onw.bronnen %}{% for slug in onw.bronnen %}{{ bron_chip(slug, channel_lookup) }}{% endfor %}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="leeg" style="margin-top:20px">Geen technologie-categorieën beschikbaar.</p>
+    {% endif %}
+
+    <!-- VERGELIJKING -->
+    <div class="sec"><span class="sec-nr">⚖</span><h2>Technologische balans</h2></div>
+    {% set vg = tech_data.innovatie_vergelijking %}
+    <div class="vergelijk">
+      <div class="vergelijk-hdr">Wie heeft technologisch de overhand?</div>
+      <div class="vergelijk-grid">
+        <div class="vkol vkol--ua">
+          <div class="vkol-titel">🇺🇦 Oekraïne sterk in</div>
+          <ul class="vkol-list">{% for p in vg.ua_sterktepunten %}<li>{{ p }}</li>{% endfor %}</ul>
+        </div>
+        <div class="vkol vkol--ru">
+          <div class="vkol-titel">🇷🇺 Rusland sterk in</div>
+          <ul class="vkol-list">{% for p in vg.ru_sterktepunten %}<li>{{ p }}</li>{% endfor %}</ul>
+        </div>
+      </div>
+      {% if vg.technologische_balans %}
+      <div class="vergelijk-concl">{{ vg.technologische_balans }}</div>
+      {% endif %}
+    </div>
+
+    <!-- TECH SIGNALEN -->
+    {% if tech_data.tech_signalen %}
+    <div class="sec"><span class="sec-nr">◆</span><h2>Technologie-signalen</h2></div>
+    {% for sig in tech_data.tech_signalen %}<div class="tech-sig">{{ sig }}</div>{% endfor %}
+    {% endif %}
+
+    <footer class="app-footer">
+      <div class="footer-title">Frontlijn Technologie — Uitputtende analyse</div>
+      <div class="footer-sub">{{ message_count }} berichten · {{ channel_count }} kanalen<br>
+        Gemini 3.1 Pro Preview · {{ generated_at }}</div>
+    </footer>
+
+  </div><!-- /wrap -->
+</div><!-- /page-tech -->
+
+</div><!-- /app-body -->
+</div><!-- /app-shell -->
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// Leaflet
+const COORDS = {
+  'zaporizka':[47.5,35.8],'zaporizhzhia':[47.838,35.144],'orikhiv':[47.563,35.779],
+  'robotyne':[47.464,36.095],'huliaipole':[47.654,36.255],'donetsk':[48.0,37.8],
+  'donbas':[48.2,37.7],'avdiivka':[48.141,37.748],'toretsk':[48.016,37.833],
+  'horlivka':[48.336,38.043],'bakhmut':[48.596,37.999],'chasiv yar':[48.574,37.857],
+  'chasivyar':[48.574,37.857],'klishchiivka':[48.520,38.025],'pokrovsk':[48.283,37.183],
+  'myrnograd':[48.312,37.249],'kurakhove':[47.985,37.273],'marinka':[47.954,37.504],
+  'vuhledar':[47.773,37.235],'velyka novosilka':[47.839,36.900],'siversk':[48.874,38.101],
+  'lyman':[49.021,37.815],'kreminna':[48.959,38.218],'lysychansk':[48.906,38.431],
+  'sloviansk':[48.862,37.612],'kharkiv':[49.993,36.230],'vovchansk':[50.287,36.942],
+  'kupiansk':[49.712,37.601],'kherson':[46.636,32.617],'sumy':[50.910,34.798],
+  'kursk':[51.730,36.193],'ryazan':[54.630,39.742],'kostiantynivka':[48.529,37.712],
+};
+function vindCoords(naam) {
+  if (!naam) return null;
+  const k = naam.toLowerCase().trim();
+  if (COORDS[k]) return COORDS[k];
+  for (const [key, val] of Object.entries(COORDS)) {
+    if (k.includes(key) || key.includes(k)) return val;
+  }
+  return null;
+}
+const sectoren = [
+  {% for s in data.sectoren %}
+  { naam:{{ s.naam|tojson }}, samenvatting:{{ s.samenvatting|tojson }}, betrouwbaarheid:{{ s.betrouwbaarheid|tojson }} },
+  {% endfor %}
+];
+const kleuren = { hoog:'#4ADE80', middel:'#FCD34D', laag:'#F87171', tegenstrijdig:'#5C5955' };
+const kaart = L.map('overzichtskaart', { center:[48.5,37.0], zoom:7 });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains:'abcd', maxZoom:19,
+}).addTo(kaart);
+const bounds = [];
+sectoren.forEach(s => {
+  const c = vindCoords(s.naam);
+  if (!c) return;
+  bounds.push(c);
+  const kleur = kleuren[s.betrouwbaarheid] || '#5C5955';
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:11px;height:11px;border-radius:50%;background:${kleur};border:2px solid rgba(255,255,255,.3);box-shadow:0 0 6px ${kleur}66"></div>`,
+    iconSize:[11,11], iconAnchor:[5,5],
+  });
+  L.marker(c,{icon}).addTo(kaart).bindPopup(
+    `<div style="font-family:sans-serif;font-size:12px;max-width:180px">
+      <b style="color:#F0EDE8">${s.naam}</b><br>
+      <span style="color:#8A8580">${s.samenvatting}</span>
+    </div>`,
+    { className:'dark-popup' }
+  );
+});
+if (bounds.length) kaart.fitBounds(bounds, { padding:[40,40], maxZoom:9 });
+</script>
+</body>
+</html>
