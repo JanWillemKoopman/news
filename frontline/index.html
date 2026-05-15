@@ -4,1644 +4,1682 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Frontlijn — 2026-05-15</title>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-/* ══════════════════════════════════════════════
-   DESIGN TOKENS — Anthropic-kleurenpalet
-   ══════════════════════════════════════════════ */
+/* ── DESIGN TOKENS — Anthropic dark palette ── */
 :root {
-  /* Kleuren */
-  --cream:         #FAF9F5;
-  --cream-2:       #F2EFE9;
-  --cream-3:       #E8E3DB;
-  --ink:           #1A1918;
-  --ink-2:         #3D3B38;
-  --ink-3:         #6B6862;
-  --ink-4:         #9D9890;
-  --coral:         #D97757;
-  --coral-dark:    #B85F41;
-  --coral-light:   #F2C4B0;
-  --ua-blue:       #2563EB;
-  --ua-light:      #DBEAFE;
-  --ru-red:        #DC2626;
-  --ru-light:      #FEE2E2;
-  --groen:         #16A34A;
-  --groen-light:   #DCFCE7;
-  --oranje:        #EA580C;
-  --oranje-light:  #FFEDD5;
-  --geel:          #CA8A04;
-  --geel-light:    #FEF9C3;
-  --paars:         #7C3AED;
-  --paars-light:   #EDE9FE;
-
-  /* Typografie */
-  --font-serif:  'Fraunces', 'Georgia', serif;
-  --font-sans:   'DM Sans', system-ui, -apple-system, sans-serif;
-
-  /* Afmetingen */
-  --radius-sm:   8px;
-  --radius-md:   12px;
-  --radius-lg:   20px;
-  --radius-full: 9999px;
-  --shadow-sm:   0 1px 3px rgba(26,25,24,.08), 0 1px 2px rgba(26,25,24,.05);
-  --shadow-md:   0 4px 16px rgba(26,25,24,.10), 0 2px 4px rgba(26,25,24,.06);
-  --nav-h:       58px;
-  --tabbar-h:    68px;
-  --max-w:       760px;
+  --bg:          #0D0D0C;
+  --bg-2:        #161614;
+  --bg-3:        #1E1D1B;
+  --bg-4:        #262420;
+  --bg-5:        #2E2B27;
+  --border:      #332F2A;
+  --border-2:    #3D3A35;
+  --text-1:      #F0EDE8;
+  --text-2:      #C4BFB8;
+  --text-3:      #8A8580;
+  --text-4:      #5C5955;
+  --coral:       #D97757;
+  --coral-dim:   #A8573A;
+  --coral-glow:  rgba(217,119,87,.15);
+  --ua:          #60A5FA;
+  --ua-dim:      #1E40AF;
+  --ua-bg:       rgba(96,165,250,.12);
+  --ru:          #F87171;
+  --ru-dim:      #991B1B;
+  --ru-bg:       rgba(248,113,113,.12);
+  --groen:       #4ADE80;
+  --groen-bg:    rgba(74,222,128,.10);
+  --oranje:      #FB923C;
+  --oranje-bg:   rgba(251,146,60,.10);
+  --geel:        #FCD34D;
+  --geel-bg:     rgba(252,211,77,.10);
+  --paars:       #A78BFA;
+  --paars-bg:    rgba(167,139,250,.10);
+  --font-serif:  'Fraunces','Georgia',serif;
+  --font-sans:   'DM Sans',system-ui,-apple-system,sans-serif;
+  --r-sm:        8px;
+  --r-md:        12px;
+  --r-lg:        18px;
+  --r-full:      9999px;
+  --sh:          0 2px 12px rgba(0,0,0,.4);
+  --sh-lg:       0 8px 32px rgba(0,0,0,.55);
+  --nav-h:       56px;
+  --max-w:       740px;
 }
 
-/* ══════════════════════════════════════════════ RESET */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { -webkit-tap-highlight-color:transparent; scroll-behavior:smooth; }
 body {
-  background: var(--cream);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.6;
-  overscroll-behavior: none;
-  min-height: 100dvh;
+  background:var(--bg);
+  color:var(--text-2);
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:1.6;
+  overscroll-behavior:none;
+  min-height:100dvh;
 }
-a { color: var(--coral); text-decoration: none; }
-a:hover { text-decoration: underline; }
-img { display: block; max-width: 100%; }
+a { color:var(--coral); text-decoration:none; }
+a:hover { text-decoration:underline; }
 
-/* ══════════════════════════════════════════════
-   APP SHELL
-   ══════════════════════════════════════════════ */
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  position: relative;
-}
+/* ── APP SHELL ── */
+.app-shell { display:flex; flex-direction:column; height:100dvh; }
 
-/* TOP HEADER */
 .app-header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  height: var(--nav-h);
-  background: var(--ink);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 12px;
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  height:var(--nav-h);
+  background:rgba(13,13,12,.92);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 16px; gap:10px;
 }
 .app-logo {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--cream);
-  letter-spacing: -0.3px;
-  flex: 1;
+  font-family:var(--font-serif);
+  font-size:1.2rem; font-weight:700;
+  color:var(--text-1); flex:1;
 }
-.app-logo span { color: var(--coral); }
-.header-date {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--ink-4);
-  letter-spacing: 0.3px;
+.app-logo span { color:var(--coral); }
+.header-live {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.68rem; color:var(--text-4);
 }
-.header-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--coral);
-  animation: pulse 2s ease-in-out infinite;
+.live-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--coral);
+  animation:livepulse 2s ease-in-out infinite;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .5; transform: scale(.85); }
+@keyframes livepulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:.4; transform:scale(.8); }
 }
 
-/* TAB SWITCHER (in header) */
 .tab-switcher {
-  display: flex;
-  background: rgba(255,255,255,.08);
-  border-radius: var(--radius-full);
-  padding: 3px;
-  gap: 2px;
+  display:flex; background:var(--bg-4);
+  border:1px solid var(--border);
+  border-radius:var(--r-full);
+  padding:3px; gap:2px;
 }
 .tab-btn {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--ink-4);
-  padding: 5px 14px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: background .18s, color .18s;
-  white-space: nowrap;
+  font-family:var(--font-sans); font-size:0.72rem; font-weight:600;
+  border:none; background:transparent; color:var(--text-3);
+  padding:5px 14px; border-radius:var(--r-full);
+  cursor:pointer; transition:background .15s,color .15s;
+  white-space:nowrap;
 }
-.tab-btn.active {
-  background: var(--coral);
-  color: white;
-}
+.tab-btn.active { background:var(--coral); color:#fff; }
 
-/* SCROLLABLE AREA */
-.app-body {
-  flex: 1;
-  margin-top: var(--nav-h);
-  overflow: hidden;
-  position: relative;
-}
+.app-body { flex:1; margin-top:var(--nav-h); overflow:hidden; position:relative; }
 
-/* PAGES */
 .page {
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 24px;
-  -webkit-overflow-scrolling: touch;
-  transition: opacity .22s ease, transform .22s ease;
+  position:absolute; inset:0;
+  overflow-y:auto; overflow-x:hidden;
+  padding-bottom:24px;
+  -webkit-overflow-scrolling:touch;
+  transition:opacity .2s,transform .2s;
 }
-.page:not(.active) {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(24px);
-}
-.page.active { opacity: 1; transform: translateX(0); }
+.page:not(.active) { opacity:0; pointer-events:none; transform:translateX(20px); }
+.page.active { opacity:1; transform:translateX(0); }
 
-/* CONTENT WIDTH */
-.content-wrap {
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: 0 20px;
+.wrap { max-width:var(--max-w); margin:0 auto; padding:0 16px; }
+
+/* ── TYPOGRAFIE ── */
+.serif { font-family:var(--font-serif); }
+.label-up {
+  font-size:0.65rem; font-weight:700;
+  letter-spacing:1.8px; text-transform:uppercase;
 }
 
-/* ══════════════════════════════════════════════
-   TYPOGRAFIE
-   ══════════════════════════════════════════════ */
-.display-xl {
-  font-family: var(--font-serif);
-  font-size: clamp(1.8rem, 5vw, 2.6rem);
-  font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  color: var(--ink);
+/* ── SECTIE DIVIDER ── */
+.sec {
+  display:flex; align-items:center; gap:10px;
+  margin:28px 0 16px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
 }
-.display-lg {
-  font-family: var(--font-serif);
-  font-size: clamp(1.4rem, 4vw, 2rem);
-  font-weight: 500;
-  line-height: 1.18;
-  letter-spacing: -0.02em;
+.sec h2 {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:500; color:var(--text-1);
 }
-.label-caps {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
+.sec-nr {
+  font-size:0.62rem; font-weight:700;
+  color:#fff; background:var(--coral);
+  padding:2px 8px; border-radius:var(--r-full);
+  flex-shrink:0;
 }
+.sec::after { content:''; flex:1; height:1px; background:var(--border); }
 
-/* ══════════════════════════════════════════════
-   SECTIE-DIVIDER
-   ══════════════════════════════════════════════ */
-.section-divider {
-  margin: 32px 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.section-divider h2 {
-  font-family: var(--font-serif);
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--ink);
-}
-.section-nr {
-  font-family: var(--font-sans);
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--cream);
-  background: var(--coral);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-.section-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--cream-3);
-}
-
-/* ══════════════════════════════════════════════
-   HERO NIEUWS
-   ══════════════════════════════════════════════ */
+/* ── HERO NIEUWS ── */
 .hero {
-  background: var(--ink);
-  padding: 28px 20px 24px;
-  position: relative;
-  overflow: hidden;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  padding:24px 16px 20px;
+  position:relative; overflow:hidden;
 }
 .hero::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -40px;
-  width: 280px; height: 280px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(217,119,87,.15) 0%, transparent 70%);
-  pointer-events: none;
+  content:''; position:absolute;
+  top:-80px; right:-60px;
+  width:300px; height:300px; border-radius:50%;
+  background:radial-gradient(circle,var(--coral-glow) 0%,transparent 70%);
+  pointer-events:none;
 }
-.hero-inner { max-width: var(--max-w); margin: 0 auto; position: relative; }
+.hero-inner { max-width:var(--max-w); margin:0 auto; position:relative; }
 .hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+  display:flex; align-items:center; gap:8px; margin-bottom:12px;
 }
-.eyebrow-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--coral);
-}
-.eyebrow-pipe { color: var(--ink-3); font-size: 0.75rem; }
-.eyebrow-time { color: var(--ink-3); font-size: 0.75rem; }
+.hero-eyebrow .label-up { color:var(--coral); }
+.hero-sep { color:var(--text-4); font-size:0.75rem; }
+.hero-time { font-size:0.75rem; color:var(--text-4); }
 .hero-kop {
-  font-family: var(--font-serif);
-  font-size: clamp(1.6rem, 5vw, 2.4rem);
-  font-weight: 700;
-  line-height: 1.12;
-  color: var(--cream);
-  margin-bottom: 8px;
+  font-family:var(--font-serif);
+  font-size:clamp(1.55rem,5vw,2.3rem);
+  font-weight:700; line-height:1.1;
+  color:var(--text-1); margin-bottom:8px;
 }
-.hero-subtitel {
-  font-size: 1rem;
-  font-style: italic;
-  color: var(--ink-4);
-  margin-bottom: 16px;
-  line-height: 1.5;
+.hero-sub {
+  font-size:0.97rem; font-style:italic;
+  color:var(--text-3); margin-bottom:14px; line-height:1.5;
 }
 .hero-lede {
-  font-size: 0.97rem;
-  line-height: 1.75;
-  color: #C8C3BC;
-  border-left: 3px solid var(--coral);
-  padding-left: 14px;
-  margin-bottom: 20px;
+  font-size:0.95rem; line-height:1.8;
+  color:var(--text-2);
+  border-left:3px solid var(--coral);
+  padding-left:14px; margin-bottom:18px;
 }
-.hero-stats {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.stat-item {
-  font-size: 0.72rem;
-  color: var(--ink-3);
-}
-.stat-item strong { color: var(--ink-4); font-weight: 600; }
+.hero-stats { display:flex; gap:18px; flex-wrap:wrap; }
+.stat { font-size:0.7rem; color:var(--text-4); }
+.stat strong { color:var(--text-3); }
 
-/* KAART BLOK */
-.kaart-blok {
-  margin: 0 0 8px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--cream-3);
-  box-shadow: var(--shadow-sm);
+/* ── KAART ── */
+.kaart-wrap {
+  border-radius:var(--r-md); overflow:hidden;
+  border:1px solid var(--border); margin-bottom:4px;
+  box-shadow:var(--sh);
 }
-#overzichtskaart { height: 220px; background: var(--cream-2); }
-.kaart-caption {
-  background: var(--cream-2);
-  padding: 6px 12px;
-  font-size: 0.7rem;
-  color: var(--ink-4);
-  border-top: 1px solid var(--cream-3);
+#overzichtskaart { height:210px; background:var(--bg-3); }
+.kaart-cap {
+  background:var(--bg-3); padding:5px 12px;
+  font-size:0.68rem; color:var(--text-4);
+  border-top:1px solid var(--border);
 }
 
-/* ══════════════════════════════════════════════
-   SECTOR KAARTEN
-   ══════════════════════════════════════════════ */
-.sectoren-lijst { display: flex; flex-direction: column; gap: 12px; }
-
-.sector-kaart {
-  background: white;
-  border: 1px solid var(--cream-3);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow .15s;
+/* ── MEDIA THUMBS ── */
+.media-thumb {
+  display:block; position:relative;
+  background-size:cover; background-position:center;
+  border-radius:var(--r-sm); overflow:hidden;
+  cursor:pointer;
 }
-.sector-kaart:hover { box-shadow: var(--shadow-md); }
-
-.sector-accent {
-  height: 3px;
-  width: 100%;
+.media-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 55%);
+  opacity:0; transition:opacity .2s;
+  display:flex; align-items:flex-end; padding:8px;
 }
-.accent-hoog { background: var(--groen); }
-.accent-middel { background: var(--geel); }
-.accent-laag { background: var(--ru-red); }
-.accent-tegenstrijdig { background: var(--ink-4); }
-
-.sector-body { padding: 16px; }
-.sector-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+.media-thumb:hover .media-overlay { opacity:1; }
+.media-meta { font-size:0.68rem; color:rgba(255,255,255,.85); line-height:1.3; }
+.media-thumb--video::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(0,0,0,.25);
 }
-.sector-naam {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 500;
-  color: var(--ink);
-}
-.betr-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: var(--radius-full);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.betr-hoog { background: var(--groen-light); color: #15803d; }
-.betr-middel { background: var(--geel-light); color: #a16207; }
-.betr-laag { background: var(--ru-light); color: #b91c1c; }
-.betr-tegenstrijdig { background: var(--cream-2); color: var(--ink-3); }
-
-.sector-samenvatting {
-  font-size: 0.9rem;
-  color: var(--ink-3);
-  line-height: 1.55;
-  margin-bottom: 12px;
+.media-play {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) translateZ(0);
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(0,0,0,.6);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.9rem; color:#fff; z-index:2;
+  backdrop-filter:blur(4px);
 }
 
-/* Feiten grid */
-.feiten-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+/* Media in sector-kaart */
+.sector-media {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+  gap:4px; margin-bottom:12px;
 }
-.feiten-vak {
-  background: var(--cream);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  border-top: 2px solid;
+.sector-media .media-thumb { height:90px; }
+
+/* Fotoreportage raster */
+.foto-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
 }
-.feiten-vak--bevestigd { border-color: var(--groen); }
-.feiten-vak--onzeker { border-color: var(--oranje); }
-.feiten-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 5px;
+.foto-grid .media-thumb { height:140px; }
+.foto-grid .media-thumb:first-child {
+  grid-column:span 2; height:200px;
 }
-.feiten-vak--bevestigd .feiten-label { color: var(--groen); }
-.feiten-vak--onzeker .feiten-label { color: var(--oranje); }
-.feiten-lijst { list-style: none; }
-.feiten-lijst li {
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: var(--ink-2);
-  padding: 3px 0 3px 9px;
-  border-left: 1px solid var(--cream-3);
-  margin-bottom: 3px;
+@media(max-width:480px) {
+  .foto-grid { grid-template-columns:repeat(2,1fr); }
+  .foto-grid .media-thumb { height:110px; }
+  .foto-grid .media-thumb:first-child { height:150px; }
 }
 
-/* Claims */
-.claims-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.claim-vak {
-  background: var(--cream);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  border-top: 2px solid;
-  font-size: 0.83rem;
-  line-height: 1.5;
-  color: var(--ink-2);
+/* ── SECTOR KAARTEN ── */
+.sectoren { display:flex; flex-direction:column; gap:10px; }
+.skaart {
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  overflow:hidden; box-shadow:var(--sh);
 }
-.claim-vak--ua { border-color: var(--ua-blue); }
-.claim-vak--ru { border-color: var(--ru-red); }
-.claim-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 5px;
-}
-.claim-vak--ua .claim-label { color: var(--ua-blue); }
-.claim-vak--ru .claim-label { color: var(--ru-red); }
-.claim-bron {
-  margin-top: 6px;
-  font-size: 0.68rem;
-  color: var(--ink-4);
-}
-.claim-bron a { color: var(--coral); font-weight: 500; }
+.skaart-accent { height:3px; }
+.acc-hoog { background:var(--groen); }
+.acc-middel { background:var(--geel); }
+.acc-laag { background:var(--ru); }
+.acc-tegenstrijdig { background:var(--text-4); }
 
-.sector-footer {
-  padding-top: 8px;
-  border-top: 1px solid var(--cream-2);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+.skaart-body { padding:14px; }
+.skaart-top {
+  display:flex; align-items:flex-start;
+  justify-content:space-between; gap:8px; margin-bottom:6px;
 }
-.footer-label { font-size: 0.65rem; color: var(--ink-4); }
+.skaart-naam {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:500; color:var(--text-1);
+}
+.betr {
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase;
+  padding:2px 8px; border-radius:var(--r-full);
+  white-space:nowrap; flex-shrink:0;
+}
+.betr-hoog { background:var(--groen-bg); color:var(--groen); }
+.betr-middel { background:var(--geel-bg); color:var(--geel); }
+.betr-laag { background:var(--ru-bg); color:var(--ru); }
+.betr-tegenstrijdig { background:var(--bg-4); color:var(--text-3); }
 
-/* ══════════════════════════════════════════════
-   CHIPS
-   ══════════════════════════════════════════════ */
+.skaart-sum {
+  font-size:0.88rem; color:var(--text-3); line-height:1.5; margin-bottom:10px;
+}
+
+.feiten-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.fvak {
+  background:var(--bg-3); border-radius:var(--r-sm);
+  padding:9px 11px; border-top:2px solid;
+}
+.fvak--ok { border-color:var(--groen); }
+.fvak--? { border-color:var(--oranje); }
+.fvak-label {
+  font-size:0.6rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; margin-bottom:4px;
+}
+.fvak--ok .fvak-label { color:var(--groen); }
+.fvak--? .fvak-label { color:var(--oranje); }
+.fvak-list { list-style:none; }
+.fvak-list li {
+  font-size:0.8rem; line-height:1.45; color:var(--text-2);
+  padding:2px 0 2px 8px; border-left:1px solid var(--border);
+  margin-bottom:3px;
+}
+
+.claims-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.cvak {
+  background:var(--bg-3); border-radius:var(--r-sm);
+  padding:9px 11px; border-top:2px solid;
+  font-size:0.81rem; line-height:1.5; color:var(--text-2);
+}
+.cvak--ua { border-color:var(--ua); }
+.cvak--ru { border-color:var(--ru); }
+.cvak-label {
+  font-size:0.58rem; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; margin-bottom:4px;
+}
+.cvak--ua .cvak-label { color:var(--ua); }
+.cvak--ru .cvak-label { color:var(--ru); }
+.cvak-bron { margin-top:5px; font-size:0.65rem; color:var(--text-4); }
+.cvak-bron a { color:var(--coral); font-weight:500; }
+
+.skaart-footer {
+  padding-top:8px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+}
+.skaart-footer-lbl { font-size:0.62rem; color:var(--text-4); }
+
+/* ── CHIPS ── */
 .chip {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: var(--cream-2);
-  border: 1px solid var(--cream-3);
-  color: var(--ink-3);
+  display:inline-block; font-size:0.65rem; font-weight:500;
+  padding:2px 7px; border-radius:var(--r-full);
+  background:var(--bg-4); border:1px solid var(--border);
+  color:var(--text-3);
 }
-.chip--ua { border-left: 3px solid var(--ua-blue); }
-.chip--ru { border-left: 3px solid var(--ru-red); }
-.chip--neutral { border-left: 3px solid var(--groen); }
+.chip--ua { border-left:3px solid var(--ua); }
+.chip--ru { border-left:3px solid var(--ru); }
+.chip--neutral { border-left:3px solid var(--groen); }
 
-/* ══════════════════════════════════════════════
-   STRATEGIE / MORGEN / SIGNALEN / KRITIEK
-   ══════════════════════════════════════════════ */
-.strategie-kaart {
-  background: linear-gradient(135deg, #1A1918 0%, #2D2B28 100%);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  color: #C8C3BC;
-  font-size: 0.97rem;
-  line-height: 1.75;
-  box-shadow: var(--shadow-md);
+/* ── KANT / IMPACT BADGES ── */
+.kbadge {
+  font-size:0.58rem; font-weight:700; letter-spacing:.5px;
+  text-transform:uppercase; padding:2px 8px; border-radius:var(--r-full);
 }
-.strategie-kaart .label-caps { color: var(--coral); margin-bottom: 10px; display: block; }
+.kbadge--ua { background:var(--ua-bg); color:var(--ua); }
+.kbadge--ru { background:var(--ru-bg); color:var(--ru); }
+.kbadge--beide { background:var(--bg-4); color:var(--text-3); }
+.impact { font-size:0.62rem; font-weight:600; padding:2px 8px; border-radius:var(--r-full); }
+.impact--hoog { background:var(--ru-bg); color:var(--ru); }
+.impact--middel { background:var(--geel-bg); color:var(--geel); }
+.impact--laag { background:var(--bg-4); color:var(--text-3); }
 
-.morgen-kaart {
-  background: white;
-  border: 1px solid var(--cream-3);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
+/* ── DIVERSE BLOKKEN ── */
+.strategie-blok {
+  background:var(--bg-3);
+  border:1px solid var(--border);
+  border-left:3px solid var(--paars);
+  border-radius:0 var(--r-md) var(--r-md) 0;
+  padding:18px; color:var(--text-2);
+  font-size:0.95rem; line-height:1.75;
+}
+.strategie-blok .label-up { color:var(--paars); display:block; margin-bottom:8px; }
+
+.morgen-wrap {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); overflow:hidden;
 }
 .morgen-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--cream-2);
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--ink-2);
+  display:flex; align-items:flex-start; gap:14px;
+  padding:13px 14px;
+  border-bottom:1px solid var(--border);
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
 }
-.morgen-item:last-child { border-bottom: none; }
+.morgen-item:last-child { border-bottom:none; }
 .morgen-num {
-  font-family: var(--font-serif);
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--coral);
-  line-height: 1;
-  min-width: 22px;
-  padding-top: 1px;
+  font-family:var(--font-serif); font-size:1.15rem;
+  font-weight:700; color:var(--coral); line-height:1; min-width:20px;
 }
 
 .signaal-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--groen-light);
-  border-left: 3px solid var(--groen);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--ink-2);
+  display:flex; gap:10px; padding:11px 14px;
+  background:var(--groen-bg); border-left:3px solid var(--groen);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
 }
-.signaal-dot { color: var(--groen); font-size: 1rem; flex-shrink: 0; padding-top: 1px; }
-
 .kritiek-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--oranje-light);
-  border-left: 3px solid var(--oranje);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--ink-2);
+  display:flex; gap:10px; padding:11px 14px;
+  background:var(--oranje-bg); border-left:3px solid var(--oranje);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
 }
-.kritiek-icon { color: var(--oranje); flex-shrink: 0; padding-top: 1px; }
-
 .ew-item {
-  padding: 12px 16px;
-  background: white;
-  border: 1px solid var(--cream-3);
-  border-left: 3px solid var(--paars);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--ink-2);
+  padding:11px 14px; background:var(--bg-2);
+  border:1px solid var(--border); border-left:3px solid var(--paars);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+}
+.menselijk-blok {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:18px;
+  font-style:italic; font-size:0.95rem;
+  line-height:1.85; color:var(--text-2);
 }
 
-.menselijk-kaart {
-  background: white;
-  border: 1px solid var(--cream-3);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  font-style: italic;
-  font-size: 0.97rem;
-  line-height: 1.8;
-  color: var(--ink-2);
-  box-shadow: var(--shadow-sm);
-}
-
-/* ══════════════════════════════════════════════
-   TECHNOLOGIE TAB — HERO
-   ══════════════════════════════════════════════ */
-.tech-hero {
-  background: linear-gradient(160deg, #1A1918 0%, #2A2724 60%, #1F1D1A 100%);
-  padding: 28px 20px 24px;
-  position: relative;
-  overflow: hidden;
-}
-.tech-hero::before {
-  content: '';
-  position: absolute;
-  top: -80px; left: -60px;
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,.12) 0%, transparent 70%);
-  pointer-events: none;
-}
-.tech-hero-inner { max-width: var(--max-w); margin: 0 auto; position: relative; }
-.tech-eyebrow {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--paars);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.tech-eyebrow::before { content: '⚙'; font-size: 0.9rem; }
-.tech-kop {
-  font-family: var(--font-serif);
-  font-size: clamp(1.5rem, 5vw, 2.2rem);
-  font-weight: 700;
-  line-height: 1.12;
-  color: var(--cream);
-  margin-bottom: 14px;
-}
-.tech-intro {
-  font-size: 0.95rem;
-  line-height: 1.75;
-  color: #C8C3BC;
-  border-left: 3px solid var(--paars);
-  padding-left: 14px;
-}
-
-/* ══════════════════════════════════════════════
-   TECHNOLOGIE CATEGORIEËN
-   ══════════════════════════════════════════════ */
-.tech-categorie { margin-bottom: 28px; }
-.tech-cat-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  background: var(--ink);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
-.tech-cat-icon { font-size: 1.3rem; }
-.tech-cat-naam {
-  font-family: var(--font-serif);
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--cream);
-  flex: 1;
-}
-.tech-cat-count {
-  font-size: 0.68rem;
-  color: var(--ink-4);
-  background: rgba(255,255,255,.08);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-.tech-cat-intro {
-  background: var(--ink-2);
-  padding: 10px 16px;
-  font-size: 0.83rem;
-  line-height: 1.6;
-  color: #9D9890;
-  font-style: italic;
-}
-.tech-ontwikkelingen {
-  border: 1px solid var(--cream-3);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  overflow: hidden;
-  background: white;
-}
-.tech-item {
-  padding: 16px;
-  border-bottom: 1px solid var(--cream-2);
-}
-.tech-item:last-child { border-bottom: none; }
-.tech-item-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.tech-item-titel {
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.3;
-}
-.tech-item-badges {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.tech-item-beschrijving {
-  font-size: 0.88rem;
-  line-height: 1.65;
-  color: var(--ink-2);
-  margin-bottom: 10px;
-}
-.tech-item-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.tech-datum {
-  font-size: 0.68rem;
-  color: var(--ink-4);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.tech-datum::before { content: '🕐'; font-size: 0.7rem; }
-
-.kant-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-.kant-ua { background: var(--ua-light); color: #1d4ed8; }
-.kant-ru { background: var(--ru-light); color: #b91c1c; }
-.kant-beide { background: var(--cream-2); color: var(--ink-3); }
-
-.impact-pip {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-.impact-hoog { background: var(--ru-light); color: #b91c1c; }
-.impact-middel { background: var(--geel-light); color: #92400e; }
-.impact-laag { background: var(--cream-2); color: var(--ink-3); }
-
-/* ══════════════════════════════════════════════
-   INNOVATIE VERGELIJKING
-   ══════════════════════════════════════════════ */
-.vergelijking-blok {
-  background: white;
-  border: 1px solid var(--cream-3);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-.vergelijking-header {
-  padding: 14px 16px;
-  background: var(--cream-2);
-  border-bottom: 1px solid var(--cream-3);
-}
-.vergelijking-header h3 {
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--ink);
-}
-.vergelijking-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.verg-kolom {
-  padding: 16px;
-  border-top: 3px solid;
-}
-.verg-kolom--ua { border-color: var(--ua-blue); border-right: 1px solid var(--cream-2); }
-.verg-kolom--ru { border-color: var(--ru-red); }
-.verg-titel {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.verg-kolom--ua .verg-titel { color: var(--ua-blue); }
-.verg-kolom--ru .verg-titel { color: var(--ru-red); }
-.verg-lijst { list-style: none; }
-.verg-lijst li {
-  font-size: 0.83rem;
-  line-height: 1.5;
-  color: var(--ink-2);
-  padding: 4px 0 4px 10px;
-  border-left: 2px solid var(--cream-3);
-  margin-bottom: 5px;
-}
-.vergelijking-conclusie {
-  padding: 16px;
-  border-top: 1px solid var(--cream-2);
-  background: var(--cream);
-  font-size: 0.88rem;
-  line-height: 1.65;
-  color: var(--ink-2);
-  font-style: italic;
-}
-
-/* TECH SIGNALEN */
-.tech-signaal {
-  padding: 12px 16px;
-  background: var(--paars-light);
-  border-left: 3px solid var(--paars);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--ink-2);
-  display: flex;
-  gap: 10px;
-}
-.tech-signaal::before { content: '◆'; color: var(--paars); flex-shrink: 0; }
-
-/* ══════════════════════════════════════════════
-   LEEG / FOOTER
-   ══════════════════════════════════════════════ */
-.leeg {
-  color: var(--ink-4);
-  font-style: italic;
-  padding: 16px 0;
-  font-size: 0.9rem;
-}
+.leeg { color:var(--text-4); font-style:italic; padding:12px 0; font-size:0.9rem; }
 
 .app-footer {
-  background: var(--ink);
-  margin: 32px -20px -24px;
-  padding: 20px 20px;
+  background:var(--bg-2); border-top:1px solid var(--border);
+  margin:32px -16px -24px; padding:18px 16px;
 }
-.footer-content {
-  max-width: var(--max-w);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.footer-title { font-family:var(--font-serif); font-size:0.95rem; font-weight:500; color:var(--text-2); }
+.footer-sub { font-size:0.7rem; color:var(--text-4); line-height:1.6; margin-top:4px; }
+
+/* ── TECH TAB ── */
+.tech-hero {
+  background:var(--bg-2); border-bottom:1px solid var(--border);
+  padding:24px 16px 20px; position:relative; overflow:hidden;
 }
-.footer-title {
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--cream);
+.tech-hero::before {
+  content:''; position:absolute; top:-80px; left:-60px;
+  width:320px; height:320px; border-radius:50%;
+  background:radial-gradient(circle,var(--paars-bg) 0%,transparent 70%);
+  pointer-events:none;
 }
-.footer-sub {
-  font-size: 0.72rem;
-  color: var(--ink-3);
-  line-height: 1.6;
+.tech-hero-inner { max-width:var(--max-w); margin:0 auto; position:relative; }
+.tech-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.tech-eyebrow .label-up { color:var(--paars); }
+.tech-kop {
+  font-family:var(--font-serif);
+  font-size:clamp(1.45rem,5vw,2.1rem);
+  font-weight:700; line-height:1.1; color:var(--text-1); margin-bottom:12px;
+}
+.tech-intro {
+  font-size:0.93rem; line-height:1.8; color:var(--text-2);
+  border-left:3px solid var(--paars); padding-left:14px;
 }
 
-/* ══════════════════════════════════════════════
-   TIJDSTEMPEL BADGE
-   ══════════════════════════════════════════════ */
-.tijdstempel {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  color: var(--ink-4);
-  background: var(--cream-2);
-  border: 1px solid var(--cream-3);
-  border-radius: var(--radius-full);
-  padding: 2px 8px;
+.tech-cat { margin-bottom:24px; }
+.tech-cat-hdr {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+  background:var(--bg-3); border:1px solid var(--border);
+  border-radius:var(--r-md) var(--r-md) 0 0;
 }
-.tijdstempel::before { content: '🕐'; font-size: 0.65rem; }
+.tech-cat-icon { font-size:1.25rem; }
+.tech-cat-naam {
+  font-family:var(--font-serif); font-size:1rem;
+  font-weight:500; color:var(--text-1); flex:1;
+}
+.tech-cat-count {
+  font-size:0.65rem; color:var(--text-4);
+  background:var(--bg-5); padding:2px 8px; border-radius:var(--r-full);
+}
+.tech-cat-intro {
+  background:var(--bg-4); border-left:1px solid var(--border);
+  border-right:1px solid var(--border);
+  padding:9px 14px; font-size:0.8rem;
+  line-height:1.6; color:var(--text-3); font-style:italic;
+}
+.tech-items {
+  border:1px solid var(--border); border-top:none;
+  border-radius:0 0 var(--r-md) var(--r-md); overflow:hidden;
+  background:var(--bg-2);
+}
+.tech-item {
+  padding:14px; border-bottom:1px solid var(--border);
+}
+.tech-item:last-child { border-bottom:none; }
+.tech-item-top {
+  display:flex; align-items:flex-start;
+  justify-content:space-between; gap:8px; margin-bottom:6px;
+}
+.tech-item-titel {
+  font-family:var(--font-serif); font-size:0.98rem;
+  font-weight:500; color:var(--text-1); line-height:1.3;
+}
+.tech-badges { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; flex-shrink:0; }
+.tech-desc {
+  font-size:0.86rem; line-height:1.65; color:var(--text-2); margin-bottom:8px;
+}
+.tech-item-media { margin-bottom:8px; }
+.tech-item-media .media-thumb { height:160px; width:100%; border-radius:var(--r-sm); }
+.tech-foot {
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+}
+.tech-datum {
+  font-size:0.65rem; color:var(--text-4);
+  display:flex; align-items:center; gap:3px;
+}
+.tech-datum::before { content:'🕐'; font-size:0.62rem; }
 
-/* ══════════════════════════════════════════════
-   RESPONSIVE
-   ══════════════════════════════════════════════ */
-@media (max-width: 560px) {
-  :root { --nav-h: 52px; }
-  .feiten-grid { grid-template-columns: 1fr; }
-  .claims-grid { grid-template-columns: 1fr; }
-  .vergelijking-grid { grid-template-columns: 1fr; }
-  .verg-kolom--ua { border-right: none; border-bottom: 1px solid var(--cream-2); }
-  .tab-btn { padding: 5px 10px; font-size: 0.7rem; }
-  .app-logo { font-size: 1.1rem; }
+.vergelijk {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--r-md); overflow:hidden;
+}
+.vergelijk-hdr {
+  padding:12px 14px; background:var(--bg-3);
+  border-bottom:1px solid var(--border);
+  font-family:var(--font-serif); font-size:0.97rem;
+  font-weight:500; color:var(--text-1);
+}
+.vergelijk-grid { display:grid; grid-template-columns:1fr 1fr; }
+.vkol { padding:14px; border-top:2px solid; }
+.vkol--ua { border-color:var(--ua); border-right:1px solid var(--border); }
+.vkol--ru { border-color:var(--ru); }
+.vkol-titel { font-size:0.62rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.vkol--ua .vkol-titel { color:var(--ua); }
+.vkol--ru .vkol-titel { color:var(--ru); }
+.vkol-list { list-style:none; }
+.vkol-list li {
+  font-size:0.81rem; line-height:1.5; color:var(--text-2);
+  padding:3px 0 3px 9px; border-left:1px solid var(--border); margin-bottom:4px;
+}
+.vergelijk-concl {
+  padding:14px; border-top:1px solid var(--border);
+  background:var(--bg-3); font-size:0.86rem;
+  line-height:1.65; color:var(--text-2); font-style:italic;
+}
+.tech-sig {
+  padding:11px 14px 11px 40px; background:var(--paars-bg);
+  border-left:3px solid var(--paars);
+  border-radius:0 var(--r-sm) var(--r-sm) 0; margin-bottom:7px;
+  font-size:0.9rem; line-height:1.55; color:var(--text-2);
+  position:relative;
+}
+.tech-sig::before { content:'◆'; color:var(--paars); position:absolute; left:13px; top:12px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px) {
+  .feiten-grid { grid-template-columns:1fr; }
+  .claims-grid { grid-template-columns:1fr; }
+  .vergelijk-grid { grid-template-columns:1fr; }
+  .vkol--ua { border-right:none; border-bottom:1px solid var(--border); }
+  .tab-btn { padding:5px 10px; font-size:0.68rem; }
+  .hero-kop { font-size:1.5rem; }
 }
 </style>
 </head>
 <body>
-
 <div class="app-shell">
 
-  <!-- ── HEADER ── -->
-  <header class="app-header">
-    <div class="app-logo">Frontlijn<span>.</span></div>
-    <div class="header-date">2026-05-15</div>
-    <div class="header-dot"></div>
-    <div class="tab-switcher">
-      <button class="tab-btn active" onclick="showTab('nieuws', this)">Nieuws</button>
-      <button class="tab-btn" onclick="showTab('tech', this)">Technologie</button>
+<!-- HEADER -->
+<header class="app-header">
+  <div class="app-logo">Frontlijn<span>.</span></div>
+  <div class="header-live">
+    <div class="live-dot"></div>
+    <span>2026-05-15</span>
+  </div>
+  <div class="tab-switcher">
+    <button class="tab-btn active" onclick="showTab('nieuws',this)">Nieuws</button>
+    <button class="tab-btn" onclick="showTab('tech',this)">Technologie</button>
+  </div>
+</header>
+
+<div class="app-body">
+
+<!-- ═══════════════ TAB 1 — NIEUWS ═══════════════ -->
+<div id="page-nieuws" class="page active">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        <span class="label-up">Frontlijn OSINT</span>
+        <span class="hero-sep">·</span>
+        <span class="hero-time">2026-05-15 — 15 mei 20:36</span>
+      </div>
+      <h1 class="hero-kop">Drone-dreiging verstoort openbaar vervoer Helsinki te midden van frontescalatie</h1>
+      <div class="hero-sub">Finse hoofdstad annuleert bussen, terwijl gevechten in Charkov en Sumy intensiveren en Kiev dodental bijstelt.</div>
+      <p class="hero-lede">De schaduw van de drone-oorlog reikt inmiddels tot diep in Scandinavië. In de Finse hoofdstad Helsinki werden vanochtend honderden busritten geannuleerd vanwege een acute drone-dreiging, een unicum dat de groeiende psychologische en logistieke impact van het conflict op Europese infrastructuur onderstreept. Tegelijkertijd eist de conventionele oorlog zijn tol: in Kiev is het dodental van de Russische raketaanval van 14 mei opgelopen tot 24, terwijl Oekraïense eenheden de strategische Ryazan-olieraffinaderij diep in Rusland wisten te raken.</p>
+      <div class="hero-stats">
+        <span class="stat">📡 <strong>11</strong> kanalen</span>
+        <span class="stat">📨 <strong>516</strong> berichten</span>
+        <span class="stat">📍 <strong>4</strong> sectoren</span>
+        <span class="stat">📅 Oudste: 24 jun 16:26</span>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <!-- ── SCROLLABLE BODY ── -->
-  <div class="app-body">
+  <div class="wrap">
 
-    <!-- ════════════════════════════════════════
-         TAB 1 — NIEUWS
-         ════════════════════════════════════════ -->
-    <div id="page-nieuws" class="page active">
+    <!-- KAART -->
+    <div class="sec"><span class="sec-nr">01</span><h2>Overzichtskaart</h2></div>
+    <div class="kaart-wrap">
+      <div id="overzichtskaart"></div>
+      <div class="kaart-cap">Klik op een marker voor sectordetails · © OpenStreetMap</div>
+    </div>
 
-      <!-- HERO -->
-      <div class="hero">
-        <div class="hero-inner">
-          <div class="hero-eyebrow">
-            <span class="eyebrow-label">Frontlijn OSINT</span>
-            <span class="eyebrow-pipe">·</span>
-            <span class="eyebrow-time">2026-05-15
-               — laatste bericht: 15 mei 18:05
-            </span>
+    <!-- FOTOREPORTAGE -->
+    
+    <div class="sec"><span class="sec-nr">02</span><h2>Fotoreportage</h2></div>
+    <div class="foto-grid">
+      
+      
+<a href="https://t.me/Slavyangrad/164278" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn1.telesco.pe/file/AvqbBOygDX9Ui-heivHYkkIIEut4fSmbNttArNGPy5_hLjYgTv0Lro0_qFHeUzkE24PrNS9T4yvWbpS8c43n6Cli8HXeRwfunm8hZ7_KWgVAG8ka5kSs7nUwSjqCGszLm7915svSLCy-fyfWoty0pCFA5zcJKlTbSCILMAIvO24THBVCYHlIJHazJPfSl4XOZXqv5oEMTPZt5c_TudkqOCXRuA8MquhnD1cgJ_d6JcH78gwFo1rx1Um9EbmPVsa1KXTNgv5ZLfxErIKj-kAv0G4HqckOmIRSuZjD472mGs08ZQXZj1m_-ZrN2IyaIVuHCFoKrmg8hoyWqH4nXVcbYA.jpg')" title="@Slavyangrad · 15 mei 20:36">
+  <div class="media-overlay">
+    <span class="media-meta">@Slavyangrad · 15 mei 20:36</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/UkraineNow/81247" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/Hd0DgnR7XQpPHUjUUjhm92qwXapqDu-3ECcURV2QN8iOqYpc272_cE0wg26gG4uLCQ7zKqRMuDWXW-5paFJWsxt5BTS-vMGTgajCewseGYkKs7Tm_oFXSN63JIOyJcH_YPQOIXDBXTfBYAnaOdhmmU6TMcjZadNN5xR8OstPvbR5oMaOLdydfOAyp68YoO31w8Z7OKwCFWbelf9lKatEE_Bn56uS3cIEd2AJCp0bfSkkWSle_F9KbrU14AwOnOiBf4Wv8b5e0O-1Nfh-KPtYrWJHaJLFJO43VfDzqUfkvz_agcV_IUhZHpj7pYUMUALrPsQSa7pg6Ufs3aFGnpqPCQ.jpg')" title="@UkraineNow · 15 mei 19:39">
+  <div class="media-overlay">
+    <span class="media-meta">@UkraineNow · 15 mei 19:39</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/Slavyangrad/164273" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/JKMl2Zo5jaUunIoFe6K-V_1vjWJcgzaQtiusdlYBtjAtiGxQdFfUy2Z3ZTDCjmXuwy297XfbsZE6fubZRHcqSuV58-UsoDqRZQM22dt_C9poV3QQHKIkd10rzUMIpwPEf3EM8lhpoQsfgiVjNaOUi78UCmNe3XkJ9TsJ-dCuS1WbltQYTzww-mA-2UCqDrzQkJy02TLB-eXcbXZNKGkpmCOWF_YNHc2OXp-S-kJ7L6MyMf6-rtzAbq0JRU2AO3aGfYEmi2L0hqQ7tfayet-OdrUrWLhN6999FUPR_g6aOpW-Yh2I7h953l7tUdOCpcO2GRcoxyuirLlsWHQWu01xWA.jpg')" title="@Slavyangrad · 15 mei 19:36">
+  <div class="media-overlay">
+    <span class="media-meta">@Slavyangrad · 15 mei 19:36</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/two_majors/75294" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/BdA8SLtj9_JEMWwL1edoAMr77s8TnvKuKrK7M7X2bwB16GTULspZGugkGrjW73eeRaeDMaf1pPflFprKFx7hlCJcOt-sDQWImza2R4STwNMdha6lbnZbrM2Kr9cIvOwNxQ8BomezoEzEcsh-W2dKjvx60WU89ByQEWfGmCpFw7i_xdnIfS5pbryR1aHb7onY5gbIn1suL4MPCRTivgDuY7dKkvPUvL81HKKCA4q0Zq0ZcC7wpeT8gmngS1BY98_RSJuN8yQuHo9psB0YiEuVOY3R7LP7BZbo37Uq1H3nfh_uDL_el8ap0dBevtoe-0veE0fXHmNGo2HyGE4sosWsnA.jpg')" title="@two_majors · 15 mei 19:26">
+  <div class="media-overlay">
+    <span class="media-meta">@two_majors · 15 mei 19:26</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/rybar/80312" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/s2J4m7SHfBUKXILbXhhmtj5YXFrgNo5ER5ptdVNNkC4ZPeJW-S-pOSuqjxHCNFReJEVHWT2Z7YJlNUIUuBl3TiZpmhmRUElnrhjHv8awgrwQfVBYGhczDr8sZgvZkfgQYc1JmXAY5eeoxLZ59-6HZc1DfudGrhvrlNRk_I1glqDIQqnptijkDbaFn89kwUbNkuehRZZ1xTclgigwbK39N6BxMV7d_VIwdp-Uh00IORWVyFrVMNvXnb-5hrhdoLi9RVjyEYCX367bUgl8PUibmMJ_eQcCCm4QgLo7QFbZfl0xj2-jSGjClx8qaAfzNfoy0ZdnnzR8DwKqKFdigLMEgg.jpg')" title="@rybar · 15 mei 19:20">
+  <div class="media-overlay">
+    <span class="media-meta">@rybar · 15 mei 19:20</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/Slavyangrad/164266" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/r259afOwyu04c7PyrXjdHFrT3vImFKt8DUnE1IXZiLfR9dgWQgMYi0_QI1v2EoI-pNRWJhCgBmkvfGLehb95eGAXjhxCind2qJO4cxU6ocrxTQHD_9VDmjE9w4twNGxiPdVVRuSfnJSv8KdfdO9B5ncBXpYnyJ2pmETlT5_AWgTMTRRKFB9wHWbXjsAoId_Js_5IfMD8zBWV8D7qVnNz2thLLyMPK09m2ABaNRCT84qIarfD3GnBLMefICRY8-fLmMVcpjE-ed_NzQoDObCsco06WexRH8pGCCG3ukaXQ8SbyRRWpbhYR5D7huY-0y0N8_gDatUOkAql3ayZadR0QQ.jpg')" title="@Slavyangrad · 15 mei 18:53">
+  <div class="media-overlay">
+    <span class="media-meta">@Slavyangrad · 15 mei 18:53</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/wartranslated/15731" target="_blank" rel="noopener" class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/0293cc4695.mov?token=sjJD3HPG9HVikkxwMQhbe3abDObF3dJDLETwZTn4DrPhhG1HLBqOAYDEZ9vcG7u04j2a58GA_g92RmIPS8fgBetNkB7QHBCUNmkXXAXyMtT8cAldjbXvVHc726WAr6xkaQ_bdFxIab95yNyqjkXXtPM_Ctf6Kxs5AlwThU8TvlPQTp7X_U-uhVCt-67gl75HnNGp_K_o7wH8DctJPHu8bLuOpYG5hcCJ3F57hAaMFjzNfTMzvj0y811NaVr9vrgv_BY5XGnEjEIp59yfa90nwWCmDmxpQl49UpbN0muNqbfWVSqYvOJcyU96cTSZzeLi78NlyfBP3hfiQlL5cAgjDg')" title="Video · @wartranslated · 15 mei 18:50">
+  <div class="media-play">▶</div>
+  <div class="media-overlay">
+    <span class="media-meta">@wartranslated · 15 mei 18:50</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/operativnoZSU/210998" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/IsdB31lAwKiz0Qj0WS645zkfEDnU7ECXlel8eoJnUhjFMthlNH5-cChXuCgUwx3EUqpBPp2PVzmfwJYpU4S2VhBy0ar3HrDbKbM5tj2IoQc-aBYtICS2XS3sooI1A4lueNEOsTccEdDKpw7UbcyGT5JXODG2U0tZzMMmQ70gR5rGApPU2uF5D3-n37Tlhqy4W3YvRiXWvNTc6eeJ9l6PkXGlx82ZHeIEA8PrmML6o_UNxRj1SFQftFpollJFIEpUGqavtJCtuWp0siCtUbeoHu_pcedL3lvbP8XX3gfmBeP5zBx_PJ3vRQrpirlnFYUbyH3xYc53YfOFMn_Bvhd3Lw.jpg')" title="@operativnoZSU · 15 mei 18:39">
+  <div class="media-overlay">
+    <span class="media-meta">@operativnoZSU · 15 mei 18:39</span>
+  </div>
+</a>
+
+      
+      
+<a href="https://t.me/rybar/80311" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/U7-_mw8LYQ6W2KfC1jHltGUZpjjgwXGOyvoYVJbnQ-mwdq-Xa0-73mm_LmPcB41LcvugGfSGhtbE42pP5TfpeGMRFhf-DVM8sxXPvTQjQRcYw6l56qLDihIPJb3ae9x47eXa5wVX89WPjrtrkggJciDuhQBBP9a4eilEW6X8eVAUw34HLDZrxfCHaO5VQdx3pc7S8weRPRoeDZua8nJLwDPzHRI_Hsg4ojdwGIjTq2lQxiTEDYmfSoowyYRmKgDJieSrSM3y18-pUC3ldjAzg5ufYggmHu_dBbQ_ZOUNwvBk9pS2jMfdJ0ApoAfK53AgNVTUUUYMAef2cOy9IwuEnA.jpg')" title="@rybar · 15 mei 18:38">
+  <div class="media-overlay">
+    <span class="media-meta">@rybar · 15 mei 18:38</span>
+  </div>
+</a>
+
+      
+    </div>
+    
+
+    <!-- FRONTSECTOREN -->
+    <div class="sec"><span class="sec-nr">03</span><h2>Frontsectoren</h2></div>
+    
+    <div class="sectoren">
+      
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        <div class="skaart-accent acc-middel"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Charkov-grensgebied (Voltsjansk/Starytsa)</div>
+            <span class="betr betr-middel">middel</span>
           </div>
-          <h1 class="hero-kop">Oekraïne intensiveert diepe aanvallen; drone-dreiging ontregelt Fins vliegverkeer</h1>
+          <div class="skaart-sum">Russische troepen voeren de druk op ten zuiden van Voltsjansk en claimen terreinwinst, ondersteund door zware artillerie vanuit de regio Belgorod.</div>
+
           
-          <div class="hero-subtitel">Terwijl Kiev Russische bases in Jejsk en Kaspisk bestookt, waarschuwt Zelenski voor een nieuw offensief vanuit Belarus</div>
+
           
-          <p class="hero-lede">De oorlog in Oekraïne verspreidt zich in toenemende mate buiten de directe frontlijnen, met een opvallende toename van Oekraïense aanvallen op Russische militaire infrastructuur in de diepe achterhoede. Tegelijkertijd nemen de geopolitieke spanningen in de bredere regio toe: een drone-dreiging legde het vliegverkeer rond Helsinki urenlang plat. Terwijl de strijd op de grond zich concentreert op incrementele Russische terreinwinst in de oostelijke sectoren, waarschuwt de Oekraïense president Zelenski voor mogelijke nieuwe Russische operaties vanuit Belarus richting de regio Kiev of een NAVO-lidstaat.</p>
-          <div class="hero-stats">
-            <span class="stat-item">📡 <strong>11</strong> kanalen</span>
-            <span class="stat-item">📨 <strong>344</strong> berichten</span>
-            <span class="stat-item">📍 <strong>5</strong> sectoren</span>
-            <span class="stat-item">📅 Oudste bericht: 24 jun 16:26</span>
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Inzet van Russische 2S5 Hyacinth-S langeafstandsartillerie vanuit het grensgebied van Belgorod richting Charkov.</li><li>Gevangenneming van een Colombiaanse strijder (William Andres Gallego Orozco) door het Russische 7e Gemotoriseerde Geweerregiment nabij Starytsa.</li></ul>
+            </div>
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>Russische inname van de nederzetting Chaykovka ten zuiden van de rivier Volchya (claim Rybar).</li></ul>
+            </div>
+            
           </div>
+          
+
+          
+          <div class="claims-grid">
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              Succesvolle opmars in de Burluk-richting en het afslaan van Oekraïense tegenaanvallen.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/rybar" target="_blank">@rybar</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--ru">@rybar</span><span class="chip chip--ru">@two_majors</span><span class="chip chip--ru">@wargonzo</span>
+          </div>
+          
         </div>
       </div>
-
-      <div class="content-wrap">
-
-        <!-- KAART -->
-        <div class="section-divider"><span class="section-nr">01</span><h2>Overzichtskaart</h2></div>
-        <div class="kaart-blok">
-          <div id="overzichtskaart"></div>
-          <div class="kaart-caption">Klik op marker voor details · © OpenStreetMap-bijdragers</div>
-        </div>
-
-        <!-- FRONTSECTOREN -->
-        <div class="section-divider"><span class="section-nr">02</span><h2>Frontsectoren</h2></div>
+      
+      
+      
+      
         
-        <div class="sectoren-lijst">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        <div class="skaart-accent acc-hoog"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Sumy (Hrabovske)</div>
+            <span class="betr betr-hoog">hoog</span>
+          </div>
+          <div class="skaart-sum">Het noordelijke front breidt zich uit met bevestigde gevechten en Oekraïense verliezen in de regio Sumy.</div>
+
           
-          <div class="sector-kaart">
-            <div class="sector-accent accent-middel"></div>
-            <div class="sector-body">
-              <div class="sector-top">
-                <div class="sector-naam">Jejsk & Kaspisk (Russisch grondgebied)</div>
-                <span class="betr-badge betr-middel">
-                  middel
-                </span>
-              </div>
-              <div class="sector-samenvatting">Oekraïne voert grootschalige aanvallen uit op militaire doelen diep in Rusland, resulterend in aanzienlijke schade aan luchtvaart- en maritieme middelen.</div>
 
-              
-              <div class="feiten-grid">
-                
-                <div class="feiten-vak feiten-vak--bevestigd">
-                  <div class="feiten-label">✓ Bevestigd</div>
-                  <ul class="feiten-lijst">
-                    <li>Een zware explosie in de havenstad Kaspisk heeft geleid tot tientallen Russische slachtoffers en mogelijke schade aan schepen.</li>
-                  </ul>
-                </div>
-                
-                
-                <div class="feiten-vak feiten-vak--onzeker">
-                  <div class="feiten-label">? Onzeker</div>
-                  <ul class="feiten-lijst">
-                    <li>De Oekraïense Special Boat Service claimt 55 aanvallen op 23 doelen in Jejsk, waarbij onder meer een Be-200 vliegtuig, een Ka-27 helikopter en luchtverdedigingssystemen zouden zijn vernietigd (claim Oekraïne).</li>
-                  </ul>
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="claims-grid">
-                
-                <div class="claim-vak claim-vak--ua">
-                  <div class="claim-label">🇺🇦 Oekraïne claimt</div>
-                  Succesvolle vernietiging van meerdere hoogwaardige Russische militaire doelen in Jejsk door speciale eenheden.
-                  
-                  <div class="claim-bron">Bron:
-                    
-                      <a href="https://t.me/s/operativnoZSU" target="_blank" rel="noopener">@operativnoZSU</a>
-                    
-                  </div>
-                  
-                </div>
-                
-                
-              </div>
-              
-
-              
-              <div class="sector-footer">
-                <span class="footer-label">Bronnen:</span>
-                <span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--neutral">@wartranslated</span>
-              </div>
-              
+          
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Gevangenneming van 13 Oekraïense militairen in Hrabovske, bevestigd door de Oekraïense president.</li></ul>
             </div>
-          </div>
-          
-          <div class="sector-kaart">
-            <div class="sector-accent accent-hoog"></div>
-            <div class="sector-body">
-              <div class="sector-top">
-                <div class="sector-naam">Kinburn-schiereiland & Cherson</div>
-                <span class="betr-badge betr-hoog">
-                  hoog
-                </span>
-              </div>
-              <div class="sector-samenvatting">Intensivering van asymmetrische aanvallen door Oekraïne met behulp van maritieme drones, terwijl Russische troepen humanitaire missies onder vuur nemen.</div>
-
-              
-              <div class="feiten-grid">
-                
-                <div class="feiten-vak feiten-vak--bevestigd">
-                  <div class="feiten-label">✓ Bevestigd</div>
-                  <ul class="feiten-lijst">
-                    <li>Oekraïense eenheden zetten onbemande oppervlaktevaartuigen (USV's) in voor aanvallen op Russische posities op het Kinburn-schiereiland.</li>
-                  </ul>
-                </div>
-                
-                
-                <div class="feiten-vak feiten-vak--onzeker">
-                  <div class="feiten-label">? Onzeker</div>
-                  <ul class="feiten-lijst">
-                    <li>Russische troepen hebben voertuigen van het VN-Bureau voor de Coördinatie van Humanitaire Aangelegenheden (OCHA) aangevallen met FPV-drones (claim neutrale bron).</li>
-                  </ul>
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="claims-grid">
-                
-                
-                <div class="claim-vak claim-vak--ru">
-                  <div class="claim-label">🇷🇺 Rusland claimt</div>
-                  Oekraïne lanceert maritieme drones vanuit havens in het stroomgebied van de Zuidelijke Boeg om Russische posities te bestoken.
-                  
-                  <div class="claim-bron">Bron:
-                    
-                      <a href="https://t.me/s/two_majors" target="_blank" rel="noopener">@two_majors</a>
-                    
-                  </div>
-                  
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="sector-footer">
-                <span class="footer-label">Bronnen:</span>
-                <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ru">@two_majors</span>
-              </div>
-              
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>Grootschalige vernietiging van Russische eenheden op afstand door Oekraïense artillerie en drones in deze specifieke sector.</li></ul>
             </div>
+            
           </div>
           
-          <div class="sector-kaart">
-            <div class="sector-accent accent-middel"></div>
-            <div class="sector-body">
-              <div class="sector-top">
-                <div class="sector-naam">Charkov-as & Belgorod</div>
-                <span class="betr-badge betr-middel">
-                  middel
-                </span>
-              </div>
-              <div class="sector-samenvatting">Aanhoudende zware gevechten en artillerieduels langs de grens, waarbij Rusland claimt nieuwe dorpen te hebben ingenomen.</div>
 
-              
-              <div class="feiten-grid">
-                
-                <div class="feiten-vak feiten-vak--bevestigd">
-                  <div class="feiten-label">✓ Bevestigd</div>
-                  <ul class="feiten-lijst">
-                    <li>Het Russische 29e Artillerieregiment zet 2S5 Hyacinth-houwitsers in vanuit de regio Belgorod richting Charkov.</li>
-                  </ul>
+          
+          <div class="claims-grid">
+            
+            <div class="cvak cvak--ua">
+              <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
+              Oekraïense troepen hebben de vijand op afstand zware verliezen toegebracht met artillerie en drones.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/UkraineNow" target="_blank">@UkraineNow</a>
                 </div>
-                
-                
-                <div class="feiten-vak feiten-vak--onzeker">
-                  <div class="feiten-label">? Onzeker</div>
-                  <ul class="feiten-lijst">
-                    <li>De Russische troepengroep 'Noord' claimt de verovering van het dorp Chaikovka op de Oekraïense 159e Brigade (claim Rusland).</li>
-                  </ul>
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="claims-grid">
-                
-                
-                <div class="claim-vak claim-vak--ru">
-                  <div class="claim-label">🇷🇺 Rusland claimt</div>
-                  Verovering van Chaikovka en succesvolle uitschakeling van buitenlandse strijders nabij Starytsa eind april.
-                  
-                  <div class="claim-bron">Bron:
-                    
-                      <a href="https://t.me/s/Slavyangrad" target="_blank" rel="noopener">@Slavyangrad</a>
-                    
-                  </div>
-                  
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="sector-footer">
-                <span class="footer-label">Bronnen:</span>
-                <span class="chip chip--ru">@wargonzo</span><span class="chip chip--ru">@Slavyangrad</span><span class="chip chip--ru">@rybar</span><span class="chip chip--ru">@two_majors</span>
-              </div>
-              
             </div>
+            
+            
           </div>
           
-          <div class="sector-kaart">
-            <div class="sector-accent accent-laag"></div>
-            <div class="sector-body">
-              <div class="sector-top">
-                <div class="sector-naam">Zaporizja (Charyvne)</div>
-                <span class="betr-badge betr-laag">
-                  laag
-                </span>
-              </div>
-              <div class="sector-samenvatting">Russische eenheden claimen een lokale doorbraak en de inname van een nederzetting in de zuidelijke sector.</div>
 
-              
-              <div class="feiten-grid">
-                
-                
-                <div class="feiten-vak feiten-vak--onzeker">
-                  <div class="feiten-label">? Onzeker</div>
-                  <ul class="feiten-lijst">
-                    <li>De Russische 38e Gemotoriseerde Brigade claimt de volledige controle over het dorp Charyvne en de vernietiging van een Oekraïense compagnie (claim Rusland).</li>
-                  </ul>
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="claims-grid">
-                
-                
-                <div class="claim-vak claim-vak--ru">
-                  <div class="claim-label">🇷🇺 Rusland claimt</div>
-                  Charyvne is bevrijd en zware verliezen zijn toegebracht aan de Oekraïense 225e Brigade.
-                  
-                  <div class="claim-bron">Bron:
-                    
-                      <a href="https://t.me/s/two_majors" target="_blank" rel="noopener">@two_majors</a>
-                    
-                  </div>
-                  
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="sector-footer">
-                <span class="footer-label">Bronnen:</span>
-                <span class="chip chip--ru">@Slavyangrad</span><span class="chip chip--ru">@two_majors</span>
-              </div>
-              
-            </div>
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--ua">@UkraineNow</span>
           </div>
           
-          <div class="sector-kaart">
-            <div class="sector-accent accent-middel"></div>
-            <div class="sector-body">
-              <div class="sector-top">
-                <div class="sector-naam">Sumy Grensgebied (Hrabovske)</div>
-                <span class="betr-badge betr-middel">
-                  middel
-                </span>
-              </div>
-              <div class="sector-samenvatting">Grensincidenten leiden tot Oekraïense krijgsgevangenen, ondanks beweringen van succesvolle artillerie-afschrikking.</div>
-
-              
-              <div class="feiten-grid">
-                
-                
-                <div class="feiten-vak feiten-vak--onzeker">
-                  <div class="feiten-label">? Onzeker</div>
-                  <ul class="feiten-lijst">
-                    <li>Dertien Oekraïense militairen zijn krijgsgevangen genomen tijdens gevechten in Hrabovske (claim Oekraïne).</li>
-                  </ul>
-                </div>
-                
-              </div>
-              
-
-              
-              <div class="claims-grid">
-                
-                <div class="claim-vak claim-vak--ua">
-                  <div class="claim-label">🇺🇦 Oekraïne claimt</div>
-                  Ondanks de gevangenneming van 13 soldaten, hebben Oekraïense troepen de vijand op afstand zware verliezen toegebracht met artillerie en drones.
-                  
-                  <div class="claim-bron">Bron:
-                    
-                      <a href="https://t.me/s/UkraineNow" target="_blank" rel="noopener">@UkraineNow</a>
-                    
-                  </div>
-                  
-                </div>
-                
-                
-              </div>
-              
-
-              
-              <div class="sector-footer">
-                <span class="footer-label">Bronnen:</span>
-                <span class="chip chip--ua">@UkraineNow</span>
-              </div>
-              
-            </div>
-          </div>
-          
-        </div>
-        
-
-        <!-- STRATEGISCHE CONTEXT -->
-        <div class="section-divider"><span class="section-nr">03</span><h2>Strategische context</h2></div>
-        
-        <div class="strategie-kaart">
-          <span class="label-caps">Analytische duiding</span>
-          De focus van het conflict verschuift deels van een puur positionele loopgravenoorlog naar asymmetrische en diepe aanvallen. Oekraïne probeert de Russische lucht- en zeemacht te degraderen ver achter het front, terwijl Rusland de druk op de noordelijke grensregio's opvoert en de dreiging vanuit Belarus inzet om Oekraïense reserves te binden. De verstoring van het Finse luchtruim illustreert hoe de inzet van langeafstandsdrones steeds vaker leidt tot spillover-effecten in NAVO-grondgebied.
-        </div>
-        
-
-        <!-- MORGEN VERWACHT -->
-        <div class="section-divider"><span class="section-nr">04</span><h2>Kijk morgen naar…</h2></div>
-        
-        <div class="morgen-kaart">
-          
-          <div class="morgen-item">
-            <div class="morgen-num">1</div>
-            <div>Verhoogde staat van paraatheid in Kiev vanwege inlichtingen over op handen zijnde Russische raket- en droneaanvallen op politieke en militaire besluitvormingscentra.</div>
-          </div>
-          
-          <div class="morgen-item">
-            <div class="morgen-num">2</div>
-            <div>Verdere inzet van Oekraïense maritieme drones (USV's) rond het Kinburn-schiereiland en de Zwarte Zeekust.</div>
-          </div>
-          
-          <div class="morgen-item">
-            <div class="morgen-num">3</div>
-            <div>Mogelijke nieuwe Russische infanterie-aanvallen in de regio Charkov om de geclaimde inname van Chaikovka te consolideren.</div>
-          </div>
-          
-        </div>
-        
-
-        <!-- TECHNOLOGIE & EW -->
-        <div class="section-divider"><span class="section-nr">05</span><h2>Technologie &amp; EW</h2></div>
-        
-          
-          <div class="ew-item">Oekraïne zet onbemande oppervlaktevaartuigen (USV's) in die zijn uitgerust met 'Shmel' vlammenwerpers voor tactische kustbombardementen (wartranslated).</div>
-          
-          <div class="ew-item">Rusland introduceert de 'Hornet' kamikaze-drone, een vliegtuigmodel van schuim en plastic met een spanwijdte van twee meter, ontworpen voor aanvallen in de diepe achterhoede (two_majors).</div>
-          
-        
-
-        <!-- MENSELIJKE FACTOR -->
-        <div class="section-divider"><span class="section-nr">06</span><h2>De Menselijke Factor</h2></div>
-        <div class="menselijk-kaart">Verhalen van gevangengenomen Russische soldaten schetsen een grimmig beeld van de realiteit aan het front, met expliciete meldingen van achtergelaten lijken, een totaal gebrek aan medische evacuatie en corruptie onder commandanten. Velen geven aan dat zij het contract tekenden voor amnestie, maar nu liever in de gevangenis zouden zitten. Dit staat in schril contrast met de geromantiseerde beelden van Russische staatsmedia, die de nadruk leggen op de kameraadschap rond artilleriestukken en triviale ontmoetingen met lokale fauna om een gevoel van normaliteit en controle te creëren.</div>
-
-        <!-- SIGNALEN -->
-        <div class="section-divider"><span class="section-nr">07</span><h2>Signalen</h2></div>
-        
-          
-          <div class="signaal-item"><div class="signaal-dot">⬥</div><div>Oekraïne innoveert tactisch door maritieme drones (USV's) niet langer uitsluitend in te zetten tegen strategische doelen op zee, maar ook voor directe vuursteun tegen kustposities.</div></div>
-          
-        
-
-        <!-- BRONNENKRITIEK -->
-        <div class="section-divider"><span class="section-nr">08</span><h2>Bronnenkritiek</h2></div>
-        
-          
-          <div class="kritiek-item"><div class="kritiek-icon">⚠</div><div>Het Russische kanaal 'wargonzo' fungeert expliciet als doorgeefluik voor staatszender Channel One, waarbij de inzet van artillerie zwaar wordt geromantiseerd en de focus ligt op de 'heldhaftigheid' van de bemanning in plaats van tactische realiteiten.</div></div>
-          
-          <div class="kritiek-item"><div class="kritiek-icon">⚠</div><div>Oekraïense bronnen zoals 'operativnoZSU' gebruiken systematisch denigrerende taal ('rashists', 'katsapolyot') bij het rapporteren van successen, wat de objectiviteit van hun verliescijfers vertroebelt.</div></div>
-          
-        
-
-        <!-- FOOTER -->
-        <footer class="app-footer">
-          <div class="footer-content">
-            <div class="footer-title">Frontlijn — Dagelijkse OSINT-briefing</div>
-            <div class="footer-sub">
-              Uitsluitend gebaseerd op openbaar beschikbare informatie.<br>
-              Geen officiële inlichtingen. Verifieer altijd onafhankelijk.<br>
-              Analyse: Gemini 3.1 Pro Preview · Gegenereerd: 15-05-2026 18:10
-            </div>
-          </div>
-        </footer>
-
-      </div><!-- /content-wrap -->
-    </div><!-- /page-nieuws -->
-
-
-    <!-- ════════════════════════════════════════
-         TAB 2 — TECHNOLOGIE
-         ════════════════════════════════════════ -->
-    <div id="page-tech" class="page">
-
-      <!-- TECH HERO -->
-      <div class="tech-hero">
-        <div class="tech-hero-inner">
-          <div class="tech-eyebrow">Technologische Innovatie · 2026-05-15</div>
-          <h1 class="tech-kop">Oorlogsvoering op Afstand: Autonome Zwermen en Maritieme Vlammenwerpers</h1>
-          <p class="tech-intro">Het technologische landschap van het conflict wordt momenteel gedomineerd door een ongekende schaalvergroting van onbemande systemen en diepe precisie-aanvallen. We zien een opmerkelijke evolutie waarbij maritieme drones (USV's) niet langer uitsluitend voor anti-scheepsoperaties worden gebruikt, maar worden uitgerust met infanteriewapens voor kustbombardementen. Tegelijkertijd bereikt de inzet van langeafstandskamikazedrones een verzadigingspunt, waarbij massale zwermen de Russische luchtafweer overbelasten en zelfs het luchtruim van buurlanden zoals Finland ontregelen. Op tactisch niveau dicteren FPV-drones de overlevingskansen van de infanterie, wat leidt tot een verlammend psychologisch effect op de grondtroepen.</p>
         </div>
       </div>
+      
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        <div class="skaart-accent acc-laag"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Zaporizja (Vozdvizhevka/Charyvne)</div>
+            <span class="betr betr-laag">laag</span>
+          </div>
+          <div class="skaart-sum">Russische eenheden claimen tactische vooruitgang in de zuidelijke sector, met specifieke focus op bosstroken en kleine nederzettingen.</div>
 
-      <div class="content-wrap">
+          
 
-        <!-- CATEGORIEËN -->
-        
-        
-        <div class="section-divider">
-          <span class="section-nr">01</span>
-          <h2>🚁 FPV-drones & Zwermtactiek</h2>
-        </div>
-        <div class="tech-categorie">
-          <div class="tech-cat-header">
-            <span class="tech-cat-icon">🚁</span>
-            <span class="tech-cat-naam">FPV-drones & Zwermtactiek</span>
-            <span class="tech-cat-count">2 systemen</span>
-          </div>
-          <div class="tech-cat-intro">Tactische FPV-drones en quadcopters vormen de ruggengraat van de frontlinie-operaties, waarbij ze fungeren als precisie-artillerie voor de infanterie. De schaal van inzet is geëvolueerd van geïsoleerde aanvallen naar gecoördineerde zwermtactieken die logistiek en troepenverplaatsingen onmogelijk maken.</div>
-          <div class="tech-ontwikkelingen">
+          
+          <div class="feiten-grid">
             
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Gecoördineerde Quadcopter- en FPV-jacht</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ru">Rusland</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Russische eenheden, specifiek het 1218e Motor Rifle Regiment, demonstreren een geïntegreerde kill-chain waarbij luchtverkenning direct wordt gekoppeld aan FPV-aanvallen en payload-drops vanaf quadcopters. Deze tactiek wordt ingezet tegen zowel Oekraïense infanterie als, controversieel, ongepantserde VN-voertuigen in de regio Kherson. Het systeem creëert een 'no-go zone' waar evacuatie van gewonden onmogelijk wordt, wat leidt tot ernstige demoralisatie onder troepen die zich in kelders moeten verschuilen.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ru">@two_majors</span><span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--neutral">@wartranslated</span>
-                
-              </div>
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>Russische controle over de buitenwijken van Vozdvizhevka en oostelijke bosstroken (claim Rybar).</li><li>Volledige inname ('bevrijding') van de nederzetting Charyvne (claim Slavyangrad).</li></ul>
             </div>
             
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Massale UAV-Zwermverzadiging</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ua">Oekraïne</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Oekraïne zet UAV's in op een ongekende strategische schaal, waarbij Russische bronnen claimen in één nacht 355 drones te hebben onderschept over 18 verschillende regio's, waaronder de Zee van Azov en Moskou. Deze zwermtactiek is ontworpen om de radar- en interceptiecapaciteit van de Russische luchtverdediging te verzadigen, waardoor 'lekkage' ontstaat voor zwaardere munitie. De schaal van deze operaties is zo groot dat het de burgerluchtvaart in aangrenzende NAVO-landen (zoals de sluiting van Helsinki Airport) verstoort.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ru">@two_majors</span><span class="chip chip--ru">@Slavyangrad</span><span class="chip chip--neutral">@wartranslated</span>
-                
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-        <div class="section-divider">
-          <span class="section-nr">02</span>
-          <h2>🛩️ Loitering Munition & Diepe Aanvallen</h2>
-        </div>
-        <div class="tech-categorie">
-          <div class="tech-cat-header">
-            <span class="tech-cat-icon">🛩️</span>
-            <span class="tech-cat-naam">Loitering Munition & Diepe Aanvallen</span>
-            <span class="tech-cat-count">2 systemen</span>
-          </div>
-          <div class="tech-cat-intro">Vliegtuig-type kamikazedrones worden in toenemende mate ingezet voor strategische aanvallen op kritieke infrastructuur en militaire bases ver achter de frontlinie. Deze systemen overbruggen de kloof tussen tactische drones en dure kruisraketten.</div>
-          <div class="tech-ontwikkelingen">
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">'Hornet' Kamikaze UAV</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ua">Oekraïne</span>
-                  <span class="impact-pip impact-middel">● Middel</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">De introductie van de Amerikaanse 'Hornet' kamikaze UAV op het slagveld markeert een nieuwe capaciteit voor diepe aanvallen. Het betreft een fixed-wing (vliegtuig-type) drone met een spanwijdte van circa twee meter, aangedreven door een achterste duwpropeller (pusher-configuratie). De romp is vervaardigd uit schuim en plastic, wat de radar-doorsnede (RCS) aanzienlijk verkleint en detectie door conventionele luchtafweer bemoeilijkt.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ru">@two_majors</span><span class="chip chip--ru">@rybar</span>
-                
-              </div>
-            </div>
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Strategische Infrastructuur-targeting</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-beide">Beide</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Loitering munitie wordt systematisch ingezet tegen hoogwaardige doelen, zoals de succesvolle nachtelijke aanval op de olieraffinaderij in Ryazan en de brandstofopslag in Zaporozhye. Deze aanvallen vereisen geavanceerde navigatiesystemen die bestand zijn tegen GPS-jamming (waarschijnlijk via traagheidsnavigatie of terrein-matching) om honderden kilometers diep in vijandelijk gebied precisietreffers te garanderen.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ru">@Slavyangrad</span>
-                
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-        <div class="section-divider">
-          <span class="section-nr">03</span>
-          <h2>🚤 Maritieme Technologie & Kustoperaties</h2>
-        </div>
-        <div class="tech-categorie">
-          <div class="tech-cat-header">
-            <span class="tech-cat-icon">🚤</span>
-            <span class="tech-cat-naam">Maritieme Technologie & Kustoperaties</span>
-            <span class="tech-cat-count">2 systemen</span>
-          </div>
-          <div class="tech-cat-intro">De maritieme dimensie van de oorlog innoveert in een razend tempo. Onbemande oppervlaktevaartuigen (USV's) evolueren van asymmetrische anti-scheepswapens naar veelzijdige platforms voor kustbombardementen en speciale operaties.</div>
-          <div class="tech-ontwikkelingen">
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">USV's met RPO-A Shmel Vlammenwerpers</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ua">Oekraïne</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Een radicale innovatie is de integratie van thermobarische wapens op maritieme drones. Oekraïense troepen gebruiken onbemande boten (aangeduid als 'BEEs') uitgerust met 'Shmel' vlammenwerpers (waarschijnlijk de RPO-A thermobarische raketwerper) om Russische kustposities op het Kinburn-schiereiland aan te vallen. Dit transformeert de USV van een kamikazeboot naar een herbruikbaar of stand-off vuurondersteuningsplatform voor amfibische operaties.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ru">@two_majors</span>
-                
-              </div>
-            </div>
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">SBS Gecombineerde Aanvallen (Yeysk)</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ua">Oekraïne</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">De Oekraïense Special Boat Service (SBS) toont de capaciteit om complexe, multi-domein aanvallen uit te voeren op zwaar verdedigde Russische kustbases. Bij een aanval op Yeysk werden 55 slagen toegebracht aan 23 doelen, resulterend in de vernietiging van strategische luchtvaartmiddelen (Be-200 amfibievliegtuig, Ka-27 helikopter) en het uitschakelen van geavanceerde luchtverdedigingssystemen (Pantsir en Tor SAM's).</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ua">@operativnoZSU</span>
-                
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-        <div class="section-divider">
-          <span class="section-nr">04</span>
-          <h2>📡 Luchtafweer & Elektronische Oorlogsvoering</h2>
-        </div>
-        <div class="tech-categorie">
-          <div class="tech-cat-header">
-            <span class="tech-cat-icon">📡</span>
-            <span class="tech-cat-naam">Luchtafweer & Elektronische Oorlogsvoering</span>
-            <span class="tech-cat-count">2 systemen</span>
-          </div>
-          <div class="tech-cat-intro">De strijd om het luchtruim is een uitputtingsslag geworden tussen massale drone-aanvallen en steeds zwaarder belaste luchtverdedigingssystemen (SHORAD en langeafstand).</div>
-          <div class="tech-ontwikkelingen">
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Kinetische Overbelasting van Luchtverdediging</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ru">Rusland</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">De massale inzet van Oekraïense drones leidt tot kritieke storingen in Russische luchtverdedigingsnetwerken. In Ryazan resulteerde de activering van luchtafweer tegen inkomende drones in 'friendly fire' op residentiële gebouwen. Tegelijkertijd toont de vernietiging van Pantsir en Tor SAM-systemen in Yeysk aan dat Oekraïne specifiek jaagt op de systemen die bedoeld zijn om drones en raketten te onderscheppen, waardoor gaten in de radardekking ontstaan.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span>
-                
-              </div>
-            </div>
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Ballistische en UAV Dreigingsintegratie</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ru">Rusland</span>
-                  <span class="impact-pip impact-middel">● Middel</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Rusland bereidt gecoördineerde aanvallen voor op Oekraïense 'besluitvormingscentra' door de inzet van ballistische raketten te combineren met UAV-zwermen. Deze tactiek is ontworpen om de Oekraïense luchtverdediging (zoals Patriot en NASAMS) te dwingen hun dure interceptors te verbruiken op goedkope drones, waarna de snellere ballistische wapens de eigenlijke doelen kunnen vernietigen.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ua">@UkraineNow</span><span class="chip chip--ua">@operativnoZSU</span>
-                
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-        <div class="section-divider">
-          <span class="section-nr">05</span>
-          <h2>🎯 Artillerie & Logistieke Interdictie</h2>
-        </div>
-        <div class="tech-categorie">
-          <div class="tech-cat-header">
-            <span class="tech-cat-icon">🎯</span>
-            <span class="tech-cat-naam">Artillerie & Logistieke Interdictie</span>
-            <span class="tech-cat-count">2 systemen</span>
-          </div>
-          <div class="tech-cat-intro">Ondanks de opkomst van drones blijft conventionele artillerie, gecombineerd met moderne ISR (Intelligence, Surveillance, Reconnaissance), een beslissende factor in het vernietigen van vijandelijke logistiek.</div>
-          <div class="tech-ontwikkelingen">
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">2S5 Giatsint-S Langeafstandsartillerie</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ru">Rusland</span>
-                  <span class="impact-pip impact-middel">● Middel</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Het Russische 29e Artillerieregiment zet de 152mm 2S5 'Hyacinth' (Giatsint-S) zelfrijdende houwitser in voor tegenbatterijvuur en langeafstandsaanvallen in de regio Belgorod/Kharkiv. Met een bereik tot 33 km (met raketondersteunde munitie) biedt dit systeem de vuurkracht om Oekraïense opmarsroutes en logistieke knooppunten te bestoken zonder direct bloot te staan aan vijandelijke FPV-drones met een korter bereik.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ru">@wargonzo</span>
-                
-              </div>
-            </div>
-            
-            <div class="tech-item">
-              <div class="tech-item-top">
-                <div class="tech-item-titel">Systematische Spoorweginterdictie</div>
-                <div class="tech-item-badges">
-                  <span class="kant-badge kant-ru">Rusland</span>
-                  <span class="impact-pip impact-hoog">● Hoge impact</span>
-                </div>
-              </div>
-              <div class="tech-item-beschrijving">Rusland voert een gerichte technologische campagne tegen de Oekraïense spoorweginfrastructuur. Door het gelijktijdig aanvallen van locomotieven, treinwagons, elektrische onderstations, depots en bruggen, probeert Rusland de strategische mobiliteit van Oekraïne te verlammen. Dit vereist nauwkeurige satelliet- of drone-verkenning om bewegende doelen (treinen) en kritieke knelpunten (onderstations) te synchroniseren met raketaanvallen.</div>
-              <div class="tech-item-footer">
-                
-                <span class="tech-datum">Gemeld: 2026-05-15</span>
-                
-                
-                  <span class="chip chip--ru">@two_majors</span>
-                
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-        
-
-        <!-- INNOVATIE VERGELIJKING -->
-        <div class="section-divider">
-          <span class="section-nr">⚖</span>
-          <h2>Technologische balans</h2>
-        </div>
-        
-        <div class="vergelijking-blok">
-          <div class="vergelijking-header">
-            <h3>Wie heeft technologisch de overhand?</h3>
-          </div>
-          <div class="vergelijking-grid">
-            <div class="verg-kolom verg-kolom--ua">
-              <div class="verg-titel">🇺🇦 Oekraïne sterk in</div>
-              <ul class="verg-lijst">
-                <li>Pionierswerk in de bewapening van USV's met thermobarische wapens (Shmel) voor offensieve kustoperaties.</li><li>Capaciteit om massale UAV-zwermen (350+ eenheden) te coördineren voor diepe penetratie in het Russische achterland.</li><li>Succesvolle targeting en vernietiging van geavanceerde Russische SHORAD-systemen (Pantsir/Tor) via speciale operaties.</li>
-              </ul>
-            </div>
-            <div class="verg-kolom verg-kolom--ru">
-              <div class="verg-titel">🇷🇺 Rusland sterk in</div>
-              <ul class="verg-lijst">
-                <li>Systeemintegratie van luchtverkenning met FPV-drones op pelotonsniveau voor continue infanterie-onderdrukking.</li><li>Behoud van superieure conventionele vuurkracht op lange afstand via systemen zoals de 2S5 Giatsint-S.</li><li>Gecoördineerde precisie-aanvallen op complexe logistieke netwerken, specifiek de elektrische spoorweginfrastructuur.</li>
-              </ul>
-            </div>
           </div>
           
-          <div class="vergelijking-conclusie">Oekraïne behoudt een duidelijk voordeel in asymmetrische en maritieme innovatie, waarbij het met relatief goedkope middelen (USV's en schuim-UAV's zoals de Hornet) strategische Russische middelen vernietigt en de luchtafweer overbelast. Rusland compenseert dit met een overweldigende kwantiteit aan tactische FPV-drones aan het front en een systematische, conventionele vernietiging van Oekraïense logistiek (spoorwegen) via artillerie en raketten. De kritieke asymmetrie ligt in de Oekraïense capaciteit om de oorlog diep in Rusland te brengen, versus de Russische capaciteit om de Oekraïense frontlinie-infrastructuur methodisch te vergruizen.</div>
+
+          
+          <div class="claims-grid">
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              Succesvolle aanvallen en het vestigen van controle over Charyvne en de randen van Vozdvizhevka.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/rybar" target="_blank">@rybar</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--ru">@rybar</span><span class="chip chip--ru">@Slavyangrad</span>
+          </div>
           
         </div>
-
-        <!-- TECH SIGNALEN -->
+      </div>
+      
+      
+      
+      
         
-        <div class="section-divider"><span class="section-nr">◆</span><h2>Technologie-signalen</h2></div>
+      
         
-        <div class="tech-signaal">De integratie van thermobarische infanteriewapens op onbemande oppervlaktevaartuigen (USV's) markeert een paradigmaverschuiving waarbij maritieme drones evolueren van eenmalige anti-scheepswapens naar tactische vuurondersteuningsplatforms voor kustgevechten.</div>
+      
         
-        <div class="tech-signaal">De inzet van UAV's met een extreem lage radar-doorsnede (zoals de schuim/plastic 'Hornet') in massale zwermen dwingt conventionele luchtverdedigingssystemen tot kinetische uitputting, wat leidt tot gevaarlijke 'friendly fire' incidenten in stedelijke gebieden zoals Ryazan.</div>
+      
         
-        <div class="tech-signaal">De systematische Russische aanvallen op elektrische onderstations van spoorwegen duiden op een verschuiving in targeting-algoritmes, waarbij de focus ligt op het verlammen van de energievoorziening van de logistiek in plaats van het uitsluitend vernietigen van de voertuigen zelf.</div>
+      
         
+      
         
-
-        <!-- FOOTER -->
-        <footer class="app-footer">
-          <div class="footer-content">
-            <div class="footer-title">Frontlijn Technologie — Uitputtende Analyse</div>
-            <div class="footer-sub">
-              Gebaseerd op 344 OSINT-berichten van 11 kanalen.<br>
-              Analyse: Gemini 3.1 Pro Preview · 15-05-2026 18:10
-            </div>
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        <div class="skaart-accent acc-middel"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Cherson</div>
+            <span class="betr betr-middel">middel</span>
           </div>
-        </footer>
+          <div class="skaart-sum">Aanhoudende drone-oorlogvoering langs de frontlijn, waarbij ook humanitaire missies in het kruisvuur lijken te belanden.</div>
 
-      </div><!-- /content-wrap -->
-    </div><!-- /page-tech -->
+          
 
-  </div><!-- /app-body -->
+          
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Intensief gebruik van FPV-drones en quadcopters door Russische eenheden tegen infanteriedoelen.</li></ul>
+            </div>
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>Gerichte Russische FPV-drone aanval op voertuigen van het VN-Bureau voor de Coördinatie van Humanitaire Aangelegenheden (UN OCHA).</li></ul>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="claims-grid">
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              Succesvolle uitschakeling van ingegraven Oekraïense infanterie na luchtverkenning.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/two_majors" target="_blank">@two_majors</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--ru">@two_majors</span><span class="chip chip--neutral">@wartranslated</span>
+          </div>
+          
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- STRATEGIE -->
+    <div class="sec"><span class="sec-nr">04</span><h2>Strategische context</h2></div>
+    
+    <div class="strategie-blok">
+      <span class="label-up">Analytische duiding</span>Het conflict fragmenteert en spreidt zich geografisch uit. Terwijl Rusland de frontlijn in het noorden (Charkov en Sumy) oprekt om Oekraïense reserves uit te putten, intensiveert Oekraïne zijn asymmetrische campagne tegen de Russische olie-infrastructuur. Het incident in Finland toont aan dat de psychologische en ontwrichtende effecten van de drone-oorlog inmiddels de NAVO-grenzen overschrijden, zelfs zonder fysieke inslagen.
+    </div>
+    
+
+    <!-- MORGEN -->
+    <div class="sec"><span class="sec-nr">05</span><h2>Kijk morgen naar…</h2></div>
+    
+    <div class="morgen-wrap">
+      
+      <div class="morgen-item"><div class="morgen-num">1</div><div>Verdere Russische pogingen om de bufferzone in de regio's Charkov en Sumy te verbreden, met aanhoudende artilleriebeschietingen vanuit Belgorod.</div></div>
+      
+      <div class="morgen-item"><div class="morgen-num">2</div><div>Mogelijke Oekraïense vergeldingsaanvallen met langeafstandsdrones op Russische logistieke knooppunten en raffinaderijen.</div></div>
+      
+      <div class="morgen-item"><div class="morgen-num">3</div><div>Verhoogde staat van paraatheid in Scandinavische en Baltische staten na de verstoringen in Helsinki.</div></div>
+      
+    </div>
+    
+
+    <!-- EW -->
+    <div class="sec"><span class="sec-nr">06</span><h2>Technologie &amp; EW</h2></div>
+    
+      <div class="ew-item">Ontwikkeling van het Russische 'Katran Air Defense' systeem door het PPSH Laboratory, bestaande uit detectieradar, optische verkenning en 'Martsinka' interceptor-drones (two_majors).</div><div class="ew-item">Toenemende Russische bezorgdheid over de Amerikaanse 'Hornet' kamikaze-drone, een schuim/plastic UAV met een spanwijdte van twee meter en een duwpropeller, die diepe achterhoedegebieden bedreigt (two_majors/rybar).</div>
+    
+
+    <!-- MENSELIJK -->
+    <div class="sec"><span class="sec-nr">07</span><h2>De Menselijke Factor</h2></div>
+    <div class="menselijk-blok">De uitputting aan het front wordt steeds zichtbaarder in getuigenissen van krijgsgevangenen. Russische soldaten klagen over een meedogenloze jacht door Oekraïense drones, een chronisch gebrek aan voedsel, water en medische evacuatie, en het achterlaten van gesneuvelde kameraden. Aan de andere kant benadrukt de Russische zijde de aanwezigheid van buitenlandse strijders, zoals Colombianen, in een poging de strijd te framen als een conflict met westerse huurlingen. De realiteit voor de infanterist blijft er een van overleven in kelders en loopgraven onder constante dreiging vanuit de lucht.</div>
+
+    <!-- SIGNALEN -->
+    <div class="sec"><span class="sec-nr">08</span><h2>Signalen</h2></div>
+    
+      <div class="signaal-item"><div>⬥</div><div>Oekraïense inlichtingendiensten en media publiceren systematisch gedetailleerde interviews met Russische krijgsgevangenen om corruptie, slechte logistiek en lage moraal binnen de Russische rangen te benadrukken.</div></div><div class="signaal-item"><div>⬥</div><div>Russische bronnen leggen opvallend veel nadruk op de eliminatie en gevangenneming van buitenlandse strijders (voornamelijk Zuid-Amerikanen) om het narratief van een oorlog tegen de NAVO/het Westen te versterken.</div></div>
+    
+
+    <!-- KRITIEK -->
+    <div class="sec"><span class="sec-nr">09</span><h2>Bronnenkritiek</h2></div>
+    
+      <div class="kritiek-item"><div>⚠</div><div>Slavyangrad overdrijft de impact van de drone-dreiging in Finland door te spreken van chaos, terwijl ze tegelijkertijd minimaliseren dat er daadwerkelijk geen drones zijn waargenomen.</div></div><div class="kritiek-item"><div>⚠</div><div>Wargonzo levert sterk geproduceerde, propagandistische beelden voor de Russische staatstelevisie (Channel One) over de inzet van de Hyacinth-artillerie, waarbij de effectiviteit wordt overdreven en eigen risico's worden genegeerd.</div></div>
+    
+
+    <footer class="app-footer">
+      <div class="footer-title">Frontlijn — Dagelijkse OSINT-briefing</div>
+      <div class="footer-sub">Open source intelligence · Geen officiële inlichtingen<br>
+        Analyse: Gemini 3.1 Pro Preview · 15-05-2026 21:38</div>
+    </footer>
+
+  </div><!-- /wrap -->
+</div><!-- /page-nieuws -->
+
+
+<!-- ═══════════════ TAB 2 — TECHNOLOGIE ═══════════════ -->
+<div id="page-tech" class="page">
+
+  <div class="tech-hero">
+    <div class="tech-hero-inner">
+      <div class="tech-eyebrow">
+        <span class="label-up">⚙ Technologische Innovatie</span>
+        <span class="hero-sep">·</span>
+        <span style="font-size:.75rem;color:var(--text-4)">2026-05-15</span>
+      </div>
+      <h1 class="tech-kop">Asymmetrische Drone-Oorlogsvoering en Gelaagde Luchtverdediging Domineren het Slagveld</h1>
+      <p class="tech-intro">De technologische dimensie van het conflict in Oekraïne kenmerkt zich in mei 2026 door een meedogenloze innovatiecyclus waarbij offensieve en defensieve systemen elkaar in rap tempo afwisselen. Autonome en op afstand bestuurbare platforms, variërend van maritieme drones tot langeafstandskamikaze-UAV's, dicteren de operationele realiteit en dwingen beide partijen tot snelle tactische aanpassingen. Terwijl Oekraïne asymmetrische diepte-aanvallen uitvoert met nieuwe westerse dronetechnologie en bewapende USV's, investeert Rusland zwaar in gelaagde counter-UAS netwerken en de integratie van buitenlandse componenten. Deze hypertechnologische uitputtingsslag reduceert de overlevingskansen van conventionele infanterie drastisch en verplaatst het zwaartepunt naar elektronische detectie en precisie-interceptie.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    
+    
+    <div class="sec">
+      <span class="sec-nr">01</span>
+      <h2>🚁 FPV-drones & Loitering Munition</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">🚁</span>
+        <span class="tech-cat-naam">FPV-drones & Loitering Munition</span>
+        <span class="tech-cat-count">2 systemen</span>
+      </div>
+      <div class="tech-cat-intro">Onbemande luchtvaartuigen vormen de ruggengraat van zowel tactische infanterie-ondersteuning als strategische diepte-aanvallen. De proliferatie van deze systemen leidt tot een constante dreiging voor logistieke ketens en frontlinie-eenheden.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Amerikaanse 'Hornet' Kamikaze UAV</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">De 'Hornet' is een vliegtuig-type kamikaze drone, naar verluidt ontwikkeld met betrokkenheid van Google, met een spanwijdte van ongeveer twee meter. Het toestel is opgebouwd uit schuim en plastic om de radarsignatuur te minimaliseren en wordt aangedreven door een achterste duwpropeller. Deze UAV wordt specifiek ingezet voor diepte-aanvallen en vormt een aanzienlijke bedreiging voor het Russische achterland, wat wijst op een verdere integratie van westerse commerciële tech in militaire applicaties.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T20:01:01+00:00</span>
+            <span class="chip chip--ru">@rybar</span><span class="chip chip--ru">@two_majors</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Tactische FPV-zwermen & Quadcopter-drops</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Russische eenheden, waaronder het 1218e Motor Rifle Regiment, maken systematisch gebruik van FPV-drones en quadcopters voor het afwerpen van munitie op ingegraven infanterie, direct volgend op luchtverkenning. De alomtegenwoordigheid van deze drones leidt tot ernstige psychologische en fysieke uitputting bij troepen, waarbij soldaten in kelders worden vastgepind en evacuaties onmogelijk worden gemaakt. Dezelfde technologie wordt controversieel ingezet tegen humanitaire VN-voertuigen in de regio Kherson.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T15:20:56+00:00</span>
+            <span class="chip chip--ru">@two_majors</span><span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="sec">
+      <span class="sec-nr">02</span>
+      <h2>🛡️ Luchtafweer & Counter-UAS</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">🛡️</span>
+        <span class="tech-cat-naam">Luchtafweer & Counter-UAS</span>
+        <span class="tech-cat-count">2 systemen</span>
+      </div>
+      <div class="tech-cat-intro">De exponentiële toename van drone-aanvallen dwingt tot de ontwikkeling van nieuwe, kosteneffectieve luchtverdedigingssystemen. Traditionele luchtafweer is vaak te duur of te schaars om in te zetten tegen goedkope UAV's.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Katran Air Defense & Martsinka Interceptors</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--middel">● Middel</span></div>
+          </div>
+          <div class="tech-desc">Het Russische PPSH Laboratory heeft het 'Katran Air Defense' systeem ontwikkeld, een gelaagd counter-UAS netwerk. Dit systeem combineert geavanceerde detectieradar met optische verkenning om inkomende doelen te identificeren. De daadwerkelijke uitschakeling gebeurt niet met dure raketten, maar met specifieke interceptor-drones genaamd 'Martsinka', wat wijst op een verschuiving naar 'drone-on-drone' kinetische interceptie om de kosten-batenverhouding van luchtverdediging te verbeteren.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T19:26:56+00:00</span>
+            <span class="chip chip--ru">@two_majors</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Hybride Drone-dreiging & Civiele Disruptie</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--middel">● Middel</span></div>
+          </div>
+          <div class="tech-desc">De loutere dreiging van UAV-aanvallen wordt ingezet als een instrument voor asymmetrische oorlogsvoering en maatschappelijke ontwrichting. In Helsinki leidde een vermeende Oekraïense drone-dreiging tot de annulering van 400 voorstadsbussen en de opschorting van luchthavenactiviteiten, ondanks dat er geen fysieke drones op de radar werden waargenomen. Dit toont aan dat de psychologische impact van drone-technologie ver buiten het fysieke slagveld reikt.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T20:36:59+00:00</span>
+            <span class="chip chip--ru">@Slavyangrad</span><span class="chip chip--neutral">@wartranslated</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="sec">
+      <span class="sec-nr">03</span>
+      <h2>🚤 Maritieme Technologie & USV's</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">🚤</span>
+        <span class="tech-cat-naam">Maritieme Technologie & USV's</span>
+        <span class="tech-cat-count">1 systemen</span>
+      </div>
+      <div class="tech-cat-intro">Onbemande oppervlaktevaartuigen (USV's) evolueren van pure kamikaze-platforms naar complexe, herbruikbare wapendragers voor kustnabije operaties en amfibische ondersteuning.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">USV's met Shmel-vlammenwerpers</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Oekraïense strijdkrachten hebben onbemande boten uitgerust met 'Shmel' thermobarische vlammenwerpers. Deze innovatieve configuratie wordt ingezet voor aanvallen op Russische kustposities op het Kinburn-schiereiland. Door infanteriewapens te integreren op maritieme drones, creëert Oekraïne een mobiel, op afstand bestuurbaar artillerieplatform dat verwoestende thermobarische effecten kan leveren zonder eigen troepen bloot te stellen aan vijandelijk vuur.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T14:12:08+00:00</span>
+            <span class="chip chip--neutral">@wartranslated</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="sec">
+      <span class="sec-nr">04</span>
+      <h2>✈️ Luchtvaart & Precisie-munitie</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">✈️</span>
+        <span class="tech-cat-naam">Luchtvaart & Precisie-munitie</span>
+        <span class="tech-cat-count">2 systemen</span>
+      </div>
+      <div class="tech-cat-intro">Ondanks de dominantie van drones blijft bemande luchtvaart cruciaal voor het afleveren van zware, precisiegeleide munitie en hypersone wapens tegen strategische doelen.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">MiG-29 met GBU-62 Integratie</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--middel">● Middel</span></div>
+          </div>
+          <div class="tech-desc">Oekraïense luchtmachtbemanningen hebben met succes westerse GBU-62 precisiebommen geïntegreerd op hun Sovjet-tijdperk MiG-29 jachtvliegtuigen. Deze wapens worden ingezet voor chirurgische aanvallen op bezette gebouwen en versterkte posities. Deze 'FrankenSAM'-achtige benadering van het combineren van oosterse platforms met westerse slimme munitie vergroot de Oekraïense aanvalscapaciteit aanzienlijk.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T18:50:53+00:00</span>
+            <span class="chip chip--neutral">@wartranslated</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">MiG-31K & Kinzhal Hypersone Raketten</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Rusland blijft de MiG-31 inzetten als lanceerplatform voor de Kh-47M2 'Kinzhal' hypersone raketten. Deze systemen worden specifiek in gereedheid gebracht voor gecoördineerde aanvallen op Oekraïense 'decision-making centers', waaronder politieke en militaire faciliteiten. De snelheid en het vluchtprofiel van de Kinzhal maken interceptie door conventionele luchtafweer uiterst complex.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T19:25:59+00:00</span>
+            <span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--ua">@UkraineNow</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="sec">
+      <span class="sec-nr">05</span>
+      <h2>🤖 Militaire Robotica & Logistieke Tech</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">🤖</span>
+        <span class="tech-cat-naam">Militaire Robotica & Logistieke Tech</span>
+        <span class="tech-cat-count">2 systemen</span>
+      </div>
+      <div class="tech-cat-intro">De oorlog stimuleert de ontwikkeling van onbemande grondvoertuigen (UGV's) en dwingt tot het opzetten van schaduw-toeleveringsketens voor kritieke technologische componenten.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Bewapende Robothonden (UGV's)</div>
+            <div class="tech-badges"><span class="kbadge kbadge--beide">Beide</span><span class="impact impact--laag">● Laag</span></div>
+          </div>
+          <div class="tech-desc">Op een militaire tentoonstelling in Beijing zijn Chinese robothonden op wielen gepresenteerd, uitgerust met diverse wapensystemen. Hoewel momenteel nog in de demonstratiefase, signaleert dit een naderende proliferatie van bewapende UGV's die in de nabije toekomst stedelijke gevechten en loopgravenoorlogen in Oekraïne fundamenteel kunnen veranderen.</div>
+          
+          <div class="tech-item-media">
+<a href="https://t.me/operativnoZSU/210998" target="_blank" rel="noopener" class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/IsdB31lAwKiz0Qj0WS645zkfEDnU7ECXlel8eoJnUhjFMthlNH5-cChXuCgUwx3EUqpBPp2PVzmfwJYpU4S2VhBy0ar3HrDbKbM5tj2IoQc-aBYtICS2XS3sooI1A4lueNEOsTccEdDKpw7UbcyGT5JXODG2U0tZzMMmQ70gR5rGApPU2uF5D3-n37Tlhqy4W3YvRiXWvNTc6eeJ9l6PkXGlx82ZHeIEA8PrmML6o_UNxRj1SFQftFpollJFIEpUGqavtJCtuWp0siCtUbeoHu_pcedL3lvbP8XX3gfmBeP5zBx_PJ3vRQrpirlnFYUbyH3xYc53YfOFMn_Bvhd3Lw.jpg')" title="@operativnoZSU · 15 mei 18:39">
+  <div class="media-overlay">
+    <span class="media-meta">@operativnoZSU · 15 mei 18:39</span>
+  </div>
+</a>
+</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T18:39:00+00:00</span>
+            <span class="chip chip--ua">@operativnoZSU</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Gedecentraliseerde Componentenproductie (Wit-Rusland)</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Om westerse sancties te omzeilen, heeft Rusland zijn technologische toeleveringsketen diep geïntegreerd met Wit-Rusland. Meer dan 500 Wit-Russische bedrijven zijn momenteel betrokken bij de productie van kritieke componenten, waaronder microchips en geavanceerde optica voor Russische tanks, evenals munitie voor 'Grad' systemen. Dit garandeert de continuïteit van de Russische militaire hardware-productie.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-15T19:18:56+00:00</span>
+            <span class="chip chip--ua">@operativnoZSU</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    
+
+    <!-- VERGELIJKING -->
+    <div class="sec"><span class="sec-nr">⚖</span><h2>Technologische balans</h2></div>
+    
+    <div class="vergelijk">
+      <div class="vergelijk-hdr">Wie heeft technologisch de overhand?</div>
+      <div class="vergelijk-grid">
+        <div class="vkol vkol--ua">
+          <div class="vkol-titel">🇺🇦 Oekraïne sterk in</div>
+          <ul class="vkol-list"><li>Succesvolle integratie van westerse commerciële en militaire technologie (Hornet UAV's, GBU-62 bommen) op bestaande platforms.</li><li>Pionierswerk in maritieme asymmetrische oorlogsvoering door USV's uit te rusten met thermobarische wapens (Shmel).</li><li>Effectief gebruik van hybride oorlogsvoering waarbij de loutere dreiging van drones wordt gebruikt om vijandelijke of neutrale infrastructuur (zoals in Finland) te ontwrichten.</li></ul>
+        </div>
+        <div class="vkol vkol--ru">
+          <div class="vkol-titel">🇷🇺 Rusland sterk in</div>
+          <ul class="vkol-list"><li>Ontwikkeling van gespecialiseerde, gelaagde counter-UAS systemen (Katran) met kinetische drone-interceptors (Martsinka) om de kosten van luchtverdediging te drukken.</li><li>Robuuste logistieke uitwijkroutes via bondgenoten (Wit-Rusland) voor de massaproductie van essentiële microchips en tank-optica.</li><li>Aanhoudende capaciteit om hypersone wapens (Kinzhal via MiG-31) in te zetten tegen hoogwaardige strategische doelen.</li></ul>
+        </div>
+      </div>
+      
+      <div class="vergelijk-concl">De technologische balans bevindt zich in een dynamisch en dodelijk evenwicht. Oekraïne behoudt de overhand in asymmetrische, innovatieve aanvalsmiddelen (bewapende USV's, diepte-drones) waarmee het met relatief goedkope middelen strategische doelen bedreigt. Rusland compenseert dit door in te zetten op schaalvergroting, de ontwikkeling van specifieke 'drone-on-drone' verdedigingssystemen (Katran) en het veiligstellen van zijn technologische toeleveringsketens via Wit-Rusland. De kritieke asymmetrie ligt in het feit dat Oekraïne innoveert om vuurkracht te vermenigvuldigen, terwijl Rusland innoveert om verzadiging en uitputting te overleven.</div>
+      
+    </div>
+
+    <!-- TECH SIGNALEN -->
+    
+    <div class="sec"><span class="sec-nr">◆</span><h2>Technologie-signalen</h2></div>
+    <div class="tech-sig">De integratie van thermobarische wapens op onbemande maritieme platforms (USV's) markeert een significante escalatie in kustnabije oorlogsvoering, waarbij traditionele infanteriewapens worden omgebouwd tot op afstand bestuurbare precisie-artillerie.</div><div class="tech-sig">De ontwikkeling van 'drone-on-drone' interceptiesystemen, zoals de Russische 'Martsinka', duidt op een definitieve verschuiving van dure traditionele luchtafweerraketten naar goedkopere, herbruikbare kinetische oplossingen om de verzadiging van het luchtruim tegen te gaan.</div><div class="tech-sig">De psychologische en economische ontwrichting door vermeende drone-dreigingen, zoals waargenomen in Helsinki, demonstreert dat UAV's niet langer uitsluitend kinetische wapens zijn, maar geëvolueerd zijn tot krachtige instrumenten voor hybride oorlogsvoering en maatschappelijke disruptie zonder dat er een schot gelost hoeft te worden.</div>
+    
+
+    <footer class="app-footer">
+      <div class="footer-title">Frontlijn Technologie — Uitputtende analyse</div>
+      <div class="footer-sub">516 berichten · 11 kanalen<br>
+        Gemini 3.1 Pro Preview · 15-05-2026 21:38</div>
+    </footer>
+
+  </div><!-- /wrap -->
+</div><!-- /page-tech -->
+
+</div><!-- /app-body -->
 </div><!-- /app-shell -->
 
-
-<!-- ══════════════════════════════════════════════ SCRIPTS -->
 <script>
-// Tab switching
 function showTab(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1649,7 +1687,7 @@ function showTab(id, btn) {
   if (btn) btn.classList.add('active');
 }
 
-// Leaflet kaart
+// Leaflet
 const COORDS = {
   'zaporizka':[47.5,35.8],'zaporizhzhia':[47.838,35.144],'orikhiv':[47.563,35.779],
   'robotyne':[47.464,36.095],'huliaipole':[47.654,36.255],'donetsk':[48.0,37.8],
@@ -1661,8 +1699,7 @@ const COORDS = {
   'lyman':[49.021,37.815],'kreminna':[48.959,38.218],'lysychansk':[48.906,38.431],
   'sloviansk':[48.862,37.612],'kharkiv':[49.993,36.230],'vovchansk':[50.287,36.942],
   'kupiansk':[49.712,37.601],'kherson':[46.636,32.617],'sumy':[50.910,34.798],
-  'kursk':[51.730,36.193],'ryazan':[54.630,39.742],'zaporizhia':[47.838,35.144],
-  'kostiantynivka':[48.529,37.712],
+  'kursk':[51.730,36.193],'ryazan':[54.630,39.742],'kostiantynivka':[48.529,37.712],
 };
 function vindCoords(naam) {
   if (!naam) return null;
@@ -1675,37 +1712,38 @@ function vindCoords(naam) {
 }
 const sectoren = [
   
-  { naam: "Jejsk \u0026 Kaspisk (Russisch grondgebied)", samenvatting: "Oekra\u00efne voert grootschalige aanvallen uit op militaire doelen diep in Rusland, resulterend in aanzienlijke schade aan luchtvaart- en maritieme middelen.", betrouwbaarheid: "middel" },
+  { naam:"Charkov-grensgebied (Voltsjansk/Starytsa)", samenvatting:"Russische troepen voeren de druk op ten zuiden van Voltsjansk en claimen terreinwinst, ondersteund door zware artillerie vanuit de regio Belgorod.", betrouwbaarheid:"middel" },
   
-  { naam: "Kinburn-schiereiland \u0026 Cherson", samenvatting: "Intensivering van asymmetrische aanvallen door Oekra\u00efne met behulp van maritieme drones, terwijl Russische troepen humanitaire missies onder vuur nemen.", betrouwbaarheid: "hoog" },
+  { naam:"Sumy (Hrabovske)", samenvatting:"Het noordelijke front breidt zich uit met bevestigde gevechten en Oekra\u00efense verliezen in de regio Sumy.", betrouwbaarheid:"hoog" },
   
-  { naam: "Charkov-as \u0026 Belgorod", samenvatting: "Aanhoudende zware gevechten en artillerieduels langs de grens, waarbij Rusland claimt nieuwe dorpen te hebben ingenomen.", betrouwbaarheid: "middel" },
+  { naam:"Zaporizja (Vozdvizhevka/Charyvne)", samenvatting:"Russische eenheden claimen tactische vooruitgang in de zuidelijke sector, met specifieke focus op bosstroken en kleine nederzettingen.", betrouwbaarheid:"laag" },
   
-  { naam: "Zaporizja (Charyvne)", samenvatting: "Russische eenheden claimen een lokale doorbraak en de inname van een nederzetting in de zuidelijke sector.", betrouwbaarheid: "laag" },
-  
-  { naam: "Sumy Grensgebied (Hrabovske)", samenvatting: "Grensincidenten leiden tot Oekra\u00efense krijgsgevangenen, ondanks beweringen van succesvolle artillerie-afschrikking.", betrouwbaarheid: "middel" },
+  { naam:"Cherson", samenvatting:"Aanhoudende drone-oorlogvoering langs de frontlijn, waarbij ook humanitaire missies in het kruisvuur lijken te belanden.", betrouwbaarheid:"middel" },
   
 ];
-const kleuren = { hoog:'#16A34A', middel:'#CA8A04', laag:'#DC2626', tegenstrijdig:'#9D9890' };
-const kaart = L.map('overzichtskaart', { center:[48.5,37.0], zoom:7, zoomControl:true });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom:15
+const kleuren = { hoog:'#4ADE80', middel:'#FCD34D', laag:'#F87171', tegenstrijdig:'#5C5955' };
+const kaart = L.map('overzichtskaart', { center:[48.5,37.0], zoom:7 });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains:'abcd', maxZoom:19,
 }).addTo(kaart);
 const bounds = [];
 sectoren.forEach(s => {
   const c = vindCoords(s.naam);
   if (!c) return;
   bounds.push(c);
-  const kleur = kleuren[s.betrouwbaarheid] || '#9D9890';
+  const kleur = kleuren[s.betrouwbaarheid] || '#5C5955';
   const icon = L.divIcon({
     className:'',
-    html:`<div style="width:11px;height:11px;border-radius:50%;background:${kleur};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+    html:`<div style="width:11px;height:11px;border-radius:50%;background:${kleur};border:2px solid rgba(255,255,255,.3);box-shadow:0 0 6px ${kleur}66"></div>`,
     iconSize:[11,11], iconAnchor:[5,5],
   });
   L.marker(c,{icon}).addTo(kaart).bindPopup(
-    `<b style="font-family:sans-serif;font-size:13px">${s.naam}</b><br>
-     <span style="font-family:sans-serif;font-size:11px;color:#555">${s.samenvatting}</span>`
+    `<div style="font-family:sans-serif;font-size:12px;max-width:180px">
+      <b style="color:#F0EDE8">${s.naam}</b><br>
+      <span style="color:#8A8580">${s.samenvatting}</span>
+    </div>`,
+    { className:'dark-popup' }
   );
 });
 if (bounds.length) kaart.fitBounds(bounds, { padding:[40,40], maxZoom:9 });

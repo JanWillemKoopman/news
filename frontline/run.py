@@ -130,10 +130,36 @@ def main():
 
     unique_channels = len(set(m['channel_slug'] for m in tactical))
 
-    # Bereken tijdstempelstatistieken voor de template
+    # Tijdstempelstatistieken
     dates = [m.get('message_date') for m in tactical if m.get('message_date')]
     oldest = min(dates) if dates else None
     newest = max(dates) if dates else None
+
+    # Bouw media-index: locatie (lowercase) → lijst van {url, type, channel, date, msg_url}
+    from collections import defaultdict
+    media_by_location = defaultdict(list)
+    all_media = []
+    for m in tactical:
+        if not m.get('media_url'):
+            continue
+        entry = {
+            'url': m['media_url'],
+            'type': m.get('media_type', 'photo'),
+            'channel': m.get('channel_slug', ''),
+            'side': m.get('channel_side', ''),
+            'date': fmt_date_nl(m.get('message_date', '')),
+            'msg_url': m.get('message_url', ''),
+        }
+        all_media.append(entry)
+        loc = (m.get('location') or '').strip().lower()
+        if loc and loc != 'onbekend':
+            media_by_location[loc].append(entry)
+            # ook opslaan onder kortere varianten
+            for part in loc.split():
+                if len(part) > 4:
+                    media_by_location[part].append(entry)
+
+    logger.info(f"  Media gevonden: {len(all_media)} items in {len(media_by_location)} locaties")
 
     html = template.render(
         date=today,
@@ -146,6 +172,8 @@ def main():
         channel_lookup=CHANNEL_LOOKUP,
         oldest_message=fmt_date_nl(oldest),
         newest_message=fmt_date_nl(newest),
+        media_by_location=dict(media_by_location),
+        all_media=all_media[:60],
     )
 
     output_dir = os.path.join(os.path.dirname(__file__), 'output')

@@ -25,6 +25,8 @@ def init_db():
                 raw_text TEXT NOT NULL,
                 lang TEXT,
                 message_date TEXT,
+                media_url TEXT,
+                media_type TEXT,
                 collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -53,6 +55,12 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_messages_date ON messages(message_date);
             CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_slug);
         """)
+        # Migration-safe: voeg kolommen toe als ze nog niet bestaan
+        for col, typedef in [('media_url', 'TEXT'), ('media_type', 'TEXT')]:
+            try:
+                conn.execute(f"ALTER TABLE messages ADD COLUMN {col} {typedef}")
+            except Exception:
+                pass  # kolom bestaat al
 
 
 def save_messages(messages: list[dict]) -> int:
@@ -65,8 +73,8 @@ def save_messages(messages: list[dict]) -> int:
                 conn.execute(
                     """INSERT INTO messages
                        (channel_slug, channel_side, channel_reliability, message_url,
-                        content_hash, raw_text, lang, message_date)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                        content_hash, raw_text, lang, message_date, media_url, media_type)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         msg['channel_slug'],
                         msg.get('channel_side'),
@@ -76,6 +84,8 @@ def save_messages(messages: list[dict]) -> int:
                         msg['raw_text'],
                         msg.get('lang'),
                         msg.get('message_date'),
+                        msg.get('media_url'),
+                        msg.get('media_type'),
                     )
                 )
                 saved += 1
@@ -89,7 +99,8 @@ def get_recent_messages(hours: int = 24) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(
             """SELECT m.id, m.channel_slug, m.channel_side, m.channel_reliability,
-                      m.raw_text, m.lang, m.message_date, m.message_url
+                      m.raw_text, m.lang, m.message_date, m.message_url,
+                      m.media_url, m.media_type
                FROM messages m
                WHERE m.collected_at >= datetime('now', ?)
                ORDER BY m.message_date DESC""",
@@ -119,11 +130,11 @@ def save_analyzed(message_id: int, data: dict):
 
 
 def get_tactical_messages(hours: int = 24) -> list[dict]:
-    """Haal geanalyseerde tactische berichten op."""
+    """Haal geanalyseerde tactische berichten op inclusief media."""
     with get_conn() as conn:
         rows = conn.execute(
             """SELECT m.channel_slug, m.channel_side, m.channel_reliability,
-                      m.message_date, m.message_url,
+                      m.message_date, m.message_url, m.media_url, m.media_type,
                       a.translated_text, a.location, a.event_type,
                       a.reliability, a.propaganda_markers, a.key_facts
                FROM analyzed_messages a
