@@ -425,6 +425,8 @@ JSON:"""
         if isinstance(b, dict) and b.get('term') and b.get('uitleg')
     }
 
+
+def generate_technology_deepdive(tactical_messages: list[dict], date: str) -> dict:
     """Genereer een uitputtende technologie-analyse via MODEL_PRO."""
     messages_text = "\n\n".join(
         f"[{m['channel_slug']}|{m['channel_side']}|datum:{m.get('message_date','?')}]\n"
