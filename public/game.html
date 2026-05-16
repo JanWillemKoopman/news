@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Helikopter Avontuur!</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,15 +13,56 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    overflow: hidden;
+    touch-action: none;
     font-family: 'Comic Sans MS', cursive;
   }
-  canvas { border: 5px solid #8b2a2a; border-radius: 4px; display: block; }
-  #info { color: #c07050; font-size: 13px; margin-top: 10px; text-align: center; }
+  #wrap {
+    position: relative;
+    width: min(100vw, min(800px, calc(100vh * 1.6)));
+    aspect-ratio: 800 / 500;
+  }
+  canvas {
+    width: 100%; height: 100%;
+    display: block;
+    border: 4px solid #8b2a2a;
+    border-radius: 4px;
+    touch-action: none;
+  }
+  .btn {
+    position: absolute;
+    width: 11%; aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid #8b2a2a;
+    background: rgba(250,246,238,0.75);
+    color: #8b2a2a; font-weight: bold;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(12px, 3.5vw, 26px);
+    display: none;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.08s;
+  }
+  .btn:active { background: rgba(139,42,42,0.25); }
+  #btn-up     { bottom: 35%; left:  8%; }
+  #btn-left   { bottom: 21%; left:  2%; }
+  #btn-right  { bottom: 21%; left: 14%; }
+  #btn-down   { bottom:  7%; left:  8%; }
+  #btn-action { bottom: 19%; right: 2%; width: 15%; font-size: clamp(14px,4vw,30px); }
 </style>
 </head>
 <body>
-<canvas id="c" width="800" height="500"></canvas>
-<p id="info">↑ ↓ ← → bewegen &nbsp;|&nbsp; SPATIE: bom laten vallen &nbsp;|&nbsp; ENTER: starten</p>
+<div id="wrap">
+  <canvas id="c" width="800" height="500"></canvas>
+  <button id="btn-up"    class="btn" aria-label="Omhoog">▲</button>
+  <button id="btn-left"  class="btn" aria-label="Links">◄</button>
+  <button id="btn-right" class="btn" aria-label="Rechts">►</button>
+  <button id="btn-down"  class="btn" aria-label="Omlaag">▼</button>
+  <button id="btn-action"class="btn" aria-label="Actie">💣</button>
+</div>
 <script>
 // ─── Canvas setup ───────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
@@ -79,6 +120,45 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ─── Touch buttons ────────────────────────────────────────────────────────────
+function wireBtn(id, code) {
+  const el = document.getElementById(id);
+  const on  = e => { e.preventDefault(); keys[code] = true;  };
+  const off = e => { e.preventDefault(); keys[code] = false; };
+  el.addEventListener('touchstart',  on,  { passive: false });
+  el.addEventListener('touchend',    off, { passive: false });
+  el.addEventListener('touchcancel', off, { passive: false });
+  el.addEventListener('mousedown',  on);
+  el.addEventListener('mouseup',    off);
+  el.addEventListener('mouseleave', off);
+}
+wireBtn('btn-up',    'ArrowUp');
+wireBtn('btn-left',  'ArrowLeft');
+wireBtn('btn-right', 'ArrowRight');
+wireBtn('btn-down',  'ArrowDown');
+wireBtn('btn-action','Space');
+
+// Tap canvas to start/restart
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (phase === 'title' || phase === 'gameover') initGame();
+}, { passive: false });
+
+function setButtons(ph) {
+  const all    = ['btn-up','btn-left','btn-right','btn-down','btn-action'];
+  const heli   = ['btn-up','btn-left','btn-right','btn-down','btn-action'];
+  const island = ['btn-left','btn-right','btn-action'];
+  all.forEach(id => (document.getElementById(id).style.display = 'none'));
+  const action = document.getElementById('btn-action');
+  if (ph === 'helicopter') {
+    heli.forEach(id => (document.getElementById(id).style.display = 'flex'));
+    action.textContent = '💣';
+  } else if (ph === 'island') {
+    island.forEach(id => (document.getElementById(id).style.display = 'flex'));
+    action.textContent = '↑';
+  }
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 // Pseudo-random (deterministic for seeding)
@@ -172,6 +252,7 @@ function initGame() {
   heli = { x: 110, y: 180, vx: 0, vy: 0, w: 90, h: 42, rotor: 0 };
   genTerrain(0, W + 700);
   plantTrees(0, W + 700);
+  setButtons('helicopter');
 }
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
@@ -285,6 +366,7 @@ function updateHeli() {
       x: heli.x + heli.w / 2, y: heli.y + heli.h / 2,
       vx: 0.4, vy: -1.8, open: false, timer: 0, dir: 1
     };
+    setButtons('parachute');
   }
 }
 
@@ -319,7 +401,7 @@ function makeExplosion(sx, sy) {
 
 function hit() {
   lives--; invincible = 110;
-  if (lives <= 0) phase = 'gameover';
+  if (lives <= 0) { phase = 'gameover'; setButtons('gameover'); }
 }
 
 function updateParachute() {
@@ -338,6 +420,7 @@ function updateParachute() {
     bear = { x: W + 90, spd: 0.85, appeared: false };
     islandFrame = 0;
     phase = 'island';
+    setButtons('island');
   }
 }
 
@@ -364,7 +447,7 @@ function updateIsland() {
   if (bear.appeared) {
     bear.x += (pilot.x < bear.x ? -1 : 1) * bear.spd;
     bear.spd = Math.min(2.0, 0.85 + islandFrame / 2800);
-    if (Math.abs(bear.x - pilot.x) < 44) phase = 'gameover';
+    if (Math.abs(bear.x - pilot.x) < 44) { phase = 'gameover'; setButtons('gameover'); }
   }
 }
 
@@ -420,7 +503,7 @@ function drawTitle() {
     ctx.save();
     ctx.strokeStyle = BROWN; ctx.lineWidth = 1.8;
     ctx.font = 'bold 22px "Comic Sans MS", cursive';
-    ctx.strokeText('Druk ENTER om te beginnen!', 198, 360);
+    ctx.strokeText('Tik of druk ENTER!', 258, 360);
     ctx.restore();
   }
 }
@@ -506,7 +589,7 @@ function drawGameOver() {
     ctx.save();
     ctx.font = 'bold 20px "Comic Sans MS", cursive';
     ctx.strokeStyle = BROWN; ctx.lineWidth = 1.6;
-    ctx.strokeText('Druk ENTER om opnieuw te spelen', W / 2 - 162, 470);
+    ctx.strokeText('Tik of druk ENTER!', W / 2 - 88, 470);
     ctx.restore();
   }
 }
