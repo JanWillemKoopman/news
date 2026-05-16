@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helikopter Avontuur!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #2a1205;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Comic Sans MS', cursive;
+  }
+  canvas { border: 5px solid #8b2a2a; border-radius: 4px; display: block; }
+  #info { color: #c07050; font-size: 13px; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="500"></canvas>
+<p id="info">↑ ↓ ← → bewegen &nbsp;|&nbsp; SPATIE: bom laten vallen &nbsp;|&nbsp; ENTER: starten</p>
+<script>
+// ─── Canvas setup ───────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const W = 800, H = 500;
+const BROWN = '#8b2a2a';
+const CREAM  = '#faf6ee';
+
+// roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+  };
+}
+
+// ─── Global state ────────────────────────────────────────────────────────────
+let phase = 'title'; // title | helicopter | parachute | island | gameover
+let frame = 0, score = 0;
+const keys = {};
+
+// Helicopter phase
+const SCROLL_SPEED  = 1.9;
+const PHASE_END     = 5500;   // px until parachute
+let scrollX = 0;
+let lives = 3, invincible = 0;
+let heli = {}, hazards = [], bombs = [], explosions = [], particles = [];
+let nextHazardAt = 280;
+
+// Terrain (helicopter phase)
+let terrainPts = [], terrainGenX = 0, nextPeakX = 1500;
+let trees = [], nextTreeX = 120;
+
+// Parachute phase
+let pilot = {};
+
+// Island phase
+let islandTerrain = [], palmX = [], bear = {}, islandFrame = 0;
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'Enter') {
+    if (phase === 'title' || phase === 'gameover') initGame();
+  }
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Pseudo-random (deterministic for seeding)
+function prand(s) {
+  const x = Math.sin(s * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
+}
+// Jitter for hand-drawn feel
+function j(v = 1.2) { return (Math.random() - 0.5) * v; }
+
+function sLine(x1, y1, x2, y2, color = BROWN, lw = 2.5) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1 + j(0.8), y1 + j(0.8));
+  ctx.lineTo(x2 + j(0.8), y2 + j(0.8));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function sCircle(x, y, r, color = BROWN, lw = 2.5) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.arc(x + j(0.6), y + j(0.6), r + j(0.4), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─── Terrain (helicopter phase) ──────────────────────────────────────────────
+function genTerrain(from, to) {
+  for (let wx = Math.ceil(from / 8) * 8; wx <= to; wx += 8) {
+    let wy = 355
+      + 48 * Math.sin(wx / 290)
+      + 24 * Math.sin(wx / 125 + 1.1)
+      + 12 * Math.sin(wx / 58 + 0.8);
+    if (wx >= nextPeakX) {
+      wy -= 80 + prand(wx) * 60;
+      nextPeakX = wx + 800 + prand(wx + 3) * 400;
+    }
+    terrainPts.push({ wx, wy });
+  }
+  terrainGenX = to;
+}
+
+function getTerrainY(wx) {
+  if (!terrainPts.length) return 355;
+  const idx = Math.round((wx - terrainPts[0].wx) / 8);
+  if (idx < 0) return terrainPts[0].wy;
+  if (idx >= terrainPts.length) return terrainPts[terrainPts.length - 1].wy;
+  return terrainPts[idx].wy;
+}
+
+function plantTrees(from, to) {
+  let x = Math.max(from, nextTreeX);
+  while (x < to) {
+    trees.push({ wx: x, palm: Math.random() < 0.28 });
+    x += 90 + Math.random() * 190;
+  }
+  nextTreeX = x;
+}
+
+// ─── Island terrain ──────────────────────────────────────────────────────────
+function buildIsland() {
+  islandTerrain = [];
+  palmX = [130, 290, 470, 640];
+  for (let x = 0; x <= W + 20; x += 8) {
+    islandTerrain.push({
+      x,
+      y: H - 88 + 16 * Math.sin(x / 155) + 9 * Math.sin(x / 64 + 0.6)
+    });
+  }
+}
+
+function getIslandY(x) {
+  if (!islandTerrain.length) return H - 88;
+  const idx = Math.round(x / 8);
+  if (idx < 0) return islandTerrain[0].y;
+  if (idx >= islandTerrain.length) return islandTerrain[islandTerrain.length - 1].y;
+  return islandTerrain[idx].y;
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+function initGame() {
+  phase = 'helicopter';
+  frame = 0; score = 0; scrollX = 0;
+  lives = 3; invincible = 0;
+  hazards = []; bombs = []; explosions = []; particles = [];
+  terrainPts = []; terrainGenX = 0; nextPeakX = 1500;
+  trees = []; nextTreeX = 120; nextHazardAt = 320;
+  heli = { x: 110, y: 180, vx: 0, vy: 0, w: 90, h: 42, rotor: 0 };
+  genTerrain(0, W + 700);
+  plantTrees(0, W + 700);
+}
+
+// ─── UPDATE ──────────────────────────────────────────────────────────────────
+function update() {
+  frame++;
+  if (phase === 'helicopter') updateHeli();
+  else if (phase === 'parachute') updateParachute();
+  else if (phase === 'island') updateIsland();
+}
+
+function updateHeli() {
+  scrollX += SCROLL_SPEED;
+  score = Math.floor(scrollX / 9);
+
+  // Input
+  if (keys['ArrowLeft'])  heli.vx -= 0.55;
+  if (keys['ArrowRight']) heli.vx += 0.55;
+  if (keys['ArrowUp'])    heli.vy -= 0.65;
+  if (keys['ArrowDown'])  heli.vy += 0.65;
+  heli.vx *= 0.83; heli.vy *= 0.83;
+  heli.vx = Math.max(-4.2, Math.min(4.2, heli.vx));
+  heli.vy = Math.max(-4.2, Math.min(4.2, heli.vy));
+  heli.x = Math.max(8, Math.min(W - heli.w - 8, heli.x + heli.vx));
+  heli.y = Math.max(8, Math.min(H - 195, heli.y + heli.vy));
+  heli.rotor += 0.22;
+
+  // Ground collision
+  if (invincible === 0) {
+    const gY = getTerrainY(heli.x + heli.w / 2 + scrollX);
+    if (heli.y + heli.h + 6 >= gY) hit();
+  }
+
+  // Bomb drop
+  if (keys['Space'] && !keys._bc) {
+    keys._bc = true;
+    bombs.push({ wx: heli.x + heli.w / 2 + scrollX, y: heli.y + heli.h + 4, vy: 0.6 });
+    setTimeout(() => { keys._bc = false; }, 380);
+  }
+
+  // Extend terrain
+  if (scrollX + W + 600 > terrainGenX) {
+    genTerrain(terrainGenX, terrainGenX + 900);
+    plantTrees(terrainGenX, terrainGenX + 900);
+  }
+  // Prune old data
+  while (terrainPts.length && terrainPts[0].wx < scrollX - 60) terrainPts.shift();
+  trees = trees.filter(t => t.wx > scrollX - 80);
+
+  // Hazard spawn
+  if (frame >= nextHazardAt) {
+    spawnHazard();
+    nextHazardAt = frame + Math.max(65, 170 - Math.floor(scrollX / 110));
+  }
+  // Update hazards
+  for (let i = hazards.length - 1; i >= 0; i--) {
+    const h = hazards[i];
+    h.x -= SCROLL_SPEED + (h.spd || 0);
+    if (h.type === 'bird')      h.fp = (h.fp || 0) + 0.15;
+    if (h.type === 'lightning') { h.timer++; if (h.timer > 95) hazards.splice(i, 1); }
+    if (h.type === 'volcano' && frame % 5 === 0) {
+      for (let k = 0; k < 2; k++) {
+        particles.push({ x: h.x + j(8), y: h.y - 8, vx: j(1.4), vy: -2 - Math.random() * 2.2,
+                         life: 55, max: 55, fire: true });
+      }
+    }
+    if (h.x < -220) hazards.splice(i, 1);
+  }
+
+  // Update bombs
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    const b = bombs[i];
+    b.vy += 0.36; b.y += b.vy;
+    const sx = b.wx - scrollX;
+    if (b.y >= getTerrainY(b.wx) || sx < -30 || sx > W + 30) {
+      makeExplosion(sx, b.y);
+      bombs.splice(i, 1);
+    }
+  }
+
+  // Update explosions + particles
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    explosions[i].r += 2.8; explosions[i].life--;
+    if (explosions[i].life <= 0) explosions.splice(i, 1);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    if (p.fire) p.vy += 0.04;
+    p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // Collision with hazards
+  if (invincible > 0) { invincible--; }
+  else {
+    const cx = heli.x + heli.w / 2, cy = heli.y + heli.h / 2;
+    for (const h of hazards) {
+      if (h.type === 'bird' && Math.abs(cx - h.x) < 32 && Math.abs(cy - h.y) < 22) { hit(); break; }
+      if (h.type === 'lightning' && h.timer > 12 && h.timer < 75 &&
+          Math.abs(cx - h.x) < 22 && cy > h.y && cy < h.y + 130) { hit(); break; }
+    }
+    for (const p of particles) {
+      if (p.fire && Math.abs(cx - p.x) < 26 && Math.abs(cy - p.y) < 24) { hit(); break; }
+    }
+  }
+
+  // Phase end → parachute
+  if (scrollX >= PHASE_END) {
+    phase = 'parachute';
+    pilot = {
+      x: heli.x + heli.w / 2, y: heli.y + heli.h / 2,
+      vx: 0.4, vy: -1.8, open: false, timer: 0, dir: 1
+    };
+  }
+}
+
+function spawnHazard() {
+  const r = Math.random();
+  if (r < 0.42) {
+    // Bird group: 3 V-shapes
+    const by = 75 + Math.random() * 210;
+    for (let i = 0; i < 3; i++)
+      hazards.push({ type: 'bird', x: W + 55 + i * 58, y: by + (Math.random() - 0.5) * 32,
+                     spd: 1.2 + Math.random() * 0.7, fp: i * 1.1 });
+  } else if (r < 0.70) {
+    // Lightning bolt
+    hazards.push({ type: 'lightning', x: W + 50 + Math.random() * 160,
+                   y: 48 + Math.random() * 190, timer: 0, spd: 0 });
+  } else {
+    // Volcano
+    hazards.push({ type: 'volcano', x: W + 70 + Math.random() * 100, y: 370, spd: 0 });
+  }
+}
+
+function makeExplosion(sx, sy) {
+  explosions.push({ x: sx, y: sy, r: 0, life: 32 });
+  for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2;
+    particles.push({ x: sx, y: sy,
+      vx: Math.cos(a) * (2.2 + Math.random() * 3),
+      vy: Math.sin(a) * (2.2 + Math.random() * 3),
+      life: 28, max: 28, fire: false });
+  }
+}
+
+function hit() {
+  lives--; invincible = 110;
+  if (lives <= 0) phase = 'gameover';
+}
+
+function updateParachute() {
+  pilot.timer++;
+  if (pilot.timer === 38) pilot.open = true;
+  const grav = pilot.open ? 0.07 : 0.38;
+  const maxV = pilot.open ? 1.9 : 9;
+  pilot.vy = Math.min(pilot.vy + grav, maxV);
+  pilot.x += pilot.vx; pilot.y += pilot.vy;
+
+  if (pilot.y >= H - 140) {
+    buildIsland();
+    pilot.x = 160; pilot.y = getIslandY(160) - 16;
+    pilot.vx = 0; pilot.vy = 0; pilot.onGround = true;
+    pilot.dir = 1; pilot.walkF = 0;
+    bear = { x: W + 90, spd: 0.85, appeared: false };
+    islandFrame = 0;
+    phase = 'island';
+  }
+}
+
+function updateIsland() {
+  islandFrame++;
+  const spd = 2.9;
+  pilot.vx = 0;
+  if (keys['ArrowLeft'])  { pilot.vx = -spd; pilot.dir = -1; }
+  if (keys['ArrowRight']) { pilot.vx =  spd; pilot.dir =  1; }
+  if (keys['ArrowUp'] && pilot.onGround) { pilot.vy = -9.5; pilot.onGround = false; }
+
+  pilot.vy += 0.44;
+  pilot.x = Math.max(14, Math.min(W - 14, pilot.x + pilot.vx));
+  pilot.y += pilot.vy;
+  if (pilot.vx !== 0) pilot.walkF++;
+
+  const gy = getIslandY(pilot.x);
+  if (pilot.y + 16 >= gy) {
+    pilot.y = gy - 16; pilot.vy = 0; pilot.onGround = true;
+  } else { pilot.onGround = false; }
+
+  // Bear
+  if (islandFrame > 160) bear.appeared = true;
+  if (bear.appeared) {
+    bear.x += (pilot.x < bear.x ? -1 : 1) * bear.spd;
+    bear.spd = Math.min(2.0, 0.85 + islandFrame / 2800);
+    if (Math.abs(bear.x - pilot.x) < 44) phase = 'gameover';
+  }
+}
+
+// ─── DRAW ────────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, W, H);
+
+  if (phase === 'title')     { drawTitle();     return; }
+  if (phase === 'gameover')  { drawGameOver();  return; }
+  if (phase === 'helicopter') drawHeliScene();
+  else if (phase === 'parachute') drawParachuteScene();
+  else if (phase === 'island')    drawIslandScene();
+}
+
+// ─── Title ───────────────────────────────────────────────────────────────────
+function drawTitle() {
+  // Sky gradient (manual bands)
+  ctx.fillStyle = '#cde4f5'; ctx.fillRect(0, 0, W, 220);
+  ctx.fillStyle = '#e8f4fc'; ctx.fillRect(0, 220, W, 120);
+  ctx.fillStyle = CREAM;      ctx.fillRect(0, 340, W, H - 340);
+  // Rolling ground
+  ctx.fillStyle = '#e8dcc8'; ctx.strokeStyle = BROWN; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 400);
+  for (let x = 0; x <= W; x += 10)
+    ctx.lineTo(x + j(0.5), 400 + 18 * Math.sin(x / 140) + 8 * Math.sin(x / 55 + 0.7) + j(0.5));
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  drawClouds(frame * 0.15);
+
+  // Title text
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 3.5; ctx.lineJoin = 'round';
+  ctx.font = 'bold 56px "Comic Sans MS", cursive';
+  ctx.strokeText('HELIKOPTER', 68, 130);
+  ctx.strokeText('AVONTUUR!', 108, 195);
+  ctx.restore();
+
+  // Static helicopter illustration
+  drawHeliSprite(440, 100, frame * 0.2, false);
+
+  // Stick figure on ground (from child's drawing)
+  const fx = 110, fy = 390;
+  sCircle(fx, fy, 9);
+  sLine(fx, fy + 9, fx, fy + 30);
+  sLine(fx, fy + 18, fx - 11, fy + 28); sLine(fx, fy + 18, fx + 11, fy + 28);
+  sLine(fx, fy + 30, fx - 9, fy + 46);  sLine(fx, fy + 30, fx + 9, fy + 46);
+
+  // Blinking start prompt
+  if (Math.floor(frame / 28) % 2 === 0) {
+    ctx.save();
+    ctx.strokeStyle = BROWN; ctx.lineWidth = 1.8;
+    ctx.font = 'bold 22px "Comic Sans MS", cursive';
+    ctx.strokeText('Druk ENTER om te beginnen!', 198, 360);
+    ctx.restore();
+  }
+}
+
+// ─── Helicopter scene ────────────────────────────────────────────────────────
+function drawHeliScene() {
+  drawSky();
+  drawTerrainFill();
+  for (const t of trees) drawTree(t.wx - scrollX, getTerrainY(t.wx), t.palm);
+  drawHazards();
+  drawParticles();
+  for (const b of bombs) drawBombAt(b.wx - scrollX, b.y);
+  drawExplosions();
+  drawHeliSprite(heli.x, heli.y, heli.rotor, true);
+  drawHUD();
+}
+
+// ─── Parachute scene ─────────────────────────────────────────────────────────
+function drawParachuteScene() {
+  ctx.fillStyle = '#bdd8f0'; ctx.fillRect(0, 0, W, H);
+  drawClouds(frame * 0.2);
+  // Sea
+  ctx.fillStyle = '#88c4e4'; ctx.fillRect(0, H - 110, W, 110);
+  drawWaves(H - 110);
+  // Island silhouette
+  ctx.fillStyle = '#ddd4b8'; ctx.strokeStyle = BROWN; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.ellipse(W / 2, H - 85, 130, 28, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  // Palm on island silhouette
+  drawPalmAt(W / 2 + 20, H - 113);
+
+  drawParachuteFigure(pilot.x, pilot.y, pilot.open);
+
+  ctx.save();
+  ctx.font = 'bold 20px "Comic Sans MS", cursive';
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 1.8;
+  ctx.strokeText('Het eiland nadert...', W / 2 - 96, 52);
+  ctx.restore();
+}
+
+// ─── Island scene ────────────────────────────────────────────────────────────
+function drawIslandScene() {
+  ctx.fillStyle = '#bdd8f0'; ctx.fillRect(0, 0, W, H);
+  drawClouds(islandFrame * 0.18);
+  ctx.fillStyle = '#88c4e4'; ctx.fillRect(0, H - 110, W, 110);
+  drawWaves(H - 110);
+  drawIslandFill();
+  for (const px of palmX) drawPalmAt(px, getIslandY(px) - 2);
+  drawPilotWalk(pilot.x, pilot.y, pilot.dir, pilot.walkF);
+  if (bear.appeared) drawBear(bear.x, getIslandY(bear.x));
+
+  // Bear warning
+  if (bear.appeared && bear.x < 650 && Math.floor(islandFrame / 22) % 2 === 0) {
+    ctx.save();
+    ctx.font = 'bold 21px "Comic Sans MS", cursive';
+    ctx.strokeStyle = BROWN; ctx.lineWidth = 2;
+    ctx.strokeText('EEN BEER KOMT ERAAN!!', W / 2 - 128, 55);
+    ctx.restore();
+  }
+  drawHUD();
+}
+
+// ─── Game over ───────────────────────────────────────────────────────────────
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(250,246,238,0.92)'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineJoin = 'round';
+  ctx.lineWidth = 4.5;
+  ctx.font = 'bold 82px "Comic Sans MS", cursive';
+  ctx.strokeText('GROIN!!', W / 2 - 182, 195);
+  ctx.lineWidth = 2.2;
+  ctx.font = 'bold 30px "Comic Sans MS", cursive';
+  ctx.strokeText('en zo door... avezleven!', W / 2 - 148, 260);
+  ctx.lineWidth = 1.8;
+  ctx.font = 'bold 24px "Comic Sans MS", cursive';
+  ctx.strokeText('Score: ' + score, W / 2 - 58, 318);
+  ctx.restore();
+
+  drawBear(W / 2, 415);
+
+  if (Math.floor(frame / 28) % 2 === 0) {
+    ctx.save();
+    ctx.font = 'bold 20px "Comic Sans MS", cursive';
+    ctx.strokeStyle = BROWN; ctx.lineWidth = 1.6;
+    ctx.strokeText('Druk ENTER om opnieuw te spelen', W / 2 - 162, 470);
+    ctx.restore();
+  }
+}
+
+// ─── Element drawing ─────────────────────────────────────────────────────────
+
+function drawHeliSprite(x, y, rotor, showInvFlicker) {
+  const alpha = (showInvFlicker && invincible > 0)
+    ? (Math.floor(invincible / 7) % 2 === 0 ? 0.22 : 1) : 1;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Body
+  ctx.beginPath(); ctx.roundRect(x + j(0.4), y + j(0.4), 90, 42, 10); ctx.stroke();
+
+  // Nose bulge
+  ctx.beginPath();
+  ctx.arc(x + 18 + j(0.4), y + 21 + j(0.4), 15, Math.PI * 0.35, Math.PI * 1.65);
+  ctx.stroke();
+
+  // Cockpit window circle
+  sCircle(x + 20, y + 21, 11);
+
+  // Pilot face inside window
+  ctx.fillStyle = CREAM;
+  ctx.beginPath(); ctx.arc(x + 20, y + 21, 8, 0, Math.PI * 2); ctx.fill();
+  sCircle(x + 20, y + 21, 8);
+  ctx.fillStyle = BROWN;
+  ctx.beginPath(); ctx.arc(x + 17.5, y + 20, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 23, y + 20, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 20, y + 23, 4, 0.05, Math.PI - 0.05); ctx.stroke(); // smile
+
+  // Tail boom
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(x + 90 + j(0.4), y + 10 + j(0.4));
+  ctx.lineTo(x + 118 + j(0.4), y - 7 + j(0.4));
+  ctx.stroke();
+  sLine(x + 115, y - 7, x + 115, y + 7);    // tail fin
+  sLine(x + 113, y - 16, x + 113, y + 4);   // tail rotor
+
+  // Main rotor
+  const rx = x + 50, ry = y - 5;
+  ctx.lineWidth = 2.3;
+  ctx.beginPath();
+  ctx.moveTo(rx + Math.cos(rotor) * 56, ry + Math.sin(rotor) * 9);
+  ctx.lineTo(rx + Math.cos(rotor + Math.PI) * 56, ry + Math.sin(rotor + Math.PI) * 9);
+  ctx.stroke();
+  sCircle(rx, ry, 4.5);
+
+  // Skids
+  sLine(x + 14, y + 50, x + 60, y + 50, BROWN, 2);
+  sLine(x + 22, y + 42, x + 22, y + 50, BROWN, 2);
+  sLine(x + 52, y + 42, x + 52, y + 50, BROWN, 2);
+
+  ctx.restore();
+}
+
+function drawTerrainFill() {
+  if (terrainPts.length < 2) return;
+  ctx.save();
+  ctx.fillStyle = '#e6d9c2'; ctx.strokeStyle = BROWN; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath();
+  let first = true;
+  for (const pt of terrainPts) {
+    const sx = pt.wx - scrollX;
+    if (sx < -25 || sx > W + 25) continue;
+    if (first) { ctx.moveTo(sx + j(0.5), pt.wy + j(0.5)); first = false; }
+    else ctx.lineTo(sx + j(0.5), pt.wy + j(0.5));
+  }
+  ctx.lineTo(W + 25, H + 5); ctx.lineTo(-25, H + 5); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawIslandFill() {
+  if (islandTerrain.length < 2) return;
+  ctx.save();
+  ctx.fillStyle = '#e6d9c2'; ctx.strokeStyle = BROWN; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(islandTerrain[0].x + j(0.4), islandTerrain[0].y + j(0.4));
+  for (const pt of islandTerrain) ctx.lineTo(pt.x + j(0.4), pt.y + j(0.4));
+  ctx.lineTo(W + 20, H + 5); ctx.lineTo(-20, H + 5); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawTree(sx, gy, palm) {
+  if (sx < -70 || sx > W + 70) return;
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.3; ctx.lineCap = 'round';
+  if (palm) {
+    ctx.beginPath();
+    ctx.moveTo(sx + j(0.5), gy + j(0.5));
+    ctx.quadraticCurveTo(sx + 15 + j(), gy - 32, sx + 7 + j(), gy - 65);
+    ctx.stroke();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.5;
+      sLine(sx + 7, gy - 65, sx + 7 + Math.cos(a) * 30, gy - 65 + Math.sin(a) * 16, BROWN, 2);
+    }
+    sCircle(sx + 9, gy - 63, 5);
+  } else {
+    const h = 46 + Math.sin(sx * 0.38) * 10;
+    sLine(sx, gy, sx, gy - h, BROWN, 2.2);
+    for (let i = 0; i < 3; i++) sCircle(sx + (i - 1) * 10, gy - h - 13, 15 + j(2));
+  }
+  ctx.restore();
+}
+
+function drawPalmAt(x, gy) {
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x + j(0.5), gy + j(0.5));
+  ctx.quadraticCurveTo(x + 18 + j(), gy - 38, x + 8 + j(), gy - 74);
+  ctx.stroke();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i - 2) * 0.52;
+    sLine(x + 8, gy - 74, x + 8 + Math.cos(a) * 34, gy - 74 + Math.sin(a) * 19, BROWN, 2);
+  }
+  sCircle(x + 10, gy - 71, 6);
+  ctx.restore();
+}
+
+function drawHazards() {
+  for (const h of hazards) {
+    if (h.type === 'bird')      drawBird(h.x, h.y, h.fp || 0);
+    if (h.type === 'lightning') drawLightning(h.x, h.y, h.timer || 0);
+    if (h.type === 'volcano')   drawVolcano(h.x, h.y);
+  }
+}
+
+function drawBird(bx, by, fp) {
+  const flap = Math.sin(fp) * 10;
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.3; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(bx - 17 + j(), by + flap + j());
+  ctx.lineTo(bx + j(), by + j());
+  ctx.lineTo(bx + 17 + j(), by + flap + j());
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawLightning(lx, ly, timer) {
+  if (timer % 16 < 8) return; // flash on/off
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  // Storm cloud
+  ctx.beginPath();
+  ctx.arc(lx - 14, ly - 4, 16, Math.PI, 0);
+  ctx.arc(lx + 10, ly - 8, 12, Math.PI, 0);
+  ctx.stroke();
+  // Zigzag bolt
+  let cx = lx, cy = ly;
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  for (let i = 0; i < 7; i++) {
+    const nx = cx + (i % 2 === 0 ? 15 : -15) + j(4);
+    const ny = cy + 18 + j(3);
+    ctx.lineTo(nx + j(), ny + j());
+    cx = nx; cy = ny;
+  }
+  ctx.stroke();
+  // Glow burst when fresh
+  if (timer % 20 < 4) {
+    ctx.strokeStyle = '#cc3333'; ctx.lineWidth = 7; ctx.globalAlpha = 0.22;
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function drawVolcano(vx, vy) {
+  ctx.save();
+  ctx.fillStyle = '#ddd0b5'; ctx.strokeStyle = BROWN; ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(vx - 65 + j(), vy + 25 + j());
+  ctx.lineTo(vx + j(), vy - 70 + j());
+  ctx.lineTo(vx + 65 + j(), vy + 25 + j());
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Crater
+  ctx.beginPath(); ctx.arc(vx + j(0.5), vy - 70, 15, Math.PI, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawBombAt(sx, sy) {
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.ellipse(sx, sy, 5, 8, 0, 0, Math.PI * 2); ctx.stroke();
+  sLine(sx, sy - 8, sx + 5, sy - 15, BROWN, 1.6);
+  ctx.restore();
+}
+
+function drawExplosions() {
+  for (const e of explosions) {
+    ctx.save();
+    ctx.globalAlpha = e.life / 32;
+    ctx.strokeStyle = BROWN; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      sLine(e.x + Math.cos(a) * e.r * 0.45, e.y + Math.sin(a) * e.r * 0.45,
+            e.x + Math.cos(a) * e.r,         e.y + Math.sin(a) * e.r, BROWN, 1.6);
+    }
+    ctx.restore();
+  }
+}
+
+function drawParticles() {
+  ctx.save();
+  for (const p of particles) {
+    const alpha = p.life / p.max;
+    ctx.globalAlpha = Math.max(0, alpha);
+    if (p.fire) {
+      ctx.fillStyle = alpha > 0.5 ? '#cc3322' : '#ee8844';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3.5 + alpha * 2.5, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.strokeStyle = BROWN; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawParachuteFigure(px, py, open) {
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.3; ctx.lineCap = 'round';
+  if (open) {
+    ctx.beginPath();
+    ctx.arc(px + j(0.5), py - 42 + j(0.5), 38, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    sLine(px - 32, py - 42, px - 2, py, BROWN, 1.6);
+    sLine(px,      py - 42, px,     py, BROWN, 1.6);
+    sLine(px + 32, py - 42, px + 2, py, BROWN, 1.6);
+  }
+  sCircle(px, py, 8);
+  sLine(px, py + 8,  px,     py + 28);
+  sLine(px, py + 16, px - 13, py + 27); sLine(px, py + 16, px + 13, py + 27);
+  sLine(px, py + 28, px - 10, py + 44); sLine(px, py + 28, px + 10, py + 44);
+  ctx.restore();
+}
+
+function drawPilotWalk(px, py, dir, wf) {
+  const leg = Math.sin(wf * 0.19) * 9;
+  const d   = dir >= 0 ? 1 : -1;
+  ctx.save(); ctx.strokeStyle = BROWN; ctx.lineWidth = 2.3; ctx.lineCap = 'round';
+  sCircle(px, py - 24, 9);
+  sLine(px, py - 15, px, py);
+  sLine(px, py - 9, px + d * 13, py - 4);  // arm
+  sLine(px, py, px - 8, py + 17 + leg);    // left leg
+  sLine(px, py, px + 8, py + 17 - leg);    // right leg
+  // Eye facing direction
+  ctx.fillStyle = BROWN;
+  ctx.beginPath(); ctx.arc(px + d * 4, py - 25, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawBear(bx, by) {
+  ctx.save();
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
+  // Scribble body (overlapping arcs — like the child's drawing)
+  for (let i = 0; i < 10; i++) {
+    const ph = (i / 10) * Math.PI * 2;
+    const r  = 22 + Math.sin(ph * 2.5 + 0.9) * 7;
+    ctx.beginPath();
+    ctx.arc(bx + j(3), by - 18 + j(3), r + j(3),
+            ph, ph + Math.PI * 0.65 + j(0.35));
+    ctx.stroke();
+  }
+  // Head
+  sCircle(bx + j(), by - 44, 14);
+  // Ears
+  sCircle(bx - 12, by - 57, 6); sCircle(bx + 12, by - 57, 6);
+  // Eyes
+  ctx.fillStyle = BROWN;
+  ctx.beginPath(); ctx.arc(bx - 5, by - 46, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(bx + 5, by - 46, 2.2, 0, Math.PI * 2); ctx.fill();
+  // Legs
+  sLine(bx - 14, by, bx - 19, by + 18, BROWN, 2.6);
+  sLine(bx + 14, by, bx + 19, by + 18, BROWN, 2.6);
+  // Reaching arms
+  sLine(bx - 18, by - 22, bx - 40, by - 10, BROWN, 2.6);
+  sLine(bx + 18, by - 22, bx + 40, by - 10, BROWN, 2.6);
+  ctx.restore();
+}
+
+function drawSky() {
+  ctx.fillStyle = '#cce4f5'; ctx.fillRect(0, 0, W, 200);
+  ctx.fillStyle = '#e5f2fc'; ctx.fillRect(0, 200, W, 120);
+  drawClouds(frame * 0.28);
+}
+
+function drawClouds(offset) {
+  const clouds = [
+    { bx: 80,  y: 52 }, { bx: 310, y: 38 }, { bx: 570, y: 62 },
+    { bx: 195, y: 92 }, { bx: 710, y: 44 }
+  ];
+  ctx.save(); ctx.strokeStyle = BROWN; ctx.lineWidth = 1.9; ctx.lineCap = 'round';
+  for (const c of clouds) {
+    const cx = ((c.bx - offset * 0.22) % (W + 200) + W + 200) % (W + 200) - 100;
+    ctx.beginPath();
+    ctx.moveTo(cx - 40, c.y + 12);
+    ctx.arc(cx - 18, c.y + 5,  17, Math.PI, 0);
+    ctx.arc(cx + 9,  c.y - 6,  21, Math.PI, 0);
+    ctx.arc(cx + 32, c.y + 3,  14, Math.PI, 0);
+    ctx.lineTo(cx + 45, c.y + 12);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWaves(baseY) {
+  ctx.save(); ctx.strokeStyle = BROWN; ctx.lineWidth = 1.9; ctx.lineCap = 'round';
+  for (let wx = -24; wx < W + 48; wx += 52) {
+    ctx.beginPath();
+    ctx.moveTo(wx, baseY + 12 + j(2));
+    ctx.quadraticCurveTo(wx + 26, baseY + 2, wx + 52, baseY + 12 + j(2));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawHUD() {
+  // Hearts
+  for (let i = 0; i < 3; i++) {
+    const hx = 13 + i * 32, hy = 11;
+    ctx.save();
+    ctx.strokeStyle = i < lives ? BROWN : '#ccb0a8'; ctx.lineWidth = 2.1;
+    ctx.beginPath();
+    ctx.moveTo(hx + 12, hy + 6);
+    ctx.bezierCurveTo(hx + 12, hy,      hx + 23, hy,      hx + 23, hy + 9);
+    ctx.bezierCurveTo(hx + 23, hy + 17, hx + 12, hy + 23, hx + 12, hy + 25);
+    ctx.bezierCurveTo(hx + 12, hy + 23, hx + 1,  hy + 17, hx + 1,  hy + 9);
+    ctx.bezierCurveTo(hx + 1,  hy,      hx + 12, hy,      hx + 12, hy + 6);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Score
+  ctx.save();
+  ctx.font = 'bold 17px "Comic Sans MS", cursive';
+  ctx.strokeStyle = BROWN; ctx.lineWidth = 1.5;
+  ctx.strokeText('Score: ' + score, W - 128, 30);
+  ctx.restore();
+
+  // Progress bar (helicopter phase only)
+  if (phase === 'helicopter') {
+    const pct = Math.min(scrollX / PHASE_END, 1);
+    ctx.save();
+    ctx.strokeStyle = BROWN; ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - 100, 9, 200, 15);
+    ctx.fillStyle = '#8b2a2a';
+    ctx.fillRect(W / 2 - 100, 9, 200 * pct, 15);
+    ctx.font = '11px "Comic Sans MS", cursive';
+    ctx.fillStyle = BROWN;
+    ctx.fillText('eiland', W / 2 + 106, 21);
+    ctx.restore();
+  }
+}
+
+// ─── Game loop ───────────────────────────────────────────────────────────────
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
