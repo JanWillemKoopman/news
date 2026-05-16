@@ -562,13 +562,47 @@ a:hover { text-decoration:underline; }
 
 /* ── BEGRIPPENLIJST ── */
 .gterm {
-  border-bottom:1px dotted var(--coral-dim);
-  cursor:help;
+  border-bottom:2px solid var(--coral);
+  cursor:pointer;
+  transition:opacity .15s;
 }
-.gterm-tip {
-  color:var(--text-4);
-  font-size:0.82em;
-  font-style:italic;
+.gterm:hover { opacity:.8; }
+
+/* Bottom-sheet popup */
+.gterm-sheet {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:500;
+  background:var(--bg-2);
+  border-top:2px solid var(--coral);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  padding:18px 20px max(24px,env(safe-area-inset-bottom));
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+  max-height:45vh; overflow-y:auto;
+  animation:sheetUp .2s ease;
+}
+.gterm-sheet.open { display:block; }
+@keyframes sheetUp {
+  from { transform:translateY(100%); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
+.gterm-sheet-handle {
+  width:36px; height:4px; border-radius:2px;
+  background:var(--border-2); margin:0 auto 14px;
+}
+.gterm-sheet-term {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:600;
+  color:var(--coral); margin-bottom:8px;
+}
+.gterm-sheet-uitleg {
+  font-size:0.93rem; line-height:1.7; color:var(--text-2);
+}
+.gterm-sheet-close {
+  position:absolute; top:14px; right:16px;
+  background:var(--bg-4); border:1px solid var(--border);
+  border-radius:var(--r-full); color:var(--text-3);
+  font-size:0.8rem; cursor:pointer;
+  padding:3px 9px; line-height:1.4;
 }
 
 /* ── RESPONSIVE ── */
@@ -609,14 +643,14 @@ a:hover { text-decoration:underline; }
       <div class="hero-eyebrow">
         <span class="label-up">Frontlijn OSINT</span>
         <span class="hero-sep">·</span>
-        <span class="hero-time">2026-05-16 — 16 mei 07:33</span>
+        <span class="hero-time">2026-05-16 — 16 mei 20:06</span>
       </div>
-      <h1 class="hero-kop">Grootschalige wederzijdse drone-aanvallen treffen industriële en civiele doelen</h1>
-      <div class="hero-sub">Oekraïne raakt chemische fabriek in Stavropol, terwijl Rusland bijna 300 drones inzet tegen steden.</div>
-      <p class="hero-lede">De luchtoorlog is de afgelopen 24 uur aanzienlijk geëscaleerd met massale drone-aanvallen over en weer. Oekraïne voerde een succesvolle diepe aanval uit op een chemische fabriek in de Russische regio Stavropol, essentieel voor de munitieproductie. Tegelijkertijd lanceerde Rusland een zwerm van bijna driehonderd drones op Oekraïense infrastructuur, waarbij onder meer Kharkiv en Odesa werden getroffen. Deze wederzijdse uitputtingsslag benadrukt de verschuiving naar strategische bombardementen op het logistieke en industriële achterland.</p>
+      <h1 class="hero-kop">Oekraïne intensiveert diepe aanvallen op Russische olie- en chemische industrie</h1>
+      <div class="hero-sub">Raffinaderij in Rjazan en chemische fabriek in Nevinnomyssk geraakt te midden van grootschalige drone-aanvallen</div>
+      <p class="hero-lede">Oekraïense strijdkrachten hebben een gecoördineerde reeks drone-aanvallen uitgevoerd op strategische doelen diep in Russisch grondgebied, waarbij aanzienlijke schade is toegebracht aan de olieraffinaderij in Rjazan en een chemische fabriek in Nevinnomyssk. Terwijl Moskou claimt tientallen drones te hebben onderschept, wijzen de succesvolle inslagen op aanhoudende kwetsbaarheden in de Russische luchtverdediging. Deze escalatie benadrukt de Oekraïense strategie om de logistieke en economische ruggengraat van de Russische oorlogsmachine structureel te verzwakken.</p>
       <div class="hero-stats">
         <span class="stat">📡 <strong>7</strong> kanalen</span>
-        <span class="stat">📨 <strong>137</strong> berichten</span>
+        <span class="stat">📨 <strong>380</strong> berichten</span>
         <span class="stat">📍 <strong>5</strong> sectoren</span>
         <span class="stat">📅 Oudste: 15 mei 18:28</span>
       </div>
@@ -638,109 +672,112 @@ a:hover { text-decoration:underline; }
     <div class="foto-grid">
       
       
-<a href="https://t.me/wargonzo/34214" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/ffrQ9l48FCE7ofcia0g9XJY1RPUGBKPUZari2BA1r_KBrn1kHayy7N-lbjNpKfn6fSRW9sT7Kpucw8V1SshAjx2JGVal9zkcmNVRpQCTRBfMOfpLeNV0NR2hDIaK7BwLqIibb5kpmqmMBj0l8f-OBCzXL3et10sZcRMWat_KKsakSEptznJv9vyNQYih7DdbupY0HUwB_JdM0Fx5y2v_XpvbKjX--15eVhrDYRo_hDQP513MGivN8XU53uXyJ4kWt-5MrLRCwwme27-3SmKoKboJtgvkRgcqXtZYFaJncLouG-GcC2Du3SQOWHHUsN3p2bkJIGSQ-jwFdfBg3CVErQ.jpg')"
-   role="img" aria-label="Foto van @wargonzo, 16 mei 07:10"
-   title="@wargonzo · 16 mei 07:10">
+<a href="https://t.me/operativnoZSU/211076" target="_blank" rel="noopener"
+   class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/83b53af326.mp4?token=M4IvHNj1KZeqefA7ihweATKbpyqXJdY-muoK9zL55rqdc9gNxO06kY5137Q6I3uSX0nCND2ZBVvj2XqxkKTSPhwqEfE5q9SYlEJVFwcl9EyOzThAjsOlgFr8530w3Bd7VHqPvztoPbMwEYHNJGkkhy3CiadK9H9O2nQbjjl96FNbzfY91--5GrwLT_95-FvROTUsjtFBzUql4ioVM3txWHqLdXEQDe_j7CidQeetIWYhjOAKscT_I2mGgWdY07tkdHDci7EDIDR9kQEcaopKYGrIiI6Eolxl06tBjUe-oYu9PDIj4gyeCpFIw8whNBRekaI7Og_lwbxgAM4E_sGNaYi-rc8JTn60jg3WQw8tSra5FJxajnlRbgTcvWPed9A7hoA88mFEYCu96vjiXAEZIAWkQueE-1qfgrnZIiKZoOLSGAUdxqESUh_wv6CWr27chfsCsgVoKSxYSAmHOwd9qM7iqlPdgl1WkxUyV4FV1b61Q8iTvryYmw13wykAZmAL84M8Ol7JirvcyAAKeOKp5D_ZEhqwoY_cuXrmIQkPFgzhCGz6UMwuTUnj_s4PDZe4dZ6NOvNp-dJRftmQqnzb8PDbBsTnn49KDphInnbCV3xZTrl6vLoFMz2QYxq3AZWfks8FtguR1kxPhFOt7Z_JSDXnBAlnUdZaDVx7DBCB7MQ')"
+   role="img" aria-label="Video van @operativnoZSU, 16 mei 19:53"
+   title="Video · @operativnoZSU · 16 mei 19:53">
+  <div class="media-play" aria-hidden="true">▶</div>
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@wargonzo · 16 mei 07:10</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 19:53</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/wargonzo/34214" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/ffrQ9l48FCE7ofcia0g9XJY1RPUGBKPUZari2BA1r_KBrn1kHayy7N-lbjNpKfn6fSRW9sT7Kpucw8V1SshAjx2JGVal9zkcmNVRpQCTRBfMOfpLeNV0NR2hDIaK7BwLqIibb5kpmqmMBj0l8f-OBCzXL3et10sZcRMWat_KKsakSEptznJv9vyNQYih7DdbupY0HUwB_JdM0Fx5y2v_XpvbKjX--15eVhrDYRo_hDQP513MGivN8XU53uXyJ4kWt-5MrLRCwwme27-3SmKoKboJtgvkRgcqXtZYFaJncLouG-GcC2Du3SQOWHHUsN3p2bkJIGSQ-jwFdfBg3CVErQ.jpg')"
-   role="img" aria-label="Foto van @wargonzo, 16 mei 07:10"
-   title="@wargonzo · 16 mei 07:10">
+<a href="https://t.me/two_majors/75352" target="_blank" rel="noopener"
+   class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/6a364f593c.mp4?token=FrXLhqHwTL1ZyughHaeeFtPP1qlQagFSNhrN3G6Ma7qK6rvDOf9Hfb1RiETTWvg3VcyPEJe4s137zofK1oloSWf-3KM0JnWj8fY1_zPBRsLAbKxtQ14u-pVKnMtxQdZhLgmT2f65ts5BBkQF1rF0WIjU-thuaJ8KAqAcTjNuc1tz9yXLm_g11W2ozkl0Vze0RgjyZL_Fbjnw4L8DcUT5ZaYPInbWxDO_yRecwQRQuOA4Y_lgm3eesSTu2LnhDKL5-kVrP_HPPS1HbfdjW9zkZzKI73o1IhpT5cKbXaVAIt22p7r-g5BCwdoAPvCDOkmJq1ORRFi0eCwZrSoV0zvzsA')"
+   role="img" aria-label="Video van @two_majors, 16 mei 19:44"
+   title="Video · @two_majors · 16 mei 19:44">
+  <div class="media-play" aria-hidden="true">▶</div>
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@wargonzo · 16 mei 07:10</span>
+    <span class="media-meta">@two_majors · 16 mei 19:44</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/wargonzo/34214" target="_blank" rel="noopener"
+<a href="https://t.me/operativnoZSU/211074" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/ffrQ9l48FCE7ofcia0g9XJY1RPUGBKPUZari2BA1r_KBrn1kHayy7N-lbjNpKfn6fSRW9sT7Kpucw8V1SshAjx2JGVal9zkcmNVRpQCTRBfMOfpLeNV0NR2hDIaK7BwLqIibb5kpmqmMBj0l8f-OBCzXL3et10sZcRMWat_KKsakSEptznJv9vyNQYih7DdbupY0HUwB_JdM0Fx5y2v_XpvbKjX--15eVhrDYRo_hDQP513MGivN8XU53uXyJ4kWt-5MrLRCwwme27-3SmKoKboJtgvkRgcqXtZYFaJncLouG-GcC2Du3SQOWHHUsN3p2bkJIGSQ-jwFdfBg3CVErQ.jpg')"
-   role="img" aria-label="Foto van @wargonzo, 16 mei 07:10"
-   title="@wargonzo · 16 mei 07:10">
+   style="background-image:url('https://cdn4.telesco.pe/file/XHuCizPcrXeiQZYaK0AYPEA7Zns6tTAt6uCyrLVYYiX3BKWlVXw7ANSCWRuOPn_ULx5WztXamGM1E1amrstAL23gebQL4W4Pp-p64zqpvqaEc6W2IGq7JWQQLn9DrxIUkhBrP96k3NzYyNO4X1E7xZgovoN7U5BdJjF0j7AkpC5ZPvp3sttlkZbelCD3KJpJdpBtKYBic-cmdN31UdzYMJdkZXDqFk4MgAsPK_zVZHXKbGyH28D7n9_j2LZxIpiGcV0c9yQNZfDoADUvHQQT8w8BZT9tMnsn8wfNsnOUNjWGF7MNUlXdyPqphXb88BMKHDDSA8PQvtb3sMf6eE0wXA.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 19:33"
+   title="@operativnoZSU · 16 mei 19:33">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@wargonzo · 16 mei 07:10</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 19:33</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/wargonzo/34214" target="_blank" rel="noopener"
+<a href="https://t.me/Slavyangrad/164344" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/ffrQ9l48FCE7ofcia0g9XJY1RPUGBKPUZari2BA1r_KBrn1kHayy7N-lbjNpKfn6fSRW9sT7Kpucw8V1SshAjx2JGVal9zkcmNVRpQCTRBfMOfpLeNV0NR2hDIaK7BwLqIibb5kpmqmMBj0l8f-OBCzXL3et10sZcRMWat_KKsakSEptznJv9vyNQYih7DdbupY0HUwB_JdM0Fx5y2v_XpvbKjX--15eVhrDYRo_hDQP513MGivN8XU53uXyJ4kWt-5MrLRCwwme27-3SmKoKboJtgvkRgcqXtZYFaJncLouG-GcC2Du3SQOWHHUsN3p2bkJIGSQ-jwFdfBg3CVErQ.jpg')"
-   role="img" aria-label="Foto van @wargonzo, 16 mei 07:10"
-   title="@wargonzo · 16 mei 07:10">
+   style="background-image:url('https://cdn1.telesco.pe/file/jz2PFpBhwQUx_cOq_IZQyGJDcXWf3rWtEkmlPDyrWhRdmmxKPA13qzRK_Z5BU71xrzkqqi0F6IEO0bJDejvH0aGikU09UQB-YA0l4u6gKle7p8VyHzfw3k_c5Rs5TFBqXeyB96Qg9fTtajp7CPzobevh1qSXa89_nJwyM5m4jQm7aweLM2R07dhgy7KhsViqTWXI6155cyHRzOkzLHQ_FoDTQAtX5kRL31ypntbsEPUHkTn0nAcVDoQbRbggOpglr4OD0ZGI2GJnLR13jQHb9FaFBs7l8hC8Rjomfvs1uBYv9xD2f3pGC9MVG1k1RuvTJHDy-kXHZTXxap0V6jNscg.jpg')"
+   role="img" aria-label="Foto van @Slavyangrad, 16 mei 19:20"
+   title="@Slavyangrad · 16 mei 19:20">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@wargonzo · 16 mei 07:10</span>
+    <span class="media-meta">@Slavyangrad · 16 mei 19:20</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/operativnoZSU/211026" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/bsgb9VhEHA17ajwwfjYNtG8iEgUSB8n_uu9qJVNyxkTPIshe5BaY9RdkEwYf4txFh-AHFSBfcKevo3Xm4fBojFT6NxJ33t4oQPq-5l7KcFUm3u76bZK9-GhAFLXJKHntkWntDfYFUgv2g2PU7OQ1G7hD5Z3qONj7mMYjaFBajgXCcBLmx4P6naCzNwoLU1Onr9weDinpNQsn1HALquS3FZ8Ao6Hrs_L5_hpHl2GOpaJfQC4KULRcCIbDvHuDFu7dCNP0KA4FJdpSqEku5DcUlBTKlXJJ8nfA7EXObDQ91TGhFyf0PaxAiJaBgYiLD9bRwaExHgr9BcLzFj-K1rQALw.jpg')"
-   role="img" aria-label="Foto van @operativnoZSU, 16 mei 07:08"
-   title="@operativnoZSU · 16 mei 07:08">
+<a href="https://t.me/operativnoZSU/211070" target="_blank" rel="noopener"
+   class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/f787d2526d.mp4?token=asVTMBxrzUEzaijj0JZJviMcWf521D--MAM6Ss3HFsHbvwfuT7s2686ge-o01sUe7IpQ60p3Nf4_wxlb0y25GnyavnYSw6NffnAtn-GUOpWqZ8eCNSrWqLpTeHYA2Vn033WE0wLwG634aLeU-rmUI2p54tHP16v87x_SmDXf_2G_cSvnZXkqi-GDASlE7W2JBdkSq9VrmRYQ7RSQhf75T9YTvZMMMr553rESid1_IQPE1ziAyuESPGdeppCHGbmbNYSOnJG16lVfHhWqPfmQ-4ufHLvpXaw25GHsHNhvyKT_1zDvjyMgYgwppEyPthgnzajFB3rOLrFNHLBO12p7BSR3ECM6kNgBBARhE0wrb8sb4H9_98joen3AgH3hN4Fqybz6WLVCGhEuUfYgRezB1IVO_dwhBSWIGyXRBfYtnUMk3Qzje0PsqYL3zHSRWsogrAdbLEyfQ8jauFUmOjBIiLHYK3idVs_Ua6vqxi-Abc1u3Jopfwwq3dWMjqO8vUSvdQL4iQjY4HF-1hFtFNIODMaTrqIvaGnEW_NuQVWFNHyOJyp_vpW0yu9pP1LohYpcn0TnOz03xubyFzZV4ymne3dfgYb56cfq7aEZtjHZxYcRWJkHBU5YTrLSxSmG-vY7MIGAYMTpTjFEIQoDr9ry2kmV6rjMxj0AY3uVS3H6jhg')"
+   role="img" aria-label="Video van @operativnoZSU, 16 mei 18:33"
+   title="Video · @operativnoZSU · 16 mei 18:33">
+  <div class="media-play" aria-hidden="true">▶</div>
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@operativnoZSU · 16 mei 07:08</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 18:33</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/operativnoZSU/211026" target="_blank" rel="noopener"
+<a href="https://t.me/operativnoZSU/211068" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/bsgb9VhEHA17ajwwfjYNtG8iEgUSB8n_uu9qJVNyxkTPIshe5BaY9RdkEwYf4txFh-AHFSBfcKevo3Xm4fBojFT6NxJ33t4oQPq-5l7KcFUm3u76bZK9-GhAFLXJKHntkWntDfYFUgv2g2PU7OQ1G7hD5Z3qONj7mMYjaFBajgXCcBLmx4P6naCzNwoLU1Onr9weDinpNQsn1HALquS3FZ8Ao6Hrs_L5_hpHl2GOpaJfQC4KULRcCIbDvHuDFu7dCNP0KA4FJdpSqEku5DcUlBTKlXJJ8nfA7EXObDQ91TGhFyf0PaxAiJaBgYiLD9bRwaExHgr9BcLzFj-K1rQALw.jpg')"
-   role="img" aria-label="Foto van @operativnoZSU, 16 mei 07:08"
-   title="@operativnoZSU · 16 mei 07:08">
+   style="background-image:url('https://cdn4.telesco.pe/file/lFhTldJ6KvlOA98mjWcRnq03IHjJmMTAMKAJaKk4YMlxgNnBeNV_6vipxtMW0VDSA1NPBt0lKiQ3oCo5gk7mtcFlXriqUZRJxVqyP7dNmQKHZKcqmPOubkI63frv9kebDnHIq7sh7oNhxu9zHdINuN2SSW-gol3577mnbVa8isCcITMkYZn_QxEWgSZkVtQ5A_WCFPC-ZO11A8FwgAwX9Trno3z7t7MZ59xWyNhWYnxAgt0szCBhnPfIborG9t6EAWdBubJJAh7-0bgzHJyunueOAFGQyr2QUEdC59ZMW06wc0ZcS0LQjZZ1TDNJW_wF1dpHv-w9WIlUFviUSDrXaw.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 17:58"
+   title="@operativnoZSU · 16 mei 17:58">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@operativnoZSU · 16 mei 07:08</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 17:58</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/operativnoZSU/211026" target="_blank" rel="noopener"
+<a href="https://t.me/wartranslated/15764" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/bsgb9VhEHA17ajwwfjYNtG8iEgUSB8n_uu9qJVNyxkTPIshe5BaY9RdkEwYf4txFh-AHFSBfcKevo3Xm4fBojFT6NxJ33t4oQPq-5l7KcFUm3u76bZK9-GhAFLXJKHntkWntDfYFUgv2g2PU7OQ1G7hD5Z3qONj7mMYjaFBajgXCcBLmx4P6naCzNwoLU1Onr9weDinpNQsn1HALquS3FZ8Ao6Hrs_L5_hpHl2GOpaJfQC4KULRcCIbDvHuDFu7dCNP0KA4FJdpSqEku5DcUlBTKlXJJ8nfA7EXObDQ91TGhFyf0PaxAiJaBgYiLD9bRwaExHgr9BcLzFj-K1rQALw.jpg')"
-   role="img" aria-label="Foto van @operativnoZSU, 16 mei 07:08"
-   title="@operativnoZSU · 16 mei 07:08">
+   style="background-image:url('https://cdn4.telesco.pe/file/qQ6rIJvkgslkeFg1TTDNc56wpawg4Fp4AgCfsEyy1JckVqKNQ_RakEDTne42nuNoDR-fcTXt4008_NK1HA6-BANAphCSOYvdek2KXydMt1g3mg3gnnWP5w74iji7CqEwWeNpC9zKKuLc_Or6zBod5c90GBR5agSDMiq7TRI_DfuaXFD_dEWigBNRt5yGdn9l71zeTNxWjmIFCt_oTW6zyYaAL0tamfu_bkaRj_XqZj4sQYtOV4Gz2oC5E2PHcZy0DgtOQeDJWZ69yo5aautACBTo5PlmxVoStup1377L8B7QIfzFB7Pgi-vOHsgTidj5Qb_4Fq6OBM3Pt18bwBjZYQ.jpg')"
+   role="img" aria-label="Foto van @wartranslated, 16 mei 17:35"
+   title="@wartranslated · 16 mei 17:35">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@operativnoZSU · 16 mei 07:08</span>
+    <span class="media-meta">@wartranslated · 16 mei 17:35</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/operativnoZSU/211026" target="_blank" rel="noopener"
+<a href="https://t.me/Slavyangrad/164337" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/bsgb9VhEHA17ajwwfjYNtG8iEgUSB8n_uu9qJVNyxkTPIshe5BaY9RdkEwYf4txFh-AHFSBfcKevo3Xm4fBojFT6NxJ33t4oQPq-5l7KcFUm3u76bZK9-GhAFLXJKHntkWntDfYFUgv2g2PU7OQ1G7hD5Z3qONj7mMYjaFBajgXCcBLmx4P6naCzNwoLU1Onr9weDinpNQsn1HALquS3FZ8Ao6Hrs_L5_hpHl2GOpaJfQC4KULRcCIbDvHuDFu7dCNP0KA4FJdpSqEku5DcUlBTKlXJJ8nfA7EXObDQ91TGhFyf0PaxAiJaBgYiLD9bRwaExHgr9BcLzFj-K1rQALw.jpg')"
-   role="img" aria-label="Foto van @operativnoZSU, 16 mei 07:08"
-   title="@operativnoZSU · 16 mei 07:08">
+   style="background-image:url('https://cdn4.telesco.pe/file/gFihfND7g6nokpelGu_nyAOEuT7gjFdRBz-kwm2W4Zai1cf8X0GVDb0h6Zhu5XIEYXxnAdeWpaeebxATFFjNI44UIA7ivCkH5wc7pFPDdpn3w2iXepL4c_7SYDdvudOp0GIukMCkCMmjHUZvsZfiZmTBtB_kphbB-Rg4cnDydGDGXotzZY_0qZtN4mQ7gXqwmTuLex8QXmiJmiPDr3d3pyLCyuM2Mb-ykV3mdEvjYpCb7vobZlQMYHRpyXh2j295YoBbPE5KAvT8Jgb46gc8rmbbb2qi_AwdOfyRyurtfSmAqsABDSnPlNPXlIXY7TjeSow9JDnBaBvPJIimDhdYoQ.jpg')"
+   role="img" aria-label="Foto van @Slavyangrad, 16 mei 17:34"
+   title="@Slavyangrad · 16 mei 17:34">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@operativnoZSU · 16 mei 07:08</span>
+    <span class="media-meta">@Slavyangrad · 16 mei 17:34</span>
   </div>
 </a>
 
       
       
-<a href="https://t.me/Slavyangrad/164305" target="_blank" rel="noopener"
+<a href="https://t.me/operativnoZSU/211067" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/nZQFwDmRxlDo0mCNU8HP6__qhYe4NpYJI-7BnPFpgr2kOlWZ3IXUbQ3zWYbMJHXt46VzSH3u5hgoeGJPDrFNcKnrvMJK5VnLYVM47l3RDIEaOs_f0x9sMu0_DyqFC6wJ2IaNPYflptL51MCIWuQIw_pVPONN8K7pa7JZvF4YsdHp0_S-7JuXoHlwAqtllIpbb9Hq4_1U_PjWhMnj-VOv-uy1by_2DJFRpZB_3JDha_2rWTukpNqRRo1mo7Cug05V9WRRyiyIK5JY9QY_uVTG8dmpMMq3yuBevfZI4vi9OJ2u55xprqKIyh-IYsW2GmbNsj4h4hHcIVrY1xiaJdhHhg.jpg')"
-   role="img" aria-label="Foto van @Slavyangrad, 16 mei 06:45"
-   title="@Slavyangrad · 16 mei 06:45">
+   style="background-image:url('https://cdn4.telesco.pe/file/BekdRP1PN9_ZilZQ7pU5KswUTy4QlkfSciymMSOtrHYHHdUZLj76K-fqtxTVFgEB-LmEp7MCnygyql2HJESsQc0GBWl7cq7H0ZLHRDgC9dKrH_Lw7wMv5nZQA1FJC_WpmRGATgnM3AXsyFTrjf0H65dUs_LyiE0ThXGQIni7vdGoqF4g91L1r-1a3Qe7MsQRnzV9lR1BZsy9tDjv3Ngeis8r7RnlYw4_vJQLIolE7RAgTg-gxkwHWFaGi-ByPGlvm61VHfwjVaqXcW3U__BH-f9Zcd1K-HA9zTNUBSE7j-tT8LPHsmryveaFosTg6BPmsatqaa9_T_dCStCA05NrMQ.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 17:22"
+   title="@operativnoZSU · 16 mei 17:22">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@Slavyangrad · 16 mei 06:45</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 17:22</span>
   </div>
 </a>
 
@@ -793,7 +830,131 @@ a:hover { text-decoration:underline; }
         
       
         
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -879,11 +1040,11 @@ a:hover { text-decoration:underline; }
         <div class="skaart-accent acc-hoog"></div>
         <div class="skaart-body">
           <div class="skaart-top">
-            <div class="skaart-naam">Stavropol (Rusland)</div>
+            <div class="skaart-naam">Diep Russisch Grondgebied (Rjazan/Stavropol)</div>
             <span class="betr betr-hoog">hoog</span>
           </div>
-          <div class="skaart-sum">Oekraïense drones hebben met succes een chemische fabriek geraakt die cruciaal is voor de Russische militaire industrie.</div>
-          <div id="minimap-1" class="minimap" data-naam="Stavropol (Rusland)"></div>
+          <div class="skaart-sum">Grootschalige Oekraïense drone-aanvallen richten zich op Russische industriële en logistieke infrastructuur.</div>
+          <div id="minimap-1" class="minimap" data-naam="Diep Russisch Grondgebied (Rjazan/Stavropol)"></div>
 
           
           <div class="sector-media-lbl">📷 Beelden uit dit gebied</div>
@@ -941,13 +1102,13 @@ a:hover { text-decoration:underline; }
             
             <div class="fvak fvak--ok">
               <div class="fvak-label">✓ Bevestigd</div>
-              <ul class="fvak-list"><li>Een drone-aanval heeft brand veroorzaakt in de Azot chemische fabriek in Nevinnomyssk, die ammoniumnitraat en ammoniak produceert.</li></ul>
+              <ul class="fvak-list"><li>Oekraïense drones hebben de olieraffinaderij in Rjazan geraakt, waarbij meerdere verwerkingseenheden (AVT-3, AVT-4, AT-6) zijn beschadigd.</li></ul>
             </div>
             
             
             <div class="fvak fvak--?">
               <div class="fvak-label">? Onzeker</div>
-              <ul class="fvak-list"><li>Lokale rapportages suggereren dat de Russische luchtverdediging in het geheel niet heeft gereageerd op de aanval (gemeld door wartranslated).</li></ul>
+              <ul class="fvak-list"><li>De Russische claim dat 76 Oekraïense drones succesvol zijn onderschept boven diverse westelijke en zuidelijke regio's (two_majors).</li><li>Lokale rapporten dat de Russische luchtverdediging in Nevinnomyssk inactief bleef tijdens de aanval op de chemische fabriek (wartranslated).</li></ul>
             </div>
             
           </div>
@@ -958,237 +1119,7 @@ a:hover { text-decoration:underline; }
             
             <div class="cvak cvak--ua">
               <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
-              Drones hebben de Azot-fabriek, onderdeel van het Russische militair-industrieel complex, succesvol aangevallen.
-              <div class="cvak-bron">Bron:
-                <a href="https://t.me/s/UkraineNow" target="_blank">@UkraineNow</a>
-                </div>
-            </div>
-            
-            
-            <div class="cvak cvak--ru">
-              <div class="cvak-label">🇷🇺 Rusland claimt</div>
-              Gedurende de nacht zijn 138 Oekraïense UAV's neergehaald boven Russische regio's, waaronder Stavropol.
-              <div class="cvak-bron">Bron:
-                <a href="https://t.me/s/rybar" target="_blank">@rybar</a>
-                </div>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="skaart-footer">
-            <span class="skaart-footer-lbl">Bronnen:</span>
-            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@UkraineNow</span><span class="chip chip--ru">@rybar</span>
-          </div>
-          
-        </div>
-      </div>
-      
-      
-      
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-      <div class="skaart">
-        
-        <div class="skaart-accent acc-hoog"></div>
-        <div class="skaart-body">
-          <div class="skaart-top">
-            <div class="skaart-naam">Kharkiv & Odesa</div>
-            <span class="betr betr-hoog">hoog</span>
-          </div>
-          <div class="skaart-sum">Russische drone-aanvallen hebben aanzienlijke schade toegebracht aan civiele en haveninfrastructuur in grote Oekraïense steden.</div>
-          <div id="minimap-2" class="minimap" data-naam="Kharkiv & Odesa"></div>
-
-          
-          <div class="sector-media-lbl">📷 Beelden uit dit gebied</div>
-          <div class="sector-media">
-            
-<a href="https://t.me/UkraineNow/81253" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/M7Q1LmNmEqdltpMNHRtM_FYEwCn4zzhOgvwVh1MPkfmbnSLLcC1MYi7IhdXNWBGhRvot43Ezb24sw6wKH7hGEEvHMuEGAynful30xwy6IJ5YGJv0PUF_HY-o6eJXoM4U6bkGzso44wQ7tTvFcn4za1t6QUsHuF1Yd1VUw3XnKVoLtrJVIKO_3x1k2vWGgyqNowESsd87yUFc2dBgf2Fl2D0XtLNsakXec5RjYDKWSUQqBZRZwQ2v7CKjLMAzHlmMhMWCOuY7DfT2dE59c0wTKmDuuMysj95P_2Dxe_TckPzCR7gHxZSbKuQKME8ncrzJywH2xbUd9Wv8cYERGpM73g.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 06:35"
-   title="@UkraineNow · 16 mei 06:35">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 06:35</span>
-  </div>
-</a>
-
-<a href="https://t.me/UkraineNow/81253" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/M7Q1LmNmEqdltpMNHRtM_FYEwCn4zzhOgvwVh1MPkfmbnSLLcC1MYi7IhdXNWBGhRvot43Ezb24sw6wKH7hGEEvHMuEGAynful30xwy6IJ5YGJv0PUF_HY-o6eJXoM4U6bkGzso44wQ7tTvFcn4za1t6QUsHuF1Yd1VUw3XnKVoLtrJVIKO_3x1k2vWGgyqNowESsd87yUFc2dBgf2Fl2D0XtLNsakXec5RjYDKWSUQqBZRZwQ2v7CKjLMAzHlmMhMWCOuY7DfT2dE59c0wTKmDuuMysj95P_2Dxe_TckPzCR7gHxZSbKuQKME8ncrzJywH2xbUd9Wv8cYERGpM73g.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 06:35"
-   title="@UkraineNow · 16 mei 06:35">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 06:35</span>
-  </div>
-</a>
-
-<a href="https://t.me/UkraineNow/81253" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/M7Q1LmNmEqdltpMNHRtM_FYEwCn4zzhOgvwVh1MPkfmbnSLLcC1MYi7IhdXNWBGhRvot43Ezb24sw6wKH7hGEEvHMuEGAynful30xwy6IJ5YGJv0PUF_HY-o6eJXoM4U6bkGzso44wQ7tTvFcn4za1t6QUsHuF1Yd1VUw3XnKVoLtrJVIKO_3x1k2vWGgyqNowESsd87yUFc2dBgf2Fl2D0XtLNsakXec5RjYDKWSUQqBZRZwQ2v7CKjLMAzHlmMhMWCOuY7DfT2dE59c0wTKmDuuMysj95P_2Dxe_TckPzCR7gHxZSbKuQKME8ncrzJywH2xbUd9Wv8cYERGpM73g.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 06:35"
-   title="@UkraineNow · 16 mei 06:35">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 06:35</span>
-  </div>
-</a>
-
-<a href="https://t.me/UkraineNow/81253" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/M7Q1LmNmEqdltpMNHRtM_FYEwCn4zzhOgvwVh1MPkfmbnSLLcC1MYi7IhdXNWBGhRvot43Ezb24sw6wKH7hGEEvHMuEGAynful30xwy6IJ5YGJv0PUF_HY-o6eJXoM4U6bkGzso44wQ7tTvFcn4za1t6QUsHuF1Yd1VUw3XnKVoLtrJVIKO_3x1k2vWGgyqNowESsd87yUFc2dBgf2Fl2D0XtLNsakXec5RjYDKWSUQqBZRZwQ2v7CKjLMAzHlmMhMWCOuY7DfT2dE59c0wTKmDuuMysj95P_2Dxe_TckPzCR7gHxZSbKuQKME8ncrzJywH2xbUd9Wv8cYERGpM73g.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 06:35"
-   title="@UkraineNow · 16 mei 06:35">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 06:35</span>
-  </div>
-</a>
-
-          </div>
-          
-
-          
-          <div class="feiten-grid">
-            
-            <div class="fvak fvak--ok">
-              <div class="fvak-label">✓ Bevestigd</div>
-              <ul class="fvak-list"><li>In het Shevchenkivskyi district van Kharkiv is schade toegebracht aan metrostations, openbaar vervoer en een onderwijsinstelling.</li><li>In het zuiden van de regio Odesa zijn residentiële gebouwen en haveninfrastructuur, waaronder een magazijn, beschadigd.</li></ul>
-            </div>
-            
-            
-            <div class="fvak fvak--?">
-              <div class="fvak-label">? Onzeker</div>
-              <ul class="fvak-list"><li>Het exacte aantal slachtoffers is onduidelijk; rapportages spreken van één tot meerdere gewonden per locatie (gemeld door UkraineNow en operativnoZSU).</li></ul>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="claims-grid">
-            
-            <div class="cvak cvak--ua">
-              <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
-              269 van de 294 Russische UAV's zijn neergehaald of onderdrukt; er zijn 20 inslagen geregistreerd op 15 locaties.
+              Succesvolle vernietiging van kritieke infrastructuur in Rjazan en de regio Donetsk.
               <div class="cvak-bron">Bron:
                 <a href="https://t.me/s/operativnoZSU" target="_blank">@operativnoZSU</a>
                 </div>
@@ -1197,9 +1128,9 @@ a:hover { text-decoration:underline; }
             
             <div class="cvak cvak--ru">
               <div class="cvak-label">🇷🇺 Rusland claimt</div>
-              Kamikaze-drones hebben vijandelijke doelen geraakt in onder meer Kharkov en de regio Dnepropetrovsk.
+              76 Oekraïense drones onderschept en vernietigd tussen 09:00 en 15:00 Moskou-tijd.
               <div class="cvak-bron">Bron:
-                <a href="https://t.me/s/Slavyangrad" target="_blank">@Slavyangrad</a>
+                <a href="https://t.me/s/two_majors" target="_blank">@two_majors</a>
                 </div>
             </div>
             
@@ -1209,7 +1140,7 @@ a:hover { text-decoration:underline; }
           
           <div class="skaart-footer">
             <span class="skaart-footer-lbl">Bronnen:</span>
-            <span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--ua">@UkraineNow</span><span class="chip chip--ru">@Slavyangrad</span>
+            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--ru">@two_majors</span>
           </div>
           
         </div>
@@ -1243,149 +1174,7 @@ a:hover { text-decoration:underline; }
         
       
         
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-      <div class="skaart">
-        
-        <div class="skaart-accent acc-laag"></div>
-        <div class="skaart-body">
-          <div class="skaart-top">
-            <div class="skaart-naam">Zaporizja Front</div>
-            <span class="betr betr-laag">laag</span>
-          </div>
-          <div class="skaart-sum">Russische troepen claimen beperkte tactische vooruitgang in een verder statische frontlijn.</div>
-          <div id="minimap-3" class="minimap" data-naam="Zaporizja Front"></div>
-
           
-
-          
-          <div class="feiten-grid">
-            
-            
-            <div class="fvak fvak--?">
-              <div class="fvak-label">? Onzeker</div>
-              <ul class="fvak-list"><li>Russische troepen zouden vooruitgang hebben geboekt ten noorden van het dorp Stepovoe in de Kamensky-richting (gemeld door wargonzo).</li></ul>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="claims-grid">
-            
-            
-            <div class="cvak cvak--ru">
-              <div class="cvak-label">🇷🇺 Rusland claimt</div>
-              Vooruitgang geboekt ten noorden van Stepovoe; de situatie blijft gespannen in de Primorsky-richting.
-              <div class="cvak-bron">Bron:
-                <a href="https://t.me/s/wargonzo" target="_blank">@wargonzo</a>
-                </div>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="skaart-footer">
-            <span class="skaart-footer-lbl">Bronnen:</span>
-            <span class="chip chip--ru">@wargonzo</span>
-          </div>
-          
-        </div>
-      </div>
-      
-      
-      
-      
         
       
         
@@ -1485,74 +1274,6 @@ a:hover { text-decoration:underline; }
         
       
         
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-      <div class="skaart">
-        
-        <div class="skaart-accent acc-laag"></div>
-        <div class="skaart-body">
-          <div class="skaart-top">
-            <div class="skaart-naam">Koepjansk-Lyman</div>
-            <span class="betr betr-laag">laag</span>
-          </div>
-          <div class="skaart-sum">De Russische militaire leiding claimt de inname van nederzettingen in de oostelijke regio Kharkiv.</div>
-          <div id="minimap-4" class="minimap" data-naam="Koepjansk-Lyman"></div>
-
-          
-
-          
-          <div class="feiten-grid">
-            
-            
-            <div class="fvak fvak--?">
-              <div class="fvak-label">? Onzeker</div>
-              <ul class="fvak-list"><li>De nederzettingen Kutkovka en Borovaya in de regio Kharkiv zouden door Russische troepen zijn ingenomen (gemeld door Slavyangrad).</li></ul>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="claims-grid">
-            
-            
-            <div class="cvak cvak--ru">
-              <div class="cvak-label">🇷🇺 Rusland claimt</div>
-              De Chef van de Generale Staf heeft de groepering 'West' geïnspecteerd en de bevrijding van Kutkovka en Borovaya bevestigd.
-              <div class="cvak-bron">Bron:
-                <a href="https://t.me/s/Slavyangrad" target="_blank">@Slavyangrad</a>
-                </div>
-            </div>
-            
-          </div>
-          
-
-          
-          <div class="skaart-footer">
-            <span class="skaart-footer-lbl">Bronnen:</span>
-            <span class="chip chip--ru">@Slavyangrad</span>
-          </div>
-          
-        </div>
-      </div>
-      
-      
-      
       
         
       
@@ -1675,12 +1396,27 @@ a:hover { text-decoration:underline; }
         <div class="skaart-accent acc-middel"></div>
         <div class="skaart-body">
           <div class="skaart-top">
-            <div class="skaart-naam">Naberezjnye Tsjelny (Rusland)</div>
+            <div class="skaart-naam">Kaspische Zee (Kaspiysk)</div>
             <span class="betr betr-middel">middel</span>
           </div>
-          <div class="skaart-sum">Een grote brand woedde in een industrieel complex in Tatarstan, al is de oorzaak onduidelijk.</div>
-          <div id="minimap-5" class="minimap" data-naam="Naberezjnye Tsjelny (Rusland)"></div>
+          <div class="skaart-sum">Een opmerkelijke langeafstandsaanval door Oekraïne op de Russische marinebasis in Dagestan.</div>
+          <div id="minimap-2" class="minimap" data-naam="Kaspische Zee (Kaspiysk)"></div>
 
+          
+          <div class="sector-media-lbl">📷 Beelden uit dit gebied</div>
+          <div class="sector-media">
+            
+<a href="https://t.me/wartranslated/15764" target="_blank" rel="noopener"
+   class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/qQ6rIJvkgslkeFg1TTDNc56wpawg4Fp4AgCfsEyy1JckVqKNQ_RakEDTne42nuNoDR-fcTXt4008_NK1HA6-BANAphCSOYvdek2KXydMt1g3mg3gnnWP5w74iji7CqEwWeNpC9zKKuLc_Or6zBod5c90GBR5agSDMiq7TRI_DfuaXFD_dEWigBNRt5yGdn9l71zeTNxWjmIFCt_oTW6zyYaAL0tamfu_bkaRj_XqZj4sQYtOV4Gz2oC5E2PHcZy0DgtOQeDJWZ69yo5aautACBTo5PlmxVoStup1377L8B7QIfzFB7Pgi-vOHsgTidj5Qb_4Fq6OBM3Pt18bwBjZYQ.jpg')"
+   role="img" aria-label="Foto van @wartranslated, 16 mei 17:35"
+   title="@wartranslated · 16 mei 17:35">
+  <div class="media-overlay" aria-hidden="true">
+    <span class="media-meta">@wartranslated · 16 mei 17:35</span>
+  </div>
+</a>
+
+          </div>
           
 
           
@@ -1688,13 +1424,13 @@ a:hover { text-decoration:underline; }
             
             <div class="fvak fvak--ok">
               <div class="fvak-label">✓ Bevestigd</div>
-              <ul class="fvak-list"><li>Een brand heeft een gebied van minstens 6000 vierkante meter verwoest bij een productie- en opslaglocatie voor polymeer- en verfproducten.</li></ul>
+              <ul class="fvak-list"><li>Een kamikaze-drone heeft de Russische marinebasis in Kaspiysk bereikt, wat resulteerde in brandbestrijdingsacties op de basis.</li></ul>
             </div>
             
             
             <div class="fvak fvak--?">
               <div class="fvak-label">? Onzeker</div>
-              <ul class="fvak-list"><li>Hoewel de brand uitbrak tijdens een luchtalarm, suggereren initiële rapporten dat dit geen gevolg was van een aanval (gemeld door wartranslated).</li></ul>
+              <ul class="fvak-list"><li>De Oekraïense claim dat een klein raketschip en een mijnenveger zijn geraakt (wartranslated).</li></ul>
             </div>
             
           </div>
@@ -1705,7 +1441,627 @@ a:hover { text-decoration:underline; }
             
             <div class="cvak cvak--ua">
               <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
-              Een productieplaats en magazijnen staan in brand in Naberezjnye Tsjelny.
+              Een klein raketschip en een mijnenveger van de Russische marine zijn succesvol geraakt.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/wartranslated" target="_blank">@wartranslated</a>
+                </div>
+            </div>
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              De aanval is afgeslagen en de schade is geminimaliseerd door het gebruik van geïmproviseerde verdedigingswerken zoals 'barbecue grills'.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/two_majors" target="_blank">@two_majors</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ru">@two_majors</span>
+          </div>
+          
+        </div>
+      </div>
+      
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        
+        <div class="skaart-accent acc-middel"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">West-Zaporizja</div>
+            <span class="betr betr-middel">middel</span>
+          </div>
+          <div class="skaart-sum">Actieve gevechtshandelingen en Oekraïense druk rondom de nederzettingen Stepnohirsk, Shcherbaky en Piatykhatky.</div>
+          <div id="minimap-3" class="minimap" data-naam="West-Zaporizja"></div>
+
+          
+
+          
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Er vinden gevechten plaats binnen de stadsgrenzen van Stepnohirsk.</li></ul>
+            </div>
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>De exacte terreinwinst of verliezen van beide partijen in deze specifieke sector (rybar).</li></ul>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="claims-grid">
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              Oekraïense strijdkrachten voeren aanvallen uit in de regio, maar worden door Russische eenheden opgevangen.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/rybar" target="_blank">@rybar</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--ru">@rybar</span>
+          </div>
+          
+        </div>
+      </div>
+      
+      
+      
+      
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        
+        <div class="skaart-accent acc-hoog"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Grensgebied Belarus (Polissja)</div>
+            <span class="betr betr-hoog">hoog</span>
+          </div>
+          <div class="skaart-sum">Oekraïne consolideert zijn noordelijke verdedigingslinies ondanks het uitblijven van een acute dreiging.</div>
+          <div id="minimap-4" class="minimap" data-naam="Grensgebied Belarus (Polissja)"></div>
+
+          
+          <div class="sector-media-lbl">📷 Beelden uit dit gebied</div>
+          <div class="sector-media">
+            
+<a href="https://t.me/operativnoZSU/211076" target="_blank" rel="noopener"
+   class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/83b53af326.mp4?token=M4IvHNj1KZeqefA7ihweATKbpyqXJdY-muoK9zL55rqdc9gNxO06kY5137Q6I3uSX0nCND2ZBVvj2XqxkKTSPhwqEfE5q9SYlEJVFwcl9EyOzThAjsOlgFr8530w3Bd7VHqPvztoPbMwEYHNJGkkhy3CiadK9H9O2nQbjjl96FNbzfY91--5GrwLT_95-FvROTUsjtFBzUql4ioVM3txWHqLdXEQDe_j7CidQeetIWYhjOAKscT_I2mGgWdY07tkdHDci7EDIDR9kQEcaopKYGrIiI6Eolxl06tBjUe-oYu9PDIj4gyeCpFIw8whNBRekaI7Og_lwbxgAM4E_sGNaYi-rc8JTn60jg3WQw8tSra5FJxajnlRbgTcvWPed9A7hoA88mFEYCu96vjiXAEZIAWkQueE-1qfgrnZIiKZoOLSGAUdxqESUh_wv6CWr27chfsCsgVoKSxYSAmHOwd9qM7iqlPdgl1WkxUyV4FV1b61Q8iTvryYmw13wykAZmAL84M8Ol7JirvcyAAKeOKp5D_ZEhqwoY_cuXrmIQkPFgzhCGz6UMwuTUnj_s4PDZe4dZ6NOvNp-dJRftmQqnzb8PDbBsTnn49KDphInnbCV3xZTrl6vLoFMz2QYxq3AZWfks8FtguR1kxPhFOt7Z_JSDXnBAlnUdZaDVx7DBCB7MQ')"
+   role="img" aria-label="Video van @operativnoZSU, 16 mei 19:53"
+   title="Video · @operativnoZSU · 16 mei 19:53">
+  <div class="media-play" aria-hidden="true">▶</div>
+  <div class="media-overlay" aria-hidden="true">
+    <span class="media-meta">@operativnoZSU · 16 mei 19:53</span>
+  </div>
+</a>
+
+          </div>
+          
+
+          
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Oekraïne legt actief veldversterkingen, caponiers en mijnenvelden aan langs de grens met Belarus.</li></ul>
+            </div>
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>De bewering dat de verdedigingslinie 'ondoordringbaar' is (operativnoZSU).</li></ul>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="claims-grid">
+            
+            <div class="cvak cvak--ua">
+              <div class="cvak-label">🇺🇦 Oekraïne claimt</div>
+              Er is momenteel geen kritieke dreiging van een Russisch offensief of troepenopbouw vanuit Belarus.
               <div class="cvak-bron">Bron:
                 <a href="https://t.me/s/operativnoZSU" target="_blank">@operativnoZSU</a>
                 </div>
@@ -1718,7 +2074,304 @@ a:hover { text-decoration:underline; }
           
           <div class="skaart-footer">
             <span class="skaart-footer-lbl">Bronnen:</span>
-            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span>
+            <span class="chip chip--ua">@operativnoZSU</span>
+          </div>
+          
+        </div>
+      </div>
+      
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      <div class="skaart">
+        
+        <div class="skaart-accent acc-middel"></div>
+        <div class="skaart-body">
+          <div class="skaart-top">
+            <div class="skaart-naam">Krim en Zwarte Zee</div>
+            <span class="betr betr-middel">middel</span>
+          </div>
+          <div class="skaart-sum">Rusland treft defensieve maatregelen op het schiereiland en claimt successen op zee.</div>
+          <div id="minimap-5" class="minimap" data-naam="Krim en Zwarte Zee"></div>
+
+          
+
+          
+          <div class="feiten-grid">
+            
+            <div class="fvak fvak--ok">
+              <div class="fvak-label">✓ Bevestigd</div>
+              <ul class="fvak-list"><li>Russische troepen plaatsen fysieke barrières ('drakentanden') op de stranden van de bezette Krim.</li></ul>
+            </div>
+            
+            
+            <div class="fvak fvak--?">
+              <div class="fvak-label">? Onzeker</div>
+              <ul class="fvak-list"><li>De Russische claim dat de Zwarte Zeevloot zes onbemande Oekraïense boten heeft vernietigd (Slavyangrad).</li></ul>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="claims-grid">
+            
+            
+            <div class="cvak cvak--ru">
+              <div class="cvak-label">🇷🇺 Rusland claimt</div>
+              Zes onbemande boten van de Oekraïense strijdkrachten zijn vernietigd.
+              <div class="cvak-bron">Bron:
+                <a href="https://t.me/s/Slavyangrad" target="_blank">@Slavyangrad</a>
+                </div>
+            </div>
+            
+          </div>
+          
+
+          
+          <div class="skaart-footer">
+            <span class="skaart-footer-lbl">Bronnen:</span>
+            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ru">@Slavyangrad</span>
           </div>
           
         </div>
@@ -1731,7 +2384,7 @@ a:hover { text-decoration:underline; }
     <div class="sec" id="sec-strategie"><span class="sec-nr">04</span><h2>Strategische context</h2></div>
     
     <div class="strategie-blok">
-      <span class="label-up">Analytische duiding</span>De oorlog verplaatst zich steeds nadrukkelijker naar het luchtruim en het diepe achterland. Oekraïne probeert de Russische logistieke keten en munitieproductie te ontwrichten door industriële doelen in Rusland te raken, terwijl Moskou met massale drone-zwermen de Oekraïense luchtverdediging probeert uit te putten en de civiele infrastructuur afbreekt. De Oekraïense beschuldiging dat Belarus zijn luchtruim openstelt voor Russische drones, voegt een potentieel explosieve geopolitieke dimensie toe aan het conflict.
+      <span class="label-up">Analytische duiding</span>De oorlog verplaatst zich steeds nadrukkelijker naar het Russische achterland, waarbij Oekraïne systematisch de energie- en defensie-industrie viseert om de Russische logistiek te ontregelen. Tegelijkertijd consolideert Oekraïne zijn noordelijke grenzen, wat wijst op een langdurige defensieve houding aldaar, terwijl Rusland zich op de Krim letterlijk ingraaft tegen mogelijke amfibische of drone-aanvallen. De inzet van westerse componenten in recent geproduceerde Russische raketten toont echter aan dat de westerse sancties nog steeds onvoldoende waterdicht zijn om de Russische wapenproductie te stoppen.
     </div>
     
 
@@ -1740,11 +2393,11 @@ a:hover { text-decoration:underline; }
     
     <div class="morgen-wrap">
       
-      <div class="morgen-item"><div class="morgen-num">1</div><div>Verdere Oekraïense pogingen om de Russische chemische en olie-industrie diep in het achterland te raken met langeafstandsdrones.</div></div>
+      <div class="morgen-item"><div class="morgen-num">1</div><div>Verdere Oekraïense drone-aanvallen op Russische raffinaderijen en logistieke knooppunten in de westelijke en zuidelijke regio's.</div></div>
       
-      <div class="morgen-item"><div class="morgen-num">2</div><div>Mogelijke diplomatieke of militaire reacties van Kiev op het vermeende gebruik van het Belarussische luchtruim door Russische Shahed-drones.</div></div>
+      <div class="morgen-item"><div class="morgen-num">2</div><div>Toenemende inzet van elektronische oorlogsvoering (EW) door beide partijen om de massale inzet van FPV- en kamikazedrones te neutraliseren.</div></div>
       
-      <div class="morgen-item"><div class="morgen-num">3</div><div>Voortzetting van Russische druk op de frontlijnen bij Zaporizja en oostelijk Kharkiv om geclaimde tactische successen te consolideren.</div></div>
+      <div class="morgen-item"><div class="morgen-num">3</div><div>Mogelijke diplomatieke frictie of verhoogde alertheid in Turkije na het neerstorten van een onbekende drone in de stad Samsun.</div></div>
       
     </div>
     
@@ -1752,29 +2405,29 @@ a:hover { text-decoration:underline; }
     <!-- EW -->
     <div class="sec" id="sec-ew"><span class="sec-nr">06</span><h2>Technologie &amp; EW</h2></div>
     
-      <div class="ew-item">Oekraïne claimt 269 van de 294 Russische drones te hebben neergehaald of elektronisch te hebben onderdrukt, wat wijst op grootschalige en effectieve inzet van EW-systemen (operativnoZSU).</div><div class="ew-item">Lokale rapportages suggereren dat Russische luchtverdediging in Nevinnomyssk niet reageerde op inkomende Oekraïense drones, wat kan duiden op blinde vlekken in de radardekking of succesvolle Oekraïense stealth-tactieken (wartranslated).</div>
+      <div class="ew-item">Russische 'Geranium' (Shahed) drones worden in toenemende mate uitgerust met eigen systemen voor elektronische oorlogsvoering om Oekraïense luchtverdediging te misleiden (Slavyangrad).</div><div class="ew-item">Recente Russische Kh-101 kruisraketten, geproduceerd in Q2 2026, bevatten nog steeds meer dan 100 westerse microchips, wat wijst op robuuste Russische smokkelnetwerken (two_majors).</div>
     
 
     <!-- MENSELIJK -->
     <div class="sec" id="sec-menselijk"><span class="sec-nr">07</span><h2>De Menselijke Factor</h2></div>
-    <div class="menselijk-blok">De tol van de uitputtingsoorlog wordt steeds zichtbaarder in de maatschappij. In Oekraïne leidt de mobilisatie van medisch personeel, inclusief degenen met eerder uitstel, tot maatschappelijke onrust en benadrukt het de constante stroom van gewonden aan het front. Tegelijkertijd worden burgers in steden als Kharkiv en Odesa geconfronteerd met nachtelijke terreur door drone-aanvallen op metrostations en woonwijken. Het dagelijks leven wordt hierdoor ernstig ontwricht, terwijl de veerkracht van de bevolking zwaar op de proef wordt gesteld.</div>
+    <div class="menselijk-blok">Aan het front heerst een grimmige realiteit van uitputting en logistieke tekorten. Oekraïense bronnen verspreiden verhalen over gedemoraliseerde Russische soldaten die zich overgeven vanwege pesterijen of die onder invloed contracten hebben getekend. Tegelijkertijd tonen Russische rekruteringscampagnes de financiële lokmiddelen (lonen vanaf 220.000 roebel) om de verliezen aan te vullen. De impact op burgers blijft aanzienlijk, met dodelijke slachtoffers door beschietingen in steden als Cherson en Dnipropetrovsk, terwijl op de Krim de oorlog letterlijk het strand op rolt met de aanleg van tankversperringen.</div>
 
     <!-- SIGNALEN -->
     <div class="sec" id="sec-signalen"><span class="sec-nr">08</span><h2>Signalen</h2></div>
     
-      <div class="signaal-item"><div>⬥</div><div>Beide partijen claimen extreem hoge aantallen ingezette en neergehaalde drones (138 door Rusland, 294 door Oekraïne), wat wijst op een massale opschaling in de productie en inzet van onbemande systemen.</div></div><div class="signaal-item"><div>⬥</div><div>Oekraïne beschuldigt Belarus expliciet van het faciliteren van Russische drone-aanvallen, wat de spanningen aan de noordgrens verder opvoert.</div></div>
+      <div class="signaal-item"><div>⬥</div><div>Oekraïne slaagt erin om met drones doelen te raken op extreem grote afstand, zoals de marinebasis in Kaspiysk (Dagestan) en fabrieken in Tatarstan.</div></div><div class="signaal-item"><div>⬥</div><div>Russische luchtverdediging lijkt in bepaalde regio's, zoals Stavropol, niet adequaat te reageren op inkomende dreigingen.</div></div>
     
 
     <!-- KRITIEK -->
     <div class="sec" id="sec-kritiek"><span class="sec-nr">09</span><h2>Bronnenkritiek</h2></div>
     
-      <div class="kritiek-item"><div>⚠</div><div>Russische kanalen zoals 'two_majors' en 'Slavyangrad' framen de Oekraïense mobilisatie van medisch personeel eenzijdig als een teken van wanhoop en zware verliezen, zonder de operationele noodzaak van militaire gezondheidszorg te belichten.</div></div><div class="kritiek-item"><div>⚠</div><div>Oekraïense bronnen ('operativnoZSU') gebruiken sterk emotionele en denigrerende taal ('Rashists', 'freaks') bij het beschrijven van de Belarussische betrokkenheid, wat de objectiviteit van hun tactische rapportages vertroebelt.</div></div>
+      <div class="kritiek-item"><div>⚠</div><div>Het Russische kanaal 'two_majors' claimt 76 neergehaalde drones zonder bewijs, een klassieke tactiek om de effectiviteit van de eigen luchtverdediging te overdrijven en de impact van succesvolle Oekraïense inslagen (zoals in Rjazan) te maskeren.</div></div><div class="kritiek-item"><div>⚠</div><div>'Slavyangrad' gebruikt een incident met een drone in Turkije en een oud bericht over een ongeluk op een Amerikaanse basis om westerse en Oekraïense technologie in diskrediet te brengen.</div></div>
     
 
     <footer class="app-footer">
       <div class="footer-title">Frontlijn — Dagelijkse OSINT-briefing</div>
       <div class="footer-sub">Open source intelligence · Geen officiële inlichtingen<br>
-        Analyse: Gemini 3.1 Pro Preview · 16-05-2026 19:29</div>
+        Analyse: Gemini 3.1 Pro Preview · 16-05-2026 20:18</div>
     </footer>
 
   </div><!-- /wrap -->
@@ -1791,8 +2444,8 @@ a:hover { text-decoration:underline; }
         <span class="hero-sep">·</span>
         <span style="font-size:.75rem;color:var(--text-4)">2026-05-16</span>
       </div>
-      <h1 class="tech-kop">Hyper-schaal Drone-oorlogsvoering en Strategische Luchtruim-exploitatie</h1>
-      <p class="tech-intro">De technologische dimensie van het conflict heeft op 16 mei 2026 een ongekend verzadigingspunt bereikt, waarbij beide partijen in één nacht gezamenlijk meer dan 400 autonome en semi-autonome systemen inzetten. Oekraïne demonstreert een volwassen 'deep strike' capaciteit met precisie-aanvallen op de Russische chemische en militair-industriële infrastructuur, waarbij Russische luchtverdediging faalt te reageren. Tegelijkertijd optimaliseert Rusland zijn zwermtactieken door het Wit-Russische luchtruim te exploiteren voor complexe naderingsvectoren, wat Oekraïne dwingt tot geavanceerde, grensoverschrijdende radartracking. De integratie van Elektronische Oorlogsvoering (EW) met kinetische interceptie is nu de absolute scheidslijn tussen strategisch succes en catastrofale schade.</p>
+      <h1 class="tech-kop">Oekraïense Dieptestrikes en Russische EW-Integratie Domineren Technologisch Slagveld</h1>
+      <p class="tech-intro">De technologische dimensie van het conflict heeft op 16 mei 2026 een nieuw kantelpunt bereikt, gekenmerkt door asymmetrische langeafstandsaanvallen en snelle iteraties in elektronische oorlogsvoering (EW). Oekraïne demonstreert een verfijnde capaciteit om strategische doelen diep in Russisch grondgebied te raken, waarbij traditionele luchtverdedigingssystemen worden omzeild of overbelast. Tegelijkertijd innoveert Rusland door offensieve drones uit te rusten met geïntegreerde EW-capaciteiten, wat wijst op een escalerend kat-en-muisspel in het elektromagnetisch spectrum. Het slagveld is getransformeerd tot een meedogenloze testomgeving waar autonome systemen, gesmokkelde westerse micro-elektronica en tactische wendbaarheid de operationele realiteit dicteren.</p>
     </div>
   </div>
 
@@ -1802,15 +2455,15 @@ a:hover { text-decoration:underline; }
     
     <div class="sec">
       <span class="sec-nr">01</span>
-      <h2>🚀 Loitering Munition & Deep Strike</h2>
+      <h2>🚁 FPV-drones & Zwermtactiek</h2>
     </div>
     <div class="tech-cat">
       <div class="tech-cat-hdr">
-        <span class="tech-cat-icon">🚀</span>
-        <span class="tech-cat-naam">Loitering Munition & Deep Strike</span>
+        <span class="tech-cat-icon">🚁</span>
+        <span class="tech-cat-naam">FPV-drones & Zwermtactiek</span>
         <span class="tech-cat-count">2 systemen</span>
       </div>
-      <div class="tech-cat-intro">De inzet van langeafstandskamikazedrones heeft een industriële schaal bereikt. Beide partijen gebruiken deze systemen niet langer uitsluitend voor tactische doelen, maar voor strategische uitputting van de vijandelijke economie en logistiek.</div>
+      <div class="tech-cat-intro">First-Person View (FPV) drones zijn geëvolueerd van geïmproviseerde wapens tot de primaire middelen voor tactische precisie-aanvallen en logistieke ontregeling. Beide partijen zetten ze massaal in om de frontlinie te domineren en voertuigbewegingen onmogelijk te maken.</div>
       <div class="tech-items">
         
         
@@ -1853,100 +2506,6 @@ a:hover { text-decoration:underline; }
           
         
           
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-        <div class="tech-item">
-          <div class="tech-item-top">
-            <div class="tech-item-titel">Massale Geran-2/Shahed-136 Zwermtactieken via Wit-Rusland</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
-          </div>
-          <div class="tech-desc">Rusland lanceerde een ongekende zwerm van 294 Shahed-type loitering munitions in één nacht. Om Oekraïense luchtverdediging te omzeilen, worden deze drones nu geprogrammeerd met complexe waypoints die gebruikmaken van een 'luchtcorridor' door het luchtruim van Wit-Rusland. Dit dwingt Oekraïense radaroperatoren om doelen over de grens te volgen en vermindert de reactietijd voor mobiele vuurgroepen aanzienlijk. Desondanks claimt Oekraïne een interceptieratio van 91% (269 neergehaald of onderdrukt).</div>
-          
-          <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T06:49:44+00:00</span>
-            <span class="chip chip--ua">@operativnoZSU</span><span class="chip chip--ru">@Slavyangrad</span>
-          </div>
-        </div>
-        
-        
-        
         
           
         
@@ -2066,176 +2625,113 @@ a:hover { text-decoration:underline; }
         
           
         
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Oekraïense Long-Range UAVs tegen Chemische Industrie</div>
+            <div class="tech-item-titel">Intensieve Oekraïense FPV-offensieven (Pokrovsk-as)</div>
             <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
           </div>
-          <div class="tech-desc">Oekraïne heeft met succes de Azot chemische fabriek in Nevinnomyssk (Stavropol) aangevallen, een faciliteit cruciaal voor de productie van ammoniumnitraat voor Russische munitie. De gebruikte systemen (waarschijnlijk doorontwikkelingen van de 'Lyutyi' of 'Bober' UAVs) wisten diep in Russisch grondgebied door te dringen. Opvallend is dat lokale rapporten bevestigen dat de Russische luchtverdediging (zoals Pantsir-S1 of Tor-M2) niet werd geactiveerd, wat wijst op een extreem lage Radar Cross-Section (RCS) of effectieve nap-of-the-earth (NOE) vluchtprofielen van de Oekraïense drones.</div>
+          <div class="tech-desc">Oekraïense eenheden voeren gecoördineerde, hoogfrequente FPV-drone-aanvallen uit op Russische troepenconcentraties in de richting van Pokrovsk. Deze tactiek fungeert als een vervanging voor traditionele artillerie, waarbij de drones met chirurgische precisie infanterie en lichte bepantsering uitschakelen. Het effect is een aanzienlijke toename van Russische verliezen en een verlamming van hun voorwaartse mobiliteit.</div>
           
           <div class="tech-item-media">
-<a href="https://t.me/UkraineNow/81249" target="_blank" rel="noopener"
-   class="media-thumb media-thumb--video "
-   style="background-image:url('https://cdn4.telesco.pe/file/1afa5f14b4.mp4?token=m_p0zC4I2TnYdtNuQay-qHzeHlrt5ibobssmv05MkouQwbOKqdUCiBC7fJ7CqGlDYcjxCbAlq84KIK-HoUIIvsw6zhxYXVo3IijnCdJ8GrJfBZ6jM0-u3i4G8yJNR6EI4iZDrdsrunX926VjOIC95O2I3j4PWQsP_nHqfTpx5K_6uHpGTiN72iz2qZVs99f0Yr8_hQ8vcjvFq0Ed1_q_9upDwpZ49z30HLJv3ahd_pN8yrGeARuBfn8zJXmCaREy_uE8pEiP6Y8UNilkfwXUzDksHdW6DyntCdjKLG9SDUwjuOntmBqBNH9WRXuTpoXWIMTJoXbTIIjG1b9EJuqGoA')"
-   role="img" aria-label="Video van @UkraineNow, 16 mei 05:32"
-   title="Video · @UkraineNow · 16 mei 05:32">
-  <div class="media-play" aria-hidden="true">▶</div>
+<a href="https://t.me/operativnoZSU/211058" target="_blank" rel="noopener"
+   class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/jxkIAp3B5aNE-8Ns1xXQcoE8X4FbqCQnt1NTsHxHbwLhmnv3B6hpgLeevMFBdJ9ajQaLRSOalwTWy19v6PGNkZM3mB8xB4Sj8Er3bNKg4yshHSSIrGAHq6u9K681GhTcOKeP7AkgHyI4WUJKALuhfyRcjNu63n9I5DJJXSP1EWN7sCKTokGbiggxOY-3Vsc6BvvbdRUvQdUsyUfxrqLK4odzAzl34ib_oMvVN4XBxGgQVAKCXr7Jwn9UA2ttl9PCqduRbmRjFbYzfDNHegc3bYOmzoHrcyGiyXG3gT8AHfL35SXyt0cDIOkGJamBl3FaTm1X8-hB6d_RqpeDOq-_2Q.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 15:28"
+   title="@operativnoZSU · 16 mei 15:28">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 05:32</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 15:28</span>
   </div>
 </a>
 </div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T07:33:15+00:00</span>
-            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@UkraineNow</span>
-          </div>
-        </div>
-        
-      </div>
-    </div>
-    
-    <div class="sec">
-      <span class="sec-nr">02</span>
-      <h2>📡 Elektronische Oorlogsvoering (EW)</h2>
-    </div>
-    <div class="tech-cat">
-      <div class="tech-cat-hdr">
-        <span class="tech-cat-icon">📡</span>
-        <span class="tech-cat-naam">Elektronische Oorlogsvoering (EW)</span>
-        <span class="tech-cat-count">2 systemen</span>
-      </div>
-      <div class="tech-cat-intro">Het onzichtbare spectrum is het meest dynamische front geworden. Zowel het onderdrukken van inkomende dreigingen als het creëren van valse doelen (spoofing) wordt op strategisch niveau toegepast.</div>
-      <div class="tech-items">
-        
-        
-        
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-          
-        
-        <div class="tech-item">
-          <div class="tech-item-top">
-            <div class="tech-item-titel">Grootschalige UAV-Onderdrukking (Soft-Kill)</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
-          </div>
-          <div class="tech-desc">Uit Oekraïense rapportages blijkt dat een aanzienlijk deel van de 269 geneutraliseerde Russische drones niet kinetisch werd vernietigd, maar 'onderdrukt' (suppressed). Dit duidt op de massale inzet van nationale EW-schilden, zoals het 'Pokrova' systeem, dat GPS/GLONASS-signalen spoofed. Hierdoor verliezen de Shahed-drones hun navigatie en storten ze neer zonder hun doel te bereiken, wat munitie voor luchtafweer bespaart.</div>
-          
-          <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T06:28:21+00:00</span>
+            <span class="tech-datum">2026-05-16T17:11:38+00:00</span>
             <span class="chip chip--ua">@operativnoZSU</span>
           </div>
         </div>
@@ -2318,7 +2814,129 @@ a:hover { text-decoration:underline; }
           
         
           
-            
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
           
         
           
@@ -2363,25 +2981,541 @@ a:hover { text-decoration:underline; }
         
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Phantom Radar Signatures en GPS-Spoofing</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--middel">● Middel</span></div>
+            <div class="tech-item-titel">Russische 'Sparta' FPV-Logistieke Interdictie</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
           </div>
-          <div class="tech-desc">Er werden verstoringen gemeld op de luchthaven van Helsinki (Finland) door vermeende Oekraïense drones, hoewel er fysiek geen drones in het luchtruim werden waargenomen. Dit is een klassieke indicatie van krachtige Russische elektronische oorlogsvoering (mogelijk vanuit de regio Kaliningrad of Sint-Petersburg) die valse radarsignaturen creëert of civiele GPS-signalen verstoort. Dit dient zowel als psychologische operatie als een test van NAVO-radarrespons.</div>
-          
-          <div class="tech-item-media">
-<a href="https://t.me/Slavyangrad/164278" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn1.telesco.pe/file/AvqbBOygDX9Ui-heivHYkkIIEut4fSmbNttArNGPy5_hLjYgTv0Lro0_qFHeUzkE24PrNS9T4yvWbpS8c43n6Cli8HXeRwfunm8hZ7_KWgVAG8ka5kSs7nUwSjqCGszLm7915svSLCy-fyfWoty0pCFA5zcJKlTbSCILMAIvO24THBVCYHlIJHazJPfSl4XOZXqv5oEMTPZt5c_TudkqOCXRuA8MquhnD1cgJ_d6JcH78gwFo1rx1Um9EbmPVsa1KXTNgv5ZLfxErIKj-kAv0G4HqckOmIRSuZjD472mGs08ZQXZj1m_-ZrN2IyaIVuHCFoKrmg8hoyWqH4nXVcbYA.jpg')"
-   role="img" aria-label="Foto van @Slavyangrad, 15 mei 20:36"
-   title="@Slavyangrad · 15 mei 20:36">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@Slavyangrad · 15 mei 20:36</span>
-  </div>
-</a>
-</div>
+          <div class="tech-desc">Het Russische 'Sparta'-bataljon zet gespecialiseerde FPV-drones in om de Oekraïense logistieke ketens (de zogenaamde 'last mile') te vernietigen. Door voertuigen te targeten die op weg zijn naar de 'nul-lijn', wordt de bevoorrading van munitie en troepen effectief afgesneden. Dit toont een verschuiving van het aanvallen van statische doelen naar dynamische logistieke interdictie.</div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-15T20:36:59+00:00</span>
+            <span class="tech-datum">2026-05-16T14:45:08+00:00</span>
+            <span class="chip chip--ru">@wargonzo</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="sec">
+      <span class="sec-nr">02</span>
+      <h2>📡 Elektronische Oorlogsvoering (EW) & Counter-UAS</h2>
+    </div>
+    <div class="tech-cat">
+      <div class="tech-cat-hdr">
+        <span class="tech-cat-icon">📡</span>
+        <span class="tech-cat-naam">Elektronische Oorlogsvoering (EW) & Counter-UAS</span>
+        <span class="tech-cat-count">2 systemen</span>
+      </div>
+      <div class="tech-cat-intro">Het elektromagnetisch spectrum is het onzichtbare front waar de overlevingskans van drones wordt bepaald. Innovaties richten zich momenteel op het beschermen van eigen systemen tegen jamming en het actief verstoren van vijandelijke radar- en communicatiesignalen.</div>
+      <div class="tech-items">
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Geranium-drones met Geïntegreerde EW-systemen</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Rusland is begonnen met het uitrusten van hun 'Geranium' (Shahed-type) loitering munitions met actieve systemen voor elektronische oorlogsvoering. Dit is een significante technologische sprong: in plaats van passief te proberen luchtverdediging te ontwijken, kunnen deze drones nu actief Oekraïense radar- en targeting-systemen storen tijdens hun vlucht. Dit verlaagt de effectiviteit van Oekraïense luchtafweer aanzienlijk.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-16T14:04:39+00:00</span>
+            <span class="chip chip--ru">@Slavyangrad</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">Nieuwe Antenne-architectuur op Russische FPV's</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--middel">● Middel</span></div>
+          </div>
+          <div class="tech-desc">Er zijn nieuwe, geavanceerde antennes waargenomen op Russische FPV-drones. Deze hardware-upgrade is ontworpen om frequentie-hopping te verbeteren en weerstand te bieden tegen de standaard Oekraïense stoorzenders (jammers) op het slagveld. Dit dwingt Oekraïne om hun eigen EW-systemen sneller te updaten.</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-16T14:04:39+00:00</span>
             <span class="chip chip--ru">@Slavyangrad</span>
           </div>
         </div>
@@ -2391,15 +3525,15 @@ a:hover { text-decoration:underline; }
     
     <div class="sec">
       <span class="sec-nr">03</span>
-      <h2>🛡️ Luchtafweer & Radar</h2>
+      <h2>🚀 Loitering Munition & Strategische Dieptestrikes</h2>
     </div>
     <div class="tech-cat">
       <div class="tech-cat-hdr">
-        <span class="tech-cat-icon">🛡️</span>
-        <span class="tech-cat-naam">Luchtafweer & Radar</span>
+        <span class="tech-cat-icon">🚀</span>
+        <span class="tech-cat-naam">Loitering Munition & Strategische Dieptestrikes</span>
         <span class="tech-cat-count">2 systemen</span>
       </div>
-      <div class="tech-cat-intro">De asymmetrie in luchtverdediging wordt steeds duidelijker. Waar Oekraïne een sterk geïntegreerd netwerk toont, vertoont de Russische dekking in het binnenland kritieke gaten.</div>
+      <div class="tech-cat-intro">Langeafstandsdrones worden ingezet als strategische precisiewapens om de economische en militaire infrastructuur diep in het achterland te vernietigen. Ze vormen een asymmetrisch antwoord op dure kruisraketten.</div>
       <div class="tech-items">
         
         
@@ -2442,6 +3576,42 @@ a:hover { text-decoration:underline; }
           
         
           
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
             
           
         
@@ -2466,7 +3636,83 @@ a:hover { text-decoration:underline; }
           
         
           
-            
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
           
         
           
@@ -2474,7 +3720,15 @@ a:hover { text-decoration:underline; }
           
         
           
-            
+        
+          
+        
+          
+        
+          
+        
+          
+        
           
         
           
@@ -2531,27 +3785,26 @@ a:hover { text-decoration:underline; }
         
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Falende Russische SHORAD-dekking</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
+            <div class="tech-item-titel">Oekraïense 'Maya' UAV & Massale Zwerm-aanvallen</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
           </div>
-          <div class="tech-desc">Tijdens de massale Oekraïense drone-aanval (waarbij Rusland claimt 138 UAVs te hebben neergehaald over 15+ regio's), bleken strategische doelen zoals de fabriek in Tatarstan (Naberezhnye Chelny) en Stavropol onbeschermd. Het onvermogen van Russische Short-Range Air Defense (SHORAD) om deze doelen te verdedigen, suggereert dat Rusland zijn luchtafweersystemen te ver heeft uitgedund door ze naar de frontlinie in Oekraïne te verplaatsen, waardoor het achterland kwetsbaar is voor precisie-aanvallen.</div>
+          <div class="tech-desc">Oekraïne heeft een massale gecoördineerde drone-aanval uitgevoerd met ten minste 76 UAV's, waaronder het 'Maya' platform, gericht op meerdere Russische regio's (Belgorod, Ryazan, Moskou, Krasnodar). Deze drones hebben met succes de Ryazan olieraffinaderij geraakt (schade aan AVT-3, AVT-4, AT-6 eenheden) en een chemische fabriek in Nevinnomyssk, waarbij lokale Russische luchtverdediging faalde in te grijpen.</div>
           
           <div class="tech-item-media">
-<a href="https://t.me/UkraineNow/81249" target="_blank" rel="noopener"
-   class="media-thumb media-thumb--video "
-   style="background-image:url('https://cdn4.telesco.pe/file/1afa5f14b4.mp4?token=m_p0zC4I2TnYdtNuQay-qHzeHlrt5ibobssmv05MkouQwbOKqdUCiBC7fJ7CqGlDYcjxCbAlq84KIK-HoUIIvsw6zhxYXVo3IijnCdJ8GrJfBZ6jM0-u3i4G8yJNR6EI4iZDrdsrunX926VjOIC95O2I3j4PWQsP_nHqfTpx5K_6uHpGTiN72iz2qZVs99f0Yr8_hQ8vcjvFq0Ed1_q_9upDwpZ49z30HLJv3ahd_pN8yrGeARuBfn8zJXmCaREy_uE8pEiP6Y8UNilkfwXUzDksHdW6DyntCdjKLG9SDUwjuOntmBqBNH9WRXuTpoXWIMTJoXbTIIjG1b9EJuqGoA')"
-   role="img" aria-label="Video van @UkraineNow, 16 mei 05:32"
-   title="Video · @UkraineNow · 16 mei 05:32">
-  <div class="media-play" aria-hidden="true">▶</div>
+<a href="https://t.me/operativnoZSU/211058" target="_blank" rel="noopener"
+   class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/jxkIAp3B5aNE-8Ns1xXQcoE8X4FbqCQnt1NTsHxHbwLhmnv3B6hpgLeevMFBdJ9ajQaLRSOalwTWy19v6PGNkZM3mB8xB4Sj8Er3bNKg4yshHSSIrGAHq6u9K681GhTcOKeP7AkgHyI4WUJKALuhfyRcjNu63n9I5DJJXSP1EWN7sCKTokGbiggxOY-3Vsc6BvvbdRUvQdUsyUfxrqLK4odzAzl34ib_oMvVN4XBxGgQVAKCXr7Jwn9UA2ttl9PCqduRbmRjFbYzfDNHegc3bYOmzoHrcyGiyXG3gT8AHfL35SXyt0cDIOkGJamBl3FaTm1X8-hB6d_RqpeDOq-_2Q.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 15:28"
+   title="@operativnoZSU · 16 mei 15:28">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 05:32</span>
+    <span class="media-meta">@operativnoZSU · 16 mei 15:28</span>
   </div>
 </a>
 </div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T07:24:26+00:00</span>
-            <span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span>
+            <span class="tech-datum">2026-05-16T16:10:07+00:00</span>
+            <span class="chip chip--ru">@two_majors</span><span class="chip chip--neutral">@wartranslated</span><span class="chip chip--ua">@operativnoZSU</span>
           </div>
         </div>
         
@@ -2635,6 +3888,136 @@ a:hover { text-decoration:underline; }
           
         
           
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
         
           
         
@@ -2676,13 +4059,25 @@ a:hover { text-decoration:underline; }
         
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Cross-Border Radar Tracking Systeem</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
+            <div class="tech-item-titel">Iraans-Russische UAV-aanvallen op Stedelijke Infrastructuur</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--middel">● Middel</span></div>
           </div>
-          <div class="tech-desc">De Oekraïense grenswacht (SBS) heeft publiekelijk verklaard dat zij elke dronevlucht door het Wit-Russische luchtruim in real-time volgen. Dit impliceert de succesvolle integratie van westerse radar-assets (zoals Patriot of NASAMS radars) met Oekraïense C4ISR-netwerken, waardoor ze 'over de horizon' en over landsgrenzen heen kunnen kijken om naderende dreigingen vroegtijdig te classificeren.</div>
+          <div class="tech-desc">Rusland blijft Iraans-ontworpen UAV's inzetten voor aanvallen op Oekraïense steden. In Kharkiv (Shevchenkivskyi district) werden deze drones gebruikt om civiele en transportinfrastructuur (metrostations, onderwijsinstellingen) te raken. Dit toont de aanhoudende inzet van deze systemen als terreurwapen en middel om Oekraïense luchtverdedigingsmunitie uit te putten.</div>
+          
+          <div class="tech-item-media">
+<a href="https://t.me/operativnoZSU/211058" target="_blank" rel="noopener"
+   class="media-thumb "
+   style="background-image:url('https://cdn4.telesco.pe/file/jxkIAp3B5aNE-8Ns1xXQcoE8X4FbqCQnt1NTsHxHbwLhmnv3B6hpgLeevMFBdJ9ajQaLRSOalwTWy19v6PGNkZM3mB8xB4Sj8Er3bNKg4yshHSSIrGAHq6u9K681GhTcOKeP7AkgHyI4WUJKALuhfyRcjNu63n9I5DJJXSP1EWN7sCKTokGbiggxOY-3Vsc6BvvbdRUvQdUsyUfxrqLK4odzAzl34ib_oMvVN4XBxGgQVAKCXr7Jwn9UA2ttl9PCqduRbmRjFbYzfDNHegc3bYOmzoHrcyGiyXG3gT8AHfL35SXyt0cDIOkGJamBl3FaTm1X8-hB6d_RqpeDOq-_2Q.jpg')"
+   role="img" aria-label="Foto van @operativnoZSU, 16 mei 15:28"
+   title="@operativnoZSU · 16 mei 15:28">
+  <div class="media-overlay" aria-hidden="true">
+    <span class="media-meta">@operativnoZSU · 16 mei 15:28</span>
+  </div>
+</a>
+</div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T06:49:44+00:00</span>
+            <span class="tech-datum">2026-05-16T07:08:01+00:00</span>
             <span class="chip chip--ua">@operativnoZSU</span>
           </div>
         </div>
@@ -2692,15 +4087,15 @@ a:hover { text-decoration:underline; }
     
     <div class="sec">
       <span class="sec-nr">04</span>
-      <h2>⚓ Maritieme Technologie & Kustverdediging</h2>
+      <h2>🚤 Maritieme Technologie & USV's</h2>
     </div>
     <div class="tech-cat">
       <div class="tech-cat-hdr">
-        <span class="tech-cat-icon">⚓</span>
-        <span class="tech-cat-naam">Maritieme Technologie & Kustverdediging</span>
+        <span class="tech-cat-icon">🚤</span>
+        <span class="tech-cat-naam">Maritieme Technologie & USV's</span>
         <span class="tech-cat-count">2 systemen</span>
       </div>
-      <div class="tech-cat-intro">De strijd om de Zwarte Zee en de Zee van Azov blijft een technologisch proefterrein, waarbij onbemande systemen de traditionele maritieme machtsbalans verstoren.</div>
+      <div class="tech-cat-intro">De zeeslag is fundamenteel veranderd door de inzet van Unmanned Surface Vehicles (USV's). Deze onbemande boten dwingen conventionele marines tot een defensieve houding en breiden het maritieme strijdtoneel uit.</div>
       <div class="tech-items">
         
         
@@ -2717,7 +4112,23 @@ a:hover { text-decoration:underline; }
           
         
           
+            
+          
         
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+            
           
         
           
@@ -2822,21 +4233,15 @@ a:hover { text-decoration:underline; }
         
           
         
-        <div class="tech-item">
-          <div class="tech-item-top">
-            <div class="tech-item-titel">Gecombineerde Lucht- en Zee-aanvallen</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--middel">● Middel</span></div>
-          </div>
-          <div class="tech-desc">Het Russische Ministerie van Defensie rapporteerde de interceptie van Oekraïense UAVs boven zowel de Zwarte Zee als de Zee van Azov. Dit patroon wijst op gecoördineerde Oekraïense operaties waarbij lucht-drones (UAVs) worden gebruikt om Russische maritieme patrouillevliegtuigen en kustradars bezig te houden of te vernietigen, vaak als voorbereiding op of in combinatie met aanvallen door onbemande oppervlaktevaartuigen (USV's zoals de Magura V5).</div>
           
-          <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T04:11:36+00:00</span>
-            <span class="chip chip--ru">@Slavyangrad</span><span class="chip chip--ru">@two_majors</span>
-          </div>
-        </div>
         
+          
         
+          
         
+          
+        
+          
         
           
         
@@ -2942,6 +4347,261 @@ a:hover { text-decoration:underline; }
         
           
         
+        <div class="tech-item">
+          <div class="tech-item-top">
+            <div class="tech-item-titel">USV/UAV Aanval op Kaspische Marinebasis (Kaspiysk)</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ua">🇺🇦 Oekraïne</span><span class="impact impact--hoog">● Hoog</span></div>
+          </div>
+          <div class="tech-desc">Oekraïne heeft een ongekende langeafstandsaanval uitgevoerd op de Russische marinebasis Kaspiysk in Dagestan, ver buiten de Zwarte Zee. Hierbij zijn een klein raketkorvet en een mijnenveger geraakt. Dit demonstreert een enorme toename in het operationele bereik van Oekraïense maritieme of luchtgedragen kamikazesystemen, wat de Russische strategische diepte op zee tenietdoet.</div>
+          
+          <div class="tech-item-media">
+<a href="https://t.me/two_majors/75352" target="_blank" rel="noopener"
+   class="media-thumb media-thumb--video "
+   style="background-image:url('https://cdn4.telesco.pe/file/6a364f593c.mp4?token=FrXLhqHwTL1ZyughHaeeFtPP1qlQagFSNhrN3G6Ma7qK6rvDOf9Hfb1RiETTWvg3VcyPEJe4s137zofK1oloSWf-3KM0JnWj8fY1_zPBRsLAbKxtQ14u-pVKnMtxQdZhLgmT2f65ts5BBkQF1rF0WIjU-thuaJ8KAqAcTjNuc1tz9yXLm_g11W2ozkl0Vze0RgjyZL_Fbjnw4L8DcUT5ZaYPInbWxDO_yRecwQRQuOA4Y_lgm3eesSTu2LnhDKL5-kVrP_HPPS1HbfdjW9zkZzKI73o1IhpT5cKbXaVAIt22p7r-g5BCwdoAPvCDOkmJq1ORRFi0eCwZrSoV0zvzsA')"
+   role="img" aria-label="Video van @two_majors, 16 mei 19:44"
+   title="Video · @two_majors · 16 mei 19:44">
+  <div class="media-play" aria-hidden="true">▶</div>
+  <div class="media-overlay" aria-hidden="true">
+    <span class="media-meta">@two_majors · 16 mei 19:44</span>
+  </div>
+</a>
+</div>
+          
+          <div class="tech-foot">
+            <span class="tech-datum">2026-05-16T17:35:30+00:00</span>
+            <span class="chip chip--ru">@two_majors</span><span class="chip chip--neutral">@wartranslated</span>
+          </div>
+        </div>
+        
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
           
         
           
@@ -2958,26 +4618,14 @@ a:hover { text-decoration:underline; }
         
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Gerichte Aanvallen op Haveninfrastructuur</div>
-            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--middel">● Middel</span></div>
+            <div class="tech-item-titel">Russische Defensie tegen MBEK's (Unmanned Boats)</div>
+            <div class="tech-badges"><span class="kbadge kbadge--beide">Beide</span><span class="impact impact--middel">● Middel</span></div>
           </div>
-          <div class="tech-desc">Russische troepen blijven de zuidelijke regio Odesa bestoken met strike drones, specifiek gericht op haveninfrastructuur en magazijnen. Dit vereist nauwkeurige terminal guidance systemen in de drones om specifieke logistieke knooppunten te raken te midden van civiele bebouwing. Het doel is het technologisch en fysiek ontregelen van de Oekraïense maritieme exportcapaciteit.</div>
-          
-          <div class="tech-item-media">
-<a href="https://t.me/UkraineNow/81248" target="_blank" rel="noopener"
-   class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/o9H-YbNLX_jWPnIQRycC3xOulSamGBkWMtasakW5rL6YCtpui8zR7BEniEBRMOVaRf5qZ6TEwTGPeZ0T4fAJXTllOcnwmVoIugQrl9V2KF25olt_HsX_AK4G5zS-9mjEItXF7rNaDg3Hr0k0TZbu0cNyNiI4CZp721Q1iZl1EN6xFsi52VRR20p0wmxCLHohIFhqSFL_6jEJQvZLeGf2HFYXB6-jTWG7cstJ5QGvUBsZF3Ga8Gn_6eiJhc_tigGFPZnNaPULktH5nWxiEthpguoZ0dUTlv-nAzXu6RvJIjpvtYOKy0BGXANJ1Eam6BNzPvR5anxOqesiqJl-2vwVRA.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 05:22"
-   title="@UkraineNow · 16 mei 05:22">
-  <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 05:22</span>
-  </div>
-</a>
-</div>
+          <div class="tech-desc">De Russische Zwarte Zeevloot claimt zes Oekraïense onbemande boten (MBEK's/USV's) te hebben vernietigd. Dit wijst op een aanhoudende Oekraïense maritieme zwermtactiek en een lichte verbetering in de Russische detectie- en interceptiecapaciteiten op zee, mogelijk door het gebruik van helikopters en snelle patrouilleboten uitgerust met zware machinegeweren.</div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T05:22:25+00:00</span>
-            <span class="chip chip--ua">@UkraineNow</span><span class="chip chip--ua">@operativnoZSU</span>
+            <span class="tech-datum">2026-05-16T17:04:02+00:00</span>
+            <span class="chip chip--ru">@Slavyangrad</span>
           </div>
         </div>
         
@@ -2986,19 +4634,77 @@ a:hover { text-decoration:underline; }
     
     <div class="sec">
       <span class="sec-nr">05</span>
-      <h2>🚁 FPV-drones & Zwermtactiek</h2>
+      <h2>⚙️ Rakettechnologie & Supply Chain Evasion</h2>
     </div>
     <div class="tech-cat">
       <div class="tech-cat-hdr">
-        <span class="tech-cat-icon">🚁</span>
-        <span class="tech-cat-naam">FPV-drones & Zwermtactiek</span>
+        <span class="tech-cat-icon">⚙️</span>
+        <span class="tech-cat-naam">Rakettechnologie & Supply Chain Evasion</span>
         <span class="tech-cat-count">1 systemen</span>
       </div>
-      <div class="tech-cat-intro">Op tactisch niveau dicteren FPV-drones het tempo van grondoffensieven. Ze fungeren als precisie-artillerie voor de infanterie.</div>
+      <div class="tech-cat-intro">Ondanks zware internationale sancties blijft de productie van geavanceerde precisiewapens doorgaan, sterk afhankelijk van complexe, illegale toeleveringsketens voor westerse micro-elektronica.</div>
       <div class="tech-items">
         
         
         
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
         
           
         
@@ -3118,28 +4824,94 @@ a:hover { text-decoration:underline; }
         
           
         
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
         <div class="tech-item">
           <div class="tech-item-top">
-            <div class="tech-item-titel">Tactische FPV-ondersteuning bij Frontlinie-operaties</div>
-            <div class="tech-badges"><span class="kbadge kbadge--beide">Beide</span><span class="impact impact--hoog">● Hoog</span></div>
+            <div class="tech-item-titel">Kh-101 Kruisraketten met Q2-2026 Westerse Componenten</div>
+            <div class="tech-badges"><span class="kbadge kbadge--ru">🇷🇺 Rusland</span><span class="impact impact--hoog">● Hoog</span></div>
           </div>
-          <div class="tech-desc">In de richtingen van Zaporozhye (Kamensky/Stepovoye) en Kharkiv (Kutkovka/Borovaya) wordt zware strijd gemeld. De inzet van FPV-kamikazedrones (zoals gemodificeerde DJI Mavics met RPG-koppen) is hier essentieel voor close air support. De constante dreiging van deze drones dwingt beide partijen tot het gebruik van zware elektronische tegenmaatregelen op voertuigen (zoals de Russische 'Volnorez' jammers), wat resulteert in een kat-en-muisspel op de frontlijn.</div>
+          <div class="tech-desc">Forensisch onderzoek van Russische Kh-101 kruisraketten, gebruikt bij recente aanvallen op Kyiv, onthult dat deze meer dan 100 westerse componenten bevatten (van o.a. Texas Instruments, AMD, Nexperia). Cruciaal is dat deze raketten zijn geproduceerd in het tweede kwartaal van 2026. Dit bewijst dat Rusland erin slaagt actuele, hoogwaardige westerse microchips te importeren via schaduwnetwerken, waardoor hun precisie-aanvalscapaciteit intact blijft.</div>
           
           <div class="tech-item-media">
-<a href="https://t.me/UkraineNow/81253" target="_blank" rel="noopener"
+<a href="https://t.me/two_majors/75314" target="_blank" rel="noopener"
    class="media-thumb "
-   style="background-image:url('https://cdn4.telesco.pe/file/M7Q1LmNmEqdltpMNHRtM_FYEwCn4zzhOgvwVh1MPkfmbnSLLcC1MYi7IhdXNWBGhRvot43Ezb24sw6wKH7hGEEvHMuEGAynful30xwy6IJ5YGJv0PUF_HY-o6eJXoM4U6bkGzso44wQ7tTvFcn4za1t6QUsHuF1Yd1VUw3XnKVoLtrJVIKO_3x1k2vWGgyqNowESsd87yUFc2dBgf2Fl2D0XtLNsakXec5RjYDKWSUQqBZRZwQ2v7CKjLMAzHlmMhMWCOuY7DfT2dE59c0wTKmDuuMysj95P_2Dxe_TckPzCR7gHxZSbKuQKME8ncrzJywH2xbUd9Wv8cYERGpM73g.jpg')"
-   role="img" aria-label="Foto van @UkraineNow, 16 mei 06:35"
-   title="@UkraineNow · 16 mei 06:35">
+   style="background-image:url('https://cdn4.telesco.pe/file/MoJo-yiY2Fq7mzyXWgvwtkG7SBDbMXhko14tchjr6TD2zKY6K25BShdWtPSNpnv39a5dcpudpMJdJpzr-1hELbIYOW__nUaF5IV2GWrbHI-C0ZCve-xfm8zXZIsvNPaFQTyz8obNeSGwhNuIAeqqDjc8dbxri28sIXJlyhc8UOMC3HJXr49JeHBKwhSMEb4f8QviNC7jg68jr0nrMPt-NGgjBI_0RKPt0uEgkJKTTB-_qKOkcsxe-xPW2yK7s9Kh8Zo8F2QOWpmkibauwm0u7WMc_HShgdNqGD3fj1TlYda-VgTZrqqgXsMmIEIA_UK8nzmVeQi4U90Qyp5mMQslTA.jpg')"
+   role="img" aria-label="Foto van @two_majors, 16 mei 07:50"
+   title="@two_majors · 16 mei 07:50">
   <div class="media-overlay" aria-hidden="true">
-    <span class="media-meta">@UkraineNow · 16 mei 06:35</span>
+    <span class="media-meta">@two_majors · 16 mei 07:50</span>
   </div>
 </a>
 </div>
           
           <div class="tech-foot">
-            <span class="tech-datum">2026-05-16T07:10:08+00:00</span>
-            <span class="chip chip--ru">@wargonzo</span><span class="chip chip--ru">@Slavyangrad</span>
+            <span class="tech-datum">2026-05-16T07:50:00+00:00</span>
+            <span class="chip chip--ru">@two_majors</span>
           </div>
         </div>
         
@@ -3156,28 +4928,28 @@ a:hover { text-decoration:underline; }
       <div class="vergelijk-grid">
         <div class="vkol vkol--ua">
           <div class="vkol-titel">🇺🇦 Oekraïne sterk in</div>
-          <ul class="vkol-list"><li>Extreem hoge interceptieratio (91%) door naadloze integratie van kinetische luchtafweer en landelijke EW-spoofing netwerken.</li><li>Ontwikkeling van stealthy long-range UAVs die ongehinderd honderden kilometers Russisch luchtruim kunnen binnendringen.</li><li>Geavanceerde C4ISR-capaciteiten die real-time tracking van vijandelijke drones in derde landen (Wit-Rusland) mogelijk maken.</li></ul>
+          <ul class="vkol-list"><li>Massale inzet van langeafstandsdrones (zoals de 'Maya') voor strategische infrastructuur (raffinaderijen, chemische fabrieken) diep in Rusland.</li><li>Succesvolle asymmetrische maritieme oorlogsvoering met USV's en UAV's ver buiten de traditionele gevechtszones (Kaspische Zee).</li><li>Hoge effectiviteit en wendbaarheid in het gebruik van FPV-drones voor tactische logistieke ontregeling aan het front.</li></ul>
         </div>
         <div class="vkol vkol--ru">
           <div class="vkol-titel">🇷🇺 Rusland sterk in</div>
-          <ul class="vkol-list"><li>Massaproductie en inzet van loitering munitions op een schaal die voorheen ondenkbaar was (bijna 300 per nacht).</li><li>Innovatief gebruik van geopolitieke grenzen (Wit-Russisch luchtruim) als tactische dekking voor naderingsroutes.</li><li>Inzet van strategische EW om valse radarsignaturen te creëren en NAVO/Oekraïense systemen te verwarren (incident Finland).</li></ul>
+          <ul class="vkol-list"><li>Integratie van actieve EW-systemen direct op offensieve platforms (Geraniums) om vijandelijke luchtverdediging te verblinden.</li><li>Continue, sanctie-ontwijkende productie van geavanceerde Kh-101 kruisraketten via parallelle import van westerse microchips.</li><li>Grootschalige inzet van FPV-drones met iteratieve hardware-upgrades (nieuwe antennes) om Oekraïense jamming te omzeilen.</li></ul>
         </div>
       </div>
       
-      <div class="vergelijk-concl">Oekraïne bezit momenteel een kwalitatief en asymmetrisch voordeel: hun vermogen om met relatief goedkope, lokaal geproduceerde drones de Russische strategische chemische industrie te raken zonder radar-detectie, toont een falen in de Russische binnenlandse verdediging. Rusland compenseert dit technologische tekort met brute kwantiteit; de productie van Shahed-varianten is zo hoog dat ze Oekraïense verdedigingssystemen proberen te verzadigen. De kritieke asymmetrie ligt in de efficiëntie van de luchtverdediging: Oekraïne neutraliseert 91% van een massale aanval, terwijl Russische systemen in het achterland volledig lijken te falen tegen een veel kleiner aantal Oekraïense drones.</div>
+      <div class="vergelijk-concl">De technologische balans vertoont een dynamische asymmetrie. Oekraïne heeft de overhand in strategische dieptestrikes en maritieme innovatie, waarmee het de Russische logistiek, economie en vloot ver buiten de frontlinie raakt. Rusland compenseert dit met een robuuste, sanctie-ontwijkende defensie-industrie en snelle iteraties in elektronische oorlogsvoering, waardoor hun offensieve drones en raketten steeds moeilijker te onderscheppen zijn. Het conflict is een uitputtingsslag geworden van industriële capaciteit versus asymmetrische innovatie.</div>
       
     </div>
 
     <!-- TECH SIGNALEN -->
     
     <div class="sec" id="sec-tech-signalen"><span class="sec-nr">07</span><h2>Technologie-signalen</h2></div>
-    <div class="tech-sig">De systematische verschuiving van Oekraïense drone-aanvallen naar de toeleveringsketen van explosieven (zoals de Azot ammoniakfabriek) wijst op een datagedreven, algoritmische targeting-strategie gericht op het verlammen van de Russische munitieproductie.</div><div class="tech-sig">Het gebruik van het Wit-Russische luchtruim door Russische drones markeert een evolutie in vluchtpad-programmering, waarbij autonome systemen geopolitieke 'grijze zones' exploiteren om de reactietijd van de verdediger te minimaliseren.</div><div class="tech-sig">De schaal van de drone-oorlogsvoering (meer dan 430 drones ingezet door beide partijen in één nacht) bewijst dat de productiecapaciteit van onbemande systemen nu de traditionele artillerie- en raketproductie heeft overtroffen als de primaire vorm van langeafstandsvuurkracht.</div>
+    <div class="tech-sig">De integratie van actieve EW-systemen op goedkope loitering munitions zoals de Geranium duidt op een verschuiving van passieve naar actieve penetratietactieken tegen luchtverdediging.</div><div class="tech-sig">De succesvolle Oekraïense drone-aanvallen op de Kaspische marinebasis en doelen in Tatarstan bewijzen dat het operationele bereik van Oekraïense UAV's en USV's drastisch is vergroot, wat de Russische strategische diepte volledig tenietdoet.</div><div class="tech-sig">De ontdekking van recent geproduceerde (Q2 2026) westerse microchips in Russische Kh-101 raketten toont aan dat de westerse exportcontroles fundamenteel falen in het afsnijden van de Russische militaire toeleveringsketen.</div>
     
 
     <footer class="app-footer">
       <div class="footer-title">Frontlijn Technologie — Uitputtende analyse</div>
-      <div class="footer-sub">137 berichten · 7 kanalen<br>
-        Gemini 3.1 Pro Preview · 16-05-2026 19:29</div>
+      <div class="footer-sub">380 berichten · 7 kanalen<br>
+        Gemini 3.1 Pro Preview · 16-05-2026 20:18</div>
     </footer>
 
   </div><!-- /wrap -->
@@ -3236,43 +5008,43 @@ function vindCoords(naam) {
 const sectoren = [
   
   {
-    naam: "Stavropol (Rusland)",
-    samenvatting: "Oekra\u00efense drones hebben met succes een chemische fabriek geraakt die cruciaal is voor de Russische militaire industrie.",
+    naam: "Diep Russisch Grondgebied (Rjazan/Stavropol)",
+    samenvatting: "Grootschalige Oekra\u00efense drone-aanvallen richten zich op Russische industri\u00eble en logistieke infrastructuur.",
     betrouwbaarheid: "hoog",
     heeft_ua: true,
     heeft_ru: true,
   },
   
   {
-    naam: "Kharkiv \u0026 Odesa",
-    samenvatting: "Russische drone-aanvallen hebben aanzienlijke schade toegebracht aan civiele en haveninfrastructuur in grote Oekra\u00efense steden.",
-    betrouwbaarheid: "hoog",
-    heeft_ua: true,
-    heeft_ru: true,
-  },
-  
-  {
-    naam: "Zaporizja Front",
-    samenvatting: "Russische troepen claimen beperkte tactische vooruitgang in een verder statische frontlijn.",
-    betrouwbaarheid: "laag",
-    heeft_ua: false,
-    heeft_ru: true,
-  },
-  
-  {
-    naam: "Koepjansk-Lyman",
-    samenvatting: "De Russische militaire leiding claimt de inname van nederzettingen in de oostelijke regio Kharkiv.",
-    betrouwbaarheid: "laag",
-    heeft_ua: false,
-    heeft_ru: true,
-  },
-  
-  {
-    naam: "Naberezjnye Tsjelny (Rusland)",
-    samenvatting: "Een grote brand woedde in een industrieel complex in Tatarstan, al is de oorzaak onduidelijk.",
+    naam: "Kaspische Zee (Kaspiysk)",
+    samenvatting: "Een opmerkelijke langeafstandsaanval door Oekra\u00efne op de Russische marinebasis in Dagestan.",
     betrouwbaarheid: "middel",
     heeft_ua: true,
+    heeft_ru: true,
+  },
+  
+  {
+    naam: "West-Zaporizja",
+    samenvatting: "Actieve gevechtshandelingen en Oekra\u00efense druk rondom de nederzettingen Stepnohirsk, Shcherbaky en Piatykhatky.",
+    betrouwbaarheid: "middel",
+    heeft_ua: false,
+    heeft_ru: true,
+  },
+  
+  {
+    naam: "Grensgebied Belarus (Polissja)",
+    samenvatting: "Oekra\u00efne consolideert zijn noordelijke verdedigingslinies ondanks het uitblijven van een acute dreiging.",
+    betrouwbaarheid: "hoog",
+    heeft_ua: true,
     heeft_ru: false,
+  },
+  
+  {
+    naam: "Krim en Zwarte Zee",
+    samenvatting: "Rusland treft defensieve maatregelen op het schiereiland en claimt successen op zee.",
+    betrouwbaarheid: "middel",
+    heeft_ua: false,
+    heeft_ru: true,
   },
   
 ];
@@ -3350,131 +5122,39 @@ document.querySelectorAll('.minimap').forEach(el => {
   L.polyline(FRONTLINE, { color:'#F97316', weight:2, opacity:0.7, dashArray:'5,4' }).addTo(m);
 });
 
-// ── BEGRIPPENLIJST — inline uitleg bij eerste gebruik ──
-const GLOSSARY = {
-  // Wapensystemen & munitie
-  'loitering munition':  'zweefbom die rondcirkelt boven het doelgebied totdat het aanvalt — ook wel zelfmoord-drone of kamikaze-drone',
-  'loitering munitions': 'zweefbommen die rondcirkelen boven het doelgebied totdat ze aanvallen — ook wel zelfmoord-drones',
-  'fpv drone':   'First-Person View drone — ultralichte kamikaze-drone bestuurd via VR-bril, extreem goedkoop en precies',
-  'fpv drones':  'First-Person View drones — ultralichte kamikaze-drones bestuurd via VR-bril',
-  'fpv':         'First-Person View — type kamikaze-drone bestuurd via VR-bril',
-  'lancet':      'Russische zelfmoord-drone (loitering munition) die boven het doel cirkelt',
-  'lancet drone': 'Russische zelfmoord-drone die boven het doel cirkelt voor de aanval',
-  'shahed':      'Iraanse eenrichtings-aanvalsdrone gebruikt door Rusland, ook bekend als Geran-2',
-  'himars':      'High Mobility Artillery Rocket System — Amerikaans mobiel raketartilleriesysteem met bereik tot 80 km',
-  'mlrs':        'Multiple Launch Rocket System — mobiel meervoudig raketwerpersysteem',
-  'atgm':        'Anti-Tank Guided Missile — geleid antitankraket',
-  'atgms':       'Anti-Tank Guided Missiles — geleide antitankraketten',
-  'glide bomb':  'vliegtuigbom uitgerust met vleugels zodat hij vanaf grote afstand kan worden losgelaten — nauwkeurig en moeilijk te onderscheppen',
-  'glide bombs': 'vliegtuigbommen met vleugels, losgelaten op grote afstand — nauwkeurig en moeilijk te onderscheppen',
-  'kab':         'Russische geleide glide bomb (Корректируемая Авиационная Бомба)',
-  'cluster munition':  'bom die tientallen of honderden kleine submunities verspreidt over groot gebied',
-  'cluster munitions': 'bommen die tientallen submunities verspreiden over groot gebied',
-  'thermobaric': 'type wapen dat een overdrukgolf én brand combineert — verwoestend in bunkers en gebouwen',
-  'tos-1':       'Russisch thermobarisch meervoudig raketsysteem — extreem destructief in bebouwd gebied',
-  'howitzer':    'veldkanon met hoge boogbaan voor beschietingen op afstand (bijv. M777, PzH 2000)',
-  'howitzers':   'veldkanonnen met hoge boogbaan voor beschietingen op afstand',
-  'self-propelled artillery': 'zelfrijdende artillerie die geen trekker nodig heeft',
-  'counter-battery': 'artillerievuur gericht op vijandelijke artilleriepositie uitschakelen',
-  'counter battery': 'artillerievuur gericht op vijandelijke artilleriepositie uitschakelen',
-  'iskander':    'Russisch ballistische raket met bereik ~500 km (Iskander-M/K)',
-  'kalibr':      'Russisch kruisraket afgevuurd vanaf schepen of onderzeeërs, bereik ~2000 km',
-  'kinzhal':     'Russische hypersonische raket (betekent "dolk") — afgevuurd vanuit vliegtuig met hoge snelheid',
-  'patriot':     'Amerikaans luchtverdedigingssysteem (PAC-3) voor het onderscheppen van ballistische raketten',
-  'nasams':      'Norwegian Advanced Surface-to-Air Missile System — luchtafweersysteem geleverd aan Oekraïne',
-  's-300':       'Oud Sovjet-/Russisch luchtverdedigingssysteem — ook door Oekraïne gebruikt',
-  's-400':       'Modern Russisch luchtverdedigingssysteem, de meest geavanceerde Russische luchtafweer',
-  'leopard 2':   'Duits gevechtstank geleverd aan Oekraïne — geldt als een van de beste ter wereld',
-  'leopard':     'Duits gevechtstank (Leopard 2) geleverd aan Oekraïne',
-  'bradley':     'Amerikaans infanteriegevechtsvoertuig geleverd aan Oekraïne',
-  'abrams':      'Amerikaans gevechtstank (M1 Abrams) geleverd aan Oekraïne',
-  'f-16':        'Amerikaans gevechtsvliegtuig geleverd aan Oekraïne door Nederland en Denemarken',
-  'bmp':         'Russisch infanteriegevechtsvoertuig (Boyevaya Mashina Pekhoty) — veelgebruikt door beide partijen',
-  'mortar':      'steilbaanwapen voor korte afstand — licht en snel te verplaatsen',
-  'mortars':     'steilbaanwapens voor korte afstand — licht en snel te verplaatsen',
-  'drone':       'onbemand luchtvaartuig — zowel voor verkenning als aanvallen gebruikt',
-  'drones':      'onbemande luchtvaartuigen — zowel voor verkenning als aanvallen',
+// ── BEGRIPPENLIJST — door Gemini gegenereerd, klik voor uitleg ──
+const GLOSSARY = {"\u0027Geranium\u0027 (Shahed) drones": "Iraanse Shahed-136 kamikazedrones die door Rusland worden ge\u00efmporteerd en lokaal geproduceerd onder de Russische naam \u0027Geran\u0027 (Geranium). Ze worden veelvuldig gebruikt voor aanvallen op Oekra\u00efense steden.", "\u0027barbecue grills\u0027": "Militaire slang voor ge\u00efmproviseerde stalen kooien of hekken die op voertuigen of schepen worden gelast. Ze zijn bedoeld om de impact van drones of raketten op te vangen voordat deze het hoofddoel raken.", "\u0027drakentanden\u0027": "Piramidevormige betonnen blokken die in rijen worden geplaatst om de opmars van tanks en pantservoertuigen te blokkeren.", "AVT-3, AVT-4, AT-6": "Specifieke technische installaties (verwerkingseenheden) binnen een olieraffinaderij. Schade hieraan legt de productie van brandstoffen direct stil.", "Belarus": "Ook wel Wit-Rusland genoemd, een buurland ten noorden van Oekra\u00efne en een belangrijke bondgenoot van Rusland.", "Cherson": "Een belangrijke havenstad en regio in het zuiden van Oekra\u00efne, gelegen aan de rivier de Dnipro.", "Dagestan": "Een Russische republiek in de noordelijke Kaukasus, grenzend aan de Kaspische Zee.", "Dieptestrikes": "Aanvallen (vaak met raketten of drones) diep in vijandelijk gebied, ver achter de frontlinie.", "Dnipropetrovsk": "Een grote regio (oblast) in centraal-oost Oekra\u00efne. Het is een cruciaal logistiek en industrieel knooppunt voor de Oekra\u00efense oorlogsinspanning.", "Donetsk": "Een stad en regio in Oost-Oekra\u00efne die sinds 2014 deels bezet is door Rusland en het toneel is van zware gevechten.", "EW-Integratie": "Het inbouwen van systemen voor elektronische oorlogsvoering (EW) in wapens of voertuigen, bijvoorbeeld om te voorkomen dat een drone door de vijand wordt gehackt of uit de lucht gehaald.", "FPV- en kamikazedrones": "FPV staat voor \u0027First Person View\u0027, waarbij de piloot de drone bestuurt via een videobril. Deze goedkope drones worden vaak voorzien van explosieven om als precisiewapen te dienen.", "Kaspische Zee": "Een groot binnenmeer tussen Europa en Azi\u00eb. Rusland heeft hier oorlogsschepen liggen die raketten op Oekra\u00efne kunnen afvuren.", "Kaspiysk": "Een havenstad in de Russische republiek Dagestan, gelegen aan de Kaspische Zee. Het is de thuisbasis van de Russische Kaspische Flottielje.", "Kh-101 kruisraketten": "Geavanceerde Russische langeafstandsraketten die vanuit bommenwerpers worden gelanceerd. Ze vliegen laag bij de grond om radar te ontwijken en worden veel gebruikt tegen Oekra\u00efense infrastructuur.", "Krim": "Een strategisch belangrijk schiereiland in de Zwarte Zee dat in 2014 illegaal door Rusland werd geannexeerd.", "Nevinnomyssk": "Een industriestad in de Russische regio Stavropol in Zuid-Rusland. De stad staat bekend om zijn grote chemische industrie.", "Piatykhatky": "Een dorp in de regio Zaporizja dat tijdens het Oekra\u00efense tegenoffensief van 2023 zwaar bevochten werd.", "Polissja": "Een historische en geografische regio vol moerassen en bossen die zich uitstrekt over de grens van Noord-Oekra\u00efne en Zuid-Belarus.", "Rjazan": "Een stad en regio in Rusland, ten zuidoosten van Moskou. Het is een belangrijk industrieel centrum met grote olieraffinaderijen.", "Samsun": "Een grote Turkse havenstad aan de kust van de Zwarte Zee.", "Shcherbaky": "Een klein dorp in de regio Zaporizja dat in de actieve gevechtszone ligt.", "Slavyangrad": "Een pro-Russisch Telegram-kanaal en nieuwsaggregator die informatie en propaganda deelt vanuit Russisch perspectief.", "Stavropol": "Een regio (kraj) en stad in het zuidwesten van Rusland, strategisch gelegen nabij de Kaukasus.", "Stepnohirsk": "Een nederzetting in de regio Zaporizja, gelegen nabij de huidige frontlinie.", "Tatarstan": "Een republiek ver in het binnenland van Rusland, waar onder andere fabrieken staan die Shahed-drones produceren.", "West-Zaporizja": "Het westelijke deel van de regio Zaporizja in Zuid-Oekra\u00efne. Dit is een belangrijke frontlinie waar Oekra\u00efne probeert de Russische landbrug naar de Krim te doorbreken.", "Zwarte Zee": "De zee ten zuiden van Oekra\u00efne en Rusland, van groot strategisch en economisch belang voor de marine en graanexport.", "Zwarte Zeevloot": "De vloot van de Russische marine die opereert in de Zwarte Zee, van oudsher gestationeerd in de havenstad Sebastopol op de Krim.", "achterland": "Het gebied ver achter de frontlinie waar een leger zijn voorraden, reserves en industrie heeft. Aanvallen hierop verstoren de bevoorrading van de troepen aan het front.", "amfibische": "Een militaire operatie die zowel vanaf het water als op het land plaatsvindt. Een voorbeeld is een landing van mariniers vanuit boten op een vijandelijk strand.", "caponiers": "Een militair verdedigingswerk (vaak een bunker of uitbouw) van waaruit men flankerend vuur kan uitbrengen op vijanden die een loopgraaf of muur naderen.", "diepe aanvallen": "Militaire term voor aanvallen ver achter de vijandelijke linies. Het doel is om logistiek, commandocentra of industrie te vernietigen voordat deze het front kunnen ondersteunen.", "elektronische oorlogsvoering (EW)": "Het gebruik van het elektromagnetische spectrum (zoals radiogolven) om vijandelijke communicatie, radar of drone-besturing te storen (\u0027jamming\u0027) of te misleiden.", "kamikaze-drone": "Een onbemand luchtvaartuig dat is uitgerust met explosieven en ontworpen is om zichzelf te vernietigen door op een doelwit in te slaan.", "mijnenveger": "Een militair schip dat speciaal is ontworpen om zeemijnen op te sporen en onschadelijk te maken, zodat andere schepen veilig kunnen varen.", "mijnenvelden": "Gebieden waar explosieven (landmijnen) onder of op de grond zijn verborgen om de opmars van vijandelijke troepen of voertuigen te stoppen.", "onbemande boten": "Ook wel maritieme drones genoemd; kleine, op afstand bestuurbare vaartuigen vol explosieven die Oekra\u00efne gebruikt om Russische oorlogsschepen aan te vallen.", "operativnoZSU": "Een officieel of semi-officieel Oekra\u00efens Telegram-kanaal dat updates geeft over de operaties van de Oekra\u00efense strijdkrachten (ZSU).", "rybar": "Een van de grootste en meest invloedrijke pro-Russische militaire Telegram-kanalen, vaak verbonden aan het Russische Ministerie van Defensie.", "tankversperringen": "Fysieke obstakels, zoals betonnen blokken of stalen constructies, die bedoeld zijn om de opmars van vijandelijke tanks en pantservoertuigen te vertragen of te stoppen.", "two_majors": "Een bekend pro-Russisch militair Telegram-kanaal dat nieuws en propaganda over de oorlog verspreidt.", "veldversterkingen": "Tijdelijke of permanente verdedigingswerken, zoals loopgraven en bunkers, die door soldaten in het veld worden aangelegd om zich te beschermen tegen vijandelijk vuur.", "wartranslated": "Een onafhankelijk project dat Russische en Oekra\u00efense militaire bronnen, video\u0027s en documenten naar het Engels vertaalt."};
 
-  // Elektronische oorlogvoering & inlichtingen
-  'electronic warfare': 'elektronische oorlogsvoering — het verstoren of onderscheppen van vijandelijke signalen, communicatie en drone-geleiding',
-  'ew':          'Electronic Warfare — elektronische oorlogvoering (signaalverstoring, jamming)',
-  'jamming':     'het verstoren van radio- of GPS-signalen zodat drones en communicatie uitvallen',
-  'jammer':      'apparaat dat radio- of GPS-signalen verstoort om drones en communicatie te blokkeren',
-  'jammers':     'apparaten die radio- of GPS-signalen verstoren om drones en communicatie te blokkeren',
-  'sigint':      'Signals Intelligence — inlichtingen via onderschepte elektronische signalen',
-  'osint':       'Open Source Intelligence — inlichtingen verzameld uit publiek toegankelijke bronnen (internet, sociale media, satellietbeelden)',
-  'isr':         'Intelligence, Surveillance, Reconnaissance — verkenning en bewaking vanuit de lucht',
-  'gps spoofing': 'het nep-GPS-signaal uitzenden om drones of raketten van koers te brengen',
+// Bottom-sheet popup element
+const gSheet = document.createElement('div');
+gSheet.className = 'gterm-sheet';
+gSheet.innerHTML = '<div class="gterm-sheet-handle"></div>'
+  + '<button class="gterm-sheet-close" aria-label="Sluiten">✕</button>'
+  + '<div class="gterm-sheet-term"></div>'
+  + '<div class="gterm-sheet-uitleg"></div>';
+document.body.appendChild(gSheet);
 
-  // Tactische begrippen
-  'flanking':    'aanval vanuit de zijkant om een vijandelijke positie te omsingelen of af te snijden',
-  'salient':     'uitstulping in de frontlinie die van meerdere kanten aangevallen kan worden',
-  'bridgehead':  'bruggenhoofd — veroverde positie aan de overkant van een rivier of grens',
-  'bridgeheads': 'bruggenhoofden — veroverde posities aan de overkant van rivieren of grenzen',
-  'fire control': 'vuurleiding — systeem voor het richten en coördineren van artillerievuur',
-  'deoccupation': 'bevrijding — het terugwinnen van bezet gebied',
-  'fortification': 'versterking — ingegraven verdedigingslinie met bunkers en loopgraven',
-  'fortifications': 'versterkingen — ingegraven verdedigingslinies met bunkers en loopgraven',
-  'trench':      'loopgraaf — ingegraven positie die soldaten beschermt tegen beschietingen',
-  'trenches':    'loopgraven — ingegraven posities die soldaten beschermen tegen beschietingen',
-  'demining':    'mijnruimen — het onschadelijk maken van landmijnen en explosieven',
-  'ied':         'Improvised Explosive Device — zelfgemaakt explosief, ook wel bermbom',
-  'ieds':        'Improvised Explosive Devices — zelfgemaakte explosieven',
-  'medevac':     'medische evacuatie van gewonde soldaten uit het gevechtsgebied',
-  'pow':         'Prisoner of War — krijgsgevangene',
-  'pows':        'Prisoners of War — krijgsgevangenen',
-  'ceasefire':   'staakt-het-vuren — afgesproken stopzetting van gevechten',
-  'mobilization': 'mobilisatie — het oproepen van burgers voor militaire dienst',
-  'mobilisation': 'mobilisatie — het oproepen van burgers voor militaire dienst',
-  'reserves':    'reservetroepen — soldaten die niet permanent actief zijn maar opgeroepen kunnen worden',
-  'advance':     'opmars — het naar voren bewegen van troepen richting de vijand',
-  'withdrawal':  'terugtrekking — gecontroleerde achterwaartse beweging van troepen',
-  'encirclement': 'omsingeling — het volledig omcirkelen van vijandelijke troepen',
-  'fortified line': 'verdedigingslinie — versterkte grens van bunkers, mijnvelden en loopgraven',
-
-  // Geografisch & bestuurlijk
-  'oblast':      'gewest — Oekraïens/Russisch bestuurlijk gebied (vergelijkbaar met een Nederlandse provincie)',
-  'raion':       'district — bestuurlijke eenheid binnen een oblast',
-  'left bank':   'linkeroever — oostelijke oever van de Dnipro-rivier (bezet door Rusland)',
-  'right bank':  'rechteroever — westelijke oever van de Dnipro-rivier (Oekraïne)',
-  'dnipro':      'de Dnipro (Dnjepr) — grootste rivier van Oekraïne, vormt een natuurlijke grens in het zuiden',
-
-  // Organisaties & eenheden
-  'zsu':         'Збройні Сили України — Strijdkrachten van Oekraïne (het Oekraïense reguliere leger)',
-  'gur':         'Головне управління розвідки — Oekraïense Militaire Inlichtingendienst',
-  'sbu':         'Служба безпеки України — Oekraïense Binnenlandse Veiligheidsdienst',
-  'fsb':         'Federale Veiligheidsdienst van Rusland — opvolger van de KGB, verantwoordelijk voor interne veiligheid',
-  'gru':         'Russische Militaire Inlichtingendienst (nu GRU/GU)',
-  'nato':        'Noord-Atlantisch Verdragsorganisatie — westers militair bondgenootschap van 32 landen',
-  'vdv':         'Russische Luchtlandingstroepen (Воздушно-десантные войска) — elite parachutisten',
-  'wagner':      'Wagner Groep — Russische privé-militaire onderneming, na 2023 grotendeels opgenomen in het reguliere leger',
-  'storm z':     'Russische strafbataljons samengesteld uit veroordeelde gevangenen die als kanonnenvoer worden ingezet',
-  'storm-z':     'Russische strafbataljons samengesteld uit veroordeelde gevangenen die als kanonnenvoer worden ingezet',
-  'omon':        'Russische speciale politie-eenheid (ОМОН) — ook ingezet bij militaire operaties',
-  'rosgvardia':  'Russische Nationale Garde — paramilitaire politiemacht ingezet bij gevechten',
-
-  // Personen
-  'zelensky':    'Volodymyr Zelensky — president van Oekraïne (verkozen 2019)',
-  'zelenskyy':   'Volodymyr Zelensky — president van Oekraïne (verkozen 2019)',
-  'putin':       'Vladimir Putin — president van de Russische Federatie (aan de macht sinds 2000)',
-  'zaluzhny':    'Valery Zaluzhny — voormalig opperbevelhebber van het Oekraïense leger, nu ambassadeur in het VK',
-  'syrskyi':     'Oleksandr Syrskyi — huidig opperbevelhebber van het Oekraïense leger (aangetreden feb. 2024)',
-  'budanov':     'Kyrylo Budanov — hoofd van de Oekraïense Militaire Inlichtingendienst (GUR)',
-  'gerasimov':   'Valery Gerasimov — opperbevelhebber van het Russische leger, architect van de huidige militaire strategie',
-  'shoigu':      'Sergei Shoigu — voormalig Russisch minister van Defensie, opgevolgd door Belousov',
-  'belousov':    'Andrei Belousov — huidig Russisch minister van Defensie (aangetreden 2024)',
-
-  // Overige begrippen
-  'propaganda':  'doelbewuste verspreiding van eenzijdige of misleidende informatie om de publieke opinie te beïnvloeden',
-  'milblogger':  'militaire blogger — burger of ex-militair die oorlogsupdates deelt op sociale media, soms met insider-informatie',
-  'milbloggers': 'militaire bloggers — burgers of ex-militairen die oorlogsupdates delen op sociale media',
-  'telegram':    'versleutelde berichtenapp populair in Rusland en Oekraïne voor het verspreiden van oorlogsnieuws',
-  'kinetic':     'kinetisch — vakterm voor fysieke militaire actie (beschietingen, aanvallen) in tegenstelling tot cyberaanvallen',
-  'grey zone':   'niemandsland — gebied tussen de frontlinies dat door geen van beide partijen volledig wordt gecontroleerd',
-  'gray zone':   'niemandsland — gebied tussen de frontlinies dat door geen van beide partijen volledig wordt gecontroleerd',
-};
+gSheet.querySelector('.gterm-sheet-close').addEventListener('click', () => {
+  gSheet.classList.remove('open');
+});
+document.addEventListener('click', e => {
+  const term = e.target.closest('.gterm');
+  if (term) {
+    gSheet.querySelector('.gterm-sheet-term').textContent = term.dataset.term;
+    gSheet.querySelector('.gterm-sheet-uitleg').textContent = term.dataset.uitleg;
+    gSheet.classList.add('open');
+    e.stopPropagation();
+  } else if (!gSheet.contains(e.target)) {
+    gSheet.classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') gSheet.classList.remove('open');
+});
 
 function annotateGlossary() {
+  if (!GLOSSARY || !Object.keys(GLOSSARY).length) return;
+
   // Langere termen eerst (voorkomt gedeeltelijke overlapping)
   const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
   const used = new Set();
@@ -3483,14 +5163,13 @@ function annotateGlossary() {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // Alleen tekst in inhoudsgebieden verwerken
   const CONTENT_SEL = [
     '.hero-lede', '.hero-sub', '.skaart-sum', '.fvak-list li',
     '.cvak', '.strategie-blok', '.menselijk-blok',
     '.morgen-item > div:last-child', '.signaal-item > div:last-child',
     '.kritiek-item > div:last-child', '.ew-item',
     '.tech-desc', '.tech-cat-intro', '.vergelijk-concl',
-    '.tech-intro', '.tech-sig',
+    '.tech-intro', '.tech-sig', '.vkol-list li',
   ].join(',');
 
   document.querySelectorAll(CONTENT_SEL).forEach(el => {
@@ -3504,15 +5183,18 @@ function annotateGlossary() {
       let changed = false;
 
       for (const term of terms) {
-        if (used.has(term)) continue;
+        const key = term.toLowerCase();
+        if (used.has(key)) continue;
         const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const re = new RegExp('(?<![\\w-])(' + escaped + ')(?![\\w-])', 'i');
         if (re.test(html)) {
-          html = html.replace(re, (match) => {
-            if (used.has(term)) return match;
-            used.add(term);
-            const uitleg = GLOSSARY[term.toLowerCase()] || GLOSSARY[term];
-            return `<span class="gterm">${match}<span class="gterm-tip"> (${uitleg})</span></span>`;
+          html = html.replace(re, match => {
+            if (used.has(key)) return match;
+            used.add(key);
+            const uitleg = GLOSSARY[term] || GLOSSARY[key] || '';
+            const safeUitleg = uitleg.replace(/"/g, '&quot;');
+            const safeTerm = match.replace(/"/g, '&quot;');
+            return `<span class="gterm" role="button" tabindex="0" data-term="${safeTerm}" data-uitleg="${safeUitleg}">${match}</span>`;
           });
           changed = true;
         }
@@ -3523,6 +5205,13 @@ function annotateGlossary() {
         span.innerHTML = html;
         node.parentNode.replaceChild(span, node);
       }
+    }
+  });
+
+  // Keyboard toegankelijkheid
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.classList.contains('gterm')) {
+      e.target.click();
     }
   });
 }

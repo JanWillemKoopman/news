@@ -600,13 +600,47 @@ a:hover { text-decoration:underline; }
 
 /* ── BEGRIPPENLIJST ── */
 .gterm {
-  border-bottom:1px dotted var(--coral-dim);
-  cursor:help;
+  border-bottom:2px solid var(--coral);
+  cursor:pointer;
+  transition:opacity .15s;
 }
-.gterm-tip {
-  color:var(--text-4);
-  font-size:0.82em;
-  font-style:italic;
+.gterm:hover { opacity:.8; }
+
+/* Bottom-sheet popup */
+.gterm-sheet {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:500;
+  background:var(--bg-2);
+  border-top:2px solid var(--coral);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  padding:18px 20px max(24px,env(safe-area-inset-bottom));
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+  max-height:45vh; overflow-y:auto;
+  animation:sheetUp .2s ease;
+}
+.gterm-sheet.open { display:block; }
+@keyframes sheetUp {
+  from { transform:translateY(100%); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
+.gterm-sheet-handle {
+  width:36px; height:4px; border-radius:2px;
+  background:var(--border-2); margin:0 auto 14px;
+}
+.gterm-sheet-term {
+  font-family:var(--font-serif);
+  font-size:1.1rem; font-weight:600;
+  color:var(--coral); margin-bottom:8px;
+}
+.gterm-sheet-uitleg {
+  font-size:0.93rem; line-height:1.7; color:var(--text-2);
+}
+.gterm-sheet-close {
+  position:absolute; top:14px; right:16px;
+  background:var(--bg-4); border:1px solid var(--border);
+  border-radius:var(--r-full); color:var(--text-3);
+  font-size:0.8rem; cursor:pointer;
+  padding:3px 9px; line-height:1.4;
 }
 
 /* ── RESPONSIVE ── */
@@ -1043,131 +1077,39 @@ document.querySelectorAll('.minimap').forEach(el => {
   L.polyline(FRONTLINE, { color:'#F97316', weight:2, opacity:0.7, dashArray:'5,4' }).addTo(m);
 });
 
-// ── BEGRIPPENLIJST — inline uitleg bij eerste gebruik ──
-const GLOSSARY = {
-  // Wapensystemen & munitie
-  'loitering munition':  'zweefbom die rondcirkelt boven het doelgebied totdat het aanvalt — ook wel zelfmoord-drone of kamikaze-drone',
-  'loitering munitions': 'zweefbommen die rondcirkelen boven het doelgebied totdat ze aanvallen — ook wel zelfmoord-drones',
-  'fpv drone':   'First-Person View drone — ultralichte kamikaze-drone bestuurd via VR-bril, extreem goedkoop en precies',
-  'fpv drones':  'First-Person View drones — ultralichte kamikaze-drones bestuurd via VR-bril',
-  'fpv':         'First-Person View — type kamikaze-drone bestuurd via VR-bril',
-  'lancet':      'Russische zelfmoord-drone (loitering munition) die boven het doel cirkelt',
-  'lancet drone': 'Russische zelfmoord-drone die boven het doel cirkelt voor de aanval',
-  'shahed':      'Iraanse eenrichtings-aanvalsdrone gebruikt door Rusland, ook bekend als Geran-2',
-  'himars':      'High Mobility Artillery Rocket System — Amerikaans mobiel raketartilleriesysteem met bereik tot 80 km',
-  'mlrs':        'Multiple Launch Rocket System — mobiel meervoudig raketwerpersysteem',
-  'atgm':        'Anti-Tank Guided Missile — geleid antitankraket',
-  'atgms':       'Anti-Tank Guided Missiles — geleide antitankraketten',
-  'glide bomb':  'vliegtuigbom uitgerust met vleugels zodat hij vanaf grote afstand kan worden losgelaten — nauwkeurig en moeilijk te onderscheppen',
-  'glide bombs': 'vliegtuigbommen met vleugels, losgelaten op grote afstand — nauwkeurig en moeilijk te onderscheppen',
-  'kab':         'Russische geleide glide bomb (Корректируемая Авиационная Бомба)',
-  'cluster munition':  'bom die tientallen of honderden kleine submunities verspreidt over groot gebied',
-  'cluster munitions': 'bommen die tientallen submunities verspreiden over groot gebied',
-  'thermobaric': 'type wapen dat een overdrukgolf én brand combineert — verwoestend in bunkers en gebouwen',
-  'tos-1':       'Russisch thermobarisch meervoudig raketsysteem — extreem destructief in bebouwd gebied',
-  'howitzer':    'veldkanon met hoge boogbaan voor beschietingen op afstand (bijv. M777, PzH 2000)',
-  'howitzers':   'veldkanonnen met hoge boogbaan voor beschietingen op afstand',
-  'self-propelled artillery': 'zelfrijdende artillerie die geen trekker nodig heeft',
-  'counter-battery': 'artillerievuur gericht op vijandelijke artilleriepositie uitschakelen',
-  'counter battery': 'artillerievuur gericht op vijandelijke artilleriepositie uitschakelen',
-  'iskander':    'Russisch ballistische raket met bereik ~500 km (Iskander-M/K)',
-  'kalibr':      'Russisch kruisraket afgevuurd vanaf schepen of onderzeeërs, bereik ~2000 km',
-  'kinzhal':     'Russische hypersonische raket (betekent "dolk") — afgevuurd vanuit vliegtuig met hoge snelheid',
-  'patriot':     'Amerikaans luchtverdedigingssysteem (PAC-3) voor het onderscheppen van ballistische raketten',
-  'nasams':      'Norwegian Advanced Surface-to-Air Missile System — luchtafweersysteem geleverd aan Oekraïne',
-  's-300':       'Oud Sovjet-/Russisch luchtverdedigingssysteem — ook door Oekraïne gebruikt',
-  's-400':       'Modern Russisch luchtverdedigingssysteem, de meest geavanceerde Russische luchtafweer',
-  'leopard 2':   'Duits gevechtstank geleverd aan Oekraïne — geldt als een van de beste ter wereld',
-  'leopard':     'Duits gevechtstank (Leopard 2) geleverd aan Oekraïne',
-  'bradley':     'Amerikaans infanteriegevechtsvoertuig geleverd aan Oekraïne',
-  'abrams':      'Amerikaans gevechtstank (M1 Abrams) geleverd aan Oekraïne',
-  'f-16':        'Amerikaans gevechtsvliegtuig geleverd aan Oekraïne door Nederland en Denemarken',
-  'bmp':         'Russisch infanteriegevechtsvoertuig (Boyevaya Mashina Pekhoty) — veelgebruikt door beide partijen',
-  'mortar':      'steilbaanwapen voor korte afstand — licht en snel te verplaatsen',
-  'mortars':     'steilbaanwapens voor korte afstand — licht en snel te verplaatsen',
-  'drone':       'onbemand luchtvaartuig — zowel voor verkenning als aanvallen gebruikt',
-  'drones':      'onbemande luchtvaartuigen — zowel voor verkenning als aanvallen',
+// ── BEGRIPPENLIJST — door Gemini gegenereerd, klik voor uitleg ──
+const GLOSSARY = {{ glossary | tojson }};
 
-  // Elektronische oorlogvoering & inlichtingen
-  'electronic warfare': 'elektronische oorlogsvoering — het verstoren of onderscheppen van vijandelijke signalen, communicatie en drone-geleiding',
-  'ew':          'Electronic Warfare — elektronische oorlogvoering (signaalverstoring, jamming)',
-  'jamming':     'het verstoren van radio- of GPS-signalen zodat drones en communicatie uitvallen',
-  'jammer':      'apparaat dat radio- of GPS-signalen verstoort om drones en communicatie te blokkeren',
-  'jammers':     'apparaten die radio- of GPS-signalen verstoren om drones en communicatie te blokkeren',
-  'sigint':      'Signals Intelligence — inlichtingen via onderschepte elektronische signalen',
-  'osint':       'Open Source Intelligence — inlichtingen verzameld uit publiek toegankelijke bronnen (internet, sociale media, satellietbeelden)',
-  'isr':         'Intelligence, Surveillance, Reconnaissance — verkenning en bewaking vanuit de lucht',
-  'gps spoofing': 'het nep-GPS-signaal uitzenden om drones of raketten van koers te brengen',
+// Bottom-sheet popup element
+const gSheet = document.createElement('div');
+gSheet.className = 'gterm-sheet';
+gSheet.innerHTML = '<div class="gterm-sheet-handle"></div>'
+  + '<button class="gterm-sheet-close" aria-label="Sluiten">✕</button>'
+  + '<div class="gterm-sheet-term"></div>'
+  + '<div class="gterm-sheet-uitleg"></div>';
+document.body.appendChild(gSheet);
 
-  // Tactische begrippen
-  'flanking':    'aanval vanuit de zijkant om een vijandelijke positie te omsingelen of af te snijden',
-  'salient':     'uitstulping in de frontlinie die van meerdere kanten aangevallen kan worden',
-  'bridgehead':  'bruggenhoofd — veroverde positie aan de overkant van een rivier of grens',
-  'bridgeheads': 'bruggenhoofden — veroverde posities aan de overkant van rivieren of grenzen',
-  'fire control': 'vuurleiding — systeem voor het richten en coördineren van artillerievuur',
-  'deoccupation': 'bevrijding — het terugwinnen van bezet gebied',
-  'fortification': 'versterking — ingegraven verdedigingslinie met bunkers en loopgraven',
-  'fortifications': 'versterkingen — ingegraven verdedigingslinies met bunkers en loopgraven',
-  'trench':      'loopgraaf — ingegraven positie die soldaten beschermt tegen beschietingen',
-  'trenches':    'loopgraven — ingegraven posities die soldaten beschermen tegen beschietingen',
-  'demining':    'mijnruimen — het onschadelijk maken van landmijnen en explosieven',
-  'ied':         'Improvised Explosive Device — zelfgemaakt explosief, ook wel bermbom',
-  'ieds':        'Improvised Explosive Devices — zelfgemaakte explosieven',
-  'medevac':     'medische evacuatie van gewonde soldaten uit het gevechtsgebied',
-  'pow':         'Prisoner of War — krijgsgevangene',
-  'pows':        'Prisoners of War — krijgsgevangenen',
-  'ceasefire':   'staakt-het-vuren — afgesproken stopzetting van gevechten',
-  'mobilization': 'mobilisatie — het oproepen van burgers voor militaire dienst',
-  'mobilisation': 'mobilisatie — het oproepen van burgers voor militaire dienst',
-  'reserves':    'reservetroepen — soldaten die niet permanent actief zijn maar opgeroepen kunnen worden',
-  'advance':     'opmars — het naar voren bewegen van troepen richting de vijand',
-  'withdrawal':  'terugtrekking — gecontroleerde achterwaartse beweging van troepen',
-  'encirclement': 'omsingeling — het volledig omcirkelen van vijandelijke troepen',
-  'fortified line': 'verdedigingslinie — versterkte grens van bunkers, mijnvelden en loopgraven',
-
-  // Geografisch & bestuurlijk
-  'oblast':      'gewest — Oekraïens/Russisch bestuurlijk gebied (vergelijkbaar met een Nederlandse provincie)',
-  'raion':       'district — bestuurlijke eenheid binnen een oblast',
-  'left bank':   'linkeroever — oostelijke oever van de Dnipro-rivier (bezet door Rusland)',
-  'right bank':  'rechteroever — westelijke oever van de Dnipro-rivier (Oekraïne)',
-  'dnipro':      'de Dnipro (Dnjepr) — grootste rivier van Oekraïne, vormt een natuurlijke grens in het zuiden',
-
-  // Organisaties & eenheden
-  'zsu':         'Збройні Сили України — Strijdkrachten van Oekraïne (het Oekraïense reguliere leger)',
-  'gur':         'Головне управління розвідки — Oekraïense Militaire Inlichtingendienst',
-  'sbu':         'Служба безпеки України — Oekraïense Binnenlandse Veiligheidsdienst',
-  'fsb':         'Federale Veiligheidsdienst van Rusland — opvolger van de KGB, verantwoordelijk voor interne veiligheid',
-  'gru':         'Russische Militaire Inlichtingendienst (nu GRU/GU)',
-  'nato':        'Noord-Atlantisch Verdragsorganisatie — westers militair bondgenootschap van 32 landen',
-  'vdv':         'Russische Luchtlandingstroepen (Воздушно-десантные войска) — elite parachutisten',
-  'wagner':      'Wagner Groep — Russische privé-militaire onderneming, na 2023 grotendeels opgenomen in het reguliere leger',
-  'storm z':     'Russische strafbataljons samengesteld uit veroordeelde gevangenen die als kanonnenvoer worden ingezet',
-  'storm-z':     'Russische strafbataljons samengesteld uit veroordeelde gevangenen die als kanonnenvoer worden ingezet',
-  'omon':        'Russische speciale politie-eenheid (ОМОН) — ook ingezet bij militaire operaties',
-  'rosgvardia':  'Russische Nationale Garde — paramilitaire politiemacht ingezet bij gevechten',
-
-  // Personen
-  'zelensky':    'Volodymyr Zelensky — president van Oekraïne (verkozen 2019)',
-  'zelenskyy':   'Volodymyr Zelensky — president van Oekraïne (verkozen 2019)',
-  'putin':       'Vladimir Putin — president van de Russische Federatie (aan de macht sinds 2000)',
-  'zaluzhny':    'Valery Zaluzhny — voormalig opperbevelhebber van het Oekraïense leger, nu ambassadeur in het VK',
-  'syrskyi':     'Oleksandr Syrskyi — huidig opperbevelhebber van het Oekraïense leger (aangetreden feb. 2024)',
-  'budanov':     'Kyrylo Budanov — hoofd van de Oekraïense Militaire Inlichtingendienst (GUR)',
-  'gerasimov':   'Valery Gerasimov — opperbevelhebber van het Russische leger, architect van de huidige militaire strategie',
-  'shoigu':      'Sergei Shoigu — voormalig Russisch minister van Defensie, opgevolgd door Belousov',
-  'belousov':    'Andrei Belousov — huidig Russisch minister van Defensie (aangetreden 2024)',
-
-  // Overige begrippen
-  'propaganda':  'doelbewuste verspreiding van eenzijdige of misleidende informatie om de publieke opinie te beïnvloeden',
-  'milblogger':  'militaire blogger — burger of ex-militair die oorlogsupdates deelt op sociale media, soms met insider-informatie',
-  'milbloggers': 'militaire bloggers — burgers of ex-militairen die oorlogsupdates delen op sociale media',
-  'telegram':    'versleutelde berichtenapp populair in Rusland en Oekraïne voor het verspreiden van oorlogsnieuws',
-  'kinetic':     'kinetisch — vakterm voor fysieke militaire actie (beschietingen, aanvallen) in tegenstelling tot cyberaanvallen',
-  'grey zone':   'niemandsland — gebied tussen de frontlinies dat door geen van beide partijen volledig wordt gecontroleerd',
-  'gray zone':   'niemandsland — gebied tussen de frontlinies dat door geen van beide partijen volledig wordt gecontroleerd',
-};
+gSheet.querySelector('.gterm-sheet-close').addEventListener('click', () => {
+  gSheet.classList.remove('open');
+});
+document.addEventListener('click', e => {
+  const term = e.target.closest('.gterm');
+  if (term) {
+    gSheet.querySelector('.gterm-sheet-term').textContent = term.dataset.term;
+    gSheet.querySelector('.gterm-sheet-uitleg').textContent = term.dataset.uitleg;
+    gSheet.classList.add('open');
+    e.stopPropagation();
+  } else if (!gSheet.contains(e.target)) {
+    gSheet.classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') gSheet.classList.remove('open');
+});
 
 function annotateGlossary() {
+  if (!GLOSSARY || !Object.keys(GLOSSARY).length) return;
+
   // Langere termen eerst (voorkomt gedeeltelijke overlapping)
   const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
   const used = new Set();
@@ -1176,14 +1118,13 @@ function annotateGlossary() {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // Alleen tekst in inhoudsgebieden verwerken
   const CONTENT_SEL = [
     '.hero-lede', '.hero-sub', '.skaart-sum', '.fvak-list li',
     '.cvak', '.strategie-blok', '.menselijk-blok',
     '.morgen-item > div:last-child', '.signaal-item > div:last-child',
     '.kritiek-item > div:last-child', '.ew-item',
     '.tech-desc', '.tech-cat-intro', '.vergelijk-concl',
-    '.tech-intro', '.tech-sig',
+    '.tech-intro', '.tech-sig', '.vkol-list li',
   ].join(',');
 
   document.querySelectorAll(CONTENT_SEL).forEach(el => {
@@ -1197,15 +1138,18 @@ function annotateGlossary() {
       let changed = false;
 
       for (const term of terms) {
-        if (used.has(term)) continue;
+        const key = term.toLowerCase();
+        if (used.has(key)) continue;
         const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const re = new RegExp('(?<![\\w-])(' + escaped + ')(?![\\w-])', 'i');
         if (re.test(html)) {
-          html = html.replace(re, (match) => {
-            if (used.has(term)) return match;
-            used.add(term);
-            const uitleg = GLOSSARY[term.toLowerCase()] || GLOSSARY[term];
-            return `<span class="gterm">${match}<span class="gterm-tip"> (${uitleg})</span></span>`;
+          html = html.replace(re, match => {
+            if (used.has(key)) return match;
+            used.add(key);
+            const uitleg = GLOSSARY[term] || GLOSSARY[key] || '';
+            const safeUitleg = uitleg.replace(/"/g, '&quot;');
+            const safeTerm = match.replace(/"/g, '&quot;');
+            return `<span class="gterm" role="button" tabindex="0" data-term="${safeTerm}" data-uitleg="${safeUitleg}">${match}</span>`;
           });
           changed = true;
         }
@@ -1216,6 +1160,13 @@ function annotateGlossary() {
         span.innerHTML = html;
         node.parentNode.replaceChild(span, node);
       }
+    }
+  });
+
+  // Keyboard toegankelijkheid
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.classList.contains('gterm')) {
+      e.target.click();
     }
   });
 }

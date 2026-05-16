@@ -25,17 +25,20 @@ def setup():
     logger.info(f"Gemini API geconfigureerd (snel: {MODEL_FAST} | pro: {MODEL_PRO})")
 
 
-def _call(prompt: str, model: str = MODEL_FAST, max_tokens: int = 4096, retries: int = 3) -> str:
+def _call(prompt: str, model: str = MODEL_FAST, max_tokens: int = 4096, retries: int = 3, json_mode: bool = False) -> str:
     if not _api_key:
         raise RuntimeError("Roep eerst gemini.setup() aan")
 
     url = f"{GEMINI_API_BASE}/{model}:generateContent?key={_api_key}"
+    gen_config: dict = {
+        "temperature": 0.2,
+        "maxOutputTokens": max_tokens,
+    }
+    if json_mode:
+        gen_config["responseMimeType"] = "application/json"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": max_tokens,
-        }
+        "generationConfig": gen_config,
     }
 
     for attempt in range(retries):
@@ -73,7 +76,7 @@ def _extract_json(text: str) -> dict | list | None:
         text = match.group(1)
     try:
         return json.loads(text.strip())
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         try:
             start = text.find('[') if text.find('[') != -1 and (text.find('{') == -1 or text.find('[') < text.find('{')) else text.find('{')
             if start != -1:
@@ -337,6 +340,93 @@ JSON:"""
         "signalen": patterns,
         "bronnenkritiek": [],
     }
+
+
+def generate_glossary(bulletin_data: dict, tech_data: dict) -> dict:
+    """Laat Gemini 3.1 Pro alle begrippen identificeren die uitleg verdienen."""
+    parts = []
+
+    for key in ['krantenkop', 'subtitel', 'lede', 'strategische_context', 'menselijke_factor']:
+        val = bulletin_data.get(key, '')
+        if val:
+            parts.append(str(val))
+
+    for sector in bulletin_data.get('sectoren', []):
+        for key in ['naam', 'samenvatting', 'ua_claim', 'ru_claim']:
+            val = sector.get(key, '')
+            if val:
+                parts.append(str(val))
+        for lst in ['bevestigd', 'onzeker']:
+            for item in sector.get(lst, []):
+                parts.append(str(item))
+
+    for lst in ['morgen_verwacht', 'technologie_ew', 'signalen', 'bronnenkritiek']:
+        for item in bulletin_data.get(lst, []):
+            parts.append(str(item))
+
+    for key in ['tech_kop', 'tech_intro']:
+        val = tech_data.get(key, '')
+        if val:
+            parts.append(str(val))
+
+    vg = tech_data.get('innovatie_vergelijking', {})
+    for cat in tech_data.get('categorieën', []):
+        parts.append(cat.get('naam', ''))
+        parts.append(cat.get('introductie', ''))
+        for onw in cat.get('ontwikkelingen', []):
+            parts.append(onw.get('titel', ''))
+            parts.append(onw.get('beschrijving', ''))
+    for lst in ['ua_sterktepunten', 'ru_sterktepunten']:
+        for item in vg.get(lst, []):
+            parts.append(str(item))
+    parts.append(vg.get('technologische_balans', ''))
+    for sig in tech_data.get('tech_signalen', []):
+        parts.append(str(sig))
+
+    full_text = "\n".join(p for p in parts if p and p.strip())
+
+    prompt = f"""Je analyseert een Nederlandse militaire nieuwsbriefing over de oorlog in Oekraïne.
+
+Identificeer ALLE woorden, begrippen en uitdrukkingen in de tekst die voor een gewone lezer (zonder militaire achtergrond) extra uitleg verdienen. Wees ROYAAL — liever te veel dan te weinig begrippen.
+
+Zoek naar:
+- Militair vakjargon (bijv. "counter-battery fire", "salient", "flanking")
+- Wapensystemen en voertuigen bij naam (bijv. "Lancet-3", "Shahed-136", "HIMARS", "Bradley")
+- Afkortingen (bijv. "GUR", "EW", "FPV", "ATGM", "ZSU", "ISR")
+- Militaire commandanten en politici
+- Geografische begrippen (bijv. "oblast", "bridgehead", "left bank", specifieke plaatsen)
+- Tactische concepten (bijv. "loitering munition", "thermobaric", "jamming", "encirclement")
+- Organisaties en eenheden (bijv. "VDV", "Wagner", "Storm-Z", "GRU")
+- Technische en wetenschappelijke termen
+
+Schrijf per begrip een heldere Nederlandse uitleg van 1-2 zinnen, geschikt voor iemand die de oorlog actief volgt maar geen militaire achtergrond heeft.
+Gebruik de term EXACT zoals die in de tekst staat.
+Geef ALLEEN begrippen die daadwerkelijk in de tekst voorkomen.
+
+Geef dit JSON-object terug:
+{{"begrippen": [{{"term": "exacte term uit tekst", "uitleg": "korte Nederlandse uitleg"}}]}}
+
+TEKST:
+{full_text[:6000]}"""
+
+    response = _call(prompt, model=MODEL_PRO, max_tokens=8192, json_mode=True)
+    result = _extract_json(response)
+
+    if not isinstance(result, dict):
+        logger.warning(f"Glossary parse mislukt (response {len(response)} chars)")
+        return {}
+
+    begrippen = result.get('begrippen', [])
+    if not isinstance(begrippen, list):
+        return {}
+
+    out = {
+        b['term']: b['uitleg']
+        for b in begrippen
+        if isinstance(b, dict) and b.get('term') and b.get('uitleg')
+    }
+    logger.info(f"  → {len(out)}/{len(begrippen)} begrippen geparsed")
+    return out
 
 
 def generate_technology_deepdive(tactical_messages: list[dict], date: str) -> dict:

@@ -109,6 +109,15 @@ def get_recent_messages(hours: int = 24) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def _to_str(v) -> str | None:
+    if v is None:
+        return None
+    if isinstance(v, (list, dict)):
+        import json as _json
+        return _json.dumps(v, ensure_ascii=False)
+    return str(v)
+
+
 def save_analyzed(message_id: int, data: dict):
     with get_conn() as conn:
         conn.execute(
@@ -118,13 +127,13 @@ def save_analyzed(message_id: int, data: dict):
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 message_id,
-                data.get('translated_text'),
+                _to_str(data.get('translated_text')),
                 1 if data.get('is_tactical') else 0,
-                data.get('location'),
-                data.get('event_type'),
-                data.get('reliability'),
-                data.get('propaganda_markers'),
-                data.get('key_facts'),
+                _to_str(data.get('location')),
+                _to_str(data.get('event_type')),
+                _to_str(data.get('reliability')),
+                _to_str(data.get('propaganda_markers')),
+                _to_str(data.get('key_facts')),
             )
         )
 

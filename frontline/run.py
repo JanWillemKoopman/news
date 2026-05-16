@@ -119,7 +119,16 @@ def main():
     tech_data = generate_technology_deepdive(tactical, today)
     logger.info(f"  → {len(tech_data.get('categorieën', []))} technologie-categorieën gegenereerd")
 
-    # === FASE 5: HTML OPSLAAN ===
+    # === FASE 5: BEGRIPPENLIJST ===
+    logger.info("=" * 50)
+    logger.info("FASE 5: Begrippenlijst genereren (Gemini 3.1 Pro)")
+    logger.info("=" * 50)
+
+    from processors.gemini import generate_glossary
+    glossary = generate_glossary(bulletin_data, tech_data)
+    logger.info(f"  → {len(glossary)} begrippen met toelichting gegenereerd")
+
+    # === FASE 6: HTML OPSLAAN ===
     from jinja2 import Environment, FileSystemLoader
     from storage.db import save_bulletin
     from channels import CHANNELS, CHANNEL_LOOKUP
@@ -174,6 +183,7 @@ def main():
         newest_message=fmt_date_nl(newest),
         media_by_location=dict(media_by_location),
         all_media=all_media[:60],
+        glossary=glossary,
     )
 
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
