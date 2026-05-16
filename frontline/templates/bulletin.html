@@ -233,12 +233,15 @@ a:hover { text-decoration:underline; }
   border:1px solid var(--border); margin-bottom:4px;
   box-shadow:var(--sh);
 }
-#overzichtskaart { height:210px; background:var(--bg-3); }
+#overzichtskaart { height:420px; background:var(--bg-3); }
+.minimap { height:150px; border-radius:var(--r-sm); margin-top:10px; border:1px solid var(--border); }
 .kaart-cap {
   background:var(--bg-3); padding:5px 12px;
   font-size:0.68rem; color:var(--text-4);
   border-top:1px solid var(--border);
 }
+.dark-tooltip { background:rgba(13,13,12,.9); color:#F0EDE8; border:1px solid #3a3a38; font-size:11px; }
+.dark-tooltip::before { border-top-color:rgba(13,13,12,.9); }
 
 /* ── MEDIA THUMBS ── */
 .media-thumb {
@@ -664,6 +667,7 @@ a:hover { text-decoration:underline; }
             <span class="betr betr-{{ s.betrouwbaarheid|lower|replace(' ','-') }}">{{ s.betrouwbaarheid }}</span>
           </div>
           <div class="skaart-sum">{{ s.samenvatting }}</div>
+          <div id="minimap-{{ loop.index }}" class="minimap" data-naam="{{ s.naam }}"></div>
 
           {% if loc_media %}
           <div class="sector-media">
@@ -893,6 +897,12 @@ const COORDS = {
   'sloviansk':[48.862,37.612],'kharkiv':[49.993,36.230],'vovchansk':[50.287,36.942],
   'kupiansk':[49.712,37.601],'kherson':[46.636,32.617],'sumy':[50.910,34.798],
   'kursk':[51.730,36.193],'ryazan':[54.630,39.742],'kostiantynivka':[48.529,37.712],
+  'selydove':[48.098,37.288],'hirnyk':[48.067,37.320],'novoazovsk':[47.130,38.080],
+  'berdiansk':[46.760,36.800],'melitopol':[46.850,35.370],'enerhodar':[47.500,34.660],
+  'nikopol':[47.570,34.390],'kryvyi rih':[47.910,33.390],'mykolaiv':[46.970,31.990],
+  'mariupol':[47.100,37.550],'izium':[49.210,37.270],'balakliya':[49.460,36.850],
+  'zaporizhzhia oblast':[47.500,35.500],'kharkiv oblast':[49.800,36.600],
+  'donetsk oblast':[48.100,37.500],'luhansk oblast':[48.700,38.500],
 };
 function vindCoords(naam) {
   if (!naam) return null;
@@ -905,35 +915,88 @@ function vindCoords(naam) {
 }
 const sectoren = [
   {% for s in data.sectoren %}
-  { naam:{{ s.naam|tojson }}, samenvatting:{{ s.samenvatting|tojson }}, betrouwbaarheid:{{ s.betrouwbaarheid|tojson }} },
+  {
+    naam: {{ s.naam|tojson }},
+    samenvatting: {{ s.samenvatting|tojson }},
+    betrouwbaarheid: {{ s.betrouwbaarheid|tojson }},
+    heeft_ua: {{ 'true' if s.ua_source or s.ua_claim else 'false' }},
+    heeft_ru: {{ 'true' if s.ru_source or s.ru_claim else 'false' }},
+  },
   {% endfor %}
 ];
-const kleuren = { hoog:'#4ADE80', middel:'#FCD34D', laag:'#F87171', tegenstrijdig:'#5C5955' };
+
+// Overzichtskaart
 const kaart = L.map('overzichtskaart', { center:[48.5,37.0], zoom:7 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains:'abcd', maxZoom:19,
-}).addTo(kaart);
+const tileOpts = { subdomains:'abcd', maxZoom:19,
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>' };
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', tileOpts).addTo(kaart);
+
+// Frontlinie (benadering mei 2026)
+const FRONTLINE = [
+  [51.20,35.20],[50.60,36.20],[50.28,36.95],[49.71,37.60],[49.02,37.82],
+  [48.96,38.22],[48.87,38.10],[48.60,37.99],[48.57,37.86],[48.40,37.77],
+  [48.28,37.18],[48.10,37.29],[47.99,37.27],[47.95,37.50],[47.78,37.26],
+  [47.84,36.90],[47.46,36.09],[47.57,35.78],[47.10,35.60],
+];
+L.polyline(FRONTLINE, { color:'#F97316', weight:3, opacity:0.8, dashArray:'7,5' })
+  .addTo(kaart)
+  .bindTooltip('Frontlinie (benadering)', { sticky:true, className:'dark-tooltip' });
+
+// Markers per sector
 const bounds = [];
 sectoren.forEach(s => {
   const c = vindCoords(s.naam);
   if (!c) return;
   bounds.push(c);
-  const kleur = kleuren[s.betrouwbaarheid] || '#5C5955';
+  const kleur = (s.heeft_ua && s.heeft_ru) ? '#F97316'
+              : s.heeft_ua ? '#60A5FA'
+              : s.heeft_ru ? '#F87171'
+              : '#8A8580';
+  const sz = 13;
   const icon = L.divIcon({
     className:'',
-    html:`<div style="width:11px;height:11px;border-radius:50%;background:${kleur};border:2px solid rgba(255,255,255,.3);box-shadow:0 0 6px ${kleur}66"></div>`,
-    iconSize:[11,11], iconAnchor:[5,5],
+    html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${kleur};border:2px solid rgba(255,255,255,.35);box-shadow:0 0 8px ${kleur}88"></div>`,
+    iconSize:[sz,sz], iconAnchor:[sz/2,sz/2],
   });
+  const side = s.heeft_ua && s.heeft_ru ? '🟠 Beide partijen melden activiteit'
+             : s.heeft_ua ? '🔵 Oekraïense bronnen'
+             : s.heeft_ru ? '🔴 Russische bronnen' : '';
   L.marker(c,{icon}).addTo(kaart).bindPopup(
-    `<div style="font-family:sans-serif;font-size:12px;max-width:180px">
-      <b style="color:#F0EDE8">${s.naam}</b><br>
-      <span style="color:#8A8580">${s.samenvatting}</span>
+    `<div style="font-family:sans-serif;font-size:12px;max-width:200px;color:#F0EDE8">
+      <b>${s.naam}</b>${side ? `<br><span style="font-size:10px;color:#8A8580">${side}</span>` : ''}<br>
+      <span style="color:#A8A39D">${s.samenvatting}</span>
     </div>`,
     { className:'dark-popup' }
   );
 });
 if (bounds.length) kaart.fitBounds(bounds, { padding:[40,40], maxZoom:9 });
+
+// Legenda
+const legenda = L.control({ position:'bottomright' });
+legenda.onAdd = () => {
+  const d = L.DomUtil.create('div','');
+  d.style.cssText = 'background:rgba(13,13,12,.85);padding:8px 10px;border-radius:6px;font-size:11px;color:#F0EDE8;line-height:1.7;border:1px solid #2a2a28';
+  d.innerHTML = '<b style="display:block;margin-bottom:3px;color:#8A8580">BRONNEN</b>'
+    + '<span style="color:#60A5FA">●</span> Oekraïne<br>'
+    + '<span style="color:#F87171">●</span> Rusland<br>'
+    + '<span style="color:#F97316">●</span> Beide<br>'
+    + '<span style="color:#F97316">— — —</span> Frontlinie';
+  return d;
+};
+legenda.addTo(kaart);
+
+// Mini-kaartjes per sectorcard
+document.querySelectorAll('.minimap').forEach(el => {
+  const naam = el.dataset.naam;
+  const c = vindCoords(naam);
+  if (!c) { el.style.display='none'; return; }
+  const m = L.map(el.id, { center:c, zoom:11, zoomControl:false, dragging:false,
+    scrollWheelZoom:false, doubleClickZoom:false, keyboard:false, attributionControl:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', tileOpts).addTo(m);
+  L.circle(c, { radius:1200, color:'#D97757', fillColor:'#D97757', fillOpacity:0.2, weight:2 }).addTo(m);
+  // Frontlinie ook op mini-kaart
+  L.polyline(FRONTLINE, { color:'#F97316', weight:2, opacity:0.7, dashArray:'5,4' }).addTo(m);
+});
 </script>
 </body>
 </html>
