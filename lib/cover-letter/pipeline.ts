@@ -4,6 +4,7 @@ import type {
   Analysis,
   ExampleLetter,
   QuestionAnswer,
+  SupportingFile,
   Verdict,
 } from '@/types/cover-letter'
 import {
@@ -20,11 +21,16 @@ import {
 async function generateText(
   systemInstruction: string,
   prompt: string,
-  temperature: number
+  temperature: number,
+  fileUris: { fileUri: string; mimeType: string }[] = []
 ): Promise<string> {
+  const contents =
+    fileUris.length > 0
+      ? [{ text: prompt }, ...fileUris.map((f) => ({ fileData: f }))]
+      : prompt
   const res = await ai.models.generateContent({
     model: MODEL,
-    contents: prompt,
+    contents,
     config: { systemInstruction, temperature },
   })
   return (res.text ?? '').trim()
@@ -37,12 +43,15 @@ export function runWriter(
   analysis: Analysis,
   answers: QuestionAnswer[],
   exampleLetters: ExampleLetter[],
-  extraInstructions = ''
+  extraInstructions = '',
+  supportingFiles: SupportingFile[] = []
 ): Promise<string> {
+  const fileUris = supportingFiles.map((f) => ({ fileUri: f.uri, mimeType: f.mimeType }))
   return generateText(
     WRITER_SYSTEM_PROMPT,
     buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters, extraInstructions),
-    0.85
+    0.85,
+    fileUris
   )
 }
 

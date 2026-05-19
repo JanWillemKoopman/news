@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { Analysis, CvInput } from '@/types/cover-letter'
 import ExampleLetterLibrary from './ExampleLetterLibrary'
+import SupportingFilesUpload from './SupportingFilesUpload'
 
 const MAX_PDF_BYTES = 3 * 1024 * 1024
 
@@ -20,6 +21,7 @@ export default function Step1Input() {
     cv,
     vacancyUrl,
     vacancyText,
+    supportingFiles,
     setCv,
     setVacancyUrl,
     setVacancyText,
@@ -96,7 +98,7 @@ export default function Step1Input() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cv, vacancy: vacancyText.trim() }),
+        body: JSON.stringify({ cv, vacancy: vacancyText.trim(), supportingFiles }),
       })
       if (!res.ok) throw new Error(`Analyse mislukt (${res.status})`)
       const analysis = (await res.json()) as Analysis
@@ -252,6 +254,9 @@ export default function Step1Input() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Supporting files */}
+      <SupportingFilesUpload />
 
       {/* Example letters */}
       <ExampleLetterLibrary />

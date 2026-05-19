@@ -66,6 +66,7 @@ export default function Step3Loading() {
       const cvText = analysis.cvText
       const vacancy = state.vacancyText
       const extraInstructions = state.extraInstructions
+      const supportingFiles = state.supportingFiles
 
       try {
         setStream('writing', 'De Schrijver stelt een eerste versie op…')
@@ -78,6 +79,7 @@ export default function Step3Loading() {
             answers,
             exampleLetters,
             extraInstructions,
+            supportingFiles,
           })
         ).draft
 

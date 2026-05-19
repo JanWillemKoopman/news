@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Type } from '@google/genai'
 import { ai, MODEL } from '@/lib/gemini'
 import { ANALYST_SYSTEM_PROMPT, buildAnalyzePrompt } from '@/lib/cover-letter/prompts'
-import type { CvInput } from '@/types/cover-letter'
+import type { CvInput, SupportingFile } from '@/types/cover-letter'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { cv, vacancy } = (await req.json()) as { cv: CvInput; vacancy: string }
+    const { cv, vacancy, supportingFiles = [] } = (await req.json()) as {
+      cv: CvInput
+      vacancy: string
+      supportingFiles?: SupportingFile[]
+    }
 
     if (!cv || !vacancy?.trim()) {
       return NextResponse.json(
@@ -26,9 +30,13 @@ export async function POST(req: NextRequest) {
     }
 
     const promptText = buildAnalyzePrompt(vacancy, isPdf ? null : cv.text)
-    const contents = isPdf
-      ? [{ text: promptText }, { inlineData: { mimeType: cv.mimeType, data: cv.data } }]
-      : promptText
+    const fileParts = [
+      ...(isPdf ? [{ inlineData: { mimeType: cv.mimeType, data: cv.data } }] : []),
+      ...supportingFiles.map((f) => ({
+        fileData: { fileUri: f.uri, mimeType: f.mimeType },
+      })),
+    ]
+    const contents = fileParts.length > 0 ? [{ text: promptText }, ...fileParts] : promptText
 
     const res = await ai.models.generateContent({
       model: MODEL,

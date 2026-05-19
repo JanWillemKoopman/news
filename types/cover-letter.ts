@@ -2,6 +2,14 @@ export type CvInput =
   | { kind: 'text'; text: string }
   | { kind: 'pdf'; data: string; mimeType: string; fileName: string }
 
+export interface SupportingFile {
+  /** Gemini Files API URI (used in subsequent AI calls) */
+  uri: string
+  mimeType: string
+  displayName: string
+  size: number
+}
+
 export interface Analysis {
   gapAnalysis: string
   companyDna: string[]

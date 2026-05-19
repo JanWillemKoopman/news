@@ -4,6 +4,7 @@ import type {
   CvInput,
   IterationStage,
   LetterStyle,
+  SupportingFile,
   Verdict,
 } from '@/types/cover-letter'
 
@@ -15,6 +16,7 @@ interface CoverLetterState {
   vacancyUrl: string
   vacancyText: string
   extraInstructions: string
+  supportingFiles: SupportingFile[]
   analysis: Analysis | null
   answers: string[]
   streamStage: IterationStage | null
@@ -31,6 +33,8 @@ interface CoverLetterActions {
   setVacancyUrl: (url: string) => void
   setVacancyText: (text: string) => void
   setExtraInstructions: (text: string) => void
+  addSupportingFile: (file: SupportingFile) => void
+  removeSupportingFile: (uri: string) => void
   setAnalysis: (analysis: Analysis) => void
   setAnswer: (index: number, value: string) => void
   setStream: (stage: IterationStage | null, label?: string) => void
@@ -47,6 +51,7 @@ const initialState: CoverLetterState = {
   vacancyUrl: '',
   vacancyText: '',
   extraInstructions: '',
+  supportingFiles: [],
   analysis: null,
   answers: [],
   streamStage: null,
@@ -70,6 +75,14 @@ export const useCoverLetterStore = create<CoverLetterState & CoverLetterActions>
     setVacancyText: (vacancyText) => set({ vacancyText }),
 
     setExtraInstructions: (extraInstructions) => set({ extraInstructions }),
+
+    addSupportingFile: (file) =>
+      set((state) => ({ supportingFiles: [...state.supportingFiles, file] })),
+
+    removeSupportingFile: (uri) =>
+      set((state) => ({
+        supportingFiles: state.supportingFiles.filter((f) => f.uri !== uri),
+      })),
 
     setAnalysis: (analysis) =>
       set({ analysis, answers: analysis.starrQuestions.map(() => '') }),
