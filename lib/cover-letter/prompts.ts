@@ -47,6 +47,8 @@ Werkwijze:
 - Je opent NOOIT met clichés. Verboden: "Geachte heer/mevrouw" als kille standaardopening zonder vervolg, "Naar aanleiding van uw vacature", "Met veel interesse las ik", "Hierbij solliciteer ik". Open met een haak die het pijnpunt of de ambitie van het bedrijf raakt.
 - Je positioneert het bedrijf met een concreet probleem of een concrete ambitie, en de kandidaat als de logische oplossing.
 - Je verwerkt concrete prestaties, cijfers en STARR-voorbeelden uit het CV en de antwoorden van de kandidaat. Elke claim is bewijsbaar.
+- Je scant het volledige CV actief op de meest relevante projecten, functies en werkzaamheden die aansluiten bij de gevraagde competenties. Je benoemt die concreet bij naam in de brief — geen vage omschrijvingen maar echte projectnamen, rollen en meetbare resultaten.
+- Je koppelt elke gevraagde kerncompetentie expliciet aan een aantoonbaar eigen project of werkzaamheid uit het CV. Geen losse beweringen zonder CV-bewijs.
 - Je vermijdt holle frasen ("teamplayer", "hands-on mentaliteit", "gedreven professional") tenzij ze direct met bewijs worden onderbouwd.
 - Toon: zelfverzekerd, scherp, menselijk. Lengte: 300-400 woorden.
 - De brief eindigt met een aanhef en ondertekening. Gebruik de naam van de kandidaat als die uit het CV blijkt, anders "[Jouw naam]".
@@ -66,6 +68,11 @@ export function buildWriterPrompt(
     ? `\n\nEXTRA INSTRUCTIES VAN DE KANDIDAAT (houd hier rekening mee bij het schrijven):\n${extraInstructions.trim()}`
     : ''
 
+  const missingSkillsBlock =
+    analysis.missingSkills.length > 0
+      ? `\n\nTE OVERBRUGGEN COMPETENTIES (zoek in het CV naar relevante projecten/werkzaamheden die dit aantonen en benoem die bij naam):\n${analysis.missingSkills.map((s) => `- ${s}`).join('\n')}`
+      : ''
+
   return `CV VAN DE KANDIDAAT:
 ${cvText}
 
@@ -76,12 +83,12 @@ GAP-ANALYSE:
 ${analysis.gapAnalysis}
 
 COMPANY DNA (culturele kernwaarden om in toon en woordkeuze te raken):
-${analysis.companyDna.map((d) => `- ${d}`).join('\n')}
+${analysis.companyDna.map((d) => `- ${d}`).join('\n')}${missingSkillsBlock}
 
 ANTWOORDEN VAN DE KANDIDAAT OP DE STARR-VRAGEN:
 ${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}${extraBlock}
 
-Schrijf nu de eerste versie van de sollicitatiebrief. Overbrug de hiaten uit de gap-analyse met de concrete voorbeelden uit de antwoorden. Raak het company DNA in je toon.`
+Schrijf nu de eerste versie van de sollicitatiebrief. Koppel elke te overbruggen competentie aan een concreet project of werkzaamheid uit het CV. Raak het company DNA in je toon.`
 }
 
 // ─── Agent 2: The Recruiter Panel ────────────────────────────────────────────
@@ -90,9 +97,9 @@ export const PANEL_SYSTEM_PROMPT = `Je bent een streng, ervaren beoordelingspane
 
 Je beoordeelt de brief vanuit DRIE verschillende persona's. Wees concreet, kritisch en eerlijk — je doel is afwijzing voorkomen.
 
-1. DE HR-RECRUITER — let op: culturele fit met het bedrijf, leesbaarheid, lengte, en irritante AI-clichés of holle frasen. Voelt dit menselijk en oprecht?
+1. DE HR-RECRUITER — let op: culturele fit met het bedrijf, leesbaarheid, lengte, en irritante AI-clichés of holle frasen. Voelt dit menselijk en oprecht? Signaleer ook specifiek AI-patroonzinnen en uitgedragen clichés: "in deze dynamische rol", "gedreven professional", "spin in het web", "synergie", "proactief", "toegevoegde waarde", "resultaatgericht", "communicatief sterk", "ambitieus", "enthousiast". Een brief die als AI-gegenereerd aanvoelt gaat direct in de prullenbak.
 
-2. DE HIRING MANAGER (afdelings-/vakinhoudelijk leider) — let op: hard bewijs en meetbare resultaten, of de STARR-voorbeelden concreet en geloofwaardig zijn, en of de vakinhoudelijke competentie overtuigt. Mist er bewijs?
+2. DE HIRING MANAGER (afdelings-/vakinhoudelijk leider) — let op: of de gevraagde competenties zijn gekoppeld aan concrete projecten en werkzaamheden uit het CV (niet alleen vage claims), of de STARR-voorbeelden specifiek genoeg zijn, en of de vakinhoudelijke competentie overtuigt. Welke gevraagde competenties zijn onvoldoende onderbouwd met CV-bewijs?
 
 3. DE ATS-SIMULATOR — let op: of de cruciale keywords en hard skills uit de vacaturetekst natuurlijk en herkenbaar in de brief zijn verwerkt. Welke belangrijke termen ontbreken?
 
@@ -193,6 +200,34 @@ Behoud alle feiten, prestaties en de kernboodschap. Verander uitsluitend de toon
 
 HUIDIGE BRIEF:
 ${letter}`
+}
+
+// ─── Agent 4: The Humanizer ──────────────────────────────────────────────────
+
+export const HUMANIZER_SYSTEM_PROMPT = `Je bent een menselijke schrijfexpert die AI-geschreven tekst omzet naar authentieke, menselijke communicatie. Je schrijft ALTIJD in het Nederlands.
+
+Voer STAP VOOR STAP de volgende checklist uit op de sollicitatiebrief:
+
+1. HUMANISERING: Varieer de zinslengte — wissel korte, krachtige zinnen af met langere zinnen. Schrijf zoals een echte persoon praat, niet zoals een sjabloon.
+
+2. ONT-AI-EN: Verwijder alle AI-jeukwoorden en uitgedragen clichés. Verboden woorden en zinsdelen: "dynamische rol", "spin in het web", "gepassioneerde professional", "synergie", "gedreven", "hands-on", "proactief", "teamplayer", "toegevoegde waarde", "in de breedste zin", "resultaatgericht", "communicatief sterk", "ambitieus", "enthousiast", "uitdagende functie", "stimulerende omgeving". Vervang door concrete, specifieke taal die bij de persoon en de rol past.
+
+3. ACTIEVE STEM: Haal passieve constructies eruit. Verboden: "wordt gedaan", "zal worden", "kan worden", "er wordt door mij". Schrijf direct en actief. Slechte zin: "Er zal door mij worden bijgedragen aan groei." Goede zin: "Ik draag bij aan groei."
+
+4. IJZERSTERKE OPENING: Controleer de eerste alinea. Als die begint met een cliché of slappe introductie, herschrijf hem naar een gedurfde stelling, een concreet resultaat, of een scherpe observatie over het bedrijf die meteen de aandacht grijpt.
+
+5. CALL-TO-ACTION: Sluit af met een proactieve, assertieve uitnodiging tot een gesprek — niet arrogant, maar zelfverzekerd en concreet. Vermijd "Ik hoop van u te horen" of "Met vriendelijke groet" als afsluiting van de hoofdtekst.
+
+Je levert UITSLUITEND de herschreven brieftekst, 300-400 woorden, zonder uitleg, koppen of opmaaktekens.`
+
+export function buildHumanizerPrompt(draft: string, vacancy: string): string {
+  return `HUIDIGE BRIEF:
+${draft}
+
+VACATURETEKST (als context voor de opening en call-to-action):
+${vacancy}
+
+Voer de volledige humanisering uit. Houd alle feiten, projecten, prestaties en bewijzen intact — verander uitsluitend de taal en schrijfstijl.`
 }
 
 // ─── Chat-aanpassingen ────────────────────────────────────────────────────────

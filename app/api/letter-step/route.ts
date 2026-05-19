@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runPanel, runRefiner, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
+import { runHumanizer, runPanel, runRefiner, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -44,6 +44,11 @@ export async function POST(req: NextRequest) {
           body.answers ?? [],
           body.exampleLetters ?? []
         )
+        return NextResponse.json({ draft })
+      }
+
+      case 'humanize': {
+        const draft = await runHumanizer(body.draft, body.vacancy)
         return NextResponse.json({ draft })
       }
 

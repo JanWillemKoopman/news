@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Check, Loader2, PenLine, ScanSearch, Sparkles, Users } from 'lucide-react'
+import { Check, Loader2, PenLine, ScanSearch, Sparkles, Users, Wand2 } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
 import { useExampleLetterStore } from '@/store/exampleLetterStore'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,19 +15,21 @@ const STAGES: { stage: IterationStage; label: string; icon: typeof PenLine }[] =
   { stage: 'writing', label: 'De Schrijver', icon: PenLine },
   { stage: 'reviewing', label: 'Het Recruiterpanel', icon: Users },
   { stage: 'refining', label: 'De Verfijner', icon: Sparkles },
+  { stage: 'humanizing', label: 'De Humaniseerder', icon: Wand2 },
   { stage: 'verdict', label: 'Het Eindoordeel', icon: ScanSearch },
 ]
 
 const STAGE_PROGRESS: Record<IterationStage, number> = {
-  writing: 12,
-  reviewing: 42,
-  refining: 70,
-  verdict: 92,
+  writing: 10,
+  reviewing: 35,
+  refining: 60,
+  humanizing: 82,
+  verdict: 94,
   done: 100,
   error: 100,
 }
 
-const STAGE_ORDER: IterationStage[] = ['writing', 'reviewing', 'refining', 'verdict', 'done']
+const STAGE_ORDER: IterationStage[] = ['writing', 'reviewing', 'refining', 'humanizing', 'verdict', 'done']
 
 export default function Step3Loading() {
   const { streamStage, streamLabel, setStream, setResult, setStep, setError } =
@@ -103,6 +105,9 @@ export default function Step3Loading() {
             })
           ).draft
         }
+
+        setStream('humanizing', 'De Humaniseerder maakt de brief menselijker…')
+        draft = (await callStep({ step: 'humanize', draft, vacancy })).draft
 
         setStream('verdict', 'Het eindoordeel van het panel wordt opgesteld…')
         const { verdict } = await callStep({ step: 'verdict', letter: draft, vacancy, analysis })
@@ -183,7 +188,7 @@ export default function Step3Loading() {
           </ul>
 
           <p className="text-xs text-muted-foreground text-center mt-6">
-            Dit duurt doorgaans twee tot drie minuten. Laat dit tabblad open staan.
+            Dit duurt doorgaans drie tot vier minuten. Laat dit tabblad open staan.
           </p>
         </CardContent>
       </Card>
