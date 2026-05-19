@@ -26,8 +26,7 @@ export async function POST(req: NextRequest) {
           body.analysis,
           body.answers ?? [],
           body.exampleLetters ?? [],
-          body.extraInstructions ?? '',
-          body.supportingFiles ?? []
+          body.extraInstructions ?? ''
         )
         return NextResponse.json({ draft })
       }
