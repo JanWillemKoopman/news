@@ -5,7 +5,7 @@ import { ANALYST_SYSTEM_PROMPT, buildAnalyzePrompt } from '@/lib/cover-letter/pr
 import type { CvInput } from '@/types/cover-letter'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {

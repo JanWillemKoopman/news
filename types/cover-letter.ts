@@ -38,12 +38,3 @@ export type IterationStage =
   | 'verdict'
   | 'done'
   | 'error'
-
-export interface IterationEvent {
-  stage: IterationStage
-  label?: string
-  iteration?: number
-  letter?: string
-  verdict?: Verdict
-  message?: string
-}

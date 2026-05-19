@@ -3,7 +3,7 @@ import { ai, MODEL } from '@/lib/gemini'
 import { LETTER_EXTRACT_PROMPT } from '@/lib/cover-letter/prompts'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {

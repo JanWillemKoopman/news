@@ -7,7 +7,9 @@ import { useExampleLetterStore } from '@/store/exampleLetterStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import type { IterationEvent, IterationStage, QuestionAnswer } from '@/types/cover-letter'
+import type { IterationStage, QuestionAnswer } from '@/types/cover-letter'
+
+const REFINE_ITERATIONS = 2
 
 const STAGES: { stage: IterationStage; label: string; icon: typeof PenLine }[] = [
   { stage: 'writing', label: 'De Schrijver', icon: PenLine },
@@ -36,17 +38,15 @@ export default function Step3Loading() {
     if (started.current) return
     started.current = true
 
-    const handleEvent = (event: IterationEvent) => {
-      if (event.stage === 'done' && event.letter && event.verdict) {
-        setResult(event.letter, event.verdict)
-        setStream(null)
-        setStep(4)
-      } else if (event.stage === 'error') {
-        setError(event.message ?? 'Er ging iets mis bij het genereren.')
-        setStep(2)
-      } else {
-        setStream(event.stage, event.label ?? '')
-      }
+    // One AI step per request — keeps every call within Vercel's 60s limit.
+    const callStep = async (payload: Record<string, unknown>) => {
+      const res = await fetch('/api/letter-step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('stap mislukt')
+      return res.json()
     }
 
     const run = async () => {
@@ -62,38 +62,45 @@ export default function Step3Loading() {
         question,
         answer: state.answers[i] ?? '',
       }))
-
-      setStream('writing', 'Voorbereiden…')
+      const exampleLetters = useExampleLetterStore.getState().letters
+      const cvText = analysis.cvText
+      const vacancy = state.vacancyText
 
       try {
-        const res = await fetch('/api/iterate-letter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cvText: analysis.cvText,
-            vacancy: state.vacancyText,
-            analysis,
-            answers,
-            exampleLetters: useExampleLetterStore.getState().letters,
-          }),
-        })
-        if (!res.ok || !res.body) throw new Error('stream mislukt')
+        setStream('writing', 'De Schrijver stelt een eerste versie op…')
+        let draft: string = (
+          await callStep({ step: 'write', cvText, vacancy, analysis, answers, exampleLetters })
+        ).draft
 
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
+        for (let i = 1; i <= REFINE_ITERATIONS; i++) {
+          setStream(
+            'reviewing',
+            `Het recruiterpanel beoordeelt de brief (ronde ${i}/${REFINE_ITERATIONS})…`
+          )
+          const { feedback } = await callStep({ step: 'review', draft, vacancy, cvText })
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-          for (const line of lines) {
-            if (line.trim()) handleEvent(JSON.parse(line) as IterationEvent)
-          }
+          setStream(
+            'refining',
+            `De Verfijner verwerkt de feedback (ronde ${i}/${REFINE_ITERATIONS})…`
+          )
+          draft = (
+            await callStep({
+              step: 'refine',
+              draft,
+              feedback,
+              vacancy,
+              answers,
+              exampleLetters,
+            })
+          ).draft
         }
-        if (buffer.trim()) handleEvent(JSON.parse(buffer) as IterationEvent)
+
+        setStream('verdict', 'Het eindoordeel van het panel wordt opgesteld…')
+        const { verdict } = await callStep({ step: 'verdict', letter: draft, vacancy, analysis })
+
+        setResult(draft, verdict)
+        setStream(null)
+        setStep(4)
       } catch {
         setError('Er ging iets mis bij het genereren van de brief.')
         setStep(2)
@@ -167,7 +174,7 @@ export default function Step3Loading() {
           </ul>
 
           <p className="text-xs text-muted-foreground text-center mt-6">
-            Dit duurt doorgaans één tot twee minuten. Laat dit tabblad open staan.
+            Dit duurt doorgaans twee tot drie minuten. Laat dit tabblad open staan.
           </p>
         </CardContent>
       </Card>

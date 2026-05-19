@@ -4,7 +4,7 @@ import { RESTYLE_SYSTEM_PROMPT, buildRestylePrompt } from '@/lib/cover-letter/pr
 import type { LetterStyle } from '@/types/cover-letter'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 60
 
 const VALID_STYLES: LetterStyle[] = ['challenger', 'expert', 'culture']
 
