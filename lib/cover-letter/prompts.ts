@@ -62,7 +62,9 @@ export function buildWriterPrompt(
   analysis: Analysis,
   answers: QuestionAnswer[],
   exampleLetters: ExampleLetter[],
-  extraInstructions = ''
+  extraInstructions = '',
+  motivation = '',
+  uniqueValue = ''
 ): string {
   const extraBlock = extraInstructions.trim()
     ? `\n\nEXTRA INSTRUCTIES VAN DE KANDIDAAT (houd hier rekening mee bij het schrijven):\n${extraInstructions.trim()}`
@@ -72,6 +74,10 @@ export function buildWriterPrompt(
     analysis.missingSkills.length > 0
       ? `\n\nTE OVERBRUGGEN COMPETENTIES (zoek in het CV naar relevante projecten/werkzaamheden die dit aantonen en benoem die bij naam):\n${analysis.missingSkills.map((s) => `- ${s}`).join('\n')}`
       : ''
+
+  const motivationBlock = `\n\nKANDIDAAT MOTIVATIE — waarom dit bedrijf (gebruik dit als VERTREKPUNT voor de 'waarom dit bedrijf' alinea, verwerk het organisch en niet letterlijk):\n${motivation.trim() || '(niet ingevuld)'}`
+
+  const uniqueValueBlock = `\n\nUNIEKE WAARDEPROPOSITIE — wat maakt de kandidaat onderscheidend (gebruik dit als kern van de openingshaak en waardepropositie, verwerk het organisch en niet letterlijk):\n${uniqueValue.trim() || '(niet ingevuld)'}`
 
   return `CV VAN DE KANDIDAAT:
 ${cvText}
@@ -83,12 +89,12 @@ GAP-ANALYSE:
 ${analysis.gapAnalysis}
 
 COMPANY DNA (culturele kernwaarden om in toon en woordkeuze te raken):
-${analysis.companyDna.map((d) => `- ${d}`).join('\n')}${missingSkillsBlock}
+${analysis.companyDna.map((d) => `- ${d}`).join('\n')}${missingSkillsBlock}${motivationBlock}${uniqueValueBlock}
 
 ANTWOORDEN VAN DE KANDIDAAT OP DE STARR-VRAGEN:
 ${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}${extraBlock}
 
-Schrijf nu de eerste versie van de sollicitatiebrief. Koppel elke te overbruggen competentie aan een concreet project of werkzaamheid uit het CV. Raak het company DNA in je toon.`
+Schrijf nu de eerste versie van de sollicitatiebrief. Koppel elke te overbruggen competentie aan een concreet project of werkzaamheid uit het CV. Raak het company DNA in je toon. Als er een motivatie en/of unieke waardepropositie is ingevuld, gebruik die dan als vertrekpunt — verwerk ze organisch, niet letterlijk.`
 }
 
 // ─── Agent 2: The Recruiter Panel ────────────────────────────────────────────

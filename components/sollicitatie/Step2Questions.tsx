@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, SlidersHorizontal, Target } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Lightbulb, SlidersHorizontal, Star, Target } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,18 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 export default function Step2Questions() {
-  const { analysis, answers, extraInstructions, setAnswer, setExtraInstructions, setStep } =
-    useCoverLetterStore()
+  const {
+    analysis,
+    answers,
+    extraInstructions,
+    motivation,
+    uniqueValue,
+    setAnswer,
+    setExtraInstructions,
+    setMotivation,
+    setUniqueValue,
+    setStep,
+  } = useCoverLetterStore()
 
   if (!analysis) return null
 
@@ -25,6 +35,60 @@ export default function Step2Questions() {
           voorbeelden, hoe sterker je brief. Vragen overslaan kan, maar wordt afgeraden.
         </p>
       </div>
+
+      {/* Motivatie */}
+      <Card className="border-primary/30 bg-primary/[0.03]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Star size={16} className="text-primary" />
+            Waarom dit bedrijf?
+            <span className="ml-auto text-xs font-normal text-primary">
+              Vul in voor een significant betere brief
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="motivation" className="text-sm text-muted-foreground block">
+            Waarom wil je SPECIFIEK bij dit bedrijf werken? Noem 1–2 concrete dingen — het
+            product, de missie, de cultuur, iets wat je las. Niet wat jij kunt bieden, maar wat
+            jou aantrekt.
+          </Label>
+          <Textarea
+            id="motivation"
+            value={motivation}
+            onChange={(e) => setMotivation(e.target.value)}
+            placeholder="Bijv.: Ik gebruik hun product dagelijks en zie hoe het X oplost. De missie om Y te bereiken spreekt me aan omdat..."
+            rows={4}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Unieke waardepropositie */}
+      <Card className="border-primary/30 bg-primary/[0.03]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Lightbulb size={16} className="text-primary" />
+            Wat maakt jou uniek?
+            <span className="ml-auto text-xs font-normal text-primary">
+              Vul in voor een significant betere brief
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="unique-value" className="text-sm text-muted-foreground block">
+            Wat maakt jou een betere kandidaat dan de gemiddelde sollicitant? Denk aan de
+            combinatie van vaardigheden, ervaringen of perspectieven die anderen waarschijnlijk
+            niet hebben.
+          </Label>
+          <Textarea
+            id="unique-value"
+            value={uniqueValue}
+            onChange={(e) => setUniqueValue(e.target.value)}
+            placeholder="Bijv.: Ik combineer X jaar ervaring in A met een achtergrond in B, waardoor ik als enige..."
+            rows={4}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
