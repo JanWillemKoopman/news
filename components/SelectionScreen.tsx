@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { ArrowRight, Users, Zap } from 'lucide-react'
 import { AGENTS } from '@/lib/agents'
 import { useChatStore } from '@/store/chatStore'
@@ -17,13 +18,21 @@ export default function SelectionScreen() {
       {/* Header */}
       <header className="px-4 pt-10 pb-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-              <Zap size={14} className="text-blue-400" />
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                <Zap size={14} className="text-blue-400" />
+              </div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                Multi-Agent AI
+              </span>
             </div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-              Multi-Agent AI
-            </span>
+            <Link
+              href="/sollicitatie"
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Sollicitatiebrief Helper &rarr;
+            </Link>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
             Kies je Adviseurs
