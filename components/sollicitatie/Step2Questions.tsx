@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, Target } from 'lucide-react'
+import { ArrowLeft, ArrowRight, SlidersHorizontal, Target } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 export default function Step2Questions() {
-  const { analysis, answers, setAnswer, setStep } = useCoverLetterStore()
+  const { analysis, answers, extraInstructions, setAnswer, setExtraInstructions, setStep } =
+    useCoverLetterStore()
 
   if (!analysis) return null
 
@@ -77,6 +78,31 @@ export default function Step2Questions() {
           </Card>
         ))}
       </div>
+
+      {/* Extra instructions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <SlidersHorizontal size={16} className="text-primary" />
+            Extra instructies voor de AI
+            <span className="text-xs font-normal text-muted-foreground ml-1">(optioneel)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="extra-instructions" className="text-sm text-muted-foreground mb-2 block">
+            Geef hier aanvullende context of wensen mee die de AI moet meenemen bij het schrijven
+            van de brief. Bijv. &quot;Gebruik een formele toon&quot;, &quot;Noem specifiek mijn
+            ervaringen in de zorg&quot;, of &quot;Richt je op groeipotentieel&quot;.
+          </Label>
+          <Textarea
+            id="extra-instructions"
+            value={extraInstructions}
+            onChange={(e) => setExtraInstructions(e.target.value)}
+            placeholder="Bijv.: Focus extra op mijn leiderschapservaring. Houd de toon informeel maar professioneel."
+            rows={4}
+          />
+        </CardContent>
+      </Card>
 
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => setStep(1)}>

@@ -65,11 +65,20 @@ export default function Step3Loading() {
       const exampleLetters = useExampleLetterStore.getState().letters
       const cvText = analysis.cvText
       const vacancy = state.vacancyText
+      const extraInstructions = state.extraInstructions
 
       try {
         setStream('writing', 'De Schrijver stelt een eerste versie op…')
         let draft: string = (
-          await callStep({ step: 'write', cvText, vacancy, analysis, answers, exampleLetters })
+          await callStep({
+            step: 'write',
+            cvText,
+            vacancy,
+            analysis,
+            answers,
+            exampleLetters,
+            extraInstructions,
+          })
         ).draft
 
         for (let i = 1; i <= REFINE_ITERATIONS; i++) {

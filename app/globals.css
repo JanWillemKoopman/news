@@ -28,26 +28,27 @@
  */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Anthropic-inspired warm light theme */
+    --background: 42 24% 92%;        /* #f0eee6 */
+    --foreground: 20 10% 10%;        /* near-black with warm tint */
+    --card: 0 0% 100%;               /* white cards on cream bg */
+    --card-foreground: 20 10% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 20 10% 10%;
+    --primary: 16 65% 50%;           /* terracotta / coral */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 14% 88%;         /* warm off-white */
+    --secondary-foreground: 20 10% 12%;
+    --muted: 40 12% 89%;
+    --muted-foreground: 20 5% 42%;
+    --accent: 40 12% 87%;
+    --accent-foreground: 20 10% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.75rem;
+    --destructive-foreground: 0 0% 100%;
+    --border: 38 14% 84%;
+    --input: 38 14% 84%;
+    --ring: 16 65% 50%;
+    --radius: 0.5rem;
   }
 
   .dark {

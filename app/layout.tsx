@@ -1,25 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const dmSans = DM_Sans({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Multi-Agent Advisor',
-  description: 'Krijg business advies van legendarische ondernemers via AI',
+  title: 'The Ultimate Cover Letter Agent',
+  description: 'AI-powered sollicitatiebrief op basis van je CV en de vacature',
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#0a0f1e',
+  themeColor: '#f0eee6',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen`}>
+      <body className={`${dmSans.className} bg-background text-foreground min-h-screen`}>
         {children}
       </body>
     </html>

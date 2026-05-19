@@ -36,11 +36,12 @@ export function runWriter(
   vacancy: string,
   analysis: Analysis,
   answers: QuestionAnswer[],
-  exampleLetters: ExampleLetter[]
+  exampleLetters: ExampleLetter[],
+  extraInstructions = ''
 ): Promise<string> {
   return generateText(
     WRITER_SYSTEM_PROMPT,
-    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters),
+    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters, extraInstructions),
     0.85
   )
 }

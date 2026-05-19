@@ -59,8 +59,13 @@ export function buildWriterPrompt(
   vacancy: string,
   analysis: Analysis,
   answers: QuestionAnswer[],
-  exampleLetters: ExampleLetter[]
+  exampleLetters: ExampleLetter[],
+  extraInstructions = ''
 ): string {
+  const extraBlock = extraInstructions.trim()
+    ? `\n\nEXTRA INSTRUCTIES VAN DE KANDIDAAT (houd hier rekening mee bij het schrijven):\n${extraInstructions.trim()}`
+    : ''
+
   return `CV VAN DE KANDIDAAT:
 ${cvText}
 
@@ -74,7 +79,7 @@ COMPANY DNA (culturele kernwaarden om in toon en woordkeuze te raken):
 ${analysis.companyDna.map((d) => `- ${d}`).join('\n')}
 
 ANTWOORDEN VAN DE KANDIDAAT OP DE STARR-VRAGEN:
-${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}
+${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}${extraBlock}
 
 Schrijf nu de eerste versie van de sollicitatiebrief. Overbrug de hiaten uit de gap-analyse met de concrete voorbeelden uit de antwoorden. Raak het company DNA in je toon.`
 }
@@ -188,6 +193,20 @@ Behoud alle feiten, prestaties en de kernboodschap. Verander uitsluitend de toon
 
 HUIDIGE BRIEF:
 ${letter}`
+}
+
+// ─── Chat-aanpassingen ────────────────────────────────────────────────────────
+
+export const ADJUST_SYSTEM_PROMPT = `Je bent een expert sollicitatiebrief-editor. Je past een bestaande brief precies aan op basis van een specifieke instructie van de gebruiker, zonder de kern, feiten of opbouw te verliezen. Je schrijft ALTIJD in het Nederlands. Je levert UITSLUITEND de herschreven brieftekst, zonder uitleg, koppen of opmaaktekens.`
+
+export function buildAdjustPrompt(letter: string, instruction: string): string {
+  return `HUIDIGE BRIEF:
+${letter}
+
+INSTRUCTIE VAN DE GEBRUIKER:
+${instruction}
+
+Pas de brief aan volgens de instructie. Behoud alle feiten, prestaties en de kernboodschap. Houd de lengte tussen 300 en 400 woorden.`
 }
 
 // ─── PDF-extractie van voorbeeldbrieven ──────────────────────────────────────
