@@ -1,0 +1,42 @@
+export type CvInput =
+  | { kind: 'text'; text: string }
+  | { kind: 'pdf'; data: string; mimeType: string; fileName: string }
+
+export interface Analysis {
+  gapAnalysis: string
+  companyDna: string[]
+  missingSkills: string[]
+  starrQuestions: string[]
+  cvText: string
+}
+
+export interface QuestionAnswer {
+  question: string
+  answer: string
+}
+
+export type LetterStyle = 'challenger' | 'expert' | 'culture'
+
+export interface Verdict {
+  strengths: string[]
+  bridgedGaps: string[]
+  strategicChoices: string[]
+  atsKeywords: string[]
+}
+
+export type IterationStage =
+  | 'writing'
+  | 'reviewing'
+  | 'refining'
+  | 'verdict'
+  | 'done'
+  | 'error'
+
+export interface IterationEvent {
+  stage: IterationStage
+  label?: string
+  iteration?: number
+  letter?: string
+  verdict?: Verdict
+  message?: string
+}
