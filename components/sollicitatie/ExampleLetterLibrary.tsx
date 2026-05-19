@@ -12,7 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
-const MAX_PDF_BYTES = 3 * 1024 * 1024
+const MAX_FILE_BYTES = 3 * 1024 * 1024
+
+const ACCEPTED_LETTER_TYPES: Record<string, true> = {
+  'application/pdf': true,
+  'application/msword': true,
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+  'image/jpeg': true,
+  'image/png': true,
+  'image/webp': true,
+  'image/heic': true,
+  'image/heif': true,
+}
 
 export default function ExampleLetterLibrary() {
   const { letters, addLetter, removeLetter } = useExampleLetterStore()
@@ -42,11 +53,11 @@ export default function ExampleLetterLibrary() {
   const handleFile = (file: File | undefined) => {
     setError(null)
     if (!file) return
-    if (file.type !== 'application/pdf') {
-      setError('Alleen PDF-bestanden zijn toegestaan.')
+    if (!ACCEPTED_LETTER_TYPES[file.type]) {
+      setError('Ondersteunde formaten: PDF, Word (.docx), of afbeelding (JPG, PNG, WebP).')
       return
     }
-    if (file.size > MAX_PDF_BYTES) {
+    if (file.size > MAX_FILE_BYTES) {
       setError('Het bestand is te groot (maximaal 3 MB).')
       return
     }
@@ -58,15 +69,15 @@ export default function ExampleLetterLibrary() {
         const res = await fetch('/api/extract-letter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: base64, mimeType: 'application/pdf' }),
+          body: JSON.stringify({ data: base64, mimeType: file.type }),
         })
         if (!res.ok) throw new Error()
         const data = await res.json()
         setText(data.text ?? '')
-        if (!title.trim()) setTitle(file.name.replace(/\.pdf$/i, ''))
+        if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ''))
         setMode('text')
       } catch {
-        setError('Kon de PDF niet omzetten naar tekst. Probeer de tekst te plakken.')
+        setError('Kon het bestand niet omzetten naar tekst. Probeer de tekst te plakken.')
       } finally {
         setExtracting(false)
       }
@@ -148,7 +159,7 @@ export default function ExampleLetterLibrary() {
             <Tabs value={mode} onValueChange={(v) => setMode(v as 'pdf' | 'text')}>
               <TabsList>
                 <TabsTrigger value="text">Tekst plakken</TabsTrigger>
-                <TabsTrigger value="pdf">PDF uploaden</TabsTrigger>
+                <TabsTrigger value="pdf">Bestand uploaden</TabsTrigger>
               </TabsList>
 
               <TabsContent value="text">
@@ -185,22 +196,24 @@ export default function ExampleLetterLibrary() {
                   {extracting ? (
                     <>
                       <Loader2 size={18} className="text-primary animate-spin" />
-                      <span className="text-sm font-medium">PDF wordt omgezet naar tekst...</span>
+                      <span className="text-sm font-medium">Bestand wordt omgezet naar tekst…</span>
                     </>
                   ) : (
                     <>
                       <Upload size={18} className="text-muted-foreground" />
                       <span className="text-sm font-medium">
-                        Sleep een PDF hierheen of klik om te uploaden
+                        Sleep een bestand hierheen of klik om te uploaden
                       </span>
-                      <span className="text-xs text-muted-foreground">PDF, maximaal 3 MB</span>
+                      <span className="text-xs text-muted-foreground">
+                        PDF, Word (.docx), afbeelding — max 3 MB
+                      </span>
                     </>
                   )}
                 </button>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="application/pdf"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif"
                   className="hidden"
                   onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
                 />

@@ -17,16 +17,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-    const isPdf = cv.kind === 'pdf'
-    if (isPdf && cv.mimeType !== 'application/pdf') {
-      return NextResponse.json(
-        { error: 'Alleen PDF-bestanden worden ondersteund' },
-        { status: 400 }
-      )
-    }
 
-    const promptText = buildAnalyzePrompt(vacancy, isPdf ? null : cv.text)
-    const contents = isPdf
+    const isFile = cv.kind === 'pdf'
+    const promptText = buildAnalyzePrompt(vacancy, isFile ? null : cv.text)
+    const contents = isFile
       ? [{ text: promptText }, { inlineData: { mimeType: cv.mimeType, data: cv.data } }]
       : promptText
 
@@ -56,7 +50,7 @@ export async function POST(req: NextRequest) {
       companyDna: parsed.companyDna ?? [],
       missingSkills: parsed.missingSkills ?? [],
       starrQuestions: parsed.starrQuestions ?? [],
-      cvText: isPdf ? String(parsed.cvText ?? '').trim() : cv.text,
+      cvText: isFile ? String(parsed.cvText ?? '').trim() : cv.text,
     })
   } catch (err) {
     console.error('[API /analyze]', err)

@@ -13,7 +13,18 @@ import { cn } from '@/lib/utils'
 import type { Analysis, CvInput } from '@/types/cover-letter'
 import ExampleLetterLibrary from './ExampleLetterLibrary'
 
-const MAX_PDF_BYTES = 3 * 1024 * 1024
+const MAX_FILE_BYTES = 3 * 1024 * 1024
+
+const ACCEPTED_CV_TYPES: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'application/msword': 'Word',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
+  'image/jpeg': 'afbeelding',
+  'image/png': 'afbeelding',
+  'image/webp': 'afbeelding',
+  'image/heic': 'afbeelding',
+  'image/heif': 'afbeelding',
+}
 
 export default function Step1Input() {
   const {
@@ -44,18 +55,18 @@ export default function Step1Input() {
   const handleFile = (file: File | undefined) => {
     setFileError(null)
     if (!file) return
-    if (file.type !== 'application/pdf') {
-      setFileError('Alleen PDF-bestanden zijn toegestaan.')
+    if (!ACCEPTED_CV_TYPES[file.type]) {
+      setFileError('Ondersteunde formaten: PDF, Word (.docx), of afbeelding (JPG, PNG, WebP).')
       return
     }
-    if (file.size > MAX_PDF_BYTES) {
+    if (file.size > MAX_FILE_BYTES) {
       setFileError('Het bestand is te groot (maximaal 3 MB).')
       return
     }
     const reader = new FileReader()
     reader.onload = () => {
       const base64 = (reader.result as string).split(',')[1] ?? ''
-      setCv({ kind: 'pdf', data: base64, mimeType: 'application/pdf', fileName: file.name })
+      setCv({ kind: 'pdf', data: base64, mimeType: file.type, fileName: file.name })
     }
     reader.onerror = () => setFileError('Kon het bestand niet lezen.')
     reader.readAsDataURL(file)
@@ -139,7 +150,7 @@ export default function Step1Input() {
             }}
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="pdf">PDF uploaden</TabsTrigger>
+              <TabsTrigger value="pdf">Bestand uploaden</TabsTrigger>
               <TabsTrigger value="text">Tekst plakken</TabsTrigger>
             </TabsList>
 
@@ -180,13 +191,15 @@ export default function Step1Input() {
                   <span className="text-sm font-medium">
                     Sleep je CV hierheen of klik om te uploaden
                   </span>
-                  <span className="text-xs text-muted-foreground">PDF, maximaal 3 MB</span>
+                  <span className="text-xs text-muted-foreground">
+                    PDF, Word (.docx), afbeelding — max 3 MB
+                  </span>
                 </button>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="application/pdf"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 className="hidden"
                 onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
               />

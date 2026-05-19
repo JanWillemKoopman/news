@@ -35,6 +35,7 @@ export type IterationStage =
   | 'writing'
   | 'reviewing'
   | 'refining'
+  | 'humanizing'
   | 'verdict'
   | 'done'
   | 'error'

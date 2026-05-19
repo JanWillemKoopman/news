@@ -14,6 +14,9 @@ interface CoverLetterState {
   cv: CvInput | null
   vacancyUrl: string
   vacancyText: string
+  extraInstructions: string
+  motivation: string
+  uniqueValue: string
   analysis: Analysis | null
   answers: string[]
   streamStage: IterationStage | null
@@ -29,6 +32,9 @@ interface CoverLetterActions {
   setCv: (cv: CvInput | null) => void
   setVacancyUrl: (url: string) => void
   setVacancyText: (text: string) => void
+  setExtraInstructions: (text: string) => void
+  setMotivation: (text: string) => void
+  setUniqueValue: (text: string) => void
   setAnalysis: (analysis: Analysis) => void
   setAnswer: (index: number, value: string) => void
   setStream: (stage: IterationStage | null, label?: string) => void
@@ -44,6 +50,9 @@ const initialState: CoverLetterState = {
   cv: null,
   vacancyUrl: '',
   vacancyText: '',
+  extraInstructions: '',
+  motivation: '',
+  uniqueValue: '',
   analysis: null,
   answers: [],
   streamStage: null,
@@ -65,6 +74,12 @@ export const useCoverLetterStore = create<CoverLetterState & CoverLetterActions>
     setVacancyUrl: (vacancyUrl) => set({ vacancyUrl }),
 
     setVacancyText: (vacancyText) => set({ vacancyText }),
+
+    setExtraInstructions: (extraInstructions) => set({ extraInstructions }),
+
+    setMotivation: (motivation) => set({ motivation }),
+
+    setUniqueValue: (uniqueValue) => set({ uniqueValue }),
 
     setAnalysis: (analysis) =>
       set({ analysis, answers: analysis.starrQuestions.map(() => '') }),

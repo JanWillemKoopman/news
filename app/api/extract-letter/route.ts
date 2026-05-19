@@ -9,9 +9,9 @@ export async function POST(req: NextRequest) {
   try {
     const { data, mimeType } = (await req.json()) as { data: string; mimeType: string }
 
-    if (!data || mimeType !== 'application/pdf') {
+    if (!data || !mimeType) {
       return NextResponse.json(
-        { error: 'Een geldig PDF-bestand is vereist' },
+        { error: 'Bestand en MIME-type zijn vereist' },
         { status: 400 }
       )
     }
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const text = (res.text ?? '').trim()
     if (!text) {
       return NextResponse.json(
-        { error: 'Kon geen tekst uit het PDF halen' },
+        { error: 'Kon geen tekst uit het bestand halen' },
         { status: 422 }
       )
     }

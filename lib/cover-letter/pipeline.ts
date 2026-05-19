@@ -7,10 +7,12 @@ import type {
   Verdict,
 } from '@/types/cover-letter'
 import {
+  HUMANIZER_SYSTEM_PROMPT,
   PANEL_SYSTEM_PROMPT,
   REFINER_SYSTEM_PROMPT,
   VERDICT_SYSTEM_PROMPT,
   WRITER_SYSTEM_PROMPT,
+  buildHumanizerPrompt,
   buildPanelPrompt,
   buildRefinerPrompt,
   buildVerdictPrompt,
@@ -36,11 +38,14 @@ export function runWriter(
   vacancy: string,
   analysis: Analysis,
   answers: QuestionAnswer[],
-  exampleLetters: ExampleLetter[]
+  exampleLetters: ExampleLetter[],
+  extraInstructions = '',
+  motivation = '',
+  uniqueValue = ''
 ): Promise<string> {
   return generateText(
     WRITER_SYSTEM_PROMPT,
-    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters),
+    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters, extraInstructions, motivation, uniqueValue),
     0.85
   )
 }
@@ -62,6 +67,15 @@ export function runRefiner(
     REFINER_SYSTEM_PROMPT,
     buildRefinerPrompt(draft, feedback, vacancy, answers, exampleLetters),
     0.7
+  )
+}
+
+// Agent 4: The Humanizer — removes AI language, activates voice, sharpens opening & CTA.
+export function runHumanizer(draft: string, vacancy: string): Promise<string> {
+  return generateText(
+    HUMANIZER_SYSTEM_PROMPT,
+    buildHumanizerPrompt(draft, vacancy),
+    0.75
   )
 }
 
