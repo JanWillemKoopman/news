@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { Check, Loader2, PenLine, ScanSearch, Sparkles, Users } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
+import { useExampleLetterStore } from '@/store/exampleLetterStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
@@ -73,6 +74,7 @@ export default function Step3Loading() {
             vacancy: state.vacancyText,
             analysis,
             answers,
+            exampleLetters: useExampleLetterStore.getState().letters,
           }),
         })
         if (!res.ok || !res.body) throw new Error('stream mislukt')

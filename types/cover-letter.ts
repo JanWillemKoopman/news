@@ -15,6 +15,13 @@ export interface QuestionAnswer {
   answer: string
 }
 
+export interface ExampleLetter {
+  id: string
+  title: string
+  content: string
+  createdAt: number
+}
+
 export type LetterStyle = 'challenger' | 'expert' | 'culture'
 
 export interface Verdict {

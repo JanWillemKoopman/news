@@ -1,6 +1,11 @@
 import { Type } from '@google/genai'
 import { ai, MODEL } from '@/lib/gemini'
-import type { Analysis, QuestionAnswer, Verdict } from '@/types/cover-letter'
+import type {
+  Analysis,
+  ExampleLetter,
+  QuestionAnswer,
+  Verdict,
+} from '@/types/cover-letter'
 import {
   PANEL_SYSTEM_PROMPT,
   REFINER_SYSTEM_PROMPT,
@@ -30,11 +35,12 @@ export function runWriter(
   cvText: string,
   vacancy: string,
   analysis: Analysis,
-  answers: QuestionAnswer[]
+  answers: QuestionAnswer[],
+  exampleLetters: ExampleLetter[]
 ): Promise<string> {
   return generateText(
     WRITER_SYSTEM_PROMPT,
-    buildWriterPrompt(cvText, vacancy, analysis, answers),
+    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters),
     0.85
   )
 }
@@ -49,11 +55,12 @@ export function runRefiner(
   draft: string,
   feedback: string,
   vacancy: string,
-  answers: QuestionAnswer[]
+  answers: QuestionAnswer[],
+  exampleLetters: ExampleLetter[]
 ): Promise<string> {
   return generateText(
     REFINER_SYSTEM_PROMPT,
-    buildRefinerPrompt(draft, feedback, vacancy, answers),
+    buildRefinerPrompt(draft, feedback, vacancy, answers, exampleLetters),
     0.7
   )
 }

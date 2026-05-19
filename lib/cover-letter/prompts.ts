@@ -1,4 +1,9 @@
-import type { Analysis, LetterStyle, QuestionAnswer } from '@/types/cover-letter'
+import type {
+  Analysis,
+  ExampleLetter,
+  LetterStyle,
+  QuestionAnswer,
+} from '@/types/cover-letter'
 
 // ─── Agent 0: The Analyst ────────────────────────────────────────────────────
 
@@ -45,6 +50,7 @@ Werkwijze:
 - Je vermijdt holle frasen ("teamplayer", "hands-on mentaliteit", "gedreven professional") tenzij ze direct met bewijs worden onderbouwd.
 - Toon: zelfverzekerd, scherp, menselijk. Lengte: 300-400 woorden.
 - De brief eindigt met een aanhef en ondertekening. Gebruik de naam van de kandidaat als die uit het CV blijkt, anders "[Jouw naam]".
+- Als er voorbeeldbrieven ter inspiratie zijn meegegeven, gebruik die UITSLUITEND als stijlreferentie: de aard van de opening (de haak), de alinea-opbouw, de toon, het zinsritme en de manier van afsluiten. Neem NOOIT inhoud, anekdotes, cijfers, namen of bedrijfsspecifieke details uit de voorbeeldbrieven over — alle feiten komen uitsluitend uit het CV en de antwoorden van de kandidaat.
 
 Je levert UITSLUITEND de brieftekst, zonder uitleg, koppen of opmaaktekens.`
 
@@ -52,7 +58,8 @@ export function buildWriterPrompt(
   cvText: string,
   vacancy: string,
   analysis: Analysis,
-  answers: QuestionAnswer[]
+  answers: QuestionAnswer[],
+  exampleLetters: ExampleLetter[]
 ): string {
   return `CV VAN DE KANDIDAAT:
 ${cvText}
@@ -67,7 +74,7 @@ COMPANY DNA (culturele kernwaarden om in toon en woordkeuze te raken):
 ${analysis.companyDna.map((d) => `- ${d}`).join('\n')}
 
 ANTWOORDEN VAN DE KANDIDAAT OP DE STARR-VRAGEN:
-${formatAnswers(answers)}
+${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}
 
 Schrijf nu de eerste versie van de sollicitatiebrief. Overbrug de hiaten uit de gap-analyse met de concrete voorbeelden uit de antwoorden. Raak het company DNA in je toon.`
 }
@@ -105,7 +112,7 @@ export const REFINER_SYSTEM_PROMPT = `Je bent een meester-redacteur die sollicit
 
 Je neemt een conceptbrief en de kritiek van het beoordelingspanel, en herschrijft de brief zodat ELK kritiekpunt is geadresseerd. Je behoudt de sterke punten en de copywriting-structuur (PAS/AIDA), verbetert de zwakke punten, verwerkt ontbrekende keywords natuurlijk, en versterkt het harde bewijs.
 
-Je houdt de brief tussen 300 en 400 woorden, zelfverzekerd en cliché-vrij.
+Je houdt de brief tussen 300 en 400 woorden, zelfverzekerd en cliché-vrij. Als er voorbeeldbrieven ter inspiratie zijn meegegeven, blijf je bij het herschrijven de stijl, opening en afsluiter daarvan respecteren — zonder inhoud of feiten uit die voorbeelden over te nemen.
 
 Je levert UITSLUITEND de herschreven brieftekst, zonder uitleg, koppen of opmaaktekens.`
 
@@ -113,13 +120,14 @@ export function buildRefinerPrompt(
   draft: string,
   feedback: string,
   vacancy: string,
-  answers: QuestionAnswer[]
+  answers: QuestionAnswer[],
+  exampleLetters: ExampleLetter[]
 ): string {
   return `VACATURETEKST:
 ${vacancy}
 
 ANTWOORDEN VAN DE KANDIDAAT (brondetails):
-${formatAnswers(answers)}
+${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}
 
 HUIDIGE CONCEPTBRIEF:
 ${draft}
@@ -182,6 +190,10 @@ HUIDIGE BRIEF:
 ${letter}`
 }
 
+// ─── PDF-extractie van voorbeeldbrieven ──────────────────────────────────────
+
+export const LETTER_EXTRACT_PROMPT = `Het bijgevoegde PDF-bestand is een sollicitatiebrief. Transcribeer de volledige inhoud naar schone, leesbare platte tekst. Behoud de alinea-indeling. Voeg zelf geen commentaar, koppen of opmaaktekens toe. Lever uitsluitend de brieftekst.`
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatAnswers(answers: QuestionAnswer[]): string {
@@ -189,4 +201,12 @@ function formatAnswers(answers: QuestionAnswer[]): string {
   return answers
     .map((qa, i) => `${i + 1}. Vraag: ${qa.question}\n   Antwoord: ${qa.answer || '(overgeslagen)'}`)
     .join('\n\n')
+}
+
+function formatExampleLetters(letters: ExampleLetter[]): string {
+  if (letters.length === 0) return ''
+  const blocks = letters
+    .map((l, i) => `--- Voorbeeld ${i + 1}: ${l.title} ---\n${l.content}`)
+    .join('\n\n')
+  return `\n\nVOORBEELDBRIEVEN TER INSPIRATIE (gebruik UITSLUITEND voor stijl, opening, opbouw, toon en afsluiter — neem GEEN inhoud, feiten, cijfers of namen over):\n${blocks}`
 }

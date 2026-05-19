@@ -1,6 +1,11 @@
 import { NextRequest } from 'next/server'
 import { runPanel, runRefiner, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
-import type { Analysis, IterationEvent, QuestionAnswer } from '@/types/cover-letter'
+import type {
+  Analysis,
+  ExampleLetter,
+  IterationEvent,
+  QuestionAnswer,
+} from '@/types/cover-letter'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -8,12 +13,15 @@ export const maxDuration = 300
 const REFINE_ITERATIONS = 2
 
 export async function POST(req: NextRequest) {
-  const { cvText, vacancy, analysis, answers } = (await req.json()) as {
+  const { cvText, vacancy, analysis, answers, exampleLetters } = (await req.json()) as {
     cvText: string
     vacancy: string
     analysis: Analysis
     answers: QuestionAnswer[]
+    exampleLetters?: ExampleLetter[]
   }
+
+  const examples = exampleLetters ?? []
 
   const encoder = new TextEncoder()
 
@@ -28,7 +36,7 @@ export async function POST(req: NextRequest) {
         }
 
         emit({ stage: 'writing', label: 'De Schrijver stelt een eerste versie op…' })
-        let draft = await runWriter(cvText, vacancy, analysis, answers ?? [])
+        let draft = await runWriter(cvText, vacancy, analysis, answers ?? [], examples)
 
         for (let i = 1; i <= REFINE_ITERATIONS; i++) {
           emit({
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
             iteration: i,
             label: `De Verfijner verwerkt de feedback (ronde ${i}/${REFINE_ITERATIONS})…`,
           })
-          draft = await runRefiner(draft, feedback, vacancy, answers ?? [])
+          draft = await runRefiner(draft, feedback, vacancy, answers ?? [], examples)
         }
 
         emit({ stage: 'verdict', label: 'Het eindoordeel van het panel wordt opgesteld…' })

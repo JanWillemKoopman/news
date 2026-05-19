@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { Analysis, CvInput } from '@/types/cover-letter'
+import ExampleLetterLibrary from './ExampleLetterLibrary'
 
 const MAX_PDF_BYTES = 3 * 1024 * 1024
 
@@ -251,6 +252,9 @@ export default function Step1Input() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Example letters */}
+      <ExampleLetterLibrary />
 
       {error && (
         <div className="flex items-start gap-3 p-4 rounded-md border border-destructive/30 bg-destructive/10">
