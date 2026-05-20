@@ -91,6 +91,7 @@ export default function Step3Loading() {
           extraInstructions: state.extraInstructions,
           motivation: state.motivation,
           uniqueValue: state.uniqueValue,
+          yesNoAnswers: state.yesNoAnswers,
         })
         const drafts: unknown[] = Array.isArray(data.drafts) ? data.drafts : []
         if (drafts.length < 3 || drafts.some((d) => typeof d !== 'string' || !d)) {

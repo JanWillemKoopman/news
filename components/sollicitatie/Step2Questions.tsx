@@ -1,21 +1,25 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, Lightbulb, SlidersHorizontal, Star, Target } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, SlidersHorizontal, Star, Target } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import type { YesNoAnswer } from '@/types/cover-letter'
 
 export default function Step2Questions() {
   const {
     analysis,
     answers,
+    yesNoAnswers,
     extraInstructions,
     motivation,
     uniqueValue,
     setAnswer,
+    setYesNoAnswer,
     setExtraInstructions,
     setMotivation,
     setUniqueValue,
@@ -23,6 +27,9 @@ export default function Step2Questions() {
   } = useCoverLetterStore()
 
   if (!analysis) return null
+
+  const yesNoQuestions = analysis.yesNoQuestions ?? []
+  const answeredCount = yesNoAnswers.filter((a) => a === 'yes' || a === 'no').length
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -118,6 +125,58 @@ export default function Step2Questions() {
         </CardContent>
       </Card>
 
+      {yesNoQuestions.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-primary" />
+              Snelle bevestigingen
+              <span className="ml-auto text-xs font-normal text-muted-foreground">
+                {answeredCount} van {yesNoQuestions.length} beantwoord
+              </span>
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Klik per stelling ja, nee of sla over — bevestigde feiten komen mee in je
+              brief, ontkende worden niet geclaimd.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {yesNoQuestions.map((statement, i) => {
+              const current = yesNoAnswers[i] ?? null
+              return (
+                <div
+                  key={i}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 py-2 border-b border-border/60 last:border-b-0"
+                >
+                  <span className="text-sm leading-snug flex-1">{statement}</span>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <YesNoPill
+                      label="Ja"
+                      active={current === 'yes'}
+                      activeClass="bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => setYesNoAnswer(i, 'yes')}
+                    />
+                    <YesNoPill
+                      label="Nee"
+                      active={current === 'no'}
+                      activeClass="bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => setYesNoAnswer(i, 'no')}
+                    />
+                    <YesNoPill
+                      label="Sla over"
+                      active={current === null}
+                      activeClass="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      onClick={() => setYesNoAnswer(i, null)}
+                      muted
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4">
         {analysis.starrQuestions.map((question, i) => (
           <Card key={i}>
@@ -179,5 +238,36 @@ export default function Step2Questions() {
         </Button>
       </div>
     </div>
+  )
+}
+
+function YesNoPill({
+  label,
+  active,
+  activeClass,
+  onClick,
+  muted = false,
+}: {
+  label: string
+  active: boolean
+  activeClass: string
+  onClick: () => void
+  muted?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+        active
+          ? `${activeClass} border-transparent`
+          : muted
+            ? 'border-border text-muted-foreground hover:bg-muted'
+            : 'border-border hover:bg-muted'
+      )}
+    >
+      {label}
+    </button>
   )
 }

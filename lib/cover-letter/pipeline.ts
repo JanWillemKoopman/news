@@ -5,6 +5,7 @@ import type {
   ExampleLetter,
   QuestionAnswer,
   Verdict,
+  YesNoAnswer,
 } from '@/types/cover-letter'
 import {
   CRITIC_SYSTEM_PROMPT,
@@ -47,11 +48,12 @@ export function runWriter(
   exampleLetters: ExampleLetter[],
   extraInstructions = '',
   motivation = '',
-  uniqueValue = ''
+  uniqueValue = '',
+  yesNoAnswers: YesNoAnswer[] = []
 ): Promise<string> {
   return generateText(
     WRITER_SYSTEM_PROMPT,
-    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters, extraInstructions, motivation, uniqueValue),
+    buildWriterPrompt(cvText, vacancy, analysis, answers, exampleLetters, extraInstructions, motivation, uniqueValue, yesNoAnswers),
     0.85
   )
 }
@@ -114,13 +116,14 @@ export async function runMultiWriter(
   exampleLetters: ExampleLetter[],
   extraInstructions = '',
   motivation = '',
-  uniqueValue = ''
+  uniqueValue = '',
+  yesNoAnswers: YesNoAnswer[] = []
 ): Promise<[string, string, string]> {
   const res = await ai.models.generateContent({
     model: MODEL,
     contents: buildMultiWriterPrompt(
       cvText, vacancy, analysis, answers, exampleLetters,
-      extraInstructions, motivation, uniqueValue
+      extraInstructions, motivation, uniqueValue, yesNoAnswers
     ),
     config: {
       systemInstruction: MULTI_WRITER_SYSTEM_PROMPT,

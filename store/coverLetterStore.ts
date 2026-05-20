@@ -5,6 +5,7 @@ import type {
   IterationStage,
   LetterStyle,
   Verdict,
+  YesNoAnswer,
 } from '@/types/cover-letter'
 
 export type WizardStep = 1 | 2 | 3 | 4
@@ -19,6 +20,7 @@ interface CoverLetterState {
   uniqueValue: string
   analysis: Analysis | null
   answers: string[]
+  yesNoAnswers: YesNoAnswer[]
   streamStage: IterationStage | null
   streamLabel: string
   letters: string[]
@@ -39,6 +41,7 @@ interface CoverLetterActions {
   setUniqueValue: (text: string) => void
   setAnalysis: (analysis: Analysis) => void
   setAnswer: (index: number, value: string) => void
+  setYesNoAnswer: (index: number, value: YesNoAnswer) => void
   setStream: (stage: IterationStage | null, label?: string) => void
   setLetters: (letters: string[]) => void
   toggleSentence: (letterIndex: number, sentenceIndex: number) => void
@@ -60,6 +63,7 @@ const initialState: CoverLetterState = {
   uniqueValue: '',
   analysis: null,
   answers: [],
+  yesNoAnswers: [],
   streamStage: null,
   streamLabel: '',
   letters: [],
@@ -89,13 +93,24 @@ export const useCoverLetterStore = create<CoverLetterState & CoverLetterActions>
     setUniqueValue: (uniqueValue) => set({ uniqueValue }),
 
     setAnalysis: (analysis) =>
-      set({ analysis, answers: analysis.starrQuestions.map(() => '') }),
+      set({
+        analysis,
+        answers: analysis.starrQuestions.map(() => ''),
+        yesNoAnswers: (analysis.yesNoQuestions ?? []).map(() => null),
+      }),
 
     setAnswer: (index, value) =>
       set((state) => {
         const answers = [...state.answers]
         answers[index] = value
         return { answers }
+      }),
+
+    setYesNoAnswer: (index, value) =>
+      set((state) => {
+        const yesNoAnswers = [...state.yesNoAnswers]
+        yesNoAnswers[index] = value
+        return { yesNoAnswers }
       }),
 
     setStream: (streamStage, streamLabel = '') => set({ streamStage, streamLabel }),

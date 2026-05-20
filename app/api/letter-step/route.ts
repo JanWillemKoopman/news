@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
           body.exampleLetters ?? [],
           body.extraInstructions ?? '',
           body.motivation ?? '',
-          body.uniqueValue ?? ''
+          body.uniqueValue ?? '',
+          body.yesNoAnswers ?? []
         )
         return NextResponse.json({ draft })
       }
@@ -95,7 +96,8 @@ export async function POST(req: NextRequest) {
           body.exampleLetters ?? [],
           body.extraInstructions ?? '',
           body.motivation ?? '',
-          body.uniqueValue ?? ''
+          body.uniqueValue ?? '',
+          body.yesNoAnswers ?? []
         )
         return NextResponse.json({ drafts })
       }

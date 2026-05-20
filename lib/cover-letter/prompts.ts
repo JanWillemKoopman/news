@@ -3,6 +3,7 @@ import type {
   ExampleLetter,
   LetterStyle,
   QuestionAnswer,
+  YesNoAnswer,
 } from '@/types/cover-letter'
 
 // ─── Agent 0: The Analyst ────────────────────────────────────────────────────
@@ -16,7 +17,9 @@ Analyseer de vacaturetekst daarnaast diepgaand en lees tussen de regels door. We
 Je genereert vervolgens 3 tot 5 zeer specifieke gedragsvragen volgens de STARR-methode (Situatie, Taak, Actie, Resultaat, Reflectie). Deze vragen zijn NOOIT generiek. Elke vraag verwijst naar een concreet hiaat dat je hebt gevonden en nodigt de kandidaat uit een concreet voorbeeld te geven dat dat hiaat overbrugt.
 
 Slecht (generiek): "Kun je iets vertellen over je leiderschapservaring?"
-Goed (specifiek): "De vacature vraagt nadrukkelijk om crisismanagement, maar je CV noemt vooral regulier projectmanagement. Beschrijf een concreet moment waarop je een operationele crisis onder grote tijdsdruk hebt opgelost — wat was de situatie, wat deed jij, en wat was het meetbare resultaat?"`
+Goed (specifiek): "De vacature vraagt nadrukkelijk om crisismanagement, maar je CV noemt vooral regulier projectmanagement. Beschrijf een concreet moment waarop je een operationele crisis onder grote tijdsdruk hebt opgelost — wat was de situatie, wat deed jij, en wat was het meetbare resultaat?"
+
+Daarnaast genereer je 5 tot 10 korte STELLINGEN die de kandidaat met ja of nee kan bevestigen. Strikte vorm: altijd een stelling in de tweede persoon ("Je hebt minimaal 3 jaar Python-ervaring.", "Je bent per direct beschikbaar.", "Je hebt een rijbewijs B."), NOOIT een vraag. Eén feit per stelling — geen samenstellingen met "en" of "of". Concreet en verifieerbaar door de kandidaat (skills, ervaring-duur, certificaten, taal-niveau, beschikbaarheid, locatie, branche-ervaring, autorisaties). Voeg een stelling alleen toe als een ja/nee-antwoord de brief substantieel kan verrijken — kwaliteit boven kwantiteit. Mag leeg blijven als geen enkele relevant is.`
 
 export function buildAnalyzePrompt(vacancy: string, cvText: string | null): string {
   const cvBlok = cvText
@@ -34,6 +37,7 @@ Analyseer grondig en lever JSON met deze velden:
 - "missingSkills": een lijst van de concrete hard skills of ervaringen die ontbreken of versterking nodig hebben.
 - "impliedChallenges": exact 2 scherpe hypotheses over het verzwegen, dieperliggende probleem of de operationele pijn die het bedrijf écht oplost met deze rol. Formuleer ze als concrete bedrijfssituaties (niet als vragen). In het Nederlands.
 - "starrQuestions": exact 3 tot 5 specifieke, niet-generieke STARR-gedragsvragen die elk een concreet hiaat adresseren. In het Nederlands.
+- "yesNoQuestions": 5 tot 10 korte STELLINGEN (geen vragen) in de tweede persoon, beantwoordbaar met ja of nee, volgens de regels uit de systeeminstructie. In het Nederlands. Mag een lege array zijn als geen enkele stelling de brief substantieel zou verrijken.
 - "cvText": de volledige, schoon opgemaakte platte tekst van het CV ${
     cvText
       ? '(neem de bovenstaande CV-tekst ongewijzigd over)'
@@ -67,7 +71,8 @@ export function buildWriterPrompt(
   exampleLetters: ExampleLetter[],
   extraInstructions = '',
   motivation = '',
-  uniqueValue = ''
+  uniqueValue = '',
+  yesNoAnswers: YesNoAnswer[] = []
 ): string {
   const extraBlock = extraInstructions.trim()
     ? `\n\nEXTRA INSTRUCTIES VAN DE KANDIDAAT (houd hier rekening mee bij het schrijven):\n${extraInstructions.trim()}`
@@ -82,6 +87,8 @@ export function buildWriterPrompt(
 
   const uniqueValueBlock = `\n\nUNIEKE WAARDEPROPOSITIE — wat maakt de kandidaat onderscheidend (gebruik dit als kern van de openingshaak en waardepropositie, verwerk het organisch en niet letterlijk):\n${uniqueValue.trim() || '(niet ingevuld)'}`
 
+  const yesNoBlock = `\n\nFEITELIJKE BEVESTIGINGEN VAN DE KANDIDAAT (ja/nee). Gebruik bevestigde feiten (✓) als directe onderbouwing; behandel ontkende feiten (✗) als afwezig — claim ze NOOIT als aanwezig of waar in de brief:\n${formatYesNoAnswers(analysis.yesNoQuestions ?? [], yesNoAnswers)}`
+
   return `CV VAN DE KANDIDAAT:
 ${cvText}
 
@@ -95,7 +102,7 @@ COMPANY DNA (culturele kernwaarden om in toon en woordkeuze te raken):
 ${analysis.companyDna.map((d) => `- ${d}`).join('\n')}${missingSkillsBlock}${motivationBlock}${uniqueValueBlock}
 
 ANTWOORDEN VAN DE KANDIDAAT OP DE STARR-VRAGEN:
-${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}${extraBlock}
+${formatAnswers(answers)}${yesNoBlock}${formatExampleLetters(exampleLetters)}${extraBlock}
 
 Schrijf nu de eerste versie van de sollicitatiebrief. Koppel elke te overbruggen competentie aan een concreet project of werkzaamheid uit het CV. Raak het company DNA in je toon. Als er een motivatie en/of unieke waardepropositie is ingevuld, gebruik die dan als vertrekpunt — verwerk ze organisch, niet letterlijk.`
 }
@@ -338,7 +345,8 @@ export function buildMultiWriterPrompt(
   exampleLetters: ExampleLetter[],
   extraInstructions = '',
   motivation = '',
-  uniqueValue = ''
+  uniqueValue = '',
+  yesNoAnswers: YesNoAnswer[] = []
 ): string {
   const extraBlock = extraInstructions.trim()
     ? `\n\nEXTRA INSTRUCTIES VAN DE KANDIDAAT:\n${extraInstructions.trim()}`
@@ -353,6 +361,8 @@ export function buildMultiWriterPrompt(
 
   const uniqueValueBlock = `\n\nUNIEKE WAARDEPROPOSITIE (kern van de openingshaak — verwerk organisch):\n${uniqueValue.trim() || '(niet ingevuld)'}`
 
+  const yesNoBlock = `\n\nFEITELIJKE BEVESTIGINGEN VAN DE KANDIDAAT (ja/nee). Gebruik bevestigde feiten (✓) als directe onderbouwing in alle drie de varianten; behandel ontkende feiten (✗) als afwezig — claim ze NOOIT als waar:\n${formatYesNoAnswers(analysis.yesNoQuestions ?? [], yesNoAnswers)}`
+
   return `CV VAN DE KANDIDAAT:
 ${cvText}
 
@@ -366,7 +376,7 @@ COMPANY DNA:
 ${analysis.companyDna.map((d) => `- ${d}`).join('\n')}${missingSkillsBlock}${motivationBlock}${uniqueValueBlock}
 
 ANTWOORDEN OP STARR-VRAGEN:
-${formatAnswers(answers)}${formatExampleLetters(exampleLetters)}${extraBlock}
+${formatAnswers(answers)}${yesNoBlock}${formatExampleLetters(exampleLetters)}${extraBlock}
 
 Schrijf nu de drie varianten. Zorg dat elke variant een duidelijk andere invalshoek heeft zoals omschreven. Lever uitsluitend het JSON-object.`
 }
@@ -414,6 +424,17 @@ function formatAnswers(answers: QuestionAnswer[]): string {
   return answers
     .map((qa, i) => `${i + 1}. Vraag: ${qa.question}\n   Antwoord: ${qa.answer || '(overgeslagen)'}`)
     .join('\n\n')
+}
+
+function formatYesNoAnswers(
+  questions: string[],
+  answers: YesNoAnswer[]
+): string {
+  const lines = questions
+    .map((q, i) => ({ q, a: answers[i] ?? null }))
+    .filter(({ a }) => a === 'yes' || a === 'no')
+    .map(({ q, a }) => `${a === 'yes' ? '✓ Bevestigd' : '✗ Ontkend'}: ${q}`)
+  return lines.length === 0 ? '(geen feitelijke bevestigingen gegeven)' : lines.join('\n')
 }
 
 function formatExampleLetters(letters: ExampleLetter[]): string {

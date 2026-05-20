@@ -8,8 +8,11 @@ export interface Analysis {
   missingSkills: string[]
   impliedChallenges: string[]
   starrQuestions: string[]
+  yesNoQuestions: string[]
   cvText: string
 }
+
+export type YesNoAnswer = 'yes' | 'no' | null
 
 export interface QuestionAnswer {
   question: string

@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
             missingSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
             impliedChallenges: { type: Type.ARRAY, items: { type: Type.STRING } },
             starrQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            yesNoQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
             cvText: { type: Type.STRING },
           },
-          required: ['gapAnalysis', 'companyDna', 'missingSkills', 'impliedChallenges', 'starrQuestions', 'cvText'],
+          required: ['gapAnalysis', 'companyDna', 'missingSkills', 'impliedChallenges', 'starrQuestions', 'yesNoQuestions', 'cvText'],
         },
       },
     })
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
       missingSkills: Array.isArray(parsed.missingSkills) ? parsed.missingSkills : [],
       impliedChallenges: Array.isArray(parsed.impliedChallenges) ? parsed.impliedChallenges : [],
       starrQuestions: Array.isArray(parsed.starrQuestions) ? parsed.starrQuestions : [],
+      yesNoQuestions: Array.isArray(parsed.yesNoQuestions) ? parsed.yesNoQuestions : [],
       cvText: isFile ? String(parsed.cvText ?? '').trim() : cv.text,
     })
   } catch (err) {
