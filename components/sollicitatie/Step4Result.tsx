@@ -414,7 +414,7 @@ export default function Step4Result() {
           <CardContent>
             <div
               className={cn(
-                'rounded-md border border-border bg-background p-5 transition-opacity',
+                'rounded-md border border-border/60 bg-card/90 p-5 transition-opacity',
                 restyling && 'opacity-50'
               )}
             >

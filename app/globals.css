@@ -72,4 +72,20 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 160 84% 39%;
   }
+
+  /*
+   * Glassmorphism background layer for /sollicitatie. Applied to the
+   * route's layout wrapper so blurred coral/peach blobs sit beneath the
+   * frosted cards. Tokens themselves are untouched.
+   */
+  .glass-bg {
+    position: relative;
+    isolation: isolate;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(at 18% 12%, hsla(16, 75%, 65%, 0.22) 0px, transparent 55%),
+      radial-gradient(at 88% 8%, hsla(32, 80%, 78%, 0.28) 0px, transparent 50%),
+      radial-gradient(at 75% 92%, hsla(16, 65%, 70%, 0.20) 0px, transparent 55%);
+    background-attachment: fixed;
+  }
 }

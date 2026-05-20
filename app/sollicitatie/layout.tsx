@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function SollicitatieLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-background text-foreground">{children}</div>
+  return <div className="glass-bg min-h-screen bg-background text-foreground">{children}</div>
 }
