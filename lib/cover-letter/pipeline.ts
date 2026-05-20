@@ -8,13 +8,17 @@ import type {
 } from '@/types/cover-letter'
 import {
   HUMANIZER_SYSTEM_PROMPT,
+  MULTI_WRITER_SYSTEM_PROMPT,
   PANEL_SYSTEM_PROMPT,
   REFINER_SYSTEM_PROMPT,
+  SYNTHESIS_SYSTEM_PROMPT,
   VERDICT_SYSTEM_PROMPT,
   WRITER_SYSTEM_PROMPT,
   buildHumanizerPrompt,
+  buildMultiWriterPrompt,
   buildPanelPrompt,
   buildRefinerPrompt,
+  buildSynthesisPrompt,
   buildVerdictPrompt,
   buildWriterPrompt,
 } from './prompts'
@@ -76,6 +80,47 @@ export function runHumanizer(draft: string, vacancy: string): Promise<string> {
     HUMANIZER_SYSTEM_PROMPT,
     buildHumanizerPrompt(draft, vacancy),
     0.75
+  )
+}
+
+// Agent 5: Multi-Writer — generates 3 distinct draft variants in one call.
+export async function runMultiWriter(
+  cvText: string,
+  vacancy: string,
+  analysis: Analysis,
+  answers: QuestionAnswer[],
+  exampleLetters: ExampleLetter[],
+  extraInstructions = '',
+  motivation = '',
+  uniqueValue = ''
+): Promise<[string, string, string]> {
+  const res = await ai.models.generateContent({
+    model: MODEL,
+    contents: buildMultiWriterPrompt(
+      cvText, vacancy, analysis, answers, exampleLetters,
+      extraInstructions, motivation, uniqueValue
+    ),
+    config: {
+      systemInstruction: MULTI_WRITER_SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      temperature: 0.9,
+    },
+  })
+  const parsed = JSON.parse(res.text ?? '{}')
+  const variants: string[] = parsed.variants ?? []
+  return [variants[0] ?? '', variants[1] ?? '', variants[2] ?? '']
+}
+
+// Agent 6: Synthesizer — creates final letter from user-selected sentences.
+export function runSynthesizer(
+  markedSentences: string[],
+  vacancy: string,
+  cvText: string
+): Promise<string> {
+  return generateText(
+    SYNTHESIS_SYSTEM_PROMPT,
+    buildSynthesisPrompt(markedSentences, vacancy, cvText),
+    0.8
   )
 }
 

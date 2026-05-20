@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runHumanizer, runPanel, runRefiner, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
+import { runHumanizer, runMultiWriter, runPanel, runRefiner, runSynthesizer, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -57,6 +57,31 @@ export async function POST(req: NextRequest) {
       case 'verdict': {
         const verdict = await runVerdict(body.letter, body.vacancy, body.analysis)
         return NextResponse.json({ verdict })
+      }
+
+      case 'write3': {
+        if (!body.cvText?.trim() || !body.vacancy?.trim()) {
+          return NextResponse.json({ error: 'Ontbrekende invoer' }, { status: 400 })
+        }
+        const drafts = await runMultiWriter(
+          body.cvText,
+          body.vacancy,
+          body.analysis,
+          body.answers ?? [],
+          body.exampleLetters ?? [],
+          body.extraInstructions ?? '',
+          body.motivation ?? '',
+          body.uniqueValue ?? ''
+        )
+        return NextResponse.json({ drafts })
+      }
+
+      case 'synthesize': {
+        if (!body.markedSentences?.length || !body.vacancy?.trim()) {
+          return NextResponse.json({ error: 'Ontbrekende invoer' }, { status: 400 })
+        }
+        const draft = await runSynthesizer(body.markedSentences, body.vacancy, body.cvText ?? '')
+        return NextResponse.json({ draft })
       }
 
       default:
