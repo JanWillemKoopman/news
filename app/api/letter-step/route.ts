@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runHumanizer, runMultiWriter, runPanel, runRefiner, runSynthesizer, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
+import { runCritic, runHumanizer, runMultiWriter, runPanel, runRefiner, runSynthesizer, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
 
 export const runtime = 'nodejs'
 // write3 (3 brieven in één call) kan langer duren dan 60s op drukke modellen.
@@ -52,7 +52,29 @@ export async function POST(req: NextRequest) {
       }
 
       case 'humanize': {
-        const draft = await runHumanizer(body.draft, body.vacancy)
+        if (!body.draft?.trim()) {
+          return NextResponse.json({ error: 'Ontbrekende brief' }, { status: 400 })
+        }
+        const draft = await runHumanizer(
+          body.draft,
+          body.vacancy ?? '',
+          body.variantType ?? 'Verbinding',
+          body.cvText ?? '',
+          body.starrAnswers ?? []
+        )
+        return NextResponse.json({ draft })
+      }
+
+      case 'critique': {
+        if (!body.draft?.trim()) {
+          return NextResponse.json({ error: 'Ontbrekende brief' }, { status: 400 })
+        }
+        const draft = await runCritic(
+          body.draft,
+          body.vacancy ?? '',
+          body.cvText ?? '',
+          body.impliedChallenges ?? []
+        )
         return NextResponse.json({ draft })
       }
 

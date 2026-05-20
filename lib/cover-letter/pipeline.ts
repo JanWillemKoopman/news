@@ -7,6 +7,7 @@ import type {
   Verdict,
 } from '@/types/cover-letter'
 import {
+  CRITIC_SYSTEM_PROMPT,
   HUMANIZER_SYSTEM_PROMPT,
   MULTI_WRITER_SYSTEM_PROMPT,
   PANEL_SYSTEM_PROMPT,
@@ -14,6 +15,7 @@ import {
   SYNTHESIS_SYSTEM_PROMPT,
   VERDICT_SYSTEM_PROMPT,
   WRITER_SYSTEM_PROMPT,
+  buildCriticPrompt,
   buildHumanizerPrompt,
   buildMultiWriterPrompt,
   buildPanelPrompt,
@@ -75,11 +77,31 @@ export function runRefiner(
 }
 
 // Agent 4: The Humanizer — removes AI language, activates voice, sharpens opening & CTA.
-export function runHumanizer(draft: string, vacancy: string): Promise<string> {
+export function runHumanizer(
+  draft: string,
+  vacancy: string,
+  variantType: string,
+  cvText: string,
+  starrAnswers: QuestionAnswer[]
+): Promise<string> {
   return generateText(
     HUMANIZER_SYSTEM_PROMPT,
-    buildHumanizerPrompt(draft, vacancy),
+    buildHumanizerPrompt(draft, vacancy, variantType, cvText, starrAnswers),
     0.75
+  )
+}
+
+// Agent 7: The Critic — Hiring Manager review and single-pass refinement.
+export function runCritic(
+  letter: string,
+  vacancy: string,
+  cvText: string,
+  impliedChallenges: string[]
+): Promise<string> {
+  return generateText(
+    CRITIC_SYSTEM_PROMPT,
+    buildCriticPrompt(letter, vacancy, cvText, impliedChallenges),
+    0.6
   )
 }
 

@@ -6,6 +6,7 @@ export interface Analysis {
   gapAnalysis: string
   companyDna: string[]
   missingSkills: string[]
+  impliedChallenges: string[]
   starrQuestions: string[]
   cvText: string
 }
@@ -41,6 +42,11 @@ export type IterationStage =
   | 'humanizing1'
   | 'humanizing2'
   | 'humanizing3'
+  | 'critiquing1'
+  | 'critiquing2'
+  | 'critiquing3'
   | 'synthesizing'
   | 'done'
   | 'error'
+
+export type VariantType = 'Verbinding' | 'Bewijs' | 'Probleemoplossing'

@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
             gapAnalysis: { type: Type.STRING },
             companyDna: { type: Type.ARRAY, items: { type: Type.STRING } },
             missingSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+            impliedChallenges: { type: Type.ARRAY, items: { type: Type.STRING } },
             starrQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
             cvText: { type: Type.STRING },
           },
-          required: ['gapAnalysis', 'companyDna', 'missingSkills', 'starrQuestions', 'cvText'],
+          required: ['gapAnalysis', 'companyDna', 'missingSkills', 'impliedChallenges', 'starrQuestions', 'cvText'],
         },
       },
     })
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       gapAnalysis: String(parsed.gapAnalysis ?? '').trim(),
       companyDna: Array.isArray(parsed.companyDna) ? parsed.companyDna : [],
       missingSkills: Array.isArray(parsed.missingSkills) ? parsed.missingSkills : [],
+      impliedChallenges: Array.isArray(parsed.impliedChallenges) ? parsed.impliedChallenges : [],
       starrQuestions: Array.isArray(parsed.starrQuestions) ? parsed.starrQuestions : [],
       cvText: isFile ? String(parsed.cvText ?? '').trim() : cv.text,
     })
