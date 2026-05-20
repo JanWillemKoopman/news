@@ -258,8 +258,8 @@ export default function Step4Result() {
                             className={cn(
                               'cursor-pointer rounded px-0.5 py-px transition-colors',
                               isMarked
-                                ? 'bg-yellow-200 text-yellow-900'
-                                : 'hover:bg-primary/10'
+                                ? 'bg-foreground text-background'
+                                : 'hover:bg-accent'
                             )}
                           >
                             {sentence}
@@ -414,7 +414,7 @@ export default function Step4Result() {
           <CardContent>
             <div
               className={cn(
-                'rounded-md border border-border/60 bg-card/90 p-5 transition-opacity',
+                'rounded-xl border border-border bg-secondary p-5 transition-opacity',
                 restyling && 'opacity-50'
               )}
             >

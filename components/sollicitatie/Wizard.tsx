@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Check, Sparkles } from 'lucide-react'
 import { useCoverLetterStore } from '@/store/coverLetterStore'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import Step1Input from './Step1Input'
 import Step2Questions from './Step2Questions'
 import Step3Loading from './Step3Loading'
@@ -16,23 +17,26 @@ export default function Wizard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/60 bg-card/60 backdrop-blur-xl px-4 py-4">
+      <header className="border-b border-border bg-background px-4 py-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
-                <Sparkles size={14} className="text-primary" />
+              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Sparkles size={13} />
               </div>
               <span className="text-sm font-semibold tracking-tight">
                 The Ultimate Cover Letter Agent
               </span>
             </div>
-            <Link
-              href="/"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Advisor &rarr;
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Advisor &rarr;
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
 
           <ol className="flex items-center gap-2">

@@ -22,70 +22,53 @@
 }
 
 /*
- * shadcn/ui design tokens.
- * Defined globally but applied only within the .dark wrapper in
- * app/sollicitatie/layout.tsx, so the advisor app at / is unaffected.
+ * shadcn/ui design tokens — ChatGPT-inspired neutral palette.
+ * Light = pure white + near-black. Dark = #212121 + off-white.
+ * Toggle via `.dark` class on <html>, set by ThemeToggle.
  */
 @layer base {
   :root {
-    /* Anthropic-inspired warm light theme */
-    --background: 42 24% 92%;        /* #f0eee6 */
-    --foreground: 20 10% 10%;        /* near-black with warm tint */
-    --card: 0 0% 100%;               /* white cards on cream bg */
-    --card-foreground: 20 10% 10%;
+    --background: 0 0% 100%;          /* #ffffff */
+    --foreground: 0 0% 9%;             /* #171717 near-black */
+    --card: 0 0% 100%;                 /* same as bg — flat ChatGPT look */
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 10% 10%;
-    --primary: 16 65% 50%;           /* terracotta / coral */
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%;                /* black buttons */
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 14% 88%;         /* warm off-white */
-    --secondary-foreground: 20 10% 12%;
-    --muted: 40 12% 89%;
-    --muted-foreground: 20 5% 42%;
-    --accent: 40 12% 87%;
-    --accent-foreground: 20 10% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 0 0% 96%;             /* #f4f4f4 sidebar/composer tint */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;      /* #666 */
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 38 14% 84%;
-    --input: 38 14% 84%;
-    --ring: 16 65% 50%;
-    --radius: 0.5rem;
+    --border: 0 0% 90%;                /* #e5e5e5 */
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 47% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 44% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 44% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 160 84% 39%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 14%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 14%;
-    --muted-foreground: 215 20.2% 62%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 160 84% 39%;
-  }
-
-  /*
-   * Glassmorphism background layer for /sollicitatie. Applied to the
-   * route's layout wrapper so blurred coral/peach blobs sit beneath the
-   * frosted cards. Tokens themselves are untouched.
-   */
-  .glass-bg {
-    position: relative;
-    isolation: isolate;
-    background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(at 18% 12%, hsla(16, 75%, 65%, 0.22) 0px, transparent 55%),
-      radial-gradient(at 88% 8%, hsla(32, 80%, 78%, 0.28) 0px, transparent 50%),
-      radial-gradient(at 75% 92%, hsla(16, 65%, 70%, 0.20) 0px, transparent 55%);
-    background-attachment: fixed;
+    --background: 0 0% 13%;            /* #212121 ChatGPT main */
+    --foreground: 0 0% 93%;            /* off-white */
+    --card: 0 0% 18%;                  /* #2f2f2f panels */
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 18%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 0 0% 95%;               /* white buttons in dark */
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 17%;             /* #2a2a2a composer */
+    --secondary-foreground: 0 0% 93%;
+    --muted: 0 0% 17%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 22%;
+    --accent-foreground: 0 0% 93%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%;                /* #404040 */
+    --input: 0 0% 25%;
+    --ring: 0 0% 95%;
   }
 }
