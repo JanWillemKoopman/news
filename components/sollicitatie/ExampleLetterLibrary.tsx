@@ -41,12 +41,16 @@ export default function ExampleLetterLibrary() {
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const resetForm = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
     setAdding(false)
     setTitle('')
     setMode('text')
     setText('')
+    setExtracting(false)
     setError(null)
   }
 
@@ -61,6 +65,11 @@ export default function ExampleLetterLibrary() {
       setError('Het bestand is te groot (maximaal 3 MB).')
       return
     }
+    // Cancel any in-flight request from a previous file selection
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     const reader = new FileReader()
     reader.onload = async () => {
       const base64 = (reader.result as string).split(',')[1] ?? ''
@@ -70,16 +79,18 @@ export default function ExampleLetterLibrary() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: base64, mimeType: file.type }),
+          signal: controller.signal,
         })
         if (!res.ok) throw new Error()
         const data = await res.json()
         setText(data.text ?? '')
         if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ''))
         setMode('text')
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
         setError('Kon het bestand niet omzetten naar tekst. Probeer de tekst te plakken.')
       } finally {
-        setExtracting(false)
+        if (!controller.signal.aborted) setExtracting(false)
       }
     }
     reader.onerror = () => setError('Kon het bestand niet lezen.')

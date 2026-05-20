@@ -74,7 +74,7 @@ export default function Step3Loading() {
 
       try {
         setStream('writing3', 'De Schrijver stelt 3 verschillende varianten op…')
-        const { drafts } = await callStep({
+        const data = await callStep({
           step: 'write3',
           cvText,
           vacancy,
@@ -85,27 +85,36 @@ export default function Step3Loading() {
           motivation,
           uniqueValue,
         })
+        const drafts: unknown[] = Array.isArray(data.drafts) ? data.drafts : []
+        if (drafts.length < 3 || drafts.some((d) => typeof d !== 'string' || !d)) {
+          throw new Error('De schrijver retourneerde niet 3 geldige varianten.')
+        }
 
         setStream('humanizing1', 'Variant 1 wordt verfijnd…')
-        const letter1: string = (await callStep({ step: 'humanize', draft: drafts[0], vacancy })).draft
+        const r1 = await callStep({ step: 'humanize', draft: drafts[0], vacancy })
+        const letter1 = typeof r1.draft === 'string' && r1.draft ? r1.draft : (drafts[0] as string)
 
         setStream('humanizing2', 'Variant 2 wordt verfijnd…')
-        const letter2: string = (await callStep({ step: 'humanize', draft: drafts[1], vacancy })).draft
+        const r2 = await callStep({ step: 'humanize', draft: drafts[1], vacancy })
+        const letter2 = typeof r2.draft === 'string' && r2.draft ? r2.draft : (drafts[1] as string)
 
         setStream('humanizing3', 'Variant 3 wordt verfijnd…')
-        const letter3: string = (await callStep({ step: 'humanize', draft: drafts[2], vacancy })).draft
+        const r3 = await callStep({ step: 'humanize', draft: drafts[2], vacancy })
+        const letter3 = typeof r3.draft === 'string' && r3.draft ? r3.draft : (drafts[2] as string)
 
         setLetters([letter1, letter2, letter3])
         setStream(null)
         setStep(4)
-      } catch {
-        setError('Er ging iets mis bij het genereren van de brieven.')
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Er ging iets mis bij het genereren.'
+        setError(msg)
         setStep(2)
       }
     }
 
     run()
-  }, [setError, setLetters, setStep, setStream])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const currentStage = streamStage ?? 'writing3'
   const progress = STAGE_PROGRESS[currentStage] ?? 0

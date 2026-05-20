@@ -106,9 +106,20 @@ export async function runMultiWriter(
       temperature: 0.9,
     },
   })
-  const parsed = JSON.parse(res.text ?? '{}')
-  const variants: string[] = parsed.variants ?? []
-  return [variants[0] ?? '', variants[1] ?? '', variants[2] ?? '']
+  let parsed: { variants?: unknown[] }
+  try {
+    parsed = JSON.parse(res.text ?? '{}')
+  } catch {
+    throw new Error('AI-response kon niet worden geparst — geen geldige JSON ontvangen.')
+  }
+  const variants = Array.isArray(parsed.variants) ? parsed.variants : []
+  const v0 = typeof variants[0] === 'string' ? variants[0] : ''
+  const v1 = typeof variants[1] === 'string' ? variants[1] : ''
+  const v2 = typeof variants[2] === 'string' ? variants[2] : ''
+  if (!v0 || !v1 || !v2) {
+    throw new Error('De schrijver retourneerde minder dan 3 volledige varianten.')
+  }
+  return [v0, v1, v2]
 }
 
 // Agent 6: Synthesizer — creates final letter from user-selected sentences.
@@ -149,11 +160,16 @@ export async function runVerdict(
     },
   })
 
-  const parsed = JSON.parse(res.text ?? '{}')
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(res.text ?? '{}')
+  } catch {
+    throw new Error('Verdict-response kon niet worden geparst.')
+  }
   return {
-    strengths: parsed.strengths ?? [],
-    bridgedGaps: parsed.bridgedGaps ?? [],
-    strategicChoices: parsed.strategicChoices ?? [],
-    atsKeywords: parsed.atsKeywords ?? [],
+    strengths: Array.isArray(parsed.strengths) ? (parsed.strengths as string[]) : [],
+    bridgedGaps: Array.isArray(parsed.bridgedGaps) ? (parsed.bridgedGaps as string[]) : [],
+    strategicChoices: Array.isArray(parsed.strategicChoices) ? (parsed.strategicChoices as string[]) : [],
+    atsKeywords: Array.isArray(parsed.atsKeywords) ? (parsed.atsKeywords as string[]) : [],
   }
 }

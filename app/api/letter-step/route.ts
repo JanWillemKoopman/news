@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runHumanizer, runMultiWriter, runPanel, runRefiner, runSynthesizer, runVerdict, runWriter } from '@/lib/cover-letter/pipeline'
 
 export const runtime = 'nodejs'
+// write3 (3 brieven in één call) kan langer duren dan 60s op drukke modellen.
+// Op Vercel Hobby is 60s het maximum; op Pro kan dit naar 300s verhoogd worden.
 export const maxDuration = 60
 
 /**

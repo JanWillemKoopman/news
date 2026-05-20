@@ -44,12 +44,17 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const parsed = JSON.parse(res.text ?? '{}')
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(res.text ?? '{}')
+    } catch {
+      throw new Error('Analyse-response kon niet worden geparst.')
+    }
     return NextResponse.json({
       gapAnalysis: String(parsed.gapAnalysis ?? '').trim(),
-      companyDna: parsed.companyDna ?? [],
-      missingSkills: parsed.missingSkills ?? [],
-      starrQuestions: parsed.starrQuestions ?? [],
+      companyDna: Array.isArray(parsed.companyDna) ? parsed.companyDna : [],
+      missingSkills: Array.isArray(parsed.missingSkills) ? parsed.missingSkills : [],
+      starrQuestions: Array.isArray(parsed.starrQuestions) ? parsed.starrQuestions : [],
       cvText: isFile ? String(parsed.cvText ?? '').trim() : cv.text,
     })
   } catch (err) {
