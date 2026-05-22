@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 
-import { LocalStorageWeddingRepository } from '@/lib/bruiloft/localStorageRepository'
-import type { WeddingRepository } from '@/lib/bruiloft/repository'
+import { repository } from '@/lib/bruiloft/repositoryInstance'
 import { generateTemplateTasks } from '@/lib/bruiloft/templateTasks'
 import { deriveTijdsblok } from '@/lib/bruiloft/timeblocks'
 import type {
@@ -20,11 +19,9 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WebsiteContent,
+  WebsiteContentInput,
 } from '@/lib/bruiloft/types'
-
-// Eén plek waar de implementatie van de opslaglaag gekozen wordt.
-// Later: vervang door new ApiWeddingRepository() — verder verandert er niets.
-const repository: WeddingRepository = new LocalStorageWeddingRepository()
 
 // Create-input zonder de velden die de store zelf invult.
 type NewGuest = Omit<GuestInput, 'weddingId'>
@@ -43,6 +40,7 @@ interface BruiloftState {
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
   tables: Table[]
+  websiteContent: WebsiteContent | null
 }
 
 interface BruiloftActions {
@@ -74,6 +72,9 @@ interface BruiloftActions {
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
   deleteTable: (id: ID) => Promise<void>
+
+  saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
+  ensureRsvpCodes: () => Promise<void>
 }
 
 export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
@@ -86,6 +87,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     budgetItems: [],
     scheduleItems: [],
     tables: [],
+    websiteContent: null,
 
     init: async () => {
       if (get().hydrated) return
@@ -94,7 +96,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         set({ hydrated: true, wedding: null })
         return
       }
-      const [guests, tasks, vendors, budgetItems, scheduleItems, tables] =
+      const [guests, tasks, vendors, budgetItems, scheduleItems, tables, websiteContent] =
         await Promise.all([
           repository.listGuests(wedding.id),
           repository.listTasks(wedding.id),
@@ -102,6 +104,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           repository.listBudgetItems(wedding.id),
           repository.listScheduleItems(wedding.id),
           repository.listTables(wedding.id),
+          repository.getWebsiteContent(wedding.id),
         ])
       set({
         hydrated: true,
@@ -112,6 +115,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         budgetItems,
         scheduleItems,
         tables,
+        websiteContent,
       })
     },
 
@@ -126,6 +130,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         budgetItems: [],
         scheduleItems: [],
         tables: [],
+        websiteContent: null,
       })
     },
 
@@ -296,6 +301,37 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tables: get().tables.filter((t) => t.id !== id),
         guests: get().guests.map((g) =>
           g.tafelId === id ? { ...g, tafelId: undefined } : g
+        ),
+      })
+    },
+
+    // --- WebsiteContent ----------------------------------------------------
+
+    saveWebsiteContent: async (patch) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const content = await repository.saveWebsiteContent(wedding.id, patch)
+      set({ websiteContent: content })
+    },
+
+    // Geef elke gast zonder code een persoonlijke RSVP-code.
+    ensureRsvpCodes: async () => {
+      const zonderCode = get().guests.filter((g) => !g.rsvpCode)
+      if (zonderCode.length === 0) return
+      const bestaand = new Set(get().guests.map((g) => g.rsvpCode).filter(Boolean))
+      const nieuw = new Map<ID, string>()
+      for (const g of zonderCode) {
+        let code = ''
+        do {
+          code = Math.random().toString(36).slice(2, 8).toUpperCase()
+        } while (bestaand.has(code) || code.length < 6)
+        bestaand.add(code)
+        nieuw.set(g.id, code)
+        await repository.updateGuest(g.id, { rsvpCode: code })
+      }
+      set({
+        guests: get().guests.map((g) =>
+          nieuw.has(g.id) ? { ...g, rsvpCode: nieuw.get(g.id) } : g
         ),
       })
     },

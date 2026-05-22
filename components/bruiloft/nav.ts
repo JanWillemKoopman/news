@@ -1,6 +1,7 @@
 import {
   Armchair,
   CalendarClock,
+  Globe,
   LayoutDashboard,
   ListChecks,
   Store,
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Tafels', href: '/bruiloft/tafels', icon: Armchair },
   { label: 'Leveranciers', href: '/bruiloft/leveranciers', icon: Store },
   { label: 'Budget', href: '/bruiloft/budget', icon: Wallet },
+  { label: 'Website', href: '/bruiloft/website', icon: Globe },
 ]
 
 export function isActive(pathname: string, href: string): boolean {

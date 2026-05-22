@@ -21,6 +21,8 @@ import type {
   Wedding,
   WeddingDatabase,
   WeddingInput,
+  WebsiteContent,
+  WebsiteContentInput,
 } from './types'
 
 const STORAGE_KEY = 'bruiloft-planner-v1'
@@ -36,6 +38,7 @@ function emptyDb(): WeddingDatabase {
     budgetItems: [],
     scheduleItems: [],
     tables: [],
+    websiteContents: [],
   }
 }
 
@@ -117,6 +120,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.budgetItems = db.budgetItems.filter((b) => b.weddingId !== id)
     db.scheduleItems = db.scheduleItems.filter((s) => s.weddingId !== id)
     db.tables = db.tables.filter((t) => t.weddingId !== id)
+    db.websiteContents = db.websiteContents.filter((w) => w.weddingId !== id)
     this.write(db)
   }
 
@@ -330,5 +334,39 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
       g.tafelId === id ? { ...g, tafelId: undefined } : g
     )
     this.write(db)
+  }
+
+  // --- WebsiteContent ------------------------------------------------------
+
+  async getWebsiteContent(weddingId: ID): Promise<WebsiteContent | null> {
+    return this.read().websiteContents.find((w) => w.weddingId === weddingId) ?? null
+  }
+
+  async saveWebsiteContent(
+    weddingId: ID,
+    patch: Partial<WebsiteContentInput>
+  ): Promise<WebsiteContent> {
+    const db = this.read()
+    const index = db.websiteContents.findIndex((w) => w.weddingId === weddingId)
+    if (index === -1) {
+      const content: WebsiteContent = {
+        id: uuid(),
+        weddingId,
+        welkomsttekst: '',
+        dresscode: '',
+        cadeaulijst: '',
+        hotels: '',
+        routebeschrijving: '',
+        contact: '',
+        ...patch,
+      }
+      db.websiteContents.push(content)
+      this.write(db)
+      return content
+    }
+    const updated: WebsiteContent = { ...db.websiteContents[index], ...patch }
+    db.websiteContents[index] = updated
+    this.write(db)
+    return updated
   }
 }

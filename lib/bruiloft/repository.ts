@@ -19,6 +19,8 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WebsiteContent,
+  WebsiteContentInput,
 } from './types'
 
 export interface WeddingRepository {
@@ -66,4 +68,11 @@ export interface WeddingRepository {
   createTable(input: TableInput): Promise<Table>
   updateTable(id: ID, patch: Partial<TableInput>): Promise<Table>
   deleteTable(id: ID): Promise<void>
+
+  // WebsiteContent (publieke trouwwebsite) — één per bruiloft (upsert).
+  getWebsiteContent(weddingId: ID): Promise<WebsiteContent | null>
+  saveWebsiteContent(
+    weddingId: ID,
+    patch: Partial<WebsiteContentInput>
+  ): Promise<WebsiteContent>
 }

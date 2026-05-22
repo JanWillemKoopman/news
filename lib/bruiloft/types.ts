@@ -56,6 +56,7 @@ export interface Guest {
   adres: string
   notitie: string
   tafelId?: ID // tafelschikking
+  rsvpCode?: string // persoonlijke code voor de publieke RSVP
 }
 
 export type GuestInput = Omit<Guest, 'id'>
@@ -213,6 +214,21 @@ export interface Table {
 
 export type TableInput = Omit<Table, 'id'>
 
+// --- WebsiteContent (publieke trouwwebsite) --------------------------------
+
+export interface WebsiteContent {
+  id: ID
+  weddingId: ID
+  welkomsttekst: string
+  dresscode: string
+  cadeaulijst: string
+  hotels: string
+  routebeschrijving: string
+  contact: string
+}
+
+export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
+
 // --- Opslag-envelope -------------------------------------------------------
 
 export interface WeddingDatabase {
@@ -224,4 +240,5 @@ export interface WeddingDatabase {
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
   tables: Table[]
+  websiteContents: WebsiteContent[]
 }
