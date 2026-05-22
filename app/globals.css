@@ -72,3 +72,59 @@
     --ring: 160 84% 39%;
   }
 }
+
+/*
+ * Bruiloftplanner-thema (Anthropic-uitstraling: warm, rustig, ivoor + terracotta).
+ * Scoped onder .wedding zodat het de bestaande apps op / en /sollicitatie niet
+ * raakt. Omdat de gedeelde shadcn-primitives token-gestuurd zijn, nemen ze
+ * binnen deze subtree automatisch het warme palet over. Donker thema wordt
+ * aan/uit gezet door .dark op dezelfde wrapper te zetten (.wedding.dark).
+ */
+@layer base {
+  .wedding {
+    --background: 47 25% 92%; /* #F0EEE6 warm ivoor */
+    --foreground: 40 5% 9%; /* #191917 warm bijna-zwart */
+    --card: 48 30% 97%; /* #FAF9F5 warme kaart */
+    --card-foreground: 40 5% 9%;
+    --popover: 48 30% 97%;
+    --popover-foreground: 40 5% 9%;
+    --primary: 15 52% 58%; /* #CC785C terracotta */
+    --primary-foreground: 40 33% 98%;
+    --primary-hover: 16 53% 48%; /* #BD5D3A dieper terracotta */
+    --secondary: 43 20% 88%;
+    --secondary-foreground: 40 5% 9%;
+    --muted: 43 18% 89%;
+    --muted-foreground: 40 6% 40%;
+    --accent: 43 24% 86%;
+    --accent-foreground: 40 5% 9%;
+    --destructive: 5 64% 50%;
+    --destructive-foreground: 40 33% 98%;
+    --border: 43 17% 83%;
+    --input: 43 17% 83%;
+    --ring: 15 52% 58%;
+    --radius: 1rem;
+  }
+
+  .wedding.dark {
+    --background: 40 4% 12%; /* warme bijna-zwarte tint */
+    --foreground: 40 20% 98%; /* #FAFAF7 warm gebroken wit */
+    --card: 40 4% 16%; /* #2B2A28 */
+    --card-foreground: 40 20% 98%;
+    --popover: 40 4% 16%;
+    --popover-foreground: 40 20% 98%;
+    --primary: 16 60% 62%; /* iets lichter terracotta voor contrast op donker */
+    --primary-foreground: 40 33% 98%;
+    --primary-hover: 16 55% 55%;
+    --secondary: 40 4% 22%;
+    --secondary-foreground: 40 20% 98%;
+    --muted: 40 4% 22%;
+    --muted-foreground: 40 8% 64%;
+    --accent: 40 5% 26%;
+    --accent-foreground: 40 20% 98%;
+    --destructive: 5 58% 52%;
+    --destructive-foreground: 40 33% 98%;
+    --border: 40 4% 24%;
+    --input: 40 4% 24%;
+    --ring: 16 60% 62%;
+  }
+}
