@@ -55,6 +55,7 @@ export interface Guest {
   aantalKinderen: number
   adres: string
   notitie: string
+  tafelId?: ID // tafelschikking
 }
 
 export type GuestInput = Omit<Guest, 'id'>
@@ -198,6 +199,20 @@ export interface ScheduleItem {
 
 export type ScheduleItemInput = Omit<ScheduleItem, 'id'>
 
+// --- Table (tafelschikking) ------------------------------------------------
+
+export type TafelVorm = 'rond' | 'vierkant' | 'langwerpig'
+
+export interface Table {
+  id: ID
+  weddingId: ID
+  naam: string
+  vorm: TafelVorm
+  capaciteit: number
+}
+
+export type TableInput = Omit<Table, 'id'>
+
 // --- Opslag-envelope -------------------------------------------------------
 
 export interface WeddingDatabase {
@@ -208,4 +223,5 @@ export interface WeddingDatabase {
   vendors: Vendor[]
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
+  tables: Table[]
 }

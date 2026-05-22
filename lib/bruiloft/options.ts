@@ -7,6 +7,7 @@ import type {
   Prioriteit,
   Rol,
   RsvpStatus,
+  TafelVorm,
   TaskStatus,
   ToegewezenAan,
   VendorStatus,
@@ -62,6 +63,8 @@ export const VENDOR_STATUSSEN: VendorStatus[] = [
   'geboekt',
   'afgewezen',
 ]
+
+export const TAFEL_VORMEN: TafelVorm[] = ['rond', 'vierkant', 'langwerpig']
 
 export const DRAAIBOEK_ROLLEN: Rol[] = [
   'bruidspaar',

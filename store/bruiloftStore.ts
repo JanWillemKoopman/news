@@ -12,6 +12,8 @@ import type {
   ID,
   ScheduleItem,
   ScheduleItemInput,
+  Table,
+  TableInput,
   Task,
   TaskInput,
   Vendor,
@@ -30,6 +32,7 @@ type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
 type NewVendor = Omit<VendorInput, 'weddingId'>
 type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
 type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
+type NewTable = Omit<TableInput, 'weddingId'>
 
 interface BruiloftState {
   hydrated: boolean
@@ -39,6 +42,7 @@ interface BruiloftState {
   vendors: Vendor[]
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
+  tables: Table[]
 }
 
 interface BruiloftActions {
@@ -66,6 +70,10 @@ interface BruiloftActions {
   addScheduleItem: (data: NewScheduleItem) => Promise<void>
   updateScheduleItem: (id: ID, patch: Partial<ScheduleItemInput>) => Promise<void>
   deleteScheduleItem: (id: ID) => Promise<void>
+
+  addTable: (data: NewTable) => Promise<void>
+  updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
+  deleteTable: (id: ID) => Promise<void>
 }
 
 export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
@@ -77,6 +85,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     vendors: [],
     budgetItems: [],
     scheduleItems: [],
+    tables: [],
 
     init: async () => {
       if (get().hydrated) return
@@ -85,20 +94,39 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         set({ hydrated: true, wedding: null })
         return
       }
-      const [guests, tasks, vendors, budgetItems, scheduleItems] = await Promise.all([
-        repository.listGuests(wedding.id),
-        repository.listTasks(wedding.id),
-        repository.listVendors(wedding.id),
-        repository.listBudgetItems(wedding.id),
-        repository.listScheduleItems(wedding.id),
-      ])
-      set({ hydrated: true, wedding, guests, tasks, vendors, budgetItems, scheduleItems })
+      const [guests, tasks, vendors, budgetItems, scheduleItems, tables] =
+        await Promise.all([
+          repository.listGuests(wedding.id),
+          repository.listTasks(wedding.id),
+          repository.listVendors(wedding.id),
+          repository.listBudgetItems(wedding.id),
+          repository.listScheduleItems(wedding.id),
+          repository.listTables(wedding.id),
+        ])
+      set({
+        hydrated: true,
+        wedding,
+        guests,
+        tasks,
+        vendors,
+        budgetItems,
+        scheduleItems,
+        tables,
+      })
     },
 
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
-      set({ wedding, tasks, guests: [], vendors: [], budgetItems: [], scheduleItems: [] })
+      set({
+        wedding,
+        tasks,
+        guests: [],
+        vendors: [],
+        budgetItems: [],
+        scheduleItems: [],
+        tables: [],
+      })
     },
 
     updateWedding: async (patch) => {
@@ -246,6 +274,30 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     deleteScheduleItem: async (id) => {
       await repository.deleteScheduleItem(id)
       set({ scheduleItems: get().scheduleItems.filter((s) => s.id !== id) })
+    },
+
+    // --- Tables ------------------------------------------------------------
+
+    addTable: async (data) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const table = await repository.createTable({ ...data, weddingId: wedding.id })
+      set({ tables: [...get().tables, table] })
+    },
+
+    updateTable: async (id, patch) => {
+      const table = await repository.updateTable(id, patch)
+      set({ tables: get().tables.map((t) => (t.id === id ? table : t)) })
+    },
+
+    deleteTable: async (id) => {
+      await repository.deleteTable(id)
+      set({
+        tables: get().tables.filter((t) => t.id !== id),
+        guests: get().guests.map((g) =>
+          g.tafelId === id ? { ...g, tafelId: undefined } : g
+        ),
+      })
     },
   })
 )

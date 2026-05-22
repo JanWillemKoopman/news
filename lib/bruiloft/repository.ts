@@ -11,6 +11,8 @@ import type {
   ID,
   ScheduleItem,
   ScheduleItemInput,
+  Table,
+  TableInput,
   Task,
   TaskInput,
   Vendor,
@@ -58,4 +60,10 @@ export interface WeddingRepository {
   createScheduleItem(input: ScheduleItemInput): Promise<ScheduleItem>
   updateScheduleItem(id: ID, patch: Partial<ScheduleItemInput>): Promise<ScheduleItem>
   deleteScheduleItem(id: ID): Promise<void>
+
+  // Tables (tafelschikking)
+  listTables(weddingId: ID): Promise<Table[]>
+  createTable(input: TableInput): Promise<Table>
+  updateTable(id: ID, patch: Partial<TableInput>): Promise<Table>
+  deleteTable(id: ID): Promise<void>
 }

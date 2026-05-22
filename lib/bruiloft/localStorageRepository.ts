@@ -12,6 +12,8 @@ import type {
   ID,
   ScheduleItem,
   ScheduleItemInput,
+  Table,
+  TableInput,
   Task,
   TaskInput,
   Vendor,
@@ -33,6 +35,7 @@ function emptyDb(): WeddingDatabase {
     vendors: [],
     budgetItems: [],
     scheduleItems: [],
+    tables: [],
   }
 }
 
@@ -113,6 +116,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.vendors = db.vendors.filter((v) => v.weddingId !== id)
     db.budgetItems = db.budgetItems.filter((b) => b.weddingId !== id)
     db.scheduleItems = db.scheduleItems.filter((s) => s.weddingId !== id)
+    db.tables = db.tables.filter((t) => t.weddingId !== id)
     this.write(db)
   }
 
@@ -291,6 +295,40 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   async deleteScheduleItem(id: ID): Promise<void> {
     const db = this.read()
     db.scheduleItems = db.scheduleItems.filter((s) => s.id !== id)
+    this.write(db)
+  }
+
+  // --- Tables --------------------------------------------------------------
+
+  async listTables(weddingId: ID): Promise<Table[]> {
+    return this.read().tables.filter((t) => t.weddingId === weddingId)
+  }
+
+  async createTable(input: TableInput): Promise<Table> {
+    const db = this.read()
+    const table: Table = { ...input, id: uuid() }
+    db.tables.push(table)
+    this.write(db)
+    return table
+  }
+
+  async updateTable(id: ID, patch: Partial<TableInput>): Promise<Table> {
+    const db = this.read()
+    const index = db.tables.findIndex((t) => t.id === id)
+    if (index === -1) throw new Error(`Table ${id} niet gevonden`)
+    const updated: Table = { ...db.tables[index], ...patch }
+    db.tables[index] = updated
+    this.write(db)
+    return updated
+  }
+
+  async deleteTable(id: ID): Promise<void> {
+    const db = this.read()
+    db.tables = db.tables.filter((t) => t.id !== id)
+    // Maak gasten aan deze tafel weer onverdeeld.
+    db.guests = db.guests.map((g) =>
+      g.tafelId === id ? { ...g, tafelId: undefined } : g
+    )
     this.write(db)
   }
 }
