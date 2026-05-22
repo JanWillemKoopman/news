@@ -1,10 +1,13 @@
 'use client'
 
+import * as React from 'react'
 import Link from 'next/link'
-import { CalendarHeart, ListChecks, MapPin, Users, Wallet } from 'lucide-react'
+import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import {
+  Button,
   Card,
   CardContent,
   EmptyState,
@@ -30,6 +33,8 @@ export default function DashboardPage() {
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
 
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
+
   if (!wedding) return null
 
   const dagen = dagenTot(wedding.trouwdatum)
@@ -48,7 +53,16 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl">
       {/* Aftelteller */}
-      <Card className="mb-8 overflow-hidden border-none bg-gradient-to-br from-primary/15 via-card to-card">
+      <Card className="relative mb-8 overflow-hidden border-none bg-gradient-to-br from-primary/15 via-card to-card">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Gegevens bewerken"
+          className="absolute right-3 top-3"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings2 className="h-5 w-5" />
+        </Button>
         <CardContent className="flex flex-col items-center px-6 py-12 text-center">
           <p className="font-serif text-2xl text-foreground md:text-3xl">
             {wedding.partner1Naam} <span className="text-primary">&amp;</span>{' '}
@@ -183,6 +197,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <WeddingSettingsForm
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        wedding={wedding}
+      />
     </div>
   )
 }

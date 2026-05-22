@@ -14,11 +14,15 @@ interface ThemeContextValue {
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null)
 
+// useLayoutEffect op de client (geen flits), useEffect op de server (geen warning).
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Standaard light; de werkelijke voorkeur wordt vóór de eerste paint gezet.
   const [theme, setThemeState] = React.useState<Theme>('light')
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null
       if (stored === 'dark' || stored === 'light') setThemeState(stored)
