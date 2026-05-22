@@ -9,6 +9,8 @@ import type {
   Guest,
   GuestInput,
   ID,
+  ScheduleItem,
+  ScheduleItemInput,
   Task,
   TaskInput,
   Vendor,
@@ -50,4 +52,10 @@ export interface WeddingRepository {
   createBudgetItem(input: BudgetItemInput): Promise<BudgetItem>
   updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem>
   deleteBudgetItem(id: ID): Promise<void>
+
+  // ScheduleItems (trouwdag-draaiboek)
+  listScheduleItems(weddingId: ID): Promise<ScheduleItem[]>
+  createScheduleItem(input: ScheduleItemInput): Promise<ScheduleItem>
+  updateScheduleItem(id: ID, patch: Partial<ScheduleItemInput>): Promise<ScheduleItem>
+  deleteScheduleItem(id: ID): Promise<void>
 }

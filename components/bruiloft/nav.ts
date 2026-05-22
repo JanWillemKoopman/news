@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   LayoutDashboard,
   ListChecks,
   Store,
@@ -18,6 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/bruiloft', icon: LayoutDashboard },
   { label: 'Gasten', href: '/bruiloft/gasten', icon: Users },
   { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks },
+  { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock },
   { label: 'Leveranciers', href: '/bruiloft/leveranciers', icon: Store },
   { label: 'Budget', href: '/bruiloft/budget', icon: Wallet },
 ]

@@ -171,6 +171,33 @@ export interface BudgetItem {
 
 export type BudgetItemInput = Omit<BudgetItem, 'id'>
 
+// --- ScheduleItem (trouwdag-draaiboek) -------------------------------------
+
+// Rollen waarop een draaiboekonderdeel betrekking heeft (voor filteren/export).
+export type Rol =
+  | 'bruidspaar'
+  | 'ceremoniemeester'
+  | 'fotograaf'
+  | 'videograaf'
+  | 'dj of band'
+  | 'catering'
+  | 'locatie'
+  | 'vervoer'
+  | 'gasten'
+  | 'overig'
+
+export interface ScheduleItem {
+  id: ID
+  weddingId: ID
+  tijd: string // 'HH:MM'
+  titel: string
+  omschrijving: string
+  locatie: string
+  betrokkenen: Rol[]
+}
+
+export type ScheduleItemInput = Omit<ScheduleItem, 'id'>
+
 // --- Opslag-envelope -------------------------------------------------------
 
 export interface WeddingDatabase {
@@ -180,4 +207,5 @@ export interface WeddingDatabase {
   tasks: Task[]
   vendors: Vendor[]
   budgetItems: BudgetItem[]
+  scheduleItems: ScheduleItem[]
 }

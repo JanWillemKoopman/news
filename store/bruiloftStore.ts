@@ -10,6 +10,8 @@ import type {
   Guest,
   GuestInput,
   ID,
+  ScheduleItem,
+  ScheduleItemInput,
   Task,
   TaskInput,
   Vendor,
@@ -27,6 +29,7 @@ type NewGuest = Omit<GuestInput, 'weddingId'>
 type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
 type NewVendor = Omit<VendorInput, 'weddingId'>
 type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
+type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
 
 interface BruiloftState {
   hydrated: boolean
@@ -35,6 +38,7 @@ interface BruiloftState {
   tasks: Task[]
   vendors: Vendor[]
   budgetItems: BudgetItem[]
+  scheduleItems: ScheduleItem[]
 }
 
 interface BruiloftActions {
@@ -58,6 +62,10 @@ interface BruiloftActions {
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
   deleteBudgetItem: (id: ID) => Promise<void>
+
+  addScheduleItem: (data: NewScheduleItem) => Promise<void>
+  updateScheduleItem: (id: ID, patch: Partial<ScheduleItemInput>) => Promise<void>
+  deleteScheduleItem: (id: ID) => Promise<void>
 }
 
 export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
@@ -68,6 +76,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     tasks: [],
     vendors: [],
     budgetItems: [],
+    scheduleItems: [],
 
     init: async () => {
       if (get().hydrated) return
@@ -76,19 +85,20 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         set({ hydrated: true, wedding: null })
         return
       }
-      const [guests, tasks, vendors, budgetItems] = await Promise.all([
+      const [guests, tasks, vendors, budgetItems, scheduleItems] = await Promise.all([
         repository.listGuests(wedding.id),
         repository.listTasks(wedding.id),
         repository.listVendors(wedding.id),
         repository.listBudgetItems(wedding.id),
+        repository.listScheduleItems(wedding.id),
       ])
-      set({ hydrated: true, wedding, guests, tasks, vendors, budgetItems })
+      set({ hydrated: true, wedding, guests, tasks, vendors, budgetItems, scheduleItems })
     },
 
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
-      set({ wedding, tasks, guests: [], vendors: [], budgetItems: [] })
+      set({ wedding, tasks, guests: [], vendors: [], budgetItems: [], scheduleItems: [] })
     },
 
     updateWedding: async (patch) => {
@@ -217,6 +227,25 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           v.budgetItemId === id ? { ...v, budgetItemId: undefined } : v
         ),
       })
+    },
+
+    // --- ScheduleItems -----------------------------------------------------
+
+    addScheduleItem: async (data) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const item = await repository.createScheduleItem({ ...data, weddingId: wedding.id })
+      set({ scheduleItems: [...get().scheduleItems, item] })
+    },
+
+    updateScheduleItem: async (id, patch) => {
+      const item = await repository.updateScheduleItem(id, patch)
+      set({ scheduleItems: get().scheduleItems.map((s) => (s.id === id ? item : s)) })
+    },
+
+    deleteScheduleItem: async (id) => {
+      await repository.deleteScheduleItem(id)
+      set({ scheduleItems: get().scheduleItems.filter((s) => s.id !== id) })
     },
   })
 )

@@ -10,6 +10,8 @@ import type {
   Guest,
   GuestInput,
   ID,
+  ScheduleItem,
+  ScheduleItemInput,
   Task,
   TaskInput,
   Vendor,
@@ -30,6 +32,7 @@ function emptyDb(): WeddingDatabase {
     tasks: [],
     vendors: [],
     budgetItems: [],
+    scheduleItems: [],
   }
 }
 
@@ -109,6 +112,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.tasks = db.tasks.filter((t) => t.weddingId !== id)
     db.vendors = db.vendors.filter((v) => v.weddingId !== id)
     db.budgetItems = db.budgetItems.filter((b) => b.weddingId !== id)
+    db.scheduleItems = db.scheduleItems.filter((s) => s.weddingId !== id)
     this.write(db)
   }
 
@@ -254,6 +258,39 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.vendors = db.vendors.map((v) =>
       v.budgetItemId === id ? { ...v, budgetItemId: undefined } : v
     )
+    this.write(db)
+  }
+
+  // --- ScheduleItems -------------------------------------------------------
+
+  async listScheduleItems(weddingId: ID): Promise<ScheduleItem[]> {
+    return this.read().scheduleItems.filter((s) => s.weddingId === weddingId)
+  }
+
+  async createScheduleItem(input: ScheduleItemInput): Promise<ScheduleItem> {
+    const db = this.read()
+    const item: ScheduleItem = { ...input, id: uuid() }
+    db.scheduleItems.push(item)
+    this.write(db)
+    return item
+  }
+
+  async updateScheduleItem(
+    id: ID,
+    patch: Partial<ScheduleItemInput>
+  ): Promise<ScheduleItem> {
+    const db = this.read()
+    const index = db.scheduleItems.findIndex((s) => s.id === id)
+    if (index === -1) throw new Error(`ScheduleItem ${id} niet gevonden`)
+    const updated: ScheduleItem = { ...db.scheduleItems[index], ...patch }
+    db.scheduleItems[index] = updated
+    this.write(db)
+    return updated
+  }
+
+  async deleteScheduleItem(id: ID): Promise<void> {
+    const db = this.read()
+    db.scheduleItems = db.scheduleItems.filter((s) => s.id !== id)
     this.write(db)
   }
 }

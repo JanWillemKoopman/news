@@ -5,6 +5,7 @@ import type {
   Gasttype,
   GuestCategorie,
   Prioriteit,
+  Rol,
   RsvpStatus,
   TaskStatus,
   ToegewezenAan,
@@ -60,6 +61,19 @@ export const VENDOR_STATUSSEN: VendorStatus[] = [
   'offerte aangevraagd',
   'geboekt',
   'afgewezen',
+]
+
+export const DRAAIBOEK_ROLLEN: Rol[] = [
+  'bruidspaar',
+  'ceremoniemeester',
+  'fotograaf',
+  'videograaf',
+  'dj of band',
+  'catering',
+  'locatie',
+  'vervoer',
+  'gasten',
+  'overig',
 ]
 
 export const BUDGET_CATEGORIEEN: BudgetCategorie[] = [
