@@ -1,15 +1,17 @@
 'use client'
 
 import * as React from 'react'
-import { Download, Plus, Wallet } from 'lucide-react'
+import { AlertTriangle, Download, PieChart, Plus, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
 import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
 import { Button, ConfirmDialog, EmptyState } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
+  budgetAfwijkingen,
   effectiefGeoffreerd,
   gastTellingen,
   restBedrag,
@@ -29,10 +31,12 @@ export default function BudgetPage() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
+  const [distributeOpen, setDistributeOpen] = React.useState(false)
 
   if (!wedding) return null
 
   const bevestigdeDaggasten = gastTellingen(guests).bevestigdeDaggasten
+  const afwijkingen = budgetAfwijkingen(budgetItems, vendors, wedding)
 
   const openNieuw = () => {
     setEditItem(null)
@@ -78,6 +82,9 @@ export default function BudgetPage() {
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
         actie={
           <>
+            <Button variant="outline" onClick={() => setDistributeOpen(true)}>
+              <PieChart className="h-4 w-4" /> Verdeel budget
+            </Button>
             <Button variant="outline" onClick={exporteer} disabled={budgetItems.length === 0}>
               <Download className="h-4 w-4" /> CSV
             </Button>
@@ -87,6 +94,16 @@ export default function BudgetPage() {
           </>
         }
       />
+
+      {afwijkingen.overBudget ? (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <span>
+            De geoffreerde bedragen samen liggen boven het totaalbudget. Bekijk de
+            categorieën of pas je budget aan.
+          </span>
+        </div>
+      ) : null}
 
       <div className="mb-8">
         <BudgetSummary items={budgetItems} vendors={vendors} wedding={wedding} />
@@ -108,6 +125,7 @@ export default function BudgetPage() {
           items={budgetItems}
           vendors={vendors}
           bevestigdeDaggasten={bevestigdeDaggasten}
+          afwijkendeItemIds={afwijkingen.itemIds}
           onEdit={openBewerk}
           onDelete={setDeleteItem}
           onToggleTerm={toggleTerm}
@@ -122,6 +140,25 @@ export default function BudgetPage() {
         onSubmit={(data) => {
           if (editItem) void updateBudgetItem(editItem.id, data)
           else void addBudgetItem(data)
+        }}
+      />
+
+      <BudgetDistributeModal
+        open={distributeOpen}
+        onOpenChange={setDistributeOpen}
+        totaalBudget={wedding.totaalBudget}
+        items={budgetItems}
+        onApply={(regels) => {
+          for (const r of regels) {
+            void addBudgetItem({
+              categorie: r.categorie,
+              omschrijving: 'Richtbedrag (automatisch)',
+              geschatBedrag: r.bedrag,
+              geoffreerdBedrag: 0,
+              betaaldBedrag: 0,
+              betaaltermijnen: [],
+            })
+          }
         }}
       />
 

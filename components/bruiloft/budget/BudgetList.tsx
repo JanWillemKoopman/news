@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Link2, Pencil, Trash2 } from 'lucide-react'
+import { AlertTriangle, Check, Link2, Pencil, Trash2 } from 'lucide-react'
 
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
 import {
@@ -18,6 +18,7 @@ interface BudgetListProps {
   items: BudgetItem[]
   vendors: Vendor[]
   bevestigdeDaggasten: number
+  afwijkendeItemIds?: Set<string>
   onEdit: (item: BudgetItem) => void
   onDelete: (item: BudgetItem) => void
   onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -27,6 +28,7 @@ export function BudgetList({
   items,
   vendors,
   bevestigdeDaggasten,
+  afwijkendeItemIds,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -56,6 +58,7 @@ export function BudgetList({
                   key={item.id}
                   item={item}
                   vendors={vendors}
+                  afwijkend={afwijkendeItemIds?.has(item.id) ?? false}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onToggleTerm={onToggleTerm}
@@ -72,12 +75,14 @@ export function BudgetList({
 function BudgetItemRow({
   item,
   vendors,
+  afwijkend,
   onEdit,
   onDelete,
   onToggleTerm,
 }: {
   item: BudgetItem
   vendors: Vendor[]
+  afwijkend: boolean
   onEdit: (item: BudgetItem) => void
   onDelete: (item: BudgetItem) => void
   onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -87,7 +92,7 @@ function BudgetItemRow({
   const rest = restBedrag(item, vendors)
 
   return (
-    <Card>
+    <Card className={cn(afwijkend && 'border-amber-300 dark:border-amber-900')}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -97,6 +102,11 @@ function BudgetItemRow({
             {geboekteVendor ? (
               <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary">
                 <Link2 className="h-3 w-3" /> geoffreerd via {geboekteVendor.naam}
+              </p>
+            ) : null}
+            {afwijkend ? (
+              <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-3 w-3" /> boven de schatting
               </p>
             ) : null}
           </div>

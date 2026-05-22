@@ -4,6 +4,7 @@
 
 import { dagenTot } from './format'
 import type {
+  BudgetCategorie,
   BudgetItem,
   Guest,
   PaymentTerm,
@@ -189,4 +190,63 @@ export function aankomendeTermijnen(
   return result
     .sort((a, b) => a.term.vervaldatum.localeCompare(b.term.vervaldatum))
     .slice(0, limiet)
+}
+
+// --- Slim budget: automatische verdeling + afwijkingen ---------------------
+
+// Richtpercentages per categorie (Nederlandse praktijk, telt op tot 1.0).
+export const STANDAARD_VERDELING: Record<BudgetCategorie, number> = {
+  locatie: 0.2,
+  catering: 0.25,
+  'kleding': 0.1,
+  'fotografie en video': 0.1,
+  muziek: 0.08,
+  'bloemen en decoratie': 0.08,
+  vervoer: 0.03,
+  taart: 0.03,
+  'uitnodigingen en drukwerk': 0.04,
+  ringen: 0.05,
+  overig: 0.04,
+}
+
+export interface VerdelingRegel {
+  categorie: BudgetCategorie
+  bedrag: number
+  heeftItem: boolean
+}
+
+// Voorstel: richtbedrag per categorie op basis van het totaalbudget.
+export function budgetVerdelingVoorstel(
+  totaalBudget: number,
+  items: BudgetItem[]
+): VerdelingRegel[] {
+  const aanwezig = new Set(items.map((i) => i.categorie))
+  return (Object.keys(STANDAARD_VERDELING) as BudgetCategorie[]).map((categorie) => ({
+    categorie,
+    bedrag: Math.round(totaalBudget * STANDAARD_VERDELING[categorie]),
+    heeftItem: aanwezig.has(categorie),
+  }))
+}
+
+export interface BudgetAfwijkingen {
+  overBudget: boolean // totaal geoffreerd boven totaalbudget
+  itemIds: Set<string> // items waar geoffreerd of betaald de schatting overschrijdt
+}
+
+// Welke items en/of het totaal lopen uit de pas? Puur berekend bij het lezen.
+export function budgetAfwijkingen(
+  items: BudgetItem[],
+  vendors: Vendor[],
+  wedding: Wedding
+): BudgetAfwijkingen {
+  const itemIds = new Set<string>()
+  for (const item of items) {
+    if (item.geschatBedrag <= 0) continue
+    const geoffreerd = effectiefGeoffreerd(item, vendors)
+    if (geoffreerd > item.geschatBedrag || item.betaaldBedrag > item.geschatBedrag) {
+      itemIds.add(item.id)
+    }
+  }
+  const totalen = budgetTotalen(items, vendors, wedding)
+  return { overBudget: totalen.totaalGeoffreerd > wedding.totaalBudget, itemIds }
 }
