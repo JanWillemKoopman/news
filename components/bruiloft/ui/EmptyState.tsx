@@ -7,6 +7,7 @@ interface EmptyStateProps {
   titel: string
   beschrijving?: string
   actie?: React.ReactNode
+  secundaireActie?: React.ReactNode
   className?: string
 }
 
@@ -16,6 +17,7 @@ export function EmptyState({
   titel,
   beschrijving,
   actie,
+  secundaireActie,
   className,
 }: EmptyStateProps) {
   return (
@@ -34,7 +36,12 @@ export function EmptyState({
       {beschrijving ? (
         <p className="mt-2 max-w-md text-sm text-muted-foreground">{beschrijving}</p>
       ) : null}
-      {actie ? <div className="mt-6">{actie}</div> : null}
+      {actie || secundaireActie ? (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {actie}
+          {secundaireActie}
+        </div>
+      ) : null}
     </div>
   )
 }

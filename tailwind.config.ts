@@ -53,19 +53,51 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      // Warm-getinte, zachte elevatie i.p.v. de standaard neutrale schaduwen.
+      boxShadow: {
+        xs: '0 1px 2px 0 rgb(41 37 36 / 0.05)',
+        sm: '0 1px 3px 0 rgb(41 37 36 / 0.06), 0 1px 2px -1px rgb(41 37 36 / 0.06)',
+        DEFAULT: '0 2px 8px -2px rgb(41 37 36 / 0.08)',
+        md: '0 6px 20px -4px rgb(41 37 36 / 0.10)',
+        lg: '0 12px 32px -8px rgb(41 37 36 / 0.12)',
+        xl: '0 20px 48px -12px rgb(41 37 36 / 0.16)',
+      },
+      transitionTimingFunction: {
+        premium: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
       animation: {
-        'fade-in': 'fadeIn 0.35s ease-out',
-        'slide-up': 'slideUp 0.35s ease-out',
+        'fade-in': 'fadeIn 0.2s ease-out',
+        'slide-up': 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'overlay-in': 'overlayIn 0.2s ease-out',
+        'dialog-in': 'dialogIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        'sheet-in': 'sheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        shimmer: 'shimmer 1.6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        overlayIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        dialogIn: {
+          '0%': { opacity: '0', transform: 'translate(-50%, -48%) scale(0.97)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
+        },
+        sheetIn: {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+        shimmer: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.45' },
         },
       },
     },

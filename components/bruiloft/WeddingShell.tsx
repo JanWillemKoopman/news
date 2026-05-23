@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { ToastProvider } from '@/components/bruiloft/ui'
 import { MobileNav } from './MobileNav'
 import { Sidebar } from './Sidebar'
 import { ThemeProvider, useTheme } from './ThemeProvider'
@@ -18,7 +19,9 @@ interface WeddingShellProps {
 export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
   return (
     <ThemeProvider>
-      <ShellInner fontClassName={fontClassName}>{children}</ShellInner>
+      <ToastProvider>
+        <ShellInner fontClassName={fontClassName}>{children}</ShellInner>
+      </ToastProvider>
     </ThemeProvider>
   )
 }

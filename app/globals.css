@@ -94,15 +94,15 @@
     --secondary: 43 20% 88%;
     --secondary-foreground: 40 5% 9%;
     --muted: 43 18% 89%;
-    --muted-foreground: 40 6% 40%;
+    --muted-foreground: 40 5% 36%; /* donkerder voor WCAG AA */
     --accent: 43 24% 86%;
     --accent-foreground: 40 5% 9%;
     --destructive: 5 64% 50%;
     --destructive-foreground: 40 33% 98%;
-    --border: 43 17% 83%;
-    --input: 43 17% 83%;
+    --border: 40 13% 86%; /* subtiele hairline */
+    --input: 40 14% 80%;
     --ring: 15 52% 58%;
-    --radius: 1rem;
+    --radius: 0.625rem; /* ingetogen radius (Linear/Stripe-craft) */
   }
 
   .wedding.dark {
@@ -124,7 +124,19 @@
     --destructive: 5 58% 52%;
     --destructive-foreground: 40 33% 98%;
     --border: 40 4% 24%;
-    --input: 40 4% 24%;
+    --input: 40 5% 30%;
     --ring: 16 60% 62%;
+  }
+}
+
+/* Respecteer de systeemvoorkeur voor minder beweging. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
