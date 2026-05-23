@@ -8,14 +8,28 @@ interface FieldProps {
   htmlFor?: string
   children: React.ReactNode
   className?: string
+  error?: string
+  required?: boolean
 }
 
-// Label + control met consistente tussenruimte voor alle formulieren.
-export function Field({ label, htmlFor, children, className }: FieldProps) {
+// Label + control met consistente tussenruimte + optionele inline-foutmelding.
+export function Field({ label, htmlFor, children, className, error, required }: FieldProps) {
   return (
     <div className={cn('space-y-1.5', className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>
+        {label}
+        {required ? (
+          <span className="ml-0.5 text-destructive" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </Label>
       {children}
+      {error ? (
+        <p className="text-xs font-medium text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

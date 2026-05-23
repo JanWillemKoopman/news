@@ -81,6 +81,12 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
 
   return (
     <div className={cn(wrapperClass, 'flex')}>
+      <a
+        href="#hoofdinhoud"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-md"
+      >
+        Naar inhoud
+      </a>
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:px-8">
@@ -89,7 +95,13 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
+        <main
+          id="hoofdinhoud"
+          tabIndex={-1}
+          className="flex-1 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
+        >
+          {children}
+        </main>
         <MobileNav />
       </div>
     </div>

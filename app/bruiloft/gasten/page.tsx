@@ -179,15 +179,18 @@ export default function GastenPage() {
         <Card className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">Gastenlijst met categorie, type en RSVP-status</caption>
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Naam</th>
-                  <th className="px-4 py-3 font-medium">Categorie</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
-                  <th className="px-4 py-3 font-medium">RSVP</th>
-                  <th className="px-4 py-3 font-medium">Partner</th>
-                  <th className="px-4 py-3 font-medium">Kinderen</th>
-                  <th className="px-4 py-3" />
+                  <th scope="col" className="px-4 py-3 font-medium">Naam</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Categorie</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Type</th>
+                  <th scope="col" className="px-4 py-3 font-medium">RSVP</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Partner</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Kinderen</th>
+                  <th scope="col" className="px-4 py-3">
+                    <span className="sr-only">Acties</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

@@ -71,13 +71,19 @@ export function BudgetItemForm({
   onSubmit,
 }: BudgetItemFormProps) {
   const [form, setForm] = React.useState<FormState>(leeg)
+  const [omsFout, setOmsFout] = React.useState(false)
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanItem(initial) : leeg())
+    if (open) {
+      setForm(initial ? vanItem(initial) : leeg())
+      setOmsFout(false)
+    }
   }, [open, initial])
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    if (key === 'omschrijving' && omsFout) setOmsFout(false)
     setForm((f) => ({ ...f, [key]: value }))
+  }
 
   const setTerm = (id: string, patch: Partial<PaymentTerm>) =>
     setForm((f) => ({
@@ -102,6 +108,10 @@ export function BudgetItemForm({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!form.omschrijving.trim()) {
+      setOmsFout(true)
+      return
+    }
     onSubmit({
       categorie: form.categorie,
       omschrijving: form.omschrijving.trim(),
@@ -137,10 +147,16 @@ export function BudgetItemForm({
           </Select>
         </Field>
 
-        <Field label="Omschrijving" htmlFor="oms">
+        <Field
+          label="Omschrijving"
+          htmlFor="oms"
+          required
+          error={omsFout ? 'Vul een omschrijving in' : undefined}
+        >
           <Input
             id="oms"
             value={form.omschrijving}
+            aria-invalid={omsFout || undefined}
             onChange={(e) => set('omschrijving', e.target.value)}
             placeholder="Bijv. Diner 100 personen"
           />

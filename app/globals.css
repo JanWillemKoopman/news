@@ -129,6 +129,14 @@
   }
 }
 
+/* Visuele markering voor ongeldige velden binnen de bruiloftplanner. */
+.wedding [aria-invalid='true'] {
+  border-color: hsl(var(--destructive));
+}
+.wedding [aria-invalid='true']:focus-visible {
+  --tw-ring-color: hsl(var(--destructive));
+}
+
 /* Respecteer de systeemvoorkeur voor minder beweging. */
 @media (prefers-reduced-motion: reduce) {
   *,

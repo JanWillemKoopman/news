@@ -56,17 +56,26 @@ function vanGuest(g: Guest): NewGuest {
 
 export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormProps) {
   const [form, setForm] = React.useState<NewGuest>(leeg)
+  const [naamFout, setNaamFout] = React.useState(false)
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanGuest(initial) : leeg())
+    if (open) {
+      setForm(initial ? vanGuest(initial) : leeg())
+      setNaamFout(false)
+    }
   }, [open, initial])
 
-  const set = <K extends keyof NewGuest>(key: K, value: NewGuest[K]) =>
+  const set = <K extends keyof NewGuest>(key: K, value: NewGuest[K]) => {
+    if ((key === 'voornaam' || key === 'achternaam') && naamFout) setNaamFout(false)
     setForm((f) => ({ ...f, [key]: value }))
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.voornaam.trim() && !form.achternaam.trim()) return
+    if (!form.voornaam.trim() && !form.achternaam.trim()) {
+      setNaamFout(true)
+      return
+    }
     onSubmit({
       ...form,
       voornaam: form.voornaam.trim(),
@@ -85,13 +94,23 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
     >
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Voornaam" htmlFor="vn">
-            <Input id="vn" value={form.voornaam} onChange={(e) => set('voornaam', e.target.value)} />
+          <Field
+            label="Voornaam"
+            htmlFor="vn"
+            error={naamFout ? 'Vul minimaal een voor- of achternaam in' : undefined}
+          >
+            <Input
+              id="vn"
+              value={form.voornaam}
+              aria-invalid={naamFout || undefined}
+              onChange={(e) => set('voornaam', e.target.value)}
+            />
           </Field>
           <Field label="Achternaam" htmlFor="an">
             <Input
               id="an"
               value={form.achternaam}
+              aria-invalid={naamFout || undefined}
               onChange={(e) => set('achternaam', e.target.value)}
             />
           </Field>

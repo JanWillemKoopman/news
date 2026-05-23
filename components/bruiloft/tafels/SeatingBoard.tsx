@@ -121,7 +121,11 @@ function GuestChip({ guest, onRemove }: { guest: Guest; onRemove?: () => void })
         isDragging && 'opacity-60'
       )}
     >
-      <span {...listeners} {...attributes} className="cursor-grab touch-none select-none">
+      <span
+        {...listeners}
+        {...attributes}
+        className="inline-block max-w-[11rem] cursor-grab truncate align-middle touch-none select-none"
+      >
         {guest.voornaam} {guest.achternaam}
       </span>
       {onRemove ? (
