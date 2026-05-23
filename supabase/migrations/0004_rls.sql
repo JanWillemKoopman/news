@@ -74,8 +74,11 @@ create policy profiles_update on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 
 -- --- weddings -------------------------------------------------------
+-- created_by staat de maker toe de net-aangemaakte rij te lezen: bij
+-- INSERT ... RETURNING is het owner-lidmaatschap (door de AFTER-trigger) nog
+-- niet zichtbaar, dus zonder created_by zou createWedding's RETURNING falen.
 create policy weddings_select on public.weddings for select to authenticated
-  using (public.is_wedding_member(id) or public.is_platform_admin());
+  using (created_by = auth.uid() or public.is_wedding_member(id) or public.is_platform_admin());
 create policy weddings_insert on public.weddings for insert to authenticated
   with check (auth.uid() is not null);
 create policy weddings_update on public.weddings for update to authenticated
