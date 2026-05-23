@@ -5,21 +5,23 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Multi-Agent Advisor',
-  description: 'Krijg business advies van legendarische ondernemers via AI',
+  title: {
+    default: 'Ons Trouwplan',
+    template: '%s · Ons Trouwplan',
+  },
+  description: 'Plan jullie bruiloft samen — gasten, budget, taken, draaiboek en meer.',
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  themeColor: '#0a0f1e',
+  themeColor: '#ffffff',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen`}>
+      <body className={`${inter.className} min-h-screen bg-white text-slate-900 antialiased`}>
         {children}
       </body>
     </html>
