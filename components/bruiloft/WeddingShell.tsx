@@ -4,7 +4,7 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { ToastProvider } from '@/components/bruiloft/ui'
+import { Skeleton, ToastProvider } from '@/components/bruiloft/ui'
 import { MobileNav } from './MobileNav'
 import { Sidebar } from './Sidebar'
 import { ThemeProvider, useTheme } from './ThemeProvider'
@@ -42,11 +42,27 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     fontClassName
   )
 
-  // Voor de eerste hydratatie: rustige laadstaat (voorkomt flits van inhoud).
+  // Voor de eerste hydratatie: skeleton-shell (voorkomt flits van inhoud).
   if (!hydrated) {
     return (
-      <div className={cn(wrapperClass, 'flex items-center justify-center')}>
-        <p className="animate-pulse text-muted-foreground">Even laden…</p>
+      <div className={cn(wrapperClass, 'flex')} aria-busy="true">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 p-4 md:flex">
+          <Skeleton className="h-9 w-40" />
+          <div className="mt-8 flex flex-col gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+        </aside>
+        <div className="flex-1 px-4 py-6 md:px-8">
+          <Skeleton className="h-8 w-48" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="mt-6 h-64 w-full rounded-xl" />
+        </div>
       </div>
     )
   }
