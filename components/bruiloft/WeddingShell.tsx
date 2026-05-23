@@ -1,14 +1,19 @@
 'use client'
 
+import { Lock } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import * as React from 'react'
 
+import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
 import { MobileNav } from './MobileNav'
+import { moduleForPath } from './nav'
 import { Sidebar } from './Sidebar'
 import { ThemeProvider, useTheme } from './ThemeProvider'
 import { ThemeToggle } from './ThemeToggle'
+import { UserMenu } from './UserMenu'
 import { WelcomeScreen } from './WelcomeScreen'
 
 interface WeddingShellProps {
@@ -28,13 +33,17 @@ export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
 
 function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const { theme } = useTheme()
+  const pathname = usePathname()
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const wedding = useBruiloftStore((s) => s.wedding)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const init = useBruiloftStore((s) => s.init)
 
   React.useEffect(() => {
     void init()
   }, [init])
+
+  const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
     'wedding min-h-screen bg-background text-foreground antialiased',
@@ -91,8 +100,9 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:px-8">
           <span className="font-serif text-lg text-foreground md:hidden">Ons Trouwplan</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
+            <UserMenu />
           </div>
         </header>
         <main
@@ -100,7 +110,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
           tabIndex={-1}
           className="flex-1 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
         >
-          {children}
+          {allowed ? (
+            children
+          ) : (
+            <EmptyState
+              icon={Lock}
+              titel="Geen toegang"
+              beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
+            />
+          )}
         </main>
         <MobileNav />
       </div>

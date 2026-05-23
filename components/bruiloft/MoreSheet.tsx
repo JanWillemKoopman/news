@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 
 import { Modal } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
-import { isActive, NAV_GROUPS } from './nav'
+import { useBruiloftStore } from '@/store/bruiloftStore'
+import { isActive, visibleGroups } from './nav'
 
 interface MoreSheetProps {
   open: boolean
@@ -15,10 +16,11 @@ interface MoreSheetProps {
 // Bottom-sheet met alle secties (mobiel), geopend via "Meer" in de onderbalk.
 export function MoreSheet({ open, onOpenChange }: MoreSheetProps) {
   const pathname = usePathname()
+  const permissions = useBruiloftStore((s) => s.permissions)
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="Menu">
       <div className="flex flex-col gap-5 pb-2">
-        {NAV_GROUPS.map((group, i) => (
+        {visibleGroups(permissions).map((group, i) => (
           <div key={group.label ?? `groep-${i}`} className="flex flex-col gap-1">
             {group.label ? (
               <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">

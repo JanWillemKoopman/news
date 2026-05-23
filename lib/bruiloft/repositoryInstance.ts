@@ -1,8 +1,7 @@
 // Eén plek waar de implementatie van de opslaglaag gekozen wordt.
-// Later: vervang deze regel door `new ApiWeddingRepository()` — de hele app
-// (store én publieke trouwwebsite) gebruikt dan automatisch de backend.
+// De hele app (store) praat via deze singleton met de backend.
 
-import { LocalStorageWeddingRepository } from './localStorageRepository'
 import type { WeddingRepository } from './repository'
+import { SupabaseWeddingRepository } from './supabaseRepository'
 
-export const repository: WeddingRepository = new LocalStorageWeddingRepository()
+export const repository: WeddingRepository = new SupabaseWeddingRepository()

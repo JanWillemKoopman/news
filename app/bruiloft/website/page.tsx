@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, Copy, ExternalLink, Info, Link2 } from 'lucide-react'
+import { Check, Copy, Info, Link2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import {
@@ -64,7 +64,6 @@ export default function WebsitePage() {
   if (!wedding) return null
 
   const t = gastTellingen(guests)
-  const publiekeUrl = `${origin}/trouwwebsite/${wedding.id}`
 
   // Bewerk lokaal en sla het gewijzigde veld direct op.
   const set = (veld: keyof Velden) => (
@@ -90,21 +89,13 @@ export default function WebsitePage() {
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de informatie voor je gasten en deel persoonlijke RSVP-links."
-        actie={
-          <Button asChild variant="outline">
-            <a href={publiekeUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" /> Bekijk
-            </a>
-          </Button>
-        }
       />
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         <span>
-          Dit is een voorbeeldversie. De website en RSVP werken nu binnen deze browser/dit
-          apparaat. Zodra er een backend is, wordt de website echt publiek en kunnen gasten
-          op hun eigen telefoon reageren.
+          Elke gast heeft een persoonlijke, niet te raden RSVP-link. Deel die link; gasten reageren
+          op hun eigen telefoon en hun antwoord verschijnt direct bij jullie gasten-overzicht.
         </span>
       </div>
 
@@ -159,7 +150,7 @@ export default function WebsitePage() {
           ) : (
             <ul className="divide-y divide-border">
               {guests.map((g) => {
-                const link = g.rsvpCode ? `${publiekeUrl}?code=${g.rsvpCode}` : ''
+                const link = g.rsvpCode ? `${origin}/rsvp/${g.rsvpCode}` : ''
                 return (
                   <li key={g.id} className="flex items-center justify-between gap-3 py-2.5">
                     <span className="min-w-0 truncate text-sm text-foreground">

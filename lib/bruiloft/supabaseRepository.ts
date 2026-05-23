@@ -1,0 +1,362 @@
+// Supabase-implementatie van de WeddingRepository. De app verandert niet:
+// dezelfde interface, maar nu met persistente, gedeelde, RLS-beveiligde opslag.
+
+import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/database.types'
+
+import {
+  budgetItemFromRow,
+  budgetItemToRow,
+  guestFromRow,
+  guestToRow,
+  scheduleItemFromRow,
+  scheduleItemToRow,
+  tableFromRow,
+  tableToRow,
+  taskFromRow,
+  taskToRow,
+  vendorFromRow,
+  vendorToRow,
+  websiteContentFromRow,
+  websiteContentToRow,
+  weddingFromRow,
+  weddingToRow,
+} from './mappers'
+import type { WeddingRepository } from './repository'
+import type {
+  BudgetItem,
+  BudgetItemInput,
+  Guest,
+  GuestInput,
+  ID,
+  ScheduleItem,
+  ScheduleItemInput,
+  Table,
+  TableInput,
+  Task,
+  TaskInput,
+  Vendor,
+  VendorInput,
+  Wedding,
+  WeddingInput,
+  WebsiteContent,
+  WebsiteContentInput,
+} from './types'
+
+type Tables = Database['public']['Tables']
+
+export class SupabaseWeddingRepository implements WeddingRepository {
+  private db = createClient()
+
+  // --- Wedding -------------------------------------------------------
+  async listWeddings(): Promise<Wedding[]> {
+    const { data, error } = await this.db
+      .from('weddings')
+      .select('*')
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(weddingFromRow)
+  }
+
+  async getWedding(id: ID): Promise<Wedding | null> {
+    const { data, error } = await this.db.from('weddings').select('*').eq('id', id).maybeSingle()
+    if (error) throw error
+    return data ? weddingFromRow(data) : null
+  }
+
+  async getActiveWedding(): Promise<Wedding | null> {
+    // RLS scoopt al op de bruiloften van deze gebruiker; pak de oudste.
+    const { data, error } = await this.db
+      .from('weddings')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (error) throw error
+    return data ? weddingFromRow(data) : null
+  }
+
+  async createWedding(input: WeddingInput): Promise<Wedding> {
+    const { data, error } = await this.db
+      .from('weddings')
+      .insert(weddingToRow(input) as Tables['weddings']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return weddingFromRow(data)
+  }
+
+  async updateWedding(id: ID, patch: Partial<WeddingInput>): Promise<Wedding> {
+    const { data, error } = await this.db
+      .from('weddings')
+      .update(weddingToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return weddingFromRow(data)
+  }
+
+  async deleteWedding(id: ID): Promise<void> {
+    const { error } = await this.db.from('weddings').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Guests --------------------------------------------------------
+  async listGuests(weddingId: ID): Promise<Guest[]> {
+    const { data, error } = await this.db
+      .from('guests')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(guestFromRow)
+  }
+
+  async createGuest(input: GuestInput): Promise<Guest> {
+    const { data, error } = await this.db
+      .from('guests')
+      .insert(guestToRow(input) as Tables['guests']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return guestFromRow(data)
+  }
+
+  async updateGuest(id: ID, patch: Partial<GuestInput>): Promise<Guest> {
+    const { data, error } = await this.db
+      .from('guests')
+      .update(guestToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return guestFromRow(data)
+  }
+
+  async deleteGuest(id: ID): Promise<void> {
+    const { error } = await this.db.from('guests').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Tasks ---------------------------------------------------------
+  async listTasks(weddingId: ID): Promise<Task[]> {
+    const { data, error } = await this.db
+      .from('tasks')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('deadline', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(taskFromRow)
+  }
+
+  async createTask(input: TaskInput): Promise<Task> {
+    const { data, error } = await this.db
+      .from('tasks')
+      .insert(taskToRow(input) as Tables['tasks']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return taskFromRow(data)
+  }
+
+  async createTasks(inputs: TaskInput[]): Promise<Task[]> {
+    if (inputs.length === 0) return []
+    const rows = inputs.map((i) => taskToRow(i) as Tables['tasks']['Insert'])
+    const { data, error } = await this.db.from('tasks').insert(rows).select()
+    if (error) throw error
+    return (data ?? []).map(taskFromRow)
+  }
+
+  async updateTask(id: ID, patch: Partial<TaskInput>): Promise<Task> {
+    const { data, error } = await this.db
+      .from('tasks')
+      .update(taskToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return taskFromRow(data)
+  }
+
+  async deleteTask(id: ID): Promise<void> {
+    const { error } = await this.db.from('tasks').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Vendors -------------------------------------------------------
+  async listVendors(weddingId: ID): Promise<Vendor[]> {
+    const { data, error } = await this.db
+      .from('vendors')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(vendorFromRow)
+  }
+
+  async createVendor(input: VendorInput): Promise<Vendor> {
+    const { data, error } = await this.db
+      .from('vendors')
+      .insert(vendorToRow(input) as Tables['vendors']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return vendorFromRow(data)
+  }
+
+  async updateVendor(id: ID, patch: Partial<VendorInput>): Promise<Vendor> {
+    const { data, error } = await this.db
+      .from('vendors')
+      .update(vendorToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return vendorFromRow(data)
+  }
+
+  async deleteVendor(id: ID): Promise<void> {
+    const { error } = await this.db.from('vendors').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- BudgetItems ---------------------------------------------------
+  async listBudgetItems(weddingId: ID): Promise<BudgetItem[]> {
+    const { data, error } = await this.db
+      .from('budget_items')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(budgetItemFromRow)
+  }
+
+  async createBudgetItem(input: BudgetItemInput): Promise<BudgetItem> {
+    const { data, error } = await this.db
+      .from('budget_items')
+      .insert(budgetItemToRow(input) as Tables['budget_items']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return budgetItemFromRow(data)
+  }
+
+  async updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem> {
+    const { data, error } = await this.db
+      .from('budget_items')
+      .update(budgetItemToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return budgetItemFromRow(data)
+  }
+
+  async deleteBudgetItem(id: ID): Promise<void> {
+    const { error } = await this.db.from('budget_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- ScheduleItems -------------------------------------------------
+  async listScheduleItems(weddingId: ID): Promise<ScheduleItem[]> {
+    const { data, error } = await this.db
+      .from('schedule_items')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('tijd', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(scheduleItemFromRow)
+  }
+
+  async createScheduleItem(input: ScheduleItemInput): Promise<ScheduleItem> {
+    const { data, error } = await this.db
+      .from('schedule_items')
+      .insert(scheduleItemToRow(input) as Tables['schedule_items']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return scheduleItemFromRow(data)
+  }
+
+  async updateScheduleItem(id: ID, patch: Partial<ScheduleItemInput>): Promise<ScheduleItem> {
+    const { data, error } = await this.db
+      .from('schedule_items')
+      .update(scheduleItemToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return scheduleItemFromRow(data)
+  }
+
+  async deleteScheduleItem(id: ID): Promise<void> {
+    const { error } = await this.db.from('schedule_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Tables --------------------------------------------------------
+  async listTables(weddingId: ID): Promise<Table[]> {
+    const { data, error } = await this.db
+      .from('tables')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(tableFromRow)
+  }
+
+  async createTable(input: TableInput): Promise<Table> {
+    const { data, error } = await this.db
+      .from('tables')
+      .insert(tableToRow(input) as Tables['tables']['Insert'])
+      .select()
+      .single()
+    if (error) throw error
+    return tableFromRow(data)
+  }
+
+  async updateTable(id: ID, patch: Partial<TableInput>): Promise<Table> {
+    const { data, error } = await this.db
+      .from('tables')
+      .update(tableToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return tableFromRow(data)
+  }
+
+  async deleteTable(id: ID): Promise<void> {
+    const { error } = await this.db.from('tables').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- WebsiteContent ------------------------------------------------
+  async getWebsiteContent(weddingId: ID): Promise<WebsiteContent | null> {
+    const { data, error } = await this.db
+      .from('website_content')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? websiteContentFromRow(data) : null
+  }
+
+  async saveWebsiteContent(
+    weddingId: ID,
+    patch: Partial<WebsiteContentInput>
+  ): Promise<WebsiteContent> {
+    const row = {
+      ...websiteContentToRow(patch),
+      wedding_id: weddingId,
+    } as Tables['website_content']['Insert']
+    const { data, error } = await this.db
+      .from('website_content')
+      .upsert(row, { onConflict: 'wedding_id' })
+      .select()
+      .single()
+    if (error) throw error
+    return websiteContentFromRow(data)
+  }
+}

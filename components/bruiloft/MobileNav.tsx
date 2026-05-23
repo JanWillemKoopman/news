@@ -6,16 +6,19 @@ import { usePathname } from 'next/navigation'
 import { MoreHorizontal } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useBruiloftStore } from '@/store/bruiloftStore'
 import { MoreSheet } from './MoreSheet'
-import { isActive, MOBILE_PRIMARY, NAV_ITEMS } from './nav'
+import { isActive, MOBILE_PRIMARY, NAV_ITEMS, visibleItems } from './nav'
 
 // Onderbalk op mobiel: ~4 hoofditems + "Meer" voor de overige secties.
 export function MobileNav() {
   const pathname = usePathname()
+  const permissions = useBruiloftStore((s) => s.permissions)
   const [meer, setMeer] = React.useState(false)
 
-  const primaryHrefs = new Set(MOBILE_PRIMARY.map((i) => i.href))
-  const meerActief = NAV_ITEMS.some(
+  const primary = visibleItems(MOBILE_PRIMARY, permissions)
+  const primaryHrefs = new Set(primary.map((i) => i.href))
+  const meerActief = visibleItems(NAV_ITEMS, permissions).some(
     (i) => !primaryHrefs.has(i.href) && isActive(pathname, i.href)
   )
 
@@ -23,7 +26,7 @@ export function MobileNav() {
     <>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-between px-1">
-          {MOBILE_PRIMARY.map((item) => {
+          {primary.map((item) => {
             const active = isActive(pathname, item.href)
             return (
               <Link

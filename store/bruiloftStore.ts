@@ -1,8 +1,17 @@
 import { create } from 'zustand'
 
+import {
+  ALL_EDIT_PERMISSIONS,
+  EMPTY_PERMISSIONS,
+  type Level,
+  type Module,
+  type PermissionMap,
+  type WeddingRole,
+} from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
 import { generateTemplateTasks } from '@/lib/bruiloft/templateTasks'
 import { deriveTijdsblok } from '@/lib/bruiloft/timeblocks'
+import { createClient } from '@/lib/supabase/client'
 import type {
   BudgetItem,
   BudgetItemInput,
@@ -31,8 +40,18 @@ type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
 type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
 type NewTable = Omit<TableInput, 'weddingId'>
 
+interface CurrentUser {
+  id: string
+  email: string
+  displayName: string
+  appRole: 'member' | 'platform_admin'
+}
+
 interface BruiloftState {
   hydrated: boolean
+  currentUser: CurrentUser | null
+  role: WeddingRole | null
+  permissions: PermissionMap
   wedding: Wedding | null
   guests: Guest[]
   tasks: Task[]
@@ -45,6 +64,7 @@ interface BruiloftState {
 
 interface BruiloftActions {
   init: () => Promise<void>
+  signOut: () => Promise<void>
 
   setupWedding: (input: WeddingInput) => Promise<void>
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
@@ -77,9 +97,51 @@ interface BruiloftActions {
   ensureRsvpCodes: () => Promise<void>
 }
 
+// Bepaalt de rol + effectieve rechten-matrix van de gebruiker voor één bruiloft.
+async function loadPermissions(
+  supabase: ReturnType<typeof createClient>,
+  weddingId: string,
+  userId: string,
+  appRole: 'member' | 'platform_admin'
+): Promise<{ role: WeddingRole | null; permissions: PermissionMap }> {
+  const { data: member } = await supabase
+    .from('wedding_members')
+    .select('role')
+    .eq('wedding_id', weddingId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  const role = (member?.role as WeddingRole | null) ?? null
+
+  if (role === 'owner') {
+    return { role, permissions: ALL_EDIT_PERMISSIONS }
+  }
+
+  const permissions: PermissionMap = { ...EMPTY_PERMISSIONS }
+  if (role) {
+    const { data: rows } = await supabase
+      .from('wedding_role_permissions')
+      .select('module, level')
+      .eq('wedding_id', weddingId)
+      .eq('role', role)
+    for (const r of rows ?? []) {
+      permissions[r.module as Module] = r.level as Level
+    }
+  }
+  // Platform-admin mag overal meekijken (support), maar niet bewerken.
+  if (appRole === 'platform_admin') {
+    for (const m of Object.keys(permissions) as Module[]) {
+      if (permissions[m] === 'none') permissions[m] = 'view'
+    }
+  }
+  return { role, permissions }
+}
+
 export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
   (set, get) => ({
     hydrated: false,
+    currentUser: null,
+    role: null,
+    permissions: EMPTY_PERMISSIONS,
     wedding: null,
     guests: [],
     tasks: [],
@@ -91,11 +153,47 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     init: async () => {
       if (get().hydrated) return
-      const wedding = await repository.getActiveWedding()
-      if (!wedding) {
-        set({ hydrated: true, wedding: null })
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        set({ hydrated: true, currentUser: null, wedding: null })
         return
       }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email, display_name, app_role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      const currentUser: CurrentUser = {
+        id: user.id,
+        email: profile?.email ?? user.email ?? '',
+        displayName: profile?.display_name ?? '',
+        appRole: (profile?.app_role as CurrentUser['appRole']) ?? 'member',
+      }
+
+      const wedding = await repository.getActiveWedding()
+      if (!wedding) {
+        set({
+          hydrated: true,
+          currentUser,
+          wedding: null,
+          role: null,
+          permissions: EMPTY_PERMISSIONS,
+        })
+        return
+      }
+
+      const { role, permissions } = await loadPermissions(
+        supabase,
+        wedding.id,
+        user.id,
+        currentUser.appRole
+      )
+
       const [guests, tasks, vendors, budgetItems, scheduleItems, tables, websiteContent] =
         await Promise.all([
           repository.listGuests(wedding.id),
@@ -108,7 +206,10 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         ])
       set({
         hydrated: true,
+        currentUser,
         wedding,
+        role,
+        permissions,
         guests,
         tasks,
         vendors,
@@ -119,11 +220,31 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
+    signOut: async () => {
+      await createClient().auth.signOut()
+      set({
+        hydrated: false,
+        currentUser: null,
+        role: null,
+        permissions: EMPTY_PERMISSIONS,
+        wedding: null,
+        guests: [],
+        tasks: [],
+        vendors: [],
+        budgetItems: [],
+        scheduleItems: [],
+        tables: [],
+        websiteContent: null,
+      })
+    },
+
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
       set({
         wedding,
+        role: 'owner',
+        permissions: ALL_EDIT_PERMISSIONS,
         tasks,
         guests: [],
         vendors: [],

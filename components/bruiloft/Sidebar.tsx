@@ -5,12 +5,16 @@ import { usePathname } from 'next/navigation'
 import { Heart } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { isActive, NAV_GROUPS } from './nav'
+import { useBruiloftStore } from '@/store/bruiloftStore'
+import { isActive, visibleGroups } from './nav'
 
 // Vaste zijbalk op desktop. Logische groepen; de actieve sectie krijgt een
 // subtiele tint + accent-tekst en een linker-indicator (i.p.v. volle vulling).
+// Items worden gefilterd op de rechten van de ingelogde gebruiker.
 export function Sidebar() {
   const pathname = usePathname()
+  const permissions = useBruiloftStore((s) => s.permissions)
+  const groups = visibleGroups(permissions)
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 px-3 py-6 md:flex">
       <Link
@@ -24,7 +28,7 @@ export function Sidebar() {
       </Link>
 
       <nav className="flex flex-col gap-6">
-        {NAV_GROUPS.map((group, i) => (
+        {groups.map((group, i) => (
           <div key={group.label ?? `groep-${i}`} className="flex flex-col gap-1">
             {group.label ? (
               <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">

@@ -625,6 +625,15 @@ export type Database = {
       get_public_wedding: { Args: { p_token: string }; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
       is_wedding_member: { Args: { p_wedding: string }; Returns: boolean }
+      list_wedding_members: {
+        Args: { p_wedding: string }
+        Returns: {
+          display_name: string
+          email: string
+          role: string
+          user_id: string
+        }[]
+      }
       member_role: { Args: { p_wedding: string }; Returns: string }
       module_level: {
         Args: { p_module: string; p_wedding: string }
