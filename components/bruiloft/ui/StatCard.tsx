@@ -18,8 +18,8 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
   const inner = (
     <div
       className={cn(
-        'group flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all',
-        href && 'hover:-translate-y-0.5 hover:shadow-md',
+        'group flex h-full flex-col rounded-xl border border-border bg-card p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-150 ease-premium',
+        href && 'hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.35)] hover:shadow-md',
         className
       )}
     >
@@ -37,7 +37,10 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
   )
 
   return href ? (
-    <Link href={href} className="block h-full">
+    <Link
+      href={href}
+      className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
       {inner}
     </Link>
   ) : (

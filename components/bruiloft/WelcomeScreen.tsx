@@ -145,7 +145,13 @@ export function WelcomeScreen() {
               </Field>
             </div>
 
-            <Button type="submit" size="lg" className="w-full" disabled={!geldig || bezig}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              loading={bezig}
+              disabled={!geldig || bezig}
+            >
               {bezig ? 'Bezig met aanmaken…' : 'Start ons trouwplan'}
             </Button>
           </form>
