@@ -14,6 +14,7 @@ import {
   Progress,
   Select,
   StatusBadge,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { taakTellingen } from '@/lib/bruiloft/derived'
 import { dagenTot, formatDatumKort } from '@/lib/bruiloft/format'
@@ -31,6 +32,7 @@ export default function TakenPage() {
   const addTask = useBruiloftStore((s) => s.addTask)
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const deleteTask = useBruiloftStore((s) => s.deleteTask)
+  const { toast } = useToast()
 
   const [fStatus, setFStatus] = React.useState('all')
   const [fToegewezen, setFToegewezen] = React.useState('all')
@@ -159,8 +161,13 @@ export default function TakenPage() {
         vendors={vendors}
         budgetItems={budgetItems}
         onSubmit={(data) => {
-          if (editTask) void updateTask(editTask.id, data)
-          else void addTask(data)
+          if (editTask) {
+            void updateTask(editTask.id, data)
+            toast({ title: 'Taak bijgewerkt', variant: 'success' })
+          } else {
+            void addTask(data)
+            toast({ title: 'Taak toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -169,7 +176,12 @@ export default function TakenPage() {
         onOpenChange={(o) => !o && setDelTask(null)}
         title="Taak verwijderen?"
         description={delTask ? `Weet je zeker dat je "${delTask.titel}" wilt verwijderen?` : undefined}
-        onConfirm={() => delTask && void deleteTask(delTask.id)}
+        onConfirm={() => {
+          if (delTask) {
+            void deleteTask(delTask.id)
+            toast({ title: 'Taak verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )

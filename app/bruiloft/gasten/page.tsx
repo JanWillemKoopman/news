@@ -14,6 +14,7 @@ import {
   Input,
   Select,
   StatusBadge,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { gastTellingen } from '@/lib/bruiloft/derived'
@@ -27,6 +28,7 @@ export default function GastenPage() {
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
+  const { toast } = useToast()
 
   const [zoek, setZoek] = React.useState('')
   const [fCategorie, setFCategorie] = React.useState('all')
@@ -91,6 +93,7 @@ export default function GastenPage() {
         g.notitie,
       ])
     )
+    toast({ title: 'Gastenlijst geëxporteerd', description: 'gastenlijst.csv is gedownload.', variant: 'success' })
   }
 
   return (
@@ -173,7 +176,7 @@ export default function GastenPage() {
       ) : gefilterd.length === 0 ? (
         <EmptyState icon={Search} titel="Geen gasten gevonden" beschrijving="Pas je filters of zoekopdracht aan." />
       ) : (
-        <Card>
+        <Card className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -235,13 +238,58 @@ export default function GastenPage() {
         </Card>
       )}
 
+      {/* Mobiel: kaartlijst i.p.v. horizontale scroll */}
+      {gefilterd.length > 0 ? (
+        <div className="space-y-3 md:hidden">
+          {gefilterd.map((g) => (
+            <Card key={g.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">
+                    {g.voornaam} {g.achternaam}
+                  </p>
+                  <p className="mt-0.5 text-xs capitalize text-muted-foreground">
+                    {g.categorie} · {g.gasttype}
+                  </p>
+                </div>
+                <StatusBadge kind="rsvp" value={g.rsvpStatus} />
+              </div>
+              {g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {[
+                    g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
+                    g.aantalKinderen > 0 ? `${g.aantalKinderen} kind(eren)` : null,
+                    g.dieetwensen || null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              ) : null}
+              <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
+                <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
+                  <Pencil className="h-4 w-4" /> Bewerken
+                </Button>
+                <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : null}
+
       <GuestForm
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editGuest}
         onSubmit={(data) => {
-          if (editGuest) void updateGuest(editGuest.id, data)
-          else void addGuest(data)
+          if (editGuest) {
+            void updateGuest(editGuest.id, data)
+            toast({ title: 'Gast bijgewerkt', variant: 'success' })
+          } else {
+            void addGuest(data)
+            toast({ title: 'Gast toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -252,7 +300,12 @@ export default function GastenPage() {
         description={
           delGuest ? `Weet je zeker dat je ${delGuest.voornaam} ${delGuest.achternaam} wilt verwijderen?` : undefined
         }
-        onConfirm={() => delGuest && void deleteGuest(delGuest.id)}
+        onConfirm={() => {
+          if (delGuest) {
+            void deleteGuest(delGuest.id)
+            toast({ title: 'Gast verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )

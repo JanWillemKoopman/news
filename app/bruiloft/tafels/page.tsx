@@ -6,7 +6,14 @@ import { Armchair, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
 import { TableForm } from '@/components/bruiloft/tafels/TableForm'
-import { Button, Card, CardContent, ConfirmDialog, EmptyState } from '@/components/bruiloft/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  ConfirmDialog,
+  EmptyState,
+  useToast,
+} from '@/components/bruiloft/ui'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Table } from '@/lib/bruiloft/types'
 
@@ -18,6 +25,7 @@ export default function TafelsPage() {
   const updateTable = useBruiloftStore((s) => s.updateTable)
   const deleteTable = useBruiloftStore((s) => s.deleteTable)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
+  const { toast } = useToast()
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editTable, setEditTable] = React.useState<Table | null>(null)
@@ -87,8 +95,13 @@ export default function TafelsPage() {
         onOpenChange={setFormOpen}
         initial={editTable}
         onSubmit={(data) => {
-          if (editTable) void updateTable(editTable.id, data)
-          else void addTable(data)
+          if (editTable) {
+            void updateTable(editTable.id, data)
+            toast({ title: 'Tafel bijgewerkt', variant: 'success' })
+          } else {
+            void addTable(data)
+            toast({ title: 'Tafel toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -101,7 +114,12 @@ export default function TafelsPage() {
             ? `Weet je zeker dat je "${delTable.naam}" wilt verwijderen? De gasten worden weer onverdeeld.`
             : undefined
         }
-        onConfirm={() => delTable && void deleteTable(delTable.id)}
+        onConfirm={() => {
+          if (delTable) {
+            void deleteTable(delTable.id)
+            toast({ title: 'Tafel verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )

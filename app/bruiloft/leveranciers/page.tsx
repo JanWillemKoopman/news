@@ -24,6 +24,7 @@ import {
   Money,
   Select,
   StatusBadge,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -36,6 +37,7 @@ export default function LeveranciersPage() {
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const updateVendor = useBruiloftStore((s) => s.updateVendor)
   const deleteVendor = useBruiloftStore((s) => s.deleteVendor)
+  const { toast } = useToast()
 
   const [fType, setFType] = React.useState('all')
   const [fStatus, setFStatus] = React.useState('all')
@@ -125,8 +127,13 @@ export default function LeveranciersPage() {
         initial={editVendor}
         budgetItems={budgetItems}
         onSubmit={(data) => {
-          if (editVendor) void updateVendor(editVendor.id, data)
-          else void addVendor(data)
+          if (editVendor) {
+            void updateVendor(editVendor.id, data)
+            toast({ title: 'Leverancier bijgewerkt', variant: 'success' })
+          } else {
+            void addVendor(data)
+            toast({ title: 'Leverancier toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -135,7 +142,12 @@ export default function LeveranciersPage() {
         onOpenChange={(o) => !o && setDelVendor(null)}
         title="Leverancier verwijderen?"
         description={delVendor ? `Weet je zeker dat je "${delVendor.naam}" wilt verwijderen?` : undefined}
-        onConfirm={() => delVendor && void deleteVendor(delVendor.id)}
+        onConfirm={() => {
+          if (delVendor) {
+            void deleteVendor(delVendor.id)
+            toast({ title: 'Leverancier verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )

@@ -11,6 +11,7 @@ import {
   Field,
   Input,
   Textarea,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { gastTellingen } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -30,6 +31,7 @@ export default function WebsitePage() {
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
   const ensureRsvpCodes = useBruiloftStore((s) => s.ensureRsvpCodes)
+  const { toast } = useToast()
 
   const [form, setForm] = React.useState<Velden>({
     welkomsttekst: '',
@@ -139,7 +141,13 @@ export default function WebsitePage() {
                 {t.bevestigd} bevestigd · {t.afgemeld} afgemeld · {t.geenReactie} geen reactie
               </p>
             </div>
-            <Button onClick={() => void ensureRsvpCodes()} disabled={guests.length === 0}>
+            <Button
+              onClick={async () => {
+                await ensureRsvpCodes()
+                toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
+              }}
+              disabled={guests.length === 0}
+            >
               <Link2 className="h-4 w-4" /> Genereer deellinks
             </Button>
           </div>

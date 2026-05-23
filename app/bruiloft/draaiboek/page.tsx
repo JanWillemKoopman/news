@@ -12,6 +12,7 @@ import {
   ConfirmDialog,
   EmptyState,
   Select,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
@@ -24,6 +25,7 @@ export default function DraaiboekPage() {
   const addScheduleItem = useBruiloftStore((s) => s.addScheduleItem)
   const updateScheduleItem = useBruiloftStore((s) => s.updateScheduleItem)
   const deleteScheduleItem = useBruiloftStore((s) => s.deleteScheduleItem)
+  const { toast } = useToast()
 
   const [fRol, setFRol] = React.useState('all')
   const [formOpen, setFormOpen] = React.useState(false)
@@ -58,6 +60,7 @@ export default function DraaiboekPage() {
         s.betrokkenen.join(', '),
       ])
     )
+    toast({ title: 'Draaiboek geëxporteerd', variant: 'success' })
   }
 
   return (
@@ -157,8 +160,13 @@ export default function DraaiboekPage() {
         onOpenChange={setFormOpen}
         initial={editItem}
         onSubmit={(data) => {
-          if (editItem) void updateScheduleItem(editItem.id, data)
-          else void addScheduleItem(data)
+          if (editItem) {
+            void updateScheduleItem(editItem.id, data)
+            toast({ title: 'Onderdeel bijgewerkt', variant: 'success' })
+          } else {
+            void addScheduleItem(data)
+            toast({ title: 'Onderdeel toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -167,7 +175,12 @@ export default function DraaiboekPage() {
         onOpenChange={(o) => !o && setDelItem(null)}
         title="Onderdeel verwijderen?"
         description={delItem ? `Weet je zeker dat je "${delItem.titel}" wilt verwijderen?` : undefined}
-        onConfirm={() => delItem && void deleteScheduleItem(delItem.id)}
+        onConfirm={() => {
+          if (delItem) {
+            void deleteScheduleItem(delItem.id)
+            toast({ title: 'Onderdeel verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )

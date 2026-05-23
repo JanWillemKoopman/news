@@ -70,13 +70,15 @@ export default function DashboardPage() {
           </p>
           <div className="my-4">
             {dagen > 0 ? (
-              <p className="font-serif text-6xl text-primary md:text-7xl">
+              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] leading-[1.05] text-primary">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
             ) : dagen === 0 ? (
-              <p className="font-serif text-5xl text-primary md:text-6xl">Vandaag is de dag!</p>
+              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] leading-tight text-primary">
+                Vandaag is de dag!
+              </p>
             ) : (
-              <p className="font-serif text-4xl text-foreground md:text-5xl">
+              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] leading-tight text-foreground">
                 Gefeliciteerd met jullie huwelijk
               </p>
             )}

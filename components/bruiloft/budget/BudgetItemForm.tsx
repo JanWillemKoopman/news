@@ -146,7 +146,7 @@ export function BudgetItemForm({
           />
         </Field>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Geschat (€)" htmlFor="ges">
             <Input
               id="ges"
@@ -206,7 +206,7 @@ export function BudgetItemForm({
           ) : (
             <div className="space-y-2">
               {form.betaaltermijnen.map((t) => (
-                <div key={t.id} className="flex items-center gap-2">
+                <div key={t.id} className="flex flex-wrap items-center gap-2">
                   <Input
                     type="number"
                     min={0}
@@ -214,7 +214,7 @@ export function BudgetItemForm({
                     placeholder="Bedrag"
                     value={t.bedrag || ''}
                     onChange={(e) => setTerm(t.id, { bedrag: Number(e.target.value) || 0 })}
-                    className="w-28"
+                    className="w-24"
                   />
                   <Input
                     type="date"

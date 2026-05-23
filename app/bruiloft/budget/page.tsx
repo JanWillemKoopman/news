@@ -1,14 +1,20 @@
 'use client'
 
 import * as React from 'react'
+import dynamic from 'next/dynamic'
 import { AlertTriangle, Download, PieChart, Plus, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
-import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
-import { Button, ConfirmDialog, EmptyState } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, EmptyState, Skeleton, useToast } from '@/components/bruiloft/ui'
+
+// Recharts is zwaar; lazy laden zodat /budget sneller binnenkomt.
+const BudgetSummary = dynamic(
+  () => import('@/components/bruiloft/budget/BudgetSummary').then((m) => m.BudgetSummary),
+  { ssr: false, loading: () => <Skeleton className="h-72 w-full rounded-xl" /> }
+)
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
   budgetAfwijkingen,
@@ -27,6 +33,7 @@ export default function BudgetPage() {
   const addBudgetItem = useBruiloftStore((s) => s.addBudgetItem)
   const updateBudgetItem = useBruiloftStore((s) => s.updateBudgetItem)
   const deleteBudgetItem = useBruiloftStore((s) => s.deleteBudgetItem)
+  const { toast } = useToast()
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
@@ -65,6 +72,7 @@ export default function BudgetPage() {
       restBedrag(i, vendors),
     ])
     downloadCsv('budget.csv', headers, rows)
+    toast({ title: 'Budget geëxporteerd', description: 'budget.csv is gedownload.', variant: 'success' })
   }
 
   const toggleTerm = (item: BudgetItem, termId: string, betaald: boolean) => {
@@ -138,8 +146,13 @@ export default function BudgetPage() {
         initial={editItem}
         vendors={vendors}
         onSubmit={(data) => {
-          if (editItem) void updateBudgetItem(editItem.id, data)
-          else void addBudgetItem(data)
+          if (editItem) {
+            void updateBudgetItem(editItem.id, data)
+            toast({ title: 'Budgetitem bijgewerkt', variant: 'success' })
+          } else {
+            void addBudgetItem(data)
+            toast({ title: 'Budgetitem toegevoegd', variant: 'success' })
+          }
         }}
       />
 
@@ -159,6 +172,13 @@ export default function BudgetPage() {
               betaaltermijnen: [],
             })
           }
+          if (regels.length > 0) {
+            toast({
+              title: 'Budget verdeeld',
+              description: `${regels.length} categorie${regels.length === 1 ? '' : 'ën'} toegevoegd.`,
+              variant: 'success',
+            })
+          }
         }}
       />
 
@@ -171,7 +191,12 @@ export default function BudgetPage() {
             ? `Weet je zeker dat je "${deleteItem.omschrijving || deleteItem.categorie}" wilt verwijderen?`
             : undefined
         }
-        onConfirm={() => deleteItem && void deleteBudgetItem(deleteItem.id)}
+        onConfirm={() => {
+          if (deleteItem) {
+            void deleteBudgetItem(deleteItem.id)
+            toast({ title: 'Budgetitem verwijderd', variant: 'success' })
+          }
+        }}
       />
     </div>
   )
