@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, LogOut, ShieldCheck } from 'lucide-react'
+import { Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -9,25 +9,32 @@ import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-// Accountmenu in de header: naam, rol, beheer-link (owner) en uitloggen.
+// Accountmenu in de header: naam, rol, bruiloft-kiezer, beheer (owner),
+// account-instellingen en uitloggen.
 export function UserMenu() {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const role = useBruiloftStore((s) => s.role)
+  const weddings = useBruiloftStore((s) => s.weddings)
+  const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
+  const switchWedding = useBruiloftStore((s) => s.switchWedding)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
 
   if (!currentUser) return null
 
-  const initials = (currentUser.displayName || currentUser.email || '?')
-    .slice(0, 1)
-    .toUpperCase()
+  const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
 
   async function onSignOut() {
     setOpen(false)
     await signOut()
     router.push('/login')
     router.refresh()
+  }
+
+  async function onSwitch(id: string) {
+    setOpen(false)
+    await switchWedding(id)
   }
 
   return (
@@ -53,7 +60,7 @@ export function UserMenu() {
           <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-2 w-60 rounded-xl border border-border bg-card p-1.5 shadow-lg"
+            className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-card p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">
@@ -67,6 +74,33 @@ export function UserMenu() {
               ) : null}
             </div>
 
+            {weddings.length > 1 ? (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  Wissel van bruiloft
+                </p>
+                {weddings.map((w) => {
+                  const active = w.id === activeWeddingId
+                  return (
+                    <button
+                      key={w.id}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => onSwitch(w.id)}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                    >
+                      <Heart className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {w.partner1Naam} &amp; {w.partner2Naam}
+                      </span>
+                      {active ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
+                    </button>
+                  )
+                })}
+              </>
+            ) : null}
+
             <div className="my-1 h-px bg-border" />
 
             {role === 'owner' ? (
@@ -74,14 +108,22 @@ export function UserMenu() {
                 href="/bruiloft/beheer/leden"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent'
-                )}
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
               >
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 Leden &amp; rechten
               </Link>
             ) : null}
+
+            <Link
+              href="/bruiloft/account"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <UserCog className="h-4 w-4 text-muted-foreground" />
+              Account
+            </Link>
 
             <button
               type="button"

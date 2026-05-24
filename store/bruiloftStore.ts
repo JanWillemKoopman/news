@@ -53,6 +53,8 @@ interface BruiloftState {
   role: WeddingRole | null
   permissions: PermissionMap
   wedding: Wedding | null
+  weddings: Wedding[]
+  activeWeddingId: ID | null
   guests: Guest[]
   tasks: Task[]
   vendors: Vendor[]
@@ -65,6 +67,8 @@ interface BruiloftState {
 interface BruiloftActions {
   init: () => Promise<void>
   signOut: () => Promise<void>
+  switchWedding: (id: ID) => Promise<void>
+  deleteActiveWedding: () => Promise<void>
 
   setupWedding: (input: WeddingInput) => Promise<void>
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
@@ -95,6 +99,24 @@ interface BruiloftActions {
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
   ensureRsvpCodes: () => Promise<void>
+}
+
+// Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
+const ACTIVE_KEY = 'bruiloft-active-wedding'
+function readActive(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_KEY)
+  } catch {
+    return null
+  }
+}
+function writeActive(id: string | null) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_KEY, id)
+    else localStorage.removeItem(ACTIVE_KEY)
+  } catch {
+    // localStorage niet beschikbaar; negeren.
+  }
 }
 
 // Bepaalt de rol + effectieve rechten-matrix van de gebruiker voor één bruiloft.
@@ -143,6 +165,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     role: null,
     permissions: EMPTY_PERMISSIONS,
     wedding: null,
+    weddings: [],
+    activeWeddingId: null,
     guests: [],
     tasks: [],
     vendors: [],
@@ -158,7 +182,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        set({ hydrated: true, currentUser: null, wedding: null })
+        set({ hydrated: true, currentUser: null, wedding: null, weddings: [], activeWeddingId: null })
         return
       }
 
@@ -175,17 +199,24 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         appRole: (profile?.app_role as CurrentUser['appRole']) ?? 'member',
       }
 
-      const wedding = await repository.getActiveWedding()
-      if (!wedding) {
+      const weddings = await repository.listWeddings()
+      if (weddings.length === 0) {
         set({
           hydrated: true,
           currentUser,
+          weddings: [],
+          activeWeddingId: null,
           wedding: null,
           role: null,
           permissions: EMPTY_PERMISSIONS,
         })
         return
       }
+
+      // Kies de onthouden actieve bruiloft, anders de eerste.
+      const stored = readActive()
+      const wedding = weddings.find((w) => w.id === stored) ?? weddings[0]
+      writeActive(wedding.id)
 
       const { role, permissions } = await loadPermissions(
         supabase,
@@ -207,6 +238,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       set({
         hydrated: true,
         currentUser,
+        weddings,
+        activeWeddingId: wedding.id,
         wedding,
         role,
         permissions,
@@ -222,12 +255,15 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     signOut: async () => {
       await createClient().auth.signOut()
+      writeActive(null)
       set({
         hydrated: false,
         currentUser: null,
         role: null,
         permissions: EMPTY_PERMISSIONS,
         wedding: null,
+        weddings: [],
+        activeWeddingId: null,
         guests: [],
         tasks: [],
         vendors: [],
@@ -238,11 +274,32 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
+    // Wissel naar een andere bruiloft waar je lid van bent.
+    switchWedding: async (id) => {
+      if (id === get().activeWeddingId) return
+      writeActive(id)
+      set({ hydrated: false })
+      await get().init()
+    },
+
+    // Verwijder de actieve bruiloft (owner). Alle bijbehorende data verdwijnt mee.
+    deleteActiveWedding: async () => {
+      const current = get().wedding
+      if (!current) return
+      await repository.deleteWedding(current.id)
+      writeActive(null) // init kiest de eerstvolgende, of toont onboarding
+      set({ hydrated: false })
+      await get().init()
+    },
+
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
+      writeActive(wedding.id)
       set({
         wedding,
+        weddings: [...get().weddings, wedding],
+        activeWeddingId: wedding.id,
         role: 'owner',
         permissions: ALL_EDIT_PERMISSIONS,
         tasks,

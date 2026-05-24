@@ -1,6 +1,7 @@
 'use client'
 
-import { Copy, Mail, Trash2, UserPlus } from 'lucide-react'
+import { AlertTriangle, Copy, Mail, Trash2, UserPlus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
@@ -47,6 +48,8 @@ export default function LedenBeheerPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const { toast } = useToast()
+  const router = useRouter()
+  const deleteActiveWedding = useBruiloftStore((s) => s.deleteActiveWedding)
   const supabase = React.useMemo(() => createClient(), [])
 
   const [members, setMembers] = React.useState<Member[]>([])
@@ -57,6 +60,8 @@ export default function LedenBeheerPage() {
   const [inviteRole, setInviteRole] = React.useState<WeddingRole>('helper')
   const [inviting, setInviting] = React.useState(false)
   const [removeTarget, setRemoveTarget] = React.useState<Member | null>(null)
+  const [delWeddingOpen, setDelWeddingOpen] = React.useState(false)
+  const [delBusy, setDelBusy] = React.useState(false)
 
   const load = React.useCallback(async () => {
     if (!wedding) return
@@ -167,6 +172,19 @@ export default function LedenBeheerPage() {
     if (error) {
       setMatrix(prev)
       toast({ title: 'Kon recht niet opslaan', description: error.message, variant: 'error' })
+    }
+  }
+
+  async function onDeleteWedding() {
+    setDelBusy(true)
+    try {
+      await deleteActiveWedding()
+      router.push('/bruiloft')
+      router.refresh()
+    } catch {
+      setDelBusy(false)
+      setDelWeddingOpen(false)
+      toast({ title: 'Verwijderen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
     }
   }
 
@@ -349,6 +367,23 @@ export default function LedenBeheerPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Danger zone */}
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-destructive">Bruiloft verwijderen</CardTitle>
+            <CardDescription>
+              Verwijder deze bruiloft en alle bijbehorende gegevens (gasten, taken, budget,
+              leveranciers, draaiboek, tafels en website). Dit kan niet ongedaan worden gemaakt.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="destructive" onClick={() => setDelWeddingOpen(true)} loading={delBusy}>
+              <AlertTriangle className="h-4 w-4" />
+              Bruiloft verwijderen
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <ConfirmDialog
@@ -358,6 +393,15 @@ export default function LedenBeheerPage() {
         description={`Weet je zeker dat je ${removeTarget?.display_name || removeTarget?.email} de toegang wilt ontnemen?`}
         bevestigLabel="Verwijderen"
         onConfirm={confirmRemove}
+      />
+
+      <ConfirmDialog
+        open={delWeddingOpen}
+        onOpenChange={(o) => !o && setDelWeddingOpen(false)}
+        title="Bruiloft definitief verwijderen?"
+        description={`Alle gegevens van "${wedding.partner1Naam} & ${wedding.partner2Naam}" worden permanent verwijderd.`}
+        bevestigLabel="Ja, verwijder bruiloft"
+        onConfirm={onDeleteWedding}
       />
     </div>
   )

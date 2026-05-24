@@ -307,6 +307,11 @@ as $$
 declare
   v_other_owners integer;
 begin
+  -- Wordt de bruiloft zelf verwijderd (cascade)? Dan is deze guard niet van
+  -- toepassing: het lidmaatschap mag mee verdwijnen.
+  if tg_op = 'DELETE' and not exists (select 1 from public.weddings where id = old.wedding_id) then
+    return old;
+  end if;
   if tg_op = 'UPDATE' and not (old.role = 'owner' and new.role <> 'owner') then
     return new;
   end if;
