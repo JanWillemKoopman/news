@@ -1,5 +1,16 @@
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { create } from 'zustand'
 
+import {
+  budgetItemFromRow,
+  guestFromRow,
+  scheduleItemFromRow,
+  tableFromRow,
+  taskFromRow,
+  vendorFromRow,
+  weddingFromRow,
+  websiteContentFromRow,
+} from '@/lib/bruiloft/mappers'
 import {
   ALL_EDIT_PERMISSIONS,
   EMPTY_PERMISSIONS,
@@ -69,6 +80,8 @@ interface BruiloftActions {
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
   deleteActiveWedding: () => Promise<void>
+  startRealtime: (weddingId: ID) => void
+  stopRealtime: () => void
 
   setupWedding: (input: WeddingInput) => Promise<void>
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
@@ -117,6 +130,31 @@ function writeActive(id: string | null) {
   } catch {
     // localStorage niet beschikbaar; negeren.
   }
+}
+
+// --- Realtime ---------------------------------------------------------------
+let realtimeChannel: RealtimeChannel | null = null
+
+type Identified = { id: string }
+type Change = RealtimePostgresChangesPayload<Record<string, unknown>>
+
+// Werk een lijst-slice bij op basis van een realtime-wijziging (idempotent op id;
+// dedupt zo ook de echo van onze eigen optimistische updates).
+function applyList<T extends Identified>(
+  current: T[],
+  payload: Change,
+  fromRow: (row: Record<string, unknown>) => T
+): T[] {
+  if (payload.eventType === 'DELETE') {
+    const id = (payload.old as { id?: string }).id
+    return id ? current.filter((x) => x.id !== id) : current
+  }
+  const item = fromRow(payload.new as Record<string, unknown>)
+  const i = current.findIndex((x) => x.id === item.id)
+  if (i === -1) return [...current, item]
+  const next = current.slice()
+  next[i] = item
+  return next
 }
 
 // Bepaalt de rol + effectieve rechten-matrix van de gebruiker voor één bruiloft.
@@ -251,9 +289,11 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tables,
         websiteContent,
       })
+      get().startRealtime(wedding.id)
     },
 
     signOut: async () => {
+      get().stopRealtime()
       await createClient().auth.signOut()
       writeActive(null)
       set({
@@ -277,6 +317,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     // Wissel naar een andere bruiloft waar je lid van bent.
     switchWedding: async (id) => {
       if (id === get().activeWeddingId) return
+      get().stopRealtime()
       writeActive(id)
       set({ hydrated: false })
       await get().init()
@@ -286,10 +327,58 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     deleteActiveWedding: async () => {
       const current = get().wedding
       if (!current) return
+      get().stopRealtime()
       await repository.deleteWedding(current.id)
       writeActive(null) // init kiest de eerstvolgende, of toont onboarding
       set({ hydrated: false })
       await get().init()
+    },
+
+    // Abonneer op live wijzigingen binnen deze bruiloft (RLS bepaalt wat binnenkomt).
+    startRealtime: (weddingId) => {
+      const supabase = createClient()
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel)
+        realtimeChannel = null
+      }
+      const wf = `wedding_id=eq.${weddingId}`
+      realtimeChannel = supabase
+        .channel(`wedding:${weddingId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'guests', filter: wf }, (p) =>
+          set({ guests: applyList(get().guests, p, (r) => guestFromRow(r as unknown as Parameters<typeof guestFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: wf }, (p) =>
+          set({ tasks: applyList(get().tasks, p, (r) => taskFromRow(r as unknown as Parameters<typeof taskFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors', filter: wf }, (p) =>
+          set({ vendors: applyList(get().vendors, p, (r) => vendorFromRow(r as unknown as Parameters<typeof vendorFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: wf }, (p) =>
+          set({ budgetItems: applyList(get().budgetItems, p, (r) => budgetItemFromRow(r as unknown as Parameters<typeof budgetItemFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_items', filter: wf }, (p) =>
+          set({ scheduleItems: applyList(get().scheduleItems, p, (r) => scheduleItemFromRow(r as unknown as Parameters<typeof scheduleItemFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: wf }, (p) =>
+          set({ tables: applyList(get().tables, p, (r) => tableFromRow(r as unknown as Parameters<typeof tableFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ websiteContent: null })
+          else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'weddings', filter: `id=eq.${weddingId}` }, (p) => {
+          if (p.eventType !== 'UPDATE') return
+          const w = weddingFromRow(p.new as unknown as Parameters<typeof weddingFromRow>[0])
+          set({ wedding: w, weddings: get().weddings.map((x) => (x.id === w.id ? w : x)) })
+        })
+        .subscribe()
+    },
+
+    stopRealtime: () => {
+      if (realtimeChannel) {
+        createClient().removeChannel(realtimeChannel)
+        realtimeChannel = null
+      }
     },
 
     setupWedding: async (input) => {
