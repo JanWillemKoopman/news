@@ -4,6 +4,7 @@
 
 import { dagenTot } from './format'
 import type {
+  ActivityEntry,
   BudgetCategorie,
   BudgetItem,
   Guest,
@@ -249,4 +250,25 @@ export function budgetAfwijkingen(
   }
   const totalen = budgetTotalen(items, vendors, wedding)
   return { overBudget: totalen.totaalGeoffreerd > wedding.totaalBudget, itemIds }
+}
+
+// --- Activiteitenfeed ------------------------------------------------------
+
+// Aantal ongelezen feed-items: nieuwer dan de laatste blik én niet van jezelf.
+export function ongelezenActiviteit(
+  activity: ActivityEntry[],
+  seenAt: string | null,
+  currentUserId?: string
+): number {
+  return activity.filter(
+    (a) => a.actorId !== currentUserId && (!seenAt || a.createdAt > seenAt)
+  ).length
+}
+
+// Recentste feed-items eerst, afgekapt op een limiet.
+export function recenteActiviteit(activity: ActivityEntry[], limiet = 15): ActivityEntry[] {
+  return activity
+    .slice()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limiet)
 }

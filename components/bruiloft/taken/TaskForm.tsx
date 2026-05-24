@@ -10,6 +10,7 @@ import {
   Select,
   Textarea,
 } from '@/components/bruiloft/ui'
+import { TaskComments } from '@/components/bruiloft/taken/TaskComments'
 import { PRIORITEITEN, TASK_STATUSSEN, TOEGEWEZEN_AAN } from '@/lib/bruiloft/options'
 import type { BudgetItem, Task, TaskInput, Vendor } from '@/lib/bruiloft/types'
 
@@ -182,6 +183,12 @@ export function TaskForm({
           <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
+
+      {initial ? (
+        <div className="mt-5">
+          <TaskComments taskId={initial.id} />
+        </div>
+      ) : null}
     </Modal>
   )
 }

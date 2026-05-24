@@ -5,6 +5,7 @@
 
 import type { WeddingRepository } from './repository'
 import type {
+  ActivityEntry,
   BudgetItem,
   BudgetItemInput,
   Guest,
@@ -15,6 +16,7 @@ import type {
   Table,
   TableInput,
   Task,
+  TaskComment,
   TaskInput,
   Vendor,
   VendorInput,
@@ -368,5 +370,23 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.websiteContents[index] = updated
     this.write(db)
     return updated
+  }
+
+  // --- Activity & opmerkingen ----------------------------------------------
+  // Activiteit wordt door DB-triggers gevuld; localStorage kent geen equivalent.
+  async listActivity(): Promise<ActivityEntry[]> {
+    return []
+  }
+
+  async listTaskComments(): Promise<TaskComment[]> {
+    return []
+  }
+
+  async createTaskComment(): Promise<TaskComment> {
+    throw new Error('Opmerkingen worden niet ondersteund in de localStorage-opslag')
+  }
+
+  async deleteTaskComment(): Promise<void> {
+    // Geen opslag; niets te doen.
   }
 }

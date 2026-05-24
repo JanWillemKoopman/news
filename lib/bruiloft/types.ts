@@ -229,6 +229,49 @@ export interface WebsiteContent {
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
 
+// --- Activiteit & opmerkingen (samen plannen) ------------------------------
+
+// De modules die in de feed verschijnen (mapt op de rechten-matrix).
+export type ActivityModule =
+  | 'taken'
+  | 'gasten'
+  | 'leveranciers'
+  | 'budget'
+  | 'draaiboek'
+  | 'tafels'
+
+export type ActivityAction = 'insert' | 'update' | 'delete'
+
+export interface ActivityEntry {
+  id: ID
+  weddingId: ID
+  module: ActivityModule
+  entityType: string // brontabel (tasks, guests, ...)
+  entityId?: ID
+  action: ActivityAction
+  actorId?: ID
+  actorName: string // snapshot ten tijde van de wijziging
+  label: string // best-effort titel/naam van de gewijzigde rij
+  createdAt: ISODateTime
+}
+
+export interface TaskComment {
+  id: ID
+  weddingId: ID
+  taskId: ID
+  authorId?: ID
+  authorName: string // snapshot
+  body: string
+  createdAt: ISODateTime
+}
+
+// De client levert alleen deze velden; auteur wordt server-side ingevuld.
+export interface TaskCommentInput {
+  weddingId: ID
+  taskId: ID
+  body: string
+}
+
 // --- Opslag-envelope -------------------------------------------------------
 
 export interface WeddingDatabase {

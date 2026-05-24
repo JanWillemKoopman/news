@@ -5,6 +5,7 @@
 import type { Database } from '@/lib/supabase/database.types'
 
 import type {
+  ActivityEntry,
   BudgetItem,
   BudgetItemInput,
   Guest,
@@ -16,6 +17,8 @@ import type {
   Table,
   TableInput,
   Task,
+  TaskComment,
+  TaskCommentInput,
   TaskInput,
   Vendor,
   VendorInput,
@@ -267,4 +270,42 @@ export function websiteContentToRow(
   if (p.routebeschrijving !== undefined) r.routebeschrijving = p.routebeschrijving
   if (p.contact !== undefined) r.contact = p.contact
   return r
+}
+
+// --- ActivityEntry (alleen lezen; de DB-trigger schrijft) ------------
+export function activityFromRow(r: Tables['wedding_activity']['Row']): ActivityEntry {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    module: r.module as ActivityEntry['module'],
+    entityType: r.entity_type,
+    entityId: r.entity_id ?? undefined,
+    action: r.action as ActivityEntry['action'],
+    actorId: r.actor_id ?? undefined,
+    actorName: r.actor_name,
+    label: r.label,
+    createdAt: r.created_at,
+  }
+}
+
+// --- TaskComment -----------------------------------------------------
+export function taskCommentFromRow(r: Tables['task_comments']['Row']): TaskComment {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    taskId: r.task_id,
+    authorId: r.author_id ?? undefined,
+    authorName: r.author_name,
+    body: r.body,
+    createdAt: r.created_at,
+  }
+}
+
+// author_id/author_name worden server-side (trigger) ingevuld; niet meesturen.
+export function taskCommentToRow(p: TaskCommentInput): Tables['task_comments']['Insert'] {
+  return {
+    wedding_id: p.weddingId,
+    task_id: p.taskId,
+    body: p.body,
+  }
 }

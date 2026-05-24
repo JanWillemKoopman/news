@@ -4,6 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
 
+import { ActivityFeed } from '@/components/bruiloft/ActivityFeed'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import {
@@ -199,6 +200,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ActivityFeed />
 
       <WeddingSettingsForm
         open={settingsOpen}

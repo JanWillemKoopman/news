@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/database.types'
 
 import {
+  activityFromRow,
   budgetItemFromRow,
   budgetItemToRow,
   guestFromRow,
@@ -13,6 +14,8 @@ import {
   scheduleItemToRow,
   tableFromRow,
   tableToRow,
+  taskCommentFromRow,
+  taskCommentToRow,
   taskFromRow,
   taskToRow,
   vendorFromRow,
@@ -24,6 +27,7 @@ import {
 } from './mappers'
 import type { WeddingRepository } from './repository'
 import type {
+  ActivityEntry,
   BudgetItem,
   BudgetItemInput,
   Guest,
@@ -34,6 +38,8 @@ import type {
   Table,
   TableInput,
   Task,
+  TaskComment,
+  TaskCommentInput,
   TaskInput,
   Vendor,
   VendorInput,
@@ -358,5 +364,43 @@ export class SupabaseWeddingRepository implements WeddingRepository {
       .single()
     if (error) throw error
     return websiteContentFromRow(data)
+  }
+
+  // --- Activity ------------------------------------------------------
+  async listActivity(weddingId: ID, limit = 50): Promise<ActivityEntry[]> {
+    const { data, error } = await this.db
+      .from('wedding_activity')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data ?? []).map(activityFromRow)
+  }
+
+  // --- TaskComments --------------------------------------------------
+  async listTaskComments(weddingId: ID): Promise<TaskComment[]> {
+    const { data, error } = await this.db
+      .from('task_comments')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(taskCommentFromRow)
+  }
+
+  async createTaskComment(input: TaskCommentInput): Promise<TaskComment> {
+    const { data, error } = await this.db
+      .from('task_comments')
+      .insert(taskCommentToRow(input))
+      .select()
+      .single()
+    if (error) throw error
+    return taskCommentFromRow(data)
+  }
+
+  async deleteTaskComment(id: ID): Promise<void> {
+    const { error } = await this.db.from('task_comments').delete().eq('id', id)
+    if (error) throw error
   }
 }

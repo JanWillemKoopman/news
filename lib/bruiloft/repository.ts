@@ -4,6 +4,7 @@
 // exact dezelfde interface kan implementeren zonder dat de app verandert.
 
 import type {
+  ActivityEntry,
   BudgetItem,
   BudgetItemInput,
   Guest,
@@ -14,6 +15,8 @@ import type {
   Table,
   TableInput,
   Task,
+  TaskComment,
+  TaskCommentInput,
   TaskInput,
   Vendor,
   VendorInput,
@@ -75,4 +78,12 @@ export interface WeddingRepository {
     weddingId: ID,
     patch: Partial<WebsiteContentInput>
   ): Promise<WebsiteContent>
+
+  // Activiteitenfeed (read-only; gevuld door DB-triggers).
+  listActivity(weddingId: ID, limit?: number): Promise<ActivityEntry[]>
+
+  // Opmerkingen op taken.
+  listTaskComments(weddingId: ID): Promise<TaskComment[]>
+  createTaskComment(input: TaskCommentInput): Promise<TaskComment>
+  deleteTaskComment(id: ID): Promise<void>
 }

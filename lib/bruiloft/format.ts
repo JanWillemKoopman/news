@@ -56,3 +56,18 @@ export function dagenTot(value: string | Date): number {
   const b = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
   return Math.round((a - b) / 86_400_000)
 }
+
+// Korte, Nederlandse "tijd geleden" voor de activiteitenfeed.
+export function tijdGeleden(value: string | Date): string {
+  const d = toDate(value)
+  if (!d) return ''
+  const sec = Math.round((Date.now() - d.getTime()) / 1000)
+  if (sec < 45) return 'zojuist'
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min} min geleden`
+  const uur = Math.round(min / 60)
+  if (uur < 24) return `${uur} uur geleden`
+  const dag = Math.round(uur / 24)
+  if (dag < 7) return `${dag} ${dag === 1 ? 'dag' : 'dagen'} geleden`
+  return formatDatumKort(d)
+}

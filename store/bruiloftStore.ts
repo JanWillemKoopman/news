@@ -2,10 +2,12 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 import { create } from 'zustand'
 
 import {
+  activityFromRow,
   budgetItemFromRow,
   guestFromRow,
   scheduleItemFromRow,
   tableFromRow,
+  taskCommentFromRow,
   taskFromRow,
   vendorFromRow,
   weddingFromRow,
@@ -24,6 +26,7 @@ import { generateTemplateTasks } from '@/lib/bruiloft/templateTasks'
 import { deriveTijdsblok } from '@/lib/bruiloft/timeblocks'
 import { createClient } from '@/lib/supabase/client'
 import type {
+  ActivityEntry,
   BudgetItem,
   BudgetItemInput,
   Guest,
@@ -34,6 +37,7 @@ import type {
   Table,
   TableInput,
   Task,
+  TaskComment,
   TaskInput,
   Vendor,
   VendorInput,
@@ -73,6 +77,9 @@ interface BruiloftState {
   scheduleItems: ScheduleItem[]
   tables: Table[]
   websiteContent: WebsiteContent | null
+  activity: ActivityEntry[]
+  taskComments: TaskComment[]
+  activitySeenAt: string | null // wanneer de feed voor het laatst bekeken is
 }
 
 interface BruiloftActions {
@@ -112,6 +119,10 @@ interface BruiloftActions {
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
   ensureRsvpCodes: () => Promise<void>
+
+  addTaskComment: (taskId: ID, body: string) => Promise<void>
+  deleteTaskComment: (id: ID) => Promise<void>
+  markActivitySeen: () => void
 }
 
 // Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
@@ -127,6 +138,24 @@ function writeActive(id: string | null) {
   try {
     if (id) localStorage.setItem(ACTIVE_KEY, id)
     else localStorage.removeItem(ACTIVE_KEY)
+  } catch {
+    // localStorage niet beschikbaar; negeren.
+  }
+}
+
+// Onthoudt per bruiloft wanneer de feed voor het laatst bekeken is (voor de
+// 'nieuw'-badge). Per gebruiker/apparaat — hoeft niet te syncen.
+const SEEN_PREFIX = 'bruiloft-activity-seen:'
+function readSeen(weddingId: string): string | null {
+  try {
+    return localStorage.getItem(SEEN_PREFIX + weddingId)
+  } catch {
+    return null
+  }
+}
+function writeSeen(weddingId: string, iso: string) {
+  try {
+    localStorage.setItem(SEEN_PREFIX + weddingId, iso)
   } catch {
     // localStorage niet beschikbaar; negeren.
   }
@@ -212,6 +241,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     scheduleItems: [],
     tables: [],
     websiteContent: null,
+    activity: [],
+    taskComments: [],
+    activitySeenAt: null,
 
     init: async () => {
       if (get().hydrated) return
@@ -247,6 +279,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           wedding: null,
           role: null,
           permissions: EMPTY_PERMISSIONS,
+          activity: [],
+          taskComments: [],
+          activitySeenAt: null,
         })
         return
       }
@@ -263,16 +298,27 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         currentUser.appRole
       )
 
-      const [guests, tasks, vendors, budgetItems, scheduleItems, tables, websiteContent] =
-        await Promise.all([
-          repository.listGuests(wedding.id),
-          repository.listTasks(wedding.id),
-          repository.listVendors(wedding.id),
-          repository.listBudgetItems(wedding.id),
-          repository.listScheduleItems(wedding.id),
-          repository.listTables(wedding.id),
-          repository.getWebsiteContent(wedding.id),
-        ])
+      const [
+        guests,
+        tasks,
+        vendors,
+        budgetItems,
+        scheduleItems,
+        tables,
+        websiteContent,
+        activity,
+        taskComments,
+      ] = await Promise.all([
+        repository.listGuests(wedding.id),
+        repository.listTasks(wedding.id),
+        repository.listVendors(wedding.id),
+        repository.listBudgetItems(wedding.id),
+        repository.listScheduleItems(wedding.id),
+        repository.listTables(wedding.id),
+        repository.getWebsiteContent(wedding.id),
+        repository.listActivity(wedding.id, 50),
+        repository.listTaskComments(wedding.id),
+      ])
       set({
         hydrated: true,
         currentUser,
@@ -288,6 +334,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems,
         tables,
         websiteContent,
+        activity,
+        taskComments,
+        activitySeenAt: readSeen(wedding.id),
       })
       get().startRealtime(wedding.id)
     },
@@ -311,6 +360,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         tables: [],
         websiteContent: null,
+        activity: [],
+        taskComments: [],
+        activitySeenAt: null,
       })
     },
 
@@ -366,6 +418,12 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'wedding_activity', filter: wf }, (p) =>
+          set({ activity: applyList(get().activity, p, (r) => activityFromRow(r as unknown as Parameters<typeof activityFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments', filter: wf }, (p) =>
+          set({ taskComments: applyList(get().taskComments, p, (r) => taskCommentFromRow(r as unknown as Parameters<typeof taskCommentFromRow>[0])) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'weddings', filter: `id=eq.${weddingId}` }, (p) => {
           if (p.eventType !== 'UPDATE') return
           const w = weddingFromRow(p.new as unknown as Parameters<typeof weddingFromRow>[0])
@@ -385,6 +443,10 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
       writeActive(wedding.id)
+      // De sjabloontaken genereren activiteit; markeer die meteen als gezien zodat
+      // de maker niet met een 'nieuw'-badge voor zijn eigen setup begint.
+      const seen = new Date().toISOString()
+      writeSeen(wedding.id, seen)
       set({
         wedding,
         weddings: [...get().weddings, wedding],
@@ -398,6 +460,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         tables: [],
         websiteContent: null,
+        activity: [],
+        taskComments: [],
+        activitySeenAt: seen,
       })
     },
 
@@ -601,6 +666,35 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           nieuw.has(g.id) ? { ...g, rsvpCode: nieuw.get(g.id) } : g
         ),
       })
+    },
+
+    // --- Opmerkingen & activiteit ------------------------------------------
+
+    addTaskComment: async (taskId, body) => {
+      const wedding = get().wedding
+      const tekst = body.trim()
+      if (!wedding || !tekst) return
+      const comment = await repository.createTaskComment({
+        weddingId: wedding.id,
+        taskId,
+        body: tekst,
+      })
+      // Idempotent: realtime-echo met hetzelfde id vervangt deze rij later.
+      set({ taskComments: [...get().taskComments, comment] })
+    },
+
+    deleteTaskComment: async (id) => {
+      await repository.deleteTaskComment(id)
+      set({ taskComments: get().taskComments.filter((c) => c.id !== id) })
+    },
+
+    // Markeer de feed als gezien (zet de 'nieuw'-badge op nul).
+    markActivitySeen: () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const seen = new Date().toISOString()
+      writeSeen(wedding.id, seen)
+      set({ activitySeenAt: seen })
     },
   })
 )
