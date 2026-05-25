@@ -24,7 +24,7 @@ import {
   gastTellingen,
   taakTellingen,
 } from '@/lib/bruiloft/derived'
-import { dagenTot, formatDatumKort, formatDatumNL } from '@/lib/bruiloft/format'
+import { dagLabel, dagenTot, formatDatumKort, formatDatumNL } from '@/lib/bruiloft/format'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 export default function DashboardPage() {
@@ -154,8 +154,7 @@ export default function DashboardPage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{t.titel}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDatumKort(t.deadline)}
-                          {d >= 0 ? ` · over ${d} dagen` : ` · ${Math.abs(d)} dagen te laat`}
+                          {formatDatumKort(t.deadline)} · {dagLabel(d)}
                         </p>
                       </div>
                       <StatusBadge kind="taak" value={t.status} />
@@ -188,8 +187,7 @@ export default function DashboardPage() {
                         {item.omschrijving || item.categorie}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDatumKort(term.vervaldatum)}
-                        {dagen >= 0 ? ` · over ${dagen} dagen` : ` · ${Math.abs(dagen)} dagen te laat`}
+                        {formatDatumKort(term.vervaldatum)} · {dagLabel(dagen)}
                       </p>
                     </div>
                     <Money bedrag={term.bedrag} className="font-semibold text-foreground" />

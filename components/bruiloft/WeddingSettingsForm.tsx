@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button, Field, Input, Modal } from '@/components/bruiloft/ui'
+import { Button, Field, Input, Modal, useToast } from '@/components/bruiloft/ui'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Wedding } from '@/lib/bruiloft/types'
 
@@ -14,6 +14,7 @@ interface WeddingSettingsFormProps {
 
 export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSettingsFormProps) {
   const updateWedding = useBruiloftStore((s) => s.updateWedding)
+  const { toast } = useToast()
 
   const [form, setForm] = React.useState({
     partner1Naam: '',
@@ -42,18 +43,23 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
   const update = (veld: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [veld]: e.target.value }))
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    void updateWedding({
-      partner1Naam: form.partner1Naam.trim(),
-      partner2Naam: form.partner2Naam.trim(),
-      trouwdatum: form.trouwdatum,
-      locatie: form.locatie.trim(),
-      totaalBudget: Number(form.totaalBudget) || 0,
-      aantalDaggasten: Number(form.aantalDaggasten) || 0,
-      aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
-    })
     onOpenChange(false)
+    try {
+      await updateWedding({
+        partner1Naam: form.partner1Naam.trim(),
+        partner2Naam: form.partner2Naam.trim(),
+        trouwdatum: form.trouwdatum,
+        locatie: form.locatie.trim(),
+        totaalBudget: Number(form.totaalBudget) || 0,
+        aantalDaggasten: Number(form.aantalDaggasten) || 0,
+        aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
+      })
+      toast({ title: 'Gegevens opgeslagen', variant: 'success' })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
   }
 
   return (

@@ -1,7 +1,16 @@
 import Link from 'next/link'
+import { Newsreader } from 'next/font/google'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+  weight: ['400', '500', '600'],
+  adjustFontFallback: false,
+})
 
 // Uitnodiging accepteren. De middleware stuurt niet-ingelogde bezoekers eerst
 // naar /login?next=… Daarna voegt accept_invite de gebruiker als lid toe.
@@ -21,7 +30,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   }
 
   return (
-    <div className="wedding flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+    <div className={`wedding ${newsreader.variable} flex min-h-screen items-center justify-center bg-background px-4 text-foreground`}>
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <h1 className="font-serif text-2xl">Uitnodiging niet geldig</h1>
         <p className="mt-2 text-sm text-muted-foreground">

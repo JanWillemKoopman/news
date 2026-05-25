@@ -116,7 +116,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Categorie" htmlFor="cat">
             <Select
               id="cat"
@@ -145,7 +145,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="RSVP-status" htmlFor="rsvp">
             <Select
               id="rsvp"

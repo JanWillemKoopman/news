@@ -81,33 +81,47 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
               Nog geen bedragen ingevuld.
             </p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  dataKey="waarde"
-                  nameKey="naam"
-                  innerRadius={55}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  stroke="none"
-                >
-                  {donutData.map((_, i) => (
-                    <Cell key={i} fill={KLEUREN[i % KLEUREN.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number, naam) => [formatEuro(value), naam as string]}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--card))',
-                    color: 'hsl(var(--card-foreground))',
-                    textTransform: 'capitalize',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    dataKey="waarde"
+                    nameKey="naam"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {donutData.map((_, i) => (
+                      <Cell key={i} fill={KLEUREN[i % KLEUREN.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, naam) => [formatEuro(value), naam as string]}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid hsl(var(--border))',
+                      background: 'hsl(var(--card))',
+                      color: 'hsl(var(--card-foreground))',
+                      textTransform: 'capitalize',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                {donutData.map((d, i) => (
+                  <li key={d.naam} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: KLEUREN[i % KLEUREN.length] }}
+                      aria-hidden
+                    />
+                    <span className="capitalize">{d.naam}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </CardContent>
       </Card>

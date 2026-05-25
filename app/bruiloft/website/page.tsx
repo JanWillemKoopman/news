@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, Copy, Info, Link2 } from 'lucide-react'
+import { AlertCircle, Check, Copy, Info, Link2, Loader2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import {
@@ -43,10 +43,49 @@ export default function WebsitePage() {
   })
   const [origin, setOrigin] = React.useState('')
   const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  // Debounce: verzamel wijzigingen en sla ze gebundeld op (niet per toetsaanslag).
+  const pendingRef = React.useRef<Partial<Velden>>({})
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   React.useEffect(() => {
     setOrigin(window.location.origin)
   }, [])
+
+  const flush = React.useCallback(async () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    const patch = pendingRef.current
+    pendingRef.current = {}
+    if (Object.keys(patch).length === 0) return
+    setSaveStatus('saving')
+    try {
+      await saveWebsiteContent(patch)
+      setSaveStatus('saved')
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000)
+    } catch {
+      // Bewaar de niet-opgeslagen velden zodat een volgende poging ze meeneemt.
+      pendingRef.current = { ...patch, ...pendingRef.current }
+      setSaveStatus('error')
+      toast({
+        title: 'Opslaan mislukt',
+        description: 'We konden de wijziging niet opslaan. Controleer je verbinding.',
+        variant: 'error',
+      })
+    }
+  }, [saveWebsiteContent, toast])
+
+  // Sla eventueel nog niet-opgeslagen wijzigingen op bij het verlaten van de pagina.
+  React.useEffect(() => {
+    return () => {
+      void flush()
+    }
+  }, [flush])
 
   React.useEffect(() => {
     if (websiteContent) {
@@ -65,13 +104,18 @@ export default function WebsitePage() {
 
   const t = gastTellingen(guests)
 
-  // Bewerk lokaal en sla het gewijzigde veld direct op.
+  // Bewerk lokaal en sla gebundeld op na een korte pauze (debounce).
   const set = (veld: keyof Velden) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const value = e.target.value
     setForm((f) => ({ ...f, [veld]: value }))
-    void saveWebsiteContent({ [veld]: value })
+    pendingRef.current = { ...pendingRef.current, [veld]: value }
+    setSaveStatus('saving')
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      void flush()
+    }, 700)
   }
 
   const kopieer = async (tekst: string, id: string) => {
@@ -89,6 +133,32 @@ export default function WebsitePage() {
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de informatie voor je gasten en deel persoonlijke RSVP-links."
+        actie={
+          saveStatus === 'idle' ? null : (
+            <span
+              className={
+                'inline-flex items-center gap-1.5 text-sm ' +
+                (saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground')
+              }
+              role="status"
+              aria-live="polite"
+            >
+              {saveStatus === 'saving' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Opslaan…
+                </>
+              ) : saveStatus === 'saved' ? (
+                <>
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Opgeslagen
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4" /> Niet opgeslagen
+                </>
+              )}
+            </span>
+          )
+        }
       />
 
       <div className="mb-6 flex items-start gap-3 rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
@@ -134,8 +204,12 @@ export default function WebsitePage() {
             </div>
             <Button
               onClick={async () => {
-                await ensureRsvpCodes()
-                toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
+                try {
+                  await ensureRsvpCodes()
+                  toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
+                } catch {
+                  toast({ title: 'Aanmaken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+                }
               }}
               disabled={guests.length === 0}
             >

@@ -9,12 +9,14 @@ import {
   CardContent,
   Field,
   Input,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 
 export function WelcomeScreen() {
   const setupWedding = useBruiloftStore((s) => s.setupWedding)
+  const { toast } = useToast()
   const [bezig, setBezig] = React.useState(false)
 
   const [form, setForm] = React.useState({
@@ -50,7 +52,17 @@ export function WelcomeScreen() {
       aantalDaggasten: Number(form.aantalDaggasten) || 0,
       aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
     }
-    await setupWedding(input)
+    try {
+      await setupWedding(input)
+      // Bij succes verschijnt de app-shell en verdwijnt dit scherm.
+    } catch {
+      setBezig(false)
+      toast({
+        title: 'Aanmaken mislukt',
+        description: 'We konden jullie trouwplan niet aanmaken. Probeer het opnieuw.',
+        variant: 'error',
+      })
+    }
   }
 
   return (

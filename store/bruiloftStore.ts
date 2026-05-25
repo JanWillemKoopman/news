@@ -64,6 +64,7 @@ interface CurrentUser {
 
 interface BruiloftState {
   hydrated: boolean
+  error: string | null
   currentUser: CurrentUser | null
   role: WeddingRole | null
   permissions: PermissionMap
@@ -84,6 +85,7 @@ interface BruiloftState {
 
 interface BruiloftActions {
   init: () => Promise<void>
+  retryInit: () => Promise<void>
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
   deleteActiveWedding: () => Promise<void>
@@ -228,6 +230,7 @@ async function loadPermissions(
 export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
   (set, get) => ({
     hydrated: false,
+    error: null,
     currentUser: null,
     role: null,
     permissions: EMPTY_PERMISSIONS,
@@ -247,12 +250,13 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     init: async () => {
       if (get().hydrated) return
+      try {
       const supabase = createClient()
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        set({ hydrated: true, currentUser: null, wedding: null, weddings: [], activeWeddingId: null })
+        set({ hydrated: true, error: null, currentUser: null, wedding: null, weddings: [], activeWeddingId: null })
         return
       }
 
@@ -273,6 +277,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (weddings.length === 0) {
         set({
           hydrated: true,
+          error: null,
           currentUser,
           weddings: [],
           activeWeddingId: null,
@@ -321,6 +326,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       ])
       set({
         hydrated: true,
+        error: null,
         currentUser,
         weddings,
         activeWeddingId: wedding.id,
@@ -339,6 +345,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         activitySeenAt: readSeen(wedding.id),
       })
       get().startRealtime(wedding.id)
+      } catch {
+        set({
+          hydrated: true,
+          error: 'We konden jullie trouwplan niet laden. Controleer je internetverbinding en probeer het opnieuw.',
+        })
+      }
+    },
+
+    retryInit: async () => {
+      set({ hydrated: false, error: null })
+      await get().init()
     },
 
     signOut: async () => {
@@ -347,6 +364,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       writeActive(null)
       set({
         hydrated: false,
+        error: null,
         currentUser: null,
         role: null,
         permissions: EMPTY_PERMISSIONS,

@@ -15,13 +15,19 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#ffffff',
+  viewportFit: 'cover',
+  themeColor: '#F0EEE6',
 }
+
+// Zet vóór de eerste paint de achtergrond van het document (en de browserbalk)
+// op de juiste themakleur. Voorkomt een wit lek bij overscroll/donkere modus.
+const themeBootstrap = `(function(){try{var t=localStorage.getItem('bruiloft-thema');var c=t==='dark'?'#201f1e':'#F0EEE6';document.documentElement.style.backgroundColor=c;var m=document.querySelector('meta[name="theme-color"]');if(m){m.setAttribute('content',c)}}catch(e){}})()`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
-      <body className={`${inter.className} min-h-screen bg-white text-slate-900 antialiased`}>
+      <body className={`${inter.className} min-h-screen text-foreground antialiased`}>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
         {children}
       </body>
     </html>

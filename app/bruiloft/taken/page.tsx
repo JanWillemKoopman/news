@@ -17,7 +17,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { taakTellingen } from '@/lib/bruiloft/derived'
-import { dagenTot, formatDatumKort } from '@/lib/bruiloft/format'
+import { dagLabel, dagenTot, formatDatumKort } from '@/lib/bruiloft/format'
 import { TASK_STATUSSEN, TOEGEWEZEN_AAN } from '@/lib/bruiloft/options'
 import { TIJDSBLOK_VOLGORDE } from '@/lib/bruiloft/timeblocks'
 import { cn } from '@/lib/utils'
@@ -61,8 +61,13 @@ export default function TakenPage() {
     setFormOpen(true)
   }
 
-  const toggleKlaar = (t: Task) =>
-    void updateTask(t.id, { status: t.status === 'klaar' ? 'open' : 'klaar' })
+  const toggleKlaar = async (t: Task) => {
+    try {
+      await updateTask(t.id, { status: t.status === 'klaar' ? 'open' : 'klaar' })
+    } catch {
+      toast({ title: 'Bijwerken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -160,13 +165,17 @@ export default function TakenPage() {
         initial={editTask}
         vendors={vendors}
         budgetItems={budgetItems}
-        onSubmit={(data) => {
-          if (editTask) {
-            void updateTask(editTask.id, data)
-            toast({ title: 'Taak bijgewerkt', variant: 'success' })
-          } else {
-            void addTask(data)
-            toast({ title: 'Taak toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editTask) {
+              await updateTask(editTask.id, data)
+              toast({ title: 'Taak bijgewerkt', variant: 'success' })
+            } else {
+              await addTask(data)
+              toast({ title: 'Taak toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -176,10 +185,13 @@ export default function TakenPage() {
         onOpenChange={(o) => !o && setDelTask(null)}
         title="Taak verwijderen?"
         description={delTask ? `Weet je zeker dat je "${delTask.titel}" wilt verwijderen?` : undefined}
-        onConfirm={() => {
-          if (delTask) {
-            void deleteTask(delTask.id)
+        onConfirm={async () => {
+          if (!delTask) return
+          try {
+            await deleteTask(delTask.id)
             toast({ title: 'Taak verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -226,7 +238,7 @@ function TaskRow({
             <span>{formatDatumKort(task.deadline)}</span>
             {!klaar ? (
               <span className={cn(d < 0 && 'font-medium text-rose-600 dark:text-rose-400')}>
-                {d >= 0 ? `over ${d} dagen` : `${Math.abs(d)} dagen te laat`}
+                {dagLabel(d)}
               </span>
             ) : null}
             <StatusBadge kind="prioriteit" value={task.prioriteit} />

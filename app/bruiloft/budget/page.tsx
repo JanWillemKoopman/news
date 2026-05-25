@@ -75,12 +75,16 @@ export default function BudgetPage() {
     toast({ title: 'Budget geëxporteerd', description: 'budget.csv is gedownload.', variant: 'success' })
   }
 
-  const toggleTerm = (item: BudgetItem, termId: string, betaald: boolean) => {
-    void updateBudgetItem(item.id, {
-      betaaltermijnen: item.betaaltermijnen.map((t) =>
-        t.id === termId ? { ...t, betaald } : t
-      ),
-    })
+  const toggleTerm = async (item: BudgetItem, termId: string, betaald: boolean) => {
+    try {
+      await updateBudgetItem(item.id, {
+        betaaltermijnen: item.betaaltermijnen.map((t) =>
+          t.id === termId ? { ...t, betaald } : t
+        ),
+      })
+    } catch {
+      toast({ title: 'Bijwerken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
   }
 
   return (
@@ -145,13 +149,17 @@ export default function BudgetPage() {
         onOpenChange={setFormOpen}
         initial={editItem}
         vendors={vendors}
-        onSubmit={(data) => {
-          if (editItem) {
-            void updateBudgetItem(editItem.id, data)
-            toast({ title: 'Budgetitem bijgewerkt', variant: 'success' })
-          } else {
-            void addBudgetItem(data)
-            toast({ title: 'Budgetitem toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editItem) {
+              await updateBudgetItem(editItem.id, data)
+              toast({ title: 'Budgetitem bijgewerkt', variant: 'success' })
+            } else {
+              await addBudgetItem(data)
+              toast({ title: 'Budgetitem toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -161,23 +169,27 @@ export default function BudgetPage() {
         onOpenChange={setDistributeOpen}
         totaalBudget={wedding.totaalBudget}
         items={budgetItems}
-        onApply={(regels) => {
-          for (const r of regels) {
-            void addBudgetItem({
-              categorie: r.categorie,
-              omschrijving: 'Richtbedrag (automatisch)',
-              geschatBedrag: r.bedrag,
-              geoffreerdBedrag: 0,
-              betaaldBedrag: 0,
-              betaaltermijnen: [],
-            })
-          }
-          if (regels.length > 0) {
-            toast({
-              title: 'Budget verdeeld',
-              description: `${regels.length} categorie${regels.length === 1 ? '' : 'ën'} toegevoegd.`,
-              variant: 'success',
-            })
+        onApply={async (regels) => {
+          try {
+            for (const r of regels) {
+              await addBudgetItem({
+                categorie: r.categorie,
+                omschrijving: 'Richtbedrag (automatisch)',
+                geschatBedrag: r.bedrag,
+                geoffreerdBedrag: 0,
+                betaaldBedrag: 0,
+                betaaltermijnen: [],
+              })
+            }
+            if (regels.length > 0) {
+              toast({
+                title: 'Budget verdeeld',
+                description: `${regels.length} categorie${regels.length === 1 ? '' : 'ën'} toegevoegd.`,
+                variant: 'success',
+              })
+            }
+          } catch {
+            toast({ title: 'Verdelen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -191,10 +203,13 @@ export default function BudgetPage() {
             ? `Weet je zeker dat je "${deleteItem.omschrijving || deleteItem.categorie}" wilt verwijderen?`
             : undefined
         }
-        onConfirm={() => {
-          if (deleteItem) {
-            void deleteBudgetItem(deleteItem.id)
+        onConfirm={async () => {
+          if (!deleteItem) return
+          try {
+            await deleteBudgetItem(deleteItem.id)
             toast({ title: 'Budgetitem verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />

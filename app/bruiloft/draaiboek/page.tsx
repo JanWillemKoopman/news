@@ -159,13 +159,17 @@ export default function DraaiboekPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editItem}
-        onSubmit={(data) => {
-          if (editItem) {
-            void updateScheduleItem(editItem.id, data)
-            toast({ title: 'Onderdeel bijgewerkt', variant: 'success' })
-          } else {
-            void addScheduleItem(data)
-            toast({ title: 'Onderdeel toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editItem) {
+              await updateScheduleItem(editItem.id, data)
+              toast({ title: 'Onderdeel bijgewerkt', variant: 'success' })
+            } else {
+              await addScheduleItem(data)
+              toast({ title: 'Onderdeel toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -175,10 +179,13 @@ export default function DraaiboekPage() {
         onOpenChange={(o) => !o && setDelItem(null)}
         title="Onderdeel verwijderen?"
         description={delItem ? `Weet je zeker dat je "${delItem.titel}" wilt verwijderen?` : undefined}
-        onConfirm={() => {
-          if (delItem) {
-            void deleteScheduleItem(delItem.id)
+        onConfirm={async () => {
+          if (!delItem) return
+          try {
+            await deleteScheduleItem(delItem.id)
             toast({ title: 'Onderdeel verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />

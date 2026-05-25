@@ -285,13 +285,17 @@ export default function GastenPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editGuest}
-        onSubmit={(data) => {
-          if (editGuest) {
-            void updateGuest(editGuest.id, data)
-            toast({ title: 'Gast bijgewerkt', variant: 'success' })
-          } else {
-            void addGuest(data)
-            toast({ title: 'Gast toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editGuest) {
+              await updateGuest(editGuest.id, data)
+              toast({ title: 'Gast bijgewerkt', variant: 'success' })
+            } else {
+              await addGuest(data)
+              toast({ title: 'Gast toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -303,10 +307,13 @@ export default function GastenPage() {
         description={
           delGuest ? `Weet je zeker dat je ${delGuest.voornaam} ${delGuest.achternaam} wilt verwijderen?` : undefined
         }
-        onConfirm={() => {
-          if (delGuest) {
-            void deleteGuest(delGuest.id)
+        onConfirm={async () => {
+          if (!delGuest) return
+          try {
+            await deleteGuest(delGuest.id)
             toast({ title: 'Gast verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />

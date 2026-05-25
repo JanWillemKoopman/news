@@ -1,13 +1,13 @@
 'use client'
 
-import { Lock } from 'lucide-react'
+import { Lock, WifiOff } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
 
 import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
 import { MobileNav } from './MobileNav'
 import { moduleForPath } from './nav'
 import { Sidebar } from './Sidebar'
@@ -35,9 +35,12 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const { theme } = useTheme()
   const pathname = usePathname()
   const hydrated = useBruiloftStore((s) => s.hydrated)
+  const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
   const permissions = useBruiloftStore((s) => s.permissions)
   const init = useBruiloftStore((s) => s.init)
+  const retryInit = useBruiloftStore((s) => s.retryInit)
+  const [retrying, setRetrying] = React.useState(false)
 
   React.useEffect(() => {
     void init()
@@ -54,7 +57,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // Voor de eerste hydratatie: skeleton-shell (voorkomt flits van inhoud).
   if (!hydrated) {
     return (
-      <div className={cn(wrapperClass, 'flex')} aria-busy="true">
+      <div className={cn(wrapperClass, 'flex')} aria-busy="true" suppressHydrationWarning>
         <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 p-4 md:flex">
           <Skeleton className="h-9 w-40" />
           <div className="mt-8 flex flex-col gap-2">
@@ -76,10 +79,38 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
+  // Laden mislukt: toon een nette foutmelding met de mogelijkheid het opnieuw te
+  // proberen, in plaats van eindeloos het skelet te tonen.
+  if (error) {
+    return (
+      <div className={cn(wrapperClass, 'flex min-h-screen flex-col items-center justify-center px-4')} suppressHydrationWarning>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <WifiOff className="h-7 w-7" />
+        </div>
+        <h1 className="mt-5 text-center font-serif text-2xl text-foreground">Er ging iets mis</h1>
+        <p className="mt-2 max-w-sm text-center text-muted-foreground">{error}</p>
+        <Button
+          className="mt-6"
+          loading={retrying}
+          onClick={async () => {
+            setRetrying(true)
+            try {
+              await retryInit()
+            } finally {
+              setRetrying(false)
+            }
+          }}
+        >
+          Opnieuw proberen
+        </Button>
+      </div>
+    )
+  }
+
   // Nog geen bruiloft ingesteld: welkomstscherm zonder navigatie.
   if (!wedding) {
     return (
-      <div className={wrapperClass}>
+      <div className={wrapperClass} suppressHydrationWarning>
         <div className="flex justify-end p-4">
           <ThemeToggle />
         </div>
@@ -89,7 +120,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   }
 
   return (
-    <div className={cn(wrapperClass, 'flex')}>
+    <div className={cn(wrapperClass, 'flex')} suppressHydrationWarning>
       <a
         href="#hoofdinhoud"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-md"

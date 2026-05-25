@@ -43,8 +43,13 @@ export default function TafelsPage() {
     setFormOpen(true)
   }
 
-  const assign = (guestId: string, tableId: string | null) =>
-    void updateGuest(guestId, { tafelId: tableId ?? undefined })
+  const assign = async (guestId: string, tableId: string | null) => {
+    try {
+      await updateGuest(guestId, { tafelId: tableId ?? undefined })
+    } catch {
+      toast({ title: 'Indelen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -94,13 +99,17 @@ export default function TafelsPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editTable}
-        onSubmit={(data) => {
-          if (editTable) {
-            void updateTable(editTable.id, data)
-            toast({ title: 'Tafel bijgewerkt', variant: 'success' })
-          } else {
-            void addTable(data)
-            toast({ title: 'Tafel toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editTable) {
+              await updateTable(editTable.id, data)
+              toast({ title: 'Tafel bijgewerkt', variant: 'success' })
+            } else {
+              await addTable(data)
+              toast({ title: 'Tafel toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -114,10 +123,13 @@ export default function TafelsPage() {
             ? `Weet je zeker dat je "${delTable.naam}" wilt verwijderen? De gasten worden weer onverdeeld.`
             : undefined
         }
-        onConfirm={() => {
-          if (delTable) {
-            void deleteTable(delTable.id)
+        onConfirm={async () => {
+          if (!delTable) return
+          try {
+            await deleteTable(delTable.id)
             toast({ title: 'Tafel verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />

@@ -126,13 +126,17 @@ export default function LeveranciersPage() {
         onOpenChange={setFormOpen}
         initial={editVendor}
         budgetItems={budgetItems}
-        onSubmit={(data) => {
-          if (editVendor) {
-            void updateVendor(editVendor.id, data)
-            toast({ title: 'Leverancier bijgewerkt', variant: 'success' })
-          } else {
-            void addVendor(data)
-            toast({ title: 'Leverancier toegevoegd', variant: 'success' })
+        onSubmit={async (data) => {
+          try {
+            if (editVendor) {
+              await updateVendor(editVendor.id, data)
+              toast({ title: 'Leverancier bijgewerkt', variant: 'success' })
+            } else {
+              await addVendor(data)
+              toast({ title: 'Leverancier toegevoegd', variant: 'success' })
+            }
+          } catch {
+            toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -142,10 +146,13 @@ export default function LeveranciersPage() {
         onOpenChange={(o) => !o && setDelVendor(null)}
         title="Leverancier verwijderen?"
         description={delVendor ? `Weet je zeker dat je "${delVendor.naam}" wilt verwijderen?` : undefined}
-        onConfirm={() => {
-          if (delVendor) {
-            void deleteVendor(delVendor.id)
+        onConfirm={async () => {
+          if (!delVendor) return
+          try {
+            await deleteVendor(delVendor.id)
             toast({ title: 'Leverancier verwijderd', variant: 'success' })
+          } catch {
+            toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
         }}
       />
@@ -239,7 +246,7 @@ function VendorCard({
           <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{vendor.notitie}</p>
         ) : null}
 
-        <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
+        <div className="mt-auto flex justify-end gap-1 border-t border-border pt-3">
           <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(vendor)}>
             <Pencil className="h-4 w-4" />
           </Button>

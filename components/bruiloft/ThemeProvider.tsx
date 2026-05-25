@@ -14,25 +14,33 @@ interface ThemeContextValue {
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null)
 
-// useLayoutEffect op de client (geen flits), useEffect op de server (geen warning).
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
+function readStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'light'
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    return stored === 'dark' ? 'dark' : 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+// Houd de document-achtergrond (en browserbalk) gelijk aan het thema, zodat er
+// geen wit lek ontstaat bij overscroll of in donkere modus.
+function syncDocumentTheme(theme: Theme) {
+  if (typeof document === 'undefined') return
+  const color = theme === 'dark' ? '#201f1e' : '#F0EEE6'
+  document.documentElement.style.backgroundColor = color
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Standaard light; de werkelijke voorkeur wordt vóór de eerste paint gezet.
-  const [theme, setThemeState] = React.useState<Theme>('light')
-
-  useIsomorphicLayoutEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null
-      if (stored === 'dark' || stored === 'light') setThemeState(stored)
-    } catch {
-      // localStorage niet beschikbaar; blijf op light.
-    }
-  }, [])
+  // Lees de voorkeur al bij de eerste render (client), zodat er geen flits van
+  // het lichte thema is voor wie donker heeft gekozen.
+  const [theme, setThemeState] = React.useState<Theme>(readStoredTheme)
 
   const setTheme = React.useCallback((next: Theme) => {
     setThemeState(next)
+    syncDocumentTheme(next)
     try {
       window.localStorage.setItem(STORAGE_KEY, next)
     } catch {

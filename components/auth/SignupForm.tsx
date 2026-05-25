@@ -15,10 +15,11 @@ import {
 } from '@/components/bruiloft/ui'
 import { createClient } from '@/lib/supabase/client'
 
-import { mapAuthError } from './authErrors'
+import { mapAuthError, safeNext } from './authErrors'
 
-export function SignupForm() {
+export function SignupForm({ next }: { next?: string }) {
   const supabase = React.useMemo(() => createClient(), [])
+  const target = safeNext(next)
 
   const [displayName, setDisplayName] = React.useState('')
   const [email, setEmail] = React.useState('')
@@ -35,7 +36,7 @@ export function SignupForm() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/bruiloft`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
         data: { display_name: displayName },
       },
     })
@@ -61,7 +62,10 @@ export function SignupForm() {
         <CardContent>
           <p className="text-sm text-muted-foreground">
             Geen mail ontvangen? Controleer je spam-map of{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+              className="font-medium text-primary hover:underline"
+            >
               ga terug naar inloggen
             </Link>
             .
@@ -124,7 +128,10 @@ export function SignupForm() {
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Heb je al een account?{' '}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link
+            href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+            className="font-medium text-primary hover:underline"
+          >
             Inloggen
           </Link>
         </p>
