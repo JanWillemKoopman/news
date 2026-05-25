@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Plan jullie bruiloft samen — gasten, budget, taken, draaiboek en meer.',
 }
 
+// Sub-route layouts (trouwplanner, sollicitatie) set their own bg via a wrapper div,
+// so the root slate-950 bg only affects the advisor app at /.
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
