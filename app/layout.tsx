@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: 'Krijg business advies van legendarische ondernemers via AI',
 }
 
+// Sub-route layouts (trouwplanner, sollicitatie) set their own bg via a wrapper div,
+// so the root slate-950 bg only affects the advisor app at /.
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
