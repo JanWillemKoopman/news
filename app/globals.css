@@ -2,54 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Licht thema — RGB-kanalen (geen rgb()-wrapper, zodat Tailwind opacity-modifiers werken) */
-  --color-cream-50:  250 249 245;
-  --color-cream-100: 245 241 232;
-  --color-cream-200: 240 238 230;
-  --color-cream-300: 235 229 215;
-  --color-cream-400: 227 218 204;
-  --color-cream-500: 216 207 191;
-  --color-cream-600: 189 179 161;
-
-  --color-ink-400: 128 125 118;
-  --color-ink-500:  94  93  89;
-  --color-ink-600:  63  62  58;
-  --color-ink-700:  44  43  39;
-  --color-ink-800:  31  30  28;
-  --color-ink-900:  20  20  19;
-}
-
-:root.dark {
-  /* Donker thema — warm donker palet */
-  --color-cream-50:   37  36  32;
-  --color-cream-100:  31  30  27;
-  --color-cream-200:  26  25  24;
-  --color-cream-300:  31  30  27;
-  --color-cream-400:  41  40  33;
-  --color-cream-500:  58  56  48;
-  --color-cream-600:  80  77  67;
-
-  --color-ink-400: 112 109 102;
-  --color-ink-500: 138 135 128;
-  --color-ink-600: 170 167 159;
-  --color-ink-700: 204 201 192;
-  --color-ink-800: 222 218 210;
-  --color-ink-900: 236 234 226;
-}
-
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply antialiased;
-  }
-  /* Sierlijke serif voor display-koppen */
-  .font-display,
-  .font-serif {
-    font-feature-settings: 'liga', 'kern', 'ss01';
-    letter-spacing: -0.01em;
   }
 }
 
@@ -60,5 +18,133 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/*
+ * shadcn/ui design tokens.
+ * Defined globally but applied only within the .dark wrapper in
+ * app/sollicitatie/layout.tsx, so the advisor app at / is unaffected.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 47% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 44% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 44% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 14%;
+    --muted-foreground: 215 20.2% 62%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 160 84% 39%;
+  }
+}
+
+/*
+ * Bruiloftplanner-thema (Anthropic-uitstraling: warm, rustig, ivoor + terracotta).
+ * Scoped onder .wedding zodat het de bestaande apps op / en /sollicitatie niet
+ * raakt. Omdat de gedeelde shadcn-primitives token-gestuurd zijn, nemen ze
+ * binnen deze subtree automatisch het warme palet over. Donker thema wordt
+ * aan/uit gezet door .dark op dezelfde wrapper te zetten (.wedding.dark).
+ */
+@layer base {
+  .wedding {
+    --background: 47 25% 92%; /* #F0EEE6 warm ivoor */
+    --foreground: 40 5% 9%; /* #191917 warm bijna-zwart */
+    --card: 48 30% 97%; /* #FAF9F5 warme kaart */
+    --card-foreground: 40 5% 9%;
+    --popover: 48 30% 97%;
+    --popover-foreground: 40 5% 9%;
+    --primary: 15 52% 58%; /* #CC785C terracotta */
+    --primary-foreground: 40 33% 98%;
+    --primary-hover: 16 53% 48%; /* #BD5D3A dieper terracotta */
+    --secondary: 43 20% 88%;
+    --secondary-foreground: 40 5% 9%;
+    --muted: 43 18% 89%;
+    --muted-foreground: 40 5% 36%; /* donkerder voor WCAG AA */
+    --accent: 43 24% 86%;
+    --accent-foreground: 40 5% 9%;
+    --destructive: 5 64% 50%;
+    --destructive-foreground: 40 33% 98%;
+    --border: 40 13% 86%; /* subtiele hairline */
+    --input: 40 14% 80%;
+    --ring: 15 52% 58%;
+    --radius: 0.625rem; /* ingetogen radius (Linear/Stripe-craft) */
+  }
+
+  .wedding.dark {
+    --background: 40 4% 12%; /* warme bijna-zwarte tint */
+    --foreground: 40 20% 98%; /* #FAFAF7 warm gebroken wit */
+    --card: 40 4% 16%; /* #2B2A28 */
+    --card-foreground: 40 20% 98%;
+    --popover: 40 4% 16%;
+    --popover-foreground: 40 20% 98%;
+    --primary: 16 60% 62%; /* iets lichter terracotta voor contrast op donker */
+    --primary-foreground: 40 33% 98%;
+    --primary-hover: 16 55% 55%;
+    --secondary: 40 4% 22%;
+    --secondary-foreground: 40 20% 98%;
+    --muted: 40 4% 22%;
+    --muted-foreground: 40 8% 64%;
+    --accent: 40 5% 26%;
+    --accent-foreground: 40 20% 98%;
+    --destructive: 5 58% 52%;
+    --destructive-foreground: 40 33% 98%;
+    --border: 40 4% 24%;
+    --input: 40 5% 30%;
+    --ring: 16 60% 62%;
+  }
+}
+
+/* Visuele markering voor ongeldige velden binnen de bruiloftplanner. */
+.wedding [aria-invalid='true'] {
+  border-color: hsl(var(--destructive));
+}
+.wedding [aria-invalid='true']:focus-visible {
+  --tw-ring-color: hsl(var(--destructive));
+}
+
+/* Respecteer de systeemvoorkeur voor minder beweging. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

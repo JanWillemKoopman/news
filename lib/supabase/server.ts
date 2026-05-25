@@ -1,10 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createSupabaseServerClient() {
-  const cookieStore = cookies()
+import type { Database } from './database.types'
 
-  return createServerClient(
+// Supabase-client voor Server Components, Route Handlers en Server Actions.
+// Leest/schrijft de sessie via cookies. Schrijven faalt stil in een puur
+// renderende Server Component — de middleware ververst de sessie daar.
+export function createClient() {
+  const cookieStore = cookies()
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -18,7 +22,7 @@ export function createSupabaseServerClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Setting cookies in a Server Component throws — middleware handles refresh.
+            // Aangeroepen vanuit een Server Component; veilig te negeren.
           }
         },
       },
