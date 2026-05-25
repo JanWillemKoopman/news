@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { WeddingTask, BudgetItem, Guest, Vendor, WeddingInfo } from '@/types/wedding'
+import type { WeddingTask, BudgetItem, Guest, Vendor, WeddingInfo, BudgetCategory } from '@/types/wedding'
+import { ARRANGED_OPTIONS, BUDGET_CATEGORY_LABELS } from '@/types/wedding'
 
 function uid() {
   return Math.random().toString(36).slice(2, 9)
@@ -36,6 +37,10 @@ const DEFAULT_TASKS: WeddingTask[] = [
 
 export type ActiveTab = 'budget' | 'taken' | 'gasten' | 'leveranciers'
 
+export type SetupStepKey = 'guests' | 'budgetSplit' | 'team' | 'arranged'
+
+export type SetupSteps = Record<SetupStepKey, boolean>
+
 interface WeddingStore {
   hasCompletedOnboarding: boolean
   wedding: WeddingInfo
@@ -49,10 +54,17 @@ interface WeddingStore {
   totalActionsCount: number
   activeTab: ActiveTab
   showRegistrationModal: boolean
+  setupSteps: SetupSteps
+  setupDismissed: boolean
 
-  completeOnboarding: (info: WeddingInfo) => void
+  completeOnboarding: (info: Partial<WeddingInfo>) => void
   resetPlanner: () => void
   updateWedding: (info: Partial<WeddingInfo>) => void
+
+  applyBudgetSplit: (items: { category: BudgetCategory; estimated: number }[]) => void
+  applyArranged: (ids: string[]) => void
+  markSetupStep: (key: SetupStepKey) => void
+  dismissSetup: () => void
 
   addBudgetItem: (item: Omit<BudgetItem, 'id'>) => void
   updateBudgetItem: (id: string, updates: Partial<BudgetItem>) => void
@@ -76,7 +88,16 @@ interface WeddingStore {
 
 const initialState = {
   hasCompletedOnboarding: false,
-  wedding: { date: null, partner1: '', partner2: '', budget: null },
+  wedding: {
+    date: null,
+    partner1: '',
+    partner2: '',
+    budget: null,
+    guestEstimate: null,
+    style: null,
+    ceremonyMasters: [],
+    witnesses: [],
+  } as WeddingInfo,
   budgetItems: [] as BudgetItem[],
   tasks: DEFAULT_TASKS,
   guests: [] as Guest[],
@@ -87,6 +108,8 @@ const initialState = {
   totalActionsCount: 0,
   activeTab: 'taken' as ActiveTab,
   showRegistrationModal: false,
+  setupSteps: { guests: false, budgetSplit: false, team: false, arranged: false } as SetupSteps,
+  setupDismissed: false,
 }
 
 export const useWeddingStore = create<WeddingStore>()(
@@ -95,12 +118,67 @@ export const useWeddingStore = create<WeddingStore>()(
       ...initialState,
 
       completeOnboarding: (info) =>
-        set({ hasCompletedOnboarding: true, wedding: info }),
+        set((s) => ({ hasCompletedOnboarding: true, wedding: { ...s.wedding, ...info } })),
 
       resetPlanner: () => set({ ...initialState, tasks: DEFAULT_TASKS }),
 
       updateWedding: (info) =>
         set((s) => ({ wedding: { ...s.wedding, ...info } })),
+
+      applyBudgetSplit: (items) =>
+        set((s) => {
+          const manual = s.budgetItems.filter((b) => !b.auto)
+          const auto: BudgetItem[] = items
+            .filter((i) => i.estimated > 0)
+            .map((i) => ({
+              id: uid(),
+              category: i.category,
+              name: BUDGET_CATEGORY_LABELS[i.category],
+              estimated: i.estimated,
+              actual: null,
+              paid: false,
+              auto: true,
+            }))
+          return {
+            budgetItems: [...manual, ...auto],
+            setupSteps: { ...s.setupSteps, budgetSplit: true },
+            totalActionsCount: s.totalActionsCount + 1,
+          }
+        }),
+
+      applyArranged: (ids) =>
+        set((s) => {
+          const opts = ARRANGED_OPTIONS.filter((o) => ids.includes(o.id))
+          const taskIds = new Set(opts.map((o) => o.taskId))
+          const tasks = s.tasks.map((t) => (taskIds.has(t.id) ? { ...t, completed: true } : t))
+          const newVendors: Vendor[] = []
+          for (const o of opts) {
+            if (!o.vendorCategory || !o.vendorName) continue
+            const exists = s.vendors.some(
+              (v) => v.name === o.vendorName && v.category === o.vendorCategory
+            )
+            if (exists) continue
+            newVendors.push({
+              id: uid(),
+              category: o.vendorCategory,
+              name: o.vendorName,
+              status: 'geboekt',
+              price: null,
+              notes: 'Toegevoegd via setup',
+            })
+          }
+          return {
+            tasks,
+            vendors: [...s.vendors, ...newVendors],
+            setupSteps: { ...s.setupSteps, arranged: true },
+            totalActionsCount: s.totalActionsCount + 1,
+          }
+        }),
+
+      markSetupStep: (key) =>
+        set((s) => ({ setupSteps: { ...s.setupSteps, [key]: true } })),
+
+      dismissSetup: () => set({ setupDismissed: true }),
 
       addBudgetItem: (item) =>
         set((s) => ({
@@ -163,6 +241,17 @@ export const useWeddingStore = create<WeddingStore>()(
 
       setShowRegistrationModal: (show) => set({ showRegistrationModal: show }),
     }),
-    { name: 'wedding-planner-v1' }
+    {
+      name: 'wedding-planner-v1',
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<WeddingStore>
+        return {
+          ...current,
+          ...p,
+          wedding: { ...current.wedding, ...(p.wedding ?? {}) },
+          setupSteps: { ...current.setupSteps, ...(p.setupSteps ?? {}) },
+        }
+      },
+    }
   )
 )

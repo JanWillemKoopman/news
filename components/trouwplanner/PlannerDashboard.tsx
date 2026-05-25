@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   Heart, CalendarDays, Wallet, ListChecks, Users, Building2,
-  Save, Settings, X, ChevronRight, Sparkles,
+  Save, Settings, X, ChevronRight, Sparkles, Crown, UserCheck, ArrowRight,
 } from 'lucide-react'
 import { useWeddingStore } from '@/store/weddingStore'
 import BudgetModule from './BudgetModule'
@@ -11,6 +11,7 @@ import TaskModule from './TaskModule'
 import GuestModule from './GuestModule'
 import VendorModule from './VendorModule'
 import RegistrationModal from './RegistrationModal'
+import SetupCompletion from './SetupCompletion'
 import { cn } from '@/lib/utils'
 import type { ActiveTab } from '@/store/weddingStore'
 
@@ -134,6 +135,93 @@ function SaveBanner() {
   )
 }
 
+function SetupCard({ onOpen }: { onOpen: () => void }) {
+  const { setupSteps, setupDismissed, dismissSetup } = useWeddingStore()
+  const total = 4
+  const done = Object.values(setupSteps).filter(Boolean).length
+
+  if (setupDismissed || done >= total) return null
+
+  return (
+    <div className="bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 rounded-2xl p-5 mb-6 animate-fade-in">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-white border border-rose-100 flex items-center justify-center flex-shrink-0">
+          <Sparkles size={18} className="text-rose-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-stone-900 text-sm">Maak je planner compleet</p>
+          <p className="text-stone-500 text-xs mt-0.5">
+            Budget verdelen, team & wat al geregeld is — in ~1 minuut.
+          </p>
+        </div>
+        <button
+          onClick={dismissSetup}
+          className="text-stone-300 hover:text-stone-500 transition-colors flex-shrink-0"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex-1 h-1.5 bg-white rounded-full overflow-hidden">
+          <div
+            className="h-full bg-rose-500 rounded-full transition-all duration-500"
+            style={{ width: `${(done / total) * 100}%` }}
+          />
+        </div>
+        <span className="text-xs font-medium text-stone-500 whitespace-nowrap">{done} van {total}</span>
+      </div>
+
+      <button
+        onClick={onOpen}
+        className="mt-4 w-full flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-sm shadow-rose-500/20"
+      >
+        {done > 0 ? 'Verder gaan' : 'Aan de slag'}
+        <ArrowRight size={15} />
+      </button>
+    </div>
+  )
+}
+
+function TeamCard() {
+  const { wedding } = useWeddingStore()
+  const { ceremonyMasters, witnesses } = wedding
+  if (ceremonyMasters.length === 0 && witnesses.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-100 p-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {ceremonyMasters.length > 0 && (
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+              <Crown size={13} className="text-rose-400" />
+              Ceremoniemeester
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {ceremonyMasters.map((m) => (
+                <span key={m} className="text-xs font-medium text-stone-700 bg-stone-100 px-2.5 py-1 rounded-full">{m}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {witnesses.length > 0 && (
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+              <UserCheck size={13} className="text-rose-400" />
+              Getuigen
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {witnesses.map((w) => (
+                <span key={w} className="text-xs font-medium text-stone-700 bg-stone-100 px-2.5 py-1 rounded-full">{w}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function QuickStats() {
   const { tasks, guests, budgetItems, vendors, wedding } = useWeddingStore()
   const completedTasks = tasks.filter((t) => t.completed).length
@@ -168,6 +256,7 @@ export default function PlannerDashboard() {
   } = useWeddingStore()
 
   const [showSettings, setShowSettings] = useState(false)
+  const [showSetup, setShowSetup] = useState(false)
   const [editDate, setEditDate] = useState(wedding.date ?? '')
   const [editBudget, setEditBudget] = useState(wedding.budget?.toString() ?? '')
 
@@ -253,6 +342,8 @@ export default function PlannerDashboard() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         <SaveBanner />
         <CountdownBanner />
+        <SetupCard onOpen={() => setShowSetup(true)} />
+        <TeamCard />
         <QuickStats />
 
         {/* Tab navigation */}
@@ -285,6 +376,7 @@ export default function PlannerDashboard() {
       </main>
 
       {showRegistrationModal && <RegistrationModal />}
+      {showSetup && <SetupCompletion onClose={() => setShowSetup(false)} />}
     </div>
   )
 }
