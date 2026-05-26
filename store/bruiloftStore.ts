@@ -121,6 +121,7 @@ interface BruiloftActions {
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
+  refreshWebsiteContent: () => Promise<void>
   ensureRsvpCodes: () => Promise<void>
 
   addTaskComment: (taskId: ID, body: string) => Promise<void>
@@ -687,6 +688,15 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const wedding = get().wedding
       if (!wedding) return
       const content = await repository.saveWebsiteContent(wedding.id, patch)
+      set({ websiteContent: content })
+    },
+
+    // Haalt de website-content opnieuw op (gebruikt na een mutatie via een
+    // server-route die de store omzeilt, zoals /api/style/save).
+    refreshWebsiteContent: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const content = await repository.getWebsiteContent(wedding.id)
       set({ websiteContent: content })
     },
 

@@ -246,6 +246,9 @@ export function tableToRow(p: Partial<TableInput>): Partial<Tables['tables']['In
 
 // --- WebsiteContent --------------------------------------------------
 export function websiteContentFromRow(r: Tables['website_content']['Row']): WebsiteContent {
+  // theme_config is structuur-vrij in de DB; validatie gebeurt server-side
+  // bij het opslaan, dus hier behandelen we het als ThemeConfig of null.
+  const theme = (r.theme_config ?? null) as WebsiteContent['theme']
   return {
     id: r.id,
     weddingId: r.wedding_id,
@@ -255,6 +258,7 @@ export function websiteContentFromRow(r: Tables['website_content']['Row']): Webs
     hotels: r.hotels,
     routebeschrijving: r.routebeschrijving,
     contact: r.contact,
+    theme,
   }
 }
 
@@ -269,6 +273,7 @@ export function websiteContentToRow(
   if (p.hotels !== undefined) r.hotels = p.hotels
   if (p.routebeschrijving !== undefined) r.routebeschrijving = p.routebeschrijving
   if (p.contact !== undefined) r.contact = p.contact
+  if (p.theme !== undefined) r.theme_config = p.theme as unknown as Tables['website_content']['Insert']['theme_config']
   return r
 }
 

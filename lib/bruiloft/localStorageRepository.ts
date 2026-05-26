@@ -360,6 +360,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
         hotels: '',
         routebeschrijving: '',
         contact: '',
+        theme: null,
         ...patch,
       }
       db.websiteContents.push(content)

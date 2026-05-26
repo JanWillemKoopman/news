@@ -259,6 +259,7 @@ create table public.website_content (
   hotels text not null default '',
   routebeschrijving text not null default '',
   contact text not null default '',
+  theme_config jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -778,6 +779,7 @@ begin
       'routebeschrijving', v_content.routebeschrijving,
       'contact', v_content.contact
     ) end,
+    'theme', v_content.theme_config,
     'schedule', coalesce((
       select jsonb_agg(jsonb_build_object(
         'tijd', s.tijd, 'titel', s.titel,

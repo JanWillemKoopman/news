@@ -1,20 +1,12 @@
-import { Cormorant_Garamond } from 'next/font/google'
+import { ALL_FONT_VARIABLES } from '@/app/fonts'
 
 import '../globals.css'
 
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-  adjustFontFallback: false,
-})
-
-// Publieke RSVP-pagina: bruiloft-palet (Riley & Grey-stijl), geen app-navigatie.
+// Publieke RSVP-pagina: laadt alle whitelisted Google Fonts (één CSS-variabele
+// per font). De ThemeProvider in de page rendert een geneste .wedding-scope
+// en wijst de gekozen serif/sans toe aan --font-serif / --font-sans.
 export default function RsvpLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`wedding ${cormorant.variable} min-h-screen bg-rhino-50 text-foreground`}>
-      {children}
-    </div>
+    <div className={`${ALL_FONT_VARIABLES} min-h-screen bg-rhino-50`}>{children}</div>
   )
 }

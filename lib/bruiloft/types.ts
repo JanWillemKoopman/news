@@ -3,6 +3,8 @@
 // Alles hangt onder één Wedding; elke deel-entiteit draagt een weddingId,
 // zodat meerdere bruiloften naast elkaar kunnen bestaan.
 
+import type { ThemeConfig } from './theme'
+
 export type ID = string
 export type ISODate = string // 'YYYY-MM-DD'
 export type ISODateTime = string // volledige ISO timestamp
@@ -225,6 +227,7 @@ export interface WebsiteContent {
   hotels: string
   routebeschrijving: string
   contact: string
+  theme: ThemeConfig | null
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>

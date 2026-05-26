@@ -471,6 +471,7 @@ export type Database = {
           hotels: string
           id: string
           routebeschrijving: string
+          theme_config: Json | null
           updated_at: string
           wedding_id: string
           welkomsttekst: string
@@ -483,6 +484,7 @@ export type Database = {
           hotels?: string
           id?: string
           routebeschrijving?: string
+          theme_config?: Json | null
           updated_at?: string
           wedding_id: string
           welkomsttekst?: string
@@ -495,6 +497,7 @@ export type Database = {
           hotels?: string
           id?: string
           routebeschrijving?: string
+          theme_config?: Json | null
           updated_at?: string
           wedding_id?: string
           welkomsttekst?: string

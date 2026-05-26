@@ -4,6 +4,7 @@ import * as React from 'react'
 import { AlertCircle, Check, Copy, Info, Link2, Loader2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { ThemeStylingSection } from '@/components/bruiloft/ThemeStylingSection'
 import {
   Button,
   Card,
@@ -168,6 +169,8 @@ export default function WebsitePage() {
           op hun eigen telefoon en hun antwoord verschijnt direct bij jullie gasten-overzicht.
         </span>
       </div>
+
+      <ThemeStylingSection />
 
       <Card className="mb-6">
         <CardContent className="space-y-4 p-6">
