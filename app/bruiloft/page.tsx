@@ -11,7 +11,6 @@ import {
   Button,
   Card,
   CardContent,
-  EmptyState,
   Money,
   Progress,
   StatCard,
@@ -53,45 +52,45 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* Aftelteller */}
-      <Card className="relative mb-8 overflow-hidden border-none bg-gradient-to-br from-primary/15 via-card to-card">
+      {/* Hero: aftelteller. Lichte rhino-achtige kaart met serif headline. */}
+      <Card className="relative mb-8 overflow-hidden border-rhino-100 bg-gradient-to-br from-rhino-50 via-white to-rose-50">
         <Button
           variant="ghost"
           size="icon"
           aria-label="Gegevens bewerken"
-          className="absolute right-3 top-3"
+          className="absolute right-3 top-3 text-gray-500 hover:text-gray-900"
           onClick={() => setSettingsOpen(true)}
         >
           <Settings2 className="h-5 w-5" />
         </Button>
-        <CardContent className="flex flex-col items-center px-6 py-12 text-center">
-          <p className="font-serif text-2xl text-foreground md:text-3xl">
-            {wedding.partner1Naam} <span className="text-primary">&amp;</span>{' '}
+        <CardContent className="flex flex-col items-center px-6 py-14 text-center">
+          <p className="font-serif text-2xl font-medium text-rhino-900 md:text-3xl">
+            {wedding.partner1Naam} <span className="text-rose-600">&amp;</span>{' '}
             {wedding.partner2Naam}
           </p>
           <div className="my-4">
             {dagen > 0 ? (
-              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] leading-[1.05] text-primary">
+              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-rhino-900">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
             ) : dagen === 0 ? (
-              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] leading-tight text-primary">
+              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-rhino-900">
                 Vandaag is de dag!
               </p>
             ) : (
-              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] leading-tight text-foreground">
+              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-rhino-900">
                 Gefeliciteerd met jullie huwelijk
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-gray-600">
             <span className="inline-flex items-center gap-1.5">
-              <CalendarHeart className="h-4 w-4" />
+              <CalendarHeart className="h-4 w-4 text-rose-600" />
               {formatDatumNL(wedding.trouwdatum)}
             </span>
             {wedding.locatie ? (
               <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" />
+                <MapPin className="h-4 w-4 text-rose-600" />
                 {wedding.locatie}
               </span>
             ) : null}
@@ -136,8 +135,11 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-serif text-xl text-foreground">Eerstvolgende taken</h2>
-              <Link href="/bruiloft/taken" className="text-sm font-medium text-primary hover:underline">
+              <h2 className="font-serif text-2xl font-medium text-foreground">Eerstvolgende taken</h2>
+              <Link
+                href="/bruiloft/taken"
+                className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700"
+              >
                 Alles bekijken
               </Link>
             </div>
@@ -169,8 +171,11 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-serif text-xl text-foreground">Aankomende betalingen</h2>
-              <Link href="/bruiloft/budget" className="text-sm font-medium text-primary hover:underline">
+              <h2 className="font-serif text-2xl font-medium text-foreground">Aankomende betalingen</h2>
+              <Link
+                href="/bruiloft/budget"
+                className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700"
+              >
                 Naar budget
               </Link>
             </div>

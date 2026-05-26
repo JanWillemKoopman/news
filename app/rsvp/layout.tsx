@@ -1,19 +1,19 @@
-import { Newsreader } from 'next/font/google'
+import { Cormorant_Garamond } from 'next/font/google'
 
 import '../globals.css'
 
-const newsreader = Newsreader({
+const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   variable: '--font-serif',
   display: 'swap',
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   adjustFontFallback: false,
 })
 
-// Publieke RSVP-pagina: warm bruiloft-palet, geen app-navigatie.
+// Publieke RSVP-pagina: bruiloft-palet (Riley & Grey-stijl), geen app-navigatie.
 export default function RsvpLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`wedding ${newsreader.variable} min-h-screen bg-background text-foreground`}>
+    <div className={`wedding ${cormorant.variable} min-h-screen bg-rhino-50 text-foreground`}>
       {children}
     </div>
   )

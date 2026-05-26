@@ -7,7 +7,6 @@ import {
   Building2,
   CalendarHeart,
   CheckCircle2,
-  Heart,
   ListChecks,
   Sparkles,
   Star,
@@ -53,6 +52,19 @@ const TESTIMONIALS = [
   { name: 'Sophie & Tim', text: 'De takenlijst per maand is goud waard. We wisten precies wat er nog moest gebeuren.', date: 'Getrouwd maart 2025' },
 ]
 
+// Brand-mark — serif ampersand in een vierkant, gelijk aan Riley & Grey.
+function BrandMark({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
+  const square =
+    tone === 'dark'
+      ? 'bg-rhino-800 text-white'
+      : 'bg-white text-rhino-800 ring-1 ring-rhino-100'
+  return (
+    <span aria-hidden className={`flex h-9 w-9 items-center justify-center rounded-md ${square} shadow-sm`}>
+      <span className="font-serif text-[22px] font-medium leading-none">&amp;</span>
+    </span>
+  )
+}
+
 export function Landing() {
   const [showOnboarding, setShowOnboarding] = React.useState(false)
 
@@ -63,18 +75,18 @@ export function Landing() {
   const start = () => setShowOnboarding(true)
 
   return (
-    <div className="overflow-x-hidden">
-      {/* Nav */}
-      <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <span className="flex items-center gap-2 font-serif text-lg text-foreground">
-            <Heart className="h-5 w-5 text-primary" />
+    <div className="overflow-x-hidden bg-white">
+      {/* Donkere navigatiebalk — Riley & Grey-stijl */}
+      <nav className="sticky top-0 z-40 bg-rhino-800 text-white">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <span className="flex items-center gap-2.5 font-serif text-lg text-white">
+            <BrandMark tone="light" />
             Ons Trouwplan
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-rhino-100 transition-colors hover:text-white"
             >
               Inloggen
             </Link>
@@ -87,17 +99,18 @@ export function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden px-4 pb-16 pt-20 sm:px-6">
-        <div className="pointer-events-none absolute right-0 top-0 h-[500px] w-[500px] -translate-y-1/3 translate-x-1/3 rounded-full bg-primary/10 blur-3xl" />
+      <section className="relative overflow-hidden bg-rhino-50 px-4 pb-20 pt-24 sm:px-6">
+        <div className="pointer-events-none absolute right-0 top-0 h-[500px] w-[500px] -translate-y-1/3 translate-x-1/3 rounded-full bg-rose-200/40 blur-3xl" />
+        <div className="pointer-events-none absolute left-0 bottom-0 h-[400px] w-[400px] translate-y-1/3 -translate-x-1/3 rounded-full bg-rhino-200/40 blur-3xl" />
         <div className="relative mx-auto max-w-3xl text-center">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-rose-700 shadow-sm ring-1 ring-rose-100">
             <Sparkles className="h-3.5 w-3.5" />
             Gratis beginnen, geen account nodig
           </span>
-          <h1 className="font-serif text-4xl leading-[1.1] text-foreground sm:text-5xl lg:text-6xl">
-            Jullie droombruiloft, <span className="text-primary">zonder stress</span>
+          <h1 className="font-serif text-5xl font-medium leading-[1.05] tracking-tight text-rhino-900 sm:text-6xl lg:text-7xl">
+            Jullie droombruiloft, <span className="italic text-rose-600">zonder stress</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-600">
             Budget, taken, gasten, leveranciers, draaiboek en een eigen trouwwebsite — alles samen op
             één plek. Direct beginnen, opslaan wanneer je er klaar voor bent.
           </p>
@@ -107,10 +120,10 @@ export function Landing() {
               <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-600">
             {['Geen account vereist', 'Direct beginnen', '100% gratis'].map((t) => (
               <span key={t} className="inline-flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <CheckCircle2 className="h-4 w-4 text-rose-600" />
                 {t}
               </span>
             ))}
@@ -119,20 +132,25 @@ export function Landing() {
       </section>
 
       {/* Features */}
-      <section className="px-4 py-16 sm:px-6">
+      <section className="px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <div className="mx-auto mb-12 max-w-xl text-center">
-            <h2 className="font-serif text-3xl text-foreground sm:text-4xl">Alles wat jullie nodig hebben</h2>
-            <p className="mt-3 text-muted-foreground">Eén tool van de eerste planning tot de laatste dans.</p>
+          <div className="mx-auto mb-14 max-w-xl text-center">
+            <h2 className="font-serif text-4xl font-medium tracking-tight text-rhino-900 sm:text-5xl">
+              Alles wat jullie nodig hebben
+            </h2>
+            <p className="mt-3 text-lg text-gray-600">Eén tool van de eerste planning tot de laatste dans.</p>
           </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/30">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div
+                key={title}
+                className="rounded-lg border border-border bg-white p-6 transition-colors hover:border-rose-200"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-rose-50 text-rose-600">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-serif text-lg text-foreground">{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                <h3 className="font-serif text-2xl font-medium text-rhino-900">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{desc}</p>
               </div>
             ))}
           </div>
@@ -140,19 +158,21 @@ export function Landing() {
       </section>
 
       {/* How it works */}
-      <section className="bg-card/40 px-4 py-16 sm:px-6">
+      <section className="bg-rhino-50 px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-12 text-center">
-            <h2 className="font-serif text-3xl text-foreground sm:text-4xl">In 3 stappen aan de slag</h2>
+          <div className="mb-14 text-center">
+            <h2 className="font-serif text-4xl font-medium tracking-tight text-rhino-900 sm:text-5xl">
+              In 3 stappen aan de slag
+            </h2>
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             {STEPS.map(({ num, title, desc }) => (
               <div key={num} className="text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary font-serif text-lg text-primary-foreground">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-600 font-serif text-2xl text-white">
                   {num}
                 </div>
-                <h3 className="font-serif text-lg text-foreground">{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                <h3 className="font-serif text-2xl font-medium text-rhino-900">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{desc}</p>
               </div>
             ))}
           </div>
@@ -166,28 +186,28 @@ export function Landing() {
       </section>
 
       {/* Social proof */}
-      <section className="px-4 py-16 sm:px-6">
+      <section className="px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <div className="mb-3 flex items-center justify-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                <Star key={i} className="h-5 w-5 fill-rose-600 text-rose-600" />
               ))}
             </div>
-            <p className="font-serif text-2xl text-foreground">Door duizenden koppels gebruikt</p>
-            <p className="mt-1 text-muted-foreground">om hun bruiloft te plannen</p>
+            <p className="font-serif text-3xl font-medium text-rhino-900">Door duizenden koppels gebruikt</p>
+            <p className="mt-1 text-gray-600">om hun bruiloft te plannen</p>
           </div>
-          <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {TESTIMONIALS.map(({ name, text, date }) => (
-              <div key={name} className="rounded-2xl border border-border bg-card p-6">
+              <div key={name} className="rounded-lg border border-border bg-white p-6">
                 <div className="mb-4 flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
+                    <Star key={i} className="h-3.5 w-3.5 fill-rose-600 text-rose-600" />
                   ))}
                 </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">&ldquo;{text}&rdquo;</p>
-                <p className="mt-4 font-medium text-foreground">{name}</p>
-                <p className="text-xs text-muted-foreground">{date}</p>
+                <p className="text-sm leading-relaxed text-gray-600">&ldquo;{text}&rdquo;</p>
+                <p className="mt-4 font-medium text-rhino-900">{name}</p>
+                <p className="text-xs text-gray-500">{date}</p>
               </div>
             ))}
           </div>
@@ -195,14 +215,14 @@ export function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="px-4 py-16 sm:px-6">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-10 text-center">
-          <CalendarHeart className="mx-auto mb-5 h-10 w-10 text-primary" />
-          <h2 className="font-serif text-3xl text-foreground sm:text-4xl">Jullie verhaal begint hier</h2>
-          <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+      <section className="px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-3xl rounded-2xl bg-rhino-800 px-8 py-14 text-center text-white">
+          <CalendarHeart className="mx-auto mb-5 h-10 w-10 text-rose-300" />
+          <h2 className="font-serif text-4xl font-medium tracking-tight sm:text-5xl">Jullie verhaal begint hier</h2>
+          <p className="mx-auto mt-3 max-w-md text-lg text-rhino-100">
             Geen wachtlijst, geen creditcard, geen account. Gewoon beginnen.
           </p>
-          <div className="mt-7">
+          <div className="mt-8">
             <Button size="lg" onClick={start}>
               Start nu gratis
               <ArrowRight className="h-5 w-5" />
@@ -212,13 +232,13 @@ export function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border px-4 py-8 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Heart className="h-4 w-4 text-primary" />
+      <footer className="border-t border-border bg-white px-4 py-8 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 sm:flex-row">
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <BrandMark tone="dark" />
             Ons Trouwplan
           </span>
-          <p className="text-xs text-muted-foreground">Gratis te gebruiken · Begin zonder account</p>
+          <p className="text-xs text-gray-500">Gratis te gebruiken · Begin zonder account</p>
         </div>
       </footer>
     </div>

@@ -9,9 +9,15 @@ import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-// Accountmenu in de header: naam, rol, bruiloft-kiezer, beheer (owner),
-// account-instellingen en uitloggen.
-export function UserMenu() {
+interface UserMenuProps {
+  variant?: 'light' | 'dark'
+  compact?: boolean
+}
+
+// Accountmenu in de header — twee varianten: 'light' (op een lichte balk) en
+// 'dark' (op de donkere navy-balk uit Riley & Grey-stijl). Het dropdown-panel
+// blijft in beide varianten een licht popover.
+export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const role = useBruiloftStore((s) => s.role)
@@ -25,6 +31,7 @@ export function UserMenu() {
 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
   const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
+  const dark = variant === 'dark'
 
   async function onSignOut() {
     setOpen(false)
@@ -45,15 +52,38 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        aria-label="Accountmenu openen"
+        className={cn(
+          'flex items-center gap-2 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          dark
+            ? 'px-1.5 py-1 text-white hover:bg-rhino-700 focus-visible:ring-white/60 focus-visible:ring-offset-rhino-800'
+            : 'px-2 py-1.5 text-sm hover:bg-accent focus-visible:ring-ring focus-visible:ring-offset-background'
+        )}
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+        <span
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
+            dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
+          )}
+        >
           {initials}
         </span>
-        <span className="hidden max-w-[12ch] truncate font-medium text-foreground sm:inline">
-          {displayLabel}
-        </span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+        {!compact ? (
+          <>
+            <span
+              className={cn(
+                'hidden max-w-[12ch] truncate text-sm font-medium sm:inline',
+                dark ? 'text-white' : 'text-foreground'
+              )}
+            >
+              {displayLabel}
+            </span>
+            <ChevronDown
+              className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
+              aria-hidden
+            />
+          </>
+        ) : null}
       </button>
 
       {open ? (
@@ -61,7 +91,7 @@ export function UserMenu() {
           <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-card p-1.5 shadow-lg"
+            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-white p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
@@ -69,7 +99,7 @@ export function UserMenu() {
                 <p className="truncate text-xs text-muted-foreground">{currentUser.email}</p>
               ) : null}
               {role ? (
-                <span className="mt-1.5 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                <span className="mt-1.5 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">
                   {ROLE_LABELS[role]}
                 </span>
               ) : null}
@@ -78,7 +108,7 @@ export function UserMenu() {
             {weddings.length > 1 ? (
               <>
                 <div className="my-1 h-px bg-border" />
-                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Wissel van bruiloft
                 </p>
                 {weddings.map((w) => {
@@ -89,13 +119,13 @@ export function UserMenu() {
                       type="button"
                       role="menuitem"
                       onClick={() => onSwitch(w.id)}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-gray-50"
                     >
                       <Heart className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate">
                         {w.partner1Naam} &amp; {w.partner2Naam}
                       </span>
-                      {active ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
+                      {active ? <Check className="h-4 w-4 shrink-0 text-rose-600" /> : null}
                     </button>
                   )
                 })}
@@ -109,7 +139,7 @@ export function UserMenu() {
                 href="/bruiloft/beheer/leden"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
               >
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 Leden &amp; rechten
@@ -120,7 +150,7 @@ export function UserMenu() {
               href="/bruiloft/account"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
             >
               <UserCog className="h-4 w-4 text-muted-foreground" />
               Account
@@ -130,7 +160,7 @@ export function UserMenu() {
               type="button"
               role="menuitem"
               onClick={onSignOut}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
             >
               <LogOut className="h-4 w-4 text-muted-foreground" />
               Uitloggen

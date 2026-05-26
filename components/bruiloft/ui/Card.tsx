@@ -2,8 +2,9 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-// Verfijnde kaart voor de bruiloftplanner: hairline-rand + zachte elevatie.
-// Layout-subcomponenten komen van de gedeelde primitive.
+// Witte kaart met fijne grijze rand en zachte schaduw — Riley & Grey-stijl.
+// Hover heeft een dunne pink-rand i.p.v. de bestaande translate, zodat de
+// look rustig en zakelijk-elegant blijft.
 export {
   CardHeader,
   CardTitle,
@@ -21,9 +22,9 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-sm',
+        'rounded-lg border border-border bg-white text-card-foreground shadow-sm',
         interactive &&
-          'cursor-pointer transition-[box-shadow,transform,border-color] duration-150 ease-premium hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.35)] hover:shadow-md',
+          'cursor-pointer transition-[box-shadow,border-color] duration-150 ease-out hover:border-rose-300 hover:shadow-md',
         className
       )}
       {...props}

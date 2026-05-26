@@ -12,23 +12,23 @@ interface StatCardProps {
   className?: string
 }
 
-// Overzichtskaart (o.a. op het dashboard). Klikt door naar een module als
-// er een href is meegegeven.
+// Overzichtskaart op het dashboard. Witte kaart met dusty-rose icoonpil en
+// (optioneel) een doorklik-pijl rechtsboven — Riley & Grey-stijl.
 export function StatCard({ icon: Icon, label, href, children, className }: StatCardProps) {
   const inner = (
     <div
       className={cn(
-        'group flex h-full flex-col rounded-xl border border-border bg-card p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-150 ease-premium',
-        href && 'hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.35)] hover:shadow-md',
+        'group flex h-full flex-col rounded-lg border border-border bg-white p-6 shadow-sm transition-[box-shadow,border-color] duration-150 ease-out',
+        href && 'hover:border-rose-300 hover:shadow-md',
         className
       )}
     >
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600">
           <Icon className="h-5 w-5" />
         </div>
         {href ? (
-          <ArrowUpRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+          <ArrowUpRight className="h-5 w-5 text-gray-300 transition-colors group-hover:text-rose-600" />
         ) : null}
       </div>
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -39,7 +39,7 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
   return href ? (
     <Link
       href={href}
-      className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {inner}
     </Link>

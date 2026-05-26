@@ -12,9 +12,7 @@ import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
 import { moduleForPath } from './nav'
 import { Sidebar } from './Sidebar'
-import { ThemeProvider, useTheme } from './ThemeProvider'
-import { ThemeToggle } from './ThemeToggle'
-import { UserMenu } from './UserMenu'
+import { TopNav } from './TopNav'
 
 interface WeddingShellProps {
   children: React.ReactNode
@@ -23,16 +21,13 @@ interface WeddingShellProps {
 
 export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <ShellInner fontClassName={fontClassName}>{children}</ShellInner>
-      </ToastProvider>
-    </ThemeProvider>
+    <ToastProvider>
+      <ShellInner fontClassName={fontClassName}>{children}</ShellInner>
+    </ToastProvider>
   )
 }
 
 function ShellInner({ children, fontClassName }: WeddingShellProps) {
-  const { theme } = useTheme()
   const pathname = usePathname()
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
@@ -49,45 +44,51 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-screen bg-background text-foreground antialiased',
-    theme === 'dark' && 'dark',
+    'wedding min-h-screen bg-white text-foreground antialiased',
     fontClassName
   )
 
-  // Voor de eerste hydratatie: skeleton-shell (voorkomt flits van inhoud).
+  // Eerste hydratatie: skeleton-shell die exact dezelfde structuur volgt als
+  // de echte shell (donkere top-balk, lichte sub-zijbalk, content-canvas).
+  // Voorkomt visuele flikkering tussen skeleton en de daadwerkelijke layout.
   if (!hydrated) {
     return (
-      <div className={cn(wrapperClass, 'flex')} aria-busy="true" suppressHydrationWarning>
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 p-4 md:flex">
-          <Skeleton className="h-9 w-40" />
-          <div className="mt-8 flex flex-col gap-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full" />
-            ))}
+      <div className={wrapperClass} aria-busy="true" suppressHydrationWarning>
+        <div className="h-16 w-full bg-rhino-800" />
+        <div className="flex min-h-[calc(100vh-4rem)]">
+          <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-white p-4 md:flex">
+            <Skeleton className="h-4 w-24" />
+            <div className="mt-4 flex flex-col gap-1">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-full" />
+              ))}
+            </div>
+          </aside>
+          <div className="flex-1 bg-gray-50 px-4 py-6 md:px-8">
+            <Skeleton className="h-8 w-48" />
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-lg" />
+              ))}
+            </div>
+            <Skeleton className="mt-6 h-64 w-full rounded-lg" />
           </div>
-        </aside>
-        <div className="flex-1 px-4 py-6 md:px-8">
-          <Skeleton className="h-8 w-48" />
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-xl" />
-            ))}
-          </div>
-          <Skeleton className="mt-6 h-64 w-full rounded-xl" />
         </div>
       </div>
     )
   }
 
-  // Laden mislukt: toon een nette foutmelding met de mogelijkheid het opnieuw te
-  // proberen, in plaats van eindeloos het skelet te tonen.
+  // Laden mislukt: toon een nette foutmelding met retry.
   if (error) {
     return (
-      <div className={cn(wrapperClass, 'flex min-h-screen flex-col items-center justify-center px-4')} suppressHydrationWarning>
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <div
+        className={cn(wrapperClass, 'flex min-h-screen flex-col items-center justify-center px-4')}
+        suppressHydrationWarning
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
           <WifiOff className="h-7 w-7" />
         </div>
-        <h1 className="mt-5 text-center font-serif text-2xl text-foreground">Er ging iets mis</h1>
+        <h1 className="mt-5 text-center font-serif text-3xl text-foreground">Er ging iets mis</h1>
         <p className="mt-2 max-w-sm text-center text-muted-foreground">{error}</p>
         <Button
           className="mt-6"
@@ -117,26 +118,20 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   }
 
   return (
-    <div className={cn(wrapperClass, 'flex')} suppressHydrationWarning>
+    <div className={wrapperClass} suppressHydrationWarning>
       <a
         href="#hoofdinhoud"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-rose-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-md"
       >
         Naar inhoud
       </a>
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:px-8">
-          <span className="font-serif text-lg text-foreground md:hidden">Ons Trouwplan</span>
-          <div className="ml-auto flex items-center gap-1">
-            <ThemeToggle />
-            <UserMenu />
-          </div>
-        </header>
+      <TopNav />
+      <div className="flex min-h-[calc(100vh-4rem)]">
+        <Sidebar />
         <main
           id="hoofdinhoud"
           tabIndex={-1}
-          className="flex-1 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
+          className="flex-1 bg-gray-50 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
         >
           {allowed ? (
             children
@@ -148,8 +143,8 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
             />
           )}
         </main>
-        <MobileNav />
       </div>
+      <MobileNav />
     </div>
   )
 }

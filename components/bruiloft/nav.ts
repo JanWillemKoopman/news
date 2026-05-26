@@ -1,9 +1,11 @@
 import {
   Armchair,
   CalendarClock,
+  ClipboardList,
   Globe,
   LayoutDashboard,
   ListChecks,
+  Settings,
   ShieldCheck,
   Store,
   Users,
@@ -20,15 +22,17 @@ export interface NavItem {
   module: Module
 }
 
-const dashboard: NavItem = { label: 'Dashboard', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
+// Individuele items.
+const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
 const leveranciers: NavItem = { label: 'Leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
-const gasten: NavItem = { label: 'Gasten', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
-const website: NavItem = { label: 'Website', href: '/bruiloft/website', icon: Globe, module: 'website' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
-const tafels: NavItem = { label: 'Tafels', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
+const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
+const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
+const website: NavItem = { label: 'Website', href: '/bruiloft/website', icon: Globe, module: 'website' }
 const leden: NavItem = { label: 'Leden & rechten', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
+const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
 
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
@@ -36,20 +40,69 @@ export const NAV_ITEMS: NavItem[] = [
   taken,
   budget,
   leveranciers,
-  gasten,
-  website,
   draaiboek,
+  gasten,
   tafels,
+  website,
   leden,
+  account,
 ]
 
-// Gegroepeerde navigatie voor de zijbalk. Een groep zonder label staat los bovenaan.
-export const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
-  { label: null, items: [dashboard] },
-  { label: 'Plannen', items: [taken, budget, leveranciers] },
-  { label: 'Gasten', items: [gasten, website] },
-  { label: 'De dag zelf', items: [draaiboek, tafels] },
-  { label: 'Beheer', items: [leden] },
+// Top-niveau secties (horizontaal in de donkere header, à la Riley & Grey).
+// Elke sectie heeft (optioneel) een sub-navigatie die in de linker zijbalk
+// verschijnt zodra de sectie actief is.
+export interface NavSection {
+  key: string
+  label: string
+  icon: LucideIcon
+  // Het pad dat geopend wordt als je op de top-knop klikt — meestal het
+  // eerste sub-item van de sectie.
+  href: string
+  items: NavItem[]
+  module: Module // welke module bepaalt zichtbaarheid in de top-balk
+}
+
+export const NAV_SECTIONS: NavSection[] = [
+  {
+    key: 'overzicht',
+    label: 'Overzicht',
+    icon: LayoutDashboard,
+    href: '/bruiloft',
+    items: [dashboard],
+    module: 'dashboard',
+  },
+  {
+    key: 'plannen',
+    label: 'Plannen',
+    icon: ClipboardList,
+    href: '/bruiloft/taken',
+    items: [taken, budget, leveranciers, draaiboek],
+    module: 'taken',
+  },
+  {
+    key: 'gasten',
+    label: 'Gastenbeheer',
+    icon: Users,
+    href: '/bruiloft/gasten',
+    items: [gasten, tafels],
+    module: 'gasten',
+  },
+  {
+    key: 'website',
+    label: 'Website',
+    icon: Globe,
+    href: '/bruiloft/website',
+    items: [website],
+    module: 'website',
+  },
+  {
+    key: 'beheer',
+    label: 'Beheer',
+    icon: ShieldCheck,
+    href: '/bruiloft/beheer/leden',
+    items: [leden],
+    module: 'beheer',
+  },
 ]
 
 // Hoofditems in de mobiele onderbalk; de rest zit achter "Meer".
@@ -66,15 +119,23 @@ export function moduleForPath(pathname: string): Module {
   return match ? match.module : 'dashboard'
 }
 
-// Filtert items/groepen op zichtbaarheid volgens de rechten-matrix.
+// Welke top-sectie is actief op basis van het huidige pad. Default: overzicht.
+export function activeSection(pathname: string): NavSection {
+  for (const section of NAV_SECTIONS) {
+    if (section.items.some((i) => isActive(pathname, i.href))) return section
+  }
+  return NAV_SECTIONS[0]
+}
+
+// Filtert items op zichtbaarheid volgens de rechten-matrix.
 export function visibleItems(items: NavItem[], permissions: PermissionMap): NavItem[] {
   return items.filter((i) => canView(permissions, i.module))
 }
 
-export function visibleGroups(
-  permissions: PermissionMap
-): { label: string | null; items: NavItem[] }[] {
-  return NAV_GROUPS.map((g) => ({ ...g, items: visibleItems(g.items, permissions) })).filter(
-    (g) => g.items.length > 0
-  )
+// Top-secties die voor de gebruiker zichtbaar zijn (filtert ook lege secties).
+export function visibleSections(permissions: PermissionMap): NavSection[] {
+  return NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: visibleItems(s.items, permissions),
+  })).filter((s) => s.items.length > 0)
 }

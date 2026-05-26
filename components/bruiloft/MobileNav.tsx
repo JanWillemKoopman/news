@@ -11,6 +11,7 @@ import { MoreSheet } from './MoreSheet'
 import { isActive, MOBILE_PRIMARY, NAV_ITEMS, visibleItems } from './nav'
 
 // Onderbalk op mobiel: ~4 hoofditems + "Meer" voor de overige secties.
+// Witte achtergrond, dusty-rose accent — in lijn met Riley & Grey-stijl.
 export function MobileNav() {
   const pathname = usePathname()
   const permissions = useBruiloftStore((s) => s.permissions)
@@ -24,7 +25,7 @@ export function MobileNav() {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_3px_rgba(15,23,42,0.04)] md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-between px-1">
           {primary.map((item) => {
             const active = isActive(pathname, item.href)
@@ -35,7 +36,7 @@ export function MobileNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-                  active ? 'text-primary' : 'text-muted-foreground'
+                  active ? 'text-rose-600' : 'text-gray-500 hover:text-gray-800'
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -49,7 +50,7 @@ export function MobileNav() {
             aria-haspopup="dialog"
             className={cn(
               'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-              meerActief ? 'text-primary' : 'text-muted-foreground'
+              meerActief ? 'text-rose-600' : 'text-gray-500 hover:text-gray-800'
             )}
           >
             <MoreHorizontal className="h-5 w-5" />

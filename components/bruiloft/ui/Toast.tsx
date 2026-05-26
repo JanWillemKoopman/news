@@ -4,7 +4,6 @@ import * as React from 'react'
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/components/bruiloft/ThemeProvider'
 
 type ToastVariant = 'default' | 'success' | 'error'
 
@@ -28,7 +27,6 @@ interface ToastContextValue {
 const ToastContext = React.createContext<ToastContextValue | null>(null)
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const { theme } = useTheme()
   const [items, setItems] = React.useState<ToastItem[]>([])
   const idRef = React.useRef(0)
 
@@ -53,10 +51,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="true"
-        className={cn(
-          'wedding pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 p-4 sm:bottom-4 sm:left-auto sm:right-4 sm:items-end',
-          theme === 'dark' && 'dark'
-        )}
+        className="wedding pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 p-4 sm:bottom-4 sm:left-auto sm:right-4 sm:items-end"
       >
         {items.map((t) => (
           <ToastCard key={t.id} item={t} onClose={() => remove(t.id)} />
@@ -71,12 +66,12 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
     item.variant === 'success' ? CheckCircle2 : item.variant === 'error' ? AlertCircle : Info
   const tone =
     item.variant === 'success'
-      ? 'text-emerald-600 dark:text-emerald-400'
+      ? 'text-emerald-600'
       : item.variant === 'error'
-        ? 'text-rose-600 dark:text-rose-400'
-        : 'text-primary'
+        ? 'text-red-600'
+        : 'text-rose-600'
   return (
-    <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-border bg-card p-3.5 text-card-foreground shadow-lg animate-slide-up">
+    <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-border bg-white p-3.5 text-card-foreground shadow-lg animate-slide-up">
       <span className={cn('mt-0.5 shrink-0', tone)}>
         <Icon className="h-5 w-5" />
       </span>

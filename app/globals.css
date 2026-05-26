@@ -22,110 +22,78 @@
 }
 
 /*
- * shadcn/ui design tokens.
- * Defined globally but applied only within the .dark wrapper in
- * app/sollicitatie/layout.tsx, so the advisor app at / is unaffected.
+ * shadcn/ui design tokens (root). Niet actief — alleen aanwezig zodat de
+ * primitives buiten een themawrapper niet onbestaande variabelen lezen.
  */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 215 25% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --popover-foreground: 215 25% 15%;
+    --primary: 339 39% 50%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 215 25% 15%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%;
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-foreground: 215 25% 15%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222.2 47% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 44% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 44% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 160 84% 39%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 14%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 14%;
-    --muted-foreground: 215 20.2% 62%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 160 84% 39%;
+    --ring: 339 39% 50%;
+    --radius: 0.5rem;
   }
 }
 
 /*
- * Bruiloftplanner-thema (Anthropic-uitstraling: warm, rustig, ivoor + terracotta).
- * Scoped onder .wedding zodat het de bestaande apps op / en /sollicitatie niet
- * raakt. Omdat de gedeelde shadcn-primitives token-gestuurd zijn, nemen ze
- * binnen deze subtree automatisch het warme palet over. Donker thema wordt
- * aan/uit gezet door .dark op dezelfde wrapper te zetten (.wedding.dark).
+ * Bruiloftplanner-thema — Riley & Grey-look.
+ *
+ * Lichte, witte canvas met dusty-rose (#ad5173) als primair accent en een
+ * diepe navy (#2a4862) voor de top-header. Het thema is gescoped onder .wedding
+ * zodat andere subapps onaangeroerd blijven.
+ *
+ * Eén thema (licht). Geen dark-mode-toggle — Riley & Grey is uitsluitend
+ * licht; de dark-variant is hier verwijderd om afwijkingen te voorkomen.
  */
 @layer base {
   .wedding {
-    --background: 47 25% 92%; /* #F0EEE6 warm ivoor */
-    --foreground: 40 5% 9%; /* #191917 warm bijna-zwart */
-    --card: 48 30% 97%; /* #FAF9F5 warme kaart */
-    --card-foreground: 40 5% 9%;
-    --popover: 48 30% 97%;
-    --popover-foreground: 40 5% 9%;
-    --primary: 15 52% 58%; /* #CC785C terracotta */
-    --primary-foreground: 40 33% 98%;
-    --primary-hover: 16 53% 48%; /* #BD5D3A dieper terracotta */
-    --secondary: 43 20% 88%;
-    --secondary-foreground: 40 5% 9%;
-    --muted: 43 18% 89%;
-    --muted-foreground: 40 5% 36%; /* donkerder voor WCAG AA */
-    --accent: 43 24% 86%;
-    --accent-foreground: 40 5% 9%;
-    --destructive: 5 64% 50%;
-    --destructive-foreground: 40 33% 98%;
-    --border: 40 13% 86%; /* subtiele hairline */
-    --input: 40 14% 80%;
-    --ring: 15 52% 58%;
-    --radius: 0.625rem; /* ingetogen radius (Linear/Stripe-craft) */
-  }
+    /* Wit canvas met een hint warmte (haast niet zichtbaar). */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%; /* near-black met blauwe ondertoon */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
 
-  .wedding.dark {
-    --background: 40 4% 12%; /* warme bijna-zwarte tint */
-    --foreground: 40 20% 98%; /* #FAFAF7 warm gebroken wit */
-    --card: 40 4% 16%; /* #2B2A28 */
-    --card-foreground: 40 20% 98%;
-    --popover: 40 4% 16%;
-    --popover-foreground: 40 20% 98%;
-    --primary: 16 60% 62%; /* iets lichter terracotta voor contrast op donker */
-    --primary-foreground: 40 33% 98%;
-    --primary-hover: 16 55% 55%;
-    --secondary: 40 4% 22%;
-    --secondary-foreground: 40 20% 98%;
-    --muted: 40 4% 22%;
-    --muted-foreground: 40 8% 64%;
-    --accent: 40 5% 26%;
-    --accent-foreground: 40 20% 98%;
-    --destructive: 5 58% 52%;
-    --destructive-foreground: 40 33% 98%;
-    --border: 40 4% 24%;
-    --input: 40 5% 30%;
-    --ring: 16 60% 62%;
+    /* Primair = dusty rose (#ad5173) ≈ Riley & Grey pink-600 */
+    --primary: 339 39% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 339 39% 60%; /* hover lichter — pink-500 (#c46f8a) */
+
+    --secondary: 215 25% 96%; /* zachte grijs-blauw */
+    --secondary-foreground: 215 25% 15%;
+    --muted: 215 16% 96%;
+    --muted-foreground: 215 14% 42%; /* gray-600 equivalent */
+    --accent: 339 38% 96%; /* zachte roze-vleug voor hover */
+    --accent-foreground: 215 25% 15%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 16% 90%; /* gray-200 */
+    --input: 215 16% 85%; /* gray-300 */
+    --ring: 339 39% 50%;
+    --radius: 0.375rem; /* rounded-md — Riley & Grey gebruikt 6px op knoppen */
+
+    /* Donkere navy header (rhino-800). */
+    --header-bg: 211 39% 27%;
+    --header-fg: 0 0% 100%;
+    --header-muted: 211 30% 75%;
+    --header-active: 211 39% 35%; /* iets lichter dan -800 */
+    --header-border: 211 39% 22%;
   }
 }
 

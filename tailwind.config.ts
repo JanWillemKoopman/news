@@ -11,7 +11,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['var(--font-serif)', 'Georgia', 'Cambria', 'serif'],
+        serif: ['var(--font-serif)', '"Cormorant Garamond"', 'Georgia', 'Cambria', 'serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -47,20 +47,49 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Riley & Grey "rhino" navy — gebruikt voor de donkere header en
+        // accenten. Overgenomen uit hun productionsite.
+        rhino: {
+          50: '#f4f7fb',
+          100: '#e8eef6',
+          200: '#cdddea',
+          300: '#a0c0d9',
+          400: '#6fa0c4',
+          500: '#4b83ac',
+          600: '#396990',
+          700: '#2f5475',
+          800: '#2a4862',
+          900: '#263c50',
+          950: '#1a2937',
+        },
+        // Riley & Grey "pink" — primaire actiekleur (dusty rose).
+        rose: {
+          50: '#fbf5f6',
+          100: '#f5e3e7',
+          200: '#f1dae0',
+          300: '#e6bbc7',
+          400: '#d795a9',
+          500: '#c46f8a',
+          600: '#ad5173',
+          700: '#913f5f',
+          800: '#7a3754',
+          900: '#69324b',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      // Warm-getinte, zachte elevatie i.p.v. de standaard neutrale schaduwen.
       boxShadow: {
-        xs: '0 1px 2px 0 rgb(41 37 36 / 0.05)',
-        sm: '0 1px 3px 0 rgb(41 37 36 / 0.06), 0 1px 2px -1px rgb(41 37 36 / 0.06)',
-        DEFAULT: '0 2px 8px -2px rgb(41 37 36 / 0.08)',
-        md: '0 6px 20px -4px rgb(41 37 36 / 0.10)',
-        lg: '0 12px 32px -8px rgb(41 37 36 / 0.12)',
-        xl: '0 20px 48px -12px rgb(41 37 36 / 0.16)',
+        xs: '0 1px 2px 0 rgb(15 23 42 / 0.04)',
+        sm: '0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.06)',
+        DEFAULT: '0 2px 8px -2px rgb(15 23 42 / 0.08)',
+        md: '0 6px 20px -4px rgb(15 23 42 / 0.10)',
+        lg: '0 12px 32px -8px rgb(15 23 42 / 0.12)',
+        xl: '0 20px 48px -12px rgb(15 23 42 / 0.16)',
+        // Subtiele schaduw onder de donkere header.
+        header: '0 1px 0 0 rgb(0 0 0 / 0.06)',
       },
       transitionTimingFunction: {
         premium: 'cubic-bezier(0.16, 1, 0.3, 1)',
