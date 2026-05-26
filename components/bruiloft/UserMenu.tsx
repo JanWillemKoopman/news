@@ -14,7 +14,6 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 export function UserMenu() {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
-  const isAnonymous = useBruiloftStore((s) => s.isAnonymous)
   const role = useBruiloftStore((s) => s.role)
   const weddings = useBruiloftStore((s) => s.weddings)
   const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
@@ -24,12 +23,8 @@ export function UserMenu() {
 
   if (!currentUser) return null
 
-  const displayLabel = isAnonymous
-    ? 'Gast'
-    : currentUser.displayName || currentUser.email || 'Account'
-  const initials = isAnonymous
-    ? 'G'
-    : (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
+  const displayLabel = currentUser.displayName || currentUser.email || 'Account'
+  const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
 
   async function onSignOut() {
     setOpen(false)
@@ -70,9 +65,7 @@ export function UserMenu() {
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
-              {isAnonymous ? (
-                <p className="truncate text-xs text-muted-foreground">Nog niet opgeslagen</p>
-              ) : currentUser.email ? (
+              {currentUser.email ? (
                 <p className="truncate text-xs text-muted-foreground">{currentUser.email}</p>
               ) : null}
               {role ? (

@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, KeyRound, Users, Wallet } from 'lucide-react'
 
 import { Button, Field, Input, useToast } from '@/components/bruiloft/ui'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Step = 'datum' | 'namen' | 'budget'
-const STEPS: Step[] = ['datum', 'namen', 'budget']
+type Step = 'datum' | 'namen' | 'budget' | 'account'
+const STEPS: Step[] = ['datum', 'namen', 'budget', 'account']
 
 const BUDGET_PRESETS = [
   { label: '< €10.000', value: 9000 },
@@ -28,6 +28,8 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
   const [partner2, setPartner2] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
 
   const stepIndex = STEPS.indexOf(step)
@@ -35,17 +37,20 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
   const canNext =
     step === 'datum' ? trouwdatum !== '' :
     step === 'namen' ? partner1.trim() !== '' && partner2.trim() !== '' :
+    step === 'account' ? email.includes('@') && password.length >= 8 :
     true
 
   function prev() {
     if (step === 'datum') onBack()
     else if (step === 'namen') setStep('datum')
-    else setStep('namen')
+    else if (step === 'budget') setStep('namen')
+    else setStep('budget')
   }
 
   async function next() {
     if (step === 'datum') return setStep('namen')
     if (step === 'namen') return setStep('budget')
+    if (step === 'budget') return setStep('account')
     await finish()
   }
 
@@ -62,15 +67,33 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
       aantalAvondgasten: 0,
     }
     try {
-      await completeOnboarding(input)
-      // Bij succes verschijnt de app-shell vanzelf (wedding is gezet).
-    } catch {
-      setBezig(false)
-      toast({
-        title: 'Aanmaken mislukt',
-        description: 'We konden jullie trouwplan niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
-        variant: 'error',
+      await completeOnboarding(input, {
+        email: email.trim(),
+        password,
+        displayName: partner1.trim() || 'Partner 1',
       })
+    } catch (err) {
+      setBezig(false)
+      const msg = err instanceof Error ? err.message : ''
+      if (msg === 'confirm-email') {
+        toast({
+          title: 'Bevestig je e-mailadres',
+          description: 'We hebben een bevestigingslink gestuurd naar ' + email.trim() + '. Klik de link aan om door te gaan.',
+          variant: 'error',
+        })
+      } else if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already been registered')) {
+        toast({
+          title: 'E-mailadres al in gebruik',
+          description: 'Er bestaat al een account met dit e-mailadres. Log in via de inlogpagina.',
+          variant: 'error',
+        })
+      } else {
+        toast({
+          title: 'Aanmaken mislukt',
+          description: 'We konden jullie account niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
+          variant: 'error',
+        })
+      }
     }
   }
 
@@ -202,15 +225,41 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
                 </Field>
               </div>
 
-              <button
-                type="button"
-                onClick={finish}
-                disabled={bezig}
-                className="mt-3 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-              >
-                Later instellen
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+            </div>
+          )}
+
+          {step === 'account' && (
+            <div>
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <KeyRound className="h-6 w-6" />
+              </div>
+              <h2 className="font-serif text-3xl text-foreground">Maak jullie account aan</h2>
+              <p className="mt-2 text-muted-foreground">
+                Hiermee bewaren we jullie trouwplan veilig en kun je het altijd en overal openen.
+              </p>
+              <div className="mt-8 space-y-4">
+                <Field label="E-mailadres" htmlFor="ob-email" required>
+                  <Input
+                    id="ob-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="jullie@email.nl"
+                    autoFocus
+                    autoComplete="email"
+                  />
+                </Field>
+                <Field label="Wachtwoord" htmlFor="ob-password" required>
+                  <Input
+                    id="ob-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimaal 8 tekens"
+                    autoComplete="new-password"
+                  />
+                </Field>
+              </div>
             </div>
           )}
 
@@ -219,7 +268,7 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
               Stap {stepIndex + 1} van {STEPS.length}
             </span>
             <Button onClick={next} disabled={!canNext || bezig} loading={bezig} size="lg">
-              {step === 'budget' ? (
+              {step === 'account' ? (
                 <>
                   Maak ons trouwplan
                   <Check className="h-4 w-4" />
