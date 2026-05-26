@@ -66,6 +66,8 @@ interface BruiloftState {
   hydrated: boolean
   error: string | null
   currentUser: CurrentUser | null
+  isAnonymous: boolean // gast-sessie (value-before-signup): nog geen echt account
+  claimRequested: boolean // gast heeft account-opslaan al ingediend (stop met nudgen)
   role: WeddingRole | null
   permissions: PermissionMap
   wedding: Wedding | null
@@ -86,6 +88,8 @@ interface BruiloftState {
 interface BruiloftActions {
   init: () => Promise<void>
   retryInit: () => Promise<void>
+  completeOnboarding: (input: WeddingInput) => Promise<void>
+  claimAccount: (data: { email: string; password: string; displayName: string }) => Promise<void>
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
   deleteActiveWedding: () => Promise<void>
@@ -232,6 +236,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     hydrated: false,
     error: null,
     currentUser: null,
+    isAnonymous: false,
+    claimRequested: false,
     role: null,
     permissions: EMPTY_PERMISSIONS,
     wedding: null,
@@ -256,9 +262,19 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        set({ hydrated: true, error: null, currentUser: null, wedding: null, weddings: [], activeWeddingId: null })
+        set({
+          hydrated: true,
+          error: null,
+          currentUser: null,
+          isAnonymous: false,
+          wedding: null,
+          weddings: [],
+          activeWeddingId: null,
+        })
         return
       }
+
+      const isAnonymous = !!user.is_anonymous
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -279,6 +295,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           hydrated: true,
           error: null,
           currentUser,
+          isAnonymous,
           weddings: [],
           activeWeddingId: null,
           wedding: null,
@@ -328,6 +345,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         hydrated: true,
         error: null,
         currentUser,
+        isAnonymous,
         weddings,
         activeWeddingId: wedding.id,
         wedding,
@@ -358,6 +376,37 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       await get().init()
     },
 
+    // Value-before-signup: rond de onboarding af. Is er nog geen sessie, dan
+    // openen we eerst een anonieme gast-sessie zodat RLS de bruiloft kan
+    // aanmaken; de gast kan later een echt account claimen (claimAccount).
+    completeOnboarding: async (input) => {
+      if (!get().currentUser) {
+        const { error } = await createClient().auth.signInAnonymously()
+        if (error) throw error
+        set({ hydrated: false })
+        await get().init()
+      }
+      await get().setupWedding(input)
+    },
+
+    // Zet een anonieme gast-sessie om in een volwaardig account. Dezelfde user
+    // blijft eigenaar, dus alle reeds ingevoerde data blijft behouden.
+    claimAccount: async ({ email, password, displayName }) => {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({
+        email,
+        password,
+        data: { display_name: displayName },
+      })
+      if (error) throw error
+      const cu = get().currentUser
+      if (cu) {
+        await supabase.from('profiles').update({ display_name: displayName }).eq('id', cu.id)
+        set({ currentUser: { ...cu, displayName, email } })
+      }
+      set({ claimRequested: true })
+    },
+
     signOut: async () => {
       get().stopRealtime()
       await createClient().auth.signOut()
@@ -366,6 +415,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         hydrated: false,
         error: null,
         currentUser: null,
+        isAnonymous: false,
+        claimRequested: false,
         role: null,
         permissions: EMPTY_PERMISSIONS,
         wedding: null,

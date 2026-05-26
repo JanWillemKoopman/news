@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, WifiOff } from 'lucide-react'
+import { Lock, Sparkles, WifiOff, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
 
@@ -8,13 +8,14 @@ import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { ClaimAccountModal } from './ClaimAccountModal'
+import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
 import { moduleForPath } from './nav'
 import { Sidebar } from './Sidebar'
 import { ThemeProvider, useTheme } from './ThemeProvider'
 import { ThemeToggle } from './ThemeToggle'
 import { UserMenu } from './UserMenu'
-import { WelcomeScreen } from './WelcomeScreen'
 
 interface WeddingShellProps {
   children: React.ReactNode
@@ -38,9 +39,13 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
   const permissions = useBruiloftStore((s) => s.permissions)
+  const isAnonymous = useBruiloftStore((s) => s.isAnonymous)
+  const claimRequested = useBruiloftStore((s) => s.claimRequested)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
   const [retrying, setRetrying] = React.useState(false)
+  const [claimOpen, setClaimOpen] = React.useState(false)
+  const [bannerHidden, setBannerHidden] = React.useState(false)
 
   React.useEffect(() => {
     void init()
@@ -107,17 +112,16 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Nog geen bruiloft ingesteld: welkomstscherm zonder navigatie.
+  // Nog geen bruiloft ingesteld: landing + onboarding-wizard, zonder app-shell.
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
-        <div className="flex justify-end p-4">
-          <ThemeToggle />
-        </div>
-        <WelcomeScreen />
+        <Landing />
       </div>
     )
   }
+
+  const showGuestBanner = isAnonymous && !claimRequested && !bannerHidden
 
   return (
     <div className={cn(wrapperClass, 'flex')} suppressHydrationWarning>
@@ -129,9 +133,37 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       </a>
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
+        {showGuestBanner ? (
+          <div className="flex items-center justify-between gap-3 border-b border-primary/20 bg-primary/10 px-4 py-2.5 text-sm md:px-8">
+            <span className="flex items-center gap-2 text-foreground">
+              <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+              <span className="truncate">
+                Jullie plan staat alleen op dit apparaat — sla het op om het overal te kunnen openen.
+              </span>
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button size="sm" onClick={() => setClaimOpen(true)}>
+                Account opslaan
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Verbergen"
+                onClick={() => setBannerHidden(true)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : null}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:px-8">
           <span className="font-serif text-lg text-foreground md:hidden">Ons Trouwplan</span>
           <div className="ml-auto flex items-center gap-1">
+            {isAnonymous && !claimRequested && bannerHidden ? (
+              <Button size="sm" onClick={() => setClaimOpen(true)} className="mr-1">
+                Account opslaan
+              </Button>
+            ) : null}
             <ThemeToggle />
             <UserMenu />
           </div>
@@ -153,6 +185,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         </main>
         <MobileNav />
       </div>
+      <ClaimAccountModal open={claimOpen} onOpenChange={setClaimOpen} />
     </div>
   )
 }

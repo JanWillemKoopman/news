@@ -14,6 +14,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 export function UserMenu() {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
+  const isAnonymous = useBruiloftStore((s) => s.isAnonymous)
   const role = useBruiloftStore((s) => s.role)
   const weddings = useBruiloftStore((s) => s.weddings)
   const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
@@ -23,7 +24,12 @@ export function UserMenu() {
 
   if (!currentUser) return null
 
-  const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
+  const displayLabel = isAnonymous
+    ? 'Gast'
+    : currentUser.displayName || currentUser.email || 'Account'
+  const initials = isAnonymous
+    ? 'G'
+    : (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
 
   async function onSignOut() {
     setOpen(false)
@@ -50,7 +56,7 @@ export function UserMenu() {
           {initials}
         </span>
         <span className="hidden max-w-[12ch] truncate font-medium text-foreground sm:inline">
-          {currentUser.displayName || currentUser.email}
+          {displayLabel}
         </span>
         <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
       </button>
@@ -63,10 +69,12 @@ export function UserMenu() {
             className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-card p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">
-              <p className="truncate text-sm font-medium text-foreground">
-                {currentUser.displayName || 'Account'}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">{currentUser.email}</p>
+              <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
+              {isAnonymous ? (
+                <p className="truncate text-xs text-muted-foreground">Nog niet opgeslagen</p>
+              ) : currentUser.email ? (
+                <p className="truncate text-xs text-muted-foreground">{currentUser.email}</p>
+              ) : null}
               {role ? (
                 <span className="mt-1.5 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                   {ROLE_LABELS[role]}

@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import type { Database } from './database.types'
 
-const PROTECTED_PREFIXES = ['/bruiloft', '/uitnodiging', '/admin']
+// /bruiloft is publiek toegankelijk: bezoekers krijgen de landing + onboarding
+// en starten een anonieme gast-sessie via signInAnonymously().
+const PROTECTED_PREFIXES = ['/uitnodiging', '/admin']
 const AUTH_PAGES = ['/login', '/signup']
 
 // Ververst de sessie bij elke request en beschermt routes. Cruciaal: geef
@@ -46,7 +48,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && AUTH_PAGES.includes(path)) {
+  // Anonieme gast-sessies blokkeren de login/signup-pagina's niet: een gast
+  // moet ook nog naar een volwaardig account kunnen overstappen via /login.
+  if (user && !user.is_anonymous && AUTH_PAGES.includes(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/bruiloft'
     url.search = ''
