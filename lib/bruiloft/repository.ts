@@ -22,6 +22,7 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
 } from './types'
@@ -86,4 +87,7 @@ export interface WeddingRepository {
   listTaskComments(weddingId: ID): Promise<TaskComment[]>
   createTaskComment(input: TaskCommentInput): Promise<TaskComment>
   deleteTaskComment(id: ID): Promise<void>
+
+  // Leden van de bruiloft (voor assignee-picker en avatars).
+  listMembers(weddingId: ID): Promise<WeddingMember[]>
 }

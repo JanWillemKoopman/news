@@ -22,8 +22,12 @@ import {
   type WeddingRole,
 } from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
-import { generateTemplateTasks } from '@/lib/bruiloft/templateTasks'
-import { deriveTijdsblok } from '@/lib/bruiloft/timeblocks'
+import {
+  generateTemplateTasks,
+  TEMPLATE_TASKS,
+  type TemplateTask,
+} from '@/lib/bruiloft/templateTasks'
+import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
 import { createClient } from '@/lib/supabase/client'
 import type {
   ActivityEntry,
@@ -43,6 +47,7 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
 } from '@/lib/bruiloft/types'
@@ -80,6 +85,7 @@ interface BruiloftState {
   websiteContent: WebsiteContent | null
   activity: ActivityEntry[]
   taskComments: TaskComment[]
+  members: WeddingMember[]
   activitySeenAt: string | null // wanneer de feed voor het laatst bekeken is
 }
 
@@ -103,6 +109,13 @@ interface BruiloftActions {
   addTask: (data: NewTask) => Promise<void>
   updateTask: (id: ID, patch: Partial<Omit<TaskInput, 'weddingId'>>) => Promise<void>
   deleteTask: (id: ID) => Promise<void>
+  bulkUpdateTasks: (
+    ids: ID[],
+    patch: Partial<Omit<TaskInput, 'weddingId'>> & { deadlineShiftDays?: number }
+  ) => Promise<void>
+  bulkDeleteTasks: (ids: ID[]) => Promise<void>
+  toggleSubtaak: (taskId: ID, subtaakId: string) => Promise<void>
+  addTemplateMissing: (titels: string[]) => Promise<void>
 
   addVendor: (data: NewVendor) => Promise<void>
   updateVendor: (id: ID, patch: Partial<VendorInput>) => Promise<void>
@@ -126,6 +139,8 @@ interface BruiloftActions {
   addTaskComment: (taskId: ID, body: string) => Promise<void>
   deleteTaskComment: (id: ID) => Promise<void>
   markActivitySeen: () => void
+
+  loadMembers: () => Promise<void>
 }
 
 // Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
@@ -247,6 +262,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     websiteContent: null,
     activity: [],
     taskComments: [],
+    members: [],
     activitySeenAt: null,
 
     init: async () => {
@@ -294,6 +310,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           permissions: EMPTY_PERMISSIONS,
           activity: [],
           taskComments: [],
+          members: [],
           activitySeenAt: null,
         })
         return
@@ -321,6 +338,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent,
         activity,
         taskComments,
+        members,
       ] = await Promise.all([
         repository.listGuests(wedding.id),
         repository.listTasks(wedding.id),
@@ -331,6 +349,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         repository.getWebsiteContent(wedding.id),
         repository.listActivity(wedding.id, 50),
         repository.listTaskComments(wedding.id),
+        repository.listMembers(wedding.id),
       ])
       set({
         hydrated: true,
@@ -350,6 +369,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent,
         activity,
         taskComments,
+        members,
         activitySeenAt: readSeen(wedding.id),
       })
       get().startRealtime(wedding.id)
@@ -406,6 +426,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent: null,
         activity: [],
         taskComments: [],
+        members: [],
         activitySeenAt: null,
       })
     },
@@ -486,6 +507,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
+      const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
       // De sjabloontaken genereren activiteit; markeer die meteen als gezien zodat
       // de maker niet met een 'nieuw'-badge voor zijn eigen setup begint.
@@ -506,6 +528,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent: null,
         activity: [],
         taskComments: [],
+        members,
         activitySeenAt: seen,
       })
     },
@@ -558,28 +581,175 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     addTask: async (data) => {
       const wedding = get().wedding
       if (!wedding) return
-      const task = await repository.createTask({
-        ...data,
+      // Optimistic: voeg tijdelijk een rij toe; vervang na server-respons door de
+      // canonieke versie (zelfde id volgt later via realtime echo).
+      const tempId = `tmp-${Math.random().toString(36).slice(2)}`
+      const tijdsblok = deriveTijdsblok(data.deadline, wedding.trouwdatum)
+      const optimistic: Task = {
+        id: tempId,
         weddingId: wedding.id,
-        tijdsblok: deriveTijdsblok(data.deadline, wedding.trouwdatum),
-      })
-      set({ tasks: [...get().tasks, task] })
+        titel: data.titel,
+        omschrijving: data.omschrijving,
+        deadline: data.deadline,
+        tijdsblok,
+        status: data.status,
+        prioriteit: data.prioriteit,
+        toegewezenAan: data.toegewezenAan,
+        assignees: data.assignees,
+        subtaken: data.subtaken,
+        volgorde: data.volgorde,
+        vendorId: data.vendorId,
+        budgetItemId: data.budgetItemId,
+      }
+      set({ tasks: [...get().tasks, optimistic] })
+      try {
+        const task = await repository.createTask({
+          ...data,
+          weddingId: wedding.id,
+          tijdsblok,
+        })
+        set({ tasks: get().tasks.map((t) => (t.id === tempId ? task : t)) })
+      } catch (e) {
+        set({ tasks: get().tasks.filter((t) => t.id !== tempId) })
+        throw e
+      }
     },
 
     updateTask: async (id, patch) => {
       const wedding = get().wedding
+      const prev = get().tasks
+      const idx = prev.findIndex((t) => t.id === id)
+      if (idx === -1) return
       // Tijdsblok mee laten lopen met een gewijzigde deadline.
-      const merged: Partial<TaskInput> =
+      const localPatch: Partial<Task> =
         patch.deadline && wedding
           ? { ...patch, tijdsblok: deriveTijdsblok(patch.deadline, wedding.trouwdatum) }
-          : patch
-      const task = await repository.updateTask(id, merged)
-      set({ tasks: get().tasks.map((t) => (t.id === id ? task : t)) })
+          : (patch as Partial<Task>)
+      const optimistic: Task = { ...prev[idx], ...localPatch }
+      set({ tasks: prev.map((t) => (t.id === id ? optimistic : t)) })
+      try {
+        const merged: Partial<TaskInput> =
+          patch.deadline && wedding
+            ? { ...patch, tijdsblok: deriveTijdsblok(patch.deadline, wedding.trouwdatum) }
+            : patch
+        const task = await repository.updateTask(id, merged)
+        set({ tasks: get().tasks.map((t) => (t.id === id ? task : t)) })
+      } catch (e) {
+        set({ tasks: get().tasks.map((t) => (t.id === id ? prev[idx] : t)) })
+        throw e
+      }
     },
 
     deleteTask: async (id) => {
-      await repository.deleteTask(id)
-      set({ tasks: get().tasks.filter((t) => t.id !== id) })
+      const prev = get().tasks
+      const snapshot = prev.find((t) => t.id === id)
+      if (!snapshot) return
+      set({ tasks: prev.filter((t) => t.id !== id) })
+      try {
+        await repository.deleteTask(id)
+      } catch (e) {
+        set({ tasks: [...get().tasks, snapshot] })
+        throw e
+      }
+    },
+
+    bulkUpdateTasks: async (ids, patch) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const idSet = new Set(ids)
+      const before = get().tasks
+      // Optimistic in één set-call.
+      const optimistic = before.map((t) => {
+        if (!idSet.has(t.id)) return t
+        const next: Task = { ...t, ...(patch as Partial<Task>) }
+        if (patch.deadlineShiftDays) {
+          const nieuwDate = addDays(t.deadline, patch.deadlineShiftDays)
+          next.deadline = toISODate(nieuwDate)
+          next.tijdsblok = deriveTijdsblok(next.deadline, wedding.trouwdatum)
+        } else if (patch.deadline) {
+          next.tijdsblok = deriveTijdsblok(patch.deadline, wedding.trouwdatum)
+        }
+        return next
+      })
+      set({ tasks: optimistic })
+
+      try {
+        const cleanPatch: Partial<TaskInput> = { ...patch }
+        delete (cleanPatch as { deadlineShiftDays?: number }).deadlineShiftDays
+        await Promise.all(
+          ids.map(async (id) => {
+            const orig = before.find((t) => t.id === id)
+            if (!orig) return
+            let perTaskPatch: Partial<TaskInput> = { ...cleanPatch }
+            if (patch.deadlineShiftDays) {
+              const nieuwDate = addDays(orig.deadline, patch.deadlineShiftDays)
+              const newDeadline = toISODate(nieuwDate)
+              perTaskPatch = {
+                ...perTaskPatch,
+                deadline: newDeadline,
+                tijdsblok: deriveTijdsblok(newDeadline, wedding.trouwdatum),
+              }
+            } else if (patch.deadline) {
+              perTaskPatch.tijdsblok = deriveTijdsblok(patch.deadline, wedding.trouwdatum)
+            }
+            await repository.updateTask(id, perTaskPatch)
+          })
+        )
+      } catch (e) {
+        set({ tasks: before })
+        throw e
+      }
+    },
+
+    bulkDeleteTasks: async (ids) => {
+      const before = get().tasks
+      const idSet = new Set(ids)
+      set({ tasks: before.filter((t) => !idSet.has(t.id)) })
+      try {
+        await Promise.all(ids.map((id) => repository.deleteTask(id)))
+      } catch (e) {
+        set({ tasks: before })
+        throw e
+      }
+    },
+
+    toggleSubtaak: async (taskId, subtaakId) => {
+      const task = get().tasks.find((t) => t.id === taskId)
+      if (!task) return
+      const subtaken = task.subtaken.map((s) =>
+        s.id === subtaakId ? { ...s, klaar: !s.klaar } : s
+      )
+      await get().updateTask(taskId, { subtaken })
+    },
+
+    // Bulk-toevoegen van ontbrekende sjabloontaken (titel-match).
+    addTemplateMissing: async (titels) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const set_ = new Set(titels)
+      const templates: TemplateTask[] = TEMPLATE_TASKS.filter((t) => set_.has(t.titel))
+      if (templates.length === 0) return
+      const inputs: TaskInput[] = templates.map((t) => {
+        const deadlineDate =
+          'maanden' in t.offset
+            ? addMonths(wedding.trouwdatum, t.offset.maanden)
+            : addDays(wedding.trouwdatum, t.offset.dagen)
+        const deadline = toISODate(deadlineDate)
+        return {
+          weddingId: wedding.id,
+          titel: t.titel,
+          omschrijving: t.omschrijving,
+          deadline,
+          tijdsblok: deriveTijdsblok(deadline, wedding.trouwdatum),
+          status: 'open',
+          prioriteit: t.prioriteit,
+          toegewezenAan: t.toegewezenAan,
+          assignees: [],
+          subtaken: [],
+        }
+      })
+      const created = await repository.createTasks(inputs)
+      set({ tasks: [...get().tasks, ...created] })
     },
 
     // --- Vendors -----------------------------------------------------------
@@ -739,6 +909,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const seen = new Date().toISOString()
       writeSeen(wedding.id, seen)
       set({ activitySeenAt: seen })
+    },
+
+    // Herlaad de ledenlijst (na uitnodigen/verwijderen van een lid).
+    loadMembers: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const members = await repository.listMembers(wedding.id)
+      set({ members })
     },
   })
 )

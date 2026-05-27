@@ -45,6 +45,8 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WeddingMember,
+  WeddingRoleSnapshot,
   WebsiteContent,
   WebsiteContentInput,
 } from './types'
@@ -402,5 +404,19 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   async deleteTaskComment(id: ID): Promise<void> {
     const { error } = await this.db.from('task_comments').delete().eq('id', id)
     if (error) throw error
+  }
+
+  // --- Members -------------------------------------------------------
+  async listMembers(weddingId: ID): Promise<WeddingMember[]> {
+    const { data, error } = await this.db.rpc('list_wedding_members', {
+      p_wedding: weddingId,
+    })
+    if (error) throw error
+    return (data ?? []).map((r) => ({
+      userId: r.user_id,
+      email: r.email ?? '',
+      displayName: r.display_name ?? '',
+      role: r.role as WeddingRoleSnapshot,
+    }))
   }
 }
