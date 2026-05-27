@@ -11,8 +11,10 @@ import {
   Textarea,
 } from '@/components/bruiloft/ui'
 import { TaskComments } from '@/components/bruiloft/taken/TaskComments'
-import { PRIORITEITEN, TASK_STATUSSEN, TOEGEWEZEN_AAN } from '@/lib/bruiloft/options'
-import type { BudgetItem, Task, TaskInput, Vendor } from '@/lib/bruiloft/types'
+import { AssigneePicker } from '@/components/bruiloft/taken/AssigneePicker'
+import { SubtakenList } from '@/components/bruiloft/taken/SubtakenList'
+import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
+import type { BudgetItem, ID, Task, TaskInput, Vendor, WeddingMember } from '@/lib/bruiloft/types'
 
 type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
 
@@ -22,6 +24,7 @@ interface TaskFormProps {
   initial?: Task | null
   vendors: Vendor[]
   budgetItems: BudgetItem[]
+  members: WeddingMember[]
   onSubmit: (data: NewTask) => void
 }
 
@@ -61,6 +64,7 @@ export function TaskForm({
   initial,
   vendors,
   budgetItems,
+  members,
   onSubmit,
 }: TaskFormProps) {
   const [form, setForm] = React.useState<NewTask>(leeg)
@@ -75,7 +79,9 @@ export function TaskForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.titel.trim() || !form.deadline) return
-    onSubmit({ ...form, titel: form.titel.trim() })
+    // Strip lege subtaken.
+    const subtaken = form.subtaken.filter((s) => s.titel.trim() !== '')
+    onSubmit({ ...form, titel: form.titel.trim(), subtaken })
     onOpenChange(false)
   }
 
@@ -93,6 +99,10 @@ export function TaskForm({
             onChange={(e) => set('omschrijving', e.target.value)}
             rows={2}
           />
+        </Field>
+
+        <Field label="Subtaken">
+          <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
@@ -134,18 +144,12 @@ export function TaskForm({
               ))}
             </Select>
           </Field>
-          <Field label="Toegewezen aan" htmlFor="toe">
-            <Select
-              id="toe"
-              value={form.toegewezenAan}
-              onChange={(e) => set('toegewezenAan', e.target.value as NewTask['toegewezenAan'])}
-            >
-              {TOEGEWEZEN_AAN.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </Select>
+          <Field label="Toegewezen aan">
+            <AssigneePicker
+              value={form.assignees}
+              members={members}
+              onChange={(ids: ID[]) => set('assignees', ids)}
+            />
           </Field>
         </div>
 
