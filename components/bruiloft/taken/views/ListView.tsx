@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/bruiloft/ui'
 import { ListChecks } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
-import { DezeWeekSection } from '@/components/bruiloft/taken/views/DezeWeekSection'
+import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
 import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblocks'
 import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 
@@ -91,7 +91,7 @@ export function ListView({
 
   return (
     <div className="space-y-8">
-      <DezeWeekSection
+      <DezeMaandSection
         tasks={tasks}
         members={members}
         onToggleStatus={onToggleStatus}
@@ -117,7 +117,7 @@ export function ListView({
             <h2 className="mb-3 flex items-center gap-2 px-1 font-serif text-lg capitalize text-foreground">
               {blok}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                {blokTaken.length}
+                {blokTaken.length} {blokTaken.length === 1 ? 'taak' : 'taken'}
               </span>
             </h2>
             <div className="space-y-2">

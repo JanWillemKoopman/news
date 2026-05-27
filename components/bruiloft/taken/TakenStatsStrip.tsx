@@ -36,8 +36,8 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
       />
       <StatTile
         icon={CalendarClock}
-        label="Deze week"
-        value={String(stats.dezeWeek)}
+        label="Deze maand"
+        value={String(stats.dezeMaand)}
         accent="amber"
       />
       <StatTile

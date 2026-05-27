@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarDays, LayoutList, ListPlus, Plus, Sparkles } from 'lucide-react'
+import { CalendarDays, LayoutList, Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
@@ -11,7 +11,6 @@ import { AchterstandBanner } from '@/components/bruiloft/taken/AchterstandBanner
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
 import { OntbrekendeTakenModal } from '@/components/bruiloft/taken/OntbrekendeTakenModal'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
-import { TimelineView } from '@/components/bruiloft/taken/views/TimelineView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
@@ -20,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ISODate, Task, TaskStatus } from '@/lib/bruiloft/types'
 
-type View = 'lijst' | 'timeline' | 'kalender'
+type View = 'lijst' | 'kalender'
 
 export function TakenShell() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -143,7 +142,7 @@ export function TakenShell() {
   return (
     <div className="mx-auto max-w-5xl pb-24">
       <PageHeader
-        titel="Taken en tijdlijn"
+        titel="Taken"
         beschrijving="Werk stap voor stap naar de grote dag toe."
         actie={
           <div className="flex gap-2">
@@ -180,22 +179,6 @@ export function TakenShell() {
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
           achterstandRef={achterstandRef}
-        />
-      )}
-
-      {view === 'timeline' && (
-        <TimelineView
-          tasks={gefilterd}
-          allTasks={tasks}
-          wedding={wedding}
-          members={members}
-          onToggleStatus={toggleStatus}
-          onEdit={openBewerk}
-          onDelete={setDelTask}
-          onToggleSubtaak={handleSubtaakToggle}
-          selectable={selectedIds.size > 0}
-          isSelected={isSelected}
-          onToggleSelect={toggleSelect}
         />
       )}
 
@@ -296,7 +279,6 @@ export function TakenShell() {
 function ViewSwitcher({ view, onChange }: { view: View; onChange: (v: View) => void }) {
   const tabs: { key: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'lijst', label: 'Lijst', icon: LayoutList },
-    { key: 'timeline', label: 'Tijdlijn', icon: ListPlus },
     { key: 'kalender', label: 'Kalender', icon: CalendarDays },
   ]
   return (

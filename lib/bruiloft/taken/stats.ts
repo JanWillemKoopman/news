@@ -9,8 +9,16 @@ export interface TaakStats {
   bezig: number
   klaar: number
   achterstallig: number
-  dezeWeek: number
+  dezeMaand: number
   pctKlaar: number
+}
+
+// Taak valt binnen de huidige kalendermaand (jaar+maand gelijk aan vandaag).
+function isDezeMaand(deadline: string): boolean {
+  const d = new Date(deadline)
+  if (Number.isNaN(d.getTime())) return false
+  const today = new Date()
+  return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth()
 }
 
 export function berekenTaakStats(tasks: Task[]): TaakStats {
@@ -18,7 +26,7 @@ export function berekenTaakStats(tasks: Task[]): TaakStats {
   let bezig = 0
   let klaar = 0
   let achterstallig = 0
-  let dezeWeek = 0
+  let dezeMaand = 0
   for (const t of tasks) {
     if (t.status === 'klaar') klaar++
     else if (t.status === 'bezig') bezig++
@@ -27,22 +35,18 @@ export function berekenTaakStats(tasks: Task[]): TaakStats {
     if (t.status !== 'klaar') {
       const d = dagenTot(t.deadline)
       if (d < 0) achterstallig++
-      else if (d <= 7) dezeWeek++
+      else if (isDezeMaand(t.deadline)) dezeMaand++
     }
   }
   const totaal = tasks.length
   const pctKlaar = totaal > 0 ? Math.round((klaar / totaal) * 100) : 0
-  return { totaal, open, bezig, klaar, achterstallig, dezeWeek, pctKlaar }
+  return { totaal, open, bezig, klaar, achterstallig, dezeMaand, pctKlaar }
 }
 
-// Taken die binnen 7 dagen vervallen en nog niet klaar zijn — cross-tijdsblok.
-export function dezeWeekTaken(tasks: Task[]): Task[] {
+// Taken in de huidige kalendermaand die nog niet klaar zijn — cross-tijdsblok.
+export function dezeMaandTaken(tasks: Task[]): Task[] {
   return tasks
-    .filter((t) => {
-      if (t.status === 'klaar') return false
-      const d = dagenTot(t.deadline)
-      return d >= 0 && d <= 7
-    })
+    .filter((t) => t.status !== 'klaar' && dagenTot(t.deadline) >= 0 && isDezeMaand(t.deadline))
     .sort((a, b) => a.deadline.localeCompare(b.deadline))
 }
 
