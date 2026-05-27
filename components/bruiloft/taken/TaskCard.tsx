@@ -4,9 +4,18 @@ import * as React from 'react'
 import { Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
 import { Button, Card, CardContent, StatusBadge } from '@/components/bruiloft/ui'
-import { dagLabel, dagenTot, formatDatumKort } from '@/lib/bruiloft/format'
+import { dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
 import { cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
+
+// Deadline-label specifiek voor de taakkaart: "deadline over X dagen" in de
+// toekomst, "vandaag" voor 0 dagen, "X dagen te laat" voor het verleden.
+function deadlineLabel(dagen: number): string {
+  if (dagen === 0) return 'deadline vandaag'
+  if (dagen > 0) return `deadline over ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
+  const laat = Math.abs(dagen)
+  return `${laat} ${laat === 1 ? 'dag' : 'dagen'} te laat`
+}
 
 import { AvatarStack } from './AvatarStack'
 import { SubtakenChecklist } from './SubtakenList'
@@ -103,15 +112,22 @@ export function TaskCard({
           ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span>{formatDatumKort(task.deadline)}</span>
+            <span>{formatDatumNL(task.deadline)}</span>
             {!klaar ? (
               <span className={cn(d < 0 && 'font-medium text-rose-600 dark:text-rose-400')}>
-                {dagLabel(d)}
+                {deadlineLabel(d)}
               </span>
             ) : null}
             <StatusBadge kind="prioriteit" value={task.prioriteit} />
             {toegewezenLeden.length > 0 ? (
-              <AvatarStack members={toegewezenLeden} />
+              <span className="inline-flex items-center gap-1.5">
+                <AvatarStack members={toegewezenLeden} />
+                <span className="truncate text-foreground">
+                  {toegewezenLeden
+                    .map((m) => m.displayName || m.email)
+                    .join(', ')}
+                </span>
+              </span>
             ) : fallbackLabel ? (
               <span className="capitalize">{fallbackLabel}</span>
             ) : null}
