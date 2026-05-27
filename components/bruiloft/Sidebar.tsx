@@ -20,8 +20,8 @@ export function Sidebar() {
   if (!currentSection) return null
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-white px-3 py-6 md:flex">
-      <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-[#2a3250] bg-[#365473] px-3 py-6 md:flex">
+      <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#dce5ee]/70">
         {currentSection.label}
       </p>
 
@@ -35,16 +35,16 @@ export function Sidebar() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#365473]',
                 active
-                  ? 'bg-rose-50 font-medium text-rose-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-[#304862] font-medium text-[#dce5ee]'
+                  : 'text-[#dce5ee]/80 hover:bg-[#304862] hover:text-[#dce5ee]'
               )}
             >
               <item.icon
                 className={cn(
                   'h-[18px] w-[18px] shrink-0 transition-colors',
-                  active ? 'text-rose-600' : 'text-gray-400 group-hover:text-gray-600'
+                  active ? 'text-[#83a1be]' : 'text-[#83a1be]/70 group-hover:text-[#83a1be]'
                 )}
               />
               {item.label}

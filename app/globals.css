@@ -70,10 +70,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 15%;
 
-    /* Primair = dusty rose (#ad5173) ≈ Riley & Grey pink-600 */
-    --primary: 339 39% 50%;
+    /* Primair = dusty rose (#a75573) ≈ Riley & Grey pink-600 */
+    --primary: 338 33% 49%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 339 39% 60%; /* hover lichter — pink-500 (#c46f8a) */
+    --primary-hover: 338 33% 59%; /* hover lichter — pink-500 (#c46f8a) */
 
     --secondary: 215 25% 96%; /* zachte grijs-blauw */
     --secondary-foreground: 215 25% 15%;
@@ -88,12 +88,12 @@
     --ring: 339 39% 50%;
     --radius: 0.375rem; /* rounded-md — Riley & Grey gebruikt 6px op knoppen */
 
-    /* Donkere navy header (rhino-800). */
-    --header-bg: 211 39% 27%;
+    /* Donkere navy header (#2a3c50). */
+    --header-bg: 210 32% 24%;
     --header-fg: 0 0% 100%;
-    --header-muted: 211 30% 75%;
-    --header-active: 211 39% 35%; /* iets lichter dan -800 */
-    --header-border: 211 39% 22%;
+    --header-muted: 210 30% 75%;
+    --header-active: 210 33% 32%; /* sidebar-blauw (#365473) */
+    --header-border: 210 32% 18%;
   }
 }
 

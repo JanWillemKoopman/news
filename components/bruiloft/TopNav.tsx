@@ -19,17 +19,17 @@ export function TopNav() {
   const active = activeSection(pathname)
 
   return (
-    <header className="sticky top-0 z-40 bg-rhino-800 text-white shadow-header">
+    <header className="sticky top-0 z-40 bg-[#2a3c50] text-white shadow-header">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo: serif ampersand in een licht vierkant. */}
         <Link
           href="/bruiloft"
           aria-label="Naar het overzicht"
-          className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800"
+          className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3c50]"
         >
           <span
             aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-rhino-800 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-[#2a3c50] shadow-sm"
           >
             <span className="font-serif text-[22px] font-medium leading-none">&amp;</span>
           </span>
@@ -51,8 +51,8 @@ export function TopNav() {
                   'inline-flex items-center rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
                   isActiveSection
-                    ? 'bg-rhino-700 text-white'
-                    : 'text-rhino-100 hover:bg-rhino-700/70 hover:text-white'
+                    ? 'bg-[#365473] text-white'
+                    : 'text-white/80 hover:bg-[#365473]/70 hover:text-white'
                 )}
               >
                 {section.label}
