@@ -194,6 +194,8 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
       status: 'open',
       prioriteit: t.prioriteit,
       toegewezenAan: t.toegewezenAan,
+      assignees: [],
+      subtaken: [],
     }
   })
 }

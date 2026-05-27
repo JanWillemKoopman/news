@@ -83,6 +83,13 @@ export type Tijdsblok =
   | 'trouwweek'
   | 'na de bruiloft'
 
+// Eén niveau diep; opgeslagen als jsonb-array op tasks.subtaken.
+export interface Subtaak {
+  id: ID
+  titel: string
+  klaar: boolean
+}
+
 export interface Task {
   id: ID
   weddingId: ID
@@ -92,12 +99,34 @@ export interface Task {
   tijdsblok: Tijdsblok
   status: TaskStatus
   prioriteit: Prioriteit
+  // Legacy-veld: blijft bestaan voor backwards-compat. UI toont 'assignees' bij voorkeur,
+  // en valt terug op deze tekst-enum als assignees nog leeg is (oude taken).
   toegewezenAan: ToegewezenAan
+  // Lijst van wedding-member user_ids. Lege array = nog niemand toegewezen.
+  assignees: ID[]
+  subtaken: Subtaak[]
+  // Optionele handmatige sortering binnen tijdsblok/dag.
+  volgorde?: number
   vendorId?: ID
   budgetItemId?: ID
 }
 
 export type TaskInput = Omit<Task, 'id'>
+
+// --- WeddingMember ---------------------------------------------------------
+// Snapshot uit de list_wedding_members RPC; wordt door de store ingeladen
+// voor de assignee-picker en AvatarStack.
+
+export interface WeddingMember {
+  userId: ID
+  email: string
+  displayName: string
+  role: WeddingRoleSnapshot
+}
+
+// Lokale alias zodat types.ts geen import op permissions.ts hoeft (cycle-vrij).
+// Houd in sync met WeddingRole in lib/bruiloft/permissions.ts.
+export type WeddingRoleSnapshot = 'owner' | 'planner' | 'helper' | 'viewer'
 
 // --- Vendor ----------------------------------------------------------------
 

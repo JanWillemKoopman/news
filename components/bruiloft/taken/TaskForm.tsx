@@ -33,6 +33,8 @@ function leeg(): NewTask {
     status: 'open',
     prioriteit: 'midden',
     toegewezenAan: 'samen',
+    assignees: [],
+    subtaken: [],
     vendorId: undefined,
     budgetItemId: undefined,
   }
@@ -46,6 +48,8 @@ function vanTask(t: Task): NewTask {
     status: t.status,
     prioriteit: t.prioriteit,
     toegewezenAan: t.toegewezenAan,
+    assignees: t.assignees,
+    subtaken: t.subtaken,
     vendorId: t.vendorId,
     budgetItemId: t.budgetItemId,
   }

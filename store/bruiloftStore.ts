@@ -43,6 +43,7 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
 } from '@/lib/bruiloft/types'
@@ -80,6 +81,7 @@ interface BruiloftState {
   websiteContent: WebsiteContent | null
   activity: ActivityEntry[]
   taskComments: TaskComment[]
+  members: WeddingMember[]
   activitySeenAt: string | null // wanneer de feed voor het laatst bekeken is
 }
 
@@ -126,6 +128,8 @@ interface BruiloftActions {
   addTaskComment: (taskId: ID, body: string) => Promise<void>
   deleteTaskComment: (id: ID) => Promise<void>
   markActivitySeen: () => void
+
+  loadMembers: () => Promise<void>
 }
 
 // Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
@@ -247,6 +251,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     websiteContent: null,
     activity: [],
     taskComments: [],
+    members: [],
     activitySeenAt: null,
 
     init: async () => {
@@ -294,6 +299,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           permissions: EMPTY_PERMISSIONS,
           activity: [],
           taskComments: [],
+          members: [],
           activitySeenAt: null,
         })
         return
@@ -321,6 +327,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent,
         activity,
         taskComments,
+        members,
       ] = await Promise.all([
         repository.listGuests(wedding.id),
         repository.listTasks(wedding.id),
@@ -331,6 +338,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         repository.getWebsiteContent(wedding.id),
         repository.listActivity(wedding.id, 50),
         repository.listTaskComments(wedding.id),
+        repository.listMembers(wedding.id),
       ])
       set({
         hydrated: true,
@@ -350,6 +358,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent,
         activity,
         taskComments,
+        members,
         activitySeenAt: readSeen(wedding.id),
       })
       get().startRealtime(wedding.id)
@@ -406,6 +415,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent: null,
         activity: [],
         taskComments: [],
+        members: [],
         activitySeenAt: null,
       })
     },
@@ -486,6 +496,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
       const tasks = await repository.createTasks(generateTemplateTasks(wedding))
+      const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
       // De sjabloontaken genereren activiteit; markeer die meteen als gezien zodat
       // de maker niet met een 'nieuw'-badge voor zijn eigen setup begint.
@@ -506,6 +517,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         websiteContent: null,
         activity: [],
         taskComments: [],
+        members,
         activitySeenAt: seen,
       })
     },
@@ -739,6 +751,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const seen = new Date().toISOString()
       writeSeen(wedding.id, seen)
       set({ activitySeenAt: seen })
+    },
+
+    // Herlaad de ledenlijst (na uitnodigen/verwijderen van een lid).
+    loadMembers: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const members = await repository.listMembers(wedding.id)
+      set({ members })
     },
   })
 )
