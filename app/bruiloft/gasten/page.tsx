@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Download, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Download, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
@@ -11,7 +11,9 @@ import {
   CardContent,
   ConfirmDialog,
   EmptyState,
+  Field,
   Input,
+  Modal,
   Select,
   StatusBadge,
   useToast,
@@ -39,7 +41,35 @@ export default function GastenPage() {
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
+  const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
+  const [rsvpEmail, setRsvpEmail] = React.useState('')
+  const [rsvpSending, setRsvpSending] = React.useState(false)
+
   if (!wedding) return null
+
+  async function sendRsvpEmail(e: React.FormEvent) {
+    e.preventDefault()
+    if (!rsvpTarget || !wedding) return
+    setRsvpSending(true)
+    try {
+      const res = await fetch('/api/email/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestId: rsvpTarget.id, email: rsvpEmail.trim(), weddingId: wedding.id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (json.emailSent) {
+        toast({ title: 'RSVP-link verzonden', description: `De RSVP-link is naar ${rsvpEmail.trim()} gemaild.`, variant: 'success' })
+      } else {
+        toast({ title: 'Verzenden mislukt', description: 'Kon de e-mail niet verzenden. Kopieer de link handmatig.', variant: 'error' })
+      }
+    } catch {
+      toast({ title: 'Verzenden mislukt', description: 'Netwerkfout. Probeer het opnieuw.', variant: 'error' })
+    }
+    setRsvpSending(false)
+    setRsvpTarget(null)
+    setRsvpEmail('')
+  }
 
   const t = gastTellingen(guests)
 
@@ -215,6 +245,16 @@ export default function GastenPage() {
                     <td className="px-4 py-3 text-muted-foreground">{g.aantalKinderen || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
+                        {g.rsvpCode ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Stuur RSVP-link"
+                            onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -269,6 +309,11 @@ export default function GastenPage() {
                 </p>
               ) : null}
               <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
+                {g.rsvpCode ? (
+                  <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
+                    <Mail className="h-4 w-4" /> RSVP-link
+                  </Button>
+                ) : null}
                 <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
                   <Pencil className="h-4 w-4" /> Bewerken
                 </Button>
@@ -317,6 +362,35 @@ export default function GastenPage() {
           }
         }}
       />
+
+      <Modal
+        open={rsvpTarget !== null}
+        onOpenChange={(o) => { if (!o) { setRsvpTarget(null); setRsvpEmail('') } }}
+        title="RSVP-link e-mailen"
+        description={rsvpTarget ? `Stuur de persoonlijke RSVP-link van ${rsvpTarget.voornaam} ${rsvpTarget.achternaam} naar een e-mailadres.` : undefined}
+      >
+        <form onSubmit={sendRsvpEmail} className="space-y-4">
+          <Field label="E-mailadres" htmlFor="rsvp-email">
+            <Input
+              id="rsvp-email"
+              type="email"
+              required
+              placeholder="naam@voorbeeld.nl"
+              value={rsvpEmail}
+              onChange={(e) => setRsvpEmail(e.target.value)}
+            />
+          </Field>
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => { setRsvpTarget(null); setRsvpEmail('') }}>
+              Annuleren
+            </Button>
+            <Button type="submit" disabled={rsvpSending}>
+              <Mail className="h-4 w-4" />
+              {rsvpSending ? 'Bezig…' : 'Versturen'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

@@ -328,6 +328,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assignees: string[]
           budget_item_id: string | null
           created_at: string
           deadline: string | null
@@ -335,14 +336,17 @@ export type Database = {
           omschrijving: string
           prioriteit: string
           status: string
+          subtaken: Json
           tijdsblok: string
           titel: string
           toegewezen_aan: string
           updated_at: string
           vendor_id: string | null
+          volgorde: number | null
           wedding_id: string
         }
         Insert: {
+          assignees?: string[]
           budget_item_id?: string | null
           created_at?: string
           deadline?: string | null
@@ -350,14 +354,17 @@ export type Database = {
           omschrijving?: string
           prioriteit?: string
           status?: string
+          subtaken?: Json
           tijdsblok?: string
           titel?: string
           toegewezen_aan?: string
           updated_at?: string
           vendor_id?: string | null
+          volgorde?: number | null
           wedding_id: string
         }
         Update: {
+          assignees?: string[]
           budget_item_id?: string | null
           created_at?: string
           deadline?: string | null
@@ -365,11 +372,13 @@ export type Database = {
           omschrijving?: string
           prioriteit?: string
           status?: string
+          subtaken?: Json
           tijdsblok?: string
           titel?: string
           toegewezen_aan?: string
           updated_at?: string
           vendor_id?: string | null
+          volgorde?: number | null
           wedding_id?: string
         }
         Relationships: [

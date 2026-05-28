@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-type Tone = 'green' | 'amber' | 'red' | 'blue' | 'grey' | 'terracotta'
+type Tone = 'green' | 'amber' | 'red' | 'blue' | 'grey' | 'terracotta' | 'white' | 'lightgrey'
 
 // Ingetogen, cohesieve tonen: zachte vulling + inset-ring + statusstip.
 const toneClasses: Record<Tone, string> = {
@@ -12,6 +12,8 @@ const toneClasses: Record<Tone, string> = {
   blue: 'bg-sky-500/10 text-sky-700 ring-sky-600/20 dark:text-sky-300 dark:ring-sky-400/20',
   grey: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
   terracotta: 'bg-primary/10 text-primary ring-primary/20',
+  white: 'bg-white text-muted-foreground ring-foreground/15 dark:bg-white/95 dark:text-stone-700',
+  lightgrey: 'bg-stone-200/70 text-stone-700 ring-stone-300 dark:bg-stone-700/40 dark:text-stone-200',
 }
 
 type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit'
@@ -36,8 +38,8 @@ const tones: Record<Kind, Record<string, Tone>> = {
     afgewezen: 'red',
   },
   prioriteit: {
-    laag: 'grey',
-    midden: 'amber',
+    laag: 'white',
+    midden: 'lightgrey',
     hoog: 'red',
   },
 }

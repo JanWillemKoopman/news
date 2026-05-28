@@ -14,6 +14,7 @@ import type {
   Rol,
   ScheduleItem,
   ScheduleItemInput,
+  Subtaak,
   Table,
   TableInput,
   Task,
@@ -112,6 +113,9 @@ export function taskFromRow(r: Tables['tasks']['Row']): Task {
     status: r.status as Task['status'],
     prioriteit: r.prioriteit as Task['prioriteit'],
     toegewezenAan: r.toegewezen_aan as Task['toegewezenAan'],
+    assignees: (r.assignees as string[] | null) ?? [],
+    subtaken: (r.subtaken as unknown as Subtaak[] | null) ?? [],
+    volgorde: r.volgorde ?? undefined,
     vendorId: r.vendor_id ?? undefined,
     budgetItemId: r.budget_item_id ?? undefined,
   }
@@ -127,6 +131,10 @@ export function taskToRow(p: Partial<TaskInput>): Partial<Tables['tasks']['Inser
   if (p.status !== undefined) r.status = p.status
   if (p.prioriteit !== undefined) r.prioriteit = p.prioriteit
   if (p.toegewezenAan !== undefined) r.toegewezen_aan = p.toegewezenAan
+  if (p.assignees !== undefined) r.assignees = p.assignees
+  if (p.subtaken !== undefined)
+    r.subtaken = p.subtaken as unknown as Tables['tasks']['Insert']['subtaken']
+  if (p.volgorde !== undefined) r.volgorde = p.volgorde ?? null
   if (p.vendorId !== undefined) r.vendor_id = p.vendorId ?? null
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
   return r

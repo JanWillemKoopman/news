@@ -23,6 +23,7 @@ import type {
   Wedding,
   WeddingDatabase,
   WeddingInput,
+  WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
 } from './types'
@@ -388,5 +389,10 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteTaskComment(): Promise<void> {
     // Geen opslag; niets te doen.
+  }
+
+  async listMembers(): Promise<WeddingMember[]> {
+    // localStorage kent geen leden — solo-modus. UI valt terug op toegewezenAan.
+    return []
   }
 }
