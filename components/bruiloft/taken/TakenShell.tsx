@@ -146,7 +146,7 @@ export function TakenShell() {
         beschrijving="Werk stap voor stap naar de grote dag toe."
         actie={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
+            <Button variant="outline" onClick={() => setTemplatesOpen(true)} title="Voeg sjabloontaken toe aan je lijst">
               <Sparkles className="h-4 w-4" /> Sjablonen
             </Button>
             <Button onClick={openNieuw}>
@@ -263,10 +263,11 @@ export function TakenShell() {
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
         tasks={tasks}
+        wedding={wedding}
         onConfirm={async (titels) => {
           try {
             await addTemplateMissing(titels)
-            toast({ title: `${titels.length} taken toegevoegd`, variant: 'success' })
+            toast({ title: `${titels.length} ${titels.length === 1 ? 'taak' : 'taken'} toegevoegd`, variant: 'success' })
           } catch {
             toast({ title: 'Toevoegen mislukt', variant: 'error' })
           }
