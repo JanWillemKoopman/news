@@ -23,7 +23,6 @@ import {
 } from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
 import {
-  generateTemplateTasks,
   TEMPLATE_TASKS,
   type TemplateTask,
 } from '@/lib/bruiloft/templateTasks'
@@ -506,11 +505,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
-      const tasks = await repository.createTasks(generateTemplateTasks(wedding))
+      const tasks: Task[] = []
       const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
-      // De sjabloontaken genereren activiteit; markeer die meteen als gezien zodat
-      // de maker niet met een 'nieuw'-badge voor zijn eigen setup begint.
       const seen = new Date().toISOString()
       writeSeen(wedding.id, seen)
       set({
