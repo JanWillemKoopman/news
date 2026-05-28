@@ -147,7 +147,7 @@ export function TakenShell() {
         actie={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setTemplatesOpen(true)} title="Voeg sjabloontaken toe aan je lijst">
-              <Sparkles className="h-4 w-4" /> Sjablonen
+              <Sparkles className="h-4 w-4" /> Voorgestelde taken
             </Button>
             <Button onClick={openNieuw}>
               <Plus className="h-4 w-4" /> Taak
