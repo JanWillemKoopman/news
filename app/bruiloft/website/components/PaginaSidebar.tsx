@@ -37,6 +37,9 @@ interface Props {
 }
 
 export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: Props) {
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const activeButtonRef = React.useRef<HTMLButtonElement>(null)
+
   const zichtbaar = SECTIES_VOLGORDE.filter((s) => {
     if (s === 'home') return true
     return sectiesConfig[s]?.zichtbaar !== false
@@ -52,30 +55,71 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: 
   const isVerborgen = (s: SectieSleutel) =>
     s !== 'home' && sectiesConfig[s]?.zichtbaar === false
 
+  // Scroll de actieve tab automatisch in beeld op mobiel
+  React.useEffect(() => {
+    if (activeButtonRef.current && scrollContainerRef.current) {
+      activeButtonRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      })
+    }
+  }, [actief])
+
   return (
     <>
       {/* Mobiel: horizontale scrollbare tabstrip */}
       <div className="lg:hidden">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+        >
           {SECTIES_VOLGORDE.map((s) => {
             const verborgenItem = isVerborgen(s)
-            const active = actief === s
+            const isActief = actief === s
             return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onSelecteer(s)}
-                className={cn(
-                  'flex-none whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : verborgenItem
-                      ? 'bg-muted text-muted-foreground/50'
-                      : 'bg-muted text-muted-foreground hover:text-foreground'
+              <div key={s} className="relative flex-none">
+                <button
+                  ref={isActief ? activeButtonRef : undefined}
+                  type="button"
+                  onClick={() => onSelecteer(s)}
+                  className={cn(
+                    'flex min-h-[44px] items-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors',
+                    isActief
+                      ? 'bg-primary text-primary-foreground'
+                      : verborgenItem
+                        ? 'bg-muted text-muted-foreground/40'
+                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {naamVan(s)}
+                  {verborgenItem && !isActief && (
+                    <EyeOff className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-60" />
+                  )}
+                </button>
+                {/* Verberg/toon knop voor niet-home secties op mobiel */}
+                {s !== 'home' && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggle(s, !(sectiesConfig[s]?.zichtbaar ?? true))
+                    }}
+                    className={cn(
+                      'absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-background text-white shadow-sm transition-opacity',
+                      isActief ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                      sectiesConfig[s]?.zichtbaar !== false ? 'bg-primary/80' : 'bg-muted-foreground/60'
+                    )}
+                    title={sectiesConfig[s]?.zichtbaar !== false ? 'Verbergen' : 'Tonen'}
+                  >
+                    {sectiesConfig[s]?.zichtbaar !== false ? (
+                      <Eye className="h-3 w-3" />
+                    ) : (
+                      <EyeOff className="h-3 w-3" />
+                    )}
+                  </button>
                 )}
-              >
-                {naamVan(s)}
-              </button>
+              </div>
             )
           })}
         </div>

@@ -75,10 +75,10 @@ export function VormgevingTab({ content }: Props) {
     slug ? `${herkomst}/trouwen/${slug}` : ''
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Publicatie */}
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <h3 className="mb-3 font-medium text-foreground">Publicatie</h3>
           <div className="flex items-center gap-3">
             <button
@@ -86,32 +86,39 @@ export function VormgevingTab({ content }: Props) {
               aria-checked={content.websiteGepubliceerd}
               onClick={() => saveWebsiteContent({ websiteGepubliceerd: !content.websiteGepubliceerd })}
               className={
-                'relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ' +
                 (content.websiteGepubliceerd ? 'bg-primary' : 'bg-input')
               }
             >
               <span
                 className={
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ' +
-                  (content.websiteGepubliceerd ? 'translate-x-5' : 'translate-x-0.5')
+                  'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ' +
+                  (content.websiteGepubliceerd ? 'translate-x-6' : 'translate-x-1')
                 }
               />
             </button>
-            <span className="text-sm text-foreground">
-              {content.websiteGepubliceerd ? 'Website is live' : 'Website is verborgen'}
-            </span>
+            <div>
+              <span className="text-sm font-medium text-foreground">
+                {content.websiteGepubliceerd ? 'Website is live' : 'Website is verborgen'}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {content.websiteGepubliceerd
+                  ? 'Zichtbaar voor gasten via de publieke URL.'
+                  : 'Alleen zichtbaar voor jou als beheerder.'}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Publieke URL / Slug */}
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <h3 className="mb-1 font-medium text-foreground">Jullie trouwwebsite-adres</h3>
           <p className="mb-3 text-sm text-muted-foreground">
             Kies een persoonlijke URL voor jullie publieke trouwwebsite.
           </p>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
             <span className="shrink-0 text-muted-foreground">/trouwen/</span>
             <input
               value={slug}
@@ -136,49 +143,54 @@ export function VormgevingTab({ content }: Props) {
 
       {/* Thema */}
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <h3 className="mb-3 font-medium text-foreground">Thema</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {THEMAS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => saveWebsiteContent({ thema: t.id })}
-                className={
-                  'relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 text-sm transition-all ' +
-                  (content.thema === t.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50')
-                }
-              >
-                {content.thema === t.id && (
-                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
-                    <Check className="h-3 w-3" />
-                  </span>
-                )}
-                <div
-                  className="h-10 w-full rounded-lg"
-                  style={{ background: `linear-gradient(135deg, ${t.accentKleur}30 0%, ${t.accentKleur}80 100%)` }}
-                />
-                <div className="text-center">
-                  <p className="font-medium text-foreground">{t.naam}</p>
-                  <p className="text-xs text-muted-foreground">{t.beschrijving}</p>
-                </div>
-              </button>
-            ))}
+          {/* Mobiel: verticale kaarten (makkelijker te tikken)
+              Desktop (sm+): 3-koloms raster */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {THEMAS.map((t) => {
+              const gekozen = content.thema === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => saveWebsiteContent({ thema: t.id })}
+                  className={
+                    'relative flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all sm:flex-col sm:items-stretch sm:text-center ' +
+                    (gekozen
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50')
+                  }
+                >
+                  {gekozen && (
+                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                  <div
+                    className="h-10 w-10 shrink-0 rounded-lg sm:w-full"
+                    style={{ background: `linear-gradient(135deg, ${t.accentKleur}30 0%, ${t.accentKleur}80 100%)` }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t.naam}</p>
+                    <p className="text-xs text-muted-foreground">{t.beschrijving}</p>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
 
       {/* Accentkleur */}
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <h3 className="mb-3 font-medium text-foreground">Accentkleur</h3>
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="color"
               value={content.kleurAccent}
               onChange={(e) => stel({ kleurAccent: e.target.value })}
-              className="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
+              className="h-11 w-11 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
             />
             <Input
               value={content.kleurAccent}
@@ -193,7 +205,7 @@ export function VormgevingTab({ content }: Props) {
                   key={k}
                   type="button"
                   onClick={() => stel({ kleurAccent: k })}
-                  className="h-7 w-7 rounded-full border-2 border-white shadow-sm ring-1 ring-border transition-transform hover:scale-110"
+                  className="h-11 w-11 rounded-full border-2 border-white shadow-sm ring-1 ring-border transition-transform hover:scale-110"
                   style={{ background: k }}
                   title={k}
                 />
@@ -205,7 +217,7 @@ export function VormgevingTab({ content }: Props) {
 
       {/* Lettertype */}
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <h3 className="mb-3 font-medium text-foreground">Koplettertype</h3>
           <div className="grid grid-cols-3 gap-3">
             {LETTERTYPES.map((l) => (
@@ -213,7 +225,7 @@ export function VormgevingTab({ content }: Props) {
                 key={l.id}
                 onClick={() => saveWebsiteContent({ kopLettertype: l.id })}
                 className={
-                  'flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all ' +
+                  'flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border-2 p-3 transition-all ' +
                   (content.kopLettertype === l.id
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50')
