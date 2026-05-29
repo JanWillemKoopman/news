@@ -59,7 +59,7 @@ function StatTile({
   icon: React.ComponentType<{ className?: string }>
   label: string
   value: string
-  accent?: keyof typeof ACCENTS
+  accent?: string
   below?: React.ReactNode
 }) {
   return (
