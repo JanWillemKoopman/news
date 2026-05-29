@@ -417,6 +417,7 @@ export class SupabaseWeddingRepository implements WeddingRepository {
       email: r.email ?? '',
       displayName: r.display_name ?? '',
       role: r.role as WeddingRoleSnapshot,
+      avatarUrl: r.avatar_url ?? undefined,
     }))
   }
 }

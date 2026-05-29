@@ -64,6 +64,7 @@ interface CurrentUser {
   email: string
   displayName: string
   appRole: 'member' | 'platform_admin'
+  avatarUrl?: string
 }
 
 interface BruiloftState {
@@ -140,6 +141,8 @@ interface BruiloftActions {
   markActivitySeen: () => void
 
   loadMembers: () => Promise<void>
+  updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null }) => Promise<void>
+  uploadAvatar: (file: File) => Promise<string>
 }
 
 // Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
@@ -285,7 +288,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('email, display_name, app_role')
+        .select('email, display_name, app_role, avatar_url')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -294,6 +297,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         email: profile?.email ?? user.email ?? '',
         displayName: profile?.display_name ?? '',
         appRole: (profile?.app_role as CurrentUser['appRole']) ?? 'member',
+        avatarUrl: profile?.avatar_url ?? undefined,
       }
 
       const weddings = await repository.listWeddings()
@@ -914,6 +918,44 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       const members = await repository.listMembers(wedding.id)
       set({ members })
+    },
+
+    updateProfile: async (patch) => {
+      const res = await fetch('/api/profiel', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? 'Opslaan mislukt')
+      }
+      const user = get().currentUser
+      if (!user) return
+      set({
+        currentUser: {
+          ...user,
+          ...(patch.displayName !== undefined && { displayName: patch.displayName }),
+          ...(patch.email !== undefined && { email: patch.email }),
+          ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
+        },
+      })
+    },
+
+    uploadAvatar: async (file) => {
+      const user = get().currentUser
+      if (!user) throw new Error('Niet ingelogd')
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${user.id}.${ext}`
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = `${data.publicUrl}?t=${Date.now()}`
+      await get().updateProfile({ avatarUrl: url })
+      return url
     },
   })
 )

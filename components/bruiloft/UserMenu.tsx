@@ -32,6 +32,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
   const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
+  const [avatarError, setAvatarError] = React.useState(false)
 
   async function onSignOut() {
     setOpen(false)
@@ -60,14 +61,26 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             : 'px-2 py-1.5 text-sm hover:bg-accent focus-visible:ring-ring focus-visible:ring-offset-background'
         )}
       >
-        <span
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
-            dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
-          )}
-        >
-          {initials}
-        </span>
+        {currentUser.avatarUrl && !avatarError ? (
+          <img
+            src={currentUser.avatarUrl}
+            alt={displayLabel}
+            onError={() => setAvatarError(true)}
+            className={cn(
+              'h-8 w-8 rounded-full object-cover ring-2',
+              dark ? 'ring-rhino-700' : 'ring-transparent'
+            )}
+          />
+        ) : (
+          <span
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
+              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
+            )}
+          >
+            {initials}
+          </span>
+        )}
         {!compact ? (
           <>
             <span

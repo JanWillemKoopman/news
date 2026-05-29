@@ -175,6 +175,7 @@ export type Database = {
       profiles: {
         Row: {
           app_role: string
+          avatar_url: string | null
           created_at: string
           display_name: string | null
           email: string | null
@@ -183,6 +184,7 @@ export type Database = {
         }
         Insert: {
           app_role?: string
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
@@ -191,6 +193,7 @@ export type Database = {
         }
         Update: {
           app_role?: string
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
@@ -729,6 +732,7 @@ export type Database = {
       list_wedding_members: {
         Args: { p_wedding: string }
         Returns: {
+          avatar_url: string | null
           display_name: string
           email: string
           role: string

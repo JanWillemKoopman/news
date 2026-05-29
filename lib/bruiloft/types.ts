@@ -122,6 +122,7 @@ export interface WeddingMember {
   email: string
   displayName: string
   role: WeddingRoleSnapshot
+  avatarUrl?: string
 }
 
 // Lokale alias zodat types.ts geen import op permissions.ts hoeft (cycle-vrij).
