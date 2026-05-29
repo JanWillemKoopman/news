@@ -56,7 +56,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       <div className={wrapperClass} aria-busy="true" suppressHydrationWarning>
         <div className="h-16 w-full bg-rhino-800" />
         <div className="flex min-h-[calc(100vh-4rem)]">
-          <aside className="hidden w-60 shrink-0 flex-col border-r border-[#2a3250] bg-[#365473] p-4 md:flex">
+          <aside className="hidden w-64 shrink-0 flex-col border-r border-[#2a3250] bg-[#365473] p-4 md:flex">
             <Skeleton className="h-4 w-24" />
             <div className="mt-4 flex flex-col gap-1">
               {Array.from({ length: 4 }).map((_, i) => (

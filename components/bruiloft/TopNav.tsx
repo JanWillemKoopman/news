@@ -21,21 +21,17 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 bg-[#2a3c50] text-white shadow-header">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
-        {/* Logo: serif ampersand in een licht vierkant. */}
+        {/* Logo */}
         <Link
           href="/bruiloft"
           aria-label="Naar het overzicht"
-          className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3c50]"
+          className="group shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3c50]"
         >
-          <span
-            aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-[#2a3c50] shadow-sm"
-          >
-            <span className="font-serif text-[22px] font-medium leading-none">&amp;</span>
-          </span>
-          <span className="hidden font-serif text-lg tracking-tight text-white md:inline">
-            Ons Trouwplan
-          </span>
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-9 w-auto object-contain"
+          />
         </Link>
 
         {/* Hoofdmenu (horizontaal). */}
@@ -61,8 +57,8 @@ export function TopNav() {
           })}
         </nav>
 
-        {/* Mobiele app-titel — vult de ruimte waar het hoofdmenu zou staan. */}
-        <span className="ml-auto font-serif text-base text-white md:hidden">Ons Trouwplan</span>
+        {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
+        <span className="flex-1 md:hidden" aria-hidden />
 
         {/* Account-menu (rechts). */}
         <div className="ml-auto hidden items-center md:flex">
