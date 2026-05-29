@@ -24,11 +24,11 @@ export function DezeMaandSection(props: DezeMaandSectionProps) {
   if (taken.length === 0) return null
   const label = taken.length === 1 ? 'taak' : 'taken'
   return (
-    <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-      <h2 className="mb-3 flex items-center gap-2 px-1 font-serif text-lg text-foreground">
-        <CalendarClock className="h-5 w-5 text-amber-700" />
+    <div className="mb-8 rounded-lg border border-border bg-gray-50 p-4">
+      <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <CalendarClock className="h-4 w-4 text-gray-500" />
         Deze maand
-        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-medium text-amber-900">
+        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
           {taken.length} {label}
         </span>
       </h2>

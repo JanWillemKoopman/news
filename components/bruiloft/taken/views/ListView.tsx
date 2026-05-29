@@ -114,7 +114,7 @@ export function ListView({
             ref={blok === achterstallig ? achterstandRef : undefined}
             data-blok={blok}
           >
-            <h2 className="mb-3 flex items-center gap-2 px-1 font-serif text-lg capitalize text-foreground">
+            <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               {blok}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                 {blokTaken.length} {blokTaken.length === 1 ? 'taak' : 'taken'}

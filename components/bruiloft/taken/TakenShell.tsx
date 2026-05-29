@@ -140,7 +140,7 @@ export function TakenShell() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Taken"
         beschrijving="Werk stap voor stap naar de grote dag toe."
@@ -150,7 +150,7 @@ export function TakenShell() {
               <Sparkles className="h-4 w-4" /> Voorgestelde taken
             </Button>
             <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Taak
+              <Plus className="h-4 w-4" /> Taak toevoegen
             </Button>
           </div>
         }

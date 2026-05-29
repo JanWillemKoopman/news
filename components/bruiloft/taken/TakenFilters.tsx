@@ -16,7 +16,8 @@ interface TakenFiltersProps {
 
 export function TakenFilters({ filters, onChange, members }: TakenFiltersProps) {
   return (
-    <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mb-6 rounded-lg border border-border bg-gray-50 p-4">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -66,6 +67,7 @@ export function TakenFilters({ filters, onChange, members }: TakenFiltersProps) 
           </optgroup>
         ) : null}
       </Select>
+    </div>
     </div>
   )
 }
