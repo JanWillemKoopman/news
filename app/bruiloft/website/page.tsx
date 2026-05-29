@@ -113,7 +113,7 @@ export default function WebsitePage() {
   )
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto w-full max-w-5xl overflow-x-hidden">
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de inhoud en vormgeving van jullie persoonlijke trouwwebsite."

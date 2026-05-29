@@ -131,7 +131,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         <main
           id="hoofdinhoud"
           tabIndex={-1}
-          className="flex-1 bg-[#f3f4f6] px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
+          className="min-w-0 flex-1 bg-[#f3f4f6] px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
         >
           {allowed ? (
             children

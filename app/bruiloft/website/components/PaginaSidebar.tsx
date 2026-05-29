@@ -68,8 +68,10 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: 
 
   return (
     <>
-      {/* Mobiel: horizontale scrollbare tabstrip */}
-      <div className="lg:hidden">
+      {/* Mobiel: horizontale scrollbare tabstrip
+          De buitenste div heeft overflow-hidden zodat de pagina niet horizontaal
+          scrollt. De binnenste div handelt het horizontaal scrollen van de pills af. */}
+      <div className="w-full overflow-hidden lg:hidden">
         <div
           ref={scrollContainerRef}
           className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
@@ -78,48 +80,25 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: 
             const verborgenItem = isVerborgen(s)
             const isActief = actief === s
             return (
-              <div key={s} className="relative flex-none">
-                <button
-                  ref={isActief ? activeButtonRef : undefined}
-                  type="button"
-                  onClick={() => onSelecteer(s)}
-                  className={cn(
-                    'flex min-h-[44px] items-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors',
-                    isActief
-                      ? 'bg-primary text-primary-foreground'
-                      : verborgenItem
-                        ? 'bg-muted text-muted-foreground/40'
-                        : 'bg-muted text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {naamVan(s)}
-                  {verborgenItem && !isActief && (
-                    <EyeOff className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-60" />
-                  )}
-                </button>
-                {/* Verberg/toon knop voor niet-home secties op mobiel */}
-                {s !== 'home' && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onToggle(s, !(sectiesConfig[s]?.zichtbaar ?? true))
-                    }}
-                    className={cn(
-                      'absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-background text-white shadow-sm transition-opacity',
-                      isActief ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-                      sectiesConfig[s]?.zichtbaar !== false ? 'bg-primary/80' : 'bg-muted-foreground/60'
-                    )}
-                    title={sectiesConfig[s]?.zichtbaar !== false ? 'Verbergen' : 'Tonen'}
-                  >
-                    {sectiesConfig[s]?.zichtbaar !== false ? (
-                      <Eye className="h-3 w-3" />
-                    ) : (
-                      <EyeOff className="h-3 w-3" />
-                    )}
-                  </button>
+              <button
+                key={s}
+                ref={isActief ? activeButtonRef : undefined}
+                type="button"
+                onClick={() => onSelecteer(s)}
+                className={cn(
+                  'flex min-h-[44px] flex-none items-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors',
+                  isActief
+                    ? 'bg-primary text-primary-foreground'
+                    : verborgenItem
+                      ? 'bg-muted text-muted-foreground/40'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
                 )}
-              </div>
+              >
+                {naamVan(s)}
+                {verborgenItem && (
+                  <EyeOff className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-60" />
+                )}
+              </button>
             )
           })}
         </div>
