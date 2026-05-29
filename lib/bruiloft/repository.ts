@@ -25,6 +25,7 @@ import type {
   WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
+  WebsiteFoto,
 } from './types'
 
 export interface WeddingRepository {
@@ -79,6 +80,13 @@ export interface WeddingRepository {
     weddingId: ID,
     patch: Partial<WebsiteContentInput>
   ): Promise<WebsiteContent>
+  checkSlugAvailable(slug: string): Promise<boolean>
+
+  // Website-foto's (gallerij).
+  listWebsiteFotos(weddingId: ID): Promise<WebsiteFoto[]>
+  createWebsiteFoto(weddingId: ID, url: string, bijschrift: string, volgorde: number): Promise<WebsiteFoto>
+  updateWebsiteFoto(id: ID, patch: { bijschrift?: string; volgorde?: number }): Promise<WebsiteFoto>
+  deleteWebsiteFoto(id: ID): Promise<void>
 
   // Activiteitenfeed (read-only; gevuld door DB-triggers).
   listActivity(weddingId: ID, limit?: number): Promise<ActivityEntry[]>

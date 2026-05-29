@@ -480,11 +480,21 @@ export type Database = {
           contact: string
           created_at: string
           dresscode: string
+          faq: Json
+          gallerij: Json
+          header_foto_url: string
+          header_overlay: number
           hotels: string
           id: string
+          kop_lettertype: string
+          kleur_accent: string
           routebeschrijving: string
+          secties_config: Json
+          slug: string | null
+          thema: string
           updated_at: string
           wedding_id: string
+          website_gepubliceerd: boolean
           welkomsttekst: string
         }
         Insert: {
@@ -492,11 +502,21 @@ export type Database = {
           contact?: string
           created_at?: string
           dresscode?: string
+          faq?: Json
+          gallerij?: Json
+          header_foto_url?: string
+          header_overlay?: number
           hotels?: string
           id?: string
+          kop_lettertype?: string
+          kleur_accent?: string
           routebeschrijving?: string
+          secties_config?: Json
+          slug?: string | null
+          thema?: string
           updated_at?: string
           wedding_id: string
+          website_gepubliceerd?: boolean
           welkomsttekst?: string
         }
         Update: {
@@ -504,11 +524,21 @@ export type Database = {
           contact?: string
           created_at?: string
           dresscode?: string
+          faq?: Json
+          gallerij?: Json
+          header_foto_url?: string
+          header_overlay?: number
           hotels?: string
           id?: string
+          kop_lettertype?: string
+          kleur_accent?: string
           routebeschrijving?: string
+          secties_config?: Json
+          slug?: string | null
+          thema?: string
           updated_at?: string
           wedding_id?: string
+          website_gepubliceerd?: boolean
           welkomsttekst?: string
         }
         Relationships: [
@@ -516,6 +546,41 @@ export type Database = {
             foreignKeyName: "website_content_wedding_id_fkey"
             columns: ["wedding_id"]
             isOneToOne: true
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_fotos: {
+        Row: {
+          bijschrift: string
+          created_at: string
+          id: string
+          url: string
+          volgorde: number
+          wedding_id: string
+        }
+        Insert: {
+          bijschrift?: string
+          created_at?: string
+          id?: string
+          url: string
+          volgorde?: number
+          wedding_id: string
+        }
+        Update: {
+          bijschrift?: string
+          created_at?: string
+          id?: string
+          url?: string
+          volgorde?: number
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_fotos_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
             referencedRelation: "weddings"
             referencedColumns: ["id"]
           },
@@ -718,6 +783,8 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: string }
+      check_slug_available: { Args: { p_slug: string }; Returns: boolean }
+      get_public_website: { Args: { p_slug: string }; Returns: Json }
       can_edit: {
         Args: { p_module: string; p_wedding: string }
         Returns: boolean

@@ -12,6 +12,7 @@ import {
   vendorFromRow,
   weddingFromRow,
   websiteContentFromRow,
+  websiteFotoFromRow,
 } from '@/lib/bruiloft/mappers'
 import {
   ALL_EDIT_PERMISSIONS,
@@ -28,10 +29,13 @@ import {
 } from '@/lib/bruiloft/templateTasks'
 import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
 import { createClient } from '@/lib/supabase/client'
+import { uploadWeddingMedia, deleteWeddingMedia } from '@/lib/supabase/storage'
 import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  FaqItem,
+  GallerijFoto,
   Guest,
   GuestInput,
   ID,
@@ -49,6 +53,7 @@ import type {
   WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
+  WebsiteFoto,
 } from '@/lib/bruiloft/types'
 
 // Create-input zonder de velden die de store zelf invult.
@@ -83,6 +88,7 @@ interface BruiloftState {
   scheduleItems: ScheduleItem[]
   tables: Table[]
   websiteContent: WebsiteContent | null
+  websiteFotos: WebsiteFoto[]
   activity: ActivityEntry[]
   taskComments: TaskComment[]
   members: WeddingMember[]
@@ -134,6 +140,12 @@ interface BruiloftActions {
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
+  checkSlugAvailable: (slug: string) => Promise<boolean>
+  uploadHeaderFoto: (file: File) => Promise<string>
+  saveWebsiteFoto: (url: string, bijschrift: string) => Promise<void>
+  deleteWebsiteFoto: (id: ID, publicUrl: string) => Promise<void>
+  updateFaq: (faq: FaqItem[]) => Promise<void>
+  updateGallerij: (gallerij: GallerijFoto[]) => Promise<void>
   ensureRsvpCodes: () => Promise<void>
 
   addTaskComment: (taskId: ID, body: string) => Promise<void>
@@ -262,6 +274,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     scheduleItems: [],
     tables: [],
     websiteContent: null,
+    websiteFotos: [],
     activity: [],
     taskComments: [],
     members: [],
@@ -339,6 +352,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems,
         tables,
         websiteContent,
+        websiteFotos,
         activity,
         taskComments,
         members,
@@ -350,6 +364,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         repository.listScheduleItems(wedding.id),
         repository.listTables(wedding.id),
         repository.getWebsiteContent(wedding.id),
+        repository.listWebsiteFotos(wedding.id),
         repository.listActivity(wedding.id, 50),
         repository.listTaskComments(wedding.id),
         repository.listMembers(wedding.id),
@@ -370,6 +385,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems,
         tables,
         websiteContent,
+        websiteFotos,
         activity,
         taskComments,
         members,
@@ -427,6 +443,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         tables: [],
         websiteContent: null,
+        websiteFotos: [],
         activity: [],
         taskComments: [],
         members: [],
@@ -486,6 +503,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'website_fotos', filter: wf }, (p) =>
+          set({ websiteFotos: applyList(get().websiteFotos, p, (r) => websiteFotoFromRow(r as unknown as Parameters<typeof websiteFotoFromRow>[0])) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'wedding_activity', filter: wf }, (p) =>
           set({ activity: applyList(get().activity, p, (r) => activityFromRow(r as unknown as Parameters<typeof activityFromRow>[0])) })
         )
@@ -859,6 +879,42 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       const content = await repository.saveWebsiteContent(wedding.id, patch)
       set({ websiteContent: content })
+    },
+
+    checkSlugAvailable: async (slug) => {
+      return repository.checkSlugAvailable(slug)
+    },
+
+    uploadHeaderFoto: async (file) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const url = await uploadWeddingMedia(supabase, wedding.id, file, 'header')
+      await get().saveWebsiteContent({ headerFotoUrl: url })
+      return url
+    },
+
+    saveWebsiteFoto: async (url, bijschrift) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const volgorde = get().websiteFotos.length
+      const foto = await repository.createWebsiteFoto(wedding.id, url, bijschrift, volgorde)
+      set({ websiteFotos: [...get().websiteFotos, foto] })
+    },
+
+    deleteWebsiteFoto: async (id, publicUrl) => {
+      const supabase = createClient()
+      await repository.deleteWebsiteFoto(id)
+      await deleteWeddingMedia(supabase, publicUrl).catch(() => undefined)
+      set({ websiteFotos: get().websiteFotos.filter((f) => f.id !== id) })
+    },
+
+    updateFaq: async (faq) => {
+      await get().saveWebsiteContent({ faq })
+    },
+
+    updateGallerij: async (gallerij) => {
+      await get().saveWebsiteContent({ gallerij })
     },
 
     // Geef elke gast zonder code een persoonlijke RSVP-code.

@@ -246,18 +246,58 @@ export type TableInput = Omit<Table, 'id'>
 
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
+export type WeddingThema = 'klassiek' | 'modern' | 'romantisch'
+export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora'
+
+export interface SectieConfig {
+  zichtbaar: boolean
+  naam: string
+}
+
+export interface FaqItem {
+  id: string
+  vraag: string
+  antwoord: string
+}
+
+export interface GallerijFoto {
+  id: string
+  url: string
+  bijschrift: string
+}
+
 export interface WebsiteContent {
   id: ID
   weddingId: ID
+  // Bestaande tekstvelden
   welkomsttekst: string
   dresscode: string
   cadeaulijst: string
   hotels: string
   routebeschrijving: string
   contact: string
+  // Nieuwe velden
+  slug: string | null
+  websiteGepubliceerd: boolean
+  thema: WeddingThema
+  kleurAccent: string
+  kopLettertype: WeddingLettertype
+  headerFotoUrl: string
+  headerOverlay: number
+  sectiesConfig: Record<string, SectieConfig>
+  faq: FaqItem[]
+  gallerij: GallerijFoto[]
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
+
+export interface WebsiteFoto {
+  id: ID
+  weddingId: ID
+  url: string
+  bijschrift: string
+  volgorde: number
+}
 
 // --- Activiteit & opmerkingen (samen plannen) ------------------------------
 
