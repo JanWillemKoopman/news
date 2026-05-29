@@ -5,7 +5,6 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import type { WeddingMember } from '@/lib/bruiloft/types'
 
-// Zachte palet-kleuren passend bij het bruiloft-thema.
 const PALET = [
   'bg-rose-200 text-rose-900',
   'bg-amber-200 text-amber-900',
@@ -35,6 +34,36 @@ export function initialsFor(m: { displayName: string; email: string }): string {
     .join('')
 }
 
+interface SingleAvatarProps {
+  member: WeddingMember
+  dim: string
+}
+
+function SingleAvatar({ member, dim }: SingleAvatarProps) {
+  const [imgError, setImgError] = React.useState(false)
+  if (member.avatarUrl && !imgError) {
+    return (
+      <img
+        src={member.avatarUrl}
+        alt={member.displayName || member.email}
+        onError={() => setImgError(true)}
+        className={cn('inline-flex shrink-0 rounded-full object-cover ring-2 ring-card', dim)}
+      />
+    )
+  }
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-full font-medium ring-2 ring-card',
+        dim,
+        bgFor(member.userId)
+      )}
+    >
+      {initialsFor(member)}
+    </span>
+  )
+}
+
 interface AvatarStackProps {
   members: WeddingMember[]
   size?: 'sm' | 'md'
@@ -50,17 +79,8 @@ export function AvatarStack({ members, size = 'sm', max = 3, className }: Avatar
   return (
     <div className={cn('flex items-center', className)}>
       {shown.map((m, i) => (
-        <span
-          key={m.userId}
-          title={m.displayName || m.email}
-          className={cn(
-            'inline-flex shrink-0 items-center justify-center rounded-full font-medium ring-2 ring-card',
-            dim,
-            bgFor(m.userId),
-            i > 0 && '-ml-2'
-          )}
-        >
-          {initialsFor(m)}
+        <span key={m.userId} title={m.displayName || m.email} className={cn(i > 0 && '-ml-2')}>
+          <SingleAvatar member={m} dim={dim} />
         </span>
       ))}
       {extra > 0 ? (
