@@ -1,92 +1,48 @@
 'use client'
 
+import { AlertCircle, Check, ExternalLink, Loader2 } from 'lucide-react'
 import * as React from 'react'
-import { AlertCircle, Check, Copy, Info, Link2, Loader2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import {
   Button,
   Card,
   CardContent,
-  Field,
-  Input,
-  Textarea,
   useToast,
 } from '@/components/bruiloft/ui'
 import { gastTellingen } from '@/lib/bruiloft/derived'
+import type { SectieConfig, WebsiteContent, WebsiteContentInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Velden = {
-  welkomsttekst: string
-  dresscode: string
-  cadeaulijst: string
-  hotels: string
-  routebeschrijving: string
-  contact: string
-}
+import { FaqEditor } from './components/editors/FaqEditor'
+import { FotoGalerijEditor } from './components/editors/FotoGalerijEditor'
+import { HomeEditor } from './components/editors/HomeEditor'
+import { TekstEditor } from './components/editors/TekstEditor'
+import { PaginaSidebar, type SectieSleutel } from './components/PaginaSidebar'
+import { useDebounceOpslaan } from './components/useDebounceOpslaan'
+import { VormgevingTab } from './components/VormgevingTab'
+import { RsvpSectie } from './components/RsvpSectie'
+
+type TabId = 'inhoud' | 'vormgeving'
 
 export default function WebsitePage() {
   const wedding = useBruiloftStore((s) => s.wedding)
-  const guests = useBruiloftStore((s) => s.guests)
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
-  const ensureRsvpCodes = useBruiloftStore((s) => s.ensureRsvpCodes)
   const { toast } = useToast()
 
-  const [form, setForm] = React.useState<Velden>({
-    welkomsttekst: '',
-    dresscode: '',
-    cadeaulijst: '',
-    hotels: '',
-    routebeschrijving: '',
-    contact: '',
-  })
-  const [origin, setOrigin] = React.useState('')
-  const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
-  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [tab, setTab] = React.useState<TabId>('inhoud')
+  const [activeSectie, setActiveSectie] = React.useState<SectieSleutel>('home')
+  const [form, setForm] = React.useState<Partial<WebsiteContentInput>>({})
 
-  // Debounce: verzamel wijzigingen en sla ze gebundeld op (niet per toetsaanslag).
-  const pendingRef = React.useRef<Partial<Velden>>({})
-  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  React.useEffect(() => {
-    setOrigin(window.location.origin)
-  }, [])
-
-  const flush = React.useCallback(async () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-    const patch = pendingRef.current
-    pendingRef.current = {}
-    if (Object.keys(patch).length === 0) return
-    setSaveStatus('saving')
-    try {
+  const debounce = useDebounceOpslaan<WebsiteContentInput>(
+    async (patch) => {
       await saveWebsiteContent(patch)
-      setSaveStatus('saved')
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000)
-    } catch {
-      // Bewaar de niet-opgeslagen velden zodat een volgende poging ze meeneemt.
-      pendingRef.current = { ...patch, ...pendingRef.current }
-      setSaveStatus('error')
-      toast({
-        title: 'Opslaan mislukt',
-        description: 'We konden de wijziging niet opslaan. Controleer je verbinding.',
-        variant: 'error',
-      })
-    }
-  }, [saveWebsiteContent, toast])
+    },
+    700
+  )
 
-  // Sla eventueel nog niet-opgeslagen wijzigingen op bij het verlaten van de pagina.
-  React.useEffect(() => {
-    return () => {
-      void flush()
-    }
-  }, [flush])
-
+  // Lokale form-staat bijhouden vanuit store
   React.useEffect(() => {
     if (websiteContent) {
       setForm({
@@ -96,167 +52,195 @@ export default function WebsitePage() {
         hotels: websiteContent.hotels,
         routebeschrijving: websiteContent.routebeschrijving,
         contact: websiteContent.contact,
+        headerFotoUrl: websiteContent.headerFotoUrl,
       })
     }
   }, [websiteContent])
 
-  if (!wedding) return null
-
-  const t = gastTellingen(guests)
-
-  // Bewerk lokaal en sla gebundeld op na een korte pauze (debounce).
-  const set = (veld: keyof Velden) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = e.target.value
-    setForm((f) => ({ ...f, [veld]: value }))
-    pendingRef.current = { ...pendingRef.current, [veld]: value }
-    setSaveStatus('saving')
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
-      void flush()
-    }, 700)
-  }
-
-  const kopieer = async (tekst: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(tekst)
-      setGekopieerd(id)
-      setTimeout(() => setGekopieerd(null), 1500)
-    } catch {
-      // klembord niet beschikbaar
+  React.useEffect(() => {
+    if (debounce.status === 'error') {
+      toast({
+        title: 'Opslaan mislukt',
+        description: 'Controleer je internetverbinding en probeer het opnieuw.',
+        variant: 'error',
+      })
     }
+  }, [debounce.status, toast])
+
+  if (!wedding || !websiteContent) return null
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const publiekeUrl = websiteContent.slug ? `${origin}/trouwen/${websiteContent.slug}` : null
+
+  function onToggleSectie(s: SectieSleutel, zichtbaar: boolean) {
+    const huidig: Record<string, SectieConfig> = { ...websiteContent!.sectiesConfig }
+    huidig[s] = { ...huidig[s], zichtbaar }
+    void saveWebsiteContent({ sectiesConfig: huidig })
   }
+
+  const SaveStatus = () => (
+    debounce.status === 'idle' ? null : (
+      <span
+        className={
+          'inline-flex items-center gap-1.5 text-sm ' +
+          (debounce.status === 'error' ? 'text-destructive' : 'text-muted-foreground')
+        }
+        role="status"
+        aria-live="polite"
+      >
+        {debounce.status === 'saving' ? (
+          <><Loader2 className="h-4 w-4 animate-spin" /> Opslaan…</>
+        ) : debounce.status === 'saved' ? (
+          <><Check className="h-4 w-4 text-emerald-600" /> Opgeslagen</>
+        ) : (
+          <><AlertCircle className="h-4 w-4" /> Niet opgeslagen</>
+        )}
+      </span>
+    )
+  )
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <PageHeader
         titel="Trouwwebsite"
-        beschrijving="Beheer de informatie voor je gasten en deel persoonlijke RSVP-links."
+        beschrijving="Beheer de inhoud en vormgeving van jullie persoonlijke trouwwebsite."
         actie={
-          saveStatus === 'idle' ? null : (
-            <span
-              className={
-                'inline-flex items-center gap-1.5 text-sm ' +
-                (saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground')
-              }
-              role="status"
-              aria-live="polite"
-            >
-              {saveStatus === 'saving' ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Opslaan…
-                </>
-              ) : saveStatus === 'saved' ? (
-                <>
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Opgeslagen
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4" /> Niet opgeslagen
-                </>
-              )}
-            </span>
-          )
+          <div className="flex items-center gap-3">
+            <SaveStatus />
+            {publiekeUrl && (
+              <Button variant="outline" size="sm" asChild>
+                <a href={publiekeUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" /> Bekijk website
+                </a>
+              </Button>
+            )}
+          </div>
         }
       />
 
-      <div className="mb-6 flex items-start gap-3 rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-        <span>
-          Elke gast heeft een persoonlijke, niet te raden RSVP-link. Deel die link; gasten reageren
-          op hun eigen telefoon en hun antwoord verschijnt direct bij jullie gasten-overzicht.
-        </span>
+      {/* Tab-knoppen */}
+      <div className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit">
+        {(['inhoud', 'vormgeving'] as TabId[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={
+              'rounded-md px-4 py-1.5 text-sm font-medium transition-all ' +
+              (tab === t
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground')
+            }
+          >
+            {t === 'inhoud' ? 'Inhoud' : 'Vormgeving'}
+          </button>
+        ))}
       </div>
 
-      <Card className="mb-6">
-        <CardContent className="space-y-4 p-6">
-          <Field label="Welkomsttekst" htmlFor="welkom">
-            <Textarea id="welkom" value={form.welkomsttekst} onChange={set('welkomsttekst')} rows={3} />
-          </Field>
-          <Field label="Dresscode" htmlFor="dress">
-            <Input id="dress" value={form.dresscode} onChange={set('dresscode')} />
-          </Field>
-          <Field label="Cadeaulijst" htmlFor="cadeau">
-            <Textarea id="cadeau" value={form.cadeaulijst} onChange={set('cadeaulijst')} rows={2} />
-          </Field>
-          <Field label="Overnachten / hotels" htmlFor="hotels">
-            <Textarea id="hotels" value={form.hotels} onChange={set('hotels')} rows={2} />
-          </Field>
-          <Field label="Routebeschrijving" htmlFor="route">
-            <Textarea id="route" value={form.routebeschrijving} onChange={set('routebeschrijving')} rows={2} />
-          </Field>
-          <Field label="Contact" htmlFor="contact">
-            <Input id="contact" value={form.contact} onChange={set('contact')} />
-          </Field>
-        </CardContent>
-      </Card>
+      {tab === 'inhoud' ? (
+        <div className="flex gap-6">
+          <PaginaSidebar
+            sectiesConfig={websiteContent.sectiesConfig}
+            actief={activeSectie}
+            onSelecteer={setActiveSectie}
+            onToggle={onToggleSectie}
+          />
 
-      {/* RSVP-overzicht + deellinks */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-serif text-xl text-foreground">RSVP &amp; deellinks</h2>
-              <p className="text-sm text-muted-foreground">
-                {t.bevestigd} bevestigd · {t.afgemeld} afgemeld · {t.geenReactie} geen reactie
-              </p>
-            </div>
-            <Button
-              onClick={async () => {
-                try {
-                  await ensureRsvpCodes()
-                  toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
-                } catch {
-                  toast({ title: 'Aanmaken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
-                }
-              }}
-              disabled={guests.length === 0}
-            >
-              <Link2 className="h-4 w-4" /> Genereer deellinks
-            </Button>
+          <div className="flex-1 min-w-0">
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="mb-4 font-serif text-xl text-foreground">
+                  {activeSectie === 'home' ? 'Home' : websiteContent.sectiesConfig[activeSectie]?.naam ?? activeSectie}
+                </h2>
+
+                {activeSectie === 'home' && (
+                  <HomeEditor
+                    welkomsttekst={websiteContent.welkomsttekst}
+                    headerFotoUrl={websiteContent.headerFotoUrl}
+                    debounce={debounce}
+                  />
+                )}
+                {activeSectie === 'programma' && (
+                  <div className="rounded-lg border border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+                    Het programma beheer je via{' '}
+                    <a href="/bruiloft/draaiboek" className="text-primary underline">
+                      Draaiboek
+                    </a>
+                    . Programma-items die voor gasten zichtbaar zijn worden automatisch op de website getoond.
+                  </div>
+                )}
+                {activeSectie === 'dresscode' && (
+                  <TekstEditor
+                    veld="dresscode"
+                    label="Dresscode"
+                    waarde={websiteContent.dresscode}
+                    debounce={debounce}
+                    placeholder="Bijv. Formeel, feestelijk casual…"
+                    toelichting="Omschrijf de gewenste kledingstijl voor jullie gasten."
+                  />
+                )}
+                {activeSectie === 'cadeaulijst' && (
+                  <TekstEditor
+                    veld="cadeaulijst"
+                    label="Cadeaulijst"
+                    waarde={websiteContent.cadeaulijst}
+                    debounce={debounce}
+                    placeholder="Link naar jullie cadeaulijst of aanwijzingen…"
+                    toelichting="Deel een link naar jullie online cadeaulijst of geef instructies."
+                  />
+                )}
+                {activeSectie === 'hotels' && (
+                  <TekstEditor
+                    veld="hotels"
+                    label="Overnachten"
+                    waarde={websiteContent.hotels}
+                    debounce={debounce}
+                    placeholder="Suggesties voor hotels of B&B's in de buurt…"
+                    toelichting="Help gasten die van ver komen met overnachtingsopties."
+                  />
+                )}
+                {activeSectie === 'routebeschrijving' && (
+                  <TekstEditor
+                    veld="routebeschrijving"
+                    label="Route"
+                    waarde={websiteContent.routebeschrijving}
+                    debounce={debounce}
+                    placeholder="Adres, routebeschrijving of parkeertips…"
+                    toelichting="Geef gasten uitleg over hoe ze de locatie bereiken."
+                  />
+                )}
+                {activeSectie === 'contact' && (
+                  <TekstEditor
+                    veld="contact"
+                    label="Contact"
+                    waarde={websiteContent.contact}
+                    debounce={debounce}
+                    meerdereRegels={false}
+                    placeholder="E-mail of telefoonnummer voor vragen…"
+                    toelichting="Contactgegevens voor gasten met vragen."
+                  />
+                )}
+                {activeSectie === 'faq' && (
+                  <FaqEditor faq={websiteContent.faq} />
+                )}
+                {activeSectie === 'fotos' && (
+                  <FotoGalerijEditor />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* RSVP-sectie onderaan (altijd zichtbaar in inhoud-tab) */}
+            {activeSectie === 'home' && (
+              <div className="mt-6">
+                <RsvpSectie />
+              </div>
+            )}
           </div>
-
-          {guests.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              Voeg eerst gasten toe om persoonlijke RSVP-links te maken.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {guests.map((g) => {
-                const link = g.rsvpCode ? `${origin}/rsvp/${g.rsvpCode}` : ''
-                return (
-                  <li key={g.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <span className="min-w-0 truncate text-sm text-foreground">
-                      {g.voornaam} {g.achternaam}
-                    </span>
-                    {g.rsvpCode ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => kopieer(link, g.id)}
-                        className="shrink-0"
-                      >
-                        {gekopieerd === g.id ? (
-                          <>
-                            <Check className="h-4 w-4" /> Gekopieerd
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4" /> Kopieer link
-                          </>
-                        )}
-                      </Button>
-                    ) : (
-                      <span className="shrink-0 text-xs text-muted-foreground">geen code</span>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <div className="max-w-xl">
+          <VormgevingTab content={websiteContent} />
+        </div>
+      )}
     </div>
   )
 }
