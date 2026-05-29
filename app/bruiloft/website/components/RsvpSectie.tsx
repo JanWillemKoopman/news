@@ -32,8 +32,9 @@ export function RsvpSectie() {
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <CardContent className="p-4 sm:p-6">
+        {/* Header: op mobiel gestapeld, op desktop naast elkaar */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-serif text-xl text-foreground">RSVP &amp; deellinks</h2>
             <p className="text-sm text-muted-foreground">
@@ -50,6 +51,7 @@ export function RsvpSectie() {
               }
             }}
             disabled={guests.length === 0}
+            className="w-full sm:w-auto"
           >
             <Link2 className="h-4 w-4" /> Genereer deellinks
           </Button>
@@ -64,7 +66,7 @@ export function RsvpSectie() {
             {guests.map((g) => {
               const link = g.rsvpCode ? `${origin}/rsvp/${g.rsvpCode}` : ''
               return (
-                <li key={g.id} className="flex items-center justify-between gap-3 py-2.5">
+                <li key={g.id} className="flex min-h-[48px] items-center justify-between gap-3 py-2">
                   <span className="min-w-0 truncate text-sm text-foreground">
                     {g.voornaam} {g.achternaam}
                   </span>
@@ -78,7 +80,7 @@ export function RsvpSectie() {
                       {gekopieerd === g.id ? (
                         <><Check className="h-4 w-4" /> Gekopieerd</>
                       ) : (
-                        <><Copy className="h-4 w-4" /> Kopieer link</>
+                        <><Copy className="h-4 w-4" /> Kopieer</>
                       )}
                     </Button>
                   ) : (

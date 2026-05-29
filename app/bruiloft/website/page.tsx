@@ -8,10 +8,10 @@ import {
   Button,
   Card,
   CardContent,
+  Skeleton,
   useToast,
 } from '@/components/bruiloft/ui'
-import { gastTellingen } from '@/lib/bruiloft/derived'
-import type { SectieConfig, WebsiteContent, WebsiteContentInput } from '@/lib/bruiloft/types'
+import type { SectieConfig, WebsiteContentInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { FaqEditor } from './components/editors/FaqEditor'
@@ -33,7 +33,7 @@ export default function WebsitePage() {
 
   const [tab, setTab] = React.useState<TabId>('inhoud')
   const [activeSectie, setActiveSectie] = React.useState<SectieSleutel>('home')
-  const [form, setForm] = React.useState<Partial<WebsiteContentInput>>({})
+  const initAttempted = React.useRef(false)
 
   const debounce = useDebounceOpslaan<WebsiteContentInput>(
     async (patch) => {
@@ -42,20 +42,14 @@ export default function WebsitePage() {
     700
   )
 
-  // Lokale form-staat bijhouden vanuit store
+  // Maak automatisch een lege websiteContent-rij aan als die nog niet bestaat.
+  // Happens for brand new weddings that haven't configured a website yet.
   React.useEffect(() => {
-    if (websiteContent) {
-      setForm({
-        welkomsttekst: websiteContent.welkomsttekst,
-        dresscode: websiteContent.dresscode,
-        cadeaulijst: websiteContent.cadeaulijst,
-        hotels: websiteContent.hotels,
-        routebeschrijving: websiteContent.routebeschrijving,
-        contact: websiteContent.contact,
-        headerFotoUrl: websiteContent.headerFotoUrl,
-      })
+    if (wedding && !websiteContent && !initAttempted.current) {
+      initAttempted.current = true
+      void saveWebsiteContent({})
     }
-  }, [websiteContent])
+  }, [wedding, websiteContent, saveWebsiteContent])
 
   React.useEffect(() => {
     if (debounce.status === 'error') {
@@ -67,7 +61,26 @@ export default function WebsitePage() {
     }
   }, [debounce.status, toast])
 
-  if (!wedding || !websiteContent) return null
+  if (!wedding) return null
+
+  // Toon skeleton terwijl websiteContent nog aangemaakt/geladen wordt
+  if (!websiteContent) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-4">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-9 w-32 shrink-0" />
+        </div>
+        <Skeleton className="h-10 w-full rounded-lg sm:w-48" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+      </div>
+    )
+  }
 
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const publiekeUrl = websiteContent.slug ? `${origin}/trouwen/${websiteContent.slug}` : null
@@ -118,14 +131,14 @@ export default function WebsitePage() {
         }
       />
 
-      {/* Tab-knoppen */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit">
+      {/* Tab-knoppen: full-width op mobiel, auto-breedte op grotere schermen */}
+      <div className="mb-6 flex w-full gap-1 rounded-lg bg-muted/40 p-1 sm:w-fit">
         {(['inhoud', 'vormgeving'] as TabId[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={
-              'rounded-md px-4 py-1.5 text-sm font-medium transition-all ' +
+              'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all sm:flex-none ' +
               (tab === t
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground')
@@ -147,7 +160,7 @@ export default function WebsitePage() {
 
           <div className="min-w-0 flex-1">
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <h2 className="mb-4 font-serif text-xl text-foreground">
                   {activeSectie === 'home' ? 'Home' : websiteContent.sectiesConfig[activeSectie]?.naam ?? activeSectie}
                 </h2>
@@ -228,9 +241,8 @@ export default function WebsitePage() {
               </CardContent>
             </Card>
 
-            {/* RSVP-sectie onderaan (altijd zichtbaar in inhoud-tab) */}
             {activeSectie === 'home' && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <RsvpSectie />
               </div>
             )}
