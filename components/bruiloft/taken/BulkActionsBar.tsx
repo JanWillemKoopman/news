@@ -35,7 +35,7 @@ export function BulkActionsBar({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-4 z-40 mx-auto w-[min(96vw,720px)] rounded-xl border border-border bg-card p-3 shadow-lg">
+    <div className="fixed inset-x-0 bottom-20 z-40 mx-auto w-[min(96vw,720px)] rounded-xl border border-border bg-card p-3 shadow-lg md:bottom-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-2 text-sm font-medium">{aantal} geselecteerd</span>
         <Select

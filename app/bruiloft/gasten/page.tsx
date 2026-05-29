@@ -177,7 +177,7 @@ export default function GastenPage() {
             Beheer de gastenlijst en houd de reacties bij.
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button variant="outline" onClick={exporteer} disabled={guests.length === 0}>
             <Download className="h-4 w-4" /> Exporteer gastenlijst
           </Button>

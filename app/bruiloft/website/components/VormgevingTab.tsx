@@ -112,7 +112,7 @@ export function VormgevingTab({ content }: Props) {
             Kies een persoonlijke URL voor jullie publieke trouwwebsite.
           </p>
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
-            <span className="shrink-0 text-muted-foreground">{herkomst}/trouwen/</span>
+            <span className="shrink-0 text-muted-foreground">/trouwen/</span>
             <input
               value={slug}
               onChange={onSlugWijziging}
@@ -124,7 +124,7 @@ export function VormgevingTab({ content }: Props) {
           </div>
           {slugFeedback && (
             <p className={
-              'mt-1.5 text-xs ' +
+              'mt-1.5 break-all text-xs ' +
               (slugStatus === 'bezet' || slugStatus === 'ongeldig' ? 'text-destructive' :
                slugStatus === 'beschikbaar' ? 'text-emerald-600' : 'text-muted-foreground')
             }>
@@ -173,7 +173,7 @@ export function VormgevingTab({ content }: Props) {
       <Card>
         <CardContent className="p-5">
           <h3 className="mb-3 font-medium text-foreground">Accentkleur</h3>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="color"
               value={content.kleurAccent}
@@ -187,10 +187,11 @@ export function VormgevingTab({ content }: Props) {
               maxLength={7}
               placeholder="#a75573"
             />
-            <div className="ml-auto flex gap-2">
+            <div className="flex gap-2">
               {['#a75573', '#334155', '#c2785e', '#6b7280', '#1e6e54'].map((k) => (
                 <button
                   key={k}
+                  type="button"
                   onClick={() => stel({ kleurAccent: k })}
                   className="h-7 w-7 rounded-full border-2 border-white shadow-sm ring-1 ring-border transition-transform hover:scale-110"
                   style={{ background: k }}

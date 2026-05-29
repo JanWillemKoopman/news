@@ -13,7 +13,7 @@ export function PageHeader({ titel, beschrijving, actie }: PageHeaderProps) {
           <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
         ) : null}
       </div>
-      {actie ? <div className="flex shrink-0 gap-2">{actie}</div> : null}
+      {actie ? <div className="flex shrink-0 flex-wrap gap-2">{actie}</div> : null}
     </div>
   )
 }

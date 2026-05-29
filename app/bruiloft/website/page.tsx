@@ -137,7 +137,7 @@ export default function WebsitePage() {
       </div>
 
       {tab === 'inhoud' ? (
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
           <PaginaSidebar
             sectiesConfig={websiteContent.sectiesConfig}
             actief={activeSectie}
@@ -145,7 +145,7 @@ export default function WebsitePage() {
             onToggle={onToggleSectie}
           />
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <Card>
               <CardContent className="p-6">
                 <h2 className="mb-4 font-serif text-xl text-foreground">

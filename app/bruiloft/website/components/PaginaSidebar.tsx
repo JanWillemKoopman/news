@@ -3,7 +3,8 @@
 import { Eye, EyeOff } from 'lucide-react'
 import * as React from 'react'
 
-import type { SectieConfig, WebsiteContentInput } from '@/lib/bruiloft/types'
+import { cn } from '@/lib/utils'
+import type { SectieConfig } from '@/lib/bruiloft/types'
 
 export type SectieSleutel =
   | 'home'
@@ -48,20 +49,114 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: 
   const naamVan = (s: SectieSleutel) =>
     s === 'home' ? 'Home' : (sectiesConfig[s]?.naam ?? s)
 
-  const Rij = ({ s }: { s: SectieSleutel }) => (
+  const isVerborgen = (s: SectieSleutel) =>
+    s !== 'home' && sectiesConfig[s]?.zichtbaar === false
+
+  return (
+    <>
+      {/* Mobiel: horizontale scrollbare tabstrip */}
+      <div className="lg:hidden">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          {SECTIES_VOLGORDE.map((s) => {
+            const verborgenItem = isVerborgen(s)
+            const active = actief === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onSelecteer(s)}
+                className={cn(
+                  'flex-none whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : verborgenItem
+                      ? 'bg-muted text-muted-foreground/50'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {naamVan(s)}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Desktop: verticale zijbalk */}
+      <nav className="hidden lg:flex w-52 shrink-0 flex-col gap-4 border-r border-border pr-4">
+        <div>
+          <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Actief
+          </p>
+          <ul className="space-y-0.5">
+            {zichtbaar.map((s) => (
+              <SidebarRij
+                key={s}
+                s={s}
+                actief={actief}
+                naam={naamVan(s)}
+                sectiesConfig={sectiesConfig}
+                onSelecteer={onSelecteer}
+                onToggle={onToggle}
+              />
+            ))}
+          </ul>
+        </div>
+        {verborgen.length > 0 && (
+          <div>
+            <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Verborgen
+            </p>
+            <ul className="space-y-0.5">
+              {verborgen.map((s) => (
+                <SidebarRij
+                  key={s}
+                  s={s}
+                  actief={actief}
+                  naam={naamVan(s)}
+                  sectiesConfig={sectiesConfig}
+                  onSelecteer={onSelecteer}
+                  onToggle={onToggle}
+                />
+              ))}
+            </ul>
+          </div>
+        )}
+      </nav>
+    </>
+  )
+}
+
+function SidebarRij({
+  s,
+  actief,
+  naam,
+  sectiesConfig,
+  onSelecteer,
+  onToggle,
+}: {
+  s: SectieSleutel
+  actief: SectieSleutel
+  naam: string
+  sectiesConfig: Record<string, SectieConfig>
+  onSelecteer: (s: SectieSleutel) => void
+  onToggle: (s: SectieSleutel, zichtbaar: boolean) => void
+}) {
+  return (
     <li>
       <button
+        type="button"
         onClick={() => onSelecteer(s)}
-        className={
-          'group flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ' +
-          (actief === s
+        className={cn(
+          'group flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors',
+          actief === s
             ? 'bg-primary/10 font-medium text-primary'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground')
-        }
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
       >
-        <span className="truncate">{naamVan(s)}</span>
+        <span className="truncate">{naam}</span>
         {s !== 'home' && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               onToggle(s, !(sectiesConfig[s]?.zichtbaar ?? true))
@@ -78,32 +173,5 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle }: 
         )}
       </button>
     </li>
-  )
-
-  return (
-    <nav className="flex w-52 shrink-0 flex-col gap-4 border-r border-border pr-4">
-      <div>
-        <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Actief
-        </p>
-        <ul className="space-y-0.5">
-          {zichtbaar.map((s) => (
-            <Rij key={s} s={s} />
-          ))}
-        </ul>
-      </div>
-      {verborgen.length > 0 && (
-        <div>
-          <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Verborgen
-          </p>
-          <ul className="space-y-0.5">
-            {verborgen.map((s) => (
-              <Rij key={s} s={s} />
-            ))}
-          </ul>
-        </div>
-      )}
-    </nav>
   )
 }

@@ -57,9 +57,9 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   const overBudget = totalen.resterendBudget < 0
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {/* Totalen */}
-      <Card className="lg:col-span-1">
+      <Card className="sm:col-span-2 lg:col-span-1">
         <CardContent className="grid grid-cols-2 gap-4 p-6">
           <Tegel label="Totaalbudget" bedrag={wedding.totaalBudget} />
           <Tegel label="Geschat" bedrag={totalen.totaalGeschat} />
