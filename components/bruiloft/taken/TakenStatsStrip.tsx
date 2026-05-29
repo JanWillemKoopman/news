@@ -20,7 +20,7 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
   const dagenTotTrouw = wedding.trouwdatum ? Math.max(0, dagenTot(wedding.trouwdatum)) : null
 
   return (
-    <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
       <StatTile
         icon={Heart}
         label="Tot de trouwdag"
