@@ -940,6 +940,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
         },
       })
+      // Herlaad leden zodat naam/avatar direct bijgewerkt zijn bij taken.
+      await get().loadMembers()
     },
 
     uploadAvatar: async (file) => {
