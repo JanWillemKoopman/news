@@ -47,6 +47,13 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        header: {
+          bg: 'hsl(var(--header-bg))',
+          fg: 'hsl(var(--header-fg))',
+          muted: 'hsl(var(--header-muted))',
+          active: 'hsl(var(--header-active))',
+          border: 'hsl(var(--header-border))',
+        },
         // Riley & Grey "rhino" navy — gebruikt voor de donkere header en
         // accenten. Overgenomen uit hun productionsite.
         rhino: {

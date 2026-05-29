@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -43,9 +44,11 @@ function SingleAvatar({ member, dim }: SingleAvatarProps) {
   const [imgError, setImgError] = React.useState(false)
   if (member.avatarUrl && !imgError) {
     return (
-      <img
+      <Image
         src={member.avatarUrl}
         alt={member.displayName || member.email}
+        width={32}
+        height={32}
         onError={() => setImgError(true)}
         className={cn('inline-flex shrink-0 rounded-full object-cover ring-2 ring-card', dim)}
       />

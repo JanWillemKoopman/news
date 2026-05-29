@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderInviteEmail } from '@/lib/email/templates'
@@ -12,6 +13,13 @@ const ROLE_LABELS: Record<string, string> = {
   viewer: 'Kijker',
 }
 
+const inviteBodySchema = z.object({
+  token: z.string().min(1),
+  email: z.string().email(),
+  weddingId: z.string().uuid(),
+  role: z.string().optional(),
+})
+
 export async function POST(request: NextRequest) {
   const supabase = createClient()
   const {
@@ -21,16 +29,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => null)
-  if (!body?.token || !body?.email || !body?.weddingId) {
-    return NextResponse.json({ error: 'Ongeldige invoer' }, { status: 400 })
+  const rawBody = await request.json().catch(() => null)
+  const parsed = inviteBodySchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Ongeldige invoer', details: parsed.error.flatten().fieldErrors }, { status: 400 })
   }
-  const { token, email, weddingId, role } = body as {
-    token: string
-    email: string
-    weddingId: string
-    role?: string
-  }
+  const { token, email, weddingId, role } = parsed.data
 
   const admin = createAdminClient()
 

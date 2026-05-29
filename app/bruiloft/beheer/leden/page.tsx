@@ -353,6 +353,7 @@ export default function LedenBeheerPage() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
+                <caption className="sr-only">Rechtenmatrix per rol voor trouwleden</caption>
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="py-2 pr-4 font-medium text-muted-foreground">Onderdeel</th>

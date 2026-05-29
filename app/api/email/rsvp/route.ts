@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderRsvpEmail } from '@/lib/email/templates'
@@ -14,15 +15,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => null)
-  if (!body?.guestId || !body?.email || !body?.weddingId) {
-    return NextResponse.json({ error: 'Ongeldige invoer' }, { status: 400 })
+  const rawBody = await request.json().catch(() => null)
+  const parsed = z.object({
+    guestId: z.string().uuid(),
+    email: z.string().email(),
+    weddingId: z.string().uuid(),
+  }).safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Ongeldige invoer', details: parsed.error.flatten().fieldErrors }, { status: 400 })
   }
-  const { guestId, email, weddingId } = body as {
-    guestId: string
-    email: string
-    weddingId: string
-  }
+  const { guestId, email, weddingId } = parsed.data
 
   const admin = createAdminClient()
 

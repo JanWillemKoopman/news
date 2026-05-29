@@ -13,24 +13,10 @@ import {
 } from 'recharts'
 
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
+import { CHART_COLORS } from '@/lib/bruiloft/constants'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { formatEuro } from '@/lib/bruiloft/format'
 import type { BudgetItem, Vendor, Wedding } from '@/lib/bruiloft/types'
-
-// Warme kleurenreeks voor de categorieën.
-const KLEUREN = [
-  '#CC785C',
-  '#D8A48F',
-  '#B8743F',
-  '#8C6A56',
-  '#C9A227',
-  '#7A8B6F',
-  '#A65A48',
-  '#D9B382',
-  '#6B8E9E',
-  '#9B6A8C',
-  '#A8A29E',
-]
 
 interface BudgetSummaryProps {
   items: BudgetItem[]
@@ -94,7 +80,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
                     stroke="none"
                   >
                     {donutData.map((_, i) => (
-                      <Cell key={i} fill={KLEUREN[i % KLEUREN.length]} />
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -114,7 +100,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
                   <li key={d.naam} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: KLEUREN[i % KLEUREN.length] }}
+                      style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                       aria-hidden
                     />
                     <span className="capitalize">{d.naam}</span>
@@ -149,7 +135,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
                   color: 'hsl(var(--card-foreground))',
                 }}
               />
-              <Bar dataKey="bedrag" radius={[8, 8, 0, 0]} fill="#CC785C" />
+              <Bar dataKey="bedrag" radius={[8, 8, 0, 0]} fill={CHART_COLORS[0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

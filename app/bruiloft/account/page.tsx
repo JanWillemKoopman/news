@@ -1,6 +1,7 @@
 'use client'
 
 import { Camera, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
@@ -103,9 +104,11 @@ function ProfielFotoSection() {
         <div className="flex items-center gap-5">
           <div className="relative shrink-0">
             {avatarSrc && !imgError ? (
-              <img
+              <Image
                 src={avatarSrc}
                 alt="Profielfoto"
+                width={80}
+                height={80}
                 onError={() => setImgError(true)}
                 className="h-20 w-20 rounded-full object-cover ring-2 ring-border"
               />
@@ -457,9 +460,11 @@ function AccountHero() {
   return (
     <div className="mb-8 flex items-center gap-4">
       {currentUser.avatarUrl && !imgError ? (
-        <img
+        <Image
           src={currentUser.avatarUrl}
           alt="Profielfoto"
+          width={64}
+          height={64}
           onError={() => setImgError(true)}
           className="h-16 w-16 rounded-full object-cover ring-2 ring-border"
         />

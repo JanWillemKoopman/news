@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { createClient } from '@/lib/supabase/server'
 
@@ -11,12 +12,16 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  const body = await req.json().catch(() => ({}))
-  const { displayName, email, avatarUrl } = body as {
-    displayName?: string
-    email?: string
-    avatarUrl?: string | null
+  const rawBody = await req.json().catch(() => ({}))
+  const parsed = z.object({
+    displayName: z.string().max(100).optional(),
+    email: z.string().email().optional(),
+    avatarUrl: z.string().url().nullable().optional(),
+  }).safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Ongeldige invoer', details: parsed.error.flatten().fieldErrors }, { status: 400 })
   }
+  const { displayName, email, avatarUrl } = parsed.data
 
   const profilePatch: {
     updated_at: string

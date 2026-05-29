@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -19,18 +20,21 @@ export function TopNav() {
   const active = activeSection(pathname)
 
   return (
-    <header className="bg-[#2a3c50] text-white shadow-header md:sticky md:top-0 md:z-40">
+    <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
           href="/bruiloft"
           aria-label="Naar het overzicht"
-          className="group shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3c50]"
+          className="group shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
         >
-          <img
+          <Image
             src="/logo.png"
             alt="Logo"
+            width={120}
+            height={36}
             className="h-9 w-auto object-contain"
+            priority
           />
         </Link>
 
@@ -47,8 +51,8 @@ export function TopNav() {
                   'inline-flex items-center rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
                   isActiveSection
-                    ? 'bg-[#365473] text-white'
-                    : 'text-white/80 hover:bg-[#365473]/70 hover:text-white'
+                    ? 'bg-header-active text-white'
+                    : 'text-white/80 hover:bg-header-active/70 hover:text-white'
                 )}
               >
                 {section.label}
