@@ -18,7 +18,12 @@ export async function PATCH(req: Request) {
     avatarUrl?: string | null
   }
 
-  const profilePatch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const profilePatch: {
+    updated_at: string
+    display_name?: string
+    email?: string
+    avatar_url?: string | null
+  } = { updated_at: new Date().toISOString() }
   if (displayName !== undefined) profilePatch.display_name = displayName.trim()
   if (email !== undefined) profilePatch.email = email.trim().toLowerCase()
   if (avatarUrl !== undefined) profilePatch.avatar_url = avatarUrl
