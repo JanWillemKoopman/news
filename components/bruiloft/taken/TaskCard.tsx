@@ -11,8 +11,8 @@ import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 // Deadline-label specifiek voor de taakkaart: "deadline over X dagen" in de
 // toekomst, "vandaag" voor 0 dagen, "X dagen te laat" voor het verleden.
 function deadlineLabel(dagen: number): string {
-  if (dagen === 0) return 'deadline vandaag'
-  if (dagen > 0) return `deadline over ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
+  if (dagen === 0) return 'uiterlijk vandaag'
+  if (dagen > 0) return `uiterlijk over ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
   const laat = Math.abs(dagen)
   return `${laat} ${laat === 1 ? 'dag' : 'dagen'} te laat`
 }
