@@ -19,7 +19,7 @@ export function TopNav() {
   const active = activeSection(pathname)
 
   return (
-    <header className="sticky top-0 z-40 bg-[#2a3c50] text-white shadow-header">
+    <header className="bg-[#2a3c50] text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
