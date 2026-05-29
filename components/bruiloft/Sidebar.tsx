@@ -20,7 +20,7 @@ export function Sidebar() {
   if (!currentSection) return null
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-[#2a3250] bg-[#365473] px-3 py-6 md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-[#2a3250] bg-[#365473] px-3 py-6 md:flex">
       <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#dce5ee]/70">
         {currentSection.label}
       </p>
