@@ -36,7 +36,7 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
       />
       <StatTile
         icon={CalendarClock}
-        label="Deze maand"
+        label="Uiterlijke datum deze maand"
         value={String(stats.dezeMaand)}
         accent="amber"
       />
