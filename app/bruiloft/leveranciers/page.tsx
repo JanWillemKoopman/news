@@ -70,7 +70,7 @@ export default function LeveranciersPage() {
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
         actie={
           <Button onClick={openNieuw}>
-            <Plus className="h-4 w-4" /> Leverancier
+            <Plus className="h-4 w-4" /> Leverancier toevoegen
           </Button>
         }
       />

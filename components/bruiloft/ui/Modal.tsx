@@ -27,7 +27,7 @@ export function Modal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-sm data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[3px] data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           className={cn(
             'fixed z-50 flex max-h-[90dvh] flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-xl focus:outline-none',

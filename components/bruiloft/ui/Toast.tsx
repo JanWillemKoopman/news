@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     ({ title, description, variant = 'default' }: ToastInput) => {
       const id = ++idRef.current
       setItems((list) => [...list, { id, title, description, variant }])
-      window.setTimeout(() => remove(id), 3800)
+      setTimeout(() => remove(id), 3800)
     },
     [remove]
   )

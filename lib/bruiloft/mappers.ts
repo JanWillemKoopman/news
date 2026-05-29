@@ -14,6 +14,7 @@ import type {
   Rol,
   ScheduleItem,
   ScheduleItemInput,
+  Subtaak,
   Table,
   TableInput,
   Task,
@@ -24,8 +25,14 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  FaqItem,
+  GallerijFoto,
+  SectieConfig,
   WebsiteContent,
   WebsiteContentInput,
+  WebsiteFoto,
+  WeddingLettertype,
+  WeddingThema,
 } from './types'
 
 type Tables = Database['public']['Tables']
@@ -112,6 +119,9 @@ export function taskFromRow(r: Tables['tasks']['Row']): Task {
     status: r.status as Task['status'],
     prioriteit: r.prioriteit as Task['prioriteit'],
     toegewezenAan: r.toegewezen_aan as Task['toegewezenAan'],
+    assignees: (r.assignees as string[] | null) ?? [],
+    subtaken: (r.subtaken as unknown as Subtaak[] | null) ?? [],
+    volgorde: r.volgorde ?? undefined,
     vendorId: r.vendor_id ?? undefined,
     budgetItemId: r.budget_item_id ?? undefined,
   }
@@ -127,6 +137,10 @@ export function taskToRow(p: Partial<TaskInput>): Partial<Tables['tasks']['Inser
   if (p.status !== undefined) r.status = p.status
   if (p.prioriteit !== undefined) r.prioriteit = p.prioriteit
   if (p.toegewezenAan !== undefined) r.toegewezen_aan = p.toegewezenAan
+  if (p.assignees !== undefined) r.assignees = p.assignees
+  if (p.subtaken !== undefined)
+    r.subtaken = p.subtaken as unknown as Tables['tasks']['Insert']['subtaken']
+  if (p.volgorde !== undefined) r.volgorde = p.volgorde ?? null
   if (p.vendorId !== undefined) r.vendor_id = p.vendorId ?? null
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
   return r
@@ -245,6 +259,19 @@ export function tableToRow(p: Partial<TableInput>): Partial<Tables['tables']['In
 }
 
 // --- WebsiteContent --------------------------------------------------
+
+const DEFAULT_SECTIES_CONFIG: Record<string, SectieConfig> = {
+  welkom:           { zichtbaar: true,  naam: 'Welkom' },
+  programma:        { zichtbaar: true,  naam: 'Programma' },
+  dresscode:        { zichtbaar: true,  naam: 'Dresscode' },
+  cadeaulijst:      { zichtbaar: true,  naam: 'Cadeaulijst' },
+  hotels:           { zichtbaar: true,  naam: 'Overnachten' },
+  routebeschrijving:{ zichtbaar: true,  naam: 'Route' },
+  contact:          { zichtbaar: true,  naam: 'Contact' },
+  faq:              { zichtbaar: false, naam: 'FAQ' },
+  fotos:            { zichtbaar: false, naam: "Foto's" },
+}
+
 export function websiteContentFromRow(r: Tables['website_content']['Row']): WebsiteContent {
   return {
     id: r.id,
@@ -255,6 +282,16 @@ export function websiteContentFromRow(r: Tables['website_content']['Row']): Webs
     hotels: r.hotels,
     routebeschrijving: r.routebeschrijving,
     contact: r.contact,
+    slug: r.slug ?? null,
+    websiteGepubliceerd: r.website_gepubliceerd,
+    thema: (r.thema as WeddingThema) ?? 'klassiek',
+    kleurAccent: r.kleur_accent,
+    kopLettertype: (r.kop_lettertype as WeddingLettertype) ?? 'cormorant',
+    headerFotoUrl: r.header_foto_url,
+    headerOverlay: num(r.header_overlay),
+    sectiesConfig: ((r.secties_config as unknown) as Record<string, SectieConfig>) ?? DEFAULT_SECTIES_CONFIG,
+    faq: ((r.faq as unknown) as FaqItem[]) ?? [],
+    gallerij: ((r.gallerij as unknown) as GallerijFoto[]) ?? [],
   }
 }
 
@@ -269,7 +306,27 @@ export function websiteContentToRow(
   if (p.hotels !== undefined) r.hotels = p.hotels
   if (p.routebeschrijving !== undefined) r.routebeschrijving = p.routebeschrijving
   if (p.contact !== undefined) r.contact = p.contact
+  if (p.slug !== undefined) r.slug = p.slug
+  if (p.websiteGepubliceerd !== undefined) r.website_gepubliceerd = p.websiteGepubliceerd
+  if (p.thema !== undefined) r.thema = p.thema
+  if (p.kleurAccent !== undefined) r.kleur_accent = p.kleurAccent
+  if (p.kopLettertype !== undefined) r.kop_lettertype = p.kopLettertype
+  if (p.headerFotoUrl !== undefined) r.header_foto_url = p.headerFotoUrl
+  if (p.headerOverlay !== undefined) r.header_overlay = p.headerOverlay
+  if (p.sectiesConfig !== undefined) r.secties_config = p.sectiesConfig as unknown as Tables['website_content']['Insert']['secties_config']
+  if (p.faq !== undefined) r.faq = p.faq as unknown as Tables['website_content']['Insert']['faq']
+  if (p.gallerij !== undefined) r.gallerij = p.gallerij as unknown as Tables['website_content']['Insert']['gallerij']
   return r
+}
+
+export function websiteFotoFromRow(r: Tables['website_fotos']['Row']): WebsiteFoto {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    url: r.url,
+    bijschrift: r.bijschrift,
+    volgorde: r.volgorde,
+  }
 }
 
 // --- ActivityEntry (alleen lezen; de DB-trigger schrijft) ------------

@@ -6,16 +6,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ titel, beschrijving, actie }: PageHeaderProps) {
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="font-serif text-3xl font-medium tracking-tight text-foreground md:text-4xl">
-          {titel}
-        </h1>
+        <h1 className="text-lg font-semibold text-foreground">{titel}</h1>
         {beschrijving ? (
-          <p className="mt-2 text-base text-muted-foreground">{beschrijving}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
         ) : null}
       </div>
-      {actie ? <div className="flex shrink-0 gap-2">{actie}</div> : null}
+      {actie ? <div className="flex shrink-0 flex-wrap gap-2">{actie}</div> : null}
     </div>
   )
 }

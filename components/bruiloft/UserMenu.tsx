@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -26,12 +27,53 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const switchWedding = useBruiloftStore((s) => s.switchWedding)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
+  const menuRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    const el = menuRef.current
+    if (!el) return
+
+    const focusable = () =>
+      Array.from(
+        el.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')
+      )
+
+    // Focus eerste item zodra het menu opent.
+    focusable()[0]?.focus()
+
+    function onKeyDown(e: KeyboardEvent) {
+      const items = focusable()
+      const idx = items.indexOf(document.activeElement as HTMLElement)
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        items[(idx + 1) % items.length]?.focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        items[(idx - 1 + items.length) % items.length]?.focus()
+      } else if (e.key === 'Tab') {
+        // Houd focus binnen het menu.
+        e.preventDefault()
+        const next = e.shiftKey
+          ? items[(idx - 1 + items.length) % items.length]
+          : items[(idx + 1) % items.length]
+        next?.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   if (!currentUser) return null
 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
   const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
+  const [avatarError, setAvatarError] = React.useState(false)
 
   async function onSignOut() {
     setOpen(false)
@@ -60,14 +102,28 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             : 'px-2 py-1.5 text-sm hover:bg-accent focus-visible:ring-ring focus-visible:ring-offset-background'
         )}
       >
-        <span
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
-            dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
-          )}
-        >
-          {initials}
-        </span>
+        {currentUser.avatarUrl && !avatarError ? (
+          <Image
+            src={currentUser.avatarUrl}
+            alt={displayLabel}
+            width={32}
+            height={32}
+            onError={() => setAvatarError(true)}
+            className={cn(
+              'h-8 w-8 rounded-full object-cover ring-2',
+              dark ? 'ring-rhino-700' : 'ring-transparent'
+            )}
+          />
+        ) : (
+          <span
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
+              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
+            )}
+          >
+            {initials}
+          </span>
+        )}
         {!compact ? (
           <>
             <span
@@ -90,7 +146,9 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
         <>
           <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
           <div
+            ref={menuRef}
             role="menu"
+            aria-label="Accountmenu"
             className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-white p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">

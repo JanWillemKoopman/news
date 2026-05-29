@@ -71,10 +71,10 @@ export default function DraaiboekPage() {
         actie={
           <>
             <Button variant="outline" onClick={exporteer} disabled={gesorteerd.length === 0}>
-              <Download className="h-4 w-4" /> CSV
+              <Download className="h-4 w-4" /> Exporteer draaiboek
             </Button>
             <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Onderdeel
+              <Plus className="h-4 w-4" /> Onderdeel toevoegen
             </Button>
           </>
         }

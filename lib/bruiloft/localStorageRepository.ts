@@ -23,8 +23,10 @@ import type {
   Wedding,
   WeddingDatabase,
   WeddingInput,
+  WeddingMember,
   WebsiteContent,
   WebsiteContentInput,
+  WebsiteFoto,
 } from './types'
 
 const STORAGE_KEY = 'bruiloft-planner-v1'
@@ -360,6 +362,16 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
         hotels: '',
         routebeschrijving: '',
         contact: '',
+        slug: null,
+        websiteGepubliceerd: false,
+        thema: 'klassiek',
+        kleurAccent: '#a75573',
+        kopLettertype: 'cormorant',
+        headerFotoUrl: '',
+        headerOverlay: 0.35,
+        sectiesConfig: {},
+        faq: [],
+        gallerij: [],
         ...patch,
       }
       db.websiteContents.push(content)
@@ -371,6 +383,20 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     this.write(db)
     return updated
   }
+
+  async checkSlugAvailable(slug: string): Promise<boolean> {
+    const taken = this.read().websiteContents.some((w) => w.slug === slug)
+    return !taken
+  }
+
+  async listWebsiteFotos(_weddingId: ID): Promise<WebsiteFoto[]> { return [] }
+  async createWebsiteFoto(weddingId: ID, url: string, bijschrift: string, volgorde: number): Promise<WebsiteFoto> {
+    return { id: uuid(), weddingId, url, bijschrift, volgorde }
+  }
+  async updateWebsiteFoto(id: ID, patch: { bijschrift?: string; volgorde?: number }): Promise<WebsiteFoto> {
+    return { id, weddingId: '', url: '', bijschrift: patch.bijschrift ?? '', volgorde: patch.volgorde ?? 0 }
+  }
+  async deleteWebsiteFoto(_id: ID): Promise<void> { return }
 
   // --- Activity & opmerkingen ----------------------------------------------
   // Activiteit wordt door DB-triggers gevuld; localStorage kent geen equivalent.
@@ -388,5 +414,10 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteTaskComment(): Promise<void> {
     // Geen opslag; niets te doen.
+  }
+
+  async listMembers(): Promise<WeddingMember[]> {
+    // localStorage kent geen leden — solo-modus. UI valt terug op toegewezenAan.
+    return []
   }
 }

@@ -77,7 +77,7 @@ export function Landing() {
   return (
     <div className="overflow-x-hidden bg-white">
       {/* Donkere navigatiebalk — Riley & Grey-stijl */}
-      <nav className="sticky top-0 z-40 bg-rhino-800 text-white">
+      <nav className="bg-rhino-800 text-white md:sticky md:top-0 md:z-40">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <span className="flex items-center gap-2.5 font-serif text-lg text-white">
             <BrandMark tone="light" />

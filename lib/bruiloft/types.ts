@@ -83,6 +83,13 @@ export type Tijdsblok =
   | 'trouwweek'
   | 'na de bruiloft'
 
+// Eén niveau diep; opgeslagen als jsonb-array op tasks.subtaken.
+export interface Subtaak {
+  id: ID
+  titel: string
+  klaar: boolean
+}
+
 export interface Task {
   id: ID
   weddingId: ID
@@ -92,12 +99,35 @@ export interface Task {
   tijdsblok: Tijdsblok
   status: TaskStatus
   prioriteit: Prioriteit
+  // Legacy-veld: blijft bestaan voor backwards-compat. UI toont 'assignees' bij voorkeur,
+  // en valt terug op deze tekst-enum als assignees nog leeg is (oude taken).
   toegewezenAan: ToegewezenAan
+  // Lijst van wedding-member user_ids. Lege array = nog niemand toegewezen.
+  assignees: ID[]
+  subtaken: Subtaak[]
+  // Optionele handmatige sortering binnen tijdsblok/dag.
+  volgorde?: number
   vendorId?: ID
   budgetItemId?: ID
 }
 
 export type TaskInput = Omit<Task, 'id'>
+
+// --- WeddingMember ---------------------------------------------------------
+// Snapshot uit de list_wedding_members RPC; wordt door de store ingeladen
+// voor de assignee-picker en AvatarStack.
+
+export interface WeddingMember {
+  userId: ID
+  email: string
+  displayName: string
+  role: WeddingRoleSnapshot
+  avatarUrl?: string
+}
+
+// Lokale alias zodat types.ts geen import op permissions.ts hoeft (cycle-vrij).
+// Houd in sync met WeddingRole in lib/bruiloft/permissions.ts.
+export type WeddingRoleSnapshot = 'owner' | 'planner' | 'helper' | 'viewer'
 
 // --- Vendor ----------------------------------------------------------------
 
@@ -216,18 +246,58 @@ export type TableInput = Omit<Table, 'id'>
 
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
+export type WeddingThema = 'klassiek' | 'modern' | 'romantisch'
+export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora'
+
+export interface SectieConfig {
+  zichtbaar: boolean
+  naam: string
+}
+
+export interface FaqItem {
+  id: string
+  vraag: string
+  antwoord: string
+}
+
+export interface GallerijFoto {
+  id: string
+  url: string
+  bijschrift: string
+}
+
 export interface WebsiteContent {
   id: ID
   weddingId: ID
+  // Bestaande tekstvelden
   welkomsttekst: string
   dresscode: string
   cadeaulijst: string
   hotels: string
   routebeschrijving: string
   contact: string
+  // Nieuwe velden
+  slug: string | null
+  websiteGepubliceerd: boolean
+  thema: WeddingThema
+  kleurAccent: string
+  kopLettertype: WeddingLettertype
+  headerFotoUrl: string
+  headerOverlay: number
+  sectiesConfig: Record<string, SectieConfig>
+  faq: FaqItem[]
+  gallerij: GallerijFoto[]
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
+
+export interface WebsiteFoto {
+  id: ID
+  weddingId: ID
+  url: string
+  bijschrift: string
+  volgorde: number
+}
 
 // --- Activiteit & opmerkingen (samen plannen) ------------------------------
 

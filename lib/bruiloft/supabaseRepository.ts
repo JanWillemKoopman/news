@@ -22,6 +22,7 @@ import {
   vendorToRow,
   websiteContentFromRow,
   websiteContentToRow,
+  websiteFotoFromRow,
   weddingFromRow,
   weddingToRow,
 } from './mappers'
@@ -45,8 +46,11 @@ import type {
   VendorInput,
   Wedding,
   WeddingInput,
+  WeddingMember,
+  WeddingRoleSnapshot,
   WebsiteContent,
   WebsiteContentInput,
+  WebsiteFoto,
 } from './types'
 
 type Tables = Database['public']['Tables']
@@ -366,6 +370,49 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return websiteContentFromRow(data)
   }
 
+  async checkSlugAvailable(slug: string): Promise<boolean> {
+    const { data, error } = await this.db.rpc('check_slug_available', { p_slug: slug })
+    if (error) throw error
+    return data as boolean
+  }
+
+  // --- Website-foto's ------------------------------------------------
+  async listWebsiteFotos(weddingId: ID): Promise<WebsiteFoto[]> {
+    const { data, error } = await this.db
+      .from('website_fotos')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(websiteFotoFromRow)
+  }
+
+  async createWebsiteFoto(weddingId: ID, url: string, bijschrift: string, volgorde: number): Promise<WebsiteFoto> {
+    const { data, error } = await this.db
+      .from('website_fotos')
+      .insert({ wedding_id: weddingId, url, bijschrift, volgorde })
+      .select()
+      .single()
+    if (error) throw error
+    return websiteFotoFromRow(data)
+  }
+
+  async updateWebsiteFoto(id: ID, patch: { bijschrift?: string; volgorde?: number }): Promise<WebsiteFoto> {
+    const { data, error } = await this.db
+      .from('website_fotos')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return websiteFotoFromRow(data)
+  }
+
+  async deleteWebsiteFoto(id: ID): Promise<void> {
+    const { error } = await this.db.from('website_fotos').delete().eq('id', id)
+    if (error) throw error
+  }
+
   // --- Activity ------------------------------------------------------
   async listActivity(weddingId: ID, limit = 50): Promise<ActivityEntry[]> {
     const { data, error } = await this.db
@@ -402,5 +449,20 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   async deleteTaskComment(id: ID): Promise<void> {
     const { error } = await this.db.from('task_comments').delete().eq('id', id)
     if (error) throw error
+  }
+
+  // --- Members -------------------------------------------------------
+  async listMembers(weddingId: ID): Promise<WeddingMember[]> {
+    const { data, error } = await this.db.rpc('list_wedding_members', {
+      p_wedding: weddingId,
+    })
+    if (error) throw error
+    return (data ?? []).map((r) => ({
+      userId: r.user_id,
+      email: r.email ?? '',
+      displayName: r.display_name ?? '',
+      role: r.role as WeddingRoleSnapshot,
+      avatarUrl: r.avatar_url ?? undefined,
+    }))
   }
 }

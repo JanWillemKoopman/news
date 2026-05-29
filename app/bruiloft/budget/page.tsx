@@ -98,10 +98,10 @@ export default function BudgetPage() {
               <PieChart className="h-4 w-4" /> Verdeel budget
             </Button>
             <Button variant="outline" onClick={exporteer} disabled={budgetItems.length === 0}>
-              <Download className="h-4 w-4" /> CSV
+              <Download className="h-4 w-4" /> Exporteer budget
             </Button>
             <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Budgetitem
+              <Plus className="h-4 w-4" /> Budgetitem toevoegen
             </Button>
           </>
         }

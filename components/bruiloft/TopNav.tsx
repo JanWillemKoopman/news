@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -19,23 +20,22 @@ export function TopNav() {
   const active = activeSection(pathname)
 
   return (
-    <header className="sticky top-0 z-40 bg-[#2a3c50] text-white shadow-header">
+    <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
-        {/* Logo: serif ampersand in een licht vierkant. */}
+        {/* Logo */}
         <Link
           href="/bruiloft"
           aria-label="Naar het overzicht"
-          className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3c50]"
+          className="group shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
         >
-          <span
-            aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-[#2a3c50] shadow-sm"
-          >
-            <span className="font-serif text-[22px] font-medium leading-none">&amp;</span>
-          </span>
-          <span className="hidden font-serif text-lg tracking-tight text-white md:inline">
-            Ons Trouwplan
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Logo"
+            width={120}
+            height={36}
+            className="h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Hoofdmenu (horizontaal). */}
@@ -51,8 +51,8 @@ export function TopNav() {
                   'inline-flex items-center rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
                   isActiveSection
-                    ? 'bg-[#365473] text-white'
-                    : 'text-white/80 hover:bg-[#365473]/70 hover:text-white'
+                    ? 'bg-header-active text-white'
+                    : 'text-white/80 hover:bg-header-active/70 hover:text-white'
                 )}
               >
                 {section.label}
@@ -61,8 +61,8 @@ export function TopNav() {
           })}
         </nav>
 
-        {/* Mobiele app-titel — vult de ruimte waar het hoofdmenu zou staan. */}
-        <span className="ml-auto font-serif text-base text-white md:hidden">Ons Trouwplan</span>
+        {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
+        <span className="flex-1 md:hidden" aria-hidden />
 
         {/* Account-menu (rechts). */}
         <div className="ml-auto hidden items-center md:flex">

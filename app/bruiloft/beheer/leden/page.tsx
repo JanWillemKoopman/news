@@ -133,15 +133,38 @@ export default function LedenBeheerPage() {
       .insert({ wedding_id: wedding!.id, email: inviteEmail.trim(), role: inviteRole })
       .select('token')
       .single()
-    setInviting(false)
     if (error || !data) {
+      setInviting(false)
       toast({ title: 'Uitnodigen mislukt', description: error?.message, variant: 'error' })
       return
     }
+    const trimmedEmail = inviteEmail.trim()
     setInviteEmail('')
     const link = `${window.location.origin}/uitnodiging/${data.token}`
     await navigator.clipboard?.writeText(link).catch(() => {})
-    toast({ title: 'Uitnodiging aangemaakt', description: 'De link is naar je klembord gekopieerd.' })
+
+    let emailSent = false
+    try {
+      const res = await fetch('/api/email/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: data.token, email: trimmedEmail, role: inviteRole, weddingId: wedding!.id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      emailSent = json.emailSent === true
+    } catch {
+      // E-mail mislukt; klembord-fallback is al gedaan.
+    }
+
+    setInviting(false)
+    if (emailSent) {
+      toast({
+        title: 'Uitnodiging verzonden',
+        description: `De uitnodiging is naar ${trimmedEmail} gemaild. De link staat ook in je klembord als backup.`,
+      })
+    } else {
+      toast({ title: 'Uitnodiging aangemaakt', description: 'De link is naar je klembord gekopieerd.' })
+    }
     void load()
   }
 
@@ -330,6 +353,7 @@ export default function LedenBeheerPage() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
+                <caption className="sr-only">Rechtenmatrix per rol voor trouwleden</caption>
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="py-2 pr-4 font-medium text-muted-foreground">Onderdeel</th>
