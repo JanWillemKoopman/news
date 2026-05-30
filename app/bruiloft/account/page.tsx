@@ -363,6 +363,63 @@ function WachtwoordSection() {
   )
 }
 
+// ── Herinneringen ────────────────────────────────────────────────────────────
+
+function HerinneringenSection() {
+  const currentUser = useBruiloftStore((s) => s.currentUser)
+  const updateProfile = useBruiloftStore((s) => s.updateProfile)
+  const { toast } = useToast()
+  const [saving, setSaving] = React.useState(false)
+
+  if (!currentUser) return null
+  const aan = currentUser.emailHerinneringen
+
+  async function handleToggle() {
+    setSaving(true)
+    try {
+      await updateProfile({ emailHerinneringen: !aan })
+      toast({ title: aan ? 'Herinneringen uitgezet' : 'Herinneringen aangezet' })
+    } catch (err) {
+      toast({
+        title: 'Opslaan mislukt',
+        description: err instanceof Error ? err.message : 'Probeer het later opnieuw.',
+        variant: 'error',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-muted-foreground" />
+          Herinneringen
+        </CardTitle>
+        <CardDescription>
+          Ontvang automatisch een e-mail vóór een taak-deadline of betaaltermijn.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">E-mailherinneringen</p>
+            <p className="text-sm text-muted-foreground">
+              {aan
+                ? 'Staan aan — je krijgt op tijd een seintje.'
+                : 'Staan uit — je ontvangt geen herinneringen.'}
+            </p>
+          </div>
+          <Button variant="outline" loading={saving} onClick={handleToggle}>
+            {aan ? 'Uitzetten' : 'Aanzetten'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Mijn rol ─────────────────────────────────────────────────────────────────
 
 function MijnRolSection() {

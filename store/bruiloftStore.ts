@@ -70,6 +70,7 @@ interface CurrentUser {
   displayName: string
   appRole: 'member' | 'platform_admin'
   avatarUrl?: string
+  emailHerinneringen: boolean
 }
 
 interface BruiloftState {
@@ -311,6 +312,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         displayName: profile?.display_name ?? '',
         appRole: (profile?.app_role as CurrentUser['appRole']) ?? 'member',
         avatarUrl: profile?.avatar_url ?? undefined,
+        emailHerinneringen: profile?.email_herinneringen ?? true,
       }
 
       const weddings = await repository.listWeddings()
@@ -994,6 +996,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           ...(patch.displayName !== undefined && { displayName: patch.displayName }),
           ...(patch.email !== undefined && { email: patch.email }),
           ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
+          ...(patch.emailHerinneringen !== undefined && { emailHerinneringen: patch.emailHerinneringen }),
         },
       })
       // Herlaad leden zodat naam/avatar direct bijgewerkt zijn bij taken.
