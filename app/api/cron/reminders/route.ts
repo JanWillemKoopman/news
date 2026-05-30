@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
   let mislukt = 0
   const resend = pendingByUser.size > 0 ? getResend() : null
 
-  for (const p of pendingByUser.values()) {
+  for (const p of Array.from(pendingByUser.values())) {
     if (p.taken.length === 0 && p.betalingen.length === 0) continue
     const { subject, html } = renderReminderDigestEmail({
       ontvangerNaam: p.naam,
