@@ -144,6 +144,7 @@ interface BruiloftActions {
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
   checkSlugAvailable: (slug: string) => Promise<boolean>
   uploadHeaderFoto: (file: File) => Promise<string>
+  uploadSectieFoto: (sectieKey: string, file: File) => Promise<string>
   saveWebsiteFoto: (url: string, bijschrift: string) => Promise<void>
   deleteWebsiteFoto: (id: ID, publicUrl: string) => Promise<void>
   updateFaq: (faq: FaqItem[]) => Promise<void>
@@ -894,6 +895,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const supabase = createClient()
       const url = await uploadWeddingMedia(supabase, wedding.id, file, 'header')
       await get().saveWebsiteContent({ headerFotoUrl: url })
+      return url
+    },
+
+    uploadSectieFoto: async (sectieKey, file) => {
+      const { wedding, websiteContent } = get()
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const url = await uploadWeddingMedia(supabase, wedding.id, file, 'sectie-fotos')
+      const config = { ...(websiteContent?.sectiesConfig ?? {}) }
+      config[sectieKey] = { ...(config[sectieKey] ?? { zichtbaar: true, naam: sectieKey }), fotoUrl: url }
+      await get().saveWebsiteContent({ sectiesConfig: config })
       return url
     },
 
