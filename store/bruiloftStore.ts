@@ -301,7 +301,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('email, display_name, app_role, avatar_url')
+        .select('email, display_name, app_role, avatar_url, email_herinneringen')
         .eq('id', user.id)
         .maybeSingle()
 

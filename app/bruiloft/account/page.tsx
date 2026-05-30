@@ -1,6 +1,6 @@
 'use client'
 
-import { Camera, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react'
+import { Bell, Camera, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -500,6 +500,7 @@ export default function AccountPage() {
       <AccountHero />
       <ProfielFotoSection />
       <GegevensSection />
+      <HerinneringenSection />
       <WachtwoordSection />
       <MijnRolSection />
       <GevaarZoneSection />

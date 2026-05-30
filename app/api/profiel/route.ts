@@ -17,21 +17,24 @@ export async function PATCH(req: Request) {
     displayName: z.string().max(100).optional(),
     email: z.string().email().optional(),
     avatarUrl: z.string().url().nullable().optional(),
+    emailHerinneringen: z.boolean().optional(),
   }).safeParse(rawBody)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ongeldige invoer', details: parsed.error.flatten().fieldErrors }, { status: 400 })
   }
-  const { displayName, email, avatarUrl } = parsed.data
+  const { displayName, email, avatarUrl, emailHerinneringen } = parsed.data
 
   const profilePatch: {
     updated_at: string
     display_name?: string
     email?: string
     avatar_url?: string | null
+    email_herinneringen?: boolean
   } = { updated_at: new Date().toISOString() }
   if (displayName !== undefined) profilePatch.display_name = displayName.trim()
   if (email !== undefined) profilePatch.email = email.trim().toLowerCase()
   if (avatarUrl !== undefined) profilePatch.avatar_url = avatarUrl
+  if (emailHerinneringen !== undefined) profilePatch.email_herinneringen = emailHerinneringen
 
   const { error: profileError } = await supabase
     .from('profiles')

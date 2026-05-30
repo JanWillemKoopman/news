@@ -1,4 +1,4 @@
-import { formatDatumNL } from '@/lib/bruiloft/format'
+import { dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 
 export interface InviteEmailProps {
   uitnodigerNamen: string
@@ -116,4 +116,86 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
     </p>
   `
   return { subject, html: baseHtml(`Bruiloft ${p.partnerNamen}`, inhoud) }
+}
+
+// --- Herinneringen-digest --------------------------------------------------
+
+export interface ReminderTaakItem {
+  titel: string
+  deadline: string // ISO 'YYYY-MM-DD'
+  dagen: number // dagen tot deadline (negatief = te laat)
+}
+
+export interface ReminderBetalingItem {
+  omschrijving: string
+  bedrag: number
+  vervaldatum: string // ISO 'YYYY-MM-DD'
+  dagen: number // dagen tot vervaldatum (negatief = te laat)
+}
+
+export interface ReminderDigestProps {
+  ontvangerNaam: string
+  partnerNamen: string
+  taken: ReminderTaakItem[]
+  betalingen: ReminderBetalingItem[]
+  dashboardUrl: string
+}
+
+function reminderRegel(hoofd: string, sub: string): string {
+  return `<tr>
+    <td style="padding:10px 0;border-bottom:1px solid #f3e8eb;">
+      <p style="margin:0;font-size:15px;color:#1c1917;">${hoofd}</p>
+      <p style="margin:2px 0 0;font-size:13px;color:#9f6271;">${sub}</p>
+    </td>
+  </tr>`
+}
+
+export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: string; html: string } {
+  const aantal = p.taken.length + p.betalingen.length
+  const subject =
+    aantal === 1
+      ? 'Herinnering voor jullie bruiloft — Ons Trouwplan'
+      : `${aantal} herinneringen voor jullie bruiloft — Ons Trouwplan`
+
+  const takenBlok = p.taken.length
+    ? `<p style="margin:24px 0 8px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">Taken</p>
+       <table width="100%" cellpadding="0" cellspacing="0">
+         ${p.taken
+           .map((t) =>
+             reminderRegel(t.titel, `Deadline ${formatDatumNL(t.deadline)} · ${dagLabel(t.dagen)}`)
+           )
+           .join('')}
+       </table>`
+    : ''
+
+  const betalingenBlok = p.betalingen.length
+    ? `<p style="margin:24px 0 8px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">Betaaltermijnen</p>
+       <table width="100%" cellpadding="0" cellspacing="0">
+         ${p.betalingen
+           .map((b) =>
+             reminderRegel(
+               `${b.omschrijving || 'Betaaltermijn'} — ${formatEuro(b.bedrag)}`,
+               `Vervalt ${formatDatumNL(b.vervaldatum)} · ${dagLabel(b.dagen)}`
+             )
+           )
+           .join('')}
+       </table>`
+    : ''
+
+  const inhoud = `
+    <p style="margin:0 0 8px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Hoi <strong>${p.ontvangerNaam || 'daar'}</strong>,
+    </p>
+    <p style="margin:0 0 8px;font-size:15px;color:#57534e;line-height:1.6;">
+      Een vriendelijke herinnering voor de planning van de bruiloft van
+      <strong>${p.partnerNamen}</strong>. Dit staat er binnenkort aan te komen:
+    </p>
+    ${takenBlok}
+    ${betalingenBlok}
+    ${ctaKnop(p.dashboardUrl, 'Naar het trouwplan')}
+    <p style="margin:8px 0 0;font-size:12px;color:#a8a29e;">
+      Geen herinneringen meer ontvangen? Dit kun je uitzetten bij je account-instellingen.
+    </p>
+  `
+  return { subject, html: baseHtml('Herinnering', inhoud) }
 }
