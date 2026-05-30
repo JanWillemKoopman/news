@@ -6,7 +6,7 @@ export async function uploadWeddingMedia(
   supabase: SupabaseClient,
   weddingId: string,
   file: File,
-  subfolder: 'header' | 'gallerij'
+  subfolder: 'header' | 'gallerij' | 'sectie-fotos'
 ): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
   const naam = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
