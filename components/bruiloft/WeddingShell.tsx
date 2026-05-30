@@ -130,24 +130,33 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       >
         Naar inhoud
       </a>
-      <TopNav />
+      {/* Desktop: TopNav buiten het scroll-gebied (altijd zichtbaar) */}
+      <div className="hidden md:block">
+        <TopNav />
+      </div>
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main
-          id="hoofdinhoud"
-          tabIndex={-1}
-          className="min-w-0 flex-1 overflow-y-auto bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
-        >
-          {allowed ? (
-            children
-          ) : (
-            <EmptyState
-              icon={Lock}
-              titel="Geen toegang"
-              beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
-            />
-          )}
-        </main>
+        <div className="min-w-0 flex-1 overflow-y-auto">
+          {/* Mobiel: TopNav binnen het scroll-gebied (scrollt mee omhoog) */}
+          <div className="md:hidden">
+            <TopNav />
+          </div>
+          <main
+            id="hoofdinhoud"
+            tabIndex={-1}
+            className="bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
+          >
+            {allowed ? (
+              children
+            ) : (
+              <EmptyState
+                icon={Lock}
+                titel="Geen toegang"
+                beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
+              />
+            )}
+          </main>
+        </div>
       </div>
       <MobileNav />
     </div>
