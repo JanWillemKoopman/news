@@ -6,6 +6,8 @@ import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'luc
 
 import { ActivityFeed } from '@/components/bruiloft/ActivityFeed'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { Routekaart } from '@/components/bruiloft/Routekaart'
+import { VolgendeStappen } from '@/components/bruiloft/VolgendeStappen'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import {
   Button,
@@ -14,16 +16,15 @@ import {
   Money,
   Progress,
   StatCard,
-  StatusBadge,
 } from '@/components/bruiloft/ui'
 import {
-  aankomendeTaken,
   aankomendeTermijnen,
   budgetTotalen,
   gastTellingen,
   taakTellingen,
 } from '@/lib/bruiloft/derived'
 import { dagLabel, dagenTot, formatDatumKort, formatDatumNL } from '@/lib/bruiloft/format'
+import { berekenGuidance } from '@/lib/bruiloft/guidance'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 export default function DashboardPage() {
@@ -42,8 +43,8 @@ export default function DashboardPage() {
   const gasten = gastTellingen(guests)
   const taken = taakTellingen(tasks)
   const nogTeDoen = taken.open + taken.bezig
-  const komendeTaken = aankomendeTaken(tasks, 5)
   const komendeBetalingen = aankomendeTermijnen(budgetItems, 5)
+  const guidance = berekenGuidance({ wedding, tasks, vendors, budgetItems, guests })
 
   const budgetPct =
     wedding.totaalBudget > 0
@@ -100,6 +101,11 @@ export default function DashboardPage() {
 
       <PageHeader titel="Overzicht" beschrijving="Alles in één oogopslag." />
 
+      {/* Volgende stappen: wat moet ik nú doen? */}
+      <div className="mb-8">
+        <VolgendeStappen steps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
+      </div>
+
       {/* Overzichtskaarten */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard icon={Wallet} label="Budget besteed" href="/bruiloft/budget">
@@ -130,44 +136,13 @@ export default function DashboardPage() {
         </StatCard>
       </div>
 
-      {/* Eerstvolgende taken + betalingen */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardContent className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-medium text-foreground">Eerstvolgende taken</h2>
-              <Link
-                href="/bruiloft/taken"
-                className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700"
-              >
-                Alles bekijken
-              </Link>
-            </div>
-            {komendeTaken.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                Geen openstaande taken. Goed bezig!
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {komendeTaken.map((t) => {
-                  const d = dagenTot(t.deadline)
-                  return (
-                    <li key={t.id} className="flex items-center justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{t.titel}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDatumKort(t.deadline)} · {dagLabel(d)}
-                        </p>
-                      </div>
-                      <StatusBadge kind="taak" value={t.status} />
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+      {/* Routekaart: fasevoortgang */}
+      <div className="mt-8">
+        <Routekaart route={guidance.route} />
+      </div>
 
+      {/* Aankomende betalingen */}
+      <div className="mt-8">
         <Card>
           <CardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">

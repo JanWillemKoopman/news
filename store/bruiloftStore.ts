@@ -24,6 +24,7 @@ import {
 } from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
 import {
+  generateTemplateTasks,
   TEMPLATE_TASKS,
   type TemplateTask,
 } from '@/lib/bruiloft/templateTasks'
@@ -531,7 +532,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
-      const tasks: Task[] = []
+      const tasks = await repository.createTasks(generateTemplateTasks(wedding)).catch(() => [])
       const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
       const seen = new Date().toISOString()

@@ -7,8 +7,8 @@ import { Button, Field, Input, useToast } from '@/components/bruiloft/ui'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Step = 'datum' | 'namen' | 'budget' | 'account'
-const STEPS: Step[] = ['datum', 'namen', 'budget', 'account']
+type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'account'
+const STEPS: Step[] = ['datum', 'namen', 'budget', 'gasten', 'account']
 
 const BUDGET_PRESETS = [
   { label: '< €10.000', value: 9000 },
@@ -28,6 +28,8 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
   const [partner2, setPartner2] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
+  const [daggasten, setDaggasten] = React.useState('')
+  const [avondgasten, setAvondgasten] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
@@ -38,19 +40,21 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
     step === 'datum' ? trouwdatum !== '' :
     step === 'namen' ? partner1.trim() !== '' && partner2.trim() !== '' :
     step === 'account' ? email.includes('@') && password.length >= 8 :
-    true
+    true // gasten en budget zijn optioneel
 
   function prev() {
     if (step === 'datum') onBack()
     else if (step === 'namen') setStep('datum')
     else if (step === 'budget') setStep('namen')
-    else setStep('budget')
+    else if (step === 'gasten') setStep('budget')
+    else setStep('gasten')
   }
 
   async function next() {
     if (step === 'datum') return setStep('namen')
     if (step === 'namen') return setStep('budget')
-    if (step === 'budget') return setStep('account')
+    if (step === 'budget') return setStep('gasten')
+    if (step === 'gasten') return setStep('account')
     await finish()
   }
 
@@ -63,8 +67,8 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
       trouwdatum,
       locatie: '',
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
-      aantalDaggasten: 0,
-      aantalAvondgasten: 0,
+      aantalDaggasten: Number(daggasten) || 0,
+      aantalAvondgasten: Number(avondgasten) || 0,
     }
     try {
       await completeOnboarding(input, {
@@ -228,6 +232,41 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
             </div>
           )}
 
+          {step === 'gasten' && (
+            <div>
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Users className="h-6 w-6" />
+              </div>
+              <h2 className="font-serif text-3xl text-foreground">Hoeveel gasten verwachten jullie?</h2>
+              <p className="mt-2 text-muted-foreground">
+                Een schatting is genoeg — je past dit later makkelijk aan.
+              </p>
+              <div className="mt-8 space-y-4">
+                <Field label="Aantal daggasten" htmlFor="ob-daggasten">
+                  <Input
+                    id="ob-daggasten"
+                    type="number"
+                    min={0}
+                    value={daggasten}
+                    onChange={(e) => setDaggasten(e.target.value)}
+                    placeholder="Bijv. 80"
+                    autoFocus
+                  />
+                </Field>
+                <Field label="Aantal avondgasten" htmlFor="ob-avondgasten">
+                  <Input
+                    id="ob-avondgasten"
+                    type="number"
+                    min={0}
+                    value={avondgasten}
+                    onChange={(e) => setAvondgasten(e.target.value)}
+                    placeholder="Bijv. 40"
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
+
           {step === 'account' && (
             <div>
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -236,6 +275,9 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
               <h2 className="font-serif text-3xl text-foreground">Maak jullie account aan</h2>
               <p className="mt-2 text-muted-foreground">
                 Hiermee bewaren we jullie trouwplan veilig en kun je het altijd en overal openen.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                We zetten direct jullie persoonlijke takenlijst klaar — gefaseerd, zodat je niet wordt overweldigd.
               </p>
               <div className="mt-8 space-y-4">
                 <Field label="E-mailadres" htmlFor="ob-email" required>
