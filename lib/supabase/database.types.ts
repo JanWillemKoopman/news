@@ -205,6 +205,39 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_log: {
+        Row: {
+          email: string
+          id: string
+          mijlpaal: string
+          ref_id: string
+          sent_at: string
+          soort: string
+          user_id: string
+          wedding_id: string
+        }
+        Insert: {
+          email?: string
+          id?: string
+          mijlpaal: string
+          ref_id: string
+          sent_at?: string
+          soort: string
+          user_id: string
+          wedding_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          mijlpaal?: string
+          ref_id?: string
+          sent_at?: string
+          soort?: string
+          user_id?: string
+          wedding_id?: string
+        }
+        Relationships: []
+      }
       schedule_items: {
         Row: {
           betrokkenen: Json
