@@ -146,15 +146,15 @@ export default function WebsitePage() {
         }
       />
 
-      <div className="mb-6 flex w-full gap-1 rounded-lg bg-muted/40 p-1 sm:w-fit">
+      <div className="mb-6 flex w-full gap-1 rounded-xl bg-muted p-1 sm:w-fit">
         {(['inhoud', 'vormgeving'] as TabId[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={
-              'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all sm:flex-none ' +
+              'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all sm:flex-none ' +
               (tab === t
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground')
             }
           >

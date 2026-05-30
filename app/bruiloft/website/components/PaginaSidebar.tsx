@@ -42,6 +42,7 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle, on
   const activeButtonRef = React.useRef<HTMLButtonElement>(null)
   const [draggingKey, setDraggingKey] = React.useState<SectieSleutel | null>(null)
   const [dragOverKey, setDragOverKey] = React.useState<SectieSleutel | null>(null)
+  const [kanNaarRechts, setKanNaarRechts] = React.useState(false)
 
   // Sort sections by volgorde stored in sectiesConfig; home is always first
   const geordend = React.useMemo(() => {
@@ -75,6 +76,22 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle, on
     }
   }, [actief])
 
+  React.useEffect(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const check = () => {
+      setKanNaarRechts(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    }
+    check()
+    el.addEventListener('scroll', check, { passive: true })
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', check)
+      ro.disconnect()
+    }
+  }, [])
+
   function handleDrop(targetKey: SectieSleutel) {
     if (!draggingKey || draggingKey === targetKey || draggingKey === 'home' || targetKey === 'home') return
     const fromIdx = geordend.indexOf(draggingKey)
@@ -91,7 +108,10 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle, on
   return (
     <>
       {/* Mobile: horizontal scrollable pill strip */}
-      <div className="w-full overflow-hidden lg:hidden">
+      <div className="relative w-full overflow-hidden lg:hidden">
+        {kanNaarRechts && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-background to-transparent" />
+        )}
         <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {geordend.map((s) => {
             const verborgenItem = isVerborgen(s)
