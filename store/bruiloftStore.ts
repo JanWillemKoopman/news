@@ -154,7 +154,7 @@ interface BruiloftActions {
   markActivitySeen: () => void
 
   loadMembers: () => Promise<void>
-  updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null }) => Promise<void>
+  updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null; emailHerinneringen?: boolean }) => Promise<void>
   uploadAvatar: (file: File) => Promise<string>
 }
 
