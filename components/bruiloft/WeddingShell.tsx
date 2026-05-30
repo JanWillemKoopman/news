@@ -46,7 +46,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-screen bg-white text-foreground antialiased',
+    'wedding min-h-dvh bg-white text-foreground antialiased',
     fontClassName
   )
 
@@ -55,9 +55,9 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // Voorkomt visuele flikkering tussen skeleton en de daadwerkelijke layout.
   if (!hydrated) {
     return (
-      <div className={wrapperClass} aria-busy="true" suppressHydrationWarning>
-        <div className="h-16 w-full bg-rhino-800" />
-        <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className={cn(wrapperClass, 'flex flex-col')} aria-busy="true" suppressHydrationWarning>
+        <div className="h-16 w-full shrink-0 bg-rhino-800" />
+        <div className="flex flex-1 overflow-hidden">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-header-border bg-header-active p-4 md:flex">
             <Skeleton className="h-4 w-24" />
             <div className="mt-4 flex flex-col gap-1">
@@ -84,7 +84,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   if (error) {
     return (
       <div
-        className={cn(wrapperClass, 'flex min-h-screen flex-col items-center justify-center px-4')}
+        className={cn(wrapperClass, 'flex min-h-dvh flex-col items-center justify-center px-4')}
         suppressHydrationWarning
       >
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
@@ -120,31 +120,43 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   }
 
   return (
-    <div className={wrapperClass} suppressHydrationWarning>
+    <div
+      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-white text-foreground antialiased', fontClassName)}
+      suppressHydrationWarning
+    >
       <a
         href="#hoofdinhoud"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-rose-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-md"
       >
         Naar inhoud
       </a>
-      <TopNav />
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      {/* Desktop: TopNav buiten het scroll-gebied (altijd zichtbaar) */}
+      <div className="hidden md:block">
+        <TopNav />
+      </div>
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main
-          id="hoofdinhoud"
-          tabIndex={-1}
-          className="min-w-0 flex-1 bg-gray-100 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-10"
-        >
-          {allowed ? (
-            children
-          ) : (
-            <EmptyState
-              icon={Lock}
-              titel="Geen toegang"
-              beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
-            />
-          )}
-        </main>
+        <div className="min-w-0 flex-1 overflow-y-auto">
+          {/* Mobiel: TopNav binnen het scroll-gebied (scrollt mee omhoog) */}
+          <div className="md:hidden">
+            <TopNav />
+          </div>
+          <main
+            id="hoofdinhoud"
+            tabIndex={-1}
+            className="bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
+          >
+            {allowed ? (
+              children
+            ) : (
+              <EmptyState
+                icon={Lock}
+                titel="Geen toegang"
+                beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
+              />
+            )}
+          </main>
+        </div>
       </div>
       <MobileNav />
     </div>

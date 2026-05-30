@@ -25,7 +25,7 @@ export function MobileNav() {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_3px_rgba(15,23,42,0.04)] md:hidden">
+      <nav className="shrink-0 border-t border-border bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_3px_rgba(15,23,42,0.04)] md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-between px-1">
           {primary.map((item) => {
             const active = isActive(pathname, item.href)

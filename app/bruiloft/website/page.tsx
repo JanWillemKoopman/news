@@ -17,6 +17,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 import { FaqEditor } from './components/editors/FaqEditor'
 import { FotoGalerijEditor } from './components/editors/FotoGalerijEditor'
 import { HomeEditor } from './components/editors/HomeEditor'
+import { SectieInstellingen } from './components/editors/SectieInstellingen'
 import { TekstEditor } from './components/editors/TekstEditor'
 import { PaginaSidebar, type SectieSleutel } from './components/PaginaSidebar'
 import { useDebounceOpslaan } from './components/useDebounceOpslaan'
@@ -29,6 +30,7 @@ export default function WebsitePage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
+  const uploadSectieFoto = useBruiloftStore((s) => s.uploadSectieFoto)
   const { toast } = useToast()
 
   const [tab, setTab] = React.useState<TabId>('inhoud')
@@ -36,14 +38,10 @@ export default function WebsitePage() {
   const initAttempted = React.useRef(false)
 
   const debounce = useDebounceOpslaan<WebsiteContentInput>(
-    async (patch) => {
-      await saveWebsiteContent(patch)
-    },
+    async (patch) => { await saveWebsiteContent(patch) },
     700
   )
 
-  // Maak automatisch een lege websiteContent-rij aan als die nog niet bestaat.
-  // Happens for brand new weddings that haven't configured a website yet.
   React.useEffect(() => {
     if (wedding && !websiteContent && !initAttempted.current) {
       initAttempted.current = true
@@ -63,7 +61,6 @@ export default function WebsitePage() {
 
   if (!wedding) return null
 
-  // Toon skeleton terwijl websiteContent nog aangemaakt/geladen wordt
   if (!websiteContent) {
     return (
       <div className="mx-auto max-w-5xl space-y-4">
@@ -85,9 +82,27 @@ export default function WebsitePage() {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const publiekeUrl = websiteContent.slug ? `${origin}/trouwen/${websiteContent.slug}` : null
 
+  function getSectieConfig(s: SectieSleutel): SectieConfig {
+    return websiteContent!.sectiesConfig[s] ?? { zichtbaar: true, naam: s }
+  }
+
   function onToggleSectie(s: SectieSleutel, zichtbaar: boolean) {
-    const huidig: Record<string, SectieConfig> = { ...websiteContent!.sectiesConfig }
+    const huidig = { ...websiteContent!.sectiesConfig }
     huidig[s] = { ...huidig[s], zichtbaar }
+    void saveWebsiteContent({ sectiesConfig: huidig })
+  }
+
+  function onSaveSectieConfig(s: SectieSleutel, patch: Partial<SectieConfig>) {
+    const huidig = { ...websiteContent!.sectiesConfig }
+    huidig[s] = { ...(huidig[s] ?? { zichtbaar: true, naam: s }), ...patch }
+    void saveWebsiteContent({ sectiesConfig: huidig })
+  }
+
+  function onHerorden(nieuweVolgorde: SectieSleutel[]) {
+    const huidig = { ...websiteContent!.sectiesConfig }
+    nieuweVolgorde.forEach((s, i) => {
+      huidig[s] = { ...(huidig[s] ?? { zichtbaar: true, naam: s }), volgorde: i }
+    })
     void saveWebsiteContent({ sectiesConfig: huidig })
   }
 
@@ -131,7 +146,6 @@ export default function WebsitePage() {
         }
       />
 
-      {/* Tab-knoppen: full-width op mobiel, auto-breedte op grotere schermen */}
       <div className="mb-6 flex w-full gap-1 rounded-lg bg-muted/40 p-1 sm:w-fit">
         {(['inhoud', 'vormgeving'] as TabId[]).map((t) => (
           <button
@@ -156,14 +170,24 @@ export default function WebsitePage() {
             actief={activeSectie}
             onSelecteer={setActiveSectie}
             onToggle={onToggleSectie}
+            onHerorden={onHerorden}
           />
 
           <div className="min-w-0 flex-1">
             <Card>
               <CardContent className="p-4 sm:p-6">
-                <h2 className="mb-4 font-serif text-xl text-foreground">
-                  {activeSectie === 'home' ? 'Home' : websiteContent.sectiesConfig[activeSectie]?.naam ?? activeSectie}
-                </h2>
+                {/* Section header: editable name + toggle for non-home sections */}
+                {activeSectie === 'home' ? (
+                  <h2 className="mb-4 font-serif text-xl text-foreground">Home</h2>
+                ) : (
+                  <SectieInstellingen
+                    config={getSectieConfig(activeSectie)}
+                    onSave={(patch) => onSaveSectieConfig(activeSectie, patch)}
+                    onUploadFoto={(file) => uploadSectieFoto(activeSectie, file).then(() => undefined)}
+                    onVerwijderFoto={() => onSaveSectieConfig(activeSectie, { fotoUrl: undefined })}
+                    toonFotoUpload={activeSectie !== 'fotos'}
+                  />
+                )}
 
                 {activeSectie === 'home' && (
                   <HomeEditor
