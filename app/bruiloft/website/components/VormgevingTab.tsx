@@ -16,51 +16,65 @@ const FONT_PREVIEW_URL =
 const THEMAS: {
   id: WeddingThema
   naam: string
+  ondertitel: string
   beschrijving: string
   palette: [string, string, string]
   accentKleur: string
+  kopLettertype: WeddingLettertype
 }[] = [
   {
     id: 'klassiek',
-    naam: 'Klassiek',
-    beschrijving: 'Elegant & tijdloos',
-    palette: ['#a75573', '#f7e8ef', '#3d1c28'],
-    accentKleur: '#a75573',
+    naam: 'The Atelier',
+    ondertitel: 'Klassiek',
+    beschrijving: 'Ornamentele typografie & tijdloos gecentreerd',
+    palette: ['#a78ba8', '#faf0f5', '#3d2040'],
+    accentKleur: '#a78ba8',
+    kopLettertype: 'cormorant',
   },
   {
     id: 'modern',
-    naam: 'Modern',
-    beschrijving: 'Strak & minimaal',
-    palette: ['#334155', '#f8fafc', '#0f172a'],
-    accentKleur: '#334155',
+    naam: 'The Editor',
+    ondertitel: 'Modern',
+    beschrijving: 'Asymmetrisch split-hero & editoriaal bold',
+    palette: ['#1c1c2e', '#f8f8fc', '#4a4a6a'],
+    accentKleur: '#1c1c2e',
+    kopLettertype: 'playfair',
   },
   {
     id: 'romantisch',
-    naam: 'Romantisch',
-    beschrijving: 'Warm & florerend',
-    palette: ['#c2785e', '#fef3ed', '#4a2011'],
-    accentKleur: '#c2785e',
+    naam: 'Le Jardin',
+    ondertitel: 'Romantisch',
+    beschrijving: 'Warm blush, botanische ornamenten & zacht',
+    palette: ['#c2829a', '#fef3ef', '#7a3a50'],
+    accentKleur: '#c2829a',
+    kopLettertype: 'dancing-script',
   },
   {
     id: 'rustiek',
-    naam: 'Rustiek',
-    beschrijving: 'Natuur & warmte',
-    palette: ['#7c6b4f', '#faf5ed', '#2d2416'],
-    accentKleur: '#7c6b4f',
+    naam: 'Het Landgoed',
+    ondertitel: 'Rustiek',
+    beschrijving: 'Donkere nav, linnen secties & warm organisch',
+    palette: ['#8b6341', '#faf5eb', '#3d2a1a'],
+    accentKleur: '#8b6341',
+    kopLettertype: 'lora',
   },
   {
     id: 'minimalistisch',
-    naam: 'Puur',
-    beschrijving: 'Minimaal & krachtig',
-    palette: ['#1a1a1a', '#fafafa', '#404040'],
+    naam: 'Studio',
+    ondertitel: 'Puur',
+    beschrijving: 'Gigantische typografie & maximale witruimte',
+    palette: ['#1a1a1a', '#ffffff', '#606060'],
     accentKleur: '#1a1a1a',
+    kopLettertype: 'eb-garamond',
   },
   {
     id: 'botanisch',
-    naam: 'Botanisch',
-    beschrijving: 'Fris & groen',
-    palette: ['#2d6a4f', '#f0f7f2', '#1a3d2c'],
-    accentKleur: '#2d6a4f',
+    naam: 'De Tuin',
+    ondertitel: 'Botanisch',
+    beschrijving: 'Groene nav, botanische details & masonry galerij',
+    palette: ['#2d5a27', '#f0f7f0', '#1a3a16'],
+    accentKleur: '#2d5a27',
+    kopLettertype: 'great-vibes',
   },
 ]
 
@@ -222,9 +236,9 @@ export function VormgevingTab({ content }: Props) {
       {/* Thema */}
       <Card>
         <CardContent className="p-4 sm:p-5">
-          <h3 className="mb-1 font-medium text-foreground">Thema</h3>
+          <h3 className="mb-1 font-medium text-foreground">Template</h3>
           <p className="mb-3 text-sm text-muted-foreground">
-            Kies een stijl — dit stelt ook de aanbevolen accentkleur in.
+            Elk template heeft een uniek design-concept — inclusief aanbevolen kleur en lettertype.
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {THEMAS.map((t) => {
@@ -232,9 +246,9 @@ export function VormgevingTab({ content }: Props) {
               return (
                 <button
                   key={t.id}
-                  onClick={() => saveWebsiteContent({ thema: t.id, kleurAccent: t.accentKleur })}
+                  onClick={() => saveWebsiteContent({ thema: t.id, kleurAccent: t.accentKleur, kopLettertype: t.kopLettertype })}
                   className={
-                    'relative flex flex-col gap-2.5 rounded-xl border-2 p-3 text-left transition-all ' +
+                    'relative flex flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all ' +
                     (gekozen ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')
                   }
                 >
@@ -243,19 +257,33 @@ export function VormgevingTab({ content }: Props) {
                       <Check className="h-3 w-3" />
                     </span>
                   )}
-                  {/* Color palette swatch */}
-                  <div className="flex gap-1">
+                  {/* Mini mockup preview */}
+                  <div className="relative overflow-hidden rounded-lg h-14" style={{ background: t.palette[1] }}>
+                    {/* Mock nav bar */}
+                    <div className="absolute top-0 inset-x-0 h-3.5 flex items-center px-2 gap-1" style={{ background: t.palette[0] }}>
+                      <div className="h-0.5 flex-1 rounded" style={{ background: 'rgba(255,255,255,0.4)' }} />
+                    </div>
+                    {/* Mock title block */}
+                    <div className="absolute inset-0 flex items-center justify-center mt-3.5">
+                      <div className="space-y-1 text-center">
+                        <div className="h-1.5 rounded mx-auto" style={{ background: t.palette[0] + 'aa', width: '55%' }} />
+                        <div className="h-1 rounded mx-auto" style={{ background: t.palette[0] + '55', width: '35%' }} />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Color palette strip */}
+                  <div className="flex gap-0.5">
                     {t.palette.map((kleur, i) => (
                       <div
                         key={i}
-                        className="h-6 flex-1 rounded-md first:rounded-l-lg last:rounded-r-lg"
+                        className="h-2 flex-1 first:rounded-l last:rounded-r"
                         style={{ background: kleur }}
                       />
                     ))}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{t.naam}</p>
-                    <p className="text-xs text-muted-foreground">{t.beschrijving}</p>
+                    <p className="text-sm font-semibold text-foreground leading-tight">{t.naam}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{t.beschrijving}</p>
                   </div>
                 </button>
               )
