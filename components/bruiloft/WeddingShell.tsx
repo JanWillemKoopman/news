@@ -46,7 +46,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-screen bg-white text-foreground antialiased',
+    'wedding min-h-dvh bg-white text-foreground antialiased',
     fontClassName
   )
 
@@ -57,7 +57,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     return (
       <div className={wrapperClass} aria-busy="true" suppressHydrationWarning>
         <div className="h-16 w-full bg-rhino-800" />
-        <div className="flex min-h-[calc(100vh-4rem)]">
+        <div className="flex min-h-[calc(100dvh-4rem)]">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-header-border bg-header-active p-4 md:flex">
             <Skeleton className="h-4 w-24" />
             <div className="mt-4 flex flex-col gap-1">
@@ -84,7 +84,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   if (error) {
     return (
       <div
-        className={cn(wrapperClass, 'flex min-h-screen flex-col items-center justify-center px-4')}
+        className={cn(wrapperClass, 'flex min-h-dvh flex-col items-center justify-center px-4')}
         suppressHydrationWarning
       >
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
@@ -128,7 +128,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         Naar inhoud
       </a>
       <TopNav />
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex min-h-[calc(100dvh-4rem)]">
         <Sidebar />
         <main
           id="hoofdinhoud"
