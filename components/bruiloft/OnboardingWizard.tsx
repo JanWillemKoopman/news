@@ -18,7 +18,7 @@ const BUDGET_PRESETS = [
   { label: '> €40.000', value: 50000 },
 ]
 
-export function OnboardingWizard({ onBack }: { onBack: () => void }) {
+export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => void; initialEmail?: string }) {
   const completeOnboarding = useBruiloftStore((s) => s.completeOnboarding)
   const { toast } = useToast()
 
@@ -30,7 +30,7 @@ export function OnboardingWizard({ onBack }: { onBack: () => void }) {
   const [customBudget, setCustomBudget] = React.useState('')
   const [daggasten, setDaggasten] = React.useState('')
   const [avondgasten, setAvondgasten] = React.useState('')
-  const [email, setEmail] = React.useState('')
+  const [email, setEmail] = React.useState(initialEmail)
   const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
 
