@@ -246,12 +246,15 @@ export type TableInput = Omit<Table, 'id'>
 
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
-export type WeddingThema = 'klassiek' | 'modern' | 'romantisch'
-export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora'
+export type WeddingThema = 'klassiek' | 'modern' | 'romantisch' | 'rustiek' | 'minimalistisch' | 'botanisch'
+export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora' | 'dancing-script' | 'eb-garamond' | 'great-vibes'
 
 export interface SectieConfig {
   zichtbaar: boolean
   naam: string
+  volgorde?: number
+  fotoUrl?: string
+  uitlijning?: 'links' | 'midden' | 'rechts'
 }
 
 export interface FaqItem {
