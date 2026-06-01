@@ -47,7 +47,13 @@ function useFetchAIAdvies(weddingId: string | null) {
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.data
     return null
   })
-  const [loading, setLoading] = React.useState(false)
+  // Start direct in loading-staat als er nog geen cache is, zodat er geen
+  // flits van een lege kaart is voordat de useEffect de fetch triggert.
+  const [loading, setLoading] = React.useState(() => {
+    if (!weddingId) return false
+    const cached = adviesCache.get(weddingId)
+    return !(cached && Date.now() - cached.fetchedAt < CACHE_TTL)
+  })
   const [error, setError] = React.useState<string | null>(null)
 
   const fetch = React.useCallback(
@@ -142,16 +148,16 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
         </div>
 
         {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start gap-4 py-2">
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-24 rounded-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
+              <span className="text-sm text-muted-foreground">AI analyseert jullie planning…</span>
+            </div>
+            <div className="flex gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
+              <span className="h-2 w-2 rounded-full bg-rose-400 animate-bounce [animation-delay:-0.15s]" />
+              <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
+            </div>
           </div>
         ) : advies && advies.length > 0 ? (
           <ul className="divide-y divide-border">

@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -203,6 +203,16 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 Leden &amp; rechten
               </Link>
             ) : null}
+
+            <Link
+              href="/bruiloft/activiteit"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+            >
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              Recente activiteit
+            </Link>
 
             <Link
               href="/bruiloft/account"

@@ -45,7 +45,7 @@ export function ActivityFeed() {
   const nieuw = ongelezenActiviteit(activity, seenAtRef.current, userId)
 
   return (
-    <Card className="mt-8">
+    <Card>
       <CardContent className="p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-serif text-xl text-foreground">Recente activiteit</h2>

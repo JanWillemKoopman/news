@@ -4,7 +4,6 @@ import * as React from 'react'
 import Link from 'next/link'
 import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
 
-import { ActivityFeed } from '@/components/bruiloft/ActivityFeed'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
@@ -178,8 +177,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <ActivityFeed />
 
       <WeddingSettingsForm
         open={settingsOpen}
