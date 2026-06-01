@@ -1,30 +1,52 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 import type { PublicRegistryData, PublicRegistryItem } from '@/lib/bruiloft/types'
 import { PublicCadeaulijstPage } from '@/components/website/PublicCadeaulijstPage'
 
-async function getRegistryData(slug: string): Promise<PublicRegistryData | null> {
+type RegistryResult =
+  | { status: 'ok'; data: PublicRegistryData }
+  | { status: 'disabled' }
+  | { status: 'not_found' }
+  | { status: 'error'; message: string }
+
+async function getRegistryData(slug: string): Promise<RegistryResult> {
   try {
     const admin = createAdminClient()
     const rawAdmin = createRawAdminClient()
 
-    const { data: content } = await admin
+    const { data: content, error: contentError } = await admin
       .from('website_content')
       .select('wedding_id')
       .eq('slug', slug)
       .maybeSingle()
-    if (!content) return null
+
+    if (contentError) {
+      console.error('[cadeaulijst] website_content error:', contentError)
+      return { status: 'error', message: contentError.message }
+    }
+    if (!content) return { status: 'not_found' }
 
     const weddingId = content.wedding_id
 
-    const { data: settings } = await rawAdmin
+    const { data: settings, error: settingsError } = await rawAdmin
       .from('registry_settings')
       .select('*')
       .eq('wedding_id', weddingId)
       .maybeSingle()
 
-    if (!settings || !settings.is_enabled) return null
+    if (settingsError) {
+      console.error('[cadeaulijst] registry_settings error:', settingsError)
+      return { status: 'error', message: settingsError.message }
+    }
+    if (!settings) {
+      console.log('[cadeaulijst] no registry_settings row for wedding', weddingId)
+      return { status: 'disabled' }
+    }
+    if (!settings.is_enabled) {
+      console.log('[cadeaulijst] registry is_enabled=false for wedding', weddingId)
+      return { status: 'disabled' }
+    }
 
     const { data: wedding } = await admin
       .from('weddings')
@@ -87,33 +109,42 @@ async function getRegistryData(slug: string): Promise<PublicRegistryData | null>
     })
 
     return {
-      enabled: true,
-      passwordRequired: !!(settings.password),
-      introText: (settings.intro_text as string) ?? '',
-      bankAccountIban: (settings.bank_account_iban as string) ?? '',
-      bankAccountName: (settings.bank_account_name as string) ?? '',
-      weddingId,
-      partner1Naam: wedding?.partner1_naam ?? '',
-      partner2Naam: wedding?.partner2_naam ?? '',
-      trouwdatum: wedding?.trouwdatum ?? null,
-      items: registryItems,
+      status: 'ok',
+      data: {
+        enabled: true,
+        passwordRequired: !!(settings.password),
+        introText: (settings.intro_text as string) ?? '',
+        bankAccountIban: (settings.bank_account_iban as string) ?? '',
+        bankAccountName: (settings.bank_account_name as string) ?? '',
+        weddingId,
+        partner1Naam: wedding?.partner1_naam ?? '',
+        partner2Naam: wedding?.partner2_naam ?? '',
+        trouwdatum: wedding?.trouwdatum ?? null,
+        items: registryItems,
+      },
     }
-  } catch {
-    return null
+  } catch (err) {
+    console.error('[cadeaulijst] unexpected error:', err)
+    return { status: 'error', message: String(err) }
   }
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = await getRegistryData(params.slug)
-  if (!data) return { title: 'Cadeaulijst' }
+  const result = await getRegistryData(params.slug)
+  if (result.status !== 'ok') return { title: 'Cadeaulijst' }
   return {
-    title: `Cadeaulijst — ${data.partner1Naam} & ${data.partner2Naam}`,
+    title: `Cadeaulijst — ${result.data.partner1Naam} & ${result.data.partner2Naam}`,
     robots: { index: false },
   }
 }
 
 export default async function CadeaulijstStandalonePage({ params }: { params: { slug: string } }) {
-  const data = await getRegistryData(params.slug)
-  if (!data || !data.enabled) notFound()
-  return <PublicCadeaulijstPage registry={data} slug={params.slug} />
+  const result = await getRegistryData(params.slug)
+
+  if (result.status === 'not_found') notFound()
+  if (result.status === 'disabled' || result.status === 'error') {
+    redirect(`/trouwen/${params.slug}`)
+  }
+
+  return <PublicCadeaulijstPage registry={result.data} slug={params.slug} />
 }
