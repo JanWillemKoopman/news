@@ -1232,7 +1232,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           target_amount: data.targetAmount ?? null,
           suggested_amounts: data.suggestedAmounts.length ? data.suggestedAmounts : null,
           payment_link: data.paymentLink || null,
-          sort_order: data.sortOrder ?? nextOrder,
+          sort_order: nextOrder,
           is_visible: data.isVisible ?? true,
         })
         .select()

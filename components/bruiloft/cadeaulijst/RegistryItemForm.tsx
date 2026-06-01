@@ -131,7 +131,7 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
         paymentLink: type === 'fund' ? paymentLink.trim() : '',
         sortOrder: initial?.sortOrder ?? 0,
         isVisible: initial?.isVisible ?? true,
-        weddingId: '',
+        weddingId: initial?.weddingId ?? '',
       }
 
       if (initial) {
