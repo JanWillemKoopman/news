@@ -42,7 +42,7 @@ export function RegistryInstellingen() {
 
   const slug = websiteContent?.slug
   const registryUrl = slug
-    ? `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/trouwen/${slug}#cadeaulijst`
+    ? `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/trouwen/${slug}/cadeaulijst`
     : null
 
   const handleSave = async () => {

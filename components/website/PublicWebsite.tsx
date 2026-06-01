@@ -8,6 +8,7 @@ import {
   HelpCircle,
   Hotel,
   Image,
+  Lock,
   MapPin,
   Menu,
   Phone,
@@ -18,7 +19,6 @@ import * as React from 'react'
 
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import type { FaqItem, GallerijFoto, SectieConfig, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
-import { PublicRegistrySection } from './PublicRegistrySection'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -796,7 +796,13 @@ const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
   botanisch:       (p) => <BotanischTemplate {...p} />,
 }
 
-export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: import('@/lib/bruiloft/types').PublicRegistryData | null; slug?: string }) {
+interface RegistryMeta {
+  enabled: boolean
+  passwordRequired: boolean
+  introText: string
+}
+
+export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: RegistryMeta | null; slug?: string }) {
   const { wedding, content, schedule } = data
   const config = content.sectiesConfig ?? {}
 
@@ -873,7 +879,22 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       fotoUrl: config['cadeaulijst']?.fotoUrl,
       render: () =>
         registry?.enabled ? (
-          <PublicRegistrySection registry={registry} slug={slug ?? ''} />
+          <div className={`space-y-4 ${uitlijningKlas('cadeaulijst')}`}>
+            {registry.introText && (
+              <p className="whitespace-pre-line text-muted-foreground">{registry.introText}</p>
+            )}
+            <div className="flex justify-center">
+              <a
+                href={`/trouwen/${slug}/cadeaulijst`}
+                className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                style={{ background: 'hsl(var(--primary))' }}
+              >
+                <Gift className="h-4 w-4" />
+                Bekijk de cadeaulijst
+                {registry.passwordRequired && <Lock className="h-3.5 w-3.5 opacity-70" />}
+              </a>
+            </div>
+          </div>
         ) : (
           <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('cadeaulijst')}`}>
             {content.cadeaulijst}
