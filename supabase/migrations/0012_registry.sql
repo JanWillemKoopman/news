@@ -169,13 +169,20 @@ stable
 set search_path = public
 as $$
 declare
-  v_wedding   public.weddings;
-  v_content   public.website_content;
-  v_settings  public.registry_settings;
-  v_items     jsonb;
+  v_wedding_id      uuid;
+  v_partner1_naam   text;
+  v_partner2_naam   text;
+  v_trouwdatum      date;
+  v_is_enabled      boolean;
+  v_password        text;
+  v_intro_text      text;
+  v_bank_iban       text;
+  v_bank_name       text;
+  v_items           jsonb;
 begin
-  -- Resolve slug → wedding
-  select wc.*, w.* into v_content, v_wedding
+  -- Resolve slug → wedding scalars
+  select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum
+  into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum
   from public.website_content wc
   join public.weddings w on w.id = wc.wedding_id
   where wc.slug = p_slug
@@ -185,12 +192,13 @@ begin
     return null;
   end if;
 
-  -- Check registry enabled
-  select * into v_settings
+  -- Check registry settings
+  select is_enabled, password, intro_text, bank_account_iban, bank_account_name
+  into v_is_enabled, v_password, v_intro_text, v_bank_iban, v_bank_name
   from public.registry_settings
-  where wedding_id = v_wedding.id;
+  where wedding_id = v_wedding_id;
 
-  if not found or not v_settings.is_enabled then
+  if not found or not v_is_enabled then
     return jsonb_build_object('enabled', false);
   end if;
 
@@ -226,19 +234,19 @@ begin
     from public.registry_contributions
     group by item_id
   ) rc on rc.item_id = ri.id
-  where ri.wedding_id = v_wedding.id
+  where ri.wedding_id = v_wedding_id
     and ri.is_visible = true;
 
   return jsonb_build_object(
     'enabled',           true,
-    'password_required', v_settings.password is not null and v_settings.password <> '',
-    'intro_text',        v_settings.intro_text,
-    'bank_account_iban', v_settings.bank_account_iban,
-    'bank_account_name', v_settings.bank_account_name,
-    'wedding_id',        v_wedding.id,
-    'partner1_naam',     v_wedding.partner1_naam,
-    'partner2_naam',     v_wedding.partner2_naam,
-    'trouwdatum',        v_wedding.trouwdatum,
+    'password_required', v_password is not null and v_password <> '',
+    'intro_text',        v_intro_text,
+    'bank_account_iban', v_bank_iban,
+    'bank_account_name', v_bank_name,
+    'wedding_id',        v_wedding_id,
+    'partner1_naam',     v_partner1_naam,
+    'partner2_naam',     v_partner2_naam,
+    'trouwdatum',        v_trouwdatum,
     'items',             coalesce(v_items, '[]'::jsonb)
   );
 end;
