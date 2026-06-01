@@ -345,6 +345,100 @@ export interface TaskCommentInput {
   body: string
 }
 
+// --- Registry (Cadeaulijst) ------------------------------------------------
+
+export type RegistryItemType = 'gift' | 'fund'
+export type RegistryPaymentStatus = 'pending' | 'confirmed' | 'cancelled'
+export type RegistryPaymentMethod = 'bank_transfer' | 'payment_link'
+
+export interface RegistryItem {
+  id: ID
+  weddingId: ID
+  type: RegistryItemType
+  title: string
+  description: string
+  imageUrl: string
+  shopUrl: string
+  targetAmount: number | null   // cents, fund only
+  suggestedAmounts: number[]    // cents
+  paymentLink: string
+  sortOrder: number
+  isVisible: boolean
+  createdAt: ISODateTime
+  updatedAt: ISODateTime
+}
+
+export type RegistryItemInput = Omit<RegistryItem, 'id' | 'createdAt' | 'updatedAt'>
+
+export interface RegistryReservation {
+  id: ID
+  itemId: ID
+  cancelToken: string
+  guestName: string
+  guestEmail: string
+  message: string
+  reservedAt: ISODateTime
+}
+
+export interface RegistryContribution {
+  id: ID
+  itemId: ID
+  guestName: string
+  guestEmail: string
+  amount: number             // cents
+  message: string
+  paymentStatus: RegistryPaymentStatus
+  paymentMethod: RegistryPaymentMethod
+  paymentReference: string
+  confirmedAt: ISODateTime | null
+  contributedAt: ISODateTime
+}
+
+export interface RegistrySettings {
+  id: ID
+  weddingId: ID
+  isEnabled: boolean
+  password: string
+  introText: string
+  bankAccountIban: string
+  bankAccountName: string
+  createdAt: ISODateTime
+  updatedAt: ISODateTime
+}
+
+export type RegistrySettingsInput = Omit<RegistrySettings, 'id' | 'createdAt' | 'updatedAt'>
+
+// Public view of a registry item (shown on guest page)
+export interface PublicRegistryItem {
+  id: ID
+  type: RegistryItemType
+  title: string
+  description: string
+  imageUrl: string
+  shopUrl: string
+  targetAmount: number | null
+  suggestedAmounts: number[]
+  paymentLink: string
+  sortOrder: number
+  isReserved: boolean
+  totalConfirmed: number  // cents
+  totalPending: number    // cents
+  contributorCount: number
+}
+
+export interface PublicRegistryData {
+  enabled: boolean
+  passwordRequired: boolean
+  introText: string
+  bankAccountIban: string
+  bankAccountName: string
+  weddingId: ID
+  partner1Naam: string
+  partner2Naam: string
+  trouwdatum: string | null
+  items: PublicRegistryItem[]
+}
+
 // --- Opslag-envelope -------------------------------------------------------
 
 export interface WeddingDatabase {

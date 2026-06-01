@@ -10,6 +10,7 @@ export const MODULES = [
   'website',
   'draaiboek',
   'tafels',
+  'registry',
   'beheer',
 ] as const
 
@@ -47,6 +48,7 @@ export const MODULE_LABELS: Record<Module, string> = {
   website: 'Website',
   draaiboek: 'Draaiboek',
   tafels: 'Tafels',
+  registry: 'Cadeaulijst',
   beheer: 'Beheer (leden & instellingen)',
 }
 

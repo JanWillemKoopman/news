@@ -18,6 +18,7 @@ import * as React from 'react'
 
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import type { FaqItem, GallerijFoto, SectieConfig, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
+import { PublicRegistrySection } from './PublicRegistrySection'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -795,7 +796,7 @@ const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
   botanisch:       (p) => <BotanischTemplate {...p} />,
 }
 
-export function PublicWebsite({ data }: { data: PublicWebsiteData }) {
+export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: import('@/lib/bruiloft/types').PublicRegistryData | null; slug?: string }) {
   const { wedding, content, schedule } = data
   const config = content.sectiesConfig ?? {}
 
@@ -870,11 +871,14 @@ export function PublicWebsite({ data }: { data: PublicWebsiteData }) {
       label: config['cadeaulijst']?.naam ?? 'Cadeaulijst',
       icoon: <Gift className="h-5 w-5" />,
       fotoUrl: config['cadeaulijst']?.fotoUrl,
-      render: () => (
-        <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('cadeaulijst')}`}>
-          {content.cadeaulijst}
-        </p>
-      ),
+      render: () =>
+        registry?.enabled ? (
+          <PublicRegistrySection registry={registry} slug={slug ?? ''} />
+        ) : (
+          <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('cadeaulijst')}`}>
+            {content.cadeaulijst}
+          </p>
+        ),
     },
     {
       id: 'hotels',
@@ -927,12 +931,14 @@ export function PublicWebsite({ data }: { data: PublicWebsiteData }) {
 
   // Filter and sort sections
   const gefilterd = sectieDefinities.filter((s) => {
+    // Registry section: always show when registry is enabled, regardless of website config
+    if (s.id === 'cadeaulijst' && registry?.enabled) return true
     if (!isZichtbaar(s.id)) return false
     switch (s.id) {
       case 'welkom':         return !!content.welkomsttekst
       case 'programma':      return schedule.length > 0
       case 'dresscode':      return !!content.dresscode
-      case 'cadeaulijst':    return !!content.cadeaulijst
+      case 'cadeaulijst':    return !!content.cadeaulijst || !!registry?.enabled
       case 'hotels':         return !!content.hotels
       case 'routebeschrijving': return !!content.routebeschrijving
       case 'faq':            return content.faq.length > 0

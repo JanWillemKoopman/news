@@ -199,3 +199,149 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
   `
   return { subject, html: baseHtml('Herinnering', inhoud) }
 }
+
+// --- Cadeaulijst (Registry) templates -------------------------------------
+
+export interface RegistryReservationGuestEmailProps {
+  guestName: string
+  itemTitle: string
+  coupleNames: string
+  weddingDate: string | null
+  shopUrl: string | null
+  cancelUrl: string
+}
+
+export function renderRegistryReservationGuestEmail(p: RegistryReservationGuestEmailProps): string {
+  const datumRegel = p.weddingDate
+    ? `op <strong>${formatDatumNL(p.weddingDate)}</strong>`
+    : ''
+  const shopLink = p.shopUrl
+    ? `<p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+        Je kunt het cadeau hier bestellen: <a href="${p.shopUrl}" style="color:#be123c;">Bekijk cadeau →</a>
+       </p>`
+    : ''
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Hoi <strong>${p.guestName}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+      Je hebt <strong>${p.itemTitle}</strong> gereserveerd voor de bruiloft van <strong>${p.coupleNames}</strong>${datumRegel ? ' ' + datumRegel : ''}.
+    </p>
+    ${shopLink}
+    <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
+      Wil je jouw reservering annuleren? Klik dan op onderstaande link:
+    </p>
+    ${ctaKnop(p.cancelUrl, 'Reservering annuleren')}
+    <p style="margin:16px 0 0;font-size:13px;color:#9f6271;line-height:1.6;">
+      Hartelijk bedankt — <strong>${p.coupleNames}</strong> zijn blij met jullie betrokkenheid!
+    </p>
+  `
+  return baseHtml('Cadeau gereserveerd', inhoud)
+}
+
+export interface RegistryNewReservationCoupleEmailProps {
+  guestName: string
+  itemTitle: string
+  dashboardUrl: string
+}
+
+export function renderRegistryNewReservationCoupleEmail(p: RegistryNewReservationCoupleEmailProps): string {
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Goed nieuws!
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
+      <strong>${p.guestName}</strong> heeft <strong>${p.itemTitle}</strong> gereserveerd op jullie cadeaulijst.
+    </p>
+    ${ctaKnop(p.dashboardUrl, 'Bekijk cadeaulijst')}
+  `
+  return baseHtml('Nieuw cadeau gereserveerd', inhoud)
+}
+
+export interface RegistryContributionPendingEmailProps {
+  guestName: string
+  itemTitle: string
+  amountCents: number
+  paymentMethod: 'bank_transfer' | 'payment_link'
+  paymentReference: string
+  coupleNames: string
+}
+
+export function renderRegistryContributionPendingEmail(p: RegistryContributionPendingEmailProps): string {
+  const bedrag = formatEuro(p.amountCents / 100)
+  const betalingsinstructie = p.paymentMethod === 'bank_transfer'
+    ? `<p style="margin:0 0 8px;font-size:15px;color:#57534e;line-height:1.6;">
+        Vergeet niet te betalen via bankoverschrijving met als omschrijving:<br />
+        <strong style="font-size:16px;">${p.paymentReference}</strong>
+       </p>`
+    : `<p style="margin:0 0 8px;font-size:15px;color:#57534e;line-height:1.6;">
+        Je hebt aangegeven via de betaallink te betalen.
+       </p>`
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Hoi <strong>${p.guestName}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+      Bedankt! Je bijdrage van <strong>${bedrag}</strong> aan <strong>'${p.itemTitle}'</strong> is geregistreerd.
+    </p>
+    ${betalingsinstructie}
+    <p style="margin:16px 0 0;font-size:13px;color:#9f6271;line-height:1.6;">
+      Het koppel bevestigt jouw bijdrage zodra ze de betaling hebben ontvangen.
+    </p>
+  `
+  return baseHtml('Bijdrage geregistreerd', inhoud)
+}
+
+export interface RegistryContributionConfirmedEmailProps {
+  guestName: string
+  itemTitle: string
+  amountCents: number
+  coupleNames: string
+}
+
+export function renderRegistryContributionConfirmedEmail(p: RegistryContributionConfirmedEmailProps): string {
+  const bedrag = formatEuro(p.amountCents / 100)
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Hoi <strong>${p.guestName}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+      <strong>${p.coupleNames}</strong> hebben je bijdrage van <strong>${bedrag}</strong> aan
+      <strong>'${p.itemTitle}'</strong> bevestigd. Dankjewel!
+    </p>
+    <p style="margin:0;font-size:15px;color:#57534e;line-height:1.6;">
+      Jullie bijdrage wordt enorm gewaardeerd.
+    </p>
+  `
+  return baseHtml('Bijdrage bevestigd!', inhoud)
+}
+
+export interface RegistryNewContributionCoupleEmailProps {
+  guestName: string
+  itemTitle: string
+  amountCents: number
+  totalCents: number
+  dashboardUrl: string
+}
+
+export function renderRegistryNewContributionCoupleEmail(p: RegistryNewContributionCoupleEmailProps): string {
+  const bedrag = formatEuro(p.amountCents / 100)
+  const totaal = formatEuro(p.totalCents / 100)
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Nieuwe bijdrage ontvangen!
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+      <strong>${p.guestName}</strong> heeft <strong>${bedrag}</strong> bijgedragen aan
+      <strong>'${p.itemTitle}'</strong>.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
+      Totaal voor dit fonds: <strong>${totaal}</strong>
+    </p>
+    <p style="margin:0 0 24px;font-size:13px;color:#9f6271;line-height:1.6;">
+      Vergeet niet de ontvangst te bevestigen in je dashboard zodra je de betaling hebt ontvangen.
+    </p>
+    ${ctaKnop(p.dashboardUrl, 'Bevestig ontvangst')}
+  `
+  return baseHtml('Nieuwe bijdrage', inhoud)
+}

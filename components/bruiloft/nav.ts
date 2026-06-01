@@ -2,6 +2,7 @@ import {
   Armchair,
   CalendarClock,
   ClipboardList,
+  Gift,
   Globe,
   LayoutDashboard,
   ListChecks,
@@ -31,6 +32,7 @@ const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', ic
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
 const website: NavItem = { label: 'Website', href: '/bruiloft/website', icon: Globe, module: 'website' }
+const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijst', icon: Gift, module: 'registry' }
 const leden: NavItem = { label: 'Leden & rechten', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
 
@@ -44,6 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
   gasten,
   tafels,
   website,
+  cadeaulijst,
   leden,
   account,
 ]
@@ -94,6 +97,14 @@ export const NAV_SECTIONS: NavSection[] = [
     href: '/bruiloft/website',
     items: [website],
     module: 'website',
+  },
+  {
+    key: 'cadeaulijst',
+    label: 'Cadeaulijst',
+    icon: Gift,
+    href: '/bruiloft/cadeaulijst',
+    items: [cadeaulijst],
+    module: 'registry',
   },
   {
     key: 'beheer',
