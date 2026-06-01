@@ -58,7 +58,7 @@ async function getRegistryData(slug: string): Promise<RegistryResult> {
       thema: ((data.thema as string) ?? 'klassiek') as WeddingThema,
       kleurAccent: (data.kleur_accent as string) ?? '#a75573',
       kopLettertype: ((data.kop_lettertype as string) ?? 'cormorant') as WeddingLettertype,
-      headerFotoUrl: (data.header_foto_url as string) ?? '',
+      headerFotoUrl: '',
       items,
     }
 

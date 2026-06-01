@@ -402,6 +402,9 @@ export interface RegistrySettings {
   introText: string
   bankAccountIban: string
   bankAccountName: string
+  thema: WeddingThema
+  kleurAccent: string
+  kopLettertype: WeddingLettertype
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }

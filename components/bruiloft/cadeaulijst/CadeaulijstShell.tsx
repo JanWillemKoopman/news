@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Gift, LayoutList, Settings, BarChart2, Share2 } from 'lucide-react'
+import { Gift, LayoutList, Settings, BarChart2, Share2, Palette } from 'lucide-react'
 
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -11,14 +11,16 @@ import { cn } from '@/lib/utils'
 import { RegistryLijstbeheer } from './RegistryLijstbeheer'
 import { RegistryOverzicht } from './RegistryOverzicht'
 import { RegistryInstellingen } from './RegistryInstellingen'
+import { RegistryVormgeving } from './RegistryVormgeving'
 import { RegistryDeelModal } from './RegistryDeelModal'
 
-type Tab = 'lijst' | 'overzicht' | 'instellingen'
+type Tab = 'lijst' | 'overzicht' | 'instellingen' | 'vormgeving'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'lijst', label: 'Lijstbeheer', icon: <LayoutList className="h-4 w-4" /> },
   { id: 'overzicht', label: 'Overzicht', icon: <BarChart2 className="h-4 w-4" /> },
   { id: 'instellingen', label: 'Instellingen', icon: <Settings className="h-4 w-4" /> },
+  { id: 'vormgeving', label: 'Vormgeving', icon: <Palette className="h-4 w-4" /> },
 ]
 
 export function CadeaulijstShell() {
@@ -90,6 +92,7 @@ export function CadeaulijstShell() {
       {activeTab === 'lijst' && <RegistryLijstbeheer isEditor={isEditor} />}
       {activeTab === 'overzicht' && <RegistryOverzicht isEditor={isEditor} />}
       {activeTab === 'instellingen' && <RegistryInstellingen />}
+      {activeTab === 'vormgeving' && <RegistryVormgeving />}
     </div>
   )
 }

@@ -173,22 +173,19 @@ declare
   v_partner1_naam   text;
   v_partner2_naam   text;
   v_trouwdatum      date;
-  v_thema           text;
-  v_kleur_accent    text;
-  v_kop_lettertype  text;
-  v_header_foto_url text;
   v_is_enabled      boolean;
   v_password        text;
   v_intro_text      text;
   v_bank_iban       text;
   v_bank_name       text;
+  v_thema           text;
+  v_kleur_accent    text;
+  v_kop_lettertype  text;
   v_items           jsonb;
 begin
-  -- Resolve slug → wedding + website content scalars
-  select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum,
-         wc.thema, wc.kleur_accent, wc.kop_lettertype, wc.header_foto_url
-  into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum,
-       v_thema, v_kleur_accent, v_kop_lettertype, v_header_foto_url
+  -- Resolve slug → wedding scalars
+  select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum
+  into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum
   from public.website_content wc
   join public.weddings w on w.id = wc.wedding_id
   where wc.slug = p_slug
@@ -199,8 +196,10 @@ begin
   end if;
 
   -- Check registry settings
-  select is_enabled, password, intro_text, bank_account_iban, bank_account_name
-  into v_is_enabled, v_password, v_intro_text, v_bank_iban, v_bank_name
+  select is_enabled, password, intro_text, bank_account_iban, bank_account_name,
+         thema, kleur_accent, kop_lettertype
+  into v_is_enabled, v_password, v_intro_text, v_bank_iban, v_bank_name,
+       v_thema, v_kleur_accent, v_kop_lettertype
   from public.registry_settings
   where wedding_id = v_wedding_id;
 
