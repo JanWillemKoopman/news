@@ -437,6 +437,10 @@ export interface PublicRegistryData {
   partner2Naam: string
   trouwdatum: string | null
   items: PublicRegistryItem[]
+  thema: WeddingThema
+  kleurAccent: string
+  kopLettertype: WeddingLettertype
+  headerFotoUrl: string
 }
 
 // --- Opslag-envelope -------------------------------------------------------

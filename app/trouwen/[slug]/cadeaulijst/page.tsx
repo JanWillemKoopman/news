@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import type { PublicRegistryData, PublicRegistryItem } from '@/lib/bruiloft/types'
+import type { PublicRegistryData, PublicRegistryItem, WeddingThema, WeddingLettertype } from '@/lib/bruiloft/types'
 import { PublicCadeaulijstPage } from '@/components/website/PublicCadeaulijstPage'
 
 type RegistryResult =
@@ -55,6 +55,10 @@ async function getRegistryData(slug: string): Promise<RegistryResult> {
       partner1Naam: (data.partner1_naam as string) ?? '',
       partner2Naam: (data.partner2_naam as string) ?? '',
       trouwdatum: (data.trouwdatum as string) ?? null,
+      thema: ((data.thema as string) ?? 'klassiek') as WeddingThema,
+      kleurAccent: (data.kleur_accent as string) ?? '#a75573',
+      kopLettertype: ((data.kop_lettertype as string) ?? 'cormorant') as WeddingLettertype,
+      headerFotoUrl: (data.header_foto_url as string) ?? '',
       items,
     }
 

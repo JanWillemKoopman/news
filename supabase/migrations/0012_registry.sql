@@ -173,6 +173,10 @@ declare
   v_partner1_naam   text;
   v_partner2_naam   text;
   v_trouwdatum      date;
+  v_thema           text;
+  v_kleur_accent    text;
+  v_kop_lettertype  text;
+  v_header_foto_url text;
   v_is_enabled      boolean;
   v_password        text;
   v_intro_text      text;
@@ -180,9 +184,11 @@ declare
   v_bank_name       text;
   v_items           jsonb;
 begin
-  -- Resolve slug → wedding scalars
-  select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum
-  into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum
+  -- Resolve slug → wedding + website content scalars
+  select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum,
+         wc.thema, wc.kleur_accent, wc.kop_lettertype, wc.header_foto_url
+  into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum,
+       v_thema, v_kleur_accent, v_kop_lettertype, v_header_foto_url
   from public.website_content wc
   join public.weddings w on w.id = wc.wedding_id
   where wc.slug = p_slug
@@ -247,6 +253,10 @@ begin
     'partner1_naam',     v_partner1_naam,
     'partner2_naam',     v_partner2_naam,
     'trouwdatum',        v_trouwdatum,
+    'thema',             coalesce(v_thema, 'klassiek'),
+    'kleur_accent',      coalesce(v_kleur_accent, '#a75573'),
+    'kop_lettertype',    coalesce(v_kop_lettertype, 'cormorant'),
+    'header_foto_url',   coalesce(v_header_foto_url, ''),
     'items',             coalesce(v_items, '[]'::jsonb)
   );
 end;
