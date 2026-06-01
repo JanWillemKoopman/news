@@ -1,16 +1,17 @@
 'use client'
 
 import * as React from 'react'
-import { Gift, LayoutList, Settings, BarChart2 } from 'lucide-react'
+import { Gift, LayoutList, Settings, BarChart2, Share2 } from 'lucide-react'
 
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { EmptyState, Skeleton } from '@/components/bruiloft/ui'
+import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { cn } from '@/lib/utils'
 import { RegistryLijstbeheer } from './RegistryLijstbeheer'
 import { RegistryOverzicht } from './RegistryOverzicht'
 import { RegistryInstellingen } from './RegistryInstellingen'
+import { RegistryDeelModal } from './RegistryDeelModal'
 
 type Tab = 'lijst' | 'overzicht' | 'instellingen'
 
@@ -28,6 +29,7 @@ export function CadeaulijstShell() {
 
   const [activeTab, setActiveTab] = React.useState<Tab>('lijst')
   const [loading, setLoading] = React.useState(false)
+  const [deelOpen, setDeelOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (wedding && !registryLoaded) {
@@ -57,7 +59,14 @@ export function CadeaulijstShell() {
       <PageHeader
         titel="Cadeaulijst"
         beschrijving="Beheer jullie cadeauwensen en geldfondsen."
+        actie={
+          <Button variant="outline" onClick={() => setDeelOpen(true)}>
+            <Share2 className="h-4 w-4" />
+            Cadeaulijst delen
+          </Button>
+        }
       />
+      <RegistryDeelModal open={deelOpen} onOpenChange={setDeelOpen} />
 
       {/* Tab bar */}
       <div className="mb-6 flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
