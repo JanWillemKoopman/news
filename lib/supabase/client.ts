@@ -10,3 +10,12 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
+
+// Untyped variant for tables added after the last type generation (e.g. registry tables).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createRawClient(): ReturnType<typeof createBrowserClient<any>> {
+  return createBrowserClient<any>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}

@@ -29,7 +29,7 @@ import {
   type TemplateTask,
 } from '@/lib/bruiloft/templateTasks'
 import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, createRawClient } from '@/lib/supabase/client'
 import { uploadWeddingMedia, deleteWeddingMedia } from '@/lib/supabase/storage'
 import type {
   ActivityEntry,
@@ -40,6 +40,12 @@ import type {
   Guest,
   GuestInput,
   ID,
+  RegistryContribution,
+  RegistryItem,
+  RegistryItemInput,
+  RegistryReservation,
+  RegistrySettings,
+  RegistrySettingsInput,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -95,6 +101,11 @@ interface BruiloftState {
   taskComments: TaskComment[]
   members: WeddingMember[]
   activitySeenAt: string | null // wanneer de feed voor het laatst bekeken is
+  registryItems: RegistryItem[]
+  registrySettings: RegistrySettings | null
+  registryReservations: RegistryReservation[]
+  registryContributions: RegistryContribution[]
+  registryLoaded: boolean
 }
 
 interface BruiloftActions {
@@ -158,6 +169,16 @@ interface BruiloftActions {
   loadMembers: () => Promise<void>
   updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null; emailHerinneringen?: boolean }) => Promise<void>
   uploadAvatar: (file: File) => Promise<string>
+
+  // --- Registry (Cadeaulijst) ---
+  loadRegistry: () => Promise<void>
+  saveRegistrySettings: (patch: Partial<RegistrySettingsInput>) => Promise<void>
+  addRegistryItem: (data: Omit<RegistryItemInput, 'weddingId'>) => Promise<RegistryItem>
+  updateRegistryItem: (id: ID, patch: Partial<RegistryItemInput>) => Promise<void>
+  deleteRegistryItem: (id: ID) => Promise<void>
+  reorderRegistryItems: (orderedIds: ID[]) => Promise<void>
+  confirmContributionReceipt: (contributionId: ID) => Promise<void>
+  uploadRegistryItemImage: (file: File) => Promise<string>
 }
 
 // Onthoudt welke bruiloft actief is (voor wie er meerdere beheert).
@@ -282,6 +303,11 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     taskComments: [],
     members: [],
     activitySeenAt: null,
+    registryItems: [],
+    registrySettings: null,
+    registryReservations: [],
+    registryContributions: [],
+    registryLoaded: false,
 
     init: async () => {
       if (get().hydrated) return
@@ -452,6 +478,11 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         taskComments: [],
         members: [],
         activitySeenAt: null,
+        registryItems: [],
+        registrySettings: null,
+        registryReservations: [],
+        registryContributions: [],
+        registryLoaded: false,
       })
     },
 
@@ -1030,6 +1061,308 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const url = `${data.publicUrl}?t=${Date.now()}`
       await get().updateProfile({ avatarUrl: url })
       return url
+    },
+
+    // --- Registry (Cadeaulijst) --------------------------------------------
+
+    loadRegistry: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const rawSupabase = createRawClient()
+
+      const [itemsRes, settingsRes, reservationsRes, contributionsRes] = await Promise.all([
+        rawSupabase
+          .from('registry_items')
+          .select('*')
+          .eq('wedding_id', wedding.id)
+          .order('sort_order', { ascending: true }),
+        rawSupabase
+          .from('registry_settings')
+          .select('*')
+          .eq('wedding_id', wedding.id)
+          .maybeSingle(),
+        rawSupabase
+          .from('registry_reservations')
+          .select('*, registry_items!inner(wedding_id)')
+          .eq('registry_items.wedding_id', wedding.id),
+        rawSupabase
+          .from('registry_contributions')
+          .select('*, registry_items!inner(wedding_id)')
+          .eq('registry_items.wedding_id', wedding.id)
+          .order('contributed_at', { ascending: false }),
+      ])
+
+      const mapItem = (r: Record<string, unknown>): RegistryItem => ({
+        id: r.id as string,
+        weddingId: r.wedding_id as string,
+        type: r.type as RegistryItem['type'],
+        title: r.title as string,
+        description: (r.description as string) ?? '',
+        imageUrl: (r.image_url as string) ?? '',
+        shopUrl: (r.shop_url as string) ?? '',
+        targetAmount: r.target_amount as number | null,
+        suggestedAmounts: (r.suggested_amounts as number[]) ?? [],
+        paymentLink: (r.payment_link as string) ?? '',
+        sortOrder: r.sort_order as number,
+        isVisible: r.is_visible as boolean,
+        createdAt: r.created_at as string,
+        updatedAt: r.updated_at as string,
+      })
+
+      const mapSettings = (r: Record<string, unknown>): RegistrySettings => ({
+        id: r.id as string,
+        weddingId: r.wedding_id as string,
+        isEnabled: r.is_enabled as boolean,
+        password: (r.password as string) ?? '',
+        introText: (r.intro_text as string) ?? '',
+        bankAccountIban: (r.bank_account_iban as string) ?? '',
+        bankAccountName: (r.bank_account_name as string) ?? '',
+        createdAt: r.created_at as string,
+        updatedAt: r.updated_at as string,
+      })
+
+      const mapReservation = (r: Record<string, unknown>): RegistryReservation => ({
+        id: r.id as string,
+        itemId: r.item_id as string,
+        cancelToken: r.cancel_token as string,
+        guestName: r.guest_name as string,
+        guestEmail: r.guest_email as string,
+        message: (r.message as string) ?? '',
+        reservedAt: r.reserved_at as string,
+      })
+
+      const mapContribution = (r: Record<string, unknown>): RegistryContribution => ({
+        id: r.id as string,
+        itemId: r.item_id as string,
+        guestName: r.guest_name as string,
+        guestEmail: r.guest_email as string,
+        amount: r.amount as number,
+        message: (r.message as string) ?? '',
+        paymentStatus: r.payment_status as RegistryContribution['paymentStatus'],
+        paymentMethod: r.payment_method as RegistryContribution['paymentMethod'],
+        paymentReference: (r.payment_reference as string) ?? '',
+        confirmedAt: (r.confirmed_at as string) ?? null,
+        contributedAt: r.contributed_at as string,
+      })
+
+      set({
+        registryItems: (itemsRes.data ?? []).map((r) => mapItem(r as unknown as Record<string, unknown>)),
+        registrySettings: settingsRes.data ? mapSettings(settingsRes.data as unknown as Record<string, unknown>) : null,
+        registryReservations: (reservationsRes.data ?? []).map((r) => mapReservation(r as unknown as Record<string, unknown>)),
+        registryContributions: (contributionsRes.data ?? []).map((r) => mapContribution(r as unknown as Record<string, unknown>)),
+        registryLoaded: true,
+      })
+    },
+
+    saveRegistrySettings: async (patch) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const rawSupabase = createRawClient()
+      const current = get().registrySettings
+
+      const dbPatch = {
+        is_enabled: patch.isEnabled ?? current?.isEnabled ?? false,
+        password: patch.password !== undefined ? (patch.password || null) : (current?.password || null),
+        intro_text: patch.introText !== undefined ? patch.introText : (current?.introText ?? ''),
+        bank_account_iban: patch.bankAccountIban !== undefined ? patch.bankAccountIban : (current?.bankAccountIban ?? ''),
+        bank_account_name: patch.bankAccountName !== undefined ? patch.bankAccountName : (current?.bankAccountName ?? ''),
+        updated_at: new Date().toISOString(),
+      }
+
+      if (current) {
+        const { data, error } = await rawSupabase
+          .from('registry_settings')
+          .update(dbPatch)
+          .eq('id', current.id)
+          .select()
+          .single()
+        if (error) throw error
+        const r = data as unknown as Record<string, unknown>
+        set({
+          registrySettings: {
+            id: r.id as string,
+            weddingId: r.wedding_id as string,
+            isEnabled: r.is_enabled as boolean,
+            password: (r.password as string) ?? '',
+            introText: (r.intro_text as string) ?? '',
+            bankAccountIban: (r.bank_account_iban as string) ?? '',
+            bankAccountName: (r.bank_account_name as string) ?? '',
+            createdAt: r.created_at as string,
+            updatedAt: r.updated_at as string,
+          },
+        })
+      } else {
+        const { data, error } = await rawSupabase
+          .from('registry_settings')
+          .insert({ wedding_id: wedding.id, ...dbPatch })
+          .select()
+          .single()
+        if (error) throw error
+        const r = data as unknown as Record<string, unknown>
+        set({
+          registrySettings: {
+            id: r.id as string,
+            weddingId: r.wedding_id as string,
+            isEnabled: r.is_enabled as boolean,
+            password: (r.password as string) ?? '',
+            introText: (r.intro_text as string) ?? '',
+            bankAccountIban: (r.bank_account_iban as string) ?? '',
+            bankAccountName: (r.bank_account_name as string) ?? '',
+            createdAt: r.created_at as string,
+            updatedAt: r.updated_at as string,
+          },
+        })
+      }
+    },
+
+    addRegistryItem: async (data) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const rawSupabase = createRawClient()
+      const nextOrder = get().registryItems.length
+      const { data: row, error } = await rawSupabase
+        .from('registry_items')
+        .insert({
+          wedding_id: wedding.id,
+          type: data.type,
+          title: data.title,
+          description: data.description || null,
+          image_url: data.imageUrl || null,
+          shop_url: data.shopUrl || null,
+          target_amount: data.targetAmount ?? null,
+          suggested_amounts: data.suggestedAmounts.length ? data.suggestedAmounts : null,
+          payment_link: data.paymentLink || null,
+          sort_order: data.sortOrder ?? nextOrder,
+          is_visible: data.isVisible ?? true,
+        })
+        .select()
+        .single()
+      if (error) throw error
+      const r = row as unknown as Record<string, unknown>
+      const item: RegistryItem = {
+        id: r.id as string,
+        weddingId: r.wedding_id as string,
+        type: r.type as RegistryItem['type'],
+        title: r.title as string,
+        description: (r.description as string) ?? '',
+        imageUrl: (r.image_url as string) ?? '',
+        shopUrl: (r.shop_url as string) ?? '',
+        targetAmount: r.target_amount as number | null,
+        suggestedAmounts: (r.suggested_amounts as number[]) ?? [],
+        paymentLink: (r.payment_link as string) ?? '',
+        sortOrder: r.sort_order as number,
+        isVisible: r.is_visible as boolean,
+        createdAt: r.created_at as string,
+        updatedAt: r.updated_at as string,
+      }
+      set({ registryItems: [...get().registryItems, item] })
+      return item
+    },
+
+    updateRegistryItem: async (id, patch) => {
+      const rawSupabase = createRawClient()
+      const dbPatch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+      if (patch.title !== undefined) dbPatch.title = patch.title
+      if (patch.description !== undefined) dbPatch.description = patch.description || null
+      if (patch.imageUrl !== undefined) dbPatch.image_url = patch.imageUrl || null
+      if (patch.shopUrl !== undefined) dbPatch.shop_url = patch.shopUrl || null
+      if (patch.targetAmount !== undefined) dbPatch.target_amount = patch.targetAmount ?? null
+      if (patch.suggestedAmounts !== undefined) dbPatch.suggested_amounts = patch.suggestedAmounts.length ? patch.suggestedAmounts : null
+      if (patch.paymentLink !== undefined) dbPatch.payment_link = patch.paymentLink || null
+      if (patch.sortOrder !== undefined) dbPatch.sort_order = patch.sortOrder
+      if (patch.isVisible !== undefined) dbPatch.is_visible = patch.isVisible
+      const { data: row, error } = await rawSupabase
+        .from('registry_items')
+        .update(dbPatch)
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      const r = row as unknown as Record<string, unknown>
+      const item: RegistryItem = {
+        id: r.id as string,
+        weddingId: r.wedding_id as string,
+        type: r.type as RegistryItem['type'],
+        title: r.title as string,
+        description: (r.description as string) ?? '',
+        imageUrl: (r.image_url as string) ?? '',
+        shopUrl: (r.shop_url as string) ?? '',
+        targetAmount: r.target_amount as number | null,
+        suggestedAmounts: (r.suggested_amounts as number[]) ?? [],
+        paymentLink: (r.payment_link as string) ?? '',
+        sortOrder: r.sort_order as number,
+        isVisible: r.is_visible as boolean,
+        createdAt: r.created_at as string,
+        updatedAt: r.updated_at as string,
+      }
+      set({ registryItems: get().registryItems.map((x) => (x.id === id ? item : x)) })
+    },
+
+    deleteRegistryItem: async (id) => {
+      const rawSupabase = createRawClient()
+      const prev = get().registryItems
+      set({ registryItems: prev.filter((x) => x.id !== id) })
+      const { error } = await rawSupabase.from('registry_items').delete().eq('id', id)
+      if (error) {
+        set({ registryItems: prev })
+        throw error
+      }
+    },
+
+    reorderRegistryItems: async (orderedIds) => {
+      const rawSupabase = createRawClient()
+      const prev = get().registryItems
+      // Optimistic: update sort_order locally
+      const updated = prev.map((item) => {
+        const idx = orderedIds.indexOf(item.id)
+        return idx !== -1 ? { ...item, sortOrder: idx } : item
+      })
+      set({ registryItems: updated.sort((a, b) => a.sortOrder - b.sortOrder) })
+      try {
+        await Promise.all(
+          orderedIds.map((id, idx) =>
+            rawSupabase.from('registry_items').update({ sort_order: idx }).eq('id', id)
+          )
+        )
+      } catch (e) {
+        set({ registryItems: prev })
+        throw e
+      }
+    },
+
+    confirmContributionReceipt: async (contributionId) => {
+      const res = await fetch('/api/registry/confirm-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contribution_id: contributionId }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? 'Bevestigen mislukt')
+      }
+      const now = new Date().toISOString()
+      set({
+        registryContributions: get().registryContributions.map((c) =>
+          c.id === contributionId
+            ? { ...c, paymentStatus: 'confirmed', confirmedAt: now }
+            : c
+        ),
+      })
+    },
+
+    uploadRegistryItemImage: async (file) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const naam = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const pad = `${wedding.id}/${naam}`
+      const { error } = await supabase.storage
+        .from('registry-images')
+        .upload(pad, file, { upsert: false, contentType: file.type })
+      if (error) throw error
+      const { data } = supabase.storage.from('registry-images').getPublicUrl(pad)
+      return data.publicUrl
     },
   })
 )
