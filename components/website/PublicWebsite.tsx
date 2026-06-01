@@ -60,6 +60,14 @@ interface TplProps {
   data: PublicWebsiteData
   secties: SectieItem[]
   headingFont: string
+  registry?: RegistryMeta | null
+  slug?: string
+}
+
+interface RegistryMeta {
+  enabled: boolean
+  passwordRequired: boolean
+  introText: string
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -124,6 +132,39 @@ function FaqAccordion({ items }: { items: FaqItem[] }) {
 // geraffineerde detaillering. Geïnspireerd op Riley & Grey "Aesthete".
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function RegistryNavButton({ slug, passwordRequired, variant = 'light', absolute = false }: { slug: string; passwordRequired: boolean; variant?: 'light' | 'dark' | 'primary'; absolute?: boolean }) {
+  const pos = absolute ? 'absolute right-4 top-1/2 -translate-y-1/2 hidden md:inline-flex' : 'hidden md:inline-flex'
+  const base = `${pos} items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors shrink-0`
+  const styles = {
+    light:   `${base} border text-primary hover:bg-primary/5`,
+    dark:    `${base} border-white/30 text-white/80 hover:text-white hover:border-white/60`,
+    primary: `${base} bg-white/15 text-white hover:bg-white/25`,
+  }
+  return (
+    <a href={`/trouwen/${slug}/cadeaulijst`} className={styles[variant]} style={variant === 'light' ? { borderColor: 'hsl(var(--primary)/0.35)' } : undefined}>
+      <Gift className="h-3 w-3" />
+      Cadeaulijst
+      {passwordRequired && <Lock className="h-2.5 w-2.5 opacity-70" />}
+    </a>
+  )
+}
+
+function RegistryMobileMenuItem({ slug, onClose }: { slug: string; onClose: () => void }) {
+  return (
+    <li>
+      <a
+        href={`/trouwen/${slug}/cadeaulijst`}
+        onClick={onClose}
+        className="flex items-center gap-2 py-2.5 text-[11px] font-semibold uppercase tracking-widest"
+        style={{ color: 'hsl(var(--primary))' }}
+      >
+        <Gift className="h-3.5 w-3.5" />
+        Cadeaulijst
+      </a>
+    </li>
+  )
+}
+
 function AterlierOrnament() {
   return (
     <div className="flex items-center gap-3 my-4">
@@ -134,7 +175,7 @@ function AterlierOrnament() {
   )
 }
 
-function KlassiekTemplate({ data, secties, headingFont }: TplProps) {
+function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -143,13 +184,16 @@ function KlassiekTemplate({ data, secties, headingFont }: TplProps) {
     <div className="bg-white">
       {/* NAV: double-bar, centered, dots between items */}
       <nav className="sticky top-0 z-40 bg-white/96 backdrop-blur-sm" style={{ boxShadow: '0 1px 0 hsl(var(--primary)/0.12)' }}>
-        <div className="py-3 text-center border-b" style={{ borderColor: 'hsl(var(--primary)/0.1)' }}>
+        <div className="relative py-3 text-center border-b" style={{ borderColor: 'hsl(var(--primary)/0.1)' }}>
           <p className="text-[11px] tracking-[0.25em] uppercase text-muted-foreground">
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
           </p>
+          {registry?.enabled && slug && (
+            <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="light" absolute />
+          )}
         </div>
         <div className="hidden md:flex justify-center items-center gap-1 py-2 overflow-x-auto">
-          {secties.map((s, i) => (
+          {secties.filter(s => s.id !== 'cadeaulijst').map((s, i) => (
             <React.Fragment key={s.id}>
               {i > 0 && <span className="text-muted-foreground/20 mx-2.5 text-[10px]">·</span>}
               <a href={`#${s.id}`} className="text-[10px] tracking-[0.18em] uppercase text-muted-foreground hover:text-primary transition-colors px-1">
@@ -164,7 +208,8 @@ function KlassiekTemplate({ data, secties, headingFont }: TplProps) {
         {mOpen && (
           <div className="md:hidden bg-white border-t px-6 py-3" style={{ borderColor: 'hsl(var(--primary)/0.1)' }}>
             <ul className="space-y-0.5">
-              {secties.map(s => (
+              {registry?.enabled && slug && <RegistryMobileMenuItem slug={slug} onClose={() => setMOpen(false)} />}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2.5 text-[11px] tracking-widest uppercase text-muted-foreground hover:text-primary">
                     {s.label}
@@ -236,7 +281,7 @@ function KlassiekTemplate({ data, secties, headingFont }: TplProps) {
 // Geïnspireerd op Riley & Grey "Rolling Stone" / "Signature".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function ModernTemplate({ data, secties, headingFont }: TplProps) {
+function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -250,7 +295,7 @@ function ModernTemplate({ data, secties, headingFont }: TplProps) {
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
           </span>
           <ul className="hidden md:flex gap-8">
-            {secties.map(s => (
+            {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
               <li key={s.id}>
                 <a href={`#${s.id}`} className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
                   {s.label}
@@ -258,14 +303,20 @@ function ModernTemplate({ data, secties, headingFont }: TplProps) {
               </li>
             ))}
           </ul>
-          <button className="md:hidden p-2 -mr-2 text-muted-foreground" onClick={() => setMOpen(!mOpen)}>
-            {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-3">
+            {registry?.enabled && slug && (
+              <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="light" />
+            )}
+            <button className="md:hidden p-2 -mr-2 text-muted-foreground" onClick={() => setMOpen(!mOpen)}>
+              {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         {mOpen && (
           <div className="md:hidden border-t border-black/10 bg-white px-6 py-4">
             <ul className="grid grid-cols-2 gap-2">
-              {secties.map(s => (
+              {registry?.enabled && slug && <RegistryMobileMenuItem slug={slug} onClose={() => setMOpen(false)} />}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
                     {s.label}
@@ -342,7 +393,7 @@ function ModernTemplate({ data, secties, headingFont }: TplProps) {
 // ornamenten. Geïnspireerd op Riley & Grey "Drift" / "Posy".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function RomantischTemplate({ data, secties, headingFont }: TplProps) {
+function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -353,17 +404,20 @@ function RomantischTemplate({ data, secties, headingFont }: TplProps) {
     <div style={{ background: warmBg }}>
       {/* NAV: warm, centered, serif name */}
       <nav className="sticky top-0 z-40 backdrop-blur-sm border-b" style={{ background: `${warmBg}ee`, borderColor: 'hsl(var(--primary)/0.12)' }}>
-        <div className="max-w-xl mx-auto px-4 py-3 flex flex-col items-center gap-1.5">
+        <div className="relative max-w-xl mx-auto px-4 py-3 flex flex-col items-center gap-1.5">
           <span className="text-base font-medium text-foreground" style={{ fontFamily: headingFont }}>
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
           </span>
           <ul className="hidden md:flex gap-5 flex-wrap justify-center">
-            {secties.map(s => (
+            {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
               <li key={s.id}>
                 <a href={`#${s.id}`} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">{s.label}</a>
               </li>
             ))}
           </ul>
+          {registry?.enabled && slug && (
+            <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="light" absolute />
+          )}
           <button className="md:hidden absolute right-4 top-3 p-1.5 text-muted-foreground" onClick={() => setMOpen(!mOpen)}>
             {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -371,7 +425,8 @@ function RomantischTemplate({ data, secties, headingFont }: TplProps) {
         {mOpen && (
           <div className="md:hidden border-t px-6 py-4" style={{ background: warmBg, borderColor: 'hsl(var(--primary)/0.12)' }}>
             <ul className="space-y-1 text-center">
-              {secties.map(s => (
+              {registry?.enabled && slug && <RegistryMobileMenuItem slug={slug} onClose={() => setMOpen(false)} />}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-primary">
                     {s.label}
@@ -440,7 +495,7 @@ function RomantischTemplate({ data, secties, headingFont }: TplProps) {
 // linker accentborder. Geïnspireerd op Riley & Grey "Nom".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function RustiekTemplate({ data, secties, headingFont }: TplProps) {
+function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -456,7 +511,7 @@ function RustiekTemplate({ data, secties, headingFont }: TplProps) {
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
           </span>
           <ul className="hidden md:flex gap-6">
-            {secties.map(s => (
+            {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
               <li key={s.id}>
                 <a href={`#${s.id}`} className="text-[10px] uppercase tracking-widest transition-colors" style={{ color: 'rgba(255,255,255,0.55)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'white')}
@@ -466,14 +521,26 @@ function RustiekTemplate({ data, secties, headingFont }: TplProps) {
               </li>
             ))}
           </ul>
-          <button className="md:hidden p-2 -mr-2" style={{ color: 'rgba(255,255,255,0.7)' }} onClick={() => setMOpen(!mOpen)}>
-            {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-3">
+            {registry?.enabled && slug && (
+              <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="dark" />
+            )}
+            <button className="md:hidden p-2 -mr-2" style={{ color: 'rgba(255,255,255,0.7)' }} onClick={() => setMOpen(!mOpen)}>
+              {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         {mOpen && (
           <div className="md:hidden px-6 py-3 border-t" style={{ background: donkerNav, borderColor: 'rgba(255,255,255,0.1)' }}>
             <ul className="space-y-1">
-              {secties.map(s => (
+              {registry?.enabled && slug && (
+                <li>
+                  <a href={`/trouwen/${slug}/cadeaulijst`} onClick={() => setMOpen(false)} className="flex items-center gap-2 py-2.5 text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                    <Gift className="h-3.5 w-3.5" /> Cadeaulijst
+                  </a>
+                </li>
+              )}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2.5 text-[11px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.65)' }}>
                     {s.label}
@@ -545,7 +612,7 @@ function RustiekTemplate({ data, secties, headingFont }: TplProps) {
 // Geïnspireerd op Riley & Grey "Perch" + Swiss editorial design.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function PuurTemplate({ data, secties, headingFont }: TplProps) {
+function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -559,7 +626,7 @@ function PuurTemplate({ data, secties, headingFont }: TplProps) {
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
           </span>
           <ul className="hidden md:flex gap-10">
-            {secties.map(s => (
+            {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
               <li key={s.id}>
                 <a href={`#${s.id}`} className="text-[9px] tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors">
                   {s.label}
@@ -567,14 +634,20 @@ function PuurTemplate({ data, secties, headingFont }: TplProps) {
               </li>
             ))}
           </ul>
-          <button className="md:hidden p-2 -mr-2 text-muted-foreground" onClick={() => setMOpen(!mOpen)}>
-            {mOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-3">
+            {registry?.enabled && slug && (
+              <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="light" />
+            )}
+            <button className="md:hidden p-2 -mr-2 text-muted-foreground" onClick={() => setMOpen(!mOpen)}>
+              {mOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
         {mOpen && (
           <div className="md:hidden border-t border-black/6 px-8 py-4">
             <ul className="grid grid-cols-2 gap-1">
-              {secties.map(s => (
+              {registry?.enabled && slug && <RegistryMobileMenuItem slug={slug} onClose={() => setMOpen(false)} />}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2.5 text-[9px] tracking-widest uppercase text-muted-foreground hover:text-foreground">
                     {s.label}
@@ -647,7 +720,7 @@ function PuurTemplate({ data, secties, headingFont }: TplProps) {
 // donkergroene navigatie. Geïnspireerd op Riley & Grey "Eden".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function BotanischTemplate({ data, secties, headingFont }: TplProps) {
+function BotanischTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -663,7 +736,7 @@ function BotanischTemplate({ data, secties, headingFont }: TplProps) {
             <span style={{ opacity: 0.55 }}>❧</span>
           </span>
           <ul className="hidden md:flex gap-5">
-            {secties.map(s => (
+            {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
               <li key={s.id}>
                 <a href={`#${s.id}`} className="text-[11px] transition-colors" style={{ color: 'rgba(255,255,255,0.65)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'white')}
@@ -673,14 +746,26 @@ function BotanischTemplate({ data, secties, headingFont }: TplProps) {
               </li>
             ))}
           </ul>
-          <button className="md:hidden p-2 -mr-2" style={{ color: 'rgba(255,255,255,0.8)' }} onClick={() => setMOpen(!mOpen)}>
-            {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-3">
+            {registry?.enabled && slug && (
+              <RegistryNavButton slug={slug} passwordRequired={registry.passwordRequired} variant="primary" />
+            )}
+            <button className="md:hidden p-2 -mr-2" style={{ color: 'rgba(255,255,255,0.8)' }} onClick={() => setMOpen(!mOpen)}>
+              {mOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         {mOpen && (
           <div className="md:hidden border-t px-5 py-3" style={{ background: 'hsl(var(--primary))', borderColor: 'rgba(255,255,255,0.15)' }}>
             <ul className="space-y-1">
-              {secties.map(s => (
+              {registry?.enabled && slug && (
+                <li>
+                  <a href={`/trouwen/${slug}/cadeaulijst`} onClick={() => setMOpen(false)} className="flex items-center gap-2 py-2.5 text-sm font-semibold" style={{ color: 'white' }}>
+                    <Gift className="h-3.5 w-3.5" /> Cadeaulijst
+                  </a>
+                </li>
+              )}
+              {secties.filter(s => s.id !== 'cadeaulijst').map(s => (
                 <li key={s.id}>
                   <a href={`#${s.id}`} onClick={() => setMOpen(false)} className="block py-2.5 text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
                     {s.label}
@@ -794,12 +879,6 @@ const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
   rustiek:         (p) => <RustiekTemplate {...p} />,
   minimalistisch:  (p) => <PuurTemplate {...p} />,
   botanisch:       (p) => <BotanischTemplate {...p} />,
-}
-
-interface RegistryMeta {
-  enabled: boolean
-  passwordRequired: boolean
-  introText: string
 }
 
 export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: RegistryMeta | null; slug?: string }) {
@@ -979,7 +1058,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
 
   return (
     <div style={themaVars}>
-      {renderer({ data, secties: gesorteerd, headingFont })}
+      {renderer({ data, secties: gesorteerd, headingFont, registry, slug })}
     </div>
   )
 }
