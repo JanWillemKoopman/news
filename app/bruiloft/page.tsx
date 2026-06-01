@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
 
 import { ActivityFeed } from '@/components/bruiloft/ActivityFeed'
+import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
-import { VolgendeStappen } from '@/components/bruiloft/VolgendeStappen'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import {
   Button,
@@ -101,9 +101,9 @@ export default function DashboardPage() {
 
       <PageHeader titel="Overzicht" beschrijving="Alles in één oogopslag." />
 
-      {/* Volgende stappen: wat moet ik nú doen? */}
+      {/* AI "Volgende stappen": wat moet ik nú doen? */}
       <div className="mb-8">
-        <VolgendeStappen steps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
+        <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
       </div>
 
       {/* Overzichtskaarten */}

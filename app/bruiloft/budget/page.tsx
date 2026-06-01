@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { AlertTriangle, Download, PieChart, Plus, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
@@ -106,6 +107,8 @@ export default function BudgetPage() {
           </>
         }
       />
+
+      <AIBudgetAdvies />
 
       {afwijkingen.overBudget ? (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
