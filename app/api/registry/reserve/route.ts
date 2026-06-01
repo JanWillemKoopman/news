@@ -11,7 +11,7 @@ import { getResend, FROM_ADDRESS } from '@/lib/email/resend'
 const bodySchema = z.object({
   item_id: z.string().uuid(),
   guest_name: z.string().min(1).max(200),
-  guest_email: z.string().email(),
+  guest_email: z.string().optional().default(''),
   message: z.string().max(1000).optional().default(''),
   wedding_slug: z.string().min(1),
 })
@@ -83,21 +83,25 @@ export async function POST(request: NextRequest) {
   const dashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/bruiloft/cadeaulijst`
 
   const resend = getResend()
-  const emailPromises: Promise<unknown>[] = [
-    resend.emails.send({
-      from: FROM_ADDRESS,
-      to: guest_email,
-      subject: `Je hebt een cadeau gereserveerd voor ${coupleNames}`,
-      html: renderRegistryReservationGuestEmail({
-        guestName: guest_name,
-        itemTitle: item.title,
-        coupleNames,
-        weddingDate: wedding?.trouwdatum ?? null,
-        shopUrl: item.shop_url ?? null,
-        cancelUrl,
-      }),
-    }),
-  ]
+  const emailPromises: Promise<unknown>[] = []
+
+  if (guest_email) {
+    emailPromises.push(
+      resend.emails.send({
+        from: FROM_ADDRESS,
+        to: guest_email,
+        subject: `Je hebt een cadeau gereserveerd voor ${coupleNames}`,
+        html: renderRegistryReservationGuestEmail({
+          guestName: guest_name,
+          itemTitle: item.title,
+          coupleNames,
+          weddingDate: wedding?.trouwdatum ?? null,
+          shopUrl: item.shop_url ?? null,
+          cancelUrl,
+        }),
+      })
+    )
+  }
 
   const { data: members } = await admin
     .from('wedding_members')
