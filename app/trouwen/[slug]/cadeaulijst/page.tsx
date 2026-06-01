@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import type { PublicRegistryData, PublicRegistryItem } from '@/lib/bruiloft/types'
 import { PublicCadeaulijstPage } from '@/components/website/PublicCadeaulijstPage'
 
@@ -12,117 +12,53 @@ type RegistryResult =
 
 async function getRegistryData(slug: string): Promise<RegistryResult> {
   try {
-    const admin = createAdminClient()
-    const rawAdmin = createRawAdminClient()
+    const supabase = createClient()
 
-    const { data: content, error: contentError } = await admin
-      .from('website_content')
-      .select('wedding_id')
-      .eq('slug', slug)
-      .maybeSingle()
+    // Use the SECURITY DEFINER RPC — works with anon key, bypasses RLS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('get_public_registry', { p_slug: slug })
 
-    if (contentError) {
-      console.error('[cadeaulijst] website_content error:', contentError)
-      return { status: 'error', message: contentError.message }
-    }
-    if (!content) return { status: 'not_found' }
-
-    const weddingId = content.wedding_id
-
-    const { data: settings, error: settingsError } = await rawAdmin
-      .from('registry_settings')
-      .select('*')
-      .eq('wedding_id', weddingId)
-      .maybeSingle()
-
-    if (settingsError) {
-      console.error('[cadeaulijst] registry_settings error:', settingsError)
-      return { status: 'error', message: settingsError.message }
-    }
-    if (!settings) {
-      console.log('[cadeaulijst] no registry_settings row for wedding', weddingId)
-      return { status: 'disabled' }
-    }
-    if (!settings.is_enabled) {
-      console.log('[cadeaulijst] registry is_enabled=false for wedding', weddingId)
-      return { status: 'disabled' }
+    if (error) {
+      console.error('[cadeaulijst] RPC error:', error)
+      return { status: 'error', message: error.message }
     }
 
-    const { data: wedding } = await admin
-      .from('weddings')
-      .select('partner1_naam, partner2_naam, trouwdatum')
-      .eq('id', weddingId)
-      .single()
+    if (!data) return { status: 'not_found' }
+    if (!data.enabled) return { status: 'disabled' }
 
-    const { data: rawItems } = await rawAdmin
-      .from('registry_items')
-      .select('*')
-      .eq('wedding_id', weddingId)
-      .eq('is_visible', true)
-      .order('sort_order', { ascending: true })
+    // Map snake_case RPC result to camelCase TypeScript types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items: PublicRegistryItem[] = (data.items ?? []).map((i: any) => ({
+      id: i.id as string,
+      type: i.type as 'gift' | 'fund',
+      title: i.title as string,
+      description: (i.description as string) ?? '',
+      imageUrl: (i.image_url as string) ?? '',
+      shopUrl: (i.shop_url as string) ?? '',
+      targetAmount: (i.target_amount as number | null) ?? null,
+      suggestedAmounts: (i.suggested_amounts as number[]) ?? [],
+      paymentLink: (i.payment_link as string) ?? '',
+      sortOrder: i.sort_order as number,
+      isReserved: i.is_reserved as boolean,
+      totalConfirmed: (i.total_confirmed as number) ?? 0,
+      totalPending: (i.total_pending as number) ?? 0,
+      contributorCount: (i.contributor_count as number) ?? 0,
+    }))
 
-    const items = rawItems ?? []
-    const itemIds = items.map((i: Record<string, unknown>) => i.id as string)
-
-    let reservationMap = new Map<string, boolean>()
-    let contributionMap = new Map<string, { confirmed: number; pending: number; count: number }>()
-
-    if (itemIds.length > 0) {
-      const [resData, contribData] = await Promise.all([
-        rawAdmin.from('registry_reservations').select('item_id').in('item_id', itemIds),
-        rawAdmin.from('registry_contributions').select('item_id, amount, payment_status').in('item_id', itemIds).neq('payment_status', 'cancelled'),
-      ])
-      for (const r of resData.data ?? []) {
-        reservationMap.set(r.item_id as string, true)
-      }
-      for (const c of contribData.data ?? []) {
-        const id = c.item_id as string
-        const existing = contributionMap.get(id) ?? { confirmed: 0, pending: 0, count: 0 }
-        const amount = c.amount as number
-        const status = c.payment_status as string
-        contributionMap.set(id, {
-          confirmed: existing.confirmed + (status === 'confirmed' ? amount : 0),
-          pending: existing.pending + (status === 'pending' ? amount : 0),
-          count: existing.count + 1,
-        })
-      }
+    const registryData: PublicRegistryData = {
+      enabled: true,
+      passwordRequired: !!(data.password_required),
+      introText: (data.intro_text as string) ?? '',
+      bankAccountIban: (data.bank_account_iban as string) ?? '',
+      bankAccountName: (data.bank_account_name as string) ?? '',
+      weddingId: data.wedding_id as string,
+      partner1Naam: (data.partner1_naam as string) ?? '',
+      partner2Naam: (data.partner2_naam as string) ?? '',
+      trouwdatum: (data.trouwdatum as string) ?? null,
+      items,
     }
 
-    const registryItems: PublicRegistryItem[] = items.map((i: Record<string, unknown>) => {
-      const contribs = contributionMap.get(i.id as string) ?? { confirmed: 0, pending: 0, count: 0 }
-      return {
-        id: i.id as string,
-        type: i.type as 'gift' | 'fund',
-        title: i.title as string,
-        description: (i.description as string) ?? '',
-        imageUrl: (i.image_url as string) ?? '',
-        shopUrl: (i.shop_url as string) ?? '',
-        targetAmount: i.target_amount as number | null,
-        suggestedAmounts: (i.suggested_amounts as number[]) ?? [],
-        paymentLink: (i.payment_link as string) ?? '',
-        sortOrder: i.sort_order as number,
-        isReserved: reservationMap.has(i.id as string),
-        totalConfirmed: contribs.confirmed,
-        totalPending: contribs.pending,
-        contributorCount: contribs.count,
-      }
-    })
-
-    return {
-      status: 'ok',
-      data: {
-        enabled: true,
-        passwordRequired: !!(settings.password),
-        introText: (settings.intro_text as string) ?? '',
-        bankAccountIban: (settings.bank_account_iban as string) ?? '',
-        bankAccountName: (settings.bank_account_name as string) ?? '',
-        weddingId,
-        partner1Naam: wedding?.partner1_naam ?? '',
-        partner2Naam: wedding?.partner2_naam ?? '',
-        trouwdatum: wedding?.trouwdatum ?? null,
-        items: registryItems,
-      },
-    }
+    return { status: 'ok', data: registryData }
   } catch (err) {
     console.error('[cadeaulijst] unexpected error:', err)
     return { status: 'error', message: String(err) }
