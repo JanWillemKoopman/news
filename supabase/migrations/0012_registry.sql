@@ -320,3 +320,88 @@ $$;
 
 revoke all on function public.cancel_reservation_by_token(uuid) from public;
 grant execute on function public.cancel_reservation_by_token(uuid) to anon, authenticated;
+
+-- RPC to atomically reserve a gift item (SECURITY DEFINER so anon can validate + insert)
+-- Returns: jsonb with { ok, cancel_token, error, item_title, shop_url, wedding_id, partner1_naam, partner2_naam, trouwdatum }
+create or replace function public.reserve_registry_item(
+  p_item_id    uuid,
+  p_slug       text,
+  p_guest_name text,
+  p_guest_email text,
+  p_message    text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_wedding_id    uuid;
+  v_item_type     text;
+  v_item_title    text;
+  v_item_visible  boolean;
+  v_item_wedding  uuid;
+  v_shop_url      text;
+  v_partner1      text;
+  v_partner2      text;
+  v_trouwdatum    date;
+  v_cancel_token  uuid;
+begin
+  -- Validate item exists and is a gift
+  select type, title, is_visible, wedding_id, shop_url
+  into v_item_type, v_item_title, v_item_visible, v_item_wedding, v_shop_url
+  from public.registry_items
+  where id = p_item_id;
+
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'item_not_found');
+  end if;
+
+  if v_item_type <> 'gift' then
+    return jsonb_build_object('ok', false, 'error', 'not_a_gift');
+  end if;
+
+  if not v_item_visible then
+    return jsonb_build_object('ok', false, 'error', 'item_not_available');
+  end if;
+
+  -- Verify slug belongs to same wedding
+  select wedding_id into v_wedding_id
+  from public.website_content
+  where slug = p_slug;
+
+  if not found or v_wedding_id <> v_item_wedding then
+    return jsonb_build_object('ok', false, 'error', 'item_not_found');
+  end if;
+
+  -- Check not already reserved
+  if exists (select 1 from public.registry_reservations where item_id = p_item_id) then
+    return jsonb_build_object('ok', false, 'error', 'already_reserved');
+  end if;
+
+  -- Insert reservation
+  insert into public.registry_reservations (item_id, guest_name, guest_email, message)
+  values (p_item_id, p_guest_name, p_guest_email, nullif(p_message, ''))
+  returning cancel_token into v_cancel_token;
+
+  -- Get wedding info for email templates
+  select partner1_naam, partner2_naam, trouwdatum
+  into v_partner1, v_partner2, v_trouwdatum
+  from public.weddings
+  where id = v_item_wedding;
+
+  return jsonb_build_object(
+    'ok',           true,
+    'cancel_token', v_cancel_token,
+    'item_title',   v_item_title,
+    'shop_url',     v_shop_url,
+    'wedding_id',   v_item_wedding,
+    'partner1_naam', v_partner1,
+    'partner2_naam', v_partner2,
+    'trouwdatum',   v_trouwdatum
+  );
+end;
+$$;
+
+revoke all on function public.reserve_registry_item(uuid, text, text, text, text) from public;
+grant execute on function public.reserve_registry_item(uuid, text, text, text, text) to anon, authenticated;
