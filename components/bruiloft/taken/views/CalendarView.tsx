@@ -175,7 +175,6 @@ export function CalendarView({
           <div className="border-t border-border pt-3">
             <Button
               size="sm"
-              variant="outline"
               className="w-full gap-1.5"
               onClick={() => {
                 const date = popoverDate!
