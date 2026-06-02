@@ -9,7 +9,7 @@ import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
 import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
 import { AchterstandBanner } from '@/components/bruiloft/taken/AchterstandBanner'
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
-import { OntbrekendeTakenModal } from '@/components/bruiloft/taken/OntbrekendeTakenModal'
+import { AIVoorgesteldeTakenModal } from '@/components/bruiloft/taken/AIVoorgesteldeTakenModal'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
@@ -17,7 +17,8 @@ import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { ISODate, Task, TaskStatus } from '@/lib/bruiloft/types'
+import type { ISODate, Task, TaskInput, TaskStatus } from '@/lib/bruiloft/types'
+import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
 type View = 'lijst' | 'kalender'
 
@@ -33,7 +34,7 @@ export function TakenShell() {
   const bulkUpdateTasks = useBruiloftStore((s) => s.bulkUpdateTasks)
   const bulkDeleteTasks = useBruiloftStore((s) => s.bulkDeleteTasks)
   const toggleSubtaak = useBruiloftStore((s) => s.toggleSubtaak)
-  const addTemplateMissing = useBruiloftStore((s) => s.addTemplateMissing)
+  const addAITaken = useBruiloftStore((s) => s.addAITaken)
   const { toast } = useToast()
 
   const [view, setView] = React.useState<View>('lijst')
@@ -259,15 +260,29 @@ export function TakenShell() {
         }}
       />
 
-      <OntbrekendeTakenModal
+      <AIVoorgesteldeTakenModal
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
         tasks={tasks}
         wedding={wedding}
-        onConfirm={async (titels) => {
+        onConfirm={async (aiTaken: AITaakSuggestie[]) => {
+          type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
+          const newTasks: NewTask[] = aiTaken.map((t) => ({
+            titel: t.titel,
+            omschrijving: t.omschrijving,
+            deadline: t.deadline as ISODate,
+            status: 'open',
+            prioriteit: t.prioriteit,
+            toegewezenAan: t.toegewezenAan,
+            assignees: [],
+            subtaken: [],
+          }))
           try {
-            await addTemplateMissing(titels)
-            toast({ title: `${titels.length} ${titels.length === 1 ? 'taak' : 'taken'} toegevoegd`, variant: 'success' })
+            await addAITaken(newTasks)
+            toast({
+              title: `${newTasks.length} ${newTasks.length === 1 ? 'taak' : 'taken'} toegevoegd`,
+              variant: 'success',
+            })
           } catch {
             toast({ title: 'Toevoegen mislukt', variant: 'error' })
           }
