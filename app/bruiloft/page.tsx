@@ -64,21 +64,21 @@ export default function DashboardPage() {
           <Settings2 className="h-5 w-5" />
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
-          <p className="text-2xl font-medium text-rhino-900 md:text-3xl">
-            {wedding.partner1Naam} <span className="text-rose-600">&amp;</span>{' '}
+          <p className="text-2xl font-medium text-[#101828] md:text-3xl">
+            {wedding.partner1Naam} <span>&amp;</span>{' '}
             {wedding.partner2Naam}
           </p>
           <div className="my-4">
             {dagen > 0 ? (
-              <p className="text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-rhino-900">
+              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-[#101828]">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
             ) : dagen === 0 ? (
-              <p className="text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-rhino-900">
+              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-[#101828]">
                 Vandaag is de dag!
               </p>
             ) : (
-              <p className="text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-rhino-900">
+              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-[#101828]">
                 Gefeliciteerd met jullie huwelijk
               </p>
             )}

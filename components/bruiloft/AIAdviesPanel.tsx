@@ -130,8 +130,8 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
       <CardContent className="p-6">
         <div className="mb-5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-rose-500" />
-            <h2 className="text-2xl font-medium text-foreground">Wat nu?</h2>
+            <Sparkles className="h-5 w-5 text-foreground" />
+            <h2 className="text-2xl font-medium text-foreground">Advies om nu te doen</h2>
           </div>
           {!loading && (
             <Button
