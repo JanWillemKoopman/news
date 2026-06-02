@@ -4,6 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { ChevronRight, RefreshCw, Sparkles } from 'lucide-react'
 
+import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import type { NextStep } from '@/lib/bruiloft/guidance'
@@ -33,6 +34,13 @@ const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number }>()
 const CACHE_TTL = 10 * 60 * 1000 // 10 minuten
 
 function useFetchAIAdvies(weddingId: string | null) {
+  const wedding = useBruiloftStore((s) => s.wedding)
+  const tasks = useBruiloftStore((s) => s.tasks)
+  const vendors = useBruiloftStore((s) => s.vendors)
+  const budgetItems = useBruiloftStore((s) => s.budgetItems)
+  const guests = useBruiloftStore((s) => s.guests)
+  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
+
   const [advies, setAdvies] = React.useState<AIAdvies[] | null>(() => {
     if (!weddingId) return null
     const cached = adviesCache.get(weddingId)
@@ -50,7 +58,7 @@ function useFetchAIAdvies(weddingId: string | null) {
 
   const fetch = React.useCallback(
     async (forceRefresh = false) => {
-      if (!weddingId) return
+      if (!wedding || !weddingId) return
       const cached = adviesCache.get(weddingId)
       if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
         setAdvies(cached.data)
@@ -61,10 +69,11 @@ function useFetchAIAdvies(weddingId: string | null) {
       setError(null)
 
       try {
+        const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
         const res = await window.fetch('/api/ai/advice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weddingId }),
+          body: JSON.stringify({ context, weddingId }),
         })
         if (!res.ok) throw new Error(await res.text())
         const json = await res.json()
@@ -81,7 +90,7 @@ function useFetchAIAdvies(weddingId: string | null) {
         setLoading(false)
       }
     },
-    [weddingId]
+    [wedding, weddingId, tasks, vendors, budgetItems, guests, scheduleItems]
   )
 
   React.useEffect(() => {

@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { AlertTriangle, CheckCircle2, Info, Loader2, Sparkles, X } from 'lucide-react'
 
+import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import type { AIBudgetAdvies } from '@/app/api/ai/budget/route'
@@ -27,6 +28,11 @@ const TYPE_STIJL = {
 
 export function AIBudgetAdvies() {
   const wedding = useBruiloftStore((s) => s.wedding)
+  const tasks = useBruiloftStore((s) => s.tasks)
+  const vendors = useBruiloftStore((s) => s.vendors)
+  const budgetItems = useBruiloftStore((s) => s.budgetItems)
+  const guests = useBruiloftStore((s) => s.guests)
+  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
 
   const [advies, setAdvies] = React.useState<AIBudgetAdvies | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -40,10 +46,11 @@ export function AIBudgetAdvies() {
     setZichtbaar(true)
 
     try {
+      const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
       const res = await fetch('/api/ai/budget', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weddingId: wedding.id }),
+        body: JSON.stringify({ context, weddingId: wedding.id }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: 'Onbekende fout' }))
