@@ -23,7 +23,6 @@ import {
   CardTitle,
   EmptyState,
   Progress,
-  Skeleton,
 } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -97,14 +96,17 @@ function AIStatusBadge({ status }: { status: ModuleStatus }) {
 
 // ---- Skeleton ---------------------------------------------------------------
 
-function SkeletonGrid() {
+function LaadAnimatie() {
   return (
-    <div className="space-y-6">
-      <Skeleton className="h-36 w-full rounded-xl" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-52 w-full rounded-xl" />
-        ))}
+    <div className="flex flex-col items-center gap-4 py-16">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 animate-pulse text-rose-400" aria-hidden />
+        <span className="text-sm text-muted-foreground">AI analyseert jullie gegevens…</span>
+      </div>
+      <div className="flex gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
+        <span className="h-2 w-2 rounded-full bg-rose-400 animate-bounce [animation-delay:-0.15s]" />
+        <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
       </div>
     </div>
   )
@@ -336,7 +338,7 @@ export default function AIWeddingPlannerPage() {
       </div>
 
       {/* Inhoud */}
-      {loading && <SkeletonGrid />}
+      {loading && <LaadAnimatie />}
 
       {!loading && advies && (
         <div className="space-y-6">
