@@ -146,16 +146,22 @@ export function TakenShell() {
         titel="Taken"
         beschrijving="Werk stap voor stap naar de grote dag toe."
         actie={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setTemplatesOpen(true)} title="Voeg sjabloontaken toe aan je lijst">
-              <Sparkles className="h-4 w-4" /> Voorgestelde taken
-            </Button>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Taak toevoegen
-            </Button>
-          </div>
+          <Button onClick={openNieuw}>
+            <Plus className="h-4 w-4" /> Taak toevoegen
+          </Button>
         }
       />
+
+      <div className="mb-6">
+        <Button
+          variant="outline"
+          onClick={() => setTemplatesOpen(true)}
+          className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+        >
+          <Sparkles className="h-4 w-4" />
+          Voorgestelde taken
+        </Button>
+      </div>
 
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
 
