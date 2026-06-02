@@ -40,7 +40,7 @@ export function Modal({
           <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
           <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
             <div>
-              <Dialog.Title className="font-serif text-xl text-foreground">
+              <Dialog.Title className="text-xl text-foreground">
                 {title}
               </Dialog.Title>
               {description ? (

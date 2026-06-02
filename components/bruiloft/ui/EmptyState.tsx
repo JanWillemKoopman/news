@@ -30,7 +30,7 @@ export function EmptyState({
       {Icon ? (
         <Icon className="mb-4 h-10 w-10 text-gray-400" />
       ) : null}
-      <h3 className="font-serif text-xl text-foreground">{titel}</h3>
+      <h3 className="text-xl text-foreground">{titel}</h3>
       {beschrijving ? (
         <p className="mt-2 max-w-md text-sm text-muted-foreground">{beschrijving}</p>
       ) : null}

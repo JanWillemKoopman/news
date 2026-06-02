@@ -24,7 +24,7 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
       )}
     >
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500">
           <Icon className="h-5 w-5" />
         </div>
         {href ? (

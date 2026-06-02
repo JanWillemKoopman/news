@@ -14,7 +14,7 @@ export default function BruiloftError({
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
         <WifiOff className="h-7 w-7" />
       </div>
-      <h2 className="mt-5 font-serif text-3xl font-medium text-foreground">Er ging iets mis</h2>
+      <h2 className="mt-5 text-3xl font-medium text-foreground">Er ging iets mis</h2>
       <p className="mt-2 max-w-sm text-muted-foreground">
         {error.message || 'Controleer je verbinding en probeer het opnieuw.'}
       </p>

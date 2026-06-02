@@ -48,7 +48,7 @@ export function ActivityFeed() {
     <Card>
       <CardContent className="p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-serif text-xl text-foreground">Recente activiteit</h2>
+          <h2 className="text-xl text-foreground">Recente activiteit</h2>
           {nieuw > 0 ? (
             <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
               {nieuw} nieuw

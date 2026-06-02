@@ -90,7 +90,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
           <WifiOff className="h-7 w-7" />
         </div>
-        <h1 className="mt-5 text-center font-serif text-3xl text-foreground">Er ging iets mis</h1>
+        <h1 className="mt-5 text-center text-3xl text-foreground">Er ging iets mis</h1>
         <p className="mt-2 max-w-sm text-center text-muted-foreground">{error}</p>
         <Button
           className="mt-6"

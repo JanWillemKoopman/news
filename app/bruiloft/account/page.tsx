@@ -531,7 +531,7 @@ function AccountHero() {
         </span>
       )}
       <div>
-        <h1 className="font-serif text-2xl text-foreground">
+        <h1 className="text-2xl text-foreground">
           {currentUser.displayName || currentUser.email}
         </h1>
         <p className="text-sm text-muted-foreground">{currentUser.email}</p>

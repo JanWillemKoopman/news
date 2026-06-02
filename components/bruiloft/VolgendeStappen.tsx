@@ -51,7 +51,7 @@ export function VolgendeStappen({ steps, trouwdatum }: VolgendeStappenProps) {
       <CardContent className="p-6">
         <div className="mb-5 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-rose-500" />
-          <h2 className="font-serif text-2xl font-medium text-foreground">Wat nu?</h2>
+          <h2 className="text-2xl font-medium text-foreground">Wat nu?</h2>
         </div>
 
         {top.length === 0 ? (

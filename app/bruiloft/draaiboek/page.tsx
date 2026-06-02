@@ -114,7 +114,7 @@ export default function DraaiboekPage() {
             <Card key={s.id}>
               <CardContent className="flex items-start gap-4 p-4">
                 <div className="w-14 shrink-0 text-center">
-                  <span className="font-serif text-lg font-semibold tabular-nums text-primary">
+                  <span className="text-lg font-semibold tabular-nums text-primary">
                     {s.tijd}
                   </span>
                 </div>

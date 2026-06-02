@@ -53,7 +53,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl">
       {/* Hero: aftelteller. Lichte rhino-achtige kaart met serif headline. */}
-      <Card className="relative mb-8 overflow-hidden border-rhino-100 bg-gradient-to-br from-rhino-50 via-white to-rose-50">
+      <Card className="relative mb-8 overflow-hidden border-border bg-white">
         <Button
           variant="ghost"
           size="icon"
@@ -64,21 +64,21 @@ export default function DashboardPage() {
           <Settings2 className="h-5 w-5" />
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
-          <p className="font-serif text-2xl font-medium text-rhino-900 md:text-3xl">
+          <p className="text-2xl font-medium text-rhino-900 md:text-3xl">
             {wedding.partner1Naam} <span className="text-rose-600">&amp;</span>{' '}
             {wedding.partner2Naam}
           </p>
           <div className="my-4">
             {dagen > 0 ? (
-              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-rhino-900">
+              <p className="text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-rhino-900">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
             ) : dagen === 0 ? (
-              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-rhino-900">
+              <p className="text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-rhino-900">
                 Vandaag is de dag!
               </p>
             ) : (
-              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-rhino-900">
+              <p className="text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-rhino-900">
                 Gefeliciteerd met jullie huwelijk
               </p>
             )}
@@ -145,7 +145,7 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-medium text-foreground">Aankomende betalingen</h2>
+              <h2 className="text-2xl font-medium text-foreground">Aankomende betalingen</h2>
               <Link
                 href="/bruiloft/budget"
                 className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700"

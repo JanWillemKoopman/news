@@ -61,7 +61,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
       {/* Donut per categorie */}
       <Card className="lg:col-span-1">
         <CardContent className="p-6">
-          <h3 className="mb-2 font-serif text-lg text-foreground">Verdeling per categorie</h3>
+          <h3 className="mb-2 text-lg text-foreground">Verdeling per categorie</h3>
           {donutData.length === 0 ? (
             <p className="flex h-48 items-center justify-center text-sm text-muted-foreground">
               Nog geen bedragen ingevuld.
@@ -115,7 +115,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
       {/* Vergelijking geschat/geoffreerd/betaald */}
       <Card className="lg:col-span-1">
         <CardContent className="p-6">
-          <h3 className="mb-2 font-serif text-lg text-foreground">Geschat vs. betaald</h3>
+          <h3 className="mb-2 text-lg text-foreground">Geschat vs. betaald</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={barData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <XAxis

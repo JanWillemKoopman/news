@@ -178,7 +178,7 @@ export default function WebsitePage() {
               <CardContent className="p-4 sm:p-6">
                 {/* Section header: editable name + toggle for non-home sections */}
                 {activeSectie === 'home' ? (
-                  <h2 className="mb-4 font-serif text-xl text-foreground">Home</h2>
+                  <h2 className="mb-4 text-xl text-foreground">Home</h2>
                 ) : (
                   <SectieInstellingen
                     config={getSectieConfig(activeSectie)}

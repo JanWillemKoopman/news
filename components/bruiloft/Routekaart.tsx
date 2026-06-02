@@ -25,7 +25,7 @@ export function Routekaart({ route }: RoutekaartProps) {
     <Card className="border-rhino-100">
       <CardContent className="p-6">
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="font-serif text-2xl font-medium text-foreground">Jullie routekaart</h2>
+          <h2 className="text-2xl font-medium text-foreground">Jullie routekaart</h2>
           <span className="text-sm font-medium text-muted-foreground">
             {route.overallPercentage}% klaar
           </span>

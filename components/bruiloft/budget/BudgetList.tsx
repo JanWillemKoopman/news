@@ -42,7 +42,7 @@ export function BudgetList({
         return (
           <div key={categorie}>
             <div className="mb-2 flex items-baseline justify-between px-1">
-              <h3 className="font-serif text-lg capitalize text-foreground">{categorie}</h3>
+              <h3 className="text-lg capitalize text-foreground">{categorie}</h3>
               <div className="text-right">
                 <Money bedrag={subtotaal} className="text-sm font-semibold text-foreground" />
                 {categorie === 'catering' && bevestigdeDaggasten > 0 ? (

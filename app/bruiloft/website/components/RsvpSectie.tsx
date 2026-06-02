@@ -36,7 +36,7 @@ export function RsvpSectie() {
         {/* Header: op mobiel gestapeld, op desktop naast elkaar */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-serif text-xl text-foreground">RSVP &amp; deellinks</h2>
+            <h2 className="text-xl text-foreground">RSVP &amp; deellinks</h2>
             <p className="text-sm text-muted-foreground">
               {t.bevestigd} bevestigd · {t.afgemeld} afgemeld · {t.geenReactie} geen reactie
             </p>

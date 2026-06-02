@@ -53,7 +53,7 @@ export function SeatingBoard({
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
         <DropZone id={ONVERDEELD} className="rounded-2xl border border-border bg-card/40 p-4">
-          <h2 className="mb-3 font-serif text-lg text-foreground">
+          <h2 className="mb-3 text-lg text-foreground">
             Onverdeeld{' '}
             <span className="text-sm font-normal text-muted-foreground">({onverdeeld.length})</span>
           </h2>
