@@ -103,12 +103,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  const { data: allowed } = await supabase.rpc('ai_rate_limit_increment', {
+  const { data: allowed, error: rpcError } = await supabase.rpc('ai_rate_limit_increment', {
     p_wedding_id: weddingId,
     p_endpoint: 'advice',
     p_max_calls: 20,
   })
-  if (!allowed) {
+  // Als de migration nog niet is uitgerold, laat het verzoek door om 400-fouten te voorkomen.
+  if (!rpcError && !allowed) {
     return NextResponse.json(
       { error: 'Te veel verzoeken, probeer het over een uur opnieuw.' },
       { status: 429 }
