@@ -42,6 +42,7 @@ export function TakenShell() {
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [formOpen, setFormOpen] = React.useState(false)
   const [editTask, setEditTask] = React.useState<Task | null>(null)
+  const [newTaskDeadline, setNewTaskDeadline] = React.useState<ISODate | null>(null)
   const [delTask, setDelTask] = React.useState<Task | null>(null)
   const [delBulkOpen, setDelBulkOpen] = React.useState(false)
   const [templatesOpen, setTemplatesOpen] = React.useState(false)
@@ -56,10 +57,17 @@ export function TakenShell() {
 
   const openNieuw = () => {
     setEditTask(null)
+    setNewTaskDeadline(null)
     setFormOpen(true)
   }
   const openBewerk = (t: Task) => {
     setEditTask(t)
+    setNewTaskDeadline(null)
+    setFormOpen(true)
+  }
+  const openNieuwOpDatum = (date: ISODate) => {
+    setEditTask(null)
+    setNewTaskDeadline(date)
     setFormOpen(true)
   }
 
@@ -199,6 +207,7 @@ export function TakenShell() {
           onDelete={setDelTask}
           onToggleSubtaak={handleSubtaakToggle}
           onShiftDeadline={handleCalendarShift}
+          onAddTask={openNieuwOpDatum}
         />
       )}
 
@@ -214,8 +223,9 @@ export function TakenShell() {
 
       <TaskForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(o) => { setFormOpen(o); if (!o) setNewTaskDeadline(null) }}
         initial={editTask}
+        defaultDeadline={editTask ? undefined : (newTaskDeadline ?? undefined)}
         vendors={vendors}
         budgetItems={budgetItems}
         members={members}

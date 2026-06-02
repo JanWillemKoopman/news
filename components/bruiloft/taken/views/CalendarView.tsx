@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import {
   DndContext,
   DragEndEvent,
@@ -28,6 +28,7 @@ interface CalendarViewProps {
   onDelete: (t: Task) => void
   onToggleSubtaak: (t: Task, id: string) => void
   onShiftDeadline: (taskId: string, newDeadline: ISODate) => Promise<void>
+  onAddTask: (date: ISODate) => void
 }
 
 function startOfMonth(d: Date): Date {
@@ -53,6 +54,7 @@ export function CalendarView({
   onDelete,
   onToggleSubtaak,
   onShiftDeadline,
+  onAddTask,
 }: CalendarViewProps) {
   const [shown, setShown] = React.useState(() => startOfMonth(new Date()))
   const [popoverDate, setPopoverDate] = React.useState<ISODate | null>(null)
@@ -148,27 +150,44 @@ export function CalendarView({
         onOpenChange={(o) => !o && setPopoverDate(null)}
         title={popoverDate ? formatDatumNL(popoverDate) : ''}
       >
-        {popoverTaken.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Geen taken op deze dag.</p>
-        ) : (
-          <div className="space-y-2">
-            {popoverTaken.map((t) => (
-              <TaskCard
-                key={t.id}
-                task={t}
-                members={members}
-                onToggleStatus={onToggleStatus}
-                onEdit={(task) => {
-                  setPopoverDate(null)
-                  onEdit(task)
-                }}
-                onDelete={onDelete}
-                onToggleSubtaak={onToggleSubtaak}
-                compact
-              />
-            ))}
+        <div className="space-y-3">
+          {popoverTaken.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Geen taken op deze dag.</p>
+          ) : (
+            <div className="space-y-2">
+              {popoverTaken.map((t) => (
+                <TaskCard
+                  key={t.id}
+                  task={t}
+                  members={members}
+                  onToggleStatus={onToggleStatus}
+                  onEdit={(task) => {
+                    setPopoverDate(null)
+                    onEdit(task)
+                  }}
+                  onDelete={onDelete}
+                  onToggleSubtaak={onToggleSubtaak}
+                  compact
+                />
+              ))}
+            </div>
+          )}
+          <div className="border-t border-border pt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={() => {
+                const date = popoverDate!
+                setPopoverDate(null)
+                onAddTask(date)
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Taak toevoegen op deze dag
+            </Button>
           </div>
-        )}
+        </div>
       </Modal>
     </div>
   )

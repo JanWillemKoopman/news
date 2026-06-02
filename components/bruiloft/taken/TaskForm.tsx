@@ -22,17 +22,18 @@ interface TaskFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: Task | null
+  defaultDeadline?: string
   vendors: Vendor[]
   budgetItems: BudgetItem[]
   members: WeddingMember[]
   onSubmit: (data: NewTask) => void
 }
 
-function leeg(): NewTask {
+function leeg(deadline = ''): NewTask {
   return {
     titel: '',
     omschrijving: '',
-    deadline: '',
+    deadline,
     status: 'open',
     prioriteit: 'midden',
     toegewezenAan: 'samen',
@@ -62,16 +63,17 @@ export function TaskForm({
   open,
   onOpenChange,
   initial,
+  defaultDeadline,
   vendors,
   budgetItems,
   members,
   onSubmit,
 }: TaskFormProps) {
-  const [form, setForm] = React.useState<NewTask>(leeg)
+  const [form, setForm] = React.useState<NewTask>(() => leeg(defaultDeadline))
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanTask(initial) : leeg())
-  }, [open, initial])
+    if (open) setForm(initial ? vanTask(initial) : leeg(defaultDeadline))
+  }, [open, initial, defaultDeadline])
 
   const set = <K extends keyof NewTask>(key: K, value: NewTask[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
