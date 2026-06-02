@@ -8,9 +8,9 @@ import {
   scheduleItemFromRow,
   taskFromRow,
   vendorFromRow,
+  weddingFromRow,
   websiteContentFromRow,
 } from '@/lib/bruiloft/mappers'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -238,9 +238,8 @@ export async function POST(request: NextRequest) {
     } satisfies AIWeddingPlannerResponse)
   }
 
-  // Haal alle bruiloftdata op via admin client (bypasses RLS)
-  const admin = createAdminClient()
-
+  // Haal alle bruiloftdata op via de geauthenticeerde client.
+  // De gebruiker is al geverifieerd als lid; RLS geeft leesstoegang tot alle data.
   const [
     { data: weddingRow },
     { data: taskRows },
@@ -250,21 +249,19 @@ export async function POST(request: NextRequest) {
     { data: scheduleRows },
     { data: websiteRow },
   ] = await Promise.all([
-    admin.from('weddings').select('*').eq('id', weddingId).single(),
-    admin.from('tasks').select('*').eq('wedding_id', weddingId),
-    admin.from('vendors').select('*').eq('wedding_id', weddingId),
-    admin.from('budget_items').select('*').eq('wedding_id', weddingId),
-    admin.from('guests').select('*').eq('wedding_id', weddingId),
-    admin.from('schedule_items').select('*').eq('wedding_id', weddingId),
-    admin.from('website_content').select('*').eq('wedding_id', weddingId).single(),
+    supabase.from('weddings').select('*').eq('id', weddingId).single(),
+    supabase.from('tasks').select('*').eq('wedding_id', weddingId),
+    supabase.from('vendors').select('*').eq('wedding_id', weddingId),
+    supabase.from('budget_items').select('*').eq('wedding_id', weddingId),
+    supabase.from('guests').select('*').eq('wedding_id', weddingId),
+    supabase.from('schedule_items').select('*').eq('wedding_id', weddingId),
+    supabase.from('website_content').select('*').eq('wedding_id', weddingId).single(),
   ])
 
   if (!weddingRow) {
     return NextResponse.json({ error: 'Bruiloft niet gevonden' }, { status: 404 })
   }
 
-  // Importeer mappers en bouw context
-  const { weddingFromRow } = await import('@/lib/bruiloft/mappers')
   const wedding = weddingFromRow(weddingRow)
   const tasks = (taskRows ?? []).map(taskFromRow)
   const vendors = (vendorRows ?? []).map(vendorFromRow)
