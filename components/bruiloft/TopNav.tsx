@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Sparkles } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -64,11 +65,37 @@ export function TopNav() {
         {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
         <span className="flex-1 md:hidden" aria-hidden />
 
-        {/* Account-menu (rechts). */}
-        <div className="ml-auto hidden items-center md:flex">
+        {/* Account-menu (rechts) + AI-knop. */}
+        <div className="ml-auto hidden items-center gap-2 md:flex">
+          <Link
+            href="/bruiloft/ai-wedding-planner"
+            aria-current={pathname.startsWith('/bruiloft/ai-wedding-planner') ? 'page' : undefined}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
+              pathname.startsWith('/bruiloft/ai-wedding-planner')
+                ? 'bg-header-active text-white'
+                : 'text-white/80 hover:bg-header-active/70 hover:text-white'
+            )}
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            <span>AI wedding planner</span>
+          </Link>
           <UserMenu variant="dark" />
         </div>
-        <div className="flex items-center md:hidden">
+        <div className="flex items-center gap-1 md:hidden">
+          <Link
+            href="/bruiloft/ai-wedding-planner"
+            aria-label="AI wedding planner"
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+              pathname.startsWith('/bruiloft/ai-wedding-planner')
+                ? 'bg-header-active text-white'
+                : 'text-white/80 hover:bg-header-active/70 hover:text-white'
+            )}
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+          </Link>
           <UserMenu variant="dark" compact />
         </div>
       </div>

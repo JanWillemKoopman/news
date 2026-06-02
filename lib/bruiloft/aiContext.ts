@@ -1,6 +1,6 @@
 import { dagenTot } from './format'
 import { STANDAARD_VERDELING, aankomendeTermijnen, budgetTotalen, gastTellingen } from './derived'
-import type { BudgetCategorie, BudgetItem, Guest, ScheduleItem, Task, Vendor, Wedding } from './types'
+import type { BudgetCategorie, BudgetItem, Guest, ScheduleItem, Task, Vendor, Wedding, WebsiteContent } from './types'
 
 export interface AIWeddingContext {
   bruidspaar: {
@@ -53,6 +53,13 @@ export interface AIWeddingContext {
   draaiboek: {
     aantalItems: number
   }
+  website: {
+    gepubliceerd: boolean
+    heeftSlug: boolean
+    heeftHeaderFoto: boolean
+    aantalZichtbareSectionten: number
+    thema: string
+  }
   betalingen: {
     aankomend: Array<{
       omschrijving: string
@@ -81,7 +88,8 @@ export function buildAIContext(
   vendors: Vendor[],
   budgetItems: BudgetItem[],
   guests: Guest[],
-  scheduleItems: ScheduleItem[]
+  scheduleItems: ScheduleItem[],
+  websiteContent: WebsiteContent | null = null
 ): AIWeddingContext {
   const budget = budgetTotalen(budgetItems, vendors, wedding)
   const gasten = gastTellingen(guests)
@@ -165,6 +173,15 @@ export function buildAIContext(
     },
     draaiboek: {
       aantalItems: scheduleItems.length,
+    },
+    website: {
+      gepubliceerd: websiteContent?.websiteGepubliceerd ?? false,
+      heeftSlug: !!(websiteContent?.slug),
+      heeftHeaderFoto: !!(websiteContent?.headerFotoUrl),
+      aantalZichtbareSectionten: websiteContent
+        ? Object.values(websiteContent.sectiesConfig).filter((s) => s.zichtbaar).length
+        : 0,
+      thema: websiteContent?.thema ?? 'niet ingesteld',
     },
     betalingen: {
       aankomend: betalingen,
