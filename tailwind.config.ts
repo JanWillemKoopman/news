@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontSize: {
+        '2xl': '1rem',
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['var(--font-serif)', '"Cormorant Garamond"', 'Georgia', 'Cambria', 'serif'],
