@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
-export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token')
-  if (!token) {
-    return NextResponse.redirect(new URL('/', request.url))
+const bodySchema = z.object({
+  token: z.string().min(1),
+})
+
+export async function POST(request: NextRequest) {
+  const raw = await request.json().catch(() => null)
+  const parsed = bodySchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Ongeldig verzoek' }, { status: 400 })
   }
+  const { token } = parsed.data
 
   const admin = createAdminClient()
   const rawAdmin = createRawAdminClient()
@@ -18,7 +25,7 @@ export async function GET(request: NextRequest) {
     .maybeSingle()
 
   if (!reservation) {
-    return NextResponse.redirect(new URL('/?geannuleerd=onbekend', request.url))
+    return NextResponse.json({ error: 'Reservering niet gevonden' }, { status: 404 })
   }
 
   const { data: item } = await rawAdmin
@@ -42,8 +49,5 @@ export async function GET(request: NextRequest) {
     .delete()
     .eq('cancel_token', token)
 
-  if (slug) {
-    return NextResponse.redirect(new URL(`/trouwen/${slug}?geannuleerd=1`, request.url))
-  }
-  return NextResponse.redirect(new URL('/?geannuleerd=1', request.url))
+  return NextResponse.json({ success: true, slug })
 }

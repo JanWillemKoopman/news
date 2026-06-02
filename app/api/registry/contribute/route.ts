@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
+import { isRateLimited } from '@/lib/rateLimit'
 
 const bodySchema = z.object({
   item_id: z.string().uuid(),
@@ -27,6 +28,12 @@ export async function POST(request: NextRequest) {
   }
 
   const { item_id, guest_name, guest_email, amount_cents, message, wedding_slug } = parsed.data
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (isRateLimited(`contribute:${ip}`, 30, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })
+  }
+
   const admin = createAdminClient()
   const rawAdmin = createRawAdminClient()
 

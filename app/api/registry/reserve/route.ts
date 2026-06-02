@@ -7,6 +7,7 @@ import {
 } from '@/lib/email/templates'
 import { getResend, FROM_ADDRESS } from '@/lib/email/resend'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isRateLimited } from '@/lib/rateLimit'
 
 const bodySchema = z.object({
   item_id: z.string().uuid(),
@@ -32,6 +33,11 @@ export async function POST(request: NextRequest) {
 
   const { item_id, guest_name, guest_email, message, wedding_slug } = parsed.data
 
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (isRateLimited(`reserve:${ip}`, 20, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })
+  }
+
   // Use anon-key client + SECURITY DEFINER RPC — works without service role key
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createClient() as any
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   // Send emails (best-effort, non-blocking)
   const coupleNames = `${result.partner1_naam} & ${result.partner2_naam}`
-  const cancelUrl = `${(process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')}/api/registry/cancel-reservation?token=${result.cancel_token}`
+  const cancelUrl = `${(process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')}/reservering-annuleren/${result.cancel_token}`
   const dashboardUrl = `${(process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')}/bruiloft/cadeaulijst`
 
   const resend = getResend()

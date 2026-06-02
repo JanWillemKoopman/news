@@ -1,5 +1,14 @@
 import { dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 export interface InviteEmailProps {
   uitnodigerNamen: string
   rolLabel: string
@@ -69,7 +78,7 @@ export function renderInviteEmail(p: InviteEmailProps): { subject: string; html:
   const subject = 'Je bent uitgenodigd om mee te plannen — Ons Trouwplan'
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      <strong>${p.uitnodigerNamen}</strong> nodigt je uit om als <strong>${p.rolLabel}</strong>
+      <strong>${escapeHtml(p.uitnodigerNamen)}</strong> nodigt je uit om als <strong>${escapeHtml(p.rolLabel)}</strong>
       mee te helpen plannen op Ons Trouwplan.
     </p>
     <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
@@ -78,11 +87,11 @@ export function renderInviteEmail(p: InviteEmailProps): { subject: string; html:
     </p>
     ${ctaKnop(p.accepteerUrl, 'Uitnodiging accepteren')}
     <p style="margin:0 0 8px;font-size:13px;color:#a8a29e;">
-      Deze uitnodiging verloopt op <strong>${p.verloopdatum}</strong>.
+      Deze uitnodiging verloopt op <strong>${escapeHtml(p.verloopdatum)}</strong>.
     </p>
     <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
       Of kopieer deze link handmatig:<br />
-      <a href="${p.accepteerUrl}" style="color:#be123c;">${p.accepteerUrl}</a>
+      <a href="${p.accepteerUrl}" style="color:#be123c;">${escapeHtml(p.accepteerUrl)}</a>
     </p>
   `
   return { subject, html: baseHtml('Uitnodiging', inhoud) }
@@ -94,14 +103,14 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
     ? `<p style="margin:0 0 8px;font-size:15px;color:#57534e;">📅 <strong>Datum:</strong> ${formatDatumNL(p.trouwdatum)}</p>`
     : ''
   const locatieRegel = p.locatie
-    ? `<p style="margin:0 0 24px;font-size:15px;color:#57534e;">📍 <strong>Locatie:</strong> ${p.locatie}</p>`
+    ? `<p style="margin:0 0 24px;font-size:15px;color:#57534e;">📍 <strong>Locatie:</strong> ${escapeHtml(p.locatie)}</p>`
     : '<p style="margin:0 0 24px;"></p>'
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Beste <strong>${p.gastVoornaam}</strong>,
+      Beste <strong>${escapeHtml(p.gastVoornaam)}</strong>,
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:#57534e;line-height:1.6;">
-      Je bent uitgenodigd voor de bruiloft van <strong>${p.partnerNamen}</strong>!
+      Je bent uitgenodigd voor de bruiloft van <strong>${escapeHtml(p.partnerNamen)}</strong>!
       We horen graag of je erbij kunt zijn.
     </p>
     ${datumRegel}
@@ -109,13 +118,13 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
     ${ctaKnop(p.rsvpUrl, 'Reageren op de uitnodiging')}
     <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
       Of kopieer deze link handmatig:<br />
-      <a href="${p.rsvpUrl}" style="color:#be123c;">${p.rsvpUrl}</a>
+      <a href="${p.rsvpUrl}" style="color:#be123c;">${escapeHtml(p.rsvpUrl)}</a>
     </p>
     <p style="margin:16px 0 0;font-size:12px;color:#a8a29e;">
       Deze link is persoonlijk en uniek voor jou.
     </p>
   `
-  return { subject, html: baseHtml(`Bruiloft ${p.partnerNamen}`, inhoud) }
+  return { subject, html: baseHtml(`Bruiloft ${escapeHtml(p.partnerNamen)}`, inhoud) }
 }
 
 // --- Herinneringen-digest --------------------------------------------------
@@ -162,7 +171,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
        <table width="100%" cellpadding="0" cellspacing="0">
          ${p.taken
            .map((t) =>
-             reminderRegel(t.titel, `Deadline ${formatDatumNL(t.deadline)} · ${dagLabel(t.dagen)}`)
+             reminderRegel(escapeHtml(t.titel), `Deadline ${formatDatumNL(t.deadline)} · ${dagLabel(t.dagen)}`)
            )
            .join('')}
        </table>`
@@ -174,7 +183,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
          ${p.betalingen
            .map((b) =>
              reminderRegel(
-               `${b.omschrijving || 'Betaaltermijn'} — ${formatEuro(b.bedrag)}`,
+               `${escapeHtml(b.omschrijving || 'Betaaltermijn')} — ${formatEuro(b.bedrag)}`,
                `Vervalt ${formatDatumNL(b.vervaldatum)} · ${dagLabel(b.dagen)}`
              )
            )
@@ -184,11 +193,11 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
 
   const inhoud = `
     <p style="margin:0 0 8px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Hoi <strong>${p.ontvangerNaam || 'daar'}</strong>,
+      Hoi <strong>${escapeHtml(p.ontvangerNaam || 'daar')}</strong>,
     </p>
     <p style="margin:0 0 8px;font-size:15px;color:#57534e;line-height:1.6;">
       Een vriendelijke herinnering voor de planning van de bruiloft van
-      <strong>${p.partnerNamen}</strong>. Dit staat er binnenkort aan te komen:
+      <strong>${escapeHtml(p.partnerNamen)}</strong>. Dit staat er binnenkort aan te komen:
     </p>
     ${takenBlok}
     ${betalingenBlok}
@@ -222,10 +231,10 @@ export function renderRegistryReservationGuestEmail(p: RegistryReservationGuestE
     : ''
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Hoi <strong>${p.guestName}</strong>,
+      Hoi <strong>${escapeHtml(p.guestName)}</strong>,
     </p>
     <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
-      Je hebt <strong>${p.itemTitle}</strong> gereserveerd voor de bruiloft van <strong>${p.coupleNames}</strong>${datumRegel ? ' ' + datumRegel : ''}.
+      Je hebt <strong>${escapeHtml(p.itemTitle)}</strong> gereserveerd voor de bruiloft van <strong>${escapeHtml(p.coupleNames)}</strong>${datumRegel ? ' ' + datumRegel : ''}.
     </p>
     ${shopLink}
     <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
@@ -233,7 +242,7 @@ export function renderRegistryReservationGuestEmail(p: RegistryReservationGuestE
     </p>
     ${ctaKnop(p.cancelUrl, 'Reservering annuleren')}
     <p style="margin:16px 0 0;font-size:13px;color:#9f6271;line-height:1.6;">
-      Hartelijk bedankt — <strong>${p.coupleNames}</strong> zijn blij met jullie betrokkenheid!
+      Hartelijk bedankt — <strong>${escapeHtml(p.coupleNames)}</strong> zijn blij met jullie betrokkenheid!
     </p>
   `
   return baseHtml('Cadeau gereserveerd', inhoud)
@@ -251,7 +260,7 @@ export function renderRegistryNewReservationCoupleEmail(p: RegistryNewReservatio
       Goed nieuws!
     </p>
     <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
-      <strong>${p.guestName}</strong> heeft <strong>${p.itemTitle}</strong> gereserveerd op jullie cadeaulijst.
+      <strong>${escapeHtml(p.guestName)}</strong> heeft <strong>${escapeHtml(p.itemTitle)}</strong> gereserveerd op jullie cadeaulijst.
     </p>
     ${ctaKnop(p.dashboardUrl, 'Bekijk cadeaulijst')}
   `
@@ -279,10 +288,10 @@ export function renderRegistryContributionPendingEmail(p: RegistryContributionPe
        </p>`
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Hoi <strong>${p.guestName}</strong>,
+      Hoi <strong>${escapeHtml(p.guestName)}</strong>,
     </p>
     <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
-      Bedankt! Je bijdrage van <strong>${bedrag}</strong> aan <strong>'${p.itemTitle}'</strong> is geregistreerd.
+      Bedankt! Je bijdrage van <strong>${bedrag}</strong> aan <strong>'${escapeHtml(p.itemTitle)}'</strong> is geregistreerd.
     </p>
     ${betalingsinstructie}
     <p style="margin:16px 0 0;font-size:13px;color:#9f6271;line-height:1.6;">
@@ -303,11 +312,11 @@ export function renderRegistryContributionConfirmedEmail(p: RegistryContribution
   const bedrag = formatEuro(p.amountCents / 100)
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Hoi <strong>${p.guestName}</strong>,
+      Hoi <strong>${escapeHtml(p.guestName)}</strong>,
     </p>
     <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
-      <strong>${p.coupleNames}</strong> hebben je bijdrage van <strong>${bedrag}</strong> aan
-      <strong>'${p.itemTitle}'</strong> bevestigd. Dankjewel!
+      <strong>${escapeHtml(p.coupleNames)}</strong> hebben je bijdrage van <strong>${bedrag}</strong> aan
+      <strong>'${escapeHtml(p.itemTitle)}'</strong> bevestigd. Dankjewel!
     </p>
     <p style="margin:0;font-size:15px;color:#57534e;line-height:1.6;">
       Jullie bijdrage wordt enorm gewaardeerd.
@@ -332,8 +341,8 @@ export function renderRegistryNewContributionCoupleEmail(p: RegistryNewContribut
       Nieuwe bijdrage ontvangen!
     </p>
     <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
-      <strong>${p.guestName}</strong> heeft <strong>${bedrag}</strong> bijgedragen aan
-      <strong>'${p.itemTitle}'</strong>.
+      <strong>${escapeHtml(p.guestName)}</strong> heeft <strong>${bedrag}</strong> bijgedragen aan
+      <strong>'${escapeHtml(p.itemTitle)}'</strong>.
     </p>
     <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
       Totaal voor dit fonds: <strong>${totaal}</strong>

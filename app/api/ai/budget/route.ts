@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import {
@@ -76,18 +77,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  let body: { weddingId: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Ongeldige request' }, { status: 400 })
+  const rawBody = await request.json().catch(() => null)
+  const bodyParsed = z.object({ weddingId: z.string().uuid() }).safeParse(rawBody)
+  if (!bodyParsed.success) {
+    return NextResponse.json({ error: 'Ongeldige of ontbrekende weddingId' }, { status: 400 })
   }
-
-  if (!body.weddingId) {
-    return NextResponse.json({ error: 'weddingId ontbreekt' }, { status: 400 })
-  }
-
-  const { weddingId } = body
+  const { weddingId } = bodyParsed.data
 
   const { data: member } = await supabase
     .from('wedding_members')
@@ -105,7 +100,9 @@ export async function POST(request: NextRequest) {
     p_endpoint: 'budget',
     p_max_calls: 10,
   })
-  if (!rpcError && !allowed) {
+  if (rpcError) {
+    console.warn('[ai/budget] ai_rate_limit_increment niet beschikbaar:', rpcError.message)
+  } else if (!allowed) {
     return NextResponse.json(
       { error: 'Te veel verzoeken, probeer het over een uur opnieuw.' },
       { status: 429 }

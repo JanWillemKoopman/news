@@ -16,7 +16,21 @@ export async function PATCH(req: Request) {
   const parsed = z.object({
     displayName: z.string().max(100).optional(),
     email: z.string().email().optional(),
-    avatarUrl: z.string().url().nullable().optional(),
+    avatarUrl: z
+      .string()
+      .url()
+      .refine(
+        (url) => {
+          try {
+            return new URL(url).hostname.endsWith('.supabase.co')
+          } catch {
+            return false
+          }
+        },
+        { message: 'Avatar moet van Supabase Storage komen' }
+      )
+      .nullable()
+      .optional(),
     emailHerinneringen: z.boolean().optional(),
   }).safeParse(rawBody)
   if (!parsed.success) {
@@ -41,7 +55,7 @@ export async function PATCH(req: Request) {
     .update(profilePatch)
     .eq('id', user.id)
   if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 500 })
+    return NextResponse.json({ error: 'Profiel bijwerken mislukt' }, { status: 500 })
   }
 
   if (email !== undefined && email.trim().toLowerCase() !== user.email) {
@@ -49,7 +63,7 @@ export async function PATCH(req: Request) {
       email: email.trim().toLowerCase(),
     })
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 500 })
+      return NextResponse.json({ error: 'E-mailadres bijwerken mislukt' }, { status: 500 })
     }
   }
 
