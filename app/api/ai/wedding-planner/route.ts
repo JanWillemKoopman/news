@@ -51,23 +51,51 @@ export interface AIWeddingPlannerResponse {
   next_available_at: string
 }
 
-// ---- Rate limit -------------------------------------------------------------
+// ---- Cache-instellingen -----------------------------------------------------
 
-const COOLDOWN_MS = 10 * 60 * 1000 // 10 minuten
+// Minimale tijd tussen regeneraties (ook als data is veranderd).
+const MIN_COOLDOWN_MS = 60 * 60 * 1000       // 1 uur
+// Veiligheidsnet: cache nooit langer dan dit gebruiken.
+const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 dagen
 
-function nextAvailableAt(lastUpdatedAt: string | null): Date {
-  if (!lastUpdatedAt) return new Date()
-  return new Date(new Date(lastUpdatedAt).getTime() + COOLDOWN_MS)
+// In-memory rate limiter voor de handmatige Verversen-knop (max 3/uur).
+// De wedding planner doet 7 parallelle AI-calls, dus conservatiever dan advice.
+const rateMap = new Map<string, { count: number; reset: number }>()
+
+function checkRateLimit(weddingId: string): boolean {
+  const now = Date.now()
+  const entry = rateMap.get(weddingId)
+  if (!entry || now > entry.reset) {
+    rateMap.set(weddingId, { count: 1, reset: now + 60 * 60 * 1000 })
+    return true
+  }
+  if (entry.count >= 3) return false
+  entry.count++
+  return true
 }
 
-function isWithinCooldown(lastUpdatedAt: string | null): boolean {
-  if (!lastUpdatedAt) return false
-  return Date.now() < new Date(lastUpdatedAt).getTime() + COOLDOWN_MS
+// ---- Vingerafdruk -----------------------------------------------------------
+
+type AIWeddingContext = ReturnType<typeof buildAIContext>
+
+function buildFingerprint(ctx: AIWeddingContext): string {
+  const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
+  return [
+    ctx.bruidspaar.trouwdatum,
+    ctx.bruidspaar.locatie,
+    ctx.taken.open,
+    ctx.taken.klaar,
+    ctx.taken.achterstallig,
+    Math.round(ctx.budget.betaald),
+    Math.round(ctx.budget.resterend),
+    ctx.gasten.totaal,
+    ctx.gasten.bevestigd,
+    geboekt,
+    ctx.draaiboek.aantalItems,
+  ].join(':')
 }
 
 // ---- Prompt builders --------------------------------------------------------
-
-type AIWeddingContext = ReturnType<typeof buildAIContext>
 
 const PLANNER_PERSONA = `Je bent een professionele, empathische maar daadkrachtige Nederlandse trouwplanner met 15 jaar ervaring. Je helpt koppels stap voor stap hun droombruiloft te organiseren. Je schrijft in het Nederlands, persoonlijk en warm maar ook concreet en to-the-point. Geef nooit vage adviezen — wees altijd specifiek en stuur het koppel aan tot actie.`
 
@@ -183,14 +211,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI niet geconfigureerd' }, { status: 503 })
   }
 
-  // Auth
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  let body: { weddingId: string; onlyFetchCache?: boolean }
+  let body: { weddingId: string; force?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -215,31 +242,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  // Lees bestaande cache (tabel bestaat niet in database.types.ts, vandaar de cast)
+  // Lees bestaande cache
   const { data: cacheRow } = await (supabase as any)
     .from('ai_wedding_planner_cache')
-    .select('cached_advice, last_updated_at')
+    .select('cached_advice, data_fingerprint, last_updated_at')
     .eq('wedding_id', weddingId)
     .single()
 
-  const lastUpdatedAt = cacheRow?.last_updated_at ?? null
-  const nextAvailable = nextAvailableAt(lastUpdatedAt)
+  const now = Date.now()
 
-  // Als alleen cache ophalen of binnen cooldown: retourneer gecachede data
-  if (body.onlyFetchCache || isWithinCooldown(lastUpdatedAt)) {
-    const advies =
-      cacheRow && Object.keys(cacheRow.cached_advice).length > 0
-        ? (cacheRow.cached_advice as AIWeddingPlannerAdvies)
-        : null
-    return NextResponse.json({
-      advies,
-      cached: true,
-      next_available_at: nextAvailable.toISOString(),
-    } satisfies AIWeddingPlannerResponse)
-  }
-
-  // Haal alle bruiloftdata op via de geauthenticeerde client.
-  // De gebruiker is al geverifieerd als lid; RLS geeft leesstoegang tot alle data.
+  // Haal alle bruiloftdata op — nodig voor de vingerafdruk én voor generatie.
   const [
     { data: weddingRow },
     { data: taskRows },
@@ -271,6 +283,37 @@ export async function POST(request: NextRequest) {
   const websiteContent = websiteRow ? websiteContentFromRow(websiteRow) : null
 
   const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
+  const fingerprint = buildFingerprint(context)
+
+  // Bepaal of de cache geldig is
+  if (cacheRow && !body.force) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    const fingerprintMatch = cacheRow.data_fingerprint === fingerprint
+    const withinCooldown = cacheAge < MIN_COOLDOWN_MS
+    const cacheValid = cacheAge < MAX_CACHE_AGE_MS
+
+    if (cacheValid && (fingerprintMatch || withinCooldown)) {
+      const nextAvailableAt = new Date(new Date(cacheRow.last_updated_at).getTime() + MIN_COOLDOWN_MS)
+      return NextResponse.json({
+        advies: cacheRow.cached_advice as AIWeddingPlannerAdvies,
+        cached: true,
+        next_available_at: nextAvailableAt.toISOString(),
+      } satisfies AIWeddingPlannerResponse)
+    }
+  }
+
+  // Rate limit voor handmatig verversen
+  if (body.force && !checkRateLimit(weddingId)) {
+    if (cacheRow?.cached_advice) {
+      const nextAvailableAt = new Date(now + MIN_COOLDOWN_MS)
+      return NextResponse.json({
+        advies: cacheRow.cached_advice as AIWeddingPlannerAdvies,
+        cached: true,
+        next_available_at: nextAvailableAt.toISOString(),
+      } satisfies AIWeddingPlannerResponse)
+    }
+    return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
+  }
 
   // 7 parallelle Gemini-aanroepen
   try {
@@ -300,22 +343,34 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date().toISOString(),
     }
 
-    // Sla op in cache
-    const now = new Date().toISOString()
+    const updatedAt = new Date().toISOString()
     await (supabase as any)
       .from('ai_wedding_planner_cache')
       .upsert(
-        { wedding_id: weddingId, cached_advice: advies, last_updated_at: now },
+        {
+          wedding_id: weddingId,
+          cached_advice: advies,
+          data_fingerprint: fingerprint,
+          last_updated_at: updatedAt,
+        },
         { onConflict: 'wedding_id' }
       )
 
     return NextResponse.json({
       advies,
       cached: false,
-      next_available_at: new Date(Date.now() + COOLDOWN_MS).toISOString(),
+      next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
     } satisfies AIWeddingPlannerResponse)
   } catch (err) {
     console.error('[api/ai/wedding-planner] Gemini fout:', err)
+    // Retourneer stale cache als fallback bij een AI-fout
+    if (cacheRow?.cached_advice) {
+      return NextResponse.json({
+        advies: cacheRow.cached_advice as AIWeddingPlannerAdvies,
+        cached: true,
+        next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
+      } satisfies AIWeddingPlannerResponse)
+    }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
 }

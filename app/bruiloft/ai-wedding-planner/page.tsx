@@ -215,7 +215,7 @@ export default function AIWeddingPlannerPage() {
   const weddingId = wedding?.id
 
   const fetchAdvies = React.useCallback(
-    async (onlyCache: boolean) => {
+    async (force: boolean) => {
       if (!weddingId) return
       setLoading(true)
       setFout(null)
@@ -223,7 +223,7 @@ export default function AIWeddingPlannerPage() {
         const res = await fetch('/api/ai/wedding-planner', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weddingId, onlyFetchCache: onlyCache }),
+          body: JSON.stringify({ weddingId, force }),
         })
         if (!res.ok) {
           const err = await res.json().catch(() => ({}))
@@ -245,7 +245,7 @@ export default function AIWeddingPlannerPage() {
   )
 
   React.useEffect(() => {
-    fetchAdvies(true)
+    fetchAdvies(false)
   }, [fetchAdvies])
 
   const now = Date.now()
@@ -281,8 +281,10 @@ export default function AIWeddingPlannerPage() {
           {cachedAt && <span>Laatste update: {formatTijdstip(cachedAt)}</span>}
           {isRateLimited && (
             <span className="text-amber-600">
-              · Verversen mogelijk over{' '}
-              {minuten(resterendeMs)} {minuten(resterendeMs) === 1 ? 'minuut' : 'minuten'}.
+              · Handmatig verversen mogelijk over{' '}
+              {minuten(resterendeMs) >= 60
+                ? `${Math.ceil(minuten(resterendeMs) / 60)} uur`
+                : `${minuten(resterendeMs)} ${minuten(resterendeMs) === 1 ? 'minuut' : 'minuten'}`}.
             </span>
           )}
           {fout && <span className="text-rose-600">· {fout}</span>}
@@ -304,9 +306,10 @@ export default function AIWeddingPlannerPage() {
                 de volgende stap is.
               </p>
               <p>
-                Klik op <strong className="text-foreground">"Ververs advies"</strong> om de
-                analyse te starten. Dit kan elke 10 minuten opnieuw. Het resultaat wordt
-                opgeslagen zodat je het altijd terug kunt lezen.
+                Het advies wordt automatisch bijgewerkt wanneer jullie planningsdata verandert.
+                Met de knop <strong className="text-foreground">"Ververs advies"</strong> kun
+                je handmatig een nieuwe analyse aanvragen (maximaal 3× per uur). Het resultaat
+                wordt opgeslagen zodat je het altijd terug kunt lezen.
               </p>
             </CardContent>
           </Card>
