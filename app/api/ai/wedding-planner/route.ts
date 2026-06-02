@@ -215,9 +215,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  // Lees bestaande cache
-  const { data: cacheRow } = await supabase
-    .from('ai_wedding_planner_cache' as any)
+  // Lees bestaande cache (tabel bestaat niet in database.types.ts, vandaar de cast)
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_wedding_planner_cache')
     .select('cached_advice, last_updated_at')
     .eq('wedding_id', weddingId)
     .single()
