@@ -29,9 +29,11 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   normaal: 'Plannen',
 }
 
-// Module-level cache: blijft actief voor de levensduur van de browser-sessie.
+// Sessiecache: voorkomt onnodige server-roundtrips bij navigatie binnen dezelfde tab.
+// De DB-cache in api/ai/advice handelt persistente caching af; dit is alleen de
+// in-memory laag voor de huidige browsersessie.
 const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number }>()
-const CACHE_TTL = 10 * 60 * 1000 // 10 minuten
+const CACHE_TTL = 60 * 60 * 1000 // 1 uur
 
 function useFetchAIAdvies(weddingId: string | null) {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -73,7 +75,7 @@ function useFetchAIAdvies(weddingId: string | null) {
         const res = await window.fetch('/api/ai/advice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context, weddingId }),
+          body: JSON.stringify({ context, weddingId, force: forceRefresh }),
         })
         if (!res.ok) throw new Error(await res.text())
         const json = await res.json()
