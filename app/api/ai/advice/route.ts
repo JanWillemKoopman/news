@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,12 @@ export interface AIAdvies {
   sectionLabel: string
 }
 
-// Eenvoudige in-memory rate limiter: max 20 calls per uur per wedding.
+// 1 uur cooldown tussen regeneraties (ook als data veranderd is).
+const MIN_COOLDOWN_MS = 60 * 60 * 1000
+// 7 dagen veiligheidsnet: cache nooit langer dan dit gebruiken.
+const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
+
+// In-memory rate limiter voor de handmatige Verversen-knop (max 5/uur).
 const rateMap = new Map<string, { count: number; reset: number }>()
 
 function checkRateLimit(weddingId: string): boolean {
@@ -25,9 +31,27 @@ function checkRateLimit(weddingId: string): boolean {
     rateMap.set(weddingId, { count: 1, reset: now + 60 * 60 * 1000 })
     return true
   }
-  if (entry.count >= 20) return false
+  if (entry.count >= 5) return false
   entry.count++
   return true
+}
+
+// Vingerafdruk van de planningsdata — verandert alleen als de inhoud verandert.
+function buildFingerprint(ctx: AIWeddingContext): string {
+  const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
+  return [
+    ctx.bruidspaar.trouwdatum,
+    ctx.bruidspaar.locatie,
+    ctx.taken.open,
+    ctx.taken.klaar,
+    ctx.taken.achterstallig,
+    Math.round(ctx.budget.betaald),
+    Math.round(ctx.budget.resterend),
+    ctx.gasten.totaal,
+    ctx.gasten.bevestigd,
+    geboekt,
+    ctx.draaiboek.aantalItems,
+  ].join(':')
 }
 
 function buildPrompt(ctx: AIWeddingContext): string {
@@ -70,7 +94,6 @@ Geef ALLEEN een JSON-array terug, geen andere tekst, in dit formaat:
 }
 
 function parseAdvies(text: string): AIAdvies[] {
-  // Verwijder eventuele markdown code blocks
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
   const parsed = JSON.parse(cleaned)
   if (!Array.isArray(parsed)) return []
@@ -91,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI niet geconfigureerd' }, { status: 503 })
   }
 
-  let body: { context: AIWeddingContext; weddingId: string }
+  let body: { context: AIWeddingContext; weddingId: string; force?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -102,21 +125,66 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ontbrekende context of weddingId' }, { status: 400 })
   }
 
+  const supabase = await createClient()
+  const fingerprint = buildFingerprint(body.context)
+  const now = Date.now()
+
+  // Lees DB-cache
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_advice_cache')
+    .select('cached_advies, data_fingerprint, last_updated_at')
+    .eq('wedding_id', body.weddingId)
+    .single()
+
+  if (cacheRow && !body.force) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    const fingerprintMatch = cacheRow.data_fingerprint === fingerprint
+    const withinCooldown = cacheAge < MIN_COOLDOWN_MS
+    const cacheValid = cacheAge < MAX_CACHE_AGE_MS
+
+    // Retourneer cache als: vingerafdruk onveranderd OF nog binnen cooldown
+    if (cacheValid && (fingerprintMatch || withinCooldown)) {
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+    }
+  }
+
   if (!checkRateLimit(body.weddingId)) {
+    // Bij rate-limit: retourneer stale cache als die er is
+    if (cacheRow?.cached_advies?.length > 0) {
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+    }
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
     const result = await model.generateContent(buildPrompt(body.context))
     const advies = parseAdvies(result.response.text())
-    return NextResponse.json({ advies })
+
+    // Sla op in DB-cache
+    await (supabase as any)
+      .from('ai_advice_cache')
+      .upsert(
+        {
+          wedding_id: body.weddingId,
+          cached_advies: advies,
+          data_fingerprint: fingerprint,
+          last_updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'wedding_id' }
+      )
+
+    return NextResponse.json({ advies, cached: false })
   } catch (err) {
     console.error('[api/ai/advice] Gemini fout:', err)
+    // Retourneer stale cache als fallback bij een AI-fout
+    if (cacheRow?.cached_advies?.length > 0) {
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+    }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
 }
