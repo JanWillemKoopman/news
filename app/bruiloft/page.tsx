@@ -64,7 +64,7 @@ export default function DashboardPage() {
           <Settings2 className="h-5 w-5" />
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
-          <p className="text-2xl font-medium text-[#101828] md:text-3xl">
+          <p className="text-2xl md:text-3xl lg:text-lg font-medium text-[#101828]">
             {wedding.partner1Naam} <span>&amp;</span>{' '}
             {wedding.partner2Naam}
           </p>
