@@ -137,6 +137,7 @@ interface BruiloftActions {
   bulkDeleteTasks: (ids: ID[]) => Promise<void>
   toggleSubtaak: (taskId: ID, subtaakId: string) => Promise<void>
   addTemplateMissing: (titels: string[]) => Promise<void>
+  addAITaken: (taken: NewTask[]) => Promise<void>
 
   addVendor: (data: NewVendor) => Promise<void>
   updateVendor: (id: ID, patch: Partial<VendorInput>) => Promise<void>
@@ -806,6 +807,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           subtaken: [],
         }
       })
+      const created = await repository.createTasks(inputs)
+      set({ tasks: [...get().tasks, ...created] })
+    },
+
+    addAITaken: async (taken) => {
+      const wedding = get().wedding
+      if (!wedding || taken.length === 0) return
+      const inputs: TaskInput[] = taken.map((t) => ({
+        ...t,
+        weddingId: wedding.id,
+        tijdsblok: deriveTijdsblok(t.deadline, wedding.trouwdatum),
+      }))
       const created = await repository.createTasks(inputs)
       set({ tasks: [...get().tasks, ...created] })
     },
