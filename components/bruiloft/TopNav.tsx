@@ -74,8 +74,8 @@ export function TopNav() {
               'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-header-active text-white'
-                : 'text-white/80 hover:bg-header-active/70 hover:text-white'
+                ? 'bg-rose-600 text-white'
+                : 'bg-rose-600/80 text-white hover:bg-rose-500'
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
@@ -88,13 +88,14 @@ export function TopNav() {
             href="/bruiloft/ai-wedding-planner"
             aria-label="AI wedding planner"
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+              'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-header-active text-white'
-                : 'text-white/80 hover:bg-header-active/70 hover:text-white'
+                ? 'bg-rose-600 text-white'
+                : 'bg-rose-600/80 text-white hover:bg-rose-500'
             )}
           >
-            <Sparkles className="h-4 w-4" aria-hidden />
+            <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>AI planner</span>
           </Link>
           <UserMenu variant="dark" compact />
         </div>
