@@ -1175,71 +1175,30 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     saveRegistrySettings: async (patch) => {
       const wedding = get().wedding
       if (!wedding) return
-      const rawSupabase = createRawClient()
-      const current = get().registrySettings
 
-      const dbPatch = {
-        is_enabled: patch.isEnabled ?? current?.isEnabled ?? false,
-        password: patch.password !== undefined ? (patch.password || null) : (current?.password || null),
-        intro_text: patch.introText !== undefined ? patch.introText : (current?.introText ?? ''),
-        bank_account_iban: patch.bankAccountIban !== undefined ? patch.bankAccountIban : (current?.bankAccountIban ?? ''),
-        bank_account_name: patch.bankAccountName !== undefined ? patch.bankAccountName : (current?.bankAccountName ?? ''),
-        thema: patch.thema !== undefined ? patch.thema : (current?.thema ?? 'klassiek'),
-        kleur_accent: patch.kleurAccent !== undefined ? patch.kleurAccent : (current?.kleurAccent ?? '#a75573'),
-        kop_lettertype: patch.kopLettertype !== undefined ? patch.kopLettertype : (current?.kopLettertype ?? 'cormorant'),
-        updated_at: new Date().toISOString(),
-      }
-
-      if (current) {
-        const { data, error } = await rawSupabase
-          .from('registry_settings')
-          .update(dbPatch)
-          .eq('id', current.id)
-          .select()
-          .single()
-        if (error) throw error
-        const r = data as unknown as Record<string, unknown>
-        set({
-          registrySettings: {
-            id: r.id as string,
-            weddingId: r.wedding_id as string,
-            isEnabled: r.is_enabled as boolean,
-            password: (r.password as string) ?? '',
-            introText: (r.intro_text as string) ?? '',
-            bankAccountIban: (r.bank_account_iban as string) ?? '',
-            bankAccountName: (r.bank_account_name as string) ?? '',
-            thema: ((r.thema as string) ?? 'klassiek') as WeddingThema,
-            kleurAccent: (r.kleur_accent as string) ?? '#a75573',
-            kopLettertype: ((r.kop_lettertype as string) ?? 'cormorant') as WeddingLettertype,
-            createdAt: r.created_at as string,
-            updatedAt: r.updated_at as string,
-          },
-        })
-      } else {
-        const { data, error } = await rawSupabase
-          .from('registry_settings')
-          .insert({ wedding_id: wedding.id, ...dbPatch })
-          .select()
-          .single()
-        if (error) throw error
-        const r = data as unknown as Record<string, unknown>
-        set({
-          registrySettings: {
-            id: r.id as string,
-            weddingId: r.wedding_id as string,
-            isEnabled: r.is_enabled as boolean,
-            password: (r.password as string) ?? '',
-            introText: (r.intro_text as string) ?? '',
-            bankAccountIban: (r.bank_account_iban as string) ?? '',
-            bankAccountName: (r.bank_account_name as string) ?? '',
-            thema: ((r.thema as string) ?? 'klassiek') as WeddingThema,
-            kleurAccent: (r.kleur_accent as string) ?? '#a75573',
-            kopLettertype: ((r.kop_lettertype as string) ?? 'cormorant') as WeddingLettertype,
-            createdAt: r.created_at as string,
-            updatedAt: r.updated_at as string,
-          },
-        })
-      }
+      const res = await fetch('/api/registry/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weddingId: wedding.id, ...patch }),
+      })
+      if (!res.ok) throw new Error('Instellingen opslaan mislukt')
+      const r = await res.json()
+      set({
+        registrySettings: {
+          id: r.id as string,
+          weddingId: r.weddingId as string,
+          isEnabled: r.isEnabled as boolean,
+          password: r.password as string,
+          introText: (r.introText as string) ?? '',
+          bankAccountIban: (r.bankAccountIban as string) ?? '',
+          bankAccountName: (r.bankAccountName as string) ?? '',
+          thema: ((r.thema as string) ?? 'klassiek') as import('@/lib/bruiloft/types').WeddingThema,
+          kleurAccent: (r.kleurAccent as string) ?? '#a75573',
+          kopLettertype: ((r.kopLettertype as string) ?? 'cormorant') as import('@/lib/bruiloft/types').WeddingLettertype,
+          createdAt: r.createdAt as string,
+          updatedAt: r.updatedAt as string,
+        },
+      })
     },
 
     addRegistryItem: async (data) => {

@@ -1,5 +1,14 @@
 import { dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 export interface InviteEmailProps {
   uitnodigerNamen: string
   rolLabel: string
@@ -69,7 +78,7 @@ export function renderInviteEmail(p: InviteEmailProps): { subject: string; html:
   const subject = 'Je bent uitgenodigd om mee te plannen — Ons Trouwplan'
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      <strong>${p.uitnodigerNamen}</strong> nodigt je uit om als <strong>${p.rolLabel}</strong>
+      <strong>${escapeHtml(p.uitnodigerNamen)}</strong> nodigt je uit om als <strong>${escapeHtml(p.rolLabel)}</strong>
       mee te helpen plannen op Ons Trouwplan.
     </p>
     <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
@@ -78,7 +87,7 @@ export function renderInviteEmail(p: InviteEmailProps): { subject: string; html:
     </p>
     ${ctaKnop(p.accepteerUrl, 'Uitnodiging accepteren')}
     <p style="margin:0 0 8px;font-size:13px;color:#a8a29e;">
-      Deze uitnodiging verloopt op <strong>${p.verloopdatum}</strong>.
+      Deze uitnodiging verloopt op <strong>${escapeHtml(p.verloopdatum)}</strong>.
     </p>
     <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
       Of kopieer deze link handmatig:<br />
@@ -94,14 +103,14 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
     ? `<p style="margin:0 0 8px;font-size:15px;color:#57534e;">📅 <strong>Datum:</strong> ${formatDatumNL(p.trouwdatum)}</p>`
     : ''
   const locatieRegel = p.locatie
-    ? `<p style="margin:0 0 24px;font-size:15px;color:#57534e;">📍 <strong>Locatie:</strong> ${p.locatie}</p>`
+    ? `<p style="margin:0 0 24px;font-size:15px;color:#57534e;">📍 <strong>Locatie:</strong> ${escapeHtml(p.locatie)}</p>`
     : '<p style="margin:0 0 24px;"></p>'
   const inhoud = `
     <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Beste <strong>${p.gastVoornaam}</strong>,
+      Beste <strong>${escapeHtml(p.gastVoornaam)}</strong>,
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:#57534e;line-height:1.6;">
-      Je bent uitgenodigd voor de bruiloft van <strong>${p.partnerNamen}</strong>!
+      Je bent uitgenodigd voor de bruiloft van <strong>${escapeHtml(p.partnerNamen)}</strong>!
       We horen graag of je erbij kunt zijn.
     </p>
     ${datumRegel}
@@ -115,7 +124,7 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
       Deze link is persoonlijk en uniek voor jou.
     </p>
   `
-  return { subject, html: baseHtml(`Bruiloft ${p.partnerNamen}`, inhoud) }
+  return { subject, html: baseHtml(`Bruiloft ${escapeHtml(p.partnerNamen)}`, inhoud) }
 }
 
 // --- Herinneringen-digest --------------------------------------------------
@@ -162,7 +171,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
        <table width="100%" cellpadding="0" cellspacing="0">
          ${p.taken
            .map((t) =>
-             reminderRegel(t.titel, `Deadline ${formatDatumNL(t.deadline)} · ${dagLabel(t.dagen)}`)
+             reminderRegel(escapeHtml(t.titel), `Deadline ${formatDatumNL(t.deadline)} · ${dagLabel(t.dagen)}`)
            )
            .join('')}
        </table>`
@@ -174,7 +183,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
          ${p.betalingen
            .map((b) =>
              reminderRegel(
-               `${b.omschrijving || 'Betaaltermijn'} — ${formatEuro(b.bedrag)}`,
+               `${escapeHtml(b.omschrijving || 'Betaaltermijn')} — ${formatEuro(b.bedrag)}`,
                `Vervalt ${formatDatumNL(b.vervaldatum)} · ${dagLabel(b.dagen)}`
              )
            )
@@ -184,11 +193,11 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
 
   const inhoud = `
     <p style="margin:0 0 8px;font-size:16px;color:#1c1917;line-height:1.6;">
-      Hoi <strong>${p.ontvangerNaam || 'daar'}</strong>,
+      Hoi <strong>${escapeHtml(p.ontvangerNaam || 'daar')}</strong>,
     </p>
     <p style="margin:0 0 8px;font-size:15px;color:#57534e;line-height:1.6;">
       Een vriendelijke herinnering voor de planning van de bruiloft van
-      <strong>${p.partnerNamen}</strong>. Dit staat er binnenkort aan te komen:
+      <strong>${escapeHtml(p.partnerNamen)}</strong>. Dit staat er binnenkort aan te komen:
     </p>
     ${takenBlok}
     ${betalingenBlok}
