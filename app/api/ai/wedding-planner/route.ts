@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import {
@@ -19,6 +20,7 @@ import {
   websiteContentFromRow,
 } from '@/lib/bruiloft/mappers'
 import { createClient } from '@/lib/supabase/server'
+import type { Json } from '@/lib/supabase/database.types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -202,18 +204,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
-  let body: { weddingId: string; onlyFetchCache?: boolean }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Ongeldige request' }, { status: 400 })
+  const rawBody = await request.json().catch(() => null)
+  const bodyParsed = z.object({
+    weddingId: z.string().uuid(),
+    onlyFetchCache: z.boolean().optional(),
+  }).safeParse(rawBody)
+  if (!bodyParsed.success) {
+    return NextResponse.json({ error: 'Ongeldige of ontbrekende weddingId' }, { status: 400 })
   }
-
-  if (!body.weddingId) {
-    return NextResponse.json({ error: 'weddingId ontbreekt' }, { status: 400 })
-  }
-
-  const { weddingId } = body
+  const { weddingId, onlyFetchCache } = bodyParsed.data
 
   // Verificeer lidmaatschap
   const { data: member } = await supabase
@@ -227,6 +226,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
+  const { data: allowed, error: rpcError } = await supabase.rpc('ai_rate_limit_increment', {
+    p_wedding_id: weddingId,
+    p_endpoint: 'wedding-planner',
+    p_max_calls: 10,
+  })
+  if (rpcError) {
+    console.warn('[ai/wedding-planner] ai_rate_limit_increment niet beschikbaar:', rpcError.message)
+  } else if (!allowed) {
+    return NextResponse.json(
+      { error: 'Te veel verzoeken, probeer het over een uur opnieuw.' },
+      { status: 429 }
+    )
+  }
+
   const { data: cacheRow } = await supabase
     .from('ai_wedding_planner_cache')
     .select('cached_advice, last_updated_at')
@@ -237,7 +250,7 @@ export async function POST(request: NextRequest) {
   const nextAvailable = nextAvailableAt(lastUpdatedAt)
 
   // Als alleen cache ophalen of binnen cooldown: retourneer gecachede data
-  if (body.onlyFetchCache || isWithinCooldown(lastUpdatedAt)) {
+  if (onlyFetchCache || isWithinCooldown(lastUpdatedAt)) {
     const raw = cacheRow?.cached_advice
     const advies =
       raw && typeof raw === 'object' && !Array.isArray(raw) && 'globaal' in raw
@@ -339,7 +352,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('ai_wedding_planner_cache')
       .upsert(
-        { wedding_id: weddingId, cached_advice: advies as unknown as Record<string, unknown>, last_updated_at: now },
+        { wedding_id: weddingId, cached_advice: advies as unknown as Json, last_updated_at: now },
         { onConflict: 'wedding_id' }
       )
 
