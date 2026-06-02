@@ -124,7 +124,7 @@ Status-regels:
 Geef ALLEEN een JSON-object terug in dit exacte formaat:
 {
   "status": "op_schema|actie_vereist|kritiek|niet_gestart",
-  "globaal_advies": "2-3 zinnen over de status van dit onderdeel als professionele wedding planner",
+  "globaal_advies": "2-3 zinnen over de status van dit onderdeel als professionele wedding planner. Begin NOOIT met een aanhef of naam, maar spring direct in de inhoud.",
   "concrete_acties": [
     { "tekst": "Specifieke actie die het koppel moet ondernemen", "link": "/bruiloft/..." }
   ]
@@ -163,7 +163,7 @@ Status-regels:
 Geef ALLEEN een JSON-object terug:
 {
   "status": "op_schema|actie_vereist|kritiek",
-  "samenvatting": "3-4 zinnen als persoonlijke wedding planner. Spreek het koppel direct aan. Wees eerlijk maar motiverend.",
+  "samenvatting": "3-4 zinnen als persoonlijke wedding planner. Begin NOOIT met een aanhef of naam, maar spring direct in de inhoud. Spreek het koppel aan als 'jullie'. Wees eerlijk maar motiverend.",
   "score": 0-100
 }`
 }
