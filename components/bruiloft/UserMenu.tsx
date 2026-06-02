@@ -124,22 +124,10 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             {initials}
           </span>
         )}
-        {!compact ? (
-          <>
-            <span
-              className={cn(
-                'hidden max-w-[12ch] truncate text-sm font-medium sm:inline',
-                dark ? 'text-white' : 'text-foreground'
-              )}
-            >
-              {displayLabel}
-            </span>
-            <ChevronDown
-              className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
-              aria-hidden
-            />
-          </>
-        ) : null}
+        <ChevronDown
+          className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
+          aria-hidden
+        />
       </button>
 
       {open ? (
