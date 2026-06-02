@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import {
+  withRetry,
+  withTimeout,
+  extractJSON,
+  moduleAdviesSchema,
+  globaleStatusSchema,
+} from '@/lib/bruiloft/aiUtils'
+import {
   budgetItemFromRow,
   guestFromRow,
   scheduleItemFromRow,
@@ -168,12 +175,17 @@ Geef ALLEEN een JSON-object terug:
 }`
 }
 
-// ---- JSON parser ------------------------------------------------------------
+// ---- Fallback voor mislukte module-analyses ---------------------------------
 
-function parseJSON<T>(text: string): T {
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-  return JSON.parse(cleaned) as T
+function fallbackModuleAdvies(): AIModuleAdvies {
+  return {
+    status: 'niet_gestart',
+    globaal_advies: 'Analyse tijdelijk niet beschikbaar.',
+    concrete_acties: [],
+  }
 }
+
+const GEMINI_TIMEOUT = 20_000
 
 // ---- Route handler ----------------------------------------------------------
 
@@ -215,8 +227,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  // Lees bestaande cache (tabel bestaat niet in database.types.ts, vandaar de cast)
-  const { data: cacheRow } = await (supabase as any)
+  const { data: cacheRow } = await supabase
     .from('ai_wedding_planner_cache')
     .select('cached_advice, last_updated_at')
     .eq('wedding_id', weddingId)
@@ -227,9 +238,10 @@ export async function POST(request: NextRequest) {
 
   // Als alleen cache ophalen of binnen cooldown: retourneer gecachede data
   if (body.onlyFetchCache || isWithinCooldown(lastUpdatedAt)) {
+    const raw = cacheRow?.cached_advice
     const advies =
-      cacheRow && Object.keys(cacheRow.cached_advice).length > 0
-        ? (cacheRow.cached_advice as AIWeddingPlannerAdvies)
+      raw && typeof raw === 'object' && !Array.isArray(raw) && 'globaal' in raw
+        ? (raw as unknown as AIWeddingPlannerAdvies)
         : null
     return NextResponse.json({
       advies,
@@ -272,27 +284,49 @@ export async function POST(request: NextRequest) {
 
   const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
 
-  // 7 parallelle Gemini-aanroepen
+  // 7 parallelle Gemini-aanroepen; individuele module-fouten worden afgevangen
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
 
     const moduleKeys: AIModuleKey[] = ['taken', 'budget', 'leveranciers', 'draaiboek', 'gasten', 'website']
 
-    const [moduleResults, globaalResult] = await Promise.all([
-      Promise.all(moduleKeys.map((key) => model.generateContent(buildModulePrompt(key, context)))),
-      model.generateContent(buildGlobaalPrompt(context)),
+    const [moduleSettled, globaalResult] = await Promise.all([
+      Promise.allSettled(
+        moduleKeys.map((key) =>
+          withRetry(() =>
+            withTimeout(model.generateContent(buildModulePrompt(key, context)), GEMINI_TIMEOUT)
+          )
+        )
+      ),
+      withRetry(() =>
+        withTimeout(model.generateContent(buildGlobaalPrompt(context)), GEMINI_TIMEOUT)
+      ),
     ])
 
     const modules = {} as Record<AIModuleKey, AIModuleAdvies>
     for (let i = 0; i < moduleKeys.length; i++) {
-      modules[moduleKeys[i]] = parseJSON<AIModuleAdvies>(moduleResults[i].response.text())
+      const r = moduleSettled[i]
+      if (r.status === 'fulfilled') {
+        try {
+          modules[moduleKeys[i]] = moduleAdviesSchema.parse(
+            JSON.parse(extractJSON(r.value.response.text()))
+          )
+        } catch {
+          modules[moduleKeys[i]] = fallbackModuleAdvies()
+        }
+      } else {
+        console.error(`[wedding-planner] Module '${moduleKeys[i]}' mislukt:`, r.reason)
+        modules[moduleKeys[i]] = fallbackModuleAdvies()
+      }
     }
 
-    const globaal = parseJSON<AIGlobaleStatus>(globaalResult.response.text())
+    const globaal = globaleStatusSchema.parse(
+      JSON.parse(extractJSON(globaalResult.response.text()))
+    )
 
     const advies: AIWeddingPlannerAdvies = {
       globaal,
@@ -302,10 +336,10 @@ export async function POST(request: NextRequest) {
 
     // Sla op in cache
     const now = new Date().toISOString()
-    await (supabase as any)
+    await supabase
       .from('ai_wedding_planner_cache')
       .upsert(
-        { wedding_id: weddingId, cached_advice: advies, last_updated_at: now },
+        { wedding_id: weddingId, cached_advice: advies as unknown as Record<string, unknown>, last_updated_at: now },
         { onConflict: 'wedding_id' }
       )
 

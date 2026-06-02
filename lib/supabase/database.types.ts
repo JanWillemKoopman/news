@@ -813,12 +813,55 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_wedding_planner_cache: {
+        Row: {
+          wedding_id: string
+          cached_advice: Json
+          last_updated_at: string
+        }
+        Insert: {
+          wedding_id: string
+          cached_advice?: Json
+          last_updated_at?: string
+        }
+        Update: {
+          wedding_id?: string
+          cached_advice?: Json
+          last_updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_rate_limits: {
+        Row: {
+          wedding_id: string
+          endpoint: string
+          hour_bucket: string
+          call_count: number
+        }
+        Insert: {
+          wedding_id: string
+          endpoint: string
+          hour_bucket: string
+          call_count?: number
+        }
+        Update: {
+          wedding_id?: string
+          endpoint?: string
+          hour_bucket?: string
+          call_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       accept_invite: { Args: { p_token: string }; Returns: string }
+      ai_rate_limit_increment: {
+        Args: { p_wedding_id: string; p_endpoint: string; p_max_calls: number }
+        Returns: boolean
+      }
       check_slug_available: { Args: { p_slug: string }; Returns: boolean }
       get_public_website: { Args: { p_slug: string }; Returns: Json }
       can_edit: {

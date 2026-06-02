@@ -102,10 +102,22 @@ export function buildAIContext(
   }
 
   const openTaken = tasks.filter((t) => t.status !== 'klaar')
-  const achterstallig = openTaken.filter((t) => dagenTot(t.deadline) < 0).length
+  const achterstallig = openTaken.filter((t) => t.deadline && dagenTot(t.deadline) < 0).length
+
+  const PRIO: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
   const urgenteTaken = openTaken
-    .slice()
-    .sort((a, b) => a.deadline.localeCompare(b.deadline))
+    .filter((t) => !!t.deadline)
+    .sort((a, b) => {
+      const dA = dagenTot(a.deadline)
+      const dB = dagenTot(b.deadline)
+      // Achterstallige taken eerst
+      if (dA < 0 !== dB < 0) return dA < 0 ? -1 : 1
+      // Dan op prioriteit
+      const pDiff = (PRIO[a.prioriteit] ?? 1) - (PRIO[b.prioriteit] ?? 1)
+      if (pDiff !== 0) return pDiff
+      // Dan op datum
+      return a.deadline.localeCompare(b.deadline)
+    })
     .slice(0, 7)
     .map((t) => ({
       titel: t.titel,

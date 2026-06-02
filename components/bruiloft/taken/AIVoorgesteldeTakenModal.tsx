@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react'
 
-import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { Button, Modal } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -31,11 +30,6 @@ export function AIVoorgesteldeTakenModal({
   wedding,
   onConfirm,
 }: AIVoorgesteldeTakenModalProps) {
-  const vendors = useBruiloftStore((s) => s.vendors)
-  const budgetItems = useBruiloftStore((s) => s.budgetItems)
-  const guests = useBruiloftStore((s) => s.guests)
-  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
-
   const [advies, setAdvies] = React.useState<AITakenAdvies | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -51,13 +45,10 @@ export function AIVoorgesteldeTakenModal({
     setError(null)
     setLoading(true)
 
-    const bestaandeTaken = tasks.map((t) => t.titel)
-    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
-
     fetch('/api/ai/taken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context, weddingId: wedding.id, bestaandeTaken }),
+      body: JSON.stringify({ weddingId: wedding.id }),
     })
       .then(async (res) => {
         if (!res.ok) {
