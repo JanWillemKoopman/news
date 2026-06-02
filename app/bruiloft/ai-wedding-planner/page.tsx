@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   CalendarClock,
   Globe,
-  Info,
   ListChecks,
   RefreshCw,
   Sparkles,
@@ -19,8 +18,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   EmptyState,
   Progress,
 } from '@/components/bruiloft/ui'
@@ -53,68 +50,86 @@ const MODULE_CONFIG: Array<{
 
 type ModuleStatus = AIModuleAdvies['status']
 
-const STATUS_CONFIG: Record<
-  ModuleStatus,
-  { label: string; className: string; dotClassName: string }
-> = {
-  op_schema: {
-    label: 'Op schema',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dotClassName: 'bg-emerald-500',
-  },
-  actie_vereist: {
-    label: 'Actie vereist',
-    className: 'bg-amber-50 text-amber-700 border-amber-200',
-    dotClassName: 'bg-amber-500',
-  },
-  kritiek: {
-    label: 'Kritiek',
-    className: 'bg-rose-50 text-rose-700 border-rose-200',
-    dotClassName: 'bg-rose-500',
-  },
-  niet_gestart: {
-    label: 'Niet gestart',
-    className: 'bg-gray-100 text-gray-500 border-gray-200',
-    dotClassName: 'bg-gray-400',
-  },
+const STATUS_CONFIG: Record<ModuleStatus, { label: string; dot: string; pill: string }> = {
+  op_schema:     { label: 'Op schema',     dot: 'bg-emerald-500', pill: 'text-emerald-700 bg-emerald-50' },
+  actie_vereist: { label: 'Actie vereist', dot: 'bg-amber-500',   pill: 'text-amber-700 bg-amber-50'   },
+  kritiek:       { label: 'Kritiek',       dot: 'bg-rose-500',    pill: 'text-rose-700 bg-rose-50'     },
+  niet_gestart:  { label: 'Niet gestart',  dot: 'bg-gray-300',    pill: 'text-gray-500 bg-gray-100'    },
 }
 
-function AIStatusBadge({ status }: { status: ModuleStatus }) {
+function StatusPill({ status }: { status: ModuleStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.niet_gestart
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-        cfg.className
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dotClassName)} />
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium', cfg.pill)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
   )
 }
 
-// ---- Skeleton ---------------------------------------------------------------
+// ---- Laadanimatie -----------------------------------------------------------
 
 function LaadAnimatie() {
   return (
-    <div className="flex flex-col items-center gap-4 py-16">
+    <div className="flex flex-col items-center gap-4 py-20">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 animate-pulse text-rose-400" aria-hidden />
         <span className="text-sm text-muted-foreground">AI analyseert jullie gegevens…</span>
       </div>
       <div className="flex gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
-        <span className="h-2 w-2 rounded-full bg-rose-400 animate-bounce [animation-delay:-0.15s]" />
-        <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-400 [animation-delay:-0.15s]" />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-500" />
       </div>
     </div>
   )
 }
 
-// ---- Module card ------------------------------------------------------------
+// ---- Globale status ---------------------------------------------------------
 
-function ModuleCard({
+function GlobaleStatusKaart({ advies }: { advies: AIWeddingPlannerAdvies }) {
+  const { globaal } = advies
+  const barColor =
+    globaal.score >= 65 ? '[&>div]:bg-emerald-500' :
+    globaal.score >= 35 ? '[&>div]:bg-amber-500' :
+    '[&>div]:bg-rose-500'
+
+  return (
+    <div className="mb-8 grid gap-6 md:grid-cols-[280px_1fr]">
+      <div className="pt-1">
+        <h2 className="text-base font-semibold text-foreground">Globaal overzicht</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Een samenvattend oordeel van de AI-planner over de algehele staat van jullie bruiloftplanning.
+        </p>
+      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <StatusPill status={globaal.status as ModuleStatus} />
+              <p className="pt-2 text-sm text-muted-foreground leading-relaxed">{globaal.samenvatting}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-3xl font-bold text-foreground">{globaal.score}</p>
+              <p className="text-xs text-muted-foreground">/ 100</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Planningsvoortgang</span>
+              <span>{globaal.score}%</span>
+            </div>
+            <Progress value={globaal.score} className={cn('h-1.5', barColor)} />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ---- Module kaart -----------------------------------------------------------
+
+function ModuleKaart({
   config,
   advies,
 }: {
@@ -123,114 +138,70 @@ function ModuleCard({
 }) {
   const Icon = config.icon
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-rhino-50">
-              <Icon className="h-4 w-4 text-rhino-700" aria-hidden />
-            </div>
-            <CardTitle className="text-base">{config.label}</CardTitle>
+    <div className="grid gap-6 border-t border-border pt-6 md:grid-cols-[280px_1fr]">
+      {/* Links: label + beschrijving */}
+      <div className="pt-1">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <h3 className="text-base font-semibold text-foreground">{config.label}</h3>
+        </div>
+        <div className="mt-2">
+          <StatusPill status={advies.status} />
+        </div>
+      </div>
+
+      {/* Rechts: witte kaart met advies */}
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <p className="text-sm text-muted-foreground leading-relaxed">{advies.globaal_advies}</p>
+
+          {advies.concrete_acties.length > 0 && (
+            <ul className="space-y-2 border-t border-border pt-4">
+              {advies.concrete_acties.map((actie, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                  {actie.link ? (
+                    <Link
+                      href={actie.link}
+                      className="text-foreground underline-offset-2 hover:text-rose-600 hover:underline"
+                    >
+                      {actie.tekst}
+                    </Link>
+                  ) : (
+                    <span className="text-foreground">{actie.tekst}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="border-t border-border pt-4">
+            <Button asChild variant="outline" size="sm">
+              <Link href={config.href}>Ga naar {config.label}</Link>
+            </Button>
           </div>
-          <AIStatusBadge status={advies.status} />
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{advies.globaal_advies}</p>
-
-        {advies.concrete_acties.length > 0 && (
-          <ul className="space-y-2">
-            {advies.concrete_acties.map((actie, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-                {actie.link ? (
-                  <Link href={actie.link} className="text-foreground underline-offset-2 hover:underline">
-                    {actie.tekst}
-                  </Link>
-                ) : (
-                  <span className="text-foreground">{actie.tekst}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="mt-auto pt-2">
-          <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href={config.href}>Ga naar {config.label}</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
-// ---- Globale status card ----------------------------------------------------
-
-function GlobaleStatusCard({ advies }: { advies: AIWeddingPlannerAdvies }) {
-  const { globaal } = advies
-  const statusCfg =
-    globaal.status === 'op_schema'
-      ? STATUS_CONFIG.op_schema
-      : globaal.status === 'kritiek'
-        ? STATUS_CONFIG.kritiek
-        : STATUS_CONFIG.actie_vereist
-
-  return (
-    <Card className="border-rhino-100 bg-gradient-to-br from-rhino-50 via-white to-rose-50">
-      <CardContent className="pt-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
-          {/* Score */}
-          <div className="flex flex-col items-center gap-2 sm:min-w-[120px]">
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-rhino-100 bg-white shadow-sm">
-              <span className="text-2xl font-bold text-rhino-800">{globaal.score}</span>
-              <span className="absolute bottom-3 text-xs text-muted-foreground">/100</span>
-            </div>
-            <AIStatusBadge status={globaal.status as ModuleStatus} />
-          </div>
-
-          {/* Tekst */}
-          <div className="flex-1 space-y-3">
-            <div>
-              <h2 className="font-serif text-lg text-foreground">Jouw planning in één oogopslag</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{globaal.samenvatting}</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Planningsvoortgang</span>
-                <span>{globaal.score}%</span>
-              </div>
-              <Progress
-                value={globaal.score}
-                className={cn(
-                  'h-2',
-                  globaal.score >= 65
-                    ? '[&>div]:bg-emerald-500'
-                    : globaal.score >= 35
-                      ? '[&>div]:bg-amber-500'
-                      : '[&>div]:bg-rose-500'
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ---- Hoofd pagina -----------------------------------------------------------
+// ---- Hulpfuncties -----------------------------------------------------------
 
 function formatTijdstip(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) +
+  return (
+    d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) +
     ' om ' +
     d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+  )
 }
 
-function minuten(ms: number): number {
+function minuten(ms: number) {
   return Math.ceil(ms / 60000)
 }
+
+// ---- Pagina -----------------------------------------------------------------
 
 export default function AIWeddingPlannerPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -273,7 +244,6 @@ export default function AIWeddingPlannerPage() {
     [weddingId]
   )
 
-  // Op mount: laad stil de cache
   React.useEffect(() => {
     fetchAdvies(true)
   }, [fetchAdvies])
@@ -288,7 +258,7 @@ export default function AIWeddingPlannerPage() {
     <div className="mx-auto max-w-5xl">
       <PageHeader
         titel="AI Wedding Planner"
-        beschrijving="Professioneel advies voor elk onderdeel van jullie bruiloft, gegenereerd door AI."
+        beschrijving="Professioneel advies per onderdeel van jullie bruiloft, gegenereerd door AI op basis van jullie planningsdata."
         actie={
           <Button
             onClick={() => fetchAdvies(false)}
@@ -300,63 +270,71 @@ export default function AIWeddingPlannerPage() {
             ) : (
               <Sparkles className="h-4 w-4" aria-hidden />
             )}
-            {loading ? 'Bezig met analyseren…' : 'Ververs AI advies'}
+            {loading ? 'Bezig met analyseren…' : 'Ververs advies'}
           </Button>
         }
       />
 
-      {/* Intro card */}
-      <Card className="mb-6 border-blue-100 bg-blue-50/50">
-        <CardContent className="flex items-start gap-3 pt-5">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" aria-hidden />
-          <div className="space-y-1 text-sm text-blue-800">
-            <p className="font-medium">Hoe werkt de AI Wedding Planner?</p>
-            <p className="text-blue-700/80">
-              De AI analyseert alle gegevens in jullie bruiloftplanning — taken, budget, leveranciers,
-              draaiboek, gastenbeheer en website — en geeft per onderdeel concreet advies van een
-              professionele trouwplanner. Klik op "Ververs AI advies" om een verse analyse te starten.
-              Je kunt dit elke 10 minuten opnieuw doen. Het advies wordt opgeslagen, zodat je het
-              altijd terug kunt lezen.
-            </p>
+      {/* Metadata + foutmelding */}
+      {(cachedAt || fout) && (
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {cachedAt && <span>Laatste update: {formatTijdstip(cachedAt)}</span>}
+          {isRateLimited && (
+            <span className="text-amber-600">
+              · Verversen mogelijk over{' '}
+              {minuten(resterendeMs)} {minuten(resterendeMs) === 1 ? 'minuut' : 'minuten'}.
+            </span>
+          )}
+          {fout && <span className="text-rose-600">· {fout}</span>}
+        </div>
+      )}
+
+      {/* Hoe werkt het — uitleg boven de inhoud */}
+      {!advies && !loading && (
+        <div className="mb-8 grid gap-6 md:grid-cols-[280px_1fr]">
+          <div className="pt-1">
+            <h2 className="text-base font-semibold text-foreground">Hoe werkt het?</h2>
           </div>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardContent className="pt-6 text-sm text-muted-foreground leading-relaxed space-y-2">
+              <p>
+                De AI analyseert alle gegevens uit jullie bruiloftplanning: taken, budget,
+                leveranciers, draaiboek, gastenbeheer en website. Per onderdeel geeft een
+                professionele AI-trouwplanner concreet advies over waar jullie staan en wat
+                de volgende stap is.
+              </p>
+              <p>
+                Klik op <strong className="text-foreground">"Ververs advies"</strong> om de
+                analyse te starten. Dit kan elke 10 minuten opnieuw. Het resultaat wordt
+                opgeslagen zodat je het altijd terug kunt lezen.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Tijdstip + rate limit */}
-      <div className="mb-5 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-        {cachedAt && (
-          <span>Laatste update: {formatTijdstip(cachedAt)}</span>
-        )}
-        {isRateLimited && (
-          <span className="text-amber-600">
-            · Je kunt je advies over {minuten(resterendeMs)} {minuten(resterendeMs) === 1 ? 'minuut' : 'minuten'} opnieuw verversen.
-          </span>
-        )}
-        {fout && (
-          <span className="text-rose-600">· {fout}</span>
-        )}
-      </div>
-
-      {/* Inhoud */}
+      {/* Laadanimatie */}
       {loading && <LaadAnimatie />}
 
+      {/* Advies-inhoud */}
       {!loading && advies && (
-        <div className="space-y-6">
-          <GlobaleStatusCard advies={advies} />
+        <div>
+          <GlobaleStatusKaart advies={advies} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-0">
             {MODULE_CONFIG.map((m) => (
-              <ModuleCard key={m.key} config={m} advies={advies.modules[m.key]} />
+              <ModuleKaart key={m.key} config={m} advies={advies.modules[m.key]} />
             ))}
           </div>
         </div>
       )}
 
+      {/* Lege staat */}
       {!loading && !advies && (
         <EmptyState
           icon={Sparkles}
           titel="Nog geen AI advies gegenereerd"
-          beschrijving="Klik op 'Ververs AI advies' om een persoonlijk planningsoverzicht te genereren op basis van alle gegevens in jullie bruiloftplanning."
+          beschrijving="Klik op 'Ververs advies' om een persoonlijk planningsoverzicht te genereren."
           actie={
             <Button onClick={() => fetchAdvies(false)} className="gap-2">
               <Sparkles className="h-4 w-4" aria-hidden />
