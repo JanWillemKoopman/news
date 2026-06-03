@@ -111,10 +111,12 @@ export function TaskForm({
           <Field label="Deadline" htmlFor="dl">
             <Input
               id="dl"
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={form.deadline}
               onChange={(e) => set('deadline', e.target.value)}
-              className="h-9 text-xs sm:h-10 sm:text-sm"
+              placeholder="JJJJ-MM-DD"
+              pattern="\d{4}-\d{2}-\d{2}"
               required
             />
           </Field>
