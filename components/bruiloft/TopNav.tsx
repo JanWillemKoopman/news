@@ -74,8 +74,8 @@ export function TopNav() {
               'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors border',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-sky-600 text-white border-sky-500'
-                : 'bg-sky-600/90 text-white border-sky-400/60 hover:bg-sky-500 hover:border-sky-300'
+                ? 'bg-white/15 text-white border-white/40'
+                : 'bg-transparent text-white/80 border-white/25 hover:bg-white/10 hover:text-white hover:border-white/40'
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
@@ -90,8 +90,8 @@ export function TopNav() {
             className={cn(
               'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors border',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-sky-600 text-white border-sky-500'
-                : 'bg-sky-600/90 text-white border-sky-400/60 hover:bg-sky-500 hover:border-sky-300'
+                ? 'bg-white/15 text-white border-white/40'
+                : 'bg-transparent text-white/80 border-white/25 hover:bg-white/10 hover:text-white hover:border-white/40'
             )}
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
