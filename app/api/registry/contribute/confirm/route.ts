@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
+
+const confirmRateMap = new Map<string, { count: number; reset: number }>()
+
+function checkConfirmRateLimit(id: string): boolean {
+  const now = Date.now()
+  const entry = confirmRateMap.get(id)
+  if (!entry || now > entry.reset) {
+    confirmRateMap.set(id, { count: 1, reset: now + 60 * 60 * 1000 })
+    return true
+  }
+  if (entry.count >= 5) return false
+  entry.count++
+  return true
+}
 import {
   renderRegistryContributionPendingEmail,
   renderRegistryNewContributionCoupleEmail,
@@ -21,6 +35,11 @@ export async function POST(request: NextRequest) {
   }
 
   const { contribution_id, payment_method } = parsed.data
+
+  if (!checkConfirmRateLimit(contribution_id)) {
+    return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })
+  }
+
   const admin = createAdminClient()
   const rawAdmin = createRawAdminClient()
 

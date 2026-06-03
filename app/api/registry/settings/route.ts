@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     .eq('wedding_id', weddingId)
     .eq('user_id', user.id)
     .maybeSingle()
-  if (!member || !['owner', 'planner'].includes(member.role)) {
+  if (!member || member.role !== 'owner') {
     return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
   }
 
