@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { Button, Field, Input, Modal, useToast } from '@/components/bruiloft/ui'
+import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Wedding } from '@/lib/bruiloft/types'
 
@@ -70,7 +71,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
       description="Pas de basisgegevens van jullie bruiloft aan."
     >
       <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Naam partner 1" htmlFor="s-p1">
             <Input id="s-p1" value={form.partner1Naam} onChange={update('partner1Naam')} required />
           </Field>
@@ -78,9 +79,12 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Trouwdatum" htmlFor="s-datum">
-            <Input id="s-datum" type="date" value={form.trouwdatum} onChange={update('trouwdatum')} required />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Trouwdatum">
+            <DateRoller
+              value={form.trouwdatum}
+              onChange={(v) => setForm((f) => ({ ...f, trouwdatum: v }))}
+            />
           </Field>
           <Field label="Locatie" htmlFor="s-loc">
             <Input id="s-loc" value={form.locatie} onChange={update('locatie')} />
@@ -96,7 +100,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             required
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Geschat aantal daggasten" htmlFor="s-dag">
             <Input id="s-dag" type="number" min={0} value={form.aantalDaggasten} onChange={update('aantalDaggasten')} />
           </Field>
