@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
 
 const MAANDEN = [
   'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
@@ -30,11 +29,8 @@ interface DateRollerProps {
   onChange: (v: string) => void
 }
 
-const selectClass = cn(
-  'flex-1 appearance-none rounded-md border border-input bg-background py-2.5 text-center text-sm text-foreground',
-  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
-  'cursor-pointer'
-)
+const sel =
+  'h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 cursor-pointer'
 
 export function DateRoller({ value, onChange }: DateRollerProps) {
   const today = new Date()
@@ -53,11 +49,10 @@ export function DateRoller({ value, onChange }: DateRollerProps) {
 
   return (
     <div className="flex gap-2">
-      {/* Dag */}
       <select
         value={clampedDay}
         onChange={(e) => update(year, month, Number(e.target.value))}
-        className={selectClass}
+        className={`w-16 ${sel}`}
         aria-label="Dag"
       >
         {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
@@ -65,11 +60,10 @@ export function DateRoller({ value, onChange }: DateRollerProps) {
         ))}
       </select>
 
-      {/* Maand */}
       <select
         value={month}
         onChange={(e) => update(year, Number(e.target.value), clampedDay)}
-        className={cn(selectClass, 'flex-[2]')}
+        className={`flex-1 ${sel}`}
         aria-label="Maand"
       >
         {MAANDEN.map((naam, i) => (
@@ -77,11 +71,10 @@ export function DateRoller({ value, onChange }: DateRollerProps) {
         ))}
       </select>
 
-      {/* Jaar */}
       <select
         value={year}
         onChange={(e) => update(Number(e.target.value), month, clampedDay)}
-        className={selectClass}
+        className={`w-20 ${sel}`}
         aria-label="Jaar"
       >
         {Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i).map((y) => (
