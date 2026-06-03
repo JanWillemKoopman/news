@@ -35,7 +35,7 @@ interface ListViewProps {
   onEdit: (t: Task) => void
   onDelete: (t: Task) => void
   onToggleSubtaak: (t: Task, id: string) => void
-  onQuickAdd: (titel: string, deadline: ISODate) => Promise<void>
+  onOpenForm: (deadline: ISODate) => void
   selectable: boolean
   isSelected: (id: string) => boolean
   onToggleSelect: (t: Task) => void
@@ -58,7 +58,7 @@ export function ListView({
   onEdit,
   onDelete,
   onToggleSubtaak,
-  onQuickAdd,
+  onOpenForm,
   selectable,
   isSelected,
   onToggleSelect,
@@ -160,7 +160,7 @@ export function ListView({
               ))}
               <QuickAddTask
                 defaultDeadline={deadlineVoorBlok(blok, wedding.trouwdatum)}
-                onAdd={onQuickAdd}
+                onOpenForm={onOpenForm}
               />
             </div>
           </div>

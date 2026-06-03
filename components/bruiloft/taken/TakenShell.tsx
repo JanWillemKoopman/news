@@ -263,7 +263,7 @@ export function TakenShell() {
           onEdit={openBewerk}
           onDelete={setDelTask}
           onToggleSubtaak={handleSubtaakToggle}
-          onQuickAdd={handleQuickAdd}
+          onOpenForm={openNieuwOpDatum}
           selectable={selectedIds.size > 0}
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
