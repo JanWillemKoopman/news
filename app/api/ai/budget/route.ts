@@ -94,14 +94,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ontbrekende context of weddingId' }, { status: 400 })
   }
 
-  if (!checkRateLimit(body.weddingId)) {
+  const { data: member } = await supabase
+    .from('wedding_members')
+    .select('role')
+    .eq('wedding_id', body.weddingId)
+    .eq('user_id', user.id)
+    .single()
+  if (!member) {
+    return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
+  }
+
+  if (!checkRateLimit(user.id)) {
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
     const result = await model.generateContent(buildBudgetPrompt(body.context))
