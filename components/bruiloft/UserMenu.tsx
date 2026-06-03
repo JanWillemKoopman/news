@@ -96,10 +96,10 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
         aria-expanded={open}
         aria-label="Accountmenu openen"
         className={cn(
-          'flex items-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          'flex items-center gap-2 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
           dark
-            ? 'rounded-full bg-white/30 px-2.5 py-1 text-white hover:bg-white/40 focus-visible:ring-white/60 focus-visible:ring-offset-rhino-800'
-            : 'rounded-md px-2 py-1.5 text-sm hover:bg-accent focus-visible:ring-ring focus-visible:ring-offset-background'
+            ? 'px-1.5 py-1 text-white hover:bg-rhino-700 focus-visible:ring-white/60 focus-visible:ring-offset-rhino-800'
+            : 'px-2 py-1.5 text-sm hover:bg-accent focus-visible:ring-ring focus-visible:ring-offset-background'
         )}
       >
         {currentUser.avatarUrl && !avatarError ? (
