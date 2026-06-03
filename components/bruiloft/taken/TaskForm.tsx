@@ -13,6 +13,7 @@ import {
 import { TaskComments } from '@/components/bruiloft/taken/TaskComments'
 import { AssigneePicker } from '@/components/bruiloft/taken/AssigneePicker'
 import { SubtakenList } from '@/components/bruiloft/taken/SubtakenList'
+import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, ID, Task, TaskInput, Vendor, WeddingMember } from '@/lib/bruiloft/types'
 
@@ -29,11 +30,15 @@ interface TaskFormProps {
   onSubmit: (data: NewTask) => void
 }
 
+function vandaagISO(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function leeg(deadline = ''): NewTask {
   return {
     titel: '',
     omschrijving: '',
-    deadline,
+    deadline: deadline || vandaagISO(),
     status: 'open',
     prioriteit: 'midden',
     toegewezenAan: 'samen',
@@ -108,16 +113,10 @@ export function TaskForm({
         </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Deadline" htmlFor="dl">
-            <Input
-              id="dl"
-              type="text"
-              inputMode="numeric"
+          <Field label="Deadline">
+            <DateRoller
               value={form.deadline}
-              onChange={(e) => set('deadline', e.target.value)}
-              placeholder="JJJJ-MM-DD"
-              pattern="\d{4}-\d{2}-\d{2}"
-              required
+              onChange={(v) => set('deadline', v)}
             />
           </Field>
           <Field label="Status" htmlFor="st">
