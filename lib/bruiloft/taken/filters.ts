@@ -14,7 +14,7 @@ export interface TaakFilters {
 }
 
 export const DEFAULT_FILTERS: TaakFilters = {
-  status: 'all',
+  status: 'open',
   prioriteit: 'all',
   toegewezen: 'all',
   zoek: '',

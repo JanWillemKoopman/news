@@ -27,7 +27,6 @@ const tones: Record<Kind, Record<string, Tone>> = {
   },
   taak: {
     open: 'grey',
-    bezig: 'amber',
     klaar: 'green',
   },
   leverancier: {
