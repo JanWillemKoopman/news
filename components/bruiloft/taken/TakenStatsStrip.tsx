@@ -12,39 +12,39 @@ interface TakenStatsStripProps {
 }
 
 function CircularProgress({ pct }: { pct: number }) {
-  const r = 28
+  const r = 26
   const circumference = 2 * Math.PI * r
   const offset = circumference - (pct / 100) * circumference
 
   return (
-    <svg width={72} height={72} className="shrink-0 -rotate-90">
+    <svg width={64} height={64} className="shrink-0 -rotate-90">
       <circle
-        cx={36}
-        cy={36}
+        cx={32}
+        cy={32}
         r={r}
         fill="none"
-        stroke="#f3e8ec"
-        strokeWidth={6}
+        stroke="#e5e7eb"
+        strokeWidth={4}
       />
       <circle
-        cx={36}
-        cy={36}
+        cx={32}
+        cy={32}
         r={r}
         fill="none"
         stroke="#be123c"
-        strokeWidth={6}
+        strokeWidth={4}
+        strokeOpacity={0.6}
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         className="transition-all duration-500"
       />
       <text
-        x={36}
-        y={36}
+        x={32}
+        y={32}
         textAnchor="middle"
         dominantBaseline="central"
-        className="rotate-90 fill-foreground text-[13px] font-semibold"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '36px 36px', fontSize: 13 }}
+        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
       >
         {pct}%
       </text>
