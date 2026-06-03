@@ -114,6 +114,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI niet geconfigureerd' }, { status: 503 })
   }
 
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
+  }
+
   let body: { context: AIWeddingContext; weddingId: string; force?: boolean }
   try {
     body = await request.json()
@@ -124,8 +130,6 @@ export async function POST(request: NextRequest) {
   if (!body.context || !body.weddingId) {
     return NextResponse.json({ error: 'Ontbrekende context of weddingId' }, { status: 400 })
   }
-
-  const supabase = await createClient()
   const fingerprint = buildFingerprint(body.context)
   const now = Date.now()
 

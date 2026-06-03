@@ -224,9 +224,10 @@ export function renderRegistryReservationGuestEmail(p: RegistryReservationGuestE
   const datumRegel = p.weddingDate
     ? `op <strong>${formatDatumNL(p.weddingDate)}</strong>`
     : ''
-  const shopLink = p.shopUrl
+  const safeShopUrl = p.shopUrl && /^https?:\/\//i.test(p.shopUrl) ? p.shopUrl : null
+  const shopLink = safeShopUrl
     ? `<p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
-        Je kunt het cadeau hier bestellen: <a href="${p.shopUrl}" style="color:#be123c;">Bekijk cadeau →</a>
+        Je kunt het cadeau hier bestellen: <a href="${escapeHtml(safeShopUrl)}" style="color:#be123c;">Bekijk cadeau →</a>
        </p>`
     : ''
   const inhoud = `
