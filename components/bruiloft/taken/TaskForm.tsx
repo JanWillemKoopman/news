@@ -107,7 +107,7 @@ export function TaskForm({
           <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Deadline" htmlFor="dl">
             <Input
               id="dl"
@@ -132,7 +132,7 @@ export function TaskForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Prioriteit" htmlFor="prio">
             <Select
               id="prio"
@@ -155,7 +155,7 @@ export function TaskForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Leverancier (optioneel)" htmlFor="ven">
             <Select
               id="ven"
