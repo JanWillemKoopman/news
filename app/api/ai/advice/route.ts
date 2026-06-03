@@ -130,6 +130,17 @@ export async function POST(request: NextRequest) {
   if (!body.context || !body.weddingId) {
     return NextResponse.json({ error: 'Ontbrekende context of weddingId' }, { status: 400 })
   }
+
+  const { data: member } = await supabase
+    .from('wedding_members')
+    .select('role')
+    .eq('wedding_id', body.weddingId)
+    .eq('user_id', user.id)
+    .single()
+  if (!member) {
+    return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
+  }
+
   const fingerprint = buildFingerprint(body.context)
   const now = Date.now()
 
@@ -152,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!checkRateLimit(body.weddingId)) {
+  if (!checkRateLimit(user.id)) {
     // Bij rate-limit: retourneer stale cache als die er is
     if (cacheRow?.cached_advies?.length > 0) {
       return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
