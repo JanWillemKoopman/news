@@ -69,6 +69,7 @@ interface ConfirmDialogProps {
   description?: string
   bevestigLabel?: string
   onConfirm: () => void
+  children?: React.ReactNode
 }
 
 export function ConfirmDialog({
@@ -78,9 +79,11 @@ export function ConfirmDialog({
   description,
   bevestigLabel = 'Verwijderen',
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={title} description={description}>
+      {children}
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Annuleren

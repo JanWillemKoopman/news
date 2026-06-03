@@ -7,13 +7,26 @@ import { createClient } from '@/lib/supabase/server'
 // de gebruiker de enige owner is, worden meeverwijderd (cascade ruimt alle
 // gasten/taken/budget enz. op). Vereist de service-role (admin) en draait
 // daarom server-side.
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
+  }
+
+  const body = await request.json().catch(() => null)
+  const wachtwoord = typeof body?.wachtwoord === 'string' ? body.wachtwoord : ''
+  if (!wachtwoord) {
+    return NextResponse.json({ error: 'Wachtwoord vereist' }, { status: 400 })
+  }
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: user.email ?? '',
+    password: wachtwoord,
+  })
+  if (authError) {
+    return NextResponse.json({ error: 'Onjuist wachtwoord' }, { status: 403 })
   }
 
   const admin = createAdminClient()
