@@ -1,7 +1,8 @@
--- Verwijder IBAN uit de publieke cadeaulijst-RPC.
--- Het IBAN was zichtbaar voor iedereen met de bruiloftsslug — ook zonder
--- wachtwoord. Het IBAN wordt nu uitsluitend teruggegeven in de
--- /api/registry/contribute-route, ná het invullen van bijdragegegevens.
+-- Beveilig IBAN in de publieke cadeaulijst-RPC.
+-- Voor wachtwoordbeveiligde registries wordt het IBAN NIET teruggegeven
+-- vóórdat het wachtwoord is ingevoerd. Open registries (geen wachtwoord)
+-- geven het IBAN wel terug; die zijn immers al vrijelijk toegankelijk
+-- voor iedereen met de slug (= alle uitgenodigde gasten).
 
 create or replace function public.get_public_registry(p_slug text)
 returns jsonb
@@ -18,11 +19,14 @@ declare
   v_is_enabled      boolean;
   v_password        text;
   v_intro_text      text;
+  v_bank_iban       text;
+  v_bank_name       text;
   v_thema           text;
   v_kleur_accent    text;
   v_kop_lettertype  text;
   v_header_foto_url text;
   v_items           jsonb;
+  v_password_protected boolean;
 begin
   select w.id, w.partner1_naam, w.partner2_naam, w.trouwdatum
   into v_wedding_id, v_partner1_naam, v_partner2_naam, v_trouwdatum
@@ -35,9 +39,9 @@ begin
     return null;
   end if;
 
-  select is_enabled, password, intro_text,
+  select is_enabled, password, intro_text, bank_account_iban, bank_account_name,
          thema, kleur_accent, kop_lettertype
-  into v_is_enabled, v_password, v_intro_text,
+  into v_is_enabled, v_password, v_intro_text, v_bank_iban, v_bank_name,
        v_thema, v_kleur_accent, v_kop_lettertype
   from public.registry_settings
   where wedding_id = v_wedding_id;
@@ -45,6 +49,8 @@ begin
   if not found or not v_is_enabled then
     return jsonb_build_object('enabled', false);
   end if;
+
+  v_password_protected := v_password is not null and v_password <> '';
 
   select jsonb_agg(
     jsonb_build_object(
@@ -82,8 +88,13 @@ begin
 
   return jsonb_build_object(
     'enabled',           true,
-    'password_required', v_password is not null and v_password <> '',
+    'password_required', v_password_protected,
     'intro_text',        v_intro_text,
+    -- IBAN alleen teruggeven voor open (niet-wachtwoordbeveiligde) registries.
+    -- Bij wachtwoordbeveiligde registries is het IBAN pas zichtbaar nadat
+    -- het wachtwoord is geverifieerd via /api/registry/contribute.
+    'bank_account_iban', case when v_password_protected then '' else v_bank_iban end,
+    'bank_account_name', case when v_password_protected then '' else v_bank_name end,
     'wedding_id',        v_wedding_id,
     'partner1_naam',     v_partner1_naam,
     'partner2_naam',     v_partner2_naam,

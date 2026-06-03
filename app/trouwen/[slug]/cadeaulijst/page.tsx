@@ -49,6 +49,8 @@ async function getRegistryData(slug: string): Promise<RegistryResult> {
       enabled: true,
       passwordRequired: !!(data.password_required),
       introText: (data.intro_text as string) ?? '',
+      bankAccountIban: (data.bank_account_iban as string) ?? '',
+      bankAccountName: (data.bank_account_name as string) ?? '',
       weddingId: data.wedding_id as string,
       partner1Naam: (data.partner1_naam as string) ?? '',
       partner2Naam: (data.partner2_naam as string) ?? '',
