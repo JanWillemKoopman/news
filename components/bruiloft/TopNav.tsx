@@ -71,31 +71,31 @@ export function TopNav() {
             href="/bruiloft/ai-wedding-planner"
             aria-current={pathname.startsWith('/bruiloft/ai-wedding-planner') ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
+              'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors border',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-rose-600 text-white'
-                : 'bg-rose-600/80 text-white hover:bg-rose-500'
+                ? 'bg-sky-600 text-white border-sky-500'
+                : 'bg-sky-600/90 text-white border-sky-400/60 hover:bg-sky-500 hover:border-sky-300'
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
-            <span>AI wedding planner</span>
+            <span>AI assistent</span>
           </Link>
           <UserMenu variant="dark" />
         </div>
         <div className="flex items-center gap-1 md:hidden">
           <Link
             href="/bruiloft/ai-wedding-planner"
-            aria-label="AI wedding planner"
+            aria-label="AI assistent"
             className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+              'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors border',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-rose-600 text-white'
-                : 'bg-rose-600/80 text-white hover:bg-rose-500'
+                ? 'bg-sky-600 text-white border-sky-500'
+                : 'bg-sky-600/90 text-white border-sky-400/60 hover:bg-sky-500 hover:border-sky-300'
             )}
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span>AI planner</span>
+            <span>AI assistent</span>
           </Link>
           <UserMenu variant="dark" compact />
         </div>
