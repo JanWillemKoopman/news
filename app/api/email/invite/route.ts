@@ -38,14 +38,14 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Verifieer dat de aanroeper lid is van deze bruiloft.
+  // Verifieer dat de aanroeper eigenaar is van deze bruiloft (alleen owners mogen uitnodigingen versturen).
   const { data: membership } = await admin
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)
     .eq('user_id', user.id)
     .maybeSingle()
-  if (!membership) {
+  if (!membership || membership.role !== 'owner') {
     return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
   }
 
