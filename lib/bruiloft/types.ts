@@ -433,8 +433,6 @@ export interface PublicRegistryData {
   enabled: boolean
   passwordRequired: boolean
   introText: string
-  bankAccountIban: string
-  bankAccountName: string
   weddingId: ID
   partner1Naam: string
   partner2Naam: string

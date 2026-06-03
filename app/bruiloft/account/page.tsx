@@ -455,14 +455,29 @@ function GevaarZoneSection() {
   const signOut = useBruiloftStore((s) => s.signOut)
   const { toast } = useToast()
   const [confirm, setConfirm] = React.useState(false)
+  const [wachtwoord, setWachtwoord] = React.useState('')
   const [busy, setBusy] = React.useState(false)
 
+  function openConfirm() {
+    setWachtwoord('')
+    setConfirm(true)
+  }
+
   async function deleteAccount() {
+    if (!wachtwoord) return
     setBusy(true)
-    const res = await fetch('/account/verwijderen', { method: 'POST' })
+    const res = await fetch('/account/verwijderen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wachtwoord }),
+    })
     if (!res.ok) {
       setBusy(false)
-      toast({ title: 'Verwijderen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
+      const data = await res.json().catch(() => ({}))
+      const msg = data.error === 'Onjuist wachtwoord'
+        ? 'Onjuist wachtwoord. Probeer opnieuw.'
+        : 'Verwijderen mislukt. Probeer het later opnieuw.'
+      toast({ title: msg, variant: 'error' })
       return
     }
     await signOut()
@@ -482,19 +497,28 @@ function GevaarZoneSection() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" onClick={() => setConfirm(true)} loading={busy}>
+          <Button variant="destructive" onClick={openConfirm} loading={busy}>
             Account verwijderen
           </Button>
         </CardContent>
       </Card>
       <ConfirmDialog
         open={confirm}
-        onOpenChange={(o) => !o && setConfirm(false)}
+        onOpenChange={(o) => { if (!o) { setConfirm(false); setWachtwoord('') } }}
         title="Account definitief verwijderen?"
-        description="Je account en de bruiloften waarvan jij de enige eigenaar bent worden permanent verwijderd."
+        description="Voer je wachtwoord in ter bevestiging. Je account en de bruiloften waarvan jij de enige eigenaar bent worden permanent verwijderd."
         bevestigLabel="Ja, verwijder mijn account"
         onConfirm={deleteAccount}
-      />
+      >
+        <Input
+          type="password"
+          placeholder="Jouw wachtwoord"
+          autoComplete="current-password"
+          value={wachtwoord}
+          onChange={(e) => setWachtwoord(e.target.value)}
+          className="mb-4"
+        />
+      </ConfirmDialog>
     </>
   )
 }
