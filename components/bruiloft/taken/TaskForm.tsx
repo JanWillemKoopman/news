@@ -114,6 +114,7 @@ export function TaskForm({
               type="date"
               value={form.deadline}
               onChange={(e) => set('deadline', e.target.value)}
+              className="h-9 text-xs sm:h-10 sm:text-sm"
               required
             />
           </Field>
