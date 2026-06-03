@@ -47,7 +47,7 @@ Bruiloftdetails:
 - Vandaag: ${vandaag}
 
 Huidige situatie:
-- Taken: ${ctx.taken.totaal} totaal (${ctx.taken.open} open, ${ctx.taken.klaar} klaar, ${ctx.taken.achterstallig} achterstallig)
+- Taken: ${ctx.taken.totaal} totaal (${ctx.taken.open} open, ${ctx.taken.bezig} in uitvoering, ${ctx.taken.klaar} klaar, ${ctx.taken.achterstallig} achterstallig)
 - Budget: €${ctx.budget.totaal} totaal, €${ctx.budget.resterend} resterend
 - Leveranciersstatus: ${JSON.stringify(ctx.leveranciers.status)}
 - Gasten: ${ctx.gasten.totaal} totaal (${ctx.gasten.bevestigd} bevestigd, ${ctx.gasten.geenReactie} geen reactie)

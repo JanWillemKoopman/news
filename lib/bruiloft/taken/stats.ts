@@ -6,6 +6,7 @@ import type { Task } from '../types'
 export interface TaakStats {
   totaal: number
   open: number
+  bezig: number
   klaar: number
   achterstallig: number
   dezeMaand: number
@@ -22,11 +23,13 @@ function isDezeMaand(deadline: string): boolean {
 
 export function berekenTaakStats(tasks: Task[]): TaakStats {
   let open = 0
+  let bezig = 0
   let klaar = 0
   let achterstallig = 0
   let dezeMaand = 0
   for (const t of tasks) {
     if (t.status === 'klaar') klaar++
+    else if (t.status === 'bezig') bezig++
     else open++
 
     if (t.status !== 'klaar') {
@@ -37,7 +40,7 @@ export function berekenTaakStats(tasks: Task[]): TaakStats {
   }
   const totaal = tasks.length
   const pctKlaar = totaal > 0 ? Math.round((klaar / totaal) * 100) : 0
-  return { totaal, open, klaar, achterstallig, dezeMaand, pctKlaar }
+  return { totaal, open, bezig, klaar, achterstallig, dezeMaand, pctKlaar }
 }
 
 // Taken in de huidige kalendermaand die nog niet klaar zijn — cross-tijdsblok.

@@ -27,6 +27,7 @@ const tones: Record<Kind, Record<string, Tone>> = {
   },
   taak: {
     open: 'grey',
+    bezig: 'amber',
     klaar: 'green',
   },
   leverancier: {
@@ -51,6 +52,8 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ kind, value, className }: StatusBadgeProps) {
   const tone = tones[kind][value] ?? 'grey'
+  const label = kind === 'taak' && value === 'bezig' ? 'In uitvoering' : value
+
   return (
     <span
       className={cn(
@@ -60,7 +63,7 @@ export function StatusBadge({ kind, value, className }: StatusBadgeProps) {
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" aria-hidden />
-      {value}
+      {label}
     </span>
   )
 }

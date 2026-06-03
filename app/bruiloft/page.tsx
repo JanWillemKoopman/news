@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const budget = budgetTotalen(budgetItems, vendors, wedding)
   const gasten = gastTellingen(guests)
   const taken = taakTellingen(tasks)
-  const nogTeDoen = taken.open
+  const nogTeDoen = taken.open + taken.bezig
   const komendeBetalingen = aankomendeTermijnen(budgetItems, 5)
   const guidance = berekenGuidance({ wedding, tasks, vendors, budgetItems, guests })
 

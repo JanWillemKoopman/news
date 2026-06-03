@@ -73,15 +73,15 @@ export function TakenFilters({
             onClick={() => setFilterOpen((p) => !p)}
             className={cn(
               'inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
-              filterOpen || activeFilterCount > 0
-                ? 'border-rose-300 bg-rose-50 text-rose-700'
+              filterOpen
+                ? 'border-gray-400 bg-gray-100 text-gray-900'
                 : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[11px] font-bold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-[11px] font-bold text-white">
                 {activeFilterCount}
               </span>
             )}
@@ -121,7 +121,7 @@ export function TakenFilters({
                     <option value="all">Alle statussen</option>
                     {TASK_STATUSSEN.map((s) => (
                       <option key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                        {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
                       </option>
                     ))}
                   </Select>

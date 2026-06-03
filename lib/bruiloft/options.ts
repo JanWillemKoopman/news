@@ -31,7 +31,7 @@ export const RSVP_STATUSSEN: RsvpStatus[] = [
   'geen reactie',
 ]
 
-export const TASK_STATUSSEN: TaskStatus[] = ['open', 'klaar']
+export const TASK_STATUSSEN: TaskStatus[] = ['open', 'bezig', 'klaar']
 
 export const PRIORITEITEN: Prioriteit[] = ['laag', 'midden', 'hoog']
 

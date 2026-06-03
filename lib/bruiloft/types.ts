@@ -63,7 +63,7 @@ export type GuestInput = Omit<Guest, 'id'>
 
 // --- Task ------------------------------------------------------------------
 
-export type TaskStatus = 'open' | 'klaar'
+export type TaskStatus = 'open' | 'bezig' | 'klaar'
 export type Prioriteit = 'laag' | 'midden' | 'hoog'
 export type ToegewezenAan =
   | 'partner 1'

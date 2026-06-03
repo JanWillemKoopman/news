@@ -145,6 +145,7 @@ export function gastTellingen(guests: Guest[]): GastTellingen {
 export interface TaakTellingen {
   totaal: number
   open: number
+  bezig: number
   klaar: number
 }
 
@@ -152,6 +153,7 @@ export function taakTellingen(tasks: Task[]): TaakTellingen {
   return {
     totaal: tasks.length,
     open: tasks.filter((t) => t.status === 'open').length,
+    bezig: tasks.filter((t) => t.status === 'bezig').length,
     klaar: tasks.filter((t) => t.status === 'klaar').length,
   }
 }

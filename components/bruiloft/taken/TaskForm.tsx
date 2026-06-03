@@ -126,7 +126,7 @@ export function TaskForm({
             >
               {TASK_STATUSSEN.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </option>
               ))}
             </Select>

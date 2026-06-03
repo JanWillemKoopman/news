@@ -28,6 +28,7 @@ export interface AIWeddingContext {
   taken: {
     totaal: number
     open: number
+    bezig: number
     klaar: number
     achterstallig: number
     urgenteTaken: Array<{
@@ -153,6 +154,7 @@ export function buildAIContext(
     taken: {
       totaal: tasks.length,
       open: tasks.filter((t) => t.status === 'open').length,
+      bezig: tasks.filter((t) => t.status === 'bezig').length,
       klaar: tasks.filter((t) => t.status === 'klaar').length,
       achterstallig,
       urgenteTaken,
