@@ -2,16 +2,16 @@
 
 import * as React from 'react'
 
-import { EmptyState } from '@/components/bruiloft/ui'
-import { ListChecks } from 'lucide-react'
+import { EmptyState, Skeleton } from '@/components/bruiloft/ui'
+import { ListChecks, Sparkles } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
+import { AIInlineSuggestieCard } from '@/components/bruiloft/taken/AIInlineSuggestieCard'
 import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
 import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblocks'
 import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
+import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
-// Een redelijke "midden van het tijdsblok"-deadline t.o.v. de trouwdatum
-// (gebruikt als default bij quick-add).
 function deadlineVoorBlok(blok: Tijdsblok, trouwdatum: ISODate): ISODate {
   const offsetDagen: Record<Tijdsblok, number> = {
     '12 maanden voor': -340,
@@ -40,6 +40,13 @@ interface ListViewProps {
   isSelected: (id: string) => boolean
   onToggleSelect: (t: Task) => void
   achterstandRef?: React.MutableRefObject<HTMLDivElement | null>
+  // AI suggestions
+  aiActive?: boolean
+  aiSuggesties?: AITaakSuggestie[]
+  aiLoading?: boolean
+  aiError?: string | null
+  onAiToevoegen?: (s: AITaakSuggestie) => Promise<void>
+  onAiDismiss?: (titel: string) => void
 }
 
 export function ListView({
@@ -56,6 +63,12 @@ export function ListView({
   isSelected,
   onToggleSelect,
   achterstandRef,
+  aiActive,
+  aiSuggesties,
+  aiLoading,
+  aiError,
+  onAiToevoegen,
+  onAiDismiss,
 }: ListViewProps) {
   if (allTasks.length === 0) {
     return (
@@ -67,7 +80,7 @@ export function ListView({
     )
   }
 
-  if (tasks.length === 0) {
+  if (tasks.length === 0 && !aiActive) {
     return (
       <EmptyState
         icon={ListChecks}
@@ -77,7 +90,6 @@ export function ListView({
     )
   }
 
-  // Vind eerste blok met achterstallige taken voor de scroll-target.
   let achterstallig: Tijdsblok | null = null
   for (const blok of TIJDSBLOK_VOLGORDE) {
     const heeftAchterstand = tasks.some(
@@ -91,6 +103,17 @@ export function ListView({
 
   return (
     <div className="space-y-8">
+      {/* AI suggestions block */}
+      {aiActive && (
+        <AISuggestiesBlok
+          suggesties={aiSuggesties}
+          loading={aiLoading}
+          error={aiError}
+          onToevoegen={onAiToevoegen}
+          onDismiss={onAiDismiss}
+        />
+      )}
+
       <DezeMaandSection
         tasks={tasks}
         members={members}
@@ -143,6 +166,70 @@ export function ListView({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function AISuggestiesBlok({
+  suggesties,
+  loading,
+  error,
+  onToevoegen,
+  onDismiss,
+}: {
+  suggesties?: AITaakSuggestie[]
+  loading?: boolean
+  error?: string | null
+  onToevoegen?: (s: AITaakSuggestie) => Promise<void>
+  onDismiss?: (titel: string) => void
+}) {
+  if (loading) {
+    return (
+      <div>
+        <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-rose-600">
+          <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+          Aanbevolen door AI
+          <span className="text-muted-foreground normal-case tracking-normal font-normal">
+            — AI denkt na…
+          </span>
+        </h2>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-600">
+        {error}
+      </div>
+    )
+  }
+
+  if (!suggesties || suggesties.length === 0) return null
+
+  return (
+    <div>
+      <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-rose-600">
+        <Sparkles className="h-3.5 w-3.5" />
+        Aanbevolen door AI
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">{suggesties.length} suggesties</span>
+      </h2>
+      <div className="space-y-2">
+        {suggesties.map((s) => (
+          <AIInlineSuggestieCard
+            key={s.titel}
+            suggestie={s}
+            onToevoegen={onToevoegen ?? (() => Promise.resolve())}
+            onDismiss={onDismiss ?? (() => {})}
+          />
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarDays, LayoutList, Plus, Sparkles } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
@@ -9,16 +9,15 @@ import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
 import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
 import { AchterstandBanner } from '@/components/bruiloft/taken/AchterstandBanner'
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
-import { AIVoorgesteldeTakenModal } from '@/components/bruiloft/taken/AIVoorgesteldeTakenModal'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
-import { cn } from '@/lib/utils'
+import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ISODate, Task, TaskInput, TaskStatus } from '@/lib/bruiloft/types'
-import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
+import type { AITaakSuggestie, AITakenAdvies } from '@/app/api/ai/taken/route'
 
 type View = 'lijst' | 'kalender'
 
@@ -28,13 +27,14 @@ export function TakenShell() {
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const members = useBruiloftStore((s) => s.members)
+  const guests = useBruiloftStore((s) => s.guests)
+  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const addTask = useBruiloftStore((s) => s.addTask)
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const deleteTask = useBruiloftStore((s) => s.deleteTask)
   const bulkUpdateTasks = useBruiloftStore((s) => s.bulkUpdateTasks)
   const bulkDeleteTasks = useBruiloftStore((s) => s.bulkDeleteTasks)
   const toggleSubtaak = useBruiloftStore((s) => s.toggleSubtaak)
-  const addAITaken = useBruiloftStore((s) => s.addAITaken)
   const { toast } = useToast()
 
   const [view, setView] = React.useState<View>('lijst')
@@ -45,10 +45,89 @@ export function TakenShell() {
   const [newTaskDeadline, setNewTaskDeadline] = React.useState<ISODate | null>(null)
   const [delTask, setDelTask] = React.useState<Task | null>(null)
   const [delBulkOpen, setDelBulkOpen] = React.useState(false)
-  const [templatesOpen, setTemplatesOpen] = React.useState(false)
   const achterstandRef = React.useRef<HTMLDivElement | null>(null)
 
+  // AI suggestions state
+  const [aiActive, setAiActive] = React.useState(false)
+  const [aiSuggesties, setAiSuggesties] = React.useState<AITaakSuggestie[]>([])
+  const [aiLoading, setAiLoading] = React.useState(false)
+  const [aiError, setAiError] = React.useState<string | null>(null)
+  const [dismissedTitels, setDismissedTitels] = React.useState<Set<string>>(new Set())
+
   const gefilterd = React.useMemo(() => applyFilters(tasks, filters), [tasks, filters])
+
+  const zichtbareSuggesties = React.useMemo(
+    () => aiSuggesties.filter((s) => !dismissedTitels.has(s.titel)),
+    [aiSuggesties, dismissedTitels]
+  )
+
+  // Fetch AI suggestions when toggle is turned on
+  React.useEffect(() => {
+    if (!aiActive || !wedding) return
+    if (aiSuggesties.length > 0) return // already loaded
+
+    setAiLoading(true)
+    setAiError(null)
+
+    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+    const bestaandeTaken = tasks.map((t) => t.titel)
+
+    fetch('/api/ai/taken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context, weddingId: wedding.id, bestaandeTaken }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: 'Onbekende fout' }))
+          throw new Error(body.error ?? 'Fout bij ophalen suggesties')
+        }
+        return res.json()
+      })
+      .then((json: { advies: AITakenAdvies }) => {
+        setAiSuggesties(json.advies.taken)
+      })
+      .catch((err: Error) => {
+        setAiError(err.message || 'AI tijdelijk niet beschikbaar')
+      })
+      .finally(() => {
+        setAiLoading(false)
+      })
+  }, [aiActive]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAiToggle = (val: boolean) => {
+    setAiActive(val)
+    if (!val) {
+      // Reset when turned off so fresh suggestions load next time
+      setAiSuggesties([])
+      setDismissedTitels(new Set())
+      setAiError(null)
+    }
+  }
+
+  const handleAiToevoegen = async (s: AITaakSuggestie) => {
+    const newTask: Omit<TaskInput, 'weddingId' | 'tijdsblok'> = {
+      titel: s.titel,
+      omschrijving: s.omschrijving,
+      deadline: s.deadline as ISODate,
+      status: 'open',
+      prioriteit: s.prioriteit,
+      toegewezenAan: s.toegewezenAan,
+      assignees: [],
+      subtaken: [],
+    }
+    try {
+      await addTask(newTask)
+      toast({ title: `"${s.titel}" toegevoegd`, variant: 'success' })
+    } catch {
+      toast({ title: 'Toevoegen mislukt', variant: 'error' })
+      throw new Error('Toevoegen mislukt')
+    }
+  }
+
+  const handleAiDismiss = (titel: string) => {
+    setDismissedTitels((prev) => new Set(Array.from(prev).concat(titel)))
+  }
 
   if (!wedding) return null
 
@@ -160,24 +239,19 @@ export function TakenShell() {
         }
       />
 
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => setTemplatesOpen(true)}
-          className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-        >
-          <Sparkles className="h-4 w-4" />
-          Voorgestelde taken
-        </Button>
-      </div>
-
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
 
       <AchterstandBanner aantal={achterstand} onSpringNaar={springNaarAchterstand} />
 
-      <ViewSwitcher view={view} onChange={setView} />
-
-      <TakenFilters filters={filters} onChange={setFilters} members={members} />
+      <TakenFilters
+        filters={filters}
+        onChange={setFilters}
+        members={members}
+        view={view}
+        onViewChange={setView}
+        aiActive={aiActive}
+        onAiToggle={handleAiToggle}
+      />
 
       {view === 'lijst' && (
         <ListView
@@ -194,6 +268,12 @@ export function TakenShell() {
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
           achterstandRef={achterstandRef}
+          aiActive={aiActive}
+          aiSuggesties={zichtbareSuggesties}
+          aiLoading={aiLoading}
+          aiError={aiError}
+          onAiToevoegen={handleAiToevoegen}
+          onAiDismiss={handleAiDismiss}
         />
       )}
 
@@ -223,7 +303,10 @@ export function TakenShell() {
 
       <TaskForm
         open={formOpen}
-        onOpenChange={(o) => { setFormOpen(o); if (!o) setNewTaskDeadline(null) }}
+        onOpenChange={(o) => {
+          setFormOpen(o)
+          if (!o) setNewTaskDeadline(null)
+        }}
         initial={editTask}
         defaultDeadline={editTask ? undefined : (newTaskDeadline ?? undefined)}
         vendors={vendors}
@@ -248,7 +331,9 @@ export function TakenShell() {
         open={delTask !== null}
         onOpenChange={(o) => !o && setDelTask(null)}
         title="Taak verwijderen?"
-        description={delTask ? `Weet je zeker dat je "${delTask.titel}" wilt verwijderen?` : undefined}
+        description={
+          delTask ? `Weet je zeker dat je "${delTask.titel}" wilt verwijderen?` : undefined
+        }
         onConfirm={async () => {
           if (!delTask) return
           try {
@@ -275,62 +360,6 @@ export function TakenShell() {
           }
         }}
       />
-
-      <AIVoorgesteldeTakenModal
-        open={templatesOpen}
-        onOpenChange={setTemplatesOpen}
-        tasks={tasks}
-        wedding={wedding}
-        onConfirm={async (aiTaken: AITaakSuggestie[]) => {
-          type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
-          const newTasks: NewTask[] = aiTaken.map((t) => ({
-            titel: t.titel,
-            omschrijving: t.omschrijving,
-            deadline: t.deadline as ISODate,
-            status: 'open',
-            prioriteit: t.prioriteit,
-            toegewezenAan: t.toegewezenAan,
-            assignees: [],
-            subtaken: [],
-          }))
-          try {
-            await addAITaken(newTasks)
-            toast({
-              title: `${newTasks.length} ${newTasks.length === 1 ? 'taak' : 'taken'} toegevoegd`,
-              variant: 'success',
-            })
-          } catch {
-            toast({ title: 'Toevoegen mislukt', variant: 'error' })
-          }
-        }}
-      />
-    </div>
-  )
-}
-
-function ViewSwitcher({ view, onChange }: { view: View; onChange: (v: View) => void }) {
-  const tabs: { key: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { key: 'lijst', label: 'Lijst', icon: LayoutList },
-    { key: 'kalender', label: 'Kalender', icon: CalendarDays },
-  ]
-  return (
-    <div className="mb-4 inline-flex rounded-lg border border-border bg-card p-1">
-      {tabs.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          onClick={() => onChange(t.key)}
-          className={cn(
-            'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
-            view === t.key
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <t.icon className="h-4 w-4" />
-          {t.label}
-        </button>
-      ))}
     </div>
   )
 }

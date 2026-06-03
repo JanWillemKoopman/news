@@ -1,17 +1,55 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CalendarClock, CheckCircle2, Heart } from 'lucide-react'
 
-import { Progress } from '@/components/bruiloft/ui'
 import { dagenTot } from '@/lib/bruiloft/format'
-import type { Task, Wedding } from '@/lib/bruiloft/types'
-
 import { berekenTaakStats } from '@/lib/bruiloft/taken/stats'
+import type { Task, Wedding } from '@/lib/bruiloft/types'
 
 interface TakenStatsStripProps {
   tasks: Task[]
   wedding: Wedding
+}
+
+function CircularProgress({ pct }: { pct: number }) {
+  const r = 28
+  const circumference = 2 * Math.PI * r
+  const offset = circumference - (pct / 100) * circumference
+
+  return (
+    <svg width={72} height={72} className="shrink-0 -rotate-90">
+      <circle
+        cx={36}
+        cy={36}
+        r={r}
+        fill="none"
+        stroke="#f3e8ec"
+        strokeWidth={6}
+      />
+      <circle
+        cx={36}
+        cy={36}
+        r={r}
+        fill="none"
+        stroke="#be123c"
+        strokeWidth={6}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        className="transition-all duration-500"
+      />
+      <text
+        x={36}
+        y={36}
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="rotate-90 fill-foreground text-[13px] font-semibold"
+        style={{ transform: 'rotate(90deg)', transformOrigin: '36px 36px', fontSize: 13 }}
+      >
+        {pct}%
+      </text>
+    </svg>
+  )
 }
 
 export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
@@ -19,57 +57,95 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
   const dagenTotTrouw = wedding.trouwdatum ? Math.max(0, dagenTot(wedding.trouwdatum)) : null
 
   return (
-    <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-      <StatTile
-        icon={Heart}
-        label="Tot de trouwdag"
-        value={dagenTotTrouw != null ? `${dagenTotTrouw} dgn` : '—'}
-        accent="rose"
-      />
-      <StatTile
-        icon={CheckCircle2}
-        label={`${stats.klaar} van ${stats.totaal} afgerond`}
-        value={`${stats.pctKlaar}%`}
-        accent="emerald"
-        below={<Progress value={stats.pctKlaar} className="mt-2" />}
-      />
-      <StatTile
-        icon={CalendarClock}
-        label="Uiterlijke datum deze maand"
-        value={String(stats.dezeMaand)}
-        accent="amber"
-      />
-      <StatTile
-        icon={AlertTriangle}
-        label="Achterstallig"
-        value={String(stats.achterstallig)}
-        accent={stats.achterstallig > 0 ? 'rose-strong' : 'muted'}
-      />
+    <div className="mb-6 rounded-lg border border-border bg-white shadow-sm">
+      {/* Main progress row */}
+      <div className="flex items-center gap-4 p-4">
+        <CircularProgress pct={stats.pctKlaar} />
+
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-muted-foreground">Voortgang</p>
+          <p className="text-base font-semibold text-foreground leading-tight">
+            {stats.klaar} van {stats.totaal} taken afgerond
+          </p>
+          {dagenTotTrouw != null && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Nog {dagenTotTrouw} {dagenTotTrouw === 1 ? 'dag' : 'dagen'} tot de trouwdag
+            </p>
+          )}
+        </div>
+
+        {/* Desktop-only stat numbers */}
+        <div className="hidden sm:flex items-center divide-x divide-border">
+          <StatNum value={dagenTotTrouw ?? 0} label="dagen te gaan" />
+          <StatNum value={stats.dezeMaand} label="deze maand" />
+          <StatNum
+            value={stats.achterstallig}
+            label="achterstallig"
+            highlight={stats.achterstallig > 0}
+          />
+        </div>
+      </div>
+
+      {/* Mobile-only stat row */}
+      <div className="flex sm:hidden border-t border-border divide-x divide-border">
+        <StatNumMobile value={dagenTotTrouw ?? 0} label="dagen" />
+        <StatNumMobile value={stats.dezeMaand} label="deze maand" />
+        <StatNumMobile
+          value={stats.achterstallig}
+          label="achterstallig"
+          highlight={stats.achterstallig > 0}
+        />
+      </div>
     </div>
   )
 }
 
-
-function StatTile({
-  icon: Icon,
-  label,
+function StatNum({
   value,
-  below,
+  label,
+  highlight,
 }: {
-  icon: React.ComponentType<{ className?: string }>
+  value: number
   label: string
-  value: string
-  accent?: string
-  below?: React.ReactNode
+  highlight?: boolean
 }) {
   return (
-    <div className="rounded-lg border border-border bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <Icon className="h-5 w-5 text-gray-500" />
-        <span className="text-2xl font-semibold tabular-nums text-foreground">{value}</span>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">{label}</p>
-      {below}
+    <div className="px-5 text-center">
+      <p
+        className={
+          highlight
+            ? 'text-2xl font-bold tabular-nums text-rose-600'
+            : 'text-2xl font-bold tabular-nums text-foreground'
+        }
+      >
+        {value}
+      </p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function StatNumMobile({
+  value,
+  label,
+  highlight,
+}: {
+  value: number
+  label: string
+  highlight?: boolean
+}) {
+  return (
+    <div className="flex-1 py-2.5 text-center">
+      <p
+        className={
+          highlight
+            ? 'text-lg font-bold tabular-nums text-rose-600'
+            : 'text-lg font-bold tabular-nums text-foreground'
+        }
+      >
+        {value}
+      </p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )
 }
