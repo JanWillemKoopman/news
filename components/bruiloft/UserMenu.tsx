@@ -28,6 +28,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
+  const [avatarError, setAvatarError] = React.useState(false)
   const menuRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -74,7 +75,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
   const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
-  const [avatarError, setAvatarError] = React.useState(false)
 
   async function onSignOut() {
     setOpen(false)
