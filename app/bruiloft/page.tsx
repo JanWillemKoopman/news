@@ -1,14 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
+import { CalendarHeart, ListChecks, MapPin, Users, Wallet } from 'lucide-react'
 
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { ProfielKaart } from '@/components/bruiloft/ProfielKaart'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
 import {
-  Button,
   Card,
   CardContent,
   Money,
@@ -51,15 +50,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl">
       {/* Hero: aftelteller. Lichte rhino-achtige kaart met serif headline. */}
-      <Card className="relative mb-8 overflow-hidden border-border bg-white">
-        <Button
-          variant="outline"
-          size="sm"
-          className="absolute right-3 top-3"
-          onClick={openWeddingSettings}
-        >
-          <Settings2 className="h-4 w-4" /> Onze gegevens
-        </Button>
+      <Card className="mb-8 overflow-hidden border-border bg-white">
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
           <p className="text-2xl md:text-3xl lg:text-lg font-medium text-[#101828]">
             {wedding.partner1Naam} <span>&amp;</span>{' '}
