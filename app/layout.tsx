@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     template: '%s · Ons Trouwplan',
   },
   description: 'Plan jullie bruiloft samen — gasten, budget, taken, draaiboek en meer.',
+  manifest: '/manifest.webmanifest',
+  // Installeerbaar als fullscreen app op iOS (titel + standalone launch).
+  appleWebApp: { capable: true, title: 'Ons Trouwplan', statusBarStyle: 'default' },
 }
 
 // De body heeft zelf geen achtergrond; elke (sub-)route zet die via een eigen

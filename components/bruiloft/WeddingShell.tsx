@@ -8,6 +8,7 @@ import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
 import { moduleForPath } from './nav'
@@ -173,6 +174,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         wedding={wedding}
       />
       <ProfielNudge />
+      <InstallPrompt />
     </div>
   )
 }
