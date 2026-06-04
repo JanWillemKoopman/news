@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, Heart, LogOut, Settings2, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -25,6 +25,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const weddings = useBruiloftStore((s) => s.weddings)
   const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
   const switchWedding = useBruiloftStore((s) => s.switchWedding)
+  const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
   const menuRef = React.useRef<HTMLDivElement>(null)
@@ -179,6 +180,19 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             ) : null}
 
             <div className="my-1 h-px bg-border" />
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                openWeddingSettings()
+              }}
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-gray-50"
+            >
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
+              Bruiloft-gegevens
+            </button>
 
             {role === 'owner' ? (
               <Link

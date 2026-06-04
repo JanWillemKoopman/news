@@ -22,6 +22,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
     partner2Naam: '',
     trouwdatum: '',
     locatie: '',
+    woonplaats: '',
     totaalBudget: '',
     aantalDaggasten: '',
     aantalAvondgasten: '',
@@ -34,6 +35,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
         partner2Naam: wedding.partner2Naam,
         trouwdatum: wedding.trouwdatum,
         locatie: wedding.locatie,
+        woonplaats: wedding.woonplaats,
         totaalBudget: String(wedding.totaalBudget || ''),
         aantalDaggasten: String(wedding.aantalDaggasten || ''),
         aantalAvondgasten: String(wedding.aantalAvondgasten || ''),
@@ -53,6 +55,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
         partner2Naam: form.partner2Naam.trim(),
         trouwdatum: form.trouwdatum,
         locatie: form.locatie.trim(),
+        woonplaats: form.woonplaats.trim(),
         totaalBudget: Number(form.totaalBudget) || 0,
         aantalDaggasten: Number(form.aantalDaggasten) || 0,
         aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
@@ -86,10 +89,23 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
               onChange={(v) => setForm((f) => ({ ...f, trouwdatum: v }))}
             />
           </Field>
-          <Field label="Locatie" htmlFor="s-loc">
-            <Input id="s-loc" value={form.locatie} onChange={update('locatie')} />
+          <Field label="Trouwlocatie" htmlFor="s-loc">
+            <Input
+              id="s-loc"
+              value={form.locatie}
+              onChange={update('locatie')}
+              placeholder="Bijv. Kasteel De Hooge Vuursche"
+            />
           </Field>
         </div>
+        <Field label="Woonplaats" htmlFor="s-woonplaats">
+          <Input
+            id="s-woonplaats"
+            value={form.woonplaats}
+            onChange={update('woonplaats')}
+            placeholder="Bijv. Utrecht"
+          />
+        </Field>
         <Field label="Totaalbudget (€)" htmlFor="s-budget">
           <Input
             id="s-budget"
