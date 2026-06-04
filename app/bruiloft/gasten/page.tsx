@@ -1,20 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import {
-  CalendarDays,
-  Download,
-  Mail,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  Users,
-  Users2,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Download, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
+import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
+import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
+import { PageHeader } from '@/components/bruiloft/PageHeader'
 import {
   Button,
   ConfirmDialog,
@@ -22,13 +14,11 @@ import {
   Field,
   Input,
   Modal,
-  Select,
+  OverflowMenu,
   StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
-import { gastTellingen } from '@/lib/bruiloft/derived'
-import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Guest } from '@/lib/bruiloft/types'
 
@@ -78,8 +68,6 @@ export default function GastenPage() {
     setRsvpTarget(null)
     setRsvpEmail('')
   }
-
-  const t = gastTellingen(guests)
 
   const gefilterd = guests.filter((g) => {
     if (fCategorie !== 'all' && g.categorie !== fCategorie) return false
@@ -135,57 +123,30 @@ export default function GastenPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
+      <PageHeader
+        titel="Gastenlijst"
+        beschrijving="Beheer de gastenlijst en houd de reacties bij."
+        actie={
+          <>
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Gast toevoegen
+            </Button>
+            <OverflowMenu
+              items={[
+                {
+                  label: 'Exporteer gastenlijst',
+                  icon: Download,
+                  onClick: exporteer,
+                  disabled: guests.length === 0,
+                },
+              ]}
+            />
+          </>
+        }
+      />
 
-      {/* ── Samenvatting ── */}
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        Samenvatting
-      </p>
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SamenvattingCard
-          icon={Users2}
-          titel="RSVP-reacties"
-          stats={[
-            { label: 'Bevestigd', waarde: t.bevestigd },
-            { label: 'Afgemeld', waarde: t.afgemeld },
-            { label: 'Geen reactie', waarde: t.geenReactie },
-          ]}
-        />
-        <SamenvattingCard
-          icon={Users}
-          titel="Gasttellingen"
-          stats={[
-            { label: 'Totaal', waarde: t.totaal },
-            { label: 'Uitgenodigd', waarde: t.uitgenodigd },
-          ]}
-        />
-        <SamenvattingCard
-          icon={CalendarDays}
-          titel="Aanwezigheid"
-          stats={[
-            { label: 'Daggasten', waarde: t.daggasten },
-            { label: 'Avondgasten', waarde: t.avondgasten },
-          ]}
-        />
-      </div>
-
-      {/* ── Gastenlijst sectieheader ── */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Gastenlijst</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Beheer de gastenlijst en houd de reacties bij.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="outline" onClick={exporteer} disabled={guests.length === 0}>
-            <Download className="h-4 w-4" /> Exporteer gastenlijst
-          </Button>
-          <Button onClick={openNieuw}>
-            <Plus className="h-4 w-4" /> Gast toevoegen
-          </Button>
-        </div>
-      </div>
+      {guests.length > 0 ? <GastenStatsStrip guests={guests} /> : null}
 
       {/* ── Gastenlijst container ── */}
       {guests.length === 0 ? (
@@ -200,38 +161,18 @@ export default function GastenPage() {
           }
         />
       ) : (
-        <div className="rounded-lg border border-border bg-white shadow-sm">
-
-          {/* Filter balk – lichtgrijze achtergrond, aansluitend op de tabel */}
-          <div className="grid gap-3 border-b border-border bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={zoek}
-                onChange={(e) => setZoek(e.target.value)}
-                placeholder="Zoek op naam…"
-                className="pl-9"
-              />
-            </div>
-            <Select value={fCategorie} onChange={(e) => setFCategorie(e.target.value)}>
-              <option value="all">Alle categorieën</option>
-              {GUEST_CATEGORIEEN.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </Select>
-            <Select value={fType} onChange={(e) => setFType(e.target.value)}>
-              <option value="all">Alle types</option>
-              {GASTTYPES.map((tp) => (
-                <option key={tp} value={tp}>{tp}</option>
-              ))}
-            </Select>
-            <Select value={fRsvp} onChange={(e) => setFRsvp(e.target.value)}>
-              <option value="all">Alle RSVP-statussen</option>
-              {RSVP_STATUSSEN.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </Select>
-          </div>
+        <>
+          <GastenFilters
+            zoek={zoek}
+            onZoek={setZoek}
+            categorie={fCategorie}
+            onCategorie={setFCategorie}
+            type={fType}
+            onType={setFType}
+            rsvp={fRsvp}
+            onRsvp={setFRsvp}
+          />
+          <div className="rounded-lg border border-border bg-white shadow-sm">
 
           {/* Tabel (desktop) */}
           {gefilterd.length === 0 ? (
@@ -367,7 +308,8 @@ export default function GastenPage() {
               ? `${guests.length} gasten weergegeven`
               : `${gefilterd.length} van ${guests.length} gasten weergegeven`}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       <GuestForm
@@ -459,33 +401,6 @@ export default function GastenPage() {
           </div>
         </form>
       </Modal>
-    </div>
-  )
-}
-
-function SamenvattingCard({
-  icon: Icon,
-  titel,
-  stats,
-}: {
-  icon: LucideIcon
-  titel: string
-  stats: { label: string; waarde: number }[]
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2.5">
-        <Icon className="h-5 w-5 shrink-0 text-gray-500" />
-        <p className="font-semibold text-foreground">{titel}</p>
-      </div>
-      <div className="space-y-1">
-        {stats.map((s) => (
-          <p key={s.label} className="text-sm text-muted-foreground">
-            {s.label}:{' '}
-            <span className="font-medium text-foreground">{s.waarde}</span>
-          </p>
-        ))}
-      </div>
     </div>
   )
 }

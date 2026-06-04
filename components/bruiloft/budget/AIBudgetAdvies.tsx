@@ -74,14 +74,17 @@ export function AIBudgetAdvies() {
   return (
     <div className="mb-6">
       {!zichtbaar ? (
-        <Button
-          variant="outline"
-          onClick={analyseer}
-          className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-        >
-          <Sparkles className="h-4 w-4" />
-          Analyseer mijn budget
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={analyseer}
+            className="gap-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+          >
+            <Sparkles className="h-4 w-4" />
+            Analyseer mijn budget
+          </Button>
+        </div>
       ) : (
         <Card className="border-rose-100">
           <CardContent className="p-5">

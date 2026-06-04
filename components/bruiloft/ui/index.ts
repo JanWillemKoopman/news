@@ -6,6 +6,8 @@ export { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 export { StatusBadge } from './StatusBadge'
 export { Money } from './Money'
 export { EmptyState } from './EmptyState'
+export { OverflowMenu } from './OverflowMenu'
+export type { OverflowMenuItem } from './OverflowMenu'
 export { StatCard } from './StatCard'
 export { Field, Select } from './Field'
 export { Modal, ConfirmDialog } from './Modal'

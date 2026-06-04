@@ -9,7 +9,7 @@ import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
-import { Button, ConfirmDialog, EmptyState, Skeleton, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, EmptyState, OverflowMenu, Skeleton, useToast } from '@/components/bruiloft/ui'
 
 // Recharts is zwaar; lazy laden zodat /budget sneller binnenkomt.
 const BudgetSummary = dynamic(
@@ -89,21 +89,30 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Budget"
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
         actie={
           <>
-            <Button variant="outline" onClick={() => setDistributeOpen(true)}>
-              <PieChart className="h-4 w-4" /> Verdeel budget
-            </Button>
-            <Button variant="outline" onClick={exporteer} disabled={budgetItems.length === 0}>
-              <Download className="h-4 w-4" /> Exporteer budget
-            </Button>
             <Button onClick={openNieuw}>
               <Plus className="h-4 w-4" /> Budgetitem toevoegen
             </Button>
+            <OverflowMenu
+              items={[
+                {
+                  label: 'Verdeel budget',
+                  icon: PieChart,
+                  onClick: () => setDistributeOpen(true),
+                },
+                {
+                  label: 'Exporteer budget',
+                  icon: Download,
+                  onClick: exporteer,
+                  disabled: budgetItems.length === 0,
+                },
+              ]}
+            />
           </>
         }
       />
@@ -111,7 +120,7 @@ export default function BudgetPage() {
       <AIBudgetAdvies />
 
       {afwijkingen.overBudget ? (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
           <span>
             De geoffreerde bedragen samen liggen boven het totaalbudget. Bekijk de
