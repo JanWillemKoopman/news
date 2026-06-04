@@ -14,7 +14,7 @@ export { Modal, ConfirmDialog } from './Modal'
 export { Skeleton } from './Skeleton'
 export { ToastProvider, useToast } from './Toast'
 
-export { Input } from '@/components/ui/input'
+export { Input, eigennaamInputProps } from '@/components/ui/input'
 export { Textarea } from '@/components/ui/textarea'
 export { Progress } from '@/components/ui/progress'
 export { Label } from '@/components/ui/label'

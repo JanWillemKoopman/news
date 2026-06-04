@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button, Field, Input, Modal, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, Modal, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Wedding } from '@/lib/bruiloft/types'
@@ -76,10 +76,10 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Naam partner 1" htmlFor="s-p1">
-            <Input id="s-p1" value={form.partner1Naam} onChange={update('partner1Naam')} required />
+            <Input id="s-p1" value={form.partner1Naam} onChange={update('partner1Naam')} required {...eigennaamInputProps} />
           </Field>
           <Field label="Naam partner 2" htmlFor="s-p2">
-            <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required />
+            <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required {...eigennaamInputProps} />
           </Field>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -95,6 +95,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
               value={form.locatie}
               onChange={update('locatie')}
               placeholder="Bijv. Kasteel De Hooge Vuursche"
+              {...eigennaamInputProps}
             />
           </Field>
         </div>
@@ -104,6 +105,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             value={form.woonplaats}
             onChange={update('woonplaats')}
             placeholder="Bijv. Utrecht"
+            {...eigennaamInputProps}
           />
         </Field>
         <Field label="Totaalbudget (€)" htmlFor="s-budget">
