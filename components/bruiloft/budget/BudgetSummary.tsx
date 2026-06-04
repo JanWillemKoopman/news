@@ -4,8 +4,6 @@ import {
   Bar,
   BarChart,
   Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,12 +25,15 @@ interface BudgetSummaryProps {
 export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   const totalen = budgetTotalen(items, vendors, wedding)
 
-  const donutData = totalen.perCategorie
+  const categorieData = totalen.perCategorie
     .map((c) => ({
       naam: c.categorie,
       waarde: c.geoffreerd > 0 ? c.geoffreerd : c.geschat,
     }))
     .filter((d) => d.waarde > 0)
+    .sort((a, b) => b.waarde - a.waarde)
+
+  const maxCategorie = categorieData.length > 0 ? categorieData[0].waarde : 0
 
   const barData = [
     { naam: 'Geschat', bedrag: totalen.totaalGeschat },
@@ -45,7 +46,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {/* Totalen */}
-      <Card className={donutData.length === 0 ? 'sm:col-span-2 lg:col-span-3' : 'sm:col-span-2 lg:col-span-1'}>
+      <Card className={categorieData.length === 0 ? 'sm:col-span-2 lg:col-span-3' : 'sm:col-span-2 lg:col-span-1'}>
         <CardContent className="grid grid-cols-2 gap-4 p-6">
           <Tegel label="Totaalbudget" bedrag={wedding.totaalBudget} />
           <Tegel label="Geschat" bedrag={totalen.totaalGeschat} />
@@ -58,49 +59,36 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
         </CardContent>
       </Card>
 
-      {/* Donut per categorie — verborgen zolang er geen bedragen zijn */}
-      {donutData.length > 0 ? (
+      {/* Verdeling per categorie — horizontale balken, verborgen zolang er geen bedragen zijn */}
+      {categorieData.length > 0 ? (
         <Card className="lg:col-span-1">
           <CardContent className="p-6">
-            <h3 className="mb-2 text-lg text-foreground">Verdeling per categorie</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  dataKey="waarde"
-                  nameKey="naam"
-                  innerRadius={55}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  stroke="none"
-                >
-                  {donutData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number, naam) => [formatEuro(value), naam as string]}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid hsl(var(--border))',
-                    background: 'hsl(var(--card))',
-                    color: 'hsl(var(--card-foreground))',
-                    textTransform: 'capitalize',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-              {donutData.map((d, i) => (
-                <li key={d.naam} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                    aria-hidden
-                  />
-                  <span className="capitalize">{d.naam}</span>
-                </li>
-              ))}
+            <h3 className="mb-4 text-lg text-foreground">Verdeling per categorie</h3>
+            <ul className="space-y-3">
+              {categorieData.map((d, i) => {
+                const pct = maxCategorie > 0 ? (d.waarde / maxCategorie) * 100 : 0
+                return (
+                  <li key={d.naam} className="flex items-center gap-3">
+                    <span className="w-24 shrink-0 truncate text-sm capitalize text-foreground sm:w-28">
+                      {d.naam}
+                    </span>
+                    <div className="flex flex-1 items-center gap-2">
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.max(pct, 2)}%`,
+                            backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                          }}
+                        />
+                      </div>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {formatEuro(d.waarde)}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </CardContent>
         </Card>
