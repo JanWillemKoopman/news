@@ -1,13 +1,12 @@
 'use client'
 
-import * as React from 'react'
 import Link from 'next/link'
 import { CalendarHeart, ListChecks, MapPin, Settings2, Users, Wallet } from 'lucide-react'
 
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { ProfielKaart } from '@/components/bruiloft/ProfielKaart'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
-import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import {
   Button,
   Card,
@@ -32,8 +31,7 @@ export default function DashboardPage() {
   const tasks = useBruiloftStore((s) => s.tasks)
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
-
-  const [settingsOpen, setSettingsOpen] = React.useState(false)
+  const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
 
   if (!wedding) return null
 
@@ -55,13 +53,12 @@ export default function DashboardPage() {
       {/* Hero: aftelteller. Lichte rhino-achtige kaart met serif headline. */}
       <Card className="relative mb-8 overflow-hidden border-border bg-white">
         <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Gegevens bewerken"
-          className="absolute right-3 top-3 text-gray-500 hover:text-gray-900"
-          onClick={() => setSettingsOpen(true)}
+          variant="outline"
+          size="sm"
+          className="absolute right-3 top-3"
+          onClick={openWeddingSettings}
         >
-          <Settings2 className="h-5 w-5" />
+          <Settings2 className="h-4 w-4" /> Onze gegevens
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
           <p className="text-2xl md:text-3xl lg:text-lg font-medium text-[#101828]">
@@ -97,6 +94,11 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Onze gegevens: de essentiële profielgegevens prominent in beeld. */}
+      <div className="mb-8">
+        <ProfielKaart wedding={wedding} onBewerk={openWeddingSettings} />
+      </div>
 
       <PageHeader titel="Overzicht" beschrijving="Alles in één oogopslag." />
 
@@ -177,12 +179,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <WeddingSettingsForm
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        wedding={wedding}
-      />
     </div>
   )
 }

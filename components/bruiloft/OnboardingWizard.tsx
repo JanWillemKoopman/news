@@ -26,6 +26,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
   const [trouwdatum, setTrouwdatum] = React.useState('')
   const [partner1, setPartner1] = React.useState('')
   const [partner2, setPartner2] = React.useState('')
+  const [woonplaats, setWoonplaats] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [daggasten, setDaggasten] = React.useState('')
@@ -66,6 +67,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
       partner2Naam: partner2.trim() || 'Partner 2',
       trouwdatum,
       locatie: '',
+      woonplaats: woonplaats.trim(),
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
       aantalDaggasten: Number(daggasten) || 0,
       aantalAvondgasten: Number(avondgasten) || 0,
@@ -176,6 +178,14 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     value={partner2}
                     onChange={(e) => setPartner2(e.target.value)}
                     placeholder="Bijv. Tom"
+                  />
+                </Field>
+                <Field label="Woonplaats" htmlFor="ob-woonplaats">
+                  <Input
+                    id="ob-woonplaats"
+                    value={woonplaats}
+                    onChange={(e) => setWoonplaats(e.target.value)}
+                    placeholder="Bijv. Utrecht"
                   />
                 </Field>
               </div>

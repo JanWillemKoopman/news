@@ -11,8 +11,10 @@ import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruilo
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
 import { moduleForPath } from './nav'
+import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
+import { WeddingSettingsForm } from './WeddingSettingsForm'
 
 interface WeddingShellProps {
   children: React.ReactNode
@@ -36,6 +38,8 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
   const stopRealtime = useBruiloftStore((s) => s.stopRealtime)
+  const weddingSettingsOpen = useBruiloftStore((s) => s.weddingSettingsOpen)
+  const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
 
   React.useEffect(() => {
@@ -159,6 +163,16 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         </div>
       </div>
       <MobileNav />
+
+      {/* App-brede profielgegevens-modal + nudge (overal te openen). */}
+      <WeddingSettingsForm
+        open={weddingSettingsOpen}
+        onOpenChange={(o) => {
+          if (!o) closeWeddingSettings()
+        }}
+        wedding={wedding}
+      />
+      <ProfielNudge />
     </div>
   )
 }
