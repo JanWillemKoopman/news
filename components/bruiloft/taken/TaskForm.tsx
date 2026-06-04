@@ -75,17 +75,32 @@ export function TaskForm({
   onSubmit,
 }: TaskFormProps) {
   const [form, setForm] = React.useState<NewTask>(() => leeg(defaultDeadline))
+  const [titelFout, setTitelFout] = React.useState(false)
+  const [deadlineFout, setDeadlineFout] = React.useState(false)
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanTask(initial) : leeg(defaultDeadline))
+    if (open) {
+      setForm(initial ? vanTask(initial) : leeg(defaultDeadline))
+      setTitelFout(false)
+      setDeadlineFout(false)
+    }
   }, [open, initial, defaultDeadline])
 
-  const set = <K extends keyof NewTask>(key: K, value: NewTask[K]) =>
+  const set = <K extends keyof NewTask>(key: K, value: NewTask[K]) => {
+    if (key === 'titel' && titelFout) setTitelFout(false)
+    if (key === 'deadline' && deadlineFout) setDeadlineFout(false)
     setForm((f) => ({ ...f, [key]: value }))
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.titel.trim() || !form.deadline) return
+    const titelLeeg = !form.titel.trim()
+    const deadlineLeeg = !form.deadline
+    if (titelLeeg || deadlineLeeg) {
+      setTitelFout(titelLeeg)
+      setDeadlineFout(deadlineLeeg)
+      return
+    }
     // Strip lege subtaken.
     const subtaken = form.subtaken.filter((s) => s.titel.trim() !== '')
     onSubmit({ ...form, titel: form.titel.trim(), subtaken })
@@ -95,8 +110,18 @@ export function TaskForm({
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={initial ? 'Taak bewerken' : 'Taak toevoegen'}>
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Titel" htmlFor="titel">
-          <Input id="titel" value={form.titel} onChange={(e) => set('titel', e.target.value)} required />
+        <Field
+          label="Titel"
+          htmlFor="titel"
+          required
+          error={titelFout ? 'Vul een titel in' : undefined}
+        >
+          <Input
+            id="titel"
+            value={form.titel}
+            aria-invalid={titelFout || undefined}
+            onChange={(e) => set('titel', e.target.value)}
+          />
         </Field>
 
         <Field label="Omschrijving" htmlFor="oms">
@@ -113,7 +138,7 @@ export function TaskForm({
         </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Deadline">
+          <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
             <DateRoller
               value={form.deadline}
               onChange={(v) => set('deadline', v)}

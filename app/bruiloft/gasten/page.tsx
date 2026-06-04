@@ -398,9 +398,33 @@ export default function GastenPage() {
         }
         onConfirm={async () => {
           if (!delGuest) return
+          const verwijderd = delGuest
           try {
-            await deleteGuest(delGuest.id)
-            toast({ title: 'Gast verwijderd', variant: 'success' })
+            await deleteGuest(verwijderd.id)
+            toast({
+              title: 'Gast verwijderd',
+              description: `${verwijderd.voornaam} ${verwijderd.achternaam}`.trim(),
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void addGuest({
+                    voornaam: verwijderd.voornaam,
+                    achternaam: verwijderd.achternaam,
+                    categorie: verwijderd.categorie,
+                    gasttype: verwijderd.gasttype,
+                    rsvpStatus: verwijderd.rsvpStatus,
+                    dieetwensen: verwijderd.dieetwensen,
+                    heeftPartner: verwijderd.heeftPartner,
+                    partnerNaam: verwijderd.partnerNaam,
+                    aantalKinderen: verwijderd.aantalKinderen,
+                    adres: verwijderd.adres,
+                    notitie: verwijderd.notitie,
+                  })
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }

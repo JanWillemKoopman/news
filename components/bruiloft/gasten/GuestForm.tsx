@@ -57,10 +57,15 @@ function vanGuest(g: Guest): NewGuest {
 export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormProps) {
   const [form, setForm] = React.useState<NewGuest>(leeg)
   const [naamFout, setNaamFout] = React.useState(false)
+  // Baseline om niet-opgeslagen wijzigingen te detecteren bij het sluiten.
+  const baseline = React.useRef<string>(JSON.stringify(leeg()))
+  const voornaamRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (open) {
-      setForm(initial ? vanGuest(initial) : leeg())
+      const start = initial ? vanGuest(initial) : leeg()
+      setForm(start)
+      baseline.current = JSON.stringify(start)
       setNaamFout(false)
     }
   }, [open, initial])
@@ -70,8 +75,19 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  // Beschermt tegen onbedoeld verlies van ingevoerde gegevens.
+  const sluit = (o: boolean) => {
+    if (!o && dirty) {
+      if (!window.confirm('Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten?'))
+        return
+    }
+    onOpenChange(o)
+  }
+
+  // closeAfter=false houdt de modal open en reset het formulier ("nog een toevoegen").
+  const verwerk = (closeAfter: boolean) => {
     if (!form.voornaam.trim() && !form.achternaam.trim()) {
       setNaamFout(true)
       return
@@ -83,13 +99,26 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
       partnerNaam: form.heeftPartner ? form.partnerNaam.trim() : '',
       aantalKinderen: Number(form.aantalKinderen) || 0,
     })
-    onOpenChange(false)
+    if (closeAfter) {
+      onOpenChange(false)
+    } else {
+      const leegForm = leeg()
+      setForm(leegForm)
+      baseline.current = JSON.stringify(leegForm)
+      setNaamFout(false)
+      voornaamRef.current?.focus()
+    }
+  }
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    verwerk(true)
   }
 
   return (
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={sluit}
       title={initial ? 'Gast bewerken' : 'Gast toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
@@ -101,6 +130,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
           >
             <Input
               id="vn"
+              ref={voornaamRef}
               value={form.voornaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('voornaam', e.target.value)}
@@ -218,10 +248,15 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
           />
         </Field>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex flex-wrap justify-end gap-3 pt-2">
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
+          {!initial ? (
+            <Button type="button" variant="secondary" onClick={() => verwerk(false)}>
+              Opslaan &amp; nog een toevoegen
+            </Button>
+          ) : null}
           <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>

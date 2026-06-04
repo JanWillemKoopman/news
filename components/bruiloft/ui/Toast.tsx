@@ -7,17 +7,27 @@ import { cn } from '@/lib/utils'
 
 type ToastVariant = 'default' | 'success' | 'error'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastItem {
   id: number
   title: string
   description?: string
   variant: ToastVariant
+  action?: ToastAction
 }
 
 interface ToastInput {
   title: string
   description?: string
   variant?: ToastVariant
+  /** Optionele actieknop, bijv. "Ongedaan maken". */
+  action?: ToastAction
+  /** Zichtbaarheidsduur in ms. Default 3800; gebruik langer voor undo-acties. */
+  duration?: number
 }
 
 interface ToastContextValue {
@@ -35,10 +45,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const toast = React.useCallback(
-    ({ title, description, variant = 'default' }: ToastInput) => {
+    ({ title, description, variant = 'default', action, duration = 3800 }: ToastInput) => {
       const id = ++idRef.current
-      setItems((list) => [...list, { id, title, description, variant }])
-      setTimeout(() => remove(id), 3800)
+      setItems((list) => [...list, { id, title, description, variant, action }])
+      setTimeout(() => remove(id), duration)
     },
     [remove]
   )
@@ -79,6 +89,18 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
         <p className="text-sm font-medium text-foreground">{item.title}</p>
         {item.description ? (
           <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
+        ) : null}
+        {item.action ? (
+          <button
+            type="button"
+            onClick={() => {
+              item.action?.onClick()
+              onClose()
+            }}
+            className="mt-1.5 text-xs font-semibold text-rose-600 underline-offset-2 hover:underline"
+          >
+            {item.action.label}
+          </button>
         ) : null}
       </div>
       <button

@@ -159,14 +159,14 @@ export async function POST(request: NextRequest) {
 
     // Retourneer cache als: vingerafdruk onveranderd OF nog binnen cooldown
     if (cacheValid && (fingerprintMatch || withinCooldown)) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
     }
   }
 
   if (!checkRateLimit(user.id)) {
     // Bij rate-limit: retourneer stale cache als die er is
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
@@ -193,12 +193,12 @@ export async function POST(request: NextRequest) {
         { onConflict: 'wedding_id' }
       )
 
-    return NextResponse.json({ advies, cached: false })
+    return NextResponse.json({ advies, cached: false, updatedAt: new Date().toISOString() })
   } catch (err) {
     console.error('[api/ai/advice] Gemini fout:', err)
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true })
+      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }

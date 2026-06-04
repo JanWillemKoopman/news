@@ -32,8 +32,22 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
 // Sessiecache: voorkomt onnodige server-roundtrips bij navigatie binnen dezelfde tab.
 // De DB-cache in api/ai/advice handelt persistente caching af; dit is alleen de
 // in-memory laag voor de huidige browsersessie.
-const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number }>()
+const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number; updatedAt?: string }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 uur
+
+// Korte, warme "x geleden"-weergave voor de versheid van het advies.
+function geledenLabel(iso?: string): string {
+  if (!iso) return 'zojuist'
+  const verschil = Date.now() - new Date(iso).getTime()
+  if (!Number.isFinite(verschil) || verschil < 0) return 'zojuist'
+  const min = Math.floor(verschil / 60000)
+  if (min < 1) return 'zojuist'
+  if (min < 60) return `${min} min geleden`
+  const uur = Math.floor(min / 60)
+  if (uur < 24) return `${uur} uur geleden`
+  const dag = Math.floor(uur / 24)
+  return dag === 1 ? 'gisteren' : `${dag} dagen geleden`
+}
 
 function useFetchAIAdvies(weddingId: string | null) {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -48,6 +62,12 @@ function useFetchAIAdvies(weddingId: string | null) {
     const cached = adviesCache.get(weddingId)
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.data
     return null
+  })
+  const [updatedAt, setUpdatedAt] = React.useState<string | undefined>(() => {
+    if (!weddingId) return undefined
+    const cached = adviesCache.get(weddingId)
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.updatedAt
+    return undefined
   })
   // Start direct in loading-staat als er nog geen cache is, zodat er geen
   // flits van een lege kaart is voordat de useEffect de fetch triggert.
@@ -64,6 +84,7 @@ function useFetchAIAdvies(weddingId: string | null) {
       const cached = adviesCache.get(weddingId)
       if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
         setAdvies(cached.data)
+        setUpdatedAt(cached.updatedAt)
         return
       }
 
@@ -80,8 +101,13 @@ function useFetchAIAdvies(weddingId: string | null) {
         if (!res.ok) throw new Error(await res.text())
         const json = await res.json()
         if (json.advies?.length > 0) {
-          adviesCache.set(weddingId, { data: json.advies, fetchedAt: Date.now() })
+          adviesCache.set(weddingId, {
+            data: json.advies,
+            fetchedAt: Date.now(),
+            updatedAt: json.updatedAt,
+          })
           setAdvies(json.advies)
+          setUpdatedAt(json.updatedAt)
         } else {
           throw new Error('Leeg antwoord van AI')
         }
@@ -103,7 +129,7 @@ function useFetchAIAdvies(weddingId: string | null) {
     }
   }, [weddingId, fetch])
 
-  return { advies, loading, error, refresh: () => fetch(true) }
+  return { advies, loading, error, updatedAt, refresh: () => fetch(true) }
 }
 
 export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps) {
@@ -113,7 +139,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
   const mayEditTaken = canEdit(permissions, 'taken')
   const [bezig, setBezig] = React.useState<string | null>(null)
 
-  const { advies, loading, error, refresh } = useFetchAIAdvies(wedding?.id ?? null)
+  const { advies, loading, error, updatedAt, refresh } = useFetchAIAdvies(wedding?.id ?? null)
 
   const dagen = dagenTot(trouwdatum)
 
@@ -162,6 +188,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
             </div>
           </div>
         ) : advies && advies.length > 0 ? (
+          <>
           <ul className="divide-y divide-border">
             {advies.map((stap) => (
               <li key={stap.id} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
@@ -187,6 +214,11 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
               </li>
             ))}
           </ul>
+          <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+            <Sparkles className="mr-1 inline h-3 w-3 align-[-1px]" />
+            AI-advies · bijgewerkt {geledenLabel(updatedAt)} · controleer belangrijke keuzes altijd zelf.
+          </p>
+          </>
         ) : (
           // Fallback naar rule-based guidance als AI niet beschikbaar is
           <>

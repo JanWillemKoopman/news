@@ -61,17 +61,26 @@ export function VendorForm({
   onSubmit,
 }: VendorFormProps) {
   const [form, setForm] = React.useState<NewVendor>(leeg)
+  const [naamFout, setNaamFout] = React.useState(false)
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanVendor(initial) : leeg())
+    if (open) {
+      setForm(initial ? vanVendor(initial) : leeg())
+      setNaamFout(false)
+    }
   }, [open, initial])
 
-  const set = <K extends keyof NewVendor>(key: K, value: NewVendor[K]) =>
+  const set = <K extends keyof NewVendor>(key: K, value: NewVendor[K]) => {
+    if (key === 'naam' && naamFout) setNaamFout(false)
     setForm((f) => ({ ...f, [key]: value }))
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.naam.trim()) return
+    if (!form.naam.trim()) {
+      setNaamFout(true)
+      return
+    }
     onSubmit({
       ...form,
       naam: form.naam.trim(),
@@ -87,8 +96,18 @@ export function VendorForm({
       title={initial ? 'Leverancier bewerken' : 'Leverancier toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Naam" htmlFor="naam">
-          <Input id="naam" value={form.naam} onChange={(e) => set('naam', e.target.value)} required />
+        <Field
+          label="Naam"
+          htmlFor="naam"
+          required
+          error={naamFout ? 'Vul een naam in' : undefined}
+        >
+          <Input
+            id="naam"
+            value={form.naam}
+            aria-invalid={naamFout || undefined}
+            onChange={(e) => set('naam', e.target.value)}
+          />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
