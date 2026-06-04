@@ -9,6 +9,7 @@ import {
   Modal,
   Select,
   Textarea,
+  eigennaamInputProps,
 } from '@/components/bruiloft/ui'
 import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import type { Guest, GuestInput } from '@/lib/bruiloft/types'
@@ -134,6 +135,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
               value={form.voornaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('voornaam', e.target.value)}
+              {...eigennaamInputProps}
             />
           </Field>
           <Field label="Achternaam" htmlFor="an">
@@ -142,6 +144,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
               value={form.achternaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('achternaam', e.target.value)}
+              {...eigennaamInputProps}
             />
           </Field>
         </div>
@@ -216,6 +219,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
               placeholder="Naam van de partner (optioneel)"
               value={form.partnerNaam}
               onChange={(e) => set('partnerNaam', e.target.value)}
+              {...eigennaamInputProps}
             />
           ) : null}
         </div>

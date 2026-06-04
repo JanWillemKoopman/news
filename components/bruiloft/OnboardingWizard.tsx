@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, KeyRound, Users, Wallet } from 'lucide-react'
 
-import { Button, Field, Input, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -170,6 +170,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     onChange={(e) => setPartner1(e.target.value)}
                     placeholder="Bijv. Sanne"
                     autoFocus
+                    {...eigennaamInputProps}
                   />
                 </Field>
                 <Field label="Naam van je partner" htmlFor="ob-p2" required>
@@ -178,6 +179,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     value={partner2}
                     onChange={(e) => setPartner2(e.target.value)}
                     placeholder="Bijv. Tom"
+                    {...eigennaamInputProps}
                   />
                 </Field>
                 <Field label="Woonplaats" htmlFor="ob-woonplaats">
@@ -186,6 +188,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     value={woonplaats}
                     onChange={(e) => setWoonplaats(e.target.value)}
                     placeholder="Bijv. Utrecht"
+                    {...eigennaamInputProps}
                   />
                 </Field>
               </div>

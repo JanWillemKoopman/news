@@ -9,6 +9,7 @@ import {
   Modal,
   Select,
   Textarea,
+  eigennaamInputProps,
 } from '@/components/bruiloft/ui'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { BudgetItem, Vendor, VendorInput } from '@/lib/bruiloft/types'
@@ -107,6 +108,7 @@ export function VendorForm({
             value={form.naam}
             aria-invalid={naamFout || undefined}
             onChange={(e) => set('naam', e.target.value)}
+            {...eigennaamInputProps}
           />
         </Field>
 
@@ -145,10 +147,11 @@ export function VendorForm({
               id="cp"
               value={form.contactpersoon}
               onChange={(e) => set('contactpersoon', e.target.value)}
+              {...eigennaamInputProps}
             />
           </Field>
           <Field label="Telefoon" htmlFor="tel">
-            <Input id="tel" value={form.telefoon} onChange={(e) => set('telefoon', e.target.value)} />
+            <Input id="tel" type="tel" autoComplete="tel" value={form.telefoon} onChange={(e) => set('telefoon', e.target.value)} />
           </Field>
         </div>
 
@@ -162,7 +165,7 @@ export function VendorForm({
             />
           </Field>
           <Field label="Website" htmlFor="web">
-            <Input id="web" value={form.website} onChange={(e) => set('website', e.target.value)} />
+            <Input id="web" type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.website} onChange={(e) => set('website', e.target.value)} />
           </Field>
         </div>
 
