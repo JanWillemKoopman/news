@@ -170,7 +170,7 @@ export function VendorForm({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Geoffreerd bedrag (€)" htmlFor="bedrag">
+          <Field label="Offerteprijs (€)" htmlFor="bedrag">
             <Input
               id="bedrag"
               type="number"

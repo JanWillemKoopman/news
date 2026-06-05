@@ -173,7 +173,7 @@ export function BudgetItemForm({
               onChange={(e) => set('geschatBedrag', e.target.value)}
             />
           </Field>
-          <Field label="Geoffreerd (€)" htmlFor="gof">
+          <Field label="Offerteprijs (€)" htmlFor="gof">
             <Input
               id="gof"
               type="number"

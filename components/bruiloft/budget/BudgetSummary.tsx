@@ -37,7 +37,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
 
   const barData = [
     { naam: 'Geschat', bedrag: totalen.totaalGeschat },
-    { naam: 'Geoffreerd', bedrag: totalen.totaalGeoffreerd },
+    { naam: 'Offerteprijs', bedrag: totalen.totaalGeoffreerd },
     { naam: 'Betaald', bedrag: totalen.totaalBetaald },
   ]
 

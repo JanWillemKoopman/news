@@ -127,7 +127,7 @@ function BudgetItemRow({
 
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
           <Bedrag label="Geschat" bedrag={item.geschatBedrag} />
-          <Bedrag label="Geoffreerd" bedrag={geoffreerd} />
+          <Bedrag label="Offerteprijs" bedrag={geoffreerd} />
           <Bedrag label="Betaald" bedrag={item.betaaldBedrag} />
           <Bedrag label="Resterend" bedrag={rest} accent={rest > 0} />
         </div>

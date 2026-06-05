@@ -60,7 +60,7 @@ export default function BudgetPage() {
       'Categorie',
       'Omschrijving',
       'Geschat',
-      'Geoffreerd',
+      'Offerteprijs',
       'Betaald',
       'Resterend',
     ]
