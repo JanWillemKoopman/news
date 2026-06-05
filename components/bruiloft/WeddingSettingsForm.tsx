@@ -82,23 +82,21 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required {...eigennaamInputProps} />
           </Field>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Trouwdatum">
-            <DateRoller
-              value={form.trouwdatum}
-              onChange={(v) => setForm((f) => ({ ...f, trouwdatum: v }))}
-            />
-          </Field>
-          <Field label="Trouwlocatie" htmlFor="s-loc">
-            <Input
-              id="s-loc"
-              value={form.locatie}
-              onChange={update('locatie')}
-              placeholder="Bijv. Kasteel De Hooge Vuursche"
-              {...eigennaamInputProps}
-            />
-          </Field>
-        </div>
+        <Field label="Trouwdatum">
+          <DateRoller
+            value={form.trouwdatum}
+            onChange={(v) => setForm((f) => ({ ...f, trouwdatum: v }))}
+          />
+        </Field>
+        <Field label="Trouwlocatie" htmlFor="s-loc">
+          <Input
+            id="s-loc"
+            value={form.locatie}
+            onChange={update('locatie')}
+            placeholder="Bijv. Kasteel De Hooge Vuursche"
+            {...eigennaamInputProps}
+          />
+        </Field>
         <Field label="Woonplaats" htmlFor="s-woonplaats">
           <Input
             id="s-woonplaats"
