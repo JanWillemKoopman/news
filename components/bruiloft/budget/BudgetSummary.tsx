@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, Money } from '@/components/bruiloft/ui'
+import { Money } from '@/components/bruiloft/ui'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { formatEuro } from '@/lib/bruiloft/format'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,37 @@ interface BudgetSummaryProps {
   items: BudgetItem[]
   vendors: Vendor[]
   wedding: Wedding
+}
+
+function CircularProgress({ pct }: { pct: number }) {
+  const r = 26
+  const circumference = 2 * Math.PI * r
+  const offset = circumference - (pct / 100) * circumference
+
+  return (
+    <svg width={64} height={64} className="shrink-0 -rotate-90">
+      <circle cx={32} cy={32} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
+      <circle
+        cx={32} cy={32} r={r}
+        fill="none"
+        stroke="#be123c"
+        strokeWidth={4}
+        strokeOpacity={0.6}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        className="transition-all duration-500"
+      />
+      <text
+        x={32} y={32}
+        textAnchor="middle"
+        dominantBaseline="central"
+        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+      >
+        {pct}%
+      </text>
+    </svg>
+  )
 }
 
 export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
@@ -24,76 +55,55 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   const overBudgetBedrag = totalen.totaalGeschat - wedding.totaalBudget
   const nogTeBetalen = Math.max(0, totalen.totaalGeschat - totalen.totaalBetaald)
 
-  const r = 28
-  const circ = 2 * Math.PI * r
-  const offset = circ - (pct / 100) * circ
-
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
-          {/* Progress donut + voortgang */}
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <svg width="68" height="68" viewBox="0 0 68 68" className="-rotate-90">
-                <circle
-                  cx="34" cy="34" r={r}
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="34" cy="34" r={r}
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="8"
-                  strokeDasharray={circ}
-                  strokeDashoffset={offset}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
-                {pct}%
-              </span>
-            </div>
+    <div className="rounded-lg border border-border bg-white shadow-sm">
+      {/* Main progress row */}
+      <div className="flex items-center gap-4 p-4">
+        <CircularProgress pct={pct} />
 
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Voortgang</p>
-              <p className="font-bold text-foreground">
-                <Money bedrag={totalen.totaalBetaald} /> van <Money bedrag={wedding.totaalBudget} /> betaald
-              </p>
-              {overBudget ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Geschat {formatEuro(totalen.totaalGeschat)} · {formatEuro(overBudgetBedrag)} boven budget
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Geschat {formatEuro(totalen.totaalGeschat)}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="hidden h-12 w-px bg-border sm:block" />
-
-          {/* Stat tiles */}
-          <div className="grid grid-cols-3 gap-4 sm:flex sm:gap-8">
-            <Stat label="geschat" bedrag={totalen.totaalGeschat} />
-            <Stat label="nog te betalen" bedrag={nogTeBetalen} />
-            {overBudget ? (
-              <Stat label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
-            ) : (
-              <Stat label="resterend budget" bedrag={totalen.resterendBudget} kleur="groen" />
-            )}
-          </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-muted-foreground">Voortgang</p>
+          <p className="text-base font-semibold leading-tight text-foreground">
+            <Money bedrag={totalen.totaalBetaald} /> van <Money bedrag={wedding.totaalBudget} /> betaald
+          </p>
+          {overBudget ? (
+            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+              Geschat {formatEuro(totalen.totaalGeschat)} · {formatEuro(overBudgetBedrag)} boven budget
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Geschat {formatEuro(totalen.totaalGeschat)}
+            </p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Desktop stats */}
+        <div className="hidden items-center divide-x divide-border sm:flex">
+          <StatNum label="geschat" bedrag={totalen.totaalGeschat} />
+          <StatNum label="nog te betalen" bedrag={nogTeBetalen} />
+          {overBudget ? (
+            <StatNum label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+          ) : (
+            <StatNum label="resterend budget" bedrag={totalen.resterendBudget} kleur="groen" />
+          )}
+        </div>
+      </div>
+
+      {/* Mobile stats row */}
+      <div className="flex divide-x divide-border border-t border-border sm:hidden">
+        <StatNumMobile label="geschat" bedrag={totalen.totaalGeschat} />
+        <StatNumMobile label="nog te betalen" bedrag={nogTeBetalen} />
+        {overBudget ? (
+          <StatNumMobile label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+        ) : (
+          <StatNumMobile label="resterend" bedrag={totalen.resterendBudget} kleur="groen" />
+        )}
+      </div>
+    </div>
   )
 }
 
-function Stat({
+function StatNum({
   label,
   bedrag,
   kleur,
@@ -103,11 +113,36 @@ function Stat({
   kleur?: 'amber' | 'groen'
 }) {
   return (
-    <div>
+    <div className="px-5 text-center">
       <Money
         bedrag={bedrag}
         className={cn(
-          'text-xl font-bold',
+          'text-2xl font-bold tabular-nums',
+          kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
+          kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
+          !kleur && 'text-foreground'
+        )}
+      />
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function StatNumMobile({
+  label,
+  bedrag,
+  kleur,
+}: {
+  label: string
+  bedrag: number
+  kleur?: 'amber' | 'groen'
+}) {
+  return (
+    <div className="flex-1 py-2.5 text-center">
+      <Money
+        bedrag={bedrag}
+        className={cn(
+          'text-lg font-bold tabular-nums',
           kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
           kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
           !kleur && 'text-foreground'
