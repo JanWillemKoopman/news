@@ -1,15 +1,16 @@
 'use client'
 
-import { AlertTriangle, Check, Link2, Pencil, Trash2 } from 'lucide-react'
+import * as React from 'react'
+import { Check, ChevronDown, ChevronRight, Grid2X2, Pencil, Search, Trash2 } from 'lucide-react'
 
-import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
+import { Button, Money } from '@/components/bruiloft/ui'
 import {
   effectiefGeoffreerd,
   geboekteLeverancierVoor,
   restBedrag,
   verwachteKost,
 } from '@/lib/bruiloft/derived'
-import { formatDatumKort } from '@/lib/bruiloft/format'
+import { formatDatumKort, formatEuro } from '@/lib/bruiloft/format'
 import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
 import type { BudgetItem, Vendor } from '@/lib/bruiloft/types'
@@ -24,6 +25,69 @@ interface BudgetListProps {
   onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
 }
 
+type CategorieStatus = 'betaald' | 'boven schatting' | 'nog te plannen' | 'in uitvoering'
+type Filter = 'alle' | 'aandacht' | 'nog te plannen' | 'betaald'
+
+interface CategorieData {
+  naam: string
+  items: BudgetItem[]
+  geschat: number
+  geoffreerd: number
+  betaald: number
+  verwacht: number
+  resterend: number
+  status: CategorieStatus
+}
+
+function berekenCategorie(naam: string, catItems: BudgetItem[], vendors: Vendor[]): CategorieData {
+  const geschat = catItems.reduce((s, i) => s + i.geschatBedrag, 0)
+  const geoffreerd = catItems.reduce((s, i) => s + effectiefGeoffreerd(i, vendors), 0)
+  const betaald = catItems.reduce((s, i) => s + i.betaaldBedrag, 0)
+  const verwacht = catItems.reduce((s, i) => s + verwachteKost(i, vendors), 0)
+  const resterend = verwacht - betaald
+
+  let status: CategorieStatus = 'nog te plannen'
+  if (verwacht > 0 && betaald >= verwacht) {
+    status = 'betaald'
+  } else if (geschat > 0 && (geoffreerd > geschat || betaald > geschat)) {
+    status = 'boven schatting'
+  } else if (betaald > 0 || geoffreerd > 0) {
+    status = 'in uitvoering'
+  }
+
+  return { naam, items: catItems, geschat, geoffreerd, betaald, verwacht, resterend, status }
+}
+
+const STATUS_CONFIG: Record<
+  CategorieStatus,
+  { label: string; dotKlasse: string; badgeKlasse: string; barKlasse: string }
+> = {
+  betaald: {
+    label: 'Betaald',
+    dotKlasse: 'bg-emerald-500',
+    badgeKlasse: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    barKlasse: 'bg-emerald-500',
+  },
+  'boven schatting': {
+    label: 'Boven schatting',
+    dotKlasse: 'bg-amber-500',
+    badgeKlasse: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    barKlasse: 'bg-amber-500',
+  },
+  'nog te plannen': {
+    label: 'Nog te plannen',
+    dotKlasse: 'bg-blue-400',
+    badgeKlasse: 'bg-muted text-muted-foreground',
+    barKlasse: 'bg-blue-400',
+  },
+  'in uitvoering': {
+    label: 'In uitvoering',
+    dotKlasse: 'bg-primary',
+    badgeKlasse: 'bg-primary/10 text-primary',
+    barKlasse: 'bg-primary',
+  },
+}
+
 export function BudgetList({
   items,
   vendors,
@@ -33,46 +97,254 @@ export function BudgetList({
   onDelete,
   onToggleTerm,
 }: BudgetListProps) {
+  const [zoekterm, setZoekterm] = React.useState('')
+  const [filter, setFilter] = React.useState<Filter>('alle')
+  const [uitgeklapt, setUitgeklapt] = React.useState<Set<string>>(new Set())
+
+  const categories = React.useMemo<CategorieData[]>(() => {
+    return BUDGET_CATEGORIEEN.flatMap((cat) => {
+      const catItems = items.filter((i) => i.categorie === cat)
+      return catItems.length > 0 ? [berekenCategorie(cat, catItems, vendors)] : []
+    })
+  }, [items, vendors])
+
+  const counts = React.useMemo(
+    () => ({
+      alle: categories.length,
+      aandacht: categories.filter((c) => c.status === 'boven schatting').length,
+      'nog te plannen': categories.filter((c) => c.status === 'nog te plannen').length,
+      betaald: categories.filter((c) => c.status === 'betaald').length,
+    }),
+    [categories]
+  )
+
+  const gefilterd = React.useMemo(() => {
+    let result = categories
+    if (zoekterm) {
+      const q = zoekterm.toLowerCase()
+      result = result.filter((c) => c.naam.toLowerCase().includes(q))
+    }
+    if (filter === 'aandacht') result = result.filter((c) => c.status === 'boven schatting')
+    else if (filter === 'nog te plannen') result = result.filter((c) => c.status === 'nog te plannen')
+    else if (filter === 'betaald') result = result.filter((c) => c.status === 'betaald')
+    return result
+  }, [categories, zoekterm, filter])
+
+  const alleUitgeklapt = gefilterd.length > 0 && gefilterd.every((c) => uitgeklapt.has(c.naam))
+
+  const toggleCategorie = (naam: string) =>
+    setUitgeklapt((prev) => {
+      const next = new Set(prev)
+      next.has(naam) ? next.delete(naam) : next.add(naam)
+      return next
+    })
+
+  const toggleAlles = () => {
+    if (alleUitgeklapt) {
+      setUitgeklapt(new Set())
+    } else {
+      setUitgeklapt(new Set(gefilterd.map((c) => c.naam)))
+    }
+  }
+
+  const FILTERS: { key: Filter; label: string }[] = [
+    { key: 'alle', label: 'Alle' },
+    { key: 'aandacht', label: 'Aandacht' },
+    { key: 'nog te plannen', label: 'Nog te plannen' },
+    { key: 'betaald', label: 'Betaald' },
+  ]
+
   return (
-    <div className="space-y-6">
-      {BUDGET_CATEGORIEEN.map((categorie) => {
-        const catItems = items.filter((i) => i.categorie === categorie)
-        if (catItems.length === 0) return null
-        const subtotaal = catItems.reduce((s, i) => s + verwachteKost(i, vendors), 0)
-        return (
-          <div key={categorie}>
-            <div className="mb-2 flex items-baseline justify-between px-1">
-              <h3 className="text-lg capitalize text-foreground">{categorie}</h3>
-              <div className="text-right">
-                <Money bedrag={subtotaal} className="text-sm font-semibold text-foreground" />
-                {categorie === 'catering' && bevestigdeDaggasten > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    referentie: {bevestigdeDaggasten} bevestigde daggasten
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <div className="space-y-3">
-              {catItems.map((item) => (
-                <BudgetItemRow
-                  key={item.id}
-                  item={item}
-                  vendors={vendors}
-                  afwijkend={afwijkendeItemIds?.has(item.id) ?? false}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onToggleTerm={onToggleTerm}
-                />
-              ))}
-            </div>
-          </div>
-        )
-      })}
+    <div className="space-y-4">
+      {/* Search + expand button */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Zoek categorie..."
+            value={zoekterm}
+            onChange={(e) => setZoekterm(e.target.value)}
+            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={toggleAlles}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          <Grid2X2 className="h-4 w-4" />
+          <span className="hidden sm:inline">{alleUitgeklapt ? 'Alles inklappen' : 'Alles uitklappen'}</span>
+        </button>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setFilter(key)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+              filter === key
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/70'
+            )}
+          >
+            {label}
+            <span
+              className={cn(
+                'rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                filter === key
+                  ? 'bg-white/20 text-primary-foreground'
+                  : 'bg-background text-foreground'
+              )}
+            >
+              {counts[key]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Section header */}
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Grid2X2 className="h-3.5 w-3.5" />
+        <span>Per categorie</span>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-foreground">
+          {gefilterd.length} categorieën
+        </span>
+      </div>
+
+      {/* Category accordion rows */}
+      <div className="space-y-2">
+        {gefilterd.map((cat) => (
+          <CategorieRij
+            key={cat.naam}
+            data={cat}
+            isOpen={uitgeklapt.has(cat.naam)}
+            bevestigdeDaggasten={bevestigdeDaggasten}
+            afwijkendeItemIds={afwijkendeItemIds}
+            vendors={vendors}
+            onToggle={() => toggleCategorie(cat.naam)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleTerm={onToggleTerm}
+          />
+        ))}
+      </div>
     </div>
   )
 }
 
-function BudgetItemRow({
+function CategorieRij({
+  data,
+  isOpen,
+  bevestigdeDaggasten,
+  afwijkendeItemIds,
+  vendors,
+  onToggle,
+  onEdit,
+  onDelete,
+  onToggleTerm,
+}: {
+  data: CategorieData
+  isOpen: boolean
+  bevestigdeDaggasten: number
+  afwijkendeItemIds?: Set<string>
+  vendors: Vendor[]
+  onToggle: () => void
+  onEdit: (item: BudgetItem) => void
+  onDelete: (item: BudgetItem) => void
+  onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
+}) {
+  const config = STATUS_CONFIG[data.status]
+  const voortgangPct = data.verwacht > 0 ? Math.min(100, (data.betaald / data.verwacht) * 100) : 0
+  const begroot = data.verwacht > 0 ? data.verwacht : data.geschat
+
+  const subtitle =
+    data.naam === 'catering' && bevestigdeDaggasten > 0
+      ? `referentie: ${bevestigdeDaggasten} bevestigde daggast${bevestigdeDaggasten === 1 ? '' : 'en'}`
+      : data.items.length > 1
+        ? `${data.items.length} posten`
+        : null
+
+  const betaaldTekst =
+    data.betaald === 0
+      ? 'nog niets betaald'
+      : `${formatEuro(data.betaald)} van ${formatEuro(data.verwacht)} betaald`
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40"
+      >
+        {/* Status dot */}
+        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', config.dotKlasse)} />
+
+        {/* Name + subtitle */}
+        <div className="min-w-0 flex-1">
+          <p className="font-medium capitalize text-foreground">{data.naam}</p>
+          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+        </div>
+
+        {/* Status badge — hidden on mobile */}
+        <span
+          className={cn(
+            'hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex',
+            config.badgeKlasse
+          )}
+        >
+          <span className={cn('h-1.5 w-1.5 rounded-full', config.dotKlasse)} />
+          {config.label}
+        </span>
+
+        {/* Progress bar — hidden on small screens */}
+        <div className="hidden w-44 shrink-0 lg:block">
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn('h-full rounded-full transition-all duration-500', config.barKlasse)}
+              style={{ width: `${Math.max(voortgangPct > 0 ? voortgangPct : 0, 0)}%` }}
+            />
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">{betaaldTekst}</p>
+        </div>
+
+        {/* Amount */}
+        <div className="shrink-0 text-right">
+          <Money bedrag={begroot} className="font-semibold text-foreground" />
+          <p className="text-xs text-muted-foreground">begroot</p>
+        </div>
+
+        {/* Chevron */}
+        <span className="shrink-0 text-muted-foreground">
+          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </span>
+      </button>
+
+      {/* Expanded items */}
+      {isOpen ? (
+        <div className="divide-y divide-border border-t border-border bg-muted/20">
+          {data.items.map((item) => (
+            <ItemRij
+              key={item.id}
+              item={item}
+              vendors={vendors}
+              afwijkend={afwijkendeItemIds?.has(item.id) ?? false}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleTerm={onToggleTerm}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ItemRij({
   item,
   vendors,
   afwijkend,
@@ -92,90 +364,71 @@ function BudgetItemRow({
   const rest = restBedrag(item, vendors)
 
   return (
-    <Card className={cn(afwijkend && 'border-amber-300 dark:border-amber-900')}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-medium text-foreground">
-              {item.omschrijving || <span className="capitalize">{item.categorie}</span>}
-            </p>
-            {geboekteVendor ? (
-              <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary">
-                <Link2 className="h-3 w-3" /> geoffreerd via {geboekteVendor.naam}
-              </p>
-            ) : null}
-            {afwijkend ? (
-              <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="h-3 w-3" /> boven de schatting
-              </p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 gap-1">
-            <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(item)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Verwijderen"
-              onClick={() => onDelete(item)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className={cn('px-4 py-3', afwijkend && 'bg-amber-50/50 dark:bg-amber-950/20')}>
+      {/* Item title + actions */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">
+            {item.omschrijving || <span className="capitalize">{item.categorie}</span>}
+          </p>
+          {geboekteVendor ? (
+            <p className="text-xs text-primary">via {geboekteVendor.naam}</p>
+          ) : null}
         </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-          <Bedrag label="Geschat" bedrag={item.geschatBedrag} />
-          <Bedrag label="Offerteprijs" bedrag={geoffreerd} />
-          <Bedrag label="Betaald" bedrag={item.betaaldBedrag} />
-          <Bedrag label="Resterend" bedrag={rest} accent={rest > 0} />
+        <div className="flex shrink-0 gap-1">
+          <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(item)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(item)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
+      </div>
 
-        {item.betaaltermijnen.length > 0 ? (
-          <div className="mt-4 border-t border-border pt-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">Betaaltermijnen</p>
-            <ul className="space-y-1.5">
-              {item.betaaltermijnen.map((t) => (
-                <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-muted-foreground">
-                    {t.vervaldatum ? formatDatumKort(t.vervaldatum) : 'Geen datum'}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <Money bedrag={t.bedrag} className="font-medium text-foreground" />
-                    <button
-                      type="button"
-                      onClick={() => onToggleTerm(item, t.id, !t.betaald)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
-                        t.betaald
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                          : 'bg-stone-200 text-stone-600 hover:bg-stone-300 dark:bg-stone-700/60 dark:text-stone-300'
-                      )}
-                    >
-                      {t.betaald ? <Check className="h-3 w-3" /> : null}
-                      {t.betaald ? 'betaald' : 'markeer betaald'}
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+      {/* 4-column bedragen */}
+      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+        <Bedrag label="Geschat" bedrag={item.geschatBedrag} />
+        <Bedrag label="Offerteprijs" bedrag={geoffreerd} />
+        <Bedrag label="Betaald" bedrag={item.betaaldBedrag} />
+        <Bedrag label="Resterend" bedrag={rest} accent={rest > 0} />
+      </div>
+
+      {/* Betaaltermijnen */}
+      {item.betaaltermijnen.length > 0 ? (
+        <div className="mt-3 border-t border-border pt-2">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">Betaaltermijnen</p>
+          <ul className="space-y-1">
+            {item.betaaltermijnen.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-xs text-muted-foreground">
+                  {t.vervaldatum ? formatDatumKort(t.vervaldatum) : 'Geen datum'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Money bedrag={t.bedrag} className="text-xs font-medium text-foreground" />
+                  <button
+                    type="button"
+                    onClick={() => onToggleTerm(item, t.id, !t.betaald)}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-colors',
+                      t.betaald
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : 'bg-stone-200 text-stone-600 hover:bg-stone-300 dark:bg-stone-700/60 dark:text-stone-300'
+                    )}
+                  >
+                    {t.betaald ? <Check className="h-3 w-3" /> : null}
+                    {t.betaald ? 'betaald' : 'markeer betaald'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
-function Bedrag({
-  label,
-  bedrag,
-  accent,
-}: {
-  label: string
-  bedrag: number
-  accent?: boolean
-}) {
+function Bedrag({ label, bedrag, accent }: { label: string; bedrag: number; accent?: boolean }) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>

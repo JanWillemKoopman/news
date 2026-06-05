@@ -1,21 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import dynamic from 'next/dynamic'
-import { AlertTriangle, Download, PieChart, Plus, Wallet } from 'lucide-react'
+import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
-import { Button, ConfirmDialog, EmptyState, OverflowMenu, Skeleton, useToast } from '@/components/bruiloft/ui'
-
-// Recharts is zwaar; lazy laden zodat /budget sneller binnenkomt.
-const BudgetSummary = dynamic(
-  () => import('@/components/bruiloft/budget/BudgetSummary').then((m) => m.BudgetSummary),
-  { ssr: false, loading: () => <Skeleton className="h-72 w-full rounded-xl" /> }
-)
+import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
+import { Button, ConfirmDialog, EmptyState, OverflowMenu, useToast } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
   budgetAfwijkingen,
@@ -40,6 +34,7 @@ export default function BudgetPage() {
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
   const [distributeOpen, setDistributeOpen] = React.useState(false)
+  const [adviesOpen, setAdviesOpen] = React.useState(false)
 
   if (!wedding) return null
 
@@ -56,14 +51,7 @@ export default function BudgetPage() {
   }
 
   const exporteer = () => {
-    const headers = [
-      'Categorie',
-      'Omschrijving',
-      'Geschat',
-      'Offerteprijs',
-      'Betaald',
-      'Resterend',
-    ]
+    const headers = ['Categorie', 'Omschrijving', 'Geschat', 'Offerteprijs', 'Betaald', 'Resterend']
     const rows = budgetItems.map((i) => [
       i.categorie,
       i.omschrijving,
@@ -95,41 +83,30 @@ export default function BudgetPage() {
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
         actie={
           <>
+            <Button
+              variant="outline"
+              onClick={() => setAdviesOpen(true)}
+              className="gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            >
+              <Sparkles className="h-4 w-4" />
+              Analyseer mijn budget
+            </Button>
             <Button onClick={openNieuw}>
               <Plus className="h-4 w-4" /> Budgetitem toevoegen
             </Button>
             <OverflowMenu
               items={[
-                {
-                  label: 'Verdeel budget',
-                  icon: PieChart,
-                  onClick: () => setDistributeOpen(true),
-                },
-                {
-                  label: 'Exporteer budget',
-                  icon: Download,
-                  onClick: exporteer,
-                  disabled: budgetItems.length === 0,
-                },
+                { label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) },
+                { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
               ]}
             />
           </>
         }
       />
 
-      <AIBudgetAdvies />
+      <AIBudgetAdvies open={adviesOpen} onClose={() => setAdviesOpen(false)} />
 
-      {afwijkingen.overBudget ? (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <span>
-            De geoffreerde bedragen samen liggen boven het totaalbudget. Bekijk de
-            categorieën of pas je budget aan.
-          </span>
-        </div>
-      ) : null}
-
-      <div className="mb-8">
+      <div className="mb-6">
         <BudgetSummary items={budgetItems} vendors={vendors} wedding={wedding} />
       </div>
 
