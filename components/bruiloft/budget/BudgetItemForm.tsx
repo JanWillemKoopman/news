@@ -133,20 +133,6 @@ export function BudgetItemForm({
       title={initial ? 'Budgetitem bewerken' : 'Budgetitem toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Categorie" htmlFor="cat">
-          <Select
-            id="cat"
-            value={form.categorie}
-            onChange={(e) => set('categorie', e.target.value as FormState['categorie'])}
-          >
-            {BUDGET_CATEGORIEEN.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
         <Field
           label="Omschrijving"
           htmlFor="oms"
@@ -160,6 +146,20 @@ export function BudgetItemForm({
             onChange={(e) => set('omschrijving', e.target.value)}
             placeholder="Bijv. Diner 100 personen"
           />
+        </Field>
+
+        <Field label="Categorie" htmlFor="cat">
+          <Select
+            id="cat"
+            value={form.categorie}
+            onChange={(e) => set('categorie', e.target.value as FormState['categorie'])}
+          >
+            {BUDGET_CATEGORIEEN.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
         </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
