@@ -36,7 +36,7 @@ const website: NavItem = { label: 'Website', href: '/bruiloft/website', icon: Gl
 const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijst', icon: Gift, module: 'registry' }
 const leden: NavItem = { label: 'Leden & rechten', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
-const aiPlanner: NavItem = { label: 'AI Wedding Planner', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
+const aiPlanner: NavItem = { label: 'AI assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
 
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
