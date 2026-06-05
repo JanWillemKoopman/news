@@ -137,27 +137,26 @@ export function TaskForm({
           <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
         </Field>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
-            <DateRoller
-              value={form.deadline}
-              onChange={(v) => set('deadline', v)}
-            />
-          </Field>
-          <Field label="Status" htmlFor="st">
-            <Select
-              id="st"
-              value={form.status}
-              onChange={(e) => set('status', e.target.value as NewTask['status'])}
-            >
-              {TASK_STATUSSEN.map((s) => (
-                <option key={s} value={s}>
-                  {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
+        <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
+          <DateRoller
+            value={form.deadline}
+            onChange={(v) => set('deadline', v)}
+          />
+        </Field>
+
+        <Field label="Status" htmlFor="st">
+          <Select
+            id="st"
+            value={form.status}
+            onChange={(e) => set('status', e.target.value as NewTask['status'])}
+          >
+            {TASK_STATUSSEN.map((s) => (
+              <option key={s} value={s}>
+                {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Prioriteit" htmlFor="prio">
