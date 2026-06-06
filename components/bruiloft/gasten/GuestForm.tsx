@@ -103,7 +103,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
         voornaam: form.voornaam.trim(),
         achternaam: form.achternaam.trim(),
         partnerNaam: form.heeftPartner ? form.partnerNaam.trim() : '',
-        aantalKinderen: Number(form.aantalKinderen) || 0,
+        aantalKinderen: Math.max(0, Math.round(Number(form.aantalKinderen) || 0)),
       }))
     } finally {
       setSaving(false)
