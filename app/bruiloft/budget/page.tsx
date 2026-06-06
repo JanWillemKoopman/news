@@ -51,17 +51,21 @@ export default function BudgetPage() {
   }
 
   const exporteer = () => {
-    const headers = ['Categorie', 'Omschrijving', 'Geschat', 'Offerteprijs', 'Betaald', 'Resterend']
-    const rows = budgetItems.map((i) => [
-      i.categorie,
-      i.omschrijving,
-      i.geschatBedrag,
-      effectiefGeoffreerd(i, vendors),
-      i.betaaldBedrag,
-      restBedrag(i, vendors),
-    ])
-    downloadCsv('budget.csv', headers, rows)
-    toast({ title: 'Budget geëxporteerd', description: 'budget.csv is gedownload.', variant: 'success' })
+    try {
+      const headers = ['Categorie', 'Omschrijving', 'Geschat', 'Offerteprijs', 'Betaald', 'Resterend']
+      const rows = budgetItems.map((i) => [
+        i.categorie,
+        i.omschrijving,
+        i.geschatBedrag,
+        effectiefGeoffreerd(i, vendors),
+        i.betaaldBedrag,
+        restBedrag(i, vendors),
+      ])
+      downloadCsv('budget.csv', headers, rows)
+      toast({ title: 'Budget geëxporteerd', description: 'budget.csv is gedownload.', variant: 'success' })
+    } catch {
+      toast({ title: 'Export mislukt', variant: 'error' })
+    }
   }
 
   const toggleTerm = async (item: BudgetItem, termId: string, betaald: boolean) => {

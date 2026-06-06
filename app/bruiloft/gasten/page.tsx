@@ -108,36 +108,40 @@ export default function GastenPage() {
   }
 
   const exporteer = () => {
-    downloadCsv(
-      'gastenlijst.csv',
-      [
-        'Voornaam',
-        'Achternaam',
-        'Categorie',
-        'Gasttype',
-        'RSVP',
-        'Dieetwensen',
-        'Partner',
-        'Partnernaam',
-        'Kinderen',
-        'Adres',
-        'Notitie',
-      ],
-      guests.map((g) => [
-        g.voornaam,
-        g.achternaam,
-        g.categorie,
-        g.gasttype,
-        g.rsvpStatus,
-        g.dieetwensen,
-        g.heeftPartner ? 'ja' : 'nee',
-        g.partnerNaam,
-        g.aantalKinderen,
-        g.adres,
-        g.notitie,
-      ])
-    )
-    toast({ title: 'Gastenlijst geëxporteerd', description: 'gastenlijst.csv is gedownload.', variant: 'success' })
+    try {
+      downloadCsv(
+        'gastenlijst.csv',
+        [
+          'Voornaam',
+          'Achternaam',
+          'Categorie',
+          'Gasttype',
+          'RSVP',
+          'Dieetwensen',
+          'Partner',
+          'Partnernaam',
+          'Kinderen',
+          'Adres',
+          'Notitie',
+        ],
+        guests.map((g) => [
+          g.voornaam,
+          g.achternaam,
+          g.categorie,
+          g.gasttype,
+          g.rsvpStatus,
+          g.dieetwensen,
+          g.heeftPartner ? 'ja' : 'nee',
+          g.partnerNaam,
+          g.aantalKinderen,
+          g.adres,
+          g.notitie,
+        ])
+      )
+      toast({ title: 'Gastenlijst geëxporteerd', description: 'gastenlijst.csv is gedownload.', variant: 'success' })
+    } catch {
+      toast({ title: 'Export mislukt', variant: 'error' })
+    }
   }
 
   return (

@@ -56,7 +56,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   const nogTeBetalen = Math.max(0, totalen.totaalGeschat - totalen.totaalBetaald)
 
   return (
-    <div className="rounded-lg border border-border bg-white shadow-sm">
+    <div className="rounded-lg border border-border bg-card shadow-sm">
       {/* Main progress row */}
       <div className="flex items-center gap-4 p-4">
         <CircularProgress pct={pct} />

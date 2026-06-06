@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react'
 
 import {
   Button,
+  ConfirmDialog,
   Field,
   Input,
   Modal,
@@ -74,16 +75,27 @@ export function BudgetItemForm({
   const [form, setForm] = React.useState<FormState>(leeg)
   const [omsFout, setOmsFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const baseline = React.useRef<string>(JSON.stringify(leeg()))
   const { toast } = useToast()
   const termijnenRef = React.useRef(form.betaaltermijnen)
   React.useEffect(() => { termijnenRef.current = form.betaaltermijnen }, [form.betaaltermijnen])
 
   React.useEffect(() => {
     if (open) {
-      setForm(initial ? vanItem(initial) : leeg())
+      const start = initial ? vanItem(initial) : leeg()
+      setForm(start)
+      baseline.current = JSON.stringify(start)
       setOmsFout(false)
     }
   }, [open, initial])
+
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  const sluit = (o: boolean) => {
+    if (!o && dirty) { setConfirmOpen(true); return }
+    onOpenChange(o)
+  }
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (key === 'omschrijving' && omsFout) setOmsFout(false)
@@ -164,9 +176,10 @@ export function BudgetItemForm({
   }
 
   return (
+    <>
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={sluit}
       title={initial ? 'Budgetitem bewerken' : 'Budgetitem toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
@@ -301,12 +314,21 @@ export function BudgetItemForm({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
           <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten?"
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+    </>
   )
 }

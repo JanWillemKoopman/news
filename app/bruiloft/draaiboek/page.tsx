@@ -49,18 +49,22 @@ export default function DraaiboekPage() {
   }
 
   const exporteer = () => {
-    downloadCsv(
-      fRol === 'all' ? 'draaiboek.csv' : `draaiboek-${fRol}.csv`,
-      ['Tijd', 'Titel', 'Locatie', 'Omschrijving', 'Betrokkenen'],
-      gesorteerd.map((s) => [
-        s.tijd,
-        s.titel,
-        s.locatie,
-        s.omschrijving,
-        s.betrokkenen.join(', '),
-      ])
-    )
-    toast({ title: 'Draaiboek geëxporteerd', variant: 'success' })
+    try {
+      downloadCsv(
+        fRol === 'all' ? 'draaiboek.csv' : `draaiboek-${fRol}.csv`,
+        ['Tijd', 'Titel', 'Locatie', 'Omschrijving', 'Betrokkenen'],
+        gesorteerd.map((s) => [
+          s.tijd,
+          s.titel,
+          s.locatie,
+          s.omschrijving,
+          s.betrokkenen.join(', '),
+        ])
+      )
+      toast({ title: 'Draaiboek geëxporteerd', variant: 'success' })
+    } catch {
+      toast({ title: 'Export mislukt', variant: 'error' })
+    }
   }
 
   return (
@@ -106,7 +110,8 @@ export default function DraaiboekPage() {
         <EmptyState
           icon={CalendarClock}
           titel="Niets voor deze betrokkene"
-          beschrijving="Pas het filter aan of voeg onderdelen toe."
+          beschrijving="Geen onderdelen komen overeen met het huidige filter."
+          actie={<Button variant="outline" size="sm" onClick={() => setFRol('all')}>Wis filter</Button>}
         />
       ) : (
         <div className="space-y-3">
