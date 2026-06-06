@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Textarea,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, BudgetItemInput, PaymentTerm, Vendor } from '@/lib/bruiloft/types'
@@ -73,6 +74,9 @@ export function BudgetItemForm({
   const [form, setForm] = React.useState<FormState>(leeg)
   const [omsFout, setOmsFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const { toast } = useToast()
+  const termijnenRef = React.useRef(form.betaaltermijnen)
+  React.useEffect(() => { termijnenRef.current = form.betaaltermijnen }, [form.betaaltermijnen])
 
   React.useEffect(() => {
     if (open) {
@@ -101,11 +105,28 @@ export function BudgetItemForm({
       ],
     }))
 
-  const removeTerm = (id: string) =>
-    setForm((f) => ({
-      ...f,
-      betaaltermijnen: f.betaaltermijnen.filter((t) => t.id !== id),
-    }))
+  const removeTerm = (id: string) => {
+    const removed = termijnenRef.current.find((t) => t.id === id)
+    const index = termijnenRef.current.findIndex((t) => t.id === id)
+    setForm((f) => ({ ...f, betaaltermijnen: f.betaaltermijnen.filter((t) => t.id !== id) }))
+    if (removed) {
+      toast({
+        title: 'Betaaltermijn verwijderd',
+        variant: 'success',
+        duration: 5000,
+        action: {
+          label: 'Ongedaan maken',
+          onClick: () => {
+            const current = termijnenRef.current
+            setForm((f) => ({
+              ...f,
+              betaaltermijnen: [...current.slice(0, index), removed, ...current.slice(index)],
+            }))
+          },
+        },
+      })
+    }
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,6 +168,7 @@ export function BudgetItemForm({
         >
           <Input
             id="oms"
+            autoFocus
             value={form.omschrijving}
             aria-invalid={omsFout || undefined}
             onChange={(e) => set('omschrijving', e.target.value)}

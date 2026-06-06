@@ -141,6 +141,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
             <Input
               id="vn"
               ref={voornaamRef}
+              autoFocus
               value={form.voornaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('voornaam', e.target.value)}

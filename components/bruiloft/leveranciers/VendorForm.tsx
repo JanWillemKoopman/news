@@ -21,7 +21,7 @@ interface VendorFormProps {
   onOpenChange: (open: boolean) => void
   initial?: Vendor | null
   budgetItems: BudgetItem[]
-  onSubmit: (data: NewVendor) => void
+  onSubmit: (data: NewVendor) => void | Promise<void>
 }
 
 function leeg(): NewVendor {
@@ -63,6 +63,7 @@ export function VendorForm({
 }: VendorFormProps) {
   const [form, setForm] = React.useState<NewVendor>(leeg)
   const [naamFout, setNaamFout] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (open) {
@@ -76,17 +77,22 @@ export function VendorForm({
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.naam.trim()) {
       setNaamFout(true)
       return
     }
-    onSubmit({
-      ...form,
-      naam: form.naam.trim(),
-      geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
-    })
+    setSaving(true)
+    try {
+      await Promise.resolve(onSubmit({
+        ...form,
+        naam: form.naam.trim(),
+        geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
+      }))
+    } finally {
+      setSaving(false)
+    }
     onOpenChange(false)
   }
 
@@ -105,6 +111,7 @@ export function VendorForm({
         >
           <Input
             id="naam"
+            autoFocus
             value={form.naam}
             aria-invalid={naamFout || undefined}
             onChange={(e) => set('naam', e.target.value)}
@@ -160,6 +167,7 @@ export function VendorForm({
             <Input
               id="mail"
               type="email"
+              autoComplete="email"
               value={form.email}
               onChange={(e) => set('email', e.target.value)}
             />
@@ -210,7 +218,7 @@ export function VendorForm({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
