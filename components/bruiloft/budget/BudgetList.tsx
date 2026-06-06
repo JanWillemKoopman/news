@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ChevronDown, ChevronRight, Grid2X2, Pencil, Search, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2 } from 'lucide-react'
 
 import { Button, Money } from '@/components/bruiloft/ui'
 import {
@@ -100,6 +100,19 @@ export function BudgetList({
   const [zoekterm, setZoekterm] = React.useState('')
   const [filter, setFilter] = React.useState<Filter>('alle')
   const [uitgeklapt, setUitgeklapt] = React.useState<Set<string>>(new Set())
+  const [filterOpen, setFilterOpen] = React.useState(false)
+  const filterPanelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!filterOpen) return
+    function handler(e: MouseEvent) {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
+        setFilterOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [filterOpen])
 
   const categories = React.useMemo<CategorieData[]>(() => {
     return BUDGET_CATEGORIEEN.flatMap((cat) => {
@@ -173,38 +186,66 @@ export function BudgetList({
           onClick={toggleAlles}
           className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground hover:bg-muted transition-colors"
         >
-          <Grid2X2 className="h-4 w-4" />
-          <span className="hidden sm:inline">{alleUitgeklapt ? 'Alles inklappen' : 'Alles uitklappen'}</span>
+          {alleUitgeklapt
+            ? <ChevronsDownUp className="h-4 w-4" />
+            : <ChevronsUpDown className="h-4 w-4" />}
+          <span>{alleUitgeklapt ? 'Inklappen' : 'Uitklappen'}</span>
         </button>
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map(({ key, label }) => (
+        <div className="relative" ref={filterPanelRef}>
           <button
-            key={key}
             type="button"
-            onClick={() => setFilter(key)}
+            onClick={() => setFilterOpen((p) => !p)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-              filter === key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70'
+              'inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors',
+              filterOpen
+                ? 'border-primary/60 bg-primary/10 text-primary'
+                : 'border-input bg-background text-foreground hover:bg-muted'
             )}
           >
-            {label}
+            <span>{FILTERS.find((f) => f.key === filter)?.label}</span>
             <span
               className={cn(
                 'rounded-full px-1.5 py-0.5 text-xs font-semibold',
-                filter === key
-                  ? 'bg-white/20 text-primary-foreground'
-                  : 'bg-background text-foreground'
+                filter !== 'alle'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
               )}
             >
-              {counts[key]}
+              {counts[filter]}
             </span>
+            <ChevronDown className={cn('h-4 w-4 transition-transform', filterOpen && 'rotate-180')} />
           </button>
-        ))}
+
+          {filterOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-lg border border-border bg-background shadow-lg">
+              {FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setFilter(key); setFilterOpen(false) }}
+                  className={cn(
+                    'flex w-full items-center justify-between px-3 py-2.5 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg',
+                    filter === key
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-foreground hover:bg-muted'
+                  )}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                      filter === key
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {counts[key]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Section header */}
