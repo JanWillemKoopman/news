@@ -77,6 +77,7 @@ export function SubtakenList({ subtaken, onChange, compact }: SubtakenListProps)
           <Input
             value={s.titel}
             onChange={(e) => rename(s.id, e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
             className={cn('h-7 text-sm', s.klaar && 'line-through text-muted-foreground')}
           />
           <button

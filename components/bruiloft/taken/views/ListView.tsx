@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { EmptyState, Skeleton } from '@/components/bruiloft/ui'
+import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
 import { ListChecks, Sparkles } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
@@ -42,6 +42,7 @@ interface ListViewProps {
   isSelected: (id: string) => boolean
   onToggleSelect: (t: Task) => void
   achterstandRef?: React.MutableRefObject<HTMLDivElement | null>
+  onResetFilters?: () => void
   // AI suggestions
   aiActive?: boolean
   aiSuggesties?: AITaakSuggestie[]
@@ -65,6 +66,7 @@ export function ListView({
   isSelected,
   onToggleSelect,
   achterstandRef,
+  onResetFilters,
   aiActive,
   aiSuggesties,
   aiLoading,
@@ -87,7 +89,8 @@ export function ListView({
       <EmptyState
         icon={ListChecks}
         titel="Geen taken gevonden"
-        beschrijving="Pas je filters aan."
+        beschrijving="Geen taken komen overeen met de huidige filters."
+        actie={onResetFilters ? <Button variant="outline" size="sm" onClick={onResetFilters}>Wis filters</Button> : undefined}
       />
     )
   }

@@ -268,6 +268,7 @@ export function TakenShell() {
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
           achterstandRef={achterstandRef}
+          onResetFilters={() => setFilters(DEFAULT_FILTERS)}
           aiActive={aiActive}
           aiSuggesties={zichtbareSuggesties}
           aiLoading={aiLoading}
@@ -321,8 +322,9 @@ export function TakenShell() {
               await addTask(data)
               toast({ title: 'Taak toegevoegd', variant: 'success' })
             }
-          } catch {
+          } catch (e) {
             toast({ title: 'Opslaan mislukt', variant: 'error' })
+            throw e
           }
         }}
       />

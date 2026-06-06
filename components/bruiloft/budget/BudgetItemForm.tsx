@@ -141,6 +141,7 @@ export function BudgetItemForm({
       toast({ title: 'Bedragen mogen niet negatief zijn', variant: 'error' })
       return
     }
+    if (saving) return
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({
@@ -154,10 +155,12 @@ export function BudgetItemForm({
           .filter((t) => t.bedrag > 0 || t.vervaldatum)
           .map((t) => ({ ...t, bedrag: Number(t.bedrag) || 0 })),
       }))
+      onOpenChange(false)
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
     } finally {
       setSaving(false)
     }
-    onOpenChange(false)
   }
 
   return (
