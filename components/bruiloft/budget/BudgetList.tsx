@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2, X } from 'lucide-react'
 
 import { Button, Money } from '@/components/bruiloft/ui'
 import {
@@ -178,8 +178,17 @@ export function BudgetList({
             placeholder="Zoek categorie..."
             value={zoekterm}
             onChange={(e) => setZoekterm(e.target.value)}
-            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          {zoekterm && (
+            <button
+              type="button"
+              onClick={() => setZoekterm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <button
           type="button"

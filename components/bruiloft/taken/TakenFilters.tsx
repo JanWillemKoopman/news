@@ -62,8 +62,17 @@ export function TakenFilters({
             value={filters.zoek}
             onChange={(e) => onChange({ ...filters, zoek: e.target.value })}
             placeholder="Zoek in taken..."
-            className="pl-9 pr-3"
+            className="pl-9 pr-9"
           />
+          {filters.zoek && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...filters, zoek: '' })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Filter button */}

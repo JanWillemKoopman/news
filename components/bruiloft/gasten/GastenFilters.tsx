@@ -54,8 +54,17 @@ export function GastenFilters({
           value={zoek}
           onChange={(e) => onZoek(e.target.value)}
           placeholder="Zoek op naam…"
-          className="pl-9 pr-3"
+          className="pl-9 pr-9"
         />
+        {zoek && (
+          <button
+            type="button"
+            onClick={() => onZoek('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Filterknop + dropdown */}
