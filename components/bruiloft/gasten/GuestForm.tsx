@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import {
   Button,
+  ConfirmDialog,
   Field,
   Input,
   Modal,
@@ -20,7 +21,7 @@ interface GuestFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: Guest | null
-  onSubmit: (data: NewGuest) => void
+  onSubmit: (data: NewGuest) => void | Promise<void>
 }
 
 function leeg(): NewGuest {
@@ -58,6 +59,8 @@ function vanGuest(g: Guest): NewGuest {
 export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormProps) {
   const [form, setForm] = React.useState<NewGuest>(leeg)
   const [naamFout, setNaamFout] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
   // Baseline om niet-opgeslagen wijzigingen te detecteren bij het sluiten.
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
   const voornaamRef = React.useRef<HTMLInputElement>(null)
@@ -81,25 +84,30 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
   // Beschermt tegen onbedoeld verlies van ingevoerde gegevens.
   const sluit = (o: boolean) => {
     if (!o && dirty) {
-      if (!window.confirm('Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten?'))
-        return
+      setConfirmOpen(true)
+      return
     }
     onOpenChange(o)
   }
 
   // closeAfter=false houdt de modal open en reset het formulier ("nog een toevoegen").
-  const verwerk = (closeAfter: boolean) => {
+  const verwerk = async (closeAfter: boolean) => {
     if (!form.voornaam.trim() && !form.achternaam.trim()) {
       setNaamFout(true)
       return
     }
-    onSubmit({
-      ...form,
-      voornaam: form.voornaam.trim(),
-      achternaam: form.achternaam.trim(),
-      partnerNaam: form.heeftPartner ? form.partnerNaam.trim() : '',
-      aantalKinderen: Number(form.aantalKinderen) || 0,
-    })
+    setSaving(true)
+    try {
+      await Promise.resolve(onSubmit({
+        ...form,
+        voornaam: form.voornaam.trim(),
+        achternaam: form.achternaam.trim(),
+        partnerNaam: form.heeftPartner ? form.partnerNaam.trim() : '',
+        aantalKinderen: Number(form.aantalKinderen) || 0,
+      }))
+    } finally {
+      setSaving(false)
+    }
     if (closeAfter) {
       onOpenChange(false)
     } else {
@@ -117,6 +125,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
   }
 
   return (
+    <>
     <Modal
       open={open}
       onOpenChange={sluit}
@@ -132,6 +141,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
             <Input
               id="vn"
               ref={voornaamRef}
+              autoFocus
               value={form.voornaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('voornaam', e.target.value)}
@@ -257,13 +267,22 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
             Annuleren
           </Button>
           {!initial ? (
-            <Button type="button" variant="secondary" onClick={() => verwerk(false)}>
+            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
               Opslaan &amp; nog een toevoegen
             </Button>
           ) : null}
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Niet-opgeslagen wijzigingen gaan verloren."
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+  </>
   )
 }

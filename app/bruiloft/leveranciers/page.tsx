@@ -108,17 +108,24 @@ export default function LeveranciersPage() {
       ) : gefilterd.length === 0 ? (
         <EmptyState icon={Store} titel="Geen leveranciers gevonden" beschrijving="Pas je filters aan." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {gefilterd.map((v) => (
-            <VendorCard
-              key={v.id}
-              vendor={v}
-              budgetItems={budgetItems}
-              onEdit={openBewerk}
-              onDelete={setDelVendor}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {gefilterd.map((v) => (
+              <VendorCard
+                key={v.id}
+                vendor={v}
+                budgetItems={budgetItems}
+                onEdit={openBewerk}
+                onDelete={setDelVendor}
+              />
+            ))}
+          </div>
+          <p className="mt-4 text-right text-xs text-muted-foreground">
+            {gefilterd.length === vendors.length
+              ? `${vendors.length} leveranciers`
+              : `${gefilterd.length} van ${vendors.length} leveranciers weergegeven`}
+          </p>
+        </>
       )}
 
       <VendorForm

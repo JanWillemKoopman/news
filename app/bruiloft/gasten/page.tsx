@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Download, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Check, Copy, Download, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -42,8 +42,21 @@ export default function GastenPage() {
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
   const [rsvpEmail, setRsvpEmail] = React.useState('')
   const [rsvpSending, setRsvpSending] = React.useState(false)
+  const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
+  const [origin, setOrigin] = React.useState('')
+  React.useEffect(() => { setOrigin(window.location.origin) }, [])
 
   if (!wedding) return null
+
+  const kopieer = async (tekst: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(tekst)
+      setGekopieerd(id)
+      setTimeout(() => setGekopieerd(null), 1500)
+    } catch {
+      // klembord niet beschikbaar
+    }
+  }
 
   async function sendRsvpEmail(e: React.FormEvent) {
     e.preventDefault()
@@ -79,6 +92,11 @@ export default function GastenPage() {
     }
     return true
   })
+
+  const zichtbaar = [...gefilterd].sort((a, b) =>
+    (a.achternaam || '').localeCompare(b.achternaam || '', 'nl') ||
+    a.voornaam.localeCompare(b.voornaam, 'nl')
+  )
 
   const openNieuw = () => {
     setEditGuest(null)
@@ -202,7 +220,7 @@ export default function GastenPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {gefilterd.map((g) => (
+                    {zichtbaar.map((g) => (
                       <tr key={g.id} className="border-b border-border last:border-0 hover:bg-accent/40">
                         <td className="px-4 py-3 font-medium text-foreground">
                           {g.voornaam} {g.achternaam}
@@ -224,14 +242,24 @@ export default function GastenPage() {
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-1">
                             {g.rsvpCode ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Stuur RSVP-link"
-                                onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}
-                              >
-                                <Mail className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Kopieer RSVP-link"
+                                  onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}
+                                >
+                                  {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Stuur RSVP-link"
+                                  onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </Button>
+                              </>
                             ) : null}
                             <Button
                               variant="ghost"
@@ -259,7 +287,7 @@ export default function GastenPage() {
 
               {/* Mobiel: kaartlijst */}
               <div className="space-y-0 divide-y divide-border md:hidden">
-                {gefilterd.map((g) => (
+                {zichtbaar.map((g) => (
                   <div key={g.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -285,9 +313,15 @@ export default function GastenPage() {
                     ) : null}
                     <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
                       {g.rsvpCode ? (
-                        <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
-                          <Mail className="h-4 w-4" /> RSVP-link
-                        </Button>
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
+                            {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                        </>
                       ) : null}
                       <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
                         <Pencil className="h-4 w-4" /> Bewerken
@@ -384,6 +418,8 @@ export default function GastenPage() {
             <Input
               id="rsvp-email"
               type="email"
+              autoFocus
+              autoComplete="email"
               required
               placeholder="naam@voorbeeld.nl"
               value={rsvpEmail}
