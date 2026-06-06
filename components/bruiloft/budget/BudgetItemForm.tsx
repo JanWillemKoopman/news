@@ -134,14 +134,21 @@ export function BudgetItemForm({
       setOmsFout(true)
       return
     }
+    const geschat = Number(form.geschatBedrag) || 0
+    const geoffreerd = Number(form.geoffreerdBedrag) || 0
+    const betaald = Number(form.betaaldBedrag) || 0
+    if (geschat < 0 || geoffreerd < 0 || betaald < 0) {
+      toast({ title: 'Bedragen mogen niet negatief zijn', variant: 'error' })
+      return
+    }
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({
         categorie: form.categorie,
         omschrijving: form.omschrijving.trim(),
-        geschatBedrag: Number(form.geschatBedrag) || 0,
-        geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
-        betaaldBedrag: Number(form.betaaldBedrag) || 0,
+        geschatBedrag: geschat,
+        geoffreerdBedrag: geoffreerd,
+        betaaldBedrag: betaald,
         vendorId: form.vendorId || undefined,
         betaaltermijnen: form.betaaltermijnen
           .filter((t) => t.bedrag > 0 || t.vervaldatum)

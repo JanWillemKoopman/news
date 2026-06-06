@@ -165,6 +165,11 @@ export function TaskForm({
             onChange={(v) => set('deadline', v)}
           />
         </Field>
+        {form.deadline && form.deadline < new Date().toISOString().slice(0, 10) ? (
+          <p className="text-xs text-amber-600">
+            Let op: deze deadline ligt al in het verleden. De taak verschijnt direct als achterstallig.
+          </p>
+        ) : null}
 
         <Field label="Status" htmlFor="st">
           <Select
