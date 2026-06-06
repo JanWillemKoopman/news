@@ -21,7 +21,7 @@ interface BudgetItemFormProps {
   onOpenChange: (open: boolean) => void
   initial?: BudgetItem | null
   vendors: Vendor[]
-  onSubmit: (data: NewBudgetItem) => void
+  onSubmit: (data: NewBudgetItem) => void | Promise<void>
 }
 
 interface FormState {
@@ -72,6 +72,7 @@ export function BudgetItemForm({
 }: BudgetItemFormProps) {
   const [form, setForm] = React.useState<FormState>(leeg)
   const [omsFout, setOmsFout] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     if (open) {
@@ -106,23 +107,28 @@ export function BudgetItemForm({
       betaaltermijnen: f.betaaltermijnen.filter((t) => t.id !== id),
     }))
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.omschrijving.trim()) {
       setOmsFout(true)
       return
     }
-    onSubmit({
-      categorie: form.categorie,
-      omschrijving: form.omschrijving.trim(),
-      geschatBedrag: Number(form.geschatBedrag) || 0,
-      geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
-      betaaldBedrag: Number(form.betaaldBedrag) || 0,
-      vendorId: form.vendorId || undefined,
-      betaaltermijnen: form.betaaltermijnen
-        .filter((t) => t.bedrag > 0 || t.vervaldatum)
-        .map((t) => ({ ...t, bedrag: Number(t.bedrag) || 0 })),
-    })
+    setSaving(true)
+    try {
+      await Promise.resolve(onSubmit({
+        categorie: form.categorie,
+        omschrijving: form.omschrijving.trim(),
+        geschatBedrag: Number(form.geschatBedrag) || 0,
+        geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
+        betaaldBedrag: Number(form.betaaldBedrag) || 0,
+        vendorId: form.vendorId || undefined,
+        betaaltermijnen: form.betaaltermijnen
+          .filter((t) => t.bedrag > 0 || t.vervaldatum)
+          .map((t) => ({ ...t, bedrag: Number(t.bedrag) || 0 })),
+      }))
+    } finally {
+      setSaving(false)
+    }
     onOpenChange(false)
   }
 
@@ -266,7 +272,7 @@ export function BudgetItemForm({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>

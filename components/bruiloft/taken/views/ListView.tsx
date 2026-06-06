@@ -12,6 +12,8 @@ import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblock
 import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
+const PRIO_ORDER: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
+
 function deadlineVoorBlok(blok: Tijdsblok, trouwdatum: ISODate): ISODate {
   const offsetDagen: Record<Tijdsblok, number> = {
     '12 maanden voor': -340,
@@ -129,7 +131,7 @@ export function ListView({
       {TIJDSBLOK_VOLGORDE.map((blok) => {
         const blokTaken = tasks
           .filter((t) => t.tijdsblok === blok)
-          .sort((a, b) => a.deadline.localeCompare(b.deadline))
+          .sort((a, b) => a.deadline.localeCompare(b.deadline) || (PRIO_ORDER[a.prioriteit ?? ''] ?? 3) - (PRIO_ORDER[b.prioriteit ?? ''] ?? 3))
         if (blokTaken.length === 0) return null
         return (
           <div

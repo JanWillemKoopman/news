@@ -80,6 +80,11 @@ export default function GastenPage() {
     return true
   })
 
+  const zichtbaar = [...gefilterd].sort((a, b) =>
+    (a.achternaam || '').localeCompare(b.achternaam || '', 'nl') ||
+    a.voornaam.localeCompare(b.voornaam, 'nl')
+  )
+
   const openNieuw = () => {
     setEditGuest(null)
     setFormOpen(true)
@@ -202,7 +207,7 @@ export default function GastenPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {gefilterd.map((g) => (
+                    {zichtbaar.map((g) => (
                       <tr key={g.id} className="border-b border-border last:border-0 hover:bg-accent/40">
                         <td className="px-4 py-3 font-medium text-foreground">
                           {g.voornaam} {g.achternaam}
@@ -259,7 +264,7 @@ export default function GastenPage() {
 
               {/* Mobiel: kaartlijst */}
               <div className="space-y-0 divide-y divide-border md:hidden">
-                {gefilterd.map((g) => (
+                {zichtbaar.map((g) => (
                   <div key={g.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
