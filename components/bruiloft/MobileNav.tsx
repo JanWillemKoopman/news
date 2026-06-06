@@ -43,7 +43,7 @@ export function MobileNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-                  active ? 'text-rose-600' : 'text-gray-500 hover:text-gray-800'
+                  active ? 'text-rose-600' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <div className="relative">
@@ -64,7 +64,7 @@ export function MobileNav() {
             aria-haspopup="dialog"
             className={cn(
               'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-              meerActief ? 'text-rose-600' : 'text-gray-500 hover:text-gray-800'
+              meerActief ? 'text-rose-600' : 'text-muted-foreground hover:text-foreground'
             )}
           >
             <MoreHorizontal className="h-5 w-5" />

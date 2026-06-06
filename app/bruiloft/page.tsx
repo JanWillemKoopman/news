@@ -48,30 +48,30 @@ export default function DashboardPage() {
       : 0
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       {/* Hero: aftelteller. Lichte rhino-achtige kaart met serif headline. */}
-      <Card className="mb-8 overflow-hidden border-border bg-white">
+      <Card className="mb-8 overflow-hidden border-border">
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
-          <p className="text-2xl md:text-3xl lg:text-lg font-medium text-[#101828]">
+          <p className="text-2xl md:text-3xl lg:text-lg font-medium text-foreground">
             {wedding.partner1Naam} <span>&amp;</span>{' '}
             {wedding.partner2Naam}
           </p>
           <div className="my-4">
             {dagen > 0 ? (
-              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-[#101828]">
+              <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-foreground">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
             ) : dagen === 0 ? (
-              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-[#101828]">
+              <p className="font-serif text-[clamp(2rem,9vw,3.75rem)] font-medium leading-tight text-foreground">
                 Vandaag is de dag!
               </p>
             ) : (
-              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-[#101828]">
+              <p className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-foreground">
                 Gefeliciteerd met jullie huwelijk
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <CalendarHeart className="h-4 w-4 text-rose-600" />
               {formatDatumNL(wedding.trouwdatum)}

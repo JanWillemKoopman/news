@@ -190,7 +190,7 @@ export default function GastenPage() {
             rsvp={fRsvp}
             onRsvp={setFRsvp}
           />
-          <div className="rounded-lg border border-border bg-white shadow-sm">
+          <div className="rounded-lg border border-border bg-card shadow-sm">
 
           {/* Tabel (desktop) */}
           {gefilterd.length === 0 ? (

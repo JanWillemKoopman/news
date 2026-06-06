@@ -46,7 +46,7 @@ export function CadeaulijstShell() {
 
   if (loading && !registryLoaded) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="mx-auto max-w-6xl space-y-4">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-10 w-full" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -57,7 +57,7 @@ export function CadeaulijstShell() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl">
       <PageHeader
         titel="Cadeaulijst"
         beschrijving="Beheer jullie cadeauwensen en geldfondsen."

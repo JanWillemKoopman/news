@@ -22,7 +22,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-lg border border-border bg-white text-card-foreground shadow-sm',
+        'rounded-lg border border-border bg-card text-card-foreground shadow-sm',
         interactive &&
           'cursor-pointer transition-[box-shadow,border-color] duration-150 ease-out hover:border-rose-300 hover:shadow-md',
         className
