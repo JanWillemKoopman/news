@@ -255,7 +255,7 @@ export default function AIWeddingPlannerPage() {
   if (!wedding) return null
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="AI Wedding Planner"
         beschrijving="Professioneel advies per onderdeel van jullie bruiloft, gegenereerd door AI op basis van jullie planningsdata."

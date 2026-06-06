@@ -22,7 +22,7 @@ const buttonVariants = cva(
         secondary:
           'bg-rhino-800 text-white hover:bg-rhino-700 focus-visible:outline-rhino-800',
         destructive:
-          'bg-red-600 text-white shadow-sm hover:bg-red-500 focus-visible:outline-red-600',
+          'bg-destructive text-white shadow-sm hover:bg-destructive/90 focus-visible:outline-destructive',
       },
       size: {
         default: 'h-10 px-4 py-2',
