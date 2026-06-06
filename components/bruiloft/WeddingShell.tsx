@@ -51,7 +51,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-dvh bg-white text-foreground antialiased',
+    'wedding min-h-dvh bg-background text-foreground antialiased',
     fontClassName
   )
 
@@ -71,7 +71,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
               ))}
             </div>
           </aside>
-          <div className="flex-1 bg-gray-100 px-4 py-6 md:px-8">
+          <div className="flex-1 bg-muted px-4 py-6 md:px-8">
             <Skeleton className="h-8 w-48" />
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -126,7 +126,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
 
   return (
     <div
-      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-white text-foreground antialiased', fontClassName)}
+      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-background text-foreground antialiased', fontClassName)}
       suppressHydrationWarning
     >
       <a
@@ -149,7 +149,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
           <main
             id="hoofdinhoud"
             tabIndex={-1}
-            className="bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
+            className="bg-muted px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
           >
             {allowed ? (
               children

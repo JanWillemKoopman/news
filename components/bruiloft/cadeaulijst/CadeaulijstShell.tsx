@@ -79,7 +79,7 @@ export function CadeaulijstShell() {
             className={cn(
               'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
               activeTab === tab.id
-                ? 'bg-white text-foreground shadow-sm'
+                ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >

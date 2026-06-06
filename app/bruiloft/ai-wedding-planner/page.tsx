@@ -54,7 +54,7 @@ const STATUS_CONFIG: Record<ModuleStatus, { label: string; dot: string; pill: st
   op_schema:     { label: 'Op schema',     dot: 'bg-emerald-500', pill: 'text-emerald-700 bg-emerald-50' },
   actie_vereist: { label: 'Actie vereist', dot: 'bg-amber-500',   pill: 'text-amber-700 bg-amber-50'   },
   kritiek:       { label: 'Kritiek',       dot: 'bg-rose-500',    pill: 'text-rose-700 bg-rose-50'     },
-  niet_gestart:  { label: 'Niet gestart',  dot: 'bg-gray-300',    pill: 'text-gray-500 bg-gray-100'    },
+  niet_gestart:  { label: 'Niet gestart',  dot: 'bg-muted-foreground/40', pill: 'text-muted-foreground bg-muted' },
 }
 
 function StatusPill({ status }: { status: ModuleStatus }) {

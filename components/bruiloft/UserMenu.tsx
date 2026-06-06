@@ -138,7 +138,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             ref={menuRef}
             role="menu"
             aria-label="Accountmenu"
-            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-white p-1.5 shadow-lg"
+            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
@@ -166,7 +166,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                       type="button"
                       role="menuitem"
                       onClick={() => onSwitch(w.id)}
-                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-gray-50"
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
                     >
                       <Heart className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate">
@@ -188,7 +188,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 setOpen(false)
                 openWeddingSettings()
               }}
-              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
             >
               <Settings2 className="h-4 w-4 text-muted-foreground" />
               Bruiloft-gegevens
@@ -199,7 +199,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 href="/bruiloft/beheer/leden"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
               >
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 Leden &amp; rechten
@@ -210,7 +210,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               href="/bruiloft/activiteit"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <Activity className="h-4 w-4 text-muted-foreground" />
               Recente activiteit
@@ -220,7 +220,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               href="/bruiloft/account"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <UserCog className="h-4 w-4 text-muted-foreground" />
               Account
@@ -230,7 +230,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               type="button"
               role="menuitem"
               onClick={onSignOut}
-              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <LogOut className="h-4 w-4 text-muted-foreground" />
               Uitloggen
