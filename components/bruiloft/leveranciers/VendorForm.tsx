@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import {
   Button,
+  ConfirmDialog,
   Field,
   Input,
   Modal,
@@ -64,13 +65,24 @@ export function VendorForm({
   const [form, setForm] = React.useState<NewVendor>(leeg)
   const [naamFout, setNaamFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const baseline = React.useRef<string>(JSON.stringify(leeg()))
 
   React.useEffect(() => {
     if (open) {
-      setForm(initial ? vanVendor(initial) : leeg())
+      const start = initial ? vanVendor(initial) : leeg()
+      setForm(start)
+      baseline.current = JSON.stringify(start)
       setNaamFout(false)
     }
   }, [open, initial])
+
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  const sluit = (o: boolean) => {
+    if (!o && dirty) { setConfirmOpen(true); return }
+    onOpenChange(o)
+  }
 
   const set = <K extends keyof NewVendor>(key: K, value: NewVendor[K]) => {
     if (key === 'naam' && naamFout) setNaamFout(false)
@@ -83,6 +95,7 @@ export function VendorForm({
       setNaamFout(true)
       return
     }
+    if (saving) return
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({
@@ -90,16 +103,19 @@ export function VendorForm({
         naam: form.naam.trim(),
         geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
       }))
+      onOpenChange(false)
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
     } finally {
       setSaving(false)
     }
-    onOpenChange(false)
   }
 
   return (
+    <>
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={sluit}
       title={initial ? 'Leverancier bewerken' : 'Leverancier toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
@@ -215,12 +231,21 @@ export function VendorForm({
         </Field>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
           <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Niet-opgeslagen wijzigingen gaan verloren."
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+    </>
   )
 }

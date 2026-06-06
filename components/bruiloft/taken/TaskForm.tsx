@@ -110,6 +110,7 @@ export function TaskForm({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (saving) return
     const titelLeeg = !form.titel.trim()
     const deadlineLeeg = !form.deadline
     if (titelLeeg || deadlineLeeg) {
@@ -121,10 +122,12 @@ export function TaskForm({
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({ ...form, titel: form.titel.trim(), subtaken }))
+      onOpenChange(false)
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
     } finally {
       setSaving(false)
     }
-    onOpenChange(false)
   }
 
   return (

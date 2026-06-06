@@ -96,6 +96,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
       setNaamFout(true)
       return
     }
+    if (saving) return
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({
@@ -105,17 +106,19 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
         partnerNaam: form.heeftPartner ? form.partnerNaam.trim() : '',
         aantalKinderen: Math.max(0, Math.round(Number(form.aantalKinderen) || 0)),
       }))
+      if (closeAfter) {
+        onOpenChange(false)
+      } else {
+        const leegForm = leeg()
+        setForm(leegForm)
+        baseline.current = JSON.stringify(leegForm)
+        setNaamFout(false)
+        voornaamRef.current?.focus()
+      }
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
     } finally {
       setSaving(false)
-    }
-    if (closeAfter) {
-      onOpenChange(false)
-    } else {
-      const leegForm = leeg()
-      setForm(leegForm)
-      baseline.current = JSON.stringify(leegForm)
-      setNaamFout(false)
-      voornaamRef.current?.focus()
     }
   }
 

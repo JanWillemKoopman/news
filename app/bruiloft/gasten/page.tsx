@@ -198,7 +198,12 @@ export default function GastenPage() {
               <EmptyState
                 icon={Search}
                 titel="Geen gasten gevonden"
-                beschrijving="Pas je filters of zoekopdracht aan."
+                beschrijving="Geen gasten komen overeen met de huidige filters of zoekopdracht."
+                actie={
+                  <Button variant="outline" size="sm" onClick={() => { setZoek(''); setFCategorie('all'); setFType('all'); setFRsvp('all') }}>
+                    Wis filters
+                  </Button>
+                }
               />
             </div>
           ) : (
@@ -247,6 +252,7 @@ export default function GastenPage() {
                                   variant="ghost"
                                   size="icon"
                                   aria-label="Kopieer RSVP-link"
+                                  disabled={!origin}
                                   onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}
                                 >
                                   {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
@@ -314,7 +320,7 @@ export default function GastenPage() {
                     <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
                       {g.rsvpCode ? (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
+                          <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
                             {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                             {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
                           </Button>
@@ -359,8 +365,9 @@ export default function GastenPage() {
               await addGuest(data)
               toast({ title: 'Gast toegevoegd', variant: 'success' })
             }
-          } catch {
+          } catch (e) {
             toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+            throw e
           }
         }}
       />

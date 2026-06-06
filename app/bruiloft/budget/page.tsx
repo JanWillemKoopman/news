@@ -147,8 +147,9 @@ export default function BudgetPage() {
               await addBudgetItem(data)
               toast({ title: 'Budgetitem toegevoegd', variant: 'success' })
             }
-          } catch {
+          } catch (e) {
             toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+            throw e
           }
         }}
       />
