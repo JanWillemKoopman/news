@@ -3,7 +3,6 @@ import { z } from 'zod'
 
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderRsvpEmail } from '@/lib/email/templates'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -26,10 +25,8 @@ export async function POST(request: NextRequest) {
   }
   const { guestId, email, weddingId } = parsed.data
 
-  const admin = createAdminClient()
-
-  // Verifieer dat de aanroeper lid is van deze bruiloft.
-  const { data: membership } = await admin
+  // Verifieer toegang via RLS: alleen leden van de bruiloft kunnen dit ophalen.
+  const { data: membership } = await supabase
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Haal gastgegevens op.
-  const { data: guest } = await admin
+  const { data: guest } = await supabase
     .from('guests')
     .select('voornaam, rsvp_token, rsvp_token_revoked')
     .eq('id', guestId)
@@ -57,7 +54,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Haal bruiloftsinformatie op.
-  const { data: wedding } = await admin
+  const { data: wedding } = await supabase
     .from('weddings')
     .select('partner1_naam, partner2_naam, trouwdatum, locatie')
     .eq('id', weddingId)
