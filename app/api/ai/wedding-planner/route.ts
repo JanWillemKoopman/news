@@ -109,7 +109,7 @@ function buildModulePrompt(key: AIModuleKey, ctx: AIWeddingContext): string {
     budget: 'Budget',
     leveranciers: 'Leveranciers',
     draaiboek: 'Draaiboek',
-    gasten: 'Gastenbeheer',
+    gasten: 'Gasten',
     website: 'Website',
   }
 

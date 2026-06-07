@@ -32,11 +32,11 @@ const leveranciers: NavItem = { label: 'Leveranciers', href: '/bruiloft/leveranc
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
-const website: NavItem = { label: 'Website', href: '/bruiloft/website', icon: Globe, module: 'website' }
+const website: NavItem = { label: 'Trouwwebsite', href: '/bruiloft/website', icon: Globe, module: 'website' }
 const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijst', icon: Gift, module: 'registry' }
 const leden: NavItem = { label: 'Leden & rechten', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
-const aiPlanner: NavItem = { label: 'AI assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
+const aiPlanner: NavItem = { label: 'AI-assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
 
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
@@ -61,20 +61,18 @@ export interface NavSection {
   key: string
   label: string
   icon: LucideIcon
-  // Het pad dat geopend wordt als je op de top-knop klikt — meestal het
-  // eerste sub-item van de sectie.
   href: string
   items: NavItem[]
-  module: Module // welke module bepaalt zichtbaarheid in de top-balk
+  module: Module
 }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    key: 'overzicht',
-    label: 'Overzicht',
+    key: 'thuis',
+    label: 'Thuis',
     icon: LayoutDashboard,
     href: '/bruiloft',
-    items: [dashboard, aiPlanner],
+    items: [dashboard],
     module: 'dashboard',
   },
   {
@@ -87,40 +85,24 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     key: 'gasten',
-    label: 'Gastenbeheer',
+    label: 'Gasten',
     icon: Users,
     href: '/bruiloft/gasten',
     items: [gasten, tafels],
     module: 'gasten',
   },
   {
-    key: 'website',
-    label: 'Website',
+    key: 'trouwpagina',
+    label: 'Trouwpagina',
     icon: Globe,
     href: '/bruiloft/website',
-    items: [website],
+    items: [website, cadeaulijst],
     module: 'website',
-  },
-  {
-    key: 'cadeaulijst',
-    label: 'Cadeaulijst',
-    icon: Gift,
-    href: '/bruiloft/cadeaulijst',
-    items: [cadeaulijst],
-    module: 'registry',
-  },
-  {
-    key: 'beheer',
-    label: 'Beheer',
-    icon: ShieldCheck,
-    href: '/bruiloft/beheer/leden',
-    items: [leden],
-    module: 'beheer',
   },
 ]
 
 // Hoofditems in de mobiele onderbalk; de rest zit achter "Meer".
-export const MOBILE_PRIMARY: NavItem[] = [dashboard, gasten, taken, budget]
+export const MOBILE_PRIMARY: NavItem[] = [dashboard, taken, gasten, budget]
 
 export function isActive(pathname: string, href: string): boolean {
   if (href === '/bruiloft') return pathname === '/bruiloft'
@@ -133,7 +115,7 @@ export function moduleForPath(pathname: string): Module {
   return match ? match.module : 'dashboard'
 }
 
-// Welke top-sectie is actief op basis van het huidige pad. Default: overzicht.
+// Welke top-sectie is actief op basis van het huidige pad. Default: thuis.
 export function activeSection(pathname: string): NavSection {
   for (const section of NAV_SECTIONS) {
     if (section.items.some((i) => isActive(pathname, i.href))) return section

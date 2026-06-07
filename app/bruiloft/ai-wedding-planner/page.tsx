@@ -42,7 +42,7 @@ const MODULE_CONFIG: Array<{
   { key: 'budget', label: 'Budget', icon: Wallet, href: '/bruiloft/budget' },
   { key: 'leveranciers', label: 'Leveranciers', icon: Store, href: '/bruiloft/leveranciers' },
   { key: 'draaiboek', label: 'Draaiboek', icon: CalendarClock, href: '/bruiloft/draaiboek' },
-  { key: 'gasten', label: 'Gastenbeheer', icon: Users, href: '/bruiloft/gasten' },
+  { key: 'gasten', label: 'Gasten', icon: Users, href: '/bruiloft/gasten' },
   { key: 'website', label: 'Website', icon: Globe, href: '/bruiloft/website' },
 ]
 
@@ -257,7 +257,7 @@ export default function AIWeddingPlannerPage() {
   return (
     <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
-        titel="AI Wedding Planner"
+        titel="AI-assistent"
         beschrijving="Professioneel advies per onderdeel van jullie bruiloft, gegenereerd door AI op basis van jullie planningsdata."
         actie={
           <Button
@@ -301,7 +301,7 @@ export default function AIWeddingPlannerPage() {
             <CardContent className="pt-6 text-sm text-muted-foreground leading-relaxed space-y-2">
               <p>
                 De AI analyseert alle gegevens uit jullie bruiloftplanning: taken, budget,
-                leveranciers, draaiboek, gastenbeheer en website. Per onderdeel geeft een
+                leveranciers, draaiboek, gasten en trouwpagina. Per onderdeel geeft een
                 professionele AI-trouwplanner concreet advies over waar jullie staan en wat
                 de volgende stap is.
               </p>
