@@ -576,7 +576,7 @@ export default function AccountPage() {
   if (!currentUser) return null
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pb-24">
       <PageHeader titel="Account" beschrijving="Beheer je profiel en accountinstellingen." />
       <AccountHero />
       <ProfielFotoSection />

@@ -5,11 +5,13 @@ import { Plus, Trash2 } from 'lucide-react'
 
 import {
   Button,
+  ConfirmDialog,
   Field,
   Input,
   Modal,
   Select,
   Textarea,
+  useToast,
 } from '@/components/bruiloft/ui'
 import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, BudgetItemInput, PaymentTerm, Vendor } from '@/lib/bruiloft/types'
@@ -21,7 +23,7 @@ interface BudgetItemFormProps {
   onOpenChange: (open: boolean) => void
   initial?: BudgetItem | null
   vendors: Vendor[]
-  onSubmit: (data: NewBudgetItem) => void
+  onSubmit: (data: NewBudgetItem) => void | Promise<void>
 }
 
 interface FormState {
@@ -72,13 +74,28 @@ export function BudgetItemForm({
 }: BudgetItemFormProps) {
   const [form, setForm] = React.useState<FormState>(leeg)
   const [omsFout, setOmsFout] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const baseline = React.useRef<string>(JSON.stringify(leeg()))
+  const { toast } = useToast()
+  const termijnenRef = React.useRef(form.betaaltermijnen)
+  React.useEffect(() => { termijnenRef.current = form.betaaltermijnen }, [form.betaaltermijnen])
 
   React.useEffect(() => {
     if (open) {
-      setForm(initial ? vanItem(initial) : leeg())
+      const start = initial ? vanItem(initial) : leeg()
+      setForm(start)
+      baseline.current = JSON.stringify(start)
       setOmsFout(false)
     }
   }, [open, initial])
+
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  const sluit = (o: boolean) => {
+    if (!o && dirty) { setConfirmOpen(true); return }
+    onOpenChange(o)
+  }
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (key === 'omschrijving' && omsFout) setOmsFout(false)
@@ -100,39 +117,88 @@ export function BudgetItemForm({
       ],
     }))
 
-  const removeTerm = (id: string) =>
-    setForm((f) => ({
-      ...f,
-      betaaltermijnen: f.betaaltermijnen.filter((t) => t.id !== id),
-    }))
+  const removeTerm = (id: string) => {
+    const removed = termijnenRef.current.find((t) => t.id === id)
+    const index = termijnenRef.current.findIndex((t) => t.id === id)
+    setForm((f) => ({ ...f, betaaltermijnen: f.betaaltermijnen.filter((t) => t.id !== id) }))
+    if (removed) {
+      toast({
+        title: 'Betaaltermijn verwijderd',
+        variant: 'success',
+        duration: 5000,
+        action: {
+          label: 'Ongedaan maken',
+          onClick: () => {
+            const current = termijnenRef.current
+            setForm((f) => ({
+              ...f,
+              betaaltermijnen: [...current.slice(0, index), removed, ...current.slice(index)],
+            }))
+          },
+        },
+      })
+    }
+  }
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.omschrijving.trim()) {
       setOmsFout(true)
       return
     }
-    onSubmit({
-      categorie: form.categorie,
-      omschrijving: form.omschrijving.trim(),
-      geschatBedrag: Number(form.geschatBedrag) || 0,
-      geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
-      betaaldBedrag: Number(form.betaaldBedrag) || 0,
-      vendorId: form.vendorId || undefined,
-      betaaltermijnen: form.betaaltermijnen
-        .filter((t) => t.bedrag > 0 || t.vervaldatum)
-        .map((t) => ({ ...t, bedrag: Number(t.bedrag) || 0 })),
-    })
-    onOpenChange(false)
+    const geschat = Number(form.geschatBedrag) || 0
+    const geoffreerd = Number(form.geoffreerdBedrag) || 0
+    const betaald = Number(form.betaaldBedrag) || 0
+    if (geschat < 0 || geoffreerd < 0 || betaald < 0) {
+      toast({ title: 'Bedragen mogen niet negatief zijn', variant: 'error' })
+      return
+    }
+    if (saving) return
+    setSaving(true)
+    try {
+      await Promise.resolve(onSubmit({
+        categorie: form.categorie,
+        omschrijving: form.omschrijving.trim(),
+        geschatBedrag: geschat,
+        geoffreerdBedrag: geoffreerd,
+        betaaldBedrag: betaald,
+        vendorId: form.vendorId || undefined,
+        betaaltermijnen: form.betaaltermijnen
+          .filter((t) => t.bedrag > 0 || t.vervaldatum)
+          .map((t) => ({ ...t, bedrag: Number(t.bedrag) || 0 })),
+      }))
+      onOpenChange(false)
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
+    <>
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={sluit}
       title={initial ? 'Budgetitem bewerken' : 'Budgetitem toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
+        <Field
+          label="Omschrijving"
+          htmlFor="oms"
+          required
+          error={omsFout ? 'Vul een omschrijving in' : undefined}
+        >
+          <Input
+            id="oms"
+            autoFocus
+            value={form.omschrijving}
+            aria-invalid={omsFout || undefined}
+            onChange={(e) => set('omschrijving', e.target.value)}
+            placeholder="Bijv. Diner 100 personen"
+          />
+        </Field>
+
         <Field label="Categorie" htmlFor="cat">
           <Select
             id="cat"
@@ -147,21 +213,6 @@ export function BudgetItemForm({
           </Select>
         </Field>
 
-        <Field
-          label="Omschrijving"
-          htmlFor="oms"
-          required
-          error={omsFout ? 'Vul een omschrijving in' : undefined}
-        >
-          <Input
-            id="oms"
-            value={form.omschrijving}
-            aria-invalid={omsFout || undefined}
-            onChange={(e) => set('omschrijving', e.target.value)}
-            placeholder="Bijv. Diner 100 personen"
-          />
-        </Field>
-
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Geschat (€)" htmlFor="ges">
             <Input
@@ -173,7 +224,7 @@ export function BudgetItemForm({
               onChange={(e) => set('geschatBedrag', e.target.value)}
             />
           </Field>
-          <Field label="Geoffreerd (€)" htmlFor="gof">
+          <Field label="Offerteprijs (€)" htmlFor="gof">
             <Input
               id="gof"
               type="number"
@@ -263,12 +314,21 @@ export function BudgetItemForm({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten?"
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+    </>
   )
 }

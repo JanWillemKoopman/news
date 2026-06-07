@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Lint draait als aparte stap (npm run lint / CI), niet tijdens de build.
+  // Zo blokkeert een lint-bevinding nooit een productie-deploy.
+  eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
       {

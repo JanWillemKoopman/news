@@ -62,8 +62,17 @@ export function TakenFilters({
             value={filters.zoek}
             onChange={(e) => onChange({ ...filters, zoek: e.target.value })}
             placeholder="Zoek in taken..."
-            className="pl-9 pr-3"
+            className="pl-9 pr-9"
           />
+          {filters.zoek && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...filters, zoek: '' })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Filter button */}
@@ -74,14 +83,14 @@ export function TakenFilters({
             className={cn(
               'inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
               filterOpen
-                ? 'border-gray-400 bg-gray-100 text-gray-900'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-border bg-accent text-foreground'
+                : 'border-input bg-background text-foreground hover:bg-accent'
             )}
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-[11px] font-bold text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background">
                 {activeFilterCount}
               </span>
             )}
@@ -89,7 +98,7 @@ export function TakenFilters({
 
           {/* Filter dropdown panel */}
           {filterOpen && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-border bg-white p-4 shadow-lg sm:w-80">
+            <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-border bg-background p-4 shadow-lg sm:w-80">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">Filters</span>
                 {activeFilterCount > 0 && (
@@ -178,7 +187,7 @@ export function TakenFilters({
         </div>
 
         {/* View switcher */}
-        <div className="inline-flex rounded-lg border border-border bg-white p-1">
+        <div className="inline-flex rounded-lg border border-border bg-background p-1">
           <button
             type="button"
             onClick={() => onViewChange('lijst')}
@@ -208,7 +217,7 @@ export function TakenFilters({
         </div>
 
         {/* AI toggle — desktop inline */}
-        <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
+        <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
           <Sparkles className="h-4 w-4 text-rose-500" />
           <span className="text-sm text-muted-foreground">AI-suggesties</span>
           <Toggle checked={aiActive} onChange={onAiToggle} />
@@ -216,7 +225,7 @@ export function TakenFilters({
       </div>
 
       {/* AI toggle — mobile row */}
-      <div className="flex sm:hidden items-center justify-between rounded-lg border border-border bg-white px-3 py-2.5">
+      <div className="flex sm:hidden items-center justify-between rounded-lg border border-border bg-background px-3 py-2.5">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-rose-500" />
           <div>
@@ -238,8 +247,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2',
-        checked ? 'bg-rose-600' : 'bg-gray-200'
+        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+        checked ? 'bg-primary' : 'bg-input'
       )}
     >
       <span

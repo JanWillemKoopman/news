@@ -2,29 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { verifyPassword } from '@/lib/crypto/password'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
 const bodySchema = z.object({
   slug: z.string().min(1),
   password: z.string().min(1),
 })
-
-// In-memory rate limiting: max 10 pogingen per 15 minuten per IP+slug.
-const attempts = new Map<string, { count: number; resetAt: number }>()
-const MAX_ATTEMPTS = 10
-const WINDOW_MS = 15 * 60 * 1000
-
-function isRateLimited(key: string): boolean {
-  const now = Date.now()
-  const rec = attempts.get(key)
-  if (!rec || rec.resetAt < now) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  if (rec.count >= MAX_ATTEMPTS) return true
-  rec.count++
-  return false
-}
 
 export async function POST(request: NextRequest) {
   const raw = await request.json().catch(() => null)
@@ -36,7 +20,8 @@ export async function POST(request: NextRequest) {
   const { slug, password } = parsed.data
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
 
-  if (isRateLimited(`${ip}:${slug}`)) {
+  const rateLimit = await checkRateLimit(`registry:password:${ip}:${slug}`, 10, 15 * 60)
+  if (!rateLimit.allowed) {
     return NextResponse.json({ ok: false, error: 'Te veel pogingen' }, { status: 429 })
   }
 

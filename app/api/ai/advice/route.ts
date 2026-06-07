@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -20,21 +21,6 @@ export interface AIAdvies {
 const MIN_COOLDOWN_MS = 60 * 60 * 1000
 // 7 dagen veiligheidsnet: cache nooit langer dan dit gebruiken.
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
-
-// In-memory rate limiter voor de handmatige Verversen-knop (max 5/uur).
-const rateMap = new Map<string, { count: number; reset: number }>()
-
-function checkRateLimit(weddingId: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(weddingId)
-  if (!entry || now > entry.reset) {
-    rateMap.set(weddingId, { count: 1, reset: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 5) return false
-  entry.count++
-  return true
-}
 
 // Vingerafdruk van de planningsdata — verandert alleen als de inhoud verandert.
 function buildFingerprint(ctx: AIWeddingContext): string {
@@ -163,7 +149,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!checkRateLimit(user.id)) {
+  const rateLimit = await checkRateLimit(`ai:advice:${user.id}`, 5, 60 * 60)
+  if (!rateLimit.allowed) {
     // Bij rate-limit: retourneer stale cache als die er is
     if (cacheRow?.cached_advies?.length > 0) {
       return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })

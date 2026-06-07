@@ -13,6 +13,7 @@ export function RsvpSectie() {
   const { toast } = useToast()
   const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
   const [origin, setOrigin] = React.useState('')
+  const [generating, setGenerating] = React.useState(false)
 
   React.useEffect(() => {
     setOrigin(window.location.origin)
@@ -42,12 +43,16 @@ export function RsvpSectie() {
             </p>
           </div>
           <Button
+            loading={generating}
             onClick={async () => {
+              setGenerating(true)
               try {
                 await ensureRsvpCodes()
                 toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
               } catch {
                 toast({ title: 'Aanmaken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+              } finally {
+                setGenerating(false)
               }
             }}
             disabled={guests.length === 0}

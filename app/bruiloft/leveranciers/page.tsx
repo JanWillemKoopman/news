@@ -64,7 +64,7 @@ export default function LeveranciersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Leveranciers en locaties"
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
@@ -106,19 +106,31 @@ export default function LeveranciersPage() {
           }
         />
       ) : gefilterd.length === 0 ? (
-        <EmptyState icon={Store} titel="Geen leveranciers gevonden" beschrijving="Pas je filters aan." />
+        <EmptyState
+          icon={Store}
+          titel="Geen leveranciers gevonden"
+          beschrijving="Geen leveranciers komen overeen met de huidige filters."
+          actie={<Button variant="outline" size="sm" onClick={() => { setFType('all'); setFStatus('all') }}>Wis filters</Button>}
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {gefilterd.map((v) => (
-            <VendorCard
-              key={v.id}
-              vendor={v}
-              budgetItems={budgetItems}
-              onEdit={openBewerk}
-              onDelete={setDelVendor}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {gefilterd.map((v) => (
+              <VendorCard
+                key={v.id}
+                vendor={v}
+                budgetItems={budgetItems}
+                onEdit={openBewerk}
+                onDelete={setDelVendor}
+              />
+            ))}
+          </div>
+          <p className="mt-4 text-right text-xs text-muted-foreground">
+            {gefilterd.length === vendors.length
+              ? `${vendors.length} leveranciers`
+              : `${gefilterd.length} van ${vendors.length} leveranciers weergegeven`}
+          </p>
+        </>
       )}
 
       <VendorForm
@@ -135,8 +147,9 @@ export default function LeveranciersPage() {
               await addVendor(data)
               toast({ title: 'Leverancier toegevoegd', variant: 'success' })
             }
-          } catch {
+          } catch (e) {
             toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+            throw e
           }
         }}
       />

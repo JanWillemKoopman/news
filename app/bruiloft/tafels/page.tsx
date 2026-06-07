@@ -52,7 +52,7 @@ export default function TafelsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Tafelschikking"
         beschrijving="Sleep gasten naar een tafel. Afgemelde gasten worden niet meegenomen."

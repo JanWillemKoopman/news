@@ -16,13 +16,13 @@ const buttonVariants = cva(
         default:
           'bg-rose-600 text-white shadow-sm hover:bg-rose-500 hover:scale-[1.02] focus-visible:outline-rose-600',
         outline:
-          'border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:outline-gray-400',
+          'border border-input bg-background text-foreground hover:bg-accent hover:border-border focus-visible:outline-ring',
         ghost:
-          'text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-gray-400',
+          'text-foreground hover:bg-accent focus-visible:outline-ring',
         secondary:
           'bg-rhino-800 text-white hover:bg-rhino-700 focus-visible:outline-rhino-800',
         destructive:
-          'bg-red-600 text-white shadow-sm hover:bg-red-500 focus-visible:outline-red-600',
+          'bg-destructive text-white shadow-sm hover:bg-destructive/90 focus-visible:outline-destructive',
       },
       size: {
         default: 'h-10 px-4 py-2',

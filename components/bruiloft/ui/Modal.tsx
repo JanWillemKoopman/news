@@ -29,6 +29,7 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[3px] data-[state=open]:animate-overlay-in" />
         <Dialog.Content
+          onInteractOutside={(e) => e.preventDefault()}
           className={cn(
             'fixed z-50 flex max-h-[90dvh] flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-xl focus:outline-none',
             // Mobiel: bottom-sheet. Desktop: gecentreerde dialog.

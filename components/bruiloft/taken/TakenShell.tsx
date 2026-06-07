@@ -268,6 +268,7 @@ export function TakenShell() {
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
           achterstandRef={achterstandRef}
+          onResetFilters={() => setFilters(DEFAULT_FILTERS)}
           aiActive={aiActive}
           aiSuggesties={zichtbareSuggesties}
           aiLoading={aiLoading}
@@ -321,8 +322,9 @@ export function TakenShell() {
               await addTask(data)
               toast({ title: 'Taak toegevoegd', variant: 'success' })
             }
-          } catch {
+          } catch (e) {
             toast({ title: 'Opslaan mislukt', variant: 'error' })
+            throw e
           }
         }}
       />
@@ -336,9 +338,32 @@ export function TakenShell() {
         }
         onConfirm={async () => {
           if (!delTask) return
+          const verwijderd = delTask
           try {
-            await deleteTask(delTask.id)
-            toast({ title: 'Taak verwijderd', variant: 'success' })
+            await deleteTask(verwijderd.id)
+            toast({
+              title: 'Taak verwijderd',
+              description: verwijderd.titel,
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void addTask({
+                    titel: verwijderd.titel,
+                    omschrijving: verwijderd.omschrijving,
+                    deadline: verwijderd.deadline,
+                    status: verwijderd.status,
+                    prioriteit: verwijderd.prioriteit,
+                    toegewezenAan: verwijderd.toegewezenAan,
+                    assignees: verwijderd.assignees,
+                    subtaken: verwijderd.subtaken,
+                    vendorId: verwijderd.vendorId,
+                    budgetItemId: verwijderd.budgetItemId,
+                  })
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', variant: 'error' })
           }
@@ -349,12 +374,38 @@ export function TakenShell() {
         open={delBulkOpen}
         onOpenChange={setDelBulkOpen}
         title={`${selectedIds.size} taken verwijderen?`}
-        description="Deze actie kan niet ongedaan gemaakt worden."
+        description={`${selectedIds.size} ${selectedIds.size === 1 ? 'taak wordt' : 'taken worden'} permanent verwijderd.`}
         onConfirm={async () => {
+          const teVerwijderen = tasks.filter((t) => selectedIds.has(t.id))
           try {
             await bulkDeleteTasks(Array.from(selectedIds))
-            toast({ title: 'Taken verwijderd', variant: 'success' })
             clearSelection()
+            toast({
+              title: `${teVerwijderen.length} taken verwijderd`,
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void Promise.all(
+                    teVerwijderen.map((t) =>
+                      addTask({
+                        titel: t.titel,
+                        omschrijving: t.omschrijving,
+                        deadline: t.deadline,
+                        status: t.status,
+                        prioriteit: t.prioriteit,
+                        toegewezenAan: t.toegewezenAan,
+                        assignees: t.assignees,
+                        subtaken: t.subtaken,
+                        vendorId: t.vendorId,
+                        budgetItemId: t.budgetItemId,
+                      })
+                    )
+                  )
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', variant: 'error' })
           }

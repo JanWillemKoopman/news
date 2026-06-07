@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Check, Plus, X } from 'lucide-react'
 
-import { Button, Input } from '@/components/bruiloft/ui'
+import { Button, Input, useToast } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import type { Subtaak } from '@/lib/bruiloft/types'
 
@@ -20,6 +20,9 @@ function newId(): string {
 
 export function SubtakenList({ subtaken, onChange, compact }: SubtakenListProps) {
   const [draft, setDraft] = React.useState('')
+  const { toast } = useToast()
+  const subtakenRef = React.useRef(subtaken)
+  React.useEffect(() => { subtakenRef.current = subtaken }, [subtaken])
 
   const toggle = (id: string) =>
     onChange(subtaken.map((s) => (s.id === id ? { ...s, klaar: !s.klaar } : s)))
@@ -27,7 +30,25 @@ export function SubtakenList({ subtaken, onChange, compact }: SubtakenListProps)
   const rename = (id: string, titel: string) =>
     onChange(subtaken.map((s) => (s.id === id ? { ...s, titel } : s)))
 
-  const remove = (id: string) => onChange(subtaken.filter((s) => s.id !== id))
+  const remove = (id: string) => {
+    const removed = subtaken.find((s) => s.id === id)
+    const index = subtaken.findIndex((s) => s.id === id)
+    onChange(subtaken.filter((s) => s.id !== id))
+    if (removed) {
+      toast({
+        title: 'Subtaak verwijderd',
+        variant: 'success',
+        duration: 5000,
+        action: {
+          label: 'Ongedaan maken',
+          onClick: () => {
+            const current = subtakenRef.current
+            onChange([...current.slice(0, index), removed, ...current.slice(index)])
+          },
+        },
+      })
+    }
+  }
 
   const add = () => {
     const titel = draft.trim()
@@ -56,6 +77,7 @@ export function SubtakenList({ subtaken, onChange, compact }: SubtakenListProps)
           <Input
             value={s.titel}
             onChange={(e) => rename(s.id, e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
             className={cn('h-7 text-sm', s.klaar && 'line-through text-muted-foreground')}
           />
           <button

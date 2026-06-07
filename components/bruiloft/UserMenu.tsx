@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LogOut, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, Heart, LogOut, Settings2, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -25,8 +25,10 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const weddings = useBruiloftStore((s) => s.weddings)
   const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
   const switchWedding = useBruiloftStore((s) => s.switchWedding)
+  const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
+  const [avatarError, setAvatarError] = React.useState(false)
   const menuRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -73,7 +75,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
   const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
-  const [avatarError, setAvatarError] = React.useState(false)
 
   async function onSignOut() {
     setOpen(false)
@@ -137,7 +138,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             ref={menuRef}
             role="menu"
             aria-label="Accountmenu"
-            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-white p-1.5 shadow-lg"
+            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background p-1.5 shadow-lg"
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
@@ -165,7 +166,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                       type="button"
                       role="menuitem"
                       onClick={() => onSwitch(w.id)}
-                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-gray-50"
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
                     >
                       <Heart className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate">
@@ -180,12 +181,25 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
 
             <div className="my-1 h-px bg-border" />
 
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                openWeddingSettings()
+              }}
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
+              Bruiloft-gegevens
+            </button>
+
             {role === 'owner' ? (
               <Link
                 href="/bruiloft/beheer/leden"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
               >
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 Leden &amp; rechten
@@ -196,7 +210,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               href="/bruiloft/activiteit"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <Activity className="h-4 w-4 text-muted-foreground" />
               Recente activiteit
@@ -206,7 +220,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               href="/bruiloft/account"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <UserCog className="h-4 w-4 text-muted-foreground" />
               Account
@@ -216,7 +230,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               type="button"
               role="menuitem"
               onClick={onSignOut}
-              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-gray-50"
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <LogOut className="h-4 w-4 text-muted-foreground" />
               Uitloggen

@@ -83,6 +83,7 @@ create table public.weddings (
   partner2_naam text not null default '',
   trouwdatum date,
   locatie text not null default '',
+  woonplaats text not null default '',
   totaal_budget numeric(12, 2) not null default 0,
   aantal_daggasten integer not null default 0,
   aantal_avondgasten integer not null default 0,

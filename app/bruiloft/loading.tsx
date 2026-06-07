@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/bruiloft/ui/Skeleton'
 
 export default function BruiloftLoading() {
   return (
-    <div className="wedding min-h-screen bg-white" aria-busy="true">
+    <div className="wedding min-h-screen bg-background" aria-busy="true">
       <div className="h-16 w-full bg-header-bg" />
       <div className="flex min-h-[calc(100vh-4rem)]">
         <aside className="hidden w-64 shrink-0 border-r border-header-border bg-header-active p-4 md:flex md:flex-col">
@@ -13,7 +13,7 @@ export default function BruiloftLoading() {
             ))}
           </div>
         </aside>
-        <div className="flex-1 bg-gray-100 px-4 py-6 md:px-8">
+        <div className="flex-1 bg-muted px-4 py-6 md:px-8">
           <Skeleton className="h-8 w-48" />
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (

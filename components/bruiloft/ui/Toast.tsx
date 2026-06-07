@@ -81,7 +81,7 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
         ? 'text-red-600'
         : 'text-rose-600'
   return (
-    <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-border bg-white p-3.5 text-card-foreground shadow-lg animate-slide-up">
+    <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-border bg-card p-3.5 text-card-foreground shadow-lg animate-slide-up">
       <span className={cn('mt-0.5 shrink-0', tone)}>
         <Icon className="h-5 w-5" />
       </span>
