@@ -1,13 +1,15 @@
 'use client'
 
-import { CalendarHeart, MapPin } from 'lucide-react'
+import * as React from 'react'
+import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
-import { Card, CardContent } from '@/components/bruiloft/ui'
+import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
+import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { berekenGuidance } from '@/lib/bruiloft/guidance'
 import { dagenTot } from '@/lib/bruiloft/format'
@@ -31,6 +33,8 @@ export default function DashboardPage() {
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
 
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
+
   if (!wedding) return null
 
   const dagen = dagenTot(wedding.trouwdatum)
@@ -40,7 +44,16 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl pb-24">
       {/* Hero: aftelteller */}
-      <Card className="mb-8 overflow-hidden border-border">
+      <Card className="relative mb-8 overflow-hidden border-border">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Gegevens bewerken"
+          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings2 className="h-5 w-5" />
+        </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
           <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
             {faseLabel}
@@ -110,6 +123,12 @@ export default function DashboardPage() {
 
       {/* Routekaart: fasevoortgang */}
       <Routekaart route={guidance.route} />
+
+      <WeddingSettingsForm
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        wedding={wedding}
+      />
     </div>
   )
 }
