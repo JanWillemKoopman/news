@@ -17,6 +17,7 @@ import {
   gastTellingen,
   restBedrag,
 } from '@/lib/bruiloft/derived'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
 
@@ -28,7 +29,10 @@ export default function BudgetPage() {
   const addBudgetItem = useBruiloftStore((s) => s.addBudgetItem)
   const updateBudgetItem = useBruiloftStore((s) => s.updateBudgetItem)
   const deleteBudgetItem = useBruiloftStore((s) => s.deleteBudgetItem)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'budget')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
@@ -95,12 +99,14 @@ export default function BudgetPage() {
               <Sparkles className="h-4 w-4" />
               Analyseer mijn budget
             </Button>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Budgetitem toevoegen
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Budgetitem toevoegen
+              </Button>
+            )}
             <OverflowMenu
               items={[
-                { label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) },
+                ...(kanBewerken ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }] : []),
                 { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
               ]}
             />
@@ -118,11 +124,13 @@ export default function BudgetPage() {
         <EmptyState
           icon={Wallet}
           titel="Nog geen budgetitems"
-          beschrijving="Voeg je eerste budgetitem toe om grip te krijgen op de kosten."
+          beschrijving={kanBewerken ? 'Voeg je eerste budgetitem toe om grip te krijgen op de kosten.' : 'Er zijn nog geen budgetitems.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Budgetitem toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Budgetitem toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -131,9 +139,9 @@ export default function BudgetPage() {
           vendors={vendors}
           bevestigdeDaggasten={bevestigdeDaggasten}
           afwijkendeItemIds={afwijkingen.itemIds}
-          onEdit={openBewerk}
-          onDelete={setDeleteItem}
-          onToggleTerm={toggleTerm}
+          onEdit={kanBewerken ? openBewerk : undefined}
+          onDelete={kanBewerken ? setDeleteItem : undefined}
+          onToggleTerm={kanBewerken ? toggleTerm : undefined}
         />
       )}
 
