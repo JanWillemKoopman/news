@@ -5,6 +5,8 @@ import { AlertTriangle, CreditCard, Users, Building2 } from 'lucide-react'
 
 import { aankomendeTermijnen, gastTellingen } from '@/lib/bruiloft/derived'
 import { dagenTot } from '@/lib/bruiloft/format'
+import { canView } from '@/lib/bruiloft/permissions'
+import type { PermissionMap } from '@/lib/bruiloft/permissions'
 import type { BudgetItem, Guest, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
 
 interface UrgenteAandachtspuntenProps {
@@ -13,6 +15,7 @@ interface UrgenteAandachtspuntenProps {
   vendors: Vendor[]
   guests: Guest[]
   wedding: Wedding
+  permissions: PermissionMap
 }
 
 interface Melding {
@@ -33,11 +36,12 @@ export function UrgenteAandachtspunten({
   vendors,
   guests,
   wedding,
+  permissions,
 }: UrgenteAandachtspuntenProps) {
   const meldingen: Melding[] = []
   const dagen = dagenTot(wedding.trouwdatum)
 
-  // 1. Achterstallige taken
+  // 1. Achterstallige taken — altijd tonen (iedereen ziet zijn eigen taken)
   const achterstallig = tasks.filter(
     (t) => t.status !== 'klaar' && dagenTot(t.deadline) < 0
   )
@@ -51,41 +55,45 @@ export function UrgenteAandachtspunten({
     })
   }
 
-  // 2. Betalingen die ≤ 3 dagen vervallen
-  const kritiekBetalingen = aankomendeTermijnen(budgetItems, 20).filter(
-    (t) => t.dagen <= 3
-  )
-  if (kritiekBetalingen.length > 0) {
-    const eerste = kritiekBetalingen[0]
-    const dagTekst =
-      eerste.dagen < 0
-        ? 'is te laat'
-        : eerste.dagen === 0
-          ? 'vervalt vandaag'
-          : `vervalt over ${eerste.dagen} ${eerste.dagen === 1 ? 'dag' : 'dagen'}`
-    meldingen.push({
-      id: 'betaling-kritiek',
-      icon: CreditCard,
-      tekst: `Betaling "${eerste.item.omschrijving || eerste.item.categorie}" ${dagTekst}`,
-      href: '/bruiloft/budget',
-      niveau: 'kritiek',
-    })
+  // 2. Betalingen die ≤ 3 dagen vervallen — alleen met budget-toegang
+  if (canView(permissions, 'budget')) {
+    const kritiekBetalingen = aankomendeTermijnen(budgetItems, 20).filter(
+      (t) => t.dagen <= 3
+    )
+    if (kritiekBetalingen.length > 0) {
+      const eerste = kritiekBetalingen[0]
+      const dagTekst =
+        eerste.dagen < 0
+          ? 'is te laat'
+          : eerste.dagen === 0
+            ? 'vervalt vandaag'
+            : `vervalt over ${eerste.dagen} ${eerste.dagen === 1 ? 'dag' : 'dagen'}`
+      meldingen.push({
+        id: 'betaling-kritiek',
+        icon: CreditCard,
+        tekst: `Betaling "${eerste.item.omschrijving || eerste.item.categorie}" ${dagTekst}`,
+        href: '/bruiloft/budget',
+        niveau: 'kritiek',
+      })
+    }
   }
 
-  // 3. RSVP urgentie: gasten zonder reactie ≤ 30 dagen voor bruiloft
-  const gasten = gastTellingen(guests)
-  if (gasten.geenReactie > 0 && dagen >= 0 && dagen <= 30) {
-    meldingen.push({
-      id: 'rsvp-urgentie',
-      icon: Users,
-      tekst: `${gasten.geenReactie} ${gasten.geenReactie === 1 ? 'gast heeft' : 'gasten hebben'} nog niet gereageerd op de uitnodiging`,
-      href: '/bruiloft/gasten',
-      niveau: 'waarschuwing',
-    })
+  // 3. RSVP urgentie: gasten zonder reactie ≤ 30 dagen — alleen met gasten-toegang
+  if (canView(permissions, 'gasten')) {
+    const gasten = gastTellingen(guests)
+    if (gasten.geenReactie > 0 && dagen >= 0 && dagen <= 30) {
+      meldingen.push({
+        id: 'rsvp-urgentie',
+        icon: Users,
+        tekst: `${gasten.geenReactie} ${gasten.geenReactie === 1 ? 'gast heeft' : 'gasten hebben'} nog niet gereageerd op de uitnodiging`,
+        href: '/bruiloft/gasten',
+        niveau: 'waarschuwing',
+      })
+    }
   }
 
-  // 4. Kritieke leveranciers niet geboekt terwijl bruiloft dichtbij is
-  if (dagen >= 0 && dagen <= 90) {
+  // 4. Kritieke leveranciers niet geboekt — alleen met leveranciers-toegang
+  if (canView(permissions, 'leveranciers') && dagen >= 0 && dagen <= 90) {
     const kritiekTypes: Array<{ type: Vendor['type']; label: string }> = [
       { type: 'locatie', label: 'Trouwlocatie' },
       { type: 'catering', label: 'Catering' },

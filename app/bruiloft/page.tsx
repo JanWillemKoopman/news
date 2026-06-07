@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const tasks = useBruiloftStore((s) => s.tasks)
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
+  const currentUser = useBruiloftStore((s) => s.currentUser)
+  const permissions = useBruiloftStore((s) => s.permissions)
 
   const [settingsOpen, setSettingsOpen] = React.useState(false)
 
@@ -98,6 +100,7 @@ export default function DashboardPage() {
         vendors={vendors}
         guests={guests}
         wedding={wedding}
+        permissions={permissions}
       />
 
       {/* AI Assistent: geprioriteerde volgende stappen */}
@@ -113,6 +116,8 @@ export default function DashboardPage() {
           tasks={tasks}
           vendors={vendors}
           budgetItems={budgetItems}
+          currentUser={currentUser}
+          permissions={permissions}
         />
       </div>
 

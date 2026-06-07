@@ -15,6 +15,8 @@ import {
   taakTellingen,
 } from '@/lib/bruiloft/derived'
 import { dagenTot } from '@/lib/bruiloft/format'
+import { canView } from '@/lib/bruiloft/permissions'
+import type { PermissionMap } from '@/lib/bruiloft/permissions'
 import type { BudgetItem, Guest, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
 import { Money, Progress } from '@/components/bruiloft/ui'
 
@@ -24,6 +26,8 @@ interface ModuleStatusGridProps {
   tasks: Task[]
   vendors: Vendor[]
   budgetItems: BudgetItem[]
+  currentUser: { id: string } | null
+  permissions: PermissionMap
 }
 
 interface ModuleKaartProps {
@@ -85,6 +89,8 @@ export function ModuleStatusGrid({
   tasks,
   vendors,
   budgetItems,
+  currentUser,
+  permissions,
 }: ModuleStatusGridProps) {
   const budget = budgetTotalen(budgetItems, vendors, wedding)
   const gasten = gastTellingen(guests)
@@ -105,88 +111,97 @@ export function ModuleStatusGrid({
   const nogTeDoen = taken.open + taken.bezig
 
   const geboektCount = vendors.filter((v) => v.status === 'geboekt').length
-  const totaalVendorTypes = 10
-  const nogTeBoeken =
-    totaalVendorTypes - new Set(vendors.filter((v) => v.status === 'geboekt').map((v) => v.type)).size
 
   const rsvpPct =
     gasten.totaal > 0
       ? Math.round((gasten.bevestigd / gasten.totaal) * 100)
       : 0
 
+  // Taken die specifiek aan de ingelogde gebruiker zijn toegewezen en nog open staan
+  const aanjouTaken =
+    currentUser
+      ? tasks.filter(
+          (t) => t.status !== 'klaar' && t.assignees.includes(currentUser.id)
+        ).length
+      : 0
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {/* Budget */}
-      <ModuleKaart href="/bruiloft/budget">
-        <p className="mb-3 text-sm font-medium text-muted-foreground">Budget</p>
-        <p className="text-2xl font-semibold text-foreground">
-          <Money bedrag={budget.totaalBetaald} />
-          {wedding.totaalBudget > 0 && (
-            <span className="text-base font-normal text-muted-foreground">
-              {' '}/{' '}
-              <Money bedrag={wedding.totaalBudget} />
-            </span>
-          )}
-        </p>
-        {wedding.totaalBudget > 0 ? (
-          <>
-            <Progress value={budgetPct} className="mt-3 mb-1.5" />
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">{budgetPct}% betaald</p>
-              {overBudget && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
-                  <AlertCircle className="h-3 w-3" /> Over budget
-                </span>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="mt-2 text-xs text-muted-foreground">Nog geen totaalbudget ingesteld</p>
-        )}
-      </ModuleKaart>
-
-      {/* Gasten */}
-      <ModuleKaart href="/bruiloft/gasten">
-        <p className="mb-3 text-sm font-medium text-muted-foreground">Gasten</p>
-        {gasten.totaal === 0 ? (
+      {/* Budget — alleen zichtbaar met budget-toegang */}
+      {canView(permissions, 'budget') && (
+        <ModuleKaart href="/bruiloft/budget">
+          <p className="mb-3 text-sm font-medium text-muted-foreground">Budget</p>
           <p className="text-2xl font-semibold text-foreground">
-            0{' '}
-            <span className="text-base font-normal text-muted-foreground">gasten</span>
-          </p>
-        ) : (
-          <>
-            <p className="text-2xl font-semibold text-foreground">
-              {gasten.bevestigd}
+            <Money bedrag={budget.totaalBetaald} />
+            {wedding.totaalBudget > 0 && (
               <span className="text-base font-normal text-muted-foreground">
-                {' '}/ {gasten.totaal} bevestigd
+                {' '}/{' '}
+                <Money bedrag={wedding.totaalBudget} />
               </span>
-            </p>
-            {gasten.totaal > 0 && (
-              <Progress value={rsvpPct} className="mt-3 mb-1.5" />
             )}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p className="text-xs text-muted-foreground">
-                {gasten.bevestigdeDaggasten} dag · {gasten.bevestigdeAvondgasten} avond
-              </p>
-              {gasten.geenReactie > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  <AlertCircle className="h-3 w-3" />
-                  {gasten.geenReactie} geen reactie
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </ModuleKaart>
+          </p>
+          {wedding.totaalBudget > 0 ? (
+            <>
+              <Progress value={budgetPct} className="mt-3 mb-1.5" />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{budgetPct}% betaald</p>
+                {overBudget && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
+                    <AlertCircle className="h-3 w-3" /> Over budget
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">Nog geen totaalbudget ingesteld</p>
+          )}
+        </ModuleKaart>
+      )}
 
-      {/* Taken */}
+      {/* Gasten — alleen zichtbaar met gasten-toegang */}
+      {canView(permissions, 'gasten') && (
+        <ModuleKaart href="/bruiloft/gasten">
+          <p className="mb-3 text-sm font-medium text-muted-foreground">Gasten</p>
+          {gasten.totaal === 0 ? (
+            <p className="text-2xl font-semibold text-foreground">
+              0{' '}
+              <span className="text-base font-normal text-muted-foreground">gasten</span>
+            </p>
+          ) : (
+            <>
+              <p className="text-2xl font-semibold text-foreground">
+                {gasten.bevestigd}
+                <span className="text-base font-normal text-muted-foreground">
+                  {' '}/ {gasten.totaal} bevestigd
+                </span>
+              </p>
+              {gasten.totaal > 0 && (
+                <Progress value={rsvpPct} className="mt-3 mb-1.5" />
+              )}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="text-xs text-muted-foreground">
+                  {gasten.bevestigdeDaggasten} dag · {gasten.bevestigdeAvondgasten} avond
+                </p>
+                {gasten.geenReactie > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    <AlertCircle className="h-3 w-3" />
+                    {gasten.geenReactie} geen reactie
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </ModuleKaart>
+      )}
+
+      {/* Taken — altijd zichtbaar; iedereen kan zijn eigen taken inzien */}
       <ModuleKaart href="/bruiloft/taken">
         <p className="mb-3 text-sm font-medium text-muted-foreground">Taken</p>
         <p className="text-2xl font-semibold text-foreground">
           {nogTeDoen}
           <span className="text-base font-normal text-muted-foreground"> te doen</span>
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="text-xs text-muted-foreground">{taken.klaar} afgerond</p>
           {achterstallig > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
@@ -195,22 +210,29 @@ export function ModuleStatusGrid({
             </span>
           )}
         </div>
+        {aanjouTaken > 0 && (
+          <p className="mt-2 text-xs font-medium text-rose-600">
+            {aanjouTaken} {aanjouTaken === 1 ? 'taak' : 'taken'} aan jou toegewezen
+          </p>
+        )}
       </ModuleKaart>
 
-      {/* Leveranciers */}
-      <ModuleKaart href="/bruiloft/leveranciers">
-        <p className="mb-3 text-sm font-medium text-muted-foreground">Leveranciers</p>
-        <p className="text-2xl font-semibold text-foreground">
-          {geboektCount}
-          <span className="text-base font-normal text-muted-foreground"> geboekt</span>
-        </p>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-          <LeverancierCheckItem type="locatie" label="Locatie" vendors={vendors} />
-          <LeverancierCheckItem type="catering" label="Catering" vendors={vendors} />
-          <LeverancierCheckItem type="fotograaf" label="Fotograaf" vendors={vendors} />
-          <LeverancierCheckItem type="dj of band" label="DJ / Band" vendors={vendors} />
-        </div>
-      </ModuleKaart>
+      {/* Leveranciers — alleen zichtbaar met leveranciers-toegang */}
+      {canView(permissions, 'leveranciers') && (
+        <ModuleKaart href="/bruiloft/leveranciers">
+          <p className="mb-3 text-sm font-medium text-muted-foreground">Leveranciers</p>
+          <p className="text-2xl font-semibold text-foreground">
+            {geboektCount}
+            <span className="text-base font-normal text-muted-foreground"> geboekt</span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+            <LeverancierCheckItem type="locatie" label="Locatie" vendors={vendors} />
+            <LeverancierCheckItem type="catering" label="Catering" vendors={vendors} />
+            <LeverancierCheckItem type="fotograaf" label="Fotograaf" vendors={vendors} />
+            <LeverancierCheckItem type="dj of band" label="DJ / Band" vendors={vendors} />
+          </div>
+        </ModuleKaart>
+      )}
     </div>
   )
 }
