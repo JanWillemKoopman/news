@@ -8,11 +8,15 @@ import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
+import { OnboardingWizard } from './OnboardingWizard'
 import { moduleForPath } from './nav'
+import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
+import { WeddingSettingsForm } from './WeddingSettingsForm'
 
 interface WeddingShellProps {
   children: React.ReactNode
@@ -32,10 +36,13 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
+  const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
   const stopRealtime = useBruiloftStore((s) => s.stopRealtime)
+  const weddingSettingsOpen = useBruiloftStore((s) => s.weddingSettingsOpen)
+  const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
 
   React.useEffect(() => {
@@ -46,7 +53,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const allowed = canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-dvh bg-white text-foreground antialiased',
+    'wedding min-h-dvh bg-background text-foreground antialiased',
     fontClassName
   )
 
@@ -66,7 +73,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
               ))}
             </div>
           </aside>
-          <div className="flex-1 bg-gray-100 px-4 py-6 md:px-8">
+          <div className="flex-1 bg-muted px-4 py-6 md:px-8">
             <Skeleton className="h-8 w-48" />
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -110,7 +117,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Nog geen bruiloft ingesteld: landing + onboarding-wizard, zonder app-shell.
+  // Ingelogd maar nog geen bruiloft: sla de marketingpagina over en toon
+  // de wizard direct zonder de account-aanmaak stap.
+  if (!wedding && currentUser) {
+    return (
+      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
+        <OnboardingWizard authenticatedMode />
+      </div>
+    )
+  }
+
+  // Uitgelogde bezoeker zonder bruiloft: volledige landing + onboarding-wizard.
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
@@ -121,7 +138,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
 
   return (
     <div
-      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-white text-foreground antialiased', fontClassName)}
+      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-background text-foreground antialiased', fontClassName)}
       suppressHydrationWarning
     >
       <a
@@ -144,7 +161,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
           <main
             id="hoofdinhoud"
             tabIndex={-1}
-            className="bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
+            className="bg-muted px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
           >
             {allowed ? (
               children
@@ -159,6 +176,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         </div>
       </div>
       <MobileNav />
+
+      {/* App-brede profielgegevens-modal + nudge (overal te openen). */}
+      <WeddingSettingsForm
+        open={weddingSettingsOpen}
+        onOpenChange={(o) => {
+          if (!o) closeWeddingSettings()
+        }}
+        wedding={wedding}
+      />
+      <ProfielNudge />
+      <InstallPrompt />
     </div>
   )
 }

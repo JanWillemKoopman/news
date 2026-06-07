@@ -11,7 +11,7 @@ export default function GastenLoading() {
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-9 w-28" />
       </div>
-      <div className="rounded-lg border border-border bg-white">
+      <div className="rounded-lg border border-border bg-card">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-0">
             <Skeleton className="h-8 w-8 rounded-full" />

@@ -784,6 +784,7 @@ export type Database = {
           totaal_budget: number
           trouwdatum: string | null
           updated_at: string
+          woonplaats: string
         }
         Insert: {
           aantal_avondgasten?: number
@@ -797,6 +798,7 @@ export type Database = {
           totaal_budget?: number
           trouwdatum?: string | null
           updated_at?: string
+          woonplaats?: string
         }
         Update: {
           aantal_avondgasten?: number
@@ -810,6 +812,7 @@ export type Database = {
           totaal_budget?: number
           trouwdatum?: string | null
           updated_at?: string
+          woonplaats?: string
         }
         Relationships: []
       }

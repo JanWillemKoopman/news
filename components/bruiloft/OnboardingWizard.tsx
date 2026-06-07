@@ -3,12 +3,13 @@
 import * as React from 'react'
 import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, KeyRound, Users, Wallet } from 'lucide-react'
 
-import { Button, Field, Input, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'account'
-const STEPS: Step[] = ['datum', 'namen', 'budget', 'gasten', 'account']
+const STEPS_FULL: Step[] = ['datum', 'namen', 'budget', 'gasten', 'account']
+const STEPS_AUTH: Step[] = ['datum', 'namen', 'budget', 'gasten']
 
 const BUDGET_PRESETS = [
   { label: '< €10.000', value: 9000 },
@@ -18,14 +19,26 @@ const BUDGET_PRESETS = [
   { label: '> €40.000', value: 50000 },
 ]
 
-export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => void; initialEmail?: string }) {
+export function OnboardingWizard({
+  onBack = () => {},
+  initialEmail = '',
+  authenticatedMode = false,
+}: {
+  onBack?: () => void
+  initialEmail?: string
+  authenticatedMode?: boolean
+}) {
   const completeOnboarding = useBruiloftStore((s) => s.completeOnboarding)
+  const setupWedding = useBruiloftStore((s) => s.setupWedding)
   const { toast } = useToast()
+
+  const steps = authenticatedMode ? STEPS_AUTH : STEPS_FULL
 
   const [step, setStep] = React.useState<Step>('datum')
   const [trouwdatum, setTrouwdatum] = React.useState('')
   const [partner1, setPartner1] = React.useState('')
   const [partner2, setPartner2] = React.useState('')
+  const [woonplaats, setWoonplaats] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [daggasten, setDaggasten] = React.useState('')
@@ -34,7 +47,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
   const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
 
-  const stepIndex = STEPS.indexOf(step)
+  const stepIndex = steps.indexOf(step)
 
   const canNext =
     step === 'datum' ? trouwdatum !== '' :
@@ -54,7 +67,10 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
     if (step === 'datum') return setStep('namen')
     if (step === 'namen') return setStep('budget')
     if (step === 'budget') return setStep('gasten')
-    if (step === 'gasten') return setStep('account')
+    if (step === 'gasten') {
+      if (authenticatedMode) return finish()
+      return setStep('account')
+    }
     await finish()
   }
 
@@ -66,16 +82,21 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
       partner2Naam: partner2.trim() || 'Partner 2',
       trouwdatum,
       locatie: '',
+      woonplaats: woonplaats.trim(),
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
       aantalDaggasten: Number(daggasten) || 0,
       aantalAvondgasten: Number(avondgasten) || 0,
     }
     try {
-      await completeOnboarding(input, {
-        email: email.trim(),
-        password,
-        displayName: partner1.trim() || 'Partner 1',
-      })
+      if (authenticatedMode) {
+        await setupWedding(input)
+      } else {
+        await completeOnboarding(input, {
+          email: email.trim(),
+          password,
+          displayName: partner1.trim() || 'Partner 1',
+        })
+      }
     } catch (err) {
       setBezig(false)
       const msg = err instanceof Error ? err.message : ''
@@ -94,7 +115,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
       } else {
         toast({
           title: 'Aanmaken mislukt',
-          description: 'We konden jullie account niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
+          description: 'We konden jullie bruiloft niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
           variant: 'error',
         })
       }
@@ -104,20 +125,24 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
-        <button
-          type="button"
-          onClick={prev}
-          className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Terug
-        </button>
+        {(!authenticatedMode || step !== 'datum') ? (
+          <button
+            type="button"
+            onClick={prev}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Terug
+          </button>
+        ) : (
+          <div className="w-16" />
+        )}
         <span className="flex items-center gap-2 font-serif text-base text-foreground">
           <Heart className="h-4 w-4 text-primary" />
           Ons Trouwplan
         </span>
         <div className="flex gap-1.5">
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <div
               key={s}
               className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -168,6 +193,7 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     onChange={(e) => setPartner1(e.target.value)}
                     placeholder="Bijv. Sanne"
                     autoFocus
+                    {...eigennaamInputProps}
                   />
                 </Field>
                 <Field label="Naam van je partner" htmlFor="ob-p2" required>
@@ -176,6 +202,16 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
                     value={partner2}
                     onChange={(e) => setPartner2(e.target.value)}
                     placeholder="Bijv. Tom"
+                    {...eigennaamInputProps}
+                  />
+                </Field>
+                <Field label="Woonplaats" htmlFor="ob-woonplaats">
+                  <Input
+                    id="ob-woonplaats"
+                    value={woonplaats}
+                    onChange={(e) => setWoonplaats(e.target.value)}
+                    placeholder="Bijv. Utrecht"
+                    {...eigennaamInputProps}
                   />
                 </Field>
               </div>
@@ -307,10 +343,10 @@ export function OnboardingWizard({ onBack, initialEmail = '' }: { onBack: () => 
 
           <div className="mt-8 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Stap {stepIndex + 1} van {STEPS.length}
+              Stap {stepIndex + 1} van {steps.length}
             </span>
             <Button onClick={next} disabled={!canNext || bezig} loading={bezig} size="lg">
-              {step === 'account' ? (
+              {(step === 'account' || (authenticatedMode && step === 'gasten')) ? (
                 <>
                   Maak ons trouwplan
                   <Check className="h-4 w-4" />

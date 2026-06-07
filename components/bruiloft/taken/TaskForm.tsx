@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import {
   Button,
+  ConfirmDialog,
   Field,
   Input,
   Modal,
@@ -27,7 +28,7 @@ interface TaskFormProps {
   vendors: Vendor[]
   budgetItems: BudgetItem[]
   members: WeddingMember[]
-  onSubmit: (data: NewTask) => void
+  onSubmit: (data: NewTask) => void | Promise<void>
 }
 
 function vandaagISO(): string {
@@ -77,10 +78,15 @@ export function TaskForm({
   const [form, setForm] = React.useState<NewTask>(() => leeg(defaultDeadline))
   const [titelFout, setTitelFout] = React.useState(false)
   const [deadlineFout, setDeadlineFout] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const baseline = React.useRef<string>(JSON.stringify(leeg(defaultDeadline)))
 
   React.useEffect(() => {
     if (open) {
-      setForm(initial ? vanTask(initial) : leeg(defaultDeadline))
+      const start = initial ? vanTask(initial) : leeg(defaultDeadline)
+      setForm(start)
+      baseline.current = JSON.stringify(start)
       setTitelFout(false)
       setDeadlineFout(false)
     }
@@ -92,8 +98,19 @@ export function TaskForm({
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  const submit = (e: React.FormEvent) => {
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  const sluit = (o: boolean) => {
+    if (!o && dirty) {
+      setConfirmOpen(true)
+      return
+    }
+    onOpenChange(o)
+  }
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (saving) return
     const titelLeeg = !form.titel.trim()
     const deadlineLeeg = !form.deadline
     if (titelLeeg || deadlineLeeg) {
@@ -101,14 +118,21 @@ export function TaskForm({
       setDeadlineFout(deadlineLeeg)
       return
     }
-    // Strip lege subtaken.
     const subtaken = form.subtaken.filter((s) => s.titel.trim() !== '')
-    onSubmit({ ...form, titel: form.titel.trim(), subtaken })
-    onOpenChange(false)
+    setSaving(true)
+    try {
+      await Promise.resolve(onSubmit({ ...form, titel: form.titel.trim(), subtaken }))
+      onOpenChange(false)
+    } catch {
+      // opslaan mislukt — modal blijft open, data bewaard
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title={initial ? 'Taak bewerken' : 'Taak toevoegen'}>
+    <>
+    <Modal open={open} onOpenChange={sluit} title={initial ? 'Taak bewerken' : 'Taak toevoegen'}>
       <form onSubmit={submit} className="space-y-4">
         <Field
           label="Titel"
@@ -118,6 +142,7 @@ export function TaskForm({
         >
           <Input
             id="titel"
+            autoFocus
             value={form.titel}
             aria-invalid={titelFout || undefined}
             onChange={(e) => set('titel', e.target.value)}
@@ -137,27 +162,31 @@ export function TaskForm({
           <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
         </Field>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
-            <DateRoller
-              value={form.deadline}
-              onChange={(v) => set('deadline', v)}
-            />
-          </Field>
-          <Field label="Status" htmlFor="st">
-            <Select
-              id="st"
-              value={form.status}
-              onChange={(e) => set('status', e.target.value as NewTask['status'])}
-            >
-              {TASK_STATUSSEN.map((s) => (
-                <option key={s} value={s}>
-                  {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
+        <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
+          <DateRoller
+            value={form.deadline}
+            onChange={(v) => set('deadline', v)}
+          />
+        </Field>
+        {form.deadline && form.deadline < new Date().toISOString().slice(0, 10) ? (
+          <p className="text-xs text-amber-600">
+            Let op: deze deadline ligt al in het verleden. De taak verschijnt direct als achterstallig.
+          </p>
+        ) : null}
+
+        <Field label="Status" htmlFor="st">
+          <Select
+            id="st"
+            value={form.status}
+            onChange={(e) => set('status', e.target.value as NewTask['status'])}
+          >
+            {TASK_STATUSSEN.map((s) => (
+              <option key={s} value={s}>
+                {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Prioriteit" htmlFor="prio">
@@ -214,10 +243,10 @@ export function TaskForm({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
 
@@ -227,5 +256,14 @@ export function TaskForm({
         </div>
       ) : null}
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Niet-opgeslagen wijzigingen gaan verloren."
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+    </>
   )
 }

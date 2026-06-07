@@ -1,21 +1,9 @@
 'use client'
 
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-
-import { Card, CardContent, Money } from '@/components/bruiloft/ui'
-import { CHART_COLORS } from '@/lib/bruiloft/constants'
+import { Money } from '@/components/bruiloft/ui'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { formatEuro } from '@/lib/bruiloft/format'
+import { cn } from '@/lib/utils'
 import type { BudgetItem, Vendor, Wedding } from '@/lib/bruiloft/types'
 
 interface BudgetSummaryProps {
@@ -24,150 +12,143 @@ interface BudgetSummaryProps {
   wedding: Wedding
 }
 
+function CircularProgress({ pct }: { pct: number }) {
+  const r = 26
+  const circumference = 2 * Math.PI * r
+  const offset = circumference - (pct / 100) * circumference
+
+  return (
+    <svg width={64} height={64} className="shrink-0 -rotate-90">
+      <circle cx={32} cy={32} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
+      <circle
+        cx={32} cy={32} r={r}
+        fill="none"
+        stroke="#be123c"
+        strokeWidth={4}
+        strokeOpacity={0.6}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        className="transition-all duration-500"
+      />
+      <text
+        x={32} y={32}
+        textAnchor="middle"
+        dominantBaseline="central"
+        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+      >
+        {pct}%
+      </text>
+    </svg>
+  )
+}
+
 export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
   const totalen = budgetTotalen(items, vendors, wedding)
 
-  const donutData = totalen.perCategorie
-    .map((c) => ({
-      naam: c.categorie,
-      waarde: c.geoffreerd > 0 ? c.geoffreerd : c.geschat,
-    }))
-    .filter((d) => d.waarde > 0)
+  const pct =
+    wedding.totaalBudget > 0
+      ? Math.min(100, Math.round((totalen.totaalBetaald / wedding.totaalBudget) * 100))
+      : 0
 
-  const barData = [
-    { naam: 'Geschat', bedrag: totalen.totaalGeschat },
-    { naam: 'Geoffreerd', bedrag: totalen.totaalGeoffreerd },
-    { naam: 'Betaald', bedrag: totalen.totaalBetaald },
-  ]
-
-  const overBudget = totalen.resterendBudget < 0
+  const overBudget = totalen.totaalGeschat > wedding.totaalBudget
+  const overBudgetBedrag = totalen.totaalGeschat - wedding.totaalBudget
+  const nogTeBetalen = Math.max(0, totalen.totaalGeschat - totalen.totaalBetaald)
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {/* Totalen */}
-      <Card className="sm:col-span-2 lg:col-span-1">
-        <CardContent className="grid grid-cols-2 gap-4 p-6">
-          <Tegel label="Totaalbudget" bedrag={wedding.totaalBudget} />
-          <Tegel label="Geschat" bedrag={totalen.totaalGeschat} />
-          <Tegel label="Betaald" bedrag={totalen.totaalBetaald} />
-          <Tegel
-            label="Resterend"
-            bedrag={totalen.resterendBudget}
-            toon={overBudget ? 'rood' : 'groen'}
-          />
-        </CardContent>
-      </Card>
+    <div className="rounded-lg border border-border bg-card shadow-sm">
+      {/* Main progress row */}
+      <div className="flex items-center gap-4 p-4">
+        <CircularProgress pct={pct} />
 
-      {/* Donut per categorie */}
-      <Card className="lg:col-span-1">
-        <CardContent className="p-6">
-          <h3 className="mb-2 text-lg text-foreground">Verdeling per categorie</h3>
-          {donutData.length === 0 ? (
-            <p className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-              Nog geen bedragen ingevuld.
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-muted-foreground">Voortgang</p>
+          <p className="text-base font-semibold leading-tight text-foreground">
+            <Money bedrag={totalen.totaalBetaald} /> van <Money bedrag={wedding.totaalBudget} /> betaald
+          </p>
+          {overBudget ? (
+            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+              Geschat {formatEuro(totalen.totaalGeschat)} · {formatEuro(overBudgetBedrag)} boven budget
             </p>
           ) : (
-            <>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={donutData}
-                    dataKey="waarde"
-                    nameKey="naam"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    stroke="none"
-                  >
-                    {donutData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number, naam) => [formatEuro(value), naam as string]}
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: '1px solid hsl(var(--border))',
-                      background: 'hsl(var(--card))',
-                      color: 'hsl(var(--card-foreground))',
-                      textTransform: 'capitalize',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-                {donutData.map((d, i) => (
-                  <li key={d.naam} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                      aria-hidden
-                    />
-                    <span className="capitalize">{d.naam}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Geschat {formatEuro(totalen.totaalGeschat)}
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Vergelijking geschat/geoffreerd/betaald */}
-      <Card className="lg:col-span-1">
-        <CardContent className="p-6">
-          <h3 className="mb-2 text-lg text-foreground">Geschat vs. betaald</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={barData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-              <XAxis
-                dataKey="naam"
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis hide />
-              <Tooltip
-                cursor={{ fill: 'hsl(var(--accent))', opacity: 0.4 }}
-                formatter={(value: number) => [formatEuro(value), 'Bedrag']}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: '1px solid hsl(var(--border))',
-                  background: 'hsl(var(--card))',
-                  color: 'hsl(var(--card-foreground))',
-                }}
-              />
-              <Bar dataKey="bedrag" radius={[8, 8, 0, 0]} fill={CHART_COLORS[0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        {/* Desktop stats */}
+        <div className="hidden items-center divide-x divide-border sm:flex">
+          <StatNum label="geschat" bedrag={totalen.totaalGeschat} />
+          <StatNum label="nog te betalen" bedrag={nogTeBetalen} />
+          {overBudget ? (
+            <StatNum label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+          ) : (
+            <StatNum label="resterend budget" bedrag={totalen.resterendBudget} kleur="groen" />
+          )}
+        </div>
+      </div>
+
+      {/* Mobile stats row */}
+      <div className="flex divide-x divide-border border-t border-border sm:hidden">
+        <StatNumMobile label="geschat" bedrag={totalen.totaalGeschat} />
+        <StatNumMobile label="nog te betalen" bedrag={nogTeBetalen} />
+        {overBudget ? (
+          <StatNumMobile label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+        ) : (
+          <StatNumMobile label="resterend" bedrag={totalen.resterendBudget} kleur="groen" />
+        )}
+      </div>
     </div>
   )
 }
 
-function Tegel({
+function StatNum({
   label,
   bedrag,
-  toon,
+  kleur,
 }: {
   label: string
   bedrag: number
-  toon?: 'groen' | 'rood'
+  kleur?: 'amber' | 'groen'
 }) {
   return (
-    <div>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p
-        className={
-          'mt-1 text-lg font-semibold ' +
-          (toon === 'rood'
-            ? 'text-rose-600 dark:text-rose-400'
-            : toon === 'groen'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-foreground')
-        }
-      >
-        <Money bedrag={bedrag} />
-      </p>
+    <div className="px-5 text-center">
+      <Money
+        bedrag={bedrag}
+        className={cn(
+          'text-2xl font-bold tabular-nums',
+          kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
+          kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
+          !kleur && 'text-foreground'
+        )}
+      />
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function StatNumMobile({
+  label,
+  bedrag,
+  kleur,
+}: {
+  label: string
+  bedrag: number
+  kleur?: 'amber' | 'groen'
+}) {
+  return (
+    <div className="flex-1 py-2.5 text-center">
+      <Money
+        bedrag={bedrag}
+        className={cn(
+          'text-lg font-bold tabular-nums',
+          kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
+          kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
+          !kleur && 'text-foreground'
+        )}
+      />
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )
 }

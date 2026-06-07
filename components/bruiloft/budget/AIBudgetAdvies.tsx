@@ -6,7 +6,7 @@ import { AlertTriangle, CheckCircle2, Info, Loader2, Sparkles, X } from 'lucide-
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
-import type { AIBudgetAdvies } from '@/app/api/ai/budget/route'
+import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
 const TYPE_STIJL = {
   waarschuwing: {
@@ -26,7 +26,12 @@ const TYPE_STIJL = {
   },
 }
 
-export function AIBudgetAdvies() {
+interface AIBudgetAdviesProps {
+  open: boolean
+  onClose: () => void
+}
+
+export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
   const wedding = useBruiloftStore((s) => s.wedding)
   const tasks = useBruiloftStore((s) => s.tasks)
   const vendors = useBruiloftStore((s) => s.vendors)
@@ -34,16 +39,15 @@ export function AIBudgetAdvies() {
   const guests = useBruiloftStore((s) => s.guests)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
 
-  const [advies, setAdvies] = React.useState<AIBudgetAdvies | null>(null)
+  const [advies, setAdvies] = React.useState<AIBudgetAdviesType | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [zichtbaar, setZichtbaar] = React.useState(false)
 
-  async function analyseer() {
+  const analyseer = React.useCallback(async () => {
     if (!wedding || loading) return
     setLoading(true)
     setError(null)
-    setZichtbaar(true)
+    setAdvies(null)
 
     try {
       const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
@@ -63,90 +67,79 @@ export function AIBudgetAdvies() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [wedding, tasks, vendors, budgetItems, guests, scheduleItems, loading])
 
-  function sluiten() {
-    setZichtbaar(false)
-    setAdvies(null)
-    setError(null)
-  }
+  React.useEffect(() => {
+    if (open && !advies && !loading) {
+      analyseer()
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!open) return null
 
   return (
-    <div className="mb-6">
-      {!zichtbaar ? (
-        <Button
-          variant="outline"
-          onClick={analyseer}
-          className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-        >
-          <Sparkles className="h-4 w-4" />
-          Analyseer mijn budget
-        </Button>
-      ) : (
-        <Card className="border-rose-100">
-          <CardContent className="p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-rose-500" />
-                <span className="font-medium text-foreground">AI Budgetanalyse</span>
-              </div>
-              <button
-                onClick={sluiten}
-                className="rounded p-1 text-muted-foreground hover:text-foreground"
-                aria-label="Sluiten"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+    <Card className="mb-6 border-rose-100">
+      <CardContent className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-rose-500" />
+            <span className="font-medium text-foreground">AI Budgetanalyse</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground hover:text-foreground"
+            aria-label="Sluiten"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-            {loading ? (
-              <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Budget wordt geanalyseerd…
-              </div>
-            ) : error ? (
-              <p className="text-sm text-rose-600">{error}</p>
-            ) : advies ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">{advies.samenvatting}</p>
+        {loading ? (
+          <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Budget wordt geanalyseerd…
+          </div>
+        ) : error ? (
+          <p className="text-sm text-rose-600">{error}</p>
+        ) : advies ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{advies.samenvatting}</p>
 
-                {advies.aandachtspunten.length > 0 && (
-                  <ul className="space-y-2">
-                    {advies.aandachtspunten.map((punt, i) => {
-                      const stijl = TYPE_STIJL[punt.type] ?? TYPE_STIJL.tip
-                      const Icon = stijl.icon
-                      return (
-                        <li
-                          key={i}
-                          className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${stijl.klasse}`}
-                        >
-                          <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
-                          <div>
-                            <span className="font-medium capitalize">{punt.categorie}: </span>
-                            {punt.bericht}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
+            {advies.aandachtspunten.length > 0 && (
+              <ul className="space-y-2">
+                {advies.aandachtspunten.map((punt, i) => {
+                  const stijl = TYPE_STIJL[punt.type] ?? TYPE_STIJL.tip
+                  const Icon = stijl.icon
+                  return (
+                    <li
+                      key={i}
+                      className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${stijl.klasse}`}
+                    >
+                      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
+                      <div>
+                        <span className="font-medium capitalize">{punt.categorie}: </span>
+                        {punt.bericht}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
 
-                <p className="text-sm font-medium text-foreground">{advies.algemeneRaad}</p>
+            <p className="text-sm font-medium text-foreground">{advies.algemeneRaad}</p>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={analyseer}
-                  className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Opnieuw analyseren
-                </Button>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={analyseer}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Opnieuw analyseren
+            </Button>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

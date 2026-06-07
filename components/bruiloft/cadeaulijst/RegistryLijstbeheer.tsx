@@ -208,7 +208,7 @@ function RegistryItemCard({ item, index, total, reservation, contributions, isEd
 
         {isGift ? (
           <div className="mt-auto flex items-center justify-between">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${isReserved ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${isReserved ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
               {isReserved ? '✓ Gereserveerd' : 'Beschikbaar'}
             </span>
             {item.shopUrl && (

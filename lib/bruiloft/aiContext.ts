@@ -8,6 +8,7 @@ export interface AIWeddingContext {
     partner2: string
     trouwdatum: string
     locatie: string
+    woonplaats: string
     dagenTotBruiloft: number
   }
   budget: {
@@ -140,6 +141,7 @@ export function buildAIContext(
       partner2: wedding.partner2Naam,
       trouwdatum: wedding.trouwdatum,
       locatie: wedding.locatie || '(nog niet ingesteld)',
+      woonplaats: wedding.woonplaats || '(nog niet ingesteld)',
       dagenTotBruiloft: dagenTot(wedding.trouwdatum),
     },
     budget: {

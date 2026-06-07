@@ -108,6 +108,9 @@ interface BruiloftState {
   registryReservations: RegistryReservation[]
   registryContributions: RegistryContribution[]
   registryLoaded: boolean
+  // UI: of de "Onze gegevens"-modal open is. App-breed te openen vanuit hero,
+  // profielkaart, accountmenu en de profiel-nudge.
+  weddingSettingsOpen: boolean
 }
 
 interface BruiloftActions {
@@ -122,6 +125,8 @@ interface BruiloftActions {
 
   setupWedding: (input: WeddingInput) => Promise<void>
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
+  openWeddingSettings: () => void
+  closeWeddingSettings: () => void
 
   addGuest: (data: NewGuest) => Promise<void>
   updateGuest: (id: ID, patch: Partial<GuestInput>) => Promise<void>
@@ -311,6 +316,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     registryReservations: [],
     registryContributions: [],
     registryLoaded: false,
+    weddingSettingsOpen: false,
 
     init: async () => {
       if (get().hydrated) return
@@ -615,6 +621,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         })
       }
     },
+
+    openWeddingSettings: () => set({ weddingSettingsOpen: true }),
+    closeWeddingSettings: () => set({ weddingSettingsOpen: false }),
 
     // --- Guests ------------------------------------------------------------
 

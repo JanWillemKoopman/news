@@ -42,7 +42,7 @@ const MODULE_CONFIG: Array<{
   { key: 'budget', label: 'Budget', icon: Wallet, href: '/bruiloft/budget' },
   { key: 'leveranciers', label: 'Leveranciers', icon: Store, href: '/bruiloft/leveranciers' },
   { key: 'draaiboek', label: 'Draaiboek', icon: CalendarClock, href: '/bruiloft/draaiboek' },
-  { key: 'gasten', label: 'Gastenbeheer', icon: Users, href: '/bruiloft/gasten' },
+  { key: 'gasten', label: 'Gasten', icon: Users, href: '/bruiloft/gasten' },
   { key: 'website', label: 'Website', icon: Globe, href: '/bruiloft/website' },
 ]
 
@@ -54,7 +54,7 @@ const STATUS_CONFIG: Record<ModuleStatus, { label: string; dot: string; pill: st
   op_schema:     { label: 'Op schema',     dot: 'bg-emerald-500', pill: 'text-emerald-700 bg-emerald-50' },
   actie_vereist: { label: 'Actie vereist', dot: 'bg-amber-500',   pill: 'text-amber-700 bg-amber-50'   },
   kritiek:       { label: 'Kritiek',       dot: 'bg-rose-500',    pill: 'text-rose-700 bg-rose-50'     },
-  niet_gestart:  { label: 'Niet gestart',  dot: 'bg-gray-300',    pill: 'text-gray-500 bg-gray-100'    },
+  niet_gestart:  { label: 'Niet gestart',  dot: 'bg-muted-foreground/40', pill: 'text-muted-foreground bg-muted' },
 }
 
 function StatusPill({ status }: { status: ModuleStatus }) {
@@ -255,9 +255,9 @@ export default function AIWeddingPlannerPage() {
   if (!wedding) return null
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
-        titel="AI Wedding Planner"
+        titel="AI-assistent"
         beschrijving="Professioneel advies per onderdeel van jullie bruiloft, gegenereerd door AI op basis van jullie planningsdata."
         actie={
           <Button
@@ -301,7 +301,7 @@ export default function AIWeddingPlannerPage() {
             <CardContent className="pt-6 text-sm text-muted-foreground leading-relaxed space-y-2">
               <p>
                 De AI analyseert alle gegevens uit jullie bruiloftplanning: taken, budget,
-                leveranciers, draaiboek, gastenbeheer en website. Per onderdeel geeft een
+                leveranciers, draaiboek, gasten en trouwpagina. Per onderdeel geeft een
                 professionele AI-trouwplanner concreet advies over waar jullie staan en wat
                 de volgende stap is.
               </p>

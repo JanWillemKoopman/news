@@ -1,14 +1,15 @@
-// Warm earth-tone kleurenpalet voor Recharts grafieken (budget, categorieën).
+// Grafiekkleuren afgeleid van het Riley & Grey template-palet (rhino-blauw +
+// dusty-rose), zodat grafieken visueel aansluiten op de rest van de UI.
 export const CHART_COLORS = [
-  '#CC785C',
-  '#D8A48F',
-  '#B8743F',
-  '#8C6A56',
-  '#C9A227',
-  '#7A8B6F',
-  '#A65A48',
-  '#D9B382',
-  '#6B8E9E',
-  '#9B6A8C',
-  '#A8A29E',
+  '#4b83ac', // rhino-500
+  '#ad5173', // rose-600
+  '#2f5475', // rhino-700
+  '#c46f8a', // rose-500
+  '#6fa0c4', // rhino-400
+  '#7a3754', // rose-800
+  '#396990', // rhino-600
+  '#d795a9', // rose-400
+  '#a0c0d9', // rhino-300
+  '#69324b', // rose-900
+  '#2a4862', // rhino-800
 ] as const

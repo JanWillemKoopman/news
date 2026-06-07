@@ -79,14 +79,14 @@ export function TopNav() {
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
-            <span>AI assistent</span>
+            <span>AI-assistent</span>
           </Link>
           <UserMenu variant="dark" />
         </div>
         <div className="flex items-center gap-1 md:hidden">
           <Link
             href="/bruiloft/ai-wedding-planner"
-            aria-label="AI assistent"
+            aria-label="AI-assistent"
             className={cn(
               'inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-medium transition-colors border',
               pathname.startsWith('/bruiloft/ai-wedding-planner')
@@ -95,7 +95,7 @@ export function TopNav() {
             )}
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span>AI assistent</span>
+            <span>AI-assistent</span>
           </Link>
           <UserMenu variant="dark" compact />
         </div>

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { EmptyState, Skeleton } from '@/components/bruiloft/ui'
+import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
 import { ListChecks, Sparkles } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
@@ -11,6 +11,8 @@ import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSec
 import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblocks'
 import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
+
+const PRIO_ORDER: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
 
 function deadlineVoorBlok(blok: Tijdsblok, trouwdatum: ISODate): ISODate {
   const offsetDagen: Record<Tijdsblok, number> = {
@@ -40,6 +42,7 @@ interface ListViewProps {
   isSelected: (id: string) => boolean
   onToggleSelect: (t: Task) => void
   achterstandRef?: React.MutableRefObject<HTMLDivElement | null>
+  onResetFilters?: () => void
   // AI suggestions
   aiActive?: boolean
   aiSuggesties?: AITaakSuggestie[]
@@ -63,6 +66,7 @@ export function ListView({
   isSelected,
   onToggleSelect,
   achterstandRef,
+  onResetFilters,
   aiActive,
   aiSuggesties,
   aiLoading,
@@ -85,7 +89,8 @@ export function ListView({
       <EmptyState
         icon={ListChecks}
         titel="Geen taken gevonden"
-        beschrijving="Pas je filters aan."
+        beschrijving="Geen taken komen overeen met de huidige filters."
+        actie={onResetFilters ? <Button variant="outline" size="sm" onClick={onResetFilters}>Wis filters</Button> : undefined}
       />
     )
   }
@@ -129,7 +134,7 @@ export function ListView({
       {TIJDSBLOK_VOLGORDE.map((blok) => {
         const blokTaken = tasks
           .filter((t) => t.tijdsblok === blok)
-          .sort((a, b) => a.deadline.localeCompare(b.deadline))
+          .sort((a, b) => a.deadline.localeCompare(b.deadline) || (PRIO_ORDER[a.prioriteit ?? ''] ?? 3) - (PRIO_ORDER[b.prioriteit ?? ''] ?? 3))
         if (blokTaken.length === 0) return null
         return (
           <div

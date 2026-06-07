@@ -45,7 +45,7 @@ export function FotoGalerijEditor() {
               <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/50 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                   onClick={() => deleteWebsiteFoto(foto.id, foto.url)}
-                  className="rounded bg-black/60 p-1 text-white hover:bg-red-600"
+                  className="rounded bg-black/60 p-1 text-white hover:bg-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

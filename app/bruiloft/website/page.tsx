@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertCircle, Check, ExternalLink, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
@@ -63,7 +64,7 @@ export default function WebsitePage() {
 
   if (!websiteContent) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="mx-auto max-w-6xl space-y-4">
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <Skeleton className="h-6 w-36" />
@@ -128,7 +129,7 @@ export default function WebsitePage() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-5xl overflow-x-hidden">
+    <div className="mx-auto max-w-6xl overflow-x-hidden pb-24">
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de inhoud en vormgeving van jullie persoonlijke trouwwebsite."
@@ -199,9 +200,9 @@ export default function WebsitePage() {
                 {activeSectie === 'programma' && (
                   <div className="rounded-lg border border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
                     Het programma beheer je via{' '}
-                    <a href="/bruiloft/draaiboek" className="text-primary underline">
+                    <Link href="/bruiloft/draaiboek" className="text-primary underline">
                       Draaiboek
-                    </a>
+                    </Link>
                     . Programma-items die voor gasten zichtbaar zijn worden automatisch op de website getoond.
                   </div>
                 )}
