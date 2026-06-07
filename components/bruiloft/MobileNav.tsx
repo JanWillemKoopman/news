@@ -26,7 +26,7 @@ export function MobileNav() {
   const vandaag = new Date().toISOString().slice(0, 10)
   const badges: Record<string, number> = {}
   const achterstallig = tasks.filter((t) => t.status !== 'klaar' && t.deadline < vandaag).length
-  const rsvpPending = guests.filter((g) => g.rsvpStatus === 'uitgenodigd').length
+  const rsvpPending = guests.filter((g) => g.rsvpStatus === 'uitgenodigd' || g.rsvpStatus === 'geen reactie').length
   if (achterstallig > 0) badges['/bruiloft/taken'] = achterstallig
   if (rsvpPending > 0) badges['/bruiloft/gasten'] = rsvpPending
 

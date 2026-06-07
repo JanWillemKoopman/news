@@ -4,8 +4,9 @@ import * as React from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { Input, Select } from '@/components/bruiloft/ui'
-import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
+import { categorieLabelVoor, GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
+import type { Wedding } from '@/lib/bruiloft/types'
 
 interface GastenFiltersProps {
   zoek: string
@@ -16,6 +17,7 @@ interface GastenFiltersProps {
   onType: (v: string) => void
   rsvp: string
   onRsvp: (v: string) => void
+  wedding?: Wedding | null
 }
 
 // Zelfde toolbar-patroon als TakenFilters: zoekveld blijft zichtbaar, de drie
@@ -30,6 +32,7 @@ export function GastenFilters({
   onType,
   rsvp,
   onRsvp,
+  wedding,
 }: GastenFiltersProps) {
   const [open, setOpen] = React.useState(false)
   const panelRef = React.useRef<HTMLDivElement>(null)
@@ -118,7 +121,7 @@ export function GastenFilters({
                   <option value="all">Alle categorieën</option>
                   {GUEST_CATEGORIEEN.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {categorieLabelVoor(c, wedding?.partner1Naam, wedding?.partner2Naam)}
                     </option>
                   ))}
                 </Select>

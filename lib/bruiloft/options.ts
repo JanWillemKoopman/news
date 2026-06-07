@@ -14,6 +14,18 @@ import type {
   VendorType,
 } from './types'
 
+// Vertaalt een categorie-waarde (zoals opgeslagen in DB) naar een leesbaar label.
+// Vervangt "partner 1/2" door de werkelijke namen van het bruidspaar indien beschikbaar.
+export function categorieLabelVoor(
+  c: string,
+  partner1Naam?: string,
+  partner2Naam?: string
+): string {
+  if (c === 'familie partner 1') return `Familie van ${partner1Naam || 'partner 1'}`
+  if (c === 'familie partner 2') return `Familie van ${partner2Naam || 'partner 2'}`
+  return c.charAt(0).toUpperCase() + c.slice(1)
+}
+
 export const GUEST_CATEGORIEEN: GuestCategorie[] = [
   'familie partner 1',
   'familie partner 2',
