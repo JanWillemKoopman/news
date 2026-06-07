@@ -11,6 +11,7 @@ import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruilo
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
+import { OnboardingWizard } from './OnboardingWizard'
 import { moduleForPath } from './nav'
 import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
@@ -35,6 +36,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
+  const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
@@ -115,7 +117,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Nog geen bruiloft ingesteld: landing + onboarding-wizard, zonder app-shell.
+  // Ingelogd maar nog geen bruiloft: sla de marketingpagina over en toon
+  // de wizard direct zonder de account-aanmaak stap.
+  if (!wedding && currentUser) {
+    return (
+      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
+        <OnboardingWizard authenticatedMode />
+      </div>
+    )
+  }
+
+  // Uitgelogde bezoeker zonder bruiloft: volledige landing + onboarding-wizard.
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
