@@ -50,7 +50,8 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     return () => stopRealtime()
   }, [init, stopRealtime])
 
-  const allowed = canView(permissions, moduleForPath(pathname))
+  const isAccountPage = pathname === '/bruiloft/account'
+  const allowed = isAccountPage || canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
     'wedding min-h-dvh bg-background text-foreground antialiased',

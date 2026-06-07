@@ -19,6 +19,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Guest } from '@/lib/bruiloft/types'
 
@@ -28,7 +29,10 @@ export default function GastenPage() {
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'gasten')
 
   const [zoek, setZoek] = React.useState('')
   const [fCategorie, setFCategorie] = React.useState('all')
@@ -151,9 +155,11 @@ export default function GastenPage() {
         beschrijving="Beheer de gastenlijst en houd de reacties bij."
         actie={
           <>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Gast toevoegen
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Gast toevoegen
+              </Button>
+            )}
             <OverflowMenu
               items={[
                 {
@@ -175,11 +181,13 @@ export default function GastenPage() {
         <EmptyState
           icon={Users}
           titel="Nog geen gasten"
-          beschrijving="Voeg je eerste gast toe om de gastenlijst op te bouwen."
+          beschrijving={kanBewerken ? 'Voeg je eerste gast toe om de gastenlijst op te bouwen.' : 'Er zijn nog geen gasten.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Gast toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Gast toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -271,22 +279,26 @@ export default function GastenPage() {
                                 </Button>
                               </>
                             ) : null}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Bewerken"
-                              onClick={() => openBewerk(g)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Verwijderen"
-                              onClick={() => setDelGuest(g)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {kanBewerken && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Bewerken"
+                                  onClick={() => openBewerk(g)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Verwijderen"
+                                  onClick={() => setDelGuest(g)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -321,25 +333,31 @@ export default function GastenPage() {
                           .join(' · ')}
                       </p>
                     ) : null}
-                    <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
-                      {g.rsvpCode ? (
-                        <>
-                          <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
-                            {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : null}
-                      <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
-                        <Pencil className="h-4 w-4" /> Bewerken
-                      </Button>
-                      <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {(g.rsvpCode || kanBewerken) ? (
+                      <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
+                        {g.rsvpCode ? (
+                          <>
+                            <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
+                              {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : null}
+                        {kanBewerken && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
+                              <Pencil className="h-4 w-4" /> Bewerken
+                            </Button>
+                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>

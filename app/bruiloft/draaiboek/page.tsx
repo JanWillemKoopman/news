@@ -15,6 +15,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
@@ -25,7 +26,10 @@ export default function DraaiboekPage() {
   const addScheduleItem = useBruiloftStore((s) => s.addScheduleItem)
   const updateScheduleItem = useBruiloftStore((s) => s.updateScheduleItem)
   const deleteScheduleItem = useBruiloftStore((s) => s.deleteScheduleItem)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'draaiboek')
 
   const [fRol, setFRol] = React.useState('all')
   const [formOpen, setFormOpen] = React.useState(false)
@@ -77,9 +81,11 @@ export default function DraaiboekPage() {
             <Button variant="outline" onClick={exporteer} disabled={gesorteerd.length === 0}>
               <Download className="h-4 w-4" /> Exporteer draaiboek
             </Button>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Onderdeel toevoegen
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Onderdeel toevoegen
+              </Button>
+            )}
           </>
         }
       />
@@ -99,11 +105,13 @@ export default function DraaiboekPage() {
         <EmptyState
           icon={CalendarClock}
           titel="Nog geen draaiboek"
-          beschrijving="Voeg programmaonderdelen toe om het tijdschema van de dag op te bouwen."
+          beschrijving={kanBewerken ? 'Voeg programmaonderdelen toe om het tijdschema van de dag op te bouwen.' : 'Er zijn nog geen onderdelen in het draaiboek.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Onderdeel toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Onderdeel toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : gesorteerd.length === 0 ? (
@@ -146,14 +154,16 @@ export default function DraaiboekPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {kanBewerken && (
+                  <div className="flex shrink-0 gap-1">
+                    <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

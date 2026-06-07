@@ -1,4 +1,5 @@
 import {
+  Activity,
   Armchair,
   CalendarClock,
   ClipboardList,
@@ -37,11 +38,13 @@ const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijs
 const leden: NavItem = { label: 'Leden & rechten', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
 const aiPlanner: NavItem = { label: 'AI assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
+const activiteit: NavItem = { label: 'Activiteit', href: '/bruiloft/activiteit', icon: Activity, module: 'dashboard' }
 
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
   dashboard,
   aiPlanner,
+  activiteit,
   taken,
   budget,
   leveranciers,
@@ -74,7 +77,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Overzicht',
     icon: LayoutDashboard,
     href: '/bruiloft',
-    items: [dashboard, aiPlanner],
+    items: [dashboard, aiPlanner, activiteit],
     module: 'dashboard',
   },
   {
