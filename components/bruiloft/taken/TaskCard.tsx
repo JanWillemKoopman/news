@@ -106,7 +106,7 @@ export function TaskCard({
             >
               {task.titel}
             </button>
-            <div className="flex shrink-0 gap-1">
+            <div className="flex shrink-0 gap-1 sm:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -173,7 +173,7 @@ export function TaskCard({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="hidden shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:flex">
           <Button
             variant="ghost"
             size="icon"
