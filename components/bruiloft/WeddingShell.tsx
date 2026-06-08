@@ -11,6 +11,7 @@ import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruilo
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
+import { OnboardingWizard } from './OnboardingWizard'
 import { moduleForPath } from './nav'
 import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
@@ -35,6 +36,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
+  const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
@@ -48,10 +50,11 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     return () => stopRealtime()
   }, [init, stopRealtime])
 
-  const allowed = canView(permissions, moduleForPath(pathname))
+  const isAccountPage = pathname === '/bruiloft/account'
+  const allowed = isAccountPage || canView(permissions, moduleForPath(pathname))
 
   const wrapperClass = cn(
-    'wedding min-h-dvh bg-white text-foreground antialiased',
+    'wedding min-h-dvh bg-background text-foreground antialiased',
     fontClassName
   )
 
@@ -71,7 +74,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
               ))}
             </div>
           </aside>
-          <div className="flex-1 bg-gray-100 px-4 py-6 md:px-8">
+          <div className="flex-1 bg-muted px-4 py-6 md:px-8">
             <Skeleton className="h-8 w-48" />
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -115,7 +118,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Nog geen bruiloft ingesteld: landing + onboarding-wizard, zonder app-shell.
+  // Ingelogd maar nog geen bruiloft: sla de marketingpagina over en toon
+  // de wizard direct zonder de account-aanmaak stap.
+  if (!wedding && currentUser) {
+    return (
+      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
+        <OnboardingWizard authenticatedMode />
+      </div>
+    )
+  }
+
+  // Uitgelogde bezoeker zonder bruiloft: volledige landing + onboarding-wizard.
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
@@ -126,7 +139,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
 
   return (
     <div
-      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-white text-foreground antialiased', fontClassName)}
+      className={cn('wedding h-dvh flex flex-col overflow-hidden bg-background text-foreground antialiased', fontClassName)}
       suppressHydrationWarning
     >
       <a
@@ -135,21 +148,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       >
         Naar inhoud
       </a>
-      {/* Desktop: TopNav buiten het scroll-gebied (altijd zichtbaar) */}
-      <div className="hidden md:block">
-        <TopNav />
-      </div>
+      {/* TopNav buiten het scroll-gebied (altijd zichtbaar op alle schermformaten) */}
+      <TopNav />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="min-w-0 flex-1 overflow-y-auto">
-          {/* Mobiel: TopNav binnen het scroll-gebied (scrollt mee omhoog) */}
-          <div className="md:hidden">
-            <TopNav />
-          </div>
           <main
             id="hoofdinhoud"
             tabIndex={-1}
-            className="bg-gray-100 px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
+            className="bg-muted px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
           >
             {allowed ? (
               children

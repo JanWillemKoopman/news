@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, Copy, Download, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Check, Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -18,9 +18,38 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
-import { RSVP_STATUSSEN } from '@/lib/bruiloft/options'
+import { categorieLabelVoor, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { Guest } from '@/lib/bruiloft/types'
+import type { Guest, RsvpStatus } from '@/lib/bruiloft/types'
+
+// Inline RSVP-select: ziet eruit als een badge maar is klikbaar om de status te wijzigen.
+function RsvpSelect({
+  value,
+  onChange,
+}: {
+  value: RsvpStatus
+  onChange: (v: RsvpStatus) => void
+}) {
+  const klassen: Record<RsvpStatus, string> = {
+    bevestigd: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
+    afgemeld: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
+    uitgenodigd: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-800',
+    'geen reactie': 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
+  }
+  return (
+    <select
+      value={value}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value as RsvpStatus)}
+      className={`rounded-full border px-2 py-0.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer ${klassen[value]}`}
+    >
+      {RSVP_STATUSSEN.map((s) => (
+        <option key={s} value={s}>{s}</option>
+      ))}
+    </select>
+  )
+}
 
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -28,7 +57,11 @@ export default function GastenPage() {
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
+  const ensureRsvpCodes = useBruiloftStore((s) => s.ensureRsvpCodes)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'gasten')
 
   const [zoek, setZoek] = React.useState('')
   const [fCategorie, setFCategorie] = React.useState('all')
@@ -46,6 +79,13 @@ export default function GastenPage() {
   const [origin, setOrigin] = React.useState('')
   React.useEffect(() => { setOrigin(window.location.origin) }, [])
 
+  // Zorg dat alle gasten een RSVP-code hebben zodra de pagina geladen is.
+  React.useEffect(() => {
+    if (wedding) void ensureRsvpCodes()
+    // ensureRsvpCodes is een stabiele store-referentie
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wedding?.id])
+
   if (!wedding) return null
 
   const kopieer = async (tekst: string, id: string) => {
@@ -55,6 +95,15 @@ export default function GastenPage() {
       setTimeout(() => setGekopieerd(null), 1500)
     } catch {
       // klembord niet beschikbaar
+    }
+  }
+
+  const genereerLinks = async () => {
+    try {
+      await ensureRsvpCodes()
+      toast({ title: 'RSVP-links gereed', description: 'Alle gasten hebben nu een persoonlijke RSVP-link.', variant: 'success' })
+    } catch {
+      toast({ title: 'Genereren mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
   }
 
@@ -80,6 +129,14 @@ export default function GastenPage() {
     setRsvpSending(false)
     setRsvpTarget(null)
     setRsvpEmail('')
+  }
+
+  const updateRsvp = async (g: Guest, status: RsvpStatus) => {
+    try {
+      await updateGuest(g.id, { rsvpStatus: status })
+    } catch {
+      toast({ title: 'Bijwerken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
   }
 
   const gefilterd = guests.filter((g) => {
@@ -108,37 +165,44 @@ export default function GastenPage() {
   }
 
   const exporteer = () => {
-    downloadCsv(
-      'gastenlijst.csv',
-      [
-        'Voornaam',
-        'Achternaam',
-        'Categorie',
-        'Gasttype',
-        'RSVP',
-        'Dieetwensen',
-        'Partner',
-        'Partnernaam',
-        'Kinderen',
-        'Adres',
-        'Notitie',
-      ],
-      guests.map((g) => [
-        g.voornaam,
-        g.achternaam,
-        g.categorie,
-        g.gasttype,
-        g.rsvpStatus,
-        g.dieetwensen,
-        g.heeftPartner ? 'ja' : 'nee',
-        g.partnerNaam,
-        g.aantalKinderen,
-        g.adres,
-        g.notitie,
-      ])
-    )
-    toast({ title: 'Gastenlijst geëxporteerd', description: 'gastenlijst.csv is gedownload.', variant: 'success' })
+    try {
+      downloadCsv(
+        'gastenlijst.csv',
+        [
+          'Voornaam',
+          'Achternaam',
+          'Categorie',
+          'Gasttype',
+          'RSVP',
+          'Dieetwensen',
+          'Partner',
+          'Partnernaam',
+          'Kinderen',
+          'Adres',
+          'Notitie',
+        ],
+        guests.map((g) => [
+          g.voornaam,
+          g.achternaam,
+          g.categorie,
+          g.gasttype,
+          g.rsvpStatus,
+          g.dieetwensen,
+          g.heeftPartner ? 'ja' : 'nee',
+          g.partnerNaam,
+          g.aantalKinderen,
+          g.adres,
+          g.notitie,
+        ])
+      )
+      toast({ title: 'Gastenlijst geëxporteerd', description: 'gastenlijst.csv is gedownload.', variant: 'success' })
+    } catch {
+      toast({ title: 'Export mislukt', variant: 'error' })
+    }
   }
+
+  const p1 = wedding.partner1Naam
+  const p2 = wedding.partner2Naam
 
   return (
     <div className="mx-auto max-w-6xl pb-24">
@@ -147,11 +211,19 @@ export default function GastenPage() {
         beschrijving="Beheer de gastenlijst en houd de reacties bij."
         actie={
           <>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Gast toevoegen
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Gast toevoegen
+              </Button>
+            )}
             <OverflowMenu
               items={[
+                ...(kanBewerken ? [{
+                  label: 'Genereer RSVP-links',
+                  icon: Link2,
+                  onClick: genereerLinks,
+                  disabled: guests.length === 0,
+                }] : []),
                 {
                   label: 'Exporteer gastenlijst',
                   icon: Download,
@@ -164,18 +236,21 @@ export default function GastenPage() {
         }
       />
 
-      {guests.length > 0 ? <GastenStatsStrip guests={guests} /> : null}
+      {/* StatsStrip pas tonen bij genoeg gasten zodat de statistieken betekenisvol zijn. */}
+      {guests.length >= 5 ? <GastenStatsStrip guests={guests} /> : null}
 
       {/* ── Gastenlijst container ── */}
       {guests.length === 0 ? (
         <EmptyState
           icon={Users}
           titel="Nog geen gasten"
-          beschrijving="Voeg je eerste gast toe om de gastenlijst op te bouwen."
+          beschrijving={kanBewerken ? 'Voeg je eerste gast toe om de gastenlijst op te bouwen.' : 'Er zijn nog geen gasten.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Gast toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Gast toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -189,8 +264,9 @@ export default function GastenPage() {
             onType={setFType}
             rsvp={fRsvp}
             onRsvp={setFRsvp}
+            wedding={wedding}
           />
-          <div className="rounded-lg border border-border bg-white shadow-sm">
+          <div className="rounded-lg border border-border bg-card shadow-sm">
 
           {/* Tabel (desktop) */}
           {gefilterd.length === 0 ? (
@@ -217,8 +293,6 @@ export default function GastenPage() {
                       <th scope="col" className="px-4 py-3 font-medium">Categorie</th>
                       <th scope="col" className="px-4 py-3 font-medium">Type</th>
                       <th scope="col" className="px-4 py-3 font-medium">RSVP</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Partner</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Kinderen</th>
                       <th scope="col" className="px-4 py-3">
                         <span className="sr-only">Acties</span>
                       </th>
@@ -229,35 +303,30 @@ export default function GastenPage() {
                       <tr key={g.id} className="border-b border-border last:border-0 hover:bg-accent/40">
                         <td className="px-4 py-3 font-medium text-foreground">
                           {g.voornaam} {g.achternaam}
-                          {g.dieetwensen ? (
+                          {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
                             <span className="block text-xs font-normal text-muted-foreground">
-                              {g.dieetwensen}
+                              {[
+                                g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
+                                g.aantalKinderen > 0 ? `${g.aantalKinderen} kind(eren)` : null,
+                                g.dieetwensen || null,
+                              ].filter(Boolean).join(' · ')}
                             </span>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 capitalize text-muted-foreground">{g.categorie}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {categorieLabelVoor(g.categorie, p1, p2)}
+                        </td>
                         <td className="px-4 py-3 capitalize text-muted-foreground">{g.gasttype}</td>
                         <td className="px-4 py-3">
-                          <select
-                            value={g.rsvpStatus}
-                            onChange={async (e) => {
-                              try {
-                                await updateGuest(g.id, { rsvpStatus: e.target.value as Guest['rsvpStatus'] })
-                              } catch {
-                                toast({ title: 'Bijwerken mislukt', variant: 'error' })
-                              }
-                            }}
-                            className="rounded-md border border-transparent bg-transparent text-sm text-foreground hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-primary px-1 py-0.5 cursor-pointer"
-                          >
-                            {RSVP_STATUSSEN.map((s) => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
+                          {kanBewerken ? (
+                            <RsvpSelect
+                              value={g.rsvpStatus}
+                              onChange={(v) => updateRsvp(g, v)}
+                            />
+                          ) : (
+                            <StatusBadge kind="rsvp" value={g.rsvpStatus} />
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {g.heeftPartner ? g.partnerNaam || 'ja' : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{g.aantalKinderen || '—'}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-1">
                             {g.rsvpCode ? (
@@ -281,22 +350,26 @@ export default function GastenPage() {
                                 </Button>
                               </>
                             ) : null}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Bewerken"
-                              onClick={() => openBewerk(g)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Verwijderen"
-                              onClick={() => setDelGuest(g)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {kanBewerken && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Bewerken"
+                                  onClick={() => openBewerk(g)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Verwijderen"
+                                  onClick={() => setDelGuest(g)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -314,8 +387,8 @@ export default function GastenPage() {
                         <p className="truncate font-medium text-foreground">
                           {g.voornaam} {g.achternaam}
                         </p>
-                        <p className="mt-0.5 text-xs capitalize text-muted-foreground">
-                          {g.categorie} · {g.gasttype}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {categorieLabelVoor(g.categorie, p1, p2)} · {g.gasttype}
                         </p>
                       </div>
                       <select
@@ -334,7 +407,7 @@ export default function GastenPage() {
                         ))}
                       </select>
                     </div>
-                    {g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen ? (
+                    {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
                       <p className="mt-2 text-xs text-muted-foreground">
                         {[
                           g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
@@ -345,25 +418,31 @@ export default function GastenPage() {
                           .join(' · ')}
                       </p>
                     ) : null}
-                    <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
-                      {g.rsvpCode ? (
-                        <>
-                          <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
-                            {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : null}
-                      <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
-                        <Pencil className="h-4 w-4" /> Bewerken
-                      </Button>
-                      <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {(g.rsvpCode || kanBewerken) ? (
+                      <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
+                        {g.rsvpCode ? (
+                          <>
+                            <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
+                              {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : null}
+                        {kanBewerken && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
+                              <Pencil className="h-4 w-4" /> Bewerken
+                            </Button>
+                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -390,6 +469,7 @@ export default function GastenPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editGuest}
+        wedding={wedding}
         onSubmit={async (data) => {
           try {
             if (editGuest) {

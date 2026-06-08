@@ -81,7 +81,7 @@ function Regel({
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
       <dt className="sr-only">{label}</dt>
       <dd className="min-w-0 truncate">
         <span className="text-xs text-muted-foreground">{label}: </span>

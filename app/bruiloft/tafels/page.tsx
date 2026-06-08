@@ -14,6 +14,7 @@ import {
   EmptyState,
   useToast,
 } from '@/components/bruiloft/ui'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Table } from '@/lib/bruiloft/types'
 
@@ -25,7 +26,10 @@ export default function TafelsPage() {
   const updateTable = useBruiloftStore((s) => s.updateTable)
   const deleteTable = useBruiloftStore((s) => s.deleteTable)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'tafels')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editTable, setEditTable] = React.useState<Table | null>(null)
@@ -52,7 +56,7 @@ export default function TafelsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Tafelschikking"
         beschrijving="Sleep gasten naar een tafel. Afgemelde gasten worden niet meegenomen."
@@ -63,15 +67,17 @@ export default function TafelsPage() {
                 <Printer className="h-4 w-4" /> Afdrukken
               </Button>
             ) : null}
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Tafel
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Tafel
+              </Button>
+            )}
           </>
         }
       />
 
       {tables.length > 0 ? (
-        <div className="mb-6 grid grid-cols-3 gap-3">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Telling label="Tafels" waarde={tables.length} />
           <Telling label="Ingedeeld" waarde={`${ingedeeld}/${pool.length}`} />
           <Telling label="Stoelen" waarde={stoelen} />
@@ -89,23 +95,25 @@ export default function TafelsPage() {
         <EmptyState
           icon={Armchair}
           titel="Nog geen tafels"
-          beschrijving="Maak je eerste tafel aan en deel daarna de gasten in."
+          beschrijving={kanBewerken ? 'Maak je eerste tafel aan en deel daarna de gasten in.' : 'Er zijn nog geen tafels.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Tafel toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Tafel toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : (
         <SeatingBoard
           tables={tables}
           guests={pool}
-          onAssign={assign}
-          onEditTable={(t) => {
+          onAssign={kanBewerken ? assign : undefined}
+          onEditTable={kanBewerken ? (t) => {
             setEditTable(t)
             setFormOpen(true)
-          }}
-          onDeleteTable={setDelTable}
+          } : undefined}
+          onDeleteTable={kanBewerken ? setDelTable : undefined}
         />
       )}
 

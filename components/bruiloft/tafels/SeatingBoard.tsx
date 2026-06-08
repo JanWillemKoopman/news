@@ -23,9 +23,9 @@ const ONVERDEELD = 'onverdeeld'
 interface SeatingBoardProps {
   tables: Table[]
   guests: Guest[] // zitplaatspool (gasten die niet afgemeld zijn)
-  onAssign: (guestId: string, tableId: string | null) => void
-  onEditTable: (t: Table) => void
-  onDeleteTable: (t: Table) => void
+  onAssign?: (guestId: string, tableId: string | null) => void
+  onEditTable?: (t: Table) => void
+  onDeleteTable?: (t: Table) => void
 }
 
 export function SeatingBoard({
@@ -45,7 +45,7 @@ export function SeatingBoard({
 
   const onDragEnd = (e: DragEndEvent) => {
     const over = e.over?.id
-    if (!over) return
+    if (!over || !onAssign) return
     onAssign(String(e.active.id), over === ONVERDEELD ? null : String(over))
   }
 
@@ -158,9 +158,9 @@ function TableCard({
   table: Table
   gasten: Guest[]
   onverdeeld: Guest[]
-  onAssign: (guestId: string, tableId: string | null) => void
-  onEdit: (t: Table) => void
-  onDelete: (t: Table) => void
+  onAssign?: (guestId: string, tableId: string | null) => void
+  onEdit?: (t: Table) => void
+  onDelete?: (t: Table) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: table.id })
   const vol = gasten.length > table.capaciteit
@@ -183,12 +183,16 @@ function TableCard({
           >
             {gasten.length}/{table.capaciteit}
           </span>
-          <Button variant="ghost" size="icon" aria-label="Tafel bewerken" onClick={() => onEdit(table)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Tafel verwijderen" onClick={() => onDelete(table)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {onEdit && (
+            <Button variant="ghost" size="icon" aria-label="Tafel bewerken" onClick={() => onEdit(table)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button variant="ghost" size="icon" aria-label="Tafel verwijderen" onClick={() => onDelete(table)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -206,13 +210,13 @@ function TableCard({
         ) : (
           <div className="flex flex-wrap gap-2">
             {gasten.map((g) => (
-              <GuestChip key={g.id} guest={g} onRemove={() => onAssign(g.id, null)} />
+              <GuestChip key={g.id} guest={g} onRemove={onAssign ? () => onAssign(g.id, null) : undefined} />
             ))}
           </div>
         )}
       </div>
 
-      {onverdeeld.length > 0 ? (
+      {onverdeeld.length > 0 && onAssign ? (
         <Select
           aria-label="Gast toevoegen aan tafel"
           value=""

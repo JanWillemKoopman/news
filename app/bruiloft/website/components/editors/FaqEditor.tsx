@@ -13,6 +13,7 @@ interface Props {
 
 export function FaqEditor({ faq }: Props) {
   const updateFaq = useBruiloftStore((s) => s.updateFaq)
+  const { toast } = useToast()
   const [items, setItems] = React.useState<FaqItem[]>(faq)
   const { toast } = useToast()
 

@@ -16,6 +16,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
@@ -26,7 +27,10 @@ export default function DraaiboekPage() {
   const addScheduleItem = useBruiloftStore((s) => s.addScheduleItem)
   const updateScheduleItem = useBruiloftStore((s) => s.updateScheduleItem)
   const deleteScheduleItem = useBruiloftStore((s) => s.deleteScheduleItem)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'draaiboek')
 
   const [fRol, setFRol] = React.useState('all')
   const [zoek, setZoek] = React.useState('')
@@ -82,7 +86,7 @@ export default function DraaiboekPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Draaiboek"
         beschrijving="Het minuutschema van de trouwdag — filter en exporteer per betrokkene."
@@ -91,9 +95,11 @@ export default function DraaiboekPage() {
             <Button variant="outline" onClick={exporteer} disabled={gesorteerd.length === 0}>
               <Download className="h-4 w-4" /> Exporteer draaiboek
             </Button>
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Onderdeel toevoegen
-            </Button>
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Onderdeel toevoegen
+              </Button>
+            )}
           </>
         }
       />
@@ -131,18 +137,21 @@ export default function DraaiboekPage() {
         <EmptyState
           icon={CalendarClock}
           titel="Nog geen draaiboek"
-          beschrijving="Voeg programmaonderdelen toe om het tijdschema van de dag op te bouwen."
+          beschrijving={kanBewerken ? 'Voeg programmaonderdelen toe om het tijdschema van de dag op te bouwen.' : 'Er zijn nog geen onderdelen in het draaiboek.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Onderdeel toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Onderdeel toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : gesorteerd.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
           titel="Niets voor deze betrokkene"
-          beschrijving="Pas het filter aan of voeg onderdelen toe."
+          beschrijving="Geen onderdelen komen overeen met het huidige filter."
+          actie={<Button variant="outline" size="sm" onClick={() => setFRol('all')}>Wis filter</Button>}
         />
       ) : (
         <div className="space-y-3">
@@ -175,7 +184,19 @@ export default function DraaiboekPage() {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{s.titel}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-foreground">{s.titel}</p>
+                        {kanBewerken && (
+                          <div className="flex shrink-0 gap-1">
+                            <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                       {s.locatie ? (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" /> {s.locatie}
@@ -196,14 +217,6 @@ export default function DraaiboekPage() {
                           ))}
                         </div>
                       ) : null}
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

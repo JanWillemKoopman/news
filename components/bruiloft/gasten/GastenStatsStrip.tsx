@@ -54,7 +54,7 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
   ].filter(Boolean)
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-white shadow-sm">
+    <div className="mb-6 rounded-lg border border-border bg-card shadow-sm">
       {/* Hoofdregel */}
       <div className="flex items-center gap-4 p-4">
         <CircularProgress pct={pct} />

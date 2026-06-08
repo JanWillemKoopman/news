@@ -11,6 +11,7 @@ import {
   weddingFromRow,
   websiteContentFromRow,
 } from '@/lib/bruiloft/mappers'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -58,21 +59,8 @@ const MIN_COOLDOWN_MS = 60 * 60 * 1000       // 1 uur
 // Veiligheidsnet: cache nooit langer dan dit gebruiken.
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 dagen
 
-// In-memory rate limiter voor de handmatige Verversen-knop (max 3/uur).
+// Rate limiter voor de handmatige Verversen-knop (max 3/uur).
 // De wedding planner doet 7 parallelle AI-calls, dus conservatiever dan advice.
-const rateMap = new Map<string, { count: number; reset: number }>()
-
-function checkRateLimit(weddingId: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(weddingId)
-  if (!entry || now > entry.reset) {
-    rateMap.set(weddingId, { count: 1, reset: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 3) return false
-  entry.count++
-  return true
-}
 
 // ---- Vingerafdruk -----------------------------------------------------------
 
@@ -121,7 +109,7 @@ function buildModulePrompt(key: AIModuleKey, ctx: AIWeddingContext): string {
     budget: 'Budget',
     leveranciers: 'Leveranciers',
     draaiboek: 'Draaiboek',
-    gasten: 'Gastenbeheer',
+    gasten: 'Gasten',
     website: 'Website',
   }
 
@@ -303,16 +291,19 @@ export async function POST(request: NextRequest) {
   }
 
   // Rate limit voor handmatig verversen
-  if (body.force && !checkRateLimit(weddingId)) {
-    if (cacheRow?.cached_advice) {
-      const nextAvailableAt = new Date(now + MIN_COOLDOWN_MS)
-      return NextResponse.json({
-        advies: cacheRow.cached_advice as AIWeddingPlannerAdvies,
-        cached: true,
-        next_available_at: nextAvailableAt.toISOString(),
-      } satisfies AIWeddingPlannerResponse)
+  if (body.force) {
+    const rateLimit = await checkRateLimit(`ai:wedding-planner:${weddingId}`, 3, 60 * 60)
+    if (!rateLimit.allowed) {
+      if (cacheRow?.cached_advice) {
+        const nextAvailableAt = new Date(now + MIN_COOLDOWN_MS)
+        return NextResponse.json({
+          advies: cacheRow.cached_advice as AIWeddingPlannerAdvies,
+          cached: true,
+          next_available_at: nextAvailableAt.toISOString(),
+        } satisfies AIWeddingPlannerResponse)
+      }
+      return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
     }
-    return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
 
   // 7 parallelle Gemini-aanroepen

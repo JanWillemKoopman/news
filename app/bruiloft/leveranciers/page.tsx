@@ -29,6 +29,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
+import { canEdit } from '@/lib/bruiloft/permissions'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem, Vendor } from '@/lib/bruiloft/types'
@@ -40,7 +41,10 @@ export default function LeveranciersPage() {
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const updateVendor = useBruiloftStore((s) => s.updateVendor)
   const deleteVendor = useBruiloftStore((s) => s.deleteVendor)
+  const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
+
+  const kanBewerken = canEdit(permissions, 'leveranciers')
 
   const [fType, setFType] = React.useState('all')
   const [fStatus, setFStatus] = React.useState('all')
@@ -76,14 +80,16 @@ export default function LeveranciersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-6xl pb-24">
       <PageHeader
         titel="Leveranciers en locaties"
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
         actie={
-          <Button onClick={openNieuw}>
-            <Plus className="h-4 w-4" /> Leverancier toevoegen
-          </Button>
+          kanBewerken ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Leverancier toevoegen
+            </Button>
+          ) : undefined
         }
       />
 
@@ -156,11 +162,13 @@ export default function LeveranciersPage() {
         <EmptyState
           icon={Store}
           titel="Nog geen leveranciers"
-          beschrijving="Voeg locaties, catering, fotografen en meer toe om te vergelijken."
+          beschrijving={kanBewerken ? 'Voeg locaties, catering, fotografen en meer toe om te vergelijken.' : 'Er zijn nog geen leveranciers.'}
           actie={
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Leverancier toevoegen
-            </Button>
+            kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Leverancier toevoegen
+              </Button>
+            ) : undefined
           }
         />
       ) : gefilterd.length === 0 ? (
@@ -182,7 +190,7 @@ export default function LeveranciersPage() {
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Bedrag</th>
                     <th className="px-4 py-3 font-medium">Contactpersoon</th>
-                    <th className="px-4 py-3"><span className="sr-only">Acties</span></th>
+                    {kanBewerken && <th className="px-4 py-3"><span className="sr-only">Acties</span></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -193,12 +201,14 @@ export default function LeveranciersPage() {
                       <td className="px-4 py-3"><StatusBadge kind="leverancier" value={v.status} /></td>
                       <td className="px-4 py-3 text-foreground">{v.geoffreerdBedrag > 0 ? <Money bedrag={v.geoffreerdBedrag} /> : '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{v.contactpersoon || '—'}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(v)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelVendor(v)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </td>
+                      {kanBewerken && (
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(v)}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelVendor(v)}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -211,8 +221,8 @@ export default function LeveranciersPage() {
                   key={v.id}
                   vendor={v}
                   budgetItems={budgetItems}
-                  onEdit={openBewerk}
-                  onDelete={setDelVendor}
+                  onEdit={kanBewerken ? openBewerk : undefined}
+                  onDelete={kanBewerken ? setDelVendor : undefined}
                 />
               ))}
             </div>
@@ -277,8 +287,8 @@ function VendorCard({
 }: {
   vendor: Vendor
   budgetItems: BudgetItem[]
-  onEdit: (v: Vendor) => void
-  onDelete: (v: Vendor) => void
+  onEdit?: (v: Vendor) => void
+  onDelete?: (v: Vendor) => void
 }) {
   const gekoppeld = vendor.budgetItemId
     ? budgetItems.find((b) => b.id === vendor.budgetItemId)
@@ -351,14 +361,20 @@ function VendorCard({
           <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{vendor.notitie}</p>
         ) : null}
 
-        <div className="mt-auto flex justify-end gap-1 border-t border-border pt-3">
-          <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(vendor)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(vendor)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {(onEdit || onDelete) && (
+          <div className="mt-auto flex justify-end gap-1 border-t border-border pt-3">
+            {onEdit && (
+              <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(vendor)}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(vendor)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

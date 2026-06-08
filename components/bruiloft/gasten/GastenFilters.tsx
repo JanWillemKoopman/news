@@ -4,8 +4,9 @@ import * as React from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { Input, Select } from '@/components/bruiloft/ui'
-import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
+import { categorieLabelVoor, GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
+import type { Wedding } from '@/lib/bruiloft/types'
 
 interface GastenFiltersProps {
   zoek: string
@@ -16,6 +17,7 @@ interface GastenFiltersProps {
   onType: (v: string) => void
   rsvp: string
   onRsvp: (v: string) => void
+  wedding?: Wedding | null
 }
 
 // Zelfde toolbar-patroon als TakenFilters: zoekveld blijft zichtbaar, de drie
@@ -30,6 +32,7 @@ export function GastenFilters({
   onType,
   rsvp,
   onRsvp,
+  wedding,
 }: GastenFiltersProps) {
   const [open, setOpen] = React.useState(false)
   const panelRef = React.useRef<HTMLDivElement>(null)
@@ -54,8 +57,18 @@ export function GastenFilters({
           value={zoek}
           onChange={(e) => onZoek(e.target.value)}
           placeholder="Zoek op naam…"
-          className="pl-9 pr-3"
+          className="pl-9 pr-9"
         />
+        {zoek && (
+          <button
+            type="button"
+            aria-label="Zoekveld wissen"
+            onClick={() => onZoek('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Filterknop + dropdown */}
@@ -66,21 +79,21 @@ export function GastenFilters({
           className={cn(
             'inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
             open
-              ? 'border-gray-400 bg-gray-100 text-gray-900'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              ? 'border-border bg-accent text-foreground'
+              : 'border-input bg-background text-foreground hover:bg-accent'
           )}
         >
           <SlidersHorizontal className="h-4 w-4" />
           <span className="hidden sm:inline">Filters</span>
           {activeCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-[11px] font-bold text-white">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background">
               {activeCount}
             </span>
           )}
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-border bg-white p-4 shadow-lg sm:w-80">
+          <div className="absolute right-0 top-full z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-background p-4 shadow-lg sm:w-80">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">Filters</span>
               {activeCount > 0 && (
@@ -108,7 +121,7 @@ export function GastenFilters({
                   <option value="all">Alle categorieën</option>
                   {GUEST_CATEGORIEEN.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {categorieLabelVoor(c, wedding?.partner1Naam, wedding?.partner2Naam)}
                     </option>
                   ))}
                 </Select>

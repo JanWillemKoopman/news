@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button, Field, Input, Modal, Textarea } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, Field, Input, Modal, Textarea } from '@/components/bruiloft/ui'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
 import type { Rol, ScheduleItem, ScheduleItemInput } from '@/lib/bruiloft/types'
@@ -37,12 +37,24 @@ export function ScheduleItemForm({
   onSubmit,
 }: ScheduleItemFormProps) {
   const [form, setForm] = React.useState<NewScheduleItem>(leeg)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
 
   React.useEffect(() => {
-    if (open) setForm(initial ? vanItem(initial) : leeg())
+    if (open) {
+      const start = initial ? vanItem(initial) : leeg()
+      setForm(start)
+      baseline.current = JSON.stringify(start)
+    }
   }, [open, initial])
+
+  const dirty = JSON.stringify(form) !== baseline.current
+
+  const sluit = (o: boolean) => {
+    if (!o && dirty) { setConfirmOpen(true); return }
+    onOpenChange(o)
+  }
 
   const set = <K extends keyof NewScheduleItem>(key: K, value: NewScheduleItem[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -79,9 +91,10 @@ export function ScheduleItemForm({
   }
 
   return (
+    <>
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={sluit}
       title={initial ? 'Programmaonderdeel bewerken' : 'Programmaonderdeel toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
@@ -90,6 +103,7 @@ export function ScheduleItemForm({
             <Input
               id="tijd"
               type="time"
+              autoFocus
               value={form.tijd}
               onChange={(e) => set('tijd', e.target.value)}
               required
@@ -149,7 +163,7 @@ export function ScheduleItemForm({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
           {!initial ? (
@@ -161,5 +175,14 @@ export function ScheduleItemForm({
         </div>
       </form>
     </Modal>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Wijzigingen verwerpen?"
+      description="Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten?"
+      bevestigLabel="Verwerpen"
+      onConfirm={() => onOpenChange(false)}
+    />
+    </>
   )
 }

@@ -18,17 +18,17 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
   const inner = (
     <div
       className={cn(
-        'group flex h-full flex-col rounded-lg border border-border bg-white p-6 shadow-sm transition-[box-shadow,border-color] duration-150 ease-out',
+        'group flex h-full flex-col rounded-lg border border-border bg-card p-6 shadow-sm transition-[box-shadow,border-color] duration-150 ease-out',
         href && 'hover:border-rose-300 hover:shadow-md',
         className
       )}
     >
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Icon className="h-5 w-5" />
         </div>
         {href ? (
-          <ArrowUpRight className="h-5 w-5 text-gray-300 transition-colors group-hover:text-rose-600" />
+          <ArrowUpRight className="h-5 w-5 text-muted-foreground/50 transition-colors group-hover:text-rose-600" />
         ) : null}
       </div>
       <p className="text-sm font-medium text-muted-foreground">{label}</p>

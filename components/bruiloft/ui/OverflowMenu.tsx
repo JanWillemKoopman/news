@@ -31,8 +31,15 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    function keyHandler(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('keydown', keyHandler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', keyHandler)
+    }
   }, [open])
 
   if (items.length === 0) return null
@@ -48,8 +55,8 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
         className={cn(
           'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
           open
-            ? 'border-gray-400 bg-gray-100 text-gray-900'
-            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            ? 'border-border bg-accent text-foreground'
+            : 'border-input bg-background text-foreground hover:bg-accent'
         )}
       >
         <MoreHorizontal className="h-4 w-4" />
@@ -59,7 +66,7 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
         <div
           role="menu"
           className={cn(
-            'absolute top-full z-20 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-white p-1 shadow-lg',
+            'absolute top-full z-20 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-background p-1 shadow-lg',
             align === 'right' ? 'right-0' : 'left-0'
           )}
         >
@@ -73,9 +80,9 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
                 setOpen(false)
                 item.onClick()
               }}
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
             >
-              {item.icon ? <item.icon className="h-4 w-4 shrink-0 text-gray-500" /> : null}
+              {item.icon ? <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
               {item.label}
             </button>
           ))}

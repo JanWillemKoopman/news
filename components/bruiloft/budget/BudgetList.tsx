@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2, X } from 'lucide-react'
 
 import { Button, Money } from '@/components/bruiloft/ui'
 import {
@@ -20,9 +20,9 @@ interface BudgetListProps {
   vendors: Vendor[]
   bevestigdeDaggasten: number
   afwijkendeItemIds?: Set<string>
-  onEdit: (item: BudgetItem) => void
-  onDelete: (item: BudgetItem) => void
-  onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
+  onEdit?: (item: BudgetItem) => void
+  onDelete?: (item: BudgetItem) => void
+  onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
 }
 
 type CategorieStatus = 'betaald' | 'boven schatting' | 'nog te plannen' | 'in uitvoering'
@@ -178,8 +178,17 @@ export function BudgetList({
             placeholder="Zoek categorie..."
             value={zoekterm}
             onChange={(e) => setZoekterm(e.target.value)}
-            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          {zoekterm && (
+            <button
+              type="button"
+              onClick={() => setZoekterm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -295,9 +304,9 @@ function CategorieRij({
   afwijkendeItemIds?: Set<string>
   vendors: Vendor[]
   onToggle: () => void
-  onEdit: (item: BudgetItem) => void
-  onDelete: (item: BudgetItem) => void
-  onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
+  onEdit?: (item: BudgetItem) => void
+  onDelete?: (item: BudgetItem) => void
+  onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
 }) {
   const config = STATUS_CONFIG[data.status]
   const voortgangPct = data.verwacht > 0 ? Math.min(100, (data.betaald / data.verwacht) * 100) : 0
@@ -396,9 +405,9 @@ function ItemRij({
   item: BudgetItem
   vendors: Vendor[]
   afwijkend: boolean
-  onEdit: (item: BudgetItem) => void
-  onDelete: (item: BudgetItem) => void
-  onToggleTerm: (item: BudgetItem, termId: string, betaald: boolean) => void
+  onEdit?: (item: BudgetItem) => void
+  onDelete?: (item: BudgetItem) => void
+  onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
 }) {
   const geboekteVendor = geboekteLeverancierVoor(item, vendors)
   const geoffreerd = effectiefGeoffreerd(item, vendors)
@@ -416,14 +425,20 @@ function ItemRij({
             <p className="text-xs text-primary">via {geboekteVendor.naam}</p>
           ) : null}
         </div>
-        <div className="flex shrink-0 gap-1">
-          <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(item)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(item)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        {(onEdit || onDelete) ? (
+          <div className="flex shrink-0 gap-1">
+            {onEdit && (
+              <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(item)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(item)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* 4-column bedragen */}
@@ -448,12 +463,15 @@ function ItemRij({
                   <Money bedrag={t.bedrag} className="text-xs font-medium text-foreground" />
                   <button
                     type="button"
-                    onClick={() => onToggleTerm(item, t.id, !t.betaald)}
+                    onClick={() => onToggleTerm?.(item, t.id, !t.betaald)}
+                    disabled={!onToggleTerm}
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-colors',
                       t.betaald
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                        : 'bg-stone-200 text-stone-600 hover:bg-stone-300 dark:bg-stone-700/60 dark:text-stone-300'
+                        : onToggleTerm
+                          ? 'bg-stone-200 text-stone-600 hover:bg-stone-300 dark:bg-stone-700/60 dark:text-stone-300'
+                          : 'bg-stone-100 text-stone-400 dark:bg-stone-800/40 dark:text-stone-500'
                     )}
                   >
                     {t.betaald ? <Check className="h-3 w-3" /> : null}
