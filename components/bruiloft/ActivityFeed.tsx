@@ -21,9 +21,10 @@ const ENTITY_LABELS: Record<string, string> = {
 function zin(e: ActivityEntry): string {
   const wie = e.actorName || 'Iemand'
   const wat = ENTITY_LABELS[e.entityType] ?? 'item'
-  if (e.action === 'insert') return `${wie} voegde een ${wat} toe`
-  if (e.action === 'delete') return `${wie} verwijderde een ${wat}`
-  return `${wie} wijzigde een ${wat}`
+  const label = e.label ? `"${e.label}"` : `een ${wat}`
+  if (e.action === 'insert') return `${wie} voegde ${label} toe`
+  if (e.action === 'delete') return `${wie} verwijderde ${label}`
+  return `${wie} wijzigde ${label}`
 }
 
 export function ActivityFeed() {
@@ -76,14 +77,7 @@ export function ActivityFeed() {
                     aria-hidden
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-foreground">
-                      {zin(e)}
-                      {e.label ? (
-                        <>
-                          : <span className="font-medium">{e.label}</span>
-                        </>
-                      ) : null}
-                    </p>
+                    <p className="text-sm text-foreground">{zin(e)}</p>
                     <p className="text-xs text-muted-foreground">{tijdGeleden(e.createdAt)}</p>
                   </div>
                 </li>

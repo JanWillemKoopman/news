@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarHeart, Home, MapPin, Pencil, Users, Wallet, AlertCircle } from 'lucide-react'
+import { CalendarHeart, Home, Info, MapPin, Pencil, Users, Wallet } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
@@ -57,9 +57,9 @@ export function ProfielKaart({ wedding, onBewerk }: ProfielKaartProps) {
           <button
             type="button"
             onClick={onBewerk}
-            className="mt-4 flex w-full items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm text-rose-800 transition-colors hover:bg-rose-100"
+            className="mt-4 flex w-full items-start gap-2.5 rounded-lg border border-border bg-muted/60 px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted"
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
               Nog aan te vullen: {ontbreekt.map((v) => v.label.toLowerCase()).join(', ')}.
             </span>

@@ -15,7 +15,6 @@ import {
   Input,
   Modal,
   OverflowMenu,
-  StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
@@ -392,7 +391,21 @@ export default function GastenPage() {
                           {categorieLabelVoor(g.categorie, p1, p2)} · {g.gasttype}
                         </p>
                       </div>
-                      <StatusBadge kind="rsvp" value={g.rsvpStatus} />
+                      <select
+                        value={g.rsvpStatus}
+                        onChange={async (e) => {
+                          try {
+                            await updateGuest(g.id, { rsvpStatus: e.target.value as Guest['rsvpStatus'] })
+                          } catch {
+                            toast({ title: 'Bijwerken mislukt', variant: 'error' })
+                          }
+                        }}
+                        className="rounded-md border border-transparent bg-transparent text-sm text-foreground hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-primary px-1 py-0.5 cursor-pointer"
+                      >
+                        {RSVP_STATUSSEN.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
                     </div>
                     {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
                       <p className="mt-2 text-xs text-muted-foreground">
@@ -437,10 +450,16 @@ export default function GastenPage() {
           )}
 
           {/* Voettekst */}
-          <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            {gefilterd.length === guests.length
-              ? `${guests.length} gasten weergegeven`
-              : `${gefilterd.length} van ${guests.length} gasten weergegeven`}
+          <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span>
+              {gefilterd.length === guests.length
+                ? `${guests.length} gasten weergegeven`
+                : `${gefilterd.length} van ${guests.length} gasten weergegeven`}
+            </span>
+            {(() => {
+              const totKinderen = gefilterd.reduce((s, g) => s + (g.aantalKinderen || 0), 0)
+              return totKinderen > 0 ? <span>{totKinderen} kinderen</span> : null
+            })()}
           </div>
           </div>
         </>

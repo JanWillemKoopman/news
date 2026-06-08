@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Camera, KeyRound, Mail, ShieldCheck, Trash2, User } from 'lucide-react'
+import { Bell, Camera, KeyRound, Mail, Trash2, User } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -19,7 +19,7 @@ import {
   Label,
   useToast,
 } from '@/components/bruiloft/ui'
-import { ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/bruiloft/permissions'
+import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -159,6 +159,7 @@ function ProfielFotoSection() {
 function GegevensSection() {
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const updateProfile = useBruiloftStore((s) => s.updateProfile)
+  const role = useBruiloftStore((s) => s.role)
   const { toast } = useToast()
 
   const splitName = React.useMemo(() => {
@@ -252,6 +253,12 @@ function GegevensSection() {
               </p>
             ) : null}
           </Field>
+          {role ? (
+            <div>
+              <p className="mb-1 text-sm font-medium text-foreground">Mijn rol</p>
+              <p className="text-sm text-muted-foreground capitalize">{ROLE_LABELS[role]}</p>
+            </div>
+          ) : null}
           <div className="flex justify-end">
             <Button type="submit" loading={busy}>
               Opslaan
@@ -420,34 +427,6 @@ function HerinneringenSection() {
   )
 }
 
-// ── Mijn rol ─────────────────────────────────────────────────────────────────
-
-function MijnRolSection() {
-  const role = useBruiloftStore((s) => s.role)
-  if (!role) return null
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          Mijn rol
-        </CardTitle>
-        <CardDescription>
-          Je rol bepaalt wat je kunt zien en bewerken binnen deze bruiloft.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-start gap-3">
-          <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-sm font-medium text-rose-700">
-            {ROLE_LABELS[role]}
-          </span>
-          <p className="text-sm text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</p>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 // ── Gevaarzone ───────────────────────────────────────────────────────────────
 
 function GevaarZoneSection() {
@@ -583,7 +562,7 @@ export default function AccountPage() {
       <GegevensSection />
       <HerinneringenSection />
       <WachtwoordSection />
-      <MijnRolSection />
+      <hr className="my-4 border-border" />
       <GevaarZoneSection />
     </div>
   )

@@ -3,7 +3,9 @@
 import * as React from 'react'
 import {
   Globe,
+  LayoutGrid,
   Link2,
+  List,
   Mail,
   Pencil,
   Phone,
@@ -26,6 +28,7 @@ import {
   StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
+import { cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -45,6 +48,8 @@ export default function LeveranciersPage() {
 
   const [fType, setFType] = React.useState('all')
   const [fStatus, setFStatus] = React.useState('all')
+  const [weergave, setWeergave] = React.useState<'kaart' | 'tabel'>('kaart')
+  const [sortering, setSortering] = React.useState<'naam' | 'status' | 'bedrag'>('naam')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editVendor, setEditVendor] = React.useState<Vendor | null>(null)
@@ -56,6 +61,13 @@ export default function LeveranciersPage() {
     if (fType !== 'all' && v.type !== fType) return false
     if (fStatus !== 'all' && v.status !== fStatus) return false
     return true
+  })
+
+  const gesorteerd = [...gefilterd].sort((a, b) => {
+    if (sortering === 'naam') return a.naam.localeCompare(b.naam, 'nl')
+    if (sortering === 'status') return a.status.localeCompare(b.status, 'nl')
+    if (sortering === 'bedrag') return b.geoffreerdBedrag - a.geoffreerdBedrag
+    return 0
   })
 
   const openNieuw = () => {
@@ -81,8 +93,33 @@ export default function LeveranciersPage() {
         }
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <Select value={fType} onChange={(e) => setFType(e.target.value)}>
+      {vendors.length > 0 && (() => {
+        const aantallen: Record<string, number> = {}
+        for (const v of vendors) {
+          aantallen[v.status] = (aantallen[v.status] || 0) + 1
+        }
+        const statussen = [
+          { label: 'Te bezoeken', key: 'te bezoeken', kleur: 'bg-secondary text-secondary-foreground' },
+          { label: 'Geoffreerd', key: 'geoffreerd', kleur: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+          { label: 'Geboekt', key: 'geboekt', kleur: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+          { label: 'Afgewezen', key: 'afgewezen', kleur: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-900/40' },
+        ]
+        return (
+          <div className="mb-6 flex flex-wrap gap-3">
+            {statussen.map((s) => aantallen[s.key] ? (
+              <div key={s.key} className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5">
+                <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', s.kleur)}>
+                  {aantallen[s.key]}
+                </span>
+                <span className="text-sm text-foreground">{s.label}</span>
+              </div>
+            ) : null)}
+          </div>
+        )
+      })()}
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <Select value={fType} onChange={(e) => setFType(e.target.value)} className="w-auto">
           <option value="all">Alle types</option>
           {VENDOR_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -90,7 +127,7 @@ export default function LeveranciersPage() {
             </option>
           ))}
         </Select>
-        <Select value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
+        <Select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="w-auto">
           <option value="all">Alle statussen</option>
           {VENDOR_STATUSSEN.map((s) => (
             <option key={s} value={s}>
@@ -98,6 +135,27 @@ export default function LeveranciersPage() {
             </option>
           ))}
         </Select>
+        <Select value={sortering} onChange={(e) => setSortering(e.target.value as typeof sortering)} className="w-auto">
+          <option value="naam">Naam A-Z</option>
+          <option value="status">Status</option>
+          <option value="bedrag">Hoogste bedrag</option>
+        </Select>
+        <div className="ml-auto inline-flex rounded-lg border border-border bg-background p-1">
+          <button
+            type="button"
+            onClick={() => setWeergave('kaart')}
+            className={cn('rounded-md px-3 py-1.5 text-sm transition-colors', weergave === 'kaart' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setWeergave('tabel')}
+            className={cn('rounded-md px-3 py-1.5 text-sm transition-colors', weergave === 'tabel' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {vendors.length === 0 ? (
@@ -122,17 +180,53 @@ export default function LeveranciersPage() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {gefilterd.map((v) => (
-              <VendorCard
-                key={v.id}
-                vendor={v}
-                budgetItems={budgetItems}
-                onEdit={kanBewerken ? openBewerk : undefined}
-                onDelete={kanBewerken ? setDelVendor : undefined}
-              />
-            ))}
-          </div>
+          {weergave === 'tabel' ? (
+            <div className="rounded-lg border border-border bg-card shadow-sm overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">Naam</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Bedrag</th>
+                    <th className="px-4 py-3 font-medium">Contactpersoon</th>
+                    {kanBewerken && <th className="px-4 py-3"><span className="sr-only">Acties</span></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {gesorteerd.map((v) => (
+                    <tr key={v.id} className="border-b border-border last:border-0 hover:bg-accent/40">
+                      <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
+                      <td className="px-4 py-3 capitalize text-muted-foreground">{v.type}</td>
+                      <td className="px-4 py-3"><StatusBadge kind="leverancier" value={v.status} /></td>
+                      <td className="px-4 py-3 text-foreground">{v.geoffreerdBedrag > 0 ? <Money bedrag={v.geoffreerdBedrag} /> : '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{v.contactpersoon || '—'}</td>
+                      {kanBewerken && (
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(v)}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelVendor(v)}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {gesorteerd.map((v) => (
+                <VendorCard
+                  key={v.id}
+                  vendor={v}
+                  budgetItems={budgetItems}
+                  onEdit={kanBewerken ? openBewerk : undefined}
+                  onDelete={kanBewerken ? setDelVendor : undefined}
+                />
+              ))}
+            </div>
+          )}
           <p className="mt-4 text-right text-xs text-muted-foreground">
             {gefilterd.length === vendors.length
               ? `${vendors.length} leveranciers`

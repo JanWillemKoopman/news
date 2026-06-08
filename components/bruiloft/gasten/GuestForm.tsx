@@ -15,6 +15,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { categorieLabelVoor, GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import type { Guest, GuestInput, Wedding } from '@/lib/bruiloft/types'
+import { cn } from '@/lib/utils'
 
 type NewGuest = Omit<GuestInput, 'weddingId'>
 
@@ -293,6 +294,7 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
             </div>
           )}
         </div>
+
 
         <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => sluit(false)}>

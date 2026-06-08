@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Armchair, Plus } from 'lucide-react'
+import { AlertTriangle, Armchair, Plus, Printer } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
@@ -61,11 +61,18 @@ export default function TafelsPage() {
         titel="Tafelschikking"
         beschrijving="Sleep gasten naar een tafel. Afgemelde gasten worden niet meegenomen."
         actie={
-          kanBewerken ? (
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Tafel
-            </Button>
-          ) : undefined
+          <>
+            {tables.length > 0 ? (
+              <Button variant="outline" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" /> Afdrukken
+              </Button>
+            ) : null}
+            {kanBewerken && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Tafel
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -74,6 +81,13 @@ export default function TafelsPage() {
           <Telling label="Tafels" waarde={tables.length} />
           <Telling label="Ingedeeld" waarde={`${ingedeeld}/${pool.length}`} />
           <Telling label="Stoelen" waarde={stoelen} />
+        </div>
+      ) : null}
+
+      {tables.length > 0 && stoelen < pool.length ? (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>Er zijn {pool.length - stoelen} gasten zonder stoel. Voeg meer tafels toe of vergroot de capaciteit.</span>
         </div>
       ) : null}
 

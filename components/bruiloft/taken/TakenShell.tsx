@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
@@ -252,6 +252,21 @@ export function TakenShell() {
         aiActive={aiActive}
         onAiToggle={handleAiToggle}
       />
+
+      {aiActive && aiLoading && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:300ms]" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">AI genereert suggesties…</p>
+            <p className="text-xs text-muted-foreground">Dit kan 10–30 seconden duren.</p>
+          </div>
+          <Sparkles className="ml-auto h-5 w-5 animate-pulse text-rose-400" />
+        </div>
+      )}
 
       {view === 'lijst' && (
         <ListView

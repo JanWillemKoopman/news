@@ -89,8 +89,7 @@ export function VendorForm({
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const verwerk = async (closeAfter: boolean) => {
     if (!form.naam.trim()) {
       setNaamFout(true)
       return
@@ -103,12 +102,24 @@ export function VendorForm({
         naam: form.naam.trim(),
         geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
       }))
-      onOpenChange(false)
+      if (closeAfter) {
+        onOpenChange(false)
+      } else {
+        const leegForm = leeg()
+        setForm(leegForm)
+        baseline.current = JSON.stringify(leegForm)
+        setNaamFout(false)
+      }
     } catch {
-      // opslaan mislukt — modal blijft open, data bewaard
+      // opslaan mislukt
     } finally {
       setSaving(false)
     }
+  }
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    verwerk(true)
   }
 
   return (
@@ -234,6 +245,11 @@ export function VendorForm({
           <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
+          {!initial ? (
+            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
+              Nog een toevoegen
+            </Button>
+          ) : null}
           <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>

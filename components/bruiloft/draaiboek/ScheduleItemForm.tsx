@@ -38,6 +38,7 @@ export function ScheduleItemForm({
 }: ScheduleItemFormProps) {
   const [form, setForm] = React.useState<NewScheduleItem>(leeg)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
 
   React.useEffect(() => {
@@ -66,11 +67,27 @@ export function ScheduleItemForm({
         : [...f.betrokkenen, rol],
     }))
 
+  const verwerk = (closeAfter: boolean) => {
+    if (!form.tijd || !form.titel.trim()) return
+    if (saving) return
+    setSaving(true)
+    try {
+      onSubmit({ ...form, titel: form.titel.trim() })
+      if (closeAfter) {
+        onOpenChange(false)
+      } else {
+        const leegForm = leeg()
+        setForm(leegForm)
+        baseline.current = JSON.stringify(leegForm)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.tijd || !form.titel.trim()) return
-    onSubmit({ ...form, titel: form.titel.trim() })
-    onOpenChange(false)
+    verwerk(true)
   }
 
   return (
@@ -149,7 +166,12 @@ export function ScheduleItemForm({
           <Button type="button" variant="outline" onClick={() => sluit(false)}>
             Annuleren
           </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          {!initial ? (
+            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
+              Nog een toevoegen
+            </Button>
+          ) : null}
+          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>

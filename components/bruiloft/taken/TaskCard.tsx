@@ -58,7 +58,7 @@ export function TaskCard({
   return (
     <Card
       className={cn(
-        'transition-opacity',
+        'group transition-opacity',
         klaar && 'opacity-60',
         selected && 'ring-2 ring-primary'
       )}
@@ -171,6 +171,25 @@ export function TaskCard({
               onToggle={(id) => onToggleSubtaak(task, id)}
             />
           ) : null}
+        </div>
+
+        <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Bewerken"
+            onClick={() => onEdit(task)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Verwijderen"
+            onClick={() => onDelete(task)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
     </Card>
