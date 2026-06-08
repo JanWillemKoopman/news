@@ -75,7 +75,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Thuis',
     icon: LayoutDashboard,
     href: '/bruiloft',
-    items: [dashboard],
+    items: [dashboard, aiPlanner],
     module: 'dashboard',
   },
   {
