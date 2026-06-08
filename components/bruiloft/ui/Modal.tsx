@@ -39,7 +39,7 @@ export function Modal({
           )}
         >
           <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
-          <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+          <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
             <div>
               <Dialog.Title className="text-xl text-foreground">
                 {title}
@@ -56,7 +56,7 @@ export function Modal({
               </Button>
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-6 py-5">{children}</div>
+          <div className="overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

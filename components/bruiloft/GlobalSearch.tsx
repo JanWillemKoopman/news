@@ -233,7 +233,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                             )}
                           >
                             <span className="flex-1 truncate">{item.label}</span>
-                            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+                            <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" aria-hidden />
                           </Link>
                         </li>
                       ))}
