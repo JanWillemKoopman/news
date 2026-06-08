@@ -23,6 +23,7 @@ export function TopNav() {
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearch()
 
   return (
+    <>
     <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
@@ -122,5 +123,6 @@ export function TopNav() {
       </div>
     </header>
     <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
   )
 }
