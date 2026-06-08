@@ -17,7 +17,6 @@ import {
   Phone,
   Shirt,
 } from 'lucide-react'
-import Link from 'next/link'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -101,7 +100,7 @@ export function SectieAccordionLijst({
   onSaveSectieConfig,
   onHerorden,
 }: Props) {
-  const [openSectie, setOpenSectie] = React.useState<SectieSleutel | null>('home')
+  const [openSectie, setOpenSectie] = React.useState<SectieSleutel | null>(null)
   const [draggingKey, setDraggingKey] = React.useState<SectieSleutel | null>(null)
   const [dragOverKey, setDragOverKey] = React.useState<SectieSleutel | null>(null)
 
@@ -349,8 +348,8 @@ function SectieRijItem({
           >
             <span
               className={cn(
-                'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
-                !isVerborgen ? 'translate-x-6' : 'translate-x-1'
+                'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200',
+                !isVerborgen ? 'left-6' : 'left-1'
               )}
             />
           </button>
@@ -399,6 +398,8 @@ function SectieRijItem({
               websiteContent={websiteContent}
               wedding={wedding}
               debounce={debounce}
+              config={config}
+              onSaveSectieConfig={(patch) => onSaveSectieConfig(s, patch)}
             />
           </div>
 
@@ -430,9 +431,11 @@ interface SectieEditorProps {
   websiteContent: WebsiteContent
   wedding: Wedding
   debounce: ReturnType<typeof useDebounceOpslaan<WebsiteContentInput>>
+  config: SectieConfig
+  onSaveSectieConfig: (patch: Partial<SectieConfig>) => void
 }
 
-function SectieEditor({ s, websiteContent, wedding, debounce }: SectieEditorProps) {
+function SectieEditor({ s, websiteContent, wedding, debounce, config, onSaveSectieConfig }: SectieEditorProps) {
   switch (s) {
     case 'home':
       return (
@@ -445,32 +448,18 @@ function SectieEditor({ s, websiteContent, wedding, debounce }: SectieEditorProp
 
     case 'programma':
       return (
-        <div className="rounded-lg border border-border bg-muted/30 px-4 py-5 text-sm text-muted-foreground">
-          <p>
-            Het programma beheer je via{' '}
-            <Link href="/bruiloft/draaiboek" className="text-primary underline">
-              Draaiboek
-            </Link>
-            . Programma-items die voor gasten zichtbaar zijn worden automatisch op
-            de website getoond.
-          </p>
-        </div>
+        <ProgrammaEditor
+          inhoud={config.inhoud ?? ''}
+          onSave={(inhoud) => onSaveSectieConfig({ inhoud })}
+        />
       )
 
     case 'countdown':
       return (
-        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-4 py-4 text-sm text-muted-foreground">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div>
-            <p className="font-medium text-foreground">Aftelling naar de trouwdag</p>
-            <p className="mt-1">
-              De aftelling wordt automatisch berekend op basis van de trouwdatum
-              {wedding.trouwdatum ? ` (${wedding.trouwdatum})` : ''}.
-              Gebruik de weergave-instellingen hieronder om de naam en achtergrond
-              aan te passen.
-            </p>
-          </div>
-        </div>
+        <CountdownEditor
+          datum={config.countdownDatum ?? ''}
+          onSave={(countdownDatum) => onSaveSectieConfig({ countdownDatum })}
+        />
       )
 
     case 'dresscode':
@@ -540,6 +529,73 @@ function SectieEditor({ s, websiteContent, wedding, debounce }: SectieEditorProp
     case 'fotos':
       return <FotoGalerijEditor />
   }
+}
+
+// ─── Programma free-text editor ─────────────────────────────────────────────
+
+function ProgrammaEditor({ inhoud, onSave }: { inhoud: string; onSave: (v: string) => void }) {
+  const [waarde, setWaarde] = React.useState(inhoud)
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  React.useEffect(() => { setWaarde(inhoud) }, [inhoud])
+
+  function onChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const v = e.target.value
+    setWaarde(v)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => onSave(v), 500)
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-foreground">Programma</label>
+      <p className="text-xs text-muted-foreground">
+        Beschrijf het verloop van de dag voor jullie gasten.
+      </p>
+      <textarea
+        value={waarde}
+        onChange={onChange}
+        rows={6}
+        placeholder="Bijv. 14:00 Ceremonie — 15:00 Cocktailreceptie — 17:00 Diner…"
+        className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20"
+      />
+    </div>
+  )
+}
+
+// ─── Countdown date editor ───────────────────────────────────────────────────
+
+function CountdownEditor({ datum, onSave }: { datum: string; onSave: (v: string) => void }) {
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-foreground" htmlFor="countdown-datum">
+          Aftellingsdatum
+        </label>
+        <p className="text-xs text-muted-foreground">
+          De datum waarnaar de aftelling telt. Laat leeg om de trouwdatum te gebruiken.
+        </p>
+        <input
+          id="countdown-datum"
+          type="date"
+          value={datum}
+          onChange={(e) => onSave(e.target.value)}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+        />
+      </div>
+      {datum && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>
+            Aftelling telt naar{' '}
+            <span className="font-medium text-foreground">
+              {new Date(datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </span>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Layout settings (alignment, background, photo) ─────────────────────────

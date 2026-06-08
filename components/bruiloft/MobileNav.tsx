@@ -13,8 +13,6 @@ import { isActive, MOBILE_PRIMARY, NAV_ITEMS, visibleItems } from './nav'
 export function MobileNav() {
   const pathname = usePathname()
   const permissions = useBruiloftStore((s) => s.permissions)
-  const guests = useBruiloftStore((s) => s.guests)
-  const tasks = useBruiloftStore((s) => s.tasks)
   const [meer, setMeer] = React.useState(false)
 
   const primary = visibleItems(MOBILE_PRIMARY, permissions)
@@ -23,12 +21,6 @@ export function MobileNav() {
     (i) => !primaryHrefs.has(i.href) && isActive(pathname, i.href)
   )
 
-  const vandaag = new Date().toISOString().slice(0, 10)
-  const badges: Record<string, number> = {}
-  const achterstallig = tasks.filter((t) => t.status !== 'klaar' && t.deadline < vandaag).length
-  const rsvpPending = guests.filter((g) => g.rsvpStatus === 'uitgenodigd' || g.rsvpStatus === 'geen reactie').length
-  if (achterstallig > 0) badges['/bruiloft/taken'] = achterstallig
-  if (rsvpPending > 0) badges['/bruiloft/gasten'] = rsvpPending
 
   return (
     <>
@@ -46,14 +38,7 @@ export function MobileNav() {
                   active ? 'text-rose-600' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                <div className="relative">
-                  <item.icon className="h-5 w-5" />
-                  {badges[item.href] ? (
-                    <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-0.5 text-[10px] font-bold text-white">
-                      {badges[item.href] > 99 ? '99+' : badges[item.href]}
-                    </span>
-                  ) : null}
-                </div>
+                <item.icon className="h-5 w-5" />
                 {item.label}
               </Link>
             )

@@ -50,8 +50,8 @@ export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl }: 
             >
               <span
                 className={cn(
-                  'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
-                  content.websiteGepubliceerd ? 'translate-x-6' : 'translate-x-1'
+                  'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200',
+                  content.websiteGepubliceerd ? 'left-6' : 'left-1'
                 )}
               />
             </button>
