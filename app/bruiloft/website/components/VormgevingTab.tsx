@@ -96,9 +96,16 @@ const LETTERTYPES: LettertypeInfo[] = [
 ]
 
 const KLEUR_PRESETS = [
-  '#a75573', '#c2785e', '#d4a853', '#7c6b4f',
-  '#334155', '#2d6a4f', '#5c6bc0', '#8b4513',
-  '#1a1a1a', '#6b7280', '#c9a96e', '#6b4c7a',
+  // Neutral
+  '#1a1a1a', '#6b7280', '#c9a96e', '#7c6b4f',
+  // Warm
+  '#a75573', '#c2785e', '#d4a853', '#8b4513',
+  // Koel
+  '#334155', '#5c6bc0', '#6b4c7a', '#1e6b8a',
+  // Botanisch / natuur
+  '#2d6a4f', '#4a7c59', '#b5835a', '#8b7355',
+  // Extra
+  '#c2829a', '#2d5a27',
 ]
 
 interface Props {
@@ -317,7 +324,7 @@ export function VormgevingTab({ content }: Props) {
               />
             </div>
             {/* Preset swatches */}
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-9 gap-2">
               {KLEUR_PRESETS.map((k) => (
                 <button
                   key={k}

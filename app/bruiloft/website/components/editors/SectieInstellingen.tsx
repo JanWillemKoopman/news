@@ -8,6 +8,25 @@ import type { SectieConfig } from '@/lib/bruiloft/types'
 
 import { FotoUpload } from '../FotoUpload'
 
+const ACHTERGROND_SWATCHES: { waarde: string; label: string; preview: string }[] = [
+  { waarde: 'transparant', label: 'Standaard', preview: 'transparent' },
+  { waarde: '#ffffff', label: 'Wit', preview: '#ffffff' },
+  { waarde: '#f5f5f0', label: 'Crème', preview: '#f5f5f0' },
+  { waarde: '#fdf0f5', label: 'Zachtroze', preview: '#fdf0f5' },
+  { waarde: '#f0f7f0', label: 'Zachtgroen', preview: '#f0f7f0' },
+  { waarde: '#f0f5fd', label: 'Lichtblauw', preview: '#f0f5fd' },
+  { waarde: '#fdf5e8', label: 'Champagne', preview: '#fdf5e8' },
+  { waarde: '#2d2d2d', label: 'Donker', preview: '#2d2d2d' },
+]
+
+function isdonker(hex: string): boolean {
+  if (!hex || hex === 'transparant') return false
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 < 128
+}
+
 interface Props {
   config: SectieConfig
   onSave: (patch: Partial<SectieConfig>) => void
@@ -109,6 +128,63 @@ export function SectieInstellingen({ config, onSave, onUploadFoto, onVerwijderFo
                   <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Background color */}
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Achtergrond
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ACHTERGROND_SWATCHES.map((s) => {
+                const actief = (config.achtergrondKleur ?? 'transparant') === s.waarde
+                return (
+                  <button
+                    key={s.waarde}
+                    type="button"
+                    title={s.label}
+                    onClick={() => {
+                      const donker = isdonker(s.waarde)
+                      onSave({
+                        achtergrondKleur: s.waarde === 'transparant' ? undefined : s.waarde,
+                        tekstKleur: s.waarde === 'transparant' ? undefined : donker ? 'licht' : undefined,
+                      })
+                    }}
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-lg border-2 transition-all hover:scale-110',
+                      actief ? 'border-primary ring-1 ring-primary' : 'border-border'
+                    )}
+                    style={{
+                      background: s.waarde === 'transparant'
+                        ? 'repeating-conic-gradient(#e5e7eb 0% 25%, transparent 0% 50%) 0 0/12px 12px'
+                        : s.preview,
+                    }}
+                  />
+                )
+              })}
+              {/* Custom color picker */}
+              <label
+                title="Aangepaste kleur"
+                className={cn(
+                  'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-2 border-border text-[9px] font-bold text-muted-foreground transition-all hover:scale-110 hover:border-primary',
+                  config.achtergrondKleur && !ACHTERGROND_SWATCHES.some(s => s.waarde === config.achtergrondKleur) ? 'border-primary' : ''
+                )}
+                style={config.achtergrondKleur && !ACHTERGROND_SWATCHES.some(s => s.waarde === config.achtergrondKleur)
+                  ? { background: config.achtergrondKleur }
+                  : {}}
+              >
+                +
+                <input
+                  type="color"
+                  className="sr-only"
+                  value={config.achtergrondKleur && config.achtergrondKleur !== 'transparant' ? config.achtergrondKleur : '#ffffff'}
+                  onChange={(e) => {
+                    const kleur = e.target.value
+                    onSave({ achtergrondKleur: kleur, tekstKleur: isdonker(kleur) ? 'licht' : undefined })
+                  }}
+                />
+              </label>
             </div>
           </div>
 

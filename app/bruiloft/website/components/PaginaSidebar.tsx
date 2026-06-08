@@ -8,6 +8,7 @@ import type { SectieConfig } from '@/lib/bruiloft/types'
 
 export type SectieSleutel =
   | 'home'
+  | 'countdown'
   | 'programma'
   | 'dresscode'
   | 'cadeaulijst'
@@ -19,6 +20,7 @@ export type SectieSleutel =
 
 export const SECTIES_VOLGORDE: SectieSleutel[] = [
   'home',
+  'countdown',
   'programma',
   'dresscode',
   'cadeaulijst',
@@ -64,8 +66,21 @@ export function PaginaSidebar({ sectiesConfig, actief, onSelecteer, onToggle, on
     return sectiesConfig[s]?.zichtbaar === false
   })
 
+  const SECTIE_STANDAARD_NAAM: Partial<Record<SectieSleutel, string>> = {
+    home: 'Home',
+    countdown: 'Aftelling',
+    programma: 'Programma',
+    dresscode: 'Dresscode',
+    cadeaulijst: 'Cadeaulijst',
+    hotels: 'Overnachten',
+    routebeschrijving: 'Route',
+    contact: 'Contact',
+    faq: 'FAQ',
+    fotos: "Foto's",
+  }
+
   const naamVan = (s: SectieSleutel) =>
-    s === 'home' ? 'Home' : (sectiesConfig[s]?.naam ?? s)
+    sectiesConfig[s]?.naam || SECTIE_STANDAARD_NAAM[s] || s
 
   const isVerborgen = (s: SectieSleutel) =>
     s !== 'home' && sectiesConfig[s]?.zichtbaar === false
