@@ -19,7 +19,7 @@ type TimelineItem =
 
 const DREMPEL_TAKEN_DAGEN = 21
 const DREMPEL_BETALINGEN_DAGEN = 60
-const INITIEEL_ZICHTBAAR = 6
+const INITIEEL_ZICHTBAAR = 3
 
 function dagUrgentieStijl(dagen: number): string {
   if (dagen < 0) return 'text-rose-600 font-medium'

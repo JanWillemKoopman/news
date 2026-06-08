@@ -42,7 +42,7 @@ export function MobileNav() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
+                  'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                   active ? 'text-rose-600' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -63,7 +63,7 @@ export function MobileNav() {
             onClick={() => setMeer(true)}
             aria-haspopup="dialog"
             className={cn(
-              'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
+              'flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
               meerActief ? 'text-rose-600' : 'text-muted-foreground hover:text-foreground'
             )}
           >

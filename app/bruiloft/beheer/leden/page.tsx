@@ -351,7 +351,8 @@ export default function LedenBeheerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="relative">
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <caption className="sr-only">Rechtenmatrix per rol voor trouwleden</caption>
                 <thead>
@@ -388,6 +389,9 @@ export default function LedenBeheerPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
+              {/* Visuele hint dat de tabel horizontaal scrollbaar is op mobiel */}
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent sm:hidden" aria-hidden />
             </div>
           </CardContent>
         </Card>

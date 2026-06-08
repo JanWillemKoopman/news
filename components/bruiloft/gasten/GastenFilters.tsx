@@ -93,7 +93,7 @@ export function GastenFilters({
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-border bg-background p-4 shadow-lg sm:w-80">
+          <div className="absolute right-0 top-full z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-background p-4 shadow-lg sm:w-80">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">Filters</span>
               {activeCount > 0 && (

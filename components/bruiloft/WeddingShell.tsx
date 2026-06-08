@@ -148,17 +148,11 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       >
         Naar inhoud
       </a>
-      {/* Desktop: TopNav buiten het scroll-gebied (altijd zichtbaar) */}
-      <div className="hidden md:block">
-        <TopNav />
-      </div>
+      {/* TopNav buiten het scroll-gebied (altijd zichtbaar op alle schermformaten) */}
+      <TopNav />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="min-w-0 flex-1 overflow-y-auto">
-          {/* Mobiel: TopNav binnen het scroll-gebied (scrollt mee omhoog) */}
-          <div className="md:hidden">
-            <TopNav />
-          </div>
           <main
             id="hoofdinhoud"
             tabIndex={-1}

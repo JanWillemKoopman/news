@@ -60,7 +60,7 @@ export default function DashboardPage() {
           <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
             {faseLabel}
           </span>
-          <p className="text-2xl font-medium text-foreground md:text-3xl">
+          <p className="text-xl font-medium text-foreground sm:text-2xl md:text-3xl">
             {wedding.partner1Naam} <span>&amp;</span> {wedding.partner2Naam}
           </p>
           <div className="my-4">
