@@ -125,8 +125,10 @@ function GuestChip({ guest, onRemove }: { guest: Guest; onRemove?: () => void })
         {...listeners}
         {...attributes}
         className="inline-block max-w-[11rem] cursor-grab truncate align-middle touch-none select-none"
+        title={guest.dieetwensen || undefined}
       >
         {guest.voornaam} {guest.achternaam}
+        {guest.dieetwensen ? <span className="ml-1 text-[10px] opacity-60">🌿</span> : null}
       </span>
       {onRemove ? (
         <button

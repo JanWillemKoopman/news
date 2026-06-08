@@ -8,7 +8,7 @@ export function PageHeader({ titel, beschrijving, actie }: PageHeaderProps) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="text-lg font-semibold text-foreground">{titel}</h1>
+        <h1 className="text-xl font-semibold text-foreground">{titel}</h1>
         {beschrijving ? (
           <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
         ) : null}

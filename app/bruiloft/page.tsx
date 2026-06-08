@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarHeart, ListChecks, MapPin, Users, Wallet } from 'lucide-react'
+import { AlertTriangle, CalendarHeart, Clock, ListChecks, MapPin, Users, Wallet } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
@@ -132,6 +134,59 @@ export default function DashboardPage() {
       <div className="mt-8">
         <Routekaart route={guidance.route} />
       </div>
+
+      {/* Urgente taken */}
+      {(() => {
+        const urgenteTaken = tasks
+          .filter((t) => t.status !== 'klaar' && dagenTot(t.deadline) <= 14)
+          .sort((a, b) => a.deadline.localeCompare(b.deadline))
+          .slice(0, 5)
+        if (urgenteTaken.length === 0) return null
+        return (
+          <div className="mt-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-2xl font-medium text-foreground">Urgente taken</h2>
+                  <Link href="/bruiloft/taken" className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700">
+                    Alle taken
+                  </Link>
+                </div>
+                <ul className="divide-y divide-border">
+                  {urgenteTaken.map((t) => {
+                    const d = dagenTot(t.deadline)
+                    return (
+                      <li key={t.id} className="flex items-center justify-between gap-3 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {d < 0 ? (
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 shrink-0 text-amber-500" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{t.titel}</p>
+                            <p className="text-xs text-muted-foreground">{formatDatumNL(t.deadline)}</p>
+                          </div>
+                        </div>
+                        <span className={cn(
+                          'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
+                          d < 0
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+                            : d === 0
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'bg-secondary text-secondary-foreground'
+                        )}>
+                          {d < 0 ? `${Math.abs(d)}d te laat` : d === 0 ? 'vandaag' : `${d}d`}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        )
+      })()}
 
       {/* Aankomende betalingen */}
       <div className="mt-8">

@@ -3,12 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Search } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
 import { UserMenu } from './UserMenu'
+import { GlobalSearch, useGlobalSearch } from './GlobalSearch'
 
 // Donkere navy header — Riley & Grey-stijl. Bevat het logo (ampersand-mark)
 // links, een horizontaal hoofdmenu in het midden en het accountmenu rechts.
@@ -19,6 +20,7 @@ export function TopNav() {
   const permissions = useBruiloftStore((s) => s.permissions)
   const sections = visibleSections(permissions)
   const active = activeSection(pathname)
+  const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearch()
 
   return (
     <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
@@ -65,8 +67,18 @@ export function TopNav() {
         {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
         <span className="flex-1 md:hidden" aria-hidden />
 
-        {/* Account-menu (rechts) + AI-knop. */}
+        {/* Account-menu (rechts) + zoekknop + AI-knop. */}
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white/80 hover:bg-white/15 hover:text-white transition-colors"
+            aria-label="Zoeken"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+            <span className="hidden lg:inline">Zoeken</span>
+            <kbd className="hidden lg:inline ml-1 rounded border border-white/20 bg-white/10 px-1 py-0.5 text-[11px] leading-none text-white/60">⌘K</kbd>
+          </button>
           <Link
             href="/bruiloft/ai-wedding-planner"
             aria-current={pathname.startsWith('/bruiloft/ai-wedding-planner') ? 'page' : undefined}
@@ -84,6 +96,14 @@ export function TopNav() {
           <UserMenu variant="dark" />
         </div>
         <div className="flex items-center gap-1 md:hidden">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Zoeken"
+            className="inline-flex items-center justify-center rounded-md p-2 text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+          </button>
           <Link
             href="/bruiloft/ai-wedding-planner"
             aria-label="AI assistent"
@@ -101,5 +121,6 @@ export function TopNav() {
         </div>
       </div>
     </header>
+    <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
   )
 }

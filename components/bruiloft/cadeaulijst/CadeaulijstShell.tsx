@@ -17,10 +17,10 @@ import { RegistryDeelModal } from './RegistryDeelModal'
 type Tab = 'lijst' | 'overzicht' | 'instellingen' | 'vormgeving'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'lijst', label: 'Lijstbeheer', icon: <LayoutList className="h-4 w-4" /> },
-  { id: 'overzicht', label: 'Overzicht', icon: <BarChart2 className="h-4 w-4" /> },
+  { id: 'lijst', label: 'Mijn lijst', icon: <LayoutList className="h-4 w-4" /> },
+  { id: 'overzicht', label: 'Reserveringen', icon: <BarChart2 className="h-4 w-4" /> },
   { id: 'instellingen', label: 'Instellingen', icon: <Settings className="h-4 w-4" /> },
-  { id: 'vormgeving', label: 'Vormgeving', icon: <Palette className="h-4 w-4" /> },
+  { id: 'vormgeving', label: 'Uiterlijk', icon: <Palette className="h-4 w-4" /> },
 ]
 
 export function CadeaulijstShell() {
@@ -57,7 +57,7 @@ export function CadeaulijstShell() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-5xl pb-24">
       <PageHeader
         titel="Cadeaulijst"
         beschrijving="Beheer jullie cadeauwensen en geldfondsen."

@@ -272,7 +272,7 @@ function SidebarRij({
               e.stopPropagation()
               onToggle(s, !(sectiesConfig[s]?.zichtbaar ?? true))
             }}
-            className="ml-2 shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent"
+            className="ml-2 shrink-0 rounded p-0.5 opacity-60 transition-opacity hover:opacity-100 hover:bg-accent"
             title={sectiesConfig[s]?.zichtbaar !== false ? 'Verbergen' : 'Tonen'}
           >
             {sectiesConfig[s]?.zichtbaar !== false ? (

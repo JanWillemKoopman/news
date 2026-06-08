@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { ChevronDown } from 'lucide-react'
 
 import {
   Button,
@@ -14,6 +15,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import type { Guest, GuestInput } from '@/lib/bruiloft/types'
+import { cn } from '@/lib/utils'
 
 type NewGuest = Omit<GuestInput, 'weddingId'>
 
@@ -61,6 +63,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
   const [naamFout, setNaamFout] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [detailsOpen, setDetailsOpen] = React.useState(!!initial)
   // Baseline om niet-opgeslagen wijzigingen te detecteren bij het sluiten.
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
   const voornaamRef = React.useRef<HTMLInputElement>(null)
@@ -71,6 +74,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
       setForm(start)
       baseline.current = JSON.stringify(start)
       setNaamFout(false)
+      setDetailsOpen(!!initial)
     }
   }, [open, initial])
 
@@ -113,6 +117,7 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
         setForm(leegForm)
         baseline.current = JSON.stringify(leegForm)
         setNaamFout(false)
+        setDetailsOpen(false)
         voornaamRef.current?.focus()
       }
     } catch {
@@ -191,79 +196,92 @@ export function GuestForm({ open, onOpenChange, initial, onSubmit }: GuestFormPr
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="RSVP-status" htmlFor="rsvp">
-            <Select
-              id="rsvp"
-              value={form.rsvpStatus}
-              onChange={(e) => set('rsvpStatus', e.target.value as NewGuest['rsvpStatus'])}
-            >
-              {RSVP_STATUSSEN.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Aantal kinderen" htmlFor="kind">
-            <Input
-              id="kind"
-              type="number"
-              min={0}
-              value={form.aantalKinderen || ''}
-              onChange={(e) => set('aantalKinderen', Number(e.target.value) || 0)}
-            />
-          </Field>
-        </div>
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(v => !v)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronDown className={cn('h-4 w-4 transition-transform', detailsOpen && 'rotate-180')} />
+          {detailsOpen ? 'Minder details' : 'Meer details'}
+        </button>
 
-        <div className="rounded-xl border border-border p-3">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={form.heeftPartner}
-              onChange={(e) => set('heeftPartner', e.target.checked)}
-              className="h-4 w-4 accent-[hsl(var(--primary))]"
-            />
-            Neemt een partner mee
-          </label>
-          {form.heeftPartner ? (
-            <Input
-              className="mt-3"
-              placeholder="Naam van de partner (optioneel)"
-              value={form.partnerNaam}
-              onChange={(e) => set('partnerNaam', e.target.value)}
-              {...eigennaamInputProps}
-            />
-          ) : null}
-        </div>
+        {detailsOpen && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="RSVP-status" htmlFor="rsvp">
+                <Select
+                  id="rsvp"
+                  value={form.rsvpStatus}
+                  onChange={(e) => set('rsvpStatus', e.target.value as NewGuest['rsvpStatus'])}
+                >
+                  {RSVP_STATUSSEN.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Aantal kinderen" htmlFor="kind">
+                <Input
+                  id="kind"
+                  type="number"
+                  min={0}
+                  value={form.aantalKinderen || ''}
+                  onChange={(e) => set('aantalKinderen', Number(e.target.value) || 0)}
+                />
+              </Field>
+            </div>
 
-        <Field label="Dieetwensen" htmlFor="dieet">
-          <Input
-            id="dieet"
-            value={form.dieetwensen}
-            onChange={(e) => set('dieetwensen', e.target.value)}
-            placeholder="Bijv. vegetarisch, notenallergie"
-          />
-        </Field>
+            <div className="rounded-xl border border-border p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={form.heeftPartner}
+                  onChange={(e) => set('heeftPartner', e.target.checked)}
+                  className="h-4 w-4 accent-[hsl(var(--primary))]"
+                />
+                Neemt een partner mee
+              </label>
+              {form.heeftPartner ? (
+                <Input
+                  className="mt-3"
+                  placeholder="Naam van de partner (optioneel)"
+                  value={form.partnerNaam}
+                  onChange={(e) => set('partnerNaam', e.target.value)}
+                  {...eigennaamInputProps}
+                />
+              ) : null}
+            </div>
 
-        <Field label="Adres" htmlFor="adres">
-          <Textarea
-            id="adres"
-            value={form.adres}
-            onChange={(e) => set('adres', e.target.value)}
-            placeholder="Voor de uitnodiging"
-            rows={2}
-          />
-        </Field>
+            <Field label="Dieetwensen" htmlFor="dieet">
+              <Input
+                id="dieet"
+                value={form.dieetwensen}
+                onChange={(e) => set('dieetwensen', e.target.value)}
+                placeholder="Bijv. vegetarisch, notenallergie"
+              />
+            </Field>
 
-        <Field label="Notitie" htmlFor="not">
-          <Textarea
-            id="not"
-            value={form.notitie}
-            onChange={(e) => set('notitie', e.target.value)}
-            rows={2}
-          />
-        </Field>
+            <Field label="Adres" htmlFor="adres">
+              <Textarea
+                id="adres"
+                value={form.adres}
+                onChange={(e) => set('adres', e.target.value)}
+                placeholder="Voor de uitnodiging"
+                rows={2}
+              />
+            </Field>
+
+            <Field label="Notitie" htmlFor="not">
+              <Textarea
+                id="not"
+                value={form.notitie}
+                onChange={(e) => set('notitie', e.target.value)}
+                rows={2}
+              />
+            </Field>
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => sluit(false)}>

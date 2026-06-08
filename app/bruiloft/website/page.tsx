@@ -128,7 +128,7 @@ export default function WebsitePage() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-5xl overflow-x-hidden">
+    <div className="mx-auto w-full max-w-5xl overflow-x-hidden pb-24">
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de inhoud en vormgeving van jullie persoonlijke trouwwebsite."
@@ -199,9 +199,9 @@ export default function WebsitePage() {
                 {activeSectie === 'programma' && (
                   <div className="rounded-lg border border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
                     Het programma beheer je via{' '}
-                    <a href="/bruiloft/draaiboek" className="text-primary underline">
+                    <Link href="/bruiloft/draaiboek" className="text-primary underline">
                       Draaiboek
-                    </a>
+                    </Link>
                     . Programma-items die voor gasten zichtbaar zijn worden automatisch op de website getoond.
                   </div>
                 )}

@@ -10,18 +10,9 @@ import { activeSection, isActive, visibleSections } from './nav'
 export function Sidebar() {
   const pathname = usePathname()
   const permissions = useBruiloftStore((s) => s.permissions)
-  const guests = useBruiloftStore((s) => s.guests)
-  const tasks = useBruiloftStore((s) => s.tasks)
   const sections = visibleSections(permissions)
   const current = activeSection(pathname)
   const currentSection = sections.find((s) => s.key === current.key) ?? sections[0]
-
-  const vandaag = new Date().toISOString().slice(0, 10)
-  const badges: Record<string, number> = {}
-  const achterstallig = tasks.filter((t) => t.status !== 'klaar' && t.deadline < vandaag).length
-  const rsvpPending = guests.filter((g) => g.rsvpStatus === 'uitgenodigd').length
-  if (achterstallig > 0) badges['/bruiloft/taken'] = achterstallig
-  if (rsvpPending > 0) badges['/bruiloft/gasten'] = rsvpPending
 
   if (!currentSection) return null
 
@@ -54,11 +45,6 @@ export function Sidebar() {
                 )}
               />
               {item.label}
-              {badges[item.href] ? (
-                <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white">
-                  {badges[item.href] > 99 ? '99+' : badges[item.href]}
-                </span>
-              ) : null}
             </Link>
           )
         })}

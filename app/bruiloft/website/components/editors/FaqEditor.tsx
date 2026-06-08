@@ -3,7 +3,7 @@
 import { GripVertical, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button, Field, Input, Textarea } from '@/components/bruiloft/ui'
+import { Button, Field, Input, Textarea, useToast } from '@/components/bruiloft/ui'
 import type { FaqItem } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -14,14 +14,20 @@ interface Props {
 export function FaqEditor({ faq }: Props) {
   const updateFaq = useBruiloftStore((s) => s.updateFaq)
   const [items, setItems] = React.useState<FaqItem[]>(faq)
+  const { toast } = useToast()
 
   React.useEffect(() => {
     setItems(faq)
   }, [faq])
 
-  function stelIn(nieuweItems: FaqItem[]) {
+  async function stelIn(nieuweItems: FaqItem[]) {
     setItems(nieuweItems)
-    void updateFaq(nieuweItems)
+    try {
+      await updateFaq(nieuweItems)
+      toast({ title: 'FAQ opgeslagen', variant: 'success' })
+    } catch {
+      toast({ title: 'Opslaan mislukt', variant: 'error' })
+    }
   }
 
   function voegToe() {

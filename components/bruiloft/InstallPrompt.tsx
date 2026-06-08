@@ -88,7 +88,7 @@ export function InstallPrompt() {
 
   return (
     <div className="wedding fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:justify-end sm:px-0">
-      <div className="w-full max-w-sm animate-slide-up rounded-xl border border-border bg-white p-4 shadow-lg">
+      <div className="w-full max-w-sm animate-slide-up rounded-xl border border-border bg-card p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rhino-50 text-rhino-800">
             {mode === 'ios' ? <Share className="h-5 w-5" /> : <Download className="h-5 w-5" />}

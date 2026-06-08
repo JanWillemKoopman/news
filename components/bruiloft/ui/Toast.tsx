@@ -45,10 +45,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const toast = React.useCallback(
-    ({ title, description, variant = 'default', action, duration = 3800 }: ToastInput) => {
+    ({ title, description, variant = 'default', action, duration }: ToastInput) => {
       const id = ++idRef.current
+      // Actie-toasts (met undo knop) krijgen automatisch 7s als geen duration opgegeven
+      const effectiveDuration = duration ?? (action ? 7000 : 3800)
       setItems((list) => [...list, { id, title, description, variant, action }])
-      setTimeout(() => remove(id), duration)
+      setTimeout(() => remove(id), effectiveDuration)
     },
     [remove]
   )
