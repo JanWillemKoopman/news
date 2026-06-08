@@ -82,7 +82,7 @@ export function TopNav() {
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
-            <span className="hidden md:inline">AI-assistent</span>
+            <span>AI-assistent</span>
           </Link>
           <button
             type="button"
