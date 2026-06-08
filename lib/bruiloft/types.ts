@@ -256,6 +256,8 @@ export interface SectieConfig {
   volgorde?: number
   fotoUrl?: string
   uitlijning?: 'links' | 'midden' | 'rechts'
+  achtergrondKleur?: string          // hex of 'transparant'
+  tekstKleur?: 'licht' | 'donker'   // auto-contrast override
 }
 
 export interface FaqItem {

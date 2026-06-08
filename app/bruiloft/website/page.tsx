@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, Check, ExternalLink, Loader2 } from 'lucide-react'
+import { AlertCircle, Check, Clock, Eye, EyeOff, ExternalLink, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -21,6 +21,7 @@ import { HomeEditor } from './components/editors/HomeEditor'
 import { SectieInstellingen } from './components/editors/SectieInstellingen'
 import { TekstEditor } from './components/editors/TekstEditor'
 import { PaginaSidebar, type SectieSleutel } from './components/PaginaSidebar'
+import { PreviewPanel } from './components/PreviewPanel'
 import { useDebounceOpslaan } from './components/useDebounceOpslaan'
 import { VormgevingTab } from './components/VormgevingTab'
 import { RsvpSectie } from './components/RsvpSectie'
@@ -32,10 +33,12 @@ export default function WebsitePage() {
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
   const uploadSectieFoto = useBruiloftStore((s) => s.uploadSectieFoto)
+  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const { toast } = useToast()
 
   const [tab, setTab] = React.useState<TabId>('inhoud')
   const [activeSectie, setActiveSectie] = React.useState<SectieSleutel>('home')
+  const [previewOpen, setPreviewOpen] = React.useState(false)
   const initAttempted = React.useRef(false)
 
   const debounce = useDebounceOpslaan<WebsiteContentInput>(
@@ -129,6 +132,7 @@ export default function WebsitePage() {
   )
 
   return (
+    <>
     <div className="mx-auto max-w-6xl overflow-x-hidden pb-24 min-h-screen">
       <PageHeader
         titel="Trouwwebsite"
@@ -136,10 +140,18 @@ export default function WebsitePage() {
         actie={
           <div className="flex items-center gap-3">
             <SaveStatus />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen((v) => !v)}
+            >
+              {previewOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <span className="hidden sm:inline">{previewOpen ? 'Sluiten' : 'Voorbeeld'}</span>
+            </Button>
             {publiekeUrl && (
               <Button variant="outline" size="sm" asChild>
                 <a href={publiekeUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" /> Bekijk website
+                  <ExternalLink className="h-4 w-4" /> <span className="hidden sm:inline">Bekijk website</span>
                 </a>
               </Button>
             )}
@@ -257,6 +269,19 @@ export default function WebsitePage() {
                     toelichting="Contactgegevens voor gasten met vragen."
                   />
                 )}
+                {activeSectie === 'countdown' && (
+                  <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-4 py-5 text-sm text-muted-foreground">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">Aftelling naar de trouwdag</p>
+                      <p className="mt-1">
+                        De aftelling wordt automatisch berekend op basis van de trouwdatum
+                        {wedding.trouwdatum ? ` (${wedding.trouwdatum})` : ''}.
+                        Gebruik de instellingen hierboven om de naam, uitlijning en achtergrondkleur aan te passen.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {activeSectie === 'faq' && (
                   <FaqEditor faq={websiteContent.faq} />
                 )}
@@ -279,5 +304,16 @@ export default function WebsitePage() {
         </div>
       )}
     </div>
+
+    {previewOpen && (
+      <PreviewPanel
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        websiteContent={websiteContent}
+        wedding={wedding}
+        scheduleItems={scheduleItems}
+      />
+    )}
+    </>
   )
 }

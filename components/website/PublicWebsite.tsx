@@ -3,6 +3,7 @@
 import {
   CalendarHeart,
   ChevronDown,
+  Clock,
   Gift,
   Heart,
   HelpCircle,
@@ -53,6 +54,7 @@ interface SectieItem {
   label: string
   icoon: React.ReactNode
   fotoUrl?: string
+  bgStijl?: React.CSSProperties
   render: () => React.ReactNode
 }
 
@@ -101,8 +103,58 @@ const LETTERTYPE_VAR: Record<WeddingLettertype, string> = {
 }
 
 const DEFAULT_ORDER: Record<string, number> = {
-  welkom: 0, programma: 1, dresscode: 2, cadeaulijst: 3,
-  hotels: 4, routebeschrijving: 5, faq: 6, fotos: 7, contact: 8,
+  welkom: 0, programma: 1, countdown: 2, dresscode: 3, cadeaulijst: 4,
+  hotels: 5, routebeschrijving: 6, faq: 7, fotos: 8, contact: 9,
+}
+
+function CountdownBlok({ trouwdatum, uitlijning }: { trouwdatum: string | null; uitlijning?: 'links' | 'midden' | 'rechts' }) {
+  const [rest, setRest] = React.useState({ dagen: 0, uren: 0, minuten: 0, seconden: 0, voorbij: false })
+
+  React.useEffect(() => {
+    if (!trouwdatum) return
+    function bereken() {
+      const nu = Date.now()
+      const doel = new Date(trouwdatum + 'T00:00:00').getTime()
+      const diff = doel - nu
+      if (diff <= 0) {
+        setRest({ dagen: 0, uren: 0, minuten: 0, seconden: 0, voorbij: true })
+        return
+      }
+      setRest({
+        dagen: Math.floor(diff / 86400000),
+        uren: Math.floor((diff % 86400000) / 3600000),
+        minuten: Math.floor((diff % 3600000) / 60000),
+        seconden: Math.floor((diff % 60000) / 1000),
+        voorbij: false,
+      })
+    }
+    bereken()
+    const id = setInterval(bereken, 1000)
+    return () => clearInterval(id)
+  }, [trouwdatum])
+
+  if (!trouwdatum) return null
+  if (rest.voorbij) return <p className="text-center text-lg font-medium text-foreground">🎉 Gefeliciteerd!</p>
+
+  const align = uitlijning === 'links' ? 'justify-start' : uitlijning === 'rechts' ? 'justify-end' : 'justify-center'
+
+  return (
+    <div className={`flex flex-wrap gap-4 sm:gap-6 ${align}`}>
+      {[
+        { val: rest.dagen, label: 'Dagen' },
+        { val: rest.uren, label: 'Uren' },
+        { val: rest.minuten, label: 'Minuten' },
+        { val: rest.seconden, label: 'Seconden' },
+      ].map(({ val, label }) => (
+        <div key={label} className="flex flex-col items-center gap-1.5 min-w-[3.5rem]">
+          <span className="text-4xl font-bold tabular-nums leading-none" style={{ color: 'hsl(var(--primary))' }}>
+            {String(val).padStart(2, '0')}
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 
@@ -246,7 +298,7 @@ function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplPro
       {/* SECTIONS */}
       <main className="mx-auto max-w-xl px-4 pb-24">
         {secties.map((s) => (
-          <section key={s.id} id={s.id} className="scroll-mt-24 py-10">
+          <section key={s.id} id={s.id} className="scroll-mt-24 py-10" style={s.bgStijl}>
             {s.fotoUrl ? (
               <div className="relative mb-6 h-40 overflow-hidden rounded-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -360,7 +412,7 @@ function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps
       {/* SECTIONS: no card boxes, clean typography */}
       <main className="max-w-3xl mx-auto px-6 md:px-12 pb-24">
         {secties.map((s, i) => (
-          <section key={s.id} id={s.id} className="scroll-mt-20 py-14 border-t border-black/8">
+          <section key={s.id} id={s.id} className="scroll-mt-20 py-14 border-t border-black/8" style={s.bgStijl}>
             {s.fotoUrl ? (
               <div className="relative mb-8 h-44 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -463,7 +515,7 @@ function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplP
       {/* SECTIONS: rounded warm cards */}
       <main className="mx-auto max-w-lg px-4 pb-24">
         {secties.map((s) => (
-          <section key={s.id} id={s.id} className="scroll-mt-20 py-8">
+          <section key={s.id} id={s.id} className="scroll-mt-20 py-8" style={s.bgStijl}>
             {s.fotoUrl ? (
               <div className="relative mb-4 h-36 overflow-hidden rounded-3xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -580,7 +632,7 @@ function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProp
       {/* SECTIONS: alternating backgrounds, left-border titles */}
       <main>
         {secties.map((s, i) => (
-          <section key={s.id} id={s.id} className="scroll-mt-16 py-12" style={{ background: i % 2 === 0 ? 'white' : linnenBg }}>
+          <section key={s.id} id={s.id} className="scroll-mt-16 py-12" style={s.bgStijl ?? { background: i % 2 === 0 ? 'white' : linnenBg }}>
             <div className="max-w-2xl mx-auto px-6 md:px-12">
               {s.fotoUrl ? (
                 <div className="relative mb-6 h-40 overflow-hidden">
@@ -698,7 +750,7 @@ function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) 
       {/* SECTIONS: no boxes, only type and line */}
       <main className="max-w-md mx-auto px-8 md:px-0 pb-24">
         {secties.map((s) => (
-          <section key={s.id} id={s.id} className="scroll-mt-20 py-14 border-t" style={{ borderColor: 'hsl(var(--primary)/0.15)' }}>
+          <section key={s.id} id={s.id} className="scroll-mt-20 py-14 border-t" style={{ borderColor: 'hsl(var(--primary)/0.15)', ...s.bgStijl }}>
             {s.fotoUrl ? (
               <div className="relative mb-8 h-36 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -803,7 +855,7 @@ function BotanischTemplate({ data, secties, headingFont, registry, slug }: TplPr
       {/* SECTIONS: white cards with green top border */}
       <main className="mx-auto max-w-xl px-4 pb-24" style={{ background: 'hsl(145 15% 97%)' }}>
         {secties.map((s) => (
-          <section key={s.id} id={s.id} className="scroll-mt-20 py-8">
+          <section key={s.id} id={s.id} className="scroll-mt-20 py-8" style={s.bgStijl}>
             {s.fotoUrl ? (
               <div className="relative mb-4 h-36 overflow-hidden rounded-2xl border-t-4" style={{ borderColor: 'hsl(var(--primary))' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -898,7 +950,19 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
   const cfgKey = (id: string) => id === 'welkom' ? 'home' : id
 
   function isZichtbaar(id: string) {
-    return config[cfgKey(id)]?.zichtbaar !== false
+    const cfg = config[cfgKey(id)]
+    // countdown is opt-in; hidden by default when not explicitly configured
+    if (id === 'countdown' && cfg === undefined) return false
+    return cfg?.zichtbaar !== false
+  }
+
+  function bgStijlVoor(id: string): React.CSSProperties | undefined {
+    const cfg = config[cfgKey(id)]
+    if (!cfg?.achtergrondKleur || cfg.achtergrondKleur === 'transparant') return undefined
+    return {
+      backgroundColor: cfg.achtergrondKleur,
+      ...(cfg.tekstKleur === 'licht' ? { color: '#ffffff' } : cfg.tekstKleur === 'donker' ? { color: '#1a1a1a' } : {}),
+    }
   }
 
   function uitlijningKlas(id: string) {
@@ -914,6 +978,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config[cfgKey('welkom')]?.naam ?? 'Welkom',
       icoon: <Heart className="h-5 w-5" />,
       fotoUrl: config[cfgKey('welkom')]?.fotoUrl,
+      bgStijl: bgStijlVoor('welkom'),
       render: () => (
         <p className={`whitespace-pre-line text-lg text-foreground ${uitlijningKlas('welkom')}`}>
           {content.welkomsttekst}
@@ -921,10 +986,19 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       ),
     },
     {
+      id: 'countdown',
+      label: config['countdown']?.naam ?? 'Aftelling',
+      icoon: <Clock className="h-5 w-5" />,
+      fotoUrl: config['countdown']?.fotoUrl,
+      bgStijl: bgStijlVoor('countdown'),
+      render: () => <CountdownBlok trouwdatum={wedding.trouwdatum} uitlijning={config['countdown']?.uitlijning} />,
+    },
+    {
       id: 'programma',
       label: config['programma']?.naam ?? 'Programma',
       icoon: <CalendarHeart className="h-5 w-5" />,
       fotoUrl: config['programma']?.fotoUrl,
+      bgStijl: bgStijlVoor('programma'),
       render: () => (
         <ul className="space-y-3">
           {schedule.map((s, i) => (
@@ -945,6 +1019,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['dresscode']?.naam ?? 'Dresscode',
       icoon: <Shirt className="h-5 w-5" />,
       fotoUrl: config['dresscode']?.fotoUrl,
+      bgStijl: bgStijlVoor('dresscode'),
       render: () => (
         <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('dresscode')}`}>
           {content.dresscode}
@@ -956,6 +1031,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['cadeaulijst']?.naam ?? 'Cadeaulijst',
       icoon: <Gift className="h-5 w-5" />,
       fotoUrl: config['cadeaulijst']?.fotoUrl,
+      bgStijl: bgStijlVoor('cadeaulijst'),
       render: () =>
         registry?.enabled ? (
           <div className={`space-y-4 ${uitlijningKlas('cadeaulijst')}`}>
@@ -985,6 +1061,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['hotels']?.naam ?? 'Overnachten',
       icoon: <Hotel className="h-5 w-5" />,
       fotoUrl: config['hotels']?.fotoUrl,
+      bgStijl: bgStijlVoor('hotels'),
       render: () => (
         <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('hotels')}`}>
           {content.hotels}
@@ -996,6 +1073,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['routebeschrijving']?.naam ?? 'Route',
       icoon: <MapPin className="h-5 w-5" />,
       fotoUrl: config['routebeschrijving']?.fotoUrl,
+      bgStijl: bgStijlVoor('routebeschrijving'),
       render: () => (
         <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('routebeschrijving')}`}>
           {content.routebeschrijving}
@@ -1007,6 +1085,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['faq']?.naam ?? 'FAQ',
       icoon: <HelpCircle className="h-5 w-5" />,
       fotoUrl: config['faq']?.fotoUrl,
+      bgStijl: bgStijlVoor('faq'),
       render: () => <FaqAccordion items={content.faq} />,
     },
     {
@@ -1014,6 +1093,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['fotos']?.naam ?? "Foto's",
       icoon: <Image className="h-5 w-5" />,
       fotoUrl: undefined,
+      bgStijl: bgStijlVoor('fotos'),
       render: () => renderGalerij(content.gallerij, thema),
     },
     {
@@ -1021,6 +1101,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       label: config['contact']?.naam ?? 'Contact',
       icoon: <Phone className="h-5 w-5" />,
       fotoUrl: config['contact']?.fotoUrl,
+      bgStijl: bgStijlVoor('contact'),
       render: () => (
         <p className={`text-muted-foreground ${uitlijningKlas('contact')}`}>
           {content.contact}
@@ -1036,6 +1117,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
     if (!isZichtbaar(s.id)) return false
     switch (s.id) {
       case 'welkom':         return !!content.welkomsttekst
+      case 'countdown':      return !!wedding.trouwdatum
       case 'programma':      return schedule.length > 0
       case 'dresscode':      return !!content.dresscode
       case 'cadeaulijst':    return !!content.cadeaulijst || !!registry?.enabled
