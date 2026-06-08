@@ -69,16 +69,14 @@ export function TopNav() {
         <span className="flex-1 md:hidden" aria-hidden />
 
         {/* Account-menu (rechts) + zoekknop + AI-knop. */}
-        <div className="ml-auto hidden items-center gap-2 md:flex">
+        <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white/80 hover:bg-white/15 hover:text-white transition-colors"
+            className="inline-flex items-center justify-center rounded-full p-2 text-white/80 bg-white/10 hover:bg-white/15 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
             aria-label="Zoeken"
           >
             <Search className="h-4 w-4" aria-hidden />
-            <span className="hidden lg:inline">Zoeken</span>
-            <kbd className="hidden lg:inline ml-1 rounded border border-white/20 bg-white/10 px-1 py-0.5 text-[11px] leading-none text-white/60">⌘K</kbd>
           </button>
           <Link
             href="/bruiloft/ai-wedding-planner"
@@ -92,33 +90,9 @@ export function TopNav() {
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
-            <span>AI-assistent</span>
+            <span className="hidden md:inline">AI-assistent</span>
           </Link>
           <UserMenu variant="dark" />
-        </div>
-        <div className="flex items-center gap-1 md:hidden">
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Zoeken"
-            className="inline-flex items-center justify-center rounded-md p-2 text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <Search className="h-4 w-4" aria-hidden />
-          </button>
-          <Link
-            href="/bruiloft/ai-wedding-planner"
-            aria-label="AI-assistent"
-            className={cn(
-              'inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-medium transition-colors border',
-              pathname.startsWith('/bruiloft/ai-wedding-planner')
-                ? 'bg-white/15 text-white border-white/40'
-                : 'bg-transparent text-white/80 border-white/25 hover:bg-white/10 hover:text-white hover:border-white/40'
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span>AI-assistent</span>
-          </Link>
-          <UserMenu variant="dark" compact />
         </div>
       </div>
     </header>
