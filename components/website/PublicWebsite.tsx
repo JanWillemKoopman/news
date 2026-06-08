@@ -64,6 +64,7 @@ interface TplProps {
   headingFont: string
   registry?: RegistryMeta | null
   slug?: string
+  toonMenu?: boolean
 }
 
 interface RegistryMeta {
@@ -227,7 +228,7 @@ function AterlierOrnament() {
   )
 }
 
-function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function KlassiekTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -235,7 +236,7 @@ function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplPro
   return (
     <div className="bg-white">
       {/* NAV: double-bar, centered, dots between items */}
-      <nav className="sticky top-0 z-40 bg-white/96 backdrop-blur-sm" style={{ boxShadow: '0 1px 0 hsl(var(--primary)/0.12)' }}>
+      {toonMenu && <nav className="sticky top-0 z-40 bg-white/96 backdrop-blur-sm" style={{ boxShadow: '0 1px 0 hsl(var(--primary)/0.12)' }}>
         <div className="relative py-3 text-center border-b" style={{ borderColor: 'hsl(var(--primary)/0.1)' }}>
           <p className="text-[11px] tracking-[0.25em] uppercase text-muted-foreground">
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
@@ -271,7 +272,7 @@ function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplPro
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO */}
       <section className="relative flex min-h-[65vh] items-center justify-center overflow-hidden">
@@ -333,7 +334,7 @@ function KlassiekTemplate({ data, secties, headingFont, registry, slug }: TplPro
 // Geïnspireerd op Riley & Grey "Rolling Stone" / "Signature".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function ModernTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -341,7 +342,7 @@ function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps
   return (
     <div className="bg-white">
       {/* NAV: sharp, links/rechts layout */}
-      <nav className="sticky top-0 z-40 bg-white border-b border-black/10">
+      {toonMenu && <nav className="sticky top-0 z-40 bg-white border-b border-black/10">
         <div className="flex items-center justify-between px-6 md:px-12 py-4 max-w-5xl mx-auto">
           <span className="text-xs tracking-[0.2em] uppercase font-medium text-foreground">
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
@@ -378,7 +379,7 @@ function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO: split layout */}
       <section className="grid grid-cols-1 md:grid-cols-[55%_45%]" style={{ minHeight: '90vh' }}>
@@ -445,7 +446,7 @@ function ModernTemplate({ data, secties, headingFont, registry, slug }: TplProps
 // ornamenten. Geïnspireerd op Riley & Grey "Drift" / "Posy".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function RomantischTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -455,7 +456,7 @@ function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplP
   return (
     <div style={{ background: warmBg }}>
       {/* NAV: warm, centered, serif name */}
-      <nav className="sticky top-0 z-40 backdrop-blur-sm border-b" style={{ background: `${warmBg}ee`, borderColor: 'hsl(var(--primary)/0.12)' }}>
+      {toonMenu && <nav className="sticky top-0 z-40 backdrop-blur-sm border-b" style={{ background: `${warmBg}ee`, borderColor: 'hsl(var(--primary)/0.12)' }}>
         <div className="relative max-w-xl mx-auto px-4 py-3 flex flex-col items-center gap-1.5">
           <span className="text-base font-medium text-foreground" style={{ fontFamily: headingFont }}>
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
@@ -488,7 +489,7 @@ function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplP
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO: warm and soft */}
       <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden" style={{ background: warmBg }}>
@@ -547,7 +548,7 @@ function RomantischTemplate({ data, secties, headingFont, registry, slug }: TplP
 // linker accentborder. Geïnspireerd op Riley & Grey "Nom".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function RustiekTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -557,7 +558,7 @@ function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProp
   return (
     <div className="bg-white">
       {/* NAV: dark earthy bar */}
-      <nav className="sticky top-0 z-40" style={{ background: donkerNav }}>
+      {toonMenu && <nav className="sticky top-0 z-40" style={{ background: donkerNav }}>
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
           <span className="text-sm font-medium tracking-wide" style={{ color: 'rgba(255,255,255,0.88)' }}>
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
@@ -602,7 +603,7 @@ function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProp
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO: left-aligned with frame */}
       <section className="relative flex min-h-[56vh] items-end overflow-hidden">
@@ -664,7 +665,7 @@ function RustiekTemplate({ data, secties, headingFont, registry, slug }: TplProp
 // Geïnspireerd op Riley & Grey "Perch" + Swiss editorial design.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function PuurTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -672,7 +673,7 @@ function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) 
   return (
     <div className="bg-white">
       {/* NAV: ultra minimal */}
-      <nav className="sticky top-0 z-40 bg-white border-b border-black/8">
+      {toonMenu && <nav className="sticky top-0 z-40 bg-white border-b border-black/8">
         <div className="px-8 md:px-16 py-4 flex items-center justify-between max-w-4xl">
           <span className="text-[9px] tracking-[0.3em] uppercase text-muted-foreground">
             {wedding.partner1Naam} &amp; {wedding.partner2Naam}
@@ -709,7 +710,7 @@ function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) 
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO: enormous typography */}
       <section className="relative overflow-hidden" style={{ minHeight: '85vh', display: 'flex', alignItems: 'center' }}>
@@ -772,7 +773,7 @@ function PuurTemplate({ data, secties, headingFont, registry, slug }: TplProps) 
 // donkergroene navigatie. Geïnspireerd op Riley & Grey "Eden".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function BotanischTemplate({ data, secties, headingFont, registry, slug }: TplProps) {
+function BotanischTemplate({ data, secties, headingFont, registry, slug, toonMenu }: TplProps) {
   const { wedding, content } = data
   const [mOpen, setMOpen] = React.useState(false)
   const heeftFoto = !!content.headerFotoUrl
@@ -780,7 +781,7 @@ function BotanischTemplate({ data, secties, headingFont, registry, slug }: TplPr
   return (
     <div className="bg-white">
       {/* NAV: forest green, white text */}
-      <nav className="sticky top-0 z-40 text-white" style={{ background: 'hsl(var(--primary))' }}>
+      {toonMenu && <nav className="sticky top-0 z-40 text-white" style={{ background: 'hsl(var(--primary))' }}>
         <div className="max-w-2xl mx-auto px-5 py-3.5 flex items-center justify-between">
           <span className="text-sm font-medium flex items-center gap-2">
             <span style={{ opacity: 0.55 }}>❧</span>
@@ -827,7 +828,7 @@ function BotanischTemplate({ data, secties, headingFont, registry, slug }: TplPr
             </ul>
           </div>
         )}
-      </nav>
+      </nav>}
 
       {/* HERO: green overlay with double-frame border */}
       <section className="relative flex min-h-[60vh] items-center justify-center overflow-hidden">
@@ -936,6 +937,7 @@ const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
 export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: RegistryMeta | null; slug?: string }) {
   const { wedding, content, schedule } = data
   const config = content.sectiesConfig ?? {}
+  const toonMenu = config['_nav']?.zichtbaar ?? false
 
   const thema: WeddingThema = content.thema ?? 'klassiek'
   const headingFont = LETTERTYPE_VAR[content.kopLettertype ?? 'cormorant']
@@ -991,7 +993,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       icoon: <Clock className="h-5 w-5" />,
       fotoUrl: config['countdown']?.fotoUrl,
       bgStijl: bgStijlVoor('countdown'),
-      render: () => <CountdownBlok trouwdatum={wedding.trouwdatum} uitlijning={config['countdown']?.uitlijning} />,
+      render: () => <CountdownBlok trouwdatum={config['countdown']?.countdownDatum ?? wedding.trouwdatum} uitlijning={config['countdown']?.uitlijning} />,
     },
     {
       id: 'programma',
@@ -999,20 +1001,30 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
       icoon: <CalendarHeart className="h-5 w-5" />,
       fotoUrl: config['programma']?.fotoUrl,
       bgStijl: bgStijlVoor('programma'),
-      render: () => (
-        <ul className="space-y-3">
-          {schedule.map((s, i) => (
-            <li key={i} className="flex gap-4">
-              <span className="w-14 shrink-0 font-semibold tabular-nums" style={{ color: 'hsl(var(--primary))' }}>{s.tijd}</span>
-              <div>
-                <p className="font-medium text-foreground">{s.titel}</p>
-                {s.omschrijving && <p className="text-sm text-muted-foreground">{s.omschrijving}</p>}
-                {s.locatie && <p className="text-sm text-muted-foreground">{s.locatie}</p>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ),
+      render: () => {
+        const inhoud = config['programma']?.inhoud
+        if (inhoud) {
+          return (
+            <p className={`whitespace-pre-line text-muted-foreground ${uitlijningKlas('programma')}`}>
+              {inhoud}
+            </p>
+          )
+        }
+        return (
+          <ul className="space-y-3">
+            {schedule.map((s, i) => (
+              <li key={i} className="flex gap-4">
+                <span className="w-14 shrink-0 font-semibold tabular-nums" style={{ color: 'hsl(var(--primary))' }}>{s.tijd}</span>
+                <div>
+                  <p className="font-medium text-foreground">{s.titel}</p>
+                  {s.omschrijving && <p className="text-sm text-muted-foreground">{s.omschrijving}</p>}
+                  {s.locatie && <p className="text-sm text-muted-foreground">{s.locatie}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )
+      },
     },
     {
       id: 'dresscode',
@@ -1118,7 +1130,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
     switch (s.id) {
       case 'welkom':         return !!content.welkomsttekst
       case 'countdown':      return !!wedding.trouwdatum
-      case 'programma':      return schedule.length > 0
+      case 'programma':      return schedule.length > 0 || !!config['programma']?.inhoud
       case 'dresscode':      return !!content.dresscode
       case 'cadeaulijst':    return !!content.cadeaulijst || !!registry?.enabled
       case 'hotels':         return !!content.hotels
@@ -1140,7 +1152,7 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
 
   return (
     <div style={themaVars}>
-      {renderer({ data, secties: gesorteerd, headingFont, registry, slug })}
+      {renderer({ data, secties: gesorteerd, headingFont, registry, slug, toonMenu })}
     </div>
   )
 }
