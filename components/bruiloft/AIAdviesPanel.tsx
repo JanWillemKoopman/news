@@ -191,9 +191,9 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
           <>
           <ul className="divide-y divide-border">
             {advies.map((stap) => (
-              <li key={stap.id} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
+              <li key={stap.id} className="py-4 first:pt-0 last:pb-0">
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${URGENTIE_STIJL[stap.urgentie]}`}
                     >
@@ -201,16 +201,16 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                     </span>
                     <span className="text-xs text-muted-foreground">{stap.sectionLabel}</span>
                   </div>
-                  <p className="font-medium text-foreground">{stap.titel}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
+                  <Link
+                    href={stap.sectie}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+                  >
+                    Bekijken
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
                 </div>
-                <Link
-                  href={stap.sectie}
-                  className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
-                >
-                  Bekijken
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
+                <p className="font-medium text-foreground">{stap.titel}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
               </li>
             ))}
           </ul>
@@ -236,9 +236,9 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
             ) : (
               <ul className="divide-y divide-border">
                 {fallbackSteps.slice(0, 3).map((stap) => (
-                  <li key={stap.id} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <li key={stap.id} className="py-4 first:pt-0 last:pb-0">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                             stap.urgentie === 'kritiek'
@@ -255,29 +255,29 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                               : 'Plannen'}
                         </span>
                       </div>
-                      <p className="font-medium text-foreground">{stap.titel}</p>
-                      <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {stap.bron === 'taak' && mayEditTaken && stap.taskId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => afrondenFallback(stap.taskId!)}
-                          disabled={bezig === stap.taskId}
-                          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      <div className="flex items-center gap-2">
+                        {stap.bron === 'taak' && mayEditTaken && stap.taskId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => afrondenFallback(stap.taskId!)}
+                            disabled={bezig === stap.taskId}
+                            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Afronden
+                          </Button>
+                        )}
+                        <Link
+                          href={stap.href}
+                          className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
                         >
-                          Afronden
-                        </Button>
-                      )}
-                      <Link
-                        href={stap.href}
-                        className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
-                      >
-                        Bekijken
-                        <ChevronRight className="h-4 w-4" />
-                      </Link>
+                          Bekijken
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </div>
                     </div>
+                    <p className="font-medium text-foreground">{stap.titel}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
                   </li>
                 ))}
               </ul>
