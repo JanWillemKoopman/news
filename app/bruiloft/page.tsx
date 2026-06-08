@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const faseLabel = FASE_LABEL[guidance.huidigeFase] ?? guidance.huidigeFase
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       {/* Hero: aftelteller */}
       <Card className="relative mb-8 overflow-hidden border-border">
         <Button

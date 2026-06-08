@@ -129,7 +129,7 @@ export default function WebsitePage() {
   )
 
   return (
-    <div className="mx-auto max-w-6xl overflow-x-hidden pb-24">
+    <div className="mx-auto max-w-6xl overflow-x-hidden pb-24 min-h-screen">
       <PageHeader
         titel="Trouwwebsite"
         beschrijving="Beheer de inhoud en vormgeving van jullie persoonlijke trouwwebsite."

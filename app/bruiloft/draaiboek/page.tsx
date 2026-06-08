@@ -86,7 +86,7 @@ export default function DraaiboekPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Draaiboek"
         beschrijving="Het minuutschema van de trouwdag — filter en exporteer per betrokkene."

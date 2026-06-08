@@ -206,7 +206,7 @@ export default function GastenPage() {
   const p2 = wedding.partner2Naam
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Gastenlijst"
         beschrijving="Beheer de gastenlijst en houd de reacties bij."
