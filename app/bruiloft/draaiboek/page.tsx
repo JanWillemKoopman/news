@@ -132,7 +132,19 @@ export default function DraaiboekPage() {
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground">{s.titel}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-foreground">{s.titel}</p>
+                    {kanBewerken && (
+                      <div className="flex shrink-0 gap-1">
+                        <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   {s.locatie ? (
                     <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" /> {s.locatie}
@@ -154,16 +166,6 @@ export default function DraaiboekPage() {
                     </div>
                   ) : null}
                 </div>
-                {kanBewerken && (
-                  <div className="flex shrink-0 gap-1">
-                    <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))}

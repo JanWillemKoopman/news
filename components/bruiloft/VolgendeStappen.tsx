@@ -63,39 +63,37 @@ export function VolgendeStappen({ steps, trouwdatum }: VolgendeStappenProps) {
         ) : (
           <ul className="divide-y divide-border">
             {top.map((stap) => (
-              <li key={stap.id} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${URGENTIE_STIJL[stap.urgentie]}`}
-                    >
-                      {URGENTIE_LABEL[stap.urgentie]}
-                    </span>
-                  </div>
-                  <p className="font-medium text-foreground">{stap.titel}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {stap.bron === 'taak' && mayEdit && stap.taskId && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => afronden(stap.taskId!)}
-                      disabled={bezig === stap.taskId}
-                      className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Afronden
-                    </Button>
-                  )}
-                  <Link
-                    href={stap.href}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+              <li key={stap.id} className="py-4 first:pt-0 last:pb-0">
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${URGENTIE_STIJL[stap.urgentie]}`}
                   >
-                    Bekijken
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
+                    {URGENTIE_LABEL[stap.urgentie]}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {stap.bron === 'taak' && mayEdit && stap.taskId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => afronden(stap.taskId!)}
+                        disabled={bezig === stap.taskId}
+                        className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Afronden
+                      </Button>
+                    )}
+                    <Link
+                      href={stap.href}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+                    >
+                      Bekijken
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </div>
                 </div>
+                <p className="font-medium text-foreground">{stap.titel}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
               </li>
             ))}
           </ul>
