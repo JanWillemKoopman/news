@@ -212,7 +212,7 @@ export default function LedenBeheerPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Leden & rechten"
         beschrijving="Nodig mensen uit om mee te plannen en bepaal per rol wat ze mogen zien en doen."

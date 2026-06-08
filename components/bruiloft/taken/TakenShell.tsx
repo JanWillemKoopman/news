@@ -228,7 +228,7 @@ export function TakenShell() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Taken"
         beschrijving="Werk stap voor stap naar de grote dag toe."

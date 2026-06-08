@@ -85,7 +85,7 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Budget"
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."

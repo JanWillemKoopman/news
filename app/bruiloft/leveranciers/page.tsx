@@ -80,7 +80,7 @@ export default function LeveranciersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Leveranciers en locaties"
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
