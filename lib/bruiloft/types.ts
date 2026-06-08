@@ -258,6 +258,8 @@ export interface SectieConfig {
   uitlijning?: 'links' | 'midden' | 'rechts'
   achtergrondKleur?: string          // hex of 'transparant'
   tekstKleur?: 'licht' | 'donker'   // auto-contrast override
+  inhoud?: string                    // vrije tekst voor secties als programma
+  countdownDatum?: string            // ISO-datum specifiek voor countdown-sectie
 }
 
 export interface FaqItem {

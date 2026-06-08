@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronDown, Loader2, Palette } from 'lucide-react'
+import { Check, ChevronDown, Loader2, Menu, Palette } from 'lucide-react'
 import * as React from 'react'
 
 import { Input } from '@/components/bruiloft/ui'
@@ -362,6 +362,53 @@ export function OntwerpInstellingen({ content }: Props) {
                     </button>
                   )
                 })}
+              </div>
+            </div>
+          </div>
+
+          {/* Navigatiemenu */}
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Navigatiemenu
+            </p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Toon een navigatiebalk bovenaan de website met links naar de secties.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                role="switch"
+                aria-checked={content.sectiesConfig['_nav']?.zichtbaar ?? false}
+                onClick={() => {
+                  const huidig = content.sectiesConfig['_nav']?.zichtbaar ?? false
+                  void saveWebsiteContent({
+                    sectiesConfig: {
+                      ...content.sectiesConfig,
+                      '_nav': {
+                        ...(content.sectiesConfig['_nav'] ?? { naam: '_nav', zichtbaar: false }),
+                        zichtbaar: !huidig,
+                      },
+                    },
+                  })
+                }}
+                className={cn(
+                  'relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  (content.sectiesConfig['_nav']?.zichtbaar ?? false) ? 'bg-primary' : 'bg-input'
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200',
+                    (content.sectiesConfig['_nav']?.zichtbaar ?? false) ? 'left-6' : 'left-1'
+                  )}
+                />
+              </button>
+              <div className="flex items-center gap-2">
+                <Menu className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-foreground">
+                  {(content.sectiesConfig['_nav']?.zichtbaar ?? false)
+                    ? 'Menu zichtbaar'
+                    : 'Geen menu (standaard)'}
+                </span>
               </div>
             </div>
           </div>

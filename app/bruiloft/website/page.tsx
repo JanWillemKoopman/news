@@ -1,15 +1,15 @@
 'use client'
 
-import { AlertCircle, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { AlertCircle, Check, ExternalLink, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { Button, Skeleton, useToast } from '@/components/bruiloft/ui'
+import Link from 'next/link'
 import type { SectieConfig, WebsiteContentInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { OntwerpInstellingen } from './components/OntwerpInstellingen'
-import { PreviewPanel } from './components/PreviewPanel'
 import { SectieAccordionLijst } from './components/SectieAccordionLijst'
 import { useDebounceOpslaan } from './components/useDebounceOpslaan'
 import { WebsiteStatusCard } from './components/WebsiteStatusCard'
@@ -19,10 +19,8 @@ export default function WebsitePage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
-  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const { toast } = useToast()
 
-  const [previewOpen, setPreviewOpen] = React.useState(false)
   const initAttempted = React.useRef(false)
 
   const debounce = useDebounceOpslaan<WebsiteContentInput>(
@@ -118,28 +116,26 @@ export default function WebsitePage() {
     )
 
   return (
-    <>
-      <div className="mx-auto max-w-6xl overflow-x-hidden pb-24 min-h-screen">
+    <div className="mx-auto max-w-6xl overflow-x-hidden pb-24 min-h-screen">
         <PageHeader
           titel="Trouwwebsite"
           beschrijving="Beheer de inhoud en het ontwerp van jullie persoonlijke trouwwebsite."
           actie={
             <div className="flex items-center gap-3">
               <SaveStatus />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPreviewOpen((v) => !v)}
-              >
-                {previewOpen ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">
-                  {previewOpen ? 'Sluiten' : 'Voorbeeld'}
-                </span>
-              </Button>
+              {publiekeUrl ? (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={publiekeUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    <span className="hidden sm:inline">Bekijk website</span>
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled>
+                  <ExternalLink className="h-4 w-4" />
+                  <span className="hidden sm:inline">Bekijk website</span>
+                </Button>
+              )}
             </div>
           }
         />
@@ -167,17 +163,6 @@ export default function WebsitePage() {
           onSaveSectieConfig={onSaveSectieConfig}
           onHerorden={onHerorden}
         />
-      </div>
-
-      {previewOpen && (
-        <PreviewPanel
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          websiteContent={websiteContent}
-          wedding={wedding}
-          scheduleItems={scheduleItems}
-        />
-      )}
-    </>
+    </div>
   )
 }
