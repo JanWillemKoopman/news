@@ -68,16 +68,8 @@ export function TopNav() {
         {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
         <span className="flex-1 md:hidden" aria-hidden />
 
-        {/* Account-menu (rechts) + zoekknop + AI-knop. */}
+        {/* Account-menu (rechts) + AI-knop + zoekknop. */}
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className="inline-flex items-center justify-center rounded-full p-2 text-white/80 bg-white/10 hover:bg-white/15 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
-            aria-label="Zoeken"
-          >
-            <Search className="h-4 w-4" aria-hidden />
-          </button>
           <Link
             href="/bruiloft/ai-wedding-planner"
             aria-current={pathname.startsWith('/bruiloft/ai-wedding-planner') ? 'page' : undefined}
@@ -92,6 +84,14 @@ export function TopNav() {
             <Sparkles className="h-4 w-4" aria-hidden />
             <span className="hidden md:inline">AI-assistent</span>
           </Link>
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="inline-flex items-center justify-center rounded-full p-2 text-white/80 bg-white/10 hover:bg-white/15 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
+            aria-label="Zoeken"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+          </button>
           <UserMenu variant="dark" />
         </div>
       </div>
