@@ -95,7 +95,7 @@ export function TaskCard({
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
+          <div className="mb-2 flex items-start justify-between gap-2">
             <button
               type="button"
               onClick={() => onEdit(task)}
@@ -106,6 +106,24 @@ export function TaskCard({
             >
               {task.titel}
             </button>
+            <div className="flex shrink-0 gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Bewerken"
+                onClick={() => onEdit(task)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Verwijderen"
+                onClick={() => onDelete(task)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           {task.omschrijving && !compact ? (
             <p className="mt-0.5 text-sm text-muted-foreground">{task.omschrijving}</p>
@@ -153,25 +171,6 @@ export function TaskCard({
               onToggle={(id) => onToggleSubtaak(task, id)}
             />
           ) : null}
-        </div>
-
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Bewerken"
-            onClick={() => onEdit(task)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Verwijderen"
-            onClick={() => onDelete(task)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       </CardContent>
     </Card>
