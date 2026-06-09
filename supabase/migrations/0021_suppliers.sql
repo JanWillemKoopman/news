@@ -65,17 +65,9 @@ create table public.suppliers (
   tags text[] not null default '{}',
   ai_context_tekst text not null default '',
 
-  -- Full-text zoekvector (Nederlands), automatisch onderhouden.
-  search_vector tsvector generated always as (
-    to_tsvector('dutch',
-      coalesce(naam, '') || ' ' ||
-      coalesce(type, '') || ' ' ||
-      coalesce(omschrijving_kort, '') || ' ' ||
-      coalesce(plaats, '') || ' ' ||
-      coalesce(provincie, '') || ' ' ||
-      array_to_string(tags, ' ')
-    )
-  ) stored,
+  -- Full-text zoekvector (Nederlands), onderhouden via trigger. Een generated
+  -- column kan hier niet: de text->regconfig-lookup is STABLE, niet IMMUTABLE.
+  search_vector tsvector,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -93,6 +85,28 @@ create index idx_suppliers_plaats on public.suppliers (plaats);
 
 create trigger trg_suppliers_updated_at before update on public.suppliers
   for each row execute function public.set_updated_at();
+
+-- Onderhoud de full-text zoekvector bij elke insert/update.
+create or replace function public.suppliers_set_search_vector()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.search_vector := to_tsvector('dutch',
+    coalesce(new.naam, '') || ' ' ||
+    coalesce(new.type, '') || ' ' ||
+    coalesce(new.omschrijving_kort, '') || ' ' ||
+    coalesce(new.plaats, '') || ' ' ||
+    coalesce(new.provincie, '') || ' ' ||
+    array_to_string(new.tags, ' ')
+  );
+  return new;
+end;
+$$;
+
+create trigger trg_suppliers_search_vector
+  before insert or update on public.suppliers
+  for each row execute function public.suppliers_set_search_vector();
 
 -- =====================================================================
 -- RLS: globale, ALLEEN-LEZEN directory voor iedere ingelogde gebruiker.
