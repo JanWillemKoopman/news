@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
+import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
@@ -120,6 +121,9 @@ export default function DashboardPage() {
           permissions={permissions}
         />
       </div>
+
+      {/* Aanbevolen leveranciers uit de globale directory, op profiel gerankt */}
+      <AanbevolenLeveranciers />
 
       {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
       <div className="mb-8">

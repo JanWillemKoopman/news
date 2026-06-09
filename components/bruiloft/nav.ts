@@ -3,6 +3,7 @@ import {
   Armchair,
   CalendarClock,
   ClipboardList,
+  Compass,
   Gift,
   Globe,
   LayoutDashboard,
@@ -30,6 +31,7 @@ const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: Layout
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
 const leveranciers: NavItem = { label: 'Leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
+const ontdekken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Compass, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
@@ -48,6 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
   taken,
   budget,
   leveranciers,
+  ontdekken,
   draaiboek,
   gasten,
   tafels,
@@ -83,7 +86,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, leveranciers, draaiboek],
+    items: [taken, budget, leveranciers, ontdekken, draaiboek],
     module: 'taken',
   },
   {
