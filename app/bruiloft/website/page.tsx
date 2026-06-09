@@ -5,7 +5,6 @@ import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { Button, Skeleton, useToast } from '@/components/bruiloft/ui'
-import Link from 'next/link'
 import type { SectieConfig, WebsiteContentInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -125,15 +124,15 @@ export default function WebsitePage() {
               <SaveStatus />
               {publiekeUrl ? (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={publiekeUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={publiekeUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
-                    <span className="hidden sm:inline">Bekijk website</span>
-                  </Link>
+                    <span>Bekijk website</span>
+                  </a>
                 </Button>
               ) : (
                 <Button variant="outline" size="sm" disabled>
                   <ExternalLink className="h-4 w-4" />
-                  <span className="hidden sm:inline">Bekijk website</span>
+                  <span>Bekijk website</span>
                 </Button>
               )}
             </div>
