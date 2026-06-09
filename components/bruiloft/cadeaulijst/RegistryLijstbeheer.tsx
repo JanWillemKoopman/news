@@ -27,13 +27,17 @@ import {
 } from '@/components/bruiloft/ui'
 import { Progress } from '@/components/ui/progress'
 import type { RegistryItem } from '@/lib/bruiloft/types'
-import { RegistryItemForm } from './RegistryItemForm'
 
 interface Props {
   isEditor: boolean
+  // De "nieuw"- en "bewerk"-acties worden door de shell aangestuurd, zodat de
+  // "Item toevoegen"-knop (en de zwevende +-knop) in de PageHeader kan staan,
+  // net als op de andere pagina's.
+  onNew: () => void
+  onEdit: (item: RegistryItem) => void
 }
 
-export function RegistryLijstbeheer({ isEditor }: Props) {
+export function RegistryLijstbeheer({ isEditor, onNew, onEdit }: Props) {
   const registryItems = useBruiloftStore((s) => s.registryItems)
   const registryReservations = useBruiloftStore((s) => s.registryReservations)
   const registryContributions = useBruiloftStore((s) => s.registryContributions)
@@ -41,21 +45,9 @@ export function RegistryLijstbeheer({ isEditor }: Props) {
   const reorderRegistryItems = useBruiloftStore((s) => s.reorderRegistryItems)
   const { toast } = useToast()
 
-  const [formOpen, setFormOpen] = React.useState(false)
-  const [editItem, setEditItem] = React.useState<RegistryItem | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<RegistryItem | null>(null)
 
   const sortedItems = [...registryItems].sort((a, b) => a.sortOrder - b.sortOrder)
-
-  const openNew = () => {
-    setEditItem(null)
-    setFormOpen(true)
-  }
-
-  const openEdit = (item: RegistryItem) => {
-    setEditItem(item)
-    setFormOpen(true)
-  }
 
   const moveItem = async (index: number, direction: 'up' | 'down') => {
     const items = [...sortedItems]
@@ -93,14 +85,6 @@ export function RegistryLijstbeheer({ isEditor }: Props) {
 
   return (
     <div>
-      {isEditor && (
-        <div className="mb-4 flex justify-end">
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" /> Item toevoegen
-          </Button>
-        </div>
-      )}
-
       {sortedItems.length === 0 ? (
         <EmptyState
           icon={Gift}
@@ -108,7 +92,7 @@ export function RegistryLijstbeheer({ isEditor }: Props) {
           beschrijving="Voeg een cadeauwens of geldfonds toe aan jullie lijst."
           actie={
             isEditor ? (
-              <Button onClick={openNew}>
+              <Button onClick={onNew}>
                 <Plus className="h-4 w-4" /> Item toevoegen
               </Button>
             ) : undefined
@@ -125,7 +109,7 @@ export function RegistryLijstbeheer({ isEditor }: Props) {
               reservation={getItemReservation(item.id)}
               contributions={getItemContributions(item.id)}
               isEditor={isEditor}
-              onEdit={() => openEdit(item)}
+              onEdit={() => onEdit(item)}
               onDelete={() => setDeleteItem(item)}
               onMoveUp={() => moveItem(index, 'up')}
               onMoveDown={() => moveItem(index, 'down')}
@@ -135,24 +119,17 @@ export function RegistryLijstbeheer({ isEditor }: Props) {
       )}
 
       {isEditor && (
-        <>
-          <RegistryItemForm
-            open={formOpen}
-            onOpenChange={setFormOpen}
-            initial={editItem}
-          />
-          <ConfirmDialog
-            open={deleteItem !== null}
-            onOpenChange={(o) => !o && setDeleteItem(null)}
-            title="Item verwijderen?"
-            description={
-              deleteItem
-                ? `Weet je zeker dat je "${deleteItem.title}" wilt verwijderen? Reserveringen en bijdragen worden ook verwijderd.`
-                : undefined
-            }
-            onConfirm={handleDelete}
-          />
-        </>
+        <ConfirmDialog
+          open={deleteItem !== null}
+          onOpenChange={(o) => !o && setDeleteItem(null)}
+          title="Item verwijderen?"
+          description={
+            deleteItem
+              ? `Weet je zeker dat je "${deleteItem.title}" wilt verwijderen? Reserveringen en bijdragen worden ook verwijderd.`
+              : undefined
+          }
+          onConfirm={handleDelete}
+        />
       )}
     </div>
   )

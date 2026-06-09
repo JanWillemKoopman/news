@@ -1,18 +1,20 @@
 'use client'
 
 import * as React from 'react'
-import { Gift, LayoutList, Settings, BarChart2, Share2, Palette } from 'lucide-react'
+import { LayoutList, Settings, BarChart2, Share2, Palette, Plus } from 'lucide-react'
 
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
+import { Button, Skeleton } from '@/components/bruiloft/ui'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { cn } from '@/lib/utils'
+import type { RegistryItem } from '@/lib/bruiloft/types'
 import { RegistryLijstbeheer } from './RegistryLijstbeheer'
 import { RegistryOverzicht } from './RegistryOverzicht'
 import { RegistryInstellingen } from './RegistryInstellingen'
 import { RegistryVormgeving } from './RegistryVormgeving'
 import { RegistryDeelModal } from './RegistryDeelModal'
+import { RegistryItemForm } from './RegistryItemForm'
 
 type Tab = 'lijst' | 'overzicht' | 'instellingen' | 'vormgeving'
 
@@ -32,6 +34,17 @@ export function CadeaulijstShell() {
   const [activeTab, setActiveTab] = React.useState<Tab>('lijst')
   const [loading, setLoading] = React.useState(false)
   const [deelOpen, setDeelOpen] = React.useState(false)
+  const [formOpen, setFormOpen] = React.useState(false)
+  const [editItem, setEditItem] = React.useState<RegistryItem | null>(null)
+
+  const openNieuw = () => {
+    setEditItem(null)
+    setFormOpen(true)
+  }
+  const openBewerk = (item: RegistryItem) => {
+    setEditItem(item)
+    setFormOpen(true)
+  }
 
   React.useEffect(() => {
     if (wedding && !registryLoaded) {
@@ -62,13 +75,28 @@ export function CadeaulijstShell() {
         titel="Cadeaulijst"
         beschrijving="Beheer jullie cadeauwensen en geldfondsen."
         actie={
-          <Button variant="outline" onClick={() => setDeelOpen(true)}>
-            <Share2 className="h-4 w-4" />
-            Cadeaulijst delen
-          </Button>
+          <>
+            {isEditor && activeTab === 'lijst' && (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Item toevoegen
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setDeelOpen(true)}>
+              <Share2 className="h-4 w-4" />
+              Cadeaulijst delen
+            </Button>
+          </>
+        }
+        fab={
+          isEditor && activeTab === 'lijst'
+            ? { label: 'Item toevoegen', onClick: openNieuw }
+            : undefined
         }
       />
       <RegistryDeelModal open={deelOpen} onOpenChange={setDeelOpen} />
+      {isEditor && (
+        <RegistryItemForm open={formOpen} onOpenChange={setFormOpen} initial={editItem} />
+      )}
 
       {/* Tab bar */}
       <div className="mb-6 flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
@@ -89,7 +117,9 @@ export function CadeaulijstShell() {
         ))}
       </div>
 
-      {activeTab === 'lijst' && <RegistryLijstbeheer isEditor={isEditor} />}
+      {activeTab === 'lijst' && (
+        <RegistryLijstbeheer isEditor={isEditor} onNew={openNieuw} onEdit={openBewerk} />
+      )}
       {activeTab === 'overzicht' && <RegistryOverzicht isEditor={isEditor} />}
       {activeTab === 'instellingen' && <RegistryInstellingen />}
       {activeTab === 'vormgeving' && <RegistryVormgeving />}
