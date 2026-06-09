@@ -32,9 +32,9 @@ export function FloatingAddButton({ label, onClick, visible }: FloatingAddButton
         type="button"
         onClick={onClick}
         aria-label={label}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg transition-[transform,background-color] duration-150 ease-out hover:scale-105 hover:bg-rose-500 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg transition-[transform,background-color] duration-150 ease-out hover:scale-105 hover:bg-rose-500 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 md:h-14 md:w-14"
       >
-        <Plus className="h-6 w-6" />
+        <Plus className="h-5 w-5 md:h-6 md:w-6" />
       </button>
     </div>
   )
