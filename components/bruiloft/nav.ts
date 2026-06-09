@@ -3,11 +3,11 @@ import {
   Armchair,
   CalendarClock,
   ClipboardList,
-  Compass,
   Gift,
   Globe,
   LayoutDashboard,
   ListChecks,
+  Search,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -30,8 +30,8 @@ export interface NavItem {
 const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
-const leveranciers: NavItem = { label: 'Leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
-const ontdekken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Compass, module: 'leveranciers' }
+const mijnLeveranciers: NavItem = { label: 'Mijn leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
+const leverancierZoeken: NavItem = { label: 'Leverancier zoeken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
@@ -49,8 +49,8 @@ export const NAV_ITEMS: NavItem[] = [
   activiteit,
   taken,
   budget,
-  leveranciers,
-  ontdekken,
+  mijnLeveranciers,
+  leverancierZoeken,
   draaiboek,
   gasten,
   tafels,
@@ -63,13 +63,21 @@ export const NAV_ITEMS: NavItem[] = [
 // Top-niveau secties (horizontaal in de donkere header, à la Riley & Grey).
 // Elke sectie heeft (optioneel) een sub-navigatie die in de linker zijbalk
 // verschijnt zodra de sectie actief is.
+// Optionele subgroep binnen een sectie: een (niet-klikbare) tekstkop met
+// eigen items. Wordt door de Sidebar als losse kop + items gerenderd.
+export interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
 export interface NavSection {
   key: string
   label: string
   icon: LucideIcon
   href: string
-  items: NavItem[]
+  items: NavItem[] // platte lijst (lookups, actief-detectie, mobiel)
   module: Module
+  groups?: NavGroup[] // indien gezet: zijbalk toont deze subkoppen i.p.v. één sectielabel
 }
 
 export const NAV_SECTIONS: NavSection[] = [
@@ -86,16 +94,20 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, leveranciers, draaiboek],
+    items: [taken, budget, draaiboek],
     module: 'taken',
   },
   {
-    key: 'ontdekken',
-    label: 'Ontdekken',
-    icon: Compass,
-    href: '/bruiloft/ontdekken',
-    items: [ontdekken],
+    key: 'leveranciers',
+    label: 'Leveranciers',
+    icon: Store,
+    href: '/bruiloft/leveranciers',
+    items: [mijnLeveranciers, leverancierZoeken],
     module: 'leveranciers',
+    groups: [
+      { label: 'Leveranciers', items: [mijnLeveranciers] },
+      { label: 'Ontdekken', items: [leverancierZoeken] },
+    ],
   },
   {
     key: 'gasten',
@@ -142,10 +154,14 @@ export function visibleItems(items: NavItem[], permissions: PermissionMap): NavI
   return items.filter((i) => canView(permissions, i.module))
 }
 
-// Top-secties die voor de gebruiker zichtbaar zijn (filtert ook lege secties).
+// Top-secties die voor de gebruiker zichtbaar zijn (filtert ook lege secties
+// en lege subgroepen).
 export function visibleSections(permissions: PermissionMap): NavSection[] {
   return NAV_SECTIONS.map((s) => ({
     ...s,
     items: visibleItems(s.items, permissions),
+    groups: s.groups
+      ?.map((g) => ({ ...g, items: visibleItems(g.items, permissions) }))
+      .filter((g) => g.items.length > 0),
   })).filter((s) => s.items.length > 0)
 }
