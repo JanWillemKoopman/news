@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   Globe,
   LayoutGrid,
@@ -10,6 +11,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Search,
   Store,
   Trash2,
   User,
@@ -85,11 +87,18 @@ export default function LeveranciersPage() {
         titel="Leveranciers en locaties"
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
         actie={
-          kanBewerken ? (
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Leverancier toevoegen
+          <>
+            <Button asChild variant="outline">
+              <Link href="/bruiloft/ontdekken">
+                <Search className="h-4 w-4" /> Leverancier zoeken
+              </Link>
             </Button>
-          ) : undefined
+            {kanBewerken ? (
+              <Button onClick={openNieuw}>
+                <Plus className="h-4 w-4" /> Leverancier toevoegen
+              </Button>
+            ) : null}
+          </>
         }
       />
 
