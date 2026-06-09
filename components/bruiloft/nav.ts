@@ -86,8 +86,16 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, leveranciers, ontdekken, draaiboek],
+    items: [taken, budget, leveranciers, draaiboek],
     module: 'taken',
+  },
+  {
+    key: 'ontdekken',
+    label: 'Ontdekken',
+    icon: Compass,
+    href: '/bruiloft/ontdekken',
+    items: [ontdekken],
+    module: 'leveranciers',
   },
   {
     key: 'gasten',
