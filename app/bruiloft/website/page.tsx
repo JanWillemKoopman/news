@@ -122,17 +122,12 @@ export default function WebsitePage() {
           actie={
             <div className="flex items-center gap-3">
               <SaveStatus />
-              {publiekeUrl ? (
+              {publiekeUrl && (
                 <Button variant="outline" size="sm" asChild>
                   <a href={publiekeUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
                     <span>Bekijk website</span>
                   </a>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  <ExternalLink className="h-4 w-4" />
-                  <span>Bekijk website</span>
                 </Button>
               )}
             </div>
