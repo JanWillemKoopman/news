@@ -235,6 +235,7 @@ export default function GastenPage() {
             />
           </>
         }
+        fab={kanBewerken ? { label: 'Gast toevoegen', onClick: openNieuw } : undefined}
       />
 
       {/* StatsStrip pas tonen bij genoeg gasten zodat de statistieken betekenisvol zijn. */}

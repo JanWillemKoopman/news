@@ -102,6 +102,7 @@ export default function DraaiboekPage() {
             )}
           </>
         }
+        fab={kanBewerken ? { label: 'Onderdeel toevoegen', onClick: openNieuw } : undefined}
       />
 
       <div className="mb-6 flex flex-wrap gap-3">

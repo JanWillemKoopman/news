@@ -100,6 +100,7 @@ export default function LeveranciersPage() {
             ) : null}
           </>
         }
+        fab={kanBewerken ? { label: 'Leverancier toevoegen', onClick: openNieuw } : undefined}
       />
 
       {vendors.length > 0 && (() => {

@@ -74,6 +74,7 @@ export default function TafelsPage() {
             )}
           </>
         }
+        fab={kanBewerken ? { label: 'Tafel toevoegen', onClick: openNieuw } : undefined}
       />
 
       {tables.length > 0 ? (

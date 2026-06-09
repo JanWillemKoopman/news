@@ -112,6 +112,7 @@ export default function BudgetPage() {
             />
           </>
         }
+        fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />
 
       <AIBudgetAdvies open={adviesOpen} onClose={() => setAdviesOpen(false)} />

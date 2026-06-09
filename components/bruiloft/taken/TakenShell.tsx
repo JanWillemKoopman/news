@@ -237,6 +237,7 @@ export function TakenShell() {
             <Plus className="h-4 w-4" /> Taak toevoegen
           </Button>
         }
+        fab={{ label: 'Taak toevoegen', onClick: openNieuw }}
       />
 
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
