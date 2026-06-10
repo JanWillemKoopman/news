@@ -1,21 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
-
-const confirmRateMap = new Map<string, { count: number; reset: number }>()
-
-function checkConfirmRateLimit(id: string): boolean {
-  const now = Date.now()
-  const entry = confirmRateMap.get(id)
-  if (!entry || now > entry.reset) {
-    confirmRateMap.set(id, { count: 1, reset: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 5) return false
-  entry.count++
-  return true
-}
 import {
   renderRegistryContributionPendingEmail,
   renderRegistryNewContributionCoupleEmail,
@@ -24,32 +11,40 @@ import { getResend, FROM_ADDRESS } from '@/lib/email/resend'
 
 const bodySchema = z.object({
   contribution_id: z.string().uuid(),
+  confirmation_token: z.string().min(1),
   payment_method: z.enum(['bank_transfer', 'payment_link']),
 })
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const rateLimit = await checkRateLimit(`registry:confirm:${ip}`, 5, 60 * 60)
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })
+  }
+
   const raw = await request.json().catch(() => null)
   const parsed = bodySchema.safeParse(raw)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ongeldige invoer' }, { status: 400 })
   }
 
-  const { contribution_id, payment_method } = parsed.data
-
-  if (!checkConfirmRateLimit(contribution_id)) {
-    return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })
-  }
+  const { contribution_id, confirmation_token, payment_method } = parsed.data
 
   const admin = createAdminClient()
   const rawAdmin = createRawAdminClient()
 
   const { data: contribution } = await rawAdmin
     .from('registry_contributions')
-    .select('id, guest_name, guest_email, amount, payment_reference, item_id')
+    .select('id, guest_name, guest_email, amount, payment_reference, item_id, confirmation_token')
     .eq('id', contribution_id)
     .maybeSingle()
 
   if (!contribution) return NextResponse.json({ error: 'Bijdrage niet gevonden' }, { status: 404 })
+
+  // Verify the caller is the one who created the contribution
+  if (!contribution.confirmation_token || contribution.confirmation_token !== confirmation_token) {
+    return NextResponse.json({ error: 'Ongeldige bevestigingscode' }, { status: 403 })
+  }
 
   const { data: item } = await rawAdmin
     .from('registry_items')

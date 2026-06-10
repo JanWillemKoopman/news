@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -20,20 +21,6 @@ export interface AITaakSuggestie {
 export interface AITakenAdvies {
   samenvatting: string
   taken: AITaakSuggestie[]
-}
-
-const rateMap = new Map<string, { count: number; reset: number }>()
-
-function checkRateLimit(weddingId: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(weddingId)
-  if (!entry || now > entry.reset) {
-    rateMap.set(weddingId, { count: 1, reset: now + 60 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 10) return false
-  entry.count++
-  return true
 }
 
 function buildTakenPrompt(ctx: AIWeddingContext, bestaandeTaken: string[]): string {
@@ -123,7 +110,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  if (!checkRateLimit(user.id)) {
+  const rl = await checkRateLimit(`ai:taken:${user.id}`, 10, 60 * 60)
+  if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Te veel verzoeken, probeer het over een uur opnieuw.' },
       { status: 429 }
