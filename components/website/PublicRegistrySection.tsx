@@ -227,7 +227,7 @@ function GiftItem({ item, slug }: { item: PublicRegistryItem; slug: string }) {
 
 type ContributionState =
   | { phase: 'form' }
-  | { phase: 'payment'; contributionId: string; amountCents: number; reference: string; hasPaymentLink: boolean; paymentLink?: string; iban?: string; accountName?: string }
+  | { phase: 'payment'; contributionId: string; confirmationToken: string; amountCents: number; reference: string; hasPaymentLink: boolean; paymentLink?: string; iban?: string; accountName?: string }
   | { phase: 'done' }
 
 function FundItem({ item, slug }: { item: PublicRegistryItem; slug: string }) {
@@ -276,6 +276,7 @@ function FundItem({ item, slug }: { item: PublicRegistryItem; slug: string }) {
         success?: boolean
         error?: string
         contribution_id?: string
+        confirmation_token?: string
         payment_reference?: string
         has_payment_link?: boolean
         payment_link?: string
@@ -289,6 +290,7 @@ function FundItem({ item, slug }: { item: PublicRegistryItem; slug: string }) {
       setState({
         phase: 'payment',
         contributionId: json.contribution_id!,
+        confirmationToken: json.confirmation_token!,
         amountCents: effectiveAmountCents,
         reference: json.payment_reference!,
         hasPaymentLink: json.has_payment_link ?? false,
@@ -310,7 +312,11 @@ function FundItem({ item, slug }: { item: PublicRegistryItem; slug: string }) {
       await fetch('/api/registry/contribute/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contribution_id: state.contributionId, payment_method: method }),
+        body: JSON.stringify({
+          contribution_id: state.contributionId,
+          confirmation_token: state.confirmationToken,
+          payment_method: method,
+        }),
       })
       setState({ phase: 'done' })
     } catch {
