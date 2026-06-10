@@ -11,6 +11,7 @@ export interface OverflowMenuItem {
   icon?: LucideIcon
   onClick: () => void
   disabled?: boolean
+  danger?: boolean
 }
 
 interface OverflowMenuProps {
@@ -80,9 +81,14 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
                 setOpen(false)
                 item.onClick()
               }}
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+              className={cn(
+                'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
+                item.danger
+                  ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                  : 'text-foreground hover:bg-accent'
+              )}
             >
-              {item.icon ? <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+              {item.icon ? <item.icon className={cn('h-4 w-4 shrink-0', item.danger ? 'text-rose-500' : 'text-muted-foreground')} /> : null}
               {item.label}
             </button>
           ))}
