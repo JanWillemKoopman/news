@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   Field,
   Input,
+  MeerDetails,
   Modal,
   Select,
   Textarea,
@@ -80,6 +81,7 @@ export function TaskForm({
   const [deadlineFout, setDeadlineFout] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg(defaultDeadline)))
 
   React.useEffect(() => {
@@ -89,6 +91,7 @@ export function TaskForm({
       baseline.current = JSON.stringify(start)
       setTitelFout(false)
       setDeadlineFout(false)
+      setDetailsOpen(!!initial)
     }
   }, [open, initial, defaultDeadline])
 
@@ -149,19 +152,6 @@ export function TaskForm({
           />
         </Field>
 
-        <Field label="Omschrijving" htmlFor="oms">
-          <Textarea
-            id="oms"
-            value={form.omschrijving}
-            onChange={(e) => set('omschrijving', e.target.value)}
-            rows={2}
-          />
-        </Field>
-
-        <Field label="Subtaken">
-          <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
-        </Field>
-
         <Field label="Deadline" required error={deadlineFout ? 'Kies een deadline' : undefined}>
           <DateRoller
             value={form.deadline}
@@ -174,34 +164,48 @@ export function TaskForm({
           </p>
         ) : null}
 
-        <Field label="Status" htmlFor="st">
+        <Field label="Prioriteit" htmlFor="prio">
           <Select
-            id="st"
-            value={form.status}
-            onChange={(e) => set('status', e.target.value as NewTask['status'])}
+            id="prio"
+            value={form.prioriteit}
+            onChange={(e) => set('prioriteit', e.target.value as NewTask['prioriteit'])}
           >
-            {TASK_STATUSSEN.map((s) => (
-              <option key={s} value={s}>
-                {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
+            {PRIORITEITEN.map((p) => (
+              <option key={p} value={p}>
+                {p}
               </option>
             ))}
           </Select>
         </Field>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Prioriteit" htmlFor="prio">
+        <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
+          <Field label="Omschrijving" htmlFor="oms">
+            <Textarea
+              id="oms"
+              value={form.omschrijving}
+              onChange={(e) => set('omschrijving', e.target.value)}
+              rows={2}
+            />
+          </Field>
+
+          <Field label="Subtaken">
+            <SubtakenList subtaken={form.subtaken} onChange={(s) => set('subtaken', s)} />
+          </Field>
+
+          <Field label="Status" htmlFor="st">
             <Select
-              id="prio"
-              value={form.prioriteit}
-              onChange={(e) => set('prioriteit', e.target.value as NewTask['prioriteit'])}
+              id="st"
+              value={form.status}
+              onChange={(e) => set('status', e.target.value as NewTask['status'])}
             >
-              {PRIORITEITEN.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+              {TASK_STATUSSEN.map((s) => (
+                <option key={s} value={s}>
+                  {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </option>
               ))}
             </Select>
           </Field>
+
           <Field label="Toegewezen aan">
             <AssigneePicker
               value={form.assignees}
@@ -209,38 +213,38 @@ export function TaskForm({
               onChange={(ids: ID[]) => set('assignees', ids)}
             />
           </Field>
-        </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Leverancier (optioneel)" htmlFor="ven">
-            <Select
-              id="ven"
-              value={form.vendorId ?? ''}
-              onChange={(e) => set('vendorId', e.target.value || undefined)}
-            >
-              <option value="">Geen</option>
-              {vendors.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.naam}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Budgetitem (optioneel)" htmlFor="bud">
-            <Select
-              id="bud"
-              value={form.budgetItemId ?? ''}
-              onChange={(e) => set('budgetItemId', e.target.value || undefined)}
-            >
-              <option value="">Geen</option>
-              {budgetItems.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.omschrijving || b.categorie}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Leverancier" htmlFor="ven">
+              <Select
+                id="ven"
+                value={form.vendorId ?? ''}
+                onChange={(e) => set('vendorId', e.target.value || undefined)}
+              >
+                <option value="">Geen</option>
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.naam}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Budgetitem" htmlFor="bud">
+              <Select
+                id="bud"
+                value={form.budgetItemId ?? ''}
+                onChange={(e) => set('budgetItemId', e.target.value || undefined)}
+              >
+                <option value="">Geen</option>
+                {budgetItems.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.omschrijving || b.categorie}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </MeerDetails>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => sluit(false)}>

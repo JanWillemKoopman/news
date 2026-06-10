@@ -8,6 +8,7 @@ import {
   Button,
   Field,
   Input,
+  MeerDetails,
   Modal,
   Textarea,
   useToast,
@@ -47,6 +48,7 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
   const [uploading, setUploading] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (open) {
@@ -62,6 +64,7 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
       setImageFile(null)
       setImagePreview(null)
       setErrors({})
+      setDetailsOpen(!!initial)
     }
   }, [open, initial])
 
@@ -188,115 +191,119 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
           />
         </Field>
 
-        <Field label="Omschrijving">
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="Optionele toelichting voor jullie gasten..."
-          />
-        </Field>
-
-        {/* Image */}
-        <div className="space-y-1.5">
-          <p className="text-sm font-medium text-foreground">Afbeelding</p>
-          <div className="flex gap-2">
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? 'Uploaden…' : 'Afbeelding uploaden'}
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleImageFile} />
-            </label>
-          </div>
-          {errors.image && <p className="text-xs text-destructive">{errors.image}</p>}
-          {(imagePreview ?? imageUrl) && (
-            <div className="relative inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imagePreview ?? imageUrl} alt="" className="h-24 w-24 rounded-lg object-cover" />
-              <button
-                type="button"
-                onClick={() => { setImageFile(null); setImagePreview(null); setImageUrl('') }}
-                className="absolute -right-1.5 -top-1.5 rounded-full bg-background border border-border p-0.5 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border-t border-border" />
-            <span className="text-xs text-muted-foreground">of</span>
-            <div className="flex-1 border-t border-border" />
-          </div>
-          <Input
-            value={imageUrl}
-            onChange={(e) => { setImageUrl(e.target.value); setImageFile(null); setImagePreview(null) }}
-            placeholder="https://..."
-          />
-        </div>
-
-        {type === 'gift' && (
-          <Field label="Link naar webshop">
+        {type === 'fund' && (
+          <Field label="Streefbedrag (€)" required error={errors.targetAmount}>
             <Input
-              value={shopUrl}
-              onChange={(e) => setShopUrl(e.target.value)}
-              placeholder="https://bol.com/..."
-              type="url"
+              value={targetAmount}
+              onChange={(e) => setTargetAmount(e.target.value)}
+              placeholder="500"
+              type="number"
+              min="1"
+              step="1"
             />
           </Field>
         )}
 
-        {type === 'fund' && (
-          <>
-            <Field label="Streefbedrag (€)" required error={errors.targetAmount}>
-              <Input
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
-                placeholder="500"
-                type="number"
-                min="1"
-                step="1"
-              />
-            </Field>
+        <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
+          <Field label="Omschrijving">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="Optionele toelichting voor jullie gasten..."
+            />
+          </Field>
 
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-foreground">Gesuggereerde bijdragebedragen</p>
-              <div className="flex flex-wrap gap-2">
-                {SUGGESTED_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleSuggested(opt.value)}
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${suggestedAmounts.includes(opt.value) ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-border text-muted-foreground hover:border-rose-300'}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Aangepast bedrag (€):</span>
-                <Input
-                  value={customSuggested}
-                  onChange={(e) => setCustomSuggested(e.target.value)}
-                  placeholder="75"
-                  type="number"
-                  min="1"
-                  className="w-24"
-                />
-              </div>
+          {/* Afbeelding */}
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-foreground">Afbeelding</p>
+            <div className="flex gap-2">
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploading ? 'Uploaden…' : 'Afbeelding uploaden'}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleImageFile} />
+              </label>
             </div>
+            {errors.image && <p className="text-xs text-destructive">{errors.image}</p>}
+            {(imagePreview ?? imageUrl) && (
+              <div className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview ?? imageUrl} alt="" className="h-24 w-24 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setImageFile(null); setImagePreview(null); setImageUrl('') }}
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-background border border-border p-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 border-t border-border" />
+              <span className="text-xs text-muted-foreground">of</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+            <Input
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImageFile(null); setImagePreview(null) }}
+              placeholder="https://..."
+            />
+          </div>
 
-            <Field label="Betaallink (optioneel)">
+          {type === 'gift' && (
+            <Field label="Link naar webshop">
               <Input
-                value={paymentLink}
-                onChange={(e) => setPaymentLink(e.target.value)}
-                placeholder="https://tikkie.me/..."
+                value={shopUrl}
+                onChange={(e) => setShopUrl(e.target.value)}
+                placeholder="https://bol.com/..."
                 type="url"
               />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Maak een Tikkie aan en plak de link hier. Gasten worden direct doorgestuurd.
-              </p>
             </Field>
-          </>
-        )}
+          )}
+
+          {type === 'fund' && (
+            <>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-foreground">Gesuggereerde bijdragebedragen</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTED_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleSuggested(opt.value)}
+                      className={`rounded-full border px-3 py-1 text-sm transition-colors ${suggestedAmounts.includes(opt.value) ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-border text-muted-foreground hover:border-rose-300'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Aangepast bedrag (€):</span>
+                  <Input
+                    value={customSuggested}
+                    onChange={(e) => setCustomSuggested(e.target.value)}
+                    placeholder="75"
+                    type="number"
+                    min="1"
+                    className="w-24"
+                  />
+                </div>
+              </div>
+
+              <Field label="Betaallink (optioneel)">
+                <Input
+                  value={paymentLink}
+                  onChange={(e) => setPaymentLink(e.target.value)}
+                  placeholder="https://tikkie.me/..."
+                  type="url"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Maak een Tikkie aan en plak de link hier. Gasten worden direct doorgestuurd.
+                </p>
+              </Field>
+            </>
+          )}
+        </MeerDetails>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

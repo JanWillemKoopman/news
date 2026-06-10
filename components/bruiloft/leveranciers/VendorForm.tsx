@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   Field,
   Input,
+  MeerDetails,
   Modal,
   Select,
   Textarea,
@@ -66,6 +67,7 @@ export function VendorForm({
   const [naamFout, setNaamFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
 
   React.useEffect(() => {
@@ -74,6 +76,7 @@ export function VendorForm({
       setForm(start)
       baseline.current = JSON.stringify(start)
       setNaamFout(false)
+      setDetailsOpen(!!initial)
     }
   }, [open, initial])
 
@@ -175,71 +178,73 @@ export function VendorForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Contactpersoon" htmlFor="cp">
-            <Input
-              id="cp"
-              value={form.contactpersoon}
-              onChange={(e) => set('contactpersoon', e.target.value)}
-              {...eigennaamInputProps}
+        <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Contactpersoon" htmlFor="cp">
+              <Input
+                id="cp"
+                value={form.contactpersoon}
+                onChange={(e) => set('contactpersoon', e.target.value)}
+                {...eigennaamInputProps}
+              />
+            </Field>
+            <Field label="Telefoon" htmlFor="tel">
+              <Input id="tel" type="tel" autoComplete="tel" value={form.telefoon} onChange={(e) => set('telefoon', e.target.value)} />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="E-mail" htmlFor="mail">
+              <Input
+                id="mail"
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+              />
+            </Field>
+            <Field label="Website" htmlFor="web">
+              <Input id="web" type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.website} onChange={(e) => set('website', e.target.value)} />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Offerteprijs (€)" htmlFor="bedrag">
+              <Input
+                id="bedrag"
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.geoffreerdBedrag || ''}
+                onChange={(e) => set('geoffreerdBedrag', Number(e.target.value) || 0)}
+              />
+            </Field>
+            <Field label="Gekoppeld budgetitem" htmlFor="bud">
+              <Select
+                id="bud"
+                value={form.budgetItemId ?? ''}
+                onChange={(e) => set('budgetItemId', e.target.value || undefined)}
+              >
+                <option value="">Geen</option>
+                {budgetItems.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.omschrijving || b.categorie}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Notitie" htmlFor="not">
+            <Textarea
+              id="not"
+              value={form.notitie}
+              onChange={(e) => set('notitie', e.target.value)}
+              rows={3}
+              placeholder="Offertedetails, indrukken, afspraken…"
             />
           </Field>
-          <Field label="Telefoon" htmlFor="tel">
-            <Input id="tel" type="tel" autoComplete="tel" value={form.telefoon} onChange={(e) => set('telefoon', e.target.value)} />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="E-mail" htmlFor="mail">
-            <Input
-              id="mail"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={(e) => set('email', e.target.value)}
-            />
-          </Field>
-          <Field label="Website" htmlFor="web">
-            <Input id="web" type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.website} onChange={(e) => set('website', e.target.value)} />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Offerteprijs (€)" htmlFor="bedrag">
-            <Input
-              id="bedrag"
-              type="number"
-              min={0}
-              step="0.01"
-              value={form.geoffreerdBedrag || ''}
-              onChange={(e) => set('geoffreerdBedrag', Number(e.target.value) || 0)}
-            />
-          </Field>
-          <Field label="Gekoppeld budgetitem" htmlFor="bud">
-            <Select
-              id="bud"
-              value={form.budgetItemId ?? ''}
-              onChange={(e) => set('budgetItemId', e.target.value || undefined)}
-            >
-              <option value="">Geen</option>
-              {budgetItems.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.omschrijving || b.categorie}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-
-        <Field label="Notitie" htmlFor="not">
-          <Textarea
-            id="not"
-            value={form.notitie}
-            onChange={(e) => set('notitie', e.target.value)}
-            rows={3}
-            placeholder="Offertedetails, indrukken, afspraken…"
-          />
-        </Field>
+        </MeerDetails>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => sluit(false)}>
