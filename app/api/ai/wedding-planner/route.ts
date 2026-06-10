@@ -68,9 +68,11 @@ type AIWeddingContext = ReturnType<typeof buildAIContext>
 
 function buildFingerprint(ctx: AIWeddingContext): string {
   const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
+  const voortgangHash = Object.entries(ctx.bruidspaar.geregeldeZaken).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}:${v}`).join(',')
   return [
     ctx.bruidspaar.trouwdatum,
     ctx.bruidspaar.locatie,
+    ctx.bruidspaar.ceremonietype ?? '',
     ctx.taken.open,
     ctx.taken.klaar,
     ctx.taken.achterstallig,
@@ -80,6 +82,7 @@ function buildFingerprint(ctx: AIWeddingContext): string {
     ctx.gasten.bevestigd,
     geboekt,
     ctx.draaiboek.aantalItems,
+    voortgangHash,
   ].join(':')
 }
 

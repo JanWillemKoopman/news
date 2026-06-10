@@ -3,7 +3,7 @@
 // tijdsblok-label volgt automatisch uit deriveTijdsblok.
 
 import { addDays, addMonths, deriveTijdsblok, toISODate } from './timeblocks'
-import type { Prioriteit, TaskInput, ToegewezenAan, Wedding } from './types'
+import type { Prioriteit, TaskInput, ToegewezenAan, VoortgangCategorie, VoortgangStatus, Wedding } from './types'
 
 type Offset = { maanden: number } | { dagen: number }
 
@@ -627,7 +627,34 @@ export const TEMPLATE_TASKS: TemplateTask[] = [
   },
 ]
 
+// Mapping van voortgangscategorie → template-taaktitels die als 'klaar' worden
+// aangemaakt als de gebruiker aangeeft dat ze dit al hebben geregeld.
+const VOORTGANG_TAAK_MAPPING: Record<VoortgangCategorie, string[]> = {
+  locatie: ['Trouwlocatie zoeken en boeken'],
+  fotograaf: ['Fotograaf vastleggen'],
+  videograaf: ['Videograaf zoeken en boeken'],
+  catering: ['Catering kiezen en boeken'],
+  dj_of_band: ['Muziek of DJ boeken'],
+  trouwambtenaar: ['Trouwambtenaar (Babs) regelen', 'Ondertrouw en ceremonie bij de gemeente regelen'],
+  trouwkleding: ['Trouwkleding partner 1 uitzoeken', 'Trouwkleding partner 2 uitzoeken'],
+  bloemist: ['Bloemist regelen'],
+}
+
+function statusVoorTaak(
+  titel: string,
+  geregeldeZaken: Partial<Record<VoortgangCategorie, VoortgangStatus>>
+): 'open' | 'bezig' | 'klaar' {
+  for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
+    if (VOORTGANG_TAAK_MAPPING[cat]?.includes(titel)) {
+      if (status === 'geboekt') return 'klaar'
+      if (status === 'bezig') return 'bezig'
+    }
+  }
+  return 'open'
+}
+
 export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
+  const geregeldeZaken = wedding.geregeldeZaken ?? {}
   return TEMPLATE_TASKS.map((t) => {
     const deadlineDate =
       'maanden' in t.offset
@@ -640,7 +667,7 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
       omschrijving: t.omschrijving,
       deadline,
       tijdsblok: deriveTijdsblok(deadline, wedding.trouwdatum),
-      status: 'open',
+      status: statusVoorTaak(t.titel, geregeldeZaken),
       prioriteit: t.prioriteit,
       toegewezenAan: t.toegewezenAan,
       assignees: [],

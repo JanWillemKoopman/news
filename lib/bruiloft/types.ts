@@ -9,6 +9,20 @@ export type ISODateTime = string // volledige ISO timestamp
 
 // --- Wedding ---------------------------------------------------------------
 
+export type VoortgangStatus = 'geboekt' | 'bezig' | 'te_doen'
+
+export type VoortgangCategorie =
+  | 'locatie'
+  | 'fotograaf'
+  | 'videograaf'
+  | 'catering'
+  | 'dj_of_band'
+  | 'trouwambtenaar'
+  | 'trouwkleding'
+  | 'bloemist'
+
+export type CeremonieType = 'gemeentelijk' | 'religieus' | 'symbolisch'
+
 export interface Wedding {
   id: ID
   partner1Naam: string
@@ -19,6 +33,8 @@ export interface Wedding {
   totaalBudget: number // in euro
   aantalDaggasten: number // geschat
   aantalAvondgasten: number // geschat
+  ceremonietype: CeremonieType | null
+  geregeldeZaken: Partial<Record<VoortgangCategorie, VoortgangStatus>>
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }

@@ -8,6 +8,7 @@ import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  CeremonieType,
   Guest,
   GuestInput,
   PaymentTerm,
@@ -23,6 +24,8 @@ import type {
   TaskInput,
   Vendor,
   VendorInput,
+  VoortgangCategorie,
+  VoortgangStatus,
   Wedding,
   WeddingInput,
   FaqItem,
@@ -51,6 +54,8 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     totaalBudget: num(r.totaal_budget),
     aantalDaggasten: r.aantal_daggasten,
     aantalAvondgasten: r.aantal_avondgasten,
+    ceremonietype: (r.ceremonietype as CeremonieType | null) ?? null,
+    geregeldeZaken: (r.geregelde_zaken as Partial<Record<VoortgangCategorie, VoortgangStatus>>) ?? {},
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -66,6 +71,8 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
   if (p.totaalBudget !== undefined) r.totaal_budget = p.totaalBudget
   if (p.aantalDaggasten !== undefined) r.aantal_daggasten = p.aantalDaggasten
   if (p.aantalAvondgasten !== undefined) r.aantal_avondgasten = p.aantalAvondgasten
+  if (p.ceremonietype !== undefined) r.ceremonietype = p.ceremonietype
+  if (p.geregeldeZaken !== undefined) r.geregelde_zaken = p.geregeldeZaken as Record<string, string>
   return r
 }
 

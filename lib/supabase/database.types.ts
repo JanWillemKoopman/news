@@ -775,8 +775,10 @@ export type Database = {
         Row: {
           aantal_avondgasten: number
           aantal_daggasten: number
+          ceremonietype: string | null
           created_at: string
           created_by: string | null
+          geregelde_zaken: Record<string, string>
           id: string
           locatie: string
           partner1_naam: string
@@ -789,8 +791,10 @@ export type Database = {
         Insert: {
           aantal_avondgasten?: number
           aantal_daggasten?: number
+          ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string
           partner1_naam?: string
@@ -803,8 +807,10 @@ export type Database = {
         Update: {
           aantal_avondgasten?: number
           aantal_daggasten?: number
+          ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string
           partner1_naam?: string
