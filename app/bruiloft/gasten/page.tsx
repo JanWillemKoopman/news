@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -93,9 +93,10 @@ export default function GastenPage() {
     try {
       await navigator.clipboard.writeText(tekst)
       setGekopieerd(id)
+      toast({ title: 'Link gekopieerd', description: 'De RSVP-link staat nu in je klembord.', variant: 'success' })
       setTimeout(() => setGekopieerd(null), 1500)
     } catch {
-      // klembord niet beschikbaar
+      toast({ title: 'Kopiëren mislukt', description: 'Geef toegang tot het klembord en probeer opnieuw.', variant: 'error' })
     }
   }
 
@@ -330,48 +331,38 @@ export default function GastenPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            {g.rsvpCode ? (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label="Kopieer RSVP-link"
-                                  disabled={!origin}
-                                  onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}
-                                >
-                                  {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label="Stuur RSVP-link"
-                                  onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </Button>
-                              </>
-                            ) : null}
-                            {kanBewerken && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label="Bewerken"
-                                  onClick={() => openBewerk(g)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label="Verwijderen"
-                                  onClick={() => setDelGuest(g)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
+                          <div className="flex justify-end">
+                            <OverflowMenu
+                              label="Acties voor deze gast"
+                              items={[
+                                ...(g.rsvpCode ? [
+                                  {
+                                    label: 'Kopieer RSVP-link',
+                                    icon: Copy,
+                                    disabled: !origin,
+                                    onClick: () => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`),
+                                  },
+                                  {
+                                    label: 'Stuur RSVP-link per e-mail',
+                                    icon: Mail,
+                                    onClick: () => { setRsvpTarget(g); setRsvpEmail('') },
+                                  },
+                                ] : []),
+                                ...(kanBewerken ? [
+                                  {
+                                    label: 'Bewerken',
+                                    icon: Pencil,
+                                    onClick: () => openBewerk(g),
+                                  },
+                                  {
+                                    label: 'Verwijderen',
+                                    icon: Trash2,
+                                    danger: true,
+                                    onClick: () => setDelGuest(g),
+                                  },
+                                ] : []),
+                              ]}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -380,70 +371,67 @@ export default function GastenPage() {
                 </table>
               </div>
 
-              {/* Mobiel: kaartlijst */}
-              <div className="space-y-0 divide-y divide-border md:hidden">
+              {/* Mobiel: compacte lijstweergave */}
+              <div className="divide-y divide-border md:hidden">
                 {zichtbaar.map((g) => (
-                  <div key={g.id} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">
-                          {g.voornaam} {g.achternaam}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {categorieLabelVoor(g.categorie, p1, p2)} · {g.gasttype}
-                        </p>
-                      </div>
-                      <select
-                        value={g.rsvpStatus}
-                        onChange={async (e) => {
-                          try {
-                            await updateGuest(g.id, { rsvpStatus: e.target.value as Guest['rsvpStatus'] })
-                          } catch {
-                            toast({ title: 'Bijwerken mislukt', variant: 'error' })
-                          }
-                        }}
-                        className="rounded-md border border-transparent bg-transparent text-sm text-foreground hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-primary px-1 py-0.5 cursor-pointer"
-                      >
-                        {RSVP_STATUSSEN.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {[
-                          g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
-                          g.aantalKinderen > 0 ? `${g.aantalKinderen} kind(eren)` : null,
-                          g.dieetwensen || null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
+                  <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+                    {/* Naam + details */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground text-sm">
+                        {g.voornaam} {g.achternaam}
                       </p>
-                    ) : null}
-                    {(g.rsvpCode || kanBewerken) ? (
-                      <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2">
-                        {g.rsvpCode ? (
-                          <>
-                            <Button variant="ghost" size="sm" disabled={!origin} onClick={() => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`)}>
-                              {gekopieerd === `copy-${g.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                              {gekopieerd === `copy-${g.id}` ? 'Gekopieerd' : 'Kopieer'}
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => { setRsvpTarget(g); setRsvpEmail('') }}>
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          </>
+                      <p className="mt-0.5 text-xs text-muted-foreground truncate">
+                        {categorieLabelVoor(g.categorie, p1, p2)} · {g.gasttype}
+                        {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
+                          <> · {[
+                            g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
+                            g.aantalKinderen > 0 ? `${g.aantalKinderen} kind(eren)` : null,
+                            g.dieetwensen || null,
+                          ].filter(Boolean).join(' · ')}</>
                         ) : null}
-                        {kanBewerken && (
-                          <>
-                            <Button variant="ghost" size="sm" onClick={() => openBewerk(g)}>
-                              <Pencil className="h-4 w-4" /> Bewerken
-                            </Button>
-                            <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelGuest(g)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      </p>
+                    </div>
+
+                    {/* RSVP-select */}
+                    <RsvpSelect
+                      value={g.rsvpStatus}
+                      onChange={(v) => updateRsvp(g, v)}
+                    />
+
+                    {/* Actiemenu */}
+                    {(g.rsvpCode || kanBewerken) ? (
+                      <OverflowMenu
+                        label="Acties voor deze gast"
+                        align="right"
+                        items={[
+                          ...(g.rsvpCode ? [
+                            {
+                              label: 'Kopieer RSVP-link',
+                              icon: Copy,
+                              disabled: !origin,
+                              onClick: () => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`),
+                            },
+                            {
+                              label: 'Stuur RSVP-link per e-mail',
+                              icon: Mail,
+                              onClick: () => { setRsvpTarget(g); setRsvpEmail('') },
+                            },
+                          ] : []),
+                          ...(kanBewerken ? [
+                            {
+                              label: 'Bewerken',
+                              icon: Pencil,
+                              onClick: () => openBewerk(g),
+                            },
+                            {
+                              label: 'Verwijderen',
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () => setDelGuest(g),
+                            },
+                          ] : []),
+                        ]}
+                      />
                     ) : null}
                   </div>
                 ))}
