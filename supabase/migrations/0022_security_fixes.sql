@@ -83,6 +83,13 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- Verwijder bestaande te ruime policies (controleerden alleen bucket_id,
+-- geen eigenaarschap → elke ingelogde gebruiker kon andermans afbeeldingen
+-- uploaden/verwijderen).
+DROP POLICY IF EXISTS "registry images insert" ON storage.objects;
+DROP POLICY IF EXISTS "registry images update" ON storage.objects;
+DROP POLICY IF EXISTS "registry images delete" ON storage.objects;
+
 DROP POLICY IF EXISTS "registry_images_public_read" ON storage.objects;
 DROP POLICY IF EXISTS "registry_images_upload"      ON storage.objects;
 DROP POLICY IF EXISTS "registry_images_delete"      ON storage.objects;
