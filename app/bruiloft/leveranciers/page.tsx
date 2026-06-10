@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { VendorForm } from '@/components/bruiloft/leveranciers/VendorForm'
 import {
   Button,
@@ -102,6 +103,8 @@ export default function LeveranciersPage() {
         }
         fab={kanBewerken ? { label: 'Leverancier toevoegen', onClick: openNieuw } : undefined}
       />
+
+      <AIInsightCard sectie="/bruiloft/leveranciers" />
 
       {vendors.length > 0 && (() => {
         const aantallen: Record<string, number> = {}

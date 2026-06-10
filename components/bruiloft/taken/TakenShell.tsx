@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
 import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
 import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
@@ -239,6 +240,8 @@ export function TakenShell() {
         }
         fab={{ label: 'Taak toevoegen', onClick: openNieuw }}
       />
+
+      <AIInsightCard sectie="/bruiloft/taken" />
 
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
 

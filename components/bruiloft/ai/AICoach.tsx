@@ -1,0 +1,253 @@
+'use client'
+
+import * as React from 'react'
+import Link from 'next/link'
+import { ArrowRight, BarChart3, ChevronRight, Lightbulb, RefreshCw, Sparkles, X } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { useBruiloftStore } from '@/store/bruiloftStore'
+import { Button, useToast } from '@/components/bruiloft/ui'
+import { geledenLabel, useAIAdvies } from './useAIAdvies'
+import type { AIAdvies } from '@/app/api/ai/advice/route'
+
+// AI-coach: app-breed bereikbaar via een bescheiden zwevende knop rechtsonder.
+// Opent op desktop een zijpaneel rechts, op mobiel een bottom sheet. Toont
+// alle (niet-weggeklikte) adviezen uit de gedeelde advieslaag — geen extra
+// AI-calls. De knop vraagt alleen aandacht (badge) bij een kritiek advies.
+
+const TYPE_ICON: Record<AIAdvies['type'], typeof Sparkles> = {
+  actie: Sparkles,
+  benchmark: BarChart3,
+  tip: Lightbulb,
+}
+
+const URGENTIE_STIJL: Record<AIAdvies['urgentie'], string> = {
+  kritiek: 'bg-rose-100 text-rose-700',
+  binnenkort: 'bg-amber-100 text-amber-700',
+  normaal: 'bg-muted text-muted-foreground',
+}
+
+const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
+  kritiek: 'Dringend',
+  binnenkort: 'Binnenkort',
+  normaal: 'Plannen',
+}
+
+// Eén nudge per paginasessie, app-breed — meer wordt opdringerig.
+let nudgeAlGetoond = false
+
+export function AICoach() {
+  const [open, setOpen] = React.useState(false)
+  const { zichtbaar, loading, updatedAt, refresh, klikWeg } = useAIAdvies()
+  const { toast } = useToast()
+
+  const heeftKritiek = zichtbaar.some((a) => a.urgentie === 'kritiek')
+
+  // Scroll-lock + Escape zolang het paneel open is.
+  React.useEffect(() => {
+    if (!open) return
+    const vorige = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = vorige
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  // Moment-nudge: als er tijdens deze sessie een taak wordt afgerond en er
+  // nog adviezen klaarstaan, wijs daar één keer subtiel op via een toast.
+  const klaarAantal = useBruiloftStore(
+    (s) => s.tasks.filter((t) => t.status === 'klaar').length
+  )
+  const vorigKlaarAantal = React.useRef<number | null>(null)
+  React.useEffect(() => {
+    const vorig = vorigKlaarAantal.current
+    vorigKlaarAantal.current = klaarAantal
+    if (vorig === null || klaarAantal <= vorig) return
+    if (nudgeAlGetoond || open) return
+    const volgende = zichtbaar[0]
+    if (!volgende) return
+    nudgeAlGetoond = true
+    toast({
+      title: 'Mooi bezig! Taak afgerond.',
+      description: `Volgende suggestie van de AI-coach: ${volgende.titel}`,
+      action: { label: 'Bekijk advies', onClick: () => setOpen(true) },
+    })
+  }, [klaarAantal, open, zichtbaar, toast])
+
+  return (
+    <>
+      {/* Zwevende coach-knop — boven de FAB-positie zodat ze niet botsen. */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="AI-coach openen"
+        className={cn(
+          'fixed right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-rhino-800 text-white shadow-lg transition-[transform,background-color,opacity] duration-150 ease-out hover:scale-105 hover:bg-rhino-700 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rhino-800',
+          'bottom-[calc(8.75rem+env(safe-area-inset-bottom))] md:bottom-[5.75rem] md:right-6 md:h-12 md:w-12',
+          open && 'pointer-events-none opacity-0'
+        )}
+      >
+        <Sparkles className="h-5 w-5" />
+        {heeftKritiek ? (
+          <span
+            aria-hidden
+            className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white"
+          />
+        ) : null}
+      </button>
+
+      {open ? (
+        <div className="wedding fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-rhino-950/30 animate-overlay-in"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="AI-coach"
+            className={cn(
+              'absolute flex flex-col bg-card text-card-foreground shadow-xl',
+              // Mobiel: bottom sheet
+              'max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[85dvh] max-md:rounded-t-2xl max-md:animate-sheet-in',
+              // Desktop: zijpaneel rechts
+              'md:inset-y-0 md:right-0 md:w-[400px] md:border-l md:border-border md:animate-drawer-in'
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rhino-800 text-white">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="text-base font-semibold leading-tight text-foreground">AI-coach</h2>
+                  {updatedAt ? (
+                    <p className="text-xs text-muted-foreground">Bijgewerkt {geledenLabel(updatedAt)}</p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {!loading ? (
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    aria-label="Advies verversen"
+                    className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="AI-coach sluiten"
+                  className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Advieslijst */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {loading ? (
+                <div className="flex flex-col items-center gap-4 py-10">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
+                    <span className="text-sm text-muted-foreground">AI analyseert jullie planning…</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-400 [animation-delay:-0.15s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-500" />
+                  </div>
+                </div>
+              ) : zichtbaar.length > 0 ? (
+                <ul className="space-y-3">
+                  {zichtbaar.map((stap) => {
+                    const TypeIcon = TYPE_ICON[stap.type]
+                    return (
+                      <li key={stap.id} className="rounded-xl border border-border p-4">
+                        <div className="mb-1.5 flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                URGENTIE_STIJL[stap.urgentie]
+                              )}
+                            >
+                              {URGENTIE_LABEL[stap.urgentie]}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <TypeIcon className="h-3 w-3" />
+                              {stap.sectionLabel}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => klikWeg(stap)}
+                            aria-label="Advies wegklikken"
+                            className="-m-1 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="text-sm font-medium text-foreground">{stap.titel}</p>
+                        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                          {stap.omschrijving}
+                        </p>
+                        <Link
+                          href={stap.sectie}
+                          onClick={() => setOpen(false)}
+                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+                        >
+                          Bekijken
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <div className="py-10 text-center">
+                  <Sparkles className="mx-auto h-6 w-6 text-rose-300" />
+                  <p className="mt-3 text-sm font-medium text-foreground">Jullie zijn helemaal bij</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Geen nieuwe adviezen op dit moment. Ververs voor een frisse analyse.
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={refresh}>
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Verversen
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-border px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <Link
+                href="/bruiloft/ai-wedding-planner"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between rounded-lg bg-rhino-50 px-4 py-3 text-sm font-medium text-rhino-900 transition-colors hover:bg-rhino-100"
+              >
+                Volledige AI-analyse per onderdeel
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <p className="mt-3 text-xs text-muted-foreground">
+                <Sparkles className="mr-1 inline h-3 w-3 align-[-1px]" />
+                AI-advies — controleer belangrijke keuzes altijd zelf.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
+}

@@ -8,6 +8,7 @@ import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
+import { AICoach } from './ai/AICoach'
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { MobileNav } from './MobileNav'
@@ -188,6 +189,8 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       />
       <ProfielNudge />
       <InstallPrompt />
+      {/* App-brede AI-coach: zijpaneel op desktop, bottom sheet op mobiel. */}
+      <AICoach />
     </div>
   )
 }

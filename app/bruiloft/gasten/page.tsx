@@ -7,6 +7,7 @@ import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
 import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import {
   Button,
   ConfirmDialog,
@@ -238,6 +239,8 @@ export default function GastenPage() {
         }
         fab={kanBewerken ? { label: 'Gast toevoegen', onClick: openNieuw } : undefined}
       />
+
+      <AIInsightCard sectie="/bruiloft/gasten" />
 
       {/* StatsStrip pas tonen bij genoeg gasten zodat de statistieken betekenisvol zijn. */}
       {guests.length >= 5 ? <GastenStatsStrip guests={guests} /> : null}

@@ -4,6 +4,7 @@ import * as React from 'react'
 import { AlertTriangle, Armchair, Plus, Printer } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
 import { TableForm } from '@/components/bruiloft/tafels/TableForm'
 import {
@@ -76,6 +77,8 @@ export default function TafelsPage() {
         }
         fab={kanBewerken ? { label: 'Tafel toevoegen', onClick: openNieuw } : undefined}
       />
+
+      <AIInsightCard sectie="/bruiloft/tafels" />
 
       {tables.length > 0 ? (
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">

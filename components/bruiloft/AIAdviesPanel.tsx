@@ -4,12 +4,12 @@ import * as React from 'react'
 import Link from 'next/link'
 import { ChevronRight, RefreshCw, Sparkles } from 'lucide-react'
 
-import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import type { NextStep } from '@/lib/bruiloft/guidance'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Button, Card, CardContent, Skeleton } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { geledenLabel, useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
 interface AIAdviesPanelProps {
@@ -29,119 +29,18 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   normaal: 'Plannen',
 }
 
-// Sessiecache: voorkomt onnodige server-roundtrips bij navigatie binnen dezelfde tab.
-// De DB-cache in api/ai/advice handelt persistente caching af; dit is alleen de
-// in-memory laag voor de huidige browsersessie.
-const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number; updatedAt?: string }>()
-const CACHE_TTL = 60 * 60 * 1000 // 1 uur
-
-// Korte, warme "x geleden"-weergave voor de versheid van het advies.
-function geledenLabel(iso?: string): string {
-  if (!iso) return 'zojuist'
-  const verschil = Date.now() - new Date(iso).getTime()
-  if (!Number.isFinite(verschil) || verschil < 0) return 'zojuist'
-  const min = Math.floor(verschil / 60000)
-  if (min < 1) return 'zojuist'
-  if (min < 60) return `${min} min geleden`
-  const uur = Math.floor(min / 60)
-  if (uur < 24) return `${uur} uur geleden`
-  const dag = Math.floor(uur / 24)
-  return dag === 1 ? 'gisteren' : `${dag} dagen geleden`
-}
-
-function useFetchAIAdvies(weddingId: string | null) {
-  const wedding = useBruiloftStore((s) => s.wedding)
-  const tasks = useBruiloftStore((s) => s.tasks)
-  const vendors = useBruiloftStore((s) => s.vendors)
-  const budgetItems = useBruiloftStore((s) => s.budgetItems)
-  const guests = useBruiloftStore((s) => s.guests)
-  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
-
-  const [advies, setAdvies] = React.useState<AIAdvies[] | null>(() => {
-    if (!weddingId) return null
-    const cached = adviesCache.get(weddingId)
-    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.data
-    return null
-  })
-  const [updatedAt, setUpdatedAt] = React.useState<string | undefined>(() => {
-    if (!weddingId) return undefined
-    const cached = adviesCache.get(weddingId)
-    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.updatedAt
-    return undefined
-  })
-  // Start direct in loading-staat als er nog geen cache is, zodat er geen
-  // flits van een lege kaart is voordat de useEffect de fetch triggert.
-  const [loading, setLoading] = React.useState(() => {
-    if (!weddingId) return false
-    const cached = adviesCache.get(weddingId)
-    return !(cached && Date.now() - cached.fetchedAt < CACHE_TTL)
-  })
-  const [error, setError] = React.useState<string | null>(null)
-
-  const fetch = React.useCallback(
-    async (forceRefresh = false) => {
-      if (!wedding || !weddingId) return
-      const cached = adviesCache.get(weddingId)
-      if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
-        setAdvies(cached.data)
-        setUpdatedAt(cached.updatedAt)
-        return
-      }
-
-      setLoading(true)
-      setError(null)
-
-      try {
-        const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
-        const res = await window.fetch('/api/ai/advice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context, weddingId, force: forceRefresh }),
-        })
-        if (!res.ok) throw new Error(await res.text())
-        const json = await res.json()
-        if (json.advies?.length > 0) {
-          adviesCache.set(weddingId, {
-            data: json.advies,
-            fetchedAt: Date.now(),
-            updatedAt: json.updatedAt,
-          })
-          setAdvies(json.advies)
-          setUpdatedAt(json.updatedAt)
-        } else {
-          throw new Error('Leeg antwoord van AI')
-        }
-      } catch (err) {
-        console.warn('[AIAdviesPanel] Fetch mislukt, fallback naar rule-based guidance:', err)
-        setError('AI tijdelijk niet beschikbaar')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [wedding, weddingId, tasks, vendors, budgetItems, guests, scheduleItems]
-  )
-
-  React.useEffect(() => {
-    if (!weddingId) return
-    const cached = adviesCache.get(weddingId)
-    if (!cached || Date.now() - cached.fetchedAt >= CACHE_TTL) {
-      fetch(false)
-    }
-  }, [weddingId, fetch])
-
-  return { advies, loading, error, updatedAt, refresh: () => fetch(true) }
-}
-
 export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps) {
-  const wedding = useBruiloftStore((s) => s.wedding)
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const permissions = useBruiloftStore((s) => s.permissions)
   const mayEditTaken = canEdit(permissions, 'taken')
   const [bezig, setBezig] = React.useState<string | null>(null)
 
-  const { advies, loading, error, updatedAt, refresh } = useFetchAIAdvies(wedding?.id ?? null)
+  // Gedeelde advieslaag: zelfde data als de insight-kaarten en de AI-coach,
+  // dus geen extra AI-calls. Weggeklikte adviezen blijven ook hier verborgen.
+  const { advies, zichtbaar, loading, error, updatedAt, refresh } = useAIAdvies()
 
   const dagen = dagenTot(trouwdatum)
+  const allesWeggeklikt = !loading && (advies?.length ?? 0) > 0 && zichtbaar.length === 0
 
   async function afrondenFallback(taskId: string) {
     if (bezig) return
@@ -187,10 +86,10 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
               <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
             </div>
           </div>
-        ) : advies && advies.length > 0 ? (
+        ) : zichtbaar.length > 0 ? (
           <>
           <ul className="divide-y divide-border">
-            {advies.map((stap) => (
+            {zichtbaar.map((stap) => (
               <li key={stap.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -219,6 +118,10 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
             AI-advies · bijgewerkt {geledenLabel(updatedAt)} · controleer belangrijke keuzes altijd zelf.
           </p>
           </>
+        ) : allesWeggeklikt ? (
+          <p className="py-4 text-sm text-muted-foreground">
+            Jullie hebben alle adviezen bekeken en weggeklikt. Ververs voor een frisse analyse.
+          </p>
         ) : (
           // Fallback naar rule-based guidance als AI niet beschikbaar is
           <>

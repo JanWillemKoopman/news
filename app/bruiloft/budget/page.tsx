@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
@@ -116,6 +117,8 @@ export default function BudgetPage() {
       />
 
       <AIBudgetAdvies open={adviesOpen} onClose={() => setAdviesOpen(false)} />
+
+      <AIInsightCard sectie="/bruiloft/budget" />
 
       <div className="mb-6">
         <BudgetSummary items={budgetItems} vendors={vendors} wedding={wedding} />

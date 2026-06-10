@@ -2,19 +2,29 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+export type AIAdviesType = 'actie' | 'benchmark' | 'tip'
+
 export interface AIAdvies {
   id: string
   titel: string
   omschrijving: string
   urgentie: 'kritiek' | 'binnenkort' | 'normaal'
+  /** actie = nu doen, benchmark = vergelijking met hoe andere koppels plannen, tip = proactief inzicht. */
+  type: AIAdviesType
   sectie: string
   sectionLabel: string
+}
+
+// Oudere cache-rijen zijn gegenereerd zonder type-veld; vul 'actie' aan.
+function metType(advies: Array<Omit<AIAdvies, 'type'> & { type?: AIAdviesType }>): AIAdvies[] {
+  return advies.map((a) => ({ ...a, type: a.type ?? 'actie' }))
 }
 
 // 1 uur cooldown tussen regeneraties (ook als data veranderd is).
@@ -23,9 +33,12 @@ const MIN_COOLDOWN_MS = 60 * 60 * 1000
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 // Vingerafdruk van de planningsdata — verandert alleen als de inhoud verandert.
+// Het versievoorvoegsel dwingt eenmalige regeneratie af na promptwijzigingen
+// (zoals de introductie van adviestypen en benchmarkdata).
 function buildFingerprint(ctx: AIWeddingContext): string {
   const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
   return [
+    'v2',
     ctx.bruidspaar.trouwdatum,
     ctx.bruidspaar.locatie,
     ctx.taken.open,
@@ -55,16 +68,23 @@ op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
 
+Benchmarkgegevens over hoe Nederlandse koppels doorgaans plannen (gecureerd, feitelijk):
+${benchmarksVoorPrompt()}
+
 Analyseer alle onderdelen (taken, budget, gasten, leveranciers, draaiboek, betalingen) grondig \
-en geef precies 4 tot 5 geprioriteerde "Volgende Beste Acties" die het koppel NU moet ondernemen.
+en geef 5 tot 6 geprioriteerde adviezen voor dit koppel.
 
 Regels:
-- Baseer elke actie op concrete getallen/feiten uit de context (noem specifieke aantallen, bedragen)
+- type: 'actie' = iets dat het koppel NU moet doen; 'benchmark' = een vergelijking van hun situatie met de benchmarkgegevens hierboven; 'tip' = proactieve suggestie of nuttig inzicht
+- Geef minstens 3 acties, 1 à 2 benchmark-inzichten en hooguit 1 tip
+- Gebruik voor benchmark-inzichten UITSLUITEND de meegegeven benchmarkgegevens — verzin NOOIT zelf cijfers of statistieken
+- Baseer elk advies op concrete getallen/feiten uit de context (noem specifieke aantallen, bedragen)
+- Spreid de adviezen over verschillende secties waar dat logisch is, zodat het koppel op meerdere plekken in de app geholpen wordt
 - Schrijf in het Nederlands, persoonlijk en warm van toon
 - urgentie: 'kritiek' = deadline verstreken of minder dan 7 dagen, 'binnenkort' = 7–30 dagen of hoog risico, 'normaal' = proactief
 - sectie: pad naar de relevante pagina, een van: /bruiloft/taken | /bruiloft/budget | /bruiloft/gasten | /bruiloft/leveranciers | /bruiloft/draaiboek | /bruiloft/tafels
 - sectionLabel: gebruiksvriendelijke naam van die sectie (bijv. 'Taken', 'Budget', 'Gasten', etc.)
-- id: uniek per actie, gebruik 'ai-1', 'ai-2', etc.
+- id: uniek per advies, gebruik 'ai-1', 'ai-2', etc.
 
 Geef ALLEEN een JSON-array terug, geen andere tekst, in dit formaat:
 [
@@ -73,6 +93,7 @@ Geef ALLEEN een JSON-array terug, geen andere tekst, in dit formaat:
     "titel": "...",
     "omschrijving": "...",
     "urgentie": "kritiek|binnenkort|normaal",
+    "type": "actie|benchmark|tip",
     "sectie": "/bruiloft/...",
     "sectionLabel": "..."
   }
@@ -83,15 +104,20 @@ function parseAdvies(text: string): AIAdvies[] {
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
   const parsed = JSON.parse(cleaned)
   if (!Array.isArray(parsed)) return []
-  return parsed.filter(
-    (item): item is AIAdvies =>
-      typeof item.id === 'string' &&
-      typeof item.titel === 'string' &&
-      typeof item.omschrijving === 'string' &&
-      ['kritiek', 'binnenkort', 'normaal'].includes(item.urgentie) &&
-      typeof item.sectie === 'string' &&
-      typeof item.sectionLabel === 'string'
-  )
+  return parsed
+    .filter(
+      (item): item is AIAdvies =>
+        typeof item.id === 'string' &&
+        typeof item.titel === 'string' &&
+        typeof item.omschrijving === 'string' &&
+        ['kritiek', 'binnenkort', 'normaal'].includes(item.urgentie) &&
+        typeof item.sectie === 'string' &&
+        typeof item.sectionLabel === 'string'
+    )
+    .map((item) => ({
+      ...item,
+      type: (['actie', 'benchmark', 'tip'] as const).includes(item.type) ? item.type : 'actie',
+    }))
 }
 
 export async function POST(request: NextRequest) {
@@ -145,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     // Retourneer cache als: vingerafdruk onveranderd OF nog binnen cooldown
     if (cacheValid && (fingerprintMatch || withinCooldown)) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
   }
 
@@ -153,7 +179,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit.allowed) {
     // Bij rate-limit: retourneer stale cache als die er is
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
@@ -185,7 +211,7 @@ export async function POST(request: NextRequest) {
     console.error('[api/ai/advice] Gemini fout:', err)
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: cacheRow.cached_advies, cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }

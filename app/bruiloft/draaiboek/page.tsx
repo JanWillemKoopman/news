@@ -4,6 +4,7 @@ import * as React from 'react'
 import { CalendarClock, Download, MapPin, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { ScheduleItemForm } from '@/components/bruiloft/draaiboek/ScheduleItemForm'
 import {
   Button,
@@ -104,6 +105,8 @@ export default function DraaiboekPage() {
         }
         fab={kanBewerken ? { label: 'Onderdeel toevoegen', onClick: openNieuw } : undefined}
       />
+
+      <AIInsightCard sectie="/bruiloft/draaiboek" />
 
       <div className="mb-6 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-xs">

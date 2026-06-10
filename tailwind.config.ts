@@ -111,6 +111,7 @@ const config: Config = {
         'overlay-in': 'overlayIn 0.2s ease-out',
         'dialog-in': 'dialogIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         'sheet-in': 'sheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        'drawer-in': 'drawerIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
         shimmer: 'shimmer 1.6s ease-in-out infinite',
       },
       keyframes: {
@@ -133,6 +134,10 @@ const config: Config = {
         sheetIn: {
           '0%': { transform: 'translateY(100%)' },
           '100%': { transform: 'translateY(0)' },
+        },
+        drawerIn: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
         },
         shimmer: {
           '0%, 100%': { opacity: '1' },
