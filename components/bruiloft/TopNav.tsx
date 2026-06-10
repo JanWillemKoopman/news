@@ -8,6 +8,7 @@ import { Sparkles, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
+import { useAIAdvies } from './ai/useAIAdvies'
 import { UserMenu } from './UserMenu'
 import { GlobalSearch, useGlobalSearch } from './GlobalSearch'
 
@@ -21,6 +22,13 @@ export function TopNav() {
   const sections = visibleSections(permissions)
   const active = activeSection(pathname)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearch()
+
+  // De AI-assistent-knop opent het coach-paneel (zie AICoach in WeddingShell).
+  // Het stipje vraagt alleen aandacht als er een kritiek advies klaarstaat.
+  const aiCoachOpen = useBruiloftStore((s) => s.aiCoachOpen)
+  const openAICoach = useBruiloftStore((s) => s.openAICoach)
+  const { zichtbaar } = useAIAdvies()
+  const heeftKritiek = zichtbaar.some((a) => a.urgentie === 'kritiek')
 
   return (
     <>
@@ -70,20 +78,28 @@ export function TopNav() {
 
         {/* Account-menu (rechts) + AI-knop + zoekknop. */}
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href="/bruiloft/ai-wedding-planner"
-            aria-current={pathname.startsWith('/bruiloft/ai-wedding-planner') ? 'page' : undefined}
+          <button
+            type="button"
+            onClick={openAICoach}
+            aria-haspopup="dialog"
+            aria-expanded={aiCoachOpen}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors border',
+              'relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors border',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
-              pathname.startsWith('/bruiloft/ai-wedding-planner')
+              aiCoachOpen
                 ? 'bg-white/15 text-white border-white/40'
                 : 'bg-transparent text-white/80 border-white/25 hover:bg-white/10 hover:text-white hover:border-white/40'
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
             <span>AI-assistent</span>
-          </Link>
+            {heeftKritiek ? (
+              <span
+                aria-hidden
+                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-rhino-800"
+              />
+            ) : null}
+          </button>
           <button
             type="button"
             onClick={() => setSearchOpen(true)}

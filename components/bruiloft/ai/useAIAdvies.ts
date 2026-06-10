@@ -17,6 +17,11 @@ import type { AIAdvies } from '@/app/api/ai/advice/route'
 const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number; updatedAt?: string }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 uur
 
+// Lopende verzoeken per bruiloft: meerdere componenten (topbalk-badge, paneel,
+// insight-kaarten) mounten de hook tegelijk; zij delen één fetch in plaats van
+// elk een eigen AI-call af te vuren.
+const inflight = new Map<string, Promise<{ data: AIAdvies[]; updatedAt?: string }>>()
+
 // ── Weggeklikte adviezen ─────────────────────────────────────────────────────
 // Een advies dat de gebruiker op één plek wegklikt, verdwijnt overal (kaarten,
 // coach én dashboardpaneel). Persistent in localStorage per bruiloft; een
@@ -168,30 +173,39 @@ export function useAIAdvies(): UseAIAdviesResult {
       setError(null)
 
       try {
-        const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
-        const res = await window.fetch('/api/ai/advice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context, weddingId, force: forceRefresh }),
-        })
-        if (!res.ok) throw new Error(await res.text())
-        const json = await res.json()
-        if (json.advies?.length > 0) {
-          // Oudere cache-rijen missen het type-veld; normaliseer naar 'actie'.
-          const genormaliseerd: AIAdvies[] = json.advies.map((a: AIAdvies) => ({
-            ...a,
-            type: a.type ?? 'actie',
-          }))
-          adviesCache.set(weddingId, {
-            data: genormaliseerd,
-            fetchedAt: Date.now(),
-            updatedAt: json.updatedAt,
+        let lopend = inflight.get(weddingId)
+        if (!lopend || forceRefresh) {
+          const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+          lopend = (async () => {
+            const res = await window.fetch('/api/ai/advice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ context, weddingId, force: forceRefresh }),
+            })
+            if (!res.ok) throw new Error(await res.text())
+            const json = await res.json()
+            if (!(json.advies?.length > 0)) throw new Error('Leeg antwoord van AI')
+            // Oudere cache-rijen missen het type-veld; normaliseer naar 'actie'.
+            const genormaliseerd: AIAdvies[] = json.advies.map((a: AIAdvies) => ({
+              ...a,
+              type: a.type ?? 'actie',
+            }))
+            adviesCache.set(weddingId, {
+              data: genormaliseerd,
+              fetchedAt: Date.now(),
+              updatedAt: json.updatedAt,
+            })
+            return { data: genormaliseerd, updatedAt: json.updatedAt as string | undefined }
+          })()
+          const metOpruiming = lopend.finally(() => {
+            if (inflight.get(weddingId) === metOpruiming) inflight.delete(weddingId)
           })
-          setAdvies(genormaliseerd)
-          setUpdatedAt(json.updatedAt)
-        } else {
-          throw new Error('Leeg antwoord van AI')
+          inflight.set(weddingId, metOpruiming)
+          lopend = metOpruiming
         }
+        const { data, updatedAt: bijgewerkt } = await lopend
+        setAdvies(data)
+        setUpdatedAt(bijgewerkt)
       } catch (err) {
         console.warn('[useAIAdvies] Fetch mislukt, fallback naar rule-based guidance:', err)
         setError('AI tijdelijk niet beschikbaar')

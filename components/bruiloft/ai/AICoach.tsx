@@ -10,10 +10,12 @@ import { Button, useToast } from '@/components/bruiloft/ui'
 import { geledenLabel, useAIAdvies } from './useAIAdvies'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
-// AI-coach: app-breed bereikbaar via een bescheiden zwevende knop rechtsonder.
-// Opent op desktop een zijpaneel rechts, op mobiel een bottom sheet. Toont
-// alle (niet-weggeklikte) adviezen uit de gedeelde advieslaag — geen extra
-// AI-calls. De knop vraagt alleen aandacht (badge) bij een kritiek advies.
+// AI-coach: app-breed paneel, geopend via de "AI-assistent"-knop in de
+// topbalk (zie TopNav) of via de moment-nudge. Op desktop een zijpaneel
+// rechts, op mobiel een bottom sheet. Toont alle (niet-weggeklikte) adviezen
+// uit de gedeelde advieslaag — geen extra AI-calls. Bewust géén eigen
+// zwevende knop: de trigger zit in de chrome van de app zodat er niets over
+// de content heen zweeft.
 
 const TYPE_ICON: Record<AIAdvies['type'], typeof Sparkles> = {
   actie: Sparkles,
@@ -37,11 +39,11 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
 let nudgeAlGetoond = false
 
 export function AICoach() {
-  const [open, setOpen] = React.useState(false)
+  const open = useBruiloftStore((s) => s.aiCoachOpen)
+  const openAICoach = useBruiloftStore((s) => s.openAICoach)
+  const closeAICoach = useBruiloftStore((s) => s.closeAICoach)
   const { zichtbaar, loading, updatedAt, refresh, klikWeg } = useAIAdvies()
   const { toast } = useToast()
-
-  const heeftKritiek = zichtbaar.some((a) => a.urgentie === 'kritiek')
 
   // Scroll-lock + Escape zolang het paneel open is.
   React.useEffect(() => {
@@ -49,14 +51,14 @@ export function AICoach() {
     const vorige = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') closeAICoach()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = vorige
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [open, closeAICoach])
 
   // Moment-nudge: als er tijdens deze sessie een taak wordt afgerond en er
   // nog adviezen klaarstaan, wijs daar één keer subtiel op via een toast.
@@ -75,37 +77,17 @@ export function AICoach() {
     toast({
       title: 'Mooi bezig! Taak afgerond.',
       description: `Volgende suggestie van de AI-coach: ${volgende.titel}`,
-      action: { label: 'Bekijk advies', onClick: () => setOpen(true) },
+      action: { label: 'Bekijk advies', onClick: openAICoach },
     })
-  }, [klaarAantal, open, zichtbaar, toast])
+  }, [klaarAantal, open, zichtbaar, toast, openAICoach])
 
   return (
     <>
-      {/* Zwevende coach-knop — boven de FAB-positie zodat ze niet botsen. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="AI-coach openen"
-        className={cn(
-          'fixed right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-rhino-800 text-white shadow-lg transition-[transform,background-color,opacity] duration-150 ease-out hover:scale-105 hover:bg-rhino-700 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rhino-800',
-          'bottom-[calc(8.75rem+env(safe-area-inset-bottom))] md:bottom-[5.75rem] md:right-6 md:h-12 md:w-12',
-          open && 'pointer-events-none opacity-0'
-        )}
-      >
-        <Sparkles className="h-5 w-5" />
-        {heeftKritiek ? (
-          <span
-            aria-hidden
-            className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white"
-          />
-        ) : null}
-      </button>
-
       {open ? (
         <div className="wedding fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-rhino-950/30 animate-overlay-in"
-            onClick={() => setOpen(false)}
+            onClick={closeAICoach}
             aria-hidden
           />
           <div
@@ -146,7 +128,7 @@ export function AICoach() {
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closeAICoach}
                   aria-label="AI-coach sluiten"
                   className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
@@ -205,7 +187,7 @@ export function AICoach() {
                         </p>
                         <Link
                           href={stap.sectie}
-                          onClick={() => setOpen(false)}
+                          onClick={closeAICoach}
                           className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
                         >
                           Bekijken
@@ -234,7 +216,7 @@ export function AICoach() {
             <div className="border-t border-border px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <Link
                 href="/bruiloft/ai-wedding-planner"
-                onClick={() => setOpen(false)}
+                onClick={closeAICoach}
                 className="flex items-center justify-between rounded-lg bg-rhino-50 px-4 py-3 text-sm font-medium text-rhino-900 transition-colors hover:bg-rhino-100"
               >
                 Volledige AI-analyse per onderdeel
