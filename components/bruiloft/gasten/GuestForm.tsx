@@ -1,13 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import {
   Button,
   ConfirmDialog,
   Field,
   Input,
+  MeerDetails,
   Modal,
   Select,
   Textarea,
@@ -203,97 +203,81 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
         </div>
 
         {/* ── Details (inklapbaar) ── */}
-        <div className="rounded-xl border border-border">
-          <button
-            type="button"
-            onClick={() => setDetailsOpen((v) => !v)}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/40 rounded-xl transition-colors"
-          >
-            <span>Meer details</span>
-            {detailsOpen
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            }
-          </button>
+        <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="RSVP-status" htmlFor="rsvp">
+              <Select
+                id="rsvp"
+                value={form.rsvpStatus}
+                onChange={(e) => set('rsvpStatus', e.target.value as NewGuest['rsvpStatus'])}
+              >
+                {RSVP_STATUSSEN.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Aantal kinderen" htmlFor="kind">
+              <Input
+                id="kind"
+                type="number"
+                min={0}
+                value={form.aantalKinderen || ''}
+                onChange={(e) => set('aantalKinderen', Number(e.target.value) || 0)}
+              />
+            </Field>
+          </div>
 
-          {detailsOpen && (
-            <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="RSVP-status" htmlFor="rsvp">
-                  <Select
-                    id="rsvp"
-                    value={form.rsvpStatus}
-                    onChange={(e) => set('rsvpStatus', e.target.value as NewGuest['rsvpStatus'])}
-                  >
-                    {RSVP_STATUSSEN.map((s) => (
-                      <option key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Aantal kinderen" htmlFor="kind">
-                  <Input
-                    id="kind"
-                    type="number"
-                    min={0}
-                    value={form.aantalKinderen || ''}
-                    onChange={(e) => set('aantalKinderen', Number(e.target.value) || 0)}
-                  />
-                </Field>
-              </div>
+          <div className="rounded-lg border border-border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={form.heeftPartner}
+                onChange={(e) => set('heeftPartner', e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              Neemt een partner mee
+            </label>
+            {form.heeftPartner ? (
+              <Input
+                className="mt-3"
+                placeholder="Naam van de partner (optioneel)"
+                value={form.partnerNaam}
+                onChange={(e) => set('partnerNaam', e.target.value)}
+                {...eigennaamInputProps}
+              />
+            ) : null}
+          </div>
 
-              <div className="rounded-lg border border-border p-3">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <input
-                    type="checkbox"
-                    checked={form.heeftPartner}
-                    onChange={(e) => set('heeftPartner', e.target.checked)}
-                    className="h-4 w-4 accent-[hsl(var(--primary))]"
-                  />
-                  Neemt een partner mee
-                </label>
-                {form.heeftPartner ? (
-                  <Input
-                    className="mt-3"
-                    placeholder="Naam van de partner (optioneel)"
-                    value={form.partnerNaam}
-                    onChange={(e) => set('partnerNaam', e.target.value)}
-                    {...eigennaamInputProps}
-                  />
-                ) : null}
-              </div>
+          <Field label="Dieetwensen" htmlFor="dieet">
+            <Input
+              id="dieet"
+              value={form.dieetwensen}
+              onChange={(e) => set('dieetwensen', e.target.value)}
+              placeholder="Bijv. vegetarisch, notenallergie"
+            />
+          </Field>
 
-              <Field label="Dieetwensen" htmlFor="dieet">
-                <Input
-                  id="dieet"
-                  value={form.dieetwensen}
-                  onChange={(e) => set('dieetwensen', e.target.value)}
-                  placeholder="Bijv. vegetarisch, notenallergie"
-                />
-              </Field>
+          <Field label="Adres" htmlFor="adres">
+            <Textarea
+              id="adres"
+              value={form.adres}
+              onChange={(e) => set('adres', e.target.value)}
+              placeholder="Voor de uitnodiging"
+              rows={2}
+            />
+          </Field>
 
-              <Field label="Adres" htmlFor="adres">
-                <Textarea
-                  id="adres"
-                  value={form.adres}
-                  onChange={(e) => set('adres', e.target.value)}
-                  placeholder="Voor de uitnodiging"
-                  rows={2}
-                />
-              </Field>
-
-              <Field label="Notitie" htmlFor="not">
-                <Textarea
-                  id="not"
-                  value={form.notitie}
-                  onChange={(e) => set('notitie', e.target.value)}
-                  rows={2}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
+          <Field label="Notitie" htmlFor="not">
+            <Textarea
+              id="not"
+              value={form.notitie}
+              onChange={(e) => set('notitie', e.target.value)}
+              rows={2}
+            />
+          </Field>
+        </MeerDetails>
 
 
         <div className="flex flex-wrap justify-end gap-3 pt-2">

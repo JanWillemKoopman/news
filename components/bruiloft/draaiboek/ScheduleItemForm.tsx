@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button, ConfirmDialog, Field, Input, Modal, Textarea } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, Field, Input, MeerDetails, Modal, Textarea } from '@/components/bruiloft/ui'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
 import type { Rol, ScheduleItem, ScheduleItemInput } from '@/lib/bruiloft/types'
@@ -39,6 +39,7 @@ export function ScheduleItemForm({
   const [form, setForm] = React.useState<NewScheduleItem>(leeg)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
 
   React.useEffect(() => {
@@ -46,6 +47,7 @@ export function ScheduleItemForm({
       const start = initial ? vanItem(initial) : leeg()
       setForm(start)
       baseline.current = JSON.stringify(start)
+      setDetailsOpen(!!initial)
     }
   }, [open, initial])
 
@@ -120,47 +122,49 @@ export function ScheduleItemForm({
           </Field>
         </div>
 
-        <Field label="Locatie" htmlFor="loc">
-          <Input
-            id="loc"
-            value={form.locatie}
-            onChange={(e) => set('locatie', e.target.value)}
-            placeholder="Bijv. Tuin / grote zaal"
-          />
-        </Field>
+        <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
+          <Field label="Locatie" htmlFor="loc">
+            <Input
+              id="loc"
+              value={form.locatie}
+              onChange={(e) => set('locatie', e.target.value)}
+              placeholder="Bijv. Tuin / grote zaal"
+            />
+          </Field>
 
-        <Field label="Omschrijving" htmlFor="oms">
-          <Textarea
-            id="oms"
-            value={form.omschrijving}
-            onChange={(e) => set('omschrijving', e.target.value)}
-            rows={2}
-          />
-        </Field>
+          <Field label="Omschrijving" htmlFor="oms">
+            <Textarea
+              id="oms"
+              value={form.omschrijving}
+              onChange={(e) => set('omschrijving', e.target.value)}
+              rows={2}
+            />
+          </Field>
 
-        <div>
-          <p className="mb-2 text-sm font-medium">Betrokkenen (voor filteren en export)</p>
-          <div className="flex flex-wrap gap-2">
-            {DRAAIBOEK_ROLLEN.map((rol) => {
-              const actief = form.betrokkenen.includes(rol)
-              return (
-                <button
-                  key={rol}
-                  type="button"
-                  onClick={() => toggleRol(rol)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-medium capitalize transition-colors',
-                    actief
-                      ? 'border-transparent bg-primary text-primary-foreground'
-                      : 'border-border text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  {rol}
-                </button>
-              )
-            })}
+          <div>
+            <p className="mb-2 text-sm font-medium">Betrokkenen</p>
+            <div className="flex flex-wrap gap-2">
+              {DRAAIBOEK_ROLLEN.map((rol) => {
+                const actief = form.betrokkenen.includes(rol)
+                return (
+                  <button
+                    key={rol}
+                    type="button"
+                    onClick={() => toggleRol(rol)}
+                    className={cn(
+                      'rounded-full border px-3 py-1 text-xs font-medium capitalize transition-colors',
+                      actief
+                        ? 'border-transparent bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:bg-accent'
+                    )}
+                  >
+                    {rol}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </MeerDetails>
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={() => sluit(false)}>
