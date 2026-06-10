@@ -11,7 +11,8 @@ import {
   CardHeader,
   CardTitle,
   Field,
-  Input,
+  PasswordHint,
+  PasswordInput,
 } from '@/components/bruiloft/ui'
 import { createClient } from '@/lib/supabase/client'
 
@@ -56,23 +57,32 @@ export function ResetPasswordForm() {
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field label="Nieuw wachtwoord" htmlFor="password" required>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               required
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <PasswordHint password={password} />
           </Field>
-          <Field label="Bevestig wachtwoord" htmlFor="confirm" required>
-            <Input
+          <Field
+            label="Bevestig wachtwoord"
+            htmlFor="confirm"
+            required
+            error={
+              confirm.length > 0 && confirm !== password
+                ? 'De wachtwoorden komen niet overeen.'
+                : undefined
+            }
+          >
+            <PasswordInput
               id="confirm"
-              type="password"
               autoComplete="new-password"
               required
-              minLength={6}
+              minLength={8}
+              aria-invalid={confirm.length > 0 && confirm !== password ? true : undefined}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />

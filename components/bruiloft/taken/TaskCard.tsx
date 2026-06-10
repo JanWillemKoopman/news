@@ -91,7 +91,7 @@ export function TaskCard({
               : 'border-border hover:border-primary'
           )}
         >
-          {klaar ? <Check className="h-4 w-4" /> : null}
+          {klaar ? <Check className="h-4 w-4 animate-check-pop" /> : null}
         </button>
 
         <div className="min-w-0 flex-1">

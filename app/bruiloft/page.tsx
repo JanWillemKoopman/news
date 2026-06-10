@@ -6,6 +6,7 @@ import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
+import { EersteStappen } from '@/components/bruiloft/EersteStappen'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
 
   const [settingsOpen, setSettingsOpen] = React.useState(false)
 
@@ -47,7 +49,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       {/* Hero: aftelteller */}
-      <Card className="relative mb-8 overflow-hidden border-border">
+      <Card className="relative mb-8 overflow-hidden border-border bg-gradient-to-b from-rose-50/70 via-card to-card">
         <Button
           variant="ghost"
           size="icon"
@@ -93,6 +95,15 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Eerste stappen: alleen zichtbaar zolang nog niet alle modules gevuld zijn */}
+      <EersteStappen
+        guests={guests}
+        tasks={tasks}
+        vendors={vendors}
+        budgetItems={budgetItems}
+        websiteContent={websiteContent}
+      />
 
       {/* Urgente aandachtspunten: alleen zichtbaar als er iets mis is */}
       <UrgenteAandachtspunten

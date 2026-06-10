@@ -248,7 +248,18 @@ export default function AIWeddingPlannerPage() {
     fetchAdvies(false)
   }, [fetchAdvies])
 
-  const now = Date.now()
+  // Tik elke halve minuut zodat de countdown live aftelt en de knop vanzelf
+  // weer beschikbaar wordt, zonder dat de gebruiker hoeft te verversen.
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    if (!nextAvailable || nextAvailable.getTime() <= Date.now()) return
+    const timer = setInterval(() => {
+      setNow(Date.now())
+      if (nextAvailable.getTime() <= Date.now()) clearInterval(timer)
+    }, 30_000)
+    return () => clearInterval(timer)
+  }, [nextAvailable])
+
   const resterendeMs = nextAvailable ? nextAvailable.getTime() - now : 0
   const isRateLimited = resterendeMs > 0 && advies !== null
 

@@ -112,11 +112,17 @@ const config: Config = {
         'dialog-in': 'dialogIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         'sheet-in': 'sheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
         shimmer: 'shimmer 1.6s ease-in-out infinite',
+        'check-pop': 'checkPop 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        checkPop: {
+          '0%': { transform: 'scale(0)' },
+          '60%': { transform: 'scale(1.25)' },
+          '100%': { transform: 'scale(1)' },
         },
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },

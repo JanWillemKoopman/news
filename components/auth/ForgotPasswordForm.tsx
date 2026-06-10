@@ -51,8 +51,11 @@ export function ForgotPasswordForm() {
             om een nieuw wachtwoord in te stellen.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Link href="/login" className="text-sm font-medium text-primary hover:underline">
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Geen mail ontvangen? Controleer ook je spam-map.
+          </p>
+          <Link href="/login" className="block text-sm font-medium text-primary hover:underline">
             Terug naar inloggen
           </Link>
         </CardContent>

@@ -17,6 +17,8 @@ import {
   Field,
   Input,
   Label,
+  PasswordHint,
+  PasswordInput,
   useToast,
 } from '@/components/bruiloft/ui'
 import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
@@ -329,9 +331,8 @@ function WachtwoordSection() {
       <CardContent>
         <form onSubmit={handleWijzig} className="space-y-4">
           <Field label="Huidig wachtwoord" htmlFor="huidig-pw">
-            <Input
+            <PasswordInput
               id="huidig-pw"
-              type="password"
               value={huidig}
               onChange={(e) => setHuidig(e.target.value)}
               autoComplete="current-password"
@@ -339,24 +340,32 @@ function WachtwoordSection() {
             />
           </Field>
           <Field label="Nieuw wachtwoord" htmlFor="nieuw-pw">
-            <Input
+            <PasswordInput
               id="nieuw-pw"
-              type="password"
               value={nieuw}
               onChange={(e) => setNieuw(e.target.value)}
               autoComplete="new-password"
               required
               minLength={8}
             />
+            <PasswordHint password={nieuw} />
           </Field>
-          <Field label="Bevestig nieuw wachtwoord" htmlFor="bevestig-pw">
-            <Input
+          <Field
+            label="Bevestig nieuw wachtwoord"
+            htmlFor="bevestig-pw"
+            error={
+              bevestig.length > 0 && bevestig !== nieuw
+                ? 'De wachtwoorden komen niet overeen.'
+                : undefined
+            }
+          >
+            <PasswordInput
               id="bevestig-pw"
-              type="password"
               value={bevestig}
               onChange={(e) => setBevestig(e.target.value)}
               autoComplete="new-password"
               required
+              aria-invalid={bevestig.length > 0 && bevestig !== nieuw ? true : undefined}
             />
           </Field>
           <div className="flex justify-end">
@@ -489,14 +498,14 @@ function GevaarZoneSection() {
         bevestigLabel="Ja, verwijder mijn account"
         onConfirm={deleteAccount}
       >
-        <Input
-          type="password"
-          placeholder="Jouw wachtwoord"
-          autoComplete="current-password"
-          value={wachtwoord}
-          onChange={(e) => setWachtwoord(e.target.value)}
-          className="mb-4"
-        />
+        <div className="mb-4">
+          <PasswordInput
+            placeholder="Jouw wachtwoord"
+            autoComplete="current-password"
+            value={wachtwoord}
+            onChange={(e) => setWachtwoord(e.target.value)}
+          />
+        </div>
       </ConfirmDialog>
     </>
   )

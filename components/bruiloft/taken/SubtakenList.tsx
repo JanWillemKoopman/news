@@ -72,7 +72,7 @@ export function SubtakenList({ subtaken, onChange, compact }: SubtakenListProps)
                 : 'border-border hover:border-primary'
             )}
           >
-            {s.klaar ? <Check className="h-3 w-3" /> : null}
+            {s.klaar ? <Check className="h-3 w-3 animate-check-pop" /> : null}
           </button>
           <Input
             value={s.titel}
@@ -138,7 +138,7 @@ export function SubtakenChecklist({
                 : 'border-border hover:border-primary'
             )}
           >
-            {s.klaar ? <Check className="h-3 w-3" /> : null}
+            {s.klaar ? <Check className="h-3 w-3 animate-check-pop" /> : null}
           </button>
           <span className={cn(s.klaar && 'line-through text-muted-foreground')}>{s.titel}</span>
         </li>

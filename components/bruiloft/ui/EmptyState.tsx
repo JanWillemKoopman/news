@@ -28,9 +28,11 @@ export function EmptyState({
       )}
     >
       {Icon ? (
-        <Icon className="mb-4 h-10 w-10 text-gray-400" />
+        <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 ring-8 ring-rose-50/50">
+          <Icon className="h-7 w-7 text-rose-400" strokeWidth={1.5} />
+        </span>
       ) : null}
-      <h3 className="text-xl text-foreground">{titel}</h3>
+      <h3 className="font-serif text-2xl text-foreground">{titel}</h3>
       {beschrijving ? (
         <p className="mt-2 max-w-md text-sm text-muted-foreground">{beschrijving}</p>
       ) : null}

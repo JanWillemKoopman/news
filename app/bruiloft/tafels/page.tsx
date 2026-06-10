@@ -148,9 +148,35 @@ export default function TafelsPage() {
         }
         onConfirm={async () => {
           if (!delTable) return
+          const verwijderd = delTable
+          const gastenAanTafel = guests.filter((g) => g.tafelId === verwijderd.id).map((g) => g.id)
           try {
-            await deleteTable(delTable.id)
-            toast({ title: 'Tafel verwijderd', variant: 'success' })
+            await deleteTable(verwijderd.id)
+            toast({
+              title: 'Tafel verwijderd',
+              description: verwijderd.naam,
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void (async () => {
+                    await addTable({
+                      naam: verwijderd.naam,
+                      vorm: verwijderd.vorm,
+                      capaciteit: verwijderd.capaciteit,
+                    })
+                    // addTable geeft de nieuwe tafel niet terug; de zojuist
+                    // toegevoegde staat achteraan in de store.
+                    const nieuw = useBruiloftStore.getState().tables.at(-1)
+                    if (!nieuw) return
+                    for (const gastId of gastenAanTafel) {
+                      await updateGuest(gastId, { tafelId: nieuw.id })
+                    }
+                  })()
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }

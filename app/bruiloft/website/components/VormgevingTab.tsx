@@ -229,11 +229,13 @@ export function VormgevingTab({ content }: Props) {
             {slugStatus === 'beschikbaar' && <Check className="h-4 w-4 text-emerald-500" />}
           </div>
           {slugFeedback && (
-            <p className={
-              'mt-1.5 break-all text-xs ' +
-              (slugStatus === 'bezet' || slugStatus === 'ongeldig' ? 'text-destructive' :
-               slugStatus === 'beschikbaar' ? 'text-emerald-600' : 'text-muted-foreground')
-            }>
+            <p
+              aria-live="polite"
+              className={
+                'mt-1.5 break-all text-xs font-medium ' +
+                (slugStatus === 'bezet' || slugStatus === 'ongeldig' ? 'text-destructive' :
+                 slugStatus === 'beschikbaar' ? 'text-emerald-700' : 'text-muted-foreground')
+              }>
               {slugFeedback}
             </p>
           )}

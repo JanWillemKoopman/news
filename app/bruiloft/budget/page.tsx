@@ -208,9 +208,29 @@ export default function BudgetPage() {
         }
         onConfirm={async () => {
           if (!deleteItem) return
+          const verwijderd = deleteItem
           try {
-            await deleteBudgetItem(deleteItem.id)
-            toast({ title: 'Budgetitem verwijderd', variant: 'success' })
+            await deleteBudgetItem(verwijderd.id)
+            toast({
+              title: 'Budgetitem verwijderd',
+              description: verwijderd.omschrijving || verwijderd.categorie,
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void addBudgetItem({
+                    categorie: verwijderd.categorie,
+                    omschrijving: verwijderd.omschrijving,
+                    geschatBedrag: verwijderd.geschatBedrag,
+                    geoffreerdBedrag: verwijderd.geoffreerdBedrag,
+                    betaaldBedrag: verwijderd.betaaldBedrag,
+                    vendorId: verwijderd.vendorId,
+                    betaaltermijnen: verwijderd.betaaltermijnen,
+                  })
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }

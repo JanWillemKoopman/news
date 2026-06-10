@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, KeyRound, Users, Wallet } from 'lucide-react'
 
-import { Button, Field, Input, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, PasswordHint, PasswordInput, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -328,14 +328,14 @@ export function OnboardingWizard({
                   />
                 </Field>
                 <Field label="Wachtwoord" htmlFor="ob-password" required>
-                  <Input
+                  <PasswordInput
                     id="ob-password"
-                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Minimaal 8 tekens"
                     autoComplete="new-password"
                   />
+                  <PasswordHint password={password} />
                 </Field>
               </div>
             </div>

@@ -12,6 +12,8 @@ import {
   CardTitle,
   Field,
   Input,
+  PasswordHint,
+  PasswordInput,
 } from '@/components/bruiloft/ui'
 import { createClient } from '@/lib/supabase/client'
 
@@ -27,9 +29,36 @@ export function SignupForm({ next }: { next?: string }) {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [sent, setSent] = React.useState(false)
+  const [resendWacht, setResendWacht] = React.useState(0)
+  const [resendStatus, setResendStatus] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (resendWacht <= 0) return
+    const timer = setInterval(() => setResendWacht((s) => s - 1), 1000)
+    return () => clearInterval(timer)
+  }, [resendWacht])
+
+  async function onResend() {
+    setResendStatus(null)
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
+      },
+    })
+    setResendWacht(60)
+    setResendStatus(
+      error ? mapAuthError(error.message) : 'Bevestigingsmail opnieuw verstuurd.'
+    )
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (password.length < 8) {
+      setError('Kies een wachtwoord van minimaal 8 tekens.')
+      return
+    }
     setLoading(true)
     setError(null)
     const { error } = await supabase.auth.signUp({
@@ -46,6 +75,7 @@ export function SignupForm({ next }: { next?: string }) {
       return
     }
     setSent(true)
+    setResendWacht(60)
     setLoading(false)
   }
 
@@ -59,16 +89,31 @@ export function SignupForm({ next }: { next?: string }) {
             die mail om je account te activeren en in te loggen.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Geen mail ontvangen? Controleer je spam-map of{' '}
+            Geen mail ontvangen? Controleer eerst je spam-map — daar belandt de mail soms in.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={resendWacht > 0}
+            onClick={onResend}
+          >
+            {resendWacht > 0 ? `Opnieuw versturen (${resendWacht}s)` : 'Mail opnieuw versturen'}
+          </Button>
+          {resendStatus ? (
+            <p className="text-center text-sm text-muted-foreground" aria-live="polite">
+              {resendStatus}
+            </p>
+          ) : null}
+          <p className="text-center text-sm text-muted-foreground">
             <Link
               href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
               className="font-medium text-primary hover:underline"
             >
-              ga terug naar inloggen
+              Terug naar inloggen
             </Link>
-            .
           </p>
         </CardContent>
       </Card>
@@ -103,16 +148,17 @@ export function SignupForm({ next }: { next?: string }) {
               onChange={(e) => setEmail(e.target.value)}
             />
           </Field>
-          <Field label="Wachtwoord" htmlFor="password" required error={undefined}>
-            <Input
+          <Field label="Wachtwoord" htmlFor="password" required>
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               required
               minLength={8}
+              aria-invalid={password.length > 0 && password.length < 8 ? true : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <PasswordHint password={password} />
           </Field>
 
           {error ? (

@@ -191,7 +191,20 @@ export default function LeveranciersPage() {
       ) : (
         <>
           {weergave === 'tabel' ? (
-            <div className="rounded-lg border border-border bg-card shadow-sm overflow-x-auto">
+            <>
+            {/* Op smalle schermen is een 6-kolomstabel onleesbaar; toon daar kaarten. */}
+            <div className="grid gap-4 md:hidden">
+              {gesorteerd.map((v) => (
+                <VendorCard
+                  key={v.id}
+                  vendor={v}
+                  budgetItems={budgetItems}
+                  onEdit={kanBewerken ? openBewerk : undefined}
+                  onDelete={kanBewerken ? setDelVendor : undefined}
+                />
+              ))}
+            </div>
+            <div className="hidden rounded-lg border border-border bg-card shadow-sm overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -224,6 +237,7 @@ export default function LeveranciersPage() {
                 </tbody>
               </table>
             </div>
+            </>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {gesorteerd.map((v) => (
@@ -273,9 +287,32 @@ export default function LeveranciersPage() {
         description={delVendor ? `Weet je zeker dat je "${delVendor.naam}" wilt verwijderen?` : undefined}
         onConfirm={async () => {
           if (!delVendor) return
+          const verwijderd = delVendor
           try {
-            await deleteVendor(delVendor.id)
-            toast({ title: 'Leverancier verwijderd', variant: 'success' })
+            await deleteVendor(verwijderd.id)
+            toast({
+              title: 'Leverancier verwijderd',
+              description: verwijderd.naam,
+              variant: 'success',
+              duration: 7000,
+              action: {
+                label: 'Ongedaan maken',
+                onClick: () => {
+                  void addVendor({
+                    naam: verwijderd.naam,
+                    type: verwijderd.type,
+                    status: verwijderd.status,
+                    contactpersoon: verwijderd.contactpersoon,
+                    telefoon: verwijderd.telefoon,
+                    email: verwijderd.email,
+                    website: verwijderd.website,
+                    geoffreerdBedrag: verwijderd.geoffreerdBedrag,
+                    notitie: verwijderd.notitie,
+                    budgetItemId: verwijderd.budgetItemId,
+                  })
+                },
+              },
+            })
           } catch {
             toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }

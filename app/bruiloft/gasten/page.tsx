@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -52,6 +52,39 @@ function RsvpSelect({
   )
 }
 
+// Klikbare kolomkop met sorteerindicator voor de gastentabel.
+function SorteerKop<K extends string>({
+  label,
+  kolom,
+  actief,
+  richting,
+  onSorteer,
+}: {
+  label: string
+  kolom: K
+  actief: K
+  richting: 'asc' | 'desc'
+  onSorteer: (kolom: K) => void
+}) {
+  const isActief = actief === kolom
+  return (
+    <th scope="col" className="px-4 py-3 font-medium" aria-sort={isActief ? (richting === 'asc' ? 'ascending' : 'descending') : undefined}>
+      <button
+        type="button"
+        onClick={() => onSorteer(kolom)}
+        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+      >
+        {label}
+        {isActief ? (
+          richting === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    </th>
+  )
+}
+
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const guests = useBruiloftStore((s) => s.guests)
@@ -68,6 +101,17 @@ export default function GastenPage() {
   const [fCategorie, setFCategorie] = React.useState('all')
   const [fType, setFType] = React.useState('all')
   const [fRsvp, setFRsvp] = React.useState('all')
+  const [sortKolom, setSortKolom] = React.useState<'naam' | 'categorie' | 'type' | 'rsvp'>('naam')
+  const [sortRichting, setSortRichting] = React.useState<'asc' | 'desc'>('asc')
+
+  const wisselSortering = (kolom: typeof sortKolom) => {
+    if (kolom === sortKolom) {
+      setSortRichting((r) => (r === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKolom(kolom)
+      setSortRichting('asc')
+    }
+  }
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
@@ -134,8 +178,23 @@ export default function GastenPage() {
   }
 
   const updateRsvp = async (g: Guest, status: RsvpStatus) => {
+    const vorige = g.rsvpStatus
+    if (vorige === status) return
     try {
       await updateGuest(g.id, { rsvpStatus: status })
+      // De inline select in de tabel is snel (per ongeluk) gewijzigd; een
+      // undo-toast maakt dat zonder zoeken terug te draaien.
+      toast({
+        title: 'RSVP bijgewerkt',
+        description: `${g.voornaam} ${g.achternaam}`.trim() + ` → ${status}`,
+        variant: 'success',
+        action: {
+          label: 'Ongedaan maken',
+          onClick: () => {
+            void updateGuest(g.id, { rsvpStatus: vorige })
+          },
+        },
+      })
     } catch {
       toast({ title: 'Bijwerken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
@@ -152,10 +211,18 @@ export default function GastenPage() {
     return true
   })
 
-  const zichtbaar = [...gefilterd].sort((a, b) =>
+  const opNaam = (a: Guest, b: Guest) =>
     (a.achternaam || '').localeCompare(b.achternaam || '', 'nl') ||
     a.voornaam.localeCompare(b.voornaam, 'nl')
-  )
+
+  const zichtbaar = [...gefilterd].sort((a, b) => {
+    let verschil = 0
+    if (sortKolom === 'categorie') verschil = a.categorie.localeCompare(b.categorie, 'nl')
+    else if (sortKolom === 'type') verschil = a.gasttype.localeCompare(b.gasttype, 'nl')
+    else if (sortKolom === 'rsvp') verschil = a.rsvpStatus.localeCompare(b.rsvpStatus, 'nl')
+    if (verschil === 0) verschil = opNaam(a, b)
+    return sortRichting === 'asc' ? verschil : -verschil
+  })
 
   const openNieuw = () => {
     setEditGuest(null)
@@ -292,10 +359,10 @@ export default function GastenPage() {
                   <caption className="sr-only">Gastenlijst met categorie, type en RSVP-status</caption>
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="px-4 py-3 font-medium">Naam</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Categorie</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Type</th>
-                      <th scope="col" className="px-4 py-3 font-medium">RSVP</th>
+                      <SorteerKop label="Naam" kolom="naam" actief={sortKolom} richting={sortRichting} onSorteer={wisselSortering} />
+                      <SorteerKop label="Categorie" kolom="categorie" actief={sortKolom} richting={sortRichting} onSorteer={wisselSortering} />
+                      <SorteerKop label="Type" kolom="type" actief={sortKolom} richting={sortRichting} onSorteer={wisselSortering} />
+                      <SorteerKop label="RSVP" kolom="rsvp" actief={sortKolom} richting={sortRichting} onSorteer={wisselSortering} />
                       <th scope="col" className="px-4 py-3">
                         <span className="sr-only">Acties</span>
                       </th>
@@ -392,11 +459,15 @@ export default function GastenPage() {
                       </p>
                     </div>
 
-                    {/* RSVP-select */}
-                    <RsvpSelect
-                      value={g.rsvpStatus}
-                      onChange={(v) => updateRsvp(g, v)}
-                    />
+                    {/* RSVP-select (alleen-lezen badge voor wie niet mag bewerken) */}
+                    {kanBewerken ? (
+                      <RsvpSelect
+                        value={g.rsvpStatus}
+                        onChange={(v) => updateRsvp(g, v)}
+                      />
+                    ) : (
+                      <StatusBadge kind="rsvp" value={g.rsvpStatus} />
+                    )}
 
                     {/* Actiemenu */}
                     {(g.rsvpCode || kanBewerken) ? (

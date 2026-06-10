@@ -13,6 +13,7 @@ import {
   CardTitle,
   Field,
   Input,
+  PasswordInput,
 } from '@/components/bruiloft/ui'
 import { createClient } from '@/lib/supabase/client'
 
@@ -58,16 +59,17 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
               type="email"
               autoComplete="email"
               required
+              aria-invalid={error ? true : undefined}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </Field>
           <Field label="Wachtwoord" htmlFor="password" required>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               required
+              aria-invalid={error ? true : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
