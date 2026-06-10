@@ -1,15 +1,32 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowLeft, ArrowRight, CalendarHeart, Check, Heart, KeyRound, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarHeart, Check, CheckCircle2, Church, ClipboardList, Heart, KeyRound, Users, Wallet } from 'lucide-react'
 
 import { Button, Field, Input, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
-import type { WeddingInput } from '@/lib/bruiloft/types'
+import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'account'
-const STEPS_FULL: Step[] = ['datum', 'namen', 'budget', 'gasten', 'account']
-const STEPS_AUTH: Step[] = ['datum', 'namen', 'budget', 'gasten']
+type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'voortgang' | 'account'
+const STEPS_FULL: Step[] = ['datum', 'namen', 'budget', 'gasten', 'voortgang', 'account']
+const STEPS_AUTH: Step[] = ['datum', 'namen', 'budget', 'gasten', 'voortgang']
+
+const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
+  { key: 'locatie', label: 'Trouwlocatie' },
+  { key: 'fotograaf', label: 'Fotograaf' },
+  { key: 'catering', label: 'Catering' },
+  { key: 'trouwambtenaar', label: 'Trouwambtenaar / Babs' },
+  { key: 'trouwkleding', label: 'Trouwkleding' },
+  { key: 'dj_of_band', label: 'DJ of band' },
+  { key: 'videograaf', label: 'Videograaf' },
+  { key: 'bloemist', label: 'Bloemist' },
+]
+
+const CEREMONIE_OPTIES: { value: CeremonieType; label: string; omschrijving: string }[] = [
+  { value: 'gemeentelijk', label: 'Gemeentelijk', omschrijving: 'Via het stadhuis of een buitenlocatie met trouwambtenaar' },
+  { value: 'religieus', label: 'Religieus', omschrijving: 'In een kerk, moskee of andere gebedsruimte' },
+  { value: 'symbolisch', label: 'Symbolisch', omschrijving: 'Zonder wettige binding, puur ceremonieel' },
+]
 
 const BUDGET_PRESETS = [
   { label: '< €10.000', value: 9000 },
@@ -43,9 +60,22 @@ export function OnboardingWizard({
   const [customBudget, setCustomBudget] = React.useState('')
   const [daggasten, setDaggasten] = React.useState('')
   const [avondgasten, setAvondgasten] = React.useState('')
+  const [ceremonietype, setCeremonietype] = React.useState<CeremonieType | null>(null)
+  const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>({})
   const [email, setEmail] = React.useState(initialEmail)
   const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
+
+  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus) {
+    setGeregeldeZaken((prev) => {
+      if (prev[key] === status) {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      }
+      return { ...prev, [key]: status }
+    })
+  }
 
   const stepIndex = steps.indexOf(step)
 
@@ -53,21 +83,23 @@ export function OnboardingWizard({
     step === 'datum' ? trouwdatum !== '' :
     step === 'namen' ? partner1.trim() !== '' && partner2.trim() !== '' :
     step === 'account' ? email.includes('@') && password.length >= 8 :
-    true // gasten en budget zijn optioneel
+    true // budget, gasten en voortgang zijn optioneel
 
   function prev() {
     if (step === 'datum') onBack()
     else if (step === 'namen') setStep('datum')
     else if (step === 'budget') setStep('namen')
     else if (step === 'gasten') setStep('budget')
-    else setStep('gasten')
+    else if (step === 'voortgang') setStep('gasten')
+    else setStep('voortgang')
   }
 
   async function next() {
     if (step === 'datum') return setStep('namen')
     if (step === 'namen') return setStep('budget')
     if (step === 'budget') return setStep('gasten')
-    if (step === 'gasten') {
+    if (step === 'gasten') return setStep('voortgang')
+    if (step === 'voortgang') {
       if (authenticatedMode) return finish()
       return setStep('account')
     }
@@ -86,6 +118,8 @@ export function OnboardingWizard({
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
       aantalDaggasten: Number(daggasten) || 0,
       aantalAvondgasten: Number(avondgasten) || 0,
+      ceremonietype,
+      geregeldeZaken,
     }
     try {
       if (authenticatedMode) {
@@ -303,6 +337,83 @@ export function OnboardingWizard({
             </div>
           )}
 
+          {step === 'voortgang' && (
+            <div>
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <ClipboardList className="h-6 w-6" />
+              </div>
+              <h2 className="font-serif text-3xl text-foreground">Wat hebben jullie al geregeld?</h2>
+              <p className="mt-2 text-muted-foreground">
+                Dit helpt ons jullie takenlijst en AI-adviezen te personaliseren. Sla gerust over als je het nog niet weet.
+              </p>
+
+              <div className="mt-6 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Type ceremonie</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {CEREMONIE_OPTIES.map(({ value, label, omschrijving }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setCeremonietype(ceremonietype === value ? null : value)}
+                      className={`rounded-xl border-2 px-3 py-3 text-left transition-all ${
+                        ceremonietype === value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-accent'
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">{label}</span>
+                      <span className="mt-0.5 block text-xs leading-snug opacity-70">{omschrijving}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Leveranciers en arrangementen</p>
+                <div className="overflow-hidden rounded-xl border border-border">
+                  {VOORTGANG_ITEMS.map(({ key, label }, i) => {
+                    const current = geregeldeZaken[key]
+                    return (
+                      <div
+                        key={key}
+                        className={`flex items-center justify-between px-4 py-3 ${i !== 0 ? 'border-t border-border' : ''}`}
+                      >
+                        <span className="text-sm font-medium text-foreground">{label}</span>
+                        <div className="flex gap-1.5">
+                          {([
+                            { status: 'geboekt' as VoortgangStatus, label: 'Geboekt' },
+                            { status: 'bezig' as VoortgangStatus, label: 'Bezig' },
+                            { status: 'te_doen' as VoortgangStatus, label: 'Te doen' },
+                          ] as const).map(({ status, label: btnLabel }) => (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => setVoortgang(key, status)}
+                              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                                current === status
+                                  ? status === 'geboekt'
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                    : status === 'bezig'
+                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                    : 'bg-muted text-foreground'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              }`}
+                            >
+                              {current === status && status === 'geboekt' && (
+                                <CheckCircle2 className="h-3 w-3" />
+                              )}
+                              {btnLabel}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {step === 'account' && (
             <div>
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -346,7 +457,7 @@ export function OnboardingWizard({
               Stap {stepIndex + 1} van {steps.length}
             </span>
             <Button onClick={next} disabled={!canNext || bezig} loading={bezig} size="lg">
-              {(step === 'account' || (authenticatedMode && step === 'gasten')) ? (
+              {(step === 'account' || (authenticatedMode && step === 'voortgang')) ? (
                 <>
                   Maak ons trouwplan
                   <Check className="h-4 w-4" />

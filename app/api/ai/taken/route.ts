@@ -36,11 +36,13 @@ Bruiloftdetails:
 Huidige situatie:
 - Taken: ${ctx.taken.totaal} totaal (${ctx.taken.open} open, ${ctx.taken.bezig} in uitvoering, ${ctx.taken.klaar} klaar, ${ctx.taken.achterstallig} achterstallig)
 - Budget: €${ctx.budget.totaal} totaal, €${ctx.budget.resterend} resterend
-- Leveranciersstatus: ${JSON.stringify(ctx.leveranciers.status)}
+- Leveranciersstatus (in het systeem): ${JSON.stringify(ctx.leveranciers.status)}
 - Gasten: ${ctx.gasten.totaal} totaal (${ctx.gasten.bevestigd} bevestigd, ${ctx.gasten.geenReactie} geen reactie)
 - Draaiboek items: ${ctx.draaiboek.aantalItems}
 - Urgente taken: ${JSON.stringify(ctx.taken.urgenteTaken)}
 - Aankomende betalingen: ${JSON.stringify(ctx.betalingen.aankomend)}
+${ctx.bruidspaar.ceremonietype ? `- Type ceremonie: ${ctx.bruidspaar.ceremonietype}` : ''}
+${Object.keys(ctx.bruidspaar.geregeldeZaken).length > 0 ? `- Door het stel opgegeven voortgang (buiten het systeem): ${JSON.stringify(ctx.bruidspaar.geregeldeZaken)}` : ''}
 
 Bestaande taken (NIET opnieuw voorstellen):
 ${bestaandeTaken.length > 0 ? bestaandeTaken.map((t) => `- ${t}`).join('\n') : '(geen)'}
@@ -48,8 +50,10 @@ ${bestaandeTaken.length > 0 ? bestaandeTaken.map((t) => `- ${t}`).join('\n') : '
 Stel 8-12 relevante en persoonlijke taken voor die:
 1. Nog NIET in de bestaande takenlijst staan
 2. Aansluiten bij de huidige fase (${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan)
-3. Rekening houden met niet-geboekte leveranciers
-4. Prioriteit geven aan wat ontbreekt of dringend is
+3. Rekening houden met niet-geboekte leveranciers — stel NOOIT een taak voor een categorie die al als 'geboekt' is opgegeven
+4. Prioriteit geven aan categorieën die als 'bezig' zijn opgegeven of nog niet geregeld zijn
+5. Bij een religieuze ceremonie: voeg kerk-specifieke taken toe (priester/dominee, kerkboek)
+6. Bij een symbolische ceremonie: geen taken over gemeentelijke registratie
 
 Bereken concrete deadlines als ISO-datums (YYYY-MM-DD) op basis van de trouwdatum en de huidige situatie.
 Gebruik "partner 1" voor taken specifiek voor ${ctx.bruidspaar.partner1}, "partner 2" voor ${ctx.bruidspaar.partner2}, of "samen".
