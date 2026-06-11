@@ -31,7 +31,7 @@ const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: Layout
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
 const mijnLeveranciers: NavItem = { label: 'Mijn leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
-const leverancierZoeken: NavItem = { label: 'Leverancier zoeken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
+const leverancierZoeken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
@@ -102,12 +102,11 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Leveranciers',
     icon: Store,
     href: '/bruiloft/leveranciers',
+    // leverancierZoeken blijft in items voor actief-detectie/deep links, maar
+    // de zijbalk toont één ingang; de tab-schakelaar op de pagina doet de rest.
     items: [mijnLeveranciers, leverancierZoeken],
     module: 'leveranciers',
-    groups: [
-      { label: 'Leveranciers', items: [mijnLeveranciers] },
-      { label: 'Ontdekken', items: [leverancierZoeken] },
-    ],
+    groups: [{ label: 'Leveranciers', items: [mijnLeveranciers] }],
   },
   {
     key: 'gasten',

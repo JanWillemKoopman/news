@@ -455,6 +455,7 @@ export type Database = {
           naam: string
           notitie: string
           status: string
+          supplier_id: string | null
           telefoon: string
           type: string
           updated_at: string
@@ -471,6 +472,7 @@ export type Database = {
           naam?: string
           notitie?: string
           status?: string
+          supplier_id?: string | null
           telefoon?: string
           type: string
           updated_at?: string
@@ -487,6 +489,7 @@ export type Database = {
           naam?: string
           notitie?: string
           status?: string
+          supplier_id?: string | null
           telefoon?: string
           type?: string
           updated_at?: string
