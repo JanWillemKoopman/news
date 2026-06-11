@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Check } from 'lucide-react'
 
 import { Progress } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import { VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { Vendor, VendorType } from '@/lib/bruiloft/types'
 
@@ -61,7 +61,7 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
               aria-pressed={actief}
               onClick={() => onChange(actief ? 'all' : t)}
               className={cn(
-                'inline-flex min-h-[2.25rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm capitalize transition-colors',
+                'inline-flex min-h-[2.25rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm transition-colors',
                 actief
                   ? 'border-primary bg-primary font-medium text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-accent',
@@ -79,7 +79,7 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
                   aria-hidden
                 />
               ) : null}
-              {t}
+              {capFirst(t)}
               {info.aantal > 0 ? (
                 <span
                   className={cn(

@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, Info, Loader2, Sparkles, X } from 'lucide-
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { capFirst } from '@/lib/utils'
 import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
 const TYPE_STIJL = {
@@ -117,7 +118,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
                     >
                       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
                       <div>
-                        <span className="font-medium capitalize">{punt.categorie}: </span>
+                        <span className="font-medium">{capFirst(punt.categorie)}: </span>
                         {punt.bericht}
                       </div>
                     </li>

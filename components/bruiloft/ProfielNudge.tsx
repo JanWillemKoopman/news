@@ -65,18 +65,20 @@ export function ProfielNudge() {
 
   return (
     <div className="wedding fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:justify-end sm:px-0">
-      <div className="w-full max-w-sm animate-slide-up rounded-xl border border-border bg-card p-4 shadow-lg">
+      {/* Compact op mobiel (minder padding, geen icoon) zodat de melding zo
+          min mogelijk content bedekt; op desktop de ruimere variant. */}
+      <div className="w-full max-w-sm animate-slide-up rounded-xl border border-border bg-card p-3 shadow-lg sm:p-4">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+          <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 sm:flex">
             <Sparkles className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">Maak je profiel compleet</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
               We missen nog: {ontbreekt.map((v) => v.label.toLowerCase()).join(', ')}. Hiermee
               personaliseren we jullie trouwplan.
             </p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-2.5 flex gap-2 sm:mt-3">
               <Button size="sm" onClick={aanvullen}>
                 Aanvullen
               </Button>

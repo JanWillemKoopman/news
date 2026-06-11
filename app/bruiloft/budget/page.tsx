@@ -128,12 +128,21 @@ export default function BudgetPage() {
         <EmptyState
           icon={Wallet}
           titel="Nog geen budgetitems"
-          beschrijving={kanBewerken ? 'Voeg je eerste budgetitem toe om grip te krijgen op de kosten.' : 'Er zijn nog geen budgetitems.'}
+          beschrijving={
+            kanBewerken
+              ? 'Laat jullie totaalbudget automatisch verdelen over de gebruikelijke categorieën, of voeg zelf een item toe.'
+              : 'Er zijn nog geen budgetitems.'
+          }
           actie={
             kanBewerken ? (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Budgetitem toevoegen
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => setDistributeOpen(true)}>
+                  <PieChart className="h-4 w-4" /> Vul een richtverdeling in
+                </Button>
+                <Button variant="outline" onClick={openNieuw}>
+                  <Plus className="h-4 w-4" /> Zelf toevoegen
+                </Button>
+              </div>
             ) : undefined
           }
         />

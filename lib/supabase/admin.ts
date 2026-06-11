@@ -16,7 +16,6 @@ export function createAdminClient() {
 
 // Untyped variant for tables added after the last type generation (e.g. registry tables).
 // Use only when accessing tables not yet in database.types.ts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createRawAdminClient(): ReturnType<typeof createClient<any>> {
   return createClient<any>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

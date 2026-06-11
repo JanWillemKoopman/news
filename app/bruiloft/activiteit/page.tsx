@@ -10,7 +10,7 @@ export default function ActiviteitPage() {
         titel="Recente activiteit"
         beschrijving="Wijzigingen van jou en je medeplanners."
       />
-      <ActivityFeed />
+      <ActivityFeed toonKop={false} />
     </div>
   )
 }

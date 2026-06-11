@@ -18,6 +18,7 @@ import { SubtakenList } from '@/components/bruiloft/taken/SubtakenList'
 import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, ID, Task, TaskInput, Vendor, WeddingMember } from '@/lib/bruiloft/types'
+import { capFirst } from '@/lib/utils'
 
 type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
 
@@ -172,7 +173,7 @@ export function TaskForm({
           >
             {PRIORITEITEN.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {capFirst(p)}
               </option>
             ))}
           </Select>
@@ -238,7 +239,7 @@ export function TaskForm({
                 <option value="">Geen</option>
                 {budgetItems.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.omschrijving || b.categorie}
+                    {b.omschrijving || capFirst(b.categorie)}
                   </option>
                 ))}
               </Select>

@@ -245,7 +245,7 @@ export function RegistryOverzicht({ isEditor }: Props) {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Vinkje "bedankkaartje verstuurd" wordt niet opgeslagen bij afsluiten.</p>
+            <p className="mt-3 text-xs text-muted-foreground">Vinkje &quot;bedankkaartje verstuurd&quot; wordt niet opgeslagen bij afsluiten.</p>
           </CardContent>
         </Card>
       )}

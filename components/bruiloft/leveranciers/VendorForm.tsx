@@ -15,6 +15,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { BudgetItem, Vendor, VendorInput } from '@/lib/bruiloft/types'
+import { capFirst } from '@/lib/utils'
 
 type NewVendor = Omit<VendorInput, 'weddingId'>
 
@@ -158,7 +159,7 @@ export function VendorForm({
             >
               {VENDOR_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {capFirst(t)}
                 </option>
               ))}
             </Select>
@@ -171,7 +172,7 @@ export function VendorForm({
             >
               {VENDOR_STATUSSEN.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {capFirst(s)}
                 </option>
               ))}
             </Select>
@@ -228,7 +229,7 @@ export function VendorForm({
                 <option value="">Geen</option>
                 {budgetItems.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.omschrijving || b.categorie}
+                    {b.omschrijving || capFirst(b.categorie)}
                   </option>
                 ))}
               </Select>

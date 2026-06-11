@@ -568,7 +568,7 @@ function PaymentScreen({ state, submitting, copiedRef, copiedIban, onCopy, onCon
         {submitting ? 'Bezig…' : 'Ik heb overgemaakt ✓'}
       </button>
       <p className="text-xs text-muted-foreground text-center">
-        Je bijdrage verschijnt als "in behandeling" totdat het koppel de ontvangst bevestigt.
+        Je bijdrage verschijnt als &quot;in behandeling&quot; totdat het koppel de ontvangst bevestigt.
       </p>
     </div>
   )

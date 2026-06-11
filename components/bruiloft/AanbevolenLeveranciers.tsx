@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, Compass, MapPin } from 'lucide-react'
 
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import { canView } from '@/lib/bruiloft/permissions'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
@@ -70,8 +70,8 @@ export function AanbevolenLeveranciers() {
             <Card className="h-full transition-colors hover:border-primary/50">
               <CardContent className="p-4">
                 <p className="truncate font-medium text-foreground">{m.supplier.naam}</p>
-                <p className="text-xs capitalize text-muted-foreground">
-                  {m.supplier.type ? `${m.supplier.type} · ` : ''}{m.supplier.categorie}
+                <p className="text-xs text-muted-foreground">
+                  {capFirst(m.supplier.type || m.supplier.categorie)}
                 </p>
                 {m.supplier.plaats ? (
                   <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">

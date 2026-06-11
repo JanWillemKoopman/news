@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Globe, Link2, Mail, Pencil, Phone, Trash2, User } from 'lucide-react'
 
 import { Card, CardContent, Money, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { BudgetItem, Vendor, VendorStatus } from '@/lib/bruiloft/types'
 
 // Statuskleur als accentrand links, in lijn met de StatusBadge-tonen.
@@ -81,7 +81,7 @@ export function VendorCard({ vendor, budgetItems, onEdit, onDelete }: VendorCard
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{vendor.naam}</p>
-            <p className="text-xs capitalize text-muted-foreground">{vendor.type}</p>
+            <p className="text-xs text-muted-foreground">{capFirst(vendor.type)}</p>
           </div>
           {menuItems.length > 0 ? (
             <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -129,7 +129,7 @@ export function VendorCard({ vendor, budgetItems, onEdit, onDelete }: VendorCard
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               <Link2 className="h-3 w-3" />
               {voedtBudget ? 'telt mee in budget' : 'budget'}:{' '}
-              <span className="capitalize">{gekoppeld.omschrijving || gekoppeld.categorie}</span>
+              <span>{gekoppeld.omschrijving || gekoppeld.categorie}</span>
             </span>
           </p>
         ) : null}

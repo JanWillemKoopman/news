@@ -22,7 +22,7 @@ import {
   StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { VENDOR_STATUSSEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -244,7 +244,7 @@ export default function LeveranciersPage() {
                   {gesorteerd.map((v) => (
                     <tr key={v.id} className="border-b border-border last:border-0 hover:bg-accent/40">
                       <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
-                      <td className="px-4 py-3 capitalize text-muted-foreground">{v.type}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{capFirst(v.type)}</td>
                       <td className="px-4 py-3"><StatusBadge kind="leverancier" value={v.status} /></td>
                       <td className="px-4 py-3 text-foreground">
                         {v.geoffreerdBedrag > 0 ? <Money bedrag={v.geoffreerdBedrag} /> : '—'}

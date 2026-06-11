@@ -15,7 +15,6 @@ async function getRegistryData(slug: string): Promise<RegistryResult> {
     const supabase = createClient()
 
     // Use the SECURITY DEFINER RPC — works with anon key, bypasses RLS
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc('get_public_registry', { p_slug: slug })
 
     if (error) {
@@ -27,7 +26,6 @@ async function getRegistryData(slug: string): Promise<RegistryResult> {
     if (!data.enabled) return { status: 'disabled' }
 
     // Map snake_case RPC result to camelCase TypeScript types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items: PublicRegistryItem[] = (data.items ?? []).map((i: any) => ({
       id: i.id as string,
       type: i.type as 'gift' | 'fund',

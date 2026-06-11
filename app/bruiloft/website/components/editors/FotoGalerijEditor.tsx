@@ -33,7 +33,7 @@ export function FotoGalerijEditor() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Upload foto's voor de galerij op jullie trouwwebsite.
+        Upload foto&apos;s voor de galerij op jullie trouwwebsite.
       </p>
 
       {fotos.length > 0 && (
@@ -66,7 +66,7 @@ export function FotoGalerijEditor() {
         ) : (
           <>
             <ImagePlus className="h-6 w-6" />
-            <span className="text-sm">Foto's toevoegen</span>
+            <span className="text-sm">Foto&apos;s toevoegen</span>
           </>
         )}
       </button>

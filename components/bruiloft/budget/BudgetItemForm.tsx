@@ -16,6 +16,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, BudgetItemInput, PaymentTerm, Vendor } from '@/lib/bruiloft/types'
+import { capFirst } from '@/lib/utils'
 
 type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
 
@@ -210,7 +211,7 @@ export function BudgetItemForm({
           >
             {BUDGET_CATEGORIEEN.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {capFirst(c)}
               </option>
             ))}
           </Select>

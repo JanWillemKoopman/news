@@ -18,6 +18,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { capFirst } from '@/lib/utils'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
@@ -38,8 +39,38 @@ export default function DraaiboekPage() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<ScheduleItem | null>(null)
   const [delItem, setDelItem] = React.useState<ScheduleItem | null>(null)
+  const [templateBezig, setTemplateBezig] = React.useState(false)
 
   if (!wedding) return null
+
+  // Veelgebruikte dagindeling als startpunt; alle tijden zijn daarna gewoon
+  // aan te passen of te verwijderen.
+  const startMetTemplate = async () => {
+    if (templateBezig) return
+    setTemplateBezig(true)
+    const template: { tijd: string; titel: string; omschrijving: string; betrokkenen: ScheduleItem['betrokkenen'] }[] = [
+      { tijd: '13:30', titel: 'Aankomst gasten', omschrijving: 'Ontvangst met koffie en thee.', betrokkenen: ['gasten', 'locatie'] },
+      { tijd: '14:00', titel: 'Ceremonie', omschrijving: 'Het jawoord en de ringen.', betrokkenen: ['bruidspaar', 'gasten', 'fotograaf'] },
+      { tijd: '15:00', titel: 'Toost en felicitaties', omschrijving: 'Proosten met alle gasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
+      { tijd: '15:30', titel: 'Fotoshoot', omschrijving: "Foto's met familie en vrienden.", betrokkenen: ['bruidspaar', 'fotograaf'] },
+      { tijd: '17:00', titel: 'Borrel', omschrijving: 'Drankjes en hapjes.', betrokkenen: ['gasten', 'catering'] },
+      { tijd: '18:30', titel: 'Diner', omschrijving: 'Aan tafel met de daggasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
+      { tijd: '20:30', titel: 'Aankomst avondgasten', omschrijving: '', betrokkenen: ['gasten', 'locatie'] },
+      { tijd: '21:00', titel: 'Openingsdans en feest', omschrijving: 'De eerste dans, daarna dansen.', betrokkenen: ['bruidspaar', 'dj of band'] },
+      // 23:30 i.p.v. na middernacht: het draaiboek sorteert op kloktijd.
+      { tijd: '23:30', titel: 'Einde feest en uitzwaaien', omschrijving: '', betrokkenen: ['bruidspaar', 'gasten'] },
+    ]
+    try {
+      for (const item of template) {
+        await addScheduleItem({ ...item, locatie: '' })
+      }
+      toast({ title: 'Standaard dagindeling klaargezet', description: 'Pas tijden en onderdelen aan jullie dag aan.', variant: 'success' })
+    } catch {
+      toast({ title: 'Klaarzetten mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } finally {
+      setTemplateBezig(false)
+    }
+  }
 
   const gesorteerd = scheduleItems
     .filter((s) => {
@@ -141,12 +172,21 @@ export default function DraaiboekPage() {
         <EmptyState
           icon={CalendarClock}
           titel="Nog geen draaiboek"
-          beschrijving={kanBewerken ? 'Voeg programmaonderdelen toe om het tijdschema van de dag op te bouwen.' : 'Er zijn nog geen onderdelen in het draaiboek.'}
+          beschrijving={
+            kanBewerken
+              ? 'Start met een veelgebruikte dagindeling en pas die aan, of bouw het schema zelf op.'
+              : 'Er zijn nog geen onderdelen in het draaiboek.'
+          }
           actie={
             kanBewerken ? (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Onderdeel toevoegen
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={startMetTemplate} loading={templateBezig}>
+                  <CalendarClock className="h-4 w-4" /> Start met standaard dagindeling
+                </Button>
+                <Button variant="outline" onClick={openNieuw}>
+                  <Plus className="h-4 w-4" /> Zelf opbouwen
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -214,9 +254,9 @@ export default function DraaiboekPage() {
                           {s.betrokkenen.map((r) => (
                             <span
                               key={r}
-                              className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium capitalize text-secondary-foreground"
+                              className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
                             >
-                              {r}
+                              {capFirst(r)}
                             </span>
                           ))}
                         </div>

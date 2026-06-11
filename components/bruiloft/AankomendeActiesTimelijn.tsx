@@ -7,6 +7,7 @@ import { CheckSquare, CreditCard, ChevronDown, ChevronUp } from 'lucide-react'
 import { dagenTot, dagLabel, formatDatumKort } from '@/lib/bruiloft/format'
 import type { BudgetItem, Task } from '@/lib/bruiloft/types'
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
+import { capFirst } from '@/lib/utils'
 
 interface AankomendeActiesTimelijnProps {
   tasks: Task[]
@@ -127,8 +128,8 @@ export function AankomendeActiesTimelijn({
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground capitalize">
-                    {item.titel}
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {capFirst(item.titel)}
                   </p>
                   <p className={`text-xs ${dagUrgentieStijl(item.dagen)}`}>
                     {formatDatumKort(item.datum)} · {dagLabel(item.dagen)}

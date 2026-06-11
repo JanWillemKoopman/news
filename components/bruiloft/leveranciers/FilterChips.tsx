@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 
 export interface ChipOption {
   value: string
@@ -44,7 +44,7 @@ export function FilterChips({ options, value, onChange, label, className }: Filt
             aria-checked={actief}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'inline-flex min-h-[2.5rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm capitalize transition-colors',
+              'inline-flex min-h-[2.5rem] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors',
               actief
                 ? 'border-primary bg-primary font-medium text-primary-foreground'
                 : 'border-border bg-card text-foreground hover:bg-accent',
@@ -52,7 +52,7 @@ export function FilterChips({ options, value, onChange, label, className }: Filt
             )}
           >
             {opt.icon ? <opt.icon className="h-3.5 w-3.5 shrink-0" /> : null}
-            {opt.label}
+            {capFirst(opt.label)}
             {opt.count !== undefined ? (
               <span
                 className={cn(

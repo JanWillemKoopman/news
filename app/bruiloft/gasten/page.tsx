@@ -22,6 +22,7 @@ import {
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { categorieLabelVoor, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { capFirst } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Guest, RsvpStatus } from '@/lib/bruiloft/types'
 
@@ -33,21 +34,23 @@ function RsvpSelect({
   value: RsvpStatus
   onChange: (v: RsvpStatus) => void
 }) {
+  // Zelfde tonen als StatusBadge (zachte vulling + inset-ring), zodat de
+  // klikbare badge visueel gelijk oogt aan de statische badges elders.
   const klassen: Record<RsvpStatus, string> = {
-    bevestigd: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800',
-    afgemeld: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800',
-    uitgenodigd: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-800',
-    'geen reactie': 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
+    bevestigd: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20',
+    afgemeld: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
+    uitgenodigd: 'bg-sky-500/10 text-sky-700 ring-sky-600/20 dark:text-sky-300 dark:ring-sky-400/20',
+    'geen reactie': 'bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-300 dark:ring-amber-400/20',
   }
   return (
     <select
       value={value}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => onChange(e.target.value as RsvpStatus)}
-      className={`rounded-full border px-2 py-0.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer ${klassen[value]}`}
+      className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring ${klassen[value]}`}
     >
       {RSVP_STATUSSEN.map((s) => (
-        <option key={s} value={s}>{s}</option>
+        <option key={s} value={s}>{capFirst(s)}</option>
       ))}
     </select>
   )
@@ -56,6 +59,7 @@ function RsvpSelect({
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const guests = useBruiloftStore((s) => s.guests)
+  const tables = useBruiloftStore((s) => s.tables)
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
@@ -80,6 +84,11 @@ export default function GastenPage() {
   const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
   const [origin, setOrigin] = React.useState('')
   React.useEffect(() => { setOrigin(window.location.origin) }, [])
+
+  const tafelNamen = React.useMemo(
+    () => new Map(tables.map((t) => [t.id, t.naam])),
+    [tables]
+  )
 
   // Zorg dat alle gasten een RSVP-code hebben zodra de pagina geladen is.
   React.useEffect(() => {
@@ -298,6 +307,7 @@ export default function GastenPage() {
                       <th scope="col" className="px-4 py-3 font-medium">Naam</th>
                       <th scope="col" className="px-4 py-3 font-medium">Categorie</th>
                       <th scope="col" className="px-4 py-3 font-medium">Type</th>
+                      <th scope="col" className="px-4 py-3 font-medium">Tafel</th>
                       <th scope="col" className="px-4 py-3 font-medium">RSVP</th>
                       <th scope="col" className="px-4 py-3">
                         <span className="sr-only">Acties</span>
@@ -322,7 +332,10 @@ export default function GastenPage() {
                         <td className="px-4 py-3 text-muted-foreground">
                           {categorieLabelVoor(g.categorie, p1, p2)}
                         </td>
-                        <td className="px-4 py-3 capitalize text-muted-foreground">{g.gasttype}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{capFirst(g.gasttype)}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {tafelNamen.get(g.tafelId ?? '') ?? '—'}
+                        </td>
                         <td className="px-4 py-3">
                           {kanBewerken ? (
                             <RsvpSelect

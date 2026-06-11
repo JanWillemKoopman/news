@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
   const { item_id, guest_name, guest_email, message, wedding_slug } = parsed.data
 
   // Use anon-key client + SECURITY DEFINER RPC — works without service role key
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createClient() as any
   const { data: result, error: rpcError } = await supabase.rpc('reserve_registry_item', {
     p_item_id: item_id,

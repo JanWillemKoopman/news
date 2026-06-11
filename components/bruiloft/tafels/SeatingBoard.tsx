@@ -15,7 +15,7 @@ import {
 import { AlertTriangle, Pencil, Trash2, X } from 'lucide-react'
 
 import { Button, Card, Select } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { Guest, Table } from '@/lib/bruiloft/types'
 
 const ONVERDEELD = 'onverdeeld'
@@ -170,7 +170,7 @@ function TableCard({
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <p className="font-medium text-foreground">{table.naam}</p>
-          <p className="text-xs capitalize text-muted-foreground">{table.vorm}</p>
+          <p className="text-xs text-muted-foreground">{capFirst(table.vorm)}</p>
         </div>
         <div className="flex items-center gap-1">
           <span

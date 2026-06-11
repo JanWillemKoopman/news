@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import { Button, Input, Modal, Money } from '@/components/bruiloft/ui'
 import { budgetVerdelingVoorstel } from '@/lib/bruiloft/derived'
+import { capFirst } from '@/lib/utils'
 import type { BudgetCategorie, BudgetItem } from '@/lib/bruiloft/types'
 
 interface BudgetDistributeModalProps {
@@ -78,8 +79,8 @@ export function BudgetDistributeModal({
                 onChange={() => toggle(r.categorie)}
                 className="h-4 w-4 accent-[hsl(var(--primary))]"
               />
-              <span className="flex-1 text-sm capitalize text-foreground">
-                {r.categorie}
+              <span className="flex-1 text-sm text-foreground">
+                {capFirst(r.categorie)}
                 {r.heeftItem ? (
                   <span className="ml-2 text-xs text-muted-foreground">(heeft al een item)</span>
                 ) : null}

@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 
 type Tone = 'green' | 'amber' | 'red' | 'blue' | 'grey' | 'terracotta' | 'white' | 'lightgrey'
 
@@ -52,12 +52,12 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ kind, value, className }: StatusBadgeProps) {
   const tone = tones[kind][value] ?? 'grey'
-  const label = kind === 'taak' && value === 'bezig' ? 'In uitvoering' : value
+  const label = kind === 'taak' && value === 'bezig' ? 'In uitvoering' : capFirst(value)
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset',
         toneClasses[tone],
         className
       )}

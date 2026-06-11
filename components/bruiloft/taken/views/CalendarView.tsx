@@ -16,7 +16,7 @@ import { Button, Modal } from '@/components/bruiloft/ui'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { addDays, toISODate } from '@/lib/bruiloft/timeblocks'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { ISODate, Task, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 
 interface CalendarViewProps {
@@ -92,7 +92,7 @@ export function CalendarView({
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg capitalize text-foreground">{MAAND_FMT.format(shown)}</h3>
+        <h3 className="text-lg text-foreground">{capFirst(MAAND_FMT.format(shown))}</h3>
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" onClick={() => setShown(startOfMonth(new Date()))}>
             <span className="text-xs">Nu</span>

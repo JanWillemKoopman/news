@@ -4,6 +4,7 @@ import * as React from 'react'
 import { BarChart3, Lightbulb, Sparkles, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { AdviesTekst } from './AdviesTekst'
 import { useAIAdvies } from './useAIAdvies'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
@@ -72,7 +73,7 @@ export function AIInsightCard({ sectie, className }: AIInsightCardProps) {
           ) : null}
         </div>
         <p className="mt-1 text-sm font-medium text-foreground">{item.titel}</p>
-        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{item.omschrijving}</p>
+        <AdviesTekst tekst={item.omschrijving} className="mt-0.5 text-sm leading-relaxed text-muted-foreground" />
       </div>
       <button
         type="button"

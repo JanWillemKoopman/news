@@ -88,7 +88,12 @@ function buildFingerprint(ctx: AIWeddingContext): string {
 
 // ---- Prompt builders --------------------------------------------------------
 
-const PLANNER_PERSONA = `Je bent een professionele, empathische maar daadkrachtige Nederlandse trouwplanner met 15 jaar ervaring. Je helpt koppels stap voor stap hun droombruiloft te organiseren. Je schrijft in het Nederlands, persoonlijk en warm maar ook concreet en to-the-point. Geef nooit vage adviezen — wees altijd specifiek en stuur het koppel aan tot actie.`
+const PLANNER_PERSONA = `Je bent een professionele, empathische maar daadkrachtige Nederlandse trouwplanner met 15 jaar ervaring. Je helpt koppels stap voor stap hun droombruiloft te organiseren. Je schrijft in het Nederlands, persoonlijk en warm maar ook concreet en to-the-point. Geef nooit vage adviezen — wees altijd specifiek en stuur het koppel aan tot actie.
+
+Belangrijke schrijfregels:
+- Toon: kalm en opbouwend, nooit paniekerig; vermijd uitroeptekens en alarmwoorden als 'dringend', 'kritiek' of 'achterstand' in je lopende tekst.
+- Noem NOOIT interne veld- of statusnamen letterlijk (zoals 'niet-geboekt', 'Geregelde Zaken' of andere waarden uit de data) — beschrijf de situatie in gewone mensentaal.
+- Als de planning er grotendeels leeg uitziet en er nog ruim tijd is, is het koppel waarschijnlijk net begonnen: behandel dat als een normale, gezonde startpositie en geef een vriendelijke eerste-stappen-opbouw in plaats van een waarschuwing.`
 
 function buildModulePrompt(key: AIModuleKey, ctx: AIWeddingContext): string {
   const dagLabel =
@@ -167,17 +172,18 @@ ${JSON.stringify(ctx, null, 2)}
 
 Geef als ervaren wedding planner een eerlijk globaal oordeel over waar dit koppel staat in hun planning. Wees warm maar realistisch. Beoordeel het algehele planningsniveau.
 
-Score-richtlijnen (0-100):
-- 80-100: planning loopt uitstekend, bijna alles is geregeld
+Score-richtlijnen (0-100) — weeg de resterende tijd ALTIJD mee:
+- 80-100: planning loopt uitstekend voor dit moment, bijna alles is geregeld
 - 60-79: goed op weg, maar er zijn nog duidelijke aandachtspunten
-- 40-59: meerdere onderdelen vereisen actie, enige urgentie gepast
-- 20-39: planning loopt achter, directe aandacht nodig
-- 0-19: planning staat nog vrijwel nergens, kritieke actie vereist
+- 40-59: meerdere onderdelen vereisen actie gezien de resterende tijd
+- 20-39: planning loopt echt achter op wat met deze resterende tijd nodig is
+- 0-19: zeer weinig geregeld terwijl de bruiloft dichtbij is
+- Een grotendeels lege planning met nog 9+ maanden te gaan is een normale startpositie, géén achterstand: scoor die 45-60 en schrijf een bemoedigende eerste-stappen-samenvatting.
 
 Status-regels:
 - "op_schema": score >= 65 en geen kritieke problemen
 - "actie_vereist": score 35-64 of enkele dringende zaken
-- "kritiek": score < 35 of verlopen deadlines / ontbrekende kritieke leveranciers met weinig tijd
+- "kritiek": alleen bij score < 35 ÉN concrete tijdsdruk (verlopen deadlines of ontbrekende kritieke leveranciers terwijl de bruiloft dichtbij is)
 
 Geef ALLEEN een JSON-object terug:
 {

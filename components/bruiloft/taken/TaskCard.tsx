@@ -3,9 +3,9 @@
 import * as React from 'react'
 import { Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
-import { Button, Card, CardContent, StatusBadge } from '@/components/bruiloft/ui'
+import { Card, CardContent, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
 import { dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 
 // Deadline-label specifiek voor de taakkaart: "deadline over X dagen" in de
@@ -106,23 +106,14 @@ export function TaskCard({
             >
               {task.titel}
             </button>
-            <div className="flex shrink-0 gap-1 sm:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Bewerken"
-                onClick={() => onEdit(task)}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Verwijderen"
-                onClick={() => onDelete(task)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div className="shrink-0">
+              <OverflowMenu
+                label={`Acties voor ${task.titel}`}
+                items={[
+                  { label: 'Bewerken', icon: Pencil, onClick: () => onEdit(task) },
+                  { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(task) },
+                ]}
+              />
             </div>
           </div>
           {task.omschrijving && !compact ? (
@@ -147,7 +138,7 @@ export function TaskCard({
                 </span>
               </span>
             ) : fallbackLabel ? (
-              <span className="capitalize">{fallbackLabel}</span>
+              <span>{capFirst(fallbackLabel)}</span>
             ) : null}
             {heeftSubtaken ? (
               <button
@@ -171,25 +162,6 @@ export function TaskCard({
               onToggle={(id) => onToggleSubtaak(task, id)}
             />
           ) : null}
-        </div>
-
-        <div className="hidden shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:flex">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Bewerken"
-            onClick={() => onEdit(task)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Verwijderen"
-            onClick={() => onDelete(task)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       </CardContent>
     </Card>

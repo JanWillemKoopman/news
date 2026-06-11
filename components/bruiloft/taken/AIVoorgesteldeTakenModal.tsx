@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { Button, Modal } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Task, Wedding } from '@/lib/bruiloft/types'
 import type { AITaakSuggestie, AITakenAdvies } from '@/app/api/ai/taken/route'
@@ -270,8 +270,8 @@ export function AIVoorgesteldeTakenModal({
                                 <p className="font-medium leading-snug text-foreground">
                                   {t.titel}
                                 </p>
-                                <span className="ml-auto shrink-0 text-xs text-muted-foreground capitalize">
-                                  {t.toegewezenAan}
+                                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                                  {capFirst(t.toegewezenAan)}
                                 </span>
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">

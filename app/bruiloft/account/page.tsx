@@ -256,7 +256,7 @@ function GegevensSection() {
           {role ? (
             <div>
               <p className="mb-1 text-sm font-medium text-foreground">Mijn rol</p>
-              <p className="text-sm text-muted-foreground capitalize">{ROLE_LABELS[role]}</p>
+              <p className="text-sm text-muted-foreground">{ROLE_LABELS[role]}</p>
             </div>
           ) : null}
           <div className="flex justify-end">
@@ -537,7 +537,12 @@ function AccountHero() {
         <h1 className="text-2xl text-foreground">
           {currentUser.displayName || currentUser.email}
         </h1>
-        <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+        {/* Zonder ingestelde naam staat het e-mailadres al in de kop; toon dan een hint. */}
+        {currentUser.displayName ? (
+          <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">Stel hieronder je naam in</p>
+        )}
         {role ? (
           <span className="mt-1 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">
             {ROLE_LABELS[role]}

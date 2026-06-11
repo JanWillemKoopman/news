@@ -101,7 +101,7 @@ export default function TafelsPage() {
             ) : null}
             {kanBewerken && (
               <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Tafel
+                <Plus className="h-4 w-4" /> Tafel toevoegen
               </Button>
             )}
           </>

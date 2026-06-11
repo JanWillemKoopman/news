@@ -655,11 +655,20 @@ function statusVoorTaak(
 
 export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
   const geregeldeZaken = wedding.geregeldeZaken ?? {}
+  // Gun een vers stel een rustige aanloop: taken vóór de bruiloft krijgen
+  // minimaal drie weken vanaf vandaag, zodat een nieuw account niet meteen
+  // start met "deadline morgen!"-paniek. Taken ná de bruiloft blijven staan.
+  const minimumDeadline = addDays(new Date(), 21)
   return TEMPLATE_TASKS.map((t) => {
-    const deadlineDate =
+    let deadlineDate =
       'maanden' in t.offset
         ? addMonths(wedding.trouwdatum, t.offset.maanden)
         : addDays(wedding.trouwdatum, t.offset.dagen)
+    const naBruiloft = 'dagen' in t.offset && t.offset.dagen > 0
+    if (!naBruiloft && deadlineDate < minimumDeadline) {
+      const trouwdag = new Date(wedding.trouwdatum)
+      deadlineDate = minimumDeadline < trouwdag ? minimumDeadline : trouwdag
+    }
     const deadline = toISODate(deadlineDate)
     return {
       weddingId: wedding.id,

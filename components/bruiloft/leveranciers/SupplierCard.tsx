@@ -4,7 +4,7 @@ import * as React from 'react'
 import { BadgeCheck, Plus } from 'lucide-react'
 
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import { CATEGORIE_ICOON } from './categorieIcoon'
@@ -28,7 +28,7 @@ export function SupplierCard({
 }: SupplierCardProps) {
   const s = match.supplier
   const Icoon = CATEGORIE_ICOON[s.categorie]
-  const subregel = [s.type || s.categorie, s.plaats].filter(Boolean).join(' · ')
+  const subregel = [capFirst(s.type || s.categorie), s.plaats].filter(Boolean).join(' · ')
 
   return (
     <Card
@@ -52,7 +52,7 @@ export function SupplierCard({
           </span>
           <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{s.naam}</p>
-            <p className="truncate text-xs capitalize text-muted-foreground">{subregel}</p>
+            <p className="truncate text-xs text-muted-foreground">{subregel}</p>
           </div>
         </div>
 

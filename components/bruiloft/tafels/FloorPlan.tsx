@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import { Button, Input, Select } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { Guest, Table } from '@/lib/bruiloft/types'
 import {
   GRID,
@@ -696,8 +696,8 @@ function TafelPaneel({
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{table.naam}</p>
-          <p className="text-xs capitalize text-muted-foreground">
-            {table.vorm} ·{' '}
+          <p className="text-xs text-muted-foreground">
+            {capFirst(table.vorm)} ·{' '}
             <span className={vol ? 'font-medium text-rose-500' : undefined}>
               {gasten.length}/{table.capaciteit}
             </span>{' '}
@@ -765,7 +765,7 @@ function TafelPaneel({
       {kanBewerken && onverdeeld.length > 0 ? (
         <div className="border-t border-border p-2">
           <Select
-            aria-label="Gast toevoegen aan tafel"
+            aria-label="Gast toevoegen aan geselecteerde tafel"
             value=""
             onChange={(e) => e.target.value && onAssign(e.target.value, table.id)}
             className="h-9 text-xs"

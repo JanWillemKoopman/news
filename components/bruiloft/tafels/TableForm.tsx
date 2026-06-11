@@ -5,6 +5,7 @@ import * as React from 'react'
 import { Button, ConfirmDialog, Field, Input, Modal, Select } from '@/components/bruiloft/ui'
 import { TAFEL_VORMEN } from '@/lib/bruiloft/options'
 import type { Table, TableInput } from '@/lib/bruiloft/types'
+import { capFirst } from '@/lib/utils'
 
 type NewTable = Omit<TableInput, 'weddingId'>
 
@@ -71,7 +72,7 @@ export function TableForm({ open, onOpenChange, initial, onSubmit }: TableFormPr
             >
               {TAFEL_VORMEN.map((v) => (
                 <option key={v} value={v}>
-                  {v}
+                  {capFirst(v)}
                 </option>
               ))}
             </Select>

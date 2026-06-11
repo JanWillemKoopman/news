@@ -12,7 +12,7 @@ import {
 } from '@/lib/bruiloft/derived'
 import { formatDatumKort, formatEuro } from '@/lib/bruiloft/format'
 import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { BudgetItem, Vendor } from '@/lib/bruiloft/types'
 
 interface BudgetListProps {
@@ -336,7 +336,7 @@ function CategorieRij({
 
         {/* Name + subtitle */}
         <div className="min-w-0 flex-1">
-          <p className="font-medium capitalize text-foreground">{data.naam}</p>
+          <p className="font-medium text-foreground">{capFirst(data.naam)}</p>
           {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
         </div>
 
@@ -419,7 +419,7 @@ function ItemRij({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">
-            {item.omschrijving || <span className="capitalize">{item.categorie}</span>}
+            {item.omschrijving || capFirst(item.categorie)}
           </p>
           {geboekteVendor ? (
             <p className="text-xs text-primary">via {geboekteVendor.naam}</p>

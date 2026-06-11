@@ -4,7 +4,7 @@ import * as React from 'react'
 
 import { Button, ConfirmDialog, Field, Input, MeerDetails, Modal, Textarea } from '@/components/bruiloft/ui'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { Rol, ScheduleItem, ScheduleItemInput } from '@/lib/bruiloft/types'
 
 type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
@@ -152,13 +152,13 @@ export function ScheduleItemForm({
                     type="button"
                     onClick={() => toggleRol(rol)}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-medium capitalize transition-colors',
+                      'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                       actief
                         ? 'border-transparent bg-primary text-primary-foreground'
                         : 'border-border text-muted-foreground hover:bg-accent'
                     )}
                   >
-                    {rol}
+                    {capFirst(rol)}
                   </button>
                 )
               })}

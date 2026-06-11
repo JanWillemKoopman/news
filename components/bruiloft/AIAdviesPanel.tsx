@@ -9,6 +9,7 @@ import { dagenTot } from '@/lib/bruiloft/format'
 import type { NextStep } from '@/lib/bruiloft/guidance'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { AdviesTekst } from '@/components/bruiloft/ai/AdviesTekst'
 import { geledenLabel, useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
@@ -109,7 +110,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                   </Link>
                 </div>
                 <p className="font-medium text-foreground">{stap.titel}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{stap.omschrijving}</p>
+                <AdviesTekst tekst={stap.omschrijving} className="mt-0.5 text-sm text-muted-foreground" />
               </li>
             ))}
           </ul>
