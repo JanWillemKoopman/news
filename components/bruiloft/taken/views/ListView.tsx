@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
-import { ListChecks, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronRight, ListChecks, Sparkles } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
 import { AIInlineSuggestieCard } from '@/components/bruiloft/taken/AIInlineSuggestieCard'
@@ -74,6 +74,9 @@ export function ListView({
   onAiToevoegen,
   onAiDismiss,
 }: ListViewProps) {
+  // Handmatig open/dicht geklapte fasesecties (wint van de standaardkeuze).
+  const [blokOverrides, setBlokOverrides] = React.useState<Partial<Record<Tijdsblok, boolean>>>({})
+
   if (allTasks.length === 0) {
     return (
       <EmptyState
@@ -106,6 +109,16 @@ export function ListView({
     }
   }
 
+  // Fasesecties zijn inklapbaar: standaard staat alleen de eerstvolgende fase
+  // met open taken uit (plus een fase met achterstand), zodat een volle lijst
+  // — zoals de 71 starttaken — niet als muur binnenkomt. Een klik op de kop
+  // klapt open/dicht; die keuze wint van de standaard.
+  const eersteOpenBlok = TIJDSBLOK_VOLGORDE.find((blok) =>
+    tasks.some((t) => t.tijdsblok === blok && t.status !== 'klaar')
+  )
+  const blokIsOpen = (blok: Tijdsblok): boolean =>
+    blokOverrides[blok] ?? (blok === eersteOpenBlok || blok === achterstallig)
+
   return (
     <div className="space-y-8">
       {/* AI suggestions block */}
@@ -136,38 +149,51 @@ export function ListView({
           .filter((t) => t.tijdsblok === blok)
           .sort((a, b) => a.deadline.localeCompare(b.deadline) || (PRIO_ORDER[a.prioriteit ?? ''] ?? 3) - (PRIO_ORDER[b.prioriteit ?? ''] ?? 3))
         if (blokTaken.length === 0) return null
+        const open = blokIsOpen(blok)
         return (
           <div
             key={blok}
             ref={blok === achterstallig ? achterstandRef : undefined}
             data-blok={blok}
           >
-            <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => setBlokOverrides((prev) => ({ ...prev, [blok]: !open }))}
+              className="mb-3 flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {open ? (
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+              )}
               {blok}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                 {blokTaken.length} {blokTaken.length === 1 ? 'taak' : 'taken'}
               </span>
-            </h2>
-            <div className="space-y-2">
-              {blokTaken.map((t) => (
-                <TaskCard
-                  key={t.id}
-                  task={t}
-                  members={members}
-                  onToggleStatus={onToggleStatus}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onToggleSubtaak={onToggleSubtaak}
-                  selectable={selectable}
-                  selected={isSelected(t.id)}
-                  onToggleSelect={onToggleSelect}
+            </button>
+            {open ? (
+              <div className="space-y-2">
+                {blokTaken.map((t) => (
+                  <TaskCard
+                    key={t.id}
+                    task={t}
+                    members={members}
+                    onToggleStatus={onToggleStatus}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onToggleSubtaak={onToggleSubtaak}
+                    selectable={selectable}
+                    selected={isSelected(t.id)}
+                    onToggleSelect={onToggleSelect}
+                  />
+                ))}
+                <QuickAddTask
+                  defaultDeadline={deadlineVoorBlok(blok, wedding.trouwdatum)}
+                  onOpenForm={onOpenForm}
                 />
-              ))}
-              <QuickAddTask
-                defaultDeadline={deadlineVoorBlok(blok, wedding.trouwdatum)}
-                onOpenForm={onOpenForm}
-              />
-            </div>
+              </div>
+            ) : null}
           </div>
         )
       })}

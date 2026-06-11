@@ -7,8 +7,10 @@ import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranc
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
+import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
+import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
@@ -93,6 +95,10 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
+      <OnboardingGids />
+      <WelkomstDialog />
 
       {/* Urgente aandachtspunten: alleen zichtbaar als er iets mis is */}
       <UrgenteAandachtspunten
