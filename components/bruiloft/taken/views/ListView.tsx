@@ -82,7 +82,7 @@ export function ListView({
       <EmptyState
         icon={ListChecks}
         titel="Nog geen taken"
-        beschrijving="Voeg taken toe of stel je bruiloft in om automatisch een takenlijst te krijgen."
+        beschrijving="Stel jullie takenlijst samen via de voorstellen hierboven, of voeg zelf een taak toe."
       />
     )
   }

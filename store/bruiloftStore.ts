@@ -579,7 +579,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     setupWedding: async (input) => {
       const wedding = await repository.createWedding(input)
-      const tasks = await repository.createTasks(generateTemplateTasks(wedding)).catch(() => [])
+      // Alleen taken die volgens de wizard al geregeld/bezig zijn worden direct
+      // aangemaakt; de rest wordt kaart voor kaart voorgesteld via
+      // "Takenlijst samenstellen" (TakenSamenstellen) op de takenpagina.
+      const voorafGeregeld = generateTemplateTasks(wedding).filter((t) => t.status !== 'open')
+      const tasks =
+        voorafGeregeld.length > 0
+          ? await repository.createTasks(voorafGeregeld).catch(() => [])
+          : []
       const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
       const seen = new Date().toISOString()

@@ -5,6 +5,7 @@ import { Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
+import { TakenSamenstellen } from '@/components/bruiloft/taken/TakenSamenstellen'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
 import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
 import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
@@ -15,6 +16,12 @@ import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
+import {
+  leesTakencheck,
+  openVoorstellen,
+  schrijfTakencheck,
+  type TakencheckState,
+} from '@/lib/bruiloft/taken/voorstellen'
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ISODate, Task, TaskInput, TaskStatus } from '@/lib/bruiloft/types'
@@ -47,6 +54,19 @@ export function TakenShell() {
   const [delTask, setDelTask] = React.useState<Task | null>(null)
   const [delBulkOpen, setDelBulkOpen] = React.useState(false)
   const achterstandRef = React.useRef<HTMLDivElement | null>(null)
+
+  // Kaart-voor-kaart samenstellen van de takenlijst (sjabloonvoorstellen).
+  const [takencheck, setTakencheck] = React.useState<TakencheckState | null>(null)
+  const [samenstellenOpen, setSamenstellenOpen] = React.useState(false)
+  React.useEffect(() => {
+    if (!wedding) return
+    setTakencheck(leesTakencheck(wedding.id))
+    // Vanaf het dashboard (welkomstdialoog/startgids) direct openen.
+    if (new URLSearchParams(window.location.search).get('samenstellen') === '1') {
+      setSamenstellenOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wedding?.id])
 
   // AI suggestions state
   const [aiActive, setAiActive] = React.useState(false)
@@ -134,6 +154,15 @@ export function TakenShell() {
 
   const stats = berekenTaakStats(tasks)
   const achterstand = achterstalligeTaken(tasks).length
+  const voorstellenOver =
+    takencheck && !takencheck.afgerond ? openVoorstellen(wedding, tasks, takencheck) : []
+
+  const verbergSamenstellen = () => {
+    if (!takencheck) return
+    const next = { ...takencheck, afgerond: true }
+    schrijfTakencheck(wedding.id, next)
+    setTakencheck(next)
+  }
 
   const openNieuw = () => {
     setEditTask(null)
@@ -243,6 +272,37 @@ export function TakenShell() {
 
       <AIInsightCard sectie="/bruiloft/taken" />
 
+      {/* Voorstellen-banner: zolang er sjabloontaken te beoordelen zijn */}
+      {voorstellenOver.length > 0 ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+          <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              {tasks.length === 0
+                ? 'Stel jullie takenlijst samen'
+                : 'Ga verder met jullie takenlijst'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {voorstellenOver.length}{' '}
+              {voorstellenOver.length === 1 ? 'voorstel' : 'voorstellen'} om te beoordelen — kies
+              kaart voor kaart wat bij jullie past.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button size="sm" onClick={() => setSamenstellenOpen(true)}>
+              {tasks.length === 0 ? 'Beginnen' : 'Ga verder'}
+            </Button>
+            <button
+              type="button"
+              onClick={verbergSamenstellen}
+              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Niet meer tonen
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
 
       <AchterstandBanner aantal={achterstand} onSpringNaar={springNaarAchterstand} />
@@ -318,6 +378,15 @@ export function TakenShell() {
           onSetStatus={handleBulkStatus}
           onShiftDeadline={handleBulkShift}
           onDelete={() => setDelBulkOpen(true)}
+        />
+      ) : null}
+
+      {takencheck ? (
+        <TakenSamenstellen
+          open={samenstellenOpen}
+          onOpenChange={setSamenstellenOpen}
+          state={takencheck}
+          onStateChange={setTakencheck}
         />
       ) : null}
 

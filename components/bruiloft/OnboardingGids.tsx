@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, Progress } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { leesTakencheck, openVoorstellen, type TakencheckState } from '@/lib/bruiloft/taken/voorstellen'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 const VERBORGEN_PREFIX = 'otp:startgids-verborgen:'
@@ -74,9 +75,11 @@ export function OnboardingGids() {
   // localStorage pas na mount lezen (SSR-veilig), en luisteren naar de
   // welkomstdialoog die de gids expliciet kan tonen.
   const [zichtbaar, setZichtbaar] = React.useState(false)
+  const [takencheck, setTakencheck] = React.useState<TakencheckState | null>(null)
   React.useEffect(() => {
     if (!wedding) return
     setZichtbaar(!isVerborgen(wedding.id))
+    setTakencheck(leesTakencheck(wedding.id))
     const toon = () => setZichtbaar(true)
     window.addEventListener('otp:startgids-toon', toon)
     return () => window.removeEventListener('otp:startgids-toon', toon)
@@ -84,15 +87,31 @@ export function OnboardingGids() {
 
   if (!wedding || !zichtbaar || !canEdit(permissions, 'taken')) return null
 
+  // Eerst de takenlijst samenstellen (kaart voor kaart); daarna wordt de stap
+  // "vink je eerste taak af".
+  const voorstellenOver = takencheck && !takencheck.afgerond
+    ? openVoorstellen(wedding, tasks, takencheck).length
+    : 0
+  const samengesteld = voorstellenOver === 0
+
   const stappen: Stap[] = [
-    {
-      key: 'taak',
-      label: 'Vink je eerste taak af',
-      uitleg: 'De takenlijst staat al voor jullie klaar.',
-      icon: ListChecks,
-      href: '/bruiloft/taken',
-      klaar: tasks.some((t) => t.status === 'klaar'),
-    },
+    samengesteld
+      ? {
+          key: 'taak',
+          label: 'Vink je eerste taak af',
+          uitleg: 'De takenlijst staat voor jullie klaar.',
+          icon: ListChecks,
+          href: '/bruiloft/taken',
+          klaar: tasks.some((t) => t.status === 'klaar'),
+        }
+      : {
+          key: 'taak',
+          label: 'Stel jullie takenlijst samen',
+          uitleg: `Kies kaart voor kaart uit ${voorstellenOver} voorstellen.`,
+          icon: ListChecks,
+          href: '/bruiloft/taken?samenstellen=1',
+          klaar: false,
+        },
     {
       key: 'budget',
       label: 'Verdeel jullie budget',

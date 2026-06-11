@@ -1,12 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { Compass, PartyPopper } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ListChecks, PartyPopper } from 'lucide-react'
 
 import { toonStartgids } from '@/components/bruiloft/OnboardingGids'
 import { Button, Modal } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { alleVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 const GEZIEN_PREFIX = 'otp:welkom-gezien:'
@@ -17,6 +19,7 @@ const MAX_LEEFTIJD_DAGEN = 14
 // Eenmalig welkomstmoment direct na de onboarding: vertelt wat er is
 // klaargezet en biedt begeleiding aan — maar dringt die niet op.
 export function WelkomstDialog() {
+  const router = useRouter()
   const wedding = useBruiloftStore((s) => s.wedding)
   const tasks = useBruiloftStore((s) => s.tasks)
   const permissions = useBruiloftStore((s) => s.permissions)
@@ -46,16 +49,13 @@ export function WelkomstDialog() {
     setOpen(false)
   }
 
-  const startBegeleiding = () => {
+  const startSamenstellen = () => {
     toonStartgids(wedding.id)
     sluit()
-    // Na het sluiten van de dialoog zacht naar de gids scrollen.
-    requestAnimationFrame(() => {
-      document.getElementById('startgids')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    router.push('/bruiloft/taken?samenstellen=1')
   }
 
-  const aantalTaken = tasks.length
+  const aantalVoorstellen = alleVoorstellen(wedding, tasks).length
 
   return (
     <Modal
@@ -68,22 +68,21 @@ export function WelkomstDialog() {
           <PartyPopper className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <p className="text-sm leading-relaxed text-foreground">
             Jullie trouwplan staat klaar. Op basis van jullie trouwdatum (
-            {formatDatumNL(wedding.trouwdatum)}) hebben we alvast{' '}
-            {aantalTaken > 0 ? `een takenlijst met ${aantalTaken} taken` : 'een takenlijst'}{' '}
-            klaargezet, verdeeld over de maanden tot de grote dag.
+            {formatDatumNL(wedding.trouwdatum)}) hebben we{' '}
+            {aantalVoorstellen > 0 ? `${aantalVoorstellen} taakvoorstellen` : 'een takenlijst'}{' '}
+            voor jullie klaargezet — jullie kiezen zelf, kaart voor kaart, welke relevant zijn.
           </p>
         </div>
         <p className="text-sm text-muted-foreground">
-          Wil je dat we jullie op weg helpen met de eerste stappen — budget, gasten en de eerste
-          taken? Het kan altijd, maar het hoeft niet: alles staat ook gewoon voor jullie klaar om
-          zelf te ontdekken.
+          Zullen we samen jullie takenlijst samenstellen? Het hoeft niet: zelf rondkijken kan ook,
+          en de voorstellen blijven klaarstaan op de takenpagina.
         </p>
         <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
           <Button variant="ghost" onClick={sluit}>
             Ik kijk zelf rond
           </Button>
-          <Button onClick={startBegeleiding}>
-            <Compass className="h-4 w-4" /> Neem me mee langs de eerste stappen
+          <Button onClick={startSamenstellen}>
+            <ListChecks className="h-4 w-4" /> Stel jullie takenlijst samen
           </Button>
         </div>
       </div>
