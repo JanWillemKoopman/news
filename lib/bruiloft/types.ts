@@ -180,6 +180,8 @@ export interface Vendor {
   geoffreerdBedrag: number // in euro
   notitie: string
   budgetItemId?: ID
+  // Herkomst uit de globale directory (public.suppliers); leeg bij handmatige invoer.
+  supplierId?: ID
 }
 
 export type VendorInput = Omit<Vendor, 'id'>

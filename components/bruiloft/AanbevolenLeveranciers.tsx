@@ -7,16 +7,9 @@ import { ArrowRight, Compass, MapPin } from 'lucide-react'
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { canView } from '@/lib/bruiloft/permissions'
-import type { MatchBadge, SupplierMatch } from '@/lib/bruiloft/suppliers/match'
+import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
+import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-
-const BADGE_STIJL: Record<MatchBadge, string> = {
-  'binnen budget': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-  'net erboven': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  'in jullie plaats': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  'in jullie regio': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  'past bij gezelschap': 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
-}
 
 // Toont de top-leveranciers uit de globale directory, gerangschikt op het
 // profiel van het bruidspaar. Rendert niets als er (nog) geen suggesties zijn.

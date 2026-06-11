@@ -170,6 +170,7 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     geoffreerdBedrag: num(r.geoffreerd_bedrag),
     notitie: r.notitie,
     budgetItemId: r.budget_item_id ?? undefined,
+    supplierId: r.supplier_id ?? undefined,
   }
 }
 
@@ -186,6 +187,9 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.geoffreerdBedrag !== undefined) r.geoffreerd_bedrag = p.geoffreerdBedrag
   if (p.notitie !== undefined) r.notitie = p.notitie
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
+  // supplierId alleen schrijven als de patch het veld expliciet bevat; het
+  // bewerkformulier stuurt het nooit mee, zodat de directory-link behouden blijft.
+  if (p.supplierId !== undefined) r.supplier_id = p.supplierId ?? null
   return r
 }
 
