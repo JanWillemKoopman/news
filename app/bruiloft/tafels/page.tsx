@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, Armchair, Plus, Printer } from 'lucide-react'
+import { AlertTriangle, Armchair, LayoutGrid, Map, Plus, Printer } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
+import { FloorPlan, type TafelPatch } from '@/components/bruiloft/tafels/FloorPlan'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
 import { TableForm } from '@/components/bruiloft/tafels/TableForm'
 import {
@@ -15,9 +16,12 @@ import {
   EmptyState,
   useToast,
 } from '@/components/bruiloft/ui'
+import { cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Table } from '@/lib/bruiloft/types'
+
+const WEERGAVE_KEY = 'bruiloft-tafels-weergave'
 
 export default function TafelsPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -35,6 +39,25 @@ export default function TafelsPage() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editTable, setEditTable] = React.useState<Table | null>(null)
   const [delTable, setDelTable] = React.useState<Table | null>(null)
+
+  // Plattegrond is de standaard op desktop; de keuze wordt onthouden.
+  const [weergave, setWeergave] = React.useState<'plattegrond' | 'lijst'>('plattegrond')
+  React.useEffect(() => {
+    try {
+      const bewaard = localStorage.getItem(WEERGAVE_KEY)
+      if (bewaard === 'lijst') setWeergave('lijst')
+    } catch {
+      // localStorage niet beschikbaar; negeren.
+    }
+  }, [])
+  const kiesWeergave = (w: 'plattegrond' | 'lijst') => {
+    setWeergave(w)
+    try {
+      localStorage.setItem(WEERGAVE_KEY, w)
+    } catch {
+      // localStorage niet beschikbaar; negeren.
+    }
+  }
 
   if (!wedding) return null
 
@@ -56,11 +79,19 @@ export default function TafelsPage() {
     }
   }
 
+  const patchTable = async (id: string, patch: TafelPatch) => {
+    try {
+      await updateTable(id, patch)
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Tafelschikking"
-        beschrijving="Sleep gasten naar een tafel. Afgemelde gasten worden niet meegenomen."
+        beschrijving="Plaats tafels op de plattegrond en sleep gasten naar hun plek. Afgemelde gasten worden niet meegenomen."
         actie={
           <>
             {tables.length > 0 ? (
@@ -81,10 +112,43 @@ export default function TafelsPage() {
       <AIInsightCard sectie="/bruiloft/tafels" />
 
       {tables.length > 0 ? (
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Telling label="Tafels" waarde={tables.length} />
-          <Telling label="Ingedeeld" waarde={`${ingedeeld}/${pool.length}`} />
-          <Telling label="Stoelen" waarde={stoelen} />
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div className="grid flex-1 grid-cols-3 gap-3">
+            <Telling label="Tafels" waarde={tables.length} />
+            <Telling label="Ingedeeld" waarde={`${ingedeeld}/${pool.length}`} />
+            <Telling label="Stoelen" waarde={stoelen} />
+          </div>
+          {/* Weergavewissel: alleen op desktop, mobiel toont altijd de lijst. */}
+          <div className="hidden rounded-lg border border-border bg-background p-1 md:inline-flex">
+            <button
+              type="button"
+              aria-label="Plattegrond"
+              aria-pressed={weergave === 'plattegrond'}
+              onClick={() => kiesWeergave('plattegrond')}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
+                weergave === 'plattegrond'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Map className="h-4 w-4" /> Plattegrond
+            </button>
+            <button
+              type="button"
+              aria-label="Lijstweergave"
+              aria-pressed={weergave === 'lijst'}
+              onClick={() => kiesWeergave('lijst')}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
+                weergave === 'lijst'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" /> Lijst
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -108,6 +172,38 @@ export default function TafelsPage() {
             ) : undefined
           }
         />
+      ) : weergave === 'plattegrond' ? (
+        <>
+          {/* Desktop: interactieve plattegrond. */}
+          <div className="hidden md:block">
+            <FloorPlan
+              tables={tables}
+              guests={pool}
+              kanBewerken={kanBewerken}
+              onAssign={assign}
+              onPatchTable={patchTable}
+              onEditTable={(t) => {
+                setEditTable(t)
+                setFormOpen(true)
+              }}
+              onDeleteTable={setDelTable}
+              onAddTable={openNieuw}
+            />
+          </div>
+          {/* Mobiel: altijd de eenvoudige lijst. */}
+          <div className="md:hidden">
+            <SeatingBoard
+              tables={tables}
+              guests={pool}
+              onAssign={kanBewerken ? assign : undefined}
+              onEditTable={kanBewerken ? (t) => {
+                setEditTable(t)
+                setFormOpen(true)
+              } : undefined}
+              onDeleteTable={kanBewerken ? setDelTable : undefined}
+            />
+          </div>
+        </>
       ) : (
         <SeatingBoard
           tables={tables}

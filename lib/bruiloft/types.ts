@@ -259,6 +259,10 @@ export interface Table {
   naam: string
   vorm: TafelVorm
   capaciteit: number
+  // Plek op de plattegrond (wereldeenheden); null/undefined = nog niet geplaatst.
+  posX?: number | null
+  posY?: number | null
+  rotatie?: number // graden, stappen van 45
 }
 
 export type TableInput = Omit<Table, 'id'>

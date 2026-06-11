@@ -259,6 +259,9 @@ export function tableFromRow(r: Tables['tables']['Row']): Table {
     naam: r.naam,
     vorm: r.vorm as Table['vorm'],
     capaciteit: r.capaciteit,
+    posX: r.pos_x ?? null,
+    posY: r.pos_y ?? null,
+    rotatie: r.rotatie ?? 0,
   }
 }
 
@@ -268,6 +271,9 @@ export function tableToRow(p: Partial<TableInput>): Partial<Tables['tables']['In
   if (p.naam !== undefined) r.naam = p.naam
   if (p.vorm !== undefined) r.vorm = p.vorm
   if (p.capaciteit !== undefined) r.capaciteit = p.capaciteit
+  if (p.posX !== undefined) r.pos_x = p.posX
+  if (p.posY !== undefined) r.pos_y = p.posY
+  if (p.rotatie !== undefined) r.rotatie = p.rotatie
   return r
 }
 

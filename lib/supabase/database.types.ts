@@ -288,6 +288,9 @@ export type Database = {
           created_at: string
           id: string
           naam: string
+          pos_x: number | null
+          pos_y: number | null
+          rotatie: number
           updated_at: string
           vorm: string
           wedding_id: string
@@ -297,6 +300,9 @@ export type Database = {
           created_at?: string
           id?: string
           naam?: string
+          pos_x?: number | null
+          pos_y?: number | null
+          rotatie?: number
           updated_at?: string
           vorm?: string
           wedding_id: string
@@ -306,6 +312,9 @@ export type Database = {
           created_at?: string
           id?: string
           naam?: string
+          pos_x?: number | null
+          pos_y?: number | null
+          rotatie?: number
           updated_at?: string
           vorm?: string
           wedding_id?: string
