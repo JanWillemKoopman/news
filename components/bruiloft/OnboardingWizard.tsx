@@ -120,6 +120,7 @@ export function OnboardingWizard({
       aantalAvondgasten: Number(avondgasten) || 0,
       ceremonietype,
       geregeldeZaken,
+      takenVoorstellen: { beslist: {}, afgerond: false },
     }
     try {
       if (authenticatedMode) {

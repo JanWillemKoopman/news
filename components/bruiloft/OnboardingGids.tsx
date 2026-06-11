@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, Progress } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
-import { leesTakencheck, openVoorstellen, type TakencheckState } from '@/lib/bruiloft/taken/voorstellen'
+import { openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 const VERBORGEN_PREFIX = 'otp:startgids-verborgen:'
@@ -75,11 +75,9 @@ export function OnboardingGids() {
   // localStorage pas na mount lezen (SSR-veilig), en luisteren naar de
   // welkomstdialoog die de gids expliciet kan tonen.
   const [zichtbaar, setZichtbaar] = React.useState(false)
-  const [takencheck, setTakencheck] = React.useState<TakencheckState | null>(null)
   React.useEffect(() => {
     if (!wedding) return
     setZichtbaar(!isVerborgen(wedding.id))
-    setTakencheck(leesTakencheck(wedding.id))
     const toon = () => setZichtbaar(true)
     window.addEventListener('otp:startgids-toon', toon)
     return () => window.removeEventListener('otp:startgids-toon', toon)
@@ -89,9 +87,9 @@ export function OnboardingGids() {
 
   // Eerst de takenlijst samenstellen (kaart voor kaart); daarna wordt de stap
   // "vink je eerste taak af".
-  const voorstellenOver = takencheck && !takencheck.afgerond
-    ? openVoorstellen(wedding, tasks, takencheck).length
-    : 0
+  const voorstellenOver = wedding.takenVoorstellen.afgerond
+    ? 0
+    : openVoorstellen(wedding, tasks).length
   const samengesteld = voorstellenOver === 0
 
   const stappen: Stap[] = [

@@ -18,6 +18,7 @@ import type {
   Subtaak,
   Table,
   TableInput,
+  TakenVoorstellenState,
   Task,
   TaskComment,
   TaskCommentInput,
@@ -56,9 +57,15 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     aantalAvondgasten: r.aantal_avondgasten,
     ceremonietype: (r.ceremonietype as CeremonieType | null) ?? null,
     geregeldeZaken: (r.geregelde_zaken as Partial<Record<VoortgangCategorie, VoortgangStatus>>) ?? {},
+    takenVoorstellen: normaliseerTakenVoorstellen(r.taken_voorstellen),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
+}
+
+function normaliseerTakenVoorstellen(v: unknown): TakenVoorstellenState {
+  const obj = (v ?? {}) as Partial<TakenVoorstellenState>
+  return { beslist: obj.beslist ?? {}, afgerond: obj.afgerond ?? false }
 }
 
 export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings']['Insert']> {
@@ -73,6 +80,8 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
   if (p.aantalAvondgasten !== undefined) r.aantal_avondgasten = p.aantalAvondgasten
   if (p.ceremonietype !== undefined) r.ceremonietype = p.ceremonietype
   if (p.geregeldeZaken !== undefined) r.geregelde_zaken = p.geregeldeZaken as Record<string, string>
+  if (p.takenVoorstellen !== undefined)
+    r.taken_voorstellen = p.takenVoorstellen as unknown as Record<string, unknown>
   return r
 }
 

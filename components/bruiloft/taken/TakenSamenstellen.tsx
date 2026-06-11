@@ -5,21 +5,14 @@ import { Check, ListChecks, SkipForward, Sparkles } from 'lucide-react'
 
 import { Button, Modal, Progress, StatusBadge, useToast } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
-import {
-  alleVoorstellen,
-  openVoorstellen,
-  schrijfTakencheck,
-  type TakencheckState,
-} from '@/lib/bruiloft/taken/voorstellen'
+import { alleVoorstellen, openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { capFirst } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { TaskInput } from '@/lib/bruiloft/types'
+import type { TakenVoorstellenState, TaskInput } from '@/lib/bruiloft/types'
 
 interface TakenSamenstellenProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  state: TakencheckState
-  onStateChange: (state: TakencheckState) => void
 }
 
 function naarNieuweTaak(t: TaskInput) {
@@ -39,21 +32,19 @@ function naarNieuweTaak(t: TaskInput) {
 // apart voorgelegd ("relevant voor jullie?"), met ontsnappingsluiken om de
 // rest in één keer toe te voegen of over te slaan. Sluiten = pauzeren; de
 // voortgang blijft bewaard en is later te hervatten.
-export function TakenSamenstellen({
-  open,
-  onOpenChange,
-  state,
-  onStateChange,
-}: TakenSamenstellenProps) {
+export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps) {
   const wedding = useBruiloftStore((s) => s.wedding)
   const tasks = useBruiloftStore((s) => s.tasks)
   const addTask = useBruiloftStore((s) => s.addTask)
   const addAITaken = useBruiloftStore((s) => s.addAITaken)
+  const updateWedding = useBruiloftStore((s) => s.updateWedding)
   const { toast } = useToast()
 
   const [bezig, setBezig] = React.useState(false)
 
   if (!wedding) return null
+
+  const state = wedding.takenVoorstellen
 
   // Toegevoegde voorstellen verdwijnen uit `alle` (ze bestaan dan als taak);
   // via de beslist-titels blijft de teller toch stabiel op het oorspronkelijke
@@ -64,30 +55,30 @@ export function TakenSamenstellen({
   const huidige = resterend[0] ?? null
   const beoordeeld = totaal - resterend.length
 
-  const bewaar = (next: TakencheckState) => {
-    schrijfTakencheck(wedding.id, next)
-    onStateChange(next)
+  const bewaar = async (next: TakenVoorstellenState) => {
+    try {
+      await updateWedding({ takenVoorstellen: next })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
   }
 
   const beslis = async (taak: TaskInput, keuze: 'toegevoegd' | 'overgeslagen') => {
     if (bezig) return
-    if (keuze === 'toegevoegd') {
-      setBezig(true)
-      try {
+    setBezig(true)
+    try {
+      if (keuze === 'toegevoegd') {
         await addTask(naarNieuweTaak(taak))
-      } catch {
-        toast({ title: 'Toevoegen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
-        setBezig(false)
-        return
       }
+      await bewaar({
+        beslist: { ...state.beslist, [taak.titel]: keuze },
+        afgerond: resterend.length <= 1 ? true : state.afgerond,
+      })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } finally {
       setBezig(false)
     }
-    const next: TakencheckState = {
-      ...state,
-      beslist: { ...state.beslist, [taak.titel]: keuze },
-      afgerond: resterend.length <= 1 ? true : state.afgerond,
-    }
-    bewaar(next)
   }
 
   const restToevoegen = async () => {
@@ -97,7 +88,7 @@ export function TakenSamenstellen({
       await addAITaken(resterend.map(naarNieuweTaak))
       const beslist = { ...state.beslist }
       for (const t of resterend) beslist[t.titel] = 'toegevoegd'
-      bewaar({ beslist, afgerond: true })
+      await bewaar({ beslist, afgerond: true })
       toast({ title: `${resterend.length} taken toegevoegd`, variant: 'success' })
     } catch {
       toast({ title: 'Toevoegen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
@@ -106,10 +97,13 @@ export function TakenSamenstellen({
     }
   }
 
-  const restOverslaan = () => {
+  const restOverslaan = async () => {
+    if (bezig) return
+    setBezig(true)
     const beslist = { ...state.beslist }
     for (const t of resterend) beslist[t.titel] = 'overgeslagen'
-    bewaar({ beslist, afgerond: true })
+    await bewaar({ beslist, afgerond: true })
+    setBezig(false)
   }
 
   return (

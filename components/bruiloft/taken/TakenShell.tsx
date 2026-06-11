@@ -16,12 +16,7 @@ import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
-import {
-  leesTakencheck,
-  openVoorstellen,
-  schrijfTakencheck,
-  type TakencheckState,
-} from '@/lib/bruiloft/taken/voorstellen'
+import { openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ISODate, Task, TaskInput, TaskStatus } from '@/lib/bruiloft/types'
@@ -56,11 +51,10 @@ export function TakenShell() {
   const achterstandRef = React.useRef<HTMLDivElement | null>(null)
 
   // Kaart-voor-kaart samenstellen van de takenlijst (sjabloonvoorstellen).
-  const [takencheck, setTakencheck] = React.useState<TakencheckState | null>(null)
+  const updateWedding = useBruiloftStore((s) => s.updateWedding)
   const [samenstellenOpen, setSamenstellenOpen] = React.useState(false)
   React.useEffect(() => {
     if (!wedding) return
-    setTakencheck(leesTakencheck(wedding.id))
     // Vanaf het dashboard (welkomstdialoog/startgids) direct openen. De
     // parameter daarna uit de URL halen, zodat herladen of delen van de link
     // de modal niet opnieuw opdringt.
@@ -157,14 +151,16 @@ export function TakenShell() {
 
   const stats = berekenTaakStats(tasks)
   const achterstand = achterstalligeTaken(tasks).length
-  const voorstellenOver =
-    takencheck && !takencheck.afgerond ? openVoorstellen(wedding, tasks, takencheck) : []
+  const voorstellenOver = wedding.takenVoorstellen.afgerond
+    ? []
+    : openVoorstellen(wedding, tasks)
 
-  const verbergSamenstellen = () => {
-    if (!takencheck) return
-    const next = { ...takencheck, afgerond: true }
-    schrijfTakencheck(wedding.id, next)
-    setTakencheck(next)
+  const verbergSamenstellen = async () => {
+    try {
+      await updateWedding({ takenVoorstellen: { ...wedding.takenVoorstellen, afgerond: true } })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
   }
 
   const openNieuw = () => {
@@ -384,14 +380,7 @@ export function TakenShell() {
         />
       ) : null}
 
-      {takencheck ? (
-        <TakenSamenstellen
-          open={samenstellenOpen}
-          onOpenChange={setSamenstellenOpen}
-          state={takencheck}
-          onStateChange={setTakencheck}
-        />
-      ) : null}
+      <TakenSamenstellen open={samenstellenOpen} onOpenChange={setSamenstellenOpen} />
 
       <TaskForm
         open={formOpen}

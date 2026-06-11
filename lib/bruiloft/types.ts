@@ -23,6 +23,13 @@ export type VoortgangCategorie =
 
 export type CeremonieType = 'gemeentelijk' | 'religieus' | 'symbolisch'
 
+// Voortgang van het kaart-voor-kaart samenstellen van de takenlijst.
+// Gedeeld per bruiloft (database), zodat partners elkaars keuzes zien.
+export interface TakenVoorstellenState {
+  beslist: Record<string, 'toegevoegd' | 'overgeslagen'> // per taaktitel
+  afgerond: boolean
+}
+
 export interface Wedding {
   id: ID
   partner1Naam: string
@@ -35,6 +42,7 @@ export interface Wedding {
   aantalAvondgasten: number // geschat
   ceremonietype: CeremonieType | null
   geregeldeZaken: Partial<Record<VoortgangCategorie, VoortgangStatus>>
+  takenVoorstellen: TakenVoorstellenState
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }
