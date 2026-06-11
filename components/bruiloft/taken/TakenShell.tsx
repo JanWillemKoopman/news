@@ -61,9 +61,12 @@ export function TakenShell() {
   React.useEffect(() => {
     if (!wedding) return
     setTakencheck(leesTakencheck(wedding.id))
-    // Vanaf het dashboard (welkomstdialoog/startgids) direct openen.
+    // Vanaf het dashboard (welkomstdialoog/startgids) direct openen. De
+    // parameter daarna uit de URL halen, zodat herladen of delen van de link
+    // de modal niet opnieuw opdringt.
     if (new URLSearchParams(window.location.search).get('samenstellen') === '1') {
       setSamenstellenOpen(true)
+      window.history.replaceState(null, '', window.location.pathname)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
