@@ -1238,9 +1238,17 @@ export function Landing() {
               </ul>
             </div>
           </div>
-          <div className="mt-12 border-t border-gray-100 pt-6">
+          <div className="mt-12 flex flex-col gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-gray-400">
               Gratis te gebruiken · Zonder reclame · Volledig in het Nederlands
+            </p>
+            <p className="flex gap-4 text-xs text-gray-400">
+              <Link href="/privacy" className="transition-colors hover:text-rhino-900">
+                Privacy
+              </Link>
+              <Link href="/voorwaarden" className="transition-colors hover:text-rhino-900">
+                Algemene voorwaarden
+              </Link>
             </p>
           </div>
         </div>

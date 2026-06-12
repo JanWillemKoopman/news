@@ -124,6 +124,18 @@ export function SignupForm({ next }: { next?: string }) {
           <Button type="submit" className="w-full" loading={loading}>
             Account aanmaken
           </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Door een account aan te maken ga je akkoord met de{' '}
+            <Link href="/voorwaarden" className="underline hover:text-primary">
+              algemene voorwaarden
+            </Link>{' '}
+            en de{' '}
+            <Link href="/privacy" className="underline hover:text-primary">
+              privacyverklaring
+            </Link>
+            .
+          </p>
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
