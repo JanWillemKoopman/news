@@ -17,6 +17,7 @@ import { moduleForPath } from './nav'
 import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
+import { WeddingPicker } from './WeddingPicker'
 import { WeddingSettingsForm } from './WeddingSettingsForm'
 
 interface WeddingShellProps {
@@ -39,6 +40,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const wedding = useBruiloftStore((s) => s.wedding)
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
+  const pickingWedding = useBruiloftStore((s) => s.pickingWedding)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
   const stopRealtime = useBruiloftStore((s) => s.stopRealtime)
@@ -115,6 +117,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         >
           Opnieuw proberen
         </Button>
+      </div>
+    )
+  }
+
+  // Ingelogd, meerdere bruiloften, geen opgeslagen voorkeur: toon keuzescreen.
+  if (pickingWedding && currentUser) {
+    return (
+      <div className={wrapperClass} suppressHydrationWarning>
+        <WeddingPicker />
       </div>
     )
   }

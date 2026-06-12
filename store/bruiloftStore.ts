@@ -114,6 +114,9 @@ interface BruiloftState {
   // UI: of het AI-coach-paneel open is. Te openen vanuit de topbalk en de
   // moment-nudge; het paneel zelf staat in WeddingShell.
   aiCoachOpen: boolean
+  // UI: of de keuzescreen getoond moet worden (meerdere bruiloften, geen
+  // opgeslagen voorkeur). Wordt gereset zodra de gebruiker een keuze maakt.
+  pickingWedding: boolean
 }
 
 interface BruiloftActions {
@@ -122,6 +125,7 @@ interface BruiloftActions {
   completeOnboarding: (input: WeddingInput, auth: { email: string; password: string; displayName: string }) => Promise<void>
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
+  selectWedding: (id: ID) => Promise<void>
   deleteActiveWedding: () => Promise<void>
   startRealtime: (weddingId: ID) => void
   stopRealtime: () => void
@@ -323,6 +327,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     registryLoaded: false,
     weddingSettingsOpen: false,
     aiCoachOpen: false,
+    pickingWedding: false,
 
     init: async () => {
       if (get().hydrated) return
@@ -377,9 +382,25 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         return
       }
 
-      // Kies de onthouden actieve bruiloft, anders de eerste.
+      // Kies de onthouden actieve bruiloft. Als er meerdere zijn en geen
+      // opgeslagen voorkeur, toon het keuzescreen.
       const stored = readActive()
-      const wedding = weddings.find((w) => w.id === stored) ?? weddings[0]
+      const match = weddings.find((w) => w.id === stored)
+      if (!match && weddings.length > 1) {
+        set({
+          hydrated: true,
+          error: null,
+          currentUser,
+          weddings,
+          wedding: null,
+          activeWeddingId: null,
+          role: null,
+          permissions: EMPTY_PERMISSIONS,
+          pickingWedding: true,
+        })
+        return
+      }
+      const wedding = match ?? weddings[0]
       writeActive(wedding.id)
 
       const { role, permissions } = await loadPermissions(
@@ -481,6 +502,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         wedding: null,
         weddings: [],
         activeWeddingId: null,
+        pickingWedding: false,
         guests: [],
         tasks: [],
         vendors: [],
@@ -506,7 +528,15 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (id === get().activeWeddingId) return
       get().stopRealtime()
       writeActive(id)
-      set({ hydrated: false })
+      set({ hydrated: false, pickingWedding: false })
+      await get().init()
+    },
+
+    // Sla een keuze op vanuit het keuzescreen (eerste keer meerdere bruiloften).
+    selectWedding: async (id) => {
+      get().stopRealtime()
+      writeActive(id)
+      set({ hydrated: false, pickingWedding: false })
       await get().init()
     },
 
