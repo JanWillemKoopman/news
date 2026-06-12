@@ -3,14 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Search } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
 import { useAIAdvies } from './ai/useAIAdvies'
 import { UserMenu } from './UserMenu'
-import { GlobalSearch, useGlobalSearch } from './GlobalSearch'
 
 // Donkere navy header — Riley & Grey-stijl. Bevat het logo (ampersand-mark)
 // links, een horizontaal hoofdmenu in het midden en het accountmenu rechts.
@@ -21,7 +20,6 @@ export function TopNav() {
   const permissions = useBruiloftStore((s) => s.permissions)
   const sections = visibleSections(permissions)
   const active = activeSection(pathname)
-  const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearch()
 
   // De AI-assistent-knop opent het coach-paneel (zie AICoach in WeddingShell).
   // Het stipje vraagt alleen aandacht als er een kritiek advies klaarstaat.
@@ -31,7 +29,6 @@ export function TopNav() {
   const heeftKritiek = zichtbaar.some((a) => a.urgentie === 'kritiek')
 
   return (
-    <>
     <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
@@ -76,7 +73,7 @@ export function TopNav() {
         {/* Spacer op mobiel zodat het account-menu rechts uitlijnt. */}
         <span className="flex-1 md:hidden" aria-hidden />
 
-        {/* Account-menu (rechts) + AI-knop + zoekknop. */}
+        {/* Account-menu (rechts) + AI-knop. */}
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -100,19 +97,9 @@ export function TopNav() {
               />
             ) : null}
           </button>
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className="inline-flex items-center justify-center rounded-full p-2 text-white/80 bg-white/10 hover:bg-white/15 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-header-bg"
-            aria-label="Zoeken"
-          >
-            <Search className="h-4 w-4" aria-hidden />
-          </button>
           <UserMenu variant="dark" />
         </div>
       </div>
     </header>
-    <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
-    </>
   )
 }
