@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -19,9 +20,13 @@ export interface AIBudgetAdvies {
 }
 
 function buildBudgetPrompt(ctx: AIWeddingContext): string {
+  const gebruikerSectie = ctx.gebruiker
+    ? `\nGebruikerscontext: ervaringsniveau '${ctx.gebruiker.ervaringsniveau}'. Pas diepgang van uitleg hierop aan.\n`
+    : ''
+
   return `Je bent een ervaren Nederlandse trouwplanner gespecialiseerd in budgetbeheer. \
 Analyseer het budget van ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} \
-voor hun bruiloft op ${ctx.bruidspaar.trouwdatum} (${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan).
+voor hun bruiloft op ${ctx.bruidspaar.trouwdatum} (${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan).${gebruikerSectie}
 
 Budget overzicht:
 ${JSON.stringify(ctx.budget, null, 2)}
@@ -70,6 +75,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
+  void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
+
   let body: { context: AIWeddingContext; weddingId: string }
   try {
     body = await request.json()
@@ -96,13 +103,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
 
+  const [profileResult, activityResult] = await Promise.all([
+    (supabase as any).from('profiles').select('created_at').eq('id', user.id).single(),
+    (supabase as any)
+      .from('wedding_activity')
+      .select('*', { count: 'exact', head: true })
+      .eq('actor_id', user.id)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+  ])
+
+  const profielLeeftijdDagen = profileResult.data?.created_at
+    ? Math.floor((Date.now() - new Date(profileResult.data.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    : 0
+
+  const enrichedContext: AIWeddingContext = {
+    ...body.context,
+    gebruiker: {
+      profielLeeftijdDagen,
+      actiesLaatste30Dagen: activityResult.count ?? 0,
+      ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, activityResult.count ?? 0),
+    },
+  }
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const result = await model.generateContent(buildBudgetPrompt(body.context))
+    const result = await model.generateContent(buildBudgetPrompt(enrichedContext))
     const advies = parseBudgetAdvies(result.response.text())
     return NextResponse.json({ advies })
   } catch (err) {

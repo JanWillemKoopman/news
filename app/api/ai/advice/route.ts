@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
@@ -61,10 +62,19 @@ function buildPrompt(ctx: AIWeddingContext): string {
         ? 'vandaag is de dag!'
         : 'al getrouwd'
 
+  const gebruikerSectie = ctx.gebruiker
+    ? `\nGebruikerscontext:
+- Profiellooptijd: ${ctx.gebruiker.profielLeeftijdDagen} dagen
+- Acties afgelopen 30 dagen: ${ctx.gebruiker.actiesLaatste30Dagen}
+- Ervaringsniveau: ${ctx.gebruiker.ervaringsniveau}
+
+Pas je toon en diepgang aan op het ervaringsniveau: 'nieuw' = meer uitleg en stapsgewijze begeleiding, leg basisbegrippen uit; 'gemiddeld' = balans tussen uitleg en efficiëntie; 'ervaren' = beknopt, focus op optimalisaties en risico's zonder basisuitleg.\n`
+    : ''
+
   return `Je bent een ervaren persoonlijke Nederlandse trouwplanner-assistent. \
 Je helpt ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} bij de voorbereiding van hun bruiloft \
 op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
-
+${gebruikerSectie}
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
 
@@ -136,6 +146,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
+  // Fire-and-forget: bijwerken hoeft de response niet te vertragen
+  void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
+
   let body: { context: AIWeddingContext; weddingId: string; force?: boolean }
   try {
     body = await request.json()
@@ -188,13 +201,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
 
+  // Haal gebruikersprofiel op voor contextuele AI-toon
+  const [profileResult, activityResult] = await Promise.all([
+    (supabase as any).from('profiles').select('created_at').eq('id', user.id).single(),
+    (supabase as any)
+      .from('wedding_activity')
+      .select('*', { count: 'exact', head: true })
+      .eq('actor_id', user.id)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+  ])
+
+  const profielLeeftijdDagen = profileResult.data?.created_at
+    ? Math.floor((Date.now() - new Date(profileResult.data.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    : 0
+  const actiesLaatste30Dagen = activityResult.count ?? 0
+
+  const enrichedContext: AIWeddingContext = {
+    ...body.context,
+    gebruiker: {
+      profielLeeftijdDagen,
+      actiesLaatste30Dagen,
+      ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, actiesLaatste30Dagen),
+    },
+  }
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const result = await model.generateContent(buildPrompt(body.context))
+    const result = await model.generateContent(buildPrompt(enrichedContext))
     const advies = parseAdvies(result.response.text())
 
     // Sla op in DB-cache

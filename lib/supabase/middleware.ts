@@ -7,6 +7,8 @@ import type { Database } from './database.types'
 // en starten een anonieme gast-sessie via signInAnonymously().
 const PROTECTED_PREFIXES = ['/uitnodiging', '/admin']
 const AUTH_PAGES = ['/login', '/signup']
+const CONFIRM_EMAIL_PATH = '/bevestig-email'
+const EMAIL_CONFIRM_GRACE_HOURS = 48
 
 // Ververst de sessie bij elke request en beschermt routes. Cruciaal: geef
 // ALTIJD het supabaseResponse-object terug zodat ververste auth-cookies
@@ -55,6 +57,26 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/bruiloft'
     url.search = ''
     return NextResponse.redirect(url)
+  }
+
+  // Gebruikers die hun e-mail nog niet bevestigd hebben en de 48-uurs
+  // grace-periode voorbij zijn, worden naar /bevestig-email gestuurd.
+  if (
+    user &&
+    !user.is_anonymous &&
+    !user.email_confirmed_at &&
+    path !== CONFIRM_EMAIL_PATH &&
+    !path.startsWith('/auth/') &&
+    !path.startsWith('/signup')
+  ) {
+    const createdAt = new Date(user.created_at)
+    const hoursOld = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60)
+    if (hoursOld > EMAIL_CONFIRM_GRACE_HOURS) {
+      const url = request.nextUrl.clone()
+      url.pathname = CONFIRM_EMAIL_PATH
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
