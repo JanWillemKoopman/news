@@ -642,19 +642,40 @@ const VOORTGANG_TAAK_MAPPING: Record<VoortgangCategorie, string[]> = {
 
 function statusVoorTaak(
   titel: string,
-  geregeldeZaken: Partial<Record<VoortgangCategorie, VoortgangStatus>>
+  wedding: Wedding
 ): 'open' | 'bezig' | 'klaar' {
+  const geregeldeZaken = wedding.geregeldeZaken ?? {}
+
+  // Leveranciers-checklist uit de wizard
   for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
     if (VOORTGANG_TAAK_MAPPING[cat]?.includes(titel)) {
       if (status === 'geboekt') return 'klaar'
       if (status === 'bezig') return 'bezig'
     }
   }
+
+  // Budget én gastenlijst ingevuld → de eerste planningstaken zijn gedaan
+  if (titel === 'Budget en globale gastenlijst bepalen') {
+    const heeftBudget = (wedding.totaalBudget ?? 0) > 0
+    const heeftGasten = (wedding.aantalDaggasten ?? 0) > 0 || (wedding.aantalAvondgasten ?? 0) > 0
+    if (heeftBudget && heeftGasten) return 'klaar'
+    if (heeftBudget || heeftGasten) return 'bezig'
+  }
+
   return 'open'
 }
 
+// Vervangt "partner 1" / "partner 2" door de echte voornamen in taakteksten.
+function vervangPartnerNamen(tekst: string, p1: string, p2: string): string {
+  let result = tekst
+  if (p1) result = result.replace(/\bpartner 1\b/gi, p1)
+  if (p2) result = result.replace(/\bpartner 2\b/gi, p2)
+  return result
+}
+
 export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
-  const geregeldeZaken = wedding.geregeldeZaken ?? {}
+  const p1 = wedding.partner1Naam ?? ''
+  const p2 = wedding.partner2Naam ?? ''
   // Gun een vers stel een rustige aanloop: taken vóór de bruiloft krijgen
   // minimaal drie weken vanaf vandaag, zodat een nieuw account niet meteen
   // start met "deadline morgen!"-paniek. Taken ná de bruiloft blijven staan.
@@ -672,11 +693,11 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
     const deadline = toISODate(deadlineDate)
     return {
       weddingId: wedding.id,
-      titel: t.titel,
-      omschrijving: t.omschrijving,
+      titel: vervangPartnerNamen(t.titel, p1, p2),
+      omschrijving: vervangPartnerNamen(t.omschrijving, p1, p2),
       deadline,
       tijdsblok: deriveTijdsblok(deadline, wedding.trouwdatum),
-      status: statusVoorTaak(t.titel, geregeldeZaken),
+      status: statusVoorTaak(t.titel, wedding),
       prioriteit: t.prioriteit,
       toegewezenAan: t.toegewezenAan,
       assignees: [],
