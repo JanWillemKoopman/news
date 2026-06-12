@@ -3,6 +3,11 @@ import { STANDAARD_VERDELING, aankomendeTermijnen, budgetTotalen, gastTellingen 
 import type { BudgetCategorie, BudgetItem, Guest, ScheduleItem, Task, Vendor, Wedding, WebsiteContent } from './types'
 
 export interface AIWeddingContext {
+  gebruiker?: {
+    profielLeeftijdDagen: number
+    actiesLaatste30Dagen: number
+    ervaringsniveau: 'nieuw' | 'gemiddeld' | 'ervaren'
+  }
   bruidspaar: {
     partner1: string
     partner2: string
@@ -71,6 +76,15 @@ export interface AIWeddingContext {
       dagenTot: number
     }>
   }
+}
+
+export function deriveErvaringsniveau(
+  profielLeeftijdDagen: number,
+  actiesLaatste30Dagen: number
+): 'nieuw' | 'gemiddeld' | 'ervaren' {
+  if (profielLeeftijdDagen <= 30 || actiesLaatste30Dagen <= 10) return 'nieuw'
+  if (profielLeeftijdDagen > 90 && actiesLaatste30Dagen > 30) return 'ervaren'
+  return 'gemiddeld'
 }
 
 const VENDOR_TYPES: Vendor['type'][] = [

@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { buildAIContext } from '@/lib/bruiloft/aiContext'
+import { buildAIContext, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import {
   budgetItemFromRow,
   guestFromRow,
@@ -130,8 +130,12 @@ function buildModulePrompt(key: AIModuleKey, ctx: AIWeddingContext): string {
     website: '/bruiloft/website',
   }
 
-  return `${PLANNER_PERSONA}
+  const gebruikerSectie = ctx.gebruiker
+    ? `\nGebruikerscontext: profiellooptijd ${ctx.gebruiker.profielLeeftijdDagen} dagen, ervaringsniveau '${ctx.gebruiker.ervaringsniveau}'. Stem je toon hierop af.\n`
+    : ''
 
+  return `${PLANNER_PERSONA}
+${gebruikerSectie}
 Je analyseert het onderdeel "${moduleNamen[key]}" voor ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2}, bruiloft op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
 
 Actuele data voor dit onderdeel:
@@ -163,8 +167,17 @@ function buildGlobaalPrompt(ctx: AIWeddingContext): string {
       ? `${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan`
       : 'vandaag of al gepasseerd'
 
-  return `${PLANNER_PERSONA}
+  const gebruikerSectie = ctx.gebruiker
+    ? `\nGebruikerscontext:
+- Profiellooptijd: ${ctx.gebruiker.profielLeeftijdDagen} dagen
+- Acties afgelopen 30 dagen: ${ctx.gebruiker.actiesLaatste30Dagen}
+- Ervaringsniveau: ${ctx.gebruiker.ervaringsniveau}
 
+Stem je toon af op dit ervaringsniveau: 'nieuw' = meer uitleg en stapsgewijze begeleiding; 'gemiddeld' = balans; 'ervaren' = beknopt, focus op optimalisaties.\n`
+    : ''
+
+  return `${PLANNER_PERSONA}
+${gebruikerSectie}
 Je geeft een globaal overzicht van de volledige bruiloftplanning van ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2}. Bruiloft op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
 
 Volledige planning:
@@ -214,6 +227,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
+  // Fire-and-forget: bijwerken hoeft de response niet te vertragen
+  void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
+
   let body: { weddingId: string; force?: boolean }
   try {
     body = await request.json()
@@ -257,6 +273,8 @@ export async function POST(request: NextRequest) {
     { data: guestRows },
     { data: scheduleRows },
     { data: websiteRow },
+    profileResult,
+    activityResult,
   ] = await Promise.all([
     supabase.from('weddings').select('*').eq('id', weddingId).single(),
     supabase.from('tasks').select('*').eq('wedding_id', weddingId),
@@ -265,6 +283,12 @@ export async function POST(request: NextRequest) {
     supabase.from('guests').select('*').eq('wedding_id', weddingId),
     supabase.from('schedule_items').select('*').eq('wedding_id', weddingId),
     supabase.from('website_content').select('*').eq('wedding_id', weddingId).single(),
+    (supabase as any).from('profiles').select('created_at').eq('id', user.id).single(),
+    (supabase as any)
+      .from('wedding_activity')
+      .select('*', { count: 'exact', head: true })
+      .eq('actor_id', user.id)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
   ])
 
   if (!weddingRow) {
@@ -279,7 +303,19 @@ export async function POST(request: NextRequest) {
   const scheduleItems = (scheduleRows ?? []).map(scheduleItemFromRow)
   const websiteContent = websiteRow ? websiteContentFromRow(websiteRow) : null
 
-  const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
+  const profielLeeftijdDagen = profileResult.data?.created_at
+    ? Math.floor((Date.now() - new Date(profileResult.data.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    : 0
+  const actiesLaatste30Dagen = activityResult.count ?? 0
+
+  const context = {
+    ...buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent),
+    gebruiker: {
+      profielLeeftijdDagen,
+      actiesLaatste30Dagen,
+      ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, actiesLaatste30Dagen),
+    },
+  }
   const fingerprint = buildFingerprint(context)
 
   // Bepaal of de cache geldig is

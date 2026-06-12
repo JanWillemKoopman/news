@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
+import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -25,7 +26,11 @@ export interface AITakenAdvies {
 
 function buildTakenPrompt(ctx: AIWeddingContext, bestaandeTaken: string[]): string {
   const vandaag = new Date().toISOString().slice(0, 10)
-  return `Je bent een ervaren Nederlandse trouwplanner. Stel een persoonlijke takenlijst voor ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} op.
+  const gebruikerSectie = ctx.gebruiker
+    ? `\nGebruikerscontext: ervaringsniveau '${ctx.gebruiker.ervaringsniveau}'. Stel bij 'nieuw' ook basisstappen voor die ervaren gebruikers al kennen.\n`
+    : ''
+
+  return `Je bent een ervaren Nederlandse trouwplanner. Stel een persoonlijke takenlijst voor ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} op.${gebruikerSectie}
 
 Bruiloftdetails:
 - Trouwdatum: ${ctx.bruidspaar.trouwdatum}
@@ -93,6 +98,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
   }
 
+  void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
+
   let body: { context: AIWeddingContext; weddingId: string; bestaandeTaken?: string[] }
   try {
     body = await request.json()
@@ -122,6 +129,28 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const [profileResult, activityResult] = await Promise.all([
+    (supabase as any).from('profiles').select('created_at').eq('id', user.id).single(),
+    (supabase as any)
+      .from('wedding_activity')
+      .select('*', { count: 'exact', head: true })
+      .eq('actor_id', user.id)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+  ])
+
+  const profielLeeftijdDagen = profileResult.data?.created_at
+    ? Math.floor((Date.now() - new Date(profileResult.data.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    : 0
+
+  const enrichedContext: AIWeddingContext = {
+    ...body.context,
+    gebruiker: {
+      profielLeeftijdDagen,
+      actiesLaatste30Dagen: activityResult.count ?? 0,
+      ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, activityResult.count ?? 0),
+    },
+  }
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
@@ -132,7 +161,7 @@ export async function POST(request: NextRequest) {
       .slice(0, 100)
       .map((t) => String(t).slice(0, 200))
     const result = await model.generateContent(
-      buildTakenPrompt(body.context, bestaandeTaken)
+      buildTakenPrompt(enrichedContext, bestaandeTaken)
     )
     const advies = parseResponse(result.response.text())
     return NextResponse.json({ advies })
