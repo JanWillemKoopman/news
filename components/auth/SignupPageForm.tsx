@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { createClient } from '@/lib/supabase/client'
@@ -109,6 +110,7 @@ function ConfirmationState({ email, next }: { email: string; next: string }) {
 
 export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillEmail?: string }) {
   const supabase = React.useMemo(() => createClient(), [])
+  const router = useRouter()
   const target = safeNext(next)
 
   const [email, setEmail] = React.useState(prefillEmail ?? '')
@@ -119,14 +121,14 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
   const [noDateYet, setNoDateYet] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [sent, setSent] = React.useState(false)
+  const [needsConfirmation, setNeedsConfirmation] = React.useState(false)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -139,31 +141,42 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
       },
     })
 
-    if (error) {
-      setError(mapAuthError(error.message))
+    if (signUpError) {
+      setError(mapAuthError(signUpError.message))
       setLoading(false)
       return
     }
 
-    setSent(true)
-    setLoading(false)
+    // Probeer direct in te loggen zodat de gebruiker meteen verder kan.
+    // Dit werkt wanneer e-mailbevestiging uitgeschakeld is in Supabase.
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (signInError) {
+      // E-mailbevestiging is vereist — toon de bevestigingsstap.
+      setNeedsConfirmation(true)
+      setLoading(false)
+      return
+    }
+
+    // Gelukt: stuur door naar stap 2 (trouwplan opstellen).
+    router.push('/signup/trouwplan')
   }
 
   return (
     <div className="flex min-h-screen">
       {/* Left: purple placeholder — will be replaced with an image */}
       <div
-        className="hidden md:block md:w-1/2 lg:w-[55%] bg-[#5B3A8A]"
+        className="hidden md:block md:w-[40%] bg-[#5B3A8A]"
         aria-hidden
       />
 
       {/* Right: steps + form */}
-      <div className="flex w-full flex-col md:w-1/2 lg:w-[45%]">
+      <div className="flex w-full flex-col md:w-[60%]">
         <StepsBar current={1} />
 
         <div className="flex flex-1 items-center justify-center px-8 py-10 md:px-12 lg:px-16">
           <div className="w-full max-w-sm">
-            {sent ? (
+            {needsConfirmation ? (
               <ConfirmationState email={email} next={next ?? ''} />
             ) : (
               <>
