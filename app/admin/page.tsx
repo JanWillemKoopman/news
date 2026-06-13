@@ -18,7 +18,7 @@ interface AdminStats {
 
 async function getStats(): Promise<AdminStats | null> {
   const supabase = createClient()
-  const { data, error } = await supabase.rpc('get_admin_stats')
+  const { data, error } = await (supabase as any).rpc('get_admin_stats')
   if (error) return null
   return data as AdminStats
 }

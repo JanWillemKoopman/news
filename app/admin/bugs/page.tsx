@@ -17,7 +17,8 @@ interface ErrorLog {
 
 async function getErrors(): Promise<ErrorLog[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // error_logs staat niet in database.types.ts (tabel na laatste type-generatie toegevoegd)
+  const { data, error } = await (supabase as any)
     .from('error_logs')
     .select('*')
     .order('created_at', { ascending: false })
