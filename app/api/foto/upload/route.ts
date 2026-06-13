@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
-    const slug = (formData.get('slug') as string | null)?.trim()
+    const weddingId = (formData.get('weddingId') as string | null)?.trim()
     const guestName = (formData.get('guestName') as string | null)?.trim() || null
     const message = (formData.get('message') as string | null)?.trim() || null
 
-    if (!file || !slug) {
+    if (!file || !weddingId) {
       return NextResponse.json({ error: 'Ontbrekende velden' }, { status: 400 })
     }
 
@@ -26,22 +26,11 @@ export async function POST(req: NextRequest) {
 
     const admin = createRawAdminClient()
 
-    // Haal wedding_id op via slug
-    const { data: wc } = await admin
-      .from('website_content')
-      .select('wedding_id')
-      .eq('slug', slug)
-      .maybeSingle()
-
-    if (!wc?.wedding_id) {
-      return NextResponse.json({ error: 'Bruiloft niet gevonden' }, { status: 404 })
-    }
-
-    // Controleer of de fotomuur actief is
+    // Controleer of de fotomuur actief is voor deze bruiloft
     const { data: settings } = await admin
       .from('photo_wall_settings')
       .select('is_active, moderation_required')
-      .eq('wedding_id', wc.wedding_id)
+      .eq('wedding_id', weddingId)
       .maybeSingle()
 
     if (!settings?.is_active) {
@@ -52,7 +41,7 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer()
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const storagePath = `${wc.wedding_id}/${filename}`
+    const storagePath = `${weddingId}/${filename}`
 
     const { error: uploadError } = await admin.storage
       .from('photo-wall')
@@ -69,7 +58,7 @@ export async function POST(req: NextRequest) {
     const { data: photo, error: insertError } = await admin
       .from('photo_wall_photos')
       .insert({
-        wedding_id: wc.wedding_id,
+        wedding_id: weddingId,
         storage_path: storagePath,
         url: publicUrl,
         guest_name: guestName,

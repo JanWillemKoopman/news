@@ -177,7 +177,7 @@ export function GuestWall({ weddingId, slug, partner1Naam, partner2Naam, trouwda
       const compressed = await compressImage(selectedFile)
       const fd = new FormData()
       fd.append('file', compressed)
-      fd.append('slug', slug)
+      fd.append('weddingId', weddingId)
       if (guestName.trim()) fd.append('guestName', guestName.trim())
       if (message.trim()) fd.append('message', message.trim())
 
