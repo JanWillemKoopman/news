@@ -138,7 +138,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             ref={menuRef}
             role="menu"
             aria-label="Accountmenu"
-            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background p-1.5 shadow-lg"
+            className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background p-1.5 shadow-lg max-h-[80vh] overflow-y-auto"
           >
             <div className="px-2.5 py-2">
               <p className="truncate text-sm font-medium text-foreground">{displayLabel}</p>
@@ -151,6 +151,21 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 </span>
               ) : null}
             </div>
+
+            {currentUser.appRole === 'platform_admin' ? (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <Link
+                  href="/admin"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Admin dashboard
+                </Link>
+              </>
+            ) : null}
 
             {weddings.length > 1 ? (
               <>
@@ -225,21 +240,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               <UserCog className="h-4 w-4 text-muted-foreground" />
               Account
             </Link>
-
-            {currentUser.appRole === 'platform_admin' ? (
-              <>
-                <div className="my-1 h-px bg-border" />
-                <Link
-                  href="/admin"
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Admin dashboard
-                </Link>
-              </>
-            ) : null}
 
             <button
               type="button"
