@@ -32,17 +32,16 @@ export async function POST(req: Request) {
     }
   )
 
-  const { data: member, error: memberError } = await userClient
-    .from('wedding_members')
-    .select('role')
-    .eq('wedding_id', weddingId)
-    .maybeSingle()
+  // Controleer lidmaatschap via de is_wedding_member() RPC — gebruikt intern
+  // auth.uid() uit de JWT, zodat we geen user_id handmatig hoeven te vergelijken.
+  const { data: isMember, error: memberError } = await userClient
+    .rpc('is_wedding_member', { p_wedding: weddingId })
 
   if (memberError) {
     return NextResponse.json({ error: `Ledfout: ${memberError.message}` }, { status: 500 })
   }
 
-  if (!member) {
+  if (!isMember) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
