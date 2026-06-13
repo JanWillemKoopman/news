@@ -264,8 +264,8 @@ export function FotomuurBeheer() {
             </div>
             {/* URL + knoppen */}
             <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-foreground overflow-hidden">
-                <span className="truncate">{guestUrl}</span>
+              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-foreground overflow-hidden min-w-0">
+                <span className="truncate min-w-0 flex-1">{guestUrl}</span>
                 <button onClick={copyUrl} className="shrink-0 text-muted-foreground hover:text-foreground">
                   {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -286,7 +286,7 @@ export function FotomuurBeheer() {
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-words">
                 Zet de QR-code op tafelkaartjes of toon hem op een scherm zodat gasten hem kunnen scannen.
               </p>
             </div>
