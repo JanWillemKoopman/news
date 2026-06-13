@@ -11,6 +11,7 @@ import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruilo
 import { AICoach } from './ai/AICoach'
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
+import { PageTracker } from '@/components/admin/PageTracker'
 import { MobileNav } from './MobileNav'
 import { OnboardingWizard } from './OnboardingWizard'
 import { moduleForPath } from './nav'
@@ -28,6 +29,7 @@ interface WeddingShellProps {
 export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
   return (
     <ToastProvider>
+      <PageTracker />
       <ShellInner fontClassName={fontClassName}>{children}</ShellInner>
     </ToastProvider>
   )
