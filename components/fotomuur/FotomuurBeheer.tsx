@@ -143,17 +143,20 @@ export function FotomuurBeheer() {
     if (!weddingId) return
     setSaving(true)
     const merged = { ...defaults, ...settings, ...patch }
-    const supabase = createRawClient()
-    const { error } = await supabase.from('photo_wall_settings').upsert({
-      wedding_id: weddingId,
-      is_active: merged.isActive,
-      title: merged.title,
-      moderation_required: merged.moderationRequired,
-      require_name: merged.requireName,
-      guests_can_download: merged.guestsCanDownload,
-    }, { onConflict: 'wedding_id' })
+    const res = await fetch('/api/fotomuur/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weddingId,
+        isActive: merged.isActive,
+        title: merged.title,
+        moderationRequired: merged.moderationRequired,
+        requireName: merged.requireName,
+        guestsCanDownload: merged.guestsCanDownload,
+      }),
+    })
     setSaving(false)
-    if (error) { toast({ title: 'Fout bij opslaan', variant: 'error' }); return }
+    if (!res.ok) { toast({ title: 'Fout bij opslaan', variant: 'error' }); return }
     setSettings(merged)
   }
 
