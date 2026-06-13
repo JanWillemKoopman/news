@@ -1,5 +1,5 @@
 import { Bug, AlertTriangle, Info } from 'lucide-react'
-import { createRawAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 30
 
@@ -16,8 +16,8 @@ interface ErrorLog {
 }
 
 async function getErrors(): Promise<ErrorLog[]> {
-  const admin = createRawAdminClient()
-  const { data, error } = await admin
+  const supabase = createClient()
+  const { data, error } = await supabase
     .from('error_logs')
     .select('*')
     .order('created_at', { ascending: false })

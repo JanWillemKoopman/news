@@ -1,6 +1,6 @@
 import { LayoutDashboard, Users, Bug, TrendingUp, CalendarHeart } from 'lucide-react'
 
-import { createRawAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
 
@@ -17,8 +17,8 @@ interface AdminStats {
 }
 
 async function getStats(): Promise<AdminStats | null> {
-  const admin = createRawAdminClient()
-  const { data, error } = await admin.rpc('get_admin_stats')
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('get_admin_stats')
   if (error) return null
   return data as AdminStats
 }
