@@ -7,7 +7,7 @@ import { createRawAdminClient } from '@/lib/supabase/admin'
 const schema = z.object({
   event_type: z.string().max(100),
   path:       z.string().max(500).optional(),
-  metadata:   z.record(z.unknown()).optional(),
+  metadata:   z.record(z.string(), z.unknown()).optional(),
 })
 
 export async function POST(req: Request) {
