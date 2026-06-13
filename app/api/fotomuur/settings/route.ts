@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json()
-  const { weddingId, isActive, title, moderationRequired, requireName, guestsCanDownload } = body
+  const { weddingId, isActive, title, moderationRequired, requireName, guestsCanDownload, numColumns } = body
 
   if (!weddingId) {
     return NextResponse.json({ error: 'weddingId ontbreekt' }, { status: 400 })
@@ -56,6 +56,7 @@ export async function POST(req: Request) {
         moderation_required: moderationRequired ?? false,
         require_name: requireName ?? false,
         guests_can_download: guestsCanDownload ?? true,
+        num_columns: numColumns ?? 3,
       },
       { onConflict: 'wedding_id' }
     )

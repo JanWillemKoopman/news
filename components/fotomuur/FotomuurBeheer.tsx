@@ -74,6 +74,7 @@ export function FotomuurBeheer() {
         moderationRequired: s.moderation_required,
         requireName: s.require_name,
         guestsCanDownload: s.guests_can_download,
+        numColumns: s.num_columns ?? 3,
       } : null)
 
       const allPhotos: WallPhoto[] = ((photosRes.data ?? []) as any[]).map((p) => ({
@@ -153,6 +154,7 @@ export function FotomuurBeheer() {
         moderationRequired: merged.moderationRequired,
         requireName: merged.requireName,
         guestsCanDownload: merged.guestsCanDownload,
+        numColumns: merged.numColumns,
       }),
     })
     setSaving(false)
@@ -200,6 +202,7 @@ export function FotomuurBeheer() {
     moderationRequired: false,
     requireName: false,
     guestsCanDownload: true,
+    numColumns: 3,
   }
 
   const guestUrl = slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/foto/${slug}` : null
@@ -268,8 +271,8 @@ export function FotomuurBeheer() {
             </div>
             {/* URL + knoppen */}
             <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-foreground overflow-hidden">
-                <span className="truncate">{guestUrl}</span>
+              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-foreground overflow-hidden min-w-0">
+                <span className="truncate min-w-0 flex-1">{guestUrl}</span>
                 <button onClick={copyUrl} className="shrink-0 text-muted-foreground hover:text-foreground">
                   {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -290,7 +293,7 @@ export function FotomuurBeheer() {
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-words">
                 Zet de QR-code op tafelkaartjes of toon hem op een scherm zodat gasten hem kunnen scannen.
               </p>
             </div>
@@ -314,6 +317,28 @@ export function FotomuurBeheer() {
             onBlur={(e) => void upsertSettings({ title: e.target.value })}
             className="w-full max-w-sm rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-sm font-medium text-foreground mb-2">Kolommen op groot scherm</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                onClick={() => void upsertSettings({ numColumns: n })}
+                disabled={saving}
+                className={[
+                  'w-10 h-10 rounded-lg text-sm font-semibold border transition-colors',
+                  (settings?.numColumns ?? defaults.numColumns) === n
+                    ? 'bg-rose-600 text-white border-rose-600'
+                    : 'bg-background text-foreground border-input hover:border-rose-400',
+                ].join(' ')}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1.5">Hoeveel kolommen foto's naast elkaar op het grote scherm</p>
         </div>
 
         {[
