@@ -3,6 +3,7 @@
 import { Lock, WifiOff } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
@@ -54,6 +55,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     void init()
     return () => stopRealtime()
   }, [init, stopRealtime])
+
+  // Koppel de ingelogde gebruiker aan Sentry zodat alerts tonen wie de fout tegenkwam
+  React.useEffect(() => {
+    if (currentUser) {
+      Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.displayName })
+    } else {
+      Sentry.setUser(null)
+    }
+  }, [currentUser])
 
   const isAccountPage = pathname === '/bruiloft/account'
   const allowed = isAccountPage || canView(permissions, moduleForPath(pathname))

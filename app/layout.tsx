@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { GlobalErrorHandler } from '@/components/admin/GlobalErrorHandler'
+import { ErrorBoundary } from '@/components/admin/ErrorBoundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="nl" style={{ backgroundColor: '#ffffff' }}>
       <body className={`${inter.className} min-h-dvh bg-white text-foreground antialiased`}>
         <GlobalErrorHandler />
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   )

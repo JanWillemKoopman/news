@@ -1,4 +1,4 @@
-import { Bug, AlertTriangle, Info } from 'lucide-react'
+import { Bug, AlertTriangle, Info, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 30
@@ -41,6 +41,28 @@ function LevelBadge({ level }: { level: string }) {
   return <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">info</span>
 }
 
+function SentryBadge({ shortId, permalink }: { shortId?: string; permalink?: string }) {
+  const label = shortId ?? 'Sentry'
+  if (permalink) {
+    return (
+      <a
+        href={permalink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 hover:bg-purple-200 transition-colors"
+      >
+        {label}
+        <ExternalLink className="h-2.5 w-2.5" />
+      </a>
+    )
+  }
+  return (
+    <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+      {label}
+    </span>
+  )
+}
+
 function formatDateTime(iso: string) {
   return new Intl.DateTimeFormat('nl-NL', {
     day: 'numeric', month: 'short',
@@ -65,7 +87,14 @@ export default async function BugsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Bugs &amp; Fouten</h1>
-        <p className="text-sm text-gray-500 mt-1">Automatisch vastgelegd via de app — laatste 200 meldingen</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Automatisch vastgelegd via de app en Sentry — laatste 200 meldingen.{' '}
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-purple-400" />
+            <span className="text-purple-600">paars</span>
+          </span>
+          {' '}= via Sentry (server-side &amp; nieuwe issues)
+        </p>
       </div>
 
       {/* Tellers */}
@@ -85,48 +114,74 @@ export default async function BugsPage() {
 
       {errors.length > 0 && (
         <div className="space-y-2">
-          {errors.map((e) => (
-            <details key={e.id} className="group rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-              <summary className="flex cursor-pointer items-start gap-3 px-4 py-3 list-none hover:bg-gray-50 transition-colors">
-                <LevelIcon level={e.level} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                    <LevelBadge level={e.level} />
-                    {e.path && (
-                      <span className="text-xs font-mono text-gray-400 truncate max-w-[200px]">{e.path}</span>
+          {errors.map((e) => {
+            const fromSentry = e.metadata?.source === 'sentry'
+            const sentryPermalink = e.metadata?.sentry_permalink as string | undefined
+            const sentryShortId = e.metadata?.sentry_short_id as string | undefined
+            const occurrences = e.metadata?.occurrences as string | undefined
+            const affectedUsers = e.metadata?.affected_users as number | undefined
+
+            return (
+              <details key={e.id} className="group rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                <summary className="flex cursor-pointer items-start gap-3 px-4 py-3 list-none hover:bg-gray-50 transition-colors">
+                  <LevelIcon level={e.level} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <LevelBadge level={e.level} />
+                      {fromSentry && (
+                        <SentryBadge shortId={sentryShortId} permalink={sentryPermalink} />
+                      )}
+                      {e.path && (
+                        <span className="text-xs font-mono text-gray-400 truncate max-w-[200px]">{e.path}</span>
+                      )}
+                      <span className="text-xs text-gray-400 ml-auto shrink-0">{formatDateTime(e.created_at)}</span>
+                    </div>
+                    <p className="text-sm text-gray-800 truncate">{e.message}</p>
+                    {e.component && (
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">Component: {e.component}</p>
                     )}
-                    <span className="text-xs text-gray-400 ml-auto shrink-0">{formatDateTime(e.created_at)}</span>
+                    {fromSentry && (occurrences || affectedUsers !== undefined) && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {occurrences && <span>{occurrences}× voorgekomen</span>}
+                        {occurrences && affectedUsers !== undefined && <span> · </span>}
+                        {affectedUsers !== undefined && <span>{affectedUsers} gebruiker{affectedUsers !== 1 ? 's' : ''} getroffen</span>}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-800 truncate">{e.message}</p>
-                  {e.component && (
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">Component: {e.component}</p>
+                </summary>
+
+                <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 space-y-3 text-xs">
+                  {e.user_id && (
+                    <p><span className="font-medium text-gray-600">User ID:</span> <span className="font-mono text-gray-500">{e.user_id}</span></p>
+                  )}
+                  {sentryPermalink && (
+                    <p>
+                      <span className="font-medium text-gray-600">Sentry:</span>{' '}
+                      <a href={sentryPermalink} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline inline-flex items-center gap-1">
+                        Bekijk in Sentry <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </p>
+                  )}
+                  {e.stack && (
+                    <div>
+                      <p className="font-medium text-gray-600 mb-1">Stack trace:</p>
+                      <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-900 text-green-300 px-3 py-2 text-xs leading-relaxed max-h-48">
+                        {e.stack}
+                      </pre>
+                    </div>
+                  )}
+                  {e.metadata && Object.keys(e.metadata).length > 0 && (
+                    <div>
+                      <p className="font-medium text-gray-600 mb-1">Metadata:</p>
+                      <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 px-3 py-2 text-gray-700 max-h-48">
+                        {JSON.stringify(e.metadata, null, 2)}
+                      </pre>
+                    </div>
                   )}
                 </div>
-              </summary>
-
-              <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 space-y-3 text-xs">
-                {e.user_id && (
-                  <p><span className="font-medium text-gray-600">User ID:</span> <span className="font-mono text-gray-500">{e.user_id}</span></p>
-                )}
-                {e.stack && (
-                  <div>
-                    <p className="font-medium text-gray-600 mb-1">Stack trace:</p>
-                    <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-900 text-green-300 px-3 py-2 text-xs leading-relaxed max-h-48">
-                      {e.stack}
-                    </pre>
-                  </div>
-                )}
-                {e.metadata && Object.keys(e.metadata).length > 0 && (
-                  <div>
-                    <p className="font-medium text-gray-600 mb-1">Metadata:</p>
-                    <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-gray-100 px-3 py-2 text-gray-700 max-h-48">
-                      {JSON.stringify(e.metadata, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            </details>
-          ))}
+              </details>
+            )
+          })}
         </div>
       )}
     </div>
