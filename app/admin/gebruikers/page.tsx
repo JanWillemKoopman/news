@@ -1,5 +1,5 @@
 import { Users } from 'lucide-react'
-import { createRawAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
 
@@ -14,8 +14,8 @@ interface AdminUser {
 }
 
 async function getUsers(): Promise<AdminUser[]> {
-  const admin = createRawAdminClient()
-  const { data, error } = await admin.rpc('get_admin_users', { p_limit: 100, p_offset: 0 })
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('get_admin_users', { p_limit: 100, p_offset: 0 })
   if (error) return []
   return (data ?? []) as AdminUser[]
 }
