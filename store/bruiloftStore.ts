@@ -289,11 +289,9 @@ async function loadPermissions(
       permissions[r.module as Module] = r.level as Level
     }
   }
-  // Platform-admin mag overal meekijken (support), maar niet bewerken.
+  // Platform-admin heeft volledige rechten op alle bruiloften.
   if (appRole === 'platform_admin') {
-    for (const m of Object.keys(permissions) as Module[]) {
-      if (permissions[m] === 'none') permissions[m] = 'view'
-    }
+    return { role: role ?? 'owner', permissions: ALL_EDIT_PERMISSIONS }
   }
   return { role, permissions }
 }
@@ -348,11 +346,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('email, display_name, app_role, avatar_url, email_herinneringen')
         .eq('id', user.id)
         .maybeSingle()
+      if (profileError) {
+        console.error('[store] profile query failed:', profileError.message)
+      }
 
       const currentUser: CurrentUser = {
         id: user.id,
