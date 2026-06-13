@@ -75,8 +75,8 @@ BEGIN
     'total_users',      (SELECT count(*)                FROM auth.users),
     'new_users_7d',     (SELECT count(*)                FROM auth.users WHERE created_at > now() - interval '7 days'),
     'new_users_30d',    (SELECT count(*)                FROM auth.users WHERE created_at > now() - interval '30 days'),
-    'active_users_7d',  (SELECT count(DISTINCT user_id) FROM public.analytics_events WHERE created_at > now() - interval '7 days'),
-    'active_users_30d', (SELECT count(DISTINCT user_id) FROM public.analytics_events WHERE created_at > now() - interval '30 days'),
+    'active_users_7d',  (SELECT count(DISTINCT actor_id) FROM public.wedding_activity WHERE created_at > now() - interval '7 days'),
+    'active_users_30d', (SELECT count(DISTINCT actor_id) FROM public.wedding_activity WHERE created_at > now() - interval '30 days'),
     'total_weddings',   (SELECT count(*)                FROM public.weddings),
     'new_weddings_7d',  (SELECT count(*)                FROM public.weddings WHERE created_at > now() - interval '7 days'),
     'errors_24h',       (SELECT count(*)                FROM public.error_logs WHERE created_at > now() - interval '24 hours' AND level = 'error'),
@@ -121,7 +121,7 @@ BEGIN
     u.created_at,
     u.last_sign_in_at,
     (SELECT count(*) FROM public.wedding_members wm WHERE wm.user_id = u.id)                                                AS wedding_count,
-    (SELECT count(*) FROM public.analytics_events ae WHERE ae.user_id = u.id AND ae.created_at > now() - interval '30 days') AS event_count_30d
+    (SELECT count(*) FROM public.wedding_activity wa WHERE wa.actor_id = u.id AND wa.created_at > now() - interval '30 days')  AS event_count_30d
   FROM auth.users u
   LEFT JOIN public.profiles p ON p.id = u.id
   ORDER BY u.created_at DESC
