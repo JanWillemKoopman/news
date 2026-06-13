@@ -54,13 +54,17 @@ const nextConfig = {
 }
 
 export default withSentryConfig(nextConfig, {
+  // Org en project zijn nodig voor source map upload naar Sentry
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
   // Stille modus: geen build-output tenzij SENTRY_AUTH_TOKEN ingesteld is
   silent: !process.env.SENTRY_AUTH_TOKEN,
 
   // Source maps uploaden naar Sentry (vereist SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT)
   widenClientFileUpload: true,
 
-  // Source maps verbergen in de client-bundle
+  // Source maps verbergen in de client-bundle (worden enkel naar Sentry gestuurd)
   hideSourceMaps: true,
 
   // Sentry tree-shaking logger verwijderen uit de productie-bundle
