@@ -1,6 +1,7 @@
 import { LayoutDashboard, Users, Bug, TrendingUp, CalendarHeart } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/server'
+import { WeeklyCharts } from '@/components/admin/WeeklyCharts'
 
 export const revalidate = 60
 
@@ -16,6 +17,12 @@ interface AdminStats {
   errors_7d: number
 }
 
+interface WeekRow {
+  week: string
+  new_users: number
+  active_users: number
+}
+
 async function getStats(): Promise<AdminStats | null> {
   const supabase = createClient()
   const { data, error } = await (supabase as any).rpc('get_admin_stats')
@@ -23,8 +30,15 @@ async function getStats(): Promise<AdminStats | null> {
   return data as AdminStats
 }
 
+async function getWeeklyStats(): Promise<WeekRow[]> {
+  const supabase = createClient()
+  const { data, error } = await (supabase as any).rpc('get_admin_weekly_stats')
+  if (error) return []
+  return (data ?? []) as WeekRow[]
+}
+
 export default async function AdminOverviewPage() {
-  const stats = await getStats()
+  const [stats, weekly] = await Promise.all([getStats(), getWeeklyStats()])
 
   return (
     <div className="space-y-8">
@@ -41,7 +55,7 @@ export default async function AdminOverviewPage() {
 
       {stats && (
         <>
-          {/* Gebruikers */}
+          {/* Gebruikers KPIs */}
           <section>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Gebruikers</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -70,6 +84,9 @@ export default async function AdminOverviewPage() {
               />
             </div>
           </section>
+
+          {/* Weekgrafieken */}
+          <WeeklyCharts data={weekly} />
 
           {/* Technisch */}
           <section>

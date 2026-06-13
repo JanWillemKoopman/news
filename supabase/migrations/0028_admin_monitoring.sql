@@ -138,3 +138,43 @@ GRANT EXECUTE ON FUNCTION public.get_admin_users(integer, integer) TO authentica
 UPDATE public.profiles
 SET app_role = 'platform_admin'
 WHERE email = 'koopman.janwillem@gmail.com';
+
+-- -----------------------------------------------------------------------
+-- 6) Wekelijkse groeistatistieken RPC (ISO-week indeling, vanaf 2026-W21)
+-- -----------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_admin_weekly_stats()
+RETURNS TABLE(
+  week         text,
+  new_users    bigint,
+  active_users bigint
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    to_char(gs.week_start, 'IYYY"-W"IW')        AS week,
+    count(DISTINCT u.id)::bigint                 AS new_users,
+    count(DISTINCT wa.actor_id)::bigint          AS active_users
+  FROM generate_series(
+    '2026-05-18 00:00:00+00'::timestamptz,
+    date_trunc('week', now() AT TIME ZONE 'UTC'),
+    '1 week'::interval
+  ) gs(week_start)
+  LEFT JOIN auth.users u
+    ON date_trunc('week', u.created_at AT TIME ZONE 'UTC') = gs.week_start
+  LEFT JOIN public.wedding_activity wa
+    ON date_trunc('week', wa.created_at AT TIME ZONE 'UTC') = gs.week_start
+  GROUP BY gs.week_start
+  ORDER BY gs.week_start;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_admin_weekly_stats() FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.get_admin_weekly_stats() TO authenticated, service_role;
