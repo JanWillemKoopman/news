@@ -261,7 +261,7 @@ export function FotomuurBeheer() {
 
       {/* Link & QR */}
       {slug ? (
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded-xl border bg-card p-5 overflow-hidden">
           <h2 className="font-medium text-foreground mb-4">Link voor gasten</h2>
           <div className="flex flex-col sm:flex-row gap-5 items-start">
             {/* QR code */}
@@ -270,7 +270,7 @@ export function FotomuurBeheer() {
               <p className="text-[11px] text-muted-foreground text-center mt-2">Scan om te openen</p>
             </div>
             {/* URL + knoppen */}
-            <div className="flex-1 min-w-0 space-y-3">
+            <div className="w-full min-w-0 sm:flex-1 space-y-3">
               <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-foreground overflow-hidden min-w-0">
                 <span className="truncate min-w-0 flex-1">{guestUrl}</span>
                 <button onClick={copyUrl} className="shrink-0 text-muted-foreground hover:text-foreground">
