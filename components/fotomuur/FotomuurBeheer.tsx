@@ -252,7 +252,7 @@ export function FotomuurBeheer() {
             <span
               className={[
                 'pointer-events-none block h-5 w-5 rounded-full bg-white shadow-md transition-transform mt-0.5',
-                isActive ? 'translate-x-5.5' : 'translate-x-0.5',
+                isActive ? 'translate-x-[22px]' : 'translate-x-[2px]',
               ].join(' ')}
             />
           </button>
@@ -364,7 +364,7 @@ export function FotomuurBeheer() {
               <span className={[
                 'block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5',
                 (settings?.[key as keyof WallSettings] ?? defaults[key as keyof WallSettings])
-                  ? 'translate-x-4.5' : 'translate-x-0.5',
+                  ? 'translate-x-[18px]' : 'translate-x-[2px]',
               ].join(' ')} />
             </button>
           </div>
