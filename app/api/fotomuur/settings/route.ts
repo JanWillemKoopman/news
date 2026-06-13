@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createRawAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   if (!weddingId) return NextResponse.json({ error: 'Missing weddingId' }, { status: 400 })
 
   // Controleer of de gebruiker lid is van deze bruiloft
-  const supabase = createAdminClient()
+  const supabase = createRawAdminClient()
   const { data: member } = await supabase
     .from('wedding_members')
     .select('role')
