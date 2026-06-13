@@ -1,11 +1,10 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-import { createRawAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
-  // Lees sessie uit cookie (geen extra netwerkrequest)
+  // Sessie uit cookie lezen (geen extra netwerkrequest naar Supabase Auth)
   const serverClient = createClient()
   const { data: { session }, error: sessionError } = await serverClient.auth.getSession()
 
@@ -20,9 +19,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'weddingId ontbreekt' }, { status: 400 })
   }
 
-  // Controleer lidmaatschap via de gebruikers-token (RLS doet de autorisatie).
-  // Door de access_token door te sturen werkt is_wedding_member() correct
-  // zonder dat we zelf de user_id hoeven te vergelijken.
+  // Client met de access_token van de gebruiker in de Authorization-header.
+  // PostgREST gebruikt de JWT om auth.uid() en de 'authenticated' role te bepalen,
+  // waardoor alle RLS-policies correct werken zonder de service-role key.
   const userClient = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -32,8 +31,7 @@ export async function POST(req: Request) {
     }
   )
 
-  // Controleer lidmaatschap via de is_wedding_member() RPC — gebruikt intern
-  // auth.uid() uit de JWT, zodat we geen user_id handmatig hoeven te vergelijken.
+  // Lidmaatschapscheck via is_wedding_member() RPC (gebruikt intern auth.uid())
   const { data: isMember, error: memberError } = await userClient
     .rpc('is_wedding_member', { p_wedding: weddingId })
 
@@ -45,10 +43,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  // Instellingen opslaan via de admin-client (omzeilt de restrictieve RLS op
-  // photo_wall_settings zodat zowel INSERT als UPDATE altijd slagen)
-  const admin = createRawAdminClient()
-  const { data, error } = await admin
+  // Upsert via dezelfde user-client. RLS-policies:
+  //   INSERT: pws_insert_members → is_wedding_member() → true voor leden ✓
+  //   UPDATE (on conflict): pws_update_edit → can_edit('website') → true voor eigenaars ✓
+  const { data, error } = await userClient
     .from('photo_wall_settings')
     .upsert(
       {
