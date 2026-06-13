@@ -10,7 +10,7 @@ const schema = z.object({
   stack:     z.string().max(10000).optional(),
   path:      z.string().max(500).optional(),
   component: z.string().max(200).optional(),
-  metadata:  z.record(z.unknown()).optional(),
+  metadata:  z.record(z.string(), z.unknown()).optional(),
 })
 
 export async function POST(req: Request) {
