@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -25,7 +27,8 @@ const nextConfig = {
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.supabase.co",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      // Sentry fout-rapportage toegevoegd aan connect-src
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io",
       "font-src 'self' https://fonts.gstatic.com",
       "object-src 'none'",
       "frame-ancestors 'none'",
@@ -48,6 +51,18 @@ const nextConfig = {
       },
     ]
   },
-};
+}
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Stille modus: geen build-output tenzij SENTRY_AUTH_TOKEN ingesteld is
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+
+  // Source maps uploaden naar Sentry (vereist SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT)
+  widenClientFileUpload: true,
+
+  // Source maps verbergen in de client-bundle
+  hideSourceMaps: true,
+
+  // Sentry tree-shaking logger verwijderen uit de productie-bundle
+  disableLogger: true,
+})

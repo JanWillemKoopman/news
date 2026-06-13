@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { trackError } from '@/lib/analytics'
+import * as Sentry from '@sentry/nextjs'
 
 interface Props {
   children: React.ReactNode
@@ -20,12 +20,25 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    void trackError(error.message, {
-      level: 'error',
-      stack: error.stack,
-      component: info.componentStack?.split('\n')[1]?.trim() ?? undefined,
-      metadata: { componentStack: info.componentStack },
+    // Sentry krijgt de volledige fout met component-stack voor leesbare traces
+    Sentry.captureException(error, {
+      extra: { componentStack: info.componentStack },
     })
+
+    // Eigen dashboard voor gebruikersattributie (directe fetch, niet via trackError,
+    // om dubbele Sentry-melding te voorkomen)
+    void fetch('/api/admin/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: 'error',
+        message: error.message,
+        stack: error.stack,
+        path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+        component: info.componentStack?.split('\n')[1]?.trim() ?? undefined,
+        metadata: { componentStack: info.componentStack },
+      }),
+    }).catch(() => {})
   }
 
   render() {

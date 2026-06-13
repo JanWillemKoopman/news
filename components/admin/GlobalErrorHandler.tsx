@@ -1,28 +1,50 @@
 'use client'
 
 import * as React from 'react'
-import { trackError } from '@/lib/analytics'
 
-// Vangt onverwerkte JS-fouten en promise-rejections op en stuurt ze naar
-// het admin foutendashboard. Wordt één keer geïnstalleerd in de root layout.
+// Stuurt onverwerkte fouten naar het eigen admin-dashboard voor gebruikersattributie.
+// Sentry vangt dezelfde fouten automatisch op via sentry.client.config.ts —
+// daarom wordt Sentry hier niet nogmaals aangeroepen.
+async function logToCustomDashboard(
+  message: string,
+  stack?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await fetch('/api/admin/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: 'error',
+        message,
+        stack,
+        path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+        metadata,
+      }),
+    })
+  } catch {
+    // Bewust leeg
+  }
+}
+
 export function GlobalErrorHandler() {
   React.useEffect(() => {
     function onError(event: ErrorEvent) {
-      void trackError(event.message, {
-        level: 'error',
-        stack: event.error?.stack,
-        metadata: { filename: event.filename, lineno: event.lineno, colno: event.colno },
+      void logToCustomDashboard(event.message, event.error?.stack, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
       })
     }
 
     function onUnhandledRejection(event: PromiseRejectionEvent) {
       const reason = event.reason
       const message = reason instanceof Error ? reason.message : String(reason)
-      void trackError(message, {
-        level: 'error',
-        stack: reason instanceof Error ? reason.stack : undefined,
-        metadata: { type: 'unhandledRejection' },
-      })
+      void logToCustomDashboard(
+        message,
+        reason instanceof Error ? reason.stack : undefined,
+        { type: 'unhandledRejection' }
+      )
     }
 
     window.addEventListener('error', onError)

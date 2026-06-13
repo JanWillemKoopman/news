@@ -1,5 +1,7 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
+
 // Stuur een analytics event naar de server. Faalt stil zodat tracking nooit
 // de gebruikerservaring verstoort.
 export async function trackEvent(
@@ -21,7 +23,8 @@ export async function trackEvent(
   }
 }
 
-// Stuur een foutmelding naar de server.
+// Stuur een foutmelding naar Sentry (alerts + leesbare traces) én naar het
+// eigen dashboard (gebruikersattributie). Faalt stil.
 export async function trackError(
   message: string,
   options?: {
@@ -31,6 +34,17 @@ export async function trackError(
     metadata?: Record<string, unknown>
   }
 ) {
+  // Sentry vangt expliciete fouten op (auto-capture dekt alleen unhandled errors)
+  Sentry.captureMessage(message, {
+    level: options?.level ?? 'error',
+    extra: {
+      stack: options?.stack,
+      component: options?.component,
+      ...options?.metadata,
+    },
+  })
+
+  // Eigen dashboard voor gebruikersattributie
   try {
     await fetch('/api/admin/log-error', {
       method: 'POST',
