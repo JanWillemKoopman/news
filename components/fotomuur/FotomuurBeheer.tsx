@@ -74,6 +74,7 @@ export function FotomuurBeheer() {
         moderationRequired: s.moderation_required,
         requireName: s.require_name,
         guestsCanDownload: s.guests_can_download,
+        numColumns: s.num_columns ?? 3,
       } : null)
 
       const allPhotos: WallPhoto[] = ((photosRes.data ?? []) as any[]).map((p) => ({
@@ -151,6 +152,7 @@ export function FotomuurBeheer() {
       moderation_required: merged.moderationRequired,
       require_name: merged.requireName,
       guests_can_download: merged.guestsCanDownload,
+      num_columns: merged.numColumns,
     }, { onConflict: 'wedding_id' })
     setSaving(false)
     if (error) { toast({ title: 'Fout bij opslaan', variant: 'error' }); return }
@@ -193,6 +195,7 @@ export function FotomuurBeheer() {
     moderationRequired: false,
     requireName: false,
     guestsCanDownload: true,
+    numColumns: 3,
   }
 
   const guestUrl = slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/foto/${slug}` : null
@@ -307,6 +310,28 @@ export function FotomuurBeheer() {
             onBlur={(e) => void upsertSettings({ title: e.target.value })}
             className="w-full max-w-sm rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-sm font-medium text-foreground mb-2">Kolommen op groot scherm</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                onClick={() => void upsertSettings({ numColumns: n })}
+                disabled={saving}
+                className={[
+                  'w-10 h-10 rounded-lg text-sm font-semibold border transition-colors',
+                  (settings?.numColumns ?? defaults.numColumns) === n
+                    ? 'bg-rose-600 text-white border-rose-600'
+                    : 'bg-background text-foreground border-input hover:border-rose-400',
+                ].join(' ')}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1.5">Hoeveel kolommen foto's naast elkaar op het grote scherm</p>
         </div>
 
         {[

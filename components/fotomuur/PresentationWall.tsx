@@ -73,10 +73,10 @@ function ScrollingColumn({ photos, scrollDown }: { photos: WallPhoto[]; scrollDo
   )
 }
 
-export function PresentationWall({ weddingId, partner1Naam, partner2Naam, trouwdatum, initialPhotos, guestUrl }: Props) {
+export function PresentationWall({ weddingId, partner1Naam, partner2Naam, trouwdatum, settings, initialPhotos, guestUrl }: Props) {
   const [photos, setPhotos] = React.useState<WallPhoto[]>(initialPhotos)
-  const [numCols, setNumCols] = React.useState(3)
   const [spotlight, setSpotlight] = React.useState<WallPhoto | null>(null)
+  const numCols = settings.numColumns ?? 3
 
   // Realtime: nieuwe foto's live toevoegen
   React.useEffect(() => {
@@ -173,25 +173,6 @@ export function PresentationWall({ weddingId, partner1Naam, partner2Naam, trouwd
             <span className="text-white/80 font-semibold text-xl">{photos.length}</span>{' '}
             {photos.length === 1 ? "foto" : "foto's"}
           </p>
-
-          {/* Kolom-kiezer */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-white/30 mr-1">kolommen</span>
-            {[1, 2, 3, 4].map((n) => (
-              <button
-                key={n}
-                onClick={() => setNumCols(n)}
-                className={[
-                  'w-8 h-8 rounded-lg text-sm font-semibold transition-colors',
-                  numCols === n
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white',
-                ].join(' ')}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
 
           {/* Gastlink QR */}
           <div className="flex flex-col items-center gap-1.5">

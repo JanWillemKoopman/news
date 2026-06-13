@@ -20,6 +20,7 @@ export interface WallSettings {
   moderationRequired: boolean
   requireName: boolean
   guestsCanDownload: boolean
+  numColumns: number
 }
 
 interface Props {
