@@ -4,7 +4,6 @@ import { Bug, LayoutDashboard, Users } from 'lucide-react'
 import Link from 'next/link'
 
 import { createClient } from '@/lib/supabase/server'
-import { createRawAdminClient } from '@/lib/supabase/admin'
 
 export const metadata: Metadata = { title: 'Admin · Ons Trouwplan' }
 
@@ -15,9 +14,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Gebruik de service-role client zodat RLS de eigen profielrij niet blokkeert.
-  const admin = createRawAdminClient()
-  const { data: profile } = await admin
+  // Lees de eigen profielrij — RLS staat dit altijd toe (id = auth.uid()).
+  // Geen admin-client nodig en geen afhankelijkheid van service-role key.
+  const { data: profile } = await supabase
     .from('profiles')
     .select('app_role')
     .eq('id', user.id)
