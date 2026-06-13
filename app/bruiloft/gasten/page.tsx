@@ -47,7 +47,7 @@ function RsvpSelect({
       value={value}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => onChange(e.target.value as RsvpStatus)}
-      className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring ${klassen[value]}`}
+      className={`cursor-pointer rounded-full px-1.5 py-0.5 md:px-2.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring ${klassen[value]}`}
     >
       {RSVP_STATUSSEN.map((s) => (
         <option key={s} value={s}>{capFirst(s)}</option>
