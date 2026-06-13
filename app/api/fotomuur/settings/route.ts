@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 
 import { createRawAdminClient } from '@/lib/supabase/admin'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
-  // Controleer authenticatie
-  const supabaseAuth = createServerClient()
-  const { data: { user } } = await supabaseAuth.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Lees sessie uit cookie (geen extra netwerkrequest naar Supabase Auth)
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
+  }
+  const userId = session.user.id
 
   const body = await req.json()
   const { weddingId, isActive, title, moderationRequired, requireName, guestsCanDownload } = body
@@ -15,17 +18,17 @@ export async function POST(req: Request) {
   if (!weddingId) return NextResponse.json({ error: 'Missing weddingId' }, { status: 400 })
 
   // Controleer of de gebruiker lid is van deze bruiloft
-  const supabase = createRawAdminClient()
-  const { data: member } = await supabase
+  const admin = createRawAdminClient()
+  const { data: member } = await admin
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .maybeSingle()
 
-  if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!member) return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('photo_wall_settings')
     .upsert({
       wedding_id: weddingId,

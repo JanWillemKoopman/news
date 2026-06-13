@@ -156,7 +156,11 @@ export function FotomuurBeheer() {
       }),
     })
     setSaving(false)
-    if (!res.ok) { toast({ title: 'Fout bij opslaan', variant: 'error' }); return }
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      toast({ title: json.error ?? 'Fout bij opslaan', variant: 'error' })
+      return
+    }
     setSettings(merged)
   }
 
