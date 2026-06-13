@@ -15,7 +15,7 @@ interface AdminUser {
 
 async function getUsers(): Promise<AdminUser[]> {
   const supabase = createClient()
-  const { data, error } = await supabase.rpc('get_admin_users', { p_limit: 100, p_offset: 0 })
+  const { data, error } = await (supabase as any).rpc('get_admin_users', { p_limit: 100, p_offset: 0 })
   if (error) return []
   return (data ?? []) as AdminUser[]
 }
