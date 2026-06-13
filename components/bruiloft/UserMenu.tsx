@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LogOut, Settings2, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, Heart, LayoutDashboard, LogOut, Settings2, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -225,6 +225,21 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               <UserCog className="h-4 w-4 text-muted-foreground" />
               Account
             </Link>
+
+            {currentUser.appRole === 'platform_admin' ? (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <Link
+                  href="/admin"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Admin dashboard
+                </Link>
+              </>
+            ) : null}
 
             <button
               type="button"
