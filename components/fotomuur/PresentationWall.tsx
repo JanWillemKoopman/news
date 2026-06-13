@@ -5,6 +5,28 @@ import * as React from 'react'
 import { createRawClient } from '@/lib/supabase/client'
 import type { WallPhoto, WallSettings } from './GuestWall'
 
+function QrCode({ url, size = 120 }: { url: string; size?: number }) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null)
+
+  React.useEffect(() => {
+    let alive = true
+    async function draw() {
+      if (typeof window === 'undefined') return
+      const { toCanvas } = await import('qrcode')
+      if (!alive || !canvasRef.current) return
+      await toCanvas(canvasRef.current, url, {
+        width: size,
+        margin: 1,
+        color: { dark: '#ffffff', light: '#1c1917' },
+      })
+    }
+    void draw()
+    return () => { alive = false }
+  }, [url, size])
+
+  return <canvas ref={canvasRef} width={size} height={size} className="rounded-xl" />
+}
+
 interface Props {
   weddingId: string
   slug: string
@@ -171,10 +193,10 @@ export function PresentationWall({ weddingId, partner1Naam, partner2Naam, trouwd
             ))}
           </div>
 
-          {/* Gastlink */}
-          <div className="text-right">
+          {/* Gastlink QR */}
+          <div className="flex flex-col items-center gap-1.5">
+            <QrCode url={guestUrl} size={120} />
             <p className="text-xs text-white/30 uppercase tracking-widest">Scan & voeg toe</p>
-            <p className="text-sm font-mono text-white/50 mt-0.5 max-w-[220px] truncate">{guestUrl}</p>
           </div>
         </div>
       </div>
