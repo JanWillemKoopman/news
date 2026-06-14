@@ -13,6 +13,14 @@ function verifySignature(rawBody: string, secret: string, signature: string): bo
 export async function POST(req: Request) {
   const secret = process.env.SENTRY_WEBHOOK_SECRET
 
+  const contentLengthHeader = req.headers.get('content-length')
+  if (contentLengthHeader) {
+    const contentLength = parseInt(contentLengthHeader, 10)
+    if (!isNaN(contentLength) && contentLength > 1 * 1024 * 1024) {
+      return new Response('Payload too large', { status: 413 })
+    }
+  }
+
   const rawBody = await req.text()
 
   if (secret) {
