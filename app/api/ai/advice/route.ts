@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
-import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
@@ -32,27 +32,6 @@ function metType(advies: Array<Omit<AIAdvies, 'type'> & { type?: AIAdviesType }>
 const MIN_COOLDOWN_MS = 60 * 60 * 1000
 // 7 dagen veiligheidsnet: cache nooit langer dan dit gebruiken.
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
-
-// Vingerafdruk van de planningsdata — verandert alleen als de inhoud verandert.
-// Het versievoorvoegsel dwingt eenmalige regeneratie af na promptwijzigingen
-// (zoals de introductie van adviestypen en benchmarkdata).
-function buildFingerprint(ctx: AIWeddingContext): string {
-  const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
-  return [
-    'v2',
-    ctx.bruidspaar.trouwdatum,
-    ctx.bruidspaar.locatie,
-    ctx.taken.open,
-    ctx.taken.klaar,
-    ctx.taken.achterstallig,
-    Math.round(ctx.budget.betaald),
-    Math.round(ctx.budget.resterend),
-    ctx.gasten.totaal,
-    ctx.gasten.bevestigd,
-    geboekt,
-    ctx.draaiboek.aantalItems,
-  ].join(':')
-}
 
 function buildPrompt(ctx: AIWeddingContext): string {
   const dagLabel =
@@ -170,7 +149,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  const fingerprint = buildFingerprint(body.context)
+  const fingerprint = buildAIFingerprint(body.context)
   const now = Date.now()
 
   // Lees DB-cache
