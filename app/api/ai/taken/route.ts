@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
     const bestaandeTaken = (body.bestaandeTaken ?? [])
