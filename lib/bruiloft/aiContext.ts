@@ -99,6 +99,30 @@ const VENDOR_TYPES: Vendor['type'][] = [
   'taart',
 ]
 
+export function buildAIFingerprint(ctx: AIWeddingContext): string {
+  const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
+  const voortgangHash = Object.entries(ctx.bruidspaar.geregeldeZaken)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}:${v}`)
+    .join(',')
+  return [
+    'v3',
+    ctx.bruidspaar.trouwdatum,
+    ctx.bruidspaar.locatie,
+    ctx.bruidspaar.ceremonietype ?? '',
+    ctx.taken.open,
+    ctx.taken.klaar,
+    ctx.taken.achterstallig,
+    Math.round(ctx.budget.betaald),
+    Math.round(ctx.budget.resterend),
+    ctx.gasten.totaal,
+    ctx.gasten.bevestigd,
+    geboekt,
+    ctx.draaiboek.aantalItems,
+    voortgangHash,
+  ].join(':')
+}
+
 export function buildAIContext(
   wedding: Wedding,
   tasks: Task[],

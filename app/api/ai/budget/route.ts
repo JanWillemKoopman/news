@@ -19,6 +19,21 @@ export interface AIBudgetAdvies {
   algemeneRaad: string
 }
 
+const MIN_COOLDOWN_MS = 30 * 60 * 1000   // 30 min
+const MAX_CACHE_AGE_MS = 4 * 60 * 60 * 1000  // 4 uur
+
+function buildBudgetFingerprint(ctx: AIWeddingContext): string {
+  return [
+    'v1',
+    Math.round(ctx.budget.totaal),
+    Math.round(ctx.budget.betaald),
+    Math.round(ctx.budget.geoffreerd),
+    ctx.budget.perCategorie.length,
+    ctx.budget.ontbrekendeCategorieën.length,
+    ctx.betalingen.aankomend.length,
+  ].join(':')
+}
+
 function buildBudgetPrompt(ctx: AIWeddingContext): string {
   const gebruikerSectie = ctx.gebruiker
     ? `\nGebruikerscontext: ervaringsniveau '${ctx.gebruiker.ervaringsniveau}'. Pas diepgang van uitleg hierop aan.\n`
@@ -125,6 +140,22 @@ export async function POST(request: NextRequest) {
     },
   }
 
+  // Cache check
+  const fingerprint = buildBudgetFingerprint(enrichedContext)
+  const now = Date.now()
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_budget_cache')
+    .select('cached_advies, data_fingerprint, last_updated_at')
+    .eq('wedding_id', body.weddingId)
+    .single()
+
+  if (cacheRow) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
+      return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
+    }
+  }
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
@@ -133,9 +164,17 @@ export async function POST(request: NextRequest) {
     })
     const result = await model.generateContent(buildBudgetPrompt(enrichedContext))
     const advies = parseBudgetAdvies(result.response.text())
-    return NextResponse.json({ advies })
+
+    void (supabase as any).from('ai_budget_cache').upsert(
+      { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: new Date().toISOString() },
+      { onConflict: 'wedding_id' }
+    )
+    return NextResponse.json({ advies, cached: false })
   } catch (err) {
     console.error('[api/ai/budget] Gemini fout:', err)
+    if (cacheRow?.cached_advies) {
+      return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
+    }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
 }

@@ -24,6 +24,19 @@ export interface AITakenAdvies {
   taken: AITaakSuggestie[]
 }
 
+const MIN_COOLDOWN_MS = 60 * 60 * 1000   // 1 uur
+const MAX_CACHE_AGE_MS = 6 * 60 * 60 * 1000  // 6 uur
+
+function buildTakenFingerprint(ctx: AIWeddingContext, bestaandeTaken: string[]): string {
+  return [
+    'v1',
+    ctx.bruidspaar.trouwdatum,
+    ctx.taken.totaal,
+    ctx.taken.klaar,
+    bestaandeTaken.length,
+  ].join(':')
+}
+
 function buildTakenPrompt(ctx: AIWeddingContext, bestaandeTaken: string[]): string {
   const vandaag = new Date().toISOString().slice(0, 10)
   const gebruikerSectie = ctx.gebruiker
@@ -151,22 +164,46 @@ export async function POST(request: NextRequest) {
     },
   }
 
+  // bestaandeTaken must be defined before cache check
+  const bestaandeTaken = (body.bestaandeTaken ?? []).slice(0, 100).map((t) => String(t).slice(0, 200))
+
+  // Cache check
+  const fingerprint = buildTakenFingerprint(enrichedContext, bestaandeTaken)
+  const now = Date.now()
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_taken_cache')
+    .select('cached_advies, data_fingerprint, last_updated_at')
+    .eq('wedding_id', body.weddingId)
+    .single()
+
+  if (cacheRow) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
+      return NextResponse.json({ advies: cacheRow.cached_advies as AITakenAdvies, cached: true })
+    }
+  }
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
       model: 'gemini-3-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const bestaandeTaken = (body.bestaandeTaken ?? [])
-      .slice(0, 100)
-      .map((t) => String(t).slice(0, 200))
     const result = await model.generateContent(
       buildTakenPrompt(enrichedContext, bestaandeTaken)
     )
     const advies = parseResponse(result.response.text())
-    return NextResponse.json({ advies })
+
+    void (supabase as any).from('ai_taken_cache').upsert(
+      { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: new Date().toISOString() },
+      { onConflict: 'wedding_id' }
+    )
+    return NextResponse.json({ advies, cached: false })
   } catch (err) {
     console.error('[api/ai/taken] Gemini fout:', err)
+    if (cacheRow?.cached_advies) {
+      return NextResponse.json({ advies: cacheRow.cached_advies as AITakenAdvies, cached: true })
+    }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
 }
