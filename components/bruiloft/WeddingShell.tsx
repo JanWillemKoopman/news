@@ -1,7 +1,7 @@
 'use client'
 
 import { Lock, WifiOff } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import * as Sentry from '@sentry/nextjs'
 
@@ -38,6 +38,15 @@ export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
 
 function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  // Bewust via "Terug naar home" hier? Dan tonen we de landing i.p.v. door te
+  // sturen naar stap 2. Synchroon uit de URL gelezen zodat de redirect-check
+  // meteen de juiste waarde heeft (geen flits van de landing).
+  const [showHomeLanding] = React.useState(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('home') === '1'
+  )
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -65,6 +74,22 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       Sentry.setUser(null)
     }
   }, [currentUser])
+
+  // Ingelogd, maar nog geen trouwplan: doorsturen naar stap 2 (trouwplan
+  // opstellen) op /aanmelden. Tenzij de gebruiker bewust via "Terug naar home"
+  // de landing wil bekijken (dan kan hij daar uitloggen of een plan starten).
+  const redirectToSetup =
+    hydrated &&
+    !error &&
+    !pickingWedding &&
+    !creatingWedding &&
+    !wedding &&
+    !!currentUser &&
+    !showHomeLanding
+
+  React.useEffect(() => {
+    if (redirectToSetup) router.replace('/aanmelden')
+  }, [redirectToSetup, router])
 
   const isAccountPage = pathname === '/bruiloft/account'
   const allowed = isAccountPage || canView(permissions, moduleForPath(pathname))
@@ -153,10 +178,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Geen actieve bruiloft: toon de marketing-landing. Voor ingelogde bezoekers
-  // zonder plan toont de landing een ingelogde staat rechtsboven; de CTA's
-  // sturen hen door naar /aanmelden (stap 2, want account bestaat al).
+  // Geen actieve bruiloft. Ingelogde gebruikers zonder plan sturen we door naar
+  // stap 2; tijdens dat doorsturen tonen we niets (voorkomt een flits van de
+  // landing). Uitgelogde bezoekers — en wie bewust "Terug naar home" koos —
+  // krijgen de marketing-landing. Die toont voor ingelogde bezoekers een
+  // accountmenu rechtsboven (naar dashboard / uitloggen).
   if (!wedding) {
+    if (redirectToSetup) {
+      return <div className={wrapperClass} aria-busy="true" suppressHydrationWarning />
+    }
     return (
       <div className={wrapperClass} suppressHydrationWarning>
         <Landing />

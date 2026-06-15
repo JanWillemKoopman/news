@@ -9,9 +9,12 @@ import {
   CalendarHeart,
   Check,
   CheckCircle2,
+  ChevronDown,
   Globe,
   Gift,
+  LayoutDashboard,
   ListChecks,
+  LogOut,
   Menu,
   Minus,
   Sparkles,
@@ -522,9 +525,19 @@ function DraaiboekMockup() {
 export function Landing() {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
+  const signOut = useBruiloftStore((s) => s.signOut)
   const [emailInput, setEmailInput] = React.useState('')
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const [userMenuOpen, setUserMenuOpen] = React.useState(false)
   const [openFaq, setOpenFaq] = React.useState<number | null>(0)
+
+  async function handleSignOut() {
+    setUserMenuOpen(false)
+    setMenuOpen(false)
+    await signOut()
+    router.push('/inloggen')
+    router.refresh()
+  }
 
   React.useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -579,7 +592,27 @@ export function Landing() {
                 {label}
               </a>
             ))}
-            {!currentUser && (
+            {currentUser ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    router.push('/bruiloft')
+                  }}
+                  className="rounded-md px-3 py-3 text-left text-base font-medium text-rhino-800 hover:bg-gray-50"
+                >
+                  Naar dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="rounded-md px-3 py-3 text-left text-base font-medium text-rhino-800 hover:bg-gray-50"
+                >
+                  Uitloggen
+                </button>
+              </>
+            ) : (
               <Link
                 href="/inloggen"
                 className="rounded-md px-3 py-3 text-base font-medium text-rhino-800 hover:bg-gray-50"
@@ -625,16 +658,53 @@ export function Landing() {
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
             {currentUser ? (
-              <button
-                type="button"
-                onClick={start}
-                className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-rhino-800 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50"
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-semibold text-white">
-                  {(currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()}
-                </span>
-                {currentUser.displayName || currentUser.email}
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                  className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-medium text-rhino-800 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-semibold text-white">
+                    {(currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()}
+                  </span>
+                  {currentUser.displayName || currentUser.email}
+                  <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden />
+                </button>
+                {userMenuOpen ? (
+                  <>
+                    <div className="fixed inset-0 z-40" aria-hidden onClick={() => setUserMenuOpen(false)} />
+                    <div
+                      role="menu"
+                      aria-label="Accountmenu"
+                      className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-gray-100 bg-white p-1.5 shadow-lg"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          router.push('/bruiloft')
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-rhino-800 transition-colors hover:bg-gray-50"
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-gray-400" />
+                        Naar dashboard
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleSignOut}
+                        className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-rhino-800 transition-colors hover:bg-gray-50"
+                      >
+                        <LogOut className="h-4 w-4 text-gray-400" />
+                        Uitloggen
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
             ) : (
               <>
                 <Link
