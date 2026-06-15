@@ -43,7 +43,7 @@ export default function BevestigEmailPage() {
             Toch doorgaan
           </Link>
           <Link
-            href="/login"
+            href="/inloggen"
             className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
           >
             Uitloggen en opnieuw inloggen

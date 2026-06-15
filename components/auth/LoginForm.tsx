@@ -93,7 +93,7 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
           <p>
             Nog geen account?{' '}
             <Link
-              href={next ? `/signup?next=${encodeURIComponent(next)}` : '/signup'}
+              href={next ? `/aanmelden?next=${encodeURIComponent(next)}` : '/aanmelden'}
               className="font-medium text-primary hover:underline"
             >
               Maak er een aan

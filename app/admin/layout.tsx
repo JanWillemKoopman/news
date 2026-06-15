@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/inloggen')
 
   // Lees de eigen profielrij — RLS staat dit altijd toe (id = auth.uid()).
   // Geen admin-client nodig en geen afhankelijkheid van service-role key.

@@ -128,7 +128,7 @@ function ConfirmationState({ email, next }: { email: string; next: string }) {
       <p className="text-sm text-gray-400">
         Geen mail ontvangen?{' '}
         <Link
-          href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+          href={next ? `/inloggen?next=${encodeURIComponent(next)}` : '/inloggen'}
           className="font-medium text-primary hover:underline"
         >
           Terug naar inloggen
@@ -703,7 +703,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                     {/* Buttons */}
                     <div className="flex items-center gap-3 pt-2">
                       <Link
-                        href="/login"
+                        href="/inloggen"
                         className="flex h-10 items-center justify-center rounded-md border border-gray-300 px-5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                       >
                         Terug
@@ -722,7 +722,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                   <p className="mt-6 text-center text-xs text-gray-400">
                     Heb je al een account?{' '}
                     <Link
-                      href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+                      href={next ? `/inloggen?next=${encodeURIComponent(next)}` : '/inloggen'}
                       className="font-medium text-primary hover:underline"
                     >
                       Inloggen
