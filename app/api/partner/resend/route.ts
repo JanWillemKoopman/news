@@ -42,14 +42,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
   }
 
-  // De ontvanger moet lid zijn van deze bruiloft.
-  const { data: targetMember } = await admin
+  // De ontvanger moet lid zijn van deze bruiloft. User-client volstaat: RLS laat
+  // owners de leden van hun bruiloft lezen via is_wedding_member(wedding_id).
+  const { data: targetMember, error: targetMemberError } = await supabase
     .from('wedding_members')
     .select('user_id')
     .eq('wedding_id', weddingId)
     .eq('user_id', userId)
     .maybeSingle()
   if (!targetMember) {
+    console.error('[partner/resend] lid ophalen mislukt:', targetMemberError)
     return NextResponse.json({ error: 'Lid niet gevonden' }, { status: 404 })
   }
 
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'E-mailadres onbekend' }, { status: 404 })
   }
 
-  const { data: wedding } = await admin
+  const { data: wedding } = await supabase
     .from('weddings')
     .select('partner1_naam, partner2_naam')
     .eq('id', weddingId)
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
   })
   const tokenHash = linkData?.properties?.hashed_token
   if (linkError || !tokenHash) {
-    console.error('[partner/resend] generateLink fout:', linkError)
+    console.error('[partner/resend] generateLink fout (check SUPABASE_SERVICE_ROLE_KEY):', linkError)
     return NextResponse.json({ error: 'Versturen mislukt' }, { status: 500 })
   }
   const actionUrl = `${siteUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink&next=/wachtwoord-resetten`
