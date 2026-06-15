@@ -117,6 +117,10 @@ interface BruiloftState {
   // UI: of de keuzescreen getoond moet worden (meerdere bruiloften, geen
   // opgeslagen voorkeur). Wordt gereset zodra de gebruiker een keuze maakt.
   pickingWedding: boolean
+  // UI: of het aanmaak-scherm voor een (extra) trouwplan geforceerd open staat.
+  // Wordt gezet vanuit het accountmenu en gereset zodra het plan is aangemaakt
+  // of de gebruiker annuleert.
+  creatingWedding: boolean
 }
 
 interface BruiloftActions {
@@ -125,6 +129,8 @@ interface BruiloftActions {
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
   selectWedding: (id: ID) => Promise<void>
+  startNewWedding: () => void
+  cancelNewWedding: () => void
   deleteActiveWedding: () => Promise<void>
   startRealtime: (weddingId: ID) => void
   stopRealtime: () => void
@@ -325,6 +331,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     weddingSettingsOpen: false,
     aiCoachOpen: false,
     pickingWedding: false,
+    creatingWedding: false,
 
     init: async () => {
       if (get().hydrated) return
@@ -485,6 +492,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         weddings: [],
         activeWeddingId: null,
         pickingWedding: false,
+        creatingWedding: false,
         guests: [],
         tasks: [],
         vendors: [],
@@ -510,7 +518,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (id === get().activeWeddingId) return
       get().stopRealtime()
       writeActive(id)
-      set({ hydrated: false, pickingWedding: false })
+      set({ hydrated: false, pickingWedding: false, creatingWedding: false })
       await get().init()
     },
 
@@ -518,8 +526,24 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     selectWedding: async (id) => {
       get().stopRealtime()
       writeActive(id)
-      set({ hydrated: false, pickingWedding: false })
+      set({ hydrated: false, pickingWedding: false, creatingWedding: false })
       await get().init()
+    },
+
+    // Open het aanmaak-scherm voor een (extra) trouwplan, ook als er al een
+    // actieve bruiloft is. Te gebruiken vanuit het accountmenu. We stoppen de
+    // realtime-stream van de huidige bruiloft zodat die straks geen wijzigingen
+    // in de verkeerde store-slices schrijft.
+    startNewWedding: () => {
+      get().stopRealtime()
+      set({ creatingWedding: true })
+    },
+    cancelNewWedding: () => {
+      set({ creatingWedding: false })
+      // Herstel de realtime-stream voor de nog actieve bruiloft (gestopt bij
+      // startNewWedding) zodat live updates blijven werken na annuleren.
+      const active = get().activeWeddingId
+      if (active) get().startRealtime(active)
     },
 
     // Verwijder de actieve bruiloft (owner). Alle bijbehorende data verdwijnt mee.
@@ -607,6 +631,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         wedding,
         weddings: [...get().weddings, wedding],
         activeWeddingId: wedding.id,
+        pickingWedding: false,
+        creatingWedding: false,
         role: 'owner',
         permissions: ALL_EDIT_PERMISSIONS,
         tasks,
@@ -621,6 +647,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         members,
         activitySeenAt: seen,
       })
+      // Live updates voor de zojuist aangemaakte bruiloft.
+      get().startRealtime(wedding.id)
     },
 
     updateWedding: async (patch) => {

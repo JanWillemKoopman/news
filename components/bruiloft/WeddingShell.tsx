@@ -14,7 +14,7 @@ import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { PageTracker } from '@/components/admin/PageTracker'
 import { MobileNav } from './MobileNav'
-import { OnboardingWizard } from './OnboardingWizard'
+import { WeddingCreate } from './WeddingCreate'
 import { moduleForPath } from './nav'
 import { ProfielNudge } from './ProfielNudge'
 import { Sidebar } from './Sidebar'
@@ -44,6 +44,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const permissions = useBruiloftStore((s) => s.permissions)
   const pickingWedding = useBruiloftStore((s) => s.pickingWedding)
+  const creatingWedding = useBruiloftStore((s) => s.creatingWedding)
   const init = useBruiloftStore((s) => s.init)
   const retryInit = useBruiloftStore((s) => s.retryInit)
   const stopRealtime = useBruiloftStore((s) => s.stopRealtime)
@@ -142,17 +143,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Ingelogd maar nog geen bruiloft: sla de marketingpagina over en toon
-  // de wizard direct zonder de account-aanmaak stap.
-  if (!wedding && currentUser) {
+  // Ingelogd zonder (actieve) bruiloft, of bewust een extra trouwplan aan het
+  // aanmaken: toon het rustige aanmaak-scherm in plaats van de marketingpagina.
+  if (currentUser && (!wedding || creatingWedding)) {
     return (
       <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
-        <OnboardingWizard />
+        <WeddingCreate existing={!!wedding} />
       </div>
     )
   }
 
-  // Uitgelogde bezoeker zonder bruiloft: volledige landing + onboarding-wizard.
+  // Uitgelogde bezoeker zonder bruiloft: de marketing-landing.
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
