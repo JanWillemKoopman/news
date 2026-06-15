@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/bruiloft/ui'
+import { useBruiloftStore } from '@/store/bruiloftStore'
 
 /* ────────────────────────────── Content ────────────────────────────── */
 
@@ -520,6 +521,7 @@ function DraaiboekMockup() {
 
 export function Landing() {
   const router = useRouter()
+  const currentUser = useBruiloftStore((s) => s.currentUser)
   const [emailInput, setEmailInput] = React.useState('')
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [openFaq, setOpenFaq] = React.useState<number | null>(0)
@@ -534,6 +536,11 @@ export function Landing() {
   function startWithEmail(e: React.FormEvent) {
     e.preventDefault()
     const email = emailInput.trim()
+    // Ingelogde gebruiker: sla stap 1 (account aanmaken) over.
+    if (currentUser) {
+      router.push('/aanmelden')
+      return
+    }
     router.push(email ? `/aanmelden?email=${encodeURIComponent(email)}` : '/aanmelden')
   }
 
@@ -572,13 +579,15 @@ export function Landing() {
                 {label}
               </a>
             ))}
-            <Link
-              href="/inloggen"
-              className="rounded-md px-3 py-3 text-base font-medium text-rhino-800 hover:bg-gray-50"
-              onClick={() => setMenuOpen(false)}
-            >
-              Inloggen
-            </Link>
+            {!currentUser && (
+              <Link
+                href="/inloggen"
+                className="rounded-md px-3 py-3 text-base font-medium text-rhino-800 hover:bg-gray-50"
+                onClick={() => setMenuOpen(false)}
+              >
+                Inloggen
+              </Link>
+            )}
           </nav>
           <div className="border-t border-gray-100 p-4">
             <Button
@@ -588,7 +597,7 @@ export function Landing() {
                 start()
               }}
             >
-              Begin gratis
+              {currentUser ? 'Trouwplan aanmaken' : 'Begin gratis'}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -615,16 +624,31 @@ export function Landing() {
             ))}
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
-            <Link
-              href="/inloggen"
-              className="text-sm font-medium text-rhino-700 transition-colors hover:text-rhino-900"
-            >
-              Inloggen
-            </Link>
-            <Button size="sm" className="rounded-full" onClick={start}>
-              Begin gratis
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={start}
+                className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-rhino-800 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-semibold text-white">
+                  {(currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()}
+                </span>
+                {currentUser.displayName || currentUser.email}
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/inloggen"
+                  className="text-sm font-medium text-rhino-700 transition-colors hover:text-rhino-900"
+                >
+                  Inloggen
+                </Link>
+                <Button size="sm" className="rounded-full" onClick={start}>
+                  Begin gratis
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
           {/* Mobiel hamburger */}
           <button

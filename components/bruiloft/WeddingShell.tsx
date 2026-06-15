@@ -143,17 +143,19 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     )
   }
 
-  // Ingelogd zonder (actieve) bruiloft, of bewust een extra trouwplan aan het
-  // aanmaken: toon het rustige aanmaak-scherm in plaats van de marketingpagina.
-  if (currentUser && (!wedding || creatingWedding)) {
+  // Ingelogd en bewust een extra trouwplan aanmaken (via accountmenu):
+  // toon het compacte aanmaak-scherm.
+  if (currentUser && creatingWedding) {
     return (
       <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
-        <WeddingCreate existing={!!wedding} />
+        <WeddingCreate existing />
       </div>
     )
   }
 
-  // Uitgelogde bezoeker zonder bruiloft: de marketing-landing.
+  // Geen actieve bruiloft: toon de marketing-landing. Voor ingelogde bezoekers
+  // zonder plan toont de landing een ingelogde staat rechtsboven; de CTA's
+  // sturen hen door naar /aanmelden (stap 2, want account bestaat al).
   if (!wedding) {
     return (
       <div className={wrapperClass} suppressHydrationWarning>
