@@ -6,7 +6,7 @@ import * as React from 'react'
 import { CheckCircle2 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
-import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
+import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { mapAuthError, safeNext } from './authErrors'
 
@@ -19,12 +19,6 @@ const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
   { key: 'dj_of_band', label: 'DJ of band' },
   { key: 'videograaf', label: 'Videograaf' },
   { key: 'bloemist', label: 'Bloemist' },
-]
-
-const CEREMONIE_OPTIES: { value: CeremonieType; label: string }[] = [
-  { value: 'gemeentelijk', label: 'Gemeentelijk' },
-  { value: 'religieus', label: 'Religieus' },
-  { value: 'symbolisch', label: 'Symbolisch' },
 ]
 
 const BUDGET_PRESETS = [
@@ -112,22 +106,44 @@ function WeddingSetup({
   const [woonplaats, setWoonplaats] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
-  const [daggasten, setDaggasten] = React.useState('')
-  const [avondgasten, setAvondgasten] = React.useState('')
-  const [ceremonietype, setCeremonietype] = React.useState<CeremonieType | null>(null)
+  const [gasten, setGasten] = React.useState('')
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>({})
+  const [nietVanToepassing, setNietVanToepassing] = React.useState<Set<VoortgangCategorie>>(new Set())
+  const [showMore, setShowMore] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus) {
-    setGeregeldeZaken((prev) => {
-      if (prev[key] === status) {
+  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus | 'niet_van_toepassing') {
+    if (status === 'niet_van_toepassing') {
+      setNietVanToepassing((prev) => {
+        const next = new Set(prev)
+        if (next.has(key)) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+        return next
+      })
+      setGeregeldeZaken((prev) => {
         const next = { ...prev }
         delete next[key]
         return next
-      }
-      return { ...prev, [key]: status }
-    })
+      })
+    } else {
+      setNietVanToepassing((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+      setGeregeldeZaken((prev) => {
+        if (prev[key] === status) {
+          const next = { ...prev }
+          delete next[key]
+          return next
+        }
+        return { ...prev, [key]: status }
+      })
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -135,6 +151,7 @@ function WeddingSetup({
     if (saving) return
     setSaving(true)
     setError(null)
+    const aantalGasten = Number(gasten) || 0
     const input: WeddingInput = {
       partner1Naam: partner1Naam.trim() || 'Partner 1',
       partner2Naam: partner2Naam.trim() || 'Partner 2',
@@ -142,9 +159,9 @@ function WeddingSetup({
       locatie: '',
       woonplaats: woonplaats.trim(),
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
-      aantalDaggasten: Number(daggasten) || 0,
-      aantalAvondgasten: Number(avondgasten) || 0,
-      ceremonietype,
+      aantalDaggasten: aantalGasten,
+      aantalAvondgasten: 0,
+      ceremonietype: null,
       geregeldeZaken,
       takenVoorstellen: { beslist: {}, afgerond: false },
     }
@@ -167,9 +184,8 @@ function WeddingSetup({
         <p className="text-sm font-medium">Account succesvol aangemaakt! Stel nu jullie trouwplan in.</p>
       </div>
 
-      <h2 className="font-serif text-2xl font-medium text-gray-900">Jullie trouwplan</h2>
-      <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
-        Vul in wat je al weet — je kunt alles later nog aanpassen.
+      <p className="text-sm leading-relaxed text-gray-500">
+        Vul in wat je al weet, je kun alles later nog aanpassen.
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-6">
@@ -193,7 +209,19 @@ function WeddingSetup({
 
         {/* Budget */}
         <div>
-          <p className="mb-2 text-sm font-medium text-gray-700">Globaal budget</p>
+          <label htmlFor="wiz-budget" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Budget (€)
+          </label>
+          <input
+            id="wiz-budget"
+            type="number"
+            min={0}
+            placeholder="Bijv. 20000"
+            value={customBudget}
+            onChange={(e) => { setCustomBudget(e.target.value); setBudget(null) }}
+            className={inputCls}
+          />
+          <p className="mt-3 mb-2 text-xs font-medium text-gray-500">Of globale schatting</p>
           <div className="grid grid-cols-2 gap-2">
             {BUDGET_PRESETS.map(({ label, value }) => {
               const active = budget === value && !customBudget
@@ -213,135 +241,100 @@ function WeddingSetup({
               )
             })}
           </div>
-          <div className="mt-2">
-            <label htmlFor="wiz-budget" className="mb-1.5 block text-xs font-medium text-gray-500">
-              Of voer een bedrag in (€)
-            </label>
-            <input
-              id="wiz-budget"
-              type="number"
-              min={0}
-              placeholder="Bijv. 20000"
-              value={customBudget}
-              onChange={(e) => { setCustomBudget(e.target.value); setBudget(null) }}
-              className={inputCls}
-            />
-          </div>
         </div>
 
-        {/* Gasten */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="wiz-daggasten" className="mb-1.5 block text-sm font-medium text-gray-700">
-              Daggasten
-            </label>
-            <input
-              id="wiz-daggasten"
-              type="number"
-              min={0}
-              placeholder="Bijv. 80"
-              value={daggasten}
-              onChange={(e) => setDaggasten(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label htmlFor="wiz-avondgasten" className="mb-1.5 block text-sm font-medium text-gray-700">
-              Avondgasten
-            </label>
-            <input
-              id="wiz-avondgasten"
-              type="number"
-              min={0}
-              placeholder="Bijv. 40"
-              value={avondgasten}
-              onChange={(e) => setAvondgasten(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-        </div>
+        {!showMore ? (
+          <button
+            type="button"
+            onClick={() => setShowMore(true)}
+            className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+          >
+            Volgende
+          </button>
+        ) : (
+          <>
+            {/* Gasten */}
+            <div>
+              <label htmlFor="wiz-gasten" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Verwacht aantal gasten totaal
+              </label>
+              <input
+                id="wiz-gasten"
+                type="number"
+                min={0}
+                placeholder="Bijv. 100"
+                value={gasten}
+                onChange={(e) => setGasten(e.target.value)}
+                className={inputCls}
+              />
+            </div>
 
-        {/* Ceremonietype */}
-        <div>
-          <p className="mb-2 text-sm font-medium text-gray-700">Type ceremonie</p>
-          <div className="grid grid-cols-3 gap-2">
-            {CEREMONIE_OPTIES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setCeremonietype(ceremonietype === value ? null : value)}
-                className={`rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-all ${
-                  ceremonietype === value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-gray-200 text-gray-500 hover:border-primary/40 hover:bg-gray-50'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+            {/* Leveranciers */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-700">Wat hebben jullie al geregeld?</p>
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                {VOORTGANG_ITEMS.map(({ key, label }, i) => {
+                  const current = geregeldeZaken[key]
+                  const isNvt = nietVanToepassing.has(key)
+                  return (
+                    <div
+                      key={key}
+                      className={`flex items-center justify-between px-3 py-2.5 ${i !== 0 ? 'border-t border-gray-100' : ''}`}
+                    >
+                      <span className="text-sm text-gray-700">{label}</span>
+                      <div className="flex gap-1">
+                        {([
+                          { status: 'geboekt' as const, label: 'Geboekt' },
+                          { status: 'te_doen' as const, label: 'Te doen' },
+                          { status: 'niet_van_toepassing' as const, label: 'N.v.t.' },
+                        ]).map(({ status, label: btnLabel }) => {
+                          const isActive = status === 'niet_van_toepassing' ? isNvt : current === status
+                          return (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => setVoortgang(key, status)}
+                              className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+                                isActive
+                                  ? status === 'geboekt'
+                                    ? 'bg-green-100 text-green-700'
+                                    : status === 'niet_van_toepassing'
+                                      ? 'bg-gray-100 text-gray-500'
+                                      : 'bg-gray-100 text-gray-700'
+                                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                              }`}
+                            >
+                              {isActive && status === 'geboekt' && (
+                                <CheckCircle2 className="h-2.5 w-2.5" />
+                              )}
+                              {btnLabel}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-        {/* Leveranciers */}
-        <div>
-          <p className="mb-2 text-sm font-medium text-gray-700">Wat hebben jullie al geregeld?</p>
-          <div className="overflow-hidden rounded-xl border border-gray-200">
-            {VOORTGANG_ITEMS.map(({ key, label }, i) => {
-              const current = geregeldeZaken[key]
-              return (
-                <div
-                  key={key}
-                  className={`flex items-center justify-between px-3 py-2.5 ${i !== 0 ? 'border-t border-gray-100' : ''}`}
-                >
-                  <span className="text-sm text-gray-700">{label}</span>
-                  <div className="flex gap-1">
-                    {([
-                      { status: 'geboekt' as VoortgangStatus, label: 'Geboekt' },
-                      { status: 'bezig' as VoortgangStatus, label: 'Bezig' },
-                      { status: 'te_doen' as VoortgangStatus, label: 'Te doen' },
-                    ] as const).map(({ status, label: btnLabel }) => (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setVoortgang(key, status)}
-                        className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
-                          current === status
-                            ? status === 'geboekt'
-                              ? 'bg-green-100 text-green-700'
-                              : status === 'bezig'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-gray-100 text-gray-700'
-                            : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-                        }`}
-                      >
-                        {current === status && status === 'geboekt' && (
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                        )}
-                        {btnLabel}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+            {error ? (
+              <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+            ) : null}
 
-        {error ? (
-          <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
-        ) : null}
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? 'Even geduld…' : 'Maak ons trouwplan'}
+            </button>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? 'Even geduld…' : 'Maak ons trouwplan'}
-        </button>
-
-        <p className="text-center text-xs text-gray-400">
-          Alle velden zijn optioneel — je kunt dit later altijd aanpassen.
-        </p>
+            <p className="text-center text-xs text-gray-400">
+              Alle velden zijn optioneel — je kunt dit later altijd aanpassen.
+            </p>
+          </>
+        )}
       </form>
     </div>
   )
