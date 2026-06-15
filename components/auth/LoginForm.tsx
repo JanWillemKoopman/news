@@ -3,17 +3,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
+import { ArrowLeft } from 'lucide-react'
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Field,
-  Input,
-} from '@/components/bruiloft/ui'
 import { createClient } from '@/lib/supabase/client'
 
 import { mapAuthError, safeNext } from './authErrors'
@@ -44,63 +35,98 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
     router.refresh()
   }
 
+  const inputCls =
+    'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary'
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-serif text-2xl">Welkom terug</CardTitle>
-        <CardDescription>Log in om verder te plannen aan jullie bruiloft.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <Field label="E-mailadres" htmlFor="email" required>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Field>
-          <Field label="Wachtwoord" htmlFor="password" required>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Field>
+    <div className="relative flex min-h-screen">
+      <Link
+        href="/bruiloft?home=1"
+        className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 md:left-6 md:top-6 md:text-white/80 md:hover:text-white"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Terug naar home
+      </Link>
 
-          {error ? (
-            <p className="text-sm font-medium text-destructive" role="alert">
-              {error}
+      {/* Left: purple panel */}
+      <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
+
+      {/* Right: form */}
+      <div className="flex w-full flex-col items-center justify-center px-8 py-16 md:w-[60%] md:px-12 lg:px-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="font-serif text-[2rem] font-medium leading-tight tracking-tight text-gray-900">
+              Welkom terug
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              Log in om verder te plannen aan jullie bruiloft.
             </p>
-          ) : null}
+          </div>
 
-          <Button type="submit" className="w-full" loading={loading}>
-            Inloggen
-          </Button>
-        </form>
+          <form onSubmit={onSubmit} className="space-y-4" noValidate>
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
+                E-mailadres <span className="text-primary">*</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputCls}
+              />
+            </div>
 
-        <div className="mt-4 space-y-2 text-center text-sm text-muted-foreground">
-          <p>
-            <Link href="/wachtwoord-vergeten" className="font-medium text-primary hover:underline">
-              Wachtwoord vergeten?
-            </Link>
-          </p>
-          <p>
-            Nog geen account?{' '}
-            <Link
-              href={next ? `/aanmelden?next=${encodeURIComponent(next)}` : '/aanmelden'}
-              className="font-medium text-primary hover:underline"
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Wachtwoord <span className="text-primary">*</span>
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+
+            {error ? (
+              <p className="text-sm font-medium text-red-600" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Maak er een aan
-            </Link>
-          </p>
+              {loading ? 'Even geduld…' : 'Inloggen'}
+            </button>
+          </form>
+
+          <div className="mt-5 space-y-2 text-center text-sm text-gray-500">
+            <p>
+              <Link href="/wachtwoord-vergeten" className="font-medium text-primary hover:underline">
+                Wachtwoord vergeten?
+              </Link>
+            </p>
+            <p>
+              Nog geen account?{' '}
+              <Link
+                href={next ? `/aanmelden?next=${encodeURIComponent(next)}` : '/aanmelden'}
+                className="font-medium text-primary hover:underline"
+              >
+                Maak er een aan
+              </Link>
+            </p>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
