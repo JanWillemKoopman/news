@@ -7,7 +7,10 @@ import type { Database } from './database.types'
 // marketing-landing; account aanmaken gebeurt op /aanmelden, inloggen op
 // /inloggen.
 const PROTECTED_PREFIXES = ['/uitnodiging', '/admin']
-const AUTH_PAGES = ['/inloggen', '/aanmelden']
+// /aanmelden staat hier bewust NIET in: ingelogde gebruikers zonder bruiloft
+// moeten /aanmelden kunnen bereiken om direct naar stap 2 (trouwplan opstellen)
+// te worden doorgestuurd. De SignupPageForm handelt dit zelf af.
+const AUTH_PAGES = ['/inloggen']
 const CONFIRM_EMAIL_PATH = '/bevestig-email'
 const EMAIL_CONFIRM_GRACE_HOURS = 48
 
