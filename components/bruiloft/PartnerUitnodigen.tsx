@@ -30,7 +30,8 @@ export function PartnerUitnodigen({ dismissible = true, onInvited }: Props) {
   const [sent, setSent] = React.useState(false)
 
   React.useEffect(() => {
-    if (!wedding) return
+    // Alleen relevant voor de eigenaar; niet-eigenaren hoeven de RPC niet te doen.
+    if (!wedding || role !== 'owner') return
     if (dismissible) {
       setDismissed(localStorage.getItem(`partner-invite-dismissed:${wedding.id}`) === '1')
     }
@@ -41,7 +42,7 @@ export function PartnerUitnodigen({ dismissible = true, onInvited }: Props) {
     return () => {
       active = false
     }
-  }, [supabase, wedding, dismissible])
+  }, [supabase, wedding, dismissible, role])
 
   if (!wedding || role !== 'owner') return null
   // Verberg zodra de partner al meeplant of (op het dashboard) weggeklikt is.
