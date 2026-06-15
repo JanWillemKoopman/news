@@ -374,12 +374,26 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
         router.replace('/bruiloft')
       } else {
         // Account bestaat al, maar nog geen trouwplan: direct naar stap 2.
+        // Pre-vul namen en datum vanuit de user metadata zodat het formulier
+        // niet met lege velden (of generieke fallbacks) opent.
+        const meta = user.user_metadata ?? {}
+        const savedName = (meta.display_name as string | undefined) ?? ''
+        const savedPartner = (meta.partner_name as string | undefined) ?? ''
+        const savedDate = (meta.wedding_date as string | undefined) ?? ''
+        if (savedName && !firstName) setFirstName(savedName)
+        if (savedPartner && !partnerName) setPartnerName(savedPartner)
+        if (savedDate && !weddingDate) {
+          setWeddingDate(savedDate)
+        } else if (!savedDate && !weddingDate) {
+          setNoDateYet(true)
+        }
         setPhase(2)
       }
     })
     return () => {
       active = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, router])
 
   async function onSubmit(e: React.FormEvent) {
@@ -409,7 +423,13 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (signInError) {
-      setNeedsConfirmation(true)
+      // Alleen "email not confirmed" toont het bevestigingsscherm; andere
+      // fouten (netwerk, Supabase-storing) tonen een normale foutmelding.
+      if (signInError.message.toLowerCase().includes('email not confirmed')) {
+        setNeedsConfirmation(true)
+      } else {
+        setError(mapAuthError(signInError.message))
+      }
       setLoading(false)
       return
     }
@@ -478,7 +498,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                         type="password"
                         autoComplete="new-password"
                         required
-                        minLength={8}
+                        minLength={6}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"

@@ -31,7 +31,13 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
       setLoading(false)
       return
     }
-    router.push(target)
+    // Gebruiker zonder trouwplan sturen we direct naar stap 2, zodat ze niet
+    // eerst de skeleton van het dashboard zien voordat ze worden doorgestuurd.
+    const { count } = await supabase
+      .from('weddings')
+      .select('id', { count: 'exact', head: true })
+    const destination = !count || count === 0 ? '/aanmelden' : target
+    router.push(destination)
     router.refresh()
   }
 
