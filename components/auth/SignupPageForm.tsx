@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
@@ -439,17 +439,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
   }
 
   return (
-    <div className="relative flex min-h-screen">
-      {/* Terug naar home — wit op het paarse paneel (desktop), grijs op de
-          witte formulierkolom (mobiel). Zichtbaar in zowel stap 1 als stap 2. */}
-      <Link
-        href="/bruiloft?home=1"
-        className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 md:left-6 md:top-6 md:text-white/80 md:hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Terug naar home
-      </Link>
-
+    <div className="relative flex min-h-[100dvh]">
       {/* Left: purple panel */}
       <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
 
