@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, checked: 0, prewarmed: 0, skipped: 0 })
   }
 
-  const weddingIds = [...new Set((memberRows as Array<{ wedding_id: string }>).map((m) => m.wedding_id))]
+  const weddingIds = Array.from(new Set((memberRows as Array<{ wedding_id: string }>).map((m) => m.wedding_id)))
 
   // 3. Filter op toekomstige bruiloften
   const today = new Date().toISOString().slice(0, 10)
