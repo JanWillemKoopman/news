@@ -367,10 +367,27 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
   const [phase, setPhase] = React.useState<1 | 2>(1)
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user && !user.is_anonymous) setPhase(2)
+    let active = true
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!active || !user || user.is_anonymous) return
+      // Heeft de ingelogde gebruiker al een trouwplan? Dan hoort hij op zijn
+      // dashboard, niet in de aanmaak-flow. Een extra plan maak je bewust aan
+      // via "Nieuw trouwplan" in het accountmenu.
+      const { count } = await supabase
+        .from('weddings')
+        .select('id', { count: 'exact', head: true })
+      if (!active) return
+      if (count && count > 0) {
+        router.replace('/bruiloft')
+      } else {
+        // Account bestaat al, maar nog geen trouwplan: direct naar stap 2.
+        setPhase(2)
+      }
     })
-  }, [supabase])
+    return () => {
+      active = false
+    }
+  }, [supabase, router])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
