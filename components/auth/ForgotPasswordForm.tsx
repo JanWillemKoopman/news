@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import * as React from 'react'
-import { ArrowLeft } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 
@@ -36,15 +35,7 @@ export function ForgotPasswordForm() {
     'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary'
 
   return (
-    <div className="relative flex min-h-screen">
-      <Link
-        href="/inloggen"
-        className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 md:left-6 md:top-6 md:text-white/80 md:hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Terug naar inloggen
-      </Link>
-
+    <div className="relative flex min-h-[100dvh]">
       {/* Left: purple panel */}
       <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
 
