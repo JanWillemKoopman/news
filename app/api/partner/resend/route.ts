@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient()
 
   // Alleen de eigenaar mag opnieuw versturen.
-  const { data: membership } = await admin
+  const { data: membership } = await supabase
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)

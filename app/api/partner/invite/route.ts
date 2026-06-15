@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
 
   // Alleen de eigenaar mag een partner uitnodigen. Platform-admins hebben
   // altijd volledige toegang, ook als ze niet in wedding_members staan.
-  const { data: membership } = await admin
+  // Gebruik de gebruiker's eigen client voor deze check (werkt via RLS met
+  // de JWT), zodat een eventueel ontbrekende service-role-key hier niet
+  // tot een onterechte 403 leidt.
+  const { data: membership } = await supabase
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   if (!membership || membership.role !== 'owner') {
     // Controleer of de gebruiker een platform_admin is; die hebben altijd toegang.
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('profiles')
       .select('app_role')
       .eq('id', user.id)
