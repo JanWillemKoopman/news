@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Trash2 } from 'lucide-react'
+import { AlertTriangle, Mail, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
@@ -24,12 +24,15 @@ type Member = { user_id: string; email: string | null; display_name: string | nu
 export default function SamenPlannenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const currentUser = useBruiloftStore((s) => s.currentUser)
+  const role = useBruiloftStore((s) => s.role)
   const { toast } = useToast()
   const router = useRouter()
   const deleteActiveWedding = useBruiloftStore((s) => s.deleteActiveWedding)
   const supabase = React.useMemo(() => createClient(), [])
 
   const [members, setMembers] = React.useState<Member[]>([])
+  const [statuses, setStatuses] = React.useState<Record<string, { activated: boolean }>>({})
+  const [resending, setResending] = React.useState<string | null>(null)
   const [removeTarget, setRemoveTarget] = React.useState<Member | null>(null)
   const [delWeddingOpen, setDelWeddingOpen] = React.useState(false)
   const [delBusy, setDelBusy] = React.useState(false)
@@ -38,7 +41,19 @@ export default function SamenPlannenPage() {
     if (!wedding) return
     const { data } = await supabase.rpc('list_wedding_members', { p_wedding: wedding.id })
     setMembers((data as Member[]) ?? [])
-  }, [supabase, wedding])
+    // Activatiestatus is alleen voor de eigenaar beschikbaar (admin-only API).
+    if (role === 'owner') {
+      try {
+        const res = await fetch(`/api/partner/status?weddingId=${wedding.id}`)
+        if (res.ok) {
+          const json = await res.json()
+          setStatuses(json.statuses ?? {})
+        }
+      } catch {
+        // Statuslabels zijn optioneel; bij een fout tonen we ze gewoon niet.
+      }
+    }
+  }, [supabase, wedding, role])
 
   React.useEffect(() => {
     void load()
@@ -60,6 +75,32 @@ export default function SamenPlannenPage() {
     }
     toast({ title: 'Toegang ingetrokken' })
     void load()
+  }
+
+  async function resend(m: Member) {
+    setResending(m.user_id)
+    try {
+      const res = await fetch('/api/partner/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weddingId: wedding!.id, userId: m.user_id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast({ title: 'Versturen mislukt', description: json.error, variant: 'error' })
+        return
+      }
+      toast({
+        title: 'E-mail opnieuw verstuurd',
+        description: json.emailSent
+          ? `${m.email} ontvangt opnieuw een link om een wachtwoord in te stellen.`
+          : 'De e-mail kon niet verzonden worden. Probeer het later opnieuw.',
+      })
+    } catch {
+      toast({ title: 'Versturen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
+    } finally {
+      setResending(null)
+    }
   }
 
   async function onDeleteWedding() {
@@ -107,16 +148,34 @@ export default function SamenPlannenPage() {
                     </p>
                     <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                   </div>
-                  {!isSelf ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Toegang intrekken"
-                      onClick={() => setRemoveTarget(m)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {!isSelf && statuses[m.user_id]?.activated === false ? (
+                      <>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                          Nog niet geactiveerd
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          loading={resending === m.user_id}
+                          onClick={() => resend(m)}
+                        >
+                          <Mail className="h-4 w-4" />
+                          Opnieuw versturen
+                        </Button>
+                      </>
+                    ) : null}
+                    {!isSelf ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Toegang intrekken"
+                        onClick={() => setRemoveTarget(m)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               )
             })}
