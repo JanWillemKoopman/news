@@ -1,10 +1,11 @@
 'use client'
 
-import { AlertTriangle, Copy, Mail, Trash2, UserPlus } from 'lucide-react'
+import { AlertTriangle, Mail, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
 import {
   Button,
   Card,
@@ -13,101 +14,52 @@ import {
   CardHeader,
   CardTitle,
   ConfirmDialog,
-  Field,
-  Input,
-  Select,
   useToast,
 } from '@/components/bruiloft/ui'
-import {
-  EDITABLE_ROLES,
-  EMPTY_PERMISSIONS,
-  LEVEL_LABELS,
-  MODULE_LABELS,
-  MODULES,
-  ROLE_DESCRIPTIONS,
-  ROLE_LABELS,
-  type Level,
-  type Module,
-  type PermissionMap,
-  type WeddingRole,
-} from '@/lib/bruiloft/permissions'
 import { createClient } from '@/lib/supabase/client'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Member = { user_id: string; email: string | null; display_name: string | null; role: WeddingRole }
-type Invite = { id: string; email: string; role: string; token: string; expires_at: string }
-type Matrix = Record<'planner' | 'helper' | 'viewer', PermissionMap>
+type Member = { user_id: string; email: string | null; display_name: string | null; role: string }
 
-const emptyMatrix = (): Matrix => ({
-  planner: { ...EMPTY_PERMISSIONS },
-  helper: { ...EMPTY_PERMISSIONS },
-  viewer: { ...EMPTY_PERMISSIONS },
-})
-
-export default function LedenBeheerPage() {
+export default function SamenPlannenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const currentUser = useBruiloftStore((s) => s.currentUser)
+  const role = useBruiloftStore((s) => s.role)
   const { toast } = useToast()
   const router = useRouter()
   const deleteActiveWedding = useBruiloftStore((s) => s.deleteActiveWedding)
   const supabase = React.useMemo(() => createClient(), [])
 
   const [members, setMembers] = React.useState<Member[]>([])
-  const [invites, setInvites] = React.useState<Invite[]>([])
-  const [matrix, setMatrix] = React.useState<Matrix>(emptyMatrix)
-
-  const [inviteEmail, setInviteEmail] = React.useState('')
-  const [inviteRole, setInviteRole] = React.useState<WeddingRole>('helper')
-  const [inviting, setInviting] = React.useState(false)
+  const [statuses, setStatuses] = React.useState<Record<string, { activated: boolean }>>({})
+  const [resending, setResending] = React.useState<string | null>(null)
   const [removeTarget, setRemoveTarget] = React.useState<Member | null>(null)
   const [delWeddingOpen, setDelWeddingOpen] = React.useState(false)
   const [delBusy, setDelBusy] = React.useState(false)
 
   const load = React.useCallback(async () => {
     if (!wedding) return
-    const [mem, inv, perms] = await Promise.all([
-      supabase.rpc('list_wedding_members', { p_wedding: wedding.id }),
-      supabase
-        .from('wedding_invites')
-        .select('id, email, role, token, expires_at')
-        .eq('wedding_id', wedding.id)
-        .is('accepted_at', null)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('wedding_role_permissions')
-        .select('role, module, level')
-        .eq('wedding_id', wedding.id),
-    ])
-    setMembers((mem.data as Member[]) ?? [])
-    setInvites((inv.data as Invite[]) ?? [])
-    const m = emptyMatrix()
-    for (const row of perms.data ?? []) {
-      if (row.role === 'planner' || row.role === 'helper' || row.role === 'viewer') {
-        m[row.role][row.module as Module] = row.level as Level
+    const { data } = await supabase.rpc('list_wedding_members', { p_wedding: wedding.id })
+    setMembers((data as Member[]) ?? [])
+    // Activatiestatus is alleen voor de eigenaar beschikbaar (admin-only API).
+    if (role === 'owner') {
+      try {
+        const res = await fetch(`/api/partner/status?weddingId=${wedding.id}`)
+        if (res.ok) {
+          const json = await res.json()
+          setStatuses(json.statuses ?? {})
+        }
+      } catch {
+        // Statuslabels zijn optioneel; bij een fout tonen we ze gewoon niet.
       }
     }
-    setMatrix(m)
-  }, [supabase, wedding])
+  }, [supabase, wedding, role])
 
   React.useEffect(() => {
     void load()
   }, [load])
 
   if (!wedding) return null
-
-  async function changeRole(member: Member, role: WeddingRole) {
-    const { error } = await supabase
-      .from('wedding_members')
-      .update({ role })
-      .eq('wedding_id', wedding!.id)
-      .eq('user_id', member.user_id)
-    if (error) {
-      toast({ title: 'Kon rol niet wijzigen', description: error.message, variant: 'error' })
-      return
-    }
-    toast({ title: 'Rol bijgewerkt' })
-    void load()
-  }
 
   async function confirmRemove() {
     if (!removeTarget) return
@@ -118,83 +70,36 @@ export default function LedenBeheerPage() {
       .eq('user_id', removeTarget.user_id)
     setRemoveTarget(null)
     if (error) {
-      toast({ title: 'Kon lid niet verwijderen', description: error.message, variant: 'error' })
+      toast({ title: 'Kon toegang niet intrekken', description: error.message, variant: 'error' })
       return
     }
-    toast({ title: 'Lid verwijderd' })
+    toast({ title: 'Toegang ingetrokken' })
     void load()
   }
 
-  async function createInvite(e: React.FormEvent) {
-    e.preventDefault()
-    setInviting(true)
-    const { data, error } = await supabase
-      .from('wedding_invites')
-      .insert({ wedding_id: wedding!.id, email: inviteEmail.trim(), role: inviteRole })
-      .select('token')
-      .single()
-    if (error || !data) {
-      setInviting(false)
-      toast({ title: 'Uitnodigen mislukt', description: error?.message, variant: 'error' })
-      return
-    }
-    const trimmedEmail = inviteEmail.trim()
-    setInviteEmail('')
-    const link = `${window.location.origin}/uitnodiging/${data.token}`
-    await navigator.clipboard?.writeText(link).catch(() => {})
-
-    let emailSent = false
+  async function resend(m: Member) {
+    setResending(m.user_id)
     try {
-      const res = await fetch('/api/email/invite', {
+      const res = await fetch('/api/partner/resend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: data.token, email: trimmedEmail, role: inviteRole, weddingId: wedding!.id }),
+        body: JSON.stringify({ weddingId: wedding!.id, userId: m.user_id }),
       })
       const json = await res.json().catch(() => ({}))
-      emailSent = json.emailSent === true
-    } catch {
-      // E-mail mislukt; klembord-fallback is al gedaan.
-    }
-
-    setInviting(false)
-    if (emailSent) {
+      if (!res.ok) {
+        toast({ title: 'Versturen mislukt', description: json.error, variant: 'error' })
+        return
+      }
       toast({
-        title: 'Uitnodiging verzonden',
-        description: `De uitnodiging is naar ${trimmedEmail} gemaild. De link staat ook in je klembord als backup.`,
+        title: 'E-mail opnieuw verstuurd',
+        description: json.emailSent
+          ? `${m.email} ontvangt opnieuw een link om een wachtwoord in te stellen.`
+          : 'De e-mail kon niet verzonden worden. Probeer het later opnieuw.',
       })
-    } else {
-      toast({ title: 'Uitnodiging aangemaakt', description: 'De link is naar je klembord gekopieerd.' })
-    }
-    void load()
-  }
-
-  async function revokeInvite(id: string) {
-    const { error } = await supabase.from('wedding_invites').delete().eq('id', id)
-    if (error) {
-      toast({ title: 'Intrekken mislukt', description: error.message, variant: 'error' })
-      return
-    }
-    void load()
-  }
-
-  function copyInvite(token: string) {
-    const link = `${window.location.origin}/uitnodiging/${token}`
-    void navigator.clipboard?.writeText(link)
-    toast({ title: 'Link gekopieerd' })
-  }
-
-  async function setCell(role: 'planner' | 'helper' | 'viewer', module: Module, level: Level) {
-    const prev = matrix
-    setMatrix({ ...matrix, [role]: { ...matrix[role], [module]: level } })
-    const { error } = await supabase
-      .from('wedding_role_permissions')
-      .upsert(
-        { wedding_id: wedding!.id, role, module, level },
-        { onConflict: 'wedding_id,role,module' }
-      )
-    if (error) {
-      setMatrix(prev)
-      toast({ title: 'Kon recht niet opslaan', description: error.message, variant: 'error' })
+    } catch {
+      toast({ title: 'Versturen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
+    } finally {
+      setResending(null)
     }
   }
 
@@ -212,18 +117,21 @@ export default function LedenBeheerPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
+    <div className="mx-auto max-w-3xl pb-24 min-h-screen">
       <PageHeader
-        titel="Leden & rechten"
-        beschrijving="Nodig mensen uit om mee te plannen en bepaal per rol wat ze mogen zien en doen."
+        titel="Samen plannen"
+        beschrijving="Nodig je partner uit zodat jullie samen aan het trouwplan werken."
       />
 
       <div className="space-y-6">
-        {/* Leden */}
+        {/* Partner uitnodigen (verdwijnt zodra de partner is toegevoegd) */}
+        <PartnerUitnodigen dismissible={false} onInvited={() => void load()} />
+
+        {/* Wie heeft toegang */}
         <Card>
           <CardHeader>
-            <CardTitle>Leden</CardTitle>
-            <CardDescription>Wie heeft toegang tot deze bruiloft.</CardDescription>
+            <CardTitle>Wie heeft toegang</CardTitle>
+            <CardDescription>Iedereen hier kan samen aan het trouwplan werken.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((m) => {
@@ -241,158 +149,36 @@ export default function LedenBeheerPage() {
                     <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select
-                      value={m.role}
-                      onChange={(e) => changeRole(m, e.target.value as WeddingRole)}
-                      className="w-40"
-                      aria-label={`Rol van ${m.display_name || m.email}`}
-                    >
-                      <option value="owner">{ROLE_LABELS.owner}</option>
-                      <option value="planner">{ROLE_LABELS.planner}</option>
-                      <option value="helper">{ROLE_LABELS.helper}</option>
-                      <option value="viewer">{ROLE_LABELS.viewer}</option>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Lid verwijderen"
-                      onClick={() => setRemoveTarget(m)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!isSelf && statuses[m.user_id]?.activated === false ? (
+                      <>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                          Nog niet geactiveerd
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          loading={resending === m.user_id}
+                          onClick={() => resend(m)}
+                        >
+                          <Mail className="h-4 w-4" />
+                          Opnieuw versturen
+                        </Button>
+                      </>
+                    ) : null}
+                    {!isSelf ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Toegang intrekken"
+                        onClick={() => setRemoveTarget(m)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               )
             })}
-          </CardContent>
-        </Card>
-
-        {/* Uitnodigen */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Iemand uitnodigen</CardTitle>
-            <CardDescription>
-              Maak een uitnodigingslink aan. Wie de link opent en inlogt, krijgt de gekozen rol.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={createInvite} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <Field label="E-mailadres" htmlFor="invite-email" className="flex-1">
-                <Input
-                  id="invite-email"
-                  type="email"
-                  required
-                  placeholder="naam@voorbeeld.nl"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                />
-              </Field>
-              <Field label="Rol" htmlFor="invite-role" className="sm:w-44">
-                <Select
-                  id="invite-role"
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as WeddingRole)}
-                >
-                  <option value="planner">{ROLE_LABELS.planner}</option>
-                  <option value="helper">{ROLE_LABELS.helper}</option>
-                  <option value="viewer">{ROLE_LABELS.viewer}</option>
-                </Select>
-              </Field>
-              <Button type="submit" loading={inviting}>
-                <UserPlus className="h-4 w-4" />
-                Uitnodigen
-              </Button>
-            </form>
-
-            {invites.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  Openstaande uitnodigingen
-                </p>
-                {invites.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-4 py-2.5"
-                  >
-                    <div className="flex min-w-0 items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{inv.email}</span>
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                        {ROLE_LABELS[inv.role as WeddingRole] ?? inv.role}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => copyInvite(inv.token)}>
-                        <Copy className="h-4 w-4" />
-                        Kopieer link
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Uitnodiging intrekken"
-                        onClick={() => revokeInvite(inv.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        {/* Rechten-matrix */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Rechten per rol</CardTitle>
-            <CardDescription>
-              Bepaal per rol wat zichtbaar is. De eigenaar (bruidspaar) heeft altijd volledige toegang.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">Rechtenmatrix per rol voor trouwleden</caption>
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="py-2 pr-4 font-medium text-muted-foreground">Onderdeel</th>
-                    <th className="px-2 py-2 font-medium text-muted-foreground">Eigenaar</th>
-                    {EDITABLE_ROLES.map((role) => (
-                      <th key={role} className="px-2 py-2 font-medium text-foreground" title={ROLE_DESCRIPTIONS[role]}>
-                        {ROLE_LABELS[role]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {MODULES.map((module) => (
-                    <tr key={module} className="border-b border-border/60">
-                      <td className="py-2.5 pr-4 font-medium text-foreground">{MODULE_LABELS[module]}</td>
-                      <td className="px-2 py-2.5 text-muted-foreground">{LEVEL_LABELS.edit}</td>
-                      {EDITABLE_ROLES.map((role) => (
-                        <td key={role} className="px-2 py-2.5">
-                          <Select
-                            value={matrix[role][module]}
-                            onChange={(e) => setCell(role, module, e.target.value as Level)}
-                            className="w-28"
-                            aria-label={`${ROLE_LABELS[role]} – ${MODULE_LABELS[module]}`}
-                          >
-                            <option value="none">{LEVEL_LABELS.none}</option>
-                            <option value="view">{LEVEL_LABELS.view}</option>
-                            <option value="edit">{LEVEL_LABELS.edit}</option>
-                          </Select>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-              {/* Visuele hint dat de tabel horizontaal scrollbaar is op mobiel */}
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent sm:hidden" aria-hidden />
-            </div>
           </CardContent>
         </Card>
 
@@ -417,9 +203,9 @@ export default function LedenBeheerPage() {
       <ConfirmDialog
         open={!!removeTarget}
         onOpenChange={(o) => !o && setRemoveTarget(null)}
-        title="Lid verwijderen?"
+        title="Toegang intrekken?"
         description={`Weet je zeker dat je ${removeTarget?.display_name || removeTarget?.email} de toegang wilt ontnemen?`}
-        bevestigLabel="Verwijderen"
+        bevestigLabel="Intrekken"
         onConfirm={confirmRemove}
       />
 

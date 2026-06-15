@@ -97,6 +97,35 @@ export function renderInviteEmail(p: InviteEmailProps): { subject: string; html:
   return { subject, html: baseHtml('Uitnodiging', inhoud) }
 }
 
+export interface PartnerInviteEmailProps {
+  inviterNamen: string
+  actionUrl: string
+  heeftAccount: boolean
+}
+
+export function renderPartnerInviteEmail(p: PartnerInviteEmailProps): { subject: string; html: string } {
+  const subject = p.heeftAccount
+    ? 'Je hebt toegang gekregen tot het trouwplan — Ons Trouwplan'
+    : 'Stel je wachtwoord in en plan mee — Ons Trouwplan'
+  const intro = p.heeftAccount
+    ? `<strong>${escapeHtml(p.inviterNamen)}</strong> heeft je toegevoegd aan het trouwplan op Ons Trouwplan.
+       Je hebt volledige toegang om samen alles te regelen.`
+    : `<strong>${escapeHtml(p.inviterNamen)}</strong> wil samen met jou het trouwplan beheren op Ons Trouwplan.
+       Stel een wachtwoord in en je hebt direct volledige toegang om samen alles te regelen.`
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">${intro}</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
+      Klik op de knop hieronder om een wachtwoord in te stellen en aan de slag te gaan.
+    </p>
+    ${ctaKnop(p.actionUrl, 'Wachtwoord instellen')}
+    <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
+      Of kopieer deze link handmatig:<br />
+      <a href="${p.actionUrl}" style="color:#be123c;">${p.actionUrl}</a>
+    </p>
+  `
+  return { subject, html: baseHtml('Stel je wachtwoord in', inhoud) }
+}
+
 export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: string } {
   const subject = `Uitnodiging — ${p.partnerNamen} vragen om jouw reactie`
   const datumRegel = p.trouwdatum
