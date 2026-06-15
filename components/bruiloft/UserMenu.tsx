@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LayoutDashboard, LogOut, Settings2, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -25,6 +25,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   const weddings = useBruiloftStore((s) => s.weddings)
   const activeWeddingId = useBruiloftStore((s) => s.activeWeddingId)
   const switchWedding = useBruiloftStore((s) => s.switchWedding)
+  const startNewWedding = useBruiloftStore((s) => s.startNewWedding)
   const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
   const signOut = useBruiloftStore((s) => s.signOut)
   const [open, setOpen] = React.useState(false)
@@ -195,6 +196,20 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             ) : null}
 
             <div className="my-1 h-px bg-border" />
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                startNewWedding()
+                router.push('/bruiloft')
+              }}
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+              Nieuw trouwplan
+            </button>
 
             <button
               type="button"
