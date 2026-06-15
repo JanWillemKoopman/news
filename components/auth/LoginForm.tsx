@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { createClient } from '@/lib/supabase/client'
+import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { mapAuthError, safeNext } from './authErrors'
 
@@ -36,6 +37,9 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
       .from('weddings')
       .select('id', { count: 'exact', head: true })
     const destination = !count || count === 0 ? '/aanmelden' : target
+    // Reset store hydration so init() re-runs with the new authenticated session
+    // instead of returning early because hydrated=true from a prior logged-out visit.
+    useBruiloftStore.setState({ hydrated: false })
     router.push(destination)
     router.refresh()
   }
