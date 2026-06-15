@@ -8,6 +8,7 @@ import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
+import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
 import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
 import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
@@ -95,6 +96,9 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Optionele nudge: nodig je partner uit om samen te plannen */}
+      <PartnerUitnodigen />
 
       {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
       <OnboardingGids />

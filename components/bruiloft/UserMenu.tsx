@@ -217,7 +217,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
               >
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                Leden &amp; rechten
+                Samen plannen
               </Link>
             ) : null}
 
