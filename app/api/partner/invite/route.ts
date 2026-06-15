@@ -36,15 +36,25 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Alleen de eigenaar mag een partner uitnodigen.
+  // Alleen de eigenaar mag een partner uitnodigen. Platform-admins hebben
+  // altijd volledige toegang, ook als ze niet in wedding_members staan.
   const { data: membership } = await admin
     .from('wedding_members')
     .select('role')
     .eq('wedding_id', weddingId)
     .eq('user_id', user.id)
     .maybeSingle()
+
   if (!membership || membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    // Controleer of de gebruiker een platform_admin is; die hebben altijd toegang.
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('app_role')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (profile?.app_role !== 'platform_admin') {
+      return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    }
   }
 
   const { data: wedding } = await admin
