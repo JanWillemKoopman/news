@@ -1,15 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowLeft, ArrowRight, CalendarHeart, Check, CheckCircle2, Church, ClipboardList, Heart, KeyRound, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarHeart, Check, CheckCircle2, ClipboardList, Heart, Users, Wallet } from 'lucide-react'
 
 import { Button, Field, Input, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'voortgang' | 'account'
-const STEPS_FULL: Step[] = ['datum', 'namen', 'budget', 'gasten', 'voortgang', 'account']
-const STEPS_AUTH: Step[] = ['datum', 'namen', 'budget', 'gasten', 'voortgang']
+type Step = 'datum' | 'namen' | 'budget' | 'gasten' | 'voortgang'
+const STEPS: Step[] = ['datum', 'namen', 'budget', 'gasten', 'voortgang']
 
 const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
   { key: 'locatie', label: 'Trouwlocatie' },
@@ -36,20 +35,12 @@ const BUDGET_PRESETS = [
   { label: '> €40.000', value: 50000 },
 ]
 
-export function OnboardingWizard({
-  onBack = () => {},
-  initialEmail = '',
-  authenticatedMode = false,
-}: {
-  onBack?: () => void
-  initialEmail?: string
-  authenticatedMode?: boolean
-}) {
-  const completeOnboarding = useBruiloftStore((s) => s.completeOnboarding)
+// Wizard die het trouwplan opzet voor een al ingelogde gebruiker zonder
+// bruiloft. Account aanmaken gebeurt vooraf op /aanmelden; hier hoeft dat
+// dus niet meer.
+export function OnboardingWizard() {
   const setupWedding = useBruiloftStore((s) => s.setupWedding)
   const { toast } = useToast()
-
-  const steps = authenticatedMode ? STEPS_AUTH : STEPS_FULL
 
   const [step, setStep] = React.useState<Step>('datum')
   const [trouwdatum, setTrouwdatum] = React.useState('')
@@ -62,8 +53,6 @@ export function OnboardingWizard({
   const [avondgasten, setAvondgasten] = React.useState('')
   const [ceremonietype, setCeremonietype] = React.useState<CeremonieType | null>(null)
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>({})
-  const [email, setEmail] = React.useState(initialEmail)
-  const [password, setPassword] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
 
   function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus) {
@@ -77,21 +66,19 @@ export function OnboardingWizard({
     })
   }
 
-  const stepIndex = steps.indexOf(step)
+  const stepIndex = STEPS.indexOf(step)
+  const isLastStep = step === 'voortgang'
 
   const canNext =
     step === 'datum' ? trouwdatum !== '' :
     step === 'namen' ? partner1.trim() !== '' && partner2.trim() !== '' :
-    step === 'account' ? email.includes('@') && password.length >= 8 :
     true // budget, gasten en voortgang zijn optioneel
 
   function prev() {
-    if (step === 'datum') onBack()
-    else if (step === 'namen') setStep('datum')
+    if (step === 'namen') setStep('datum')
     else if (step === 'budget') setStep('namen')
     else if (step === 'gasten') setStep('budget')
     else if (step === 'voortgang') setStep('gasten')
-    else setStep('voortgang')
   }
 
   async function next() {
@@ -99,10 +86,6 @@ export function OnboardingWizard({
     if (step === 'namen') return setStep('budget')
     if (step === 'budget') return setStep('gasten')
     if (step === 'gasten') return setStep('voortgang')
-    if (step === 'voortgang') {
-      if (authenticatedMode) return finish()
-      return setStep('account')
-    }
     await finish()
   }
 
@@ -123,44 +106,21 @@ export function OnboardingWizard({
       takenVoorstellen: { beslist: {}, afgerond: false },
     }
     try {
-      if (authenticatedMode) {
-        await setupWedding(input)
-      } else {
-        await completeOnboarding(input, {
-          email: email.trim(),
-          password,
-          displayName: partner1.trim() || 'Partner 1',
-        })
-      }
-    } catch (err) {
+      await setupWedding(input)
+    } catch {
       setBezig(false)
-      const msg = err instanceof Error ? err.message : ''
-      if (msg === 'confirm-email') {
-        toast({
-          title: 'Bevestig je e-mailadres',
-          description: 'We hebben een bevestigingslink gestuurd naar ' + email.trim() + '. Klik de link aan om door te gaan.',
-          variant: 'error',
-        })
-      } else if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already been registered')) {
-        toast({
-          title: 'E-mailadres al in gebruik',
-          description: 'Er bestaat al een account met dit e-mailadres. Log in via de inlogpagina.',
-          variant: 'error',
-        })
-      } else {
-        toast({
-          title: 'Aanmaken mislukt',
-          description: 'We konden jullie bruiloft niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
-          variant: 'error',
-        })
-      }
+      toast({
+        title: 'Aanmaken mislukt',
+        description: 'We konden jullie bruiloft niet aanmaken. Controleer je verbinding en probeer het opnieuw.',
+        variant: 'error',
+      })
     }
   }
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
-        {(!authenticatedMode || step !== 'datum') ? (
+        {step !== 'datum' ? (
           <button
             type="button"
             onClick={prev}
@@ -177,7 +137,7 @@ export function OnboardingWizard({
           Ons Trouwplan
         </span>
         <div className="flex gap-1.5">
-          {steps.map((s, i) => (
+          {STEPS.map((s, i) => (
             <div
               key={s}
               className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -415,50 +375,12 @@ export function OnboardingWizard({
             </div>
           )}
 
-          {step === 'account' && (
-            <div>
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <KeyRound className="h-6 w-6" />
-              </div>
-              <h2 className="font-serif text-3xl text-foreground">Maak jullie account aan</h2>
-              <p className="mt-2 text-muted-foreground">
-                Hiermee bewaren we jullie trouwplan veilig en kun je het altijd en overal openen.
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                We zetten direct jullie persoonlijke takenlijst klaar — gefaseerd, zodat je niet wordt overweldigd.
-              </p>
-              <div className="mt-8 space-y-4">
-                <Field label="E-mailadres" htmlFor="ob-email" required>
-                  <Input
-                    id="ob-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="jullie@email.nl"
-                    autoFocus
-                    autoComplete="email"
-                  />
-                </Field>
-                <Field label="Wachtwoord" htmlFor="ob-password" required>
-                  <Input
-                    id="ob-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimaal 8 tekens"
-                    autoComplete="new-password"
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
-
           <div className="mt-8 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Stap {stepIndex + 1} van {steps.length}
+              Stap {stepIndex + 1} van {STEPS.length}
             </span>
             <Button onClick={next} disabled={!canNext || bezig} loading={bezig} size="lg">
-              {(step === 'account' || (authenticatedMode && step === 'voortgang')) ? (
+              {isLastStep ? (
                 <>
                   Maak ons trouwplan
                   <Check className="h-4 w-4" />

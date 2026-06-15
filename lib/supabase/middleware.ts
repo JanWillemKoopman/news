@@ -3,10 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import type { Database } from './database.types'
 
-// /bruiloft is publiek toegankelijk: bezoekers krijgen de landing + onboarding
-// en starten een anonieme gast-sessie via signInAnonymously().
+// /bruiloft is publiek toegankelijk: uitgelogde bezoekers krijgen de
+// marketing-landing; account aanmaken gebeurt op /aanmelden, inloggen op
+// /inloggen.
 const PROTECTED_PREFIXES = ['/uitnodiging', '/admin']
-const AUTH_PAGES = ['/login', '/signup']
+const AUTH_PAGES = ['/inloggen', '/aanmelden']
 const CONFIRM_EMAIL_PATH = '/bevestig-email'
 const EMAIL_CONFIRM_GRACE_HOURS = 48
 
@@ -44,14 +45,14 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/inloggen'
     url.search = ''
     url.searchParams.set('next', path)
     return NextResponse.redirect(url)
   }
 
-  // Anonieme gast-sessies blokkeren de login/signup-pagina's niet: een gast
-  // moet ook nog naar een volwaardig account kunnen overstappen via /login.
+  // Al ingelogd? Dan hebben de inlog- en aanmeldpagina's geen functie meer:
+  // stuur door naar de app.
   if (user && !user.is_anonymous && AUTH_PAGES.includes(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/bruiloft'
@@ -67,6 +68,7 @@ export async function updateSession(request: NextRequest) {
     !user.email_confirmed_at &&
     path !== CONFIRM_EMAIL_PATH &&
     !path.startsWith('/auth/') &&
+    !path.startsWith('/aanmelden') &&
     !path.startsWith('/signup')
   ) {
     const createdAt = new Date(user.created_at)

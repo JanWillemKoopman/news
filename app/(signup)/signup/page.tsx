@@ -1,13 +1,15 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { SignupPageForm } from '@/components/auth/SignupPageForm'
-
-export const metadata: Metadata = { title: 'Account aanmaken — Ons Trouwplan' }
-
-export default function SignupPage({
+// Oude URL — doorverwijzen naar de nieuwe /aanmelden (query-parameters behouden).
+export default function SignupRedirect({
   searchParams,
 }: {
-  searchParams: { next?: string; email?: string }
+  searchParams: Record<string, string | string[] | undefined>
 }) {
-  return <SignupPageForm next={searchParams.next} prefillEmail={searchParams.email} />
+  const qs = new URLSearchParams()
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === 'string') qs.set(key, value)
+  }
+  const query = qs.toString()
+  redirect(query ? `/aanmelden?${query}` : '/aanmelden')
 }

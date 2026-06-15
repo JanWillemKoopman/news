@@ -122,7 +122,6 @@ interface BruiloftState {
 interface BruiloftActions {
   init: () => Promise<void>
   retryInit: () => Promise<void>
-  completeOnboarding: (input: WeddingInput, auth: { email: string; password: string; displayName: string }) => Promise<void>
   signOut: () => Promise<void>
   switchWedding: (id: ID) => Promise<void>
   selectWedding: (id: ID) => Promise<void>
@@ -470,24 +469,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     retryInit: async () => {
       set({ hydrated: false, error: null })
       await get().init()
-    },
-
-    // Maak een nieuw account aan en koppel daar direct de bruiloft aan.
-    completeOnboarding: async (input, auth) => {
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signUp({
-        email: auth.email,
-        password: auth.password,
-        options: { data: { display_name: auth.displayName } },
-      })
-      if (error) throw error
-      if (!data.session) {
-        // E-mailbevestiging staat aan: gebruiker moet eerst bevestigen.
-        throw new Error('confirm-email')
-      }
-      set({ hydrated: false })
-      await get().init()
-      await get().setupWedding(input)
     },
 
     signOut: async () => {

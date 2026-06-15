@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   BookOpen,
@@ -21,7 +22,6 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/bruiloft/ui'
-import { OnboardingWizard } from './OnboardingWizard'
 
 /* ────────────────────────────── Content ────────────────────────────── */
 
@@ -519,8 +519,7 @@ function DraaiboekMockup() {
 /* ─────────────────────────────── Pagina ────────────────────────────── */
 
 export function Landing() {
-  const [showOnboarding, setShowOnboarding] = React.useState(false)
-  const [heroEmail, setHeroEmail] = React.useState('')
+  const router = useRouter()
   const [emailInput, setEmailInput] = React.useState('')
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [openFaq, setOpenFaq] = React.useState<number | null>(0)
@@ -532,19 +531,14 @@ export function Landing() {
     }
   }, [menuOpen])
 
-  if (showOnboarding) {
-    return <OnboardingWizard onBack={() => setShowOnboarding(false)} initialEmail={heroEmail} />
-  }
-
   function startWithEmail(e: React.FormEvent) {
     e.preventDefault()
-    setHeroEmail(emailInput.trim())
-    setShowOnboarding(true)
+    const email = emailInput.trim()
+    router.push(email ? `/aanmelden?email=${encodeURIComponent(email)}` : '/aanmelden')
   }
 
   function start() {
-    setHeroEmail('')
-    setShowOnboarding(true)
+    router.push('/aanmelden')
   }
 
   return (
@@ -579,7 +573,7 @@ export function Landing() {
               </a>
             ))}
             <Link
-              href="/login"
+              href="/inloggen"
               className="rounded-md px-3 py-3 text-base font-medium text-rhino-800 hover:bg-gray-50"
               onClick={() => setMenuOpen(false)}
             >
@@ -622,7 +616,7 @@ export function Landing() {
           </nav>
           <div className="hidden items-center gap-4 lg:flex">
             <Link
-              href="/login"
+              href="/inloggen"
               className="text-sm font-medium text-rhino-700 transition-colors hover:text-rhino-900"
             >
               Inloggen
@@ -1231,7 +1225,7 @@ export function Landing() {
                   </button>
                 </li>
                 <li>
-                  <Link href="/login" className="transition-colors hover:text-rhino-900">
+                  <Link href="/inloggen" className="transition-colors hover:text-rhino-900">
                     Inloggen
                   </Link>
                 </li>

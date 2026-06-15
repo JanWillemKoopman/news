@@ -147,7 +147,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   if (!wedding && currentUser) {
     return (
       <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
-        <OnboardingWizard authenticatedMode />
+        <OnboardingWizard />
       </div>
     )
   }

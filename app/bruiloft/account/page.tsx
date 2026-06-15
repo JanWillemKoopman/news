@@ -460,7 +460,7 @@ function GevaarZoneSection() {
       return
     }
     await signOut()
-    router.push('/login')
+    router.push('/inloggen')
     router.refresh()
   }
 

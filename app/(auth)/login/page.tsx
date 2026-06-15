@@ -1,13 +1,15 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { LoginForm } from '@/components/auth/LoginForm'
-
-export const metadata: Metadata = { title: 'Inloggen' }
-
-export default function LoginPage({
+// Oude URL — doorverwijzen naar de nieuwe /inloggen (query-parameters behouden).
+export default function LoginRedirect({
   searchParams,
 }: {
-  searchParams: { next?: string; error?: string }
+  searchParams: Record<string, string | string[] | undefined>
 }) {
-  return <LoginForm next={searchParams.next} error={searchParams.error} />
+  const qs = new URLSearchParams()
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === 'string') qs.set(key, value)
+  }
+  const query = qs.toString()
+  redirect(query ? `/inloggen?${query}` : '/inloggen')
 }

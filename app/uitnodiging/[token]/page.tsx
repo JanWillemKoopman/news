@@ -13,7 +13,7 @@ const cormorant = Cormorant_Garamond({
 })
 
 // Uitnodiging accepteren. De middleware stuurt niet-ingelogde bezoekers eerst
-// naar /login?next=… Daarna voegt accept_invite de gebruiker als lid toe.
+// naar /inloggen?next=… Daarna voegt accept_invite de gebruiker als lid toe.
 export default async function InvitePage({ params }: { params: { token: string } }) {
   const supabase = createClient()
   const {
@@ -21,7 +21,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/login?next=/uitnodiging/${params.token}`)
+    redirect(`/inloggen?next=/uitnodiging/${params.token}`)
   }
 
   const { error } = await supabase.rpc('accept_invite', { p_token: params.token })

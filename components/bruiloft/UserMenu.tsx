@@ -79,7 +79,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   async function onSignOut() {
     setOpen(false)
     await signOut()
-    router.push('/login')
+    router.push('/inloggen')
     router.refresh()
   }
 

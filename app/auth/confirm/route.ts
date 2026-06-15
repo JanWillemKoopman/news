@@ -20,5 +20,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=confirm`)
+  return NextResponse.redirect(`${origin}/inloggen?error=confirm`)
 }

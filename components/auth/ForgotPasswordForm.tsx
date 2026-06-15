@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/login" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/inloggen" className="text-sm font-medium text-primary hover:underline">
             Terug naar inloggen
           </Link>
         </CardContent>
@@ -93,7 +93,7 @@ export function ForgotPasswordForm() {
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link href="/inloggen" className="font-medium text-primary hover:underline">
             Terug naar inloggen
           </Link>
         </p>
