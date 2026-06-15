@@ -84,7 +84,7 @@ export default function SamenPlannenPage() {
 
       <div className="space-y-6">
         {/* Partner uitnodigen (verdwijnt zodra de partner is toegevoegd) */}
-        <PartnerUitnodigen dismissible={false} />
+        <PartnerUitnodigen dismissible={false} onInvited={() => void load()} />
 
         {/* Wie heeft toegang */}
         <Card>

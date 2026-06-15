@@ -62,9 +62,15 @@ export async function POST(request: NextRequest) {
       : wedding.partner1_naam || wedding.partner2_naam || 'Je partner'
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
-  const redirectTo = `${siteUrl}/auth/callback?next=/wachtwoord-resetten`
   // Best-effort naam voor het partnerprofiel.
   const partnerNaam = wedding.partner2_naam || wedding.partner1_naam || ''
+
+  // Bouw een link via /auth/confirm (verifyOtp met token_hash). Dit werkt
+  // cross-device: de partner klikt de link in een andere browser dan waar de
+  // uitnodiging vandaan kwam, dus de PKCE-code-exchange (/auth/callback) is hier
+  // geen optie — daar ontbreekt de code_verifier.
+  const confirmUrl = (tokenHash: string, type: 'invite' | 'recovery') =>
+    `${siteUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=${type}&next=/wachtwoord-resetten`
 
   let actionUrl: string | null = null
   let heeftAccount = false
@@ -75,7 +81,6 @@ export async function POST(request: NextRequest) {
     type: 'invite',
     email,
     options: {
-      redirectTo,
       data: { display_name: partnerNaam },
     },
   })
@@ -98,12 +103,13 @@ export async function POST(request: NextRequest) {
     const { data: recData } = await admin.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo },
     })
-    actionUrl = recData?.properties?.action_link ?? `${siteUrl}/login`
+    const recHash = recData?.properties?.hashed_token
+    actionUrl = recHash ? confirmUrl(recHash, 'recovery') : `${siteUrl}/login`
   } else {
     partnerUserId = linkData.user?.id ?? null
-    actionUrl = linkData.properties?.action_link ?? null
+    const inviteHash = linkData.properties?.hashed_token
+    actionUrl = inviteHash ? confirmUrl(inviteHash, 'invite') : null
   }
 
   if (!partnerUserId) {

@@ -11,11 +11,13 @@ interface Props {
   // Op het dashboard is dit een wegklikbaar tipkaartje; op de "Samen plannen"-
   // pagina staat het altijd vast (geen kruisje, niet te verbergen).
   dismissible?: boolean
+  // Aangeroepen na een geslaagde uitnodiging (bv. om een ledenlijst te verversen).
+  onInvited?: () => void
 }
 
 // Nodig je partner uit met hun e-mailadres. Ze krijgen een eigen, volwaardig
 // account met volledige toegang. Verbergt zichzelf zodra de partner meeplant.
-export function PartnerUitnodigen({ dismissible = true }: Props) {
+export function PartnerUitnodigen({ dismissible = true, onInvited }: Props) {
   const wedding = useBruiloftStore((s) => s.wedding)
   const role = useBruiloftStore((s) => s.role)
   const { toast } = useToast()
@@ -66,6 +68,7 @@ export function PartnerUitnodigen({ dismissible = true }: Props) {
         return
       }
       setSent(true)
+      onInvited?.()
       toast({
         title: 'Partner uitgenodigd',
         description: json.emailSent
