@@ -44,11 +44,7 @@ export function ResetPasswordForm() {
         type: tokenType as 'recovery',
       })
       if (verifyError) {
-        setError(
-          verifyError.message.toLowerCase().includes('expired')
-            ? 'Je herstelLink is verlopen. Vraag een nieuwe aan via de wachtwoord vergeten pagina.'
-            : mapAuthError(verifyError.message),
-        )
+        setError(`[verifyOtp] ${verifyError.message}`)
         setLoading(false)
         return
       }
@@ -56,7 +52,7 @@ export function ResetPasswordForm() {
 
     const { error: updateError } = await supabase.auth.updateUser({ password })
     if (updateError) {
-      setError(mapAuthError(updateError.message))
+      setError(`[updateUser] ${updateError.message}`)
       setLoading(false)
       return
     }
