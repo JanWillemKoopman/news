@@ -60,12 +60,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: wedding } = await admin
+  // Gebruik de user-client: de eigendomscheck is al gedaan en RLS staat lezen toe.
+  // Admin-client is alleen nodig voor generateLink en de member-upsert.
+  const { data: wedding, error: weddingError } = await supabase
     .from('weddings')
     .select('partner1_naam, partner2_naam')
     .eq('id', weddingId)
     .single()
   if (!wedding) {
+    console.error('[partner/invite] bruiloft ophalen mislukt:', weddingError)
     return NextResponse.json({ error: 'Bruiloft niet gevonden' }, { status: 404 })
   }
 
@@ -99,11 +102,11 @@ export async function POST(request: NextRequest) {
   })
 
   if (linkError) {
+    console.error('[partner/invite] generateLink fout (check SUPABASE_SERVICE_ROLE_KEY):', linkError)
     // Bestaat het account al? Voeg de partner dan direct toe als eigenaar en stuur
     // een herstel-link zodat ze (opnieuw) een wachtwoord kunnen instellen.
     const alreadyExists = /already|registered|exist/i.test(linkError.message)
     if (!alreadyExists) {
-      console.error('[partner/invite] generateLink fout:', linkError)
       return NextResponse.json({ error: 'Uitnodigen mislukt' }, { status: 500 })
     }
     heeftAccount = true
