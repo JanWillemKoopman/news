@@ -31,6 +31,10 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
       setLoading(false)
       return
     }
+    // Voorverwarm de AI-content alvast bij de eerste login van de dag, zodat het
+    // advies al klaarstaat wanneer het koppel het bekijkt. Fire-and-forget: dit
+    // mag het doorsturen niet vertragen. De server doet per dag hooguit één call.
+    void fetch('/api/ai/prewarm', { method: 'POST', keepalive: true }).catch(() => {})
     // Gebruiker zonder trouwplan sturen we direct naar stap 2, zodat ze niet
     // eerst de skeleton van het dashboard zien voordat ze worden doorgestuurd.
     const { count } = await supabase
