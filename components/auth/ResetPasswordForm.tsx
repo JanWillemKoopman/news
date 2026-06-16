@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
 import { ArrowLeft } from 'lucide-react'
 
@@ -11,7 +11,14 @@ import { mapAuthError } from './authErrors'
 
 export function ResetPasswordForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = React.useMemo(() => createClient(), [])
+
+  // token_hash + type worden meegegeven via de email template:
+  // {{ .SiteURL }}/wachtwoord-resetten?token_hash={{ .TokenHash }}&type=recovery
+  // Het token wordt pas verbruikt bij submitten (niet bij het openen van de link).
+  const tokenHash = searchParams.get('token_hash')
+  const tokenType = searchParams.get('type')
 
   const [password, setPassword] = React.useState('')
   const [confirm, setConfirm] = React.useState('')
@@ -27,9 +34,25 @@ export function ResetPasswordForm() {
     }
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) {
-      setError(mapAuthError(error.message))
+
+    if (tokenHash && tokenType) {
+      // Verifieer het token pas op het moment dat de gebruiker het formulier instuurt.
+      // Dit voorkomt dat e-mailscanners (zoals Checkpoint) het token verbruiken
+      // door de link in de email te volgen.
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: tokenType as 'recovery',
+      })
+      if (verifyError) {
+        setError(`[verifyOtp] ${verifyError.message}`)
+        setLoading(false)
+        return
+      }
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password })
+    if (updateError) {
+      setError(`[updateUser] ${updateError.message}`)
       setLoading(false)
       return
     }
