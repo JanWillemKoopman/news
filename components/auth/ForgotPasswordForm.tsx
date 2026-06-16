@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import * as React from 'react'
 
 import { createClient } from '@/lib/supabase/client'
@@ -9,6 +10,8 @@ import { mapAuthError } from './authErrors'
 
 export function ForgotPasswordForm() {
   const supabase = React.useMemo(() => createClient(), [])
+  const searchParams = useSearchParams()
+  const linkVerlopen = searchParams.get('error') === 'link_verlopen'
 
   const [email, setEmail] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -87,6 +90,12 @@ export function ForgotPasswordForm() {
                   stellen.
                 </p>
               </div>
+
+              {linkVerlopen && (
+                <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  Je herstelLink is verlopen of al gebruikt. Vraag hieronder een nieuwe aan.
+                </div>
+              )}
 
               <form onSubmit={onSubmit} className="space-y-4" noValidate>
                 <div>
