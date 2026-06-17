@@ -113,7 +113,7 @@ function ProfielFotoSection() {
                 className="h-20 w-20 rounded-full object-cover ring-2 ring-border"
               />
             ) : (
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-rose-600 text-2xl font-semibold text-white ring-2 ring-border">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-primary-foreground ring-2 ring-border">
                 {initials}
               </span>
             )}
@@ -642,7 +642,7 @@ function AccountHero() {
           className="h-16 w-16 rounded-full object-cover ring-2 ring-border"
         />
       ) : (
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-600 text-xl font-semibold text-white ring-2 ring-border">
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground ring-2 ring-border">
           {initials}
         </span>
       )}
@@ -657,7 +657,7 @@ function AccountHero() {
           <p className="text-sm text-muted-foreground">Stel hieronder je naam in</p>
         )}
         {role ? (
-          <span className="mt-1 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">
+          <span className="mt-1 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
             {ROLE_LABELS[role]}
           </span>
         ) : null}

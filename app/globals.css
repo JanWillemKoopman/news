@@ -250,3 +250,167 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Theme-kleur overrides ──────────────────────────────────────────────────
+ * Vervangt hardcoded Tailwind rose/rhino klassen door CSS-variabelen in de
+ * 3 extra dashboard-themes. Staat buiten @layer zodat hogere specificiteit
+ * alle Tailwind utilities overschrijft zonder !important.
+ */
+
+/* Primaire achtergronden */
+.wedding[data-theme="dark"] .bg-rose-600,
+.wedding[data-theme="roze"] .bg-rose-600,
+.wedding[data-theme="paars"] .bg-rose-600 { background-color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .bg-rose-500,
+.wedding[data-theme="roze"] .bg-rose-500,
+.wedding[data-theme="paars"] .bg-rose-500 { background-color: hsl(var(--primary) / 0.9); }
+
+.wedding[data-theme="dark"] .bg-rose-400,
+.wedding[data-theme="roze"] .bg-rose-400,
+.wedding[data-theme="paars"] .bg-rose-400 { background-color: hsl(var(--primary) / 0.75); }
+
+.wedding[data-theme="dark"] .bg-rose-100,
+.wedding[data-theme="roze"] .bg-rose-100,
+.wedding[data-theme="paars"] .bg-rose-100 { background-color: hsl(var(--primary) / 0.12); }
+
+.wedding[data-theme="dark"] .bg-rose-50,
+.wedding[data-theme="roze"] .bg-rose-50,
+.wedding[data-theme="paars"] .bg-rose-50 { background-color: hsl(var(--primary) / 0.07); }
+
+/* Hover-achtergronden */
+.wedding[data-theme="dark"] .hover\:bg-rose-600:hover,
+.wedding[data-theme="roze"] .hover\:bg-rose-600:hover,
+.wedding[data-theme="paars"] .hover\:bg-rose-600:hover { background-color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .hover\:bg-rose-500:hover,
+.wedding[data-theme="roze"] .hover\:bg-rose-500:hover,
+.wedding[data-theme="paars"] .hover\:bg-rose-500:hover { background-color: hsl(var(--primary) / 0.9); }
+
+.wedding[data-theme="dark"] .hover\:bg-rose-100:hover,
+.wedding[data-theme="roze"] .hover\:bg-rose-100:hover,
+.wedding[data-theme="paars"] .hover\:bg-rose-100:hover { background-color: hsl(var(--primary) / 0.12); }
+
+.wedding[data-theme="dark"] .hover\:bg-rose-50:hover,
+.wedding[data-theme="roze"] .hover\:bg-rose-50:hover,
+.wedding[data-theme="paars"] .hover\:bg-rose-50:hover { background-color: hsl(var(--primary) / 0.07); }
+
+/* Sidebar actief — rhino-800 → header-active */
+.wedding[data-theme="dark"] .bg-rhino-800,
+.wedding[data-theme="roze"] .bg-rhino-800,
+.wedding[data-theme="paars"] .bg-rhino-800 { background-color: hsl(var(--header-active)); }
+
+.wedding[data-theme="dark"] .hover\:bg-rhino-800:hover,
+.wedding[data-theme="roze"] .hover\:bg-rhino-800:hover,
+.wedding[data-theme="paars"] .hover\:bg-rhino-800:hover { background-color: hsl(var(--header-active)); }
+
+/* Tekstkleuren */
+.wedding[data-theme="dark"] .text-rose-900,
+.wedding[data-theme="roze"] .text-rose-900,
+.wedding[data-theme="paars"] .text-rose-900 { color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .text-rose-800,
+.wedding[data-theme="roze"] .text-rose-800,
+.wedding[data-theme="paars"] .text-rose-800 { color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .text-rose-700,
+.wedding[data-theme="roze"] .text-rose-700,
+.wedding[data-theme="paars"] .text-rose-700 { color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .text-rose-600,
+.wedding[data-theme="roze"] .text-rose-600,
+.wedding[data-theme="paars"] .text-rose-600 { color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .text-rose-500,
+.wedding[data-theme="roze"] .text-rose-500,
+.wedding[data-theme="paars"] .text-rose-500 { color: hsl(var(--primary) / 0.85); }
+
+.wedding[data-theme="dark"] .text-rose-400,
+.wedding[data-theme="roze"] .text-rose-400,
+.wedding[data-theme="paars"] .text-rose-400 { color: hsl(var(--primary) / 0.7); }
+
+.wedding[data-theme="dark"] .text-rose-300,
+.wedding[data-theme="roze"] .text-rose-300,
+.wedding[data-theme="paars"] .text-rose-300 { color: hsl(var(--primary) / 0.55); }
+
+.wedding[data-theme="dark"] .text-rose-200,
+.wedding[data-theme="roze"] .text-rose-200,
+.wedding[data-theme="paars"] .text-rose-200 { color: hsl(var(--primary) / 0.4); }
+
+/* Hover-tekst */
+.wedding[data-theme="dark"] .hover\:text-rose-600:hover,
+.wedding[data-theme="roze"] .hover\:text-rose-600:hover,
+.wedding[data-theme="paars"] .hover\:text-rose-600:hover { color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .hover\:text-rose-700:hover,
+.wedding[data-theme="roze"] .hover\:text-rose-700:hover,
+.wedding[data-theme="paars"] .hover\:text-rose-700:hover { color: hsl(var(--primary)); }
+
+/* Randkleuren */
+.wedding[data-theme="dark"] .border-rose-500,
+.wedding[data-theme="roze"] .border-rose-500,
+.wedding[data-theme="paars"] .border-rose-500 { border-color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .border-rose-300,
+.wedding[data-theme="roze"] .border-rose-300,
+.wedding[data-theme="paars"] .border-rose-300 { border-color: hsl(var(--primary) / 0.4); }
+
+.wedding[data-theme="dark"] .border-rose-200,
+.wedding[data-theme="roze"] .border-rose-200,
+.wedding[data-theme="paars"] .border-rose-200 { border-color: hsl(var(--primary) / 0.25); }
+
+.wedding[data-theme="dark"] .border-rose-100,
+.wedding[data-theme="roze"] .border-rose-100,
+.wedding[data-theme="paars"] .border-rose-100 { border-color: hsl(var(--primary) / 0.15); }
+
+/* Hover-randen */
+.wedding[data-theme="dark"] .hover\:border-rose-300:hover,
+.wedding[data-theme="roze"] .hover\:border-rose-300:hover,
+.wedding[data-theme="paars"] .hover\:border-rose-300:hover { border-color: hsl(var(--primary) / 0.4); }
+
+.wedding[data-theme="dark"] .hover\:border-rose-200:hover,
+.wedding[data-theme="roze"] .hover\:border-rose-200:hover,
+.wedding[data-theme="paars"] .hover\:border-rose-200:hover { border-color: hsl(var(--primary) / 0.25); }
+
+/* Focus-within randen */
+.wedding[data-theme="dark"] .focus-within\:border-rose-300:focus-within,
+.wedding[data-theme="roze"] .focus-within\:border-rose-300:focus-within,
+.wedding[data-theme="paars"] .focus-within\:border-rose-300:focus-within { border-color: hsl(var(--primary) / 0.4); }
+
+/* SVG fill */
+.wedding[data-theme="dark"] .fill-rose-500,
+.wedding[data-theme="roze"] .fill-rose-500,
+.wedding[data-theme="paars"] .fill-rose-500 { fill: hsl(var(--primary)); }
+
+/* SVG stroke */
+.wedding[data-theme="dark"] .stroke-rose-400,
+.wedding[data-theme="roze"] .stroke-rose-400,
+.wedding[data-theme="paars"] .stroke-rose-400 { stroke: hsl(var(--primary) / 0.7); }
+
+/* Tekstdecoratie */
+.wedding[data-theme="dark"] .decoration-rose-300,
+.wedding[data-theme="roze"] .decoration-rose-300,
+.wedding[data-theme="paars"] .decoration-rose-300 { text-decoration-color: hsl(var(--primary) / 0.4); }
+
+/* Form accent */
+.wedding[data-theme="dark"] .accent-rose-600,
+.wedding[data-theme="roze"] .accent-rose-600,
+.wedding[data-theme="paars"] .accent-rose-600 { accent-color: hsl(var(--primary)); }
+
+/* Focus-visible outline */
+.wedding[data-theme="dark"] .focus-visible\:outline-rose-600:focus-visible,
+.wedding[data-theme="roze"] .focus-visible\:outline-rose-600:focus-visible,
+.wedding[data-theme="paars"] .focus-visible\:outline-rose-600:focus-visible { outline-color: hsl(var(--primary)); }
+
+/* Ring */
+.wedding[data-theme="dark"] .ring-rose-500,
+.wedding[data-theme="roze"] .ring-rose-500,
+.wedding[data-theme="paars"] .ring-rose-500 { --tw-ring-color: hsl(var(--primary)); }
+
+.wedding[data-theme="dark"] .ring-rose-600\/20,
+.wedding[data-theme="roze"] .ring-rose-600\/20,
+.wedding[data-theme="paars"] .ring-rose-600\/20 { --tw-ring-color: hsl(var(--primary) / 0.2); }
+
+.wedding[data-theme="dark"] .focus-visible\:ring-rose-500:focus-visible,
+.wedding[data-theme="roze"] .focus-visible\:ring-rose-500:focus-visible,
+.wedding[data-theme="paars"] .focus-visible\:ring-rose-500:focus-visible { --tw-ring-color: hsl(var(--primary)); }

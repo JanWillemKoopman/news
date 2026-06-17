@@ -93,7 +93,7 @@ export function TopNav() {
             {heeftKritiek ? (
               <span
                 aria-hidden
-                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-rhino-800"
+                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-header-bg"
               />
             ) : null}
           </button>

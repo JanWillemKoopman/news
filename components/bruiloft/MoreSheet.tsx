@@ -39,14 +39,14 @@ export function MoreSheet({ open, onOpenChange }: MoreSheetProps) {
                   className={cn(
                     'flex min-h-[44px] items-center gap-3 rounded-md px-3 text-sm transition-colors',
                     active
-                      ? 'bg-rose-50 font-medium text-rose-700'
+                      ? 'bg-primary/10 font-medium text-primary'
                       : 'text-foreground hover:bg-accent'
                   )}
                 >
                   <item.icon
                     className={cn(
                       'h-5 w-5 shrink-0',
-                      active ? 'text-rose-600' : 'text-muted-foreground'
+                      active ? 'text-primary' : 'text-muted-foreground'
                     )}
                   />
                   {item.label}
