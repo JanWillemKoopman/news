@@ -36,23 +36,35 @@ export function ResetPasswordForm() {
     setError(null)
 
     if (tokenHash && tokenType) {
-      // Verifieer het token pas op het moment dat de gebruiker het formulier instuurt.
-      // Dit voorkomt dat e-mailscanners (zoals Checkpoint) het token verbruiken
-      // door de link in de email te volgen.
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: tokenType as 'recovery',
+      // Verificatie server-side: voorkomt PKCE code-verifier problemen
+      // die optreden bij client-side verifyOtp met @supabase/ssr.
+      const res = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token_hash: tokenHash, type: tokenType, password }),
       })
-      if (verifyError) {
-        setError(`[verifyOtp] ${verifyError.message}`)
+      const json = await res.json()
+      if (!res.ok) {
+        const msg = json.error ?? ''
+        setError(
+          msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
+            ? 'Je herstellink is verlopen of al gebruikt. Vraag een nieuwe aan via de wachtwoord vergeten pagina.'
+            : mapAuthError(msg),
+        )
         setLoading(false)
         return
       }
+      setDone(true)
+      setLoading(false)
+      router.push('/bruiloft')
+      router.refresh()
+      return
     }
 
+    // Fallback voor ingelogde gebruikers die wachtwoord wijzigen zonder token.
     const { error: updateError } = await supabase.auth.updateUser({ password })
     if (updateError) {
-      setError(`[updateUser] ${updateError.message}`)
+      setError(mapAuthError(updateError.message))
       setLoading(false)
       return
     }
