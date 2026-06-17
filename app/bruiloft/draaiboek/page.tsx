@@ -99,7 +99,8 @@ export default function DraaiboekPage() {
     .slice()
     .sort((a, b) => a.tijd.localeCompare(b.tijd))
 
-  const defaultTijdNieuw = gesorteerd.at(-1)?.eindtijd ?? ''
+  const alleSorteerd = scheduleItems.slice().sort((a, b) => a.tijd.localeCompare(b.tijd))
+  const defaultTijdNieuw = alleSorteerd.at(-1)?.eindtijd ?? ''
 
   const openNieuw = () => {
     setEditItem(null)
@@ -175,7 +176,7 @@ export default function DraaiboekPage() {
             </button>
           )}
         </div>
-        <Select value={fRol} onChange={(e) => setFRol(e.target.value)} className="w-auto max-w-xs">
+        <Select value={fRol} onChange={(e) => setFRol(e.target.value)} className="w-full sm:w-auto max-w-xs">
           <option value="all">Hele draaiboek</option>
           {DRAAIBOEK_ROLLEN.map((r) => (
             <option key={r} value={r}>
@@ -234,7 +235,7 @@ export default function DraaiboekPage() {
                 {isOverlap ? (
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-rose-200" />
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-rose-600">
                       <AlertTriangle className="h-3 w-3" />
                       {Math.abs(gapMinuten) >= 60
                         ? `Overlap ${Math.floor(Math.abs(gapMinuten) / 60)}u${Math.abs(gapMinuten) % 60 > 0 ? ` ${Math.abs(gapMinuten) % 60}min` : ''}`
@@ -245,7 +246,7 @@ export default function DraaiboekPage() {
                 ) : gapMinuten >= MIN_PAUZE_MINUTEN ? (
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-border" />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
                       {gapMinuten >= 60
                         ? `${Math.floor(gapMinuten / 60)}u${gapMinuten % 60 > 0 ? ` ${gapMinuten % 60}min` : ''}`
                         : `${gapMinuten}min`}{' '}
@@ -256,7 +257,7 @@ export default function DraaiboekPage() {
                 ) : null}
                 <Card>
                   <CardContent className="flex items-start gap-4 p-4">
-                    <div className="shrink-0 text-center">
+                    <div className="w-16 shrink-0 text-center">
                       <span className="text-lg font-semibold tabular-nums text-primary">
                         {s.tijd}
                       </span>
