@@ -102,6 +102,7 @@ function WeddingSetup({
 }) {
   const setupWedding = useBruiloftStore((s) => s.setupWedding)
   const router = useRouter()
+  const supabase = React.useMemo(() => createClient(), [])
 
   const [woonplaats, setWoonplaats] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
@@ -151,6 +152,23 @@ function WeddingSetup({
     if (saving) return
     setSaving(true)
     setError(null)
+
+    // Idempotentie: heeft dit account al een trouwplan (bijv. door dubbel
+    // indienen, terugknop of een tweede tab), maak er dan geen tweede aan maar
+    // ga naar het dashboard. Een extra plan maak je bewust via "Nieuw
+    // trouwplan" in het accountmenu.
+    try {
+      const { count } = await supabase
+        .from('weddings')
+        .select('id', { count: 'exact', head: true })
+      if (count && count > 0) {
+        router.replace('/bruiloft')
+        return
+      }
+    } catch {
+      // Telling mislukt (netwerk): ga door en laat setupWedding de fout afhandelen.
+    }
+
     const aantalGasten = Number(gasten) || 0
     const input: WeddingInput = {
       partner1Naam: partner1Naam.trim() || 'Partner 1',

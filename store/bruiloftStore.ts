@@ -417,6 +417,20 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         currentUser.appRole
       )
 
+      // De bruiloft en rechten zijn al geladen; de losse datalijsten hieronder
+      // mogen het laden van het dashboard niet blokkeren. Faalt één lijst
+      // tijdelijk (netwerkhik, 5xx op één tabel), dan tonen we die slice leeg in
+      // plaats van het hele trouwplan onbruikbaar te maken met het foutscherm.
+      // Een echt verbroken verbinding faalt al eerder op listWeddings hierboven.
+      const safe = async <T,>(label: string, p: Promise<T>, fallback: T): Promise<T> => {
+        try {
+          return await p
+        } catch (e) {
+          console.error(`[store] init: ${label} laden mislukt`, e)
+          return fallback
+        }
+      }
+
       const [
         guests,
         tasks,
@@ -430,17 +444,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         taskComments,
         members,
       ] = await Promise.all([
-        repository.listGuests(wedding.id),
-        repository.listTasks(wedding.id),
-        repository.listVendors(wedding.id),
-        repository.listBudgetItems(wedding.id),
-        repository.listScheduleItems(wedding.id),
-        repository.listTables(wedding.id),
-        repository.getWebsiteContent(wedding.id),
-        repository.listWebsiteFotos(wedding.id),
-        repository.listActivity(wedding.id, 50),
-        repository.listTaskComments(wedding.id),
-        repository.listMembers(wedding.id),
+        safe('gasten', repository.listGuests(wedding.id), []),
+        safe('taken', repository.listTasks(wedding.id), []),
+        safe('leveranciers', repository.listVendors(wedding.id), []),
+        safe('budget', repository.listBudgetItems(wedding.id), []),
+        safe('draaiboek', repository.listScheduleItems(wedding.id), []),
+        safe('tafels', repository.listTables(wedding.id), []),
+        safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
+        safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
+        safe('activiteit', repository.listActivity(wedding.id, 50), []),
+        safe('opmerkingen', repository.listTaskComments(wedding.id), []),
+        safe('leden', repository.listMembers(wedding.id), []),
       ])
       set({
         hydrated: true,
