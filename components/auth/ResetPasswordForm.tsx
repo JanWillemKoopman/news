@@ -46,11 +46,12 @@ export function ResetPasswordForm() {
       const json = await res.json()
       if (!res.ok) {
         const msg = json.error ?? ''
-        setError(
+        const baseMsg =
           msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')
             ? 'Je herstellink is verlopen of al gebruikt. Vraag een nieuwe aan via de wachtwoord vergeten pagina.'
-            : mapAuthError(msg),
-        )
+            : mapAuthError(msg)
+        // TIJDELIJK: toon ruwe debug-info uit /api/reset-password voor diagnose.
+        setError(json.debug ? `${baseMsg}\n\n[DEBUG] ${JSON.stringify(json.debug)}` : baseMsg)
         setLoading(false)
         return
       }
@@ -136,7 +137,10 @@ export function ResetPasswordForm() {
             </div>
 
             {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
+              <p
+                className="whitespace-pre-wrap break-words text-sm font-medium text-red-600"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}
