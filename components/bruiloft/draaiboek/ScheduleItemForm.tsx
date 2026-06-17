@@ -17,12 +17,13 @@ interface ScheduleItemFormProps {
 }
 
 function leeg(): NewScheduleItem {
-  return { tijd: '', titel: '', omschrijving: '', locatie: '', betrokkenen: [] }
+  return { tijd: '', eindtijd: '', titel: '', omschrijving: '', locatie: '', betrokkenen: [] }
 }
 
 function vanItem(s: ScheduleItem): NewScheduleItem {
   return {
     tijd: s.tijd,
+    eindtijd: s.eindtijd,
     titel: s.titel,
     omschrijving: s.omschrijving,
     locatie: s.locatie,
@@ -71,6 +72,8 @@ export function ScheduleItemForm({
 
   const verwerk = (closeAfter: boolean) => {
     if (!form.tijd || !form.titel.trim()) return
+    // Eindtijd mag leeg zijn, maar als ingevuld moet het na starttijd vallen.
+    if (form.eindtijd && form.eindtijd <= form.tijd) return
     if (saving) return
     setSaving(true)
     try {
@@ -100,8 +103,8 @@ export function ScheduleItemForm({
       title={initial ? 'Programmaonderdeel bewerken' : 'Programmaonderdeel toevoegen'}
     >
       <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Tijd" htmlFor="tijd">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Starttijd" htmlFor="tijd">
             <Input
               id="tijd"
               type="time"
@@ -111,16 +114,25 @@ export function ScheduleItemForm({
               required
             />
           </Field>
-          <Field label="Titel" htmlFor="titel" className="col-span-2">
+          <Field label="Eindtijd" htmlFor="eindtijd">
             <Input
-              id="titel"
-              value={form.titel}
-              onChange={(e) => set('titel', e.target.value)}
-              placeholder="Bijv. Ceremonie"
-              required
+              id="eindtijd"
+              type="time"
+              value={form.eindtijd}
+              onChange={(e) => set('eindtijd', e.target.value)}
+              min={form.tijd || undefined}
             />
           </Field>
         </div>
+        <Field label="Titel" htmlFor="titel">
+          <Input
+            id="titel"
+            value={form.titel}
+            onChange={(e) => set('titel', e.target.value)}
+            placeholder="Bijv. Ceremonie"
+            required
+          />
+        </Field>
 
         <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
           <Field label="Locatie" htmlFor="loc">

@@ -239,6 +239,7 @@ export function scheduleItemFromRow(r: Tables['schedule_items']['Row']): Schedul
     id: r.id,
     weddingId: r.wedding_id,
     tijd: r.tijd,
+    eindtijd: r.eindtijd ?? '',
     titel: r.titel,
     omschrijving: r.omschrijving,
     locatie: r.locatie,
@@ -252,6 +253,7 @@ export function scheduleItemToRow(
   const r: Partial<Tables['schedule_items']['Insert']> = {}
   if (p.weddingId !== undefined) r.wedding_id = p.weddingId
   if (p.tijd !== undefined) r.tijd = p.tijd
+  if (p.eindtijd !== undefined) r.eindtijd = p.eindtijd
   if (p.titel !== undefined) r.titel = p.titel
   if (p.omschrijving !== undefined) r.omschrijving = p.omschrijving
   if (p.locatie !== undefined) r.locatie = p.locatie

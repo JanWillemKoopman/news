@@ -242,6 +242,7 @@ export type Database = {
         Row: {
           betrokkenen: Json
           created_at: string
+          eindtijd: string
           id: string
           locatie: string
           omschrijving: string
@@ -253,6 +254,7 @@ export type Database = {
         Insert: {
           betrokkenen?: Json
           created_at?: string
+          eindtijd?: string
           id?: string
           locatie?: string
           omschrijving?: string
@@ -264,6 +266,7 @@ export type Database = {
         Update: {
           betrokkenen?: Json
           created_at?: string
+          eindtijd?: string
           id?: string
           locatie?: string
           omschrijving?: string

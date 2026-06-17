@@ -249,6 +249,7 @@ export interface ScheduleItem {
   id: ID
   weddingId: ID
   tijd: string // 'HH:MM'
+  eindtijd: string // 'HH:MM', leeg string indien niet ingevuld
   titel: string
   omschrijving: string
   locatie: string

@@ -241,6 +241,7 @@ create table public.schedule_items (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   tijd text not null default '',
+  eindtijd text not null default '',
   titel text not null default '',
   omschrijving text not null default '',
   locatie text not null default '',

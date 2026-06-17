@@ -48,17 +48,16 @@ export default function DraaiboekPage() {
   const startMetTemplate = async () => {
     if (templateBezig) return
     setTemplateBezig(true)
-    const template: { tijd: string; titel: string; omschrijving: string; betrokkenen: ScheduleItem['betrokkenen'] }[] = [
-      { tijd: '13:30', titel: 'Aankomst gasten', omschrijving: 'Ontvangst met koffie en thee.', betrokkenen: ['gasten', 'locatie'] },
-      { tijd: '14:00', titel: 'Ceremonie', omschrijving: 'Het jawoord en de ringen.', betrokkenen: ['bruidspaar', 'gasten', 'fotograaf'] },
-      { tijd: '15:00', titel: 'Toost en felicitaties', omschrijving: 'Proosten met alle gasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
-      { tijd: '15:30', titel: 'Fotoshoot', omschrijving: "Foto's met familie en vrienden.", betrokkenen: ['bruidspaar', 'fotograaf'] },
-      { tijd: '17:00', titel: 'Borrel', omschrijving: 'Drankjes en hapjes.', betrokkenen: ['gasten', 'catering'] },
-      { tijd: '18:30', titel: 'Diner', omschrijving: 'Aan tafel met de daggasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
-      { tijd: '20:30', titel: 'Aankomst avondgasten', omschrijving: '', betrokkenen: ['gasten', 'locatie'] },
-      { tijd: '21:00', titel: 'Openingsdans en feest', omschrijving: 'De eerste dans, daarna dansen.', betrokkenen: ['bruidspaar', 'dj of band'] },
-      // 23:30 i.p.v. na middernacht: het draaiboek sorteert op kloktijd.
-      { tijd: '23:30', titel: 'Einde feest en uitzwaaien', omschrijving: '', betrokkenen: ['bruidspaar', 'gasten'] },
+    const template: { tijd: string; eindtijd: string; titel: string; omschrijving: string; betrokkenen: ScheduleItem['betrokkenen'] }[] = [
+      { tijd: '13:30', eindtijd: '14:00', titel: 'Aankomst gasten', omschrijving: 'Ontvangst met koffie en thee.', betrokkenen: ['gasten', 'locatie'] },
+      { tijd: '14:00', eindtijd: '15:00', titel: 'Ceremonie', omschrijving: 'Het jawoord en de ringen.', betrokkenen: ['bruidspaar', 'gasten', 'fotograaf'] },
+      { tijd: '15:00', eindtijd: '15:30', titel: 'Toost en felicitaties', omschrijving: 'Proosten met alle gasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
+      { tijd: '15:30', eindtijd: '17:00', titel: 'Fotoshoot', omschrijving: "Foto's met familie en vrienden.", betrokkenen: ['bruidspaar', 'fotograaf'] },
+      { tijd: '17:00', eindtijd: '18:30', titel: 'Borrel', omschrijving: 'Drankjes en hapjes.', betrokkenen: ['gasten', 'catering'] },
+      { tijd: '18:30', eindtijd: '20:30', titel: 'Diner', omschrijving: 'Aan tafel met de daggasten.', betrokkenen: ['bruidspaar', 'gasten', 'catering'] },
+      { tijd: '20:30', eindtijd: '21:00', titel: 'Aankomst avondgasten', omschrijving: '', betrokkenen: ['gasten', 'locatie'] },
+      { tijd: '21:00', eindtijd: '23:30', titel: 'Openingsdans en feest', omschrijving: 'De eerste dans, daarna dansen.', betrokkenen: ['bruidspaar', 'dj of band'] },
+      { tijd: '23:30', eindtijd: '', titel: 'Einde feest en uitzwaaien', omschrijving: '', betrokkenen: ['bruidspaar', 'gasten'] },
     ]
     try {
       for (const item of template) {
@@ -104,7 +103,7 @@ export default function DraaiboekPage() {
         ['Tijd', 'Einde', 'Titel', 'Locatie', 'Omschrijving', 'Betrokkenen'],
         gesorteerd.map((s, idx) => [
           s.tijd,
-          gesorteerd[idx + 1]?.tijd ?? '',
+          s.eindtijd || gesorteerd[idx + 1]?.tijd || '',
           s.titel,
           s.locatie,
           s.omschrijving,
@@ -203,29 +202,37 @@ export default function DraaiboekPage() {
             const prev = idx > 0 ? gesorteerd[idx - 1] : null
             const gapMinuten = prev
               ? (() => {
-                  const [ph, pm] = prev.tijd.split(':').map(Number)
+                  // Gebruik eindtijd van vorig item als die is ingevuld, anders starttijd
+                  const referentieTijd = prev.eindtijd || prev.tijd
+                  const [rh, rm] = referentieTijd.split(':').map(Number)
                   const [sh, sm] = s.tijd.split(':').map(Number)
-                  return sh * 60 + sm - (ph * 60 + pm)
+                  return sh * 60 + sm - (rh * 60 + rm)
                 })()
               : 0
 
             return (
               <React.Fragment key={s.id}>
-                {gapMinuten >= 30 && idx > 0 ? (
+                {gapMinuten > 0 && idx > 0 ? (
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-border" />
                     <span className="text-xs text-muted-foreground">
-                      {gapMinuten >= 60 ? `${Math.round(gapMinuten / 60)}u` : `${gapMinuten}min`} pauze
+                      {gapMinuten >= 60
+                        ? `${Math.floor(gapMinuten / 60)}u${gapMinuten % 60 > 0 ? ` ${gapMinuten % 60}min` : ''}`
+                        : `${gapMinuten}min`}{' '}
+                      pauze
                     </span>
                     <div className="h-px flex-1 bg-border" />
                   </div>
                 ) : null}
                 <Card>
                   <CardContent className="flex items-start gap-4 p-4">
-                    <div className="w-14 shrink-0 text-center">
+                    <div className="shrink-0 text-center">
                       <span className="text-lg font-semibold tabular-nums text-primary">
                         {s.tijd}
                       </span>
+                      {s.eindtijd ? (
+                        <p className="text-xs text-muted-foreground tabular-nums">–&nbsp;{s.eindtijd}</p>
+                      ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
