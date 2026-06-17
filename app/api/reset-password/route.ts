@@ -1,10 +1,7 @@
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
-
-// OTP expiry: standaard 3600 seconden in Supabase. Bij aanpassing in het
-// dashboard dit getal meepassen.
-const OTP_EXPIRY_SECONDS = 3600
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   const { token_hash, type, password } = await request.json()
@@ -13,45 +10,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Ongeldige aanvraag.' }, { status: 400 })
   }
 
-  // verifyOtp via @supabase/ssr createServerClient werkt niet betrouwbaar
-  // met implicit-flow tokens (PKCE-gedrag van de SSR-client interfereert).
-  // Directe admin-query op auth.one_time_tokens omzeilt dit probleem.
-  const raw = createRawAdminClient()
+  // Gebruik vanilla createClient met flowType: 'implicit' zodat verifyOtp
+  // de token hash direct verifieert zonder PKCE flow_state lookup.
+  // createServerClient van @supabase/ssr forceert PKCE-mode wat verifyOtp
+  // doet mislukken met implicit-flow tokens uit de e-mailtemplate.
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { flowType: 'implicit', persistSession: false, autoRefreshToken: false } },
+  )
 
-  const { data: tokenRow, error: tokenError } = await raw
-    .schema('auth')
-    .from('one_time_tokens')
-    .select('id, user_id, created_at')
-    .eq('token_hash', token_hash)
-    .eq('token_type', 'recovery_token')
-    .single()
+  const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+    token_hash,
+    type,
+  })
 
-  if (tokenError || !tokenRow) {
+  if (verifyError || !verifyData.user) {
+    console.error('[reset-password] verifyOtp error:', verifyError)
     return NextResponse.json(
       { error: 'Email link is invalid or has expired' },
       { status: 400 },
     )
   }
 
-  // Controleer of het token niet verlopen is.
-  const createdAt = new Date(tokenRow.created_at).getTime()
-  if (Date.now() - createdAt > OTP_EXPIRY_SECONDS * 1000) {
-    return NextResponse.json(
-      { error: 'Email link is invalid or has expired' },
-      { status: 400 },
-    )
-  }
-
-  const userId = tokenRow.user_id
-
-  // Verwijder het token zodat het niet opnieuw gebruikt kan worden.
-  await raw.schema('auth').from('one_time_tokens').delete().eq('id', tokenRow.id)
+  const userId = verifyData.user.id
 
   // Wachtwoord bijwerken via admin client.
   const admin = createAdminClient()
   const { error: updateError } = await admin.auth.admin.updateUserById(userId, { password })
 
   if (updateError) {
+    console.error('[reset-password] updateUserById error:', updateError)
     return NextResponse.json({ error: updateError.message }, { status: 400 })
   }
 
