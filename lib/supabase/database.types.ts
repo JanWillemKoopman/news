@@ -177,6 +177,7 @@ export type Database = {
           app_role: string
           avatar_url: string | null
           created_at: string
+          dashboard_theme: string
           display_name: string | null
           email: string | null
           email_herinneringen: boolean
@@ -187,6 +188,7 @@ export type Database = {
           app_role?: string
           avatar_url?: string | null
           created_at?: string
+          dashboard_theme?: string
           display_name?: string | null
           email?: string | null
           email_herinneringen?: boolean
@@ -197,6 +199,7 @@ export type Database = {
           app_role?: string
           avatar_url?: string | null
           created_at?: string
+          dashboard_theme?: string
           display_name?: string | null
           email?: string | null
           email_herinneringen?: boolean
