@@ -13,6 +13,7 @@ interface ScheduleItemFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: ScheduleItem | null
+  defaultTijd?: string
   onSubmit: (data: NewScheduleItem) => void
 }
 
@@ -35,6 +36,7 @@ export function ScheduleItemForm({
   open,
   onOpenChange,
   initial,
+  defaultTijd,
   onSubmit,
 }: ScheduleItemFormProps) {
   const [form, setForm] = React.useState<NewScheduleItem>(leeg)
@@ -45,12 +47,12 @@ export function ScheduleItemForm({
 
   React.useEffect(() => {
     if (open) {
-      const start = initial ? vanItem(initial) : leeg()
+      const start = initial ? vanItem(initial) : { ...leeg(), tijd: defaultTijd ?? '' }
       setForm(start)
       baseline.current = JSON.stringify(start)
       setDetailsOpen(!!initial)
     }
-  }, [open, initial])
+  }, [open, initial, defaultTijd])
 
   const dirty = JSON.stringify(form) !== baseline.current
 
@@ -114,7 +116,11 @@ export function ScheduleItemForm({
               required
             />
           </Field>
-          <Field label="Eindtijd" htmlFor="eindtijd">
+          <Field
+            label="Eindtijd"
+            htmlFor="eindtijd"
+            error={form.eindtijd && form.eindtijd <= form.tijd ? 'Moet na starttijd vallen' : undefined}
+          >
             <Input
               id="eindtijd"
               type="time"
@@ -178,16 +184,16 @@ export function ScheduleItemForm({
           </div>
         </MeerDetails>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => sluit(false)}>
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => sluit(false)}>
             Annuleren
           </Button>
           {!initial ? (
-            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => verwerk(false)} loading={saving}>
               Nog een toevoegen
             </Button>
           ) : null}
-          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+          <Button type="submit" className="w-full sm:w-auto" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>

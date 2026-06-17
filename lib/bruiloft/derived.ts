@@ -9,6 +9,7 @@ import type {
   BudgetItem,
   Guest,
   PaymentTerm,
+  ScheduleItem,
   Task,
   Vendor,
   Wedding,
@@ -271,4 +272,41 @@ export function recenteActiviteit(activity: ActivityEntry[], limiet = 15): Activ
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, limiet)
+}
+
+// --- Draaiboek statistieken -----------------------------------------------
+
+export interface DraaiboekStats {
+  totaalItems: number
+  geplandMinuten: number  // som van duur van items met beide tijden ingevuld
+  aantalGaten: number     // pauzes >= minPauze minuten
+  aantalOverlaps: number  // negatieve gaps (eindtijd vorig > starttijd huidig)
+}
+
+export function draaiboekStats(items: ScheduleItem[], minPauze = 5): DraaiboekStats {
+  const gesorteerd = items.slice().sort((a, b) => a.tijd.localeCompare(b.tijd))
+  let geplandMinuten = 0
+  let aantalGaten = 0
+  let aantalOverlaps = 0
+
+  for (let i = 0; i < gesorteerd.length; i++) {
+    const s = gesorteerd[i]
+    if (s.tijd && s.eindtijd) {
+      const [sh, sm] = s.tijd.split(':').map(Number)
+      const [eh, em] = s.eindtijd.split(':').map(Number)
+      const dur = eh * 60 + em - (sh * 60 + sm)
+      if (dur > 0) geplandMinuten += dur
+    }
+    if (i > 0) {
+      const prev = gesorteerd[i - 1]
+      const ref = prev.eindtijd || prev.tijd
+      const [rh, rm] = ref.split(':').map(Number)
+      const [sh, sm] = s.tijd.split(':').map(Number)
+      const gap = sh * 60 + sm - (rh * 60 + rm)
+      if (gap < 0) aantalOverlaps++
+      else if (gap >= minPauze) aantalGaten++
+    }
+  }
+
+  return { totaalItems: gesorteerd.length, geplandMinuten, aantalGaten, aantalOverlaps }
 }
