@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock, Download, MapPin, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Download, MapPin, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
+import { DraaiboekStatsStrip } from '@/components/bruiloft/draaiboek/DraaiboekStatsStrip'
 import { ScheduleItemForm } from '@/components/bruiloft/draaiboek/ScheduleItemForm'
 import {
   Button,
@@ -22,6 +23,19 @@ import { capFirst } from '@/lib/utils'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
+
+const MIN_PAUZE_MINUTEN = 5
+
+function duurLabel(tijd: string, eindtijd: string): string | null {
+  if (!tijd || !eindtijd) return null
+  const [sh, sm] = tijd.split(':').map(Number)
+  const [eh, em] = eindtijd.split(':').map(Number)
+  const min = eh * 60 + em - (sh * 60 + sm)
+  if (min <= 0) return null
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h > 0 ? (m > 0 ? `${h}u ${m}min` : `${h}u`) : `${min}min`
+}
 
 export default function DraaiboekPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -43,8 +57,6 @@ export default function DraaiboekPage() {
 
   if (!wedding) return null
 
-  // Veelgebruikte dagindeling als startpunt; alle tijden zijn daarna gewoon
-  // aan te passen of te verwijderen.
   const startMetTemplate = async () => {
     if (templateBezig) return
     setTemplateBezig(true)
@@ -86,6 +98,8 @@ export default function DraaiboekPage() {
     })
     .slice()
     .sort((a, b) => a.tijd.localeCompare(b.tijd))
+
+  const defaultTijdNieuw = gesorteerd.at(-1)?.eindtijd ?? ''
 
   const openNieuw = () => {
     setEditItem(null)
@@ -137,6 +151,10 @@ export default function DraaiboekPage() {
       />
 
       <AIInsightCard sectie="/bruiloft/draaiboek" />
+
+      {scheduleItems.length > 0 && (
+        <DraaiboekStatsStrip items={scheduleItems} minPauze={MIN_PAUZE_MINUTEN} />
+      )}
 
       <div className="mb-6 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -202,22 +220,34 @@ export default function DraaiboekPage() {
             const prev = idx > 0 ? gesorteerd[idx - 1] : null
             const gapMinuten = prev
               ? (() => {
-                  // Gebruik eindtijd van vorig item als die is ingevuld, anders starttijd
                   const referentieTijd = prev.eindtijd || prev.tijd
                   const [rh, rm] = referentieTijd.split(':').map(Number)
                   const [sh, sm] = s.tijd.split(':').map(Number)
                   return sh * 60 + sm - (rh * 60 + rm)
                 })()
               : 0
+            const isOverlap = idx > 0 && gapMinuten < 0
+            const label = duurLabel(s.tijd, s.eindtijd)
 
             return (
               <React.Fragment key={s.id}>
-                {gapMinuten > 0 && idx > 0 ? (
+                {isOverlap ? (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="h-px flex-1 bg-rose-200" />
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600">
+                      <AlertTriangle className="h-3 w-3" />
+                      {Math.abs(gapMinuten) >= 60
+                        ? `Overlap ${Math.floor(Math.abs(gapMinuten) / 60)}u${Math.abs(gapMinuten) % 60 > 0 ? ` ${Math.abs(gapMinuten) % 60}min` : ''}`
+                        : `Overlap ${Math.abs(gapMinuten)}min`}
+                    </span>
+                    <div className="h-px flex-1 bg-rose-200" />
+                  </div>
+                ) : gapMinuten >= MIN_PAUZE_MINUTEN ? (
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-border" />
                     <span className="text-xs text-muted-foreground">
                       {gapMinuten >= 60
-                        ? `${Math.floor(gapMinuten / 60)}u${gapMinuten % 60 > 0 ? ` ${gapMinuten % 60}min` : ''}`
+                        ? `${Math.floor(gapMinuten / 60)}u${gapMinuten % 60 > 0 ? ` ${gapMinuten % 60}min` : ''}`
                         : `${gapMinuten}min`}{' '}
                       pauze
                     </span>
@@ -231,7 +261,10 @@ export default function DraaiboekPage() {
                         {s.tijd}
                       </span>
                       {s.eindtijd ? (
-                        <p className="text-xs text-muted-foreground tabular-nums">–&nbsp;{s.eindtijd}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">&ndash;&nbsp;{s.eindtijd}</p>
+                      ) : null}
+                      {label ? (
+                        <p className="text-xs text-muted-foreground/60 tabular-nums">{label}</p>
                       ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -281,6 +314,7 @@ export default function DraaiboekPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initial={editItem}
+        defaultTijd={editItem ? undefined : defaultTijdNieuw}
         onSubmit={async (data) => {
           try {
             if (editItem) {

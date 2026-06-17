@@ -13,6 +13,7 @@ interface ScheduleItemFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: ScheduleItem | null
+  defaultTijd?: string
   onSubmit: (data: NewScheduleItem) => void
 }
 
@@ -35,6 +36,7 @@ export function ScheduleItemForm({
   open,
   onOpenChange,
   initial,
+  defaultTijd,
   onSubmit,
 }: ScheduleItemFormProps) {
   const [form, setForm] = React.useState<NewScheduleItem>(leeg)
@@ -45,12 +47,12 @@ export function ScheduleItemForm({
 
   React.useEffect(() => {
     if (open) {
-      const start = initial ? vanItem(initial) : leeg()
+      const start = initial ? vanItem(initial) : { ...leeg(), tijd: defaultTijd ?? '' }
       setForm(start)
       baseline.current = JSON.stringify(start)
       setDetailsOpen(!!initial)
     }
-  }, [open, initial])
+  }, [open, initial, defaultTijd])
 
   const dirty = JSON.stringify(form) !== baseline.current
 

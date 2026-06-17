@@ -46,7 +46,7 @@ export interface PublicWebsiteData {
     gallerij: GallerijFoto[]
     sectiesConfig: Record<string, SectieConfig>
   }
-  schedule: { tijd: string; titel: string; omschrijving: string; locatie: string }[]
+  schedule: { tijd: string; eindtijd: string; titel: string; omschrijving: string; locatie: string }[]
 }
 
 interface SectieItem {
@@ -1014,7 +1014,12 @@ export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteDat
           <ul className="space-y-3">
             {schedule.map((s, i) => (
               <li key={i} className="flex gap-4">
-                <span className="w-14 shrink-0 font-semibold tabular-nums" style={{ color: 'hsl(var(--primary))' }}>{s.tijd}</span>
+                <div className="shrink-0 text-center" style={{ minWidth: '3.5rem' }}>
+                  <span className="font-semibold tabular-nums" style={{ color: 'hsl(var(--primary))' }}>{s.tijd}</span>
+                  {s.eindtijd && (
+                    <p className="text-xs tabular-nums" style={{ color: 'hsl(var(--muted-foreground))' }}>&ndash;&nbsp;{s.eindtijd}</p>
+                  )}
+                </div>
                 <div>
                   <p className="font-medium text-foreground">{s.titel}</p>
                   {s.omschrijving && <p className="text-sm text-muted-foreground">{s.omschrijving}</p>}
