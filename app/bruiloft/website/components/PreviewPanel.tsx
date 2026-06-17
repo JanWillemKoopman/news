@@ -45,6 +45,7 @@ export function PreviewPanel({ open, onClose, websiteContent, wedding, scheduleI
     },
     schedule: scheduleItems.map((s) => ({
       tijd: s.tijd,
+      eindtijd: s.eindtijd,
       titel: s.titel,
       omschrijving: s.omschrijving,
       locatie: s.locatie,
