@@ -56,7 +56,7 @@ export function ResetPasswordForm() {
       }
       setDone(true)
       setLoading(false)
-      router.push('/bruiloft')
+      router.push('/inloggen?succes=wachtwoord_gewijzigd')
       router.refresh()
       return
     }
@@ -70,7 +70,7 @@ export function ResetPasswordForm() {
     }
     setDone(true)
     setLoading(false)
-    router.push('/bruiloft')
+    router.push('/inloggen?succes=wachtwoord_gewijzigd')
     router.refresh()
   }
 
