@@ -4,20 +4,21 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import * as React from 'react'
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 import { mapAuthError } from './authErrors'
 
 export function ForgotPasswordForm() {
-  // Gebruik implicit flow zodat {{ .TokenHash }} in de email template een gewone
-  // OTP hash genereert (zonder pkce_ prefix). PKCE hashes vereisen een code
-  // verifier bij verifyOtp, die niet beschikbaar is in onze server-side aanpak.
+  // @supabase/ssr dwingt PKCE intern af en negeert de flowType-optie. Gebruik
+  // vanilla createClient zodat flowType: 'implicit' daadwerkelijk werkt.
+  // Zonder implicit flow krijgt {{ .TokenHash }} een pkce_ prefix die
+  // server-side verifyOtp (zonder code verifier) doet mislukken.
   const supabase = React.useMemo(
     () =>
-      createBrowserClient(
+      createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { flowType: 'implicit' } },
+        { auth: { flowType: 'implicit', persistSession: false, autoRefreshToken: false } },
       ),
     [],
   )

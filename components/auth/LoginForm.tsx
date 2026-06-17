@@ -9,7 +9,15 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { mapAuthError, safeNext } from './authErrors'
 
-export function LoginForm({ next, error: initialError }: { next?: string; error?: string }) {
+export function LoginForm({
+  next,
+  error: initialError,
+  succes,
+}: {
+  next?: string
+  error?: string
+  succes?: string
+}) {
   const router = useRouter()
   const supabase = React.useMemo(() => createClient(), [])
   const target = safeNext(next)
@@ -67,6 +75,12 @@ export function LoginForm({ next, error: initialError }: { next?: string; error?
               Log in om verder te plannen aan jullie bruiloft.
             </p>
           </div>
+
+          {succes === 'wachtwoord_gewijzigd' && (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              Wachtwoord succesvol gewijzigd. Log in met je nieuwe wachtwoord.
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-4" noValidate>
             <div>
