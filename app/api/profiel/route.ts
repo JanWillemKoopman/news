@@ -18,11 +18,12 @@ export async function PATCH(req: Request) {
     email: z.string().email().optional(),
     avatarUrl: z.string().url().nullable().optional(),
     emailHerinneringen: z.boolean().optional(),
+    dashboardTheme: z.enum(['standaard', 'dark', 'roze', 'paars']).optional(),
   }).safeParse(rawBody)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ongeldige invoer', details: parsed.error.flatten().fieldErrors }, { status: 400 })
   }
-  const { displayName, email, avatarUrl, emailHerinneringen } = parsed.data
+  const { displayName, email, avatarUrl, emailHerinneringen, dashboardTheme } = parsed.data
 
   const profilePatch: {
     updated_at: string
@@ -30,11 +31,13 @@ export async function PATCH(req: Request) {
     email?: string
     avatar_url?: string | null
     email_herinneringen?: boolean
+    dashboard_theme?: string
   } = { updated_at: new Date().toISOString() }
   if (displayName !== undefined) profilePatch.display_name = displayName.trim()
   if (email !== undefined) profilePatch.email = email.trim().toLowerCase()
   if (avatarUrl !== undefined) profilePatch.avatar_url = avatarUrl
   if (emailHerinneringen !== undefined) profilePatch.email_herinneringen = emailHerinneringen
+  if (dashboardTheme !== undefined) profilePatch.dashboard_theme = dashboardTheme
 
   const { error: profileError } = await supabase
     .from('profiles')

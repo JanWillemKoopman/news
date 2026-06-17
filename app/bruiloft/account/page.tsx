@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Camera, KeyRound, Mail, Trash2, User } from 'lucide-react'
+import { Bell, Camera, Check, KeyRound, Mail, Palette, Trash2, User } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -22,7 +22,7 @@ import {
 import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { useBruiloftStore } from '@/store/bruiloftStore'
+import { useBruiloftStore, type DashboardTheme } from '@/store/bruiloftStore'
 
 // ── Profielfoto ──────────────────────────────────────────────────────────────
 
@@ -427,6 +427,119 @@ function HerinneringenSection() {
   )
 }
 
+// ── Dashboardthema ───────────────────────────────────────────────────────────
+
+const THEMES: {
+  id: DashboardTheme
+  label: string
+  beschrijving: string
+  // Twee stalen: [achtergrondkleur, accentkleur]
+  stalen: [string, string]
+}[] = [
+  {
+    id: 'standaard',
+    label: 'Standaard',
+    beschrijving: 'Wit canvas met dusty-rose accent en donkerblauwe navigatie.',
+    stalen: ['#f4f4f5', '#a75573'],
+  },
+  {
+    id: 'dark',
+    label: 'Dark',
+    beschrijving: 'Donker blauwleisten met levendige rose accent — rustiger op het oog.',
+    stalen: ['#161e2b', '#be3769'],
+  },
+  {
+    id: 'roze',
+    label: 'Roze',
+    beschrijving: 'Zachte blushroos canvas met diep rose accent en berry navigatie.',
+    stalen: ['#faf4f7', '#b12554'],
+  },
+  {
+    id: 'paars',
+    label: 'Paars',
+    beschrijving: 'Haast wit met lavendelaanslag en een diep violet accent.',
+    stalen: ['#f8f5fa', '#6b25b1'],
+  },
+]
+
+function ThemeSwitcherSection() {
+  const currentUser = useBruiloftStore((s) => s.currentUser)
+  const updateProfile = useBruiloftStore((s) => s.updateProfile)
+  const { toast } = useToast()
+  const [saving, setSaving] = React.useState<DashboardTheme | null>(null)
+
+  if (!currentUser) return null
+  const huidig = currentUser.dashboardTheme
+
+  async function handleKies(theme: DashboardTheme) {
+    if (theme === huidig || saving) return
+    setSaving(theme)
+    try {
+      await updateProfile({ dashboardTheme: theme })
+      toast({ title: 'Thema opgeslagen' })
+    } catch {
+      toast({ title: 'Opslaan mislukt', variant: 'error' })
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          Dashboardthema
+        </CardTitle>
+        <CardDescription>
+          Kies een kleursfeer voor jouw dashboard. De keuze wordt per apparaat direct toegepast.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {THEMES.map((t) => {
+            const actief = t.id === huidig
+            const bezig = saving === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                disabled={!!saving}
+                onClick={() => handleKies(t.id)}
+                aria-pressed={actief}
+                title={t.beschrijving}
+                className={cn(
+                  'group relative flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait',
+                  actief
+                    ? 'border-primary bg-accent'
+                    : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                )}
+              >
+                {/* Kleurstaal */}
+                <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-border">
+                  <span className="h-full w-1/2" style={{ background: t.stalen[0] }} />
+                  <span className="h-full w-1/2" style={{ background: t.stalen[1] }} />
+                </span>
+                <span className="text-xs font-medium text-foreground">{t.label}</span>
+                {actief && (
+                  <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                  </span>
+                )}
+                {bezig && (
+                  <span className="absolute inset-0 flex items-center justify-center rounded-[6px] bg-background/60">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Gevaarzone ───────────────────────────────────────────────────────────────
 
 function GevaarZoneSection() {
@@ -566,6 +679,7 @@ export default function AccountPage() {
       <ProfielFotoSection />
       <GegevensSection />
       <HerinneringenSection />
+      <ThemeSwitcherSection />
       <WachtwoordSection />
       <hr className="my-4 border-border" />
       <GevaarZoneSection />

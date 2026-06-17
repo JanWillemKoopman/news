@@ -73,6 +73,8 @@ type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
 type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
 type NewTable = Omit<TableInput, 'weddingId'>
 
+export type DashboardTheme = 'standaard' | 'dark' | 'roze' | 'paars'
+
 interface CurrentUser {
   id: string
   email: string
@@ -80,6 +82,7 @@ interface CurrentUser {
   appRole: 'member' | 'platform_admin'
   avatarUrl?: string
   emailHerinneringen: boolean
+  dashboardTheme: DashboardTheme
 }
 
 interface BruiloftState {
@@ -189,7 +192,7 @@ interface BruiloftActions {
   markActivitySeen: () => void
 
   loadMembers: () => Promise<void>
-  updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null; emailHerinneringen?: boolean }) => Promise<void>
+  updateProfile: (patch: { displayName?: string; email?: string; avatarUrl?: string | null; emailHerinneringen?: boolean; dashboardTheme?: DashboardTheme }) => Promise<void>
   uploadAvatar: (file: File) => Promise<string>
 
   // --- Registry (Cadeaulijst) ---
@@ -218,6 +221,18 @@ function writeActive(id: string | null) {
     else localStorage.removeItem(ACTIVE_KEY)
   } catch {
     // localStorage niet beschikbaar; negeren.
+  }
+}
+
+// Onthoudt het gekozen dashboardthema per apparaat (zorgt voor directe toepassing
+// vóór de eerste DB-respons, zodat er geen kleurflits optreedt bij laden).
+const THEME_KEY = 'bruiloft-dashboard-theme'
+function writeTheme(theme: DashboardTheme) {
+  try {
+    if (theme === 'standaard') localStorage.removeItem(THEME_KEY)
+    else localStorage.setItem(THEME_KEY, theme)
+  } catch {
+    // localStorage niet beschikbaar.
   }
 }
 
@@ -354,12 +369,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('email, display_name, app_role, avatar_url, email_herinneringen')
+        .select('email, display_name, app_role, avatar_url, email_herinneringen, dashboard_theme')
         .eq('id', user.id)
         .maybeSingle()
       if (profileError) {
         console.error('[store] profile query failed:', profileError.message)
       }
+
+      const dbTheme = profile?.dashboard_theme as DashboardTheme | undefined
+      const dashboardTheme: DashboardTheme =
+        dbTheme === 'dark' || dbTheme === 'roze' || dbTheme === 'paars' ? dbTheme : 'standaard'
+      writeTheme(dashboardTheme)
 
       const currentUser: CurrentUser = {
         id: user.id,
@@ -368,6 +388,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         appRole: (profile?.app_role as CurrentUser['appRole']) ?? 'member',
         avatarUrl: profile?.avatar_url ?? undefined,
         emailHerinneringen: profile?.email_herinneringen ?? true,
+        dashboardTheme,
       }
 
       const weddings = await repository.listWeddings()
@@ -1128,6 +1149,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       }
       const user = get().currentUser
       if (!user) return
+      if (patch.dashboardTheme !== undefined) writeTheme(patch.dashboardTheme)
       set({
         currentUser: {
           ...user,
@@ -1135,6 +1157,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           ...(patch.email !== undefined && { email: patch.email }),
           ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
           ...(patch.emailHerinneringen !== undefined && { emailHerinneringen: patch.emailHerinneringen }),
+          ...(patch.dashboardTheme !== undefined && { dashboardTheme: patch.dashboardTheme }),
         },
       })
       // Herlaad leden zodat naam/avatar direct bijgewerkt zijn bij taken.

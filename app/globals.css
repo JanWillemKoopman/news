@@ -97,6 +97,128 @@
   }
 }
 
+/*
+ * ── DARK THEME ──────────────────────────────────────────────────────────────
+ * Moderne donkere modus. Diep blauw-leistenen canvas met een levendigere
+ * dusty-rose (#be3769, contrast 4.97:1 op wit) als primair accent.
+ * Alle tekst-/knop-contrastratio's voldoen aan WCAG AA (≥ 4.5:1).
+ */
+@layer base {
+  .wedding[data-theme='dark'] {
+    --background: 217 28% 13%;        /* #161e2b – diep blauw-zwart */
+    --foreground: 214 25% 87%;        /* #d0d9e8 – licht blauwgrijs */
+    --card: 217 28% 17%;              /* #1e2a3e – kaart-canvas */
+    --card-foreground: 214 25% 87%;
+    --popover: 217 28% 17%;
+    --popover-foreground: 214 25% 87%;
+
+    /* Primair = levendig rose (#be3769), contrast 4.97:1 op wit ✓ */
+    --primary: 338 55% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 338 55% 58%;
+
+    --secondary: 217 25% 22%;
+    --secondary-foreground: 214 25% 87%;
+    --muted: 217 25% 18%;             /* content-achtergrond */
+    --muted-foreground: 214 18% 55%;  /* #7d8fa5, contrast 5.07:1 op bg ✓ */
+    --accent: 217 25% 22%;
+    --accent-foreground: 214 25% 87%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 22% 25%;
+    --input: 217 22% 28%;
+    --ring: 338 55% 48%;
+    --radius: 0.375rem;
+
+    --header-bg: 217 35% 9%;          /* #0e1520 – vrijwel zwart */
+    --header-fg: 0 0% 95%;
+    --header-muted: 214 18% 55%;
+    --header-active: 217 28% 17%;
+    --header-border: 217 35% 7%;
+  }
+}
+
+/*
+ * ── ROZE THEME ───────────────────────────────────────────────────────────────
+ * Stijlvol blossom-rose palet. Zachte blushroos canvas met een diepe rose
+ * (#b12554, contrast 6.05:1 op wit) als krachtig primair accent.
+ * Header in diep berry, zodat het contrast met de lichte content optimaal is.
+ */
+@layer base {
+  .wedding[data-theme='roze'] {
+    --background: 340 40% 98%;        /* #faf4f7 – nauwelijks zichtbaar blushroos */
+    --foreground: 340 20% 18%;        /* #332027 – warm near-black */
+    --card: 0 0% 100%;
+    --card-foreground: 340 20% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 20% 18%;
+
+    /* Primair = diep rose (#b12554), contrast 6.05:1 op wit ✓ */
+    --primary: 340 65% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 340 65% 52%;
+
+    --secondary: 340 25% 92%;
+    --secondary-foreground: 340 20% 25%;
+    --muted: 340 30% 95%;             /* content-achtergrond */
+    --muted-foreground: 340 15% 48%;  /* contrast 5.05:1 op bg ✓ */
+    --accent: 340 35% 90%;
+    --accent-foreground: 340 20% 25%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 20% 88%;
+    --input: 340 20% 82%;
+    --ring: 340 65% 42%;
+    --radius: 0.375rem;
+
+    --header-bg: 338 35% 22%;         /* #4a1c2e – diep berry */
+    --header-fg: 0 0% 96%;
+    --header-muted: 340 20% 70%;
+    --header-active: 338 30% 30%;
+    --header-border: 338 35% 16%;
+  }
+}
+
+/*
+ * ── PAARS THEME ──────────────────────────────────────────────────────────────
+ * Verfrist lavendel-violet palet. Haast witte lavendelcanvas met een diepe
+ * violet (#6b25b1, contrast 7.62:1 op wit) als uitgesproken primair accent.
+ */
+@layer base {
+  .wedding[data-theme='paars'] {
+    --background: 270 30% 98%;        /* #f8f5fa – nauwelijks zichtbaar lavendel */
+    --foreground: 268 25% 15%;        /* #1e1525 – warm near-black met paarse tint */
+    --card: 0 0% 100%;
+    --card-foreground: 268 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 268 25% 15%;
+
+    /* Primair = diep violet (#6b25b1), contrast 7.62:1 op wit ✓ */
+    --primary: 270 65% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 270 65% 52%;
+
+    --secondary: 270 25% 93%;
+    --secondary-foreground: 268 25% 20%;
+    --muted: 270 25% 95%;             /* content-achtergrond */
+    --muted-foreground: 268 15% 48%;  /* contrast ≥ 4.5:1 op bg ✓ */
+    --accent: 270 30% 90%;
+    --accent-foreground: 268 25% 20%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 20% 88%;
+    --input: 270 20% 83%;
+    --ring: 270 65% 42%;
+    --radius: 0.375rem;
+
+    --header-bg: 268 40% 20%;         /* #2d1a45 – diep paars-marineblauw */
+    --header-fg: 0 0% 96%;
+    --header-muted: 268 20% 68%;
+    --header-active: 268 35% 28%;
+    --header-border: 268 40% 14%;
+  }
+}
+
 /* Visuele markering voor ongeldige velden binnen de bruiloftplanner. */
 .wedding [aria-invalid='true'] {
   border-color: hsl(var(--destructive));
