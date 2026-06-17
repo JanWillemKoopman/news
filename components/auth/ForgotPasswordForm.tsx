@@ -4,12 +4,23 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import * as React from 'react'
 
-import { createClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 
 import { mapAuthError } from './authErrors'
 
 export function ForgotPasswordForm() {
-  const supabase = React.useMemo(() => createClient(), [])
+  // Gebruik implicit flow zodat {{ .TokenHash }} in de email template een gewone
+  // OTP hash genereert (zonder pkce_ prefix). PKCE hashes vereisen een code
+  // verifier bij verifyOtp, die niet beschikbaar is in onze server-side aanpak.
+  const supabase = React.useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: 'implicit' } },
+      ),
+    [],
+  )
   const searchParams = useSearchParams()
   const linkVerlopen = searchParams.get('error') === 'link_verlopen'
 
