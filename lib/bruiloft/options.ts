@@ -79,6 +79,8 @@ export const VENDOR_STATUSSEN: VendorStatus[] = [
 export const TAFEL_VORMEN: TafelVorm[] = ['rond', 'vierkant', 'langwerpig']
 
 export const DRAAIBOEK_ROLLEN: Rol[] = [
+  'bruid',
+  'bruidegom',
   'bruidspaar',
   'ceremoniemeester',
   'fotograaf',

@@ -234,6 +234,8 @@ export type BudgetItemInput = Omit<BudgetItem, 'id'>
 
 // Rollen waarop een draaiboekonderdeel betrekking heeft (voor filteren/export).
 export type Rol =
+  | 'bruid'
+  | 'bruidegom'
   | 'bruidspaar'
   | 'ceremoniemeester'
   | 'fotograaf'
