@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/nextjs'
 
 import { canView } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
-import { useBruiloftStore, type DashboardTheme } from '@/store/bruiloftStore'
+import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
 import { AICoach } from './ai/AICoach'
 import { InstallPrompt } from './InstallPrompt'
@@ -47,19 +47,10 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).get('home') === '1'
   )
-  // Lees het thema direct vanuit localStorage vóór de eerste DB-respons zodat er
-  // geen kleurflits optreedt. Na hydratatie wint de waarde uit currentUser.
-  const [localTheme] = React.useState<DashboardTheme>(() => {
-    if (typeof window === 'undefined') return 'standaard'
-    const v = localStorage.getItem('bruiloft-dashboard-theme')
-    if (v === 'dark' || v === 'roze' || v === 'paars') return v
-    return 'standaard'
-  })
   const hydrated = useBruiloftStore((s) => s.hydrated)
   const error = useBruiloftStore((s) => s.error)
   const wedding = useBruiloftStore((s) => s.wedding)
   const currentUser = useBruiloftStore((s) => s.currentUser)
-  const theme = currentUser?.dashboardTheme ?? localTheme
   const permissions = useBruiloftStore((s) => s.permissions)
   const pickingWedding = useBruiloftStore((s) => s.pickingWedding)
   const creatingWedding = useBruiloftStore((s) => s.creatingWedding)
@@ -107,14 +98,13 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     'wedding min-h-dvh bg-background text-foreground antialiased',
     fontClassName
   )
-  const themeAttr = theme !== 'standaard' ? theme : undefined
 
   // Eerste hydratatie: skeleton-shell die exact dezelfde structuur volgt als
   // de echte shell (donkere top-balk, lichte sub-zijbalk, content-canvas).
   // Voorkomt visuele flikkering tussen skeleton en de daadwerkelijke layout.
   if (!hydrated) {
     return (
-      <div className={cn(wrapperClass, 'flex flex-col')} data-theme={themeAttr} aria-busy="true" suppressHydrationWarning>
+      <div className={cn(wrapperClass, 'flex flex-col')} aria-busy="true" suppressHydrationWarning>
         <div className="h-16 w-full shrink-0 bg-rhino-800" />
         <div className="flex flex-1 overflow-hidden">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-header-border bg-header-active p-4 md:flex">
@@ -144,7 +134,6 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     return (
       <div
         className={cn(wrapperClass, 'flex min-h-dvh flex-col items-center justify-center px-4')}
-        data-theme={themeAttr}
         suppressHydrationWarning
       >
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
@@ -173,7 +162,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // Ingelogd, meerdere bruiloften, geen opgeslagen voorkeur: toon keuzescreen.
   if (pickingWedding && currentUser) {
     return (
-      <div className={wrapperClass} data-theme={themeAttr} suppressHydrationWarning>
+      <div className={wrapperClass} suppressHydrationWarning>
         <WeddingPicker />
       </div>
     )
@@ -183,7 +172,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // toon het compacte aanmaak-scherm.
   if (currentUser && creatingWedding) {
     return (
-      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} data-theme={themeAttr} suppressHydrationWarning>
+      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
         <WeddingCreate existing />
       </div>
     )
@@ -196,10 +185,10 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // accountmenu rechtsboven (naar dashboard / uitloggen).
   if (!wedding) {
     if (redirectToSetup) {
-      return <div className={wrapperClass} data-theme={themeAttr} aria-busy="true" suppressHydrationWarning />
+      return <div className={wrapperClass} aria-busy="true" suppressHydrationWarning />
     }
     return (
-      <div className={wrapperClass} data-theme={themeAttr} suppressHydrationWarning>
+      <div className={wrapperClass} suppressHydrationWarning>
         <Landing />
       </div>
     )
@@ -208,7 +197,6 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   return (
     <div
       className={cn('wedding h-dvh flex flex-col overflow-hidden bg-background text-foreground antialiased', fontClassName)}
-      data-theme={themeAttr}
       suppressHydrationWarning
     >
       <a

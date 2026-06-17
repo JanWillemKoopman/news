@@ -14,13 +14,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:scale-[1.02] focus-visible:outline-primary',
+          'bg-rose-600 text-white shadow-sm hover:bg-rose-500 hover:scale-[1.02] focus-visible:outline-rose-600',
         outline:
           'border border-input bg-background text-foreground hover:bg-accent hover:border-border focus-visible:outline-ring',
         ghost:
           'text-foreground hover:bg-accent focus-visible:outline-ring',
         secondary:
-          'bg-header-bg text-white hover:bg-header-active focus-visible:outline-ring',
+          'bg-rhino-800 text-white hover:bg-rhino-700 focus-visible:outline-rhino-800',
         destructive:
           'bg-destructive text-white shadow-sm hover:bg-destructive/90 focus-visible:outline-destructive',
       },
