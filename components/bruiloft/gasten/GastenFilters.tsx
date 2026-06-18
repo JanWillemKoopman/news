@@ -104,9 +104,9 @@ export function GastenFilters({
                     onType('all')
                     onRsvp('all')
                   }}
-                  className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700"
+                  className="flex items-center gap-1 py-1 px-2 text-xs text-rose-600 hover:text-rose-700"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                   Wis filters
                 </button>
               )}

@@ -508,9 +508,9 @@ export function FloorPlan({
                         title={`Aan ${geselecteerdeTafel.naam} toevoegen`}
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => onAssign(g.id, geselecteerdeTafel.id)}
-                        className="rounded-full p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        className="rounded-full p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                       >
-                        <UserPlus className="h-3.5 w-3.5" />
+                        <UserPlus className="h-4 w-4" />
                       </button>
                     ) : null}
                   </li>
@@ -751,9 +751,9 @@ function TafelPaneel({
                     type="button"
                     aria-label={`${g.voornaam} van tafel halen`}
                     onClick={() => onAssign(g.id, null)}
-                    className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </button>
                 ) : null}
               </li>

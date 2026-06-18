@@ -91,7 +91,7 @@ export function ProfielNudge() {
             type="button"
             onClick={later}
             aria-label="Sluiten"
-            className="-mr-1 -mt-1 shrink-0 rounded p-1 text-muted-foreground hover:text-foreground"
+            className="-mr-1 -mt-1 shrink-0 rounded p-2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>

@@ -58,7 +58,7 @@ export function RegistryDeelModal({ open, onOpenChange }: Props) {
               <span className="flex-1 truncate text-muted-foreground font-mono text-xs">{registryUrl}</span>
               <button
                 onClick={copyLink}
-                className="shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="shrink-0 rounded p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Kopieer link"
               >
                 {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
