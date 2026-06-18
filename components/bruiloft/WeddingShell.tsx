@@ -13,6 +13,7 @@ import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruilo
 import { AICoach } from './ai/AICoach'
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
+import { PullToRefresh } from './PullToRefresh'
 import { PageTracker } from '@/components/admin/PageTracker'
 import { MobileNav } from './MobileNav'
 import { WeddingCreate } from './WeddingCreate'
@@ -224,15 +225,17 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
             tabIndex={-1}
             className="bg-muted px-4 pb-6 pt-6 focus:outline-none md:px-8 md:pb-10"
           >
-            {allowed ? (
-              children
-            ) : (
-              <EmptyState
-                icon={Lock}
-                titel="Geen toegang"
-                beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
-              />
-            )}
+            <PullToRefresh>
+              {allowed ? (
+                children
+              ) : (
+                <EmptyState
+                  icon={Lock}
+                  titel="Geen toegang"
+                  beschrijving="Je hebt geen rechten om dit onderdeel te bekijken. Vraag de eigenaar van de bruiloft om toegang."
+                />
+              )}
+            </PullToRefresh>
           </main>
         </div>
       </div>
