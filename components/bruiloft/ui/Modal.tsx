@@ -24,12 +24,39 @@ export function Modal({
   children,
   className,
 }: ModalProps) {
+  const [mobileStyle, setMobileStyle] = React.useState<React.CSSProperties>({})
+
+  React.useEffect(() => {
+    if (!open) return
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const update = () => {
+      if (window.innerWidth >= 640) return
+      const bottom = Math.max(0, window.innerHeight - vv.offsetTop - vv.height)
+      setMobileStyle({
+        bottom,
+        maxHeight: `${vv.height * 0.95}px`,
+      })
+    }
+
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      setMobileStyle({})
+    }
+  }, [open])
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[3px] data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onInteractOutside={(e) => e.preventDefault()}
+          style={mobileStyle}
           className={cn(
             'fixed z-50 flex max-h-[90dvh] flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-xl focus:outline-none',
             // Mobiel: bottom-sheet. Desktop: gecentreerde dialog.
