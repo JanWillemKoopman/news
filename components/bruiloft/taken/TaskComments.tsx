@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Trash2 } from 'lucide-react'
 
-import { Button, Textarea, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, Textarea, useToast } from '@/components/bruiloft/ui'
 import { tijdGeleden } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -19,6 +19,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
 
   const [body, setBody] = React.useState('')
   const [bezig, setBezig] = React.useState(false)
+  const [teVerwijderen, setTeVerwijderen] = React.useState<string | null>(null)
 
   const mayPost = canEdit(permissions, 'taken')
   const comments = all
@@ -81,7 +82,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
                     variant="ghost"
                     size="icon"
                     aria-label="Opmerking verwijderen"
-                    onClick={() => void verwijder(c.id)}
+                    onClick={() => setTeVerwijderen(c.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -91,6 +92,15 @@ export function TaskComments({ taskId }: { taskId: string }) {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={teVerwijderen !== null}
+        onOpenChange={(o) => { if (!o) setTeVerwijderen(null) }}
+        title="Opmerking verwijderen?"
+        description="Dit kan niet ongedaan worden gemaakt."
+        bevestigLabel="Verwijderen"
+        onConfirm={() => { if (teVerwijderen) void verwijder(teVerwijderen) }}
+      />
 
       {mayPost ? (
         <form onSubmit={submit} className="space-y-2">

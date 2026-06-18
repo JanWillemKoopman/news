@@ -147,6 +147,7 @@ export function TaskForm({
           <Input
             id="titel"
             autoFocus
+            enterKeyHint="next"
             value={form.titel}
             aria-invalid={titelFout || undefined}
             onChange={(e) => set('titel', e.target.value)}
