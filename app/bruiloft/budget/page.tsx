@@ -19,6 +19,7 @@ import {
   restBedrag,
 } from '@/lib/bruiloft/derived'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
 
@@ -37,6 +38,8 @@ export default function BudgetPage() {
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
+  const { save: saveScroll, restore: restoreScroll } = useScrollRestore()
+  const savedScroll = React.useRef(0)
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
   const [distributeOpen, setDistributeOpen] = React.useState(false)
   const [adviesOpen, setAdviesOpen] = React.useState(false)
@@ -47,10 +50,12 @@ export default function BudgetPage() {
   const afwijkingen = budgetAfwijkingen(budgetItems, vendors, wedding)
 
   const openNieuw = () => {
+    savedScroll.current = saveScroll()
     setEditItem(null)
     setFormOpen(true)
   }
   const openBewerk = (item: BudgetItem) => {
+    savedScroll.current = saveScroll()
     setEditItem(item)
     setFormOpen(true)
   }
@@ -160,7 +165,10 @@ export default function BudgetPage() {
 
       <BudgetItemForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(o) => {
+          setFormOpen(o)
+          if (!o) restoreScroll(savedScroll.current)
+        }}
         initial={editItem}
         vendors={vendors}
         onSubmit={async (data) => {
