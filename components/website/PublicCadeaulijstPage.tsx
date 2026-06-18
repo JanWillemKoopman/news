@@ -45,7 +45,13 @@ function formatDatumNL(iso: string) {
 
 // ─── Password gate ────────────────────────────────────────────────────────────
 
-function PasswordGate({ slug, onUnlocked, headingFont }: { slug: string; onUnlocked: () => void; headingFont: string }) {
+interface UnlockData {
+  items: PublicRegistryItem[]
+  bankAccountIban: string
+  bankAccountName: string
+}
+
+function PasswordGate({ slug, onUnlocked, headingFont }: { slug: string; onUnlocked: (data: UnlockData) => void; headingFont: string }) {
   const [pw, setPw] = React.useState('')
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -55,15 +61,18 @@ function PasswordGate({ slug, onUnlocked, headingFont }: { slug: string; onUnloc
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/registry/check-password', {
+      const res = await fetch('/api/registry/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, password: pw }),
       })
-      const json = await res.json() as { ok: boolean }
+      const json = await res.json() as { ok: boolean; items?: PublicRegistryItem[]; bankAccountIban?: string; bankAccountName?: string }
       if (json.ok) {
-        sessionStorage.setItem(`registry_unlocked_${slug}`, '1')
-        onUnlocked()
+        onUnlocked({
+          items: json.items ?? [],
+          bankAccountIban: json.bankAccountIban ?? '',
+          bankAccountName: json.bankAccountName ?? '',
+        })
       } else {
         setError('Onjuist wachtwoord.')
       }
@@ -380,7 +389,7 @@ interface TplProps {
   registry: PublicRegistryData
   slug: string
   unlocked: boolean
-  onUnlocked: () => void
+  onUnlocked: (data: UnlockData) => void
   reservedIds: Set<string>
   onReserved: (id: string) => void
   headingFont: string
@@ -753,35 +762,38 @@ export interface PublicCadeaulijstPageProps {
 }
 
 export function PublicCadeaulijstPage({ registry, slug }: PublicCadeaulijstPageProps) {
-  const storageKey = `registry_unlocked_${slug}`
   const headingFont = LETTERTYPE_VAR[registry.kopLettertype] ?? LETTERTYPE_VAR.cormorant
 
-  const [unlocked, setUnlocked] = React.useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return sessionStorage.getItem(storageKey) === '1'
-  })
-
-  React.useEffect(() => {
-    if (!registry.passwordRequired) setUnlocked(true)
-  }, [registry.passwordRequired])
+  const [unlocked, setUnlocked] = React.useState<boolean>(!registry.passwordRequired)
+  const [liveRegistry, setLiveRegistry] = React.useState<PublicRegistryData>(registry)
 
   const [reservedIds, setReservedIds] = React.useState<Set<string>>(new Set())
 
   const themaVars: React.CSSProperties = {
-    '--primary':            hexNaarHsl(registry.kleurAccent || '#a75573'),
+    '--primary':            hexNaarHsl(liveRegistry.kleurAccent || '#a75573'),
     '--primary-foreground': '0 0% 100%',
     '--heading-font':       headingFont,
   } as React.CSSProperties
 
-  const Layout = LAYOUTS[registry.thema] ?? KlassiekLayout
+  const Layout = LAYOUTS[liveRegistry.thema] ?? KlassiekLayout
+
+  const handleUnlocked = (data: UnlockData) => {
+    setLiveRegistry(prev => ({
+      ...prev,
+      items: data.items,
+      bankAccountIban: data.bankAccountIban,
+      bankAccountName: data.bankAccountName,
+    }))
+    setUnlocked(true)
+  }
 
   return (
     <div style={themaVars}>
       <Layout
-        registry={registry}
+        registry={liveRegistry}
         slug={slug}
         unlocked={unlocked}
-        onUnlocked={() => setUnlocked(true)}
+        onUnlocked={handleUnlocked}
         reservedIds={reservedIds}
         onReserved={(id) => setReservedIds(prev => new Set(Array.from(prev).concat(id)))}
         headingFont={headingFont}
