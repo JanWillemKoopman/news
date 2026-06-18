@@ -83,7 +83,7 @@ export function Modal({
               </Button>
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
+          <div className="overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-5">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
