@@ -36,6 +36,7 @@ export function BulkActionsBar({
   }
 
   return (
+    <>
     <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 mx-auto w-[min(96vw,720px)] rounded-xl border border-border bg-card p-3 shadow-lg md:bottom-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-2 text-sm font-medium">{aantal} geselecteerd</span>
@@ -101,5 +102,6 @@ export function BulkActionsBar({
       bevestigLabel="Verwijderen"
       onConfirm={() => run(onDelete)}
     />
+    </>
   )
 }
