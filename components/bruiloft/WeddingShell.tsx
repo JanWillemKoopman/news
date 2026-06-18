@@ -6,6 +6,7 @@ import * as React from 'react'
 import * as Sentry from '@sentry/nextjs'
 
 import { canView } from '@/lib/bruiloft/permissions'
+import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
@@ -39,6 +40,7 @@ export function WeddingShell({ children, fontClassName }: WeddingShellProps) {
 function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   // Bewust via "Terug naar home" hier? Dan tonen we de landing i.p.v. door te
   // sturen naar stap 2. Synchroon uit de URL gelezen zodat de redirect-check
   // meteen de juiste waarde heeft (geen flits van de landing).
@@ -195,6 +197,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   }
 
   return (
+    <ScrollContainerContext.Provider value={scrollContainerRef}>
     <div
       className={cn('wedding h-dvh flex flex-col overflow-hidden bg-background text-foreground antialiased', fontClassName)}
       suppressHydrationWarning
@@ -211,7 +214,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="min-w-0 flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="min-w-0 flex-1 overflow-y-auto">
           {/* TopNav binnen het scroll-gebied op mobiel (scrollt mee met inhoud) */}
           <div className="md:hidden">
             <TopNav />
@@ -248,5 +251,6 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       {/* App-brede AI-coach: zijpaneel op desktop, bottom sheet op mobiel. */}
       <AICoach />
     </div>
+    </ScrollContainerContext.Provider>
   )
 }

@@ -22,6 +22,7 @@ import {
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { categorieLabelVoor, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { capFirst } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Guest, RsvpStatus } from '@/lib/bruiloft/types'
@@ -80,6 +81,8 @@ export default function GastenPage() {
   const { toast } = useToast()
 
   const kanBewerken = canEdit(permissions, 'gasten')
+  const { save: saveScroll, restore: restoreScroll } = useScrollRestore()
+  const savedScroll = React.useRef(0)
 
   const [zoek, setZoek] = React.useState('')
   const [fCategorie, setFCategorie] = React.useState('all')
@@ -180,10 +183,12 @@ export default function GastenPage() {
   )
 
   const openNieuw = () => {
+    savedScroll.current = saveScroll()
     setEditGuest(null)
     setFormOpen(true)
   }
   const openBewerk = (g: Guest) => {
+    savedScroll.current = saveScroll()
     setEditGuest(g)
     setFormOpen(true)
   }
@@ -485,7 +490,10 @@ export default function GastenPage() {
 
       <GuestForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(o) => {
+          setFormOpen(o)
+          if (!o) restoreScroll(savedScroll.current)
+        }}
         initial={editGuest}
         wedding={wedding}
         onSubmit={async (data) => {

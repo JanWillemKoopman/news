@@ -15,6 +15,7 @@ import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
 import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
+import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
 import { openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
@@ -49,6 +50,8 @@ export function TakenShell() {
   const [delTask, setDelTask] = React.useState<Task | null>(null)
   const [delBulkOpen, setDelBulkOpen] = React.useState(false)
   const achterstandRef = React.useRef<HTMLDivElement | null>(null)
+  const { save: saveScroll, restore: restoreScroll } = useScrollRestore()
+  const savedScroll = React.useRef(0)
 
   // Kaart-voor-kaart samenstellen van de takenlijst (sjabloonvoorstellen).
   const updateWedding = useBruiloftStore((s) => s.updateWedding)
@@ -164,16 +167,19 @@ export function TakenShell() {
   }
 
   const openNieuw = () => {
+    savedScroll.current = saveScroll()
     setEditTask(null)
     setNewTaskDeadline(null)
     setFormOpen(true)
   }
   const openBewerk = (t: Task) => {
+    savedScroll.current = saveScroll()
     setEditTask(t)
     setNewTaskDeadline(null)
     setFormOpen(true)
   }
   const openNieuwOpDatum = (date: ISODate) => {
+    savedScroll.current = saveScroll()
     setEditTask(null)
     setNewTaskDeadline(date)
     setFormOpen(true)
@@ -386,7 +392,10 @@ export function TakenShell() {
         open={formOpen}
         onOpenChange={(o) => {
           setFormOpen(o)
-          if (!o) setNewTaskDeadline(null)
+          if (!o) {
+            setNewTaskDeadline(null)
+            restoreScroll(savedScroll.current)
+          }
         }}
         initial={editTask}
         defaultDeadline={editTask ? undefined : (newTaskDeadline ?? undefined)}
