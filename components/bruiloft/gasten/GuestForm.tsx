@@ -156,6 +156,7 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
               id="vn"
               ref={voornaamRef}
               autoFocus
+              enterKeyHint="next"
               value={form.voornaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('voornaam', e.target.value)}
@@ -165,6 +166,7 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
           <Field label="Achternaam" htmlFor="an">
             <Input
               id="an"
+              enterKeyHint="next"
               value={form.achternaam}
               aria-invalid={naamFout || undefined}
               onChange={(e) => set('achternaam', e.target.value)}

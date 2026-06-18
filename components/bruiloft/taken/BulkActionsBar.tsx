@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Trash2, X } from 'lucide-react'
 
-import { Button, Input, Select } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, Input, Select } from '@/components/bruiloft/ui'
 import { TASK_STATUSSEN } from '@/lib/bruiloft/options'
 import type { TaskStatus } from '@/lib/bruiloft/types'
 
@@ -24,6 +24,7 @@ export function BulkActionsBar({
 }: BulkActionsBarProps) {
   const [shift, setShift] = React.useState('7')
   const [busy, setBusy] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
 
   const run = async (fn: () => Promise<void> | void) => {
     setBusy(true)
@@ -81,7 +82,7 @@ export function BulkActionsBar({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => run(onDelete)}
+          onClick={() => setConfirmOpen(true)}
           disabled={busy}
           className="text-rose-600 hover:bg-rose-50"
         >
@@ -92,5 +93,13 @@ export function BulkActionsBar({
         </Button>
       </div>
     </div>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title={`${aantal} ${aantal === 1 ? 'taak' : 'taken'} verwijderen?`}
+      description="Dit kan niet ongedaan worden gemaakt."
+      bevestigLabel="Verwijderen"
+      onConfirm={() => run(onDelete)}
+    />
   )
 }

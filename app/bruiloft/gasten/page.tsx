@@ -32,8 +32,19 @@ function RsvpSelect({
   onChange,
 }: {
   value: RsvpStatus
-  onChange: (v: RsvpStatus) => void
+  onChange: (v: RsvpStatus) => Promise<void> | void
 }) {
+  const [pending, setPending] = React.useState(false)
+
+  const handleChange = async (v: RsvpStatus) => {
+    setPending(true)
+    try {
+      await onChange(v)
+    } finally {
+      setPending(false)
+    }
+  }
+
   // Zelfde tonen als StatusBadge (zachte vulling + inset-ring), zodat de
   // klikbare badge visueel gelijk oogt aan de statische badges elders.
   const klassen: Record<RsvpStatus, string> = {
@@ -45,9 +56,10 @@ function RsvpSelect({
   return (
     <select
       value={value}
+      disabled={pending}
       onClick={(e) => e.stopPropagation()}
-      onChange={(e) => onChange(e.target.value as RsvpStatus)}
-      className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring ${klassen[value]}`}
+      onChange={(e) => void handleChange(e.target.value as RsvpStatus)}
+      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring transition-opacity ${pending ? 'cursor-wait opacity-50' : 'cursor-pointer'} ${klassen[value]}`}
     >
       {RSVP_STATUSSEN.map((s) => (
         <option key={s} value={s}>{capFirst(s)}</option>
