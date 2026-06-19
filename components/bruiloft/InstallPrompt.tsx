@@ -81,9 +81,12 @@ export function InstallPrompt() {
     const evt = deferred.current
     if (!evt) return
     await evt.prompt()
-    await evt.userChoice
+    const { outcome } = await evt.userChoice
     deferred.current = null
     dismiss()
+    if (outcome === 'accepted' && 'Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission().catch(() => {})
+    }
   }
 
   return (

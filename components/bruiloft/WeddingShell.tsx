@@ -82,6 +82,15 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     return () => stopRealtime()
   }, [init, stopRealtime])
 
+  // Service worker registratie (punt 21/24)
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // Registratie mislukt (bijv. zonder HTTPS) — negeer.
+      })
+    }
+  }, [])
+
   // Koppel de ingelogde gebruiker aan Sentry zodat alerts tonen wie de fout tegenkwam
   React.useEffect(() => {
     if (currentUser) {
