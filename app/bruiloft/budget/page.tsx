@@ -19,6 +19,7 @@ import {
   restBedrag,
 } from '@/lib/bruiloft/derived'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
@@ -35,6 +36,9 @@ export default function BudgetPage() {
   const { toast } = useToast()
 
   const kanBewerken = canEdit(permissions, 'budget')
+  // Op mobiel verhuist "Analyseer mijn budget" naar het overflowmenu om de
+  // header op te schonen; op sm+ blijft het een zichtbare knop.
+  const isMobile = useMediaQuery('(max-width: 639px)')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
@@ -95,12 +99,15 @@ export default function BudgetPage() {
       <PageHeader
         titel="Budget"
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
+        beschrijvingMobielVerbergen
         actie={
           <>
+            {/* Desktop: "Analyseer mijn budget" als zichtbare outline-knop.
+                Op mobiel verborgen en verplaatst naar het overflowmenu. */}
             <Button
               variant="outline"
               onClick={() => setAdviesOpen(true)}
-              className="gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              className="hidden gap-1.5 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:inline-flex"
             >
               <Sparkles className="h-4 w-4" />
               Analyseer mijn budget
@@ -112,6 +119,7 @@ export default function BudgetPage() {
             )}
             <OverflowMenu
               items={[
+                ...(isMobile ? [{ label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) }] : []),
                 ...(kanBewerken ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }] : []),
                 { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
               ]}
