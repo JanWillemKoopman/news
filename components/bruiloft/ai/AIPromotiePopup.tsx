@@ -14,15 +14,16 @@ export function AIPromotiePopup() {
   const permissions = useBruiloftStore((s) => s.permissions)
   const openAICoach = useBruiloftStore((s) => s.openAICoach)
 
-  const { showPopup, changeCount, dismiss } = useAIPromotiePopup(wedding?.id ?? null)
+  const { showPopup, changeCount, dismiss, markShown } = useAIPromotiePopup(wedding?.id ?? null)
 
   const trackedRef = React.useRef(false)
   React.useEffect(() => {
     if (showPopup && !trackedRef.current) {
       trackedRef.current = true
+      markShown()
       void trackEvent('ai_promotie_getoond', { weddingId: wedding?.id, changeCount })
     }
-  }, [showPopup, wedding?.id, changeCount])
+  }, [showPopup, wedding?.id, changeCount, markShown])
 
   if (!wedding || !showPopup || !canEdit(permissions, 'taken')) return null
 

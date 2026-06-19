@@ -8,19 +8,26 @@ import { trackEvent } from '@/lib/analytics'
 const SHOW_THRESHOLD = 5
 const RE_SHOW_THRESHOLD = 10
 const STORAGE_KEY_PREFIX = 'otp:ai-promotie-weggeklikt:'
+const SHOWN_TODAY_PREFIX = 'otp:ai-promotie-getoond-op:'
 
 type DismissalState = { dismissedAtCount: number }
+
+function getToday() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 export function useAIPromotiePopup(weddingId: string | null) {
   const [changeCount, setChangeCount] = React.useState(0)
   const [checked, setChecked] = React.useState(false)
   const [dismissalState, setDismissalState] = React.useState<DismissalState | null>(null)
+  const [lastShownDate, setLastShownDate] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (!weddingId) return
     try {
       const raw = localStorage.getItem(STORAGE_KEY_PREFIX + weddingId)
       setDismissalState(raw ? (JSON.parse(raw) as DismissalState) : null)
+      setLastShownDate(localStorage.getItem(SHOWN_TODAY_PREFIX + weddingId))
     } catch {
       setDismissalState(null)
     }
@@ -70,12 +77,24 @@ export function useAIPromotiePopup(weddingId: string | null) {
     void trackEvent('ai_promotie_weggeklikt', { weddingId, changeCount })
   }, [weddingId, changeCount])
 
+  const markShown = React.useCallback(() => {
+    if (!weddingId) return
+    const today = getToday()
+    try {
+      localStorage.setItem(SHOWN_TODAY_PREFIX + weddingId, today)
+    } catch {
+      // localStorage niet beschikbaar — negeer
+    }
+    setLastShownDate(today)
+  }, [weddingId])
+
   const showPopup = React.useMemo(() => {
     if (!checked) return false
     if (changeCount < SHOW_THRESHOLD) return false
+    if (lastShownDate === getToday()) return false
     if (!dismissalState) return true
     return changeCount >= dismissalState.dismissedAtCount + RE_SHOW_THRESHOLD
-  }, [checked, changeCount, dismissalState])
+  }, [checked, changeCount, dismissalState, lastShownDate])
 
-  return { showPopup, changeCount, dismiss }
+  return { showPopup, changeCount, dismiss, markShown }
 }
