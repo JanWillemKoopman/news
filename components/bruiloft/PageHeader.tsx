@@ -3,16 +3,12 @@
 import * as React from 'react'
 
 import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
-import { cn } from '@/lib/utils'
 import { FloatingAddButton } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
   titel: string
   beschrijving?: string
   actie?: React.ReactNode
-  // Verbergt de beschrijving op mobiel (<sm) om de header op te schonen; op
-  // grotere schermen blijft de tekst zichtbaar. Standaard altijd zichtbaar.
-  beschrijvingMobielVerbergen?: boolean
   // Optionele primaire "toevoegen"-actie die ook als zwevende +-knop (FAB)
   // rechtsonder verschijnt zodra de header uit beeld scrolt. Roept dezelfde
   // handler aan als de knop in de header.
@@ -47,7 +43,7 @@ function useElementInView(ref: React.RefObject<HTMLElement>) {
   return inView
 }
 
-export function PageHeader({ titel, beschrijving, actie, beschrijvingMobielVerbergen, fab }: PageHeaderProps) {
+export function PageHeader({ titel, beschrijving, actie, fab }: PageHeaderProps) {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const headerInView = useElementInView(headerRef)
 
@@ -60,14 +56,7 @@ export function PageHeader({ titel, beschrijving, actie, beschrijvingMobielVerbe
         <div>
           <h1 className="text-xl font-semibold text-foreground">{titel}</h1>
           {beschrijving ? (
-            <p
-              className={cn(
-                'mt-0.5 text-sm text-muted-foreground',
-                beschrijvingMobielVerbergen && 'hidden sm:block'
-              )}
-            >
-              {beschrijving}
-            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
           ) : null}
         </div>
         {actie ? <div className="flex shrink-0 flex-wrap gap-2">{actie}</div> : null}

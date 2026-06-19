@@ -99,7 +99,6 @@ export default function BudgetPage() {
       <PageHeader
         titel="Budget"
         beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
-        beschrijvingMobielVerbergen
         actie={
           <>
             {/* Desktop: "Analyseer mijn budget" als zichtbare outline-knop.
