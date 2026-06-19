@@ -1,42 +1,30 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CalendarClock, Download, MapPin, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Download, Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
-import { DraaiboekStatsSidebar } from '@/components/bruiloft/draaiboek/DraaiboekStatsSidebar'
+import { DraaiboekControls, type KolomAantal } from '@/components/bruiloft/draaiboek/DraaiboekControls'
+import { DraaiboekColumns, filterItems, type RolFilter } from '@/components/bruiloft/draaiboek/DraaiboekColumns'
 import { DraaiboekStatsStrip } from '@/components/bruiloft/draaiboek/DraaiboekStatsStrip'
+import { ScheduleItemCard } from '@/components/bruiloft/draaiboek/ScheduleItemCard'
 import { ScheduleItemForm } from '@/components/bruiloft/draaiboek/ScheduleItemForm'
 import {
   Button,
-  Card,
-  CardContent,
   ConfirmDialog,
   EmptyState,
-  Input,
   Select,
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import { canEdit } from '@/lib/bruiloft/permissions'
-import { capFirst } from '@/lib/utils'
+import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
 
 const MIN_PAUZE_MINUTEN = 5
-
-function duurLabel(tijd: string, eindtijd: string): string | null {
-  if (!tijd || !eindtijd) return null
-  const [sh, sm] = tijd.split(':').map(Number)
-  const [eh, em] = eindtijd.split(':').map(Number)
-  const min = eh * 60 + em - (sh * 60 + sm)
-  if (min <= 0) return null
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  return h > 0 ? (m > 0 ? `${h}u ${m}min` : `${h}u`) : `${min}min`
-}
 
 export default function DraaiboekPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -48,9 +36,11 @@ export default function DraaiboekPage() {
   const { toast } = useToast()
 
   const kanBewerken = canEdit(permissions, 'draaiboek')
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
-  const [fRol, setFRol] = React.useState('all')
   const [zoek, setZoek] = React.useState('')
+  const [kolommen, setKolommen] = React.useState<KolomAantal>(1)
+  const [kolomFilters, setKolomFilters] = React.useState<RolFilter[]>(['all', 'all', 'all'])
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<ScheduleItem | null>(null)
   const [delItem, setDelItem] = React.useState<ScheduleItem | null>(null)
@@ -84,21 +74,13 @@ export default function DraaiboekPage() {
     }
   }
 
-  const gesorteerd = scheduleItems
-    .filter((s) => {
-      if (fRol !== 'all' && !s.betrokkenen.includes(fRol as ScheduleItem['betrokkenen'][number])) return false
-      if (zoek.trim()) {
-        const z = zoek.trim().toLowerCase()
-        return (
-          s.titel.toLowerCase().includes(z) ||
-          s.omschrijving?.toLowerCase().includes(z) ||
-          s.locatie?.toLowerCase().includes(z)
-        )
-      }
-      return true
-    })
-    .slice()
-    .sort((a, b) => a.tijd.localeCompare(b.tijd))
+  // Meerkoloms vergelijken is een desktop-feature; op smallere schermen tonen we
+  // altijd één kolom (met het filter van kolom 1).
+  const meerkoloms = isDesktop && kolommen >= 2
+  const fRol = kolomFilters[0] ?? 'all'
+
+  // Voor de 1-koloms tijdlijn en de export: gefilterd op kolom 1.
+  const gesorteerd = filterItems(scheduleItems, fRol, zoek)
 
   const alleSorteerd = scheduleItems.slice().sort((a, b) => a.tijd.localeCompare(b.tijd))
   const defaultTijdNieuw = alleSorteerd.at(-1)?.eindtijd ?? ''
@@ -112,14 +94,19 @@ export default function DraaiboekPage() {
     setFormOpen(true)
   }
 
+  // In de meerkoloms-weergave exporteren we het volledige schema; in 1-koloms
+  // de huidige (per-betrokkene gefilterde) lijst.
+  const exportLijst = meerkoloms ? alleSorteerd : gesorteerd
+  const exportRol = meerkoloms ? 'all' : fRol
+
   const exporteer = () => {
     try {
       downloadCsv(
-        fRol === 'all' ? 'draaiboek.csv' : `draaiboek-${fRol}.csv`,
+        exportRol === 'all' ? 'draaiboek.csv' : `draaiboek-${exportRol}.csv`,
         ['Tijd', 'Einde', 'Titel', 'Locatie', 'Omschrijving', 'Betrokkenen'],
-        gesorteerd.map((s, idx) => [
+        exportLijst.map((s, idx) => [
           s.tijd,
-          s.eindtijd || gesorteerd[idx + 1]?.tijd || '',
+          s.eindtijd || exportLijst[idx + 1]?.tijd || '',
           s.titel,
           s.locatie,
           s.omschrijving,
@@ -132,38 +119,12 @@ export default function DraaiboekPage() {
     }
   }
 
-  // Gedeelde zoekbalk — gebruikt in mobile filter row én desktop sidebar
-  const zoekbalk = (
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        value={zoek}
-        onChange={(e) => setZoek(e.target.value)}
-        placeholder="Zoek in draaiboek..."
-        className="pl-9 pr-9"
-      />
-      {zoek && (
-        <button
-          type="button"
-          onClick={() => setZoek('')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-  )
-
-  const rolfilter = (
-    <Select value={fRol} onChange={(e) => setFRol(e.target.value)} className="w-full">
-      <option value="all">Hele draaiboek</option>
-      {DRAAIBOEK_ROLLEN.map((r) => (
-        <option key={r} value={r}>
-          Alleen {r}
-        </option>
-      ))}
-    </Select>
-  )
+  const setKolomFilter = (index: number, rol: RolFilter) =>
+    setKolomFilters((prev) => {
+      const next = prev.slice()
+      next[index] = rol
+      return next
+    })
 
   return (
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
@@ -172,7 +133,7 @@ export default function DraaiboekPage() {
         beschrijving="Het minuutschema van de trouwdag — filter en exporteer per betrokkene."
         actie={
           <>
-            <Button variant="outline" onClick={exporteer} disabled={gesorteerd.length === 0}>
+            <Button variant="outline" onClick={exporteer} disabled={exportLijst.length === 0}>
               <Download className="h-4 w-4" /> Exporteer draaiboek
             </Button>
             {kanBewerken && (
@@ -187,56 +148,83 @@ export default function DraaiboekPage() {
 
       <AIInsightCard sectie="/bruiloft/draaiboek" />
 
-      {/* Stats strip: mobiel/tablet zichtbaar, op desktop in sidebar */}
+      {/* Stats strip — altijd full-width, net als de andere planning-pagina's */}
       {scheduleItems.length > 0 && (
-        <div className="lg:hidden">
-          <DraaiboekStatsStrip items={scheduleItems} minPauze={MIN_PAUZE_MINUTEN} />
-        </div>
+        <DraaiboekStatsStrip items={scheduleItems} minPauze={MIN_PAUZE_MINUTEN} />
       )}
 
-      {/* Mobile filter row: verborgen op desktop (controls staan in sidebar) */}
-      <div className="mb-6 flex flex-wrap gap-3 lg:hidden">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          {zoekbalk}
-        </div>
-        <div className="w-full sm:w-auto max-w-xs">
-          {rolfilter}
-        </div>
-      </div>
+      {/* Besturingsbalk: globale zoek + kolomkeuze (kolomkeuze alleen op desktop) */}
+      {scheduleItems.length > 0 && (
+        <DraaiboekControls
+          zoek={zoek}
+          onZoekChange={setZoek}
+          kolommen={kolommen}
+          onKolommenChange={setKolommen}
+        />
+      )}
 
-      {/* Desktop: 2-koloms grid. Mobiel/tablet: single column. */}
-      <div className="lg:grid lg:grid-cols-[1fr_288px] lg:gap-8 lg:items-start">
-
-        {/* Tijdlijn */}
+      {scheduleItems.length === 0 ? (
+        <EmptyState
+          icon={CalendarClock}
+          titel="Nog geen draaiboek"
+          beschrijving={
+            kanBewerken
+              ? 'Start met een veelgebruikte dagindeling en pas die aan, of bouw het schema zelf op.'
+              : 'Er zijn nog geen onderdelen in het draaiboek.'
+          }
+          actie={
+            kanBewerken ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={startMetTemplate} loading={templateBezig}>
+                  <CalendarClock className="h-4 w-4" /> Start met standaard dagindeling
+                </Button>
+                <Button variant="outline" onClick={openNieuw}>
+                  <Plus className="h-4 w-4" /> Zelf opbouwen
+                </Button>
+              </div>
+            ) : undefined
+          }
+        />
+      ) : meerkoloms ? (
+        <DraaiboekColumns
+          items={scheduleItems}
+          kolommen={kolommen}
+          kolomFilters={kolomFilters}
+          zoek={zoek}
+          kanBewerken={kanBewerken}
+          onEdit={openBewerk}
+          onDelete={setDelItem}
+          onFilterChange={setKolomFilter}
+        />
+      ) : (
         <div>
-          {scheduleItems.length === 0 ? (
-            <EmptyState
-              icon={CalendarClock}
-              titel="Nog geen draaiboek"
-              beschrijving={
-                kanBewerken
-                  ? 'Start met een veelgebruikte dagindeling en pas die aan, of bouw het schema zelf op.'
-                  : 'Er zijn nog geen onderdelen in het draaiboek.'
-              }
-              actie={
-                kanBewerken ? (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button onClick={startMetTemplate} loading={templateBezig}>
-                      <CalendarClock className="h-4 w-4" /> Start met standaard dagindeling
-                    </Button>
-                    <Button variant="outline" onClick={openNieuw}>
-                      <Plus className="h-4 w-4" /> Zelf opbouwen
-                    </Button>
-                  </div>
-                ) : undefined
-              }
-            />
-          ) : gesorteerd.length === 0 ? (
+          {/* Categorie-filter boven de (enige) kolom */}
+          <div className="mb-3 max-w-xs">
+            <Select
+              value={fRol}
+              onChange={(e) => setKolomFilter(0, e.target.value as RolFilter)}
+              className="w-full"
+              aria-label="Filter draaiboek op betrokkene"
+            >
+              <option value="all">Hele draaiboek</option>
+              {DRAAIBOEK_ROLLEN.map((r) => (
+                <option key={r} value={r}>
+                  Alleen {r}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {gesorteerd.length === 0 ? (
             <EmptyState
               icon={CalendarClock}
               titel="Niets voor deze betrokkene"
               beschrijving="Geen onderdelen komen overeen met het huidige filter."
-              actie={<Button variant="outline" size="sm" onClick={() => setFRol('all')}>Wis filter</Button>}
+              actie={
+                <Button variant="outline" size="sm" onClick={() => setKolomFilter(0, 'all')}>
+                  Wis filter
+                </Button>
+              }
             />
           ) : (
             <div className="space-y-3">
@@ -251,7 +239,6 @@ export default function DraaiboekPage() {
                     })()
                   : 0
                 const isOverlap = idx > 0 && gapMinuten < 0
-                const label = duurLabel(s.tijd, s.eindtijd)
 
                 return (
                   <React.Fragment key={s.id}>
@@ -278,93 +265,19 @@ export default function DraaiboekPage() {
                         <div className="h-px flex-1 bg-border" />
                       </div>
                     ) : null}
-                    <Card>
-                      <CardContent className="flex items-start gap-4 p-4 lg:gap-6 lg:p-5">
-                        <div className="w-16 shrink-0 text-center lg:w-20">
-                          <span className="text-lg font-semibold tabular-nums text-primary lg:text-xl">
-                            {s.tijd}
-                          </span>
-                          {s.eindtijd ? (
-                            <p className="text-xs text-muted-foreground tabular-nums">&ndash;&nbsp;{s.eindtijd}</p>
-                          ) : null}
-                          {label ? (
-                            <p className="text-xs text-muted-foreground/60 tabular-nums">{label}</p>
-                          ) : null}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="font-medium text-foreground">{s.titel}</p>
-                            {kanBewerken && (
-                              <div className="flex shrink-0 gap-1">
-                                <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => openBewerk(s)}>
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => setDelItem(s)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          {s.locatie ? (
-                            <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin className="h-3 w-3" /> {s.locatie}
-                            </p>
-                          ) : null}
-                          {s.omschrijving ? (
-                            <p className="mt-1 text-sm text-muted-foreground">{s.omschrijving}</p>
-                          ) : null}
-                          {s.betrokkenen.length > 0 ? (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {s.betrokkenen.map((r) => (
-                                <span
-                                  key={r}
-                                  className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
-                                >
-                                  {capFirst(r)}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <ScheduleItemCard
+                      item={s}
+                      kanBewerken={kanBewerken}
+                      onEdit={openBewerk}
+                      onDelete={setDelItem}
+                    />
                   </React.Fragment>
                 )
               })}
             </div>
           )}
         </div>
-
-        {/* Sticky sidebar: alleen op desktop (lg+) */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-4">
-            {scheduleItems.length > 0 && (
-              <DraaiboekStatsSidebar items={scheduleItems} minPauze={MIN_PAUZE_MINUTEN} />
-            )}
-
-            <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Zoeken</p>
-              {zoekbalk}
-            </div>
-
-            <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Filter</p>
-              {rolfilter}
-            </div>
-
-            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={exporteer} disabled={gesorteerd.length === 0}>
-                <Download className="h-4 w-4" /> Exporteer draaiboek
-              </Button>
-              {kanBewerken && (
-                <Button className="w-full" onClick={openNieuw}>
-                  <Plus className="h-4 w-4" /> Onderdeel toevoegen
-                </Button>
-              )}
-            </div>
-          </div>
-        </aside>
-      </div>
+      )}
 
       <ScheduleItemForm
         open={formOpen}
