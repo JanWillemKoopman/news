@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
 import { FloatingAddButton } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
@@ -15,20 +16,22 @@ interface PageHeaderProps {
 }
 
 // Houdt bij of het element (de header) in beeld is. Start als zichtbaar zodat de
-// FAB pas verschijnt nadat er daadwerkelijk voorbij de header is gescrolld. De
-// content scrolt binnen een container die het volledige venster vult, dus de
-// viewport als observer-root volstaat.
+// FAB pas verschijnt nadat er daadwerkelijk voorbij de header is gescrolld.
+// Gebruikt de scroll-container uit context als observer-root, want de pagina scrolt
+// binnen een div, niet het venster zelf.
 function useElementInView(ref: React.RefObject<HTMLElement>) {
+  const scrollContainer = React.useContext(ScrollContainerContext)
   const [inView, setInView] = React.useState(true)
   React.useEffect(() => {
     const el = ref.current
     if (!el || typeof IntersectionObserver === 'undefined') return
     const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
       threshold: 0,
+      root: scrollContainer?.current ?? null,
     })
     io.observe(el)
     return () => io.disconnect()
-  }, [ref])
+  }, [ref, scrollContainer])
   return inView
 }
 
