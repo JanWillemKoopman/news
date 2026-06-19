@@ -15,23 +15,31 @@ interface PageHeaderProps {
   fab?: { label: string; onClick: () => void }
 }
 
-// Houdt bij of het element (de header) in beeld is. Start als zichtbaar zodat de
-// FAB pas verschijnt nadat er daadwerkelijk voorbij de header is gescrolld.
-// Gebruikt de scroll-container uit context als observer-root, want de pagina scrolt
-// binnen een div, niet het venster zelf.
+// Houdt bij of het element (de header) in beeld is via scroll-events op de
+// container. IntersectionObserver met custom root werkt niet betrouwbaar in
+// alle browsers wanneer de container een div is i.p.v. het venster.
 function useElementInView(ref: React.RefObject<HTMLElement>) {
   const scrollContainer = React.useContext(ScrollContainerContext)
   const [inView, setInView] = React.useState(true)
+
   React.useEffect(() => {
-    const el = ref.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
-      threshold: 0,
-      root: scrollContainer?.current ?? null,
-    })
-    io.observe(el)
-    return () => io.disconnect()
+    const container = scrollContainer?.current
+    if (!container) return
+
+    const check = () => {
+      const el = ref.current
+      if (!el) return
+      // Header is zichtbaar als de onderkant nog boven de bovenkant van de container uitsteekt
+      const elBottom = el.getBoundingClientRect().bottom
+      const containerTop = container.getBoundingClientRect().top
+      setInView(elBottom > containerTop)
+    }
+
+    check()
+    container.addEventListener('scroll', check, { passive: true })
+    return () => container.removeEventListener('scroll', check)
   }, [ref, scrollContainer])
+
   return inView
 }
 
