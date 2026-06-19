@@ -185,44 +185,60 @@ export function OnboardingGids() {
         <Progress value={(gedaan / stappen.length) * 100} className="mt-4 h-1.5" />
 
         <ul className="mt-4 grid gap-1 sm:grid-cols-2">
-          {stappen.map((stap) => (
-            <li key={stap.key}>
-              <Link
-                href={stap.href}
-                className={cn(
-                  'group flex min-h-[3rem] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors',
-                  stap.klaar ? 'opacity-70' : 'hover:bg-accent'
-                )}
-              >
-                <span
+          {stappen.map((stap, i) => {
+            const eersteActief = !stap.klaar && stappen.slice(0, i).every((s) => s.klaar)
+            return (
+              <li key={stap.key} className={cn(eersteActief && 'sm:col-span-2')}>
+                <Link
+                  href={stap.href}
                   className={cn(
-                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border',
+                    'group flex min-h-[3rem] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors',
                     stap.klaar
-                      ? 'border-emerald-500 bg-emerald-500 text-white'
-                      : 'border-border bg-background text-muted-foreground'
+                      ? 'opacity-70'
+                      : eersteActief
+                        ? 'bg-primary/8 hover:bg-primary/12 border border-primary/20'
+                        : 'hover:bg-accent'
                   )}
                 >
-                  {stap.klaar ? <Check className="h-3.5 w-3.5" /> : <stap.icon className="h-3.5 w-3.5" />}
-                </span>
-                <span className="min-w-0 flex-1">
                   <span
                     className={cn(
-                      'block truncate text-sm font-medium',
-                      stap.klaar ? 'text-muted-foreground line-through' : 'text-foreground'
+                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border',
+                      stap.klaar
+                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                        : eersteActief
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-muted-foreground'
                     )}
                   >
-                    {stap.label}
+                    {stap.klaar ? <Check className="h-3.5 w-3.5" /> : <stap.icon className="h-3.5 w-3.5" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={cn(
+                        'block truncate text-sm font-medium',
+                        stap.klaar
+                          ? 'text-muted-foreground line-through'
+                          : eersteActief
+                            ? 'text-primary'
+                            : 'text-foreground'
+                      )}
+                    >
+                      {stap.label}
+                    </span>
+                    {!stap.klaar ? (
+                      <span className="block truncate text-xs text-muted-foreground">{stap.uitleg}</span>
+                    ) : null}
                   </span>
                   {!stap.klaar ? (
-                    <span className="block truncate text-xs text-muted-foreground">{stap.uitleg}</span>
+                    <ChevronRight className={cn(
+                      'h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5',
+                      eersteActief ? 'text-primary' : 'text-muted-foreground'
+                    )} />
                   ) : null}
-                </span>
-                {!stap.klaar ? (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                ) : null}
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </CardContent>
     </Card>

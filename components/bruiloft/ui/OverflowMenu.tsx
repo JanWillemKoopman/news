@@ -29,16 +29,16 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
 
   React.useEffect(() => {
     if (!open) return
-    function handler(e: MouseEvent) {
+    function handler(e: PointerEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     function keyHandler(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
     document.addEventListener('keydown', keyHandler)
     return () => {
-      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('pointerdown', handler)
       document.removeEventListener('keydown', keyHandler)
     }
   }, [open])

@@ -45,6 +45,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       if (!pulling) return
       pulling = false
       if (pullYRef.current >= THRESHOLD) {
+        if ('vibrate' in navigator) navigator.vibrate(15)
         refreshingRef.current = true
         setRefreshing(true)
         pullYRef.current = 0

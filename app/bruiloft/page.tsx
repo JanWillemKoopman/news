@@ -53,12 +53,12 @@ export default function DashboardPage() {
       <Card className="relative mb-8 overflow-hidden border-border">
         <Button
           variant="ghost"
-          size="icon"
           aria-label="Gegevens bewerken"
-          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+          className="absolute right-3 top-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setSettingsOpen(true)}
         >
-          <Settings2 className="h-5 w-5" />
+          <Settings2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Bewerken</span>
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
           <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">

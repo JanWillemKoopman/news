@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, WifiOff } from 'lucide-react'
+import { Lock, WifiOff, CloudOff } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import * as Sentry from '@sentry/nextjs'
@@ -63,11 +63,33 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const weddingSettingsOpen = useBruiloftStore((s) => s.weddingSettingsOpen)
   const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
+  const [isOnline, setIsOnline] = React.useState(true)
+
+  React.useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const goOnline = () => setIsOnline(true)
+    const goOffline = () => setIsOnline(false)
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
 
   React.useEffect(() => {
     void init()
     return () => stopRealtime()
   }, [init, stopRealtime])
+
+  // Service worker registratie (punt 21/24)
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // Registratie mislukt (bijv. zonder HTTPS) — negeer.
+      })
+    }
+  }, [])
 
   // Koppel de ingelogde gebruiker aan Sentry zodat alerts tonen wie de fout tegenkwam
   React.useEffect(() => {
@@ -220,6 +242,13 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
           <div className="md:hidden">
             <TopNav />
           </div>
+          {/* Offline banner (punt 14) */}
+          {!isOnline && (
+            <div className="sticky top-0 z-30 flex items-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+              <CloudOff className="h-4 w-4 shrink-0" />
+              <span>Je bent offline — wijzigingen worden niet opgeslagen</span>
+            </div>
+          )}
           <main
             id="hoofdinhoud"
             tabIndex={-1}
