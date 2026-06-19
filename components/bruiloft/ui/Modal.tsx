@@ -26,8 +26,12 @@ export function Modal({
 }: ModalProps) {
   const [mobileStyle, setMobileStyle] = React.useState<React.CSSProperties>({})
 
+  // Swipe-to-dismiss state (punt 9)
+  const swipeStartY = React.useRef(0)
+  const [swipeY, setSwipeY] = React.useState(0)
+
   React.useEffect(() => {
-    if (!open) return
+    if (!open) { setSwipeY(0); return }
     const vv = window.visualViewport
     if (!vv) return
 
@@ -50,13 +54,33 @@ export function Modal({
     }
   }, [open])
 
+  // Touch handlers for drag handle (punt 9)
+  const onHandleTouchStart = (e: React.TouchEvent) => {
+    swipeStartY.current = e.touches[0].clientY
+  }
+  const onHandleTouchMove = (e: React.TouchEvent) => {
+    const delta = e.touches[0].clientY - swipeStartY.current
+    if (delta > 0) setSwipeY(delta)
+  }
+  const onHandleTouchEnd = () => {
+    if (swipeY > 80) {
+      setSwipeY(0)
+      onOpenChange(false)
+    } else {
+      setSwipeY(0)
+    }
+  }
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[3px] data-[state=open]:animate-overlay-in" />
         <Dialog.Content
-          onInteractOutside={(e) => e.preventDefault()}
-          style={mobileStyle}
+          style={{
+            ...mobileStyle,
+            transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
+            transition: swipeY === 0 ? 'transform 200ms ease' : undefined,
+          }}
           className={cn(
             'fixed z-50 flex max-h-[90dvh] flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-xl focus:outline-none',
             // Mobiel: bottom-sheet. Desktop: gecentreerde dialog.
@@ -65,7 +89,16 @@ export function Modal({
             className
           )}
         >
-          <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
+          {/* Drag handle — touch target voor swipe-to-dismiss (punt 9) */}
+          <div
+            aria-hidden
+            className="-my-3 mx-auto flex w-full justify-center py-3 sm:hidden"
+            onTouchStart={onHandleTouchStart}
+            onTouchMove={onHandleTouchMove}
+            onTouchEnd={onHandleTouchEnd}
+          >
+            <div className="h-1.5 w-10 rounded-full bg-border" />
+          </div>
           <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
             <div>
               <Dialog.Title className="text-xl text-foreground">
