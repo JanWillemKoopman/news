@@ -55,14 +55,53 @@ export function TaskCard({
   const fallbackLabel =
     toegewezenLeden.length === 0 && task.toegewezenAan ? task.toegewezenAan : null
 
+  const swipeStartX = React.useRef(0)
+  const [swipeX, setSwipeX] = React.useState(0)
+  const swiping = React.useRef(false)
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX
+    swiping.current = true
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!swiping.current) return
+    const delta = swipeStartX.current - e.touches[0].clientX
+    if (delta > 0) setSwipeX(delta)
+  }
+  const onTouchEnd = () => {
+    swiping.current = false
+    if (swipeX > 60) {
+      setSwipeX(0)
+      onDelete(task)
+    } else {
+      setSwipeX(0)
+    }
+  }
+
   return (
-    <Card
-      className={cn(
-        'group transition-opacity',
-        klaar && 'opacity-60',
-        selected && 'ring-2 ring-primary'
-      )}
-    >
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Rode laag achter de kaart, zichtbaar bij links-vegen */}
+      <div
+        aria-hidden
+        className="absolute inset-y-0 right-0 flex items-center justify-end rounded-xl bg-rose-600 pr-5 text-white"
+        style={{ width: `${Math.min(swipeX, 80)}px`, opacity: swipeX > 10 ? 1 : 0 }}
+      >
+        <Trash2 className="h-5 w-5 shrink-0" />
+      </div>
+      <Card
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{
+          transform: swipeX > 0 ? `translateX(-${Math.min(swipeX, 80)}px)` : undefined,
+          transition: swipeX === 0 ? 'transform 200ms ease' : undefined,
+        }}
+        className={cn(
+          'group relative transition-opacity',
+          klaar && 'opacity-60',
+          selected && 'ring-2 ring-primary'
+        )}
+      >
       <CardContent className={cn('flex items-start gap-3', compact ? 'p-3' : 'p-4')}>
         {selectable ? (
           <button
@@ -165,5 +204,6 @@ export function TaskCard({
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 }
