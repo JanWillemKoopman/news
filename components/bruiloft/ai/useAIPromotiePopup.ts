@@ -9,6 +9,7 @@ const SHOW_THRESHOLD = 5
 const RE_SHOW_THRESHOLD = 10
 const STORAGE_KEY_PREFIX = 'otp:ai-promotie-weggeklikt:'
 const SHOWN_TODAY_PREFIX = 'otp:ai-promotie-getoond-op:'
+const NEVER_SHOW_PREFIX = 'otp:ai-promotie-nooit:'
 
 type DismissalState = { dismissedAtCount: number }
 
@@ -21,6 +22,7 @@ export function useAIPromotiePopup(weddingId: string | null) {
   const [checked, setChecked] = React.useState(false)
   const [dismissalState, setDismissalState] = React.useState<DismissalState | null>(null)
   const [lastShownDate, setLastShownDate] = React.useState<string | null>(null)
+  const [neverShow, setNeverShow] = React.useState(false)
 
   React.useEffect(() => {
     if (!weddingId) return
@@ -28,6 +30,7 @@ export function useAIPromotiePopup(weddingId: string | null) {
       const raw = localStorage.getItem(STORAGE_KEY_PREFIX + weddingId)
       setDismissalState(raw ? (JSON.parse(raw) as DismissalState) : null)
       setLastShownDate(localStorage.getItem(SHOWN_TODAY_PREFIX + weddingId))
+      setNeverShow(!!localStorage.getItem(NEVER_SHOW_PREFIX + weddingId))
     } catch {
       setDismissalState(null)
     }
@@ -88,13 +91,25 @@ export function useAIPromotiePopup(weddingId: string | null) {
     setLastShownDate(today)
   }, [weddingId])
 
+  const dismissPermanently = React.useCallback(() => {
+    if (!weddingId) return
+    try {
+      localStorage.setItem(NEVER_SHOW_PREFIX + weddingId, '1')
+    } catch {
+      // localStorage niet beschikbaar — alleen in-memory
+    }
+    setNeverShow(true)
+    void trackEvent('ai_promotie_nooit_meer', { weddingId })
+  }, [weddingId])
+
   const showPopup = React.useMemo(() => {
     if (!checked) return false
+    if (neverShow) return false
     if (changeCount < SHOW_THRESHOLD) return false
     if (lastShownDate === getToday()) return false
     if (!dismissalState) return true
     return changeCount >= dismissalState.dismissedAtCount + RE_SHOW_THRESHOLD
-  }, [checked, changeCount, dismissalState, lastShownDate])
+  }, [checked, changeCount, dismissalState, lastShownDate, neverShow])
 
-  return { showPopup, changeCount, dismiss, markShown }
+  return { showPopup, changeCount, dismiss, markShown, dismissPermanently }
 }

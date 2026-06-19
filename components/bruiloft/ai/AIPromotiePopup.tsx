@@ -14,7 +14,7 @@ export function AIPromotiePopup() {
   const permissions = useBruiloftStore((s) => s.permissions)
   const openAICoach = useBruiloftStore((s) => s.openAICoach)
 
-  const { showPopup, changeCount, dismiss, markShown } = useAIPromotiePopup(wedding?.id ?? null)
+  const { showPopup, changeCount, dismiss, markShown, dismissPermanently } = useAIPromotiePopup(wedding?.id ?? null)
 
   const trackedRef = React.useRef(false)
   React.useEffect(() => {
@@ -25,7 +25,11 @@ export function AIPromotiePopup() {
     }
   }, [showPopup, wedding?.id, changeCount, markShown])
 
-  if (!wedding || !showPopup || !canEdit(permissions, 'taken')) return null
+  const weddingAgeDays = wedding
+    ? (Date.now() - new Date(wedding.createdAt).getTime()) / 86_400_000
+    : 0
+
+  if (!wedding || !showPopup || !canEdit(permissions, 'taken') || weddingAgeDays < 7) return null
 
   function handleCTA() {
     dismiss()
@@ -42,11 +46,11 @@ export function AIPromotiePopup() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">
-              Wil je AI-advies voor je bruiloft?
+              Wil je weten of jullie op schema liggen?
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-              Je hebt {changeCount} wijzigingen gemaakt. De AI-coach kan jullie planning nu
-              analyseren en gerichte adviezen geven.
+              Jullie zijn druk bezig geweest met de planning. De AI-coach analyseert jullie taken,
+              budget en deadline en vertelt wat nu het meest urgent is.
             </p>
             <div className="mt-2.5 flex gap-2 sm:mt-3">
               <Button size="sm" onClick={handleCTA}>
@@ -56,6 +60,13 @@ export function AIPromotiePopup() {
                 Niet nu
               </Button>
             </div>
+            <button
+              type="button"
+              onClick={dismissPermanently}
+              className="mt-1.5 text-xs text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Niet meer tonen
+            </button>
           </div>
           <button
             type="button"

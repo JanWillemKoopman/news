@@ -15,10 +15,14 @@ function dismissKey(id: string) {
   return `profiel-nudge-dismissed:${id}`
 }
 
+interface ProfielNudgeProps {
+  onVisibleChange?: (visible: boolean) => void
+}
+
 // Zwevend kaartje rechtsonder dat ontbrekende essentiële profielgegevens
 // uitvraagt (namen, trouwdatum, trouwlocatie, woonplaats). App-breed gemount
 // in WeddingShell, dus alleen zichtbaar wanneer er al een bruiloft is.
-export function ProfielNudge() {
+export function ProfielNudge({ onVisibleChange }: ProfielNudgeProps) {
   const wedding = useBruiloftStore((s) => s.wedding)
   const settingsOpen = useBruiloftStore((s) => s.weddingSettingsOpen)
   const openWeddingSettings = useBruiloftStore((s) => s.openWeddingSettings)
@@ -44,6 +48,10 @@ export function ProfielNudge() {
     }
     setVisible(!recentlyDismissed)
   }, [wedding, ontbreekt])
+
+  React.useEffect(() => {
+    onVisibleChange?.(visible)
+  }, [visible, onVisibleChange])
 
   if (!wedding || !visible || ontbreekt.length === 0 || settingsOpen) return null
 

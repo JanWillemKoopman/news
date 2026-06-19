@@ -65,6 +65,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
   const [isOnline, setIsOnline] = React.useState(true)
+  const [profielNudgeVisible, setProfielNudgeVisible] = React.useState(false)
 
   React.useEffect(() => {
     setIsOnline(navigator.onLine)
@@ -280,9 +281,9 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
         }}
         wedding={wedding}
       />
-      <ProfielNudge />
+      <ProfielNudge onVisibleChange={setProfielNudgeVisible} />
       <InstallPrompt />
-      {!isOnAIPage && <AIPromotiePopup />}
+      {!isOnAIPage && !profielNudgeVisible && <AIPromotiePopup />}
       {/* App-brede AI-coach: zijpaneel op desktop, bottom sheet op mobiel. */}
       <AICoach />
     </div>
