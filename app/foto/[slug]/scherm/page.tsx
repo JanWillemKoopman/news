@@ -3,6 +3,13 @@ import { notFound } from 'next/navigation'
 import { PresentationWall } from '@/components/fotomuur/PresentationWall'
 import { createRawAdminClient } from '@/lib/supabase/admin'
 
+// Altijd vers uit de database renderen. Zonder dit cachet Next.js de
+// server-render (Full Route Cache) en toont een reload een verouderde
+// momentopname — waardoor geüploade foto's lijken te "verdwijnen" zodra
+// de pagina opnieuw wordt geladen. De fotomuur moet altijd de actuele
+// foto's tonen, ongeacht wijzigingen aan de instellingen.
+export const dynamic = 'force-dynamic'
+
 async function getData(slug: string) {
   const supabase = createRawAdminClient()
   const { data, error } = await supabase.rpc('get_photo_wall', { p_slug: slug })

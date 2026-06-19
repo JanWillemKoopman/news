@@ -4,6 +4,12 @@ import { notFound } from 'next/navigation'
 import { GuestWall } from '@/components/fotomuur/GuestWall'
 import { createRawAdminClient } from '@/lib/supabase/admin'
 
+// Altijd vers uit de database renderen. Zonder dit cachet Next.js de
+// server-render (Full Route Cache) en toont een reload een verouderde
+// momentopname waarin recent geüploade foto's ontbreken. De gastpagina
+// moet altijd de actuele foto's tonen.
+export const dynamic = 'force-dynamic'
+
 async function getData(slug: string) {
   const supabase = createRawAdminClient()
   const { data, error } = await supabase.rpc('get_photo_wall', { p_slug: slug })
