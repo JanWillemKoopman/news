@@ -12,10 +12,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import type { VendorType } from '@/lib/bruiloft/types'
-
 // Eén herkenbaar icoon per leverancierscategorie (kaarten, detail, voortgang).
-export const CATEGORIE_ICOON: Record<VendorType, LucideIcon> = {
+export const CATEGORIE_ICOON: Record<string, LucideIcon> = {
   locatie: MapPin,
   catering: UtensilsCrossed,
   fotograaf: Camera,
@@ -26,4 +24,8 @@ export const CATEGORIE_ICOON: Record<VendorType, LucideIcon> = {
   vervoer: CarFront,
   taart: Cake,
   overig: Store,
+}
+
+export function getCategorieIcoon(type: string): LucideIcon {
+  return CATEGORIE_ICOON[type] ?? Store
 }

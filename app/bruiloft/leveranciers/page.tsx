@@ -24,7 +24,7 @@ import {
 } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
-import { VENDOR_STATUSSEN } from '@/lib/bruiloft/options'
+import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Vendor } from '@/lib/bruiloft/types'
 
@@ -51,6 +51,9 @@ export default function LeveranciersPage() {
   const [delVendor, setDelVendor] = React.useState<Vendor | null>(null)
 
   if (!wedding) return null
+
+  // Custom categorieën die al in gebruik zijn (niet in de standaardlijst)
+  const extraTypes = Array.from(new Set(vendors.map((v) => v.type).filter((t) => !VENDOR_TYPES.includes(t))))
 
   const zoekterm = zoek.trim().toLowerCase()
   const gefilterd = vendors.filter((v) => {
@@ -301,6 +304,7 @@ export default function LeveranciersPage() {
         onOpenChange={setFormOpen}
         initial={editVendor}
         budgetItems={budgetItems}
+        extraTypes={extraTypes}
         onSubmit={async (data) => {
           try {
             if (editVendor) {

@@ -24,8 +24,12 @@ interface VendorFormProps {
   onOpenChange: (open: boolean) => void
   initial?: Vendor | null
   budgetItems: BudgetItem[]
+  // Custom categorieën die al in gebruik zijn bij dit bruidspaar
+  extraTypes?: string[]
   onSubmit: (data: NewVendor) => void | Promise<void>
 }
+
+const NIEUW_SENTINEL = '__nieuw__'
 
 function leeg(): NewVendor {
   return {
@@ -62,6 +66,7 @@ export function VendorForm({
   onOpenChange,
   initial,
   budgetItems,
+  extraTypes = [],
   onSubmit,
 }: VendorFormProps) {
   const [form, setForm] = React.useState<NewVendor>(leeg)
@@ -69,7 +74,16 @@ export function VendorForm({
   const [saving, setSaving] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
+  // Of de gebruiker een eigen categorienaam intypt
+  const [nieuweCategorieModus, setNieuweCategorieModus] = React.useState(false)
+  const [nieuweCategorieFout, setNieuweCategorieFout] = React.useState(false)
   const baseline = React.useRef<string>(JSON.stringify(leeg()))
+
+  // Alle bekende types: standaard + al gebruikte custom types
+  const alleTypes = React.useMemo(() => {
+    const extra = extraTypes.filter((t) => !VENDOR_TYPES.includes(t))
+    return [...VENDOR_TYPES, ...extra]
+  }, [extraTypes])
 
   React.useEffect(() => {
     if (open) {
@@ -78,7 +92,11 @@ export function VendorForm({
       baseline.current = JSON.stringify(start)
       setNaamFout(false)
       setDetailsOpen(!!initial)
+      // Als het type niet in de bekende lijst staat → custom modus
+      setNieuweCategorieModus(!!initial && !alleTypes.includes(start.type))
+      setNieuweCategorieFout(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial])
 
   const dirty = JSON.stringify(form) !== baseline.current
@@ -93,9 +111,24 @@ export function VendorForm({
     setForm((f) => ({ ...f, [key]: value }))
   }
 
+  const handleTypeSelect = (value: string) => {
+    if (value === NIEUW_SENTINEL) {
+      setNieuweCategorieModus(true)
+      set('type', '')
+    } else {
+      setNieuweCategorieModus(false)
+      setNieuweCategorieFout(false)
+      set('type', value)
+    }
+  }
+
   const verwerk = async (closeAfter: boolean) => {
     if (!form.naam.trim()) {
       setNaamFout(true)
+      return
+    }
+    if (nieuweCategorieModus && !form.type.trim()) {
+      setNieuweCategorieFout(true)
       return
     }
     if (saving) return
@@ -104,6 +137,7 @@ export function VendorForm({
       await Promise.resolve(onSubmit({
         ...form,
         naam: form.naam.trim(),
+        type: nieuweCategorieModus ? form.type.trim().toLowerCase() : form.type,
         geoffreerdBedrag: Number(form.geoffreerdBedrag) || 0,
       }))
       if (closeAfter) {
@@ -113,6 +147,8 @@ export function VendorForm({
         setForm(leegForm)
         baseline.current = JSON.stringify(leegForm)
         setNaamFout(false)
+        setNieuweCategorieModus(false)
+        setNieuweCategorieFout(false)
       }
     } catch {
       // opslaan mislukt
@@ -152,17 +188,49 @@ export function VendorForm({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Type" htmlFor="type">
-            <Select
-              id="type"
-              value={form.type}
-              onChange={(e) => set('type', e.target.value as NewVendor['type'])}
-            >
-              {VENDOR_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {capFirst(t)}
-                </option>
-              ))}
-            </Select>
+            {nieuweCategorieModus ? (
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  id="type"
+                  placeholder="Bijv. entertainement"
+                  value={form.type}
+                  aria-invalid={nieuweCategorieFout || undefined}
+                  onChange={(e) => {
+                    setNieuweCategorieFout(false)
+                    set('type', e.target.value)
+                  }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setNieuweCategorieModus(false)
+                    setNieuweCategorieFout(false)
+                    set('type', 'locatie')
+                  }}
+                >
+                  Kies uit de lijst
+                </button>
+                {nieuweCategorieFout && (
+                  <p className="text-xs text-destructive">Vul een categorienaam in</p>
+                )}
+              </div>
+            ) : (
+              <Select
+                id="type"
+                value={form.type}
+                onChange={(e) => handleTypeSelect(e.target.value)}
+              >
+                {alleTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {capFirst(t)}
+                  </option>
+                ))}
+                <option disabled>──────────</option>
+                <option value={NIEUW_SENTINEL}>Nieuwe categorie…</option>
+              </Select>
+            )}
           </Field>
           <Field label="Status" htmlFor="status">
             <Select

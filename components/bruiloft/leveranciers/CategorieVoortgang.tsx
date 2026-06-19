@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 import { Progress } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { VENDOR_TYPES } from '@/lib/bruiloft/options'
-import type { Vendor, VendorType } from '@/lib/bruiloft/types'
+import type { Vendor } from '@/lib/bruiloft/types'
 
 interface CategorieVoortgangProps {
   vendors: Vendor[]
@@ -18,9 +18,18 @@ interface CategorieVoortgangProps {
 // Voortgangsstrip: hoeveel categorieën zijn geboekt + chips per categorie
 // (vinkje = geboekt, stip = bezig, leeg = nog niets) die als typefilter werken.
 export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoortgangProps) {
+  // Standaard categorieën + eventuele custom categorieën uit de vendors
+  const alleTypes = React.useMemo(() => {
+    const customTypes = vendors
+      .map((v) => v.type)
+      .filter((t) => !VENDOR_TYPES.includes(t))
+    const uniek = Array.from(new Set(customTypes))
+    return [...VENDOR_TYPES, ...uniek]
+  }, [vendors])
+
   const perCategorie = React.useMemo(() => {
-    const m = new Map<VendorType, { aantal: number; geboekt: boolean }>()
-    for (const t of VENDOR_TYPES) m.set(t, { aantal: 0, geboekt: false })
+    const m = new Map<string, { aantal: number; geboekt: boolean }>()
+    for (const t of alleTypes) m.set(t, { aantal: 0, geboekt: false })
     for (const v of vendors) {
       const cur = m.get(v.type)
       if (!cur) continue
@@ -28,7 +37,7 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
       if (v.status === 'geboekt') cur.geboekt = true
     }
     return m
-  }, [vendors])
+  }, [vendors, alleTypes])
 
   const geboektAantal = Array.from(perCategorie.values()).filter((c) => c.geboekt).length
 
@@ -36,7 +45,7 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
     <div className="mb-6 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">
-          {geboektAantal} van {VENDOR_TYPES.length} categorieën geboekt
+          {geboektAantal} van {alleTypes.length} categorieën geboekt
         </p>
         {waarde !== 'all' ? (
           <button
@@ -48,10 +57,10 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
           </button>
         ) : null}
       </div>
-      <Progress value={(geboektAantal / VENDOR_TYPES.length) * 100} className="mt-2 h-1.5" />
+      <Progress value={(geboektAantal / alleTypes.length) * 100} className="mt-2 h-1.5" />
 
       <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        {VENDOR_TYPES.map((t) => {
+        {alleTypes.map((t) => {
           const info = perCategorie.get(t)!
           const actief = waarde === t
           return (
