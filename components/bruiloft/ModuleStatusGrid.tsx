@@ -143,14 +143,23 @@ export function ModuleStatusGrid({
           {wedding.totaalBudget > 0 ? (
             <>
               <Progress value={budgetPct} className="mt-3 mb-1.5" />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">{budgetPct}% betaald</p>
-                {overBudget && (
+                {overBudget ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
                     <AlertCircle className="h-3 w-3" /> Over budget
                   </span>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    nog <Money bedrag={Math.max(0, wedding.totaalBudget - budget.totaalBetaald)} /> over
+                  </p>
                 )}
               </div>
+              {budget.totaalGeoffreerd > budget.totaalBetaald && (
+                <p className="mt-1.5 text-xs text-amber-700">
+                  <Money bedrag={budget.totaalGeoffreerd} /> gereserveerd
+                </p>
+              )}
             </>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">Nog geen totaalbudget ingesteld</p>
