@@ -105,7 +105,6 @@ const config: Config = {
         premium: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       animation: {
-        'speed-dial-in': 'speedDialIn 0.2s ease-out both',
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -116,10 +115,6 @@ const config: Config = {
         shimmer: 'shimmer 1.6s ease-in-out infinite',
       },
       keyframes: {
-        speedDialIn: {
-          '0%': { opacity: '0', transform: 'translateY(8px) scale(0.9)' },
-          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
-        },
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
