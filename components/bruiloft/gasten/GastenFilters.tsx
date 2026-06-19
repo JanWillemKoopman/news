@@ -41,11 +41,11 @@ export function GastenFilters({
 
   React.useEffect(() => {
     if (!open) return
-    function handler(e: MouseEvent) {
+    function handler(e: PointerEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [open])
 
   return (
