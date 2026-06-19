@@ -287,17 +287,19 @@ export default function GastenPage() {
         />
       ) : (
         <>
-          <GastenFilters
-            zoek={zoek}
-            onZoek={setZoek}
-            categorie={fCategorie}
-            onCategorie={setFCategorie}
-            type={fType}
-            onType={setFType}
-            rsvp={fRsvp}
-            onRsvp={setFRsvp}
-            wedding={wedding}
-          />
+          <div className="sticky top-0 z-20 -mx-4 bg-muted px-4 pt-1 pb-2 md:-mx-8 md:px-8">
+            <GastenFilters
+              zoek={zoek}
+              onZoek={setZoek}
+              categorie={fCategorie}
+              onCategorie={setFCategorie}
+              type={fType}
+              onType={setFType}
+              rsvp={fRsvp}
+              onRsvp={setFRsvp}
+              wedding={wedding}
+            />
+          </div>
           <div className="rounded-lg border border-border bg-card shadow-sm">
 
           {/* Tabel (desktop) */}
@@ -407,7 +409,15 @@ export default function GastenPage() {
               {/* Mobiel: compacte lijstweergave */}
               <div className="divide-y divide-border md:hidden">
                 {zichtbaar.map((g) => (
-                  <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+                  <div
+                    key={g.id}
+                    role={kanBewerken ? 'button' : undefined}
+                    tabIndex={kanBewerken ? 0 : undefined}
+                    aria-label={kanBewerken ? `${g.voornaam} ${g.achternaam} bewerken` : undefined}
+                    onClick={kanBewerken ? () => openBewerk(g) : undefined}
+                    onKeyDown={kanBewerken ? (e) => { if (e.key === 'Enter' || e.key === ' ') openBewerk(g) } : undefined}
+                    className={`flex min-h-[3.5rem] items-center gap-3 px-4 py-3 transition-colors${kanBewerken ? ' cursor-pointer hover:bg-accent/40 active:bg-accent/60' : ''}`}
+                  >
                     {/* Naam + details */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-foreground text-sm">
