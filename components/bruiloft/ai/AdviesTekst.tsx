@@ -4,18 +4,27 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-// Lange AI-teksten standaard ingeklapt op twee regels, met "Lees meer".
-// Houdt advieskaarten compact, vooral op mobiel.
-const LANG_VANAF = 160
-
 export function AdviesTekst({ tekst, className }: { tekst: string; className?: string }) {
   const [uitgeklapt, setUitgeklapt] = React.useState(false)
-  const isLang = tekst.length > LANG_VANAF
+  const [isAfgekapt, setIsAfgekapt] = React.useState(false)
+  const ref = React.useRef<HTMLParagraphElement>(null)
+
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Detect whether line-clamp-2 actually cuts off content
+    setIsAfgekapt(el.scrollHeight > el.clientHeight)
+  }, [tekst])
 
   return (
     <>
-      <p className={cn(className, isLang && !uitgeklapt && 'line-clamp-2')}>{tekst}</p>
-      {isLang ? (
+      <p
+        ref={ref}
+        className={cn(className, !uitgeklapt && 'line-clamp-2')}
+      >
+        {tekst}
+      </p>
+      {isAfgekapt ? (
         <button
           type="button"
           onClick={() => setUitgeklapt((v) => !v)}
