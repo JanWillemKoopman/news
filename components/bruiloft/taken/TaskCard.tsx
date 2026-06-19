@@ -56,6 +56,7 @@ export function TaskCard({
     toegewezenLeden.length === 0 && task.toegewezenAan ? task.toegewezenAan : null
 
   const swipeStartX = React.useRef(0)
+  const swipeXRef = React.useRef(0)
   const [swipeX, setSwipeX] = React.useState(0)
   const swiping = React.useRef(false)
 
@@ -66,15 +67,14 @@ export function TaskCard({
   const onTouchMove = (e: React.TouchEvent) => {
     if (!swiping.current) return
     const delta = swipeStartX.current - e.touches[0].clientX
-    if (delta > 0) setSwipeX(delta)
+    if (delta > 0) { swipeXRef.current = delta; setSwipeX(delta) }
   }
   const onTouchEnd = () => {
     swiping.current = false
-    if (swipeX > 60) {
-      setSwipeX(0)
-      onDelete(task)
+    if (swipeXRef.current > 60) {
+      swipeXRef.current = 0; setSwipeX(0); onDelete(task)
     } else {
-      setSwipeX(0)
+      swipeXRef.current = 0; setSwipeX(0)
     }
   }
 

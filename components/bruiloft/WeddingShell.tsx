@@ -63,10 +63,11 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const weddingSettingsOpen = useBruiloftStore((s) => s.weddingSettingsOpen)
   const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
-  const [isOnline, setIsOnline] = React.useState(true)
+  const [isOnline, setIsOnline] = React.useState(
+    () => typeof window !== 'undefined' ? navigator.onLine : true
+  )
 
   React.useEffect(() => {
-    setIsOnline(navigator.onLine)
     const goOnline = () => setIsOnline(true)
     const goOffline = () => setIsOnline(false)
     window.addEventListener('online', goOnline)

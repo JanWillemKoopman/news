@@ -35,7 +35,14 @@ self.addEventListener('fetch', (e) => {
 
   // Supabase API — network-first, geen cache
   if (url.hostname.endsWith('supabase.co')) {
-    e.respondWith(fetch(request).catch(() => new Response('', { status: 503 })))
+    e.respondWith(
+      fetch(request).catch(() =>
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+    )
     return
   }
 

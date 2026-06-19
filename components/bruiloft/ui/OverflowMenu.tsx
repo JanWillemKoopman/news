@@ -71,9 +71,9 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
             align === 'right' ? 'right-0' : 'left-0'
           )}
         >
-          {items.map((item) => (
+          {items.map((item, i) => (
             <button
-              key={item.label}
+              key={`${item.label}-${i}`}
               type="button"
               role="menuitem"
               disabled={item.disabled}

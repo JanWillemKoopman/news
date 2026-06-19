@@ -41,18 +41,16 @@ export default function TafelsPage() {
   const [delTable, setDelTable] = React.useState<Table | null>(null)
 
   // Plattegrond is de standaard op desktop; lijst op mobiel. De keuze wordt onthouden.
-  const [weergave, setWeergave] = React.useState<'plattegrond' | 'lijst'>('plattegrond')
-  React.useEffect(() => {
+  const [weergave, setWeergave] = React.useState<'plattegrond' | 'lijst'>(() => {
+    if (typeof window === 'undefined') return 'plattegrond'
     try {
       const bewaard = localStorage.getItem(WEERGAVE_KEY)
-      if (bewaard === 'lijst') { setWeergave('lijst'); return }
-      if (bewaard === 'plattegrond') return
-      // Geen opgeslagen voorkeur: mobiel standaard naar lijstmodus
-      if (window.innerWidth < 768) setWeergave('lijst')
+      if (bewaard === 'lijst' || bewaard === 'plattegrond') return bewaard as 'lijst' | 'plattegrond'
+      return window.innerWidth < 768 ? 'lijst' : 'plattegrond'
     } catch {
-      // localStorage niet beschikbaar; negeren.
+      return 'plattegrond'
     }
-  }, [])
+  })
   const kiesWeergave = (w: 'plattegrond' | 'lijst') => {
     setWeergave(w)
     try {

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
 import { FloatingAddButton } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
@@ -14,21 +15,37 @@ interface PageHeaderProps {
   fab?: { label: string; onClick: () => void }
 }
 
-// Houdt bij of het element (de header) in beeld is. Start als zichtbaar zodat de
-// FAB pas verschijnt nadat er daadwerkelijk voorbij de header is gescrolld. De
-// content scrolt binnen een container die het volledige venster vult, dus de
-// viewport als observer-root volstaat.
+// Houdt bij of het element (de header) in beeld is via scroll-events op de
+// container. IntersectionObserver met custom root werkt niet betrouwbaar in
+// alle browsers wanneer de container een div is i.p.v. het venster.
 function useElementInView(ref: React.RefObject<HTMLElement>) {
+  const scrollContainer = React.useContext(ScrollContainerContext)
   const [inView, setInView] = React.useState(true)
+
   React.useEffect(() => {
-    const el = ref.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
-      threshold: 0,
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [ref])
+    const container = scrollContainer?.current
+    if (!container) return
+
+    let rafId: number | null = null
+    const check = () => {
+      const el = ref.current
+      if (!el) return
+      // Header is zichtbaar als de onderkant nog boven de bovenkant van de container uitsteekt
+      const elBottom = el.getBoundingClientRect().bottom
+      const containerTop = container.getBoundingClientRect().top
+      setInView(elBottom > containerTop)
+      rafId = null
+    }
+    const handleScroll = () => { if (rafId === null) rafId = requestAnimationFrame(check) }
+
+    check()
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      container.removeEventListener('scroll', handleScroll)
+    }
+  }, [ref, scrollContainer])
+
   return inView
 }
 
