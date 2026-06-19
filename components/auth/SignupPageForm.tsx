@@ -95,6 +95,11 @@ function ConfirmationState({ email, next }: { email: string; next: string }) {
 
 /* ─── Step 2: wedding setup ─────────────────────────────────────────── */
 
+// Standaard staan alle leverancier-categorieën op 'te_doen'. Gebruikers
+// hoeven alleen aan te geven wat al geregeld is of niet van toepassing is.
+const DEFAULT_GEREGELDE_ZAKEN: Partial<Record<VoortgangCategorie, VoortgangStatus>> =
+  Object.fromEntries(VOORTGANG_ITEMS.map(({ key }) => [key, 'te_doen' as VoortgangStatus]))
+
 function WeddingSetup({
   partner1Naam,
   partner2Naam,
@@ -112,16 +117,15 @@ function WeddingSetup({
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [gasten, setGasten] = React.useState('')
-  const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>({})
-  const [nietVanToepassing, setNietVanToepassing] = React.useState<Set<VoortgangCategorie>>(new Set())
-  const [showMore, setShowMore] = React.useState(false)
+  const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>(DEFAULT_GEREGELDE_ZAKEN)
+  const [nietNodig, setNietNodig] = React.useState<Set<VoortgangCategorie>>(new Set())
   const [maakBudget, setMaakBudget] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
   function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus | 'niet_van_toepassing') {
     if (status === 'niet_van_toepassing') {
-      setNietVanToepassing((prev) => {
+      setNietNodig((prev) => {
         const next = new Set(prev)
         if (next.has(key)) {
           next.delete(key)
@@ -136,19 +140,12 @@ function WeddingSetup({
         return next
       })
     } else {
-      setNietVanToepassing((prev) => {
+      setNietNodig((prev) => {
         const next = new Set(prev)
         next.delete(key)
         return next
       })
-      setGeregeldeZaken((prev) => {
-        if (prev[key] === status) {
-          const next = { ...prev }
-          delete next[key]
-          return next
-        }
-        return { ...prev, [key]: status }
-      })
+      setGeregeldeZaken((prev) => ({ ...prev, [key]: status }))
     }
   }
 
@@ -199,19 +196,26 @@ function WeddingSetup({
 
   const inputCls = 'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary'
 
+  const naam1 = partner1Naam.trim()
+  const naam2 = partner2Naam.trim()
+  const begroeting = naam1 && naam2
+    ? `Hoi ${naam1} & ${naam2}!`
+    : naam1
+      ? `Hoi ${naam1}!`
+      : 'Goed bezig!'
+
   return (
     <div className="w-full max-w-sm">
-      {/* Success notice */}
-      <div className="mb-8 flex items-start gap-3 rounded-xl bg-green-50 px-4 py-3 text-green-800">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" aria-hidden />
-        <p className="text-sm font-medium">Account succesvol aangemaakt! Stel nu jullie trouwplan in.</p>
+      <div className="mb-6">
+        <h2 className="font-serif text-[1.75rem] font-medium leading-tight tracking-tight text-gray-900">
+          {begroeting}
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
+          Vul in wat jullie al weten — alles is later nog aan te passen.
+        </p>
       </div>
 
-      <p className="text-sm leading-relaxed text-gray-500">
-        Vul in wat je al weet, je kun alles later nog aanpassen.
-      </p>
-
-      <form onSubmit={onSubmit} className="mt-6 space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
 
         {/* Woonplaats */}
         <div>
@@ -266,122 +270,111 @@ function WeddingSetup({
           </div>
         </div>
 
-        {!showMore ? (
-          <button
-            type="button"
-            onClick={() => setShowMore(true)}
-            className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-          >
-            Volgende
-          </button>
-        ) : (
-          <>
-            {/* Gasten */}
-            <div>
-              <label htmlFor="wiz-gasten" className="mb-1.5 block text-sm font-medium text-gray-700">
-                Verwacht aantal gasten totaal
-              </label>
-              <input
-                id="wiz-gasten"
-                type="number"
-                min={0}
-                placeholder="Bijv. 100"
-                value={gasten}
-                onChange={(e) => setGasten(e.target.value)}
-                className={inputCls}
-              />
-            </div>
+        {/* Gasten */}
+        <div>
+          <label htmlFor="wiz-gasten" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Verwacht aantal gasten totaal
+          </label>
+          <input
+            id="wiz-gasten"
+            type="number"
+            min={0}
+            placeholder="Bijv. 100"
+            value={gasten}
+            onChange={(e) => setGasten(e.target.value)}
+            className={inputCls}
+          />
+        </div>
 
-            {/* Leveranciers */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-gray-700">Wat hebben jullie al geregeld?</p>
-              <div className="overflow-hidden rounded-xl border border-gray-200">
-                {VOORTGANG_ITEMS.map(({ key, label }, i) => {
-                  const current = geregeldeZaken[key]
-                  const isNvt = nietVanToepassing.has(key)
-                  return (
-                    <div
-                      key={key}
-                      className={`flex items-center justify-between px-3 py-2.5 ${i !== 0 ? 'border-t border-gray-100' : ''}`}
-                    >
-                      <span className="text-sm text-gray-700">{label}</span>
-                      <div className="flex gap-1">
-                        {([
-                          { status: 'geboekt' as const, label: 'Geboekt' },
-                          { status: 'te_doen' as const, label: 'Te doen' },
-                          { status: 'niet_van_toepassing' as const, label: 'N.v.t.' },
-                        ]).map(({ status, label: btnLabel }) => {
-                          const isActive = status === 'niet_van_toepassing' ? isNvt : current === status
-                          return (
-                            <button
-                              key={status}
-                              type="button"
-                              onClick={() => setVoortgang(key, status)}
-                              className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
-                                isActive
-                                  ? status === 'geboekt'
-                                    ? 'bg-green-100 text-green-700'
-                                    : status === 'niet_van_toepassing'
-                                      ? 'bg-gray-100 text-gray-500'
-                                      : 'bg-gray-100 text-gray-700'
-                                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-                              }`}
-                            >
-                              {isActive && status === 'geboekt' && (
-                                <CheckCircle2 className="h-2.5 w-2.5" />
-                              )}
-                              {btnLabel}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Budget-kaartjes toggle */}
-            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5">
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  id="wiz-budget-kaartjes"
-                  type="checkbox"
-                  checked={maakBudget}
-                  onChange={(e) => setMaakBudget(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <div>
-                  <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800">
-                    Budget-kaartjes aanmaken
-                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                      Aanbevolen
-                    </span>
-                  </span>
-                  <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
-                    We zetten alvast kaartjes klaar voor de categorieën die jullie nog moeten regelen.
-                  </p>
+        {/* Leveranciers */}
+        <div>
+          <p className="mb-1 text-sm font-medium text-gray-700">Wat hebben jullie al geregeld?</p>
+          <p className="mb-2 text-xs text-gray-500">Pas aan wat afwijkt — de rest staat al op &apos;Te doen&apos;.</p>
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            {VOORTGANG_ITEMS.map(({ key, label }, i) => {
+              const current = geregeldeZaken[key]
+              const isNietNodig = nietNodig.has(key)
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between px-3 py-2.5 ${i !== 0 ? 'border-t border-gray-100' : ''}`}
+                >
+                  <span className="text-sm text-gray-700">{label}</span>
+                  <div className="flex gap-1">
+                    {([
+                      { status: 'geboekt' as const, label: 'Geboekt' },
+                      { status: 'te_doen' as const, label: 'Te doen' },
+                      { status: 'niet_van_toepassing' as const, label: 'Niet nodig' },
+                    ]).map(({ status, label: btnLabel }) => {
+                      const isActive = status === 'niet_van_toepassing' ? isNietNodig : current === status
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => setVoortgang(key, status)}
+                          className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+                            isActive
+                              ? status === 'geboekt'
+                                ? 'bg-green-100 text-green-700'
+                                : status === 'niet_van_toepassing'
+                                  ? 'bg-gray-100 text-gray-500'
+                                  : 'bg-gray-100 text-gray-700'
+                              : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                          }`}
+                        >
+                          {isActive && status === 'geboekt' && (
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                          )}
+                          {btnLabel}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </label>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Budget-kaartjes toggle */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              id="wiz-budget-kaartjes"
+              type="checkbox"
+              checked={maakBudget}
+              onChange={(e) => setMaakBudget(e.target.checked)}
+              className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <div>
+              <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800">
+                Budget-kaartjes aanmaken
+                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  Aanbevolen
+                </span>
+              </span>
+              <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                We zetten alvast kaartjes klaar voor de categorieën die jullie nog moeten regelen.
+              </p>
             </div>
+          </label>
+        </div>
 
-            {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
-            ) : null}
+        {error ? (
+          <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+        ) : null}
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? 'Even geduld…' : 'Maak ons trouwplan'}
-            </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? 'Even geduld…' : 'Maak ons trouwplan'}
+        </button>
 
-            <p className="text-center text-xs text-gray-400">
-              Alle velden zijn optioneel — je kunt dit later altijd aanpassen.
-            </p>
-          </>
-        )}
+        <p className="text-center text-xs text-gray-400">
+          Alle velden zijn optioneel — je kunt dit later altijd aanpassen.
+        </p>
       </form>
     </div>
   )
