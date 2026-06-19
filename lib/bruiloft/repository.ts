@@ -60,6 +60,7 @@ export interface WeddingRepository {
   // BudgetItems
   listBudgetItems(weddingId: ID): Promise<BudgetItem[]>
   createBudgetItem(input: BudgetItemInput): Promise<BudgetItem>
+  createBudgetItems(inputs: BudgetItemInput[]): Promise<BudgetItem[]>
   updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem>
   deleteBudgetItem(id: ID): Promise<void>
 

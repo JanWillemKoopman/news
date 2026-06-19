@@ -10,6 +10,8 @@ import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/br
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { mapAuthError, safeNext } from './authErrors'
 
+type Phase = 'account' | 'keuze' | 'wizard'
+
 const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
   { key: 'locatie', label: 'Trouwlocatie' },
   { key: 'fotograaf', label: 'Fotograaf' },
@@ -31,13 +33,15 @@ const BUDGET_PRESETS = [
 
 /* ─── Steps indicator ──────────────────────────────────────────────── */
 
-function StepsBar({ current }: { current: 1 | 2 }) {
+function StepsBar({ current }: { current: Phase }) {
   const steps = ['Account aanmaken', 'Trouwplan opstellen']
+  // 'account' = stap 1 actief; 'keuze'/'wizard' = stap 1 klaar, stap 2 actief
+  const stepIndex = current === 'account' ? 0 : 1
   return (
     <div className="flex gap-6 px-8 pt-8 pb-4 md:px-12 md:pt-10">
       {steps.map((label, i) => {
-        const active = current === i + 1
-        const completed = current > i + 1
+        const active = stepIndex === i
+        const completed = stepIndex > i
         return (
           <div key={i} className="flex flex-1 flex-col items-center gap-1.5 text-center">
             <span
@@ -111,6 +115,7 @@ function WeddingSetup({
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>({})
   const [nietVanToepassing, setNietVanToepassing] = React.useState<Set<VoortgangCategorie>>(new Set())
   const [showMore, setShowMore] = React.useState(false)
+  const [maakBudget, setMaakBudget] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -184,7 +189,7 @@ function WeddingSetup({
       takenVoorstellen: { beslist: {}, afgerond: false },
     }
     try {
-      await setupWedding(input)
+      await setupWedding(input, { maakTaken: true, maakBudget })
       router.push('/bruiloft')
     } catch {
       setSaving(false)
@@ -336,6 +341,30 @@ function WeddingSetup({
               </div>
             </div>
 
+            {/* Budget-kaartjes toggle */}
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  id="wiz-budget-kaartjes"
+                  type="checkbox"
+                  checked={maakBudget}
+                  onChange={(e) => setMaakBudget(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <div>
+                  <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800">
+                    Budget-kaartjes aanmaken
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      Aanbevolen
+                    </span>
+                  </span>
+                  <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                    We zetten alvast kaartjes klaar voor de categorieën die jullie nog moeten regelen.
+                  </p>
+                </div>
+              </label>
+            </div>
+
             {error ? (
               <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
             ) : null}
@@ -358,12 +387,83 @@ function WeddingSetup({
   )
 }
 
+/* ─── Step "keuze": guided vs. clean ───────────────────────────────── */
+
+function KeuzeStep({
+  onGeholpen,
+  onLeegBeginnen,
+}: {
+  onGeholpen: () => void
+  onLeegBeginnen: () => Promise<void>
+}) {
+  const [saving, setSaving] = React.useState(false)
+
+  return (
+    <div className="w-full max-w-sm">
+      <div className="mb-8">
+        <div className="mb-3 flex items-center gap-2.5">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
+          <p className="text-sm font-medium text-green-700">Account aangemaakt!</p>
+        </div>
+        <h2 className="font-serif text-[1.75rem] font-medium leading-tight tracking-tight text-gray-900">
+          Hoe willen jullie beginnen?
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
+          Kies hoe we jullie trouwplan opzetten.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {/* Optie A: geholpen beginnen (aanbevolen) */}
+        <button
+          type="button"
+          onClick={onGeholpen}
+          className="relative w-full rounded-xl border-2 border-primary bg-primary/5 p-5 text-left transition-all hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <span className="absolute right-4 top-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+            Aanbevolen
+          </span>
+          <p className="pr-24 text-base font-semibold text-gray-900">Geholpen beginnen</p>
+          <p className="mt-1 text-sm leading-relaxed text-gray-600">
+            We stellen samen jullie takenlijst en budget op. Duurt ±2 minuten.
+          </p>
+          <p className="mt-3 text-sm font-medium text-primary">Ja, help ons →</p>
+        </button>
+
+        {/* Optie B: zelf beginnen (leeg account) */}
+        <button
+          type="button"
+          onClick={async () => {
+            setSaving(true)
+            try {
+              await onLeegBeginnen()
+            } catch {
+              setSaving(false)
+            }
+          }}
+          disabled={saving}
+          className="w-full rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <p className="text-base font-semibold text-gray-700">Zelf beginnen</p>
+          <p className="mt-1 text-sm leading-relaxed text-gray-500">
+            Leeg trouwplan. Jullie voegen zelf alles toe wanneer jullie willen.
+          </p>
+          <p className="mt-3 text-sm font-medium text-gray-400">
+            {saving ? 'Even geduld…' : 'Leeg beginnen →'}
+          </p>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main form ─────────────────────────────────────────────────────── */
 
 export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillEmail?: string }) {
   const supabase = React.useMemo(() => createClient(), [])
   const router = useRouter()
   const target = safeNext(next)
+  const setupWedding = useBruiloftStore((s) => s.setupWedding)
 
   const [email, setEmail] = React.useState(prefillEmail ?? '')
   const [password, setPassword] = React.useState('')
@@ -375,7 +475,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
   const [error, setError] = React.useState<string | null>(null)
   const [needsConfirmation, setNeedsConfirmation] = React.useState(false)
   // Ingelogde gebruikers slaan stap 1 (account aanmaken) automatisch over.
-  const [phase, setPhase] = React.useState<1 | 2>(1)
+  const [phase, setPhase] = React.useState<Phase>('account')
 
   React.useEffect(() => {
     let active = true
@@ -405,7 +505,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
         } else if (!savedDate && !weddingDate) {
           setNoDateYet(true)
         }
-        setPhase(2)
+        setPhase('keuze')
       }
     })
     return () => {
@@ -453,7 +553,25 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
     }
 
     setLoading(false)
-    setPhase(2)
+    setPhase('keuze')
+  }
+
+  async function onLeegBeginnen() {
+    const input: WeddingInput = {
+      partner1Naam: firstName.trim() || 'Partner 1',
+      partner2Naam: partnerName.trim() || 'Partner 2',
+      trouwdatum: noDateYet ? '' : weddingDate || '',
+      locatie: '',
+      woonplaats: '',
+      totaalBudget: 0,
+      aantalDaggasten: 0,
+      aantalAvondgasten: 0,
+      ceremonietype: null,
+      geregeldeZaken: {},
+      takenVoorstellen: { beslist: {}, afgerond: false },
+    }
+    await setupWedding(input, { maakTaken: false, maakBudget: false })
+    router.push('/bruiloft')
   }
 
   return (
@@ -466,7 +584,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
         <StepsBar current={phase} />
 
         <div className="flex flex-1 items-start justify-center overflow-y-auto px-8 py-10 md:px-12 lg:px-16">
-          {phase === 1 ? (
+          {phase === 'account' ? (
             <div className="w-full max-w-sm">
               {needsConfirmation ? (
                 <ConfirmationState email={email} next={next ?? ''} />
@@ -589,6 +707,11 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                 </>
               )}
             </div>
+          ) : phase === 'keuze' ? (
+            <KeuzeStep
+              onGeholpen={() => setPhase('wizard')}
+              onLeegBeginnen={onLeegBeginnen}
+            />
           ) : (
             <WeddingSetup
               partner1Naam={firstName}

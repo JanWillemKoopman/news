@@ -253,6 +253,14 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return budgetItemFromRow(data)
   }
 
+  async createBudgetItems(inputs: BudgetItemInput[]): Promise<BudgetItem[]> {
+    if (inputs.length === 0) return []
+    const rows = inputs.map((i) => budgetItemToRow(i) as Tables['budget_items']['Insert'])
+    const { data, error } = await this.db.from('budget_items').insert(rows).select()
+    if (error) throw error
+    return (data ?? []).map(budgetItemFromRow)
+  }
+
   async updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem> {
     const { data, error } = await this.db
       .from('budget_items')

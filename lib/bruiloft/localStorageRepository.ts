@@ -253,6 +253,14 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     return item
   }
 
+  async createBudgetItems(inputs: BudgetItemInput[]): Promise<BudgetItem[]> {
+    const db = this.read()
+    const items: BudgetItem[] = inputs.map((input) => ({ ...input, id: uuid() }))
+    db.budgetItems.push(...items)
+    this.write(db)
+    return items
+  }
+
   async updateBudgetItem(
     id: ID,
     patch: Partial<BudgetItemInput>

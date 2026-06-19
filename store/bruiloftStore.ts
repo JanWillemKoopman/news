@@ -24,6 +24,7 @@ import {
 } from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
 import type { SeatUpdate } from '@/lib/bruiloft/seating'
+import { generateTemplateBudgetItems } from '@/lib/bruiloft/templateBudgetItems'
 import {
   generateTemplateTasks,
   TEMPLATE_TASKS,
@@ -137,7 +138,7 @@ interface BruiloftActions {
   startRealtime: (weddingId: ID) => void
   stopRealtime: () => void
 
-  setupWedding: (input: WeddingInput) => Promise<void>
+  setupWedding: (input: WeddingInput, options?: { maakTaken?: boolean; maakBudget?: boolean }) => Promise<void>
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
   openWeddingSettings: () => void
   closeWeddingSettings: () => void
@@ -631,16 +632,29 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       }
     },
 
-    setupWedding: async (input) => {
+    setupWedding: async (input, options) => {
+      const { maakTaken = true, maakBudget = false } = options ?? {}
       const wedding = await repository.createWedding(input)
-      // Alleen taken die volgens de wizard al geregeld/bezig zijn worden direct
-      // aangemaakt; de rest wordt kaart voor kaart voorgesteld via
-      // "Takenlijst samenstellen" (TakenSamenstellen) op de takenpagina.
-      const voorafGeregeld = generateTemplateTasks(wedding).filter((t) => t.status !== 'open')
-      const tasks =
-        voorafGeregeld.length > 0
+
+      // Taken: alleen die de wizard al geregeld/bezig zijn worden direct aangemaakt;
+      // de rest wordt kaart voor kaart voorgesteld via "Takenlijst samenstellen".
+      let tasks: Task[] = []
+      if (maakTaken) {
+        const voorafGeregeld = generateTemplateTasks(wedding).filter((t) => t.status !== 'open')
+        tasks = voorafGeregeld.length > 0
           ? await repository.createTasks(voorafGeregeld).catch(() => [])
           : []
+      }
+
+      // Budget-kaartjes: op basis van wizard-input, zonder bedragen.
+      let budgetItems: BudgetItem[] = []
+      if (maakBudget) {
+        const sjabloonItems = generateTemplateBudgetItems(wedding)
+        budgetItems = sjabloonItems.length > 0
+          ? await repository.createBudgetItems(sjabloonItems).catch(() => [])
+          : []
+      }
+
       const members = await repository.listMembers(wedding.id).catch(() => [])
       writeActive(wedding.id)
       const seen = new Date().toISOString()
@@ -656,7 +670,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         guests: [],
         vendors: [],
-        budgetItems: [],
+        budgetItems,
         scheduleItems: [],
         tables: [],
         websiteContent: null,
