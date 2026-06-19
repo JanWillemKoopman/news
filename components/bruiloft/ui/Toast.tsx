@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       const id = ++idRef.current
       // Actie-toasts (met undo knop) krijgen automatisch 7s als geen duration opgegeven
       const effectiveDuration = duration ?? (action ? 7000 : 3800)
-      setItems((list) => [...list, { id, title, description, variant, action }])
+      setItems((list) => [...list, { id, title, description, variant, action }].slice(-3))
       setTimeout(() => remove(id), effectiveDuration)
     },
     [remove]
