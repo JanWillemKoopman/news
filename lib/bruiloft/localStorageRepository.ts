@@ -10,6 +10,7 @@ import type {
   BudgetItemInput,
   Guest,
   GuestInput,
+  GuestPatch,
   ID,
   ScheduleItem,
   ScheduleItemInput,
@@ -142,11 +143,16 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     return guest
   }
 
-  async updateGuest(id: ID, patch: Partial<GuestInput>): Promise<Guest> {
+  async updateGuest(id: ID, patch: GuestPatch): Promise<Guest> {
     const db = this.read()
     const index = db.guests.findIndex((g) => g.id === id)
     if (index === -1) throw new Error(`Guest ${id} niet gevonden`)
-    const updated: Guest = { ...db.guests[index], ...patch }
+    // tafelId/stoelIndex mogen `null` zijn om te wissen; lokaal bewaren we dat
+    // als `undefined` zodat het domeintype klopt.
+    const { tafelId, stoelIndex, ...rest } = patch
+    const updated: Guest = { ...db.guests[index], ...rest }
+    if (tafelId !== undefined) updated.tafelId = tafelId ?? undefined
+    if (stoelIndex !== undefined) updated.stoelIndex = stoelIndex ?? undefined
     db.guests[index] = updated
     this.write(db)
     return updated

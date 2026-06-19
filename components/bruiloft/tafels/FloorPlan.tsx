@@ -3,6 +3,8 @@
 import * as React from 'react'
 import {
   Armchair,
+  ChevronDown,
+  ChevronUp,
   GripVertical,
   Maximize2,
   Minus,
@@ -18,6 +20,12 @@ import {
 
 import { Button, Input, Select } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
+import {
+  placeOnSeatUpdates,
+  reorderSeatUpdates,
+  seatsForTable,
+  type SeatUpdate,
+} from '@/lib/bruiloft/seating'
 import type { Guest, Table } from '@/lib/bruiloft/types'
 import {
   GRID,
@@ -56,6 +64,7 @@ interface FloorPlanProps {
   guests: Guest[] // zitplaatspool (niet afgemeld)
   kanBewerken: boolean
   onAssign: (guestId: string, tableId: string | null) => void
+  onSeat: (updates: SeatUpdate[]) => void
   onPatchTable: (id: string, patch: TafelPatch) => void
   onEditTable: (t: Table) => void
   onDeleteTable: (t: Table) => void
@@ -77,6 +86,7 @@ export function FloorPlan({
   guests,
   kanBewerken,
   onAssign,
+  onSeat,
   onPatchTable,
   onEditTable,
   onDeleteTable,
@@ -93,6 +103,7 @@ export function FloorPlan({
   const [overrides, setOverrides] = React.useState<Record<string, Punt>>({})
   const [dragGast, setDragGast] = React.useState<{ gast: Guest; x: number; y: number } | null>(null)
   const [hoverTafel, setHoverTafel] = React.useState<string | null>(null)
+  const [hoverStoel, setHoverStoel] = React.useState<number | null>(null)
   const [zoekGast, setZoekGast] = React.useState('')
   const dragRef = React.useRef<DragMode>(null)
 
@@ -141,6 +152,36 @@ export function FloorPlan({
   }, [guests])
 
   const onverdeeld = React.useMemo(() => guests.filter((g) => !g.tafelId), [guests])
+
+  // Wereldposities van de stoelen van een tafel (geroteerd, rond het middelpunt).
+  const stoelWereldPosities = React.useCallback((t: Table, p: Punt): Punt[] => {
+    const rot = t.rotatie ?? 0
+    return stoelPosities(t).map((cp) => {
+      const r = roteer(cp, rot)
+      return { x: p.x + r.x, y: p.y + r.y }
+    })
+  }, [])
+
+  // Dichtstbijzijnde vrije stoel van een tafel t.o.v. de cursor (wereldcoörd.).
+  const dichtstbijzijndeVrijeStoel = React.useCallback(
+    (t: Table, p: Punt, w: Punt, sleepGastId: string): number | null => {
+      const seats = seatsForTable(t.capaciteit, gastenPerTafel.get(t.id) ?? [])
+      const chairs = stoelWereldPosities(t, p)
+      let best = -1
+      let bestD = Infinity
+      chairs.forEach((cp, i) => {
+        const bezet = seats[i]
+        if (bezet && bezet.id !== sleepGastId) return // door iemand anders bezet
+        const d = Math.hypot(w.x - cp.x, w.y - cp.y)
+        if (d < bestD) {
+          bestD = d
+          best = i
+        }
+      })
+      return best >= 0 ? best : null
+    },
+    [gastenPerTafel, stoelWereldPosities]
+  )
 
   const naarWereld = React.useCallback((clientX: number, clientY: number): Punt => {
     const rect = svgRef.current?.getBoundingClientRect()
@@ -313,22 +354,40 @@ export function FloorPlan({
     const rect = svgRef.current?.getBoundingClientRect()
     if (!rect || e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
       setHoverTafel(null)
+      setHoverStoel(null)
       return
     }
     const w = naarWereld(e.clientX, e.clientY)
     const raak = positiesRef.current.find(
       ({ t, p }) => Math.hypot(w.x - p.x, w.y - p.y) <= tafelStraal(t)
     )
-    setHoverTafel(raak ? raak.t.id : null)
+    if (!raak) {
+      setHoverTafel(null)
+      setHoverStoel(null)
+      return
+    }
+    setHoverTafel(raak.t.id)
+    setHoverStoel(dichtstbijzijndeVrijeStoel(raak.t, raak.p, w, dragGast.gast.id))
   }
 
   const stopGastDrag = () => {
     if (dragGast && hoverTafel) {
-      onAssign(dragGast.gast.id, hoverTafel)
-      setSelectie(hoverTafel)
+      const table = tables.find((t) => t.id === hoverTafel)
+      if (table) {
+        if (hoverStoel != null) {
+          // Op een specifieke (vrije) stoel laten vallen.
+          const seats = seatsForTable(table.capaciteit, gastenPerTafel.get(table.id) ?? [])
+          onSeat(placeOnSeatUpdates(seats, dragGast.gast, table.id, hoverStoel))
+        } else {
+          // Geen vrije stoel onder de cursor: gewoon aan de tafel toevoegen.
+          onAssign(dragGast.gast.id, table.id)
+        }
+        setSelectie(table.id)
+      }
     }
     setDragGast(null)
     setHoverTafel(null)
+    setHoverStoel(null)
   }
 
   const geselecteerdeTafel = selectie ? tables.find((t) => t.id === selectie) ?? null : null
@@ -375,18 +434,23 @@ export function FloorPlan({
             {/* rastervlak ruim rond de inhoud */}
             <rect x={-4000} y={-4000} width={12000} height={12000} fill="url(#raster)" />
 
-            {tables.map((t) => (
-              <TafelNode
-                key={t.id}
-                table={t}
-                pos={posVan(t)}
-                gasten={gastenPerTafel.get(t.id) ?? []}
-                geselecteerd={selectie === t.id}
-                dropDoel={hoverTafel === t.id}
-                sleepbaar={kanBewerken}
-                onPointerDown={(e) => startTafelDrag(e, t)}
-              />
-            ))}
+            {tables.map((t) => {
+              const gastenT = gastenPerTafel.get(t.id) ?? []
+              return (
+                <TafelNode
+                  key={t.id}
+                  table={t}
+                  pos={posVan(t)}
+                  seats={seatsForTable(t.capaciteit, gastenT)}
+                  aantal={gastenT.length}
+                  geselecteerd={selectie === t.id}
+                  dropDoel={hoverTafel === t.id}
+                  hoverStoel={hoverTafel === t.id ? hoverStoel : null}
+                  sleepbaar={kanBewerken}
+                  onPointerDown={(e) => startTafelDrag(e, t)}
+                />
+              )
+            })}
           </g>
         </svg>
 
@@ -415,7 +479,7 @@ export function FloorPlan({
         ) : null}
 
         <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-card/90 px-3 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur">
-          Scroll = verschuiven · {typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl'}+scroll = zoomen · Sleep tafels en gasten
+          Scroll = verschuiven · {typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl'}+scroll = zoomen · Sleep een gast op een stoel
         </p>
 
         {tables.length === 0 ? (
@@ -440,6 +504,7 @@ export function FloorPlan({
             onverdeeld={onverdeeld}
             kanBewerken={kanBewerken}
             onAssign={onAssign}
+            onSeat={onSeat}
             onRoteer={() =>
               onPatchTable(geselecteerdeTafel.id, {
                 rotatie: ((geselecteerdeTafel.rotatie ?? 0) + 45) % 360,
@@ -520,7 +585,7 @@ export function FloorPlan({
           </div>
           {kanBewerken && onverdeeld.length > 0 ? (
             <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-              Sleep een gast op een tafel in de plattegrond.
+              Sleep een gast op een stoel in de plattegrond.
             </p>
           ) : null}
         </div>
@@ -544,17 +609,21 @@ export function FloorPlan({
 function TafelNode({
   table,
   pos,
-  gasten,
+  seats,
+  aantal,
   geselecteerd,
   dropDoel,
+  hoverStoel,
   sleepbaar,
   onPointerDown,
 }: {
   table: Table
   pos: Punt
-  gasten: Guest[]
+  seats: (Guest | null)[]
+  aantal: number
   geselecteerd: boolean
   dropDoel: boolean
+  hoverStoel: number | null
   sleepbaar: boolean
   onPointerDown: (e: React.PointerEvent) => void
 }) {
@@ -565,7 +634,7 @@ function TafelNode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [table.vorm, table.capaciteit, rot]
   )
-  const vol = gasten.length > table.capaciteit
+  const vol = aantal > table.capaciteit
 
   const bladKlasse = cn(
     'fill-card transition-[stroke] duration-150',
@@ -612,16 +681,22 @@ function TafelNode({
 
       {/* Stoelen met initialen van de ingedeelde gasten */}
       {stoelen.map((p, i) => {
-        const gast = gasten[i]
+        const gast = seats[i] ?? null
+        const doelStoel = hoverStoel === i
         return (
           <g key={i} transform={`translate(${p.x} ${p.y})`} className="pointer-events-none">
+            {doelStoel ? (
+              <circle r={STOEL_R + 5} className="fill-emerald-500/15 stroke-emerald-500" strokeWidth={1.5} />
+            ) : null}
             <circle
               r={STOEL_R}
-              strokeWidth={1.25}
+              strokeWidth={doelStoel ? 2 : 1.25}
               className={
-                gast
-                  ? 'fill-primary stroke-primary'
-                  : 'fill-background stroke-foreground/20 [stroke-dasharray:3_3]'
+                doelStoel
+                  ? 'fill-emerald-50 stroke-emerald-500 dark:fill-emerald-950'
+                  : gast
+                    ? 'fill-primary stroke-primary'
+                    : 'fill-background stroke-foreground/20 [stroke-dasharray:3_3]'
               }
             />
             {gast ? (
@@ -661,7 +736,7 @@ function TafelNode({
         fontSize={11}
         className={cn('pointer-events-none', vol ? 'fill-rose-500' : 'fill-muted-foreground')}
       >
-        {gasten.length}/{table.capaciteit}
+        {aantal}/{table.capaciteit}
       </text>
     </g>
   )
@@ -675,6 +750,7 @@ function TafelPaneel({
   onverdeeld,
   kanBewerken,
   onAssign,
+  onSeat,
   onRoteer,
   onEdit,
   onDelete,
@@ -685,12 +761,14 @@ function TafelPaneel({
   onverdeeld: Guest[]
   kanBewerken: boolean
   onAssign: (guestId: string, tableId: string | null) => void
+  onSeat: (updates: SeatUpdate[]) => void
   onRoteer: () => void
   onEdit: () => void
   onDelete: () => void
   onSluit: () => void
 }) {
   const vol = gasten.length > table.capaciteit
+  const seats = seatsForTable(table.capaciteit, gasten)
   return (
     <div className="rounded-xl border border-primary/40 bg-card shadow-sm">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
@@ -730,35 +808,66 @@ function TafelPaneel({
             Nog niemand aan deze tafel.
           </p>
         ) : (
-          <ul className="space-y-0.5">
-            {gasten.map((g, i) => (
-              <li
-                key={g.id}
-                className={cn(
-                  'flex items-center gap-2 rounded-md px-2 py-1 text-sm text-foreground',
-                  i >= table.capaciteit && 'text-rose-600 dark:text-rose-400'
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">
-                  {g.voornaam} {g.achternaam}
-                  {g.dieetwensen ? <span className="ml-1 text-[10px] opacity-60">🌿</span> : null}
-                </span>
-                {i >= table.capaciteit ? (
-                  <span className="text-[10px] uppercase">geen stoel</span>
-                ) : null}
-                {kanBewerken ? (
-                  <button
-                    type="button"
-                    aria-label={`${g.voornaam} van tafel halen`}
-                    onClick={() => onAssign(g.id, null)}
-                    className="rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <ol className="space-y-0.5">
+            {seats.map((g, i) => {
+              const geenStoel = i >= table.capaciteit
+              return (
+                <li
+                  key={g ? g.id : `leeg-${i}`}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm',
+                    g ? 'text-foreground' : 'text-muted-foreground/60',
+                    geenStoel && g && 'text-rose-600 dark:text-rose-400'
+                  )}
+                >
+                  <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  {g ? (
+                    <>
+                      <span className="min-w-0 flex-1 truncate">
+                        {g.voornaam} {g.achternaam}
+                        {g.dieetwensen ? <span className="ml-1 text-[10px] opacity-60">🌿</span> : null}
+                      </span>
+                      {geenStoel ? <span className="text-[10px] uppercase">geen stoel</span> : null}
+                      {kanBewerken ? (
+                        <span className="flex shrink-0 items-center">
+                          <button
+                            type="button"
+                            aria-label={`${g.voornaam} een plek omhoog`}
+                            disabled={i === 0}
+                            onClick={() => onSeat(reorderSeatUpdates(seats, i, -1))}
+                            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`${g.voornaam} een plek omlaag`}
+                            disabled={i === seats.length - 1}
+                            onClick={() => onSeat(reorderSeatUpdates(seats, i, 1))}
+                            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`${g.voornaam} van tafel halen`}
+                            onClick={() => onAssign(g.id, null)}
+                            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="flex-1 italic">leeg</span>
+                  )}
+                </li>
+              )
+            })}
+          </ol>
         )}
       </div>
 

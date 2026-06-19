@@ -23,6 +23,7 @@ import {
   type WeddingRole,
 } from '@/lib/bruiloft/permissions'
 import { repository } from '@/lib/bruiloft/repositoryInstance'
+import type { SeatUpdate } from '@/lib/bruiloft/seating'
 import {
   generateTemplateTasks,
   TEMPLATE_TASKS,
@@ -39,6 +40,7 @@ import type {
   GallerijFoto,
   Guest,
   GuestInput,
+  GuestPatch,
   ID,
   RegistryContribution,
   RegistryItem,
@@ -143,7 +145,9 @@ interface BruiloftActions {
   closeAICoach: () => void
 
   addGuest: (data: NewGuest) => Promise<void>
-  updateGuest: (id: ID, patch: Partial<GuestInput>) => Promise<void>
+  updateGuest: (id: ID, patch: GuestPatch) => Promise<void>
+  // Meerdere zitplaatswijzigingen tegelijk (ruilen/herschikken), optimistisch.
+  updateGuestsSeating: (updates: SeatUpdate[]) => Promise<void>
   deleteGuest: (id: ID) => Promise<void>
 
   addTask: (data: NewTask) => Promise<void>
@@ -709,6 +713,39 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       set({ guests: get().guests.map((g) => (g.id === id ? guest : g)) })
     },
 
+    // Pas meerdere zitplaatsen tegelijk aan (bijv. twee gasten die van stoel
+    // ruilen). Optimistisch zodat het direct voelt; bij een fout rollen we de
+    // hele batch terug.
+    updateGuestsSeating: async (updates) => {
+      if (updates.length === 0) return
+      const prev = get().guests
+      const byId = new Map(updates.map((u) => [u.id, u] as const))
+      const applyLocal = (g: Guest): Guest => {
+        const u = byId.get(g.id)
+        if (!u) return g
+        const next = { ...g }
+        if (u.tafelId !== undefined) next.tafelId = u.tafelId ?? undefined
+        if (u.stoelIndex !== undefined) next.stoelIndex = u.stoelIndex ?? undefined
+        return next
+      }
+      set({ guests: prev.map(applyLocal) })
+      try {
+        const saved = await Promise.all(
+          updates.map((u) => {
+            const patch: GuestPatch = {}
+            if (u.tafelId !== undefined) patch.tafelId = u.tafelId
+            if (u.stoelIndex !== undefined) patch.stoelIndex = u.stoelIndex
+            return repository.updateGuest(u.id, patch)
+          })
+        )
+        const savedById = new Map(saved.map((g) => [g.id, g] as const))
+        set({ guests: get().guests.map((g) => savedById.get(g.id) ?? g) })
+      } catch (e) {
+        set({ guests: prev })
+        throw e
+      }
+    },
+
     deleteGuest: async (id) => {
       await repository.deleteGuest(id)
       set({ guests: get().guests.filter((g) => g.id !== id) })
@@ -996,7 +1033,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       set({
         tables: get().tables.filter((t) => t.id !== id),
         guests: get().guests.map((g) =>
-          g.tafelId === id ? { ...g, tafelId: undefined } : g
+          g.tafelId === id ? { ...g, tafelId: undefined, stoelIndex: undefined } : g
         ),
       })
     },

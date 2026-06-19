@@ -81,10 +81,18 @@ export interface Guest {
   adres: string
   notitie: string
   tafelId?: ID // tafelschikking
+  stoelIndex?: number // vaste plek aan de tafel (0-gebaseerd); leeg = automatisch
   rsvpCode?: string // persoonlijke code voor de publieke RSVP
 }
 
 export type GuestInput = Omit<Guest, 'id'>
+
+// Patch voor gast-updates. tafelId/stoelIndex mogen expliciet `null` zijn om de
+// koppeling of de vaste plek te wissen; `undefined` laat het veld ongemoeid.
+export type GuestPatch = Partial<Omit<GuestInput, 'tafelId' | 'stoelIndex'>> & {
+  tafelId?: ID | null
+  stoelIndex?: number | null
+}
 
 // --- Task ------------------------------------------------------------------
 
