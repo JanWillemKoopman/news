@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import type { SeatUpdate } from '@/lib/bruiloft/seating'
 import type { Table } from '@/lib/bruiloft/types'
 
 const WEERGAVE_KEY = 'bruiloft-tafels-weergave'
@@ -31,6 +32,7 @@ export default function TafelsPage() {
   const updateTable = useBruiloftStore((s) => s.updateTable)
   const deleteTable = useBruiloftStore((s) => s.deleteTable)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
+  const updateGuestsSeating = useBruiloftStore((s) => s.updateGuestsSeating)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
 
@@ -74,9 +76,23 @@ export default function TafelsPage() {
     setFormOpen(true)
   }
 
+  // Wijs een gast aan een tafel toe of haal hem eraf (tableId = null). We sturen
+  // tafelId én stoelIndex expliciet mee — bij verwijderen als `null`, zodat de
+  // update nooit leeg is (een lege update wordt door de database geweigerd) en
+  // de vaste plek meereist met de tafelwissel.
   const assign = async (guestId: string, tableId: string | null) => {
     try {
-      await updateGuest(guestId, { tafelId: tableId ?? undefined })
+      await updateGuest(guestId, { tafelId: tableId, stoelIndex: null })
+    } catch {
+      toast({ title: 'Indelen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
+
+  // Vaste plekken aanpassen (op een stoel zetten of stoelen ruilen).
+  const seat = async (updates: SeatUpdate[]) => {
+    if (updates.length === 0) return
+    try {
+      await updateGuestsSeating(updates)
     } catch {
       toast({ title: 'Indelen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
@@ -184,6 +200,7 @@ export default function TafelsPage() {
               guests={pool}
               kanBewerken={kanBewerken}
               onAssign={assign}
+              onSeat={seat}
               onPatchTable={patchTable}
               onEditTable={(t) => {
                 setEditTable(t)
@@ -199,6 +216,7 @@ export default function TafelsPage() {
               tables={tables}
               guests={pool}
               onAssign={kanBewerken ? assign : undefined}
+              onSeat={kanBewerken ? seat : undefined}
               onEditTable={kanBewerken ? (t) => {
                 setEditTable(t)
                 setFormOpen(true)
@@ -212,6 +230,7 @@ export default function TafelsPage() {
           tables={tables}
           guests={pool}
           onAssign={kanBewerken ? assign : undefined}
+          onSeat={kanBewerken ? seat : undefined}
           onEditTable={kanBewerken ? (t) => {
             setEditTable(t)
             setFormOpen(true)

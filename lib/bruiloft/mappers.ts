@@ -10,7 +10,7 @@ import type {
   BudgetItemInput,
   CeremonieType,
   Guest,
-  GuestInput,
+  GuestPatch,
   PaymentTerm,
   Rol,
   ScheduleItem,
@@ -102,11 +102,12 @@ export function guestFromRow(r: Tables['guests']['Row']): Guest {
     adres: r.adres,
     notitie: r.notitie,
     tafelId: r.tafel_id ?? undefined,
+    stoelIndex: r.stoel_index ?? undefined,
     rsvpCode: r.rsvp_token ?? undefined,
   }
 }
 
-export function guestToRow(p: Partial<GuestInput>): Partial<Tables['guests']['Insert']> {
+export function guestToRow(p: GuestPatch): Partial<Tables['guests']['Insert']> {
   const r: Partial<Tables['guests']['Insert']> = {}
   if (p.weddingId !== undefined) r.wedding_id = p.weddingId
   if (p.voornaam !== undefined) r.voornaam = p.voornaam
@@ -121,6 +122,7 @@ export function guestToRow(p: Partial<GuestInput>): Partial<Tables['guests']['In
   if (p.adres !== undefined) r.adres = p.adres
   if (p.notitie !== undefined) r.notitie = p.notitie
   if (p.tafelId !== undefined) r.tafel_id = p.tafelId ?? null
+  if (p.stoelIndex !== undefined) r.stoel_index = p.stoelIndex ?? null
   // rsvpCode/rsvp_token wordt door de database beheerd; niet schrijven.
   return r
 }

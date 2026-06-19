@@ -33,6 +33,7 @@ import type {
   BudgetItemInput,
   Guest,
   GuestInput,
+  GuestPatch,
   ID,
   ScheduleItem,
   ScheduleItemInput,
@@ -133,7 +134,7 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return guestFromRow(data)
   }
 
-  async updateGuest(id: ID, patch: Partial<GuestInput>): Promise<Guest> {
+  async updateGuest(id: ID, patch: GuestPatch): Promise<Guest> {
     const { data, error } = await this.db
       .from('guests')
       .update(guestToRow(patch))

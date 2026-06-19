@@ -108,6 +108,7 @@ export type Database = {
           rsvp_submitted_at: string | null
           rsvp_token: string
           rsvp_token_revoked: boolean
+          stoel_index: number | null
           tafel_id: string | null
           updated_at: string
           voornaam: string
@@ -129,6 +130,7 @@ export type Database = {
           rsvp_submitted_at?: string | null
           rsvp_token?: string
           rsvp_token_revoked?: boolean
+          stoel_index?: number | null
           tafel_id?: string | null
           updated_at?: string
           voornaam?: string
@@ -150,6 +152,7 @@ export type Database = {
           rsvp_submitted_at?: string | null
           rsvp_token?: string
           rsvp_token_revoked?: boolean
+          stoel_index?: number | null
           tafel_id?: string | null
           updated_at?: string
           voornaam?: string
