@@ -164,17 +164,7 @@ export type WeddingRoleSnapshot = 'owner' | 'planner' | 'helper' | 'viewer'
 
 // --- Vendor ----------------------------------------------------------------
 
-export type VendorType =
-  | 'locatie'
-  | 'catering'
-  | 'fotograaf'
-  | 'videograaf'
-  | 'dj of band'
-  | 'bloemist'
-  | 'kleding'
-  | 'vervoer'
-  | 'taart'
-  | 'overig'
+export type VendorType = string
 
 export type VendorStatus =
   | 'te bezoeken'
