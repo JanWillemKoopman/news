@@ -231,8 +231,17 @@ export function useAIAdvies(): UseAIAdviesResult {
 
   const zichtbaar = React.useMemo(() => {
     if (!advies) return []
+    // Ontdubbel op sleutel én op (genormaliseerde) titel, zodat overlappende
+    // adviezen uit verschillende bronnen niet dubbel verschijnen (#19).
+    const gezien = new Set<string>()
     return advies
       .filter((a) => !weggeklikt.has(adviesKey(a)))
+      .filter((a) => {
+        const titelSleutel = a.titel.trim().toLowerCase()
+        if (gezien.has(titelSleutel)) return false
+        gezien.add(titelSleutel)
+        return true
+      })
       .slice()
       .sort((a, b) => URGENTIE_VOLGORDE[a.urgentie] - URGENTIE_VOLGORDE[b.urgentie])
   }, [advies, weggeklikt])

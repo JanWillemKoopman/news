@@ -6,6 +6,7 @@ import { Button, Field, Input, Modal, Select, eigennaamInputProps, useToast } fr
 import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { PROVINCIES, afleidProvincie } from '@/lib/bruiloft/geo'
+import { directeWijzigingsTip } from '@/lib/bruiloft/instantTip'
 import type { Wedding } from '@/lib/bruiloft/types'
 
 interface WeddingSettingsFormProps {
@@ -62,6 +63,9 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     onOpenChange(false)
+    const nieuwBudget = Number(form.totaalBudget) || 0
+    const nieuwDag = Number(form.aantalDaggasten) || 0
+    const nieuwAvond = Number(form.aantalAvondgasten) || 0
     try {
       await updateWedding({
         partner1Naam: form.partner1Naam.trim(),
@@ -70,11 +74,26 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
         locatie: form.locatie.trim(),
         woonplaats: form.woonplaats.trim(),
         provincie: form.provincie,
-        totaalBudget: Number(form.totaalBudget) || 0,
-        aantalDaggasten: Number(form.aantalDaggasten) || 0,
-        aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
+        totaalBudget: nieuwBudget,
+        aantalDaggasten: nieuwDag,
+        aantalAvondgasten: nieuwAvond,
       })
       toast({ title: 'Gegevens opgeslagen', variant: 'success' })
+
+      // Directe, regelgebaseerde tip op het beslismoment — geen AI-call (#5).
+      const budgetOfGastenGewijzigd =
+        nieuwBudget !== wedding.totaalBudget ||
+        nieuwDag !== wedding.aantalDaggasten ||
+        nieuwAvond !== wedding.aantalAvondgasten
+      if (budgetOfGastenGewijzigd) {
+        const tip = directeWijzigingsTip({
+          ...wedding,
+          totaalBudget: nieuwBudget,
+          aantalDaggasten: nieuwDag,
+          aantalAvondgasten: nieuwAvond,
+        })
+        if (tip) toast({ title: tip.titel, description: tip.tekst })
+      }
     } catch {
       toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
