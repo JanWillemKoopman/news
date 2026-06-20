@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   // Filters
   const categorie = sp.get('categorie')
   const plaats = sp.get('plaats')
-  const provincie = sp.get('provincie')
+  const provincie = sp.get('provincie') // harde filter (door gebruiker gekozen)
   const q = sp.get('q')?.trim()
   const prijsMin = sp.get('prijsMin')
   const prijsMax = sp.get('prijsMax')
@@ -51,6 +51,10 @@ export async function GET(request: NextRequest) {
     {
       totaalBudget: intParam(sp.get('budget'), 0),
       woonplaats: sp.get('woonplaats') ?? '',
+      // Woonprovincie van het bruidspaar: stuurt de "in jullie regio"-weging.
+      // Los van de harde provinciefilter, zodat aanbevelingen niet onnodig
+      // worden ingeperkt maar regio wél meeweegt in de score.
+      provincie: sp.get('profielProvincie')?.trim() || provincie?.trim() || undefined,
       aantalDaggasten: intParam(sp.get('daggasten'), 0),
       aantalAvondgasten: intParam(sp.get('avondgasten'), 0),
     },
@@ -59,7 +63,6 @@ export async function GET(request: NextRequest) {
       .map((s) => s.trim())
       .filter(Boolean) as VendorType[]
   )
-  if (provincie) profiel.provincie = provincie
 
   // Basale, herbruikbare filterquery. `suppliers` staat nog niet in
   // database.types.ts, dus we benaderen de tabel ongetypeerd (zoals de

@@ -167,12 +167,16 @@ export function rangschik(suppliers: Supplier[], profiel: MatchProfiel): Supplie
 // Helper voor de aanroepende code: bouwt het matchprofiel uit het bruidspaar +
 // hun reeds geboekte leveranciers (zelfde categorie-enum als suppliers).
 export function bouwProfiel(
-  wedding: Pick<Wedding, 'totaalBudget' | 'woonplaats' | 'aantalDaggasten' | 'aantalAvondgasten'>,
+  wedding: Pick<
+    Wedding,
+    'totaalBudget' | 'woonplaats' | 'aantalDaggasten' | 'aantalAvondgasten'
+  > & { provincie?: string },
   geboekteCategorieen: VendorType[]
 ): MatchProfiel {
   return {
     totaalBudget: wedding.totaalBudget,
     woonplaats: wedding.woonplaats,
+    provincie: wedding.provincie?.trim() || undefined,
     aantalGasten: Math.max(wedding.aantalDaggasten, wedding.aantalAvondgasten),
     geboekteCategorieen: new Set(geboekteCategorieen),
   }

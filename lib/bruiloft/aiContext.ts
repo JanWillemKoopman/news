@@ -14,6 +14,7 @@ export interface AIWeddingContext {
     trouwdatum: string
     locatie: string
     woonplaats: string
+    provincie: string
     dagenTotBruiloft: number
     ceremonietype: string | null
     geregeldeZaken: Record<string, string>
@@ -182,6 +183,7 @@ export function buildAIContext(
       trouwdatum: wedding.trouwdatum,
       locatie: wedding.locatie || '(nog niet ingesteld)',
       woonplaats: wedding.woonplaats || '(nog niet ingesteld)',
+      provincie: wedding.provincie || '(nog niet ingesteld)',
       dagenTotBruiloft: dagenTot(wedding.trouwdatum),
       ceremonietype: wedding.ceremonietype ?? null,
       geregeldeZaken: wedding.geregeldeZaken as Record<string, string>,

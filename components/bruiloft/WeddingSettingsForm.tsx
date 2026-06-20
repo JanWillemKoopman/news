@@ -2,9 +2,10 @@
 
 import * as React from 'react'
 
-import { Button, Field, Input, Modal, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, Modal, Select, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
 import { DateRoller } from '@/components/bruiloft/taken/DateRoller'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { PROVINCIES, afleidProvincie } from '@/lib/bruiloft/geo'
 import type { Wedding } from '@/lib/bruiloft/types'
 
 interface WeddingSettingsFormProps {
@@ -23,6 +24,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
     trouwdatum: '',
     locatie: '',
     woonplaats: '',
+    provincie: '',
     totaalBudget: '',
     aantalDaggasten: '',
     aantalAvondgasten: '',
@@ -36,6 +38,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
         trouwdatum: wedding.trouwdatum,
         locatie: wedding.locatie,
         woonplaats: wedding.woonplaats,
+        provincie: wedding.provincie,
         totaalBudget: String(wedding.totaalBudget || ''),
         aantalDaggasten: String(wedding.aantalDaggasten || ''),
         aantalAvondgasten: String(wedding.aantalAvondgasten || ''),
@@ -45,6 +48,16 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
 
   const update = (veld: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [veld]: e.target.value }))
+
+  // Vul de provincie automatisch in bij een herkende woonplaats, zolang de
+  // gebruiker nog niets gekozen heeft. Frictieloos, maar altijd overschrijfbaar.
+  const updateWoonplaats = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const woonplaats = e.target.value
+    setForm((f) => {
+      const afgeleid = afleidProvincie(woonplaats)
+      return { ...f, woonplaats, provincie: f.provincie || afgeleid || '' }
+    })
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +69,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
         trouwdatum: form.trouwdatum,
         locatie: form.locatie.trim(),
         woonplaats: form.woonplaats.trim(),
+        provincie: form.provincie,
         totaalBudget: Number(form.totaalBudget) || 0,
         aantalDaggasten: Number(form.aantalDaggasten) || 0,
         aantalAvondgasten: Number(form.aantalAvondgasten) || 0,
@@ -97,15 +111,29 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             {...eigennaamInputProps}
           />
         </Field>
-        <Field label="Woonplaats" htmlFor="s-woonplaats">
-          <Input
-            id="s-woonplaats"
-            value={form.woonplaats}
-            onChange={update('woonplaats')}
-            placeholder="Bijv. Utrecht"
-            {...eigennaamInputProps}
-          />
-        </Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Woonplaats" htmlFor="s-woonplaats">
+            <Input
+              id="s-woonplaats"
+              value={form.woonplaats}
+              onChange={updateWoonplaats}
+              placeholder="Bijv. Utrecht"
+              {...eigennaamInputProps}
+            />
+          </Field>
+          <Field label="Provincie" htmlFor="s-provincie">
+            <Select
+              id="s-provincie"
+              value={form.provincie}
+              onChange={(e) => setForm((f) => ({ ...f, provincie: e.target.value }))}
+            >
+              <option value="">Kies provincie</option>
+              {PROVINCIES.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </Select>
+          </Field>
+        </div>
         <Field label="Totaalbudget (€)" htmlFor="s-budget">
           <Input
             id="s-budget"

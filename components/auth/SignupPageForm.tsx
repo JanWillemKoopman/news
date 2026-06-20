@@ -6,6 +6,7 @@ import * as React from 'react'
 import { CheckCircle2 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
+import { afleidProvincie } from '@/lib/bruiloft/geo'
 import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { mapAuthError, safeNext } from './authErrors'
@@ -178,6 +179,8 @@ function WeddingSetup({
       trouwdatum: trouwdatum ?? '',
       locatie: '',
       woonplaats: woonplaats.trim(),
+      // Provincie automatisch afgeleid uit de woonplaats; later verfijnbaar.
+      provincie: afleidProvincie(woonplaats) ?? '',
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
       aantalDaggasten: aantalGasten,
       aantalAvondgasten: 0,
@@ -556,6 +559,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
       trouwdatum: noDateYet ? '' : weddingDate || '',
       locatie: '',
       woonplaats: '',
+      provincie: '',
       totaalBudget: 0,
       aantalDaggasten: 0,
       aantalAvondgasten: 0,

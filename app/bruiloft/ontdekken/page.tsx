@@ -66,6 +66,8 @@ export default function OntdekkenPage() {
       avondgasten: String(wedding.aantalAvondgasten),
       geboekt,
     })
+    // Woonprovincie stuurt de regio-weging in de ranking (los van de filter).
+    if (wedding.provincie) p.set('profielProvincie', wedding.provincie)
     return p.toString()
   }, [wedding, vendors])
 

@@ -36,6 +36,7 @@ export function AanbevolenLeveranciers() {
       avondgasten: String(wedding.aantalAvondgasten),
       geboekt,
     })
+    if (wedding.provincie) params.set('profielProvincie', wedding.provincie)
     let actief = true
     fetch(`/api/suppliers/search?${params.toString()}`)
       .then((res) => (res.ok ? res.json() : null))

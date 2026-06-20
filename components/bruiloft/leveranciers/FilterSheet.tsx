@@ -3,11 +3,10 @@
 import * as React from 'react'
 
 import { Button, Field, Input, Modal, Select } from '@/components/bruiloft/ui'
+import { PROVINCIES } from '@/lib/bruiloft/geo'
 
-export const PROVINCIES = [
-  'Drenthe', 'Flevoland', 'Friesland', 'Gelderland', 'Groningen', 'Limburg',
-  'Noord-Brabant', 'Noord-Holland', 'Overijssel', 'Utrecht', 'Zeeland', 'Zuid-Holland',
-]
+// Re-export zodat bestaande imports van hier blijven werken.
+export { PROVINCIES }
 
 export type OntdekSort = 'match' | 'naam' | 'prijs'
 
