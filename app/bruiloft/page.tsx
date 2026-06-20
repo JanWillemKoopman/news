@@ -6,10 +6,10 @@ import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
+import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
-import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
 import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
@@ -97,12 +97,24 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Optionele nudge: nodig je partner uit om samen te plannen */}
+      {/* Samen plannen — direct onder de Hero, alleen zichtbaar zolang de
+          partner nog geen account heeft (verbergt zichzelf zodra die meeplant). */}
       <PartnerUitnodigen />
+
+      {/* Korte statusbevestiging: waar staan jullie nu, vóór de details. */}
+      <DashboardIntro
+        wedding={wedding}
+        tasks={tasks}
+        budgetItems={budgetItems}
+        vendors={vendors}
+        faseLabel={faseLabel}
+      />
 
       {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
       <OnboardingGids />
       <WelkomstDialog />
+
+      {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
 
       {/* Urgente aandachtspunten: alleen zichtbaar als er iets mis is */}
       <UrgenteAandachtspunten
@@ -114,12 +126,12 @@ export default function DashboardPage() {
         permissions={permissions}
       />
 
-      {/* AI Assistent: geprioriteerde volgende stappen */}
+      {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
       <div className="mb-8">
-        <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
+        <AankomendeActiesTimelijn tasks={tasks} budgetItems={budgetItems} />
       </div>
 
-      {/* Module status grid: Budget · Gasten · Taken · Leveranciers */}
+      {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">
         <ModuleStatusGrid
           wedding={wedding}
@@ -132,16 +144,13 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Aanbevolen leveranciers uit de globale directory, op profiel gerankt */}
-      <AanbevolenLeveranciers />
-
-      {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
+      {/* ── AI-AANBEVELINGEN — ná de harde feiten, als advies erbovenop ── */}
       <div className="mb-8">
-        <AankomendeActiesTimelijn tasks={tasks} budgetItems={budgetItems} />
+        <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
       </div>
 
-      {/* Routekaart: fasevoortgang */}
-      <Routekaart route={guidance.route} />
+      {/* Ontdek leveranciers — onder de persoonlijke status, geen onderbreking */}
+      <AanbevolenLeveranciers />
 
       <WeddingSettingsForm
         open={settingsOpen}
