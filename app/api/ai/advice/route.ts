@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
 import { buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
+import { logAiUsage } from '@/lib/ai/usage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -204,14 +205,29 @@ export async function POST(request: NextRequest) {
     },
   }
 
+  const MODEL = 'gemini-2.5-flash'
+  const startTijd = Date.now()
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const result = await model.generateContent(buildPrompt(enrichedContext))
-    const advies = parseAdvies(result.response.text())
+    const prompt = buildPrompt(enrichedContext)
+    const result = await model.generateContent(prompt)
+    const tekst = result.response.text()
+    const advies = parseAdvies(tekst)
+
+    logAiUsage({
+      endpoint: 'advice',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: true,
+      promptChars: prompt.length,
+      responseChars: tekst.length,
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
 
     // Sla op in DB-cache
     await (supabase as any)
@@ -229,6 +245,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ advies, cached: false, updatedAt: new Date().toISOString() })
   } catch (err) {
     console.error('[api/ai/advice] Gemini fout:', err)
+    logAiUsage({
+      endpoint: 'advice',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advies?.length > 0) {
       return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })

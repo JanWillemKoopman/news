@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { ArrowRight, BarChart3, ChevronRight, Lightbulb, RefreshCw, Sparkles, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, useToast } from '@/components/bruiloft/ui'
 import { geledenLabel, useAIAdvies } from './useAIAdvies'
+import { AdviesFeedback } from './AdviesFeedback'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
 // AI-coach: app-breed paneel, geopend via de "AI-assistent"-knop in de
@@ -185,14 +187,24 @@ export function AICoach() {
                         <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
                           {stap.omschrijving}
                         </p>
-                        <Link
-                          href={stap.sectie}
-                          onClick={closeAICoach}
-                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
-                        >
-                          Bekijken
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <Link
+                            href={stap.sectie}
+                            onClick={() => {
+                              trackEvent('ai_advies_klik', {
+                                bron: 'coach',
+                                type: stap.type,
+                                sectie: stap.sectie,
+                              })
+                              closeAICoach()
+                            }}
+                            className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+                          >
+                            Bekijken
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                          <AdviesFeedback advies={stap} />
+                        </div>
                       </li>
                     )
                   })}
