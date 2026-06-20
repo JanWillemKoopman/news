@@ -150,7 +150,7 @@ export function AICoach() {
                 <div className="flex flex-col items-center gap-4 py-10">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-                    <span className="text-sm text-muted-foreground">AI analyseert jullie planning…</span>
+                    <span className="text-sm text-muted-foreground">AI bekijkt jullie planning en het passende leveranciersaanbod…</span>
                   </div>
                   <div className="flex gap-1.5">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />

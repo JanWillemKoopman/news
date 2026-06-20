@@ -37,7 +37,11 @@ CREATE POLICY "ai_feedback_insert_own" ON public.ai_advice_feedback
   FOR INSERT TO authenticated
   WITH CHECK (
     user_id = (SELECT auth.uid())
-    AND public.can_view('leveranciers', wedding_id)
+    AND EXISTS (
+      SELECT 1 FROM public.wedding_members wm
+      WHERE wm.wedding_id = ai_advice_feedback.wedding_id
+        AND wm.user_id = (SELECT auth.uid())
+    )
   );
 
 CREATE POLICY "ai_feedback_update_own" ON public.ai_advice_feedback

@@ -35,7 +35,18 @@ const MIN_COOLDOWN_MS = 60 * 60 * 1000
 // 7 dagen veiligheidsnet: cache nooit langer dan dit gebruiken.
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
-function buildPrompt(ctx: AIWeddingContext): string {
+function dismissedSectie(dismissed?: string[]): string {
+  if (!dismissed || dismissed.length === 0) return ''
+  // Sleutels hebben de vorm "sectie|titel"; toon het leesbare deel.
+  const titels = dismissed
+    .map((k) => k.split('|').slice(1).join('|').trim())
+    .filter(Boolean)
+    .slice(0, 30)
+  if (titels.length === 0) return ''
+  return `\nEerder door het koppel weggeklikte adviezen (vermijd deze opnieuw te geven; kom met andere, nieuwe inzichten):\n- ${titels.join('\n- ')}\n`
+}
+
+function buildPrompt(ctx: AIWeddingContext, dismissed?: string[]): string {
   const dagLabel =
     ctx.bruidspaar.dagenTotBruiloft > 0
       ? `${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan`
@@ -55,7 +66,7 @@ Pas je toon en diepgang aan op het ervaringsniveau: 'nieuw' = meer uitleg en sta
   return `Je bent een ervaren persoonlijke Nederlandse trouwplanner-assistent. \
 Je helpt ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} bij de voorbereiding van hun bruiloft \
 op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
-${gebruikerSectie}
+${gebruikerSectie}${dismissedSectie(dismissed)}
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
 
@@ -131,7 +142,7 @@ export async function POST(request: NextRequest) {
   // Fire-and-forget: bijwerken hoeft de response niet te vertragen
   void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
 
-  let body: { context: AIWeddingContext; weddingId: string; force?: boolean }
+  let body: { context: AIWeddingContext; weddingId: string; force?: boolean; dismissed?: string[] }
   try {
     body = await request.json()
   } catch {
@@ -220,7 +231,7 @@ export async function POST(request: NextRequest) {
       model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const prompt = buildPrompt(enrichedContext)
+    const prompt = buildPrompt(enrichedContext, body.dismissed)
     const result = await model.generateContent(prompt)
     const tekst = result.response.text()
     const advies = parseAdvies(tekst)
