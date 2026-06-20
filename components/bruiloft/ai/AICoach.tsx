@@ -160,10 +160,14 @@ export function AICoach() {
                 </div>
               ) : zichtbaar.length > 0 ? (
                 <ul className="space-y-3">
-                  {zichtbaar.map((stap) => {
+                  {zichtbaar.map((stap, i) => {
                     const TypeIcon = TYPE_ICON[stap.type]
                     return (
-                      <li key={stap.id} className="rounded-xl border border-border p-4">
+                      <li
+                        key={stap.id}
+                        className="animate-slide-up rounded-xl border border-border p-4"
+                        style={{ animationDelay: `${i * 70}ms`, animationFillMode: 'both' }}
+                      >
                         <div className="mb-1.5 flex items-start justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span
