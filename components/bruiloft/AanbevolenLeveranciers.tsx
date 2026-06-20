@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowRight, Compass, MapPin } from 'lucide-react'
+import { ArrowRight, Compass, MapPin, Sparkles } from 'lucide-react'
 
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
@@ -10,7 +10,8 @@ import { dagenTot } from '@/lib/bruiloft/format'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { canView } from '@/lib/bruiloft/permissions'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
-import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
+import { richtbudgetMap } from '@/lib/bruiloft/suppliers/match'
+import type { AISupplierMatch } from '@/app/api/ai/leveranciers-rank/route'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 // Toont de top-leveranciers uit de globale directory, gerangschikt op het
@@ -21,7 +22,7 @@ export function AanbevolenLeveranciers() {
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const permissions = useBruiloftStore((s) => s.permissions)
 
-  const [matches, setMatches] = React.useState<SupplierMatch[]>([])
+  const [matches, setMatches] = React.useState<AISupplierMatch[]>([])
 
   const mag = canView(permissions, 'leveranciers')
 
@@ -29,28 +30,52 @@ export function AanbevolenLeveranciers() {
     if (!wedding || !mag) return
     const geboekt = Array.from(
       new Set(vendors.filter((v) => v.status === 'geboekt').map((v) => v.type))
-    ).join(',')
-    const params = new URLSearchParams({
-      sort: 'match',
-      limit: '6',
-      budget: String(wedding.totaalBudget),
-      woonplaats: wedding.woonplaats,
-      daggasten: String(wedding.aantalDaggasten),
-      avondgasten: String(wedding.aantalAvondgasten),
-      geboekt,
-      dagen: String(dagenTot(wedding.trouwdatum)),
-    })
-    if (wedding.provincie) params.set('profielProvincie', wedding.provincie)
-    // Echt begroot bedrag per categorie meegeven voor budget-matching (#23).
+    )
     const rb = richtbudgetMap(budgetTotalen(budgetItems, vendors, wedding).perCategorie)
-    if (Object.keys(rb).length > 0) params.set('richtbudget', JSON.stringify(rb))
+    const profiel = {
+      budget: wedding.totaalBudget,
+      woonplaats: wedding.woonplaats,
+      provincie: wedding.provincie || undefined,
+      daggasten: wedding.aantalDaggasten,
+      avondgasten: wedding.aantalAvondgasten,
+      geboekt,
+      dagen: dagenTot(wedding.trouwdatum),
+      richtbudget: Object.keys(rb).length > 0 ? rb : undefined,
+    }
+
     let actief = true
-    fetch(`/api/suppliers/search?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
+    // Hybride AI-ranking (#24); het endpoint valt zelf terug op de rekenregel.
+    // Bij een harde fout op het endpoint vallen we hier terug op de zoek-API.
+    fetch('/api/ai/leveranciers-rank', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weddingId: wedding.id, profiel }),
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data) => {
-        if (actief && data?.matches) setMatches(data.matches as SupplierMatch[])
+        if (actief && data?.matches) setMatches(data.matches as AISupplierMatch[])
       })
-      .catch(() => {})
+      .catch(() => {
+        // Terugval: rekenregel-zoekroute.
+        const params = new URLSearchParams({
+          sort: 'match',
+          limit: '6',
+          budget: String(wedding.totaalBudget),
+          woonplaats: wedding.woonplaats,
+          daggasten: String(wedding.aantalDaggasten),
+          avondgasten: String(wedding.aantalAvondgasten),
+          geboekt: geboekt.join(','),
+          dagen: String(dagenTot(wedding.trouwdatum)),
+        })
+        if (wedding.provincie) params.set('profielProvincie', wedding.provincie)
+        if (profiel.richtbudget) params.set('richtbudget', JSON.stringify(profiel.richtbudget))
+        fetch(`/api/suppliers/search?${params.toString()}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (actief && data?.matches) setMatches(data.matches as AISupplierMatch[])
+          })
+          .catch(() => {})
+      })
     return () => {
       actief = false
     }
@@ -98,6 +123,11 @@ export function AanbevolenLeveranciers() {
                 {!m.supplier.isPrijsOpAanvraag && m.supplier.prijsVanaf != null ? (
                   <p className="mt-2 text-sm font-semibold text-foreground">
                     vanaf <Money bedrag={m.supplier.prijsVanaf} />
+                  </p>
+                ) : null}
+                {m.aiReden ? (
+                  <p className="mt-2 flex items-start gap-1.5 text-xs italic text-muted-foreground">
+                    <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-rose-400" /> {m.aiReden}
                   </p>
                 ) : null}
               </CardContent>
