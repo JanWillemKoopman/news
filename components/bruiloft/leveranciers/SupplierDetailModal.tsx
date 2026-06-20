@@ -16,6 +16,7 @@ const BADGE_UITLEG: Record<MatchBadge, string> = {
   'in jullie plaats': 'Gevestigd in jullie woonplaats.',
   'in jullie regio': 'Gevestigd in jullie provincie.',
   'past bij gezelschap': 'De capaciteit past bij jullie gastenaantal.',
+  'boek dit binnenkort': 'Dit is een goed moment om deze te boeken gezien jullie trouwdatum.',
 }
 
 function websiteHref(website: string): string {
@@ -80,6 +81,11 @@ export function SupplierDetailModal({
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <p className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Sparkles className="h-4 w-4 text-primary" /> Waarom dit bij jullie past
+              {match.score > 0 ? (
+                <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {match.score}% match
+                </span>
+              ) : null}
             </p>
             <ul className="mt-2 space-y-1.5">
               {match.badges.map((b) => (
@@ -94,6 +100,12 @@ export function SupplierDetailModal({
 
         {s.omschrijvingKort ? (
           <p className="text-sm leading-relaxed text-muted-foreground">{s.omschrijvingKort}</p>
+        ) : null}
+
+        {s.aiContextTekst && s.aiContextTekst !== s.omschrijvingKort ? (
+          <p className="rounded-lg bg-muted/50 p-3 text-sm leading-relaxed text-muted-foreground">
+            {s.aiContextTekst}
+          </p>
         ) : null}
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3">

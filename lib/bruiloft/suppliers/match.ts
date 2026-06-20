@@ -38,12 +38,15 @@ export type MatchBadge =
   | 'in jullie plaats'
   | 'in jullie regio'
   | 'past bij gezelschap'
+  | 'boek dit binnenkort'
 
 export interface SupplierMatch {
   supplier: Supplier
   score: number // 0..100
   badges: MatchBadge[]
   binnenBudget: boolean
+  /** Korte uitleg in mensentaal waaróm dit een (goede) match is (#22). */
+  uitleg: string
 }
 
 export interface MatchProfiel {
@@ -52,6 +55,24 @@ export interface MatchProfiel {
   provincie?: string // optioneel; nu nog niet op het bruidspaar opgeslagen
   aantalGasten: number // max(dag, avond) — relevant voor capaciteit
   geboekteCategorieen: Set<SupplierCategorie> // categorieën met al een geboekte vendor
+  /** Dagen tot de bruiloft; stuurt de boekvolgorde-prioriteit (#3). */
+  dagenTotBruiloft?: number
+}
+
+// Vuistregel: zóveel maanden vóór de bruiloft is deze soort leverancier idealiter
+// geboekt (gebaseerd op de Nederlandse boekbenchmarks). Binnen dit venster én
+// nog niet geboekt = nu prioriteit.
+const BOEKVENSTER_MAANDEN: Record<SupplierCategorie, number> = {
+  locatie: 12,
+  catering: 10,
+  fotograaf: 10,
+  videograaf: 9,
+  'dj of band': 9,
+  kleding: 8,
+  bloemist: 6,
+  vervoer: 5,
+  taart: 4,
+  overig: 3,
 }
 
 function normaliseer(s: string): string {
@@ -113,9 +134,40 @@ function capaciteitScore(
 }
 
 // Categorieën waar nog niets geboekt is krijgen voorrang: toont wat het stel
-// nog nodig heeft.
-function gatScore(supplier: Supplier, profiel: MatchProfiel): number {
-  return profiel.geboekteCategorieen.has(supplier.categorie) ? 0.3 : 1
+// nog nodig heeft. Ligt de bruiloft binnen het ideale boekvenster van deze
+// soort, dan weegt de behoefte extra zwaar en tonen we een attentiebadge (#3).
+function gatScore(
+  supplier: Supplier,
+  profiel: MatchProfiel
+): { score: number; badge?: MatchBadge; nuBoeken: boolean } {
+  if (profiel.geboekteCategorieen.has(supplier.categorie)) {
+    return { score: 0.3, nuBoeken: false }
+  }
+  const dagen = profiel.dagenTotBruiloft
+  const venster = BOEKVENSTER_MAANDEN[supplier.categorie] ?? 6
+  // Binnen het boekvenster (of al getrouwd/onbekend → behandel als niet urgent).
+  if (typeof dagen === 'number' && dagen > 0 && dagen <= venster * 30) {
+    return { score: 1, badge: 'boek dit binnenkort', nuBoeken: true }
+  }
+  return { score: 1, nuBoeken: false }
+}
+
+const BADGE_UITLEG_KORT: Record<MatchBadge, string> = {
+  'binnen budget': 'past binnen jullie budget',
+  'net erboven': 'net boven jullie richtbudget',
+  'in jullie plaats': 'in jullie woonplaats',
+  'in jullie regio': 'in jullie provincie',
+  'past bij gezelschap': 'past bij jullie gastenaantal',
+  'boek dit binnenkort': 'goed om binnenkort te boeken',
+}
+
+// Bouwt een korte, leesbare uitleg uit de badges (#22). Valt terug op een
+// neutrale tekst zonder badges, zodat er altijd context staat.
+function bouwUitleg(badges: MatchBadge[]): string {
+  if (badges.length === 0) return 'Algemene match op basis van jullie profiel.'
+  const delen = badges.map((b) => BADGE_UITLEG_KORT[b])
+  const zin = delen.length === 1 ? delen[0] : `${delen.slice(0, -1).join(', ')} en ${delen.at(-1)}`
+  return `Deze past bij jullie omdat het ${zin}.`
 }
 
 // --- Totaalscore -----------------------------------------------------------
@@ -135,21 +187,26 @@ export function scoreSupplier(supplier: Supplier, profiel: MatchProfiel): Suppli
   if (cap?.badge) badges.push(cap.badge)
 
   const gat = gatScore(supplier, profiel)
+  if (gat.badge) badges.push(gat.badge)
 
   // Gewogen gemiddelde; capaciteit telt alleen mee als die van toepassing is,
   // zodat niet-locaties niet onterecht gestraft worden.
-  let gewogen = GEWICHT.budget * bud.score + GEWICHT.locatie * loc.score + GEWICHT.gat * gat
+  let gewogen = GEWICHT.budget * bud.score + GEWICHT.locatie * loc.score + GEWICHT.gat * gat.score
   let totaalGewicht = GEWICHT.budget + GEWICHT.locatie + GEWICHT.gat
   if (cap) {
     gewogen += GEWICHT.capaciteit * cap.score
     totaalGewicht += GEWICHT.capaciteit
   }
 
+  // Kleine voorrang voor leveranciers die nu geboekt zouden moeten worden,
+  // zodat ze bovenaan verschijnen zonder de inhoudelijke score te verstoren.
+  const score = Math.round((gewogen / totaalGewicht) * 100)
   return {
     supplier,
-    score: Math.round((gewogen / totaalGewicht) * 100),
+    score: gat.nuBoeken ? Math.min(100, score + 5) : score,
     badges,
     binnenBudget: bud.binnenBudget,
+    uitleg: bouwUitleg(badges),
   }
 }
 
@@ -170,7 +227,7 @@ export function bouwProfiel(
   wedding: Pick<
     Wedding,
     'totaalBudget' | 'woonplaats' | 'aantalDaggasten' | 'aantalAvondgasten'
-  > & { provincie?: string },
+  > & { provincie?: string; dagenTotBruiloft?: number },
   geboekteCategorieen: VendorType[]
 ): MatchProfiel {
   return {
@@ -179,5 +236,6 @@ export function bouwProfiel(
     provincie: wedding.provincie?.trim() || undefined,
     aantalGasten: Math.max(wedding.aantalDaggasten, wedding.aantalAvondgasten),
     geboekteCategorieen: new Set(geboekteCategorieen),
+    dagenTotBruiloft: wedding.dagenTotBruiloft,
   }
 }

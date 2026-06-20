@@ -26,6 +26,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { dagenTot } from '@/lib/bruiloft/format'
 import { VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
@@ -65,6 +66,7 @@ export default function OntdekkenPage() {
       daggasten: String(wedding.aantalDaggasten),
       avondgasten: String(wedding.aantalAvondgasten),
       geboekt,
+      dagen: String(dagenTot(wedding.trouwdatum)),
     })
     // Woonprovincie stuurt de regio-weging in de ranking (los van de filter).
     if (wedding.provincie) p.set('profielProvincie', wedding.provincie)

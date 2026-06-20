@@ -6,6 +6,7 @@ import { ArrowRight, Compass, MapPin } from 'lucide-react'
 
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
+import { dagenTot } from '@/lib/bruiloft/format'
 import { canView } from '@/lib/bruiloft/permissions'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
@@ -35,6 +36,7 @@ export function AanbevolenLeveranciers() {
       daggasten: String(wedding.aantalDaggasten),
       avondgasten: String(wedding.aantalAvondgasten),
       geboekt,
+      dagen: String(dagenTot(wedding.trouwdatum)),
     })
     if (wedding.provincie) params.set('profielProvincie', wedding.provincie)
     let actief = true

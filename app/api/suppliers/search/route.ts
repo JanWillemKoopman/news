@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
       provincie: sp.get('profielProvincie')?.trim() || provincie?.trim() || undefined,
       aantalDaggasten: intParam(sp.get('daggasten'), 0),
       aantalAvondgasten: intParam(sp.get('avondgasten'), 0),
+      // Dagen tot de bruiloft stuurt de boekvolgorde-prioriteit (#3).
+      dagenTotBruiloft: sp.get('dagen') != null ? intParam(sp.get('dagen'), 0) : undefined,
     },
     (sp.get('geboekt') ?? '')
       .split(',')
@@ -94,7 +96,7 @@ export async function GET(request: NextRequest) {
       const rows = (data ?? []) as SupplierRow[]
       const matches: SupplierMatch[] = rows
         .map(mapSupplierRow)
-        .map((supplier) => ({ supplier, score: 0, badges: [], binnenBudget: false }))
+        .map((supplier) => ({ supplier, score: 0, badges: [], binnenBudget: false, uitleg: '' }))
       return NextResponse.json({ matches, total: count ?? rows.length, page, limit })
     }
 

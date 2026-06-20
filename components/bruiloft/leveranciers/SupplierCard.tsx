@@ -50,10 +50,18 @@ export function SupplierCard({
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Icoon className="h-5 w-5" />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-foreground">{s.naam}</p>
             <p className="truncate text-xs text-muted-foreground">{subregel}</p>
           </div>
+          {match.score > 0 && (
+            <span
+              className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+              title={match.uitleg}
+            >
+              {match.score}%
+            </span>
+          )}
         </div>
 
         {match.badges.length > 0 && (
