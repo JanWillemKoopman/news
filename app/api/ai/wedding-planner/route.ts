@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { buildConsolidatedPrompt, parseConsolidated } from '@/lib/bruiloft/ai/consolidatedPrompt'
+import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
 import { logAiUsage } from '@/lib/ai/usage'
 import {
   budgetItemFromRow,
@@ -211,7 +212,10 @@ export async function POST(request: NextRequest) {
       generationConfig: { responseMimeType: 'application/json' },
     })
 
-    const prompt = buildConsolidatedPrompt(context)
+    // Verrijk met het leveranciersaanbod (alleen bij een echte generatie, niet
+    // bij cache-hits) zodat het advies naar concrete opties verwijst (#2/#25).
+    const aanbod = await bouwLeveranciersAanbod(supabase, matchProfielUitContext(context))
+    const prompt = buildConsolidatedPrompt({ ...context, leveranciersAanbod: aanbod })
     const result = await model.generateContent(prompt)
     const tekst = result.response.text()
     const consolidated = parseConsolidated(tekst)

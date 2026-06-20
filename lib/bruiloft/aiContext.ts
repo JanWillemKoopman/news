@@ -77,6 +77,27 @@ export interface AIWeddingContext {
       dagenTot: number
     }>
   }
+  // Server-side verrijkt: samenvatting van het beschikbare leveranciersaanbod
+  // uit de directory, zodat het advies naar concrete opties kan verwijzen (#2).
+  leveranciersAanbod?: import('./ai/leveranciersAanbod').LeveranciersAanbod
+}
+
+// Bouwt een leveranciers-matchprofiel uit de AI-context, zodat het
+// aanbod server-side op hetzelfde profiel gerangschikt kan worden (#2).
+export function matchProfielUitContext(ctx: AIWeddingContext): import('./suppliers/match').MatchProfiel {
+  const woonplaats = ctx.bruidspaar.woonplaats.startsWith('(') ? '' : ctx.bruidspaar.woonplaats
+  const provincie = ctx.bruidspaar.provincie.startsWith('(') ? undefined : ctx.bruidspaar.provincie
+  const geboekt = (Object.entries(ctx.leveranciers.status) as Array<[string, string]>)
+    .filter(([, status]) => status === 'geboekt')
+    .map(([categorie]) => categorie)
+  return {
+    totaalBudget: ctx.budget.totaal,
+    woonplaats,
+    provincie,
+    aantalGasten: Math.max(ctx.gasten.daggasten, ctx.gasten.avondgasten),
+    geboekteCategorieen: new Set(geboekt as import('./types').VendorType[]),
+    dagenTotBruiloft: ctx.bruidspaar.dagenTotBruiloft,
+  }
 }
 
 export function deriveErvaringsniveau(

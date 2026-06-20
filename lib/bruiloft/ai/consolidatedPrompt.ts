@@ -86,6 +86,8 @@ Score-richtlijnen voor globaal.score (0-100) — weeg resterende tijd ALTIJD mee
 - 0-19: zeer weinig geregeld terwijl de bruiloft dichtbij is
 - Grotendeels lege planning met nog 9+ maanden: normale startpositie, scoor 45-60, bemoedigende toon
 
+Leveranciers: gebruik het veld 'leveranciersAanbod' uit de context. Verwijs in het leveranciers-advies en in de concrete acties naar het beschikbare aanbod (bijv. "er staan X opties binnen jullie budget in de buurt klaar") en noem waar passend 1 of 2 namen uit topMatches. Stel NOOIT voor om iets te regelen voor een categorie die niet in 'leveranciersAanbod' staat — daar is dan geen passend aanbod voor.
+
 Regels voor modules:
 - "niet_gestart": nog niets ingevuld in dit onderdeel
 - "op_schema": alles ziet er goed uit, kleine verbeterpunten mogelijk

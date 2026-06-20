@@ -2,8 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
-import { buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
+import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
 import { logAiUsage } from '@/lib/ai/usage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
@@ -76,6 +77,7 @@ Regels:
 - Noem NOOIT interne veld- of statusnamen letterlijk (zoals 'niet-geboekt', 'Geregelde Zaken', statuswaarden of veldnamen uit de data) — beschrijf de situatie in gewone mensentaal
 - Als de planning er grotendeels leeg uitziet (vrijwel geen voltooide taken, budgetitems of geboekte leveranciers), is het koppel waarschijnlijk net begonnen: geef dan een vriendelijke eerste-stappen-opbouw in plaats van een waarschuwing over achterstand
 - urgentie: 'kritiek' = deadline verstreken of minder dan 7 dagen, 'binnenkort' = 7–30 dagen of hoog risico, 'normaal' = proactief; gebruik 'kritiek' spaarzaam en alleen als er echt iets misgaat zonder actie
+- Leveranciers: gebruik het veld 'leveranciersAanbod' uit de context. Verwijs bij leveranciers-advies concreet naar het aanbod (bijv. "er zijn X opties binnen jullie budget in de buurt") en noem eventueel 1 of 2 namen uit topMatches. Adviseer NOOIT iets te regelen voor een categorie die niet in 'leveranciersAanbod' voorkomt — daar is dan geen passend aanbod voor. Verwijs leveranciers-adviezen naar /bruiloft/leveranciers.
 - sectie: pad naar de relevante pagina, een van: /bruiloft/taken | /bruiloft/budget | /bruiloft/gasten | /bruiloft/leveranciers | /bruiloft/draaiboek | /bruiloft/tafels
 - sectionLabel: gebruiksvriendelijke naam van die sectie (bijv. 'Taken', 'Budget', 'Gasten', etc.)
 - id: uniek per advies, gebruik 'ai-1', 'ai-2', etc.
@@ -196,6 +198,10 @@ export async function POST(request: NextRequest) {
     : 0
   const actiesLaatste30Dagen = activityResult.count ?? 0
 
+  // Verrijk met het beschikbare leveranciersaanbod, zodat het advies naar
+  // concrete opties kan verwijzen en geen loze adviezen geeft (#2/#25).
+  const aanbod = await bouwLeveranciersAanbod(supabase, matchProfielUitContext(body.context))
+
   const enrichedContext: AIWeddingContext = {
     ...body.context,
     gebruiker: {
@@ -203,6 +209,7 @@ export async function POST(request: NextRequest) {
       actiesLaatste30Dagen,
       ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, actiesLaatste30Dagen),
     },
+    leveranciersAanbod: aanbod,
   }
 
   const MODEL = 'gemini-2.5-flash'

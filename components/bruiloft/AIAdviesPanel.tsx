@@ -32,6 +32,12 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   normaal: 'Plannen',
 }
 
+// Leveranciers-advies leidt naar de ontdek-pagina met concrete, gerangschikte
+// opties in plaats van de (mogelijk lege) eigen lijst (#1).
+function adviesBestemming(sectie: string): string {
+  return sectie === '/bruiloft/leveranciers' ? '/bruiloft/ontdekken' : sectie
+}
+
 export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps) {
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const permissions = useBruiloftStore((s) => s.permissions)
@@ -113,7 +119,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                     <span className="text-xs text-muted-foreground">{stap.sectionLabel}</span>
                   </div>
                   <Link
-                    href={stap.sectie}
+                    href={adviesBestemming(stap.sectie)}
                     onClick={() =>
                       trackEvent('ai_advies_klik', {
                         bron: 'dashboard',

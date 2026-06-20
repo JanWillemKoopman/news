@@ -119,6 +119,11 @@ export default function DashboardPage() {
         <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
       </div>
 
+      {/* Aanbevolen leveranciers: concrete, op profiel gerankte opties direct
+          onder het advies, zodat AI-advies en passend aanbod samen één geheel
+          vormen. */}
+      <AanbevolenLeveranciers />
+
       {/* Module status grid: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">
         <ModuleStatusGrid
@@ -131,9 +136,6 @@ export default function DashboardPage() {
           permissions={permissions}
         />
       </div>
-
-      {/* Aanbevolen leveranciers uit de globale directory, op profiel gerankt */}
-      <AanbevolenLeveranciers />
 
       {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
       <div className="mb-8">

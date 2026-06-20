@@ -37,6 +37,11 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   normaal: 'Plannen',
 }
 
+// Leveranciers-advies leidt naar de ontdek-pagina met concrete matches (#1).
+function adviesBestemming(sectie: string): string {
+  return sectie === '/bruiloft/leveranciers' ? '/bruiloft/ontdekken' : sectie
+}
+
 // Eén nudge per paginasessie, app-breed — meer wordt opdringerig.
 let nudgeAlGetoond = false
 
@@ -189,7 +194,7 @@ export function AICoach() {
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <Link
-                            href={stap.sectie}
+                            href={adviesBestemming(stap.sectie)}
                             onClick={() => {
                               trackEvent('ai_advies_klik', {
                                 bron: 'coach',
