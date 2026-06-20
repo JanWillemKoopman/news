@@ -46,6 +46,19 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, intParam(sp.get('page'), 1))
   const limit = Math.min(MAX_LIMIT, Math.max(1, intParam(sp.get('limit'), DEFAULT_LIMIT)))
 
+  // Optioneel: het door het paar zélf begrote bedrag per budgetcategorie,
+  // als compacte JSON meegegeven door de client (#23).
+  let richtbudgetMap: Record<string, number> | undefined
+  const richtbudgetRaw = sp.get('richtbudget')
+  if (richtbudgetRaw) {
+    try {
+      const parsed = JSON.parse(richtbudgetRaw)
+      if (parsed && typeof parsed === 'object') richtbudgetMap = parsed as Record<string, number>
+    } catch {
+      // Ongeldige JSON: negeer en val terug op het standaardpercentage.
+    }
+  }
+
   // Profiel voor de ranking (door de client meegegeven uit de store).
   const profiel = bouwProfiel(
     {
@@ -59,6 +72,7 @@ export async function GET(request: NextRequest) {
       aantalAvondgasten: intParam(sp.get('avondgasten'), 0),
       // Dagen tot de bruiloft stuurt de boekvolgorde-prioriteit (#3).
       dagenTotBruiloft: sp.get('dagen') != null ? intParam(sp.get('dagen'), 0) : undefined,
+      richtbudgetPerBudgetCategorie: richtbudgetMap,
     },
     (sp.get('geboekt') ?? '')
       .split(',')

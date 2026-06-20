@@ -90,6 +90,10 @@ export function matchProfielUitContext(ctx: AIWeddingContext): import('./supplie
   const geboekt = (Object.entries(ctx.leveranciers.status) as Array<[string, string]>)
     .filter(([, status]) => status === 'geboekt')
     .map(([categorie]) => categorie)
+  const richtbudget: Record<string, number> = {}
+  for (const c of ctx.budget.perCategorie) {
+    if (c.geschat > 0) richtbudget[c.categorie] = c.geschat
+  }
   return {
     totaalBudget: ctx.budget.totaal,
     woonplaats,
@@ -97,6 +101,7 @@ export function matchProfielUitContext(ctx: AIWeddingContext): import('./supplie
     aantalGasten: Math.max(ctx.gasten.daggasten, ctx.gasten.avondgasten),
     geboekteCategorieen: new Set(geboekt as import('./types').VendorType[]),
     dagenTotBruiloft: ctx.bruidspaar.dagenTotBruiloft,
+    richtbudgetPerBudgetCategorie: Object.keys(richtbudget).length > 0 ? richtbudget : undefined,
   }
 }
 

@@ -7,9 +7,10 @@ import { ArrowRight, Compass, MapPin } from 'lucide-react'
 import { Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { dagenTot } from '@/lib/bruiloft/format'
+import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { canView } from '@/lib/bruiloft/permissions'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
-import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
+import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 // Toont de top-leveranciers uit de globale directory, gerangschikt op het
@@ -17,6 +18,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 export function AanbevolenLeveranciers() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const vendors = useBruiloftStore((s) => s.vendors)
+  const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const permissions = useBruiloftStore((s) => s.permissions)
 
   const [matches, setMatches] = React.useState<SupplierMatch[]>([])
@@ -39,6 +41,9 @@ export function AanbevolenLeveranciers() {
       dagen: String(dagenTot(wedding.trouwdatum)),
     })
     if (wedding.provincie) params.set('profielProvincie', wedding.provincie)
+    // Echt begroot bedrag per categorie meegeven voor budget-matching (#23).
+    const rb = richtbudgetMap(budgetTotalen(budgetItems, vendors, wedding).perCategorie)
+    if (Object.keys(rb).length > 0) params.set('richtbudget', JSON.stringify(rb))
     let actief = true
     fetch(`/api/suppliers/search?${params.toString()}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -49,7 +54,7 @@ export function AanbevolenLeveranciers() {
     return () => {
       actief = false
     }
-  }, [wedding, vendors, mag])
+  }, [wedding, vendors, budgetItems, mag])
 
   if (!mag || matches.length === 0) return null
 

@@ -57,6 +57,13 @@ export interface MatchProfiel {
   geboekteCategorieen: Set<SupplierCategorie> // categorieën met al een geboekte vendor
   /** Dagen tot de bruiloft; stuurt de boekvolgorde-prioriteit (#3). */
   dagenTotBruiloft?: number
+  /**
+   * Het door het paar zélf begrote bedrag per budgetcategorie (#23). Aanwezig
+   * → gebruikt als richtbudget i.p.v. het standaardpercentage; zo matcht de
+   * prijs op hun werkelijke plan, niet op een generieke verdeling.
+   * Gesleuteld op budgetcategorie-naam.
+   */
+  richtbudgetPerBudgetCategorie?: Record<string, number>
 }
 
 // Vuistregel: zóveel maanden vóór de bruiloft is deze soort leverancier idealiter
@@ -106,7 +113,10 @@ function budgetScore(
   if (supplier.isPrijsOpAanvraag || supplier.prijsVanaf == null || profiel.totaalBudget <= 0) {
     return { score: 0.5, binnenBudget: false }
   }
-  const richt = categorieRichtbudget(profiel, supplier.categorie)
+  // Voorkeur voor het zelf-begrote bedrag van het paar; anders het
+  // standaardpercentage van het totaalbudget (#23).
+  const eigenRicht = profiel.richtbudgetPerBudgetCategorie?.[CATEGORIE_NAAR_BUDGET[supplier.categorie]]
+  const richt = eigenRicht && eigenRicht > 0 ? eigenRicht : categorieRichtbudget(profiel, supplier.categorie)
   if (richt <= 0) return { score: 0.5, binnenBudget: false }
 
   if (supplier.prijsVanaf <= richt) {
@@ -221,13 +231,30 @@ export function rangschik(suppliers: Supplier[], profiel: MatchProfiel): Supplie
     })
 }
 
+// Bouwt de richtbudget-map (budgetcategorie -> zelf-begroot bedrag) voor #23.
+// Alleen categorieën met een ingevuld bedrag; de rest valt terug op het
+// standaardpercentage.
+export function richtbudgetMap(
+  perCategorie: Array<{ categorie: string; geschat: number }>
+): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const c of perCategorie) {
+    if (c.geschat > 0) map[c.categorie] = c.geschat
+  }
+  return map
+}
+
 // Helper voor de aanroepende code: bouwt het matchprofiel uit het bruidspaar +
 // hun reeds geboekte leveranciers (zelfde categorie-enum als suppliers).
 export function bouwProfiel(
   wedding: Pick<
     Wedding,
     'totaalBudget' | 'woonplaats' | 'aantalDaggasten' | 'aantalAvondgasten'
-  > & { provincie?: string; dagenTotBruiloft?: number },
+  > & {
+    provincie?: string
+    dagenTotBruiloft?: number
+    richtbudgetPerBudgetCategorie?: Record<string, number>
+  },
   geboekteCategorieen: VendorType[]
 ): MatchProfiel {
   return {
@@ -237,5 +264,6 @@ export function bouwProfiel(
     aantalGasten: Math.max(wedding.aantalDaggasten, wedding.aantalAvondgasten),
     geboekteCategorieen: new Set(geboekteCategorieen),
     dagenTotBruiloft: wedding.dagenTotBruiloft,
+    richtbudgetPerBudgetCategorie: wedding.richtbudgetPerBudgetCategorie,
   }
 }
