@@ -5,6 +5,7 @@ import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
 import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
+import { PlanningScoreKaart } from '@/components/bruiloft/ai/PlanningScoreKaart'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
@@ -114,8 +115,9 @@ export default function DashboardPage() {
         permissions={permissions}
       />
 
-      {/* AI Assistent: geprioriteerde volgende stappen */}
+      {/* AI Assistent: globale score + geprioriteerde volgende stappen */}
       <div className="mb-8">
+        <PlanningScoreKaart />
         <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
       </div>
 
