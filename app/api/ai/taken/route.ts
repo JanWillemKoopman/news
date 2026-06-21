@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
 import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { logAiUsage } from '@/lib/ai/usage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -183,16 +184,29 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const MODEL = 'gemini-2.5-flash'
+  const startTijd = Date.now()
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const result = await model.generateContent(
-      buildTakenPrompt(enrichedContext, bestaandeTaken)
-    )
-    const advies = parseResponse(result.response.text())
+    const prompt = buildTakenPrompt(enrichedContext, bestaandeTaken)
+    const result = await model.generateContent(prompt)
+    const tekst = result.response.text()
+    const advies = parseResponse(tekst)
+
+    logAiUsage({
+      endpoint: 'taken',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: true,
+      promptChars: prompt.length,
+      responseChars: tekst.length,
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
 
     void (supabase as any).from('ai_taken_cache').upsert(
       { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: new Date().toISOString() },
@@ -201,6 +215,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ advies, cached: false })
   } catch (err) {
     console.error('[api/ai/taken] Gemini fout:', err)
+    logAiUsage({
+      endpoint: 'taken',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
     if (cacheRow?.cached_advies) {
       return NextResponse.json({ advies: cacheRow.cached_advies as AITakenAdvies, cached: true })
     }

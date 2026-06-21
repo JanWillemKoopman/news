@@ -14,6 +14,7 @@ export interface AIWeddingContext {
     trouwdatum: string
     locatie: string
     woonplaats: string
+    provincie: string
     dagenTotBruiloft: number
     ceremonietype: string | null
     geregeldeZaken: Record<string, string>
@@ -75,6 +76,32 @@ export interface AIWeddingContext {
       vervaldatum: string
       dagenTot: number
     }>
+  }
+  // Server-side verrijkt: samenvatting van het beschikbare leveranciersaanbod
+  // uit de directory, zodat het advies naar concrete opties kan verwijzen (#2).
+  leveranciersAanbod?: import('./ai/leveranciersAanbod').LeveranciersAanbod
+}
+
+// Bouwt een leveranciers-matchprofiel uit de AI-context, zodat het
+// aanbod server-side op hetzelfde profiel gerangschikt kan worden (#2).
+export function matchProfielUitContext(ctx: AIWeddingContext): import('./suppliers/match').MatchProfiel {
+  const woonplaats = ctx.bruidspaar.woonplaats.startsWith('(') ? '' : ctx.bruidspaar.woonplaats
+  const provincie = ctx.bruidspaar.provincie.startsWith('(') ? undefined : ctx.bruidspaar.provincie
+  const geboekt = (Object.entries(ctx.leveranciers.status) as Array<[string, string]>)
+    .filter(([, status]) => status === 'geboekt')
+    .map(([categorie]) => categorie)
+  const richtbudget: Record<string, number> = {}
+  for (const c of ctx.budget.perCategorie) {
+    if (c.geschat > 0) richtbudget[c.categorie] = c.geschat
+  }
+  return {
+    totaalBudget: ctx.budget.totaal,
+    woonplaats,
+    provincie,
+    aantalGasten: Math.max(ctx.gasten.daggasten, ctx.gasten.avondgasten),
+    geboekteCategorieen: new Set(geboekt as import('./types').VendorType[]),
+    dagenTotBruiloft: ctx.bruidspaar.dagenTotBruiloft,
+    richtbudgetPerBudgetCategorie: Object.keys(richtbudget).length > 0 ? richtbudget : undefined,
   }
 }
 
@@ -182,6 +209,7 @@ export function buildAIContext(
       trouwdatum: wedding.trouwdatum,
       locatie: wedding.locatie || '(nog niet ingesteld)',
       woonplaats: wedding.woonplaats || '(nog niet ingesteld)',
+      provincie: wedding.provincie || '(nog niet ingesteld)',
       dagenTotBruiloft: dagenTot(wedding.trouwdatum),
       ceremonietype: wedding.ceremonietype ?? null,
       geregeldeZaken: wedding.geregeldeZaken as Record<string, string>,

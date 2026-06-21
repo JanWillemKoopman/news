@@ -26,9 +26,11 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { canEdit } from '@/lib/bruiloft/permissions'
+import { dagenTot } from '@/lib/bruiloft/format'
+import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
-import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
+import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import type { Supplier } from '@/lib/bruiloft/suppliers/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -37,6 +39,7 @@ const LIMIT = 24
 export default function OntdekkenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const vendors = useBruiloftStore((s) => s.vendors)
+  const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
@@ -65,9 +68,15 @@ export default function OntdekkenPage() {
       daggasten: String(wedding.aantalDaggasten),
       avondgasten: String(wedding.aantalAvondgasten),
       geboekt,
+      dagen: String(dagenTot(wedding.trouwdatum)),
     })
+    // Woonprovincie stuurt de regio-weging in de ranking (los van de filter).
+    if (wedding.provincie) p.set('profielProvincie', wedding.provincie)
+    // Echt begroot bedrag per categorie voor budget-matching (#23).
+    const rb = richtbudgetMap(budgetTotalen(budgetItems, vendors, wedding).perCategorie)
+    if (Object.keys(rb).length > 0) p.set('richtbudget', JSON.stringify(rb))
     return p.toString()
-  }, [wedding, vendors])
+  }, [wedding, vendors, budgetItems])
 
   const fetchPagina = React.useCallback(
     async (gewenstePage: number, vervang: boolean) => {

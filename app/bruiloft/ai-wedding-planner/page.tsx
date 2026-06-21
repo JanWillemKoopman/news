@@ -322,11 +322,21 @@ export default function AIWeddingPlannerPage() {
       {/* Advies-inhoud */}
       {!loading && advies && (
         <div>
-          <GlobaleStatusKaart advies={advies} />
+          {/* Progressieve reveal: de kaarten verschijnen vlot na elkaar, zodat
+              een verse analyse soepeler binnenkomt dan in één keer (#10). */}
+          <div className="animate-slide-up" style={{ animationFillMode: 'both' }}>
+            <GlobaleStatusKaart advies={advies} />
+          </div>
 
           <div className="space-y-0">
-            {MODULE_CONFIG.map((m) => (
-              <ModuleKaart key={m.key} config={m} advies={advies.modules[m.key]} />
+            {MODULE_CONFIG.map((m, i) => (
+              <div
+                key={m.key}
+                className="animate-slide-up"
+                style={{ animationDelay: `${(i + 1) * 80}ms`, animationFillMode: 'both' }}
+              >
+                <ModuleKaart config={m} advies={advies.modules[m.key]} />
+              </div>
             ))}
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { buildConsolidatedPrompt, parseConsolidated } from '@/lib/bruiloft/ai/consolidatedPrompt'
+import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
+import { logAiUsage } from '@/lib/ai/usage'
 import {
   budgetItemFromRow,
   guestFromRow,
@@ -201,15 +203,33 @@ export async function POST(request: NextRequest) {
   }
 
   // 1 geconsolideerde Gemini-aanroep (was: 7 parallelle aanroepen)
+  const MODEL = 'gemini-2.5-flash'
+  const startTijd = Date.now()
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
 
-    const result = await model.generateContent(buildConsolidatedPrompt(context))
-    const consolidated = parseConsolidated(result.response.text())
+    // Verrijk met het leveranciersaanbod (alleen bij een echte generatie, niet
+    // bij cache-hits) zodat het advies naar concrete opties verwijst (#2/#25).
+    const aanbod = await bouwLeveranciersAanbod(supabase, matchProfielUitContext(context))
+    const prompt = buildConsolidatedPrompt({ ...context, leveranciersAanbod: aanbod })
+    const result = await model.generateContent(prompt)
+    const tekst = result.response.text()
+    const consolidated = parseConsolidated(tekst)
+
+    logAiUsage({
+      endpoint: 'wedding-planner',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: true,
+      promptChars: prompt.length,
+      responseChars: tekst.length,
+      userId: user.id,
+      weddingId,
+    })
 
     const advies: AIWeddingPlannerAdvies = {
       globaal: consolidated.globaal,
@@ -252,6 +272,15 @@ export async function POST(request: NextRequest) {
     } satisfies AIWeddingPlannerResponse)
   } catch (err) {
     console.error('[api/ai/wedding-planner] Gemini fout:', err)
+    logAiUsage({
+      endpoint: 'wedding-planner',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      userId: user.id,
+      weddingId,
+    })
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advice) {
       return NextResponse.json({

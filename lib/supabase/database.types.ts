@@ -801,6 +801,7 @@ export type Database = {
           locatie: string
           partner1_naam: string
           partner2_naam: string
+          provincie: string
           taken_voorstellen: Record<string, unknown>
           totaal_budget: number
           trouwdatum: string | null
@@ -818,6 +819,7 @@ export type Database = {
           locatie?: string
           partner1_naam?: string
           partner2_naam?: string
+          provincie?: string
           taken_voorstellen?: Record<string, unknown>
           totaal_budget?: number
           trouwdatum?: string | null
@@ -835,6 +837,7 @@ export type Database = {
           locatie?: string
           partner1_naam?: string
           partner2_naam?: string
+          provincie?: string
           taken_voorstellen?: Record<string, unknown>
           totaal_budget?: number
           trouwdatum?: string | null

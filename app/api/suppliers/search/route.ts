@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   // Filters
   const categorie = sp.get('categorie')
   const plaats = sp.get('plaats')
-  const provincie = sp.get('provincie')
+  const provincie = sp.get('provincie') // harde filter (door gebruiker gekozen)
   const q = sp.get('q')?.trim()
   const prijsMin = sp.get('prijsMin')
   const prijsMax = sp.get('prijsMax')
@@ -46,20 +46,39 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, intParam(sp.get('page'), 1))
   const limit = Math.min(MAX_LIMIT, Math.max(1, intParam(sp.get('limit'), DEFAULT_LIMIT)))
 
+  // Optioneel: het door het paar zélf begrote bedrag per budgetcategorie,
+  // als compacte JSON meegegeven door de client (#23).
+  let richtbudgetMap: Record<string, number> | undefined
+  const richtbudgetRaw = sp.get('richtbudget')
+  if (richtbudgetRaw) {
+    try {
+      const parsed = JSON.parse(richtbudgetRaw)
+      if (parsed && typeof parsed === 'object') richtbudgetMap = parsed as Record<string, number>
+    } catch {
+      // Ongeldige JSON: negeer en val terug op het standaardpercentage.
+    }
+  }
+
   // Profiel voor de ranking (door de client meegegeven uit de store).
   const profiel = bouwProfiel(
     {
       totaalBudget: intParam(sp.get('budget'), 0),
       woonplaats: sp.get('woonplaats') ?? '',
+      // Woonprovincie van het bruidspaar: stuurt de "in jullie regio"-weging.
+      // Los van de harde provinciefilter, zodat aanbevelingen niet onnodig
+      // worden ingeperkt maar regio wél meeweegt in de score.
+      provincie: sp.get('profielProvincie')?.trim() || provincie?.trim() || undefined,
       aantalDaggasten: intParam(sp.get('daggasten'), 0),
       aantalAvondgasten: intParam(sp.get('avondgasten'), 0),
+      // Dagen tot de bruiloft stuurt de boekvolgorde-prioriteit (#3).
+      dagenTotBruiloft: sp.get('dagen') != null ? intParam(sp.get('dagen'), 0) : undefined,
+      richtbudgetPerBudgetCategorie: richtbudgetMap,
     },
     (sp.get('geboekt') ?? '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean) as VendorType[]
   )
-  if (provincie) profiel.provincie = provincie
 
   // Basale, herbruikbare filterquery. `suppliers` staat nog niet in
   // database.types.ts, dus we benaderen de tabel ongetypeerd (zoals de
@@ -91,7 +110,7 @@ export async function GET(request: NextRequest) {
       const rows = (data ?? []) as SupplierRow[]
       const matches: SupplierMatch[] = rows
         .map(mapSupplierRow)
-        .map((supplier) => ({ supplier, score: 0, badges: [], binnenBudget: false }))
+        .map((supplier) => ({ supplier, score: 0, badges: [], binnenBudget: false, uitleg: '' }))
       return NextResponse.json({ matches, total: count ?? rows.length, page, limit })
     }
 

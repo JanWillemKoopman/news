@@ -6,10 +6,12 @@ import { ChevronRight, RefreshCw, Sparkles } from 'lucide-react'
 
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
+import { trackEvent } from '@/lib/analytics'
 import type { NextStep } from '@/lib/bruiloft/guidance'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import { AdviesTekst } from '@/components/bruiloft/ai/AdviesTekst'
+import { AdviesFeedback } from '@/components/bruiloft/ai/AdviesFeedback'
 import { geledenLabel, useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
@@ -30,6 +32,12 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   normaal: 'Plannen',
 }
 
+// Leveranciers-advies leidt naar de ontdek-pagina met concrete, gerangschikte
+// opties in plaats van de (mogelijk lege) eigen lijst (#1).
+function adviesBestemming(sectie: string): string {
+  return sectie === '/bruiloft/leveranciers' ? '/bruiloft/ontdekken' : sectie
+}
+
 export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps) {
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const permissions = useBruiloftStore((s) => s.permissions)
@@ -43,6 +51,15 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
 
   const dagen = dagenTot(trouwdatum)
   const allesWeggeklikt = !loading && (advies?.length ?? 0) > 0 && zichtbaar.length === 0
+
+  // Meet één keer per mount dat er advies getoond is, als denominator voor de
+  // doorklik-/feedbackcijfers (#30).
+  const getoondGemeten = React.useRef(false)
+  React.useEffect(() => {
+    if (getoondGemeten.current || loading || zichtbaar.length === 0) return
+    getoondGemeten.current = true
+    trackEvent('ai_advies_getoond', { aantal: zichtbaar.length })
+  }, [loading, zichtbaar.length])
 
   async function afrondenFallback(taskId: string) {
     if (bezig) return
@@ -80,7 +97,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
           <div className="flex flex-col items-center gap-4 py-6">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-              <span className="text-sm text-muted-foreground">AI analyseert jullie planning…</span>
+              <span className="text-sm text-muted-foreground">AI vergelijkt jullie planning met de Nederlandse trouwbenchmarks…</span>
             </div>
             <div className="flex gap-1.5">
               <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
@@ -103,7 +120,14 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                     <span className="text-xs text-muted-foreground">{stap.sectionLabel}</span>
                   </div>
                   <Link
-                    href={stap.sectie}
+                    href={adviesBestemming(stap.sectie)}
+                    onClick={() =>
+                      trackEvent('ai_advies_klik', {
+                        bron: 'dashboard',
+                        type: stap.type,
+                        sectie: stap.sectie,
+                      })
+                    }
                     className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
                   >
                     Bekijken
@@ -112,6 +136,9 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                 </div>
                 <p className="font-medium text-foreground">{stap.titel}</p>
                 <AdviesTekst tekst={stap.omschrijving} className="mt-0.5 text-sm text-muted-foreground" />
+                <div className="mt-2 flex justify-end">
+                  <AdviesFeedback advies={stap} />
+                </div>
               </li>
             ))}
           </ul>

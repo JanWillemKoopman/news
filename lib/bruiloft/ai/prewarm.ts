@@ -2,8 +2,9 @@ import 'server-only'
 
 import type { GenerativeModel } from '@google/generative-ai'
 
-import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { buildConsolidatedPrompt, parseConsolidated } from '@/lib/bruiloft/ai/consolidatedPrompt'
+import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
 import {
   budgetItemFromRow,
   guestFromRow,
@@ -100,7 +101,8 @@ export async function prewarmWedding(
 
   const fingerprint = buildAIFingerprint(ctx)
 
-  const result = await model.generateContent(buildConsolidatedPrompt(ctx))
+  const aanbod = await bouwLeveranciersAanbod(admin, matchProfielUitContext(ctx))
+  const result = await model.generateContent(buildConsolidatedPrompt({ ...ctx, leveranciersAanbod: aanbod }))
   const consolidated = parseConsolidated(result.response.text())
 
   const plannerAdvies = {

@@ -52,6 +52,7 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     trouwdatum: r.trouwdatum ?? '',
     locatie: r.locatie,
     woonplaats: r.woonplaats,
+    provincie: r.provincie ?? '',
     totaalBudget: num(r.totaal_budget),
     aantalDaggasten: r.aantal_daggasten,
     aantalAvondgasten: r.aantal_avondgasten,
@@ -75,6 +76,7 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
   if (p.trouwdatum !== undefined) r.trouwdatum = p.trouwdatum || null
   if (p.locatie !== undefined) r.locatie = p.locatie
   if (p.woonplaats !== undefined) r.woonplaats = p.woonplaats
+  if (p.provincie !== undefined) r.provincie = p.provincie
   if (p.totaalBudget !== undefined) r.totaal_budget = p.totaalBudget
   if (p.aantalDaggasten !== undefined) r.aantal_daggasten = p.aantalDaggasten
   if (p.aantalAvondgasten !== undefined) r.aantal_avondgasten = p.aantalAvondgasten

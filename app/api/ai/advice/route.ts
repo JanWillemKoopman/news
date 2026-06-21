@@ -2,8 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
-import { buildAIFingerprint, deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
+import { buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
+import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
+import { logAiUsage } from '@/lib/ai/usage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -33,7 +35,18 @@ const MIN_COOLDOWN_MS = 60 * 60 * 1000
 // 7 dagen veiligheidsnet: cache nooit langer dan dit gebruiken.
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
-function buildPrompt(ctx: AIWeddingContext): string {
+function dismissedSectie(dismissed?: string[]): string {
+  if (!dismissed || dismissed.length === 0) return ''
+  // Sleutels hebben de vorm "sectie|titel"; toon het leesbare deel.
+  const titels = dismissed
+    .map((k) => k.split('|').slice(1).join('|').trim())
+    .filter(Boolean)
+    .slice(0, 30)
+  if (titels.length === 0) return ''
+  return `\nEerder door het koppel weggeklikte adviezen (vermijd deze opnieuw te geven; kom met andere, nieuwe inzichten):\n- ${titels.join('\n- ')}\n`
+}
+
+function buildPrompt(ctx: AIWeddingContext, dismissed?: string[]): string {
   const dagLabel =
     ctx.bruidspaar.dagenTotBruiloft > 0
       ? `${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan`
@@ -53,7 +66,7 @@ Pas je toon en diepgang aan op het ervaringsniveau: 'nieuw' = meer uitleg en sta
   return `Je bent een ervaren persoonlijke Nederlandse trouwplanner-assistent. \
 Je helpt ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} bij de voorbereiding van hun bruiloft \
 op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
-${gebruikerSectie}
+${gebruikerSectie}${dismissedSectie(dismissed)}
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
 
@@ -75,6 +88,7 @@ Regels:
 - Noem NOOIT interne veld- of statusnamen letterlijk (zoals 'niet-geboekt', 'Geregelde Zaken', statuswaarden of veldnamen uit de data) — beschrijf de situatie in gewone mensentaal
 - Als de planning er grotendeels leeg uitziet (vrijwel geen voltooide taken, budgetitems of geboekte leveranciers), is het koppel waarschijnlijk net begonnen: geef dan een vriendelijke eerste-stappen-opbouw in plaats van een waarschuwing over achterstand
 - urgentie: 'kritiek' = deadline verstreken of minder dan 7 dagen, 'binnenkort' = 7–30 dagen of hoog risico, 'normaal' = proactief; gebruik 'kritiek' spaarzaam en alleen als er echt iets misgaat zonder actie
+- Leveranciers: gebruik het veld 'leveranciersAanbod' uit de context. Verwijs bij leveranciers-advies concreet naar het aanbod (bijv. "er zijn X opties binnen jullie budget in de buurt") en noem eventueel 1 of 2 namen uit topMatches. Adviseer NOOIT iets te regelen voor een categorie die niet in 'leveranciersAanbod' voorkomt — daar is dan geen passend aanbod voor. Verwijs leveranciers-adviezen naar /bruiloft/leveranciers.
 - sectie: pad naar de relevante pagina, een van: /bruiloft/taken | /bruiloft/budget | /bruiloft/gasten | /bruiloft/leveranciers | /bruiloft/draaiboek | /bruiloft/tafels
 - sectionLabel: gebruiksvriendelijke naam van die sectie (bijv. 'Taken', 'Budget', 'Gasten', etc.)
 - id: uniek per advies, gebruik 'ai-1', 'ai-2', etc.
@@ -147,7 +161,7 @@ export async function POST(request: NextRequest) {
   // Fire-and-forget: bijwerken hoeft de response niet te vertragen
   void (supabase as any).from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', user.id)
 
-  let body: { context: AIWeddingContext; weddingId: string; force?: boolean }
+  let body: { context: AIWeddingContext; weddingId: string; force?: boolean; dismissed?: string[] }
   try {
     body = await request.json()
   } catch {
@@ -214,6 +228,10 @@ export async function POST(request: NextRequest) {
     : 0
   const actiesLaatste30Dagen = activityResult.count ?? 0
 
+  // Verrijk met het beschikbare leveranciersaanbod, zodat het advies naar
+  // concrete opties kan verwijzen en geen loze adviezen geeft (#2/#25).
+  const aanbod = await bouwLeveranciersAanbod(supabase, matchProfielUitContext(body.context))
+
   const enrichedContext: AIWeddingContext = {
     ...body.context,
     gebruiker: {
@@ -221,16 +239,32 @@ export async function POST(request: NextRequest) {
       actiesLaatste30Dagen,
       ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, actiesLaatste30Dagen),
     },
+    leveranciersAanbod: aanbod,
   }
 
+  const MODEL = 'gemini-2.5-flash'
+  const startTijd = Date.now()
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const result = await model.generateContent(buildPrompt(enrichedContext))
-    const { samenvatting, advies } = parseResponse(result.response.text())
+    const prompt = buildPrompt(enrichedContext, body.dismissed)
+    const result = await model.generateContent(prompt)
+    const tekst = result.response.text()
+    const { samenvatting, advies } = parseResponse(tekst)
+
+    logAiUsage({
+      endpoint: 'advice',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: true,
+      promptChars: prompt.length,
+      responseChars: tekst.length,
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
 
     // Sla op in DB-cache
     await (supabase as any)
@@ -249,6 +283,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ samenvatting, advies, cached: false, updatedAt: new Date().toISOString() })
   } catch (err) {
     console.error('[api/ai/advice] Gemini fout:', err)
+    logAiUsage({
+      endpoint: 'advice',
+      model: MODEL,
+      latencyMs: Date.now() - startTijd,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      userId: user.id,
+      weddingId: body.weddingId,
+    })
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advies?.length > 0) {
       return NextResponse.json({ samenvatting: cacheRow.cached_samenvatting ?? '', advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })

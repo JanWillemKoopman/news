@@ -37,6 +37,7 @@ export interface Wedding {
   trouwdatum: ISODate
   locatie: string // trouwlocatie/venue (kan nog onbekend zijn)
   woonplaats: string // woonplaats bruidspaar — geografisch ankerpunt voor personalisatie
+  provincie: string // provincie bruidspaar — regio-anker voor leveranciersmatching ('' = onbekend)
   totaalBudget: number // in euro
   aantalDaggasten: number // geschat
   aantalAvondgasten: number // geschat

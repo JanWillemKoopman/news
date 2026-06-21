@@ -30,4 +30,5 @@ export const BADGE_STIJL: Record<MatchBadge, string> = {
   'in jullie plaats': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
   'in jullie regio': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
   'past bij gezelschap': 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
+  'boek dit binnenkort': 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
 }

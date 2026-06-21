@@ -3,7 +3,8 @@
 import * as React from 'react'
 import { ArrowLeft, ArrowRight, CalendarHeart, Heart, Plus } from 'lucide-react'
 
-import { Button, Field, Input, MeerDetails, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
+import { Button, Field, Input, MeerDetails, Select, eigennaamInputProps, useToast } from '@/components/bruiloft/ui'
+import { PROVINCIES, afleidProvincie } from '@/lib/bruiloft/geo'
 import type { WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -68,6 +69,7 @@ function WeddingCreateForm({
   const [partner2, setPartner2] = React.useState('')
   const [trouwdatum, setTrouwdatum] = React.useState('')
   const [woonplaats, setWoonplaats] = React.useState('')
+  const [provincie, setProvincie] = React.useState('')
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [daggasten, setDaggasten] = React.useState('')
@@ -88,6 +90,7 @@ function WeddingCreateForm({
       trouwdatum,
       locatie: '',
       woonplaats: woonplaats.trim(),
+      provincie,
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
       aantalDaggasten: Number(daggasten) || 0,
       aantalAvondgasten: Number(avondgasten) || 0,
@@ -169,15 +172,34 @@ function WeddingCreateForm({
             </Field>
 
             <MeerDetails open={meer} onToggle={() => setMeer((v) => !v)}>
-              <Field label="Woonplaats" htmlFor="wc-woonplaats">
-                <Input
-                  id="wc-woonplaats"
-                  value={woonplaats}
-                  onChange={(e) => setWoonplaats(e.target.value)}
-                  placeholder="Bijv. Utrecht"
-                  {...eigennaamInputProps}
-                />
-              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Woonplaats" htmlFor="wc-woonplaats">
+                  <Input
+                    id="wc-woonplaats"
+                    value={woonplaats}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setWoonplaats(v)
+                      // Provincie automatisch voorinvullen bij herkende plaats.
+                      setProvincie((p) => p || afleidProvincie(v) || '')
+                    }}
+                    placeholder="Bijv. Utrecht"
+                    {...eigennaamInputProps}
+                  />
+                </Field>
+                <Field label="Provincie" htmlFor="wc-provincie">
+                  <Select
+                    id="wc-provincie"
+                    value={provincie}
+                    onChange={(e) => setProvincie(e.target.value)}
+                  >
+                    <option value="">Kies provincie</option>
+                    {PROVINCIES.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
 
               <div>
                 <p className="mb-1.5 block text-sm font-medium text-foreground">Globaal budget</p>

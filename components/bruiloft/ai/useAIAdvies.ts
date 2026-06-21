@@ -191,11 +191,16 @@ export function useAIAdvies(): UseAIAdviesResult {
         let lopend = inflight.get(weddingId)
         if (!lopend || forceRefresh) {
           const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+          // Eerder weggeklikte adviezen meesturen zodat de AI zichzelf niet
+          // herhaalt bij een nieuwe generatie (#15). Vers uit localStorage
+          // gelezen, niet als effect-dependency, zodat wegklikken geen refetch
+          // triggert.
+          const afgewezen = Array.from(leesWeggeklikt(weddingId)).slice(-30)
           lopend = (async () => {
             const res = await window.fetch('/api/ai/advice', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ context, weddingId, force: forceRefresh }),
+              body: JSON.stringify({ context, weddingId, force: forceRefresh, dismissed: afgewezen }),
             })
             if (!res.ok) throw new Error(await res.text())
             const json = await res.json()
@@ -247,8 +252,17 @@ export function useAIAdvies(): UseAIAdviesResult {
 
   const zichtbaar = React.useMemo(() => {
     if (!advies) return []
+    // Ontdubbel op sleutel én op (genormaliseerde) titel, zodat overlappende
+    // adviezen uit verschillende bronnen niet dubbel verschijnen (#19).
+    const gezien = new Set<string>()
     return advies
       .filter((a) => !weggeklikt.has(adviesKey(a)))
+      .filter((a) => {
+        const titelSleutel = a.titel.trim().toLowerCase()
+        if (gezien.has(titelSleutel)) return false
+        gezien.add(titelSleutel)
+        return true
+      })
       .slice()
       .sort((a, b) => URGENTIE_VOLGORDE[a.urgentie] - URGENTIE_VOLGORDE[b.urgentie])
   }, [advies, weggeklikt])

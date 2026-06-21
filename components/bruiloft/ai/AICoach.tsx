@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { ArrowRight, BarChart3, ChevronRight, Lightbulb, RefreshCw, Sparkles, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, useToast } from '@/components/bruiloft/ui'
 import { geledenLabel, useAIAdvies } from './useAIAdvies'
+import { AdviesFeedback } from './AdviesFeedback'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
 
 // AI-coach: app-breed paneel, geopend via de "AI-assistent"-knop in de
@@ -33,6 +35,11 @@ const URGENTIE_LABEL: Record<AIAdvies['urgentie'], string> = {
   kritiek: 'Dringend',
   binnenkort: 'Binnenkort',
   normaal: 'Plannen',
+}
+
+// Leveranciers-advies leidt naar de ontdek-pagina met concrete matches (#1).
+function adviesBestemming(sectie: string): string {
+  return sectie === '/bruiloft/leveranciers' ? '/bruiloft/ontdekken' : sectie
 }
 
 // Eén nudge per paginasessie, app-breed — meer wordt opdringerig.
@@ -143,7 +150,7 @@ export function AICoach() {
                 <div className="flex flex-col items-center gap-4 py-10">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-                    <span className="text-sm text-muted-foreground">AI analyseert jullie planning…</span>
+                    <span className="text-sm text-muted-foreground">AI bekijkt jullie planning en het passende leveranciersaanbod…</span>
                   </div>
                   <div className="flex gap-1.5">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />
@@ -153,10 +160,14 @@ export function AICoach() {
                 </div>
               ) : zichtbaar.length > 0 ? (
                 <ul className="space-y-3">
-                  {zichtbaar.map((stap) => {
+                  {zichtbaar.map((stap, i) => {
                     const TypeIcon = TYPE_ICON[stap.type]
                     return (
-                      <li key={stap.id} className="rounded-xl border border-border p-4">
+                      <li
+                        key={stap.id}
+                        className="animate-slide-up rounded-xl border border-border p-4"
+                        style={{ animationDelay: `${i * 70}ms`, animationFillMode: 'both' }}
+                      >
                         <div className="mb-1.5 flex items-start justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span
@@ -185,14 +196,24 @@ export function AICoach() {
                         <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
                           {stap.omschrijving}
                         </p>
-                        <Link
-                          href={stap.sectie}
-                          onClick={closeAICoach}
-                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
-                        >
-                          Bekijken
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <Link
+                            href={adviesBestemming(stap.sectie)}
+                            onClick={() => {
+                              trackEvent('ai_advies_klik', {
+                                bron: 'coach',
+                                type: stap.type,
+                                sectie: stap.sectie,
+                              })
+                              closeAICoach()
+                            }}
+                            className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
+                          >
+                            Bekijken
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                          <AdviesFeedback advies={stap} />
+                        </div>
                       </li>
                     )
                   })}
