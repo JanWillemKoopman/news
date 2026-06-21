@@ -107,6 +107,7 @@ export default function DashboardPage() {
         tasks={tasks}
         budgetItems={budgetItems}
         vendors={vendors}
+        guests={guests}
         faseLabel={faseLabel}
       />
 

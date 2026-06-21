@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react'
 
 import { aankomendeTermijnen } from '@/lib/bruiloft/derived'
 import { dagenTot } from '@/lib/bruiloft/format'
-import type { BudgetItem, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
+import type { BudgetItem, Guest, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
 import { Card, CardContent } from '@/components/bruiloft/ui'
 import { useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 
@@ -13,6 +13,7 @@ interface DashboardIntroProps {
   tasks: Task[]
   budgetItems: BudgetItem[]
   vendors: Vendor[]
+  guests: Guest[]
   faseLabel: string
 }
 
@@ -30,6 +31,7 @@ export function DashboardIntro({
   tasks,
   budgetItems,
   vendors,
+  guests,
   faseLabel,
 }: DashboardIntroProps) {
   // Deelt de gecachte advieslaag met het AI-paneel; geen extra AI-call.
@@ -46,23 +48,28 @@ export function DashboardIntro({
   const aankomendeBetalingen = aankomendeTermijnen(budgetItems, 20).filter(
     (t) => t.dagen <= 30
   ).length
-  const geboekt = vendors.filter((v) => v.status === 'geboekt').length
 
-  // Net begonnen: vrijwel niets ingevuld — behandel als gezonde startpositie.
-  const netBegonnen = tasks.length === 0 && budgetItems.length === 0 && geboekt === 0
+  // Nog nauwelijks begonnen: geen budget, leveranciers of gasten ingevuld én
+  // geen openstaande takenlijst (een afgevinkte onboarding-taak telt niet als
+  // voortgang). Voor deze koppels is "op schema" misleidend.
+  const nauwelijksBegonnen =
+    budgetItems.length === 0 &&
+    vendors.length === 0 &&
+    guests.length === 0 &&
+    openTaken.length === 0
 
-  // Deterministische terugval-kop, kalm van toon.
+  // Deterministische terugval-kop — feitelijk, zonder loze 'op schema'-claim.
   let fallbackKop: string
   if (dagen < 0) {
     fallbackKop = 'Gefeliciteerd met jullie huwelijk! Nog een paar dingen om af te ronden.'
-  } else if (netBegonnen) {
-    fallbackKop = 'Jullie zijn net begonnen — een mooie, rustige start.'
+  } else if (nauwelijksBegonnen) {
+    fallbackKop = 'Tijd om te beginnen — zet jullie eerste stappen voor de bruiloft.'
   } else if (achterstallig > 0) {
     fallbackKop = 'Een paar dingen vragen jullie aandacht.'
   } else if (aankomendeTaken === 0 && aankomendeBetalingen === 0) {
-    fallbackKop = 'Jullie liggen mooi op schema — niets wat nu niet kan wachten.'
+    fallbackKop = 'Goed bijgewerkt — niets wat nu dringend is.'
   } else {
-    fallbackKop = 'Jullie liggen op schema voor deze fase.'
+    fallbackKop = 'Een paar dingen om binnenkort op te pakken.'
   }
 
   // AI-samenvatting heeft voorrang zodra die binnen is.

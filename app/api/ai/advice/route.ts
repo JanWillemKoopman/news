@@ -78,7 +78,7 @@ Regels:
 - sectie: pad naar de relevante pagina, een van: /bruiloft/taken | /bruiloft/budget | /bruiloft/gasten | /bruiloft/leveranciers | /bruiloft/draaiboek | /bruiloft/tafels
 - sectionLabel: gebruiksvriendelijke naam van die sectie (bijv. 'Taken', 'Budget', 'Gasten', etc.)
 - id: uniek per advies, gebruik 'ai-1', 'ai-2', etc.
-- samenvatting: 1 à 2 korte zinnen die bevestigen waar het koppel staat (bijv. op schema, of een paar dingen om op te pakken), persoonlijk en kalm; baseer je op de concrete situatie en noem nooit interne veld- of statusnamen
+- samenvatting: 1 à 2 korte zinnen die bevestigen waar het koppel staat, persoonlijk en kalm; als er nog vrijwel niets is ingevuld (geen budget, leveranciers of gasten), gebruik een uitnodigende eerste-stappen-toon en zeg NIET dat alles 'op schema' loopt; baseer je op de concrete situatie en noem nooit interne veld- of statusnamen
 
 Geef ALLEEN dit JSON-object terug, geen andere tekst, in dit formaat:
 {
