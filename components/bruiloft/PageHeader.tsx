@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
+import { EersteKeerHint } from '@/components/bruiloft/EersteKeerHint'
 import { FloatingAddButton } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
@@ -61,6 +62,7 @@ export function PageHeader({ titel, beschrijving, actie, fab }: PageHeaderProps)
         </div>
         {actie ? <div className="flex shrink-0 flex-wrap gap-2">{actie}</div> : null}
       </div>
+      <EersteKeerHint />
       {fab ? (
         <FloatingAddButton label={fab.label} onClick={fab.onClick} visible={!headerInView} />
       ) : null}
