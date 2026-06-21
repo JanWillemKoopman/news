@@ -46,7 +46,14 @@ function dismissedSectie(dismissed?: string[]): string {
   return `\nEerder door het koppel weggeklikte adviezen (vermijd deze opnieuw te geven; kom met andere, nieuwe inzichten):\n- ${titels.join('\n- ')}\n`
 }
 
-function buildPrompt(ctx: AIWeddingContext, dismissed?: string[]): string {
+function afgekeurdSectie(afgekeurd?: string[]): string {
+  if (!afgekeurd || afgekeurd.length === 0) return ''
+  const titels = Array.from(new Set(afgekeurd.map((t) => t.trim()).filter(Boolean))).slice(0, 30)
+  if (titels.length === 0) return ''
+  return `\nEerder door het koppel als niet nuttig beoordeeld (duim omlaag) — kom met andere invalshoeken of formuleringen, geef niet hetzelfde advies opnieuw:\n- ${titels.join('\n- ')}\n`
+}
+
+function buildPrompt(ctx: AIWeddingContext, dismissed?: string[], afgekeurd?: string[]): string {
   const dagLabel =
     ctx.bruidspaar.dagenTotBruiloft > 0
       ? `${ctx.bruidspaar.dagenTotBruiloft} dagen te gaan`
@@ -66,7 +73,7 @@ Pas je toon en diepgang aan op het ervaringsniveau: 'nieuw' = meer uitleg en sta
   return `Je bent een ervaren persoonlijke Nederlandse trouwplanner-assistent. \
 Je helpt ${ctx.bruidspaar.partner1} en ${ctx.bruidspaar.partner2} bij de voorbereiding van hun bruiloft \
 op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
-${gebruikerSectie}${dismissedSectie(dismissed)}
+${gebruikerSectie}${dismissedSectie(dismissed)}${afgekeurdSectie(afgekeurd)}
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
 
@@ -214,14 +221,25 @@ export async function POST(request: NextRequest) {
   }
 
   // Haal gebruikersprofiel op voor contextuele AI-toon
-  const [profileResult, activityResult] = await Promise.all([
+  const [profileResult, activityResult, feedbackResult] = await Promise.all([
     (supabase as any).from('profiles').select('created_at').eq('id', user.id).single(),
     (supabase as any)
       .from('wedding_activity')
       .select('*', { count: 'exact', head: true })
       .eq('actor_id', user.id)
       .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+    (supabase as any)
+      .from('ai_advice_feedback')
+      .select('advies_titel')
+      .eq('wedding_id', body.weddingId)
+      .eq('waardering', 'omlaag'),
   ])
+
+  // Adviezen die het koppel met duim-omlaag beoordeelde, meegeven zodat de AI
+  // met andere invalshoeken komt i.p.v. hetzelfde advies te herhalen (#14).
+  const afgekeurd: string[] = (feedbackResult.data ?? [])
+    .map((r: { advies_titel?: string | null }) => r.advies_titel ?? '')
+    .filter((t: string) => t.length > 0)
 
   const profielLeeftijdDagen = profileResult.data?.created_at
     ? Math.floor((Date.now() - new Date(profileResult.data.created_at).getTime()) / (1000 * 60 * 60 * 24))
@@ -250,7 +268,7 @@ export async function POST(request: NextRequest) {
       model: MODEL,
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const prompt = buildPrompt(enrichedContext, body.dismissed)
+    const prompt = buildPrompt(enrichedContext, body.dismissed, afgekeurd)
     const result = await model.generateContent(prompt)
     const tekst = result.response.text()
     const { samenvatting, advies } = parseResponse(tekst)

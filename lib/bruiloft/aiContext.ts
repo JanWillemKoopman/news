@@ -126,6 +126,18 @@ const VENDOR_TYPES: Vendor['type'][] = [
   'taart',
 ]
 
+// Tijd-bucket: laat de cache-verversing meeschalen met de urgentie. Ver weg
+// verandert advies traag (≈maandelijks vers), 1–6 mnd wekelijks, in de laatste
+// maand dagelijks; ná de bruiloft alleen nog op data-wijziging. Zo blijft het
+// advies tijd-bewust actueel zonder dat ver-weg-paren onnodig regenereren.
+function tijdBucket(dagenTotBruiloft: number): string {
+  const d = dagenTotBruiloft
+  if (d < 0) return 'na'
+  if (d <= 30) return `d${d}`
+  if (d <= 180) return `w${Math.floor(d / 7)}`
+  return `m${Math.floor(d / 30)}`
+}
+
 export function buildAIFingerprint(ctx: AIWeddingContext): string {
   const geboekt = Object.values(ctx.leveranciers.status).filter((s) => s === 'geboekt').length
   const voortgangHash = Object.entries(ctx.bruidspaar.geregeldeZaken)
@@ -133,8 +145,9 @@ export function buildAIFingerprint(ctx: AIWeddingContext): string {
     .map(([k, v]) => `${k}:${v}`)
     .join(',')
   return [
-    'v3',
+    'v4',
     ctx.bruidspaar.trouwdatum,
+    tijdBucket(ctx.bruidspaar.dagenTotBruiloft),
     ctx.bruidspaar.locatie,
     ctx.bruidspaar.ceremonietype ?? '',
     ctx.taken.open,
