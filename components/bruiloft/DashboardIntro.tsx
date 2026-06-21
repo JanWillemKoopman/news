@@ -93,7 +93,7 @@ export function DashboardIntro({
         </span>
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            {faseLabel} · waar jullie nu staan
+            {wedding.trouwdatum ? `${faseLabel} · waar jullie nu staan` : 'Waar jullie nu staan'}
           </p>
           <p className="mt-1 font-medium text-foreground">{kop}</p>
           {detail ? <p className="mt-0.5 text-sm text-muted-foreground">{detail}</p> : null}
