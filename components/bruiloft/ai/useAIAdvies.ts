@@ -14,13 +14,19 @@ import type { AIAdvies } from '@/app/api/ai/advice/route'
 
 // Sessiecache: voorkomt onnodige server-roundtrips bij navigatie binnen
 // dezelfde tab. De DB-cache in api/ai/advice handelt persistente caching af.
-const adviesCache = new Map<string, { data: AIAdvies[]; fetchedAt: number; updatedAt?: string }>()
+const adviesCache = new Map<
+  string,
+  { data: AIAdvies[]; fetchedAt: number; updatedAt?: string; samenvatting?: string }
+>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 uur
 
 // Lopende verzoeken per bruiloft: meerdere componenten (topbalk-badge, paneel,
 // insight-kaarten) mounten de hook tegelijk; zij delen één fetch in plaats van
 // elk een eigen AI-call af te vuren.
-const inflight = new Map<string, Promise<{ data: AIAdvies[]; updatedAt?: string }>>()
+const inflight = new Map<
+  string,
+  Promise<{ data: AIAdvies[]; updatedAt?: string; samenvatting?: string }>
+>()
 
 // ── Weggeklikte adviezen ─────────────────────────────────────────────────────
 // Een advies dat de gebruiker op één plek wegklikt, verdwijnt overal (kaarten,
@@ -120,6 +126,8 @@ export interface UseAIAdviesResult {
   advies: AIAdvies[] | null
   /** Adviezen die de gebruiker nog niet heeft weggeklikt, gesorteerd op urgentie. */
   zichtbaar: AIAdvies[]
+  /** Korte AI-statussamenvatting voor de dashboard-intro (leeg bij oudere cache). */
+  samenvatting?: string
   loading: boolean
   error: string | null
   updatedAt?: string
@@ -150,6 +158,12 @@ export function useAIAdvies(): UseAIAdviesResult {
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.updatedAt
     return undefined
   })
+  const [samenvatting, setSamenvatting] = React.useState<string | undefined>(() => {
+    if (!weddingId) return undefined
+    const cached = adviesCache.get(weddingId)
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.samenvatting
+    return undefined
+  })
   // Start direct in loading-staat als er nog geen cache is, zodat er geen
   // flits van een lege kaart is voordat de useEffect de fetch triggert.
   const [loading, setLoading] = React.useState(() => {
@@ -166,6 +180,7 @@ export function useAIAdvies(): UseAIAdviesResult {
       if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
         setAdvies(cached.data)
         setUpdatedAt(cached.updatedAt)
+        setSamenvatting(cached.samenvatting)
         return
       }
 
@@ -185,6 +200,10 @@ export function useAIAdvies(): UseAIAdviesResult {
             if (!res.ok) throw new Error(await res.text())
             const json = await res.json()
             if (!(json.advies?.length > 0)) throw new Error('Leeg antwoord van AI')
+            const samenvatting: string | undefined =
+              typeof json.samenvatting === 'string' && json.samenvatting.trim()
+                ? json.samenvatting.trim()
+                : undefined
             // Oudere cache-rijen missen het type-veld; normaliseer naar 'actie'.
             const genormaliseerd: AIAdvies[] = json.advies.map((a: AIAdvies) => ({
               ...a,
@@ -194,8 +213,9 @@ export function useAIAdvies(): UseAIAdviesResult {
               data: genormaliseerd,
               fetchedAt: Date.now(),
               updatedAt: json.updatedAt,
+              samenvatting,
             })
-            return { data: genormaliseerd, updatedAt: json.updatedAt as string | undefined }
+            return { data: genormaliseerd, updatedAt: json.updatedAt as string | undefined, samenvatting }
           })()
           const metOpruiming = lopend.finally(() => {
             if (inflight.get(weddingId) === metOpruiming) inflight.delete(weddingId)
@@ -203,9 +223,10 @@ export function useAIAdvies(): UseAIAdviesResult {
           inflight.set(weddingId, metOpruiming)
           lopend = metOpruiming
         }
-        const { data, updatedAt: bijgewerkt } = await lopend
+        const { data, updatedAt: bijgewerkt, samenvatting: nieuweSamenvatting } = await lopend
         setAdvies(data)
         setUpdatedAt(bijgewerkt)
+        setSamenvatting(nieuweSamenvatting)
       } catch (err) {
         console.warn('[useAIAdvies] Fetch mislukt, fallback naar rule-based guidance:', err)
         setError('AI tijdelijk niet beschikbaar')
@@ -235,6 +256,7 @@ export function useAIAdvies(): UseAIAdviesResult {
   return {
     advies,
     zichtbaar,
+    samenvatting,
     loading,
     error,
     updatedAt,

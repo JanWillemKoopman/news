@@ -6,6 +6,7 @@ import { aankomendeTermijnen } from '@/lib/bruiloft/derived'
 import { dagenTot } from '@/lib/bruiloft/format'
 import type { BudgetItem, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
 import { Card, CardContent } from '@/components/bruiloft/ui'
+import { useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 
 interface DashboardIntroProps {
   wedding: Wedding
@@ -16,10 +17,10 @@ interface DashboardIntroProps {
 }
 
 // Korte statusbevestiging bovenaan het dashboard: in één oogopslag waar het
-// koppel staat, gevolgd door de harde feiten (taken/betalingen) die hieronder
-// in detail volgen. Bewust deterministisch — altijd correct en instant, geen
-// extra AI-call of laadflits. Kan later vervangen worden door de
-// AI-samenvatting (globaal.samenvatting uit /api/ai/wedding-planner).
+// koppel staat, gevolgd door de harde feiten (taken/betalingen). De kop komt bij
+// voorkeur van de AI (samenvatting uit dezelfde /api/ai/advice-call — geen extra
+// API-call), met een deterministische terugval tijdens het laden of bij oudere
+// cache zonder samenvatting. De feitenregel eronder is altijd deterministisch.
 function meervoud(n: number, enkel: string, meerv: string): string {
   return `${n} ${n === 1 ? enkel : meerv}`
 }
@@ -31,6 +32,9 @@ export function DashboardIntro({
   vendors,
   faseLabel,
 }: DashboardIntroProps) {
+  // Deelt de gecachte advieslaag met het AI-paneel; geen extra AI-call.
+  const { samenvatting } = useAIAdvies()
+
   const dagen = dagenTot(wedding.trouwdatum)
 
   const openTaken = tasks.filter((t) => t.status !== 'klaar')
@@ -47,21 +51,25 @@ export function DashboardIntro({
   // Net begonnen: vrijwel niets ingevuld — behandel als gezonde startpositie.
   const netBegonnen = tasks.length === 0 && budgetItems.length === 0 && geboekt === 0
 
-  // Eerste zin: bevestig de status, kalm van toon.
-  let kop: string
+  // Deterministische terugval-kop, kalm van toon.
+  let fallbackKop: string
   if (dagen < 0) {
-    kop = 'Gefeliciteerd met jullie huwelijk! Nog een paar dingen om af te ronden.'
+    fallbackKop = 'Gefeliciteerd met jullie huwelijk! Nog een paar dingen om af te ronden.'
   } else if (netBegonnen) {
-    kop = 'Jullie zijn net begonnen — een mooie, rustige start.'
+    fallbackKop = 'Jullie zijn net begonnen — een mooie, rustige start.'
   } else if (achterstallig > 0) {
-    kop = 'Een paar dingen vragen jullie aandacht.'
+    fallbackKop = 'Een paar dingen vragen jullie aandacht.'
   } else if (aankomendeTaken === 0 && aankomendeBetalingen === 0) {
-    kop = 'Jullie liggen mooi op schema — niets wat nu niet kan wachten.'
+    fallbackKop = 'Jullie liggen mooi op schema — niets wat nu niet kan wachten.'
   } else {
-    kop = 'Jullie liggen op schema voor deze fase.'
+    fallbackKop = 'Jullie liggen op schema voor deze fase.'
   }
 
-  // Tweede zin: de harde feiten, kort opgesomd.
+  // AI-samenvatting heeft voorrang zodra die binnen is.
+  const aiKop = samenvatting?.trim()
+  const kop = aiKop && aiKop.length > 0 ? aiKop : fallbackKop
+
+  // Tweede regel: de harde feiten, kort opgesomd (altijd deterministisch).
   const feiten: string[] = []
   if (achterstallig > 0) feiten.push(`${meervoud(achterstallig, 'taak', 'taken')} over de deadline`)
   if (aankomendeTaken > 0) feiten.push(`${meervoud(aankomendeTaken, 'taak', 'taken')} binnenkort`)

@@ -78,26 +78,44 @@ Regels:
 - sectie: pad naar de relevante pagina, een van: /bruiloft/taken | /bruiloft/budget | /bruiloft/gasten | /bruiloft/leveranciers | /bruiloft/draaiboek | /bruiloft/tafels
 - sectionLabel: gebruiksvriendelijke naam van die sectie (bijv. 'Taken', 'Budget', 'Gasten', etc.)
 - id: uniek per advies, gebruik 'ai-1', 'ai-2', etc.
+- samenvatting: 1 à 2 korte zinnen die bevestigen waar het koppel staat (bijv. op schema, of een paar dingen om op te pakken), persoonlijk en kalm; baseer je op de concrete situatie en noem nooit interne veld- of statusnamen
 
-Geef ALLEEN een JSON-array terug, geen andere tekst, in dit formaat:
-[
-  {
-    "id": "ai-1",
-    "titel": "...",
-    "omschrijving": "...",
-    "urgentie": "kritiek|binnenkort|normaal",
-    "type": "actie|benchmark|tip",
-    "sectie": "/bruiloft/...",
-    "sectionLabel": "..."
-  }
-]`
+Geef ALLEEN dit JSON-object terug, geen andere tekst, in dit formaat:
+{
+  "samenvatting": "1 à 2 zinnen, spreek het koppel aan met 'jullie', begin niet met een aanhef of naam",
+  "advies": [
+    {
+      "id": "ai-1",
+      "titel": "...",
+      "omschrijving": "...",
+      "urgentie": "kritiek|binnenkort|normaal",
+      "type": "actie|benchmark|tip",
+      "sectie": "/bruiloft/...",
+      "sectionLabel": "..."
+    }
+  ]
+}`
 }
 
-function parseAdvies(text: string): AIAdvies[] {
+interface AdviceResponse {
+  samenvatting: string
+  advies: AIAdvies[]
+}
+
+function parseResponse(text: string): AdviceResponse {
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
   const parsed = JSON.parse(cleaned)
-  if (!Array.isArray(parsed)) return []
-  return parsed
+  // Backward-compat: het oude formaat was een kale array zonder samenvatting.
+  const lijst: any[] = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed?.advies)
+      ? parsed.advies
+      : []
+  const samenvatting =
+    !Array.isArray(parsed) && typeof parsed?.samenvatting === 'string'
+      ? parsed.samenvatting.trim()
+      : ''
+  const advies: AIAdvies[] = lijst
     .filter(
       (item): item is AIAdvies =>
         typeof item.id === 'string' &&
@@ -111,6 +129,7 @@ function parseAdvies(text: string): AIAdvies[] {
       ...item,
       type: (['actie', 'benchmark', 'tip'] as const).includes(item.type) ? item.type : 'actie',
     }))
+  return { samenvatting, advies }
 }
 
 export async function POST(request: NextRequest) {
@@ -155,7 +174,7 @@ export async function POST(request: NextRequest) {
   // Lees DB-cache
   const { data: cacheRow } = await (supabase as any)
     .from('ai_advice_cache')
-    .select('cached_advies, data_fingerprint, last_updated_at')
+    .select('cached_advies, cached_samenvatting, data_fingerprint, last_updated_at')
     .eq('wedding_id', body.weddingId)
     .single()
 
@@ -167,7 +186,7 @@ export async function POST(request: NextRequest) {
 
     // Retourneer cache als: vingerafdruk onveranderd OF nog binnen cooldown
     if (cacheValid && (fingerprintMatch || withinCooldown)) {
-      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ samenvatting: cacheRow.cached_samenvatting ?? '', advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
   }
 
@@ -175,7 +194,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit.allowed) {
     // Bij rate-limit: retourneer stale cache als die er is
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ samenvatting: cacheRow.cached_samenvatting ?? '', advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
   }
@@ -211,7 +230,7 @@ export async function POST(request: NextRequest) {
       generationConfig: { responseMimeType: 'application/json' },
     })
     const result = await model.generateContent(buildPrompt(enrichedContext))
-    const advies = parseAdvies(result.response.text())
+    const { samenvatting, advies } = parseResponse(result.response.text())
 
     // Sla op in DB-cache
     await (supabase as any)
@@ -220,18 +239,19 @@ export async function POST(request: NextRequest) {
         {
           wedding_id: body.weddingId,
           cached_advies: advies,
+          cached_samenvatting: samenvatting,
           data_fingerprint: fingerprint,
           last_updated_at: new Date().toISOString(),
         },
         { onConflict: 'wedding_id' }
       )
 
-    return NextResponse.json({ advies, cached: false, updatedAt: new Date().toISOString() })
+    return NextResponse.json({ samenvatting, advies, cached: false, updatedAt: new Date().toISOString() })
   } catch (err) {
     console.error('[api/ai/advice] Gemini fout:', err)
     // Retourneer stale cache als fallback bij een AI-fout
     if (cacheRow?.cached_advies?.length > 0) {
-      return NextResponse.json({ advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
+      return NextResponse.json({ samenvatting: cacheRow.cached_samenvatting ?? '', advies: metType(cacheRow.cached_advies), cached: true, updatedAt: cacheRow?.last_updated_at })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
