@@ -5,12 +5,11 @@ import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
 import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
-import { PlanningScoreKaart } from '@/components/bruiloft/ai/PlanningScoreKaart'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
+import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
-import { Routekaart } from '@/components/bruiloft/Routekaart'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
 import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
@@ -44,6 +43,7 @@ export default function DashboardPage() {
 
   if (!wedding) return null
 
+  const heeftDatum = Boolean(wedding.trouwdatum)
   const dagen = dagenTot(wedding.trouwdatum)
   const guidance = berekenGuidance({ wedding, tasks, vendors, budgetItems, guests })
   const faseLabel = FASE_LABEL[guidance.huidigeFase] ?? guidance.huidigeFase
@@ -62,14 +62,24 @@ export default function DashboardPage() {
           <span className="hidden sm:inline">Bewerken</span>
         </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
-          <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
-            {faseLabel}
-          </span>
+          {heeftDatum ? (
+            <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
+              {faseLabel}
+            </span>
+          ) : null}
           <p className="text-xl font-medium text-foreground sm:text-2xl md:text-3xl">
             {wedding.partner1Naam} <span>&amp;</span> {wedding.partner2Naam}
           </p>
           <div className="my-4">
-            {dagen > 0 ? (
+            {!heeftDatum ? (
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="font-serif text-[clamp(1.75rem,7vw,3rem)] font-medium leading-tight text-foreground underline decoration-rose-300 underline-offset-4 transition-colors hover:text-rose-700"
+              >
+                Stel jullie trouwdatum in
+              </button>
+            ) : dagen > 0 ? (
               <p className="font-serif text-[clamp(2.5rem,11vw,4.5rem)] font-medium leading-[1.05] tracking-tight text-foreground">
                 nog {dagen} {dagen === 1 ? 'dag' : 'dagen'}
               </p>
@@ -84,10 +94,12 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarHeart className="h-4 w-4 text-rose-600" />
-              {formatDatumNL(wedding.trouwdatum)}
-            </span>
+            {heeftDatum ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarHeart className="h-4 w-4 text-rose-600" />
+                {formatDatumNL(wedding.trouwdatum)}
+              </span>
+            ) : null}
             {wedding.locatie ? (
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-rose-600" />
@@ -98,12 +110,25 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Optionele nudge: nodig je partner uit om samen te plannen */}
+      {/* Samen plannen — direct onder de Hero, alleen zichtbaar zolang de
+          partner nog geen account heeft (verbergt zichzelf zodra die meeplant). */}
       <PartnerUitnodigen />
+
+      {/* Korte statusbevestiging: waar staan jullie nu, vóór de details. */}
+      <DashboardIntro
+        wedding={wedding}
+        tasks={tasks}
+        budgetItems={budgetItems}
+        vendors={vendors}
+        guests={guests}
+        faseLabel={faseLabel}
+      />
 
       {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
       <OnboardingGids />
       <WelkomstDialog />
+
+      {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
 
       {/* Urgente aandachtspunten: alleen zichtbaar als er iets mis is */}
       <UrgenteAandachtspunten
@@ -115,18 +140,12 @@ export default function DashboardPage() {
         permissions={permissions}
       />
 
-      {/* AI Assistent: globale score + geprioriteerde volgende stappen */}
+      {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
       <div className="mb-8">
-        <PlanningScoreKaart />
-        <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
+        <AankomendeActiesTimelijn tasks={tasks} budgetItems={budgetItems} />
       </div>
 
-      {/* Aanbevolen leveranciers: concrete, op profiel gerankte opties direct
-          onder het advies, zodat AI-advies en passend aanbod samen één geheel
-          vormen. */}
-      <AanbevolenLeveranciers />
-
-      {/* Module status grid: Budget · Gasten · Taken · Leveranciers */}
+      {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">
         <ModuleStatusGrid
           wedding={wedding}
@@ -139,13 +158,13 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
+      {/* ── AI-AANBEVELINGEN — ná de harde feiten, als advies erbovenop ── */}
       <div className="mb-8">
-        <AankomendeActiesTimelijn tasks={tasks} budgetItems={budgetItems} />
+        <AIAdviesPanel fallbackSteps={guidance.stappen} trouwdatum={wedding.trouwdatum} />
       </div>
 
-      {/* Routekaart: fasevoortgang */}
-      <Routekaart route={guidance.route} />
+      {/* Ontdek leveranciers — onder de persoonlijke status, geen onderbreking */}
+      <AanbevolenLeveranciers />
 
       <WeddingSettingsForm
         open={settingsOpen}

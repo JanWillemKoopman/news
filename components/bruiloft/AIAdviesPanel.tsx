@@ -41,6 +41,7 @@ function adviesBestemming(sectie: string): string {
 export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps) {
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const permissions = useBruiloftStore((s) => s.permissions)
+  const openAICoach = useBruiloftStore((s) => s.openAICoach)
   const mayEditTaken = canEdit(permissions, 'taken')
   const [bezig, setBezig] = React.useState<string | null>(null)
 
@@ -107,7 +108,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
         ) : zichtbaar.length > 0 ? (
           <>
           <ul className="divide-y divide-border">
-            {zichtbaar.map((stap) => (
+            {zichtbaar.slice(0, 3).map((stap) => (
               <li key={stap.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -141,6 +142,15 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
               </li>
             ))}
           </ul>
+          {zichtbaar.length > 3 ? (
+            <button
+              type="button"
+              onClick={openAICoach}
+              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Bekijk alle adviezen ({zichtbaar.length})
+            </button>
+          ) : null}
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
             <Sparkles className="mr-1 inline h-3 w-3 align-[-1px]" />
             AI-advies · bijgewerkt {geledenLabel(updatedAt)} · controleer belangrijke keuzes altijd zelf.

@@ -86,9 +86,14 @@ export function AankomendeActiesTimelijn({
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-2xl font-medium text-foreground">Aankomende acties</h2>
-          <div className="flex items-center gap-3">
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-medium text-foreground">Vraagt je aandacht</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Taken en betalingen die binnenkort spelen.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
             <Link
               href="/bruiloft/taken"
               className="text-sm font-medium text-rose-600 transition-colors hover:text-rose-700"
