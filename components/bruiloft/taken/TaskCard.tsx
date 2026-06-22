@@ -5,14 +5,16 @@ import { Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
 import { Card, CardContent, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
 import { dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
+import { taakUrgentie } from '@/lib/bruiloft/taakUrgentie'
 import { capFirst, cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 
-// Deadline-label specifiek voor de taakkaart: "deadline over X dagen" in de
-// toekomst, "vandaag" voor 0 dagen, "X dagen te laat" voor het verleden.
+// Relatieve telling naast het "Klaar voor <datum>"-label. Het woord deadline zit
+// al in dat label, dus hier alleen de telling: "nog X dagen" in de toekomst,
+// "vandaag" voor 0 dagen, "X dagen te laat" voor het verleden.
 function deadlineLabel(dagen: number): string {
-  if (dagen === 0) return 'uiterlijk vandaag'
-  if (dagen > 0) return `uiterlijk over ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
+  if (dagen === 0) return 'vandaag'
+  if (dagen > 0) return `nog ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
   const laat = Math.abs(dagen)
   return `${laat} ${laat === 1 ? 'dag' : 'dagen'} te laat`
 }
@@ -47,6 +49,7 @@ export function TaskCard({
 }: TaskCardProps) {
   const klaar = task.status === 'klaar'
   const d = dagenTot(task.deadline)
+  const urgentie = taakUrgentie(task.deadline, klaar)
   const [expanded, setExpanded] = React.useState(false)
   const heeftSubtaken = task.subtaken.length > 0
   const subKlaar = task.subtaken.filter((s: Subtaak) => s.klaar).length
@@ -160,8 +163,13 @@ export function TaskCard({
           ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span>{formatDatumNL(task.deadline)}</span>
-            {!klaar ? (
+            {urgentie === 'te_laat' ? (
+              <StatusBadge kind="urgentie" value="te laat" />
+            ) : urgentie === 'binnenkort' ? (
+              <StatusBadge kind="urgentie" value="binnenkort" />
+            ) : null}
+            {task.deadline ? <span>Klaar voor {formatDatumNL(task.deadline)}</span> : null}
+            {task.deadline && !klaar ? (
               <span className={cn(d < 0 && 'font-medium text-rose-600 dark:text-rose-400')}>
                 {deadlineLabel(d)}
               </span>
