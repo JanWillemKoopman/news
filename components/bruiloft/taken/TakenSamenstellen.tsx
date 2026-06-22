@@ -130,8 +130,11 @@ export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps
               <span className="rounded-full bg-secondary px-2 py-0.5 font-medium text-secondary-foreground">
                 {capFirst(huidige.tijdsblok)}
               </span>
-              <StatusBadge kind="prioriteit" value={huidige.prioriteit} />
-              <span>uiterlijk {formatDatumNL(huidige.deadline)}</span>
+              <span className="inline-flex items-center gap-1.5">
+                Prioriteit
+                <StatusBadge kind="prioriteit" value={huidige.prioriteit} />
+              </span>
+              <span>Deadline {formatDatumNL(huidige.deadline)}</span>
             </div>
             <p className="mt-3 font-medium text-foreground">{huidige.titel}</p>
             {huidige.omschrijving ? (

@@ -137,7 +137,8 @@ export function AankomendeActiesTimelijn({
                     {capFirst(item.titel)}
                   </p>
                   <p className={`text-xs ${dagUrgentieStijl(item.dagen)}`}>
-                    {formatDatumKort(item.datum)} · {dagLabel(item.dagen)}
+                    {item.type === 'taak' ? 'Deadline' : 'Vervalt'} {formatDatumKort(item.datum)} ·{' '}
+                    {dagLabel(item.dagen)}
                   </p>
                 </div>
 

@@ -60,7 +60,7 @@ export function dagenTot(value: string | Date): number {
 // Leesbaar label voor een aantal dagen t.o.v. vandaag (positief = toekomst).
 export function dagLabel(dagen: number): string {
   if (dagen === 0) return 'vandaag'
-  if (dagen > 0) return `over ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
+  if (dagen > 0) return `nog ${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
   const laat = Math.abs(dagen)
   return `${laat} ${laat === 1 ? 'dag' : 'dagen'} te laat`
 }
