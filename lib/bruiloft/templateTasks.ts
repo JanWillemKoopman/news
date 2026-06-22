@@ -214,6 +214,14 @@ export const TEMPLATE_TASKS: TemplateTask[] = [
     fase: '6 maanden van tevoren',
   },
   {
+    titel: 'Huwelijkse voorwaarden bij notaris regelen',
+    omschrijving: 'Beslis of jullie afwijken van de wettelijke standaard (beperkte gemeenschap van goederen); zo ja, regel het op tijd bij een notaris — het moet vóór de trouwdag rond zijn.',
+    offset: { maanden: -6 },
+    prioriteit: 'midden',
+    toegewezenAan: 'samen',
+    fase: '6 maanden van tevoren',
+  },
+  {
     titel: 'Huwelijksreis boeken',
     omschrijving: 'Boek bestemming en accommodatie en controleer of de paspoorten lang genoeg geldig zijn (en eventuele visa).',
     offset: { maanden: -6 },

@@ -44,6 +44,7 @@ export const ONDERWERP_BENCHMARKS: OnderwerpBenchmark[] = [
   { key: 'savethedate', label: 'Save-the-dates', aanDeSlagVanaf: 9, binnenkortVanaf: 6, kritiekVanaf: 4, taakBevat: 'Save-the-dates versturen' },
   { key: 'trouwwebsite', label: 'Trouwwebsite (incl. cadeaulijst)', aanDeSlagVanaf: 9, binnenkortVanaf: 4, kritiekVanaf: 2 },
   { key: 'bloemist', label: 'Bloemist / decoratie', aanDeSlagVanaf: 9, binnenkortVanaf: 6, kritiekVanaf: 3, vendorType: 'bloemist', taakBevat: 'Bloemist' },
+  { key: 'huwelijksevoorwaarden', label: 'Huwelijkse voorwaarden (notaris)', aanDeSlagVanaf: 7, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Huwelijkse voorwaarden' },
   { key: 'ringen', label: 'Trouwringen', aanDeSlagVanaf: 6, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Trouwringen' },
   { key: 'vervoer', label: 'Vervoer (trouwauto)', aanDeSlagVanaf: 6, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Vervoer voor de trouwdag' },
   { key: 'taart', label: 'Bruidstaart', aanDeSlagVanaf: 6, binnenkortVanaf: 3, kritiekVanaf: 2, taakBevat: 'Bruidstaart bestellen' },
