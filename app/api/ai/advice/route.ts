@@ -5,6 +5,7 @@ import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
 import { buildAIFingerprint, deriveErvaringsniveau, matchProfielUitContext } from '@/lib/bruiloft/aiContext'
 import { benchmarksVoorPrompt } from '@/lib/bruiloft/benchmarks'
 import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
+import { isSprintModus } from '@/lib/bruiloft/ai/urgentie'
 import { logAiUsage } from '@/lib/ai/usage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
@@ -53,6 +54,28 @@ function afgekeurdSectie(afgekeurd?: string[]): string {
   return `\nEerder door het koppel als niet nuttig beoordeeld (duim omlaag) — kom met andere invalshoeken of formuleringen, geef niet hetzelfde advies opnieuw:\n- ${titels.join('\n- ')}\n`
 }
 
+function urgentieSectie(ctx: AIWeddingContext): string {
+  const lijst = ctx.onderwerpUrgentie ?? []
+  const sprint = isSprintModus(ctx.bruidspaar.dagenTotBruiloft)
+  if (lijst.length === 0 && !sprint) return ''
+  const faseLabel: Record<string, string> = {
+    aan_de_slag: 'nu oppakken',
+    binnenkort: 'binnenkort (er komt druk op)',
+    kritiek: 'KRITIEK (loopt achter)',
+  }
+  const regels = lijst
+    .map((u) => `- ${u.onderwerp}: ${faseLabel[u.fase] ?? u.fase}${u.reden ? ` — ${u.reden}` : ''}`)
+    .join('\n')
+  const lijstSectie =
+    lijst.length > 0
+      ? `\nVooraf berekende urgentie per onderwerp (LEIDEND — bepaald op basis van de trouwdatum, het seizoen en de afhankelijkheden tussen taken):\n${regels}\nNeem deze urgentie over in je advies. Zeg NOOIT dat alles "op schema" loopt of dat er "geen haast" is als hierboven iets op 'binnenkort' of 'KRITIEK' staat; behandel die onderwerpen dan met de passende urgentie.\n`
+      : ''
+  const sprintSectie = sprint
+    ? `\nEr zijn nog 10 maanden of minder tot de bruiloft (sprint-modus): gebruik een actiegerichte, bemoedigende "high-velocity"-toon en focus op de belangrijkste onderwerpen eerst (budget, gastenlijst, locatie) in plaats van alles tegelijk.\n`
+    : ''
+  return `${lijstSectie}${sprintSectie}`
+}
+
 function buildPrompt(ctx: AIWeddingContext, dismissed?: string[], afgekeurd?: string[]): string {
   const dagLabel =
     ctx.bruidspaar.dagenTotBruiloft > 0
@@ -76,7 +99,7 @@ op ${ctx.bruidspaar.trouwdatum} in ${ctx.bruidspaar.locatie} (${dagLabel}).
 ${gebruikerSectie}${dismissedSectie(dismissed)}${afgekeurdSectie(afgekeurd)}
 Actuele situatie van hun planning:
 ${JSON.stringify(ctx, null, 2)}
-
+${urgentieSectie(ctx)}
 Benchmarkgegevens over hoe Nederlandse koppels doorgaans plannen (gecureerd, feitelijk):
 ${benchmarksVoorPrompt()}
 
