@@ -17,7 +17,8 @@ interface LineConfig {
 }
 
 interface Props {
-  data: Record<string, string | number>[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>[]
   lines: LineConfig[]
   xKey: string
   height?: number
