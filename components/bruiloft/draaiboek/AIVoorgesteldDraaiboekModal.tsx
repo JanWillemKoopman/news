@@ -34,6 +34,7 @@ export function AIVoorgesteldDraaiboekModal({
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const guests = useBruiloftStore((s) => s.guests)
   const tasks = useBruiloftStore((s) => s.tasks)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
 
   const [advies, setAdvies] = React.useState<AIDraaiboekAdvies | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -49,7 +50,7 @@ export function AIVoorgesteldDraaiboekModal({
     setLoading(true)
 
     const bestaandeItems = scheduleItems.map((s) => `${s.tijd} ${s.titel}`)
-    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
 
     fetch('/api/ai/draaiboek', {
       method: 'POST',

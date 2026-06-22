@@ -35,6 +35,7 @@ export function AIVoorgesteldeTakenModal({
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const guests = useBruiloftStore((s) => s.guests)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
 
   const [advies, setAdvies] = React.useState<AITakenAdvies | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -52,7 +53,7 @@ export function AIVoorgesteldeTakenModal({
     setLoading(true)
 
     const bestaandeTaken = tasks.map((t) => t.titel)
-    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
 
     fetch('/api/ai/taken', {
       method: 'POST',

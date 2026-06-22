@@ -33,6 +33,7 @@ export function TakenShell() {
   const members = useBruiloftStore((s) => s.members)
   const guests = useBruiloftStore((s) => s.guests)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const addTask = useBruiloftStore((s) => s.addTask)
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const deleteTask = useBruiloftStore((s) => s.deleteTask)
@@ -90,7 +91,7 @@ export function TakenShell() {
     setAiLoading(true)
     setAiError(null)
 
-    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
     const bestaandeTaken = tasks.map((t) => t.titel)
 
     fetch('/api/ai/taken', {

@@ -264,6 +264,15 @@ export function buildAIContext(
     geregeld.budget = true
     geregeld.gastenlijst = true
   }
+  // Trouwwebsite (incl. cadeaulijst): 'klaar' zodra er een gepubliceerde site,
+  // een eigen slug of welkomsttekst is. Eén signaal voor het hele online-luik;
+  // werkt ook voor bestaande bruiloften omdat websiteContent app-breed laadt.
+  geregeld.trouwwebsite = Boolean(
+    websiteContent &&
+      (websiteContent.websiteGepubliceerd ||
+        websiteContent.slug ||
+        websiteContent.welkomsttekst.trim())
+  )
   const locatieInBehandeling =
     Boolean(wedding.locatie && wedding.locatie.trim()) ||
     vendors.some((v) => v.type === 'locatie') ||

@@ -142,6 +142,7 @@ export function useAIAdvies(): UseAIAdviesResult {
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const guests = useBruiloftStore((s) => s.guests)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const weddingId = wedding?.id ?? null
 
   const { weggeklikt, klikWeg } = useWeggeklikt(weddingId)
@@ -190,7 +191,7 @@ export function useAIAdvies(): UseAIAdviesResult {
       try {
         let lopend = inflight.get(weddingId)
         if (!lopend || forceRefresh) {
-          const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+          const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
           // Eerder weggeklikte adviezen meesturen zodat de AI zichzelf niet
           // herhaalt bij een nieuwe generatie (#15). Vers uit localStorage
           // gelezen, niet als effect-dependency, zodat wegklikken geen refetch
@@ -239,7 +240,7 @@ export function useAIAdvies(): UseAIAdviesResult {
         setLoading(false)
       }
     },
-    [wedding, weddingId, tasks, vendors, budgetItems, guests, scheduleItems]
+    [wedding, weddingId, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent]
   )
 
   React.useEffect(() => {

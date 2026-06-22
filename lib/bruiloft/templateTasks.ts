@@ -147,6 +147,14 @@ export const TEMPLATE_TASKS: TemplateTask[] = [
     toegewezenAan: 'samen',
     fase: '9–10 maanden van tevoren',
   },
+  {
+    titel: 'Trouwwebsite opzetten',
+    omschrijving: 'Zet een trouwwebsite op met de datum, route, dagindeling en RSVP, en deel de link op de save-the-dates.',
+    offset: { maanden: -9 },
+    prioriteit: 'midden',
+    toegewezenAan: 'samen',
+    fase: '9–10 maanden van tevoren',
+  },
 
   // ~6 maanden voor
   {
@@ -205,6 +213,30 @@ export const TEMPLATE_TASKS: TemplateTask[] = [
     toegewezenAan: 'partner 1',
     fase: '6 maanden van tevoren',
   },
+  {
+    titel: 'Huwelijksreis boeken',
+    omschrijving: 'Boek bestemming en accommodatie en controleer of de paspoorten lang genoeg geldig zijn (en eventuele visa).',
+    offset: { maanden: -6 },
+    prioriteit: 'midden',
+    toegewezenAan: 'samen',
+    fase: '6 maanden van tevoren',
+  },
+  {
+    titel: 'Verlof aanvragen bij werkgever(s)',
+    omschrijving: 'Vraag op tijd vrij voor de trouwdag én de huwelijksreis, voordat de planning bij het werk volloopt.',
+    offset: { maanden: -6 },
+    prioriteit: 'midden',
+    toegewezenAan: 'samen',
+    fase: '6 maanden van tevoren',
+  },
+  {
+    titel: 'Loveshoot plannen',
+    omschrijving: 'Optioneel: een fotoshoot vooraf levert beeld op voor de website, uitnodigingen en bedankkaartjes.',
+    offset: { maanden: -6 },
+    prioriteit: 'laag',
+    toegewezenAan: 'samen',
+    fase: '6 maanden van tevoren',
+  },
 
   // ~4–5 maanden voor
   {
@@ -236,6 +268,14 @@ export const TEMPLATE_TASKS: TemplateTask[] = [
     omschrijving: 'Bezoek 1-2 banketbakkers voor proeven en ontwerp.',
     offset: { maanden: -4 },
     prioriteit: 'midden',
+    toegewezenAan: 'samen',
+    fase: '4–5 maanden van tevoren',
+  },
+  {
+    titel: 'Cadeaulijst of huwelijksbijdrage opstellen',
+    omschrijving: 'Stel een cadeau- of bijdragelijst samen en verwijs ernaar op de website of bij de uitnodiging.',
+    offset: { maanden: -4 },
+    prioriteit: 'laag',
     toegewezenAan: 'samen',
     fase: '4–5 maanden van tevoren',
   },
