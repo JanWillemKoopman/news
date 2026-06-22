@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { Bug, LayoutDashboard, Users } from 'lucide-react'
+import { Activity, BarChart2, Bug, CalendarHeart, LayoutDashboard, Sparkles, Users } from 'lucide-react'
 import Link from 'next/link'
 
 import { createClient } from '@/lib/supabase/server'
@@ -33,8 +33,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-sm font-semibold text-gray-800 mt-0.5">Ons Trouwplan</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
+          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Cockpit</p>
           <NavItem href="/admin" icon={<LayoutDashboard className="h-4 w-4" />} label="Overzicht" />
           <NavItem href="/admin/gebruikers" icon={<Users className="h-4 w-4" />} label="Gebruikers" />
+          <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Analytics</p>
+          <NavItem href="/admin/bruiloften" icon={<CalendarHeart className="h-4 w-4" />} label="Bruiloften" />
+          <NavItem href="/admin/gebruik" icon={<Activity className="h-4 w-4" />} label="App Gebruik" />
+          <NavItem href="/admin/ai" icon={<Sparkles className="h-4 w-4" />} label="AI Monitor" />
+          <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Technisch</p>
           <NavItem href="/admin/bugs" icon={<Bug className="h-4 w-4" />} label="Bugs & Fouten" />
         </nav>
         <div className="px-5 py-4 border-t border-gray-100">
@@ -46,13 +52,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       {/* Mobile topbalk */}
-      <div className="fixed top-0 inset-x-0 z-10 flex items-center gap-4 bg-white border-b border-gray-200 px-4 py-3 md:hidden">
-        <p className="font-semibold text-sm">Admin</p>
-        <div className="flex gap-4 ml-auto">
-          <Link href="/admin" className="text-xs text-gray-600">Overzicht</Link>
-          <Link href="/admin/gebruikers" className="text-xs text-gray-600">Gebruikers</Link>
-          <Link href="/admin/bugs" className="text-xs text-gray-600">Bugs</Link>
-          <Link href="/bruiloft" className="text-xs text-blue-600">← App</Link>
+      <div className="fixed top-0 inset-x-0 z-10 flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3 md:hidden overflow-x-auto">
+        <p className="font-semibold text-sm shrink-0">Admin</p>
+        <div className="flex gap-3 ml-auto shrink-0">
+          <Link href="/admin" className="text-xs text-gray-600 whitespace-nowrap">Overzicht</Link>
+          <Link href="/admin/gebruikers" className="text-xs text-gray-600 whitespace-nowrap">Gebruikers</Link>
+          <Link href="/admin/bruiloften" className="text-xs text-gray-600 whitespace-nowrap">Bruiloften</Link>
+          <Link href="/admin/gebruik" className="text-xs text-gray-600 whitespace-nowrap">Gebruik</Link>
+          <Link href="/admin/ai" className="text-xs text-gray-600 whitespace-nowrap">AI</Link>
+          <Link href="/admin/bugs" className="text-xs text-gray-600 whitespace-nowrap">Bugs</Link>
+          <Link href="/bruiloft" className="text-xs text-blue-600 whitespace-nowrap">← App</Link>
         </div>
       </div>
 
