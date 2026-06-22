@@ -25,34 +25,99 @@ import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
 
-// Introductie en FAQ voor de informatieknop rechtsboven. Inhoud staat op
-// volgorde van belangrijk naar minder belangrijk, in de vorm van vragen die
-// een gebruiker zich kan stellen.
+// Introductie en FAQ voor de informatieknop rechtsboven. De intro legt de
+// waarde van de pagina uit; de FAQ volgt de gebruikersreis (van starten naar
+// verdiepen) en staat op volgorde van belangrijk naar minder belangrijk.
 const budgetInfoIntro = (
-  <p>
-    Op de <strong>Budget</strong>-pagina houd je grip op alle kosten van jullie
-    bruiloft. Je legt per onderdeel vast wat je <em>verwacht</em> uit te geven
-    (geschat), wat een leverancier <em>offreert</em> en wat je al hebt{' '}
-    <em>betaald</em>. Zo zie je in één oogopslag of je nog binnen jullie
-    totaalbudget zit en wat er nog op je afkomt. Hieronder vind je per stap hoe
-    alles werkt.
-  </p>
+  <div className="space-y-3">
+    <p>
+      De <strong>Budget</strong>-pagina is jullie financiële kompas voor de
+      bruiloft. Per onderdeel leg je vast wat je verwacht uit te geven
+      (<strong>geschat</strong>), wat een leverancier vraagt
+      (<strong>offerte</strong>) en wat je al hebt <strong>betaald</strong>. Zo
+      zie je in één oogopslag of je binnen jullie totaalbudget blijft, wat er
+      nog op je afkomt en welke categorieën aandacht nodig hebben.
+    </p>
+    <p>
+      Meer dan een lijstje: koppel je een leverancier, dan telt diens offerte
+      automatisch mee. Met betaaltermijnen blijven deadlines in beeld. En de
+      AI-planner denkt mee — die vergelijkt je budget met dat van vergelijkbare
+      bruiloften, signaleert uitschieters en vergeten posten en wijst je op
+      betalingen die eraan komen. Je budget telt ook mee in jullie voortgang in
+      de AI Wedding Planner.
+    </p>
+    <div className="rounded-xl border border-border bg-muted/40 p-4">
+      <p className="font-semibold text-foreground">Zo begin je</p>
+      <ol className="mt-2 list-decimal space-y-1 pl-5">
+        <li>
+          <strong>Stel je totaalbudget in</strong> — via Overzicht →{' '}
+          <em>Bewerken</em>.
+        </li>
+        <li>
+          <strong>Vul je categorieën</strong> — laat automatisch verdelen of
+          voeg zelf items toe.
+        </li>
+        <li>
+          <strong>Houd het actueel</strong> — vul offertes en betalingen in en
+          koppel je leveranciers.
+        </li>
+      </ol>
+    </div>
+  </div>
 )
 
 const budgetInfoFaq = [
+  {
+    vraag: 'Hoe begin ik met mijn budget?',
+    antwoord: (
+      <p>
+        Stel eerst jullie <strong>totaalbudget</strong> in op de{' '}
+        <strong>Overzicht</strong>-pagina (via <em>Bewerken</em>). Vul daarna je
+        categorieën: laat het budget automatisch verdelen met{' '}
+        <strong>Verdeel budget</strong> of voeg zelf items toe met{' '}
+        <strong>Budgetitem toevoegen</strong>. Werk het vervolgens bij naarmate
+        je offertes ontvangt en betalingen doet.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Wat betekenen geschat, offerte en betaald?',
+    antwoord: (
+      <>
+        <p>Elk budgetitem werkt met drie bedragen:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <strong>Geschat</strong> — jouw eigen inschatting van de kosten,
+            vaak nog voordat je offertes hebt.
+          </li>
+          <li>
+            <strong>Offerte</strong> — wat een leverancier daadwerkelijk vraagt.
+          </li>
+          <li>
+            <strong>Betaald</strong> — wat je al hebt overgemaakt.
+          </li>
+        </ul>
+        <p className="mt-2">
+          Het verschil tussen geschat en betaald is wat je{' '}
+          <strong>nog te betalen</strong> hebt. Zo zie je per onderdeel hoe je
+          ervoor staat.
+        </p>
+      </>
+    ),
+  },
   {
     vraag: 'Hoe voeg ik een budgetitem toe?',
     antwoord: (
       <p>
         Klik rechtsboven op <strong>Budgetitem toevoegen</strong> (of op de
         zwevende +-knop wanneer je naar beneden scrolt). Kies een categorie,
-        geef een omschrijving en vul het geschatte bedrag in. Heb je al een
-        offerte of betaling? Die kun je in hetzelfde scherm meteen invullen.
+        geef een omschrijving en vul het geschatte bedrag in. Een offerte,
+        betaling of leverancier voeg je toe onder <strong>Meer details</strong>.
       </p>
     ),
   },
   {
-    vraag: 'Hoe lees ik het overzicht bovenaan?',
+    vraag: 'Wat betekenen de bedragen in het overzicht bovenaan?',
     antwoord: (
       <>
         <p>Het blok bovenaan vat jullie hele budget samen:</p>
@@ -78,48 +143,48 @@ const budgetInfoFaq = [
     ),
   },
   {
-    vraag: 'Hoe stel ik het totaalbudget in?',
-    antwoord: (
-      <p>
-        Het totaalbudget waar alles tegen wordt afgezet, stel je in op de{' '}
-        <strong>Overzicht</strong>-pagina bij de instellingen van jullie
-        bruiloft. Pas je het daar aan, dan rekent dit overzicht automatisch
-        opnieuw.
-      </p>
-    ),
-  },
-  {
     vraag: 'Hoe verdeel ik mijn budget automatisch over categorieën?',
     antwoord: (
       <p>
         Gebruik <strong>Verdeel budget</strong> (via het{' '}
         <strong>···</strong>-menu, of de knop in het lege overzicht). Je
         totaalbudget wordt dan als richtbedrag verdeeld over de gebruikelijke
-        categorieën. Handig om snel te starten — je kunt elk bedrag daarna nog
-        aanpassen.
+        categorieën, op basis van een standaardverdeling. Handig om snel te
+        starten — je kunt elk bedrag daarna nog aanpassen.
       </p>
     ),
   },
   {
-    vraag: 'Hoe bekijk of bewerk ik een categorie of item?',
+    vraag: 'Hoe koppel ik een leverancier aan een budgetitem?',
     antwoord: (
       <p>
-        Tik op een categorie om hem <strong>uit te klappen</strong> en de losse
-        items te zien. Via het potlood- of menu-icoon bij een item kun je het{' '}
-        <strong>bewerken</strong> of <strong>verwijderen</strong>. Met de knop{' '}
-        <strong>Uitklappen</strong> / <strong>Inklappen</strong> open of sluit je
-        alle categorieën in één keer.
+        Open een budgetitem en vouw <strong>Meer details</strong> uit. Kies daar
+        bij <strong>Gekoppelde leverancier</strong> de juiste leverancier. Staat
+        die op <em>«geboekt»</em>, dan telt diens offertebedrag automatisch mee
+        als geoffreerd bedrag — je hoeft het dus niet dubbel in te vullen.
       </p>
     ),
   },
   {
-    vraag: 'Hoe houd ik deelbetalingen en termijnen bij?',
+    vraag: 'Hoe houd ik betalingen en termijnen bij?',
     antwoord: (
       <p>
-        Bij een budgetitem kun je <strong>betaaltermijnen</strong> toevoegen,
-        bijvoorbeeld een aanbetaling en een restbedrag. Vink een termijn af
-        zodra die betaald is; het betaalde bedrag en de voortgang worden dan
-        automatisch bijgewerkt.
+        Bij een budgetitem kun je <strong>betaaltermijnen</strong> toevoegen
+        (bedrag + vervaldatum), bijvoorbeeld een aanbetaling en een restbedrag.
+        Vink een termijn af zodra die betaald is; het betaalde bedrag en de
+        voortgang worden dan automatisch bijgewerkt.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Wat doet de AI met mijn budget?',
+    antwoord: (
+      <p>
+        Met <strong>Analyseer mijn budget</strong> en de AI-adviestegel bovenaan
+        denkt de AI-planner met je mee. Die vergelijkt je budget met dat van
+        vergelijkbare bruiloften, signaleert categorieën die opvallen of die je
+        misschien vergeten bent, en wijst je op betalingen die eraan komen. Het
+        is advies — jij beslist.
       </p>
     ),
   },
@@ -131,18 +196,8 @@ const budgetInfoFaq = [
         filteren. Met het filter rechts (<strong>Alle</strong>,{' '}
         <strong>Aandacht</strong>, <strong>Nog te plannen</strong>,{' '}
         <strong>Betaald</strong>) toon je alleen categorieën met een bepaalde
-        status — handig om te zien waar nog actie nodig is.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Wat doet "Analyseer mijn budget"?',
-    antwoord: (
-      <p>
-        Met <strong>Analyseer mijn budget</strong> laat je de AI-assistent
-        meekijken. Die signaleert categorieën die opvallen, geeft tips over een
-        realistische verdeling en helpt je keuzes maken. Het is advies — jij
-        beslist.
+        status. Met <strong>Uitklappen</strong> / <strong>Inklappen</strong> open
+        of sluit je alle categorieën in één keer.
       </p>
     ),
   },

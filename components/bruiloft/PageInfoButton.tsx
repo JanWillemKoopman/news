@@ -50,7 +50,7 @@ export function PageInfoButton({
       <Modal open={open} onOpenChange={setOpen} title={titel}>
         <div className="space-y-5">
           {intro ? (
-            <div className="text-sm leading-relaxed text-muted-foreground">{intro}</div>
+            <div className="text-sm leading-relaxed text-foreground">{intro}</div>
           ) : null}
 
           <div className="space-y-2">
@@ -74,7 +74,7 @@ export function PageInfoButton({
                     />
                   </button>
                   {isOpen ? (
-                    <div className="border-t border-border px-4 pb-4 pt-3 text-sm leading-relaxed text-muted-foreground">
+                    <div className="border-t border-border px-4 pb-4 pt-3 text-sm leading-relaxed text-foreground">
                       {item.antwoord}
                     </div>
                   ) : null}
