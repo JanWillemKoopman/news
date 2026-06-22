@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { ledenInfo } from '@/components/bruiloft/faqContent'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
 import {
   Button,
@@ -121,6 +123,7 @@ export default function SamenPlannenPage() {
       <PageHeader
         titel="Samen plannen"
         beschrijving="Nodig je partner uit zodat jullie samen aan het trouwplan werken."
+        info={<PageInfoButton {...ledenInfo} />}
       />
 
       <div className="space-y-6">

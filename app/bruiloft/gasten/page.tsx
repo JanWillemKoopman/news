@@ -7,6 +7,8 @@ import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
 import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { gastenInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import {
   Button,
@@ -238,6 +240,7 @@ export default function GastenPage() {
       <PageHeader
         titel="Gastenlijst"
         beschrijving="Beheer de gastenlijst en houd de reacties bij."
+        info={<PageInfoButton {...gastenInfo} />}
         actie={
           <>
             {kanBewerken && (

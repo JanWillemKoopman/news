@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { accountInfo } from '@/components/bruiloft/faqContent'
 import {
   Button,
   Card,
@@ -561,7 +563,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl pb-24 min-h-screen">
-      <PageHeader titel="Account" beschrijving="Beheer je profiel en accountinstellingen." />
+      <PageHeader titel="Account" beschrijving="Beheer je profiel en accountinstellingen." info={<PageInfoButton {...accountInfo} />} />
       <AccountHero />
       <ProfielFotoSection />
       <GegevensSection />

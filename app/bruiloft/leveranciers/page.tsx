@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Compass, LayoutGrid, List, Pencil, Plus, Search, Store, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { leveranciersInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
 import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
@@ -103,6 +105,7 @@ export default function LeveranciersPage() {
       <PageHeader
         titel="Leveranciers"
         beschrijving="Vergelijk, contacteer en boek de juiste partijen."
+        info={<PageInfoButton {...leveranciersInfo} />}
         actie={
           kanBewerken ? (
             <Button onClick={openNieuw}>

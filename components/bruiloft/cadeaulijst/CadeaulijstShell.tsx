@@ -7,6 +7,8 @@ import { canEdit } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Skeleton } from '@/components/bruiloft/ui'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { cadeaulijstInfo } from '@/components/bruiloft/faqContent'
 import { cn } from '@/lib/utils'
 import type { RegistryItem } from '@/lib/bruiloft/types'
 import { RegistryLijstbeheer } from './RegistryLijstbeheer'
@@ -74,6 +76,7 @@ export function CadeaulijstShell() {
       <PageHeader
         titel="Cadeaulijst"
         beschrijving="Beheer jullie cadeauwensen en geldfondsen."
+        info={<PageInfoButton {...cadeaulijstInfo} />}
         actie={
           <>
             {isEditor && activeTab === 'lijst' && (

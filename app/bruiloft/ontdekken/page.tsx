@@ -4,6 +4,8 @@ import * as React from 'react'
 import { Compass, Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { ontdekkenInfo } from '@/components/bruiloft/faqContent'
 import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
 import {
   FilterSheet,
@@ -169,6 +171,7 @@ export default function OntdekkenPage() {
       <PageHeader
         titel="Leveranciers"
         beschrijving="Doorzoek alle trouwlocaties en leveranciers — gesorteerd op wat het beste bij jullie past."
+        info={<PageInfoButton {...ontdekkenInfo} />}
       />
       <LeveranciersTabs />
 

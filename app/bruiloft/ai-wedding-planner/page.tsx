@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { aiAssistentInfo } from '@/components/bruiloft/faqContent'
 import {
   Button,
   Card,
@@ -259,6 +261,7 @@ export default function AIWeddingPlannerPage() {
       <PageHeader
         titel="AI-assistent"
         beschrijving="Professioneel advies per onderdeel van jullie bruiloft, gegenereerd door AI op basis van jullie planningsdata."
+        info={<PageInfoButton {...aiAssistentInfo} />}
         actie={
           <Button
             onClick={() => fetchAdvies(false)}

@@ -4,6 +4,8 @@ import * as React from 'react'
 import { AlertTriangle, CalendarClock, Download, Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { draaiboekInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { AIVoorgesteldDraaiboekModal } from '@/components/bruiloft/draaiboek/AIVoorgesteldDraaiboekModal'
 import { DraaiboekControls, type KolomAantal } from '@/components/bruiloft/draaiboek/DraaiboekControls'
@@ -133,6 +135,7 @@ export default function DraaiboekPage() {
       <PageHeader
         titel="Draaiboek"
         beschrijving="Het minuutschema van de trouwdag — filter en exporteer per betrokkene."
+        info={<PageInfoButton {...draaiboekInfo} />}
         actie={
           <>
             <Button variant="outline" onClick={exporteer} disabled={exportLijst.length === 0}>

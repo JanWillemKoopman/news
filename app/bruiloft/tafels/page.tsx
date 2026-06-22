@@ -4,6 +4,8 @@ import * as React from 'react'
 import { AlertTriangle, Armchair, LayoutGrid, Map, Plus, Printer } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { tafelsInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { FloorPlan, type TafelPatch } from '@/components/bruiloft/tafels/FloorPlan'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
@@ -111,6 +113,7 @@ export default function TafelsPage() {
       <PageHeader
         titel="Tafelschikking"
         beschrijving="Plaats tafels op de plattegrond en sleep gasten naar hun plek. Afgemelde gasten worden niet meegenomen."
+        info={<PageInfoButton {...tafelsInfo} />}
         actie={
           <>
             {tables.length > 0 ? (

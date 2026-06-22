@@ -5,6 +5,8 @@ import { Camera, Check, Copy, ExternalLink, Loader2, Monitor, Star, Trash2, X } 
 import Link from 'next/link'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { fotomuurInfo } from '@/components/bruiloft/faqContent'
 import { Button, ConfirmDialog, EmptyState, useToast } from '@/components/bruiloft/ui'
 import { createRawClient } from '@/lib/supabase/client'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -224,6 +226,7 @@ export function FotomuurBeheer() {
       <PageHeader
         titel="Fotomuur"
         beschrijving="Laat gasten foto's uploaden die live op een groot scherm verschijnen."
+        info={<PageInfoButton {...fotomuurInfo} />}
       />
 
       {/* Activatie */}

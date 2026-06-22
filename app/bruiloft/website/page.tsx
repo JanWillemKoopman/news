@@ -4,6 +4,8 @@ import { AlertCircle, Check, ExternalLink, Loader2 } from 'lucide-react'
 import * as React from 'react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { websiteInfo } from '@/components/bruiloft/faqContent'
 import { Button, Skeleton, useToast } from '@/components/bruiloft/ui'
 import type { SectieConfig, WebsiteContentInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -119,6 +121,7 @@ export default function WebsitePage() {
         <PageHeader
           titel="Trouwwebsite"
           beschrijving="Beheer de inhoud en het ontwerp van jullie persoonlijke trouwwebsite."
+          info={<PageInfoButton {...websiteInfo} />}
           actie={
             <div className="flex items-center gap-3">
               <SaveStatus />

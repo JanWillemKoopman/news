@@ -4,6 +4,8 @@ import * as React from 'react'
 import { Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { takenInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { TakenSamenstellen } from '@/components/bruiloft/taken/TakenSamenstellen'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
@@ -268,6 +270,7 @@ export function TakenShell() {
       <PageHeader
         titel="Taken"
         beschrijving="Werk stap voor stap naar de grote dag toe."
+        info={<PageInfoButton {...takenInfo} />}
         actie={
           <Button onClick={openNieuw}>
             <Plus className="h-4 w-4" /> Taak toevoegen

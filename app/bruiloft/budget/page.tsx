@@ -5,6 +5,7 @@ import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
+import { budgetInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
@@ -24,195 +25,6 @@ import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
-
-// Introductie en FAQ voor de informatieknop rechtsboven. De intro legt de
-// waarde van de pagina uit; de FAQ volgt de gebruikersreis (van starten naar
-// verdiepen) en staat op volgorde van belangrijk naar minder belangrijk.
-const budgetInfoIntro = (
-  <div className="space-y-3">
-    <p>
-      De <strong>Budget</strong>-pagina is jullie financiële kompas voor de
-      bruiloft. Per onderdeel leg je vast wat je verwacht uit te geven
-      (<strong>geschat</strong>), wat een leverancier vraagt
-      (<strong>offerte</strong>) en wat je al hebt <strong>betaald</strong>. Zo
-      zie je in één oogopslag of je binnen jullie totaalbudget blijft, wat er
-      nog op je afkomt en welke categorieën aandacht nodig hebben.
-    </p>
-    <p>
-      Meer dan een lijstje: koppel je een leverancier, dan telt diens offerte
-      automatisch mee. Met betaaltermijnen blijven deadlines in beeld. En de
-      AI-planner denkt mee — die vergelijkt je budget met dat van vergelijkbare
-      bruiloften, signaleert uitschieters en vergeten posten en wijst je op
-      betalingen die eraan komen. Je budget telt ook mee in jullie voortgang in
-      de AI Wedding Planner.
-    </p>
-    <div className="rounded-xl border border-border bg-muted/40 p-4">
-      <p className="font-semibold text-foreground">Zo begin je</p>
-      <ol className="mt-2 list-decimal space-y-1 pl-5">
-        <li>
-          <strong>Stel je totaalbudget in</strong> — via Overzicht →{' '}
-          <em>Bewerken</em>.
-        </li>
-        <li>
-          <strong>Vul je categorieën</strong> — laat automatisch verdelen of
-          voeg zelf items toe.
-        </li>
-        <li>
-          <strong>Houd het actueel</strong> — vul offertes en betalingen in en
-          koppel je leveranciers.
-        </li>
-      </ol>
-    </div>
-  </div>
-)
-
-const budgetInfoFaq = [
-  {
-    vraag: 'Hoe begin ik met mijn budget?',
-    antwoord: (
-      <p>
-        Stel eerst jullie <strong>totaalbudget</strong> in op de{' '}
-        <strong>Overzicht</strong>-pagina (via <em>Bewerken</em>). Vul daarna je
-        categorieën: laat het budget automatisch verdelen met{' '}
-        <strong>Verdeel budget</strong> of voeg zelf items toe met{' '}
-        <strong>Budgetitem toevoegen</strong>. Werk het vervolgens bij naarmate
-        je offertes ontvangt en betalingen doet.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Wat betekenen geschat, offerte en betaald?',
-    antwoord: (
-      <>
-        <p>Elk budgetitem werkt met drie bedragen:</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>
-            <strong>Geschat</strong> — jouw eigen inschatting van de kosten,
-            vaak nog voordat je offertes hebt.
-          </li>
-          <li>
-            <strong>Offerte</strong> — wat een leverancier daadwerkelijk vraagt.
-          </li>
-          <li>
-            <strong>Betaald</strong> — wat je al hebt overgemaakt.
-          </li>
-        </ul>
-        <p className="mt-2">
-          Het verschil tussen geschat en betaald is wat je{' '}
-          <strong>nog te betalen</strong> hebt. Zo zie je per onderdeel hoe je
-          ervoor staat.
-        </p>
-      </>
-    ),
-  },
-  {
-    vraag: 'Hoe voeg ik een budgetitem toe?',
-    antwoord: (
-      <p>
-        Klik rechtsboven op <strong>Budgetitem toevoegen</strong> (of op de
-        zwevende +-knop wanneer je naar beneden scrolt). Kies een categorie,
-        geef een omschrijving en vul het geschatte bedrag in. Een offerte,
-        betaling of leverancier voeg je toe onder <strong>Meer details</strong>.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Wat betekenen de bedragen in het overzicht bovenaan?',
-    antwoord: (
-      <>
-        <p>Het blok bovenaan vat jullie hele budget samen:</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>
-            <strong>Voortgang</strong> — het percentage en het bedrag dat je van
-            het totaalbudget al hebt betaald.
-          </li>
-          <li>
-            <strong>Geschat</strong> — alles wat je samen verwacht uit te geven.
-          </li>
-          <li>
-            <strong>Nog te betalen</strong> — het geschatte bedrag min wat je al
-            betaald hebt.
-          </li>
-          <li>
-            <strong>Resterend budget</strong> — wat er nog over is binnen jullie
-            totaalbudget. Kleurt dit oranje (<em>boven budget</em>), dan ligt de
-            schatting hoger dan het totaalbudget.
-          </li>
-        </ul>
-      </>
-    ),
-  },
-  {
-    vraag: 'Hoe verdeel ik mijn budget automatisch over categorieën?',
-    antwoord: (
-      <p>
-        Gebruik <strong>Verdeel budget</strong> (via het{' '}
-        <strong>···</strong>-menu, of de knop in het lege overzicht). Je
-        totaalbudget wordt dan als richtbedrag verdeeld over de gebruikelijke
-        categorieën, op basis van een standaardverdeling. Handig om snel te
-        starten — je kunt elk bedrag daarna nog aanpassen.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Hoe koppel ik een leverancier aan een budgetitem?',
-    antwoord: (
-      <p>
-        Open een budgetitem en vouw <strong>Meer details</strong> uit. Kies daar
-        bij <strong>Gekoppelde leverancier</strong> de juiste leverancier. Staat
-        die op <em>«geboekt»</em>, dan telt diens offertebedrag automatisch mee
-        als geoffreerd bedrag — je hoeft het dus niet dubbel in te vullen.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Hoe houd ik betalingen en termijnen bij?',
-    antwoord: (
-      <p>
-        Bij een budgetitem kun je <strong>betaaltermijnen</strong> toevoegen
-        (bedrag + vervaldatum), bijvoorbeeld een aanbetaling en een restbedrag.
-        Vink een termijn af zodra die betaald is; het betaalde bedrag en de
-        voortgang worden dan automatisch bijgewerkt.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Wat doet de AI met mijn budget?',
-    antwoord: (
-      <p>
-        Met <strong>Analyseer mijn budget</strong> en de AI-adviestegel bovenaan
-        denkt de AI-planner met je mee. Die vergelijkt je budget met dat van
-        vergelijkbare bruiloften, signaleert categorieën die opvallen of die je
-        misschien vergeten bent, en wijst je op betalingen die eraan komen. Het
-        is advies — jij beslist.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Hoe vind ik snel een bepaalde categorie?',
-    antwoord: (
-      <p>
-        Gebruik het zoekveld <strong>Zoek categorie…</strong> om op naam te
-        filteren. Met het filter rechts (<strong>Alle</strong>,{' '}
-        <strong>Aandacht</strong>, <strong>Nog te plannen</strong>,{' '}
-        <strong>Betaald</strong>) toon je alleen categorieën met een bepaalde
-        status. Met <strong>Uitklappen</strong> / <strong>Inklappen</strong> open
-        of sluit je alle categorieën in één keer.
-      </p>
-    ),
-  },
-  {
-    vraag: 'Hoe exporteer ik mijn budget?',
-    antwoord: (
-      <p>
-        Via het <strong>···</strong>-menu kies je{' '}
-        <strong>Exporteer budget</strong>. Je downloadt dan een CSV-bestand met
-        alle categorieën en bedragen, dat je bijvoorbeeld in Excel of Google
-        Sheets kunt openen.
-      </p>
-    ),
-  },
-]
 
 export default function BudgetPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -315,7 +127,7 @@ export default function BudgetPage() {
             />
           </>
         }
-        info={<PageInfoButton titel="Budget" intro={budgetInfoIntro} faq={budgetInfoFaq} />}
+        info={<PageInfoButton {...budgetInfo} />}
         fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />
 
