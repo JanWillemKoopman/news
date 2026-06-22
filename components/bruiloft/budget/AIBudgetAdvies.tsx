@@ -39,6 +39,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const guests = useBruiloftStore((s) => s.guests)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
+  const websiteContent = useBruiloftStore((s) => s.websiteContent)
 
   const [advies, setAdvies] = React.useState<AIBudgetAdviesType | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -51,7 +52,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
     setAdvies(null)
 
     try {
-      const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems)
+      const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
       const res = await fetch('/api/ai/budget', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +69,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
     } finally {
       setLoading(false)
     }
-  }, [wedding, tasks, vendors, budgetItems, guests, scheduleItems, loading])
+  }, [wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent, loading])
 
   React.useEffect(() => {
     if (open && !advies && !loading) {

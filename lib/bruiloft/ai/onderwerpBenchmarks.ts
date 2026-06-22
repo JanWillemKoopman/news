@@ -5,9 +5,11 @@
 // AI niet langer "op schema" zegt terwijl iets eigenlijk kritiek is.
 //
 // 'Geregeld'-detectie: een geboekte leverancier van `vendorType`, en/of een
-// afgevinkte taak waarvan de titel `taakBevat` bevat. Onderwerpen zonder
-// betrouwbaar 'klaar'-signaal (bijv. trouwwebsite, huwelijksreis) staan bewust
-// nog NIET in deze lijst, zodat de engine niet over iets zeurt dat al gedaan is.
+// afgevinkte taak waarvan de titel `taakBevat` bevat. De trouwwebsite heeft geen
+// taak- of leveranciersignaal en wordt apart in aiContext.ts op 'klaar' gezet
+// zodra er websitecontent is. Onderwerpen zónder enig betrouwbaar 'klaar'-signaal
+// blijven bewust uit deze lijst, zodat de engine niet zeurt over iets dat al
+// gedaan is.
 
 export type Fase = 'orienteren' | 'aan_de_slag' | 'binnenkort' | 'kritiek'
 
@@ -38,8 +40,11 @@ export const ONDERWERP_BENCHMARKS: OnderwerpBenchmark[] = [
   { key: 'catering', label: 'Catering', aanDeSlagVanaf: 11, binnenkortVanaf: 8, kritiekVanaf: 5, vendorType: 'catering', taakBevat: 'Catering kiezen' },
   { key: 'videograaf', label: 'Videograaf', aanDeSlagVanaf: 11, binnenkortVanaf: 8, kritiekVanaf: 5, topLeverancier: true, vendorType: 'videograaf', taakBevat: 'Videograaf' },
   { key: 'dj', label: 'DJ / band / muziek', aanDeSlagVanaf: 11, binnenkortVanaf: 8, kritiekVanaf: 5, vendorType: 'dj of band', taakBevat: 'Muziek of DJ' },
+  { key: 'huwelijksreis', label: 'Huwelijksreis', aanDeSlagVanaf: 10, binnenkortVanaf: 6, kritiekVanaf: 2, taakBevat: 'Huwelijksreis boeken' },
   { key: 'savethedate', label: 'Save-the-dates', aanDeSlagVanaf: 9, binnenkortVanaf: 6, kritiekVanaf: 4, taakBevat: 'Save-the-dates versturen' },
+  { key: 'trouwwebsite', label: 'Trouwwebsite (incl. cadeaulijst)', aanDeSlagVanaf: 9, binnenkortVanaf: 4, kritiekVanaf: 2 },
   { key: 'bloemist', label: 'Bloemist / decoratie', aanDeSlagVanaf: 9, binnenkortVanaf: 6, kritiekVanaf: 3, vendorType: 'bloemist', taakBevat: 'Bloemist' },
+  { key: 'huwelijksevoorwaarden', label: 'Huwelijkse voorwaarden (notaris)', aanDeSlagVanaf: 7, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Huwelijkse voorwaarden' },
   { key: 'ringen', label: 'Trouwringen', aanDeSlagVanaf: 6, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Trouwringen' },
   { key: 'vervoer', label: 'Vervoer (trouwauto)', aanDeSlagVanaf: 6, binnenkortVanaf: 4, kritiekVanaf: 2, taakBevat: 'Vervoer voor de trouwdag' },
   { key: 'taart', label: 'Bruidstaart', aanDeSlagVanaf: 6, binnenkortVanaf: 3, kritiekVanaf: 2, taakBevat: 'Bruidstaart bestellen' },
