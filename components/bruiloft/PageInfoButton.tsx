@@ -42,7 +42,7 @@ export function PageInfoButton({
         onClick={() => setOpen(true)}
         aria-label={ariaLabel}
         title={ariaLabel}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-rose-600 transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-gray-600 transition-colors hover:bg-accent dark:text-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <Info className="h-5 w-5" aria-hidden />
       </button>
