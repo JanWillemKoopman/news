@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
@@ -23,6 +24,140 @@ import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
+
+// Introductie en FAQ voor de informatieknop rechtsboven. Inhoud staat op
+// volgorde van belangrijk naar minder belangrijk, in de vorm van vragen die
+// een gebruiker zich kan stellen.
+const budgetInfoIntro = (
+  <p>
+    Op de <strong>Budget</strong>-pagina houd je grip op alle kosten van jullie
+    bruiloft. Je legt per onderdeel vast wat je <em>verwacht</em> uit te geven
+    (geschat), wat een leverancier <em>offreert</em> en wat je al hebt{' '}
+    <em>betaald</em>. Zo zie je in één oogopslag of je nog binnen jullie
+    totaalbudget zit en wat er nog op je afkomt. Hieronder vind je per stap hoe
+    alles werkt.
+  </p>
+)
+
+const budgetInfoFaq = [
+  {
+    vraag: 'Hoe voeg ik een budgetitem toe?',
+    antwoord: (
+      <p>
+        Klik rechtsboven op <strong>Budgetitem toevoegen</strong> (of op de
+        zwevende +-knop wanneer je naar beneden scrolt). Kies een categorie,
+        geef een omschrijving en vul het geschatte bedrag in. Heb je al een
+        offerte of betaling? Die kun je in hetzelfde scherm meteen invullen.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe lees ik het overzicht bovenaan?',
+    antwoord: (
+      <>
+        <p>Het blok bovenaan vat jullie hele budget samen:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <strong>Voortgang</strong> — het percentage en het bedrag dat je van
+            het totaalbudget al hebt betaald.
+          </li>
+          <li>
+            <strong>Geschat</strong> — alles wat je samen verwacht uit te geven.
+          </li>
+          <li>
+            <strong>Nog te betalen</strong> — het geschatte bedrag min wat je al
+            betaald hebt.
+          </li>
+          <li>
+            <strong>Resterend budget</strong> — wat er nog over is binnen jullie
+            totaalbudget. Kleurt dit oranje (<em>boven budget</em>), dan ligt de
+            schatting hoger dan het totaalbudget.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    vraag: 'Hoe stel ik het totaalbudget in?',
+    antwoord: (
+      <p>
+        Het totaalbudget waar alles tegen wordt afgezet, stel je in op de{' '}
+        <strong>Overzicht</strong>-pagina bij de instellingen van jullie
+        bruiloft. Pas je het daar aan, dan rekent dit overzicht automatisch
+        opnieuw.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe verdeel ik mijn budget automatisch over categorieën?',
+    antwoord: (
+      <p>
+        Gebruik <strong>Verdeel budget</strong> (via het{' '}
+        <strong>···</strong>-menu, of de knop in het lege overzicht). Je
+        totaalbudget wordt dan als richtbedrag verdeeld over de gebruikelijke
+        categorieën. Handig om snel te starten — je kunt elk bedrag daarna nog
+        aanpassen.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe bekijk of bewerk ik een categorie of item?',
+    antwoord: (
+      <p>
+        Tik op een categorie om hem <strong>uit te klappen</strong> en de losse
+        items te zien. Via het potlood- of menu-icoon bij een item kun je het{' '}
+        <strong>bewerken</strong> of <strong>verwijderen</strong>. Met de knop{' '}
+        <strong>Uitklappen</strong> / <strong>Inklappen</strong> open of sluit je
+        alle categorieën in één keer.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe houd ik deelbetalingen en termijnen bij?',
+    antwoord: (
+      <p>
+        Bij een budgetitem kun je <strong>betaaltermijnen</strong> toevoegen,
+        bijvoorbeeld een aanbetaling en een restbedrag. Vink een termijn af
+        zodra die betaald is; het betaalde bedrag en de voortgang worden dan
+        automatisch bijgewerkt.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe vind ik snel een bepaalde categorie?',
+    antwoord: (
+      <p>
+        Gebruik het zoekveld <strong>Zoek categorie…</strong> om op naam te
+        filteren. Met het filter rechts (<strong>Alle</strong>,{' '}
+        <strong>Aandacht</strong>, <strong>Nog te plannen</strong>,{' '}
+        <strong>Betaald</strong>) toon je alleen categorieën met een bepaalde
+        status — handig om te zien waar nog actie nodig is.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Wat doet "Analyseer mijn budget"?',
+    antwoord: (
+      <p>
+        Met <strong>Analyseer mijn budget</strong> laat je de AI-assistent
+        meekijken. Die signaleert categorieën die opvallen, geeft tips over een
+        realistische verdeling en helpt je keuzes maken. Het is advies — jij
+        beslist.
+      </p>
+    ),
+  },
+  {
+    vraag: 'Hoe exporteer ik mijn budget?',
+    antwoord: (
+      <p>
+        Via het <strong>···</strong>-menu kies je{' '}
+        <strong>Exporteer budget</strong>. Je downloadt dan een CSV-bestand met
+        alle categorieën en bedragen, dat je bijvoorbeeld in Excel of Google
+        Sheets kunt openen.
+      </p>
+    ),
+  },
+]
 
 export default function BudgetPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -125,6 +260,7 @@ export default function BudgetPage() {
             />
           </>
         }
+        info={<PageInfoButton titel="Budget" intro={budgetInfoIntro} faq={budgetInfoFaq} />}
         fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />
 

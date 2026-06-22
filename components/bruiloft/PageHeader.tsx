@@ -9,6 +9,8 @@ interface PageHeaderProps {
   titel: string
   beschrijving?: string
   actie?: React.ReactNode
+  // Optionele ronde informatieknop die uiterst rechtsboven verschijnt.
+  info?: React.ReactNode
   // Optionele primaire "toevoegen"-actie die ook als zwevende +-knop (FAB)
   // rechtsonder verschijnt zodra de header uit beeld scrolt. Roept dezelfde
   // handler aan als de knop in de header.
@@ -43,7 +45,7 @@ function useElementInView(ref: React.RefObject<HTMLElement>) {
   return inView
 }
 
-export function PageHeader({ titel, beschrijving, actie, fab }: PageHeaderProps) {
+export function PageHeader({ titel, beschrijving, actie, info, fab }: PageHeaderProps) {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const headerInView = useElementInView(headerRef)
 
@@ -59,7 +61,12 @@ export function PageHeader({ titel, beschrijving, actie, fab }: PageHeaderProps)
             <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
           ) : null}
         </div>
-        {actie ? <div className="flex shrink-0 flex-wrap gap-2">{actie}</div> : null}
+        {actie || info ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {actie}
+            {info}
+          </div>
+        ) : null}
       </div>
       {fab ? (
         <FloatingAddButton label={fab.label} onClick={fab.onClick} visible={!headerInView} />
