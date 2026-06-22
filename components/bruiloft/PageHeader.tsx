@@ -62,9 +62,11 @@ export function PageHeader({ titel, beschrijving, actie, info, fab }: PageHeader
           ) : null}
         </div>
         {actie || info ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {actie}
-            {info}
+          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+            {actie ? (
+              <div className="flex flex-wrap items-center gap-2">{actie}</div>
+            ) : null}
+            {info ? <div className="ml-auto shrink-0">{info}</div> : null}
           </div>
         ) : null}
       </div>
