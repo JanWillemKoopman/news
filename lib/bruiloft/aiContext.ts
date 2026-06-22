@@ -1,6 +1,8 @@
 import { dagenTot } from './format'
 import { STANDAARD_VERDELING, aankomendeTermijnen, budgetTotalen, gastTellingen } from './derived'
 import type { BudgetCategorie, BudgetItem, Guest, ScheduleItem, Task, Vendor, Wedding, WebsiteContent } from './types'
+import { ONDERWERP_BENCHMARKS, landUitProvincie } from './ai/onderwerpBenchmarks'
+import { berekenOnderwerpUrgentie, type OnderwerpUrgentie } from './ai/urgentie'
 
 export interface AIWeddingContext {
   gebruiker?: {
@@ -80,6 +82,8 @@ export interface AIWeddingContext {
   // Server-side verrijkt: samenvatting van het beschikbare leveranciersaanbod
   // uit de directory, zodat het advies naar concrete opties kan verwijzen (#2).
   leveranciersAanbod?: import('./ai/leveranciersAanbod').LeveranciersAanbod
+  // Vooraf berekende urgentie per onderwerp (deterministisch; zie ai/urgentie.ts).
+  onderwerpUrgentie?: OnderwerpUrgentie[]
 }
 
 // Bouwt een leveranciers-matchprofiel uit de AI-context, zodat het
@@ -144,8 +148,12 @@ export function buildAIFingerprint(ctx: AIWeddingContext): string {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}:${v}`)
     .join(',')
+  // Ververs het advies zodra een onderwerp van urgentiefase wisselt.
+  const urgentieHash = (ctx.onderwerpUrgentie ?? [])
+    .map((u) => `${u.onderwerp}=${u.fase}`)
+    .join('|')
   return [
-    'v4',
+    'v5',
     ctx.bruidspaar.trouwdatum,
     tijdBucket(ctx.bruidspaar.dagenTotBruiloft),
     ctx.bruidspaar.locatie,
@@ -160,6 +168,7 @@ export function buildAIFingerprint(ctx: AIWeddingContext): string {
     geboekt,
     ctx.draaiboek.aantalItems,
     voortgangHash,
+    urgentieHash,
   ].join(':')
 }
 
@@ -214,6 +223,63 @@ export function buildAIContext(
     vervaldatum: term.vervaldatum,
     dagenTot: dagen,
   }))
+
+  // --- Deterministische urgentie per onderwerp ---
+  // Bepaal per onderwerp of het al geregeld is (geboekte leverancier, afgevinkte
+  // taak of wizard-checklist), plus de afhankelijkheidssignalen; de engine zet
+  // dat om in een fase die we als feit aan de AI meegeven.
+  const geregeldeZaken = (wedding.geregeldeZaken ?? {}) as Record<string, string>
+  const VOORTGANG_NAAR_KEY: Record<string, string[]> = {
+    locatie: ['locatie'],
+    fotograaf: ['fotograaf'],
+    videograaf: ['videograaf'],
+    catering: ['catering'],
+    dj_of_band: ['dj'],
+    trouwambtenaar: ['trouwambtenaar', 'melding'],
+    trouwkleding: ['trouwjurk'],
+    bloemist: ['bloemist'],
+  }
+  const geregeld: Record<string, boolean> = {}
+  for (const b of ONDERWERP_BENCHMARKS) {
+    const vendorType = b.vendorType
+    const taakBevat = b.taakBevat
+    const viaVendor = vendorType
+      ? vendors.some((v) => v.type === vendorType && v.status === 'geboekt')
+      : false
+    const viaTaak = taakBevat
+      ? tasks.some(
+          (t) => t.status === 'klaar' && t.titel.toLowerCase().includes(taakBevat.toLowerCase())
+        )
+      : false
+    geregeld[b.key] = viaVendor || viaTaak
+  }
+  for (const [cat, status] of Object.entries(geregeldeZaken)) {
+    if (status === 'geboekt') {
+      for (const key of VOORTGANG_NAAR_KEY[cat] ?? []) geregeld[key] = true
+    }
+  }
+  const budgetGeregeld =
+    wedding.totaalBudget > 0 && wedding.aantalDaggasten + wedding.aantalAvondgasten > 0
+  if (budgetGeregeld) {
+    geregeld.budget = true
+    geregeld.gastenlijst = true
+  }
+  const locatieInBehandeling =
+    Boolean(wedding.locatie && wedding.locatie.trim()) ||
+    vendors.some((v) => v.type === 'locatie') ||
+    geregeldeZaken.locatie != null
+  const stdVerstuurd = tasks.some(
+    (t) => t.status === 'klaar' && t.titel.toLowerCase().includes('save-the-dates versturen')
+  )
+  const onderwerpUrgentie = berekenOnderwerpUrgentie({
+    dagenTotBruiloft: dagenTot(wedding.trouwdatum),
+    trouwdatum: wedding.trouwdatum,
+    geregeld,
+    budgetGeregeld,
+    locatieInBehandeling,
+    stdVerstuurd,
+    land: landUitProvincie(wedding.provincie),
+  })
 
   return {
     bruidspaar: {
@@ -271,5 +337,6 @@ export function buildAIContext(
     betalingen: {
       aankomend: betalingen,
     },
+    onderwerpUrgentie,
   }
 }
