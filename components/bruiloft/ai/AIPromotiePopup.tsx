@@ -49,7 +49,7 @@ export function AIPromotiePopup() {
               Wil je weten of jullie op schema liggen?
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-              Jullie zijn druk bezig geweest met de planning. De AI-coach analyseert jullie taken,
+              Jullie zijn druk bezig geweest met de planning. De AI-assistent analyseert jullie taken,
               budget en deadline en vertelt wat nu het meest urgent is.
             </p>
             <div className="mt-2.5 flex gap-2 sm:mt-3">

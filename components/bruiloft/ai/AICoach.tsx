@@ -83,7 +83,7 @@ export function AICoach() {
     nudgeAlGetoond = true
     toast({
       title: 'Mooi bezig! Taak afgerond.',
-      description: `Volgende suggestie van de AI-coach: ${volgende.titel}`,
+      description: `Volgende suggestie van de AI-assistent: ${volgende.titel}`,
       action: { label: 'Bekijk advies', onClick: openAICoach },
     })
   }, [klaarAantal, open, zichtbaar, toast, openAICoach])
@@ -100,7 +100,7 @@ export function AICoach() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="AI-coach"
+            aria-label="AI-assistent"
             className={cn(
               'absolute flex flex-col bg-card text-card-foreground shadow-xl',
               // Mobiel: bottom sheet
@@ -112,14 +112,14 @@ export function AICoach() {
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rhino-800 text-white">
-                  <Sparkles className="h-4 w-4" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rhino-800 text-white text-xs font-bold tracking-tight">
+                  AI
                 </span>
                 <div>
-                  <h2 className="text-base font-semibold leading-tight text-foreground">AI-coach</h2>
-                  {updatedAt ? (
-                    <p className="text-xs text-muted-foreground">Bijgewerkt {geledenLabel(updatedAt)}</p>
-                  ) : null}
+                  <h2 className="text-base font-semibold leading-tight text-foreground">AI-assistent</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {updatedAt ? `Bijgewerkt ${geledenLabel(updatedAt)}` : 'Persoonlijke adviezen voor jullie planning'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -136,7 +136,7 @@ export function AICoach() {
                 <button
                   type="button"
                   onClick={closeAICoach}
-                  aria-label="AI-coach sluiten"
+                  aria-label="AI-assistent sluiten"
                   className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
@@ -146,6 +146,11 @@ export function AICoach() {
 
             {/* Advieslijst */}
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {!loading && zichtbaar.length > 0 ? (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Aanbevolen acties en inzichten op basis van jullie planning, samengesteld door de AI-assistent.
+                </p>
+              ) : null}
               {loading ? (
                 <div className="flex flex-col items-center gap-4 py-10">
                   <div className="flex items-center gap-2">
