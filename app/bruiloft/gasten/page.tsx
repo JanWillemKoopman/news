@@ -62,7 +62,7 @@ function RsvpSelect({
       disabled={pending}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => void handleChange(e.target.value as RsvpStatus)}
-      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring transition-opacity ${pending ? 'cursor-wait opacity-50' : 'cursor-pointer'} ${klassen[value]}`}
+      className={`rounded-full px-1.5 py-0 text-[10px] sm:px-2.5 sm:py-0.5 sm:text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring transition-opacity ${pending ? 'cursor-wait opacity-50' : 'cursor-pointer'} ${klassen[value]}`}
     >
       {RSVP_STATUSSEN.map((s) => (
         <option key={s} value={s}>{capFirst(s)}</option>
