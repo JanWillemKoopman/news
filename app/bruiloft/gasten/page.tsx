@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -30,6 +30,8 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Guest, RsvpStatus } from '@/lib/bruiloft/types'
 
 // Inline RSVP-select: ziet eruit als een badge maar is klikbaar om de status te wijzigen.
+// Gebruik een custom dropdown i.p.v. native <select> zodat iOS Safari de tekst niet
+// forceert naar 16px (het minimum voor form-elementen).
 function RsvpSelect({
   value,
   onChange,
@@ -38,8 +40,27 @@ function RsvpSelect({
   onChange: (v: RsvpStatus) => Promise<void> | void
 }) {
   const [pending, setPending] = React.useState(false)
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
 
-  const handleChange = async (v: RsvpStatus) => {
+  React.useEffect(() => {
+    if (!open) return
+    function onPointer(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const handleSelect = async (v: RsvpStatus) => {
+    setOpen(false)
     setPending(true)
     try {
       await onChange(v)
@@ -48,26 +69,45 @@ function RsvpSelect({
     }
   }
 
-  // Zelfde tonen als StatusBadge (zachte vulling + inset-ring), zodat de
-  // klikbare badge visueel gelijk oogt aan de statische badges elders.
   const klassen: Record<RsvpStatus, string> = {
     bevestigd: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20',
     afgemeld: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
     uitgenodigd: 'bg-sky-500/10 text-sky-700 ring-sky-600/20 dark:text-sky-300 dark:ring-sky-400/20',
     'geen reactie': 'bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-300 dark:ring-amber-400/20',
   }
+
   return (
-    <select
-      value={value}
-      disabled={pending}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => void handleChange(e.target.value as RsvpStatus)}
-      className={`rounded-full px-1.5 py-0 text-[10px] sm:px-2.5 sm:py-0.5 sm:text-xs font-medium ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-ring transition-opacity ${pending ? 'cursor-wait opacity-50' : 'cursor-pointer'} ${klassen[value]}`}
-    >
-      {RSVP_STATUSSEN.map((s) => (
-        <option key={s} value={s}>{capFirst(s)}</option>
-      ))}
-    </select>
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p) }}
+        className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset transition-opacity focus:outline-none ${pending ? 'cursor-wait opacity-50' : 'cursor-pointer'} ${klassen[value]}`}
+      >
+        {capFirst(value)}
+        <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-60" />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute right-0 top-full z-30 mt-1 min-w-[9rem] overflow-hidden rounded-lg border border-border bg-background p-1 shadow-lg"
+        >
+          {RSVP_STATUSSEN.map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="option"
+              aria-selected={s === value}
+              onClick={(e) => { e.stopPropagation(); void handleSelect(s) }}
+              className={`flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent ${s === value ? 'font-semibold' : ''}`}
+            >
+              {capFirst(s)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
