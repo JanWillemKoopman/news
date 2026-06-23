@@ -238,10 +238,13 @@ export function AICoach() {
               <Link
                 href="/bruiloft/ai-wedding-planner"
                 onClick={closeAICoach}
-                className="flex items-center justify-between rounded-lg bg-rhino-50 px-4 py-3 text-sm font-medium text-rhino-900 transition-colors hover:bg-rhino-100"
+                className="flex items-center justify-between rounded-lg bg-rhino-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rhino-700"
               >
-                Volledige AI-analyse per onderdeel
-                <ArrowRight className="h-4 w-4" />
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  Volledige AI-analyse per onderdeel
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
               </Link>
               <p className="mt-3 text-xs text-muted-foreground">
                 <Sparkles className="mr-1 inline h-3 w-3 align-[-1px]" />
