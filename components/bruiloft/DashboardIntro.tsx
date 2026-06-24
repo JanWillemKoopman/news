@@ -86,7 +86,7 @@ export function DashboardIntro({
   const detail = dagen >= 0 && feiten.length > 0 ? `Op de planning: ${feiten.join(' · ')}.` : null
 
   return (
-    <Card className="mb-8 border-rhino-100 bg-rhino-50/40">
+    <Card className="mb-8">
       <CardContent className="flex items-start gap-3 p-5 sm:p-6">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rhino-800 text-white">
           <Sparkles className="h-4 w-4" />
