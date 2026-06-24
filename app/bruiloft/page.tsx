@@ -13,8 +13,6 @@ import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
 import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
-import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
-import { overzichtInfo } from '@/components/bruiloft/faqContent'
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { berekenGuidance } from '@/lib/bruiloft/guidance'
@@ -98,10 +96,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       {/* Hero: aftelteller */}
       <Card className="relative mb-8 overflow-hidden border-border">
-        <div className="absolute left-3 top-3 z-10">
-          <PageInfoButton {...overzichtInfo} />
-        </div>
-        <Button
+<Button
           variant="ghost"
           aria-label="Gegevens bewerken"
           className="absolute right-3 top-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
