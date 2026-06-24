@@ -47,6 +47,22 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
     }
   }, [open, wedding])
 
+  const NAAM_PH = new Set(['', 'partner 1', 'partner 2'])
+  const isPlacehoudernaam = (n: string) => NAAM_PH.has(n.trim().toLowerCase())
+
+  const leeg = {
+    partner1Naam: isPlacehoudernaam(form.partner1Naam),
+    partner2Naam: isPlacehoudernaam(form.partner2Naam),
+    trouwdatum: !form.trouwdatum,
+    locatie: !form.locatie.trim(),
+    woonplaats: !form.woonplaats.trim(),
+    provincie: !form.provincie,
+    totaalBudget: !form.totaalBudget,
+    aantalDaggasten: !form.aantalDaggasten,
+    aantalAvondgasten: !form.aantalAvondgasten,
+  }
+  const leegRand = 'border-purple-300'
+
   const update = (veld: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [veld]: e.target.value }))
 
@@ -109,10 +125,10 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Naam partner 1" htmlFor="s-p1">
-            <Input id="s-p1" value={form.partner1Naam} onChange={update('partner1Naam')} required {...eigennaamInputProps} />
+            <Input id="s-p1" value={form.partner1Naam} onChange={update('partner1Naam')} required className={leeg.partner1Naam ? leegRand : undefined} {...eigennaamInputProps} />
           </Field>
           <Field label="Naam partner 2" htmlFor="s-p2">
-            <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required {...eigennaamInputProps} />
+            <Input id="s-p2" value={form.partner2Naam} onChange={update('partner2Naam')} required className={leeg.partner2Naam ? leegRand : undefined} {...eigennaamInputProps} />
           </Field>
         </div>
         <Field label="Trouwdatum">
@@ -127,6 +143,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             value={form.locatie}
             onChange={update('locatie')}
             placeholder="Bijv. Kasteel De Hooge Vuursche"
+            className={leeg.locatie ? leegRand : undefined}
             {...eigennaamInputProps}
           />
         </Field>
@@ -137,6 +154,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
               value={form.woonplaats}
               onChange={updateWoonplaats}
               placeholder="Bijv. Utrecht"
+              className={leeg.woonplaats ? leegRand : undefined}
               {...eigennaamInputProps}
             />
           </Field>
@@ -145,6 +163,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
               id="s-provincie"
               value={form.provincie}
               onChange={(e) => setForm((f) => ({ ...f, provincie: e.target.value }))}
+              className={leeg.provincie ? leegRand : undefined}
             >
               <option value="">Kies provincie</option>
               {PROVINCIES.map((p) => (
@@ -161,11 +180,12 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
             value={form.totaalBudget}
             onChange={update('totaalBudget')}
             required
+            className={leeg.totaalBudget ? leegRand : undefined}
           />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Geschat aantal daggasten" htmlFor="s-dag">
-            <Input id="s-dag" type="number" min={0} value={form.aantalDaggasten} onChange={update('aantalDaggasten')} />
+            <Input id="s-dag" type="number" min={0} value={form.aantalDaggasten} onChange={update('aantalDaggasten')} className={leeg.aantalDaggasten ? leegRand : undefined} />
           </Field>
           <Field label="Geschat aantal avondgasten" htmlFor="s-avond">
             <Input
@@ -174,6 +194,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
               min={0}
               value={form.aantalAvondgasten}
               onChange={update('aantalAvondgasten')}
+              className={leeg.aantalAvondgasten ? leegRand : undefined}
             />
           </Field>
         </div>
