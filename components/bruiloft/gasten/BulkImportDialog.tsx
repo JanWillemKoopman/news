@@ -33,17 +33,33 @@ function naamSleutel(voornaam: string, achternaam: string): string {
   return `${voornaam} ${achternaam}`.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+const VOORBEREIDINGSSTAPPEN = [
+  'Bestand inlezen...',
+  'Data importeren...',
+  'Data structureren...',
+  'Data filteren en opschonen...',
+  'Gasten herkennen...',
+  'Categorieën bepalen...',
+  'Gegevens controleren...',
+]
+
 function LaadScherm({ namen }: { namen: string[] }) {
   const lijstRef = React.useRef<HTMLDivElement>(null)
   const gevonden = namen.length
+  const [stapIndex, setStapIndex] = React.useState(0)
+
+  // Cyclee door voorbereidingsstappen zolang er nog geen namen zijn.
+  React.useEffect(() => {
+    if (gevonden > 0) return
+    const id = setInterval(() => setStapIndex((i) => (i + 1) % VOORBEREIDINGSSTAPPEN.length), 1400)
+    return () => clearInterval(id)
+  }, [gevonden])
 
   // Scroll mee zodra er een nieuwe naam binnenkomt.
   React.useEffect(() => {
     const el = lijstRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [gevonden])
-
-  const onderschrift = gevonden === 0 ? 'Bestand lezen...' : 'Bezig met verwerken...'
 
   return (
     <div className="flex flex-col items-center gap-5 py-6 px-2 text-center">
@@ -54,12 +70,23 @@ function LaadScherm({ namen }: { namen: string[] }) {
         <Users className="relative h-7 w-7 text-primary" />
       </div>
 
-      {/* Live teller */}
-      <div className="space-y-0.5">
-        <p className="text-2xl font-bold tabular-nums text-foreground">
-          {gevonden} {gevonden === 1 ? 'gast' : 'gasten'} gevonden
-        </p>
-        <p className="text-sm text-muted-foreground">{onderschrift}</p>
+      {/* Live teller of voorbereidingsstatus */}
+      <div className="space-y-0.5 min-h-[3.5rem] flex flex-col justify-center">
+        {gevonden > 0 ? (
+          <>
+            <p className="text-2xl font-bold tabular-nums text-foreground">
+              {gevonden} {gevonden === 1 ? 'gast' : 'gasten'} gevonden
+            </p>
+            <p className="text-sm text-muted-foreground">Bezig met verwerken...</p>
+          </>
+        ) : (
+          <>
+            <p className="text-2xl font-bold text-foreground">Bezig...</p>
+            <p className="text-sm text-muted-foreground transition-all duration-300">
+              {VOORBEREIDINGSSTAPPEN[stapIndex]}
+            </p>
+          </>
+        )}
       </div>
 
       {/* Indeterminate activiteitsbalk (totaal is vooraf onbekend) */}
