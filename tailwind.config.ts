@@ -128,8 +128,8 @@ const config: Config = {
           '100%': { opacity: '1' },
         },
         dialogIn: {
-          '0%': { opacity: '0', transform: 'translate(-50%, -48%) scale(0.97)' },
-          '100%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
+          '0%': { opacity: '0', transform: 'scale(0.97) translateY(4px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
         },
         sheetIn: {
           '0%': { transform: 'translateY(100%)' },

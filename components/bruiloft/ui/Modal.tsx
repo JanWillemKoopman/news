@@ -85,7 +85,7 @@ export function Modal({
             'fixed z-50 flex max-h-[90dvh] flex-col overflow-hidden border border-border bg-card text-card-foreground shadow-xl focus:outline-none',
             // Mobiel: bottom-sheet. Desktop: gecentreerde dialog.
             'inset-x-0 bottom-0 rounded-t-2xl data-[state=open]:animate-sheet-in',
-            'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100vw-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:data-[state=open]:animate-dialog-in',
+            'sm:inset-0 sm:m-auto sm:h-fit sm:w-[calc(100vw-2rem)] sm:max-w-lg sm:rounded-2xl sm:data-[state=open]:animate-dialog-in',
             className
           )}
         >
