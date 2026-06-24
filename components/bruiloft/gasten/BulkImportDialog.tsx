@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, ChevronDown, FileText, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, FileText, ListChecks, Trash2, Upload, Users, X } from 'lucide-react'
 
 import {
   Button,
@@ -33,6 +33,89 @@ function naamSleutel(voornaam: string, achternaam: string): string {
   return `${voornaam} ${achternaam}`.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+const LAAD_BERICHTEN = [
+  'Bestand lezen...',
+  'Namen herkennen...',
+  'Categorieën bepalen...',
+  'Gegevens ordenen...',
+  'Bijna klaar...',
+]
+
+function LaadScherm({ bronNaam }: { bronNaam: string }) {
+  const [voortgang, setVoortgang] = React.useState(0)
+  const [berichtIndex, setBerichtIndex] = React.useState(0)
+
+  React.useEffect(() => {
+    // Voortgangsbalk: snel naar 80%, dan langzaam door naar 92%
+    const stappen = [
+      { doel: 30, ms: 400 },
+      { doel: 58, ms: 800 },
+      { doel: 75, ms: 1200 },
+      { doel: 83, ms: 2000 },
+      { doel: 90, ms: 3000 },
+      { doel: 92, ms: 5000 },
+    ]
+    const timers: ReturnType<typeof setTimeout>[] = []
+    let verstreken = 0
+    for (const { doel, ms } of stappen) {
+      verstreken += ms
+      timers.push(setTimeout(() => setVoortgang(doel), verstreken))
+    }
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setBerichtIndex((i) => (i + 1) % LAAD_BERICHTEN.length)
+    }, 1800)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-8 px-4 text-center">
+      {/* Animerend icoon */}
+      <div className="relative flex h-20 w-20 items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute inset-2 rounded-full bg-primary/15" />
+        <Users className="relative h-9 w-9 text-primary" />
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-foreground">Gastenlijst verwerken</p>
+        <p className="text-sm text-muted-foreground truncate max-w-xs">{bronNaam}</p>
+      </div>
+
+      {/* Voortgangsbalk */}
+      <div className="w-full space-y-2">
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${voortgang}%`, transitionDuration: '800ms', transitionTimingFunction: 'ease-out' }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="transition-opacity duration-500">{LAAD_BERICHTEN[berichtIndex]}</span>
+          <span>{voortgang}%</span>
+        </div>
+      </div>
+
+      {/* Stappen */}
+      <div className="w-full space-y-2 text-left">
+        {LAAD_BERICHTEN.slice(0, -1).map((bericht, i) => (
+          <div key={bericht} className={cn('flex items-center gap-2 text-sm transition-colors duration-300',
+            i < berichtIndex ? 'text-primary' : i === berichtIndex ? 'text-foreground font-medium' : 'text-muted-foreground/50'
+          )}>
+            <div className={cn('h-1.5 w-1.5 rounded-full transition-colors duration-300 shrink-0',
+              i < berichtIndex ? 'bg-primary' : i === berichtIndex ? 'bg-foreground' : 'bg-muted-foreground/30'
+            )} />
+            {bericht}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 interface BulkImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -44,7 +127,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
   const addGuests = useBruiloftStore((s) => s.addGuests)
   const { toast } = useToast()
 
-  const [stap, setStap] = React.useState<'invoer' | 'controle'>('invoer')
+  const [stap, setStap] = React.useState<'invoer' | 'laden' | 'controle'>('invoer')
   const [bron, setBron] = React.useState<'bestand' | 'tekst'>('bestand')
   const [file, setFile] = React.useState<File | null>(null)
   const [tekst, setTekst] = React.useState('')
@@ -82,6 +165,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     if (!wedding || bezig) return
     if (!kanAnalyseren) return
     setBezig(true)
+    setStap('laden')
     try {
       const fd = new FormData()
       fd.append('weddingId', wedding.id)
@@ -93,12 +177,14 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       const res = await fetch('/api/ai/gasten-import', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) {
-        toast({ title: 'Analyse mislukt', description: data?.error || 'Probeer het opnieuw.', variant: 'error' })
+        toast({ title: 'Verwerken mislukt', description: data?.error || 'Probeer het opnieuw.', variant: 'error' })
+        setStap('invoer')
         return
       }
       const ruw: NewGuest[] = Array.isArray(data.gasten) ? data.gasten : []
       if (ruw.length === 0) {
         toast({ title: 'Geen gasten gevonden', description: 'Controleer het bestand of de tekst en probeer opnieuw.', variant: 'error' })
+        setStap('invoer')
         return
       }
       const nieuwe: Rij[] = ruw.map((g, i) => {
@@ -109,7 +195,8 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       setSamenvatting(typeof data.samenvatting === 'string' ? data.samenvatting : '')
       setStap('controle')
     } catch {
-      toast({ title: 'Analyse mislukt', description: 'Er ging iets mis. Probeer het opnieuw.', variant: 'error' })
+      toast({ title: 'Verwerken mislukt', description: 'Er ging iets mis. Probeer het opnieuw.', variant: 'error' })
+      setStap('invoer')
     } finally {
       setBezig(false)
     }
@@ -165,13 +252,15 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title="Gasten importeren met AI"
+      title="Gasten importeren"
       description={stap === 'invoer'
-        ? 'Upload een bestand of plak een lijst. De AI maakt er een gastenlijst van die je hierna controleert.'
+        ? 'Upload een bestand of plak een lijst. We zetten het automatisch om naar een gastenlijst die je hierna controleert.'
         : undefined}
       className="sm:max-w-3xl"
     >
-      {stap === 'invoer' ? (
+      {stap === 'laden' ? (
+        <LaadScherm bronNaam={bron === 'bestand' ? (file?.name ?? 'bestand') : 'tekst'} />
+      ) : stap === 'invoer' ? (
         <div className="space-y-4">
           {/* Bron-tabs */}
           <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
@@ -245,8 +334,8 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuleren
             </Button>
-            <Button type="button" onClick={analyseer} loading={bezig} disabled={!kanAnalyseren}>
-              <Sparkles className="h-4 w-4" /> Analyseren met AI
+            <Button type="button" onClick={analyseer} disabled={!kanAnalyseren}>
+              <ListChecks className="h-4 w-4" /> Verwerken
             </Button>
           </div>
         </div>
@@ -254,7 +343,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
         <div className="space-y-4">
           {samenvatting ? (
             <div className="flex items-start gap-2 rounded-lg border border-border bg-accent/30 p-3 text-sm">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>{samenvatting}</span>
             </div>
           ) : null}
