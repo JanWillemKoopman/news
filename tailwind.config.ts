@@ -113,6 +113,7 @@ const config: Config = {
         'sheet-in': 'sheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
         'drawer-in': 'drawerIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
         shimmer: 'shimmer 1.6s ease-in-out infinite',
+        'indeterminate': 'indeterminate 1.3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -142,6 +143,10 @@ const config: Config = {
         shimmer: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.45' },
+        },
+        indeterminate: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' },
         },
       },
     },

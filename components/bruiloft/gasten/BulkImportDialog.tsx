@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, ChevronDown, FileText, ListChecks, Trash2, Upload, Users, X } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, FileText, ListChecks, Trash2, Upload, Users, X } from 'lucide-react'
 
 import {
   Button,
@@ -33,84 +33,60 @@ function naamSleutel(voornaam: string, achternaam: string): string {
   return `${voornaam} ${achternaam}`.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-const LAAD_BERICHTEN = [
-  'Bestand lezen...',
-  'Namen herkennen...',
-  'Categorieën bepalen...',
-  'Gegevens ordenen...',
-  'Bijna klaar...',
-]
+function LaadScherm({ namen }: { namen: string[] }) {
+  const lijstRef = React.useRef<HTMLDivElement>(null)
+  const gevonden = namen.length
 
-function LaadScherm({ bronNaam }: { bronNaam: string }) {
-  const [voortgang, setVoortgang] = React.useState(0)
-  const [berichtIndex, setBerichtIndex] = React.useState(0)
-
+  // Scroll mee zodra er een nieuwe naam binnenkomt.
   React.useEffect(() => {
-    // Voortgangsbalk: snel naar 80%, dan langzaam door naar 92%
-    const stappen = [
-      { doel: 30, ms: 400 },
-      { doel: 58, ms: 800 },
-      { doel: 75, ms: 1200 },
-      { doel: 83, ms: 2000 },
-      { doel: 90, ms: 3000 },
-      { doel: 92, ms: 5000 },
-    ]
-    const timers: ReturnType<typeof setTimeout>[] = []
-    let verstreken = 0
-    for (const { doel, ms } of stappen) {
-      verstreken += ms
-      timers.push(setTimeout(() => setVoortgang(doel), verstreken))
-    }
-    return () => timers.forEach(clearTimeout)
-  }, [])
+    const el = lijstRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [gevonden])
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setBerichtIndex((i) => (i + 1) % LAAD_BERICHTEN.length)
-    }, 1800)
-    return () => clearInterval(interval)
-  }, [])
+  const onderschrift = gevonden === 0 ? 'Bestand lezen...' : 'Bezig met verwerken...'
 
   return (
-    <div className="flex flex-col items-center gap-6 py-8 px-4 text-center">
-      {/* Animerend icoon */}
-      <div className="relative flex h-20 w-20 items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: '2s' }} />
-        <div className="absolute inset-2 rounded-full bg-primary/15" />
-        <Users className="relative h-9 w-9 text-primary" />
+    <div className="flex flex-col items-center gap-5 py-6 px-2 text-center">
+      {/* Pulserend icoon */}
+      <div className="relative flex h-16 w-16 items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: '1.8s' }} />
+        <div className="absolute inset-1.5 rounded-full bg-primary/15" />
+        <Users className="relative h-7 w-7 text-primary" />
       </div>
 
-      <div className="space-y-1">
-        <p className="text-base font-semibold text-foreground">Gastenlijst verwerken</p>
-        <p className="text-sm text-muted-foreground truncate max-w-xs">{bronNaam}</p>
+      {/* Live teller */}
+      <div className="space-y-0.5">
+        <p className="text-2xl font-bold tabular-nums text-foreground">
+          {gevonden} {gevonden === 1 ? 'gast' : 'gasten'} gevonden
+        </p>
+        <p className="text-sm text-muted-foreground">{onderschrift}</p>
       </div>
 
-      {/* Voortgangsbalk */}
-      <div className="w-full space-y-2">
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${voortgang}%`, transitionDuration: '800ms', transitionTimingFunction: 'ease-out' }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="transition-opacity duration-500">{LAAD_BERICHTEN[berichtIndex]}</span>
-          <span>{voortgang}%</span>
-        </div>
+      {/* Indeterminate activiteitsbalk (totaal is vooraf onbekend) */}
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="absolute inset-y-0 left-0 w-1/4 rounded-full bg-primary animate-indeterminate" />
       </div>
 
-      {/* Stappen */}
-      <div className="w-full space-y-2 text-left">
-        {LAAD_BERICHTEN.slice(0, -1).map((bericht, i) => (
-          <div key={bericht} className={cn('flex items-center gap-2 text-sm transition-colors duration-300',
-            i < berichtIndex ? 'text-primary' : i === berichtIndex ? 'text-foreground font-medium' : 'text-muted-foreground/50'
-          )}>
-            <div className={cn('h-1.5 w-1.5 rounded-full transition-colors duration-300 shrink-0',
-              i < berichtIndex ? 'bg-primary' : i === berichtIndex ? 'bg-foreground' : 'bg-muted-foreground/30'
-            )} />
-            {bericht}
-          </div>
-        ))}
+      {/* Live venster: namen verschijnen één voor één */}
+      <div
+        ref={lijstRef}
+        className="w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 text-left"
+      >
+        {gevonden === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">De gasten verschijnen hier zodra ze worden herkend…</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {namen.map((naam, i) => (
+              <li
+                key={`${i}-${naam}`}
+                className="flex items-center gap-2 text-sm text-foreground animate-fade-in"
+              >
+                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{naam}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   )
@@ -135,6 +111,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
   const [importeren, setImporteren] = React.useState(false)
   const [samenvatting, setSamenvatting] = React.useState('')
   const [rijen, setRijen] = React.useState<Rij[]>([])
+  const [liveNamen, setLiveNamen] = React.useState<string[]>([])
   const fileRef = React.useRef<HTMLInputElement>(null)
 
   // Reset alles wanneer de dialoog opent.
@@ -148,6 +125,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       setImporteren(false)
       setSamenvatting('')
       setRijen([])
+      setLiveNamen([])
     }
   }, [open])
 
@@ -161,10 +139,28 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
 
   const kanAnalyseren = bron === 'bestand' ? !!file : tekst.trim().length > 0
 
+  // Verwerk het 'done'-event: zet gesaneerde gasten om naar bewerkbare rijen.
+  function toonResultaat(data: { samenvatting?: unknown; gasten?: unknown }) {
+    const ruw: NewGuest[] = Array.isArray(data.gasten) ? (data.gasten as NewGuest[]) : []
+    if (ruw.length === 0) {
+      toast({ title: 'Geen gasten gevonden', description: 'Controleer het bestand of de tekst en probeer opnieuw.', variant: 'error' })
+      setStap('invoer')
+      return
+    }
+    const nieuwe: Rij[] = ruw.map((g, i) => {
+      const dup = bestaandeNamen.has(naamSleutel(g.voornaam, g.achternaam))
+      return { ...g, _id: `${Date.now()}-${i}`, _include: !dup, _dup: dup, _open: false }
+    })
+    setRijen(nieuwe)
+    setSamenvatting(typeof data.samenvatting === 'string' ? data.samenvatting : '')
+    setStap('controle')
+  }
+
   async function analyseer() {
     if (!wedding || bezig) return
     if (!kanAnalyseren) return
     setBezig(true)
+    setLiveNamen([])
     setStap('laden')
     try {
       const fd = new FormData()
@@ -175,25 +171,53 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       if (bron === 'tekst') fd.append('text', tekst)
 
       const res = await fetch('/api/ai/gasten-import', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) {
-        toast({ title: 'Verwerken mislukt', description: data?.error || 'Probeer het opnieuw.', variant: 'error' })
+      if (!res.ok || !res.body) {
+        let bericht = 'Probeer het opnieuw.'
+        try { bericht = (await res.json())?.error || bericht } catch { /* geen JSON-body */ }
+        toast({ title: 'Verwerken mislukt', description: bericht, variant: 'error' })
         setStap('invoer')
         return
       }
-      const ruw: NewGuest[] = Array.isArray(data.gasten) ? data.gasten : []
-      if (ruw.length === 0) {
-        toast({ title: 'Geen gasten gevonden', description: 'Controleer het bestand of de tekst en probeer opnieuw.', variant: 'error' })
-        setStap('invoer')
-        return
+
+      // Lees de NDJSON-stream: elke regel is één event (progress | done | error).
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let afgerond = false
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        let nl: number
+        while ((nl = buffer.indexOf('\n')) >= 0) {
+          const regel = buffer.slice(0, nl).trim()
+          buffer = buffer.slice(nl + 1)
+          if (!regel) continue
+
+          let evt: { type?: string; nieuw?: string[]; error?: string; samenvatting?: unknown; gasten?: unknown }
+          try { evt = JSON.parse(regel) } catch { continue }
+
+          if (evt.type === 'progress') {
+            if (Array.isArray(evt.nieuw) && evt.nieuw.length > 0) {
+              setLiveNamen((ns) => [...ns, ...(evt.nieuw as string[])])
+            }
+          } else if (evt.type === 'error') {
+            toast({ title: 'Verwerken mislukt', description: evt.error || 'Probeer het opnieuw.', variant: 'error' })
+            setStap('invoer')
+            afgerond = true
+          } else if (evt.type === 'done') {
+            toonResultaat(evt)
+            afgerond = true
+          }
+        }
       }
-      const nieuwe: Rij[] = ruw.map((g, i) => {
-        const dup = bestaandeNamen.has(naamSleutel(g.voornaam, g.achternaam))
-        return { ...g, _id: `${Date.now()}-${i}`, _include: !dup, _dup: dup, _open: false }
-      })
-      setRijen(nieuwe)
-      setSamenvatting(typeof data.samenvatting === 'string' ? data.samenvatting : '')
-      setStap('controle')
+
+      if (!afgerond) {
+        toast({ title: 'Verwerken mislukt', description: 'De verbinding werd onderbroken. Probeer het opnieuw.', variant: 'error' })
+        setStap('invoer')
+      }
     } catch {
       toast({ title: 'Verwerken mislukt', description: 'Er ging iets mis. Probeer het opnieuw.', variant: 'error' })
       setStap('invoer')
@@ -259,7 +283,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       className="sm:max-w-3xl"
     >
       {stap === 'laden' ? (
-        <LaadScherm bronNaam={bron === 'bestand' ? (file?.name ?? 'bestand') : 'tekst'} />
+        <LaadScherm namen={liveNamen} />
       ) : stap === 'invoer' ? (
         <div className="space-y-4">
           {/* Bron-tabs */}
