@@ -41,6 +41,7 @@ export interface WeddingRepository {
   // Guests
   listGuests(weddingId: ID): Promise<Guest[]>
   createGuest(input: GuestInput): Promise<Guest>
+  createGuests(inputs: GuestInput[]): Promise<Guest[]> // bulk voor import
   updateGuest(id: ID, patch: GuestPatch): Promise<Guest>
   deleteGuest(id: ID): Promise<void>
 

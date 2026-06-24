@@ -1,9 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Sparkles, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
+import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
 import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
@@ -133,6 +134,7 @@ export default function GastenPage() {
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
+  const [bulkOpen, setBulkOpen] = React.useState(false)
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
@@ -286,6 +288,11 @@ export default function GastenPage() {
             {kanBewerken && (
               <Button onClick={openNieuw}>
                 <Plus className="h-4 w-4" /> Gast toevoegen
+              </Button>
+            )}
+            {kanBewerken && (
+              <Button variant="outline" className="bg-muted hover:bg-muted/70" onClick={() => setBulkOpen(true)}>
+                <Sparkles className="h-4 w-4" /> Bulk import
               </Button>
             )}
             <OverflowMenu
@@ -564,6 +571,8 @@ export default function GastenPage() {
           }
         }}
       />
+
+      <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} />
 
       <ConfirmDialog
         open={delGuest !== null}

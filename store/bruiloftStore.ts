@@ -146,6 +146,8 @@ interface BruiloftActions {
   closeAICoach: () => void
 
   addGuest: (data: NewGuest) => Promise<void>
+  // Bulk-import: meerdere gasten in één keer toevoegen (AI-import).
+  addGuests: (rows: NewGuest[]) => Promise<number>
   updateGuest: (id: ID, patch: GuestPatch) => Promise<void>
   // Meerdere zitplaatswijzigingen tegelijk (ruilen/herschikken), optimistisch.
   updateGuestsSeating: (updates: SeatUpdate[]) => Promise<void>
@@ -720,6 +722,16 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       const guest = await repository.createGuest({ ...data, weddingId: wedding.id })
       set({ guests: [...get().guests, guest] })
+    },
+
+    addGuests: async (rows) => {
+      const wedding = get().wedding
+      if (!wedding || rows.length === 0) return 0
+      const created = await repository.createGuests(
+        rows.map((r) => ({ ...r, weddingId: wedding.id }))
+      )
+      set({ guests: [...get().guests, ...created] })
+      return created.length
     },
 
     updateGuest: async (id, patch) => {

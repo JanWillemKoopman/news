@@ -143,6 +143,14 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     return guest
   }
 
+  async createGuests(inputs: GuestInput[]): Promise<Guest[]> {
+    const db = this.read()
+    const guests: Guest[] = inputs.map((input) => ({ ...input, id: uuid() }))
+    db.guests.push(...guests)
+    this.write(db)
+    return guests
+  }
+
   async updateGuest(id: ID, patch: GuestPatch): Promise<Guest> {
     const db = this.read()
     const index = db.guests.findIndex((g) => g.id === id)
