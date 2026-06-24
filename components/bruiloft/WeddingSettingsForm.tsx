@@ -61,7 +61,7 @@ export function WeddingSettingsForm({ open, onOpenChange, wedding }: WeddingSett
     aantalDaggasten: !form.aantalDaggasten,
     aantalAvondgasten: !form.aantalAvondgasten,
   }
-  const leegRand = 'border-purple-300'
+  const leegRand = 'border-2 border-[#a85473]'
 
   const update = (veld: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [veld]: e.target.value }))
