@@ -200,7 +200,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   // toon het compacte aanmaak-scherm.
   if (currentUser && creatingWedding) {
     return (
-      <div className={cn(wrapperClass, 'flex min-h-dvh flex-col')} suppressHydrationWarning>
+      <div className={wrapperClass} suppressHydrationWarning>
         <WeddingCreate existing />
       </div>
     )
