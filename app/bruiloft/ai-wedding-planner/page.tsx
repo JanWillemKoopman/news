@@ -106,15 +106,9 @@ function GlobaleStatusKaart({ advies }: { advies: AIWeddingPlannerAdvies }) {
       </div>
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <StatusPill status={globaal.status as ModuleStatus} />
-              <p className="pt-2 text-sm text-muted-foreground leading-relaxed">{globaal.samenvatting}</p>
-            </div>
-            <div className="shrink-0 text-right">
-              <p className="text-3xl font-bold text-foreground">{globaal.score}</p>
-              <p className="text-xs text-muted-foreground">/ 100</p>
-            </div>
+          <div className="space-y-1">
+            <StatusPill status={globaal.status as ModuleStatus} />
+            <p className="pt-2 text-sm text-muted-foreground leading-relaxed">{globaal.samenvatting}</p>
           </div>
           <div className="mt-4 space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
