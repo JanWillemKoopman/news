@@ -21,6 +21,7 @@ import {
   Label,
   useToast,
 } from '@/components/bruiloft/ui'
+import { PasswordInput } from '@/components/ui/password-input'
 import { ROLE_LABELS } from '@/lib/bruiloft/permissions'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -331,9 +332,8 @@ function WachtwoordSection() {
       <CardContent>
         <form onSubmit={handleWijzig} className="space-y-4">
           <Field label="Huidig wachtwoord" htmlFor="huidig-pw">
-            <Input
+            <PasswordInput
               id="huidig-pw"
-              type="password"
               value={huidig}
               onChange={(e) => setHuidig(e.target.value)}
               autoComplete="current-password"
@@ -341,9 +341,8 @@ function WachtwoordSection() {
             />
           </Field>
           <Field label="Nieuw wachtwoord" htmlFor="nieuw-pw">
-            <Input
+            <PasswordInput
               id="nieuw-pw"
-              type="password"
               value={nieuw}
               onChange={(e) => setNieuw(e.target.value)}
               autoComplete="new-password"
@@ -352,9 +351,8 @@ function WachtwoordSection() {
             />
           </Field>
           <Field label="Bevestig nieuw wachtwoord" htmlFor="bevestig-pw">
-            <Input
+            <PasswordInput
               id="bevestig-pw"
-              type="password"
               value={bevestig}
               onChange={(e) => setBevestig(e.target.value)}
               autoComplete="new-password"
@@ -491,8 +489,7 @@ function GevaarZoneSection() {
         bevestigLabel="Ja, verwijder mijn account"
         onConfirm={deleteAccount}
       >
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Jouw wachtwoord"
           autoComplete="current-password"
           value={wachtwoord}
