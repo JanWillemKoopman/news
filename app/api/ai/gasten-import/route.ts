@@ -227,49 +227,91 @@ export async function POST(request: NextRequest) {
 
   const prompt = buildPrompt(bronTekst, partner1, partner2)
   const startTijd = Date.now()
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      generationConfig: { responseMimeType: 'application/json' },
-    })
-    const parts: Array<string | { inlineData: { data: string; mimeType: string } }> = [prompt]
-    if (inlinePart) parts.push(inlinePart)
-    const result = await model.generateContent(parts as any)
-    const tekst = result.response.text()
-    const cleaned = tekst.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-    const parsed = JSON.parse(cleaned) as { samenvatting?: string; gasten?: unknown[] }
 
-    const gasten = Array.isArray(parsed.gasten)
-      ? parsed.gasten.map(saneer).filter((g): g is ImportGuest => g !== null)
-      : []
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    generationConfig: { responseMimeType: 'application/json' },
+  })
+  const parts: Array<string | { inlineData: { data: string; mimeType: string } }> = [prompt]
+  if (inlinePart) parts.push(inlinePart)
 
-    logAiUsage({
-      endpoint: 'gasten-import',
-      model: MODEL,
-      latencyMs: Date.now() - startTijd,
-      success: true,
-      promptChars: prompt.length,
-      responseChars: tekst.length,
-      userId: user.id,
-      weddingId,
-    })
+  // Streamende NDJSON-respons: per regel één JSON-event (\n-gescheiden).
+  // De client toont de gevonden namen live terwijl het model ze produceert.
+  const encoder = new TextEncoder()
+  // Pakt voltooide voornaam+achternaam-paren uit de tot dusver ontvangen tekst.
+  const NAAM_RE = /"voornaam"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"achternaam"\s*:\s*"((?:[^"\\]|\\.)*)"/g
 
-    return NextResponse.json({
-      samenvatting: str(parsed.samenvatting) || `${gasten.length} ${gasten.length === 1 ? 'gast' : 'gasten'} gevonden.`,
-      gasten,
-    })
-  } catch (err) {
-    console.error('[api/ai/gasten-import] fout:', err)
-    logAiUsage({
-      endpoint: 'gasten-import',
-      model: MODEL,
-      latencyMs: Date.now() - startTijd,
-      success: false,
-      error: err instanceof Error ? err.message : String(err),
-      userId: user.id,
-      weddingId,
-    })
-    return NextResponse.json({ error: 'AI kon de lijst niet verwerken. Probeer het opnieuw.' }, { status: 502 })
-  }
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const emit = (obj: unknown) => controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'))
+      let vol = ''
+      let gevonden = 0
+
+      try {
+        const result = await model.generateContentStream(parts as any)
+        for await (const chunk of result.stream) {
+          vol += chunk.text()
+
+          // Tel de tot nu toe voltooide gasten en stuur alleen de nieuwe namen door.
+          NAAM_RE.lastIndex = 0
+          const namen: string[] = []
+          let m: RegExpExecArray | null
+          while ((m = NAAM_RE.exec(vol)) !== null) {
+            namen.push(`${m[1]} ${m[2]}`.replace(/\\"/g, '"').trim())
+          }
+          if (namen.length > gevonden) {
+            const nieuw = namen.slice(gevonden)
+            gevonden = namen.length
+            emit({ type: 'progress', gevonden, nieuw })
+          }
+        }
+
+        const cleaned = vol.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+        const parsed = JSON.parse(cleaned) as { samenvatting?: string; gasten?: unknown[] }
+        const gasten = Array.isArray(parsed.gasten)
+          ? parsed.gasten.map(saneer).filter((g): g is ImportGuest => g !== null)
+          : []
+
+        logAiUsage({
+          endpoint: 'gasten-import',
+          model: MODEL,
+          latencyMs: Date.now() - startTijd,
+          success: true,
+          promptChars: prompt.length,
+          responseChars: vol.length,
+          userId: user.id,
+          weddingId,
+        })
+
+        emit({
+          type: 'done',
+          samenvatting: str(parsed.samenvatting) || `${gasten.length} ${gasten.length === 1 ? 'gast' : 'gasten'} gevonden.`,
+          gasten,
+        })
+      } catch (err) {
+        console.error('[api/ai/gasten-import] fout:', err)
+        logAiUsage({
+          endpoint: 'gasten-import',
+          model: MODEL,
+          latencyMs: Date.now() - startTijd,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+          userId: user.id,
+          weddingId,
+        })
+        emit({ type: 'error', error: 'AI kon de lijst niet verwerken. Probeer het opnieuw.' })
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  })
 }
