@@ -81,7 +81,7 @@ export function AanbevolenLeveranciers() {
     }
   }, [wedding, vendors, budgetItems, mag])
 
-  if (!mag || matches.length === 0 || dagenTot(wedding?.trouwdatum) < 0) return null
+  if (!mag || matches.length === 0 || (wedding?.trouwdatum ? dagenTot(wedding.trouwdatum) < 0 : false)) return null
 
   return (
     <section className="mb-8">
