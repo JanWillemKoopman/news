@@ -11,6 +11,8 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 
+import { PasswordInput } from '@/components/ui/password-input'
+
 import type { PublicRegistryData, PublicRegistryItem } from '@/lib/bruiloft/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -58,12 +60,11 @@ function PasswordGate({ slug, onUnlocked }: { slug: string; onUnlocked: () => vo
       <h3 className="mb-1 text-lg font-semibold">Cadeaulijst beveiligd</h3>
       <p className="mb-6 text-sm text-muted-foreground">Voer het wachtwoord in om de lijst te bekijken.</p>
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-3">
-        <input
-          type="password"
+        <PasswordInput
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           placeholder="Wachtwoord"
-          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          inputClassName="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           autoComplete="off"
         />
         {error && <p className="text-xs text-red-600">{error}</p>}

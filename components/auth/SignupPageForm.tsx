@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client'
 import { afleidProvincie } from '@/lib/bruiloft/geo'
 import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { PasswordInput } from '@/components/ui/password-input'
+
 import { mapAuthError, safeNext } from './authErrors'
 
 type Phase = 'account' | 'keuze' | 'wizard'
@@ -616,15 +618,14 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                       <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
                         Wachtwoord <span className="text-primary">*</span>
                       </label>
-                      <input
+                      <PasswordInput
                         id="password"
-                        type="password"
                         autoComplete="new-password"
                         required
                         minLength={6}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        inputClassName="w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
 

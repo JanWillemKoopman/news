@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 import { ArrowLeft, Check, ChevronDown, Copy, ExternalLink, Gift, Lock, Menu, PiggyBank, X } from 'lucide-react'
+
+import { PasswordInput } from '@/components/ui/password-input'
 import Link from 'next/link'
 import type { PublicRegistryData, PublicRegistryItem, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
 
@@ -91,12 +93,11 @@ function PasswordGate({ slug, onUnlocked, headingFont }: { slug: string; onUnloc
       <h2 className="mb-1 text-xl font-semibold" style={{ fontFamily: headingFont }}>Beveiligd met wachtwoord</h2>
       <p className="mb-6 text-sm text-gray-500">Voer het wachtwoord in om de cadeaulijst te bekijken.</p>
       <form onSubmit={submit} className="w-full max-w-xs space-y-3">
-        <input
-          type="password"
+        <PasswordInput
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           placeholder="Wachtwoord"
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2"
+          inputClassName="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2"
           style={{ '--tw-ring-color': 'hsl(var(--primary)/0.3)' } as React.CSSProperties}
           autoComplete="off"
         />

@@ -7,6 +7,8 @@ import { ArrowLeft } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 
+import { PasswordInput } from '@/components/ui/password-input'
+
 import { mapAuthError } from './authErrors'
 
 export function ResetPasswordForm() {
@@ -107,15 +109,14 @@ export function ResetPasswordForm() {
               <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
                 Nieuw wachtwoord <span className="text-primary">*</span>
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="new-password"
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputCls}
+                inputClassName={inputCls}
               />
             </div>
 
@@ -123,15 +124,14 @@ export function ResetPasswordForm() {
               <label htmlFor="confirm" className="mb-1.5 block text-sm font-medium text-gray-700">
                 Bevestig wachtwoord <span className="text-primary">*</span>
               </label>
-              <input
+              <PasswordInput
                 id="confirm"
-                type="password"
                 autoComplete="new-password"
                 required
                 minLength={6}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className={inputCls}
+                inputClassName={inputCls}
               />
             </div>
 
