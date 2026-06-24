@@ -134,6 +134,14 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return guestFromRow(data)
   }
 
+  async createGuests(inputs: GuestInput[]): Promise<Guest[]> {
+    if (inputs.length === 0) return []
+    const rows = inputs.map((i) => guestToRow(i) as Tables['guests']['Insert'])
+    const { data, error } = await this.db.from('guests').insert(rows).select()
+    if (error) throw error
+    return (data ?? []).map(guestFromRow)
+  }
+
   async updateGuest(id: ID, patch: GuestPatch): Promise<Guest> {
     const { data, error } = await this.db
       .from('guests')
