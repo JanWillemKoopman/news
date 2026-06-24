@@ -71,17 +71,81 @@ function StatusPill({ status }: { status: ModuleStatus }) {
 
 // ---- Laadanimatie -----------------------------------------------------------
 
+const ANALYSE_STAPPEN: Array<{ label: string; icon: React.ElementType }> = [
+  { label: 'Planningsdata ophalen...',       icon: RefreshCw      },
+  { label: 'Taken analyseren...',            icon: ListChecks     },
+  { label: 'Budget doorrekenen...',          icon: Wallet         },
+  { label: 'Leveranciers beoordelen...',     icon: Store          },
+  { label: 'Draaiboek controleren...',       icon: CalendarClock  },
+  { label: 'Gastenlijst bekijken...',        icon: Users          },
+  { label: 'Trouwwebsite evalueren...',      icon: Globe          },
+  { label: 'Persoonlijk advies opstellen...', icon: Sparkles      },
+]
+
 function LaadAnimatie() {
+  const [actief, setActief] = React.useState(0)
+
+  React.useEffect(() => {
+    const id = setInterval(
+      () => setActief((i) => Math.min(i + 1, ANALYSE_STAPPEN.length - 1)),
+      1500,
+    )
+    return () => clearInterval(id)
+  }, [])
+
+  const HuidigIcon = ANALYSE_STAPPEN[actief].icon
+
   return (
-    <div className="flex flex-col items-center gap-4 py-20">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 animate-pulse text-rose-400" aria-hidden />
-        <span className="text-sm text-muted-foreground">AI analyseert jullie gegevens…</span>
+    <div className="flex flex-col items-center gap-8 py-16 px-4">
+      {/* Pulsend Sparkles-icoon met gevulde achtergrond */}
+      <div className="relative flex h-24 w-24 items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-rose-400/20 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute inset-0 rounded-full bg-rose-500" />
+        <Sparkles className="relative h-10 w-10 text-white" aria-hidden />
       </div>
-      <div className="flex gap-1.5">
-        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-400 [animation-delay:-0.15s]" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-rose-500" />
+
+      {/* Titel + actieve stap */}
+      <div className="space-y-2 text-center">
+        <p className="text-lg font-semibold text-foreground">Jullie bruiloft wordt geanalyseerd</p>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <HuidigIcon className="h-4 w-4 shrink-0 text-rose-400 animate-pulse" aria-hidden />
+          <span className="transition-all duration-300">{ANALYSE_STAPPEN[actief].label}</span>
+        </div>
+      </div>
+
+      {/* Indeterminate balk */}
+      <div className="relative h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
+        <div className="absolute inset-y-0 left-0 w-1/4 rounded-full bg-rose-400 animate-indeterminate" />
+      </div>
+
+      {/* Stappen-lijst */}
+      <div className="w-full max-w-sm space-y-2">
+        {ANALYSE_STAPPEN.map((stap, i) => {
+          const Icon = stap.icon
+          const gedaan = i < actief
+          const bezig  = i === actief
+          return (
+            <div
+              key={stap.label}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-300',
+                gedaan ? 'text-rose-600'
+                  : bezig ? 'bg-rose-50 text-foreground font-medium dark:bg-rose-950/30'
+                  : 'text-muted-foreground/40',
+              )}
+            >
+              <Icon className={cn('h-4 w-4 shrink-0 transition-colors duration-300',
+                gedaan ? 'text-rose-500' : bezig ? 'text-rose-400' : 'text-muted-foreground/30',
+              )} aria-hidden />
+              <span>{stap.label}</span>
+              {gedaan && (
+                <svg className="ml-auto h-4 w-4 shrink-0 text-rose-500" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
