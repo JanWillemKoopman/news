@@ -5,6 +5,12 @@
 > volledige inventarisatie van de tool zelf — zonder positionering, marketing of
 > commerciële afwegingen. Bedoeld als basis voor investeerders en marketeers om
 > het product door en door te begrijpen.
+>
+> **Buiten scope:** de promotionele homepagina waarop niet-leden binnenkomen
+> (de publieke landingspagina vóór het inloggen) is bewust **niet** in dit
+> document opgenomen. Die pagina is nog in ontwikkeling en nog niet
+> representatief; dit document beschrijft uitsluitend de functionele applicatie
+> zelf (vanaf het aanmelden/inloggen en alle modules daarna).
 
 ---
 
