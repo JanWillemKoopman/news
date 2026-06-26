@@ -1,9 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import Image from 'next/image'
 import { BadgeCheck, Plus, Star } from 'lucide-react'
 
+import { SafeImage } from './SafeImage'
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
@@ -48,13 +48,12 @@ export function SupplierCard({
     >
       {heeftFoto && (
         <div className="relative h-40 w-full shrink-0 bg-muted">
-          <Image
+          <SafeImage
             src={s.afbeeldingUrl}
             alt={s.naam}
             fill
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized
           />
         </div>
       )}

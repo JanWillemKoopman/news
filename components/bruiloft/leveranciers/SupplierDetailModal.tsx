@@ -1,10 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { BadgeCheck, ChevronLeft, ChevronRight, Globe, Mail, Phone, Plus, Sparkles, Star } from 'lucide-react'
 
+import { SafeImage } from './SafeImage'
 import { Button, Modal, Money } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
@@ -31,13 +31,12 @@ function FotoGalerij({ fotos, naam }: { fotos: string[]; naam: string }) {
 
   return (
     <div className="relative -mx-6 h-56 overflow-hidden bg-muted sm:h-64">
-      <Image
+      <SafeImage
         src={fotos[index]}
         alt={`${naam} foto ${index + 1}`}
         fill
         className="object-cover"
         sizes="(max-width: 640px) 100vw, 672px"
-        unoptimized
       />
       {fotos.length > 1 && (
         <>
