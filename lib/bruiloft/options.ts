@@ -55,6 +55,41 @@ export const TOEGEWEZEN_AAN: ToegewezenAan[] = [
   'overig',
 ]
 
+export const TPW_CATEGORIEEN = [
+  'Trouwlocaties',
+  'Weddingplanners',
+  'Trouwambtenaren',
+  'Trouwjurken',
+  'Trouwpakken',
+  'Bruidsmakeup',
+  'Bruidskapsels',
+  'Trouwringen',
+  'Trouwfotografen',
+  'Videografen',
+  'Photobooths',
+  'Bruidstaart',
+  'Catering',
+  'Decoratie',
+  'Bloemen',
+  'Muziek',
+  'Trouwvervoer',
+  'Entertainment',
+  'Trouwkaarten',
+  'Bedankjes',
+] as const
+
+export type TpwCategorie = (typeof TPW_CATEGORIEEN)[number]
+
+// Omzetting van TPW-categorienaam naar URL-slug (lowercase).
+export function tpwCategorieNaarSlug(categorie: TpwCategorie): string {
+  return categorie.toLowerCase()
+}
+
+// Omzetting van URL-slug terug naar TPW-categorienaam.
+export function slugNaarTpwCategorie(slug: string): TpwCategorie | undefined {
+  return TPW_CATEGORIEEN.find((c) => c.toLowerCase() === slug.toLowerCase())
+}
+
 export const VENDOR_TYPES: VendorType[] = [
   'locatie',
   'catering',

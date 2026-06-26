@@ -43,28 +43,29 @@ export function Sidebar() {
   }
 
   const groupLabelClass =
-    'px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-header-muted/70'
+    'px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-header-muted/70 first:pt-0'
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-header-border bg-header-active px-3 py-6 md:flex">
-      {currentSection.groups && currentSection.groups.length > 0 ? (
-        // Sectie met subkoppen: elke groep krijgt een eigen (niet-klikbare) kop.
-        currentSection.groups.map((group, i) => (
-          <div key={group.label} className={cn('flex flex-col', i > 0 && 'mt-6')}>
-            <p className={groupLabelClass}>{group.label}</p>
-            <nav className="flex flex-col gap-0.5" aria-label={group.label}>
-              {group.items.map(renderItem)}
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-header-border bg-header-active md:flex">
+      <div className="flex flex-1 flex-col overflow-y-auto px-3 py-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-rhino-700">
+        {currentSection.groups && currentSection.groups.length > 0 ? (
+          currentSection.groups.map((group) => (
+            <div key={group.label} className="flex flex-col">
+              <p className={groupLabelClass}>{group.label}</p>
+              <nav className="flex flex-col gap-0.5" aria-label={group.label}>
+                {group.items.map(renderItem)}
+              </nav>
+            </div>
+          ))
+        ) : (
+          <>
+            <p className={groupLabelClass}>{currentSection.label}</p>
+            <nav className="flex flex-col gap-0.5" aria-label="Sub-navigatie">
+              {currentSection.items.map(renderItem)}
             </nav>
-          </div>
-        ))
-      ) : (
-        <>
-          <p className={groupLabelClass}>{currentSection.label}</p>
-          <nav className="flex flex-col gap-0.5" aria-label="Sub-navigatie">
-            {currentSection.items.map(renderItem)}
-          </nav>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </aside>
   )
 }

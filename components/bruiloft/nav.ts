@@ -1,19 +1,32 @@
 import {
   Activity,
   Armchair,
+  Cake,
   CalendarClock,
   Camera,
+  CarFront,
   ClipboardList,
+  Flower2,
   Gift,
   Globe,
+  Laugh,
   LayoutDashboard,
   ListChecks,
+  Mail,
+  MapPin,
+  Mic2,
+  Music,
+  PartyPopper,
   Search,
   Settings,
   ShieldCheck,
+  Shirt,
   Sparkles,
+  Star,
   Store,
+  UtensilsCrossed,
   Users,
+  Video,
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
@@ -44,6 +57,51 @@ const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Se
 const aiPlanner: NavItem = { label: 'AI-assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
 const activiteit: NavItem = { label: 'Activiteit', href: '/bruiloft/activiteit', icon: Activity, module: 'dashboard' }
 
+// TPW-categorieën — elk een eigen pagina onder /bruiloft/ontdekken/[slug].
+const catTrouwlocaties: NavItem = { label: 'Trouwlocaties', href: '/bruiloft/ontdekken/trouwlocaties', icon: MapPin, module: 'leveranciers' }
+const catWeddingplanners: NavItem = { label: 'Weddingplanners', href: '/bruiloft/ontdekken/weddingplanners', icon: Star, module: 'leveranciers' }
+const catTrouwambtenaren: NavItem = { label: 'Trouwambtenaren', href: '/bruiloft/ontdekken/trouwambtenaren', icon: Mic2, module: 'leveranciers' }
+const catTrouwjurken: NavItem = { label: 'Trouwjurken', href: '/bruiloft/ontdekken/trouwjurken', icon: Shirt, module: 'leveranciers' }
+const catTrouwpakken: NavItem = { label: 'Trouwpakken', href: '/bruiloft/ontdekken/trouwpakken', icon: Shirt, module: 'leveranciers' }
+const catBruidsmakeup: NavItem = { label: 'Bruidsmakeup', href: '/bruiloft/ontdekken/bruidsmakeup', icon: Sparkles, module: 'leveranciers' }
+const catBruidskapsels: NavItem = { label: 'Bruidskapsels', href: '/bruiloft/ontdekken/bruidskapsels', icon: Sparkles, module: 'leveranciers' }
+const catTrouwringen: NavItem = { label: 'Trouwringen', href: '/bruiloft/ontdekken/trouwringen', icon: Star, module: 'leveranciers' }
+const catTrouwfotografen: NavItem = { label: 'Trouwfotografen', href: '/bruiloft/ontdekken/trouwfotografen', icon: Camera, module: 'leveranciers' }
+const catVideografen: NavItem = { label: 'Videografen', href: '/bruiloft/ontdekken/videografen', icon: Video, module: 'leveranciers' }
+const catPhotobooths: NavItem = { label: 'Photobooths', href: '/bruiloft/ontdekken/photobooths', icon: Laugh, module: 'leveranciers' }
+const catBruidstaart: NavItem = { label: 'Bruidstaart', href: '/bruiloft/ontdekken/bruidstaart', icon: Cake, module: 'leveranciers' }
+const catCatering: NavItem = { label: 'Catering', href: '/bruiloft/ontdekken/catering', icon: UtensilsCrossed, module: 'leveranciers' }
+const catDecoratie: NavItem = { label: 'Decoratie', href: '/bruiloft/ontdekken/decoratie', icon: PartyPopper, module: 'leveranciers' }
+const catBloemen: NavItem = { label: 'Bloemen', href: '/bruiloft/ontdekken/bloemen', icon: Flower2, module: 'leveranciers' }
+const catMuziek: NavItem = { label: 'Muziek', href: '/bruiloft/ontdekken/muziek', icon: Music, module: 'leveranciers' }
+const catTrouwvervoer: NavItem = { label: 'Trouwvervoer', href: '/bruiloft/ontdekken/trouwvervoer', icon: CarFront, module: 'leveranciers' }
+const catEntertainment: NavItem = { label: 'Entertainment', href: '/bruiloft/ontdekken/entertainment', icon: PartyPopper, module: 'leveranciers' }
+const catTrouwkaarten: NavItem = { label: 'Trouwkaarten', href: '/bruiloft/ontdekken/trouwkaarten', icon: Mail, module: 'leveranciers' }
+const catBedankjes: NavItem = { label: 'Bedankjes', href: '/bruiloft/ontdekken/bedankjes', icon: Gift, module: 'leveranciers' }
+
+export const TPW_CATEGORIE_ITEMS: NavItem[] = [
+  catTrouwlocaties,
+  catWeddingplanners,
+  catTrouwambtenaren,
+  catTrouwjurken,
+  catTrouwpakken,
+  catBruidsmakeup,
+  catBruidskapsels,
+  catTrouwringen,
+  catTrouwfotografen,
+  catVideografen,
+  catPhotobooths,
+  catBruidstaart,
+  catCatering,
+  catDecoratie,
+  catBloemen,
+  catMuziek,
+  catTrouwvervoer,
+  catEntertainment,
+  catTrouwkaarten,
+  catBedankjes,
+]
+
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
   dashboard,
@@ -53,6 +111,7 @@ export const NAV_ITEMS: NavItem[] = [
   budget,
   mijnLeveranciers,
   leverancierZoeken,
+  ...TPW_CATEGORIE_ITEMS,
   draaiboek,
   gasten,
   tafels,
@@ -64,10 +123,6 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 // Top-niveau secties (horizontaal in de donkere header, à la Riley & Grey).
-// Elke sectie heeft (optioneel) een sub-navigatie die in de linker zijbalk
-// verschijnt zodra de sectie actief is.
-// Optionele subgroep binnen een sectie: een (niet-klikbare) tekstkop met
-// eigen items. Wordt door de Sidebar als losse kop + items gerenderd.
 export interface NavGroup {
   label: string
   items: NavItem[]
@@ -105,11 +160,12 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Leveranciers',
     icon: Store,
     href: '/bruiloft/leveranciers',
-    // leverancierZoeken blijft in items voor actief-detectie/deep links, maar
-    // de zijbalk toont één ingang; de tab-schakelaar op de pagina doet de rest.
-    items: [mijnLeveranciers, leverancierZoeken],
+    items: [mijnLeveranciers, leverancierZoeken, ...TPW_CATEGORIE_ITEMS],
     module: 'leveranciers',
-    groups: [{ label: 'Leveranciers', items: [mijnLeveranciers] }],
+    groups: [
+      { label: 'Mijn leveranciers', items: [mijnLeveranciers] },
+      { label: 'Ontdekken', items: TPW_CATEGORIE_ITEMS },
+    ],
   },
   {
     key: 'gasten',
