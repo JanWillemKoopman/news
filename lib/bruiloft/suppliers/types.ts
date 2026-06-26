@@ -37,6 +37,10 @@ export interface Supplier {
   afbeeldingUrl: string
   tags: string[]
   aiContextTekst: string
+  // Uitgebreide velden — alleen aanwezig bij tpw_businesses records
+  ratingGemiddeld?: number
+  ratingAantal?: number
+  fotos?: string[]
 }
 
 // Ruwe rij zoals die uit Supabase komt (snake_case). Untyped tabel (nog niet in

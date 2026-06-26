@@ -184,7 +184,8 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     notitie: r.notitie,
     budgetItemId: r.budget_item_id ?? undefined,
     supplierId: r.supplier_id ?? undefined,
-    tpwBusinessId: (r as any).tpw_business_id ?? undefined,
+    // tpw_business_id is integer in DB; sla op als string (consistent met ID = string).
+    tpwBusinessId: (r as any).tpw_business_id != null ? String((r as any).tpw_business_id) : undefined,
   }
 }
 
@@ -204,7 +205,9 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   // supplierId alleen schrijven als de patch het veld expliciet bevat; het
   // bewerkformulier stuurt het nooit mee, zodat de directory-link behouden blijft.
   if (p.supplierId !== undefined) r.supplier_id = p.supplierId ?? null
-  if (p.tpwBusinessId !== undefined) (r as any).tpw_business_id = p.tpwBusinessId ?? null
+  // tpwBusinessId is string in domein (ID = string) maar integer in DB — converteer terug.
+  if (p.tpwBusinessId !== undefined)
+    (r as any).tpw_business_id = p.tpwBusinessId ? parseInt(p.tpwBusinessId, 10) : null
   return r
 }
 

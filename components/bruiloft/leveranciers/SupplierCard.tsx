@@ -1,13 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { BadgeCheck, Plus } from 'lucide-react'
+import Image from 'next/image'
+import { BadgeCheck, Plus, Star } from 'lucide-react'
 
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
-import { CATEGORIE_ICOON } from './categorieIcoon'
+import { getCategorieIcoon } from './categorieIcoon'
 
 interface SupplierCardProps {
   match: SupplierMatch
@@ -17,8 +18,6 @@ interface SupplierCardProps {
   onOpen: () => void
 }
 
-// Compacte directory-kaart: identiteit, match en prijs. Alle verdere details
-// (omschrijving, contact, kenmerken) zitten in de detailweergave.
 export function SupplierCard({
   match,
   kanBewerken,
@@ -27,8 +26,10 @@ export function SupplierCard({
   onOpen,
 }: SupplierCardProps) {
   const s = match.supplier
-  const Icoon = CATEGORIE_ICOON[s.categorie]
+  const Icoon = getCategorieIcoon(s.categorie)
   const subregel = [capFirst(s.type || s.categorie), s.plaats].filter(Boolean).join(' · ')
+  const heeftFoto = Boolean(s.afbeeldingUrl)
+  const heeftRating = s.ratingGemiddeld != null && s.ratingGemiddeld > 0
 
   return (
     <Card
@@ -43,13 +44,28 @@ export function SupplierCard({
         }
       }}
       interactive
-      className="flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring overflow-hidden"
     >
+      {heeftFoto && (
+        <div className="relative h-40 w-full shrink-0 bg-muted">
+          <Image
+            src={s.afbeeldingUrl}
+            alt={s.naam}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized
+          />
+        </div>
+      )}
+
       <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Icoon className="h-5 w-5" />
-          </span>
+          {!heeftFoto && (
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Icoon className="h-5 w-5" />
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-foreground">{s.naam}</p>
             <p className="truncate text-xs text-muted-foreground">{subregel}</p>
@@ -63,6 +79,18 @@ export function SupplierCard({
             </span>
           )}
         </div>
+
+        {heeftRating && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-medium text-foreground">
+              {s.ratingGemiddeld!.toFixed(1)}
+            </span>
+            {s.ratingAantal != null && (
+              <span className="text-xs text-muted-foreground">({s.ratingAantal})</span>
+            )}
+          </div>
+        )}
 
         {match.badges.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
