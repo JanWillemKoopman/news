@@ -6,6 +6,7 @@ import { Compass, Search } from 'lucide-react'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { ontdekkenInfo } from '@/components/bruiloft/faqContent'
+import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
 import { FilterSidebar } from '@/components/bruiloft/leveranciers/FilterSidebar'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { SupplierCard } from '@/components/bruiloft/leveranciers/SupplierCard'
@@ -28,6 +29,7 @@ import {
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
+import { TPW_CATEGORIEEN } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
 import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import type { Supplier } from '@/lib/bruiloft/suppliers/types'
@@ -92,6 +94,7 @@ export default function OntdekkenPage() {
       params.set('sort', filters.sort)
       params.set('page', String(gewenstePage))
       params.set('limit', String(LIMIT))
+      if (filters.categorie !== 'all') params.set('categorie', filters.categorie)
       if (filters.provincie !== 'all') params.set('provincie', filters.provincie)
       if (filters.plaats.trim()) params.set('plaats', filters.plaats.trim())
       if (filters.q.trim()) params.set('q', filters.q.trim())
@@ -158,28 +161,40 @@ export default function OntdekkenPage() {
       <LeveranciersTabs />
 
       {/* Sticky zoekbalk */}
-      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-muted/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={filters.q}
-              onChange={(e) => set('q', e.target.value)}
-              placeholder="Zoek op naam, sfeer, kenmerk…"
-              className="bg-background pl-9"
-              aria-label="Zoek leveranciers"
-            />
+      <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-border bg-muted/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+        <div className="mx-auto max-w-7xl space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={filters.q}
+                onChange={(e) => set('q', e.target.value)}
+                placeholder="Zoek op naam, sfeer, kenmerk…"
+                className="bg-background pl-9"
+                aria-label="Zoek leveranciers"
+              />
+            </div>
+            <Select
+              value={filters.sort}
+              onChange={(e) => set('sort', e.target.value as OntdekSort)}
+              className="hidden w-auto sm:flex"
+              aria-label="Sorteren op"
+            >
+              <option value="match">Beste match voor jullie</option>
+              <option value="naam">Naam A-Z</option>
+              <option value="prijs">Laagste prijs</option>
+            </Select>
           </div>
-          <Select
-            value={filters.sort}
-            onChange={(e) => set('sort', e.target.value as OntdekSort)}
-            className="hidden w-auto sm:flex"
-            aria-label="Sorteren op"
-          >
-            <option value="match">Beste match voor jullie</option>
-            <option value="naam">Naam A-Z</option>
-            <option value="prijs">Laagste prijs</option>
-          </Select>
+
+          <FilterChips
+            label="Filter op categorie"
+            value={filters.categorie}
+            onChange={(v) => set('categorie', v)}
+            options={[
+              { value: 'all', label: 'Alle' },
+              ...TPW_CATEGORIEEN.map((c) => ({ value: c, label: c })),
+            ]}
+          />
         </div>
       </div>
 
