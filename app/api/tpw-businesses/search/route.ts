@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
     if (categorie) query = query.eq('categorie', categorie)
     if (plaats) query = query.ilike('plaats', `%${plaats}%`)
     if (provincie) query = query.eq('provincie', provincie)
-    if (prijsMin) query = query.gte('prijs_vanaf', Number(prijsMin))
-    if (prijsMax) query = query.lte('prijs_vanaf', Number(prijsMax))
+    if (prijsMin) query = query.gte('prijspakket_vanaf', Number(prijsMin))
+    if (prijsMax) query = query.lte('prijspakket_vanaf', Number(prijsMax))
     // Full-text search: probeer search_vector (tsvector), val terug op ilike.
     if (q) {
       try {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       query =
         sort === 'naam'
           ? query.order('naam', { ascending: true })
-          : query.order('prijs_vanaf', { ascending: true, nullsFirst: false })
+          : query.order('prijspakket_vanaf', { ascending: true, nullsFirst: false })
       const { data, error, count } = await query.range(from, from + limit - 1)
       if (error) throw error
       const rows = (data ?? []) as TpwBusinessRow[]
