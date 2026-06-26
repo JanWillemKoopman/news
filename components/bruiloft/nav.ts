@@ -163,8 +163,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [mijnLeveranciers, leverancierZoeken, ...TPW_CATEGORIE_ITEMS],
     module: 'leveranciers',
     groups: [
-      { label: 'Mijn leveranciers', items: [mijnLeveranciers] },
-      { label: 'Ontdekken', items: TPW_CATEGORIE_ITEMS },
+      { label: 'Leveranciers', items: [mijnLeveranciers, leverancierZoeken] },
     ],
   },
   {

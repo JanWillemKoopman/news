@@ -14,6 +14,10 @@ export function Sidebar() {
   const current = activeSection(pathname)
   const currentSection = sections.find((s) => s.key === current.key) ?? sections[0]
 
+  // Leveranciers en ontdekken-pagina's gebruiken een eigen inhouds-sidebar;
+  // verberg de blauwe navigatiesidebar zodat de inhoud de volledige breedte krijgt.
+  if (pathname === '/bruiloft/leveranciers' || pathname.startsWith('/bruiloft/ontdekken')) return null
+
   if (!currentSection) return null
 
   const renderItem = (item: (typeof currentSection.items)[number]) => {
