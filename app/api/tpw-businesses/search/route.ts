@@ -73,13 +73,11 @@ export async function GET(request: NextRequest) {
     if (provincie) query = query.eq('provincie', provincie)
     if (prijsMin) query = query.gte('prijspakket_vanaf', Number(prijsMin))
     if (prijsMax) query = query.lte('prijspakket_vanaf', Number(prijsMax))
-    // Full-text search: probeer search_vector (tsvector), val terug op ilike.
+    // Zoeken op naam (geen full-text search tot dat beschikbaar is).
     if (q) {
-      try {
-        query = query.textSearch('search_vector', q, { type: 'websearch', config: 'dutch' })
-      } catch {
-        query = query.ilike('naam', `%${q}%`)
-      }
+      query = query.or(
+        `naam.ilike.%${q}%,beschrijving.ilike.%${q}%,seo_omschrijving.ilike.%${q}%`
+      )
     }
     return query
   }
