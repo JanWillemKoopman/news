@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { Compass, Search } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
 import { FilterSidebar } from '@/components/bruiloft/leveranciers/FilterSidebar'
 import {
   STANDAARD_FILTERS,
@@ -18,11 +19,12 @@ import { Button, Card, CardContent, EmptyState, Input, Select, Skeleton, useToas
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
-import { slugNaarTpwCategorie, type TpwCategorie } from '@/lib/bruiloft/options'
+import { slugNaarTpwCategorie, tpwCategorieNaarSlug, TPW_CATEGORIEEN, type TpwCategorie } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
 import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import type { Supplier } from '@/lib/bruiloft/suppliers/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { useRouter } from 'next/navigation'
 
 const LIMIT = 24
 
@@ -40,6 +42,7 @@ function aantalActiefFilters(f: OntdekFilters): number {
 }
 
 export default function TpwCategoriePage({ params }: Props) {
+  const router = useRouter()
   const categorie = slugNaarTpwCategorie(params.categorie) as TpwCategorie | undefined
 
   if (!categorie) {
@@ -162,28 +165,37 @@ export default function TpwCategoriePage({ params }: Props) {
       />
 
       {/* Sticky zoekbalk */}
-      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-muted/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={filters.q}
-              onChange={(e) => set('q', e.target.value)}
-              placeholder={`Zoek in ${categorie.toLowerCase()}…`}
-              className="bg-background pl-9"
-              aria-label={`Zoek ${categorie}`}
-            />
+      <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-border bg-muted/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+        <div className="mx-auto max-w-7xl space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={filters.q}
+                onChange={(e) => set('q', e.target.value)}
+                placeholder={`Zoek in ${categorie.toLowerCase()}…`}
+                className="bg-background pl-9"
+                aria-label={`Zoek ${categorie}`}
+              />
+            </div>
+            <Select
+              value={filters.sort}
+              onChange={(e) => set('sort', e.target.value as OntdekSort)}
+              className="hidden w-auto sm:flex"
+              aria-label="Sorteren op"
+            >
+              <option value="match">Beste match voor jullie</option>
+              <option value="naam">Naam A-Z</option>
+              <option value="prijs">Laagste prijs</option>
+            </Select>
           </div>
-          <Select
-            value={filters.sort}
-            onChange={(e) => set('sort', e.target.value as OntdekSort)}
-            className="hidden w-auto sm:flex"
-            aria-label="Sorteren op"
-          >
-            <option value="match">Beste match voor jullie</option>
-            <option value="naam">Naam A-Z</option>
-            <option value="prijs">Laagste prijs</option>
-          </Select>
+
+          <FilterChips
+            label="Selecteer categorie"
+            value={categorie}
+            onChange={(c) => router.push(`/bruiloft/ontdekken/${tpwCategorieNaarSlug(c as TpwCategorie)}`)}
+            options={TPW_CATEGORIEEN.map((cat) => ({ value: cat, label: cat }))}
+          />
         </div>
       </div>
 
