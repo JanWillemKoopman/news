@@ -1,5 +1,7 @@
-# Claude Code internal files
-.claude/
+# Claude Code internal files (settings.json + hooks are committed on purpose
+# so they apply to every session; only local/machine-specific state is ignored)
+.claude/settings.local.json
+.claude/hooks/.npm-install-stamp
 
 # Dependencies
 node_modules/
