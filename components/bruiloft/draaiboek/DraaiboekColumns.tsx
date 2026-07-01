@@ -1,21 +1,24 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, ChevronDown, X } from 'lucide-react'
 
-import { EmptyState, Select } from '@/components/bruiloft/ui'
+import { EmptyState } from '@/components/bruiloft/ui'
 import { ScheduleItemCard } from '@/components/bruiloft/draaiboek/ScheduleItemCard'
 import { vergelijkTijd } from '@/lib/bruiloft/draaiboek'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
+import { capFirst, cn } from '@/lib/utils'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
 
-export type RolFilter = (typeof DRAAIBOEK_ROLLEN)[number] | 'all'
+export type Rol = (typeof DRAAIBOEK_ROLLEN)[number]
+/** Lege lijst = geen filter (hele draaiboek); anders alle gekozen betrokkenen. */
+export type RolFilter = Rol[]
 
-export function filterItems(items: ScheduleItem[], rol: RolFilter, zoek: string): ScheduleItem[] {
+export function filterItems(items: ScheduleItem[], rollen: RolFilter, zoek: string): ScheduleItem[] {
   const z = zoek.trim().toLowerCase()
   return items
     .filter((s) => {
-      if (rol !== 'all' && !s.betrokkenen.includes(rol)) return false
+      if (rollen.length > 0 && !rollen.some((r) => s.betrokkenen.includes(r))) return false
       if (z) {
         return (
           s.titel.toLowerCase().includes(z) ||
@@ -37,7 +40,7 @@ interface DraaiboekColumnsProps {
   kanBewerken: boolean
   onEdit: (s: ScheduleItem) => void
   onDelete: (s: ScheduleItem) => void
-  onFilterChange: (index: number, rol: RolFilter) => void
+  onFilterChange: (index: number, rollen: RolFilter) => void
 }
 
 /**
@@ -58,7 +61,7 @@ export function DraaiboekColumns({
   const kolomItems = React.useMemo(
     () =>
       Array.from({ length: kolommen }, (_, i) =>
-        filterItems(items, kolomFilters[i] ?? 'all', zoek)
+        filterItems(items, kolomFilters[i] ?? [], zoek)
       ),
     [items, kolommen, kolomFilters, zoek]
   )
@@ -78,25 +81,17 @@ export function DraaiboekColumns({
 
   return (
     <div className="grid gap-x-4 gap-y-3" style={gridStyle}>
-      {/* Header-rij: filter-Select boven elke kolom */}
-      <div className="sticky top-24 z-10 self-end bg-background pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      {/* Header-rij: filterknop boven elke kolom */}
+      <div className="sticky top-24 z-10 self-end bg-muted pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Tijd
       </div>
       {Array.from({ length: kolommen }, (_, i) => (
-        <div key={`head-${i}`} className="sticky top-24 z-10 bg-background pb-1">
-          <Select
-            value={kolomFilters[i] ?? 'all'}
-            onChange={(e) => onFilterChange(i, e.target.value as RolFilter)}
-            className="w-full"
-            aria-label={`Filter kolom ${i + 1}`}
-          >
-            <option value="all">Hele draaiboek</option>
-            {DRAAIBOEK_ROLLEN.map((r) => (
-              <option key={r} value={r}>
-                Alleen {r}
-              </option>
-            ))}
-          </Select>
+        <div key={`head-${i}`} className="sticky top-24 z-10 bg-muted pb-1">
+          <RolFilterKnop
+            waarde={kolomFilters[i] ?? []}
+            onChange={(v) => onFilterChange(i, v)}
+            ariaLabel={`Filter kolom ${i + 1}`}
+          />
         </div>
       ))}
 
@@ -133,6 +128,100 @@ export function DraaiboekColumns({
             })}
           </React.Fragment>
         ))
+      )}
+    </div>
+  )
+}
+
+function rolFilterLabel(waarde: RolFilter): string {
+  if (waarde.length === 0) return 'Hele draaiboek'
+  if (waarde.length <= 2) return waarde.map(capFirst).join(', ')
+  return `${capFirst(waarde[0])} +${waarde.length - 1}`
+}
+
+/**
+ * Filterknop + dropdown-paneel met checkboxes, in dezelfde opmaak als de
+ * filterknoppen op de takenpagina (bv. "Prioriteit"). In tegenstelling tot
+ * die knoppen kunnen hier meerdere betrokkenen tegelijk aan- of uitgevinkt
+ * worden i.p.v. één enkele keuze.
+ */
+export function RolFilterKnop({
+  waarde,
+  onChange,
+  ariaLabel,
+}: {
+  waarde: RolFilter
+  onChange: (v: RolFilter) => void
+  ariaLabel: string
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  const isActief = waarde.length > 0
+
+  React.useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const toggleRol = (r: Rol) => {
+    onChange(waarde.includes(r) ? waarde.filter((x) => x !== r) : [...waarde, r])
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        aria-label={ariaLabel}
+        className={cn(
+          'inline-flex h-10 w-full max-w-64 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors',
+          open
+            ? 'border-primary/60 bg-primary/10 text-primary'
+            : isActief
+              ? 'border-primary/30 bg-primary/5 text-foreground hover:bg-muted'
+              : 'border-input bg-background text-foreground hover:bg-muted'
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate text-left">{rolFilterLabel(waarde)}</span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 max-h-80 w-64 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <span className="text-xs font-semibold text-foreground">Betrokkenen</span>
+            {isActief && (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700"
+              >
+                <X className="h-3 w-3" />
+                Wis filter
+              </button>
+            )}
+          </div>
+          <div className="py-1">
+            {DRAAIBOEK_ROLLEN.map((r) => (
+              <label
+                key={r}
+                className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
+              >
+                <input
+                  type="checkbox"
+                  checked={waarde.includes(r)}
+                  onChange={() => toggleRol(r)}
+                  className="h-4 w-4 accent-primary"
+                />
+                {capFirst(r)}
+              </label>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )

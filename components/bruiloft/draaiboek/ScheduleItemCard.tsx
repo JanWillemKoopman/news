@@ -46,9 +46,6 @@ export function ScheduleItemCard({
             {s.eindtijd ? (
               <p className="text-xs text-muted-foreground tabular-nums">&ndash;&nbsp;{s.eindtijd}</p>
             ) : null}
-            {label ? (
-              <p className="text-xs text-muted-foreground/60 tabular-nums">{label}</p>
-            ) : null}
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
@@ -59,6 +56,9 @@ export function ScheduleItemCard({
                 <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" /> {s.locatie}
                 </p>
+              ) : null}
+              {showTime && label ? (
+                <p className="text-xs text-muted-foreground/60 tabular-nums">{label}</p>
               ) : null}
               {!showTime && (s.eindtijd || label) ? (
                 <p className="text-xs text-muted-foreground tabular-nums">
