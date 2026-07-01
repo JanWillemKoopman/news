@@ -9,43 +9,44 @@ import { Button, Card, CardContent, LoadingDots } from '@/components/bruiloft/ui
 import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
 // Vier vaste secties die samen het budgetverhaal vertellen, van "wat gaat
-// goed" tot "wat nu te doen" — rustige, merkeigen tonen i.p.v. felle
-// verkeerslicht-kleuren.
+// goed" tot "wat nu te doen". Zelfde rustige, witruimte-gedreven opmaak als
+// de AI-planner-pagina: geen gekleurde vlakken, alleen een dun lijntje tussen
+// secties en een gedempt icoon per kop.
 const SECTIE_STIJL = {
-  statusEnSuccessen: {
-    titel: 'Huidige status & successen',
-    icon: CheckCircle2,
-    klasse: 'border-violet-200 bg-violet-50 dark:border-violet-900 dark:bg-violet-950/40',
-    iconKlasse: 'text-violet-500',
-  },
-  risicosEnBlindeVlekken: {
-    titel: "Risico's & blinde vlekken",
-    icon: AlertTriangle,
-    klasse: 'border-border bg-muted/50',
-    iconKlasse: 'text-rose-500',
-  },
-  marktvergelijking: {
-    titel: 'Marktvergelijking & benchmark',
-    icon: Scale,
-    klasse: 'border-rhino-200 bg-rhino-50 dark:border-rhino-800 dark:bg-rhino-950/40',
-    iconKlasse: 'text-rhino-600',
-  },
-  conclusieEnAdvies: {
-    titel: 'Conclusie & concreet advies',
-    icon: Target,
-    klasse: 'border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/40',
-    iconKlasse: 'text-rose-500',
-  },
+  statusEnSuccessen: { titel: 'Huidige status & successen', icon: CheckCircle2 },
+  risicosEnBlindeVlekken: { titel: "Risico's & blinde vlekken", icon: AlertTriangle },
+  marktvergelijking: { titel: 'Marktvergelijking & benchmark', icon: Scale },
+  conclusieEnAdvies: { titel: 'Conclusie & concreet advies', icon: Target },
 } as const
 
-function SectieTitel({ sectie }: { sectie: keyof typeof SECTIE_STIJL }) {
+function Bullet({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5 text-sm">
+      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+      <span className="text-foreground">{children}</span>
+    </li>
+  )
+}
+
+function Sectie({
+  sectie,
+  eerste,
+  children,
+}: {
+  sectie: keyof typeof SECTIE_STIJL
+  eerste?: boolean
+  children: React.ReactNode
+}) {
   const stijl = SECTIE_STIJL[sectie]
   const Icon = stijl.icon
   return (
-    <div className="mb-2 flex items-center gap-2">
-      <Icon className={`h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
-      <h4 className="text-sm font-semibold text-foreground">{stijl.titel}</h4>
-    </div>
+    <section className={eerste ? 'pt-2' : 'border-t border-border pt-6'}>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <h4 className="text-base font-semibold text-foreground">{stijl.titel}</h4>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
   )
 }
 
@@ -102,16 +103,16 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
   if (!open) return null
 
   return (
-    <Card className="mb-6 border-rose-100">
-      <CardContent className="p-5">
-        <div className="mb-4 flex items-center justify-between">
+    <Card className="mb-6">
+      <CardContent className="p-6 sm:p-8">
+        <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-rose-500" />
-            <span className="font-medium text-foreground">Budgetanalyse</span>
+            <span className="text-lg font-semibold text-foreground">Budgetanalyse</span>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:text-foreground"
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
@@ -126,69 +127,75 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
         ) : error ? (
           <p className="text-sm text-rose-600">{error}</p>
         ) : advies ? (
-          <div className="space-y-4">
-            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.statusEnSuccessen.klasse}`}>
-              <SectieTitel sectie="statusEnSuccessen" />
-              <p className="text-sm text-foreground">{advies.statusEnSuccessen.algemeneIndruk}</p>
+          <div>
+            <Sectie sectie="statusEnSuccessen" eerste>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {advies.statusEnSuccessen.algemeneIndruk}
+              </p>
               {advies.statusEnSuccessen.sterkePunten.length > 0 && (
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+                <ul className="space-y-2">
                   {advies.statusEnSuccessen.sterkePunten.map((punt, i) => (
-                    <li key={i}>{punt}</li>
+                    <Bullet key={i}>{punt}</Bullet>
                   ))}
                 </ul>
               )}
-            </section>
+            </Sectie>
 
-            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.risicosEnBlindeVlekken.klasse}`}>
-              <SectieTitel sectie="risicosEnBlindeVlekken" />
+            <Sectie sectie="risicosEnBlindeVlekken">
               {advies.risicosEnBlindeVlekken.verbeterpunten.length > 0 && (
-                <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+                <ul className="space-y-2">
                   {advies.risicosEnBlindeVlekken.verbeterpunten.map((punt, i) => (
-                    <li key={i}>{punt}</li>
+                    <Bullet key={i}>{punt}</Bullet>
                   ))}
                 </ul>
               )}
               {advies.risicosEnBlindeVlekken.ontbrekendeKosten.length > 0 && (
-                <div className="mt-3">
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Mogelijk vergeten posten
                   </p>
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+                  <ul className="space-y-2">
                     {advies.risicosEnBlindeVlekken.ontbrekendeKosten.map((punt, i) => (
-                      <li key={i}>{punt}</li>
+                      <Bullet key={i}>{punt}</Bullet>
                     ))}
                   </ul>
                 </div>
               )}
-            </section>
+            </Sectie>
 
-            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.marktvergelijking.klasse}`}>
-              <SectieTitel sectie="marktvergelijking" />
-              <p className="text-sm text-foreground">{advies.marktvergelijking.begrootVsDaadwerkelijk}</p>
-              <p className="mt-2 text-sm text-foreground">{advies.marktvergelijking.benchmarkAnalyse}</p>
-            </section>
+            <Sectie sectie="marktvergelijking">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {advies.marktvergelijking.begrootVsDaadwerkelijk}
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {advies.marktvergelijking.benchmarkAnalyse}
+              </p>
+            </Sectie>
 
-            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.conclusieEnAdvies.klasse}`}>
-              <SectieTitel sectie="conclusieEnAdvies" />
-              <p className="text-sm font-medium text-foreground">{advies.conclusieEnAdvies.haalbaarheid}</p>
+            <Sectie sectie="conclusieEnAdvies">
+              <p className="text-sm font-medium leading-relaxed text-foreground">
+                {advies.conclusieEnAdvies.haalbaarheid}
+              </p>
               {advies.conclusieEnAdvies.actiepunten.length > 0 && (
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+                <ul className="space-y-2">
                   {advies.conclusieEnAdvies.actiepunten.map((punt, i) => (
-                    <li key={i}>{punt}</li>
+                    <Bullet key={i}>{punt}</Bullet>
                   ))}
                 </ul>
               )}
-            </section>
+            </Sectie>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={analyseer}
-              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Opnieuw analyseren
-            </Button>
+            <div className="mt-6 border-t border-border pt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={analyseer}
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Opnieuw analyseren
+              </Button>
+            </div>
           </div>
         ) : null}
       </CardContent>
