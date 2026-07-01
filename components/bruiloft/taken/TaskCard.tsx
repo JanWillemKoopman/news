@@ -96,7 +96,9 @@ export function TaskCard({
           achterstallig && 'border-l-4 border-l-rose-400'
         )}
       >
-      <CardContent className="flex items-start gap-3 p-3">
+      <CardContent
+        className={cn('flex items-start gap-3 p-3', !compact && 'sm:items-center')}
+      >
         {selectable ? (
           <button
             type="button"
@@ -104,6 +106,7 @@ export function TaskCard({
             aria-label={selected ? 'Deselecteer' : 'Selecteer'}
             className={cn(
               'mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors',
+              !compact && 'sm:mt-0',
               selected
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border hover:border-primary'
@@ -119,6 +122,7 @@ export function TaskCard({
           aria-label={klaar ? 'Markeer als open' : 'Markeer als klaar'}
           className={cn(
             'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+            !compact && 'sm:mt-0',
             klaar
               ? 'border-foreground bg-foreground text-background'
               : 'border-border hover:border-primary'
@@ -127,37 +131,43 @@ export function TaskCard({
           {klaar ? <Check className="h-4 w-4" /> : null}
         </button>
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-start justify-between gap-2">
+        {/* Op mobiel (en in compacte contexten zoals de kalender-popover)
+            blijft alles onder elkaar staan. Op desktop past titel,
+            omschrijving en metadata op één regel — minder verticale ruimte,
+            de beschikbare breedte wordt benut i.p.v. leeg te blijven. */}
+        <div className={cn('min-w-0 flex-1', !compact && 'sm:flex sm:items-center sm:gap-4')}>
+          <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-3')}>
             <button
               type="button"
               onClick={() => onEdit(task)}
               className={cn(
                 'text-left font-medium text-foreground hover:underline',
+                !compact && 'sm:shrink-0 sm:truncate sm:max-w-[15rem]',
                 klaar && 'line-through'
               )}
             >
               {task.titel}
             </button>
-            <div className="shrink-0">
-              <OverflowMenu
-                label={`Acties voor ${task.titel}`}
-                items={[
-                  { label: 'Bewerken', icon: Pencil, onClick: () => onEdit(task) },
-                  { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(task) },
-                ]}
-              />
-            </div>
+            {task.omschrijving && !compact ? (
+              <>
+                <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground sm:hidden">
+                  {task.omschrijving}
+                </p>
+                <p className="hidden text-sm text-muted-foreground sm:block sm:min-w-0 sm:flex-1 sm:truncate">
+                  {task.omschrijving}
+                </p>
+              </>
+            ) : null}
           </div>
-          {task.omschrijving && !compact ? (
-            <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">
-              {task.omschrijving}
-            </p>
-          ) : null}
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <div
+            className={cn(
+              'mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground',
+              !compact && 'sm:mt-0 sm:shrink-0 sm:flex-nowrap'
+            )}
+          >
             {task.deadline ? (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex shrink-0 items-center gap-1">
                 {achterstallig ? (
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
                 ) : null}
@@ -169,26 +179,26 @@ export function TaskCard({
                 ) : null}
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex shrink-0 items-center gap-1.5">
               <StatusBadge kind="prioriteit" value={effectievePrioriteit(task)} />
             </span>
             {toegewezenLeden.length > 0 ? (
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex min-w-0 shrink items-center gap-1.5">
                 <AvatarStack members={toegewezenLeden} />
-                <span className="truncate text-foreground">
+                <span className="max-w-[9rem] truncate text-foreground">
                   {toegewezenLeden
                     .map((m) => m.displayName || m.email)
                     .join(', ')}
                 </span>
               </span>
             ) : fallbackLabel ? (
-              <span>{capFirst(fallbackLabel)}</span>
+              <span className="shrink-0">{capFirst(fallbackLabel)}</span>
             ) : null}
             {heeftSubtaken ? (
               <button
                 type="button"
                 onClick={() => setExpanded((e) => !e)}
-                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground hover:bg-secondary/80"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground hover:bg-secondary/80"
               >
                 {expanded ? (
                   <ChevronDown className="h-3 w-3" />
@@ -199,15 +209,27 @@ export function TaskCard({
               </button>
             ) : null}
           </div>
+        </div>
 
-          {heeftSubtaken && expanded && onToggleSubtaak ? (
-            <SubtakenChecklist
-              subtaken={task.subtaken}
-              onToggle={(id) => onToggleSubtaak(task, id)}
-            />
-          ) : null}
+        <div className="shrink-0">
+          <OverflowMenu
+            label={`Acties voor ${task.titel}`}
+            items={[
+              { label: 'Bewerken', icon: Pencil, onClick: () => onEdit(task) },
+              { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(task) },
+            ]}
+          />
         </div>
       </CardContent>
+
+      {heeftSubtaken && expanded && onToggleSubtaak ? (
+        <div className="px-3 pb-3 sm:pl-[4.5rem]">
+          <SubtakenChecklist
+            subtaken={task.subtaken}
+            onToggle={(id) => onToggleSubtaak(task, id)}
+          />
+        </div>
+      ) : null}
     </Card>
     </div>
   )
