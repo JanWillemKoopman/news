@@ -39,6 +39,7 @@ export interface Wedding {
   woonplaats: string // woonplaats bruidspaar — geografisch ankerpunt voor personalisatie
   provincie: string // provincie bruidspaar — regio-anker voor leveranciersmatching ('' = onbekend)
   totaalBudget: number // in euro
+  reserveBedrag: number // reservefonds voor onvoorziene kosten, in euro
   aantalDaggasten: number // geschat
   aantalAvondgasten: number // geschat
   ceremonietype: CeremonieType | null
@@ -215,6 +216,7 @@ export interface PaymentTerm {
   bedrag: number // in euro
   vervaldatum: ISODate
   betaald: boolean
+  betaaldOp?: ISODateTime | null // moment van aanvinken; voedt toekomstige betaald-verloop-analyse
 }
 
 export interface BudgetItem {

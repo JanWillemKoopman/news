@@ -16,7 +16,7 @@ const toneClasses: Record<Tone, string> = {
   lightgrey: 'bg-stone-200/70 text-stone-700 ring-stone-300 dark:bg-stone-700/40 dark:text-stone-200',
 }
 
-type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit'
+type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit' | 'budget'
 
 const tones: Record<Kind, Record<string, Tone>> = {
   rsvp: {
@@ -41,6 +41,12 @@ const tones: Record<Kind, Record<string, Tone>> = {
     laag: 'white',
     midden: 'lightgrey',
     hoog: 'red',
+  },
+  budget: {
+    betaald: 'green',
+    'boven schatting': 'amber',
+    'nog te plannen': 'blue',
+    'in uitvoering': 'terracotta',
   },
 }
 

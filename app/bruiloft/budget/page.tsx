@@ -1,27 +1,35 @@
 'use client'
 
 import * as React from 'react'
-import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
+import { Download, PieChart, Plus, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { budgetInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
-import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
+import { BudgetAffordabilityCheck } from '@/components/bruiloft/budget/BudgetAffordabilityCheck'
+import { BudgetAICoachPanel } from '@/components/bruiloft/budget/BudgetAICoachPanel'
+import { useBudgetAIAdvies } from '@/components/bruiloft/budget/useBudgetAIAdvies'
+import { BudgetBriefing } from '@/components/bruiloft/budget/BudgetBriefing'
+import { BudgetCashflowTimeline } from '@/components/bruiloft/budget/BudgetCashflowTimeline'
+import { BudgetCategoryDetailModal } from '@/components/bruiloft/budget/BudgetCategoryDetailModal'
+import { BudgetCategoryGrid } from '@/components/bruiloft/budget/BudgetCategoryGrid'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
-import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
-import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
-import { Button, ConfirmDialog, EmptyState, OverflowMenu, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, EmptyState, useToast } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
   budgetAfwijkingen,
+  budgetBriefingRegels,
+  budgetForecast,
+  budgetHealthScore,
+  budgetTotalen,
+  budgetVolgendeActies,
+  budgetWaarschuwingen,
   effectiefGeoffreerd,
   gastTellingen,
   restBedrag,
 } from '@/lib/bruiloft/derived'
 import { canEdit } from '@/lib/bruiloft/permissions'
-import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
@@ -34,13 +42,11 @@ export default function BudgetPage() {
   const addBudgetItem = useBruiloftStore((s) => s.addBudgetItem)
   const updateBudgetItem = useBruiloftStore((s) => s.updateBudgetItem)
   const deleteBudgetItem = useBruiloftStore((s) => s.deleteBudgetItem)
+  const updateWedding = useBruiloftStore((s) => s.updateWedding)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
 
   const kanBewerken = canEdit(permissions, 'budget')
-  // Op mobiel verhuist "Analyseer mijn budget" naar het overflowmenu om de
-  // header op te schonen; op sm+ blijft het een zichtbare knop.
-  const isMobile = useMediaQuery('(max-width: 639px)')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
@@ -48,23 +54,78 @@ export default function BudgetPage() {
   const savedScroll = React.useRef(0)
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
   const [distributeOpen, setDistributeOpen] = React.useState(false)
-  const [adviesOpen, setAdviesOpen] = React.useState(false)
+  const [openCategorie, setOpenCategorie] = React.useState<string | null>(null)
 
-  if (!wedding) return null
+  const aiAdvies = useBudgetAIAdvies()
 
-  const bevestigdeDaggasten = gastTellingen(guests).bevestigdeDaggasten
-  const afwijkingen = budgetAfwijkingen(budgetItems, vendors, wedding)
+  // Elke afgeleide waarde precies één keer berekend, daarna als props
+  // doorgegeven — voorkomt dat 5 componenten hetzelfde opnieuw uitrekenen.
+  const bevestigdeDaggasten = wedding ? gastTellingen(guests).bevestigdeDaggasten : 0
+  const totalen = React.useMemo(
+    () => (wedding ? budgetTotalen(budgetItems, vendors, wedding) : null),
+    [budgetItems, vendors, wedding]
+  )
+  const healthScore = React.useMemo(
+    () => (wedding ? budgetHealthScore(budgetItems, vendors, wedding) : null),
+    [budgetItems, vendors, wedding]
+  )
+  const forecast = React.useMemo(
+    () => (wedding ? budgetForecast(budgetItems, vendors, wedding) : null),
+    [budgetItems, vendors, wedding]
+  )
+  const volgendeActies = React.useMemo(
+    () => (wedding ? budgetVolgendeActies(budgetItems, vendors, wedding) : []),
+    [budgetItems, vendors, wedding]
+  )
+  const waarschuwingen = React.useMemo(
+    () => (wedding ? budgetWaarschuwingen(budgetItems, vendors, wedding) : []),
+    [budgetItems, vendors, wedding]
+  )
+  const briefingRegels = React.useMemo(
+    () => (wedding && healthScore ? budgetBriefingRegels(budgetItems, wedding, healthScore) : null),
+    [budgetItems, wedding, healthScore]
+  )
+  const afwijkingen = React.useMemo(
+    () => (wedding ? budgetAfwijkingen(budgetItems, vendors, wedding) : null),
+    [budgetItems, vendors, wedding]
+  )
 
-  const openNieuw = () => {
+  const openNieuw = React.useCallback(() => {
     savedScroll.current = saveScroll()
     setEditItem(null)
     setFormOpen(true)
-  }
-  const openBewerk = (item: BudgetItem) => {
-    savedScroll.current = saveScroll()
-    setEditItem(item)
-    setFormOpen(true)
-  }
+  }, [saveScroll])
+
+  const openBewerk = React.useCallback(
+    (item: BudgetItem) => {
+      savedScroll.current = saveScroll()
+      setEditItem(item)
+      setFormOpen(true)
+    },
+    [saveScroll]
+  )
+
+  // Lichte paginalokale sneltoetsen i.p.v. een command-menu (zie planning):
+  // 'n' nieuw item, '/' focus zoekveld. Geen effect terwijl er getypt wordt.
+  React.useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      const isTyping =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      if (isTyping) return
+      if (e.key === '/') {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>('[data-budget-search]')?.focus()
+      } else if (e.key === 'n' && kanBewerken) {
+        e.preventDefault()
+        openNieuw()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [kanBewerken, openNieuw])
+
+  if (!wedding || !totalen || !healthScore || !forecast || !briefingRegels || !afwijkingen) return null
 
   const exporteer = () => {
     try {
@@ -88,11 +149,20 @@ export default function BudgetPage() {
     try {
       await updateBudgetItem(item.id, {
         betaaltermijnen: item.betaaltermijnen.map((t) =>
-          t.id === termId ? { ...t, betaald } : t
+          t.id === termId ? { ...t, betaald, betaaldOp: betaald ? new Date().toISOString() : null } : t
         ),
       })
     } catch {
       toast({ title: 'Bijwerken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
+
+  const onEditReserve = async (bedrag: number) => {
+    try {
+      await updateWedding({ reserveBedrag: bedrag })
+      toast({ title: 'Reserve bijgewerkt', variant: 'success' })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
   }
 
@@ -102,41 +172,47 @@ export default function BudgetPage() {
         titel="Budget"
         actie={
           <>
-            {/* Desktop: "Analyseer mijn budget" als zichtbare outline-knop.
-                Op mobiel verborgen en verplaatst naar het overflowmenu. */}
-            <Button
-              variant="outline"
-              onClick={() => setAdviesOpen(true)}
-              className="hidden sm:inline-flex"
-            >
-              <Sparkles className="h-4 w-4" />
-              Analyseer mijn budget
-            </Button>
             {kanBewerken && (
               <Button onClick={openNieuw}>
                 <Plus className="h-4 w-4" /> Budgetitem toevoegen
               </Button>
             )}
-            <OverflowMenu
-              items={[
-                ...(isMobile ? [{ label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) }] : []),
-                ...(kanBewerken ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }] : []),
-                { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
-              ]}
-            />
+            {kanBewerken && (
+              <Button variant="outline" onClick={() => setDistributeOpen(true)}>
+                <PieChart className="h-4 w-4" /> Verdeel budget
+              </Button>
+            )}
+            <Button variant="outline" onClick={exporteer} disabled={budgetItems.length === 0}>
+              <Download className="h-4 w-4" /> Exporteren
+            </Button>
           </>
         }
         info={<PageInfoButton {...budgetInfo} />}
         fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />
 
-      <AIBudgetAdvies open={adviesOpen} onClose={() => setAdviesOpen(false)} />
+      <BudgetBriefing
+        healthScore={healthScore}
+        forecast={forecast}
+        regels={briefingRegels}
+        volgendeActies={volgendeActies}
+        reserveBedrag={wedding.reserveBedrag}
+        aiSamenvatting={aiAdvies.advies?.samenvatting}
+        kanBewerken={kanBewerken}
+        onEditReserve={onEditReserve}
+      />
 
-      <AIInsightCard sectie="/bruiloft/budget" />
+      <BudgetAffordabilityCheck totalen={totalen} reserveBedrag={wedding.reserveBedrag} />
 
-      <div className="mb-6">
-        <BudgetSummary items={budgetItems} vendors={vendors} wedding={wedding} />
-      </div>
+      <BudgetAICoachPanel
+        advies={aiAdvies.advies}
+        loading={aiAdvies.loading}
+        error={aiAdvies.error}
+        onRefresh={aiAdvies.refresh}
+        waarschuwingenFallback={waarschuwingen}
+      />
+
+      <BudgetCashflowTimeline items={budgetItems} variant="compact" />
 
       {budgetItems.length === 0 ? (
         <EmptyState
@@ -161,16 +237,27 @@ export default function BudgetPage() {
           }
         />
       ) : (
-        <BudgetList
+        <BudgetCategoryGrid
           items={budgetItems}
           vendors={vendors}
+          wedding={wedding}
           bevestigdeDaggasten={bevestigdeDaggasten}
           afwijkendeItemIds={afwijkingen.itemIds}
-          onEdit={kanBewerken ? openBewerk : undefined}
-          onDelete={kanBewerken ? setDeleteItem : undefined}
-          onToggleTerm={kanBewerken ? toggleTerm : undefined}
+          onOpenCategorie={setOpenCategorie}
         />
       )}
+
+      <BudgetCategoryDetailModal
+        open={openCategorie !== null}
+        onOpenChange={(o) => !o && setOpenCategorie(null)}
+        categorie={openCategorie}
+        items={budgetItems}
+        vendors={vendors}
+        waarschuwingen={waarschuwingen}
+        onEdit={kanBewerken ? openBewerk : undefined}
+        onDelete={kanBewerken ? setDeleteItem : undefined}
+        onToggleTerm={kanBewerken ? toggleTerm : undefined}
+      />
 
       <BudgetItemForm
         open={formOpen}

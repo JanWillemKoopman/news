@@ -126,6 +126,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
       woonplaats: woonplaats.trim(),
       provincie: afleidProvincie(woonplaats) ?? '',
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
+      reserveBedrag: 0,
       aantalDaggasten: Number(gasten) || 0,
       aantalAvondgasten: 0,
       ceremonietype: null,

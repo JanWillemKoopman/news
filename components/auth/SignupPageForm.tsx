@@ -184,6 +184,7 @@ function WeddingSetup({
       // Provincie automatisch afgeleid uit de woonplaats; later verfijnbaar.
       provincie: afleidProvincie(woonplaats) ?? '',
       totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
+      reserveBedrag: 0,
       aantalDaggasten: aantalGasten,
       aantalAvondgasten: 0,
       ceremonietype: null,
@@ -563,6 +564,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
       woonplaats: '',
       provincie: '',
       totaalBudget: 0,
+      reserveBedrag: 0,
       aantalDaggasten: 0,
       aantalAvondgasten: 0,
       ceremonietype: null,
