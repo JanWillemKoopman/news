@@ -51,8 +51,11 @@ export function DraaiboekControls({
 
       {/* Kolom-keuze — alleen op desktop (mobiel/tablet altijd 1 kolom) */}
       <div className="hidden items-center gap-2 lg:flex">
-        <span className="text-sm text-muted-foreground">Kolommen</span>
-        <div className="inline-flex rounded-lg border border-border bg-background p-1">
+        <div
+          className="inline-flex rounded-lg border border-border bg-background p-1"
+          role="group"
+          aria-label="Aantal kolommen"
+        >
           {OPTIES.map(({ waarde, icon: Icon, label }) => (
             <button
               key={waarde}
