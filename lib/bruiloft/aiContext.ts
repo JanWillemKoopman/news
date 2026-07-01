@@ -1,6 +1,6 @@
 import { dagenTot } from './format'
 import { STANDAARD_VERDELING, aankomendeTermijnen, budgetTotalen, gastTellingen } from './derived'
-import type { BudgetCategorie, BudgetItem, Guest, ScheduleItem, Task, Vendor, Wedding, WebsiteContent } from './types'
+import type { BudgetItem, Guest, ScheduleItem, StandaardBudgetCategorie, Task, Vendor, Wedding, WebsiteContent } from './types'
 import { ONDERWERP_BENCHMARKS, landUitProvincie } from './ai/onderwerpBenchmarks'
 import { berekenOnderwerpUrgentie, type OnderwerpUrgentie } from './ai/urgentie'
 
@@ -205,14 +205,14 @@ export function buildAIContext(
     }))
 
   const aanwezigeCategorieen = new Set(budgetItems.map((i) => i.categorie))
-  const ontbrekendeCategorieën = (Object.keys(STANDAARD_VERDELING) as BudgetCategorie[]).filter(
+  const ontbrekendeCategorieën = (Object.keys(STANDAARD_VERDELING) as StandaardBudgetCategorie[]).filter(
     (c) => !aanwezigeCategorieen.has(c)
   )
 
   const perCategorie = budget.perCategorie.map((c) => ({
     ...c,
     richtbedrag: Math.round(
-      wedding.totaalBudget * (STANDAARD_VERDELING[c.categorie as BudgetCategorie] ?? 0)
+      wedding.totaalBudget * (STANDAARD_VERDELING[c.categorie as StandaardBudgetCategorie] ?? 0)
     ),
   }))
 

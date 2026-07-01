@@ -1,12 +1,12 @@
 // Keuzelijsten voor formulieren, afgeleid van de types. Eén bron van waarheid.
 
 import type {
-  BudgetCategorie,
   Gasttype,
   GuestCategorie,
   Prioriteit,
   Rol,
   RsvpStatus,
+  StandaardBudgetCategorie,
   TafelVorm,
   TaskStatus,
   ToegewezenAan,
@@ -128,7 +128,9 @@ export const DRAAIBOEK_ROLLEN: Rol[] = [
   'overig',
 ]
 
-export const BUDGET_CATEGORIEEN: BudgetCategorie[] = [
+// Standaard suggestielijst; bruidsparen kunnen hun eigen lijst uitbreiden of
+// inkorten via wedding.budgetCategorieen (zie BudgetCategoryManageModal).
+export const BUDGET_CATEGORIEEN: StandaardBudgetCategorie[] = [
   'locatie',
   'catering',
   'kleding',

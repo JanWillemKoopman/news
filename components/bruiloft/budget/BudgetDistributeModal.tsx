@@ -5,14 +5,14 @@ import * as React from 'react'
 import { Button, Input, Modal, Money } from '@/components/bruiloft/ui'
 import { budgetVerdelingVoorstel } from '@/lib/bruiloft/derived'
 import { capFirst } from '@/lib/utils'
-import type { BudgetCategorie, BudgetItem } from '@/lib/bruiloft/types'
+import type { BudgetItem, StandaardBudgetCategorie } from '@/lib/bruiloft/types'
 
 interface BudgetDistributeModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   totaalBudget: number
   items: BudgetItem[]
-  onApply: (regels: { categorie: BudgetCategorie; bedrag: number }[]) => void
+  onApply: (regels: { categorie: StandaardBudgetCategorie; bedrag: number }[]) => void
 }
 
 export function BudgetDistributeModal({

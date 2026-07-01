@@ -87,6 +87,11 @@ create table public.weddings (
   totaal_budget numeric(12, 2) not null default 0,
   aantal_daggasten integer not null default 0,
   aantal_avondgasten integer not null default 0,
+  budget_categorieen jsonb not null default '[
+    "locatie", "catering", "kleding", "fotografie en video", "muziek",
+    "bloemen en decoratie", "vervoer", "taart", "uitnodigingen en drukwerk",
+    "ringen", "overig"
+  ]'::jsonb,
   created_by uuid references auth.users(id) on delete set null default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -169,11 +174,9 @@ create index idx_vendors_wedding on public.vendors(wedding_id);
 create table public.budget_items (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid not null references public.weddings(id) on delete cascade,
-  categorie text not null check (categorie in (
-    'locatie', 'catering', 'kleding', 'fotografie en video', 'muziek',
-    'bloemen en decoratie', 'vervoer', 'taart', 'uitnodigingen en drukwerk',
-    'ringen', 'overig'
-  )),
+  -- Vrije tekst: bruidsparen beheren hun eigen lijst budgetcategorieën
+  -- (zie weddings.budget_categorieen), geen vaste CHECK-lijst meer.
+  categorie text not null,
   omschrijving text not null default '',
   geschat_bedrag numeric(12, 2) not null default 0,
   geoffreerd_bedrag numeric(12, 2) not null default 0,

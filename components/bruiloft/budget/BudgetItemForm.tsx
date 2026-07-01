@@ -14,7 +14,6 @@ import {
   Textarea,
   useToast,
 } from '@/components/bruiloft/ui'
-import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, BudgetItemInput, PaymentTerm, Vendor } from '@/lib/bruiloft/types'
 import { capFirst } from '@/lib/utils'
 
@@ -25,11 +24,13 @@ interface BudgetItemFormProps {
   onOpenChange: (open: boolean) => void
   initial?: BudgetItem | null
   vendors: Vendor[]
+  // Beheerde lijst budgetcategorieën van dit bruidspaar (BudgetCategoryManageModal).
+  categorieen: string[]
   onSubmit: (data: NewBudgetItem) => void | Promise<void>
 }
 
 interface FormState {
-  categorie: BudgetItem['categorie']
+  categorie: string
   omschrijving: string
   geschatBedrag: string
   geoffreerdBedrag: string
@@ -38,9 +39,9 @@ interface FormState {
   betaaltermijnen: PaymentTerm[]
 }
 
-function leeg(): FormState {
+function leeg(eersteCategorie: string): FormState {
   return {
-    categorie: 'locatie',
+    categorie: eersteCategorie,
     omschrijving: '',
     geschatBedrag: '',
     geoffreerdBedrag: '',
@@ -67,31 +68,41 @@ function nieuwId(): string {
   return 'term-' + Math.random().toString(36).slice(2)
 }
 
+const NIEUW_SENTINEL = '__nieuw__'
+
 export function BudgetItemForm({
   open,
   onOpenChange,
   initial,
   vendors,
+  categorieen,
   onSubmit,
 }: BudgetItemFormProps) {
-  const [form, setForm] = React.useState<FormState>(leeg)
+  const [form, setForm] = React.useState<FormState>(() => leeg(categorieen[0] ?? 'overig'))
   const [omsFout, setOmsFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
-  const baseline = React.useRef<string>(JSON.stringify(leeg()))
+  // Of de gebruiker een eigen categorienaam intypt
+  const [nieuweCategorieModus, setNieuweCategorieModus] = React.useState(false)
+  const [nieuweCategorieFout, setNieuweCategorieFout] = React.useState(false)
+  const baseline = React.useRef<string>(JSON.stringify(leeg(categorieen[0] ?? 'overig')))
   const { toast } = useToast()
   const termijnenRef = React.useRef(form.betaaltermijnen)
   React.useEffect(() => { termijnenRef.current = form.betaaltermijnen }, [form.betaaltermijnen])
 
   React.useEffect(() => {
     if (open) {
-      const start = initial ? vanItem(initial) : leeg()
+      const start = initial ? vanItem(initial) : leeg(categorieen[0] ?? 'overig')
       setForm(start)
       baseline.current = JSON.stringify(start)
       setOmsFout(false)
       setDetailsOpen(!!initial)
+      // Als de categorie niet in de bekende lijst staat → custom modus
+      setNieuweCategorieModus(!!initial && !categorieen.includes(start.categorie))
+      setNieuweCategorieFout(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial])
 
   const dirty = JSON.stringify(form) !== baseline.current
@@ -104,6 +115,17 @@ export function BudgetItemForm({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (key === 'omschrijving' && omsFout) setOmsFout(false)
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  const handleCategorySelect = (value: string) => {
+    if (value === NIEUW_SENTINEL) {
+      setNieuweCategorieModus(true)
+      set('categorie', '')
+    } else {
+      setNieuweCategorieModus(false)
+      setNieuweCategorieFout(false)
+      set('categorie', value)
+    }
   }
 
   const setTerm = (id: string, patch: Partial<PaymentTerm>) =>
@@ -150,6 +172,10 @@ export function BudgetItemForm({
       setOmsFout(true)
       return
     }
+    if (nieuweCategorieModus && !form.categorie.trim()) {
+      setNieuweCategorieFout(true)
+      return
+    }
     const geschat = Number(form.geschatBedrag) || 0
     const geoffreerd = Number(form.geoffreerdBedrag) || 0
     const betaald = Number(form.betaaldBedrag) || 0
@@ -161,7 +187,7 @@ export function BudgetItemForm({
     setSaving(true)
     try {
       await Promise.resolve(onSubmit({
-        categorie: form.categorie,
+        categorie: nieuweCategorieModus ? form.categorie.trim().toLowerCase() : form.categorie,
         omschrijving: form.omschrijving.trim(),
         geschatBedrag: geschat,
         geoffreerdBedrag: geoffreerd,
@@ -204,17 +230,49 @@ export function BudgetItemForm({
         </Field>
 
         <Field label="Categorie" htmlFor="cat">
-          <Select
-            id="cat"
-            value={form.categorie}
-            onChange={(e) => set('categorie', e.target.value as FormState['categorie'])}
-          >
-            {BUDGET_CATEGORIEEN.map((c) => (
-              <option key={c} value={c}>
-                {capFirst(c)}
-              </option>
-            ))}
-          </Select>
+          {nieuweCategorieModus ? (
+            <div className="flex flex-col gap-1.5">
+              <Input
+                id="cat"
+                placeholder="Bijv. huwelijksreis"
+                value={form.categorie}
+                aria-invalid={nieuweCategorieFout || undefined}
+                onChange={(e) => {
+                  setNieuweCategorieFout(false)
+                  set('categorie', e.target.value)
+                }}
+                autoFocus
+              />
+              <button
+                type="button"
+                className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+                onClick={() => {
+                  setNieuweCategorieModus(false)
+                  setNieuweCategorieFout(false)
+                  set('categorie', categorieen[0] ?? 'overig')
+                }}
+              >
+                Kies uit de lijst
+              </button>
+              {nieuweCategorieFout && (
+                <p className="text-xs text-destructive">Vul een categorienaam in</p>
+              )}
+            </div>
+          ) : (
+            <Select
+              id="cat"
+              value={form.categorie}
+              onChange={(e) => handleCategorySelect(e.target.value)}
+            >
+              {categorieen.map((c) => (
+                <option key={c} value={c}>
+                  {capFirst(c)}
+                </option>
+              ))}
+              <option disabled>──────────</option>
+              <option value={NIEUW_SENTINEL}>Nieuwe categorie…</option>
+            </Select>
+          )}
         </Field>
 
         <Field label="Geschat (€)" htmlFor="ges">

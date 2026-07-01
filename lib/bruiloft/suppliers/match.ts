@@ -5,12 +5,12 @@
 // Geen AI in deze fase — dat is bewust (snel, gratis, deterministisch).
 
 import { STANDAARD_VERDELING } from '../derived'
-import type { BudgetCategorie, VendorType, Wedding } from '../types'
+import type { StandaardBudgetCategorie, VendorType, Wedding } from '../types'
 import type { Supplier, SupplierCategorie } from './types'
 
 // Leverancier-categorie -> budgetcategorie, zodat we het richtbudget per soort
 // kunnen bepalen via de bestaande STANDAARD_VERDELING (derived.ts).
-const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, BudgetCategorie> = {
+const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, StandaardBudgetCategorie> = {
   locatie: 'locatie',
   catering: 'catering',
   fotograaf: 'fotografie en video',
