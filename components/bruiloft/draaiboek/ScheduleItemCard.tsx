@@ -37,7 +37,7 @@ export function ScheduleItemCard({
 
   return (
     <Card>
-      <CardContent className="flex items-start gap-4 p-4 lg:gap-6 lg:p-5">
+      <CardContent className="flex items-start gap-4 p-4">
         {showTime ? (
           <div className="w-16 shrink-0 text-center lg:w-20">
             <span className="text-lg font-semibold tabular-nums text-primary lg:text-xl">
