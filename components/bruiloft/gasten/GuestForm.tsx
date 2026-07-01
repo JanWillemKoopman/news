@@ -38,7 +38,7 @@ function leeg(): NewGuest {
     achternaam: '',
     categorie: 'vrienden',
     gasttype: 'daggast',
-    rsvpStatus: 'uitgenodigd',
+    rsvpStatus: 'nog niet uitgenodigd',
     dieetwensen: '',
     heeftPartner: false,
     partnerNaam: '',

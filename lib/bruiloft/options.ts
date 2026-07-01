@@ -39,6 +39,7 @@ export const GUEST_CATEGORIEEN: GuestCategorie[] = [
 export const GASTTYPES: Gasttype[] = ['daggast', 'avondgast']
 
 export const RSVP_STATUSSEN: RsvpStatus[] = [
+  'nog niet uitgenodigd',
   'uitgenodigd',
   'bevestigd',
   'afgemeld',

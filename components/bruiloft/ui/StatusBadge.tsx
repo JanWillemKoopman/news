@@ -17,8 +17,9 @@ const tones: Record<Kind, Record<string, Tone>> = {
   rsvp: {
     bevestigd: 'neutral',
     afgemeld: 'attention',
-    'geen reactie': 'neutral',
+    'geen reactie': 'attention',
     uitgenodigd: 'neutral',
+    'nog niet uitgenodigd': 'attention',
   },
   taak: {
     open: 'neutral',
