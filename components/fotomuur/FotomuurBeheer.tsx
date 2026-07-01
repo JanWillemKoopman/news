@@ -225,7 +225,6 @@ export function FotomuurBeheer() {
     <div className="space-y-8">
       <PageHeader
         titel="Fotomuur"
-        beschrijving="Laat gasten foto's uploaden die live op een groot scherm verschijnen."
         info={<PageInfoButton {...fotomuurInfo} />}
       />
 

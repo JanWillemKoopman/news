@@ -112,7 +112,6 @@ export default function TafelsPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Tafelschikking"
-        beschrijving="Plaats tafels op de plattegrond en sleep gasten naar hun plek. Afgemelde gasten worden niet meegenomen."
         info={<PageInfoButton {...tafelsInfo} />}
         actie={
           <>

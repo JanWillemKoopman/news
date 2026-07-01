@@ -100,7 +100,6 @@ export default function BudgetPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Budget"
-        beschrijving="Houd grip op geschatte, geoffreerde en betaalde bedragen."
         actie={
           <>
             {/* Desktop: "Analyseer mijn budget" als zichtbare outline-knop.

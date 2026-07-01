@@ -7,7 +7,7 @@ import { ArrowRight, BarChart3, ChevronRight, Lightbulb, RefreshCw, Sparkles, X 
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Button, useToast } from '@/components/bruiloft/ui'
+import { Button, LoadingDots, useToast } from '@/components/bruiloft/ui'
 import { geledenLabel, useAIAdvies } from './useAIAdvies'
 import { AdviesFeedback } from './AdviesFeedback'
 import type { AIAdvies } from '@/app/api/ai/advice/route'
@@ -153,15 +153,8 @@ export function AICoach() {
               ) : null}
               {loading ? (
                 <div className="flex flex-col items-center gap-4 py-10">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-                    <span className="text-sm text-muted-foreground">AI bekijkt jullie planning en het passende leveranciersaanbod…</span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-300 [animation-delay:-0.3s]" />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-400 [animation-delay:-0.15s]" />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-rose-500" />
-                  </div>
+                  <span className="text-sm text-muted-foreground">AI bekijkt jullie planning en het passende leveranciersaanbod…</span>
+                  <LoadingDots />
                 </div>
               ) : zichtbaar.length > 0 ? (
                 <ul className="space-y-3">

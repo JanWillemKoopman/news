@@ -14,6 +14,7 @@ export { StatCard } from './StatCard'
 export { Field, Select } from './Field'
 export { Modal, ConfirmDialog } from './Modal'
 export { Skeleton } from './Skeleton'
+export { LoadingDots } from './LoadingDots'
 export { ToastProvider, useToast } from './Toast'
 
 export { Input, eigennaamInputProps } from '@/components/ui/input'

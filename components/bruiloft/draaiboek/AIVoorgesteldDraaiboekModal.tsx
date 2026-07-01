@@ -1,10 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { Clock, MapPin, Sparkles } from 'lucide-react'
+import { Clock, MapPin } from 'lucide-react'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
-import { Button, Modal } from '@/components/bruiloft/ui'
+import { Button, LoadingDots, Modal } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem, Wedding } from '@/lib/bruiloft/types'
@@ -106,17 +106,10 @@ export function AIVoorgesteldDraaiboekModal({
     >
       {loading ? (
         <div className="flex flex-col items-center gap-4 py-10">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-            <span className="text-sm text-muted-foreground">
-              AI stelt een dagindeling samen die past bij jullie dag…
-            </span>
-          </div>
-          <div className="flex gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
-            <span className="h-2 w-2 rounded-full bg-rose-400 animate-bounce [animation-delay:-0.15s]" />
-            <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
-          </div>
+          <span className="text-sm text-muted-foreground">
+            AI stelt een dagindeling samen die past bij jullie dag…
+          </span>
+          <LoadingDots />
         </div>
       ) : error ? (
         <div className="py-6 text-center">

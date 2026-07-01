@@ -120,7 +120,6 @@ export default function WebsitePage() {
     <div className="mx-auto max-w-6xl overflow-x-hidden pb-24 min-h-screen">
         <PageHeader
           titel="Trouwwebsite"
-          beschrijving="Beheer de inhoud en het ontwerp van jullie persoonlijke trouwwebsite."
           info={<PageInfoButton {...websiteInfo} />}
           actie={
             <div className="flex items-center gap-3">

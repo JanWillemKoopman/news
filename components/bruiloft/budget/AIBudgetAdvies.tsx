@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CheckCircle2, Info, Loader2, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Info, Sparkles, X } from 'lucide-react'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent, LoadingDots } from '@/components/bruiloft/ui'
 import { capFirst } from '@/lib/utils'
 import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
@@ -98,7 +98,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
 
         {loading ? (
           <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <LoadingDots />
             Budget wordt geanalyseerd…
           </div>
         ) : error ? (

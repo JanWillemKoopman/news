@@ -575,8 +575,8 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
 
   return (
     <div className="relative flex min-h-[100dvh]">
-      {/* Left: purple panel */}
-      <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
+      {/* Left: navy panel */}
+      <div className="hidden md:block md:w-[40%] bg-rhino-950" aria-hidden />
 
       {/* Right: steps + form */}
       <div className="flex w-full flex-col md:w-[60%]">

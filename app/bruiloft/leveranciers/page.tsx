@@ -104,7 +104,6 @@ export default function LeveranciersPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Leveranciers"
-        beschrijving="Vergelijk, contacteer en boek de juiste partijen."
         info={<PageInfoButton {...leveranciersInfo} />}
         actie={
           kanBewerken ? (

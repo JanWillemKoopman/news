@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { ChevronDown, Info } from 'lucide-react'
 
-import { Modal } from '@/components/bruiloft/ui'
+import { Button, Modal } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 
 export interface FaqItem {
@@ -37,15 +37,16 @@ export function PageInfoButton({
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="icon"
         onClick={() => setOpen(true)}
         aria-label={ariaLabel}
         title={ariaLabel}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground hover:border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <Info className="h-4 w-4" aria-hidden />
-      </button>
+      </Button>
 
       <Modal open={open} onOpenChange={setOpen} title={titel}>
         <div className="space-y-5">

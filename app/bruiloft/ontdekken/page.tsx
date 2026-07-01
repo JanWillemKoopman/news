@@ -155,7 +155,6 @@ export default function OntdekkenPage() {
     <div className="mx-auto max-w-7xl pb-24 min-h-screen">
       <PageHeader
         titel="Leveranciers"
-        beschrijving="Doorzoek alle trouwlocaties en leveranciers — gesorteerd op wat het beste bij jullie past."
         info={<PageInfoButton {...ontdekkenInfo} />}
       />
       <LeveranciersTabs />

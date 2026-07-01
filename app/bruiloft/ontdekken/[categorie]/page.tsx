@@ -161,7 +161,6 @@ export default function TpwCategoriePage({ params }: Props) {
     <div className="mx-auto max-w-7xl pb-24 min-h-screen">
       <PageHeader
         titel={categorie}
-        beschrijving={`Bekijk alle ${categorie.toLowerCase()} en voeg jouw favorieten toe aan jullie lijst.`}
       />
 
       {/* Sticky zoekbalk */}

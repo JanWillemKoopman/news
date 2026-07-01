@@ -152,8 +152,8 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
 
   return (
     <div className="relative flex min-h-[100dvh]">
-      {/* Purple left panel */}
-      <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
+      {/* Navy left panel */}
+      <div className="hidden md:block md:w-[40%] bg-rhino-950" aria-hidden />
 
       {/* Right: form content */}
       <div className="flex w-full flex-col md:w-[60%]">

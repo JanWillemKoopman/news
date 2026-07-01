@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" style={{ backgroundColor: '#ffffff' }}>
+    <html lang="nl" className="bg-background">
       <body className={`${inter.className} min-h-dvh bg-white text-foreground antialiased`}>
         <GlobalErrorHandler />
         <ErrorBoundary>

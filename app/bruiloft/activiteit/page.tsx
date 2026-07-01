@@ -8,7 +8,6 @@ export default function ActiviteitPage() {
     <div className="mx-auto max-w-3xl pb-24 min-h-screen">
       <PageHeader
         titel="Recente activiteit"
-        beschrijving="Wijzigingen van jou en je medeplanners."
       />
       <ActivityFeed toonKop={false} />
     </div>

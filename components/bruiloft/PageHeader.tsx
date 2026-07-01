@@ -7,7 +7,6 @@ import { FloatingAddButton } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
   titel: string
-  beschrijving?: string
   actie?: React.ReactNode
   // Optionele ronde informatieknop die uiterst rechtsboven verschijnt.
   info?: React.ReactNode
@@ -45,7 +44,7 @@ function useElementInView(ref: React.RefObject<HTMLElement>) {
   return inView
 }
 
-export function PageHeader({ titel, beschrijving, actie, info, fab }: PageHeaderProps) {
+export function PageHeader({ titel, actie, info, fab }: PageHeaderProps) {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const headerInView = useElementInView(headerRef)
 
@@ -57,9 +56,6 @@ export function PageHeader({ titel, beschrijving, actie, info, fab }: PageHeader
       >
         <div>
           <h1 className="text-xl font-semibold text-foreground">{titel}</h1>
-          {beschrijving ? (
-            <p className="mt-0.5 text-sm text-muted-foreground">{beschrijving}</p>
-          ) : null}
         </div>
         {actie || info ? (
           <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">

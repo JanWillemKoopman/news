@@ -122,7 +122,6 @@ export default function SamenPlannenPage() {
     <div className="mx-auto max-w-3xl pb-24 min-h-screen">
       <PageHeader
         titel="Samen plannen"
-        beschrijving="Nodig je partner uit zodat jullie samen aan het trouwplan werken."
         info={<PageInfoButton {...ledenInfo} />}
       />
 

@@ -72,6 +72,9 @@ const config: Config = {
           900: '#263c50',
           950: '#1a2937',
         },
+        // Officiële merkkleur van WhatsApp — bewuste uitzondering op het
+        // rhino/rose-palet voor herkenbare "deel via WhatsApp"-knoppen.
+        whatsapp: '#25D366',
         // Riley & Grey "pink" — primaire actiekleur (dusty rose).
         rose: {
           50: '#fbf5f6',

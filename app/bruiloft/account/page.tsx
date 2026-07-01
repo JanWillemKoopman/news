@@ -560,7 +560,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl pb-24 min-h-screen">
-      <PageHeader titel="Account" beschrijving="Beheer je profiel en accountinstellingen." info={<PageInfoButton {...accountInfo} />} />
+      <PageHeader titel="Account" info={<PageInfoButton {...accountInfo} />} />
       <AccountHero />
       <ProfielFotoSection />
       <GegevensSection />

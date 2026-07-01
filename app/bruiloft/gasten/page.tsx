@@ -281,7 +281,6 @@ export default function GastenPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Gastenlijst"
-        beschrijving="Beheer de gastenlijst en houd de reacties bij."
         info={<PageInfoButton {...gastenInfo} />}
         actie={
           <>

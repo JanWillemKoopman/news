@@ -15,7 +15,7 @@ import { AchterstandBanner } from '@/components/bruiloft/taken/AchterstandBanner
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
-import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, LoadingDots, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
@@ -269,7 +269,6 @@ export function TakenShell() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Taken"
-        beschrijving="Werk stap voor stap naar de grote dag toe."
         info={<PageInfoButton {...takenInfo} />}
         actie={
           <Button onClick={openNieuw}>
@@ -328,16 +327,11 @@ export function TakenShell() {
 
       {aiActive && aiLoading && (
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
-            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:150ms]" />
-            <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:300ms]" />
-          </div>
+          <LoadingDots />
           <div>
             <p className="text-sm font-medium text-foreground">AI genereert suggesties…</p>
             <p className="text-xs text-muted-foreground">Dit kan 10–30 seconden duren.</p>
           </div>
-          <Sparkles className="ml-auto h-5 w-5 animate-pulse text-rose-400" />
         </div>
       )}
 

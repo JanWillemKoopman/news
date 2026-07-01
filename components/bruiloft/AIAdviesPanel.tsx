@@ -9,7 +9,7 @@ import { dagenTot } from '@/lib/bruiloft/format'
 import { trackEvent } from '@/lib/analytics'
 import type { NextStep } from '@/lib/bruiloft/guidance'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent, LoadingDots } from '@/components/bruiloft/ui'
 import { AdviesTekst } from '@/components/bruiloft/ai/AdviesTekst'
 import { AdviesFeedback } from '@/components/bruiloft/ai/AdviesFeedback'
 import { geledenLabel, useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
@@ -95,15 +95,8 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
 
         {loading ? (
           <div className="flex flex-col items-center gap-4 py-6">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 animate-pulse text-rose-400" />
-              <span className="text-sm text-muted-foreground">AI vergelijkt jullie planning met de Nederlandse trouwbenchmarks…</span>
-            </div>
-            <div className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-rose-300 animate-bounce [animation-delay:-0.3s]" />
-              <span className="h-2 w-2 rounded-full bg-rose-400 animate-bounce [animation-delay:-0.15s]" />
-              <span className="h-2 w-2 rounded-full bg-rose-500 animate-bounce" />
-            </div>
+            <span className="text-sm text-muted-foreground">AI vergelijkt jullie planning met de Nederlandse trouwbenchmarks…</span>
+            <LoadingDots />
           </div>
         ) : zichtbaar.length > 0 ? (
           <>

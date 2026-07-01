@@ -77,7 +77,7 @@ export function RegistryDeelModal({ open, onOpenChange }: Props) {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-md border border-transparent bg-[#25D366] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#22c55e]"
+                  className="flex items-center justify-center gap-2 rounded-md border border-transparent bg-whatsapp px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-whatsapp/90"
                 >
                   <ExternalLink className="h-4 w-4" />
                   WhatsApp

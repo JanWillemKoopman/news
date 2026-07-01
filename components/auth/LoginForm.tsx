@@ -63,8 +63,8 @@ export function LoginForm({
 
   return (
     <div className="relative flex min-h-[100dvh]">
-      {/* Left: purple panel */}
-      <div className="hidden md:block md:w-[40%] bg-[#5B3A8A]" aria-hidden />
+      {/* Left: navy panel */}
+      <div className="hidden md:block md:w-[40%] bg-rhino-950" aria-hidden />
 
       {/* Right: form */}
       <div className="flex w-full flex-col items-center justify-center px-8 py-16 md:w-[60%] md:px-12 lg:px-16">

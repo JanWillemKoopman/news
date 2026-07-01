@@ -167,7 +167,7 @@ export function RegistryInstellingen() {
                   href={whatsappMsg}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-border bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#22c55e] transition-colors"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md border border-border bg-whatsapp px-4 py-2 text-sm font-semibold text-white hover:bg-whatsapp/90 transition-colors"
                 >
                   <ExternalLink className="h-4 w-4" /> Deel via WhatsApp
                 </a>
