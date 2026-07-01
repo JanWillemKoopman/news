@@ -3,14 +3,13 @@
 import { MapPin, Pencil, Trash2 } from 'lucide-react'
 
 import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { dagVolgordeMinuten } from '@/lib/bruiloft/draaiboek'
 import { capFirst } from '@/lib/utils'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
 
 export function duurLabel(tijd: string, eindtijd: string): string | null {
   if (!tijd || !eindtijd) return null
-  const [sh, sm] = tijd.split(':').map(Number)
-  const [eh, em] = eindtijd.split(':').map(Number)
-  const min = eh * 60 + em - (sh * 60 + sm)
+  const min = dagVolgordeMinuten(eindtijd) - dagVolgordeMinuten(tijd)
   if (min <= 0) return null
   const h = Math.floor(min / 60)
   const m = min % 60

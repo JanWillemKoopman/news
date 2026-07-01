@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarDays, LayoutList, Search, SlidersHorizontal, X } from 'lucide-react'
+import { CalendarDays, ChevronDown, LayoutList, Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { Input, Select } from '@/components/bruiloft/ui'
 import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
@@ -44,6 +44,23 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
     return () => document.removeEventListener('mousedown', handler)
   }, [filterOpen])
 
+  const statusOpties = [
+    { key: 'all', label: 'Alle statussen' },
+    ...TASK_STATUSSEN.map((s) => ({
+      key: s,
+      label: s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1),
+    })),
+  ]
+  const prioriteitOpties = [
+    { key: 'all', label: 'Alle prioriteiten' },
+    ...PRIORITEITEN.map((p) => ({ key: p, label: p.charAt(0).toUpperCase() + p.slice(1) })),
+  ]
+  const toegewezenOpties = [
+    { key: 'all', label: 'Iedereen' },
+    { key: 'unassigned', label: 'Niet toegewezen' },
+    ...members.map((m) => ({ key: m.userId, label: m.displayName || m.email })),
+  ]
+
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2">
       {/* Search */}
@@ -68,49 +85,21 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
 
       {/* Status/Prioriteit/Toegewezen aan — inline op desktop, naast de zoekbalk */}
       <div className="hidden items-center gap-2 lg:flex">
-        <Select
-          value={filters.status}
-          onChange={(e) => onChange({ ...filters, status: e.target.value as TaakFilters['status'] })}
-          className="w-36"
-        >
-          <option value="all">Alle statussen</option>
-          {TASK_STATUSSEN.map((s) => (
-            <option key={s} value={s}>
-              {s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.prioriteit}
-          onChange={(e) =>
-            onChange({ ...filters, prioriteit: e.target.value as TaakFilters['prioriteit'] })
-          }
-          className="w-36"
-        >
-          <option value="all">Alle prioriteiten</option>
-          {PRIORITEITEN.map((p) => (
-            <option key={p} value={p}>
-              {p.charAt(0).toUpperCase() + p.slice(1)}
-            </option>
-          ))}
-        </Select>
-        <Select
-          value={filters.toegewezen}
-          onChange={(e) => onChange({ ...filters, toegewezen: e.target.value })}
-          className="w-40"
-        >
-          <option value="all">Iedereen</option>
-          <option value="unassigned">Niet toegewezen</option>
-          {members.length > 0 ? (
-            <optgroup label="Leden">
-              {members.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.displayName || m.email}
-                </option>
-              ))}
-            </optgroup>
-          ) : null}
-        </Select>
+        <FilterKnop
+          waarde={filters.status}
+          opties={statusOpties}
+          onSelect={(v) => onChange({ ...filters, status: v as TaakFilters['status'] })}
+        />
+        <FilterKnop
+          waarde={filters.prioriteit}
+          opties={prioriteitOpties}
+          onSelect={(v) => onChange({ ...filters, prioriteit: v as TaakFilters['prioriteit'] })}
+        />
+        <FilterKnop
+          waarde={filters.toegewezen}
+          opties={toegewezenOpties}
+          onSelect={(v) => onChange({ ...filters, toegewezen: v })}
+        />
         {activeFilterCount > 0 && (
           <button
             type="button"
@@ -129,16 +118,16 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
           type="button"
           onClick={() => setFilterOpen((p) => !p)}
           className={cn(
-            'inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
+            'inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors',
             filterOpen
-              ? 'border-border bg-accent text-foreground'
-              : 'border-input bg-background text-foreground hover:bg-accent'
+              ? 'border-primary/60 bg-primary/10 text-primary'
+              : 'border-input bg-background text-foreground hover:bg-muted'
           )}
         >
           <SlidersHorizontal className="h-4 w-4" />
           <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background">
+            <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground">
               {activeFilterCount}
             </span>
           )}
@@ -261,6 +250,77 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
           <span className="hidden sm:inline">Kalender</span>
         </button>
       </div>
+    </div>
+  )
+}
+
+// Eén filterdimensie als knop + dropdown-paneel, in dezelfde vormgeving als de
+// filterknop op de budgetpagina (rounded-lg, zelfde hover/actief-tinten),
+// i.p.v. een kale native <select> naast de zoekbalk.
+function FilterKnop({
+  waarde,
+  opties,
+  onSelect,
+}: {
+  waarde: string
+  opties: { key: string; label: string }[]
+  onSelect: (v: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  const isActief = waarde !== (opties[0]?.key ?? 'all')
+
+  React.useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const huidigLabel = opties.find((o) => o.key === waarde)?.label ?? opties[0]?.label
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={cn(
+          'inline-flex h-10 max-w-40 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors',
+          open
+            ? 'border-primary/60 bg-primary/10 text-primary'
+            : isActief
+              ? 'border-primary/30 bg-primary/5 text-foreground hover:bg-muted'
+              : 'border-input bg-background text-foreground hover:bg-muted'
+        )}
+      >
+        <span className="truncate">{huidigLabel}</span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+          {opties.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => {
+                onSelect(o.key)
+                setOpen(false)
+              }}
+              className={cn(
+                'flex w-full items-center px-3 py-2.5 text-left text-sm transition-colors first:rounded-t-lg last:rounded-b-lg',
+                waarde === o.key
+                  ? 'bg-primary/10 font-medium text-primary'
+                  : 'text-foreground hover:bg-muted'
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

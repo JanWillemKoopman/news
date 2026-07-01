@@ -21,6 +21,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
+import { dagVolgordeMinuten, vergelijkTijd } from '@/lib/bruiloft/draaiboek'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
@@ -86,7 +87,7 @@ export default function DraaiboekPage() {
   // Voor de 1-koloms tijdlijn en de export: gefilterd op kolom 1.
   const gesorteerd = filterItems(scheduleItems, fRol, zoek)
 
-  const alleSorteerd = scheduleItems.slice().sort((a, b) => a.tijd.localeCompare(b.tijd))
+  const alleSorteerd = scheduleItems.slice().sort((a, b) => vergelijkTijd(a.tijd, b.tijd))
   const defaultTijdNieuw = alleSorteerd.at(-1)?.eindtijd ?? ''
 
   const openNieuw = () => {
@@ -240,12 +241,7 @@ export default function DraaiboekPage() {
               {gesorteerd.map((s, idx) => {
                 const prev = idx > 0 ? gesorteerd[idx - 1] : null
                 const gapMinuten = prev
-                  ? (() => {
-                      const referentieTijd = prev.eindtijd || prev.tijd
-                      const [rh, rm] = referentieTijd.split(':').map(Number)
-                      const [sh, sm] = s.tijd.split(':').map(Number)
-                      return sh * 60 + sm - (rh * 60 + rm)
-                    })()
+                  ? dagVolgordeMinuten(s.tijd) - dagVolgordeMinuten(prev.eindtijd || prev.tijd)
                   : 0
                 const isOverlap = idx > 0 && gapMinuten < 0
 

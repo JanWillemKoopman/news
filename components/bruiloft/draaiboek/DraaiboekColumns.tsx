@@ -5,6 +5,7 @@ import { CalendarClock } from 'lucide-react'
 
 import { EmptyState, Select } from '@/components/bruiloft/ui'
 import { ScheduleItemCard } from '@/components/bruiloft/draaiboek/ScheduleItemCard'
+import { vergelijkTijd } from '@/lib/bruiloft/draaiboek'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
 
@@ -25,7 +26,7 @@ export function filterItems(items: ScheduleItem[], rol: RolFilter, zoek: string)
       return true
     })
     .slice()
-    .sort((a, b) => a.tijd.localeCompare(b.tijd))
+    .sort((a, b) => vergelijkTijd(a.tijd, b.tijd))
 }
 
 interface DraaiboekColumnsProps {
@@ -66,7 +67,7 @@ export function DraaiboekColumns({
   const tijden = React.useMemo(() => {
     const set = new Set<string>()
     for (const lijst of kolomItems) for (const s of lijst) set.add(s.tijd)
-    return Array.from(set).sort((a, b) => a.localeCompare(b))
+    return Array.from(set).sort(vergelijkTijd)
   }, [kolomItems])
 
   const gridStyle: React.CSSProperties = {

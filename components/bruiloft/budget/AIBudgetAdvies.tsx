@@ -9,21 +9,23 @@ import { Button, Card, CardContent, LoadingDots } from '@/components/bruiloft/ui
 import { capFirst } from '@/lib/utils'
 import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
+// Rustige, merkeigen tonen i.p.v. felle verkeerslicht-kleuren: grijs voor een
+// aandachtspunt, rhino-blauw voor een tip, paars voor iets positiefs.
 const TYPE_STIJL = {
   waarschuwing: {
     icon: AlertTriangle,
-    klasse: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300',
-    iconKlasse: 'text-amber-500',
+    klasse: 'border-border bg-muted/50 text-foreground',
+    iconKlasse: 'text-rose-500',
   },
   tip: {
     icon: Info,
-    klasse: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300',
-    iconKlasse: 'text-blue-500',
+    klasse: 'border-rhino-200 bg-rhino-50 text-rhino-800 dark:border-rhino-800 dark:bg-rhino-950/40 dark:text-rhino-200',
+    iconKlasse: 'text-rhino-600',
   },
   positief: {
     icon: CheckCircle2,
-    klasse: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300',
-    iconKlasse: 'text-emerald-500',
+    klasse: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300',
+    iconKlasse: 'text-violet-500',
   },
 }
 
@@ -85,7 +87,7 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-rose-500" />
-            <span className="font-medium text-foreground">AI Budgetanalyse</span>
+            <span className="font-medium text-foreground">Budgetanalyse</span>
           </div>
           <button
             onClick={onClose}
