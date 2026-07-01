@@ -76,18 +76,22 @@ export function CadeaulijstShell() {
       <PageHeader
         titel="Cadeaulijst"
         info={<PageInfoButton {...cadeaulijstInfo} />}
-        actie={
-          <>
-            {isEditor && activeTab === 'lijst' && (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Item toevoegen
-              </Button>
-            )}
+        primaryActie={
+          isEditor && activeTab === 'lijst' ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Item toevoegen
+            </Button>
+          ) : (
             <Button variant="outline" onClick={() => setDeelOpen(true)}>
               <Share2 className="h-4 w-4" />
               Cadeaulijst delen
             </Button>
-          </>
+          )
+        }
+        meerActies={
+          isEditor && activeTab === 'lijst'
+            ? [{ label: 'Cadeaulijst delen', icon: Share2, onClick: () => setDeelOpen(true) }]
+            : []
         }
         fab={
           isEditor && activeTab === 'lijst'

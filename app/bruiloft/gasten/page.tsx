@@ -284,36 +284,32 @@ export default function GastenPage() {
       <PageHeader
         titel="Gastenlijst"
         info={<PageInfoButton {...gastenInfo} />}
-        actie={
-          <>
-            {kanBewerken && (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Gast toevoegen
-              </Button>
-            )}
-            {kanBewerken && (
-              <Button variant="outline" className="bg-muted hover:bg-muted/70" onClick={() => setBulkOpen(true)}>
-                <Sparkles className="h-4 w-4" /> Bulk import
-              </Button>
-            )}
-            <OverflowMenu
-              items={[
-                ...(kanBewerken ? [{
-                  label: 'Genereer RSVP-links',
-                  icon: Link2,
-                  onClick: genereerLinks,
-                  disabled: guests.length === 0,
-                }] : []),
-                {
-                  label: 'Exporteer gastenlijst',
-                  icon: Download,
-                  onClick: exporteer,
-                  disabled: guests.length === 0,
-                },
-              ]}
-            />
-          </>
+        primaryActie={
+          kanBewerken ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Gast toevoegen
+            </Button>
+          ) : null
         }
+        meerActies={[
+          ...(kanBewerken
+            ? [{ label: 'Bulk import', icon: Sparkles, onClick: () => setBulkOpen(true) }]
+            : []),
+          ...(kanBewerken
+            ? [{
+                label: 'Genereer RSVP-links',
+                icon: Link2,
+                onClick: genereerLinks,
+                disabled: guests.length === 0,
+              }]
+            : []),
+          {
+            label: 'Exporteer gastenlijst',
+            icon: Download,
+            onClick: exporteer,
+            disabled: guests.length === 0,
+          },
+        ]}
         fab={kanBewerken ? { label: 'Gast toevoegen', onClick: openNieuw } : undefined}
       />
 

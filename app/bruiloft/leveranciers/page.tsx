@@ -105,7 +105,7 @@ export default function LeveranciersPage() {
       <PageHeader
         titel="Leveranciers"
         info={<PageInfoButton {...leveranciersInfo} />}
-        actie={
+        primaryActie={
           kanBewerken ? (
             <Button onClick={openNieuw}>
               <Plus className="h-4 w-4" /> Leverancier toevoegen

@@ -121,7 +121,7 @@ export default function WebsitePage() {
         <PageHeader
           titel="Trouwwebsite"
           info={<PageInfoButton {...websiteInfo} />}
-          actie={
+          primaryActie={
             <div className="flex items-center gap-3">
               <SaveStatus />
               {publiekeUrl && (

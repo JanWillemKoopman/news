@@ -3,11 +3,19 @@
 import * as React from 'react'
 
 import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
-import { FloatingAddButton } from '@/components/bruiloft/ui'
+import { FloatingAddButton, OverflowMenu } from '@/components/bruiloft/ui'
+import type { OverflowMenuItem } from '@/components/bruiloft/ui'
 
 interface PageHeaderProps {
   titel: string
-  actie?: React.ReactNode
+  // De ene primaire actie van de pagina (bv. "Taak toevoegen"). Pakt op
+  // mobiel de volle breedte, op desktop de normale knopbreedte. Elke andere
+  // actie hoort in `meerActies`, niet hier — zo blijft de header overal
+  // precies 3 elementen breed (primair · meer · info) i.p.v. een wisselend
+  // aantal knoppen dat op mobiel gaat wrappen.
+  primaryActie?: React.ReactNode
+  // Secundaire acties: altijd gebundeld achter één "•••"-knop.
+  meerActies?: OverflowMenuItem[]
   // Optionele ronde informatieknop die uiterst rechtsboven verschijnt.
   info?: React.ReactNode
   // Optionele primaire "toevoegen"-actie die ook als zwevende +-knop (FAB)
@@ -44,7 +52,7 @@ function useElementInView(ref: React.RefObject<HTMLElement>) {
   return inView
 }
 
-export function PageHeader({ titel, actie, info, fab }: PageHeaderProps) {
+export function PageHeader({ titel, primaryActie, meerActies, info, fab }: PageHeaderProps) {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const headerInView = useElementInView(headerRef)
 
@@ -57,12 +65,13 @@ export function PageHeader({ titel, actie, info, fab }: PageHeaderProps) {
         <div>
           <h1 className="text-xl font-semibold text-foreground">{titel}</h1>
         </div>
-        {actie || info ? (
-          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
-            {actie ? (
-              <div className="flex flex-wrap items-center gap-2">{actie}</div>
+        {primaryActie || meerActies?.length || info ? (
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            {primaryActie ? (
+              <div className="flex-1 [&>*]:w-full sm:flex-none sm:[&>*]:w-auto">{primaryActie}</div>
             ) : null}
-            {info ? <div className="ml-auto shrink-0">{info}</div> : null}
+            {meerActies && meerActies.length > 0 ? <OverflowMenu items={meerActies} /> : null}
+            {info ? <div className="ml-auto shrink-0 sm:ml-0">{info}</div> : null}
           </div>
         ) : null}
       </div>

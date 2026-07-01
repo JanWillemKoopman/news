@@ -263,17 +263,15 @@ export function TakenShell() {
       <PageHeader
         titel="Taken"
         info={<PageInfoButton {...takenInfo} />}
-        actie={
-          <>
-            {!aiActive && (
-              <Button variant="outline" onClick={() => handleAiToggle(true)}>
-                <Sparkles className="h-4 w-4" /> Voorgestelde taken
-              </Button>
-            )}
-            <Button onClick={openNieuw}>
-              <Plus className="h-4 w-4" /> Taak toevoegen
-            </Button>
-          </>
+        primaryActie={
+          <Button onClick={openNieuw}>
+            <Plus className="h-4 w-4" /> Taak toevoegen
+          </Button>
+        }
+        meerActies={
+          !aiActive
+            ? [{ label: 'Voorgestelde taken', icon: Sparkles, onClick: () => handleAiToggle(true) }]
+            : []
         }
         fab={{ label: 'Taak toevoegen', onClick: openNieuw }}
       />

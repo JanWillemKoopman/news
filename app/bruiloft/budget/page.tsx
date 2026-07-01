@@ -13,7 +13,7 @@ import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
 import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
 import { TotaalBudgetEditModal } from '@/components/bruiloft/budget/TotaalBudgetEditModal'
-import { Button, ConfirmDialog, EmptyState, OverflowMenu, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, EmptyState, useToast } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
   budgetAfwijkingen,
@@ -22,7 +22,6 @@ import {
   restBedrag,
 } from '@/lib/bruiloft/derived'
 import { canEdit } from '@/lib/bruiloft/permissions'
-import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { BudgetItem } from '@/lib/bruiloft/types'
@@ -39,9 +38,6 @@ export default function BudgetPage() {
   const { toast } = useToast()
 
   const kanBewerken = canEdit(permissions, 'budget')
-  // Op mobiel verhuist "Analyseer mijn budget" naar het overflowmenu om de
-  // header op te schonen; op sm+ blijft het een zichtbare knop.
-  const isMobile = useMediaQuery('(max-width: 639px)')
 
   const [formOpen, setFormOpen] = React.useState(false)
   const [editItem, setEditItem] = React.useState<BudgetItem | null>(null)
@@ -102,32 +98,20 @@ export default function BudgetPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Budget"
-        actie={
-          <>
-            {/* Desktop: "Analyseer mijn budget" als zichtbare outline-knop.
-                Op mobiel verborgen en verplaatst naar het overflowmenu. */}
-            <Button
-              variant="outline"
-              onClick={() => setAdviesOpen(true)}
-              className="hidden sm:inline-flex"
-            >
-              <Sparkles className="h-4 w-4" />
-              Analyseer mijn budget
+        primaryActie={
+          kanBewerken ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Budgetitem toevoegen
             </Button>
-            {kanBewerken && (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Budgetitem toevoegen
-              </Button>
-            )}
-            <OverflowMenu
-              items={[
-                ...(isMobile ? [{ label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) }] : []),
-                ...(kanBewerken ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }] : []),
-                { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
-              ]}
-            />
-          </>
+          ) : null
         }
+        meerActies={[
+          { label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) },
+          ...(kanBewerken
+            ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }]
+            : []),
+          { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
+        ]}
         info={<PageInfoButton {...budgetInfo} />}
         fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />

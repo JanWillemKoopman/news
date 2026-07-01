@@ -136,23 +136,17 @@ export default function DraaiboekPage() {
       <PageHeader
         titel="Draaiboek"
         info={<PageInfoButton {...draaiboekInfo} />}
-        actie={
-          <>
-            <Button variant="outline" onClick={exporteer} disabled={exportLijst.length === 0}>
-              <Download className="h-4 w-4" /> Exporteer draaiboek
+        primaryActie={
+          kanBewerken ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Onderdeel toevoegen
             </Button>
-            {kanBewerken && (
-              <Button variant="outline" onClick={() => setAiOpen(true)}>
-                <Sparkles className="h-4 w-4" /> AI-draaiboek
-              </Button>
-            )}
-            {kanBewerken && (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Onderdeel toevoegen
-              </Button>
-            )}
-          </>
+          ) : null
         }
+        meerActies={[
+          ...(kanBewerken ? [{ label: 'AI-draaiboek', icon: Sparkles, onClick: () => setAiOpen(true) }] : []),
+          { label: 'Exporteer draaiboek', icon: Download, onClick: exporteer, disabled: exportLijst.length === 0 },
+        ]}
         fab={kanBewerken ? { label: 'Onderdeel toevoegen', onClick: openNieuw } : undefined}
       />
 

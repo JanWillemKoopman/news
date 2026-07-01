@@ -276,7 +276,7 @@ export default function AIWeddingPlannerPage() {
       <PageHeader
         titel="AI-assistent"
         info={<PageInfoButton {...aiAssistentInfo} />}
-        actie={
+        primaryActie={
           <Button
             onClick={() => fetchAdvies(false)}
             disabled={loading || isRateLimited}

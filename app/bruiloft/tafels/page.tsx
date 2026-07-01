@@ -113,19 +113,15 @@ export default function TafelsPage() {
       <PageHeader
         titel="Tafelschikking"
         info={<PageInfoButton {...tafelsInfo} />}
-        actie={
-          <>
-            {tables.length > 0 ? (
-              <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" /> Afdrukken
-              </Button>
-            ) : null}
-            {kanBewerken && (
-              <Button onClick={openNieuw}>
-                <Plus className="h-4 w-4" /> Tafel toevoegen
-              </Button>
-            )}
-          </>
+        primaryActie={
+          kanBewerken ? (
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Tafel toevoegen
+            </Button>
+          ) : null
+        }
+        meerActies={
+          tables.length > 0 ? [{ label: 'Afdrukken', icon: Printer, onClick: () => window.print() }] : []
         }
         fab={kanBewerken ? { label: 'Tafel toevoegen', onClick: openNieuw } : undefined}
       />
@@ -174,8 +170,8 @@ export default function TafelsPage() {
       ) : null}
 
       {tables.length > 0 && stoelen < pool.length ? (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
           <span>Er zijn {pool.length - stoelen} gasten zonder stoel. Voeg meer tafels toe of vergroot de capaciteit.</span>
         </div>
       ) : null}
