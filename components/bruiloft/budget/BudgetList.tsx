@@ -1,7 +1,20 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Grid2X2, Pencil, Search, Trash2, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Grid2X2,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
 
 import { Button, Money } from '@/components/bruiloft/ui'
 import {
@@ -58,34 +71,17 @@ function berekenCategorie(naam: string, catItems: BudgetItem[], vendors: Vendor[
   return { naam, items: catItems, geschat, geoffreerd, betaald, verwacht, resterend, status }
 }
 
+// Eén kleur met betekenis: rose voor "dit heeft aandacht nodig", verder
+// alles neutraal grijs. Zo is in één oogopslag duidelijk welke categorieën
+// om actie vragen, zonder dat elke status een eigen kleur claimt.
 const STATUS_CONFIG: Record<
   CategorieStatus,
-  { label: string; dotKlasse: string; badgeKlasse: string; barKlasse: string }
+  { label: string; icon: React.ElementType | null; aandacht: boolean }
 > = {
-  betaald: {
-    label: 'Betaald',
-    dotKlasse: 'bg-emerald-500',
-    badgeKlasse: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    barKlasse: 'bg-emerald-500',
-  },
-  'boven schatting': {
-    label: 'Boven schatting',
-    dotKlasse: 'bg-amber-500',
-    badgeKlasse: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    barKlasse: 'bg-amber-500',
-  },
-  'nog te plannen': {
-    label: 'Nog te plannen',
-    dotKlasse: 'bg-blue-400',
-    badgeKlasse: 'bg-muted text-muted-foreground',
-    barKlasse: 'bg-blue-400',
-  },
-  'in uitvoering': {
-    label: 'In uitvoering',
-    dotKlasse: 'bg-primary',
-    badgeKlasse: 'bg-primary/10 text-primary',
-    barKlasse: 'bg-primary',
-  },
+  betaald: { label: 'Volledig betaald', icon: CheckCircle2, aandacht: false },
+  'boven schatting': { label: 'Boven begroting', icon: AlertTriangle, aandacht: true },
+  'nog te plannen': { label: 'Nog te plannen', icon: null, aandacht: false },
+  'in uitvoering': { label: 'In uitvoering', icon: null, aandacht: false },
 }
 
 export function BudgetList({
@@ -207,7 +203,7 @@ export function BudgetList({
             className={cn(
               'inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors',
               filterOpen
-                ? 'border-primary/60 bg-primary/10 text-primary'
+                ? 'border-foreground/20 bg-muted text-foreground'
                 : 'border-input bg-background text-foreground hover:bg-muted'
             )}
           >
@@ -216,7 +212,7 @@ export function BudgetList({
               className={cn(
                 'rounded-full px-1.5 py-0.5 text-xs font-semibold',
                 filter !== 'alle'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-foreground text-background'
                   : 'bg-muted text-muted-foreground'
               )}
             >
@@ -235,7 +231,7 @@ export function BudgetList({
                   className={cn(
                     'flex w-full items-center justify-between px-3 py-2.5 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg',
                     filter === key
-                      ? 'bg-primary/10 text-primary font-medium'
+                      ? 'bg-muted font-medium text-foreground'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -244,7 +240,7 @@ export function BudgetList({
                     className={cn(
                       'rounded-full px-1.5 py-0.5 text-xs font-semibold',
                       filter === key
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-foreground text-background'
                         : 'bg-muted text-muted-foreground'
                     )}
                   >
@@ -267,7 +263,7 @@ export function BudgetList({
       </div>
 
       {/* Category accordion rows */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {gefilterd.map((cat) => (
           <CategorieRij
             key={cat.naam}
@@ -309,74 +305,78 @@ function CategorieRij({
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
 }) {
   const config = STATUS_CONFIG[data.status]
+  const StatusIcon = config.icon
   const voortgangPct = data.verwacht > 0 ? Math.min(100, (data.betaald / data.verwacht) * 100) : 0
   const begroot = data.verwacht > 0 ? data.verwacht : data.geschat
 
-  const subtitle =
+  const postenTekst = data.items.length > 1 ? `${data.items.length} posten` : null
+  const referentieTekst =
     data.naam === 'catering' && bevestigdeDaggasten > 0
-      ? `referentie: ${bevestigdeDaggasten} bevestigde daggast${bevestigdeDaggasten === 1 ? '' : 'en'}`
-      : data.items.length > 1
-        ? `${data.items.length} posten`
-        : null
+      ? `${bevestigdeDaggasten} bevestigde daggast${bevestigdeDaggasten === 1 ? '' : 'en'}`
+      : null
 
-  const betaaldTekst =
-    data.betaald === 0
-      ? 'nog niets betaald'
-      : `${formatEuro(data.betaald)} van ${formatEuro(data.verwacht)} betaald`
+  // Eén regel die statustekst en voortgang combineert, i.p.v. losse badge +
+  // aparte bijschriften — minder tekst, minder kleur, sneller te lezen.
+  let statusRegel = config.label
+  if (data.status === 'in uitvoering') {
+    statusRegel = data.betaald > 0 ? `${formatEuro(data.betaald)} van ${formatEuro(data.verwacht)} betaald` : 'Nog niets betaald'
+  } else if (data.status === 'boven schatting') {
+    const verschil = Math.max(data.verwacht, data.geoffreerd) - data.geschat
+    statusRegel = verschil > 0 ? `${formatEuro(verschil)} boven begroting` : config.label
+  }
+  const bijschrift = [referentieTekst, postenTekst].filter(Boolean).join(' · ')
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card transition-colors hover:border-foreground/15">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40"
+        className="flex w-full items-center gap-4 px-5 py-4 text-left"
       >
-        {/* Status dot */}
-        <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', config.dotKlasse)} />
-
-        {/* Name + subtitle */}
+        {/* Name + status regel */}
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground">{capFirst(data.naam)}</p>
-          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
+          <p className="text-[15px] font-semibold text-foreground">{capFirst(data.naam)}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm">
+            {StatusIcon ? (
+              <StatusIcon
+                className={cn('h-3.5 w-3.5 shrink-0', config.aandacht ? 'text-rose-600' : 'text-muted-foreground')}
+              />
+            ) : null}
+            <span className={cn(config.aandacht ? 'font-medium text-rose-600' : 'text-muted-foreground')}>
+              {statusRegel}
+            </span>
+            {bijschrift ? <span className="text-muted-foreground">· {bijschrift}</span> : null}
+          </div>
         </div>
 
-        {/* Status badge — hidden on mobile */}
-        <span
-          className={cn(
-            'hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex',
-            config.badgeKlasse
-          )}
-        >
-          <span className={cn('h-1.5 w-1.5 rounded-full', config.dotKlasse)} />
-          {config.label}
-        </span>
-
-        {/* Progress bar — hidden on small screens */}
-        <div className="hidden w-44 shrink-0 lg:block">
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        {/* Progress bar — hidden op kleine schermen */}
+        <div className="hidden w-40 shrink-0 lg:block">
+          <div className={cn('h-1.5 overflow-hidden rounded-full', config.aandacht ? 'bg-rose-100 dark:bg-rose-950/50' : 'bg-muted')}>
             <div
-              className={cn('h-full rounded-full transition-all duration-500', config.barKlasse)}
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                config.aandacht ? 'bg-rose-500' : 'bg-foreground/70'
+              )}
               style={{ width: `${Math.max(voortgangPct > 0 ? voortgangPct : 0, 0)}%` }}
             />
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">{betaaldTekst}</p>
         </div>
 
         {/* Amount */}
         <div className="shrink-0 text-right">
-          <Money bedrag={begroot} className="font-semibold text-foreground" />
+          <Money bedrag={begroot} className="text-[15px] font-semibold text-foreground" />
           <p className="text-xs text-muted-foreground">begroot</p>
         </div>
 
         {/* Chevron */}
-        <span className="shrink-0 text-muted-foreground">
-          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </span>
+        <ChevronRight
+          className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-90')}
+        />
       </button>
 
       {/* Expanded items */}
       {isOpen ? (
-        <div className="divide-y divide-border border-t border-border bg-muted/20">
+        <div className="divide-y divide-border border-t border-border bg-muted/30">
           {data.items.map((item) => (
             <ItemRij
               key={item.id}
@@ -416,7 +416,7 @@ function ItemRij({
   const rest = restBedrag(item, vendors)
 
   return (
-    <div className={cn('px-4 py-3', afwijkend && 'bg-amber-50/50 dark:bg-amber-950/20')}>
+    <div className={cn('px-5 py-3.5', afwijkend && 'bg-rose-50/60 dark:bg-rose-950/20')}>
       {/* Item title + actions */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -424,7 +424,7 @@ function ItemRij({
             {item.omschrijving || capFirst(item.categorie)}
           </p>
           {geboekteVendor ? (
-            <p className="text-xs text-primary">via {geboekteVendor.naam}</p>
+            <p className="text-xs text-muted-foreground">via {geboekteVendor.naam}</p>
           ) : null}
         </div>
         {(onEdit || onDelete) ? (
@@ -444,7 +444,7 @@ function ItemRij({
       </div>
 
       {/* 3-column bedragen */}
-      <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1">
+      <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-2">
         <Bedrag label="Verwacht" bedrag={verwacht} caption={verwachtCaption} />
         <Bedrag label="Betaald" bedrag={item.betaaldBedrag} />
         <Bedrag label="Nog te betalen" bedrag={rest} accent={rest > 0} />
@@ -452,9 +452,9 @@ function ItemRij({
 
       {/* Betaaltermijnen */}
       {item.betaaltermijnen.length > 0 ? (
-        <div className="mt-3 border-t border-border pt-2">
-          <p className="mb-1.5 text-xs font-medium text-muted-foreground">Betaaltermijnen</p>
-          <ul className="space-y-1">
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Betaaltermijnen</p>
+          <ul className="space-y-1.5">
             {item.betaaltermijnen.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-xs text-muted-foreground">
@@ -469,10 +469,10 @@ function ItemRij({
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-colors',
                       t.betaald
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        ? 'bg-foreground text-background'
                         : onToggleTerm
-                          ? 'bg-stone-200 text-stone-600 hover:bg-stone-300 dark:bg-stone-700/60 dark:text-stone-300'
-                          : 'bg-stone-100 text-stone-400 dark:bg-stone-800/40 dark:text-stone-500'
+                          ? 'border border-input text-muted-foreground hover:bg-muted'
+                          : 'border border-input text-muted-foreground/50'
                     )}
                   >
                     {t.betaald ? <Check className="h-3 w-3" /> : null}
@@ -504,7 +504,7 @@ function Bedrag({
       <p className="text-xs text-muted-foreground">{label}</p>
       <Money
         bedrag={bedrag}
-        className={cn('text-sm font-semibold', accent ? 'text-primary' : 'text-foreground')}
+        className={cn('text-sm font-semibold', accent ? 'text-rose-600' : 'text-foreground')}
       />
       {caption ? <p className="text-[11px] text-muted-foreground/70">{caption}</p> : null}
     </div>
