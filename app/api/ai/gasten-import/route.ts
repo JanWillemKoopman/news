@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logAiUsage } from '@/lib/ai/usage'
+import { teVeelVerzoekenBericht } from '@/lib/ai/rateLimitMessage'
 import { GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import type { Gasttype, GuestCategorie, RsvpStatus } from '@/lib/bruiloft/types'
 import { checkRateLimit } from '@/lib/rateLimit'
@@ -199,9 +200,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  const rl = await checkRateLimit(`ai:gasten-import:${user.id}`, 10, 60 * 60)
+  const rl = await checkRateLimit(`ai:gasten-import:${weddingId}`, 3, 60 * 60)
   if (!rl.allowed) {
-    return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
+    return NextResponse.json(
+      { error: teVeelVerzoekenBericht(rl.resetAt), next_available_at: rl.resetAt.toISOString() },
+      { status: 429 }
+    )
   }
 
   // Bouw de Gemini-invoer: PDF/afbeelding gaat inline, de rest wordt tekst.

@@ -325,7 +325,7 @@ export default function AIWeddingPlannerPage() {
               <p>
                 Het advies wordt automatisch bijgewerkt wanneer jullie planningsdata verandert.
                 Met de knop <strong className="text-foreground">&quot;Ververs advies&quot;</strong> kun
-                je handmatig een nieuwe analyse aanvragen (maximaal 3× per uur). Het resultaat
+                je handmatig een nieuwe analyse aanvragen (maximaal 1× per uur). Het resultaat
                 wordt opgeslagen zodat je het altijd terug kunt lezen.
               </p>
             </CardContent>

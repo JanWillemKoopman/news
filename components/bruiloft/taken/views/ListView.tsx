@@ -59,8 +59,11 @@ interface ListViewProps {
   aiSuggesties?: AITaakSuggestie[]
   aiLoading?: boolean
   aiError?: string | null
+  aiNextAvailable?: Date | null
+  aiAantalWeggeklikt?: number
   onAiToevoegen?: (s: AITaakSuggestie) => Promise<void>
   onAiDismiss?: (titel: string) => void
+  onAiToonWeggeklikt?: () => void
   onAiHide?: () => void
 }
 
@@ -82,8 +85,11 @@ export function ListView({
   aiSuggesties,
   aiLoading,
   aiError,
+  aiNextAvailable,
+  aiAantalWeggeklikt,
   onAiToevoegen,
   onAiDismiss,
+  onAiToonWeggeklikt,
   onAiHide,
 }: ListViewProps) {
   // Handmatig open/dicht geklapte fasesecties (wint van de standaardkeuze).
@@ -123,8 +129,11 @@ export function ListView({
           suggesties={aiSuggesties}
           loading={aiLoading}
           error={aiError}
+          nextAvailable={aiNextAvailable}
+          aantalWeggeklikt={aiAantalWeggeklikt}
           onToevoegen={onAiToevoegen}
           onDismiss={onAiDismiss}
+          onToonWeggeklikt={onAiToonWeggeklikt}
           onHide={onAiHide}
         />
       )}
@@ -202,17 +211,27 @@ function AISuggestiesBlok({
   suggesties,
   loading,
   error,
+  nextAvailable,
+  aantalWeggeklikt,
   onToevoegen,
   onDismiss,
+  onToonWeggeklikt,
   onHide,
 }: {
   suggesties?: AITaakSuggestie[]
   loading?: boolean
   error?: string | null
+  nextAvailable?: Date | null
+  aantalWeggeklikt?: number
   onToevoegen?: (s: AITaakSuggestie) => Promise<void>
   onDismiss?: (titel: string) => void
+  onToonWeggeklikt?: () => void
   onHide?: () => void
 }) {
+  const wachtMinuten =
+    nextAvailable && nextAvailable.getTime() > Date.now()
+      ? Math.ceil((nextAvailable.getTime() - Date.now()) / 60000)
+      : null
   // De kop met "Verberg voorgestelde taken" staat er in élke toestand (laden,
   // fout, leeg, resultaten) zodat er altijd een uitweg is zolang de
   // voorgestelde-taken-modus aanstaat.
@@ -268,7 +287,20 @@ function AISuggestiesBlok({
     return (
       <div>
         {header(null)}
-        <p className="px-1 text-sm text-muted-foreground">Geen suggesties meer.</p>
+        <p className="px-1 text-sm text-muted-foreground">
+          {aantalWeggeklikt && aantalWeggeklikt > 0
+            ? `Alle ${aantalWeggeklikt} suggesties zijn weggeklikt.`
+            : 'Geen suggesties meer.'}
+        </p>
+        {aantalWeggeklikt && aantalWeggeklikt > 0 && onToonWeggeklikt ? (
+          <button
+            type="button"
+            onClick={onToonWeggeklikt}
+            className="mt-1 px-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Weggeklikte suggesties opnieuw tonen
+          </button>
+        ) : null}
       </div>
     )
   }
@@ -279,8 +311,22 @@ function AISuggestiesBlok({
         <>
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground">{suggesties.length} suggesties</span>
+          {wachtMinuten !== null && (
+            <span className="text-muted-foreground normal-case tracking-normal font-normal">
+              · nieuwe suggesties over {wachtMinuten} {wachtMinuten === 1 ? 'minuut' : 'minuten'}
+            </span>
+          )}
         </>
       )}
+      {aantalWeggeklikt && aantalWeggeklikt > 0 && onToonWeggeklikt ? (
+        <button
+          type="button"
+          onClick={onToonWeggeklikt}
+          className="mb-2 px-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {aantalWeggeklikt} weggeklikte {aantalWeggeklikt === 1 ? 'suggestie' : 'suggesties'} opnieuw tonen
+        </button>
+      ) : null}
       <div className="space-y-2">
         {suggesties.map((s) => (
           <AIInlineSuggestieCard

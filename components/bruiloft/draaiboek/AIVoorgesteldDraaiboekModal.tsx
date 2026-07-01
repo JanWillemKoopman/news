@@ -41,12 +41,14 @@ export function AIVoorgesteldDraaiboekModal({
   const [error, setError] = React.useState<string | null>(null)
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
   const [busy, setBusy] = React.useState(false)
+  const [nextAvailable, setNextAvailable] = React.useState<Date | null>(null)
 
   React.useEffect(() => {
     if (!open) return
     setSelected(new Set())
     setAdvies(null)
     setError(null)
+    setNextAvailable(null)
     setLoading(true)
 
     const bestaandeItems = scheduleItems.map((s) => `${s.tijd} ${s.titel}`)
@@ -58,14 +60,15 @@ export function AIVoorgesteldDraaiboekModal({
       body: JSON.stringify({ context, weddingId: wedding.id, bestaandeItems }),
     })
       .then(async (res) => {
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({ error: 'Onbekende fout' }))
-          throw new Error(b.error ?? 'Fout bij ophalen suggesties')
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok && !json.advies) {
+          throw new Error(json.error ?? 'Fout bij ophalen suggesties')
         }
-        return res.json()
+        return json
       })
-      .then((json: { advies: AIDraaiboekAdvies }) => {
+      .then((json: { advies: AIDraaiboekAdvies; cached?: boolean; next_available_at?: string }) => {
         setAdvies(json.advies)
+        setNextAvailable(json.next_available_at ? new Date(json.next_available_at) : null)
         // Standaard alles voorgeselecteerd; het paar vinkt af wat niet past.
         setSelected(new Set((json.advies.items ?? []).map(sleutel)))
       })
@@ -120,7 +123,13 @@ export function AIVoorgesteldDraaiboekModal({
         </div>
       ) : advies ? (
         <div className="flex flex-col gap-0">
-          <p className="mb-3 text-sm text-muted-foreground">{advies.samenvatting}</p>
+          <p className="mb-1 text-sm text-muted-foreground">{advies.samenvatting}</p>
+          {nextAvailable && nextAvailable.getTime() > Date.now() && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              Dit zijn de resultaten van de vorige AI-generatie. Een nieuwe generatie kan over{' '}
+              {Math.ceil((nextAvailable.getTime() - Date.now()) / 60000)} minuten.
+            </p>
+          )}
 
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <button

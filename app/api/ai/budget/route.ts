@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
 import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { logAiUsage } from '@/lib/ai/usage'
+import { teVeelVerzoekenBericht } from '@/lib/ai/rateLimitMessage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -29,7 +30,7 @@ export interface AIBudgetAdvies {
   }
 }
 
-const MIN_COOLDOWN_MS = 30 * 60 * 1000   // 30 min
+const MIN_COOLDOWN_MS = 60 * 60 * 1000   // 1 uur — max 1x per uur een nieuwe analyse
 const MAX_CACHE_AGE_MS = 4 * 60 * 60 * 1000  // 4 uur
 
 function buildBudgetFingerprint(ctx: AIWeddingContext): string {
@@ -138,9 +139,44 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  const rl = await checkRateLimit(`ai:budget:${user.id}`, 10, 60 * 60)
+  // Cache check eerst — een cache-hit kost geen Gemini-call en mag dus nooit
+  // door de rate limiter geblokkeerd worden. De fingerprint gebruikt alleen
+  // budget-/leveranciers-/betalingsvelden, dus dit kan vóór het verrijken met
+  // gebruikersprofiel.
+  const fingerprint = buildBudgetFingerprint(body.context)
+  const now = Date.now()
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_budget_cache')
+    .select('cached_advies, data_fingerprint, last_updated_at')
+    .eq('wedding_id', body.weddingId)
+    .single()
+
+  if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
+      const nextAvailableAt = new Date(new Date(cacheRow.last_updated_at).getTime() + MIN_COOLDOWN_MS)
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIBudgetAdvies,
+        cached: true,
+        next_available_at: nextAvailableAt.toISOString(),
+      })
+    }
+  }
+
+  // Alleen bij een echte generatie telt dit mee voor de limiet van 1x per uur.
+  const rl = await checkRateLimit(`ai:budget:${body.weddingId}`, 1, 60 * 60)
   if (!rl.allowed) {
-    return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
+    if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIBudgetAdvies,
+        cached: true,
+        next_available_at: rl.resetAt.toISOString(),
+      })
+    }
+    return NextResponse.json(
+      { error: teVeelVerzoekenBericht(rl.resetAt), next_available_at: rl.resetAt.toISOString() },
+      { status: 429 }
+    )
   }
 
   const [profileResult, activityResult] = await Promise.all([
@@ -163,22 +199,6 @@ export async function POST(request: NextRequest) {
       actiesLaatste30Dagen: activityResult.count ?? 0,
       ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, activityResult.count ?? 0),
     },
-  }
-
-  // Cache check
-  const fingerprint = buildBudgetFingerprint(enrichedContext)
-  const now = Date.now()
-  const { data: cacheRow } = await (supabase as any)
-    .from('ai_budget_cache')
-    .select('cached_advies, data_fingerprint, last_updated_at')
-    .eq('wedding_id', body.weddingId)
-    .single()
-
-  if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
-    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
-    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
-      return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
-    }
   }
 
   const MODEL = 'gemini-2.5-flash'
@@ -205,11 +225,16 @@ export async function POST(request: NextRequest) {
       weddingId: body.weddingId,
     })
 
+    const updatedAt = new Date().toISOString()
     void (supabase as any).from('ai_budget_cache').upsert(
-      { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: new Date().toISOString() },
+      { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: updatedAt },
       { onConflict: 'wedding_id' }
     )
-    return NextResponse.json({ advies, cached: false })
+    return NextResponse.json({
+      advies,
+      cached: false,
+      next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
+    })
   } catch (err) {
     console.error('[api/ai/budget] Gemini fout:', err)
     logAiUsage({
@@ -222,7 +247,11 @@ export async function POST(request: NextRequest) {
       weddingId: body.weddingId,
     })
     if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
-      return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIBudgetAdvies,
+        cached: true,
+        next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
+      })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }

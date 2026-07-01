@@ -67,12 +67,12 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
   const [advies, setAdvies] = React.useState<AIBudgetAdviesType | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [nextAvailable, setNextAvailable] = React.useState<Date | null>(null)
 
   const analyseer = React.useCallback(async () => {
     if (!wedding || loading) return
     setLoading(true)
     setError(null)
-    setAdvies(null)
 
     try {
       const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
@@ -81,12 +81,13 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context, weddingId: wedding.id }),
       })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: 'Onbekende fout' }))
-        throw new Error(body.error ?? 'Fout bij ophalen advies')
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok && !json.advies) {
+        throw new Error(json.error ?? 'Fout bij ophalen advies')
       }
-      const json = await res.json()
-      setAdvies(json.advies)
+      if (json.advies) setAdvies(json.advies)
+      setNextAvailable(json.next_available_at ? new Date(json.next_available_at) : null)
+      if (!res.ok && json.error) setError(json.error)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI tijdelijk niet beschikbaar')
     } finally {
@@ -101,6 +102,9 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null
+
+  const resterendeMs = nextAvailable ? nextAvailable.getTime() - Date.now() : 0
+  const wachtMinuten = resterendeMs > 0 ? Math.ceil(resterendeMs / 60000) : null
 
   return (
     <Card className="mb-6">
@@ -185,16 +189,22 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
               )}
             </Sectie>
 
-            <div className="mt-6 border-t border-border pt-4">
+            <div className="mt-6 flex items-center gap-3 border-t border-border pt-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={analyseer}
+                disabled={wachtMinuten !== null}
                 className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Opnieuw analyseren
               </Button>
+              {wachtMinuten !== null && (
+                <span className="text-xs text-muted-foreground">
+                  Nieuwe analyse mogelijk over {wachtMinuten} {wachtMinuten === 1 ? 'minuut' : 'minuten'}
+                </span>
+              )}
             </div>
           </div>
         ) : null}

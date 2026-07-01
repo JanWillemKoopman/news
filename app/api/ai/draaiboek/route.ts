@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { AIWeddingContext } from '@/lib/bruiloft/aiContext'
 import { deriveErvaringsniveau } from '@/lib/bruiloft/aiContext'
 import { logAiUsage } from '@/lib/ai/usage'
+import { teVeelVerzoekenBericht } from '@/lib/ai/rateLimitMessage'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
@@ -163,10 +164,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geen toegang tot deze bruiloft' }, { status: 403 })
   }
 
-  const rl = await checkRateLimit(`ai:draaiboek:${user.id}`, 10, 60 * 60)
+  const bestaandeItems = (body.bestaandeItems ?? []).slice(0, 100).map((t) => String(t).slice(0, 200))
+
+  // Cache check eerst — kost geen Gemini-call, mag dus nooit door de rate
+  // limiter geblokkeerd worden.
+  const fingerprint = buildDraaiboekFingerprint(body.context, bestaandeItems)
+  const now = Date.now()
+  const { data: cacheRow } = await (supabase as any)
+    .from('ai_draaiboek_cache')
+    .select('cached_advies, data_fingerprint, last_updated_at')
+    .eq('wedding_id', body.weddingId)
+    .maybeSingle()
+
+  if (cacheRow) {
+    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
+    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
+      const nextAvailableAt = new Date(new Date(cacheRow.last_updated_at).getTime() + MIN_COOLDOWN_MS)
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIDraaiboekAdvies,
+        cached: true,
+        next_available_at: nextAvailableAt.toISOString(),
+      })
+    }
+  }
+
+  // Alleen bij een echte generatie telt dit mee voor de limiet van 1x per uur.
+  const rl = await checkRateLimit(`ai:draaiboek:${body.weddingId}`, 1, 60 * 60)
   if (!rl.allowed) {
+    if (cacheRow?.cached_advies) {
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIDraaiboekAdvies,
+        cached: true,
+        next_available_at: rl.resetAt.toISOString(),
+      })
+    }
     return NextResponse.json(
-      { error: 'Te veel verzoeken, probeer het over een uur opnieuw.' },
+      { error: teVeelVerzoekenBericht(rl.resetAt), next_available_at: rl.resetAt.toISOString() },
       { status: 429 }
     )
   }
@@ -191,23 +224,6 @@ export async function POST(request: NextRequest) {
       actiesLaatste30Dagen: activityResult.count ?? 0,
       ervaringsniveau: deriveErvaringsniveau(profielLeeftijdDagen, activityResult.count ?? 0),
     },
-  }
-
-  const bestaandeItems = (body.bestaandeItems ?? []).slice(0, 100).map((t) => String(t).slice(0, 200))
-
-  const fingerprint = buildDraaiboekFingerprint(enrichedContext, bestaandeItems)
-  const now = Date.now()
-  const { data: cacheRow } = await (supabase as any)
-    .from('ai_draaiboek_cache')
-    .select('cached_advies, data_fingerprint, last_updated_at')
-    .eq('wedding_id', body.weddingId)
-    .maybeSingle()
-
-  if (cacheRow) {
-    const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
-    if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
-      return NextResponse.json({ advies: cacheRow.cached_advies as AIDraaiboekAdvies, cached: true })
-    }
   }
 
   const MODEL = 'gemini-2.5-flash'
@@ -238,7 +254,11 @@ export async function POST(request: NextRequest) {
       { wedding_id: body.weddingId, cached_advies: advies, data_fingerprint: fingerprint, last_updated_at: new Date().toISOString() },
       { onConflict: 'wedding_id' }
     )
-    return NextResponse.json({ advies, cached: false })
+    return NextResponse.json({
+      advies,
+      cached: false,
+      next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
+    })
   } catch (err) {
     console.error('[api/ai/draaiboek] Gemini fout:', err)
     logAiUsage({
@@ -251,7 +271,11 @@ export async function POST(request: NextRequest) {
       weddingId: body.weddingId,
     })
     if (cacheRow?.cached_advies) {
-      return NextResponse.json({ advies: cacheRow.cached_advies as AIDraaiboekAdvies, cached: true })
+      return NextResponse.json({
+        advies: cacheRow.cached_advies as AIDraaiboekAdvies,
+        cached: true,
+        next_available_at: new Date(now + MIN_COOLDOWN_MS).toISOString(),
+      })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
   }
