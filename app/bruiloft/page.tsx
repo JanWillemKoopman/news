@@ -4,7 +4,6 @@ import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
-import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
@@ -12,7 +11,7 @@ import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
 import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
 import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
-import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { berekenGuidance } from '@/lib/bruiloft/guidance'
 import type { NextStep } from '@/lib/bruiloft/guidance'
@@ -95,15 +94,6 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       {/* Hero: aftelteller */}
       <Card className="relative mb-8 overflow-hidden border-border">
-<Button
-          variant="ghost"
-          aria-label="Gegevens bewerken"
-          className="absolute right-3 top-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Bewerken</span>
-        </Button>
         <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-14">
           {heeftDatum ? (
             <span className="mb-3 inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700">
@@ -150,6 +140,14 @@ export default function DashboardPage() {
               </span>
             ) : null}
           </div>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            Gegevens bewerken
+          </button>
         </CardContent>
       </Card>
 
@@ -184,11 +182,6 @@ export default function DashboardPage() {
         wedding={wedding}
         permissions={permissions}
       />
-
-      {/* Aankomende acties: taken + betalingen gecombineerd op datum */}
-      <div className="mb-8">
-        <AankomendeActiesTimelijn tasks={tasks} budgetItems={budgetItems} />
-      </div>
 
       {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">

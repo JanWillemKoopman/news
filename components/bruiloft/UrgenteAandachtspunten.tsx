@@ -120,8 +120,8 @@ export function UrgenteAandachtspunten({
         const stijl =
           m.niveau === 'kritiek'
             ? 'border-rose-200 bg-rose-50 text-rose-800'
-            : 'border-amber-200 bg-amber-50 text-amber-800'
-        const iconStijl = m.niveau === 'kritiek' ? 'text-rose-500' : 'text-amber-500'
+            : 'border-border bg-muted/50 text-foreground'
+        const iconStijl = m.niveau === 'kritiek' ? 'text-rose-500' : 'text-muted-foreground'
         return (
           <Link
             key={m.id}

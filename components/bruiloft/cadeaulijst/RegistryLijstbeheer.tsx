@@ -174,7 +174,7 @@ function RegistryItemCard({ item, index, total, reservation, contributions, isEd
       <CardContent className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-foreground line-clamp-2">{item.title}</h3>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${isGift ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'}`}>
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
             {isGift ? 'Cadeau' : 'Geldfonds'}
           </span>
         </div>

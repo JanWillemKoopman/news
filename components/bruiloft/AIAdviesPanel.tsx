@@ -22,7 +22,7 @@ interface AIAdviesPanelProps {
 
 const URGENTIE_STIJL: Record<AIAdvies['urgentie'], string> = {
   kritiek: 'bg-rose-100 text-rose-700',
-  binnenkort: 'bg-amber-100 text-amber-700',
+  binnenkort: 'bg-muted text-muted-foreground',
   normaal: 'bg-muted text-muted-foreground',
 }
 
@@ -163,9 +163,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                             stap.urgentie === 'kritiek'
                               ? 'bg-rose-100 text-rose-700'
-                              : stap.urgentie === 'binnenkort'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-muted text-muted-foreground'
+                              : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           {stap.urgentie === 'kritiek'

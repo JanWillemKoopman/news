@@ -56,24 +56,9 @@ export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl }: 
               />
             </button>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {content.websiteGepubliceerd ? 'Website is live' : 'Website is verborgen'}
-                </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                    content.websiteGepubliceerd
-                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                      : 'bg-muted text-muted-foreground ring-1 ring-border'
-                  )}
-                >
-                  {content.websiteGepubliceerd && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  )}
-                  {content.websiteGepubliceerd ? 'Live' : 'Concept'}
-                </span>
-              </div>
+              <span className="text-sm font-semibold text-foreground">
+                {content.websiteGepubliceerd ? 'Website is live' : 'Website is verborgen'}
+              </span>
               <p className="text-xs text-muted-foreground">
                 {content.websiteGepubliceerd
                   ? 'Jullie gasten kunnen de website bekijken.'

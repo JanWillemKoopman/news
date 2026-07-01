@@ -327,7 +327,7 @@ function CategorieRij({
   const bijschrift = [referentieTekst, postenTekst].filter(Boolean).join(' · ')
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card transition-colors hover:border-foreground/15">
+    <div className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/15">
       <button
         type="button"
         onClick={onToggle}

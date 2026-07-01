@@ -7,12 +7,13 @@ import { Card, CardContent, Money, OverflowMenu, StatusBadge } from '@/component
 import { capFirst, cn } from '@/lib/utils'
 import type { BudgetItem, Vendor, VendorStatus } from '@/lib/bruiloft/types'
 
-// Statuskleur als accentrand links, in lijn met de StatusBadge-tonen.
+// Eén betekenisvolle kleur als accentrand: rose alleen bij "afgewezen"
+// (de enige status die echt aandacht vraagt), verder neutraal grijs.
 const STATUS_ACCENT: Record<VendorStatus, string> = {
-  'te bezoeken': 'border-l-sky-400',
-  bezocht: 'border-l-stone-300 dark:border-l-stone-600',
-  'offerte aangevraagd': 'border-l-amber-400',
-  geboekt: 'border-l-emerald-500',
+  'te bezoeken': 'border-l-border',
+  bezocht: 'border-l-border',
+  'offerte aangevraagd': 'border-l-border',
+  geboekt: 'border-l-foreground/40',
   afgewezen: 'border-l-rose-400',
 }
 

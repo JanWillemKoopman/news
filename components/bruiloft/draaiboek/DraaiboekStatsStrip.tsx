@@ -25,7 +25,7 @@ export function DraaiboekStatsStrip({ items, minPauze }: DraaiboekStatsStripProp
   ].filter(Boolean).join(' · ')
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-card shadow-sm">
+    <div className="mb-6 rounded-xl border border-border bg-card shadow-sm">
       <div className="flex items-center gap-4 p-4">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted-foreground">DAGINDELING</p>

@@ -16,13 +16,13 @@ function CircularProgress({ pct }: { pct: number }) {
 
   return (
     <svg width={64} height={64} className="shrink-0 -rotate-90">
-      <circle cx={32} cy={32} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
+      <circle cx={32} cy={32} r={r} fill="none" stroke="hsl(var(--border))" strokeWidth={4} />
       <circle
         cx={32}
         cy={32}
         r={r}
         fill="none"
-        stroke="#be123c"
+        stroke="hsl(var(--primary))"
         strokeWidth={4}
         strokeOpacity={0.6}
         strokeLinecap="round"
@@ -35,7 +35,7 @@ function CircularProgress({ pct }: { pct: number }) {
         y={32}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: 'hsl(var(--muted-foreground))' }}
       >
         {pct}%
       </text>
@@ -54,7 +54,7 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
   ].filter(Boolean)
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-card shadow-sm">
+    <div className="mb-6 rounded-xl border border-border bg-card shadow-sm">
       {/* Hoofdregel */}
       <div className="flex items-center gap-4 p-4">
         <CircularProgress pct={pct} />

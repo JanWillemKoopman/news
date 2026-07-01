@@ -159,11 +159,11 @@ export function RegistryOverzicht({ isEditor }: Props) {
                           <td className="py-2.5 pr-4 font-medium">{formatEuro(c.amount / 100, { cents: true })}</td>
                           <td className="py-2.5 pr-4">
                             {c.paymentStatus === 'confirmed' ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                                 <CheckCircle2 className="h-3 w-3" /> Bevestigd
                               </span>
                             ) : (
-                              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                                 In behandeling
                               </span>
                             )}

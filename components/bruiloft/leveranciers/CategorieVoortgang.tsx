@@ -42,7 +42,7 @@ export function CategorieVoortgang({ vendors, waarde, onChange }: CategorieVoort
   const geboektAantal = Array.from(perCategorie.values()).filter((c) => c.geboekt).length
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-card p-4">
+    <div className="mb-6 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">
           {geboektAantal} van {alleTypes.length} categorieën geboekt

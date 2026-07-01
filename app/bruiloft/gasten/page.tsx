@@ -70,11 +70,13 @@ function RsvpSelect({
     }
   }
 
+  // Eén betekenisvolle kleur: rose alleen voor "afgemeld", verder neutraal —
+  // zelfde regel als StatusBadge, hier lokaal omdat dit element klikbaar is.
   const klassen: Record<RsvpStatus, string> = {
-    bevestigd: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20',
+    bevestigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
     afgemeld: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
-    uitgenodigd: 'bg-sky-500/10 text-sky-700 ring-sky-600/20 dark:text-sky-300 dark:ring-sky-400/20',
-    'geen reactie': 'bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-300 dark:ring-amber-400/20',
+    uitgenodigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
+    'geen reactie': 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
   }
 
   return (
@@ -349,7 +351,7 @@ export default function GastenPage() {
               wedding={wedding}
             />
           </div>
-          <div className="rounded-lg border border-border bg-card shadow-sm">
+          <div className="rounded-xl border border-border bg-card shadow-sm">
 
           {/* Tabel (desktop) */}
           {gefilterd.length === 0 ? (

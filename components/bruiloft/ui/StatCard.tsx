@@ -18,7 +18,7 @@ export function StatCard({ icon: Icon, label, href, children, className }: StatC
   const inner = (
     <div
       className={cn(
-        'group flex h-full flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-[box-shadow,border-color] duration-150 ease-out sm:p-6',
+        'group flex h-full flex-col rounded-xl border border-border bg-card p-4 shadow-sm transition-[box-shadow,border-color] duration-150 ease-out sm:p-6',
         href && 'hover:border-rose-300 hover:shadow-md',
         className
       )}

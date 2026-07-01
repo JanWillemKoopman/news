@@ -233,7 +233,7 @@ export default function LeveranciersPage() {
       ) : (
         <>
           {weergave === 'tabel' ? (
-            <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-sm md:block">
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

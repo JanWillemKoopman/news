@@ -12,7 +12,7 @@ export default function GastenLoading() {
       {/* Stat-kaartjes */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-lg border border-border bg-card p-4">
+          <div key={i} className="rounded-xl border border-border bg-card p-4">
             <Skeleton className="h-3 w-16 mb-2" />
             <Skeleton className="h-7 w-10" />
           </div>

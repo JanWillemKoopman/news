@@ -12,16 +12,18 @@ import type { AIAdvies } from '@/app/api/ai/advice/route'
 // meest urgente dat bij deze sectie hoort — uit de gedeelde advieslaag. Geen
 // eigen AI-call, geen skeleton: de kaart verschijnt pas (met een fade) zodra
 // er daadwerkelijk een relevant advies is, en verdwijnt na wegklikken overal.
-
-const TYPE_CONFIG: Record<AIAdvies['type'], { label: string; icon: typeof Sparkles; tone: string }> = {
-  actie: { label: 'AI-advies', icon: Sparkles, tone: 'bg-rose-50 text-rose-600' },
-  benchmark: { label: 'Benchmark', icon: BarChart3, tone: 'bg-rhino-50 text-rhino-700' },
-  tip: { label: 'AI-tip', icon: Lightbulb, tone: 'bg-amber-50 text-amber-600' },
+//
+// Eén neutraal icoon voor alle AI-types; rose is gereserveerd voor het enige
+// signaal dat er echt toe doet — "dit is dringend".
+const TYPE_CONFIG: Record<AIAdvies['type'], { label: string; icon: typeof Sparkles }> = {
+  actie: { label: 'AI-advies', icon: Sparkles },
+  benchmark: { label: 'Benchmark', icon: BarChart3 },
+  tip: { label: 'AI-tip', icon: Lightbulb },
 }
 
 const URGENTIE_CHIP: Record<AIAdvies['urgentie'], string | null> = {
   kritiek: 'bg-rose-100 text-rose-700',
-  binnenkort: 'bg-amber-100 text-amber-700',
+  binnenkort: null,
   normaal: null,
 }
 
@@ -48,7 +50,7 @@ export function AIInsightCard({ sectie, className }: AIInsightCardProps) {
 
   if (loading || !item) return null
 
-  const { label, icon: Icon, tone } = TYPE_CONFIG[item.type]
+  const { label, icon: Icon } = TYPE_CONFIG[item.type]
   const urgentieChip = URGENTIE_CHIP[item.urgentie]
 
   return (
@@ -58,7 +60,7 @@ export function AIInsightCard({ sectie, className }: AIInsightCardProps) {
         className
       )}
     >
-      <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full', tone)}>
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">

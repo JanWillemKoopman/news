@@ -57,7 +57,7 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
   const dagenTotTrouw = wedding.trouwdatum ? Math.max(0, dagenTot(wedding.trouwdatum)) : null
 
   return (
-    <div className="mb-6 rounded-lg border border-border bg-card shadow-sm">
+    <div className="mb-6 rounded-xl border border-border bg-card shadow-sm">
       {/* Main progress row */}
       <div className="flex items-center gap-4 p-3">
         <CircularProgress pct={stats.pctKlaar} />

@@ -204,7 +204,7 @@ export function OnboardingGids() {
                     className={cn(
                       'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border',
                       stap.klaar
-                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                        ? 'border-foreground bg-foreground text-background'
                         : eersteActief
                           ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-border bg-background text-muted-foreground'

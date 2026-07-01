@@ -2,10 +2,9 @@
 
 import Link from 'next/link'
 import {
+  AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
   Circle,
 } from 'lucide-react'
 
@@ -39,7 +38,7 @@ function ModuleKaart({ href, children }: ModuleKaartProps) {
   return (
     <Link
       href={href}
-      className="group relative flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition-[box-shadow,border-color] duration-150 hover:border-rose-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group relative flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm transition-[box-shadow,border-color] duration-150 hover:border-rose-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {children}
       <ArrowUpRight className="absolute right-4 top-4 h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-rose-500" />
@@ -61,7 +60,7 @@ function LeverancierCheckItem({
 
   if (geboekt) {
     return (
-      <span className="flex items-center gap-1 text-xs text-emerald-700">
+      <span className="flex items-center gap-1 text-xs text-foreground">
         <CheckCircle2 className="h-3 w-3 shrink-0" />
         {label}
       </span>
@@ -69,8 +68,8 @@ function LeverancierCheckItem({
   }
   if (inBehandeling) {
     return (
-      <span className="flex items-center gap-1 text-xs text-amber-700">
-        <AlertCircle className="h-3 w-3 shrink-0" />
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Circle className="h-3 w-3 shrink-0" />
         {label}
       </span>
     )
@@ -147,7 +146,7 @@ export function ModuleStatusGrid({
                 <p className="text-xs text-muted-foreground">{budgetPct}% betaald</p>
                 {overBudget ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
-                    <AlertCircle className="h-3 w-3" /> Over budget
+                    <AlertTriangle className="h-3 w-3" /> Over budget
                   </span>
                 ) : (
                   <p className="text-xs text-muted-foreground">
@@ -156,7 +155,7 @@ export function ModuleStatusGrid({
                 )}
               </div>
               {budget.totaalGeoffreerd > budget.totaalBetaald && (
-                <p className="mt-1.5 text-xs text-amber-700">
+                <p className="mt-1.5 text-xs text-muted-foreground">
                   <Money bedrag={budget.totaalGeoffreerd} /> gereserveerd
                 </p>
               )}
@@ -192,8 +191,7 @@ export function ModuleStatusGrid({
                   {gasten.bevestigdeDaggasten} dag · {gasten.bevestigdeAvondgasten} avond
                 </p>
                 {gasten.geenReactie > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    <AlertCircle className="h-3 w-3" />
+                  <span className="text-xs text-muted-foreground">
                     {gasten.geenReactie} geen reactie
                   </span>
                 )}
@@ -214,13 +212,13 @@ export function ModuleStatusGrid({
           <p className="text-xs text-muted-foreground">{taken.klaar} afgerond</p>
           {achterstallig > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
-              <XCircle className="h-3 w-3" />
+              <AlertTriangle className="h-3 w-3" />
               {achterstallig} achterstallig
             </span>
           )}
         </div>
         {aanjouTaken > 0 && (
-          <p className="mt-2 text-xs font-medium text-rose-600">
+          <p className="mt-2 text-xs font-medium text-foreground">
             {aanjouTaken} {aanjouTaken === 1 ? 'taak' : 'taken'} aan jou toegewezen
           </p>
         )}

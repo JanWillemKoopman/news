@@ -53,9 +53,12 @@ const MODULE_CONFIG: Array<{
 
 type ModuleStatus = AIModuleAdvies['status']
 
+// Eén betekenisvolle kleur: rose alleen voor "kritiek", verder neutraal grijs
+// — zelfde regel als de budgetanalyse, zodat de twee AI-pagina's elkaars
+// spiegelbeeld zijn.
 const STATUS_CONFIG: Record<ModuleStatus, { label: string; dot: string; pill: string }> = {
-  op_schema:     { label: 'Op schema',     dot: 'bg-emerald-500', pill: 'text-emerald-700 bg-emerald-50' },
-  actie_vereist: { label: 'Actie vereist', dot: 'bg-amber-500',   pill: 'text-amber-700 bg-amber-50'   },
+  op_schema:     { label: 'Op schema',     dot: 'bg-muted-foreground/40', pill: 'text-muted-foreground bg-muted' },
+  actie_vereist: { label: 'Actie vereist', dot: 'bg-muted-foreground/40', pill: 'text-muted-foreground bg-muted' },
   kritiek:       { label: 'Kritiek',       dot: 'bg-rose-500',    pill: 'text-rose-700 bg-rose-50'     },
   niet_gestart:  { label: 'Niet gestart',  dot: 'bg-muted-foreground/40', pill: 'text-muted-foreground bg-muted' },
 }
@@ -112,10 +115,7 @@ function LaadAnimatie() {
 
 function GlobaleStatusKaart({ advies }: { advies: AIWeddingPlannerAdvies }) {
   const { globaal } = advies
-  const barColor =
-    globaal.score >= 65 ? '[&>div]:bg-emerald-500' :
-    globaal.score >= 35 ? '[&>div]:bg-amber-500' :
-    '[&>div]:bg-rose-500'
+  const barColor = globaal.score >= 35 ? '[&>div]:bg-foreground/70' : '[&>div]:bg-rose-500'
 
   return (
     <div className="mb-8 grid gap-6 md:grid-cols-[280px_1fr]">
