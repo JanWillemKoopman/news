@@ -1,32 +1,52 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CheckCircle2, Info, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Scale, Sparkles, Target, X } from 'lucide-react'
 
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, Card, CardContent, LoadingDots } from '@/components/bruiloft/ui'
-import { capFirst } from '@/lib/utils'
 import type { AIBudgetAdvies as AIBudgetAdviesType } from '@/app/api/ai/budget/route'
 
-// Rustige, merkeigen tonen i.p.v. felle verkeerslicht-kleuren: grijs voor een
-// aandachtspunt, rhino-blauw voor een tip, paars voor iets positiefs.
-const TYPE_STIJL = {
-  waarschuwing: {
-    icon: AlertTriangle,
-    klasse: 'border-border bg-muted/50 text-foreground',
-    iconKlasse: 'text-rose-500',
-  },
-  tip: {
-    icon: Info,
-    klasse: 'border-rhino-200 bg-rhino-50 text-rhino-800 dark:border-rhino-800 dark:bg-rhino-950/40 dark:text-rhino-200',
-    iconKlasse: 'text-rhino-600',
-  },
-  positief: {
+// Vier vaste secties die samen het budgetverhaal vertellen, van "wat gaat
+// goed" tot "wat nu te doen" — rustige, merkeigen tonen i.p.v. felle
+// verkeerslicht-kleuren.
+const SECTIE_STIJL = {
+  statusEnSuccessen: {
+    titel: 'Huidige status & successen',
     icon: CheckCircle2,
-    klasse: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300',
+    klasse: 'border-violet-200 bg-violet-50 dark:border-violet-900 dark:bg-violet-950/40',
     iconKlasse: 'text-violet-500',
   },
+  risicosEnBlindeVlekken: {
+    titel: "Risico's & blinde vlekken",
+    icon: AlertTriangle,
+    klasse: 'border-border bg-muted/50',
+    iconKlasse: 'text-rose-500',
+  },
+  marktvergelijking: {
+    titel: 'Marktvergelijking & benchmark',
+    icon: Scale,
+    klasse: 'border-rhino-200 bg-rhino-50 dark:border-rhino-800 dark:bg-rhino-950/40',
+    iconKlasse: 'text-rhino-600',
+  },
+  conclusieEnAdvies: {
+    titel: 'Conclusie & concreet advies',
+    icon: Target,
+    klasse: 'border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/40',
+    iconKlasse: 'text-rose-500',
+  },
+} as const
+
+function SectieTitel({ sectie }: { sectie: keyof typeof SECTIE_STIJL }) {
+  const stijl = SECTIE_STIJL[sectie]
+  const Icon = stijl.icon
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <Icon className={`h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
+      <h4 className="text-sm font-semibold text-foreground">{stijl.titel}</h4>
+    </div>
+  )
 }
 
 interface AIBudgetAdviesProps {
@@ -107,30 +127,58 @@ export function AIBudgetAdvies({ open, onClose }: AIBudgetAdviesProps) {
           <p className="text-sm text-rose-600">{error}</p>
         ) : advies ? (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{advies.samenvatting}</p>
+            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.statusEnSuccessen.klasse}`}>
+              <SectieTitel sectie="statusEnSuccessen" />
+              <p className="text-sm text-foreground">{advies.statusEnSuccessen.algemeneIndruk}</p>
+              {advies.statusEnSuccessen.sterkePunten.length > 0 && (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+                  {advies.statusEnSuccessen.sterkePunten.map((punt, i) => (
+                    <li key={i}>{punt}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
-            {advies.aandachtspunten.length > 0 && (
-              <ul className="space-y-2">
-                {advies.aandachtspunten.map((punt, i) => {
-                  const stijl = TYPE_STIJL[punt.type] ?? TYPE_STIJL.tip
-                  const Icon = stijl.icon
-                  return (
-                    <li
-                      key={i}
-                      className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${stijl.klasse}`}
-                    >
-                      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${stijl.iconKlasse}`} />
-                      <div>
-                        <span className="font-medium">{capFirst(punt.categorie)}: </span>
-                        {punt.bericht}
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
+            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.risicosEnBlindeVlekken.klasse}`}>
+              <SectieTitel sectie="risicosEnBlindeVlekken" />
+              {advies.risicosEnBlindeVlekken.verbeterpunten.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+                  {advies.risicosEnBlindeVlekken.verbeterpunten.map((punt, i) => (
+                    <li key={i}>{punt}</li>
+                  ))}
+                </ul>
+              )}
+              {advies.risicosEnBlindeVlekken.ontbrekendeKosten.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Mogelijk vergeten posten
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+                    {advies.risicosEnBlindeVlekken.ontbrekendeKosten.map((punt, i) => (
+                      <li key={i}>{punt}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
 
-            <p className="text-sm font-medium text-foreground">{advies.algemeneRaad}</p>
+            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.marktvergelijking.klasse}`}>
+              <SectieTitel sectie="marktvergelijking" />
+              <p className="text-sm text-foreground">{advies.marktvergelijking.begrootVsDaadwerkelijk}</p>
+              <p className="mt-2 text-sm text-foreground">{advies.marktvergelijking.benchmarkAnalyse}</p>
+            </section>
+
+            <section className={`rounded-lg border p-4 ${SECTIE_STIJL.conclusieEnAdvies.klasse}`}>
+              <SectieTitel sectie="conclusieEnAdvies" />
+              <p className="text-sm font-medium text-foreground">{advies.conclusieEnAdvies.haalbaarheid}</p>
+              {advies.conclusieEnAdvies.actiepunten.length > 0 && (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+                  {advies.conclusieEnAdvies.actiepunten.map((punt, i) => (
+                    <li key={i}>{punt}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
             <Button
               variant="ghost"

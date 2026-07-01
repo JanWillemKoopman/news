@@ -11,13 +11,22 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export interface AIBudgetAdvies {
-  samenvatting: string
-  aandachtspunten: Array<{
-    categorie: string
-    bericht: string
-    type: 'waarschuwing' | 'tip' | 'positief'
-  }>
-  algemeneRaad: string
+  statusEnSuccessen: {
+    algemeneIndruk: string
+    sterkePunten: string[]
+  }
+  risicosEnBlindeVlekken: {
+    verbeterpunten: string[]
+    ontbrekendeKosten: string[]
+  }
+  marktvergelijking: {
+    begrootVsDaadwerkelijk: string
+    benchmarkAnalyse: string
+  }
+  conclusieEnAdvies: {
+    haalbaarheid: string
+    actiepunten: string[]
+  }
 }
 
 const MIN_COOLDOWN_MS = 30 * 60 * 1000   // 30 min
@@ -25,7 +34,7 @@ const MAX_CACHE_AGE_MS = 4 * 60 * 60 * 1000  // 4 uur
 
 function buildBudgetFingerprint(ctx: AIWeddingContext): string {
   return [
-    'v1',
+    'v2',
     Math.round(ctx.budget.totaal),
     Math.round(ctx.budget.betaald),
     Math.round(ctx.budget.geoffreerd),
@@ -53,30 +62,45 @@ ${JSON.stringify(ctx.leveranciers, null, 2)}
 Aankomende betalingen:
 ${JSON.stringify(ctx.betalingen, null, 2)}
 
-Geef een beknopte maar waardevolle budgetanalyse. Let op:
+Schrijf een overzichtelijk, lopend verhaal in 4 delen — geen losse opsomming van losstaande punten, maar een samenhangende analyse waarin je de lezer meeneemt. Let op:
 - Vergelijk geoffreerde bedragen per categorie met het richtbedrag (Nederlandse praktijk)
 - Signaleer categorieën die over of significant onder het richtbedrag zitten
-- Waarschuw voor ontbrekende categorieën die ze mogelijk vergeten zijn
+- Waarschuw voor ontbrekende categorieën die ze mogelijk vergeten zijn (denk aan servicekosten, fooien, styling, vervoer, of een onvoorziene buffer van ~10%)
+- Vergelijk begrote bedragen met de daadwerkelijke offertes/betalingen tot nu toe
+- Benchmark de kosten per categorie (catering, locatie, kleding, etc.) tegen het marktgemiddelde voor een bruiloft van deze omvang en stijl
 - Wijs op aankomende betalingen die aandacht nodig hebben
-- Schrijf in het Nederlands, concreet en vriendelijk
+- Schrijf in het Nederlands, concreet, vriendelijk en in volledige zinnen (geen telegramstijl)
 
 Geef ALLEEN een JSON-object terug in dit formaat:
 {
-  "samenvatting": "2-3 zinnen over de algehele budgetstatus",
-  "aandachtspunten": [
-    {
-      "categorie": "naam van de categorie of betaling",
-      "bericht": "specifiek en concreet advies",
-      "type": "waarschuwing|tip|positief"
-    }
-  ],
-  "algemeneRaad": "1-2 zinnen algemeen advies"
+  "statusEnSuccessen": {
+    "algemeneIndruk": "2-3 zinnen: korte samenvatting van het totale budget en de huidige voortgang",
+    "sterkePunten": ["welke posten zijn slim ingeschat, waar zijn al deals gesloten of kosten bespaard — elk punt 1 volzin"]
+  },
+  "risicosEnBlindeVlekken": {
+    "verbeterpunten": ["posten die nu al over budget dreigen te gaan of te optimistisch zijn begroot — elk punt 1 volzin"],
+    "ontbrekendeKosten": ["cruciale 'vergeten' posten die vaak over het hoofd worden gezien — elk punt 1 volzin"]
+  },
+  "marktvergelijking": {
+    "begrootVsDaadwerkelijk": "2-3 zinnen: hoe verhouden de initiële schattingen zich tot de werkelijke offertes en betalingen tot nu toe",
+    "benchmarkAnalyse": "2-3 zinnen: hoe scoren de kosten per categorie vergeleken met het marktgemiddelde voor een bruiloft van deze omvang en stijl"
+  },
+  "conclusieEnAdvies": {
+    "haalbaarheid": "1-2 zinnen: is het budget in de huidige vorm realistisch",
+    "actiepunten": ["directe, strategische adviezen om te schuiven met budgetten of te heronderhandelen — elk punt 1 volzin"]
+  }
 }`
 }
 
 function parseBudgetAdvies(text: string): AIBudgetAdvies {
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
   return JSON.parse(cleaned) as AIBudgetAdvies
+}
+
+// Oude cache-rijen bevatten nog het vlakke opsommings-schema; die mogen niet
+// als het nieuwe verhaal-schema teruggegeven worden.
+function isNieuwSchema(advies: unknown): advies is AIBudgetAdvies {
+  return Boolean(advies && typeof advies === 'object' && 'statusEnSuccessen' in advies)
 }
 
 export async function POST(request: NextRequest) {
@@ -150,7 +174,7 @@ export async function POST(request: NextRequest) {
     .eq('wedding_id', body.weddingId)
     .single()
 
-  if (cacheRow) {
+  if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
     const cacheAge = now - new Date(cacheRow.last_updated_at).getTime()
     if (cacheAge < MAX_CACHE_AGE_MS && (cacheRow.data_fingerprint === fingerprint || cacheAge < MIN_COOLDOWN_MS)) {
       return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
@@ -197,7 +221,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       weddingId: body.weddingId,
     })
-    if (cacheRow?.cached_advies) {
+    if (cacheRow && isNieuwSchema(cacheRow.cached_advies)) {
       return NextResponse.json({ advies: cacheRow.cached_advies as AIBudgetAdvies, cached: true })
     }
     return NextResponse.json({ error: 'AI tijdelijk niet beschikbaar' }, { status: 502 })
