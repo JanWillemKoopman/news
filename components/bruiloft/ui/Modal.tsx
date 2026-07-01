@@ -14,6 +14,10 @@ interface ModalProps {
   description?: string
   children: React.ReactNode
   className?: string
+  // Blijft altijd zichtbaar onderaan (buiten de scrollbare inhoud), voor
+  // actieknoppen die anders achter uitgeklapte content ("Meer details")
+  // zouden wegscrollen — vooral belangrijk op mobiel.
+  footer?: React.ReactNode
 }
 
 export function Modal({
@@ -23,6 +27,7 @@ export function Modal({
   description,
   children,
   className,
+  footer,
 }: ModalProps) {
   const [mobileStyle, setMobileStyle] = React.useState<React.CSSProperties>({})
 
@@ -116,7 +121,19 @@ export function Modal({
               </Button>
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-5">{children}</div>
+          <div
+            className={cn(
+              'min-h-0 flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:py-5',
+              footer ? 'pb-5' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+            )}
+          >
+            {children}
+          </div>
+          {footer ? (
+            <div className="shrink-0 border-t border-border bg-card px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+              {footer}
+            </div>
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

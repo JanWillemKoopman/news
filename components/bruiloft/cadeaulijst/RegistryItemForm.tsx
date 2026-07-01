@@ -159,8 +159,18 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
       onOpenChange={onOpenChange}
       title={initial ? 'Item bewerken' : 'Item toevoegen'}
       className="sm:max-w-xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuleren
+          </Button>
+          <Button type="submit" form="registry-item-form" loading={saving}>
+            {initial ? 'Opslaan' : 'Toevoegen'}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="registry-item-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Type toggle */}
         <div>
           <p className="mb-1.5 text-sm font-medium text-foreground">Type</p>
@@ -304,15 +314,6 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
             </>
           )}
         </MeerDetails>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Annuleren
-          </Button>
-          <Button type="submit" loading={saving}>
-            {initial ? 'Opslaan' : 'Toevoegen'}
-          </Button>
-        </div>
       </form>
     </Modal>
   )

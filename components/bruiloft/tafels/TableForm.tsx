@@ -51,8 +51,20 @@ export function TableForm({ open, onOpenChange, initial, onSubmit }: TableFormPr
 
   return (
     <>
-    <Modal open={open} onOpenChange={sluit} title={initial ? 'Tafel bewerken' : 'Tafel toevoegen'}>
-      <form onSubmit={submit} className="space-y-4">
+    <Modal
+      open={open}
+      onOpenChange={sluit}
+      title={initial ? 'Tafel bewerken' : 'Tafel toevoegen'}
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
+            Annuleren
+          </Button>
+          <Button type="submit" form="table-form">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
+        </div>
+      }
+    >
+      <form id="table-form" onSubmit={submit} className="space-y-4">
         <Field label="Naam" htmlFor="naam">
           <Input
             id="naam"
@@ -86,12 +98,6 @@ export function TableForm({ open, onOpenChange, initial, onSubmit }: TableFormPr
               onChange={(e) => setForm((f) => ({ ...f, capaciteit: Number(e.target.value) || 0 }))}
             />
           </Field>
-        </div>
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => sluit(false)}>
-            Annuleren
-          </Button>
-          <Button type="submit">{initial ? 'Opslaan' : 'Toevoegen'}</Button>
         </div>
       </form>
     </Modal>
