@@ -26,6 +26,8 @@ export function categorieLabelVoor(
   return c.charAt(0).toUpperCase() + c.slice(1)
 }
 
+// Vaste suggestielijst; bruidsparen kunnen bij het aanmaken/bewerken van een
+// gast ook een eigen categorie of gasttype intypen (zie GuestForm).
 export const GUEST_CATEGORIEEN: GuestCategorie[] = [
   'familie partner 1',
   'familie partner 2',

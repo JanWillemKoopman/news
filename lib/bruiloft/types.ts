@@ -55,14 +55,12 @@ export type WeddingInput = Omit<Wedding, 'id' | 'createdAt' | 'updatedAt'>
 
 // --- Guest -----------------------------------------------------------------
 
-export type GuestCategorie =
-  | 'familie partner 1'
-  | 'familie partner 2'
-  | 'vrienden'
-  | "collega's"
-  | 'overig'
+// Vrije tekst: bruidsparen kunnen bij het toevoegen/bewerken van een gast ook
+// zelf een categorie of gasttype intypen (net als bij budgetcategorieën en
+// leverancierstypes), naast de vaste suggestielijst in de UI.
+export type GuestCategorie = string
 
-export type Gasttype = 'daggast' | 'avondgast'
+export type Gasttype = string
 
 export type RsvpStatus =
   | 'uitgenodigd'

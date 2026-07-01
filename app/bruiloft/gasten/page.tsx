@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Sparkles, Trash2, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Sparkles, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
@@ -23,7 +23,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
-import { categorieLabelVoor, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
+import { categorieLabelVoor, GASTTYPES, GUEST_CATEGORIEEN, RSVP_STATUSSEN } from '@/lib/bruiloft/options'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { capFirst } from '@/lib/utils'
@@ -114,6 +114,46 @@ function RsvpSelect({
   )
 }
 
+type SortKolom = 'naam' | 'categorie' | 'type' | 'tafel' | 'rsvp'
+
+// Sorteericoon in de kolomtitel: neutraal (beide richtingen) als de kolom niet
+// actief is, anders een pijl die de huidige richting toont.
+function SortIcon({ actief, richting }: { actief: boolean; richting: 'asc' | 'desc' }) {
+  if (!actief) return <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-40" />
+  return richting === 'asc' ? (
+    <ArrowUp className="h-3.5 w-3.5 shrink-0" />
+  ) : (
+    <ArrowDown className="h-3.5 w-3.5 shrink-0" />
+  )
+}
+
+function SortableTh({
+  kolom,
+  actief,
+  richting,
+  onSort,
+  children,
+}: {
+  kolom: SortKolom
+  actief: boolean
+  richting: 'asc' | 'desc'
+  onSort: (kolom: SortKolom) => void
+  children: React.ReactNode
+}) {
+  return (
+    <th scope="col" className="px-4 py-3 font-medium">
+      <button
+        type="button"
+        onClick={() => onSort(kolom)}
+        className="inline-flex items-center gap-1 hover:text-foreground"
+      >
+        {children}
+        <SortIcon actief={actief} richting={richting} />
+      </button>
+    </th>
+  )
+}
+
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const guests = useBruiloftStore((s) => s.guests)
@@ -134,6 +174,19 @@ export default function GastenPage() {
   const [fType, setFType] = React.useState('all')
   const [fRsvp, setFRsvp] = React.useState('all')
 
+  // Standaard alfabetisch op naam; klik op een kolomtitel sorteert daarop
+  // (nogmaals klikken keert de richting om).
+  const [sortKolom, setSortKolom] = React.useState<SortKolom>('naam')
+  const [sortRichting, setSortRichting] = React.useState<'asc' | 'desc'>('asc')
+  const toggleSort = (kolom: SortKolom) => {
+    if (sortKolom === kolom) {
+      setSortRichting((r) => (r === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKolom(kolom)
+      setSortRichting('asc')
+    }
+  }
+
   const [formOpen, setFormOpen] = React.useState(false)
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
   const [bulkOpen, setBulkOpen] = React.useState(false)
@@ -149,6 +202,17 @@ export default function GastenPage() {
   const tafelNamen = React.useMemo(
     () => new Map(tables.map((t) => [t.id, t.naam])),
     [tables]
+  )
+
+  // Custom categorieën/gasttypes die al bij gasten in gebruik zijn, naast de
+  // vaste suggestielijst — zodat ze ook als filter- en formulieroptie verschijnen.
+  const extraCategorieen = React.useMemo(
+    () => Array.from(new Set(guests.map((g) => g.categorie).filter((c) => !GUEST_CATEGORIEEN.includes(c)))),
+    [guests]
+  )
+  const extraGasttypen = React.useMemo(
+    () => Array.from(new Set(guests.map((g) => g.gasttype).filter((t) => !GASTTYPES.includes(t)))),
+    [guests]
   )
 
   // Zorg dat alle gasten een RSVP-code hebben zodra de pagina geladen is.
@@ -223,10 +287,37 @@ export default function GastenPage() {
     return true
   })
 
-  const zichtbaar = [...gefilterd].sort((a, b) =>
+  const naamVergelijk = (a: Guest, b: Guest) =>
     (a.achternaam || '').localeCompare(b.achternaam || '', 'nl') ||
     a.voornaam.localeCompare(b.voornaam, 'nl')
-  )
+
+  const vergelijk = (a: Guest, b: Guest): number => {
+    switch (sortKolom) {
+      case 'categorie':
+        return (
+          categorieLabelVoor(a.categorie, wedding.partner1Naam, wedding.partner2Naam)
+            .localeCompare(categorieLabelVoor(b.categorie, wedding.partner1Naam, wedding.partner2Naam), 'nl') ||
+          naamVergelijk(a, b)
+        )
+      case 'type':
+        return a.gasttype.localeCompare(b.gasttype, 'nl') || naamVergelijk(a, b)
+      case 'tafel':
+        return (
+          (tafelNamen.get(a.tafelId ?? '') ?? '').localeCompare(tafelNamen.get(b.tafelId ?? '') ?? '', 'nl') ||
+          naamVergelijk(a, b)
+        )
+      case 'rsvp':
+        return a.rsvpStatus.localeCompare(b.rsvpStatus, 'nl') || naamVergelijk(a, b)
+      case 'naam':
+      default:
+        return naamVergelijk(a, b)
+    }
+  }
+
+  const zichtbaar = [...gefilterd].sort((a, b) => {
+    const cmp = vergelijk(a, b)
+    return sortRichting === 'asc' ? cmp : -cmp
+  })
 
   const openNieuw = () => {
     savedScroll.current = saveScroll()
@@ -345,6 +436,8 @@ export default function GastenPage() {
               rsvp={fRsvp}
               onRsvp={setFRsvp}
               wedding={wedding}
+              extraCategorieen={extraCategorieen}
+              extraGasttypen={extraGasttypen}
             />
           </div>
           <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -370,11 +463,21 @@ export default function GastenPage() {
                   <caption className="sr-only">Gastenlijst met categorie, type en RSVP-status</caption>
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th scope="col" className="px-4 py-3 font-medium">Naam</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Categorie</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Type</th>
-                      <th scope="col" className="px-4 py-3 font-medium">Tafel</th>
-                      <th scope="col" className="px-4 py-3 font-medium">RSVP</th>
+                      <SortableTh kolom="naam" actief={sortKolom === 'naam'} richting={sortRichting} onSort={toggleSort}>
+                        Naam
+                      </SortableTh>
+                      <SortableTh kolom="categorie" actief={sortKolom === 'categorie'} richting={sortRichting} onSort={toggleSort}>
+                        Categorie
+                      </SortableTh>
+                      <SortableTh kolom="type" actief={sortKolom === 'type'} richting={sortRichting} onSort={toggleSort}>
+                        Type
+                      </SortableTh>
+                      <SortableTh kolom="tafel" actief={sortKolom === 'tafel'} richting={sortRichting} onSort={toggleSort}>
+                        Tafel
+                      </SortableTh>
+                      <SortableTh kolom="rsvp" actief={sortKolom === 'rsvp'} richting={sortRichting} onSort={toggleSort}>
+                        RSVP
+                      </SortableTh>
                       <th scope="col" className="px-4 py-3">
                         <span className="sr-only">Acties</span>
                       </th>
@@ -553,6 +656,8 @@ export default function GastenPage() {
         }}
         initial={editGuest}
         wedding={wedding}
+        extraCategorieen={extraCategorieen}
+        extraGasttypen={extraGasttypen}
         onSubmit={async (data) => {
           try {
             if (editGuest) {
