@@ -11,6 +11,30 @@
 - **Wedding Website**: Customizable public wedding sites
 - **Real-time Collaboration**: Live updates using Supabase Realtime
 
+### Codebase-oriëntatie
+- **`app/bruiloft/<feature>/page.tsx`** — pagina's, één map per feature (budget,
+  taken, gasten, leveranciers, tafels, draaiboek, website, cadeaulijst, ...).
+- **`components/bruiloft/<feature>/`** — UI-componenten per feature;
+  **`components/bruiloft/ui/`** bevat de gedeelde bouwstenen (`Card`,
+  `Button`, `PageHeader`, `StatusBadge`, `OverflowMenu`, `EmptyState`, ...) —
+  begin hier bij hergebruik, zie ook `DESIGN_PHILOSOPHY.md`.
+- **`lib/bruiloft/`** — domeinlogica: `types.ts` (databasetypes),
+  `derived.ts` (afgeleide berekeningen zoals budgettotalen), `permissions.ts`,
+  `aiContext.ts` (context voor AI-endpoints), `ai/` (prompts/benchmarks per
+  AI-feature).
+- **`store/bruiloftStore.ts`** — enige Zustand-store, alle pagina's lezen
+  hieruit.
+- **`app/api/`** — route handlers, o.a. `ai/` (Gemini-endpoints per feature),
+  `cron/reminders` (dagelijkse herinneringen), `registry/` (cadeaulijst).
+- **`supabase/migrations/`** — schemawijzigingen; `supabase/schema.sql` is de
+  samengevoegde huidige stand.
+- **Commando's**: `npm run dev` / `build` / `lint`. Geen testscript aanwezig
+  (`npm test` bestaat niet) — verificatie loopt via `tsc --noEmit`, `next
+  lint` en handmatige/Playwright-controle, niet via een testsuite.
+- **Lokale env**: `.env.example` kopiëren naar `.env.local` (Supabase-URL/
+  keys, Resend, Gemini, Sentry, cron-secret) — zonder deze env-vars faalt
+  `next build` bij het prerenderen van pagina's die Supabase aanroepen.
+
 ---
 
 ## Design Filosofie (VERPLICHT LEESWERK)

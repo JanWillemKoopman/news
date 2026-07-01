@@ -87,6 +87,24 @@ Gebruik deze vragen bij elke UI-beslissing:
    rommelige tweede regel — verplaats naar een meer-menu i.p.v. laten
    wrappen.
 
+## Referentie-implementaties
+
+Voor principe #6 (hergebruik patronen): dit zijn de canonieke bestanden per
+patroon. Nieuwe features passen deze toe of breiden ze uit — vind niet
+opnieuw uit.
+
+| Patroon | Bestand |
+|---|---|
+| Kaart (basisbouwsteen) | `components/bruiloft/ui/Card.tsx` |
+| Statuslabel (rose = aandacht, verder neutraal) | `components/bruiloft/ui/StatusBadge.tsx` |
+| Paginaheader (primaire actie + meer-menu + info) | `components/bruiloft/PageHeader.tsx` |
+| "Meer"-menu voor secundaire acties | `components/bruiloft/ui/OverflowMenu.tsx` |
+| Lege staat | `components/bruiloft/ui/EmptyState.tsx` |
+| Toast/directe feedback na een actie | `components/bruiloft/ui/Toast.tsx` |
+| Statusregel die tekst + voortgang combineert i.p.v. losse badges | `components/bruiloft/budget/BudgetList.tsx` (`CategorieRij`) |
+| AI-laag: verhalende samenvatting i.p.v. opsomming | `components/bruiloft/budget/AIBudgetAdvies.tsx` |
+| AI-laag: contextueel, per-sectie advieskaartje | `components/bruiloft/ai/AIInsightCard.tsx` |
+
 ## In één zin
 
 *Stupid simpel aan de oppervlakte, onbeperkt rijk één klik dieper, en
