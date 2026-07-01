@@ -70,13 +70,16 @@ function RsvpSelect({
     }
   }
 
-  // Eén betekenisvolle kleur: rose alleen voor "afgemeld", verder neutraal —
+  // Eén betekenisvolle kleur: rose voor statussen die actie vragen
+  // ("afgemeld", "geen reactie", "nog niet uitgenodigd"), verder neutraal —
   // zelfde regel als StatusBadge, hier lokaal omdat dit element klikbaar is.
+  const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20'
   const klassen: Record<RsvpStatus, string> = {
     bevestigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
-    afgemeld: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
+    afgemeld: rose,
     uitgenodigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
-    'geen reactie': 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
+    'geen reactie': rose,
+    'nog niet uitgenodigd': rose,
   }
 
   return (

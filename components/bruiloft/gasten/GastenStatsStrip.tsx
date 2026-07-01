@@ -47,7 +47,7 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
   const t = gastTellingen(guests)
   const pct = t.totaal > 0 ? Math.round((t.bevestigd / t.totaal) * 100) : 0
 
-  const nogTeReageren = t.uitgenodigd + t.geenReactie
+  const nogTeReageren = t.nogNietUitgenodigd + t.uitgenodigd + t.geenReactie
   const subdelen = [
     t.afgemeld > 0 ? `${t.afgemeld} afgemeld` : null,
     nogTeReageren > 0 ? `${nogTeReageren} nog te reageren` : null,

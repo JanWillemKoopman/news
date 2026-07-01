@@ -63,6 +63,7 @@ export type GuestCategorie = string
 export type Gasttype = string
 
 export type RsvpStatus =
+  | 'nog niet uitgenodigd'
   | 'uitgenodigd'
   | 'bevestigd'
   | 'afgemeld'
