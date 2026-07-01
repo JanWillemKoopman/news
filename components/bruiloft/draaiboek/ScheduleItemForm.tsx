@@ -103,8 +103,29 @@ export function ScheduleItemForm({
       open={open}
       onOpenChange={sluit}
       title={initial ? 'Programmaonderdeel bewerken' : 'Programmaonderdeel toevoegen'}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => sluit(false)}>
+            Annuleren
+          </Button>
+          {!initial ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() => verwerk(false)}
+              loading={saving}
+            >
+              Nog een toevoegen
+            </Button>
+          ) : null}
+          <Button type="submit" form="schedule-item-form" className="w-full sm:w-auto" loading={saving}>
+            {initial ? 'Opslaan' : 'Toevoegen'}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form id="schedule-item-form" onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Starttijd" htmlFor="tijd">
             <Input
@@ -183,18 +204,6 @@ export function ScheduleItemForm({
             </div>
           </div>
         </MeerDetails>
-
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
-          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => sluit(false)}>
-            Annuleren
-          </Button>
-          {!initial ? (
-            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => verwerk(false)} loading={saving}>
-              Nog een toevoegen
-            </Button>
-          ) : null}
-          <Button type="submit" className="w-full sm:w-auto" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
-        </div>
       </form>
     </Modal>
     <ConfirmDialog

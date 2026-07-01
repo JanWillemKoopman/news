@@ -168,8 +168,23 @@ export function VendorForm({
       open={open}
       onOpenChange={sluit}
       title={initial ? 'Leverancier bewerken' : 'Leverancier toevoegen'}
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
+            Annuleren
+          </Button>
+          {!initial ? (
+            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
+              Nog een toevoegen
+            </Button>
+          ) : null}
+          <Button type="submit" form="vendor-form" loading={saving}>
+            {initial ? 'Opslaan' : 'Toevoegen'}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form id="vendor-form" onSubmit={submit} className="space-y-4">
         <Field
           label="Naam"
           htmlFor="naam"
@@ -314,18 +329,6 @@ export function VendorForm({
             />
           </Field>
         </MeerDetails>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => sluit(false)}>
-            Annuleren
-          </Button>
-          {!initial ? (
-            <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
-              Nog een toevoegen
-            </Button>
-          ) : null}
-          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
-        </div>
       </form>
     </Modal>
     <ConfirmDialog

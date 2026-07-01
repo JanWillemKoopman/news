@@ -136,8 +136,22 @@ export function TaskForm({
 
   return (
     <>
-    <Modal open={open} onOpenChange={sluit} title={initial ? 'Taak bewerken' : 'Taak toevoegen'}>
-      <form onSubmit={submit} className="space-y-4">
+    <Modal
+      open={open}
+      onOpenChange={sluit}
+      title={initial ? 'Taak bewerken' : 'Taak toevoegen'}
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
+            Annuleren
+          </Button>
+          <Button type="submit" form="task-form" loading={saving}>
+            {initial ? 'Opslaan' : 'Toevoegen'}
+          </Button>
+        </div>
+      }
+    >
+      <form id="task-form" onSubmit={submit} className="space-y-4">
         <Field
           label="Titel"
           htmlFor="titel"
@@ -247,13 +261,6 @@ export function TaskForm({
             </Field>
           </div>
         </MeerDetails>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => sluit(false)}>
-            Annuleren
-          </Button>
-          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
-        </div>
       </form>
 
       {initial ? (

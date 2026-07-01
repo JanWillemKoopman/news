@@ -151,6 +151,30 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
       open={open}
       onOpenChange={sluit}
       title={initial ? 'Gast bewerken' : 'Gast toevoegen'}
+      footer={
+        stap === 1 ? (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => sluit(false)}>
+              Annuleren
+            </Button>
+            <Button type="submit" form="guest-form">Volgende</Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => setStap(1)}>
+              Terug
+            </Button>
+            {!initial ? (
+              <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
+                Opslaan &amp; nog een
+              </Button>
+            ) : null}
+            <Button type="submit" form="guest-form" loading={saving}>
+              {initial ? 'Opslaan' : 'Toevoegen'}
+            </Button>
+          </div>
+        )
+      }
     >
       {/* Stap-indicator */}
       <div className="mb-5 flex items-center gap-2">
@@ -161,7 +185,7 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
         <span className="shrink-0 text-xs text-muted-foreground">Stap {stap} van 2</span>
       </div>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form id="guest-form" onSubmit={submit} className="space-y-4">
         {stap === 1 && (
           <>
             {/* ── Stap 1: Naam + Categorie ── */}
@@ -221,13 +245,6 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
                   ))}
                 </Select>
               </Field>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => sluit(false)}>
-                Annuleren
-              </Button>
-              <Button type="submit">Volgende</Button>
             </div>
           </>
         )}
@@ -308,18 +325,6 @@ export function GuestForm({ open, onOpenChange, initial, wedding, onSubmit }: Gu
                 rows={2}
               />
             </Field>
-
-            <div className="flex flex-wrap justify-end gap-3 pt-2">
-              <Button type="button" variant="ghost" onClick={() => setStap(1)}>
-                Terug
-              </Button>
-              {!initial ? (
-                <Button type="button" variant="secondary" onClick={() => verwerk(false)} loading={saving}>
-                  Opslaan &amp; nog een
-                </Button>
-              ) : null}
-              <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
-            </div>
           </>
         )}
       </form>

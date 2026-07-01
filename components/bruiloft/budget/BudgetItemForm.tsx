@@ -211,8 +211,18 @@ export function BudgetItemForm({
       open={open}
       onOpenChange={sluit}
       title={initial ? 'Budgetitem bewerken' : 'Budgetitem toevoegen'}
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => sluit(false)}>
+            Annuleren
+          </Button>
+          <Button type="submit" form="budget-item-form" loading={saving}>
+            {initial ? 'Opslaan' : 'Toevoegen'}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form id="budget-item-form" onSubmit={submit} className="space-y-4">
         <Field
           label="Omschrijving"
           htmlFor="oms"
@@ -229,7 +239,7 @@ export function BudgetItemForm({
           />
         </Field>
 
-        <Field label="Categorie" htmlFor="cat">
+        <Field label="Categorie" htmlFor="cat" required>
           {nieuweCategorieModus ? (
             <div className="flex flex-col gap-1.5">
               <Input
@@ -263,14 +273,15 @@ export function BudgetItemForm({
               id="cat"
               value={form.categorie}
               onChange={(e) => handleCategorySelect(e.target.value)}
+              required
             >
+              <option value={NIEUW_SENTINEL}>Nieuwe categorie…</option>
+              <option disabled>──────────</option>
               {categorieen.map((c) => (
                 <option key={c} value={c}>
                   {capFirst(c)}
                 </option>
               ))}
-              <option disabled>──────────</option>
-              <option value={NIEUW_SENTINEL}>Nieuwe categorie…</option>
             </Select>
           )}
         </Field>
@@ -396,13 +407,6 @@ export function BudgetItemForm({
             )}
           </div>
         </MeerDetails>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => sluit(false)}>
-            Annuleren
-          </Button>
-          <Button type="submit" loading={saving}>{initial ? 'Opslaan' : 'Toevoegen'}</Button>
-        </div>
       </form>
     </Modal>
     <ConfirmDialog
