@@ -52,9 +52,14 @@ export function ScheduleItemCard({
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
               <p className="font-medium text-foreground">{s.titel}</p>
+              {s.locatie ? (
+                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" /> {s.locatie}
+                </p>
+              ) : null}
               {!showTime && (s.eindtijd || label) ? (
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {s.eindtijd ? `tot ${s.eindtijd}` : null}
@@ -63,36 +68,33 @@ export function ScheduleItemCard({
                 </p>
               ) : null}
             </div>
-            {kanBewerken && (
-              <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(s)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(s)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {s.betrokkenen.length > 0 ? (
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {s.betrokkenen.map((r) => (
+                    <span
+                      key={r}
+                      className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                    >
+                      {capFirst(r)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {kanBewerken && (
+                <div className="flex shrink-0 gap-1">
+                  <Button variant="ghost" size="icon" aria-label="Bewerken" onClick={() => onEdit(s)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label="Verwijderen" onClick={() => onDelete(s)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-          {s.locatie ? (
-            <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" /> {s.locatie}
-            </p>
-          ) : null}
           {s.omschrijving ? (
             <p className="mt-1 text-sm text-muted-foreground">{s.omschrijving}</p>
-          ) : null}
-          {s.betrokkenen.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {s.betrokkenen.map((r) => (
-                <span
-                  key={r}
-                  className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
-                >
-                  {capFirst(r)}
-                </span>
-              ))}
-            </div>
           ) : null}
         </div>
       </CardContent>

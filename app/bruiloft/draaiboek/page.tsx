@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CalendarClock, Download, Plus, Sparkles } from 'lucide-react'
+import { AlertTriangle, CalendarClock, ChevronDown, Download, Plus, Sparkles } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -17,7 +17,6 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Select,
   useToast,
 } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
@@ -25,6 +24,7 @@ import { dagVolgordeMinuten, vergelijkTijd } from '@/lib/bruiloft/draaiboek'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useMediaQuery } from '@/lib/bruiloft/useMediaQuery'
 import { DRAAIBOEK_ROLLEN } from '@/lib/bruiloft/options'
+import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { ScheduleItem } from '@/lib/bruiloft/types'
 
@@ -202,21 +202,17 @@ export default function DraaiboekPage() {
         />
       ) : (
         <div>
-          {/* Categorie-filter boven de (enige) kolom */}
-          <div className="mb-3 max-w-xs">
-            <Select
-              value={fRol}
-              onChange={(e) => setKolomFilter(0, e.target.value as RolFilter)}
-              className="w-full"
-              aria-label="Filter draaiboek op betrokkene"
-            >
-              <option value="all">Hele draaiboek</option>
-              {DRAAIBOEK_ROLLEN.map((r) => (
-                <option key={r} value={r}>
-                  Alleen {r}
-                </option>
-              ))}
-            </Select>
+          {/* Categorie-filter boven de (enige) kolom — zelfde opmaak als de
+              filterknoppen (bv. "Prioriteit") op de takenpagina. */}
+          <div className="mb-3">
+            <RolFilterKnop
+              waarde={fRol}
+              opties={[
+                { key: 'all', label: 'Hele draaiboek' },
+                ...DRAAIBOEK_ROLLEN.map((r) => ({ key: r, label: `Alleen ${r}` })),
+              ]}
+              onSelect={(v) => setKolomFilter(0, v as RolFilter)}
+            />
           </div>
 
           {gesorteerd.length === 0 ? (
@@ -345,6 +341,76 @@ export default function DraaiboekPage() {
           }
         }}
       />
+    </div>
+  )
+}
+
+// Zelfde knop + dropdown-paneel als de filterknoppen op de takenpagina
+// (bv. "Prioriteit"), i.p.v. een kale native <select>.
+function RolFilterKnop({
+  waarde,
+  opties,
+  onSelect,
+}: {
+  waarde: string
+  opties: { key: string; label: string }[]
+  onSelect: (v: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  const isActief = waarde !== (opties[0]?.key ?? 'all')
+
+  React.useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const huidigLabel = opties.find((o) => o.key === waarde)?.label ?? opties[0]?.label
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={cn(
+          'inline-flex h-10 max-w-64 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors',
+          open
+            ? 'border-primary/60 bg-primary/10 text-primary'
+            : isActief
+              ? 'border-primary/30 bg-primary/5 text-foreground hover:bg-muted'
+              : 'border-input bg-background text-foreground hover:bg-muted'
+        )}
+      >
+        <span className="truncate">{huidigLabel}</span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+          {opties.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => {
+                onSelect(o.key)
+                setOpen(false)
+              }}
+              className={cn(
+                'flex w-full items-center px-3 py-2.5 text-left text-sm transition-colors first:rounded-t-lg last:rounded-b-lg',
+                waarde === o.key
+                  ? 'bg-primary/10 font-medium text-primary'
+                  : 'text-foreground hover:bg-muted'
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
