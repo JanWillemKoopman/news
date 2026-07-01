@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ChevronRight, RefreshCw, Sparkles } from 'lucide-react'
+import { ChevronRight, Sparkles } from 'lucide-react'
 
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
@@ -47,7 +47,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
 
   // Gedeelde advieslaag: zelfde data als de insight-kaarten en de AI-coach,
   // dus geen extra AI-calls. Weggeklikte adviezen blijven ook hier verborgen.
-  const { advies, zichtbaar, loading, error, updatedAt, refresh } = useAIAdvies()
+  const { advies, zichtbaar, loading, error, updatedAt } = useAIAdvies()
 
   const dagen = dagenTot(trouwdatum)
   const allesWeggeklikt = !loading && (advies?.length ?? 0) > 0 && zichtbaar.length === 0
@@ -74,23 +74,9 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
   return (
     <Card className="border-rhino-100">
       <CardContent className="p-6">
-        <div className="mb-5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-foreground" />
-            <h2 className="text-2xl font-medium text-foreground">Advies om nu te doen</h2>
-          </div>
-          {!loading && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refresh}
-              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-              aria-label="Advies verversen"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Verversen
-            </Button>
-          )}
+        <div className="mb-5 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-foreground" />
+          <h2 className="text-2xl font-medium text-foreground">Advies om nu te doen</h2>
         </div>
 
         {loading ? (
@@ -123,7 +109,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                     }
                     className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
                   >
-                    Bekijken
+                    Naar {stap.sectionLabel.toLowerCase()}
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -205,7 +191,7 @@ export function AIAdviesPanel({ fallbackSteps, trouwdatum }: AIAdviesPanelProps)
                           href={stap.href}
                           className="inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:text-rose-700"
                         >
-                          Bekijken
+                          Naar {stap.href.split('/').pop()}
                           <ChevronRight className="h-4 w-4" />
                         </Link>
                       </div>

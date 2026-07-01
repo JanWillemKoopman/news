@@ -130,7 +130,7 @@ export function UrgenteAandachtspunten({
           >
             <Icon className={`h-4 w-4 shrink-0 ${iconStijl}`} />
             <span className="flex-1">{m.tekst}</span>
-            <span className="shrink-0 text-xs opacity-70">Bekijken →</span>
+            <span className="shrink-0 text-xs opacity-70">Naar {m.href.split('/').pop()} →</span>
           </Link>
         )
       })}

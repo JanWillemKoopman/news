@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
-import { AanbevolenLeveranciers } from '@/components/bruiloft/AanbevolenLeveranciers'
 import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { AankomendeActiesTimelijn } from '@/components/bruiloft/AankomendeActiesTimelijn'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
@@ -203,9 +202,6 @@ export default function DashboardPage() {
           permissions={permissions}
         />
       </div>
-
-      {/* Ontdek leveranciers — onder de persoonlijke status, geen onderbreking */}
-      <AanbevolenLeveranciers />
 
       <WeddingSettingsForm
         open={settingsOpen}
