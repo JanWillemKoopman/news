@@ -72,7 +72,10 @@ export function TaskCard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    // overflow-hidden alleen tijdens het swipen zelf (voor de rode laag +
+    // afgeronde hoeken): permanent overflow-hidden zou ook het "meer"-menu
+    // afknippen, want dat wordt binnen deze wrapper absoluut gepositioneerd.
+    <div className={cn('relative rounded-xl', swipeX > 0 && 'overflow-hidden')}>
       {/* Rode laag achter de kaart, zichtbaar bij links-vegen */}
       <div
         aria-hidden
