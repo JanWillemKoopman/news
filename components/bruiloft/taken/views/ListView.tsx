@@ -3,16 +3,28 @@
 import * as React from 'react'
 
 import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
-import { ChevronDown, ChevronRight, ListChecks, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronRight, EyeOff, ListChecks, Sparkles } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
 import { AIInlineSuggestieCard } from '@/components/bruiloft/taken/AIInlineSuggestieCard'
 import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
+import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
 import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblocks'
+import { cn } from '@/lib/utils'
 import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
 const PRIO_ORDER: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
+
+// Alleen de "X maanden/maand voor"-fasen krijgen de "jullie bruiloft"-suffix in
+// het label; de onderliggende Tijdsblok-waarden (opslag/filters) blijven ongewijzigd.
+const TIJDSBLOK_LABEL: Partial<Record<Tijdsblok, string>> = {
+  '12 maanden voor': '12 maanden voor jullie bruiloft',
+  '9 maanden voor': '9 maanden voor jullie bruiloft',
+  '6 maanden voor': '6 maanden voor jullie bruiloft',
+  '3 maanden voor': '3 maanden voor jullie bruiloft',
+  '1 maand voor': '1 maand voor jullie bruiloft',
+}
 
 function deadlineVoorBlok(blok: Tijdsblok, trouwdatum: ISODate): ISODate {
   const offsetDagen: Record<Tijdsblok, number> = {
@@ -41,7 +53,6 @@ interface ListViewProps {
   selectable: boolean
   isSelected: (id: string) => boolean
   onToggleSelect: (t: Task) => void
-  achterstandRef?: React.MutableRefObject<HTMLDivElement | null>
   onResetFilters?: () => void
   // AI suggestions
   aiActive?: boolean
@@ -50,6 +61,7 @@ interface ListViewProps {
   aiError?: string | null
   onAiToevoegen?: (s: AITaakSuggestie) => Promise<void>
   onAiDismiss?: (titel: string) => void
+  onAiHide?: () => void
 }
 
 export function ListView({
@@ -65,7 +77,6 @@ export function ListView({
   selectable,
   isSelected,
   onToggleSelect,
-  achterstandRef,
   onResetFilters,
   aiActive,
   aiSuggesties,
@@ -73,6 +84,7 @@ export function ListView({
   aiError,
   onAiToevoegen,
   onAiDismiss,
+  onAiHide,
 }: ListViewProps) {
   // Handmatig open/dicht geklapte fasesecties (wint van de standaardkeuze).
   const [blokOverrides, setBlokOverrides] = React.useState<Partial<Record<Tijdsblok, boolean>>>({})
@@ -98,26 +110,10 @@ export function ListView({
     )
   }
 
-  let achterstallig: Tijdsblok | null = null
-  for (const blok of TIJDSBLOK_VOLGORDE) {
-    const heeftAchterstand = tasks.some(
-      (t) => t.tijdsblok === blok && t.status !== 'klaar' && new Date(t.deadline) < new Date()
-    )
-    if (heeftAchterstand) {
-      achterstallig = blok
-      break
-    }
-  }
-
-  // Fasesecties zijn inklapbaar: standaard staat alleen de eerstvolgende fase
-  // met open taken uit (plus een fase met achterstand), zodat een volle lijst
-  // — zoals de 71 starttaken — niet als muur binnenkomt. Een klik op de kop
-  // klapt open/dicht; die keuze wint van de standaard.
-  const eersteOpenBlok = TIJDSBLOK_VOLGORDE.find((blok) =>
-    tasks.some((t) => t.tijdsblok === blok && t.status !== 'klaar')
-  )
-  const blokIsOpen = (blok: Tijdsblok): boolean =>
-    blokOverrides[blok] ?? (blok === eersteOpenBlok || blok === achterstallig)
+  // Fasesecties zijn inklapbaar, maar staan standaard allemaal open zodat alle
+  // kaartjes direct zichtbaar zijn. Een klik op de kop klapt dicht; die keuze
+  // wint van de standaard.
+  const blokIsOpen = (blok: Tijdsblok): boolean => blokOverrides[blok] ?? true
 
   return (
     <div className="space-y-8">
@@ -129,6 +125,7 @@ export function ListView({
           error={aiError}
           onToevoegen={onAiToevoegen}
           onDismiss={onAiDismiss}
+          onHide={onAiHide}
         />
       )}
 
@@ -147,27 +144,27 @@ export function ListView({
       {TIJDSBLOK_VOLGORDE.map((blok) => {
         const blokTaken = tasks
           .filter((t) => t.tijdsblok === blok)
-          .sort((a, b) => a.deadline.localeCompare(b.deadline) || (PRIO_ORDER[a.prioriteit ?? ''] ?? 3) - (PRIO_ORDER[b.prioriteit ?? ''] ?? 3))
+          .sort(
+            (a, b) =>
+              a.deadline.localeCompare(b.deadline) ||
+              PRIO_ORDER[effectievePrioriteit(a)] - PRIO_ORDER[effectievePrioriteit(b)]
+          )
         if (blokTaken.length === 0) return null
         const open = blokIsOpen(blok)
         return (
-          <div
-            key={blok}
-            ref={blok === achterstallig ? achterstandRef : undefined}
-            data-blok={blok}
-          >
+          <div key={blok} data-blok={blok} className="border-l-2 border-border pl-4">
             <button
               type="button"
               aria-expanded={open}
               onClick={() => setBlokOverrides((prev) => ({ ...prev, [blok]: !open }))}
-              className="mb-3 flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+              className="mb-3 -ml-4 flex w-full items-center gap-2 rounded-md py-1.5 pl-4 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
             >
               {open ? (
                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
               ) : (
                 <ChevronRight className="h-3.5 w-3.5 shrink-0" />
               )}
-              {blok}
+              {TIJDSBLOK_LABEL[blok] ?? blok}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                 {blokTaken.length} {blokTaken.length === 1 ? 'taak' : 'taken'}
               </span>
@@ -207,23 +204,46 @@ function AISuggestiesBlok({
   error,
   onToevoegen,
   onDismiss,
+  onHide,
 }: {
   suggesties?: AITaakSuggestie[]
   loading?: boolean
   error?: string | null
   onToevoegen?: (s: AITaakSuggestie) => Promise<void>
   onDismiss?: (titel: string) => void
+  onHide?: () => void
 }) {
+  // De kop met "Verberg voorgestelde taken" staat er in élke toestand (laden,
+  // fout, leeg, resultaten) zodat er altijd een uitweg is zolang de
+  // voorgestelde-taken-modus aanstaat.
+  const header = (subtitel: React.ReactNode) => (
+    <div className="mb-3 flex items-center justify-between gap-3 px-1">
+      <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-rose-600">
+        <Sparkles className={cn('h-3.5 w-3.5', loading && 'animate-pulse')} />
+        Aanbevolen door de AI-assistent
+        {subtitel}
+      </h2>
+      {onHide ? (
+        <button
+          type="button"
+          onClick={onHide}
+          className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <EyeOff className="h-3.5 w-3.5" />
+          Verberg voorgestelde taken
+        </button>
+      ) : null}
+    </div>
+  )
+
   if (loading) {
     return (
       <div>
-        <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-rose-600">
-          <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-          Aanbevolen door AI
+        {header(
           <span className="text-muted-foreground normal-case tracking-normal font-normal">
-            — AI denkt na…
+            — De AI-assistent genereert suggesties…
           </span>
-        </h2>
+        )}
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 w-full rounded-lg" />
@@ -235,22 +255,32 @@ function AISuggestiesBlok({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-600">
-        {error}
+      <div>
+        {header(null)}
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-600">
+          {error}
+        </div>
       </div>
     )
   }
 
-  if (!suggesties || suggesties.length === 0) return null
+  if (!suggesties || suggesties.length === 0) {
+    return (
+      <div>
+        {header(null)}
+        <p className="px-1 text-sm text-muted-foreground">Geen suggesties meer.</p>
+      </div>
+    )
+  }
 
   return (
     <div>
-      <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-rose-600">
-        <Sparkles className="h-3.5 w-3.5" />
-        Aanbevolen door AI
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">{suggesties.length} suggesties</span>
-      </h2>
+      {header(
+        <>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">{suggesties.length} suggesties</span>
+        </>
+      )}
       <div className="space-y-2">
         {suggesties.map((s) => (
           <AIInlineSuggestieCard

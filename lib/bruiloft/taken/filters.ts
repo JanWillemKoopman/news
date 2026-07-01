@@ -1,5 +1,6 @@
 // Filterstate + toepassing voor de taken-tab.
 
+import { effectievePrioriteit } from './stats'
 import type { Prioriteit, Task, TaskStatus, ToegewezenAan } from '../types'
 
 // 'all' = geen filter; member-id = die specifieke persoon; 'unassigned' = niemand.
@@ -14,7 +15,7 @@ export interface TaakFilters {
 }
 
 export const DEFAULT_FILTERS: TaakFilters = {
-  status: 'open',
+  status: 'all',
   prioriteit: 'all',
   toegewezen: 'all',
   zoek: '',
@@ -40,7 +41,7 @@ export function applyFilters(tasks: Task[], filters: TaakFilters): Task[] {
   const zoek = filters.zoek.trim().toLowerCase()
   return tasks.filter((t) => {
     if (filters.status !== 'all' && t.status !== filters.status) return false
-    if (filters.prioriteit !== 'all' && t.prioriteit !== filters.prioriteit) return false
+    if (filters.prioriteit !== 'all' && effectievePrioriteit(t) !== filters.prioriteit) return false
     if (!matchToegewezen(t, filters.toegewezen)) return false
     if (zoek) {
       const hay = `${t.titel}\n${t.omschrijving}`.toLowerCase()

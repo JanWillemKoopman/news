@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Plus, Sparkles, X } from 'lucide-react'
 
 import { dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
+import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
 import { cn } from '@/lib/utils'
 import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
@@ -33,6 +34,11 @@ export function AIInlineSuggestieCard({
   const [loading, setLoading] = React.useState(false)
 
   const d = dagenTot(suggestie.deadline)
+  const prioriteit = effectievePrioriteit({
+    prioriteit: suggestie.prioriteit,
+    deadline: suggestie.deadline,
+    status: 'open',
+  })
   const datumLabel = formatDatumNL(suggestie.deadline)
   const dagenLabel =
     d === 0
@@ -58,7 +64,7 @@ export function AIInlineSuggestieCard({
         <div className="flex items-start justify-between gap-3">
           <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-rose-600">
             <Sparkles className="h-3 w-3" />
-            Aanbevolen door AI
+            Aanbevolen door de AI-assistent
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -90,10 +96,8 @@ export function AIInlineSuggestieCard({
           <span>{dagenLabel}</span>
           <span>·</span>
           <span className="flex items-center gap-1">
-            <span
-              className={cn('h-2 w-2 rounded-full', PRIORITEIT_DOT[suggestie.prioriteit])}
-            />
-            {PRIORITEIT_LABEL[suggestie.prioriteit]}
+            <span className={cn('h-2 w-2 rounded-full', PRIORITEIT_DOT[prioriteit])} />
+            {PRIORITEIT_LABEL[prioriteit]}
           </span>
         </div>
       </div>

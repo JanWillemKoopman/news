@@ -12,23 +12,23 @@ interface TakenStatsStripProps {
 }
 
 function CircularProgress({ pct }: { pct: number }) {
-  const r = 26
+  const r = 22
   const circumference = 2 * Math.PI * r
   const offset = circumference - (pct / 100) * circumference
 
   return (
-    <svg width={64} height={64} className="shrink-0 -rotate-90">
+    <svg width={56} height={56} className="shrink-0 -rotate-90">
       <circle
-        cx={32}
-        cy={32}
+        cx={28}
+        cy={28}
         r={r}
         fill="none"
         stroke="#e5e7eb"
         strokeWidth={4}
       />
       <circle
-        cx={32}
-        cy={32}
+        cx={28}
+        cy={28}
         r={r}
         fill="none"
         stroke="#be123c"
@@ -40,11 +40,11 @@ function CircularProgress({ pct }: { pct: number }) {
         className="transition-all duration-500"
       />
       <text
-        x={32}
-        y={32}
+        x={28}
+        y={28}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+        style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
       >
         {pct}%
       </text>
@@ -59,7 +59,7 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
   return (
     <div className="mb-6 rounded-lg border border-border bg-card shadow-sm">
       {/* Main progress row */}
-      <div className="flex items-center gap-4 p-4">
+      <div className="flex items-center gap-4 p-3">
         <CircularProgress pct={stats.pctKlaar} />
 
         <div className="flex-1 min-w-0">
@@ -67,17 +67,12 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
           <p className="text-base font-semibold text-foreground leading-tight">
             {stats.klaar} van {stats.totaal} taken afgerond
           </p>
-          {dagenTotTrouw != null && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Nog {dagenTotTrouw} {dagenTotTrouw === 1 ? 'dag' : 'dagen'} tot de trouwdag
-            </p>
-          )}
         </div>
 
         {/* Desktop-only stat numbers */}
         <div className="hidden sm:flex items-center divide-x divide-border">
           <StatNum value={dagenTotTrouw ?? 0} label="dagen te gaan" />
-          <StatNum value={stats.dezeMaand} label="deze maand" />
+          <StatNum value={stats.aankomend30Dagen} label="komende 30 dagen" />
           <StatNum
             value={stats.achterstallig}
             label="achterstallig"
@@ -89,7 +84,7 @@ export function TakenStatsStrip({ tasks, wedding }: TakenStatsStripProps) {
       {/* Mobile-only stat row */}
       <div className="flex sm:hidden border-t border-border divide-x divide-border">
         <StatNumMobile value={dagenTotTrouw ?? 0} label="dagen" />
-        <StatNumMobile value={stats.dezeMaand} label="deze maand" />
+        <StatNumMobile value={stats.aankomend30Dagen} label="30 dagen" />
         <StatNumMobile
           value={stats.achterstallig}
           label="achterstallig"

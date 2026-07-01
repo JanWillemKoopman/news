@@ -38,7 +38,7 @@ interface AIInsightCardProps {
 }
 
 export function AIInsightCard({ sectie, className }: AIInsightCardProps) {
-  const { zichtbaar, loading, klikWeg } = useAIAdvies()
+  const { zichtbaar, loading, klikWegSectie } = useAIAdvies()
 
   // `zichtbaar` is al op urgentie gesorteerd; pak het eerste advies voor deze sectie.
   const item = React.useMemo(
@@ -77,7 +77,7 @@ export function AIInsightCard({ sectie, className }: AIInsightCardProps) {
       </div>
       <button
         type="button"
-        onClick={() => klikWeg(item)}
+        onClick={() => klikWegSectie(item.sectie)}
         aria-label="Advies wegklikken"
         className="-m-1 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
       >
