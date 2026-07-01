@@ -93,8 +93,7 @@ export function TaskCard({
           transition: swipeX === 0 ? 'transform 200ms ease' : undefined,
         }}
         className={cn(
-          'group relative transition-opacity',
-          klaar && 'opacity-60',
+          'group relative',
           selected && 'ring-2 ring-primary',
           achterstallig && 'border-l-4 border-l-rose-400'
         )}
@@ -137,8 +136,18 @@ export function TaskCard({
         {/* Op mobiel (en in compacte contexten zoals de kalender-popover)
             blijft alles onder elkaar staan. Op desktop past titel,
             omschrijving en metadata op één regel — minder verticale ruimte,
-            de beschikbare breedte wordt benut i.p.v. leeg te blijven. */}
-        <div className={cn('min-w-0 flex-1', !compact && 'sm:flex sm:items-center sm:gap-4')}>
+            de beschikbare breedte wordt benut i.p.v. leeg te blijven.
+            opacity staat hier i.p.v. op de hele Card: opacity < 1 creëert
+            een nieuwe stacking-context, en zou anders het "meer"-menu
+            (verderop in dezelfde Card) achter latere kaarten in de lijst
+            laten verdwijnen zodra de taak is afgevinkt. */}
+        <div
+          className={cn(
+            'min-w-0 flex-1 transition-opacity',
+            klaar && 'opacity-60',
+            !compact && 'sm:flex sm:items-center sm:gap-4'
+          )}
+        >
           <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-3')}>
             <button
               type="button"
