@@ -410,7 +410,9 @@ function ItemRij({
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
 }) {
   const geboekteVendor = geboekteLeverancierVoor(item, vendors)
-  const geoffreerd = effectiefGeoffreerd(item, vendors)
+  const geoffreerdEffectief = effectiefGeoffreerd(item, vendors)
+  const verwacht = verwachteKost(item, vendors)
+  const verwachtCaption = geoffreerdEffectief > 0 ? 'obv offerte' : 'schatting'
   const rest = restBedrag(item, vendors)
 
   return (
@@ -441,12 +443,11 @@ function ItemRij({
         ) : null}
       </div>
 
-      {/* 4-column bedragen */}
-      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
-        <Bedrag label="Geschat" bedrag={item.geschatBedrag} />
-        <Bedrag label="Offerteprijs" bedrag={geoffreerd} />
+      {/* 3-column bedragen */}
+      <div className="mt-2 grid grid-cols-3 gap-x-4 gap-y-1">
+        <Bedrag label="Verwacht" bedrag={verwacht} caption={verwachtCaption} />
         <Bedrag label="Betaald" bedrag={item.betaaldBedrag} />
-        <Bedrag label="Resterend" bedrag={rest} accent={rest > 0} />
+        <Bedrag label="Nog te betalen" bedrag={rest} accent={rest > 0} />
       </div>
 
       {/* Betaaltermijnen */}
@@ -487,7 +488,17 @@ function ItemRij({
   )
 }
 
-function Bedrag({ label, bedrag, accent }: { label: string; bedrag: number; accent?: boolean }) {
+function Bedrag({
+  label,
+  bedrag,
+  accent,
+  caption,
+}: {
+  label: string
+  bedrag: number
+  accent?: boolean
+  caption?: string
+}) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -495,6 +506,7 @@ function Bedrag({ label, bedrag, accent }: { label: string; bedrag: number; acce
         bedrag={bedrag}
         className={cn('text-sm font-semibold', accent ? 'text-primary' : 'text-foreground')}
       />
+      {caption ? <p className="text-[11px] text-muted-foreground/70">{caption}</p> : null}
     </div>
   )
 }
