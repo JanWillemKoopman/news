@@ -44,6 +44,9 @@ export interface Wedding {
   ceremonietype: CeremonieType | null
   geregeldeZaken: Partial<Record<VoortgangCategorie, VoortgangStatus>>
   takenVoorstellen: TakenVoorstellenState
+  // Zelf te beheren lijst budgetcategorieën (aanvullen/verwijderen), los van
+  // de vaste suggestielijst in de UI.
+  budgetCategorieen: string[]
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }
@@ -197,7 +200,9 @@ export type VendorInput = Omit<Vendor, 'id'>
 
 // --- BudgetItem ------------------------------------------------------------
 
-export type BudgetCategorie =
+// Categorie is vrije tekst (bruidsparen beheren hun eigen lijst); dit is de
+// vaste standaardset die als uitgangspunt dient (richtverdeling, sjablonen).
+export type StandaardBudgetCategorie =
   | 'locatie'
   | 'catering'
   | 'kleding'
@@ -209,6 +214,8 @@ export type BudgetCategorie =
   | 'uitnodigingen en drukwerk'
   | 'ringen'
   | 'overig'
+
+export type BudgetCategorie = string
 
 export interface PaymentTerm {
   id: ID

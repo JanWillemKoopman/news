@@ -1,13 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { Download, PieChart, Plus, Sparkles, Wallet } from 'lucide-react'
+import { Download, PieChart, Plus, Sparkles, Tags, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { budgetInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
+import { BudgetCategoryManageModal } from '@/components/bruiloft/budget/BudgetCategoryManageModal'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
@@ -21,6 +22,7 @@ import {
   gastTellingen,
   restBedrag,
 } from '@/lib/bruiloft/derived'
+import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -34,6 +36,7 @@ export default function BudgetPage() {
   const addBudgetItem = useBruiloftStore((s) => s.addBudgetItem)
   const updateBudgetItem = useBruiloftStore((s) => s.updateBudgetItem)
   const deleteBudgetItem = useBruiloftStore((s) => s.deleteBudgetItem)
+  const updateWedding = useBruiloftStore((s) => s.updateWedding)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
 
@@ -47,8 +50,11 @@ export default function BudgetPage() {
   const [distributeOpen, setDistributeOpen] = React.useState(false)
   const [adviesOpen, setAdviesOpen] = React.useState(false)
   const [budgetEditOpen, setBudgetEditOpen] = React.useState(false)
+  const [categoryManageOpen, setCategoryManageOpen] = React.useState(false)
 
   if (!wedding) return null
+
+  const categorieen = wedding.budgetCategorieen?.length ? wedding.budgetCategorieen : BUDGET_CATEGORIEEN
 
   const bevestigdeDaggasten = gastTellingen(guests).bevestigdeDaggasten
   const afwijkingen = budgetAfwijkingen(budgetItems, vendors, wedding)
@@ -108,7 +114,10 @@ export default function BudgetPage() {
         meerActies={[
           { label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) },
           ...(kanBewerken
-            ? [{ label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) }]
+            ? [
+                { label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) },
+                { label: 'Categorieën beheren', icon: Tags, onClick: () => setCategoryManageOpen(true) },
+              ]
             : []),
           { label: 'Exporteer budget', icon: Download, onClick: exporteer, disabled: budgetItems.length === 0 },
         ]}
@@ -157,6 +166,7 @@ export default function BudgetPage() {
           vendors={vendors}
           bevestigdeDaggasten={bevestigdeDaggasten}
           afwijkendeItemIds={afwijkingen.itemIds}
+          categorieen={categorieen}
           onEdit={kanBewerken ? openBewerk : undefined}
           onDelete={kanBewerken ? setDeleteItem : undefined}
           onToggleTerm={kanBewerken ? toggleTerm : undefined}
@@ -171,6 +181,7 @@ export default function BudgetPage() {
         }}
         initial={editItem}
         vendors={vendors}
+        categorieen={categorieen}
         onSubmit={async (data) => {
           try {
             if (editItem) {
@@ -180,11 +191,21 @@ export default function BudgetPage() {
               await addBudgetItem(data)
               toast({ title: 'Budgetitem toegevoegd', variant: 'success' })
             }
+            if (!categorieen.includes(data.categorie)) {
+              await updateWedding({ budgetCategorieen: [...categorieen, data.categorie] }).catch(() => {})
+            }
           } catch (e) {
             toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
             throw e
           }
         }}
+      />
+
+      <BudgetCategoryManageModal
+        open={categoryManageOpen}
+        onOpenChange={setCategoryManageOpen}
+        categorieen={categorieen}
+        budgetItems={budgetItems}
       />
 
       <TotaalBudgetEditModal

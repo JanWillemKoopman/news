@@ -24,7 +24,6 @@ import {
   verwachteKost,
 } from '@/lib/bruiloft/derived'
 import { formatDatumKort, formatEuro } from '@/lib/bruiloft/format'
-import { BUDGET_CATEGORIEEN } from '@/lib/bruiloft/options'
 import { capFirst, cn } from '@/lib/utils'
 import type { BudgetItem, Vendor } from '@/lib/bruiloft/types'
 
@@ -33,6 +32,8 @@ interface BudgetListProps {
   vendors: Vendor[]
   bevestigdeDaggasten: number
   afwijkendeItemIds?: Set<string>
+  // Beheerde lijst budgetcategorieën, bepaalt de weergavevolgorde.
+  categorieen: string[]
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -89,6 +90,7 @@ export function BudgetList({
   vendors,
   bevestigdeDaggasten,
   afwijkendeItemIds,
+  categorieen,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -111,11 +113,16 @@ export function BudgetList({
   }, [filterOpen])
 
   const categories = React.useMemo<CategorieData[]>(() => {
-    return BUDGET_CATEGORIEEN.flatMap((cat) => {
+    // Volgorde: de beheerde lijst eerst, daarna categorieën die alleen nog
+    // op bestaande items voorkomen (bv. net verwijderd uit de lijst).
+    const overigeCategorieen = Array.from(new Set(items.map((i) => i.categorie))).filter(
+      (c) => !categorieen.includes(c)
+    )
+    return [...categorieen, ...overigeCategorieen].flatMap((cat) => {
       const catItems = items.filter((i) => i.categorie === cat)
       return catItems.length > 0 ? [berekenCategorie(cat, catItems, vendors)] : []
     })
-  }, [items, vendors])
+  }, [items, vendors, categorieen])
 
   const counts = React.useMemo(
     () => ({

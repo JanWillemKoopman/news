@@ -5,11 +5,11 @@
 import { dagenTot } from './format'
 import type {
   ActivityEntry,
-  BudgetCategorie,
   BudgetItem,
   Guest,
   PaymentTerm,
   ScheduleItem,
+  StandaardBudgetCategorie,
   Task,
   Vendor,
   Wedding,
@@ -197,7 +197,7 @@ export function aankomendeTermijnen(
 // --- Slim budget: automatische verdeling + afwijkingen ---------------------
 
 // Richtpercentages per categorie (Nederlandse praktijk, telt op tot 1.0).
-export const STANDAARD_VERDELING: Record<BudgetCategorie, number> = {
+export const STANDAARD_VERDELING: Record<StandaardBudgetCategorie, number> = {
   locatie: 0.2,
   catering: 0.25,
   'kleding': 0.1,
@@ -212,7 +212,7 @@ export const STANDAARD_VERDELING: Record<BudgetCategorie, number> = {
 }
 
 export interface VerdelingRegel {
-  categorie: BudgetCategorie
+  categorie: StandaardBudgetCategorie
   bedrag: number
   heeftItem: boolean
 }
@@ -223,7 +223,7 @@ export function budgetVerdelingVoorstel(
   items: BudgetItem[]
 ): VerdelingRegel[] {
   const aanwezig = new Set(items.map((i) => i.categorie))
-  return (Object.keys(STANDAARD_VERDELING) as BudgetCategorie[]).map((categorie) => ({
+  return (Object.keys(STANDAARD_VERDELING) as StandaardBudgetCategorie[]).map((categorie) => ({
     categorie,
     bedrag: Math.round(totaalBudget * STANDAARD_VERDELING[categorie]),
     heeftItem: aanwezig.has(categorie),

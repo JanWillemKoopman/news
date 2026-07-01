@@ -793,6 +793,7 @@ export type Database = {
         Row: {
           aantal_avondgasten: number
           aantal_daggasten: number
+          budget_categorieen: string[]
           ceremonietype: string | null
           created_at: string
           created_by: string | null
@@ -811,6 +812,7 @@ export type Database = {
         Insert: {
           aantal_avondgasten?: number
           aantal_daggasten?: number
+          budget_categorieen?: string[]
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
@@ -829,6 +831,7 @@ export type Database = {
         Update: {
           aantal_avondgasten?: number
           aantal_daggasten?: number
+          budget_categorieen?: string[]
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null

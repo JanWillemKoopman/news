@@ -4,6 +4,7 @@
 
 import type { Database } from '@/lib/supabase/database.types'
 
+import { BUDGET_CATEGORIEEN } from './options'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -59,9 +60,14 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     ceremonietype: (r.ceremonietype as CeremonieType | null) ?? null,
     geregeldeZaken: (r.geregelde_zaken as Partial<Record<VoortgangCategorie, VoortgangStatus>>) ?? {},
     takenVoorstellen: normaliseerTakenVoorstellen(r.taken_voorstellen),
+    budgetCategorieen: normaliseerBudgetCategorieen(r.budget_categorieen),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
+}
+
+function normaliseerBudgetCategorieen(v: unknown): string[] {
+  return Array.isArray(v) ? (v as string[]) : [...BUDGET_CATEGORIEEN]
 }
 
 function normaliseerTakenVoorstellen(v: unknown): TakenVoorstellenState {
@@ -84,6 +90,8 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
   if (p.geregeldeZaken !== undefined) r.geregelde_zaken = p.geregeldeZaken as Record<string, string>
   if (p.takenVoorstellen !== undefined)
     r.taken_voorstellen = p.takenVoorstellen as unknown as Record<string, unknown>
+  if (p.budgetCategorieen !== undefined)
+    r.budget_categorieen = p.budgetCategorieen as unknown as Tables['weddings']['Insert']['budget_categorieen']
   return r
 }
 
