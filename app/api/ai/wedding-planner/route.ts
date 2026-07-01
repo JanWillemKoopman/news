@@ -5,6 +5,7 @@ import { buildAIContext, buildAIFingerprint, deriveErvaringsniveau, matchProfiel
 import { buildConsolidatedPrompt, parseConsolidated } from '@/lib/bruiloft/ai/consolidatedPrompt'
 import { bouwLeveranciersAanbod } from '@/lib/bruiloft/ai/leveranciersAanbod'
 import { logAiUsage } from '@/lib/ai/usage'
+import { teVeelVerzoekenBericht } from '@/lib/ai/rateLimitMessage'
 import {
   budgetItemFromRow,
   guestFromRow,
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
 
   // Rate limit voor handmatig verversen
   if (body.force) {
-    const rateLimit = await checkRateLimit(`ai:wedding-planner:${weddingId}`, 3, 60 * 60)
+    const rateLimit = await checkRateLimit(`ai:wedding-planner:${weddingId}`, 1, 60 * 60)
     if (!rateLimit.allowed) {
       if (cacheRow?.cached_advice) {
         const nextAvailableAt = new Date(now + MIN_COOLDOWN_MS)
@@ -198,7 +199,10 @@ export async function POST(request: NextRequest) {
           next_available_at: nextAvailableAt.toISOString(),
         } satisfies AIWeddingPlannerResponse)
       }
-      return NextResponse.json({ error: 'Te veel verzoeken, probeer het over een uur opnieuw.' }, { status: 429 })
+      return NextResponse.json(
+        { error: teVeelVerzoekenBericht(rateLimit.resetAt), next_available_at: rateLimit.resetAt.toISOString() },
+        { status: 429 }
+      )
     }
   }
 

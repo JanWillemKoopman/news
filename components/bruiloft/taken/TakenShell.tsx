@@ -74,6 +74,7 @@ export function TakenShell() {
   const [aiSuggesties, setAiSuggesties] = React.useState<AITaakSuggestie[]>([])
   const [aiLoading, setAiLoading] = React.useState(false)
   const [aiError, setAiError] = React.useState<string | null>(null)
+  const [aiNextAvailable, setAiNextAvailable] = React.useState<Date | null>(null)
   const [dismissedTitels, setDismissedTitels] = React.useState<Set<string>>(new Set())
 
   const gefilterd = React.useMemo(() => applyFilters(tasks, filters), [tasks, filters])
@@ -100,14 +101,15 @@ export function TakenShell() {
       body: JSON.stringify({ context, weddingId: wedding.id, bestaandeTaken }),
     })
       .then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: 'Onbekende fout' }))
+        const body = await res.json().catch(() => ({}))
+        if (!res.ok && !body.advies) {
           throw new Error(body.error ?? 'Fout bij ophalen suggesties')
         }
-        return res.json()
+        return body
       })
-      .then((json: { advies: AITakenAdvies }) => {
+      .then((json: { advies: AITakenAdvies; next_available_at?: string }) => {
         setAiSuggesties(json.advies.taken)
+        setAiNextAvailable(json.next_available_at ? new Date(json.next_available_at) : null)
       })
       .catch((err: Error) => {
         setAiError(err.message || 'AI tijdelijk niet beschikbaar')
@@ -119,13 +121,11 @@ export function TakenShell() {
 
   const handleAiToggle = (val: boolean) => {
     setAiActive(val)
-    if (!val) {
-      // Reset when turned off so fresh suggestions load next time
-      setAiSuggesties([])
-      setDismissedTitels(new Set())
-      setAiError(null)
-    }
+    // Bewust geen reset bij verbergen: de suggesties en weggeklikte items
+    // blijven staan zodat opnieuw tonen geen extra AI-run kost (max 1x/uur).
   }
+
+  const handleAiToonWeggeklikt = () => setDismissedTitels(new Set())
 
   const handleAiToevoegen = async (s: AITaakSuggestie) => {
     const newTask: Omit<TaskInput, 'weddingId' | 'tijdsblok'> = {
@@ -338,8 +338,11 @@ export function TakenShell() {
           aiSuggesties={zichtbareSuggesties}
           aiLoading={aiLoading}
           aiError={aiError}
+          aiNextAvailable={aiNextAvailable}
+          aiAantalWeggeklikt={dismissedTitels.size}
           onAiToevoegen={handleAiToevoegen}
           onAiDismiss={handleAiDismiss}
+          onAiToonWeggeklikt={handleAiToonWeggeklikt}
           onAiHide={() => handleAiToggle(false)}
         />
       )}

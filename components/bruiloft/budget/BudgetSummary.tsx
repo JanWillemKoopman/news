@@ -4,7 +4,6 @@ import { Pencil } from 'lucide-react'
 
 import { Button, Money } from '@/components/bruiloft/ui'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
-import { formatEuro } from '@/lib/bruiloft/format'
 import { cn } from '@/lib/utils'
 import type { BudgetItem, Vendor, Wedding } from '@/lib/bruiloft/types'
 
@@ -16,15 +15,15 @@ interface BudgetSummaryProps {
 }
 
 function CircularProgress({ pct }: { pct: number }) {
-  const r = 26
+  const r = 22
   const circumference = 2 * Math.PI * r
   const offset = circumference - (pct / 100) * circumference
 
   return (
-    <svg width={64} height={64} className="shrink-0 -rotate-90">
-      <circle cx={32} cy={32} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
+    <svg width={56} height={56} className="shrink-0 -rotate-90">
+      <circle cx={28} cy={28} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
       <circle
-        cx={32} cy={32} r={r}
+        cx={28} cy={28} r={r}
         fill="none"
         stroke="#be123c"
         strokeWidth={4}
@@ -35,10 +34,10 @@ function CircularProgress({ pct }: { pct: number }) {
         className="transition-all duration-500"
       />
       <text
-        x={32} y={32}
+        x={28} y={28}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+        style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
       >
         {pct}%
       </text>
@@ -74,7 +73,7 @@ export function BudgetSummary({ items, vendors, wedding, onEditTotaalBudget }: B
       </div>
 
       {/* Main progress row */}
-      <div className="flex items-center gap-4 p-4">
+      <div className="flex items-center gap-4 p-3">
         <CircularProgress pct={pct} />
 
         <div className="min-w-0 flex-1">
@@ -82,15 +81,6 @@ export function BudgetSummary({ items, vendors, wedding, onEditTotaalBudget }: B
           <p className="text-base font-semibold leading-tight text-foreground">
             <Money bedrag={totalen.totaalBetaald} /> van <Money bedrag={wedding.totaalBudget} /> betaald
           </p>
-          {overBudget ? (
-            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-              Geschat {formatEuro(totalen.totaalGeschat)} · {formatEuro(overBudgetBedrag)} boven budget
-            </p>
-          ) : (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Geschat {formatEuro(totalen.totaalGeschat)}
-            </p>
-          )}
         </div>
 
         {/* Desktop stats */}
