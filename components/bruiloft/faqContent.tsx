@@ -259,8 +259,8 @@ export const budgetInfo: PageInfo = {
       <QuickStart
         stappen={[
           <>
-            <strong>Stel je totaalbudget in</strong> — via Overzicht →{' '}
-            <em>Bewerken</em>.
+            <strong>Stel je totaalbudget in</strong> — bovenin dit overzicht (via
+            het potloodje), of via Overzicht → <em>Bewerken</em>.
           </>,
           <>
             <strong>Vul je categorieën</strong> — laat automatisch verdelen of voeg
@@ -279,9 +279,10 @@ export const budgetInfo: PageInfo = {
       vraag: 'Hoe begin ik met mijn budget?',
       antwoord: (
         <p>
-          Stel eerst jullie <strong>totaalbudget</strong> in op de{' '}
-          <strong>Overzicht</strong>-pagina (via <em>Bewerken</em>). Vul daarna je
-          categorieën: laat het budget automatisch verdelen met{' '}
+          Stel eerst jullie <strong>totaalbudget</strong> in via het potloodje
+          bovenin deze pagina (of op de <strong>Overzicht</strong>-pagina via{' '}
+          <em>Bewerken</em>). Vul daarna je categorieën: laat het budget
+          automatisch verdelen met{' '}
           <strong>Verdeel budget</strong> of voeg zelf items toe met{' '}
           <strong>Budgetitem toevoegen</strong>. Werk het vervolgens bij naarmate
           je offertes ontvangt en betalingen doet.
@@ -306,8 +307,10 @@ export const budgetInfo: PageInfo = {
             </li>
           </ul>
           <p className="mt-2">
-            Het verschil tussen geschat en betaald is wat je{' '}
-            <strong>nog te betalen</strong> hebt.
+            In het overzicht per post zie je deze samengevoegd als{' '}
+            <strong>verwacht</strong> (de offerte als die er is, anders de
+            schatting) en <strong>nog te betalen</strong> (verwacht min
+            betaald).
           </p>
         </>
       ),
@@ -339,7 +342,7 @@ export const budgetInfo: PageInfo = {
             betaald hebt.
           </li>
           <li>
-            <strong>Resterend budget</strong> — wat er over is binnen jullie
+            <strong>Budget over</strong> — wat er over is binnen jullie
             totaalbudget. Kleurt dit oranje (<em>boven budget</em>), dan ligt de
             schatting hoger dan het totaalbudget.
           </li>

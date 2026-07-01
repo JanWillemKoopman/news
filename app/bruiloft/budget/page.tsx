@@ -12,6 +12,7 @@ import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistri
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
 import { BudgetList } from '@/components/bruiloft/budget/BudgetList'
 import { BudgetSummary } from '@/components/bruiloft/budget/BudgetSummary'
+import { TotaalBudgetEditModal } from '@/components/bruiloft/budget/TotaalBudgetEditModal'
 import { Button, ConfirmDialog, EmptyState, OverflowMenu, useToast } from '@/components/bruiloft/ui'
 import { downloadCsv } from '@/lib/bruiloft/csv'
 import {
@@ -49,6 +50,7 @@ export default function BudgetPage() {
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
   const [distributeOpen, setDistributeOpen] = React.useState(false)
   const [adviesOpen, setAdviesOpen] = React.useState(false)
+  const [budgetEditOpen, setBudgetEditOpen] = React.useState(false)
 
   if (!wedding) return null
 
@@ -68,7 +70,7 @@ export default function BudgetPage() {
 
   const exporteer = () => {
     try {
-      const headers = ['Categorie', 'Omschrijving', 'Geschat', 'Offerteprijs', 'Betaald', 'Resterend']
+      const headers = ['Categorie', 'Omschrijving', 'Geschat', 'Offerteprijs', 'Betaald', 'Nog te betalen']
       const rows = budgetItems.map((i) => [
         i.categorie,
         i.omschrijving,
@@ -135,7 +137,12 @@ export default function BudgetPage() {
       <AIInsightCard sectie="/bruiloft/budget" />
 
       <div className="mb-6">
-        <BudgetSummary items={budgetItems} vendors={vendors} wedding={wedding} />
+        <BudgetSummary
+          items={budgetItems}
+          vendors={vendors}
+          wedding={wedding}
+          onEditTotaalBudget={kanBewerken ? () => setBudgetEditOpen(true) : undefined}
+        />
       </div>
 
       {budgetItems.length === 0 ? (
@@ -194,6 +201,12 @@ export default function BudgetPage() {
             throw e
           }
         }}
+      />
+
+      <TotaalBudgetEditModal
+        open={budgetEditOpen}
+        onOpenChange={setBudgetEditOpen}
+        huidigBudget={wedding.totaalBudget}
       />
 
       <BudgetDistributeModal

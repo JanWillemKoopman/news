@@ -1,6 +1,8 @@
 'use client'
 
-import { Money } from '@/components/bruiloft/ui'
+import { Pencil } from 'lucide-react'
+
+import { Button, Money } from '@/components/bruiloft/ui'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
 import { formatEuro } from '@/lib/bruiloft/format'
 import { cn } from '@/lib/utils'
@@ -10,6 +12,7 @@ interface BudgetSummaryProps {
   items: BudgetItem[]
   vendors: Vendor[]
   wedding: Wedding
+  onEditTotaalBudget?: () => void
 }
 
 function CircularProgress({ pct }: { pct: number }) {
@@ -43,7 +46,7 @@ function CircularProgress({ pct }: { pct: number }) {
   )
 }
 
-export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
+export function BudgetSummary({ items, vendors, wedding, onEditTotaalBudget }: BudgetSummaryProps) {
   const totalen = budgetTotalen(items, vendors, wedding)
 
   const pct =
@@ -57,6 +60,19 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
 
   return (
     <div className="rounded-lg border border-border bg-card shadow-sm">
+      {/* Totaalbudget + bewerken */}
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Totaalbudget</p>
+          <Money bedrag={wedding.totaalBudget} className="text-base font-semibold text-foreground" />
+        </div>
+        {onEditTotaalBudget ? (
+          <Button variant="ghost" size="icon" aria-label="Totaalbudget bewerken" onClick={onEditTotaalBudget}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+      </div>
+
       {/* Main progress row */}
       <div className="flex items-center gap-4 p-4">
         <CircularProgress pct={pct} />
@@ -84,7 +100,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
           {overBudget ? (
             <StatNum label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
           ) : (
-            <StatNum label="resterend budget" bedrag={totalen.resterendBudget} kleur="groen" />
+            <StatNum label="budget over" bedrag={totalen.resterendBudget} kleur="groen" />
           )}
         </div>
       </div>
@@ -96,7 +112,7 @@ export function BudgetSummary({ items, vendors, wedding }: BudgetSummaryProps) {
         {overBudget ? (
           <StatNumMobile label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
         ) : (
-          <StatNumMobile label="resterend" bedrag={totalen.resterendBudget} kleur="groen" />
+          <StatNumMobile label="budget over" bedrag={totalen.resterendBudget} kleur="groen" />
         )}
       </div>
     </div>
