@@ -87,7 +87,7 @@ Mapping-regels:
 ${categorieRegels}
   Kies "overig" als je het niet zeker weet.
 - gasttype — exact één van: ${GASTTYPES.join(', ')}. Standaard "daggast" tenzij duidelijk avondgast.
-- rsvpStatus — exact één van: ${RSVP_STATUSSEN.join(', ')}. Standaard "uitgenodigd" tenzij de bron een reactie aangeeft (ja/aanwezig → "bevestigd", nee/afwezig → "afgemeld").
+- rsvpStatus — exact één van: ${RSVP_STATUSSEN.join(', ')}. Standaard "niet verzonden" tenzij de bron een reactie aangeeft (ja/aanwezig → "bevestigd", nee/afwezig → "afgemeld").
 - heeftPartner — true als er een partner/begeleider/"+1" wordt genoemd. Zet de partnernaam in partnerNaam (leeg als onbekend).
 - aantalKinderen — geheel getal ≥ 0, alleen als de bron kinderen vermeldt; anders 0. Tel kinderen NIET als losse gasten als ze als "X kinderen" bij iemand horen.
 - dieetwensen, adres, notitie — vul alleen als de bron dit bevat, anders een lege string "".
@@ -105,7 +105,7 @@ Geef ALLEEN een JSON-object terug in exact dit formaat:
       "achternaam": "",
       "categorie": "vrienden",
       "gasttype": "daggast",
-      "rsvpStatus": "uitgenodigd",
+      "rsvpStatus": "niet verzonden",
       "dieetwensen": "",
       "heeftPartner": false,
       "partnerNaam": "",
@@ -135,7 +135,7 @@ function saneer(raw: unknown): ImportGuest | null {
 
   const categorie = (CATSET.has(r.categorie as string) ? r.categorie : 'overig') as GuestCategorie
   const gasttype = (TYPESET.has(r.gasttype as string) ? r.gasttype : 'daggast') as Gasttype
-  const rsvpStatus = (RSVPSET.has(r.rsvpStatus as string) ? r.rsvpStatus : 'uitgenodigd') as RsvpStatus
+  const rsvpStatus = (RSVPSET.has(r.rsvpStatus as string) ? r.rsvpStatus : 'niet verzonden') as RsvpStatus
   const heeftPartner = r.heeftPartner === true || str(r.partnerNaam).length > 0
   const aantalKinderen = Math.max(0, Math.round(Number(r.aantalKinderen) || 0))
 

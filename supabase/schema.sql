@@ -198,8 +198,8 @@ create table public.guests (
     'familie partner 1', 'familie partner 2', 'vrienden', 'collega''s', 'overig'
   )),
   gasttype text not null default 'daggast' check (gasttype in ('daggast', 'avondgast')),
-  rsvp_status text not null default 'uitgenodigd' check (rsvp_status in (
-    'uitgenodigd', 'bevestigd', 'afgemeld', 'geen reactie'
+  rsvp_status text not null default 'niet verzonden' check (rsvp_status in (
+    'niet verzonden', 'uitgenodigd', 'bevestigd', 'afgemeld', 'geen reactie'
   )),
   dieetwensen text not null default '',
   heeft_partner boolean not null default false,
@@ -207,6 +207,8 @@ create table public.guests (
   aantal_kinderen integer not null default 0,
   adres text not null default '',
   notitie text not null default '',
+  email text not null default '',
+  telefoon text not null default '',
   tafel_id uuid, -- FK toegevoegd onderaan (-> tables)
   rsvp_token text not null unique default encode(extensions.gen_random_bytes(16), 'hex'),
   rsvp_submitted_at timestamptz,

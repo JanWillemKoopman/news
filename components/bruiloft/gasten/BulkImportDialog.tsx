@@ -279,6 +279,8 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
         aantalKinderen: Math.max(0, Math.round(Number(r.aantalKinderen) || 0)),
         adres: r.adres.trim(),
         notitie: r.notitie.trim(),
+        email: '',
+        telefoon: '',
       }))
     if (teImporteren.length === 0) {
       toast({ title: 'Niets geselecteerd', description: 'Vink minstens één gast aan om te importeren.', variant: 'error' })

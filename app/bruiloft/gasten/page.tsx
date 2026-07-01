@@ -1,12 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Copy, Download, Link2, Mail, Pencil, Plus, Search, Sparkles, Trash2, Users } from 'lucide-react'
+import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
 import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
+import { RsvpDeelModal } from '@/components/bruiloft/gasten/RsvpDeelModal'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { gastenInfo } from '@/components/bruiloft/faqContent'
@@ -15,9 +16,6 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Field,
-  Input,
-  Modal,
   OverflowMenu,
   StatusBadge,
   useToast,
@@ -73,6 +71,7 @@ function RsvpSelect({
   // Eén betekenisvolle kleur: rose alleen voor "afgemeld", verder neutraal —
   // zelfde regel als StatusBadge, hier lokaal omdat dit element klikbaar is.
   const klassen: Record<RsvpStatus, string> = {
+    'niet verzonden': 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
     bevestigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
     afgemeld: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
     uitgenodigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
@@ -140,11 +139,6 @@ export default function GastenPage() {
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
-  const [rsvpEmail, setRsvpEmail] = React.useState('')
-  const [rsvpSending, setRsvpSending] = React.useState(false)
-  const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
-  const [origin, setOrigin] = React.useState('')
-  React.useEffect(() => { setOrigin(window.location.origin) }, [])
 
   const tafelNamen = React.useMemo(
     () => new Map(tables.map((t) => [t.id, t.naam])),
@@ -160,17 +154,6 @@ export default function GastenPage() {
 
   if (!wedding) return null
 
-  const kopieer = async (tekst: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(tekst)
-      setGekopieerd(id)
-      toast({ title: 'Link gekopieerd', description: 'De RSVP-link staat nu in je klembord.', variant: 'success' })
-      setTimeout(() => setGekopieerd(null), 1500)
-    } catch {
-      toast({ title: 'Kopiëren mislukt', description: 'Geef toegang tot het klembord en probeer opnieuw.', variant: 'error' })
-    }
-  }
-
   const genereerLinks = async () => {
     try {
       await ensureRsvpCodes()
@@ -178,30 +161,6 @@ export default function GastenPage() {
     } catch {
       toast({ title: 'Genereren mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
-  }
-
-  async function sendRsvpEmail(e: React.FormEvent) {
-    e.preventDefault()
-    if (!rsvpTarget || !wedding) return
-    setRsvpSending(true)
-    try {
-      const res = await fetch('/api/email/rsvp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestId: rsvpTarget.id, email: rsvpEmail.trim(), weddingId: wedding.id }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (json.emailSent) {
-        toast({ title: 'RSVP-link verzonden', description: `De RSVP-link is naar ${rsvpEmail.trim()} gemaild.`, variant: 'success' })
-      } else {
-        toast({ title: 'Verzenden mislukt', description: 'Kon de e-mail niet verzenden. Kopieer de link handmatig.', variant: 'error' })
-      }
-    } catch {
-      toast({ title: 'Verzenden mislukt', description: 'Netwerkfout. Probeer het opnieuw.', variant: 'error' })
-    }
-    setRsvpSending(false)
-    setRsvpTarget(null)
-    setRsvpEmail('')
   }
 
   const updateRsvp = async (g: Guest, status: RsvpStatus) => {
@@ -246,6 +205,8 @@ export default function GastenPage() {
         [
           'Voornaam',
           'Achternaam',
+          'E-mail',
+          'Telefoon',
           'Categorie',
           'Gasttype',
           'RSVP',
@@ -259,6 +220,8 @@ export default function GastenPage() {
         guests.map((g) => [
           g.voornaam,
           g.achternaam,
+          g.email,
+          g.telefoon,
           g.categorie,
           g.gasttype,
           g.rsvpStatus,
@@ -419,15 +382,9 @@ export default function GastenPage() {
                               items={[
                                 ...(g.rsvpCode ? [
                                   {
-                                    label: 'Kopieer RSVP-link',
-                                    icon: Copy,
-                                    disabled: !origin,
-                                    onClick: () => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`),
-                                  },
-                                  {
-                                    label: 'Stuur RSVP-link per e-mail',
-                                    icon: Mail,
-                                    onClick: () => { setRsvpTarget(g); setRsvpEmail('') },
+                                    label: 'Uitnodiging versturen',
+                                    icon: Send,
+                                    onClick: () => setRsvpTarget(g),
                                   },
                                 ] : []),
                                 ...(kanBewerken ? [
@@ -496,15 +453,9 @@ export default function GastenPage() {
                         items={[
                           ...(g.rsvpCode ? [
                             {
-                              label: 'Kopieer RSVP-link',
-                              icon: Copy,
-                              disabled: !origin,
-                              onClick: () => kopieer(`${origin}/rsvp/${g.rsvpCode}`, `copy-${g.id}`),
-                            },
-                            {
-                              label: 'Stuur RSVP-link per e-mail',
-                              icon: Mail,
-                              onClick: () => { setRsvpTarget(g); setRsvpEmail('') },
+                              label: 'Uitnodiging versturen',
+                              icon: Send,
+                              onClick: () => setRsvpTarget(g),
                             },
                           ] : []),
                           ...(kanBewerken ? [
@@ -603,6 +554,8 @@ export default function GastenPage() {
                     aantalKinderen: verwijderd.aantalKinderen,
                     adres: verwijderd.adres,
                     notitie: verwijderd.notitie,
+                    email: verwijderd.email,
+                    telefoon: verwijderd.telefoon,
                   })
                 },
               },
@@ -613,36 +566,11 @@ export default function GastenPage() {
         }}
       />
 
-      <Modal
-        open={rsvpTarget !== null}
-        onOpenChange={(o) => { if (!o) { setRsvpTarget(null); setRsvpEmail('') } }}
-        title="RSVP-link e-mailen"
-        description={rsvpTarget ? `Stuur de persoonlijke RSVP-link van ${rsvpTarget.voornaam} ${rsvpTarget.achternaam} naar een e-mailadres.` : undefined}
-      >
-        <form onSubmit={sendRsvpEmail} className="space-y-4">
-          <Field label="E-mailadres" htmlFor="rsvp-email">
-            <Input
-              id="rsvp-email"
-              type="email"
-              autoFocus
-              autoComplete="email"
-              required
-              placeholder="naam@voorbeeld.nl"
-              value={rsvpEmail}
-              onChange={(e) => setRsvpEmail(e.target.value)}
-            />
-          </Field>
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => { setRsvpTarget(null); setRsvpEmail('') }}>
-              Annuleren
-            </Button>
-            <Button type="submit" disabled={rsvpSending}>
-              <Mail className="h-4 w-4" />
-              {rsvpSending ? 'Bezig…' : 'Versturen'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      <RsvpDeelModal
+        guest={rsvpTarget}
+        onOpenChange={(o) => { if (!o) setRsvpTarget(null) }}
+        weddingId={wedding.id}
+      />
     </div>
   )
 }

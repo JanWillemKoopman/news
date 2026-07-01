@@ -49,6 +49,7 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
 
   const nogTeReageren = t.uitgenodigd + t.geenReactie
   const subdelen = [
+    t.nietVerzonden > 0 ? `${t.nietVerzonden} nog niet uitgenodigd` : null,
     t.afgemeld > 0 ? `${t.afgemeld} afgemeld` : null,
     nogTeReageren > 0 ? `${nogTeReageren} nog te reageren` : null,
   ].filter(Boolean)

@@ -55,6 +55,7 @@ export interface AIWeddingContext {
   gasten: {
     totaal: number
     bevestigd: number
+    nietVerzonden: number
     uitgenodigd: number
     afgemeld: number
     geenReactie: number
@@ -325,6 +326,7 @@ export function buildAIContext(
     gasten: {
       totaal: guests.length,
       bevestigd: gasten.bevestigd,
+      nietVerzonden: gasten.nietVerzonden,
       uitgenodigd: gasten.uitgenodigd,
       afgemeld: gasten.afgemeld,
       geenReactie: gasten.geenReactie,
