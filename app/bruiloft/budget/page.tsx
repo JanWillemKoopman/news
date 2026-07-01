@@ -107,7 +107,7 @@ export default function BudgetPage() {
             <Button
               variant="outline"
               onClick={() => setAdviesOpen(true)}
-              className="hidden gap-1.5 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:inline-flex"
+              className="hidden sm:inline-flex"
             >
               <Sparkles className="h-4 w-4" />
               Analyseer mijn budget
