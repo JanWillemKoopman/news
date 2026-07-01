@@ -98,6 +98,17 @@ function useWeggeklikt(weddingId: string | null) {
   return { weggeklikt, klikWeg }
 }
 
+// Wegklikken van álle nog zichtbare adviezen voor één sectie in één keer, zodat
+// een volgend advies voor dezelfde sectie niet meteen achter het weggeklikte
+// item vandaan komt (zou aanvoelen als "komt terug" / "twee keer wegklikken").
+function klikWegAlleVoorSectie(weddingId: string, sectie: string, advies: AIAdvies[]) {
+  const next = new Set(leesWeggeklikt(weddingId))
+  for (const a of advies) {
+    if (a.sectie === sectie) next.add(adviesKey(a))
+  }
+  schrijfWeggeklikt(weddingId, next)
+}
+
 // ── Versheidslabel ───────────────────────────────────────────────────────────
 
 export function geledenLabel(iso?: string): string {
@@ -133,6 +144,8 @@ export interface UseAIAdviesResult {
   updatedAt?: string
   refresh: () => void
   klikWeg: (advies: AIAdvies) => void
+  /** Klikt in één keer alle (nog zichtbare) adviezen voor deze sectie weg. */
+  klikWegSectie: (sectie: string) => void
 }
 
 export function useAIAdvies(): UseAIAdviesResult {
@@ -268,6 +281,14 @@ export function useAIAdvies(): UseAIAdviesResult {
       .sort((a, b) => URGENTIE_VOLGORDE[a.urgentie] - URGENTIE_VOLGORDE[b.urgentie])
   }, [advies, weggeklikt])
 
+  const klikWegSectie = React.useCallback(
+    (sectie: string) => {
+      if (!weddingId || !advies) return
+      klikWegAlleVoorSectie(weddingId, sectie, advies)
+    },
+    [weddingId, advies]
+  )
+
   return {
     advies,
     zichtbaar,
@@ -277,5 +298,6 @@ export function useAIAdvies(): UseAIAdviesResult {
     updatedAt,
     refresh: () => fetchAdvies(true),
     klikWeg,
+    klikWegSectie,
   }
 }

@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
 import { Card, CardContent, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
 import { dagLabel, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
+import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
 import { capFirst, cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 
@@ -38,6 +39,7 @@ export function TaskCard({
 }: TaskCardProps) {
   const klaar = task.status === 'klaar'
   const d = dagenTot(task.deadline)
+  const achterstallig = !klaar && d < 0
   const [expanded, setExpanded] = React.useState(false)
   const heeftSubtaken = task.subtaken.length > 0
   const subKlaar = task.subtaken.filter((s: Subtaak) => s.klaar).length
@@ -90,10 +92,11 @@ export function TaskCard({
         className={cn(
           'group relative transition-opacity',
           klaar && 'opacity-60',
-          selected && 'ring-2 ring-primary'
+          selected && 'ring-2 ring-primary',
+          achterstallig && 'border-l-4 border-l-rose-400'
         )}
       >
-      <CardContent className={cn('flex items-start gap-3', compact ? 'p-3' : 'p-4')}>
+      <CardContent className="flex items-start gap-3 p-3">
         {selectable ? (
           <button
             type="button"
@@ -147,27 +150,27 @@ export function TaskCard({
             </div>
           </div>
           {task.omschrijving && !compact ? (
-            <p className="mt-0.5 text-sm text-muted-foreground">{task.omschrijving}</p>
-          ) : null}
-
-          {task.deadline ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Deadline {formatDatumNL(task.deadline)}
-              {!klaar ? (
-                <>
-                  {' · '}
-                  <span className={cn(d < 0 && 'font-medium text-rose-600 dark:text-rose-400')}>
-                    {dagLabel(d)}
-                  </span>
-                </>
-              ) : null}
+            <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">
+              {task.omschrijving}
             </p>
           ) : null}
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {task.deadline ? (
+              <span className="inline-flex items-center gap-1">
+                {achterstallig ? (
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                ) : null}
+                {formatDatumNL(task.deadline)}
+                {!klaar ? (
+                  <span className={cn(achterstallig && 'font-medium text-rose-600 dark:text-rose-400')}>
+                    · {dagLabel(d)}
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
             <span className="inline-flex items-center gap-1.5">
-              Prioriteit
-              <StatusBadge kind="prioriteit" value={task.prioriteit} />
+              <StatusBadge kind="prioriteit" value={effectievePrioriteit(task)} />
             </span>
             {toegewezenLeden.length > 0 ? (
               <span className="inline-flex items-center gap-1.5">

@@ -4,7 +4,7 @@ import * as React from 'react'
 import { CalendarClock } from 'lucide-react'
 
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
-import { dezeMaandTaken } from '@/lib/bruiloft/taken/stats'
+import { aankomendeTaken } from '@/lib/bruiloft/taken/stats'
 import type { Task, WeddingMember } from '@/lib/bruiloft/types'
 
 interface DezeMaandSectionProps {
@@ -20,14 +20,14 @@ interface DezeMaandSectionProps {
 }
 
 export function DezeMaandSection(props: DezeMaandSectionProps) {
-  const taken = dezeMaandTaken(props.tasks)
+  const taken = aankomendeTaken(props.tasks)
   if (taken.length === 0) return null
   const label = taken.length === 1 ? 'taak' : 'taken'
   return (
     <div className="mb-8 rounded-lg border border-border bg-muted/50 p-4">
       <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <CalendarClock className="h-4 w-4 text-muted-foreground" />
-        Deze maand
+        Deadline aankomende 30 dagen
         <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
           {taken.length} {label}
         </span>

@@ -11,14 +11,13 @@ import { TakenSamenstellen } from '@/components/bruiloft/taken/TakenSamenstellen
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
 import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
 import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
-import { AchterstandBanner } from '@/components/bruiloft/taken/AchterstandBanner'
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
-import { Button, ConfirmDialog, LoadingDots, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
-import { achterstalligeTaken, berekenTaakStats } from '@/lib/bruiloft/taken/stats'
+import { berekenTaakStats } from '@/lib/bruiloft/taken/stats'
 import { openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
 import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -52,7 +51,6 @@ export function TakenShell() {
   const [newTaskDeadline, setNewTaskDeadline] = React.useState<ISODate | null>(null)
   const [delTask, setDelTask] = React.useState<Task | null>(null)
   const [delBulkOpen, setDelBulkOpen] = React.useState(false)
-  const achterstandRef = React.useRef<HTMLDivElement | null>(null)
   const { save: saveScroll, restore: restoreScroll } = useScrollRestore()
   const savedScroll = React.useRef(0)
 
@@ -156,7 +154,6 @@ export function TakenShell() {
   if (!wedding) return null
 
   const stats = berekenTaakStats(tasks)
-  const achterstand = achterstalligeTaken(tasks).length
   const voorstellenOver = wedding.takenVoorstellen.afgerond
     ? []
     : openVoorstellen(wedding, tasks)
@@ -261,19 +258,22 @@ export function TakenShell() {
     }
   }
 
-  const springNaarAchterstand = () => {
-    achterstandRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   return (
     <div className="mx-auto max-w-6xl pb-24 min-h-screen">
       <PageHeader
         titel="Taken"
         info={<PageInfoButton {...takenInfo} />}
         actie={
-          <Button onClick={openNieuw}>
-            <Plus className="h-4 w-4" /> Taak toevoegen
-          </Button>
+          <>
+            {!aiActive && (
+              <Button variant="outline" onClick={() => handleAiToggle(true)}>
+                <Sparkles className="h-4 w-4" /> Voorgestelde taken
+              </Button>
+            )}
+            <Button onClick={openNieuw}>
+              <Plus className="h-4 w-4" /> Taak toevoegen
+            </Button>
+          </>
         }
         fab={{ label: 'Taak toevoegen', onClick: openNieuw }}
       />
@@ -313,27 +313,13 @@ export function TakenShell() {
 
       {stats.totaal > 0 ? <TakenStatsStrip tasks={tasks} wedding={wedding} /> : null}
 
-      <AchterstandBanner aantal={achterstand} onSpringNaar={springNaarAchterstand} />
-
       <TakenFilters
         filters={filters}
         onChange={setFilters}
         members={members}
         view={view}
         onViewChange={setView}
-        aiActive={aiActive}
-        onAiToggle={handleAiToggle}
       />
-
-      {aiActive && aiLoading && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5">
-          <LoadingDots />
-          <div>
-            <p className="text-sm font-medium text-foreground">AI genereert suggesties…</p>
-            <p className="text-xs text-muted-foreground">Dit kan 10–30 seconden duren.</p>
-          </div>
-        </div>
-      )}
 
       {view === 'lijst' && (
         <ListView
@@ -349,7 +335,6 @@ export function TakenShell() {
           selectable={selectedIds.size > 0}
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
-          achterstandRef={achterstandRef}
           onResetFilters={() => setFilters(DEFAULT_FILTERS)}
           aiActive={aiActive}
           aiSuggesties={zichtbareSuggesties}
@@ -357,6 +342,7 @@ export function TakenShell() {
           aiError={aiError}
           onAiToevoegen={handleAiToevoegen}
           onAiDismiss={handleAiDismiss}
+          onAiHide={() => handleAiToggle(false)}
         />
       )}
 
