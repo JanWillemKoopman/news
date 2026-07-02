@@ -194,12 +194,11 @@ create table public.guests (
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   voornaam text not null default '',
   achternaam text not null default '',
-  categorie text not null check (categorie in (
-    'familie partner 1', 'familie partner 2', 'vrienden', 'collega''s', 'overig'
-  )),
-  gasttype text not null default 'daggast' check (gasttype in ('daggast', 'avondgast')),
-  rsvp_status text not null default 'niet verzonden' check (rsvp_status in (
-    'niet verzonden', 'uitgenodigd', 'bevestigd', 'afgemeld', 'geen reactie'
+  -- Vrije tekst (zie 0044_custom_guest_categories): geen vaste CHECK-lijst meer.
+  categorie text not null,
+  gasttype text not null default 'daggast',
+  rsvp_status text not null default 'nog niet uitgenodigd' check (rsvp_status in (
+    'nog niet uitgenodigd', 'uitgenodigd', 'bevestigd', 'afgemeld', 'geen reactie'
   )),
   dieetwensen text not null default '',
   heeft_partner boolean not null default false,

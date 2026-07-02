@@ -15,11 +15,11 @@ type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit'
 
 const tones: Record<Kind, Record<string, Tone>> = {
   rsvp: {
-    'niet verzonden': 'neutral',
     bevestigd: 'neutral',
     afgemeld: 'attention',
-    'geen reactie': 'neutral',
+    'geen reactie': 'attention',
     uitgenodigd: 'neutral',
+    'nog niet uitgenodigd': 'attention',
   },
   taak: {
     open: 'neutral',

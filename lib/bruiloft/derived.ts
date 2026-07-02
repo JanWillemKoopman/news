@@ -102,7 +102,7 @@ export function budgetTotalen(
 
 export interface GastTellingen {
   totaal: number
-  nietVerzonden: number
+  nogNietUitgenodigd: number
   uitgenodigd: number
   bevestigd: number
   afgemeld: number
@@ -116,7 +116,7 @@ export interface GastTellingen {
 export function gastTellingen(guests: Guest[]): GastTellingen {
   const t: GastTellingen = {
     totaal: guests.length,
-    nietVerzonden: 0,
+    nogNietUitgenodigd: 0,
     uitgenodigd: 0,
     bevestigd: 0,
     afgemeld: 0,
@@ -127,7 +127,7 @@ export function gastTellingen(guests: Guest[]): GastTellingen {
     bevestigdeAvondgasten: 0,
   }
   for (const g of guests) {
-    if (g.rsvpStatus === 'niet verzonden') t.nietVerzonden++
+    if (g.rsvpStatus === 'nog niet uitgenodigd') t.nogNietUitgenodigd++
     else if (g.rsvpStatus === 'uitgenodigd') t.uitgenodigd++
     else if (g.rsvpStatus === 'bevestigd') t.bevestigd++
     else if (g.rsvpStatus === 'afgemeld') t.afgemeld++

@@ -36,7 +36,7 @@ export function RsvpDeelModal({ guest, onOpenChange, weddingId }: RsvpDeelModalP
     }
   }, [guest])
 
-  const kanStatusZetten = guest?.rsvpStatus === 'niet verzonden'
+  const kanStatusZetten = guest?.rsvpStatus === 'nog niet uitgenodigd'
   const link = guest?.rsvpCode && origin ? `${origin}/rsvp/${guest.rsvpCode}` : null
   const bericht = guest && link ? `Hoi ${guest.voornaam}, vul je RSVP in via deze link: ${link}` : ''
   const whatsappUrl = link ? buildWhatsappUrl(bericht, guest?.telefoon) : null

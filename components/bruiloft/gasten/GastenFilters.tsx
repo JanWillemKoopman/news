@@ -18,6 +18,9 @@ interface GastenFiltersProps {
   rsvp: string
   onRsvp: (v: string) => void
   wedding?: Wedding | null
+  // Custom categorieën/gasttypes die al in gebruik zijn bij dit bruidspaar
+  extraCategorieen?: string[]
+  extraGasttypen?: string[]
 }
 
 // Zelfde toolbar-patroon als TakenFilters: op desktop staan de filters los
@@ -33,6 +36,8 @@ export function GastenFilters({
   rsvp,
   onRsvp,
   wedding,
+  extraCategorieen = [],
+  extraGasttypen = [],
 }: GastenFiltersProps) {
   const [open, setOpen] = React.useState(false)
   const panelRef = React.useRef<HTMLDivElement>(null)
@@ -54,16 +59,19 @@ export function GastenFilters({
     return () => document.removeEventListener('pointerdown', handler)
   }, [open])
 
+  const alleCategorieen = [...GUEST_CATEGORIEEN, ...extraCategorieen.filter((c) => !GUEST_CATEGORIEEN.includes(c))]
+  const alleGasttypen = [...GASTTYPES, ...extraGasttypen.filter((t) => !GASTTYPES.includes(t))]
+
   const categorieOpties = [
     { key: 'all', label: 'Alle categorieën' },
-    ...GUEST_CATEGORIEEN.map((c) => ({
+    ...alleCategorieen.map((c) => ({
       key: c,
       label: categorieLabelVoor(c, wedding?.partner1Naam, wedding?.partner2Naam),
     })),
   ]
   const typeOpties = [
     { key: 'all', label: 'Alle types' },
-    ...GASTTYPES.map((tp) => ({ key: tp, label: tp })),
+    ...alleGasttypen.map((tp) => ({ key: tp, label: tp })),
   ]
   const rsvpOpties = [
     { key: 'all', label: 'Alle RSVP-statussen' },
@@ -154,7 +162,7 @@ export function GastenFilters({
                 </label>
                 <Select value={categorie} onChange={(e) => onCategorie(e.target.value)} className="w-full">
                   <option value="all">Alle categorieën</option>
-                  {GUEST_CATEGORIEEN.map((c) => (
+                  {alleCategorieen.map((c) => (
                     <option key={c} value={c}>
                       {categorieLabelVoor(c, wedding?.partner1Naam, wedding?.partner2Naam)}
                     </option>
@@ -166,7 +174,7 @@ export function GastenFilters({
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Type</label>
                 <Select value={type} onChange={(e) => onType(e.target.value)} className="w-full">
                   <option value="all">Alle types</option>
-                  {GASTTYPES.map((tp) => (
+                  {alleGasttypen.map((tp) => (
                     <option key={tp} value={tp}>
                       {tp}
                     </option>
