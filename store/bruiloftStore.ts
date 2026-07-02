@@ -78,7 +78,7 @@ type NewVendor = Omit<VendorInput, 'weddingId'>
 
 // Payload voor het versturen van een offerte-/contactbericht naar een
 // leverancier. `vendor` bevat óf een bestaand vendorId (al in de lijst), óf
-// de directory-herkomst (supplierId/tpwBusinessId) zodat de server-route een
+// de directory-herkomst (supplierId/businessId) zodat de server-route een
 // nieuwe vendor-rij kan aanmaken.
 export interface SendVendorContactPayload {
   type: VendorContactType
@@ -87,7 +87,7 @@ export interface SendVendorContactPayload {
   vendor: {
     vendorId?: ID
     supplierId?: ID
-    tpwBusinessId?: ID
+    businessId?: ID
     naam: string
     type: string
     email: string

@@ -57,7 +57,7 @@ const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Se
 const aiPlanner: NavItem = { label: 'AI-assistent', href: '/bruiloft/ai-wedding-planner', icon: Sparkles, module: 'dashboard' }
 const activiteit: NavItem = { label: 'Activiteit', href: '/bruiloft/activiteit', icon: Activity, module: 'dashboard' }
 
-// TPW-categorieën — elk een eigen pagina onder /bruiloft/ontdekken/[slug].
+// Directory-categorieën — elk een eigen pagina onder /bruiloft/ontdekken/[slug].
 const catTrouwlocaties: NavItem = { label: 'Trouwlocaties', href: '/bruiloft/ontdekken/trouwlocaties', icon: MapPin, module: 'leveranciers' }
 const catWeddingplanners: NavItem = { label: 'Weddingplanners', href: '/bruiloft/ontdekken/weddingplanners', icon: Star, module: 'leveranciers' }
 const catTrouwambtenaren: NavItem = { label: 'Trouwambtenaren', href: '/bruiloft/ontdekken/trouwambtenaren', icon: Mic2, module: 'leveranciers' }
@@ -79,7 +79,7 @@ const catEntertainment: NavItem = { label: 'Entertainment', href: '/bruiloft/ont
 const catTrouwkaarten: NavItem = { label: 'Trouwkaarten', href: '/bruiloft/ontdekken/trouwkaarten', icon: Mail, module: 'leveranciers' }
 const catBedankjes: NavItem = { label: 'Bedankjes', href: '/bruiloft/ontdekken/bedankjes', icon: Gift, module: 'leveranciers' }
 
-export const TPW_CATEGORIE_ITEMS: NavItem[] = [
+export const DIRECTORY_CATEGORIE_ITEMS: NavItem[] = [
   catTrouwlocaties,
   catWeddingplanners,
   catTrouwambtenaren,
@@ -111,7 +111,7 @@ export const NAV_ITEMS: NavItem[] = [
   budget,
   mijnLeveranciers,
   leverancierZoeken,
-  ...TPW_CATEGORIE_ITEMS,
+  ...DIRECTORY_CATEGORIE_ITEMS,
   draaiboek,
   gasten,
   tafels,
@@ -160,7 +160,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Leveranciers',
     icon: Store,
     href: '/bruiloft/leveranciers',
-    items: [mijnLeveranciers, leverancierZoeken, ...TPW_CATEGORIE_ITEMS],
+    items: [mijnLeveranciers, leverancierZoeken, ...DIRECTORY_CATEGORIE_ITEMS],
     module: 'leveranciers',
     groups: [
       { label: 'Leveranciers', items: [mijnLeveranciers, leverancierZoeken] },

@@ -193,8 +193,8 @@ export interface Vendor {
   budgetItemId?: ID
   // Herkomst uit de globale directory (public.suppliers); leeg bij handmatige invoer.
   supplierId?: ID
-  // Herkomst uit tpw_businesses; leeg bij handmatige invoer of suppliers-koppeling.
-  tpwBusinessId?: ID
+  // Herkomst uit de directory (public.businesses); leeg bij handmatige invoer of suppliers-koppeling.
+  businessId?: ID
 }
 
 export type VendorInput = Omit<Vendor, 'id'>

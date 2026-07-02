@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { mapBusinessRow, type BusinessRow } from '@/lib/bruiloft/suppliers/business-types'
 import { bouwProfiel, rangschik, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
-import { mapTpwBusinessRow, type TpwBusinessRow } from '@/lib/bruiloft/suppliers/tpw-types'
 import type { VendorType } from '@/lib/bruiloft/types'
 import { createClient } from '@/lib/supabase/server'
 
@@ -32,10 +32,8 @@ export async function GET(request: NextRequest) {
   const plaats = sp.get('plaats')
   const provincie = sp.get('provincie')
   const q = sp.get('q')?.trim()
-  const prijsMin = sp.get('prijsMin')
-  const prijsMax = sp.get('prijsMax')
 
-  const sort = (sp.get('sort') ?? 'match') as 'match' | 'naam' | 'prijs'
+  const sort = (sp.get('sort') ?? 'match') as 'match' | 'naam'
   const page = Math.max(1, intParam(sp.get('page'), 1))
   const limit = Math.min(MAX_LIMIT, Math.max(1, intParam(sp.get('limit'), DEFAULT_LIMIT)))
 
@@ -67,47 +65,39 @@ export async function GET(request: NextRequest) {
   )
 
   const build = () => {
-    let query = (supabase as any).from('tpw_businesses').select('*', { count: 'exact' })
+    let query = (supabase as any).from('businesses').select('*', { count: 'exact' })
     if (categorie) query = query.eq('categorie', categorie)
     if (plaats) query = query.ilike('plaats', `%${plaats}%`)
     if (provincie) query = query.eq('provincie', provincie)
-    if (prijsMin) query = query.gte('prijspakket_vanaf', Number(prijsMin))
-    if (prijsMax) query = query.lte('prijspakket_vanaf', Number(prijsMax))
-    // Zoeken op naam (geen full-text search tot dat beschikbaar is).
     if (q) {
-      query = query.or(
-        `naam.ilike.%${q}%,beschrijving.ilike.%${q}%,seo_omschrijving.ilike.%${q}%`
-      )
+      query = query.textSearch('search_vector', q, { type: 'websearch', config: 'dutch' })
     }
     return query
   }
 
   try {
-    if (sort === 'naam' || sort === 'prijs') {
+    if (sort === 'naam') {
       const from = (page - 1) * limit
-      let query = build()
-      query =
-        sort === 'naam'
-          ? query.order('naam', { ascending: true })
-          : query.order('prijspakket_vanaf', { ascending: true, nullsFirst: false })
-      const { data, error, count } = await query.range(from, from + limit - 1)
+      const { data, error, count } = await build()
+        .order('naam', { ascending: true })
+        .range(from, from + limit - 1)
       if (error) throw error
-      const rows = (data ?? []) as TpwBusinessRow[]
+      const rows = (data ?? []) as BusinessRow[]
       const matches: SupplierMatch[] = rows
-        .map(mapTpwBusinessRow)
+        .map(mapBusinessRow)
         .map((supplier) => ({ supplier, score: 0, badges: [], binnenBudget: false, uitleg: '' }))
       return NextResponse.json({ matches, total: count ?? rows.length, page, limit })
     }
 
     const { data, error, count } = await build().limit(CANDIDATE_CAP)
     if (error) throw error
-    const rows = (data ?? []) as TpwBusinessRow[]
-    const gerangschikt = rangschik(rows.map(mapTpwBusinessRow), profiel)
+    const rows = (data ?? []) as BusinessRow[]
+    const gerangschikt = rangschik(rows.map(mapBusinessRow), profiel)
     const from = (page - 1) * limit
     const matches = gerangschikt.slice(from, from + limit)
     return NextResponse.json({ matches, total: count ?? gerangschikt.length, page, limit })
   } catch (err) {
-    console.error('[api/tpw-businesses/search] fout:', err)
+    console.error('[api/businesses/search] fout:', err)
     return NextResponse.json({ error: 'Zoeken mislukt' }, { status: 500 })
   }
 }

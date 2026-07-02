@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { mapBusinessRow, type BusinessRow } from '@/lib/bruiloft/suppliers/business-types'
 import { bouwProfiel, rangschik, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
-import { mapTpwBusinessRow, type TpwBusinessRow } from '@/lib/bruiloft/suppliers/tpw-types'
 import type { VendorType } from '@/lib/bruiloft/types'
 import { logAiUsage } from '@/lib/ai/usage'
 import { createClient } from '@/lib/supabase/server'
@@ -110,12 +110,12 @@ export async function POST(request: NextRequest) {
 
   const admin = createRawAdminClient()
 
-  // Rekenregel-voorselectie (de veilige basis + fallback). Bron: tpw_businesses,
-  // dezelfde directory als /api/tpw-businesses/search — daar staat de daadwerkelijk
+  // Rekenregel-voorselectie (de veilige basis + fallback). Bron: businesses,
+  // dezelfde directory als /api/businesses/search — daar staat de daadwerkelijk
   // gevulde data (Trouwlocaties, Weddingplanners, Trouwambtenaren, ...), niet in
   // de oudere (grotendeels lege) public.suppliers-tabel.
-  const { data: supplierRows } = await admin.from('tpw_businesses').select('*').limit(FETCH_CAP)
-  const alle = ((supplierRows ?? []) as TpwBusinessRow[]).map(mapTpwBusinessRow)
+  const { data: supplierRows } = await admin.from('businesses').select('*').limit(FETCH_CAP)
+  const alle = ((supplierRows ?? []) as BusinessRow[]).map(mapBusinessRow)
   const gerangschikt = rangschik(alle, profiel)
   const kandidaten = gerangschikt.slice(0, KANDIDATEN)
   const regelTop: AISupplierMatch[] = kandidaten.slice(0, TOP)

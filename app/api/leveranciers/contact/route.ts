@@ -24,7 +24,7 @@ const bodySchema = z.object({
   vendor: z.object({
     vendorId: z.string().uuid().optional(),
     supplierId: z.string().optional(),
-    tpwBusinessId: z.string().optional(),
+    businessId: z.string().uuid().optional(),
     naam: z.string().trim().min(1),
     type: z.string().trim().min(1),
     email: z.string().trim().email(),
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   // 1. Vendor upsert via de user-scoped (RLS-respecterende) client — RLS
   // (can_edit(wedding_id,'leveranciers')) doet hier het autorisatiewerk,
   // exact zoals de bestaande addVendor/updateVendor-store-acties.
-  // any: tpw_business_id ontbreekt in de gegenereerde database.types.ts
+  // any: business_id ontbreekt in de gegenereerde database.types.ts
   // (bekende drift, zie ook de (r as any)-casts in lib/bruiloft/mappers.ts).
   let vendorRow: any = null
 
@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('wedding_id', weddingId)
     const site = normaliseerWebsite(vendor.website ?? '')
-    // any: zie tpw_business_id-toelichting hierboven.
+    // any: zie business_id-toelichting hierboven.
     const gevonden = ((bestaandeVendors ?? []) as any[]).find(
       (v) =>
         (vendor.supplierId && v.supplier_id === vendor.supplierId) ||
-        (vendor.tpwBusinessId && v.tpw_business_id != null && String(v.tpw_business_id) === vendor.tpwBusinessId) ||
+        (vendor.businessId && v.business_id === vendor.businessId) ||
         (site && v.website && normaliseerWebsite(v.website) === site)
     )
 
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
           email: vendor.email,
           website: vendor.website ?? '',
           supplier_id: vendor.supplierId ?? null,
-          // tpw_business_id: zie any-cast hierboven, ontbreekt in database.types.ts.
-          ...(vendor.tpwBusinessId ? { tpw_business_id: parseInt(vendor.tpwBusinessId, 10) } : {}),
+          // business_id: zie any-cast hierboven, ontbreekt in database.types.ts.
+          business_id: vendor.businessId ?? null,
         } as any)
         .select()
         .single()

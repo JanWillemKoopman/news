@@ -8,7 +8,7 @@ import { PROVINCIES } from '@/lib/bruiloft/geo'
 // Re-export zodat bestaande imports van hier blijven werken.
 export { PROVINCIES }
 
-export type OntdekSort = 'match' | 'naam' | 'prijs'
+export type OntdekSort = 'match' | 'naam'
 
 // Alle zoek-/filterstate van de Ontdekken-pagina in één object, zodat het
 // paneel in één keer kan toepassen (geen refetch per veld).
@@ -17,10 +17,6 @@ export interface OntdekFilters {
   categorie: string // 'all' of VendorType
   provincie: string // 'all' of provincienaam
   plaats: string
-  prijsMin: string // leeg = geen ondergrens
-  prijsMax: string
-  buitenTrouwen: boolean
-  overnachting: boolean
   sort: OntdekSort
 }
 
@@ -29,10 +25,6 @@ export const STANDAARD_FILTERS: OntdekFilters = {
   categorie: 'all',
   provincie: 'all',
   plaats: '',
-  prijsMin: '',
-  prijsMax: '',
-  buitenTrouwen: false,
-  overnachting: false,
   sort: 'match',
 }
 
@@ -41,9 +33,6 @@ export function aantalSheetFilters(f: OntdekFilters): number {
   let n = 0
   if (f.provincie !== 'all') n++
   if (f.plaats.trim()) n++
-  if (f.prijsMin || f.prijsMax) n++
-  if (f.buitenTrouwen) n++
-  if (f.overnachting) n++
   return n
 }
 
@@ -77,10 +66,6 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
       ...lokaal,
       provincie: 'all',
       plaats: '',
-      prijsMin: '',
-      prijsMax: '',
-      buitenTrouwen: false,
-      overnachting: false,
     })
     onOpenChange(false)
   }
@@ -117,52 +102,6 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Prijs vanaf (min. €)" htmlFor="f-prijsmin">
-            <Input
-              id="f-prijsmin"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={lokaal.prijsMin}
-              onChange={(e) => set('prijsMin', e.target.value)}
-              placeholder="0"
-            />
-          </Field>
-          <Field label="Prijs vanaf (max. €)" htmlFor="f-prijsmax">
-            <Input
-              id="f-prijsmax"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={lokaal.prijsMax}
-              onChange={(e) => set('prijsMax', e.target.value)}
-              placeholder="10000"
-            />
-          </Field>
-        </div>
-
-        <div className="space-y-2">
-          <label className="flex min-h-[2.75rem] cursor-pointer items-center gap-3 rounded-md border border-border px-3 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={lokaal.buitenTrouwen}
-              onChange={(e) => set('buitenTrouwen', e.target.checked)}
-              className="h-4 w-4 accent-primary"
-            />
-            Buiten trouwen mogelijk
-          </label>
-          <label className="flex min-h-[2.75rem] cursor-pointer items-center gap-3 rounded-md border border-border px-3 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={lokaal.overnachting}
-              onChange={(e) => set('overnachting', e.target.checked)}
-              className="h-4 w-4 accent-primary"
-            />
-            Overnachting mogelijk
-          </label>
-        </div>
-
         <div className="sm:hidden">
           <Field label="Sorteren op" htmlFor="f-sort">
             <Select
@@ -172,7 +111,6 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
             >
               <option value="match">Beste match voor jullie</option>
               <option value="naam">Naam A-Z</option>
-              <option value="prijs">Laagste prijs</option>
             </Select>
           </Field>
         </div>

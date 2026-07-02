@@ -10,9 +10,10 @@ import type { Supplier, SupplierCategorie } from './types'
 
 // Leverancier-categorie -> budgetcategorie, zodat we het richtbudget per soort
 // kunnen bepalen via de bestaande STANDAARD_VERDELING (derived.ts). Bevat zowel
-// de oude (public.suppliers) enum als de TPW_CATEGORIEEN-namen (tpw_businesses,
-// zie lib/bruiloft/options.ts) — zonder deze laatste zou budgetScore() voor elke
-// tpw_businesses-leverancier stil op een neutrale score terugvallen.
+// de oude (public.suppliers) enum als de DIRECTORY_CATEGORIEEN-namen
+// (public.businesses, zie lib/bruiloft/options.ts) — zonder deze laatste zou
+// budgetScore() voor elke directory-leverancier stil op een neutrale score
+// terugvallen.
 const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, StandaardBudgetCategorie> = {
   locatie: 'locatie',
   catering: 'catering',
@@ -24,7 +25,7 @@ const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, StandaardBudgetCategorie>
   vervoer: 'vervoer',
   taart: 'taart',
   overig: 'overig',
-  // --- TPW_CATEGORIEEN ---
+  // --- DIRECTORY_CATEGORIEEN ---
   Trouwlocaties: 'locatie',
   Weddingplanners: 'overig',
   Trouwambtenaren: 'overig',

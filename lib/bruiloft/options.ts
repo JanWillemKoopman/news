@@ -58,7 +58,7 @@ export const TOEGEWEZEN_AAN: ToegewezenAan[] = [
   'overig',
 ]
 
-export const TPW_CATEGORIEEN = [
+export const DIRECTORY_CATEGORIEEN = [
   'Trouwlocaties',
   'Weddingplanners',
   'Trouwambtenaren',
@@ -81,25 +81,26 @@ export const TPW_CATEGORIEEN = [
   'Bedankjes',
 ] as const
 
-export type TpwCategorie = (typeof TPW_CATEGORIEEN)[number]
+export type DirectoryCategorie = (typeof DIRECTORY_CATEGORIEEN)[number]
 
-// Categorieën die op dit moment daadwerkelijk gevuld zijn in tpw_businesses.
-// De rest van TPW_CATEGORIEEN volgt later — uitbreiden is dan één regel hier,
-// geldt meteen voor de filterchips én de AI-aanbevelingen op /bruiloft/ontdekken.
-export const BESCHIKBARE_TPW_CATEGORIEEN: TpwCategorie[] = [
+// Categorieën die op dit moment daadwerkelijk gevuld zijn in de directory
+// (public.businesses). De rest van DIRECTORY_CATEGORIEEN volgt later —
+// uitbreiden is dan één regel hier, geldt meteen voor de filterchips én de
+// AI-aanbevelingen op /bruiloft/ontdekken.
+export const BESCHIKBARE_DIRECTORY_CATEGORIEEN: DirectoryCategorie[] = [
   'Trouwlocaties',
   'Weddingplanners',
   'Trouwambtenaren',
 ]
 
-// Omzetting van TPW-categorienaam naar URL-slug (lowercase).
-export function tpwCategorieNaarSlug(categorie: TpwCategorie): string {
+// Omzetting van directory-categorienaam naar URL-slug (lowercase).
+export function directoryCategorieNaarSlug(categorie: DirectoryCategorie): string {
   return categorie.toLowerCase()
 }
 
-// Omzetting van URL-slug terug naar TPW-categorienaam.
-export function slugNaarTpwCategorie(slug: string): TpwCategorie | undefined {
-  return TPW_CATEGORIEEN.find((c) => c.toLowerCase() === slug.toLowerCase())
+// Omzetting van URL-slug terug naar directory-categorienaam.
+export function slugNaarDirectoryCategorie(slug: string): DirectoryCategorie | undefined {
+  return DIRECTORY_CATEGORIEEN.find((c) => c.toLowerCase() === slug.toLowerCase())
 }
 
 export const VENDOR_TYPES: VendorType[] = [

@@ -33,7 +33,7 @@ export const CATEGORIE_ICOON: Record<string, LucideIcon> = {
   taart: Cake,
   overig: Store,
 
-  // Nieuw systeem (tpw_businesses) — 20 categorieën
+  // Nieuw systeem (public.businesses) — 20 categorieën
   Trouwlocaties: MapPin,
   Weddingplanners: Star,
   Trouwambtenaren: Mic2,

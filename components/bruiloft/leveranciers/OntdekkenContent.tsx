@@ -23,7 +23,7 @@ import { Button, Card, CardContent, EmptyState, Input, Select, Skeleton, useToas
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
-import { BESCHIKBARE_TPW_CATEGORIEEN, type TpwCategorie } from '@/lib/bruiloft/options'
+import { BESCHIKBARE_DIRECTORY_CATEGORIEEN, type DirectoryCategorie } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
 import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import type { Supplier } from '@/lib/bruiloft/suppliers/types'
@@ -35,7 +35,7 @@ interface OntdekkenContentProps {
   // Gezet op /bruiloft/ontdekken/[categorie]: pagina is vast op één categorie
   // (geen categorie-chips of AI-aanbevelingen, die vergelijken juist over
   // categorieën heen), header toont de categorienaam als titel.
-  categoriePreset?: TpwCategorie
+  categoriePreset?: DirectoryCategorie
 }
 
 export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
@@ -93,11 +93,8 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
       if (filters.provincie !== 'all') params.set('provincie', filters.provincie)
       if (filters.plaats.trim()) params.set('plaats', filters.plaats.trim())
       if (filters.q.trim()) params.set('q', filters.q.trim())
-      if (filters.prijsMin) params.set('prijsMin', filters.prijsMin)
-      if (filters.prijsMax) params.set('prijsMax', filters.prijsMax)
-      if (filters.overnachting) params.set('overnachting', 'true')
       try {
-        const res = await fetch(`/api/tpw-businesses/search?${params.toString()}`)
+        const res = await fetch(`/api/businesses/search?${params.toString()}`)
         if (!res.ok) throw new Error('Zoeken mislukt')
         const data = (await res.json()) as { matches: SupplierMatch[]; total: number }
         setMatches((prev) => (vervang ? data.matches : [...prev, ...data.matches]))
@@ -130,7 +127,7 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
         website: s.website,
         geoffreerdBedrag: s.prijsVanaf ?? 0,
         notitie: [s.omschrijvingKort, adres].filter(Boolean).join(' — '),
-        tpwBusinessId: s.id,
+        businessId: s.id,
       })
       toast({ title: 'Toegevoegd aan Mijn lijst', variant: 'success' })
     } catch {
@@ -183,7 +180,6 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
           >
             <option value="match">Aanbevolen</option>
             <option value="naam">Naam A-Z</option>
-            <option value="prijs">Laagste prijs</option>
           </Select>
           <Button variant="outline" onClick={() => setFilterSheetOpen(true)} className="shrink-0">
             <Filter className="h-4 w-4" />
@@ -204,7 +200,7 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
               onChange={(v) => set('categorie', v)}
               options={[
                 { value: 'all', label: 'Alle' },
-                ...BESCHIKBARE_TPW_CATEGORIEEN.map((c) => ({ value: c, label: c })),
+                ...BESCHIKBARE_DIRECTORY_CATEGORIEEN.map((c) => ({ value: c, label: c })),
               ]}
             />
             <p className="text-xs text-muted-foreground">
