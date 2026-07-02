@@ -18,6 +18,7 @@ import {
   taskCommentToRow,
   taskFromRow,
   taskToRow,
+  vendorContactRequestFromRow,
   vendorFromRow,
   vendorToRow,
   websiteContentFromRow,
@@ -44,6 +45,7 @@ import type {
   TaskCommentInput,
   TaskInput,
   Vendor,
+  VendorContactRequest,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -238,6 +240,16 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   async deleteVendor(id: ID): Promise<void> {
     const { error } = await this.db.from('vendors').delete().eq('id', id)
     if (error) throw error
+  }
+
+  async listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]> {
+    const { data, error } = await this.db
+      .from('vendor_contact_requests')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(vendorContactRequestFromRow)
   }
 
   // --- BudgetItems ---------------------------------------------------

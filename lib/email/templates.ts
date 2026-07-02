@@ -156,6 +156,32 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
   return { subject, html: baseHtml(`Bruiloft ${escapeHtml(p.partnerNamen)}`, inhoud) }
 }
 
+// --- Leverancierscontact (offerte-/contactaanvraag) ------------------------
+
+export interface VendorContactEmailProps {
+  onderwerp: string
+  bericht: string // vrije tekst, alinea's gescheiden door een lege regel
+}
+
+// Zet vrije tekst (zoals bewerkt in de compose-modal) om naar veilige HTML:
+// alinea's op lege regels, enkele regeleinden binnen een alinea als <br/>.
+function berichtNaarHtml(bericht: string): string {
+  return bericht
+    .split(/\n\s*\n/)
+    .map((alinea) => alinea.trim())
+    .filter(Boolean)
+    .map(
+      (alinea) =>
+        `<p style="margin:0 0 16px;font-size:15px;color:#1c1917;line-height:1.6;">${escapeHtml(alinea).replace(/\n/g, '<br />')}</p>`
+    )
+    .join('')
+}
+
+export function renderVendorContactEmail(p: VendorContactEmailProps): { subject: string; html: string } {
+  const inhoud = berichtNaarHtml(p.bericht)
+  return { subject: p.onderwerp, html: baseHtml(p.onderwerp, inhoud) }
+}
+
 // --- Herinneringen-digest --------------------------------------------------
 
 export interface ReminderTaakItem {

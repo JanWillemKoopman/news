@@ -20,6 +20,7 @@ import type {
   TaskCommentInput,
   TaskInput,
   Vendor,
+  VendorContactRequest,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -57,6 +58,10 @@ export interface WeddingRepository {
   createVendor(input: VendorInput): Promise<Vendor>
   updateVendor(id: ID, patch: Partial<VendorInput>): Promise<Vendor>
   deleteVendor(id: ID): Promise<void>
+
+  // Contact-/offertegeschiedenis per leverancier (append-only; wordt server-side
+  // ingevuld door de /api/leveranciers/contact-route, hier alleen leesbaar).
+  listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]>
 
   // BudgetItems
   listBudgetItems(weddingId: ID): Promise<BudgetItem[]>

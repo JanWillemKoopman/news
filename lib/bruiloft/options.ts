@@ -83,6 +83,15 @@ export const TPW_CATEGORIEEN = [
 
 export type TpwCategorie = (typeof TPW_CATEGORIEEN)[number]
 
+// Categorieën die op dit moment daadwerkelijk gevuld zijn in tpw_businesses.
+// De rest van TPW_CATEGORIEEN volgt later — uitbreiden is dan één regel hier,
+// geldt meteen voor de filterchips én de AI-aanbevelingen op /bruiloft/ontdekken.
+export const BESCHIKBARE_TPW_CATEGORIEEN: TpwCategorie[] = [
+  'Trouwlocaties',
+  'Weddingplanners',
+  'Trouwambtenaren',
+]
+
 // Omzetting van TPW-categorienaam naar URL-slug (lowercase).
 export function tpwCategorieNaarSlug(categorie: TpwCategorie): string {
   return categorie.toLowerCase()

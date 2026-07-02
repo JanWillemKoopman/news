@@ -199,6 +199,23 @@ export interface Vendor {
 
 export type VendorInput = Omit<Vendor, 'id'>
 
+// Geschiedenis van offerte-/contactaanvragen aan een leverancier. Append-only
+// log, los van vendor.status (dat blijft de door de gebruiker gestuurde
+// pipeline-stap); dit maakt zichtbaar wannéér en wát er verstuurd is.
+export type VendorContactType = 'offerte' | 'contact'
+
+export interface VendorContactRequest {
+  id: ID
+  weddingId: ID
+  vendorId: ID
+  type: VendorContactType
+  onderwerp: string
+  bericht: string
+  verzondenNaar: string
+  verzondenDoor?: ID
+  createdAt: ISODateTime
+}
+
 // --- BudgetItem ------------------------------------------------------------
 
 // Categorie is vrije tekst (bruidsparen beheren hun eigen lijst); dit is de

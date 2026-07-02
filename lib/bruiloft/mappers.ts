@@ -25,6 +25,7 @@ import type {
   TaskCommentInput,
   TaskInput,
   Vendor,
+  VendorContactRequest,
   VendorInput,
   VoortgangCategorie,
   VoortgangStatus,
@@ -221,6 +222,22 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.tpwBusinessId !== undefined)
     (r as any).tpw_business_id = p.tpwBusinessId ? parseInt(p.tpwBusinessId, 10) : null
   return r
+}
+
+export function vendorContactRequestFromRow(
+  r: Tables['vendor_contact_requests']['Row']
+): VendorContactRequest {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    vendorId: r.vendor_id,
+    type: r.type as VendorContactRequest['type'],
+    onderwerp: r.onderwerp,
+    bericht: r.bericht,
+    verzondenNaar: r.verzonden_naar,
+    verzondenDoor: r.verzonden_door ?? undefined,
+    createdAt: r.created_at,
+  }
 }
 
 // --- BudgetItem ------------------------------------------------------

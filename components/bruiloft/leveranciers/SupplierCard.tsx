@@ -1,12 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { BadgeCheck, Plus, Star } from 'lucide-react'
+import { BadgeCheck, Star } from 'lucide-react'
 
 import { SafeImage } from './SafeImage'
 import { Button, Card, CardContent, Money } from '@/components/bruiloft/ui'
-import { capFirst, cn } from '@/lib/utils'
-import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
+import { capFirst } from '@/lib/utils'
 import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import { getCategorieIcoon } from './categorieIcoon'
 
@@ -69,14 +68,6 @@ export function SupplierCard({
             <p className="truncate font-medium text-foreground">{s.naam}</p>
             <p className="truncate text-xs text-muted-foreground">{subregel}</p>
           </div>
-          {match.score > 0 && (
-            <span
-              className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
-              title={match.uitleg}
-            >
-              {match.score}%
-            </span>
-          )}
         </div>
 
         {heeftRating && (
@@ -88,16 +79,6 @@ export function SupplierCard({
             {s.ratingAantal != null && (
               <span className="text-xs text-muted-foreground">({s.ratingAantal})</span>
             )}
-          </div>
-        )}
-
-        {match.badges.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {match.badges.slice(0, 2).map((b) => (
-              <span key={b} className={cn('rounded-full px-2 py-0.5 text-xs font-medium', BADGE_STIJL[b])}>
-                {b}
-              </span>
-            ))}
           </div>
         )}
 
@@ -113,8 +94,8 @@ export function SupplierCard({
 
         <div className="mt-auto pt-4">
           {toegevoegd ? (
-            <span className="inline-flex min-h-[2.25rem] items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              <BadgeCheck className="h-4 w-4" /> In jullie lijst
+            <span className="inline-flex min-h-[2.25rem] items-center gap-1.5 text-sm font-medium text-foreground">
+              <BadgeCheck className="h-4 w-4" /> Staat in Mijn lijst
             </span>
           ) : kanBewerken ? (
             <Button
@@ -126,7 +107,7 @@ export function SupplierCard({
                 onToevoegen()
               }}
             >
-              <Plus className="h-4 w-4" /> Toevoegen
+              Mijn lijst
             </Button>
           ) : null}
         </div>
