@@ -83,6 +83,8 @@ export interface Guest {
   aantalKinderen: number
   adres: string
   notitie: string
+  email: string // optioneel; voor RSVP-uitnodiging per e-mail
+  telefoon: string // optioneel; voor RSVP-uitnodiging per WhatsApp
   tafelId?: ID // tafelschikking
   stoelIndex?: number // vaste plek aan de tafel (0-gebaseerd); leeg = automatisch
   rsvpCode?: string // persoonlijke code voor de publieke RSVP

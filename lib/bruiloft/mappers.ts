@@ -111,6 +111,8 @@ export function guestFromRow(r: Tables['guests']['Row']): Guest {
     aantalKinderen: r.aantal_kinderen,
     adres: r.adres,
     notitie: r.notitie,
+    email: r.email,
+    telefoon: r.telefoon,
     tafelId: r.tafel_id ?? undefined,
     stoelIndex: r.stoel_index ?? undefined,
     rsvpCode: r.rsvp_token ?? undefined,
@@ -131,6 +133,8 @@ export function guestToRow(p: GuestPatch): Partial<Tables['guests']['Insert']> {
   if (p.aantalKinderen !== undefined) r.aantal_kinderen = p.aantalKinderen
   if (p.adres !== undefined) r.adres = p.adres
   if (p.notitie !== undefined) r.notitie = p.notitie
+  if (p.email !== undefined) r.email = p.email
+  if (p.telefoon !== undefined) r.telefoon = p.telefoon
   if (p.tafelId !== undefined) r.tafel_id = p.tafelId ?? null
   if (p.stoelIndex !== undefined) r.stoel_index = p.stoelIndex ?? null
   // rsvpCode/rsvp_token wordt door de database beheerd; niet schrijven.

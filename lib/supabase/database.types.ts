@@ -99,6 +99,7 @@ export type Database = {
           categorie: string
           created_at: string
           dieetwensen: string
+          email: string
           gasttype: string
           heeft_partner: boolean
           id: string
@@ -110,6 +111,7 @@ export type Database = {
           rsvp_token_revoked: boolean
           stoel_index: number | null
           tafel_id: string | null
+          telefoon: string
           updated_at: string
           voornaam: string
           wedding_id: string
@@ -121,6 +123,7 @@ export type Database = {
           categorie: string
           created_at?: string
           dieetwensen?: string
+          email?: string
           gasttype?: string
           heeft_partner?: boolean
           id?: string
@@ -132,6 +135,7 @@ export type Database = {
           rsvp_token_revoked?: boolean
           stoel_index?: number | null
           tafel_id?: string | null
+          telefoon?: string
           updated_at?: string
           voornaam?: string
           wedding_id: string
@@ -143,6 +147,7 @@ export type Database = {
           categorie?: string
           created_at?: string
           dieetwensen?: string
+          email?: string
           gasttype?: string
           heeft_partner?: boolean
           id?: string
@@ -154,6 +159,7 @@ export type Database = {
           rsvp_token_revoked?: boolean
           stoel_index?: number | null
           tafel_id?: string | null
+          telefoon?: string
           updated_at?: string
           voornaam?: string
           wedding_id?: string

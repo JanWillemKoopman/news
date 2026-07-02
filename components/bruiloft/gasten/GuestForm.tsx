@@ -45,6 +45,8 @@ function leeg(): NewGuest {
     aantalKinderen: 0,
     adres: '',
     notitie: '',
+    email: '',
+    telefoon: '',
   }
 }
 
@@ -61,6 +63,8 @@ function vanGuest(g: Guest): NewGuest {
     aantalKinderen: g.aantalKinderen,
     adres: g.adres,
     notitie: g.notitie,
+    email: g.email,
+    telefoon: g.telefoon,
   }
 }
 
@@ -397,6 +401,29 @@ export function GuestForm({
         {stap === 2 && (
           <>
             {/* ── Stap 2: Details ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="E-mail" htmlFor="gast-email">
+                <Input
+                  id="gast-email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(e) => set('email', e.target.value)}
+                  placeholder="naam@voorbeeld.nl"
+                />
+              </Field>
+              <Field label="Telefoon" htmlFor="gast-tel">
+                <Input
+                  id="gast-tel"
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.telefoon}
+                  onChange={(e) => set('telefoon', e.target.value)}
+                  placeholder="06 12345678"
+                />
+              </Field>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <Field label="RSVP-status" htmlFor="rsvp">
                 <Select
