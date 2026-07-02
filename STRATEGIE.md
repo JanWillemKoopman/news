@@ -89,7 +89,57 @@ en/of de omzet.
 | 18 | **Zoekintentie gestructureerd vastleggen.** In de leveranciers/ontdekken-flow elke zoekactie normaliseren naar categorie, regio, budgetrange en trouwdatum. Dit is het product dat in 2027 verkocht wordt; het moet in 2026 al verzameld worden, anders start je 2027 met een lege database. | P1 | M | Hoog (2027) |
 | 19 | **Consent- en privacy-fundament (AVG).** Expliciete, granulaire toestemming voor het gebruik van (geaggregeerde) plandata voor leveranciersmatching, vastgelegd vanaf dag 1. Zonder dit is de hele B2B-datastrategie juridisch onverkoopbaar; achteraf repareren is vrijwel onmogelijk. | P0 (zodra #18 live gaat) | S–M | Hoog (risico) |
 | 20 | **Intern "marktvraag"-rapport.** Admin-query/dashboard: actieve zoekvraag per regio × categorie × budgetrange ("85 koppels zoeken een fotograaf in Utrecht, €2.000–€3.500, sept 2027"). Dit is de sales-munitie voor de B2B-lancering. | P2 | S | Middel |
-| 21 | **Leveranciersprofielen claimbaar maken.** Leveranciers kunnen gratis hun (nu passieve) profiel claimen en verrijken. Zo start de 2027-verkoop met een warme, geregistreerde lijst i.p.v. koude acquisitie. | P2 | M | Middel |
+| 21 | **Leveranciersprofielen claimbaar maken (lichte versie).** Leveranciers kunnen gratis hun (nu passieve) profiel claimen en verrijken (account, foto's, tarieven). Zo start de 2027-verkoop met een warme, geregistreerde lijst i.p.v. koude acquisitie. Fundament voor de volledige leveranciersportal in Pijler 5 (#25–#29). | P1 (laat H2 2026) | M | Middel |
+
+### Pijler 5 — B2B leveranciersplatform (fundament voor 2027, ná de consumentenfocus van 2026)
+
+Pijler 4 hierboven beschrijft het *verzamelen* van intent-data. Onderstaande
+items zijn de vervolgstap: het product dat leveranciers in 2027 daadwerkelijk
+kopen (portal, leads, premium-plek in de matching). Ze bouwen voort op #21
+en horen bewust ná de kern van H2 2026 — zie de contradictie-check verderop.
+
+| # | Optimalisatie | Prioriteit | Effort | Impact |
+|---|---|---|---|---|
+| 25 | **Lead-inbox voor leveranciers.** Offerteaanvragen (nu alleen e-mail via `app/api/leveranciers/contact`) ook in-app laten binnenkomen met status (nieuw/beantwoord/afgewezen). Zonder dit is er geen product om in 2027 een abonnement voor te vragen — leads verdwijnen nu buiten het platform. | P2 | M–L | Hoog |
+| 26 | **B2B-abonnement & billing (€39/mnd).** Recurring betalingen voor leveranciers, bovenop de checkout-infrastructuur uit #1. Proefperiode + zelfbediening. | P2 | M | Hoog |
+| 27 | **Premium-boost in de AI-matching.** De bestaande `ai/leveranciers-rank` krijgt een premium-tier: betalende leveranciers worden als top-aanbeveling gepusht bij matchende zoekopdrachten. Dit is letterlijk "de AI opent de poort" uit de filosofie — de kernbelofte van het B2B-aanbod. | P2 | M | Hoog |
+| 28 | **Beschikbaarheidskalender per leverancier.** Leverancier geeft aan welke datums vrij zijn; verhoogt leadkwaliteit (geen aanvragen voor bezette data) en daarmee de prijs die ervoor gevraagd kan worden. | P2 | M | Middel |
+| 29 | **Reviews van leveranciers door bruidsparen.** Ontbreekt nog in het domeinmodel. Verhoogt vertrouwen in aanbevelingen én verrijkt de matchingdata voor #27. | P2 | M | Middel |
+
+### Aanvullingen op Pijler 2 en 3 (RSVP-detail en mediapipeline)
+
+| # | Optimalisatie | Prioriteit | Effort | Impact |
+|---|---|---|---|---|
+| 22 | **Verzoeknummer/DJ-vraag in de RSVP-flow.** Gasten kunnen bij het invullen van hun RSVP een muziekverzoek achterlaten; komt terecht in het draaiboek van het bruidspaar. Kleine toevoeging uit de filosofie die de "feest"-belofte van de RSVP-flow invult. | P2 | S | Laag–Middel |
+| 23 | **Herinnering naar gasten die nog niet gereageerd hebben.** Eén-klik bulkherinnering (e-mail) vanuit de gastenlijst voor open RSVP's. Verhoogt het aantal ingevulde RSVP's — en dus de omvang van de vliegwiel-input — direct. | P1 | S–M | Middel |
+| 24 | **Video-ondersteuning + compressie in de fotomuur-pipeline.** Nu alleen foto's; uitbreiden met (client-side gecomprimeerde) video verhoogt de waarde van de premium fotomuur, maar verzwaart de bandbreedtekosten extra — hoort samen met #15 ontwikkeld te worden, niet los. | P2 | M | Middel |
+
+---
+
+## Contradictie-check t.o.v. de leidende strategie
+
+Expliciet getoetst: leidt deze aanvulling tot iets dat ingaat tegen de
+afspraken hierboven (gratis kern tot de trouwdag, geld op de feestdag,
+2026 = consument monopoliseren, 2027 = B2B verzilveren, K-factor als enige
+stuurmetric)? Conclusie: **geen directe tegenspraak.** Twee spanningen zijn
+gevonden en opgelost door de bestaande strategie leidend te houden, niet door
+die aan te passen:
+
+1. **Timing van het leveranciersplatform.** Los bekeken zou de volledige
+   B2B-portal (lead-inbox, billing, premium-boost — #25–#29) eerder moeten
+   starten dan "P2 daarna" om in 2027 daadwerkelijk verkoopbaar te zijn. Dat
+   is opgelost door alleen de lichte claimflow (#21) naar voren te halen
+   (P1, laat H2 2026) zodat er bij de start van 2027 al een warme,
+   geregistreerde leverancierslijst staat — zonder dat de zware portal-bouw
+   (#25–#29) de consumentenfocus van H2 2026 verdringt. Dit volgt de eigen
+   conclusie van de filosofie ("gebruik 2026 om de consumentenmarkt te
+   monopoliseren") en wijkt er dus niet vanaf; #21 is de enige prioriteit die
+   is aangepast (was P2, is nu P1-laat).
+2. **Geen wijziging aan Pijler 1–4 of de KPI.** Alle overige nieuwe items
+   (#22, #23, #24) zijn uitbreidingen ván bestaande P0/P1-items, geen nieuwe
+   geldstromen of afwijkende volgorde. De K-factor blijft de enige
+   wekelijkse stuurmetric; er is geen aanleiding gevonden om dat te
+   heroverwegen.
 
 ---
 
@@ -98,9 +148,13 @@ en/of de omzet.
 1. **Nu (P0):** #7 + #9 + #8 (vliegwiel aan en meetbaar) parallel aan #1 + #14
    (geldkraan open), daarna #2 (upsell-moment) en #3 (de belofte waarmaken).
    #19 gaat mee zodra intentiedata wordt opgeslagen.
-2. **H2 2026 (P1):** funnel-frictie weg (#10, #11, #12), marge beschermen
-   (#15, #16), overstapdrempel weg (#4), en de 2027-dataset opbouwen (#18).
-3. **Daarna (P2):** retentie- en B2B-voorbereiding (#5, #13, #17, #20, #21).
+2. **H2 2026 (P1):** funnel-frictie weg (#10, #11, #12), RSVP-volume verhogen
+   (#23), marge beschermen (#15, #16), overstapdrempel weg (#4), de
+   2027-dataset opbouwen (#18), en de lichte leverancier-claimflow starten
+   (#21, verplaatst van P2).
+3. **Daarna (P2):** retentie- en B2B-voorbereiding (#5, #13, #17, #20), plus
+   het volledige leveranciersplatform en losse toevoegingen (#22, #24, #25,
+   #26, #27, #28, #29).
 
 ---
 
