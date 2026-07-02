@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Compass, LayoutGrid, List, Pencil, Plus, Search, Store, Trash2 } from 'lucide-react'
+import { Compass, FileText, LayoutGrid, List, MessageCircle, Pencil, Plus, Search, Store, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -11,6 +11,7 @@ import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
 import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
+import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
 import { VendorCard } from '@/components/bruiloft/leveranciers/VendorCard'
 import { VendorForm } from '@/components/bruiloft/leveranciers/VendorForm'
 import {
@@ -25,14 +26,21 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
+import { formatDatumNL } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { Vendor } from '@/lib/bruiloft/types'
+import type { Vendor, VendorContactRequest, VendorContactType } from '@/lib/bruiloft/types'
+
+const CONTACT_LABEL: Record<VendorContactType, string> = {
+  offerte: 'Offerte aangevraagd',
+  contact: 'Contact opgenomen',
+}
 
 export default function LeveranciersPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const vendors = useBruiloftStore((s) => s.vendors)
+  const vendorContactRequests = useBruiloftStore((s) => s.vendorContactRequests)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const updateVendor = useBruiloftStore((s) => s.updateVendor)
@@ -51,6 +59,19 @@ export default function LeveranciersPage() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editVendor, setEditVendor] = React.useState<Vendor | null>(null)
   const [delVendor, setDelVendor] = React.useState<Vendor | null>(null)
+  const [contactVendor, setContactVendor] = React.useState<{ vendor: Vendor; type: VendorContactType } | null>(null)
+
+  // Meest recente offerte-/contactaanvraag per leverancier, ongeacht de
+  // volgorde waarin ze geladen/binnengekomen zijn (realtime voegt niet per se
+  // gesorteerd toe) — vergelijk op createdAt, niet op array-positie.
+  const laatsteContactPerVendor = React.useMemo(() => {
+    const map = new Map<string, VendorContactRequest>()
+    for (const c of vendorContactRequests) {
+      const huidig = map.get(c.vendorId)
+      if (!huidig || c.createdAt > huidig.createdAt) map.set(c.vendorId, c)
+    }
+    return map
+  }, [vendorContactRequests])
 
   if (!wedding) return null
 
@@ -98,6 +119,9 @@ export default function LeveranciersPage() {
   const openBewerk = (v: Vendor) => {
     setEditVendor(v)
     setFormOpen(true)
+  }
+  const openContact = (v: Vendor, type: VendorContactType) => {
+    setContactVendor({ vendor: v, type })
   }
 
   return (
@@ -242,34 +266,50 @@ export default function LeveranciersPage() {
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Bedrag</th>
                     <th className="px-4 py-3 font-medium">Contactpersoon</th>
+                    <th className="px-4 py-3 font-medium">Laatste contact</th>
                     {kanBewerken && <th className="px-4 py-3"><span className="sr-only">Acties</span></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {gesorteerd.map((v) => (
-                    <tr key={v.id} className="border-b border-border last:border-0 hover:bg-accent/40">
-                      <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{capFirst(v.type)}</td>
-                      <td className="px-4 py-3"><StatusBadge kind="leverancier" value={v.status} /></td>
-                      <td className="px-4 py-3 text-foreground">
-                        {v.geoffreerdBedrag > 0 ? <Money bedrag={v.geoffreerdBedrag} /> : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{v.contactpersoon || '—'}</td>
-                      {kanBewerken && (
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end">
-                            <OverflowMenu
-                              label={`Acties voor ${v.naam}`}
-                              items={[
-                                { label: 'Bewerken', icon: Pencil, onClick: () => openBewerk(v) },
-                                { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => setDelVendor(v) },
-                              ]}
-                            />
-                          </div>
+                  {gesorteerd.map((v) => {
+                    const laatsteContact = laatsteContactPerVendor.get(v.id)
+                    const kanContact = kanBewerken && Boolean(v.email)
+                    return (
+                      <tr key={v.id} className="border-b border-border last:border-0 hover:bg-accent/40">
+                        <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{capFirst(v.type)}</td>
+                        <td className="px-4 py-3"><StatusBadge kind="leverancier" value={v.status} /></td>
+                        <td className="px-4 py-3 text-foreground">
+                          {v.geoffreerdBedrag > 0 ? <Money bedrag={v.geoffreerdBedrag} /> : '—'}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="px-4 py-3 text-muted-foreground">{v.contactpersoon || '—'}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {laatsteContact
+                            ? `${CONTACT_LABEL[laatsteContact.type]} op ${formatDatumNL(laatsteContact.createdAt)}`
+                            : '—'}
+                        </td>
+                        {kanBewerken && (
+                          <td className="px-4 py-3">
+                            <div className="flex justify-end">
+                              <OverflowMenu
+                                label={`Acties voor ${v.naam}`}
+                                items={[
+                                  { label: 'Bewerken', icon: Pencil, onClick: () => openBewerk(v) },
+                                  ...(kanContact
+                                    ? [
+                                        { label: 'Offerte aanvragen', icon: FileText, onClick: () => openContact(v, 'offerte' as const) },
+                                        { label: 'Contact opnemen', icon: MessageCircle, onClick: () => openContact(v, 'contact' as const) },
+                                      ]
+                                    : []),
+                                  { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => setDelVendor(v) },
+                                ]}
+                              />
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -287,8 +327,10 @@ export default function LeveranciersPage() {
                 key={v.id}
                 vendor={v}
                 budgetItems={budgetItems}
+                laatsteContact={laatsteContactPerVendor.get(v.id)}
                 onEdit={kanBewerken ? openBewerk : undefined}
                 onDelete={kanBewerken ? setDelVendor : undefined}
+                onContact={kanBewerken ? openContact : undefined}
               />
             ))}
           </div>
@@ -338,6 +380,23 @@ export default function LeveranciersPage() {
           }
         }}
       />
+
+      {contactVendor ? (
+        <LeverancierBerichtModal
+          open
+          onOpenChange={(o) => !o && setContactVendor(null)}
+          type={contactVendor.type}
+          vendor={{
+            vendorId: contactVendor.vendor.id,
+            naam: contactVendor.vendor.naam,
+            type: contactVendor.vendor.type,
+            email: contactVendor.vendor.email,
+            telefoon: contactVendor.vendor.telefoon,
+            website: contactVendor.vendor.website,
+          }}
+          onSent={() => setContactVendor(null)}
+        />
+      ) : null}
     </div>
   )
 }

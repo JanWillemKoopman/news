@@ -1,11 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { Globe, Link2, Mail, Pencil, Phone, Trash2, User } from 'lucide-react'
+import { FileText, Globe, Link2, Mail, MessageCircle, Pencil, Phone, Trash2, User } from 'lucide-react'
 
 import { Card, CardContent, Money, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
-import type { BudgetItem, Vendor, VendorStatus } from '@/lib/bruiloft/types'
+import { formatDatumNL } from '@/lib/bruiloft/format'
+import type { BudgetItem, Vendor, VendorContactRequest, VendorContactType, VendorStatus } from '@/lib/bruiloft/types'
 
 // Eén betekenisvolle kleur als accentrand: rose alleen bij "afgewezen"
 // (de enige status die echt aandacht vraagt), verder neutraal grijs.
@@ -24,19 +25,33 @@ function websiteHref(website: string): string {
 interface VendorCardProps {
   vendor: Vendor
   budgetItems: BudgetItem[]
+  laatsteContact?: VendorContactRequest
   onEdit?: (v: Vendor) => void
   onDelete?: (v: Vendor) => void
+  onContact?: (v: Vendor, type: VendorContactType) => void
+}
+
+const CONTACT_LABEL: Record<VendorContactType, string> = {
+  offerte: 'Offerte aangevraagd',
+  contact: 'Contact opgenomen',
 }
 
 // Kaart in de persoonlijke lijst: status voorop, contact als snelle acties.
-export function VendorCard({ vendor, budgetItems, onEdit, onDelete }: VendorCardProps) {
+export function VendorCard({ vendor, budgetItems, laatsteContact, onEdit, onDelete, onContact }: VendorCardProps) {
   const gekoppeld = vendor.budgetItemId
     ? budgetItems.find((b) => b.id === vendor.budgetItemId)
     : null
   const voedtBudget = vendor.status === 'geboekt' && gekoppeld
+  const kanContact = Boolean(onContact && vendor.email)
 
   const menuItems = [
     ...(onEdit ? [{ label: 'Bewerken', icon: Pencil, onClick: () => onEdit(vendor) }] : []),
+    ...(kanContact
+      ? [
+          { label: 'Offerte aanvragen', icon: FileText, onClick: () => onContact!(vendor, 'offerte') },
+          { label: 'Contact opnemen', icon: MessageCircle, onClick: () => onContact!(vendor, 'contact') },
+        ]
+      : []),
     ...(onDelete
       ? [{ label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(vendor) }]
       : []),
@@ -137,6 +152,12 @@ export function VendorCard({ vendor, budgetItems, onEdit, onDelete }: VendorCard
 
         {vendor.notitie ? (
           <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{vendor.notitie}</p>
+        ) : null}
+
+        {laatsteContact ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {CONTACT_LABEL[laatsteContact.type]} op {formatDatumNL(laatsteContact.createdAt)}
+          </p>
         ) : null}
       </CardContent>
     </Card>

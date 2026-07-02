@@ -459,6 +459,57 @@ export type Database = {
           },
         ]
       }
+      vendor_contact_requests: {
+        Row: {
+          bericht: string
+          created_at: string
+          id: string
+          onderwerp: string
+          type: string
+          vendor_id: string
+          verzonden_door: string | null
+          verzonden_naar: string
+          wedding_id: string
+        }
+        Insert: {
+          bericht?: string
+          created_at?: string
+          id?: string
+          onderwerp?: string
+          type: string
+          vendor_id: string
+          verzonden_door?: string | null
+          verzonden_naar?: string
+          wedding_id: string
+        }
+        Update: {
+          bericht?: string
+          created_at?: string
+          id?: string
+          onderwerp?: string
+          type?: string
+          vendor_id?: string
+          verzonden_door?: string | null
+          verzonden_naar?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_contact_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_contact_requests_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           budget_item_id: string | null

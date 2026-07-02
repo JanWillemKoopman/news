@@ -20,6 +20,7 @@ import type {
   TaskComment,
   TaskInput,
   Vendor,
+  VendorContactRequest,
   VendorInput,
   Wedding,
   WeddingDatabase,
@@ -245,6 +246,12 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
       b.vendorId === id ? { ...b, vendorId: undefined } : b
     )
     this.write(db)
+  }
+
+  // Contact-/offertegeschiedenis wordt uitsluitend server-side (Supabase)
+  // bijgehouden; deze legacy localStorage-implementatie heeft geen equivalent.
+  async listVendorContactRequests(): Promise<VendorContactRequest[]> {
+    return []
   }
 
   // --- BudgetItems ---------------------------------------------------------

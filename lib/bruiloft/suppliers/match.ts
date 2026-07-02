@@ -9,7 +9,10 @@ import type { StandaardBudgetCategorie, VendorType, Wedding } from '../types'
 import type { Supplier, SupplierCategorie } from './types'
 
 // Leverancier-categorie -> budgetcategorie, zodat we het richtbudget per soort
-// kunnen bepalen via de bestaande STANDAARD_VERDELING (derived.ts).
+// kunnen bepalen via de bestaande STANDAARD_VERDELING (derived.ts). Bevat zowel
+// de oude (public.suppliers) enum als de TPW_CATEGORIEEN-namen (tpw_businesses,
+// zie lib/bruiloft/options.ts) — zonder deze laatste zou budgetScore() voor elke
+// tpw_businesses-leverancier stil op een neutrale score terugvallen.
 const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, StandaardBudgetCategorie> = {
   locatie: 'locatie',
   catering: 'catering',
@@ -21,6 +24,27 @@ const CATEGORIE_NAAR_BUDGET: Record<SupplierCategorie, StandaardBudgetCategorie>
   vervoer: 'vervoer',
   taart: 'taart',
   overig: 'overig',
+  // --- TPW_CATEGORIEEN ---
+  Trouwlocaties: 'locatie',
+  Weddingplanners: 'overig',
+  Trouwambtenaren: 'overig',
+  Trouwjurken: 'kleding',
+  Trouwpakken: 'kleding',
+  Bruidsmakeup: 'kleding',
+  Bruidskapsels: 'kleding',
+  Trouwringen: 'ringen',
+  Trouwfotografen: 'fotografie en video',
+  Videografen: 'fotografie en video',
+  Photobooths: 'overig',
+  Bruidstaart: 'taart',
+  Catering: 'catering',
+  Decoratie: 'bloemen en decoratie',
+  Bloemen: 'bloemen en decoratie',
+  Muziek: 'muziek',
+  Trouwvervoer: 'vervoer',
+  Entertainment: 'overig',
+  Trouwkaarten: 'uitnodigingen en drukwerk',
+  Bedankjes: 'uitnodigingen en drukwerk',
 }
 
 // Het deel van het totaalbudget dat normaliter naar deze soort leverancier gaat.

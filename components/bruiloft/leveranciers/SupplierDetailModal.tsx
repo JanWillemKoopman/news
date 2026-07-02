@@ -2,22 +2,13 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { BadgeCheck, ChevronLeft, ChevronRight, Globe, Mail, Phone, Plus, Sparkles, Star } from 'lucide-react'
+import { BadgeCheck, ChevronLeft, ChevronRight, Globe, Mail, MessageCircle, Phone, Sparkles, Star } from 'lucide-react'
 
 import { SafeImage } from './SafeImage'
+import { LeverancierBerichtModal } from './LeverancierBerichtModal'
 import { Button, Modal, Money } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
-import { BADGE_STIJL } from '@/lib/bruiloft/suppliers/linked'
-import type { MatchBadge, SupplierMatch } from '@/lib/bruiloft/suppliers/match'
-
-const BADGE_UITLEG: Record<MatchBadge, string> = {
-  'binnen budget': 'De vanafprijs past binnen jullie richtbudget voor deze categorie.',
-  'net erboven': 'De vanafprijs ligt net boven jullie richtbudget voor deze categorie.',
-  'in jullie plaats': 'Gevestigd in jullie woonplaats.',
-  'in jullie regio': 'Gevestigd in jullie provincie.',
-  'past bij gezelschap': 'De capaciteit past bij jullie gastenaantal.',
-  'boek dit binnenkort': 'Dit is een goed moment om deze te boeken gezien jullie trouwdatum.',
-}
+import type { SupplierMatch } from '@/lib/bruiloft/suppliers/match'
+import type { VendorContactType } from '@/lib/bruiloft/types'
 
 function websiteHref(website: string): string {
   return /^https?:\/\//i.test(website) ? website : `https://${website}`
@@ -71,6 +62,10 @@ interface SupplierDetailModalProps {
   kanBewerken: boolean
   toegevoegd: boolean
   onToevoegen: () => void
+  // Eén zin AI-uitleg — alleen aanwezig als deze leverancier via de
+  // "AI aanbevolen voor jullie"-sectie geopend is. Geen synthetische score of
+  // badge-lijst meer (zie DESIGN_PHILOSOPHY.md: zinnen boven badges).
+  aiReden?: string
 }
 
 export function SupplierDetailModal({
@@ -79,9 +74,21 @@ export function SupplierDetailModal({
   kanBewerken,
   toegevoegd,
   onToevoegen,
+  aiReden,
 }: SupplierDetailModalProps) {
+  const [berichtType, setBerichtType] = React.useState<VendorContactType | null>(null)
+
   if (!match) return null
   const s = match.supplier
+  const heeftEmail = Boolean(s.email)
+  const vendorSnapshot = {
+    tpwBusinessId: s.id,
+    naam: s.naam,
+    type: s.categorie,
+    email: s.email,
+    telefoon: s.telefoon,
+    website: s.website,
+  }
 
   const heeftFotos = s.fotos && s.fotos.length > 0
   const alleFotos = heeftFotos
@@ -145,26 +152,14 @@ export function SupplierDetailModal({
           </div>
         )}
 
-        {match.badges.length > 0 && (
+        {aiReden ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Sparkles className="h-4 w-4 text-primary" /> Waarom dit bij jullie past
-              {match.score > 0 ? (
-                <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                  {match.score}% match
-                </span>
-              ) : null}
+            <p className="flex items-start gap-2 text-sm text-foreground">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span>{aiReden}</span>
             </p>
-            <ul className="mt-2 space-y-1.5">
-              {match.badges.map((b) => (
-                <li key={b} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', BADGE_STIJL[b])}>{b}</span>
-                  {BADGE_UITLEG[b]}
-                </li>
-              ))}
-            </ul>
           </div>
-        )}
+        ) : null}
 
         {s.omschrijvingKort ? (
           <p className="text-sm leading-relaxed text-muted-foreground">{s.omschrijvingKort}</p>
@@ -223,23 +218,50 @@ export function SupplierDetailModal({
           </div>
         )}
 
-        <div className="border-t border-border pt-4">
-          {toegevoegd ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                <BadgeCheck className="h-4 w-4" /> Staat in jullie lijst
-              </span>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/bruiloft/leveranciers">Bekijk in mijn lijst</Link>
+        {kanBewerken ? (
+          <div className="space-y-3 border-t border-border pt-4">
+            {toegevoegd ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <BadgeCheck className="h-4 w-4" /> Staat in Mijn lijst
+                </span>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/bruiloft/leveranciers">Bekijk in mijn lijst</Link>
+                </Button>
+              </div>
+            ) : (
+              <Button className="w-full" onClick={onToevoegen}>
+                Mijn lijst
               </Button>
-            </div>
-          ) : kanBewerken ? (
-            <Button className="w-full" onClick={onToevoegen}>
-              <Plus className="h-4 w-4" /> Toevoegen aan mijn lijst
-            </Button>
-          ) : null}
-        </div>
+            )}
+
+            {heeftEmail ? (
+              <div className="flex gap-3">
+                <Button className="flex-1" onClick={() => setBerichtType('offerte')}>
+                  Offerte
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setBerichtType('contact')}>
+                  <MessageCircle className="h-4 w-4" /> Contact
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Geen e-mailadres bekend — bekijk de website of bel voor meer info.
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
+
+      {berichtType ? (
+        <LeverancierBerichtModal
+          open
+          onOpenChange={(o) => !o && setBerichtType(null)}
+          type={berichtType}
+          vendor={vendorSnapshot}
+          onSent={() => setBerichtType(null)}
+        />
+      ) : null}
     </Modal>
   )
 }

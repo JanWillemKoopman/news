@@ -9,6 +9,7 @@ import {
   tableFromRow,
   taskCommentFromRow,
   taskFromRow,
+  vendorContactRequestFromRow,
   vendorFromRow,
   weddingFromRow,
   websiteContentFromRow,
@@ -59,6 +60,8 @@ import type {
   TaskComment,
   TaskInput,
   Vendor,
+  VendorContactRequest,
+  VendorContactType,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -72,6 +75,26 @@ import type {
 type NewGuest = Omit<GuestInput, 'weddingId'>
 type NewTask = Omit<TaskInput, 'weddingId' | 'tijdsblok'>
 type NewVendor = Omit<VendorInput, 'weddingId'>
+
+// Payload voor het versturen van een offerte-/contactbericht naar een
+// leverancier. `vendor` bevat óf een bestaand vendorId (al in de lijst), óf
+// de directory-herkomst (supplierId/tpwBusinessId) zodat de server-route een
+// nieuwe vendor-rij kan aanmaken.
+export interface SendVendorContactPayload {
+  type: VendorContactType
+  onderwerp: string
+  bericht: string
+  vendor: {
+    vendorId?: ID
+    supplierId?: ID
+    tpwBusinessId?: ID
+    naam: string
+    type: string
+    email: string
+    telefoon?: string
+    website?: string
+  }
+}
 type NewBudgetItem = Omit<BudgetItemInput, 'weddingId'>
 type NewScheduleItem = Omit<ScheduleItemInput, 'weddingId'>
 type NewTable = Omit<TableInput, 'weddingId'>
@@ -97,6 +120,7 @@ interface BruiloftState {
   guests: Guest[]
   tasks: Task[]
   vendors: Vendor[]
+  vendorContactRequests: VendorContactRequest[]
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
   tables: Table[]
@@ -168,6 +192,12 @@ interface BruiloftActions {
   addVendor: (data: NewVendor) => Promise<void>
   updateVendor: (id: ID, patch: Partial<VendorInput>) => Promise<void>
   deleteVendor: (id: ID) => Promise<void>
+  // Verstuurt een offerte-/contactbericht (via /api/leveranciers/contact) en
+  // werkt vendors + vendorContactRequests in één keer bij op basis van het
+  // serverantwoord (upsert, geen losse addVendor/updateVendor-call nodig).
+  // contactRequest is null in het zeldzame geval dat de e-mail wél is
+  // verstuurd maar het loggen daarna onverwacht mislukte.
+  sendVendorContact: (payload: SendVendorContactPayload) => Promise<VendorContactRequest | null>
 
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
@@ -321,6 +351,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     guests: [],
     tasks: [],
     vendors: [],
+    vendorContactRequests: [],
     budgetItems: [],
     scheduleItems: [],
     tables: [],
@@ -442,6 +473,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests,
         tasks,
         vendors,
+        vendorContactRequests,
         budgetItems,
         scheduleItems,
         tables,
@@ -454,6 +486,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('gasten', repository.listGuests(wedding.id), []),
         safe('taken', repository.listTasks(wedding.id), []),
         safe('leveranciers', repository.listVendors(wedding.id), []),
+        safe('leveranciers-contact', repository.listVendorContactRequests(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
         safe('tafels', repository.listTables(wedding.id), []),
@@ -475,6 +508,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests,
         tasks,
         vendors,
+        vendorContactRequests,
         budgetItems,
         scheduleItems,
         tables,
@@ -517,6 +551,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests: [],
         tasks: [],
         vendors: [],
+        vendorContactRequests: [],
         budgetItems: [],
         scheduleItems: [],
         tables: [],
@@ -597,6 +632,15 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors', filter: wf }, (p) =>
           set({ vendors: applyList(get().vendors, p, (r) => vendorFromRow(r as unknown as Parameters<typeof vendorFromRow>[0])) })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_contact_requests', filter: wf }, (p) =>
+          set({
+            vendorContactRequests: applyList(
+              get().vendorContactRequests,
+              p,
+              (r) => vendorContactRequestFromRow(r as unknown as Parameters<typeof vendorContactRequestFromRow>[0])
+            ),
+          })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: wf }, (p) =>
           set({ budgetItems: applyList(get().budgetItems, p, (r) => budgetItemFromRow(r as unknown as Parameters<typeof budgetItemFromRow>[0])) })
         )
@@ -672,6 +716,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         guests: [],
         vendors: [],
+        vendorContactRequests: [],
         budgetItems,
         scheduleItems: [],
         tables: [],
@@ -992,6 +1037,33 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           b.vendorId === id ? { ...b, vendorId: undefined } : b
         ),
       })
+    },
+
+    sendVendorContact: async (payload) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const res = await fetch('/api/leveranciers/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weddingId: wedding.id, ...payload }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? 'Versturen mislukt')
+      }
+      const { vendor, contactRequest } = (await res.json()) as {
+        vendor: Vendor
+        contactRequest: VendorContactRequest | null
+      }
+      set({
+        vendors: get().vendors.some((v) => v.id === vendor.id)
+          ? get().vendors.map((v) => (v.id === vendor.id ? vendor : v))
+          : [...get().vendors, vendor],
+        vendorContactRequests: contactRequest
+          ? [contactRequest, ...get().vendorContactRequests]
+          : get().vendorContactRequests,
+      })
+      return contactRequest
     },
 
     // --- BudgetItems -------------------------------------------------------
