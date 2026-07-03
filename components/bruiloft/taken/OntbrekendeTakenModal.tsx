@@ -4,6 +4,7 @@ import * as React from 'react'
 import { ChevronDown, ChevronRight, Star } from 'lucide-react'
 
 import { Button, Modal } from '@/components/bruiloft/ui'
+import { toegewezenAanLabel } from '@/lib/bruiloft/options'
 import {
   TEMPLATE_FASE_VOLGORDE,
   TEMPLATE_TASKS,
@@ -33,6 +34,7 @@ export function OntbrekendeTakenModal({
   open,
   onOpenChange,
   tasks,
+  wedding,
   onConfirm,
 }: OntbrekendeTakenModalProps) {
   const ontbrekend = React.useMemo(
@@ -215,7 +217,7 @@ export function OntbrekendeTakenModal({
                                   {t.titel}
                                 </p>
                                 <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                                  {t.toegewezenAan}
+                                  {toegewezenAanLabel(t.toegewezenAan, wedding.partner1Naam, wedding.partner2Naam)}
                                 </span>
                               </div>
                               <p className="mt-0.5 truncate text-xs text-muted-foreground">

@@ -10,6 +10,8 @@ import type { Task, WeddingMember } from '@/lib/bruiloft/types'
 interface DezeMaandSectionProps {
   tasks: Task[]
   members: WeddingMember[]
+  partner1Naam?: string
+  partner2Naam?: string
   onToggleStatus: (t: Task) => void
   onEdit: (t: Task) => void
   onDelete: (t: Task) => void
@@ -38,6 +40,8 @@ export function DezeMaandSection(props: DezeMaandSectionProps) {
             key={t.id}
             task={t}
             members={props.members}
+            partner1Naam={props.partner1Naam}
+            partner2Naam={props.partner2Naam}
             onToggleStatus={props.onToggleStatus}
             onEdit={props.onEdit}
             onDelete={props.onDelete}

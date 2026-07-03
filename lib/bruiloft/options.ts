@@ -26,6 +26,21 @@ export function categorieLabelVoor(
   return c.charAt(0).toUpperCase() + c.slice(1)
 }
 
+// Vertaalt de legacy 'toegewezenAan'-enum (gebruikt door sjabloontaken en
+// AI-suggesties, vóórdat er een echt gekoppeld lid is) naar leesbare tekst.
+// Toont nooit "Partner 1"/"Partner 2" letterlijk — valt terug op de echte
+// voornaam zodra die bekend is.
+export function toegewezenAanLabel(
+  value: ToegewezenAan,
+  partner1Naam?: string,
+  partner2Naam?: string
+): string {
+  if (value === 'partner 1') return partner1Naam || 'Partner 1'
+  if (value === 'partner 2') return partner2Naam || 'Partner 2'
+  if (value === 'getuige') return 'Getuige(n)'
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
 // Vaste suggestielijst; bruidsparen kunnen bij het aanmaken/bewerken van een
 // gast ook een eigen categorie of gasttype intypen (zie GuestForm).
 export const GUEST_CATEGORIEEN: GuestCategorie[] = [

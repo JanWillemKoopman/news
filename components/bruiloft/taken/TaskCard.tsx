@@ -5,8 +5,9 @@ import { AlertTriangle, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 
 
 import { Card, CardContent, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
 import { dagLabel, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
+import { toegewezenAanLabel } from '@/lib/bruiloft/options'
 import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
-import { capFirst, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 
 import { AvatarStack } from './AvatarStack'
@@ -15,6 +16,8 @@ import { SubtakenChecklist } from './SubtakenList'
 interface TaskCardProps {
   task: Task
   members: WeddingMember[]
+  partner1Naam?: string
+  partner2Naam?: string
   onToggleStatus: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (task: Task) => void
@@ -28,6 +31,8 @@ interface TaskCardProps {
 export function TaskCard({
   task,
   members,
+  partner1Naam,
+  partner2Naam,
   onToggleStatus,
   onEdit,
   onDelete,
@@ -204,7 +209,9 @@ export function TaskCard({
                 </span>
               </span>
             ) : fallbackLabel ? (
-              <span className="shrink-0">{capFirst(fallbackLabel)}</span>
+              <span className="shrink-0">
+                {toegewezenAanLabel(fallbackLabel, partner1Naam, partner2Naam)}
+              </span>
             ) : null}
             {heeftSubtaken ? (
               <button
