@@ -1,9 +1,7 @@
 'use client'
 
-import { Button, Field, Modal, Select } from '@/components/bruiloft/ui'
-import { FilterChips } from '@/components/bruiloft/leveranciers/FilterChips'
-import { VENDOR_STATUSSEN } from '@/lib/bruiloft/options'
-import { capFirst } from '@/lib/utils'
+import { Button, Modal } from '@/components/bruiloft/ui'
+import { DropdownFilter, type DropdownFilterOption } from '@/components/bruiloft/leveranciers/DropdownFilter'
 
 interface MijnLijstFiltersProps {
   open: boolean
@@ -12,10 +10,8 @@ interface MijnLijstFiltersProps {
   onStatus: (value: string) => void
   type: string
   onType: (value: string) => void
-  categorieen: string[]
-  geboekteCategorieen: Set<string>
-  statusTellers: Map<string, number>
-  totaal: number
+  categorieOpties: DropdownFilterOption[]
+  statusOpties: DropdownFilterOption[]
 }
 
 export function MijnLijstFilters({
@@ -25,10 +21,8 @@ export function MijnLijstFilters({
   onStatus,
   type,
   onType,
-  categorieen,
-  geboekteCategorieen,
-  statusTellers,
-  totaal,
+  categorieOpties,
+  statusOpties,
 }: MijnLijstFiltersProps) {
   const wisFilters = () => {
     onStatus('all')
@@ -38,33 +32,14 @@ export function MijnLijstFilters({
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="Filters">
       <div className="space-y-5">
-        <Field label="Categorie" htmlFor="filter-categorie">
-          <Select id="filter-categorie" value={type} onChange={(e) => onType(e.target.value)}>
-            <option value="all">Alle categorieën</option>
-            {categorieen.map((c) => (
-              <option key={c} value={c}>
-                {(geboekteCategorieen.has(c) ? '✓ ' : '') + capFirst(c)}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div>
+          <p className="mb-2 text-sm font-medium text-foreground">Categorie</p>
+          <DropdownFilter value={type} onChange={onType} options={categorieOpties} ariaLabel="Filter op categorie" />
+        </div>
 
         <div>
           <p className="mb-2 text-sm font-medium text-foreground">Status</p>
-          <FilterChips
-            label="Filter op status"
-            value={status}
-            onChange={onStatus}
-            options={[
-              { value: 'all', label: 'Alle', count: totaal },
-              ...VENDOR_STATUSSEN.map((s) => ({
-                value: s,
-                label: s,
-                count: statusTellers.get(s) ?? 0,
-                dimmed: !statusTellers.get(s),
-              })),
-            ]}
-          />
+          <DropdownFilter value={status} onChange={onStatus} options={statusOpties} ariaLabel="Filter op status" />
         </div>
 
         <div className="flex justify-between pt-1">

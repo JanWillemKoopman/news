@@ -9,6 +9,7 @@ import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { leveranciersInfo } from '@/components/bruiloft/faqContent'
 import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
+import { DropdownFilter } from '@/components/bruiloft/leveranciers/DropdownFilter'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
 import { MijnLijstFilters } from '@/components/bruiloft/leveranciers/MijnLijstFilters'
@@ -21,7 +22,6 @@ import {
   Input,
   Money,
   OverflowMenu,
-  Select,
   SortableTh,
   StatusBadge,
   useToast,
@@ -123,6 +123,30 @@ export default function LeveranciersPage() {
   const aantalFilters = (fStatus !== 'all' ? 1 : 0) + (fType !== 'all' ? 1 : 0)
   const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
 
+  // Tellers per categorie (afwijkende/legacy types tellen mee onder Overig).
+  const categorieTellers = new Map<string, number>()
+  for (const v of vendors) {
+    const c = categorieVoorWeergave(v.type, categorieen)
+    categorieTellers.set(c, (categorieTellers.get(c) ?? 0) + 1)
+  }
+  const categorieOpties = [
+    { value: 'all', label: 'Alle categorieën', count: vendors.length },
+    ...categorieen.map((c) => ({
+      value: c,
+      label: capFirst(c),
+      count: categorieTellers.get(c) ?? 0,
+      geboekt: geboekteCategorieen.has(c),
+    })),
+  ]
+  const statusOpties = [
+    { value: 'all', label: 'Alle statussen', count: totaalBinnenType },
+    ...VENDOR_STATUSSEN.map((s) => ({
+      value: s,
+      label: capFirst(s),
+      count: statusTellers.get(s) ?? 0,
+    })),
+  ]
+
   const wisFilters = () => {
     setZoek('')
     setFType('all')
@@ -186,34 +210,21 @@ export default function LeveranciersPage() {
             />
           </div>
 
-          {/* Desktop: filters direct zichtbaar naast de zoekbalk */}
+          {/* Desktop: filters direct zichtbaar naast de zoekbalk, zelfde
+              ontwerp als de statusfilter op /bruiloft/budget */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
-            <Select
+            <DropdownFilter
               value={fType}
-              onChange={(e) => setFType(e.target.value)}
-              className="w-auto"
-              aria-label="Filter op categorie"
-            >
-              <option value="all">Alle categorieën</option>
-              {categorieen.map((c) => (
-                <option key={c} value={c}>
-                  {(geboekteCategorieen.has(c) ? '✓ ' : '') + capFirst(c)}
-                </option>
-              ))}
-            </Select>
-            <Select
+              onChange={setFType}
+              options={categorieOpties}
+              ariaLabel="Filter op categorie"
+            />
+            <DropdownFilter
               value={fStatus}
-              onChange={(e) => setFStatus(e.target.value)}
-              className="w-auto"
-              aria-label="Filter op status"
-            >
-              <option value="all">Alle statussen ({totaalBinnenType})</option>
-              {VENDOR_STATUSSEN.map((s) => (
-                <option key={s} value={s}>
-                  {capFirst(s)} ({statusTellers.get(s) ?? 0})
-                </option>
-              ))}
-            </Select>
+              onChange={setFStatus}
+              options={statusOpties}
+              ariaLabel="Filter op status"
+            />
           </div>
 
           {/* Mobiel: filters achter één knop i.v.m. beperkte ruimte */}
@@ -273,7 +284,7 @@ export default function LeveranciersPage() {
                     Naam
                   </SortableTh>
                   <SortableTh kolom="type" actief={sortKolom === 'type'} richting={sortRichting} onSort={toggleSort}>
-                    Type
+                    Categorie
                   </SortableTh>
                   <SortableTh kolom="status" actief={sortKolom === 'status'} richting={sortRichting} onSort={toggleSort}>
                     Status
@@ -459,10 +470,8 @@ export default function LeveranciersPage() {
         onStatus={setFStatus}
         type={fType}
         onType={setFType}
-        categorieen={categorieen}
-        geboekteCategorieen={geboekteCategorieen}
-        statusTellers={statusTellers}
-        totaal={totaalBinnenType}
+        categorieOpties={categorieOpties}
+        statusOpties={statusOpties}
       />
 
       <VendorCategoryManageModal
