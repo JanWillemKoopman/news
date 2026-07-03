@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { Compass, FileText, Filter, MessageCircle, Pencil, Plus, Search, Store, Tags, Trash2 } from 'lucide-react'
+import { Compass, FileText, MessageCircle, Pencil, Plus, Search, Store, Tags, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -65,7 +65,6 @@ export default function LeveranciersPage() {
     }
   }
 
-  const [filtersOpen, setFiltersOpen] = React.useState(false)
   const [categoryManageOpen, setCategoryManageOpen] = React.useState(false)
 
   const [formOpen, setFormOpen] = React.useState(false)
@@ -120,7 +119,6 @@ export default function LeveranciersPage() {
     }
   }
   const totaalBinnenType = Array.from(statusTellers.values()).reduce((a, b) => a + b, 0)
-  const aantalFilters = (fStatus !== 'all' ? 1 : 0) + (fType !== 'all' ? 1 : 0)
   const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
 
   // Tellers per categorie (afwijkende/legacy types tellen mee onder Overig).
@@ -227,15 +225,15 @@ export default function LeveranciersPage() {
             />
           </div>
 
-          {/* Mobiel: filters achter één knop i.v.m. beperkte ruimte */}
-          <Button variant="outline" onClick={() => setFiltersOpen(true)} className="shrink-0 md:hidden">
-            <Filter className="h-4 w-4" /> Filters
-            {aantalFilters > 0 ? (
-              <span className="rounded-full bg-primary/10 px-1.5 text-xs font-medium text-primary">
-                {aantalFilters}
-              </span>
-            ) : null}
-          </Button>
+          {/* Mobiel: filterknop + verankerd paneel, zelfde opzet als /bruiloft/taken */}
+          <MijnLijstFilters
+            status={fStatus}
+            onStatus={setFStatus}
+            type={fType}
+            onType={setFType}
+            categorieOpties={categorieOpties}
+            statusOpties={statusOpties}
+          />
         </div>
       ) : null}
 
@@ -462,17 +460,6 @@ export default function LeveranciersPage() {
           onSent={() => setContactVendor(null)}
         />
       ) : null}
-
-      <MijnLijstFilters
-        open={filtersOpen}
-        onOpenChange={setFiltersOpen}
-        status={fStatus}
-        onStatus={setFStatus}
-        type={fType}
-        onType={setFType}
-        categorieOpties={categorieOpties}
-        statusOpties={statusOpties}
-      />
 
       <VendorCategoryManageModal
         open={categoryManageOpen}
