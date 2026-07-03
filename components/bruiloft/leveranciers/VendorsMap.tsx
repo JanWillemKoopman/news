@@ -20,6 +20,11 @@ interface VendorsMapProps {
   kanBewerken: boolean
   onBewerk: (vendor: Vendor) => void
   onGeocoded: (id: ID, latitude: number, longitude: number) => void
+  // Geselecteerde leverancier is "opgetild" naar de pagina, zodat een klik op
+  // een rij in de tabel/lijst hieronder ook de bijbehorende marker op de
+  // kaart aanvinkt (en andersom).
+  selectedId: ID | null
+  onSelectedIdChange: (id: ID | null) => void
 }
 
 type Coords = { latitude: number; longitude: number }
@@ -71,6 +76,19 @@ function FitBounds({ punten }: { punten: [number, number][] }) {
     }
     map.fitBounds(L.latLngBounds(punten), { padding: [32, 32], maxZoom: 14 })
     // sleutel vat punten samen tot een stabiele dependency (arrays zijn anders elke render nieuw).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, sleutel])
+  return null
+}
+
+// Zoomt/pant zachtjes naar de geselecteerde leverancier — ook als de selectie
+// van buiten de kaart komt (klik op een rij in de tabel/lijst eronder).
+function PanToSelected({ positie }: { positie: [number, number] | null }) {
+  const map = useMap()
+  const sleutel = positie ? positie.join(',') : ''
+  React.useEffect(() => {
+    if (!positie) return
+    map.flyTo(positie, Math.max(map.getZoom(), 12), { duration: 0.5 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, sleutel])
   return null
@@ -145,9 +163,16 @@ function VendorDetailPaneel({
 // mobiel ook geen kaarttegels/geocoding-verkeer geladen wordt). Adressen
 // worden één voor één gegeocodeerd via /api/geocode (gratis, Nominatim) en
 // daarna persistent opgeslagen zodat dit maar één keer per leverancier hoeft.
-export function VendorsMap({ vendors, categorieen, kanBewerken, onBewerk, onGeocoded }: VendorsMapProps) {
+export function VendorsMap({
+  vendors,
+  categorieen,
+  kanBewerken,
+  onBewerk,
+  onGeocoded,
+  selectedId,
+  onSelectedIdChange,
+}: VendorsMapProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
-  const [selectedId, setSelectedId] = React.useState<ID | null>(null)
   const [live, setLive] = React.useState<Record<ID, Coords | null>>({})
   const [bezigMetGeocoden, setBezigMetGeocoden] = React.useState(false)
   const geprobeerd = React.useRef<Set<ID>>(new Set())
@@ -217,7 +242,8 @@ export function VendorsMap({ vendors, categorieen, kanBewerken, onBewerk, onGeoc
 
   if (!isDesktop) return null
 
-  const selected = gegeocodeerd.find((g) => g.vendor.id === selectedId)?.vendor ?? null
+  const selectedPunt = gegeocodeerd.find((g) => g.vendor.id === selectedId)
+  const selected = selectedPunt?.vendor ?? null
 
   if (metAdres.length === 0) {
     return (
@@ -252,6 +278,7 @@ export function VendorsMap({ vendors, categorieen, kanBewerken, onBewerk, onGeoc
               subdomains="abcd"
             />
             <FitBounds punten={gegeocodeerd.map((g) => [g.latitude, g.longitude])} />
+            <PanToSelected positie={selectedPunt ? [selectedPunt.latitude, selectedPunt.longitude] : null} />
             {gegeocodeerd.map(({ vendor, latitude, longitude }) => (
               <Marker
                 key={vendor.id}
@@ -261,7 +288,7 @@ export function VendorsMap({ vendors, categorieen, kanBewerken, onBewerk, onGeoc
                   vendor.naam,
                   vendor.id === selectedId
                 )}
-                eventHandlers={{ click: () => setSelectedId(vendor.id) }}
+                eventHandlers={{ click: () => onSelectedIdChange(vendor.id) }}
               />
             ))}
           </MapContainer>

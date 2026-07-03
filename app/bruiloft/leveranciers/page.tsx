@@ -40,7 +40,7 @@ import { canEdit } from '@/lib/bruiloft/permissions'
 import { categorieVoorWeergave, VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { geboektePerCategorie } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { Vendor, VendorContactType } from '@/lib/bruiloft/types'
+import type { ID, Vendor, VendorContactType } from '@/lib/bruiloft/types'
 
 type SortKolom = 'naam' | 'type' | 'status' | 'bedrag' | 'adres'
 
@@ -81,6 +81,9 @@ export default function LeveranciersPage() {
   const [delVendor, setDelVendor] = React.useState<Vendor | null>(null)
   const [contactVendor, setContactVendor] = React.useState<{ vendor: Vendor; type: VendorContactType } | null>(null)
   const [detailVendor, setDetailVendor] = React.useState<Vendor | null>(null)
+  // Gedeeld met VendorsMap, zodat een klik op een rij de bijbehorende marker
+  // op de kaart erboven ook aanvinkt (en omgekeerd).
+  const [selectedVendorId, setSelectedVendorId] = React.useState<ID | null>(null)
 
   if (!wedding) return null
 
@@ -174,6 +177,7 @@ export default function LeveranciersPage() {
   }
   const openDetail = (v: Vendor) => {
     setDetailVendor(v)
+    setSelectedVendorId(v.id)
   }
 
   return (
@@ -295,6 +299,8 @@ export default function LeveranciersPage() {
             onGeocoded={(id, latitude, longitude) => {
               updateVendor(id, { latitude, longitude }).catch(() => {})
             }}
+            selectedId={selectedVendorId}
+            onSelectedIdChange={setSelectedVendorId}
           />
 
           <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
