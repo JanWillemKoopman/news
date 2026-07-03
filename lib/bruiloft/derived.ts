@@ -3,6 +3,7 @@
 // eenvoudig en kunnen er geen oneindige update-loops ontstaan.
 
 import { dagenTot } from './format'
+import { categorieVoorWeergave } from './options'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -14,6 +15,18 @@ import type {
   Vendor,
   Wedding,
 } from './types'
+
+// --- Leverancierscategorieën -------------------------------------------
+
+// Categorieën met minstens één geboekte leverancier — gebruikt voor het
+// vinkje in het categoriefilter en de "X van Y categorieën geboekt"-tekst.
+export function geboektePerCategorie(vendors: Vendor[], categorieen: string[]): Set<string> {
+  return new Set(
+    vendors
+      .filter((v) => v.status === 'geboekt')
+      .map((v) => categorieVoorWeergave(v.type, categorieen))
+  )
+}
 
 // --- Kruisverband 1: geboekte leverancier voedt het budgetitem ------------
 

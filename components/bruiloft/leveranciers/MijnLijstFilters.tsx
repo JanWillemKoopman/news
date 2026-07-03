@@ -13,6 +13,7 @@ interface MijnLijstFiltersProps {
   type: string
   onType: (value: string) => void
   categorieen: string[]
+  geboekteCategorieen: Set<string>
   statusTellers: Map<string, number>
   totaal: number
 }
@@ -25,6 +26,7 @@ export function MijnLijstFilters({
   type,
   onType,
   categorieen,
+  geboekteCategorieen,
   statusTellers,
   totaal,
 }: MijnLijstFiltersProps) {
@@ -41,7 +43,7 @@ export function MijnLijstFilters({
             <option value="all">Alle categorieën</option>
             {categorieen.map((c) => (
               <option key={c} value={c}>
-                {capFirst(c)}
+                {(geboekteCategorieen.has(c) ? '✓ ' : '') + capFirst(c)}
               </option>
             ))}
           </Select>

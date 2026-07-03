@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { categorieVoorWeergave } from '@/lib/bruiloft/options'
+import { geboektePerCategorie } from '@/lib/bruiloft/derived'
 import type { Vendor } from '@/lib/bruiloft/types'
 
 interface CategorieVoortgangProps {
@@ -14,11 +14,7 @@ interface CategorieVoortgangProps {
 // minstens één geboekte leverancier, uit hoeveel beheerde categorieën in totaal.
 export function CategorieVoortgang({ vendors, categorieen }: CategorieVoortgangProps) {
   const geboektAantal = React.useMemo(() => {
-    const geboekt = new Set(
-      vendors
-        .filter((v) => v.status === 'geboekt')
-        .map((v) => categorieVoorWeergave(v.type, categorieen))
-    )
+    const geboekt = geboektePerCategorie(vendors, categorieen)
     return categorieen.filter((c) => geboekt.has(c)).length
   }, [vendors, categorieen])
 

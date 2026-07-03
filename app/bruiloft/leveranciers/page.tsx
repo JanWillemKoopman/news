@@ -21,6 +21,7 @@ import {
   Input,
   Money,
   OverflowMenu,
+  Select,
   SortableTh,
   StatusBadge,
   useToast,
@@ -28,6 +29,7 @@ import {
 import { capFirst, cn } from '@/lib/utils'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { categorieVoorWeergave, VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
+import { geboektePerCategorie } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { Vendor, VendorContactType } from '@/lib/bruiloft/types'
 
@@ -119,6 +121,7 @@ export default function LeveranciersPage() {
   }
   const totaalBinnenType = Array.from(statusTellers.values()).reduce((a, b) => a + b, 0)
   const aantalFilters = (fStatus !== 'all' ? 1 : 0) + (fType !== 'all' ? 1 : 0)
+  const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
 
   const wisFilters = () => {
     setZoek('')
@@ -150,6 +153,13 @@ export default function LeveranciersPage() {
             </Button>
           ) : undefined
         }
+        secundaireActie={
+          kanBewerken ? (
+            <Button variant="outline" onClick={() => setCategoryManageOpen(true)}>
+              <Tags className="h-4 w-4" /> Categorieën beheren
+            </Button>
+          ) : undefined
+        }
         meerActies={
           kanBewerken
             ? [{ label: 'Categorieën beheren', icon: Tags, onClick: () => setCategoryManageOpen(true) }]
@@ -175,7 +185,39 @@ export default function LeveranciersPage() {
               aria-label="Zoek in jullie leveranciers"
             />
           </div>
-          <Button variant="outline" onClick={() => setFiltersOpen(true)} className="shrink-0">
+
+          {/* Desktop: filters direct zichtbaar naast de zoekbalk */}
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
+            <Select
+              value={fType}
+              onChange={(e) => setFType(e.target.value)}
+              className="w-auto"
+              aria-label="Filter op categorie"
+            >
+              <option value="all">Alle categorieën</option>
+              {categorieen.map((c) => (
+                <option key={c} value={c}>
+                  {(geboekteCategorieen.has(c) ? '✓ ' : '') + capFirst(c)}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={fStatus}
+              onChange={(e) => setFStatus(e.target.value)}
+              className="w-auto"
+              aria-label="Filter op status"
+            >
+              <option value="all">Alle statussen ({totaalBinnenType})</option>
+              {VENDOR_STATUSSEN.map((s) => (
+                <option key={s} value={s}>
+                  {capFirst(s)} ({statusTellers.get(s) ?? 0})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Mobiel: filters achter één knop i.v.m. beperkte ruimte */}
+          <Button variant="outline" onClick={() => setFiltersOpen(true)} className="shrink-0 md:hidden">
             <Filter className="h-4 w-4" /> Filters
             {aantalFilters > 0 ? (
               <span className="rounded-full bg-primary/10 px-1.5 text-xs font-medium text-primary">
@@ -418,6 +460,7 @@ export default function LeveranciersPage() {
         type={fType}
         onType={setFType}
         categorieen={categorieen}
+        geboekteCategorieen={geboekteCategorieen}
         statusTellers={statusTellers}
         totaal={totaalBinnenType}
       />

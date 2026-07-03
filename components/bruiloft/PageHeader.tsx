@@ -16,6 +16,11 @@ interface PageHeaderProps {
   primaryActie?: React.ReactNode
   // Secundaire acties: altijd gebundeld achter één "•••"-knop.
   meerActies?: OverflowMenuItem[]
+  // Losse knop die op desktop (waar ruimte is) zichtbaar staat i.p.v. verstopt
+  // achter "•••" — bedoeld voor de situatie waarin `meerActies` maar één item
+  // bevat dat het waard is om altijd zichtbaar te zijn. Verschijnt alleen
+  // vanaf `md`; op mobiel blijft dezelfde actie bereikbaar via `meerActies`.
+  secundaireActie?: React.ReactNode
   // Optionele ronde informatieknop die uiterst rechtsboven verschijnt.
   info?: React.ReactNode
   // Optionele primaire "toevoegen"-actie die ook als zwevende +-knop (FAB)
@@ -52,7 +57,7 @@ function useElementInView(ref: React.RefObject<HTMLElement>) {
   return inView
 }
 
-export function PageHeader({ titel, primaryActie, meerActies, info, fab }: PageHeaderProps) {
+export function PageHeader({ titel, primaryActie, meerActies, secundaireActie, info, fab }: PageHeaderProps) {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const headerInView = useElementInView(headerRef)
 
@@ -65,12 +70,17 @@ export function PageHeader({ titel, primaryActie, meerActies, info, fab }: PageH
         <div>
           <h1 className="text-xl font-semibold text-foreground">{titel}</h1>
         </div>
-        {primaryActie || meerActies?.length || info ? (
+        {primaryActie || meerActies?.length || secundaireActie || info ? (
           <div className="flex w-full items-center gap-2 sm:w-auto">
             {primaryActie ? (
               <div className="flex-1 [&>*]:w-full sm:flex-none sm:[&>*]:w-auto">{primaryActie}</div>
             ) : null}
-            {meerActies && meerActies.length > 0 ? <OverflowMenu items={meerActies} /> : null}
+            {secundaireActie ? <div className="hidden md:block">{secundaireActie}</div> : null}
+            {meerActies && meerActies.length > 0 ? (
+              <div className={secundaireActie ? 'md:hidden' : undefined}>
+                <OverflowMenu items={meerActies} />
+              </div>
+            ) : null}
             {info ? <div className="ml-auto shrink-0 sm:ml-0">{info}</div> : null}
           </div>
         ) : null}
