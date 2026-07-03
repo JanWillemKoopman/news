@@ -406,13 +406,13 @@ export const budgetInfo: PageInfo = {
   ],
 }
 
-// ── Mijn leveranciers ──────────────────────────────────────────────────────
+// ── Mijn lijst ─────────────────────────────────────────────────────────────
 export const leveranciersInfo: PageInfo = {
   titel: 'FAQ Leveranciers',
   intro: (
     <Intro>
       <p>
-        Op <strong>Mijn leveranciers</strong> beheer je alle partijen voor jullie
+        Op <strong>Mijn lijst</strong> beheer je alle partijen voor jullie
         dag — van locatie en catering tot fotograaf en band. Je houdt per
         leverancier de status bij (van oriëntatie tot geboekt), het offertebedrag
         en de contactgegevens.
@@ -509,7 +509,7 @@ export const ontdekkenInfo: PageInfo = {
         Op <strong>Ontdekken</strong> doorzoek je alle trouwlocaties en
         leveranciers in de app, gesorteerd op wat het best bij jullie past. Vind je
         iets leuks, dan zet je het zo op je eigen lijst bij{' '}
-        <strong>Mijn leveranciers</strong>.
+        <strong>Mijn lijst</strong>.
       </p>
       <QuickStart
         stappen={[
@@ -520,7 +520,7 @@ export const ontdekkenInfo: PageInfo = {
             Verfijn de resultaten met de <strong>filters</strong>.
           </>,
           <>
-            Zet een favoriet op <strong>Mijn leveranciers</strong>.
+            Zet een favoriet op <strong>Mijn lijst</strong>.
           </>,
         ]}
       />
@@ -560,17 +560,17 @@ export const ontdekkenInfo: PageInfo = {
       vraag: 'Hoe zet ik een leverancier op mijn lijst?',
       antwoord: (
         <p>
-          Voeg een resultaat toe aan <strong>Mijn leveranciers</strong>. Daar
+          Voeg een resultaat toe aan <strong>Mijn lijst</strong>. Daar
           beheer je vervolgens de status, offertes en contactmomenten.
         </p>
       ),
     },
     {
-      vraag: 'Wat is het verschil met "Mijn leveranciers"?',
+      vraag: 'Wat is het verschil met "Mijn lijst"?',
       antwoord: (
         <p>
           <strong>Ontdekken</strong> is bladeren en zoeken in de volledige
-          directory. <strong>Mijn leveranciers</strong> is jouw eigen shortlist,
+          directory. <strong>Mijn lijst</strong> is jouw eigen shortlist,
           waar je de boekingsstatus en bedragen bijhoudt.
         </p>
       ),

@@ -44,7 +44,7 @@ export interface NavItem {
 const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
-const mijnLeveranciers: NavItem = { label: 'Mijn leveranciers', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
+const mijnLeveranciers: NavItem = { label: 'Mijn lijst', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
 const leverancierZoeken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }

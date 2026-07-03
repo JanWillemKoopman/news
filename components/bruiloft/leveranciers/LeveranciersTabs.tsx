@@ -9,7 +9,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 
 const TABS = [
   { href: '/bruiloft/ontdekken', label: 'Ontdekken', icon: Compass },
-  { href: '/bruiloft/leveranciers', label: 'Mijn leveranciers', icon: Store },
+  { href: '/bruiloft/leveranciers', label: 'Mijn lijst', icon: Store },
 ] as const
 
 // Segmentschakelaar tussen de twee leveranciersweergaven. Beide routes blijven
