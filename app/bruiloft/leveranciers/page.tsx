@@ -166,7 +166,7 @@ export default function LeveranciersPage() {
   return (
     <div className="mx-auto max-w-7xl pb-24 min-h-screen">
       <PageHeader
-        titel="Mijn leveranciers"
+        titel="Mijn lijst"
         info={<PageInfoButton {...leveranciersInfo} />}
         primaryActie={
           kanBewerken ? (
