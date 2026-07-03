@@ -18,8 +18,8 @@ interface LeverancierBerichtModalProps {
 }
 
 // Compose-modal voor een offerte-/contactbericht aan een leverancier. Wordt
-// zowel vanuit de ontdekken-kant (SupplierDetailModal) als vanuit "Mijn lijst"
-// (VendorCard, opnieuw contact opnemen) aangeroepen — één implementatie.
+// zowel vanuit de ontdekken-kant (SupplierDetailModal) als vanuit "Mijn
+// leveranciers" (opnieuw contact opnemen) aangeroepen — één implementatie.
 export function LeverancierBerichtModal({
   open,
   onOpenChange,

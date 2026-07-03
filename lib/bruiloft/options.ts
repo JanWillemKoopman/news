@@ -115,6 +115,12 @@ export const VENDOR_TYPES: VendorType[] = [
   'overig',
 ]
 
+// Leveranciers waarvan het type niet (meer) in de beheerde lijst staat, vallen terug
+// op 'overig' bij weergave/telling — defensief tegen legacy/verwijderde categorieën.
+export function categorieVoorWeergave(type: string, categorieen: string[]): string {
+  return categorieen.includes(type) ? type : 'overig'
+}
+
 export const VENDOR_STATUSSEN: VendorStatus[] = [
   'te bezoeken',
   'bezocht',

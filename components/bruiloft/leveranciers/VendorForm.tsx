@@ -13,7 +13,7 @@ import {
   Textarea,
   eigennaamInputProps,
 } from '@/components/bruiloft/ui'
-import { VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
+import { VENDOR_STATUSSEN } from '@/lib/bruiloft/options'
 import type { BudgetItem, Vendor, VendorInput } from '@/lib/bruiloft/types'
 import { capFirst } from '@/lib/utils'
 
@@ -24,17 +24,19 @@ interface VendorFormProps {
   onOpenChange: (open: boolean) => void
   initial?: Vendor | null
   budgetItems: BudgetItem[]
-  // Custom categorieën die al in gebruik zijn bij dit bruidspaar
+  // Zelf beheerde lijst leverancierscategorieën van dit bruidspaar
+  categorieen: string[]
+  // Custom categorieën die al in gebruik zijn maar niet (meer) beheerd worden
   extraTypes?: string[]
   onSubmit: (data: NewVendor) => void | Promise<void>
 }
 
 const NIEUW_SENTINEL = '__nieuw__'
 
-function leeg(): NewVendor {
+function leeg(categorieen: string[]): NewVendor {
   return {
     naam: '',
-    type: 'locatie',
+    type: categorieen[0] ?? 'overig',
     status: 'te bezoeken',
     contactpersoon: '',
     telefoon: '',
@@ -42,6 +44,7 @@ function leeg(): NewVendor {
     website: '',
     geoffreerdBedrag: 0,
     notitie: '',
+    adres: '',
     budgetItemId: undefined,
   }
 }
@@ -57,6 +60,7 @@ function vanVendor(v: Vendor): NewVendor {
     website: v.website,
     geoffreerdBedrag: v.geoffreerdBedrag,
     notitie: v.notitie,
+    adres: v.adres,
     budgetItemId: v.budgetItemId,
   }
 }
@@ -66,10 +70,11 @@ export function VendorForm({
   onOpenChange,
   initial,
   budgetItems,
+  categorieen,
   extraTypes = [],
   onSubmit,
 }: VendorFormProps) {
-  const [form, setForm] = React.useState<NewVendor>(leeg)
+  const [form, setForm] = React.useState<NewVendor>(() => leeg(categorieen))
   const [naamFout, setNaamFout] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [confirmOpen, setConfirmOpen] = React.useState(false)
@@ -77,17 +82,17 @@ export function VendorForm({
   // Of de gebruiker een eigen categorienaam intypt
   const [nieuweCategorieModus, setNieuweCategorieModus] = React.useState(false)
   const [nieuweCategorieFout, setNieuweCategorieFout] = React.useState(false)
-  const baseline = React.useRef<string>(JSON.stringify(leeg()))
+  const baseline = React.useRef<string>(JSON.stringify(leeg(categorieen)))
 
-  // Alle bekende types: standaard + al gebruikte custom types
+  // Alle bekende types: beheerde lijst + al gebruikte afwijkende (legacy) types
   const alleTypes = React.useMemo(() => {
-    const extra = extraTypes.filter((t) => !VENDOR_TYPES.includes(t))
-    return [...VENDOR_TYPES, ...extra]
-  }, [extraTypes])
+    const extra = extraTypes.filter((t) => !categorieen.includes(t))
+    return [...categorieen, ...extra]
+  }, [categorieen, extraTypes])
 
   React.useEffect(() => {
     if (open) {
-      const start = initial ? vanVendor(initial) : leeg()
+      const start = initial ? vanVendor(initial) : leeg(categorieen)
       setForm(start)
       baseline.current = JSON.stringify(start)
       setNaamFout(false)
@@ -143,7 +148,7 @@ export function VendorForm({
       if (closeAfter) {
         onOpenChange(false)
       } else {
-        const leegForm = leeg()
+        const leegForm = leeg(categorieen)
         setForm(leegForm)
         baseline.current = JSON.stringify(leegForm)
         setNaamFout(false)
@@ -222,7 +227,7 @@ export function VendorForm({
                   onClick={() => {
                     setNieuweCategorieModus(false)
                     setNieuweCategorieFout(false)
-                    set('type', 'locatie')
+                    set('type', categorieen[0] ?? 'overig')
                   }}
                 >
                   Kies uit de lijst
@@ -262,22 +267,32 @@ export function VendorForm({
           </Field>
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Contactpersoon" htmlFor="cp">
+            <Input
+              id="cp"
+              value={form.contactpersoon}
+              onChange={(e) => set('contactpersoon', e.target.value)}
+              {...eigennaamInputProps}
+            />
+          </Field>
+          <Field label="Offerteprijs (€)" htmlFor="bedrag">
+            <Input
+              id="bedrag"
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.geoffreerdBedrag || ''}
+              onChange={(e) => set('geoffreerdBedrag', Number(e.target.value) || 0)}
+            />
+          </Field>
+        </div>
+
         <MeerDetails open={detailsOpen} onToggle={() => setDetailsOpen((v) => !v)}>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Contactpersoon" htmlFor="cp">
-              <Input
-                id="cp"
-                value={form.contactpersoon}
-                onChange={(e) => set('contactpersoon', e.target.value)}
-                {...eigennaamInputProps}
-              />
-            </Field>
             <Field label="Telefoon" htmlFor="tel">
               <Input id="tel" type="tel" autoComplete="tel" value={form.telefoon} onChange={(e) => set('telefoon', e.target.value)} />
             </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <Field label="E-mail" htmlFor="mail">
               <Input
                 id="mail"
@@ -287,37 +302,36 @@ export function VendorForm({
                 onChange={(e) => set('email', e.target.value)}
               />
             </Field>
-            <Field label="Website" htmlFor="web">
-              <Input id="web" type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.website} onChange={(e) => set('website', e.target.value)} />
-            </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Offerteprijs (€)" htmlFor="bedrag">
+            <Field label="Website" htmlFor="web">
+              <Input id="web" type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={form.website} onChange={(e) => set('website', e.target.value)} />
+            </Field>
+            <Field label="Adres" htmlFor="adres">
               <Input
-                id="bedrag"
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.geoffreerdBedrag || ''}
-                onChange={(e) => set('geoffreerdBedrag', Number(e.target.value) || 0)}
+                id="adres"
+                value={form.adres}
+                onChange={(e) => set('adres', e.target.value)}
+                placeholder="Straat huisnummer, plaats"
               />
             </Field>
-            <Field label="Gekoppeld budgetitem" htmlFor="bud">
-              <Select
-                id="bud"
-                value={form.budgetItemId ?? ''}
-                onChange={(e) => set('budgetItemId', e.target.value || undefined)}
-              >
-                <option value="">Geen</option>
-                {budgetItems.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.omschrijving || capFirst(b.categorie)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
           </div>
+
+          <Field label="Gekoppeld budgetitem" htmlFor="bud">
+            <Select
+              id="bud"
+              value={form.budgetItemId ?? ''}
+              onChange={(e) => set('budgetItemId', e.target.value || undefined)}
+            >
+              <option value="">Geen</option>
+              {budgetItems.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.omschrijving || capFirst(b.categorie)}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <Field label="Notitie" htmlFor="not">
             <Textarea

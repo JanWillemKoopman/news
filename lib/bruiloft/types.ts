@@ -47,6 +47,9 @@ export interface Wedding {
   // Zelf te beheren lijst budgetcategorieën (aanvullen/verwijderen), los van
   // de vaste suggestielijst in de UI.
   budgetCategorieen: string[]
+  // Zelf te beheren lijst leverancierscategorieën (aanvullen/verwijderen), los van
+  // de vaste suggestielijst in de UI.
+  vendorCategorieen: string[]
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }
@@ -190,6 +193,7 @@ export interface Vendor {
   website: string
   geoffreerdBedrag: number // in euro
   notitie: string
+  adres: string
   budgetItemId?: ID
   // Herkomst uit de globale directory (public.suppliers); leeg bij handmatige invoer.
   supplierId?: ID

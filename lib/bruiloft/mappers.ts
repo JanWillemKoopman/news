@@ -4,7 +4,7 @@
 
 import type { Database } from '@/lib/supabase/database.types'
 
-import { BUDGET_CATEGORIEEN } from './options'
+import { BUDGET_CATEGORIEEN, VENDOR_TYPES } from './options'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -62,6 +62,7 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     geregeldeZaken: (r.geregelde_zaken as Partial<Record<VoortgangCategorie, VoortgangStatus>>) ?? {},
     takenVoorstellen: normaliseerTakenVoorstellen(r.taken_voorstellen),
     budgetCategorieen: normaliseerBudgetCategorieen(r.budget_categorieen),
+    vendorCategorieen: normaliseerVendorCategorieen(r.vendor_categorieen),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -69,6 +70,10 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
 
 function normaliseerBudgetCategorieen(v: unknown): string[] {
   return Array.isArray(v) ? (v as string[]) : [...BUDGET_CATEGORIEEN]
+}
+
+function normaliseerVendorCategorieen(v: unknown): string[] {
+  return Array.isArray(v) ? (v as string[]) : [...VENDOR_TYPES]
 }
 
 function normaliseerTakenVoorstellen(v: unknown): TakenVoorstellenState {
@@ -93,6 +98,8 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
     r.taken_voorstellen = p.takenVoorstellen as unknown as Record<string, unknown>
   if (p.budgetCategorieen !== undefined)
     r.budget_categorieen = p.budgetCategorieen as unknown as Tables['weddings']['Insert']['budget_categorieen']
+  if (p.vendorCategorieen !== undefined)
+    r.vendor_categorieen = p.vendorCategorieen as unknown as Tables['weddings']['Insert']['vendor_categorieen']
   return r
 }
 
@@ -195,6 +202,7 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     website: r.website,
     geoffreerdBedrag: num(r.geoffreerd_bedrag),
     notitie: r.notitie,
+    adres: r.adres,
     budgetItemId: r.budget_item_id ?? undefined,
     supplierId: r.supplier_id ?? undefined,
     // tpw_business_id is integer in DB; sla op als string (consistent met ID = string).
@@ -214,6 +222,7 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.website !== undefined) r.website = p.website
   if (p.geoffreerdBedrag !== undefined) r.geoffreerd_bedrag = p.geoffreerdBedrag
   if (p.notitie !== undefined) r.notitie = p.notitie
+  if (p.adres !== undefined) r.adres = p.adres
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
   // supplierId alleen schrijven als de patch het veld expliciet bevat; het
   // bewerkformulier stuurt het nooit mee, zodat de directory-link behouden blijft.

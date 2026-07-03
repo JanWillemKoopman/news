@@ -518,6 +518,7 @@ export type Database = {
       }
       vendors: {
         Row: {
+          adres: string
           budget_item_id: string | null
           contactpersoon: string
           created_at: string
@@ -535,6 +536,7 @@ export type Database = {
           wedding_id: string
         }
         Insert: {
+          adres?: string
           budget_item_id?: string | null
           contactpersoon?: string
           created_at?: string
@@ -552,6 +554,7 @@ export type Database = {
           wedding_id: string
         }
         Update: {
+          adres?: string
           budget_item_id?: string | null
           contactpersoon?: string
           created_at?: string
@@ -864,6 +867,7 @@ export type Database = {
           totaal_budget: number
           trouwdatum: string | null
           updated_at: string
+          vendor_categorieen: string[]
           woonplaats: string
         }
         Insert: {
@@ -883,6 +887,7 @@ export type Database = {
           totaal_budget?: number
           trouwdatum?: string | null
           updated_at?: string
+          vendor_categorieen?: string[]
           woonplaats?: string
         }
         Update: {
@@ -902,6 +907,7 @@ export type Database = {
           totaal_budget?: number
           trouwdatum?: string | null
           updated_at?: string
+          vendor_categorieen?: string[]
           woonplaats?: string
         }
         Relationships: []
