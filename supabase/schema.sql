@@ -165,6 +165,9 @@ create table public.vendors (
   geoffreerd_bedrag numeric(12, 2) not null default 0,
   notitie text not null default '',
   budget_item_id uuid, -- FK toegevoegd onderaan (circulair met budget_items)
+  -- Coördinaten voor de kaartweergave, gevuld via geocoding van adres.
+  latitude numeric,
+  longitude numeric,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

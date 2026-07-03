@@ -194,6 +194,10 @@ export interface Vendor {
   geoffreerdBedrag: number // in euro
   notitie: string
   adres: string
+  // Coördinaten voor de kaartweergave; null zolang adres nog niet (succesvol)
+  // gegeocodeerd is (of leeg is).
+  latitude?: number | null
+  longitude?: number | null
   budgetItemId?: ID
   // Herkomst uit de globale directory (public.suppliers); leeg bij handmatige invoer.
   supplierId?: ID
