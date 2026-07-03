@@ -10,6 +10,9 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 // Na wegklikken blijft de install-uitnodiging een week weg.
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000
 const DISMISS_KEY = 'install-prompt-dismissed'
+// Ongeacht dismissen: binnen één sessie (tabblad-bezoek) hoogstens 1x tonen,
+// ook als de gebruiker gewoon doornavigeert zonder de melding weg te klikken.
+const SESSION_KEY = 'install-prompt-shown-session'
 
 // Chrome's beforeinstallprompt zit niet in de standaard DOM-typings.
 interface BeforeInstallPromptEvent extends Event {
@@ -23,6 +26,22 @@ function recentlyDismissed(): boolean {
     return !!raw && Date.now() - Number(raw) < DISMISS_MS
   } catch {
     return false
+  }
+}
+
+function shownThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markShownThisSession() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, '1')
+  } catch {
+    // sessionStorage niet beschikbaar; dan maar geen sessie-limiet.
   }
 }
 
@@ -52,16 +71,20 @@ export function InstallPrompt() {
   const deferred = React.useRef<BeforeInstallPromptEvent | null>(null)
 
   React.useEffect(() => {
-    if (isStandalone() || recentlyDismissed()) return
+    if (isStandalone() || recentlyDismissed() || shownThisSession()) return
 
     function onBeforeInstall(e: Event) {
       e.preventDefault()
       deferred.current = e as BeforeInstallPromptEvent
       setMode('android')
+      markShownThisSession()
     }
     window.addEventListener('beforeinstallprompt', onBeforeInstall)
 
-    if (isIOSSafari()) setMode('ios')
+    if (isIOSSafari()) {
+      setMode('ios')
+      markShownThisSession()
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall)
   }, [])
