@@ -231,7 +231,7 @@ export function VendorsMap({ vendors, categorieen, kanBewerken, onBewerk, onGeoc
   }
 
   return (
-    <Card className="mb-5 overflow-hidden">
+    <Card className="isolate mb-5 overflow-hidden">
       <style>{`
         .vendor-marker-wrapper { background: transparent; border: none; }
         .vendor-marker-icon { transition: transform 150ms ease-out; }
