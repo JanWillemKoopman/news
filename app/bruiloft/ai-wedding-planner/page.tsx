@@ -345,7 +345,7 @@ export default function AIWeddingPlannerPage() {
             <GlobaleStatusKaart advies={advies} />
           </div>
 
-          <div className="space-y-0">
+          <div className="space-y-8">
             {MODULE_CONFIG.map((m, i) => (
               <div
                 key={m.key}
