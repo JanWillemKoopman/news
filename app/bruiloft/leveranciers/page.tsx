@@ -15,6 +15,7 @@ import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/Leverancier
 import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
 import { MijnLijstFilters } from '@/components/bruiloft/leveranciers/MijnLijstFilters'
 import { VendorCategoryManageModal } from '@/components/bruiloft/leveranciers/VendorCategoryManageModal'
+import { VendorDetailModal } from '@/components/bruiloft/leveranciers/VendorDetailModal'
 import { VendorForm } from '@/components/bruiloft/leveranciers/VendorForm'
 
 // Leaflet gebruikt `window` bij het laden — alleen client-side importeren,
@@ -79,6 +80,7 @@ export default function LeveranciersPage() {
   const [editVendor, setEditVendor] = React.useState<Vendor | null>(null)
   const [delVendor, setDelVendor] = React.useState<Vendor | null>(null)
   const [contactVendor, setContactVendor] = React.useState<{ vendor: Vendor; type: VendorContactType } | null>(null)
+  const [detailVendor, setDetailVendor] = React.useState<Vendor | null>(null)
 
   if (!wedding) return null
 
@@ -169,6 +171,9 @@ export default function LeveranciersPage() {
   }
   const openContact = (v: Vendor, type: VendorContactType) => {
     setContactVendor({ vendor: v, type })
+  }
+  const openDetail = (v: Vendor) => {
+    setDetailVendor(v)
   }
 
   return (
@@ -318,7 +323,20 @@ export default function LeveranciersPage() {
                 {gesorteerd.map((v) => {
                   const kanContact = kanBewerken && Boolean(v.email)
                   return (
-                    <tr key={v.id} className="border-b border-border last:border-0 hover:bg-accent/40">
+                    <tr
+                      key={v.id}
+                      onClick={() => openDetail(v)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openDetail(v)
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Meer informatie over ${v.naam}`}
+                      className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/40"
+                    >
                       <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {capFirst(categorieVoorWeergave(v.type, categorieen))}
@@ -329,7 +347,7 @@ export default function LeveranciersPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{v.adres || '—'}</td>
                       {kanBewerken && (
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end">
                             <OverflowMenu
                               label={`Acties voor ${v.naam}`}
@@ -361,20 +379,18 @@ export default function LeveranciersPage() {
               return (
                 <div
                   key={v.id}
-                  role={kanBewerken ? 'button' : undefined}
-                  tabIndex={kanBewerken ? 0 : undefined}
-                  aria-label={kanBewerken ? `${v.naam} bewerken` : undefined}
-                  onClick={kanBewerken ? () => openBewerk(v) : undefined}
-                  onKeyDown={
-                    kanBewerken
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') openBewerk(v)
-                        }
-                      : undefined
-                  }
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Meer informatie over ${v.naam}`}
+                  onClick={() => openDetail(v)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      openDetail(v)
+                    }
+                  }}
                   className={cn(
-                    'flex min-h-[3.5rem] items-center gap-3 px-4 py-3 transition-colors',
-                    kanBewerken && 'cursor-pointer hover:bg-accent/40 active:bg-accent/60'
+                    'flex min-h-[3.5rem] cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40 active:bg-accent/60'
                   )}
                 >
                   <div className="min-w-0 flex-1">
@@ -392,20 +408,22 @@ export default function LeveranciersPage() {
                   </div>
                   <StatusBadge kind="leverancier" value={v.status} />
                   {kanBewerken ? (
-                    <OverflowMenu
-                      label={`Acties voor ${v.naam}`}
-                      align="right"
-                      items={[
-                        { label: 'Bewerken', icon: Pencil, onClick: () => openBewerk(v) },
-                        ...(kanContact
-                          ? [
-                              { label: 'Offerte aanvragen', icon: FileText, onClick: () => openContact(v, 'offerte' as const) },
-                              { label: 'Contact opnemen', icon: MessageCircle, onClick: () => openContact(v, 'contact' as const) },
-                            ]
-                          : []),
-                        { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => setDelVendor(v) },
-                      ]}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <OverflowMenu
+                        label={`Acties voor ${v.naam}`}
+                        align="right"
+                        items={[
+                          { label: 'Bewerken', icon: Pencil, onClick: () => openBewerk(v) },
+                          ...(kanContact
+                            ? [
+                                { label: 'Offerte aanvragen', icon: FileText, onClick: () => openContact(v, 'offerte' as const) },
+                                { label: 'Contact opnemen', icon: MessageCircle, onClick: () => openContact(v, 'contact' as const) },
+                              ]
+                            : []),
+                          { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => setDelVendor(v) },
+                        ]}
+                      />
+                    </div>
                   ) : null}
                 </div>
               )
@@ -444,6 +462,18 @@ export default function LeveranciersPage() {
             throw e
           }
         }}
+      />
+
+      <VendorDetailModal
+        vendor={detailVendor}
+        onOpenChange={(o) => !o && setDetailVendor(null)}
+        categorieen={categorieen}
+        kanBewerken={kanBewerken}
+        onBewerk={(v) => {
+          setDetailVendor(null)
+          openBewerk(v)
+        }}
+        onContact={openContact}
       />
 
       <ConfirmDialog

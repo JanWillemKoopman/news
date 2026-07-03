@@ -22,6 +22,7 @@ export function VendorCategoryManageModal({
   vendors,
 }: VendorCategoryManageModalProps) {
   const updateWedding = useBruiloftStore((s) => s.updateWedding)
+  const updateVendor = useBruiloftStore((s) => s.updateVendor)
   const { toast } = useToast()
   const [nieuw, setNieuw] = React.useState('')
   const [nieuwFout, setNieuwFout] = React.useState<string | null>(null)
@@ -59,6 +60,10 @@ export function VendorCategoryManageModal({
 
   const verwijder = async (naam: string) => {
     try {
+      // Leveranciers die deze categorie gebruiken gaan mee naar "overig" —
+      // de categorie zelf verdwijnt niet stilletjes uit hun gegevens.
+      const betrokken = vendors.filter((v) => v.type === naam && naam !== 'overig')
+      await Promise.all(betrokken.map((v) => updateVendor(v.id, { type: 'overig' })))
       await updateWedding({ vendorCategorieen: categorieen.filter((c) => c !== naam) })
       toast({ title: 'Categorie verwijderd', variant: 'success' })
     } catch {
@@ -112,12 +117,6 @@ export function VendorCategoryManageModal({
                     variant="ghost"
                     size="icon"
                     aria-label={`${c} verwijderen`}
-                    disabled={inGebruik > 0}
-                    title={
-                      inGebruik > 0
-                        ? 'Verplaats eerst de leveranciers naar een andere categorie'
-                        : undefined
-                    }
                     onClick={() => setTeVerwijderen(c)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -141,7 +140,13 @@ export function VendorCategoryManageModal({
         title="Categorie verwijderen?"
         description={
           teVerwijderen
-            ? `"${capFirst(teVerwijderen)}" wordt niet meer voorgesteld bij nieuwe leveranciers.`
+            ? (() => {
+                const aantal = aantalItems(teVerwijderen)
+                const basis = `"${capFirst(teVerwijderen)}" wordt niet meer voorgesteld bij nieuwe leveranciers.`
+                if (aantal === 0) return basis
+                const onderwerp = aantal === 1 ? 'De leverancier die deze categorie gebruikt wordt' : `De ${aantal} leveranciers die deze categorie gebruiken worden`
+                return `${basis} ${onderwerp} voortaan getoond als "Overig".`
+              })()
             : undefined
         }
         bevestigLabel="Verwijderen"
