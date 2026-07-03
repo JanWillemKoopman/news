@@ -119,7 +119,8 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
 
   async function voegToe(s: Supplier) {
     try {
-      const adres = [s.straat, s.huisnummer, s.plaats].filter(Boolean).join(' ')
+      const straatHnr = [s.straat, s.huisnummer].filter(Boolean).join(' ')
+      const adres = [straatHnr, s.plaats].filter(Boolean).join(', ')
       await addVendor({
         naam: s.naam,
         type: s.categorie,
@@ -129,7 +130,8 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
         email: s.email,
         website: s.website,
         geoffreerdBedrag: s.prijsVanaf ?? 0,
-        notitie: [s.omschrijvingKort, adres].filter(Boolean).join(' — '),
+        notitie: s.omschrijvingKort,
+        adres,
         tpwBusinessId: s.id,
       })
       toast({ title: 'Toegevoegd aan Mijn lijst', variant: 'success' })
@@ -154,7 +156,7 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
   const CategorieIcoon = categoriePreset ? getCategorieIcoon(categoriePreset) : Compass
 
   return (
-    <div className="mx-auto max-w-6xl pb-24 min-h-screen">
+    <div className="mx-auto max-w-7xl pb-24 min-h-screen">
       <PageHeader titel={titel} info={categoriePreset ? undefined : <PageInfoButton {...ontdekkenInfo} />} />
       {categoriePreset ? null : <LeveranciersTabs />}
 

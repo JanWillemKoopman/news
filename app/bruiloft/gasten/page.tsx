@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowDown, ArrowUp, ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react'
+import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
@@ -17,6 +17,7 @@ import {
   ConfirmDialog,
   EmptyState,
   OverflowMenu,
+  SortableTh,
   StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
@@ -116,44 +117,6 @@ function RsvpSelect({
 }
 
 type SortKolom = 'naam' | 'categorie' | 'type' | 'tafel' | 'rsvp'
-
-// Sorteericoon in de kolomtitel: neutraal (beide richtingen) als de kolom niet
-// actief is, anders een pijl die de huidige richting toont.
-function SortIcon({ actief, richting }: { actief: boolean; richting: 'asc' | 'desc' }) {
-  if (!actief) return <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-40" />
-  return richting === 'asc' ? (
-    <ArrowUp className="h-3.5 w-3.5 shrink-0" />
-  ) : (
-    <ArrowDown className="h-3.5 w-3.5 shrink-0" />
-  )
-}
-
-function SortableTh({
-  kolom,
-  actief,
-  richting,
-  onSort,
-  children,
-}: {
-  kolom: SortKolom
-  actief: boolean
-  richting: 'asc' | 'desc'
-  onSort: (kolom: SortKolom) => void
-  children: React.ReactNode
-}) {
-  return (
-    <th scope="col" className="px-4 py-3 font-medium">
-      <button
-        type="button"
-        onClick={() => onSort(kolom)}
-        className="inline-flex items-center gap-1 hover:text-foreground"
-      >
-        {children}
-        <SortIcon actief={actief} richting={richting} />
-      </button>
-    </th>
-  )
-}
 
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
