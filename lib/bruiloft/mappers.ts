@@ -203,6 +203,8 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     geoffreerdBedrag: num(r.geoffreerd_bedrag),
     notitie: r.notitie,
     adres: r.adres,
+    latitude: r.latitude ?? null,
+    longitude: r.longitude ?? null,
     budgetItemId: r.budget_item_id ?? undefined,
     supplierId: r.supplier_id ?? undefined,
     // tpw_business_id is integer in DB; sla op als string (consistent met ID = string).
@@ -223,6 +225,8 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.geoffreerdBedrag !== undefined) r.geoffreerd_bedrag = p.geoffreerdBedrag
   if (p.notitie !== undefined) r.notitie = p.notitie
   if (p.adres !== undefined) r.adres = p.adres
+  if (p.latitude !== undefined) r.latitude = p.latitude
+  if (p.longitude !== undefined) r.longitude = p.longitude
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
   // supplierId alleen schrijven als de patch het veld expliciet bevat; het
   // bewerkformulier stuurt het nooit mee, zodat de directory-link behouden blijft.

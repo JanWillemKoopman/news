@@ -525,6 +525,8 @@ export type Database = {
           email: string
           geoffreerd_bedrag: number
           id: string
+          latitude: number | null
+          longitude: number | null
           naam: string
           notitie: string
           status: string
@@ -543,6 +545,8 @@ export type Database = {
           email?: string
           geoffreerd_bedrag?: number
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           naam?: string
           notitie?: string
           status?: string
@@ -561,6 +565,8 @@ export type Database = {
           email?: string
           geoffreerd_bedrag?: number
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           naam?: string
           notitie?: string
           status?: string

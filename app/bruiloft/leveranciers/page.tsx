@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Compass, FileText, MessageCircle, Pencil, Plus, Search, Store, Tags, Trash2 } from 'lucide-react'
 
@@ -15,6 +16,13 @@ import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/Leve
 import { MijnLijstFilters } from '@/components/bruiloft/leveranciers/MijnLijstFilters'
 import { VendorCategoryManageModal } from '@/components/bruiloft/leveranciers/VendorCategoryManageModal'
 import { VendorForm } from '@/components/bruiloft/leveranciers/VendorForm'
+
+// Leaflet gebruikt `window` bij het laden — alleen client-side importeren,
+// en pas op desktop (VendorsMap rendert zelf niets op mobiel).
+const VendorsMap = dynamic(
+  () => import('@/components/bruiloft/leveranciers/VendorsMap').then((m) => m.VendorsMap),
+  { ssr: false }
+)
 import {
   Button,
   ConfirmDialog,
@@ -274,6 +282,16 @@ export default function LeveranciersPage() {
         />
       ) : (
         <>
+          <VendorsMap
+            vendors={gesorteerd}
+            categorieen={categorieen}
+            kanBewerken={kanBewerken}
+            onBewerk={openBewerk}
+            onGeocoded={(id, latitude, longitude) => {
+              updateVendor(id, { latitude, longitude }).catch(() => {})
+            }}
+          />
+
           <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
             <table className="w-full text-sm">
               <thead>
