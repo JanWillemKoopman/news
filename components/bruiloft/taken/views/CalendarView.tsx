@@ -160,6 +160,8 @@ export function CalendarView({
                   key={t.id}
                   task={t}
                   members={members}
+                  partner1Naam={wedding.partner1Naam}
+                  partner2Naam={wedding.partner2Naam}
                   onToggleStatus={onToggleStatus}
                   onEdit={(task) => {
                     setPopoverDate(null)
