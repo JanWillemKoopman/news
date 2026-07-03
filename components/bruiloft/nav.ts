@@ -159,7 +159,7 @@ export const NAV_SECTIONS: NavSection[] = [
     key: 'leveranciers',
     label: 'Leveranciers',
     icon: Store,
-    href: '/bruiloft/leveranciers',
+    href: '/bruiloft/ontdekken',
     items: [mijnLeveranciers, leverancierZoeken, ...TPW_CATEGORIE_ITEMS],
     module: 'leveranciers',
     groups: [

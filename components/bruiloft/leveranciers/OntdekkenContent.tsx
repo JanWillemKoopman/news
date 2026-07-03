@@ -23,7 +23,7 @@ import { Button, Card, CardContent, EmptyState, Input, Select, Skeleton, useToas
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { dagenTot } from '@/lib/bruiloft/format'
 import { budgetTotalen } from '@/lib/bruiloft/derived'
-import { BESCHIKBARE_TPW_CATEGORIEEN, type TpwCategorie } from '@/lib/bruiloft/options'
+import { BESCHIKBARE_TPW_CATEGORIEEN, VENDOR_TYPES, type TpwCategorie } from '@/lib/bruiloft/options'
 import { isToegevoegd } from '@/lib/bruiloft/suppliers/linked'
 import { richtbudgetMap, type SupplierMatch } from '@/lib/bruiloft/suppliers/match'
 import type { Supplier } from '@/lib/bruiloft/suppliers/types'
@@ -43,6 +43,7 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const addVendor = useBruiloftStore((s) => s.addVendor)
+  const updateWedding = useBruiloftStore((s) => s.updateWedding)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
 
@@ -134,6 +135,13 @@ export function OntdekkenContent({ categoriePreset }: OntdekkenContentProps) {
         adres,
         tpwBusinessId: s.id,
       })
+      // Categorie meteen aan de beheerde lijst toevoegen als hij daar nog niet
+      // in zit — anders valt de nieuwe leverancier op /bruiloft/leveranciers
+      // terug op "Overig" totdat iemand de categorie handmatig toevoegt.
+      const categorieen = wedding?.vendorCategorieen?.length ? wedding.vendorCategorieen : VENDOR_TYPES
+      if (wedding && !categorieen.includes(s.categorie)) {
+        await updateWedding({ vendorCategorieen: [...categorieen, s.categorie] }).catch(() => {})
+      }
       toast({ title: 'Toegevoegd aan Mijn lijst', variant: 'success' })
     } catch {
       toast({ title: 'Toevoegen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
