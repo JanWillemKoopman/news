@@ -5,8 +5,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, ChevronDown, Gift, LayoutDashboard, ListChecks, LogOut, Users } from 'lucide-react'
 
-import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent, Modal } from '@/components/bruiloft/ui'
+import { PasswordInput } from '@/components/ui/password-input'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+
+// Zolang de app nog niet publiek is, staat er een simpele toegangscode
+// voor het aanmaken van een account en inloggen — geen echte beveiliging,
+// alleen een drempel tegen toevallige bezoekers.
+const ACCESS_CODE = '0172'
 
 const FEATURES = [
   {
@@ -39,7 +45,7 @@ function BrandMark() {
 
 /** Header-accountmenu: alleen relevant als een ingelogde gebruiker hier via
  * "Terug naar home" belandt (ShellInner, `?home=1`). */
-function AccountMenu() {
+function AccountMenu({ onRequestAccess }: { onRequestAccess: (target: string) => void }) {
   const router = useRouter()
   const currentUser = useBruiloftStore((s) => s.currentUser)
   const signOut = useBruiloftStore((s) => s.signOut)
@@ -47,9 +53,13 @@ function AccountMenu() {
 
   if (!currentUser) {
     return (
-      <Link href="/inloggen" className="text-sm font-medium text-rhino-700 transition-colors hover:text-rhino-900">
+      <button
+        type="button"
+        onClick={() => onRequestAccess('/inloggen')}
+        className="text-sm font-medium text-rhino-700 transition-colors hover:text-rhino-900"
+      >
         Inloggen
-      </Link>
+      </button>
     )
   }
 
@@ -113,6 +123,25 @@ function AccountMenu() {
 
 export function Landing() {
   const router = useRouter()
+  const [gateTarget, setGateTarget] = React.useState<string | null>(null)
+  const [gateValue, setGateValue] = React.useState('')
+  const [gateError, setGateError] = React.useState<string | null>(null)
+
+  function requestAccess(target: string) {
+    setGateTarget(target)
+    setGateValue('')
+    setGateError(null)
+  }
+
+  function submitGate() {
+    if (gateValue.trim() === ACCESS_CODE) {
+      const target = gateTarget
+      setGateTarget(null)
+      if (target) router.push(target)
+    } else {
+      setGateError('Onjuiste toegangscode.')
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-white">
@@ -122,7 +151,7 @@ export function Landing() {
             <BrandMark />
             Ons Trouwplan
           </span>
-          <AccountMenu />
+          <AccountMenu onRequestAccess={requestAccess} />
         </div>
       </header>
 
@@ -147,12 +176,12 @@ export function Landing() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" className="rounded-full" onClick={() => router.push('/aanmelden')}>
+            <Button size="lg" className="rounded-full" onClick={() => requestAccess('/aanmelden')}>
               Account aanmaken
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button asChild variant="outline" size="lg" className="rounded-full">
-              <Link href="/inloggen">Inloggen</Link>
+            <Button variant="outline" size="lg" className="rounded-full" onClick={() => requestAccess('/inloggen')}>
+              Inloggen
             </Button>
           </div>
         </div>
@@ -182,6 +211,39 @@ export function Landing() {
           </Link>
         </p>
       </footer>
+
+      <Modal
+        open={gateTarget !== null}
+        onOpenChange={(open) => !open && setGateTarget(null)}
+        title="Toegangscode"
+        description="Ons Trouwplan is nog in ontwikkeling. Vul de toegangscode in om verder te gaan."
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setGateTarget(null)}>
+              Annuleren
+            </Button>
+            <Button onClick={submitGate}>Doorgaan</Button>
+          </div>
+        }
+      >
+        <PasswordInput
+          autoFocus
+          value={gateValue}
+          onChange={(e) => {
+            setGateValue(e.target.value)
+            setGateError(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submitGate()
+          }}
+          aria-label="Toegangscode"
+        />
+        {gateError ? (
+          <p className="mt-2 text-sm font-medium text-rose-600" role="alert">
+            {gateError}
+          </p>
+        ) : null}
+      </Modal>
     </div>
   )
 }
