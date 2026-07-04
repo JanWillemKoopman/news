@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, ChevronDown, Gift, LayoutDashboard, ListChecks, LogOut, Users } from 'lucide-react'
+import { ArrowRight, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
 
 import { Button, Card, CardContent, Modal } from '@/components/bruiloft/ui'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -14,22 +14,17 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 // alleen een drempel tegen toevallige bezoekers.
 const ACCESS_CODE = '0172'
 
-const FEATURES = [
-  {
-    icon: ListChecks,
-    titel: 'Takenlijst',
-    beschrijving: 'Verdeel taken samen en krijg op het juiste moment een seintje wat er nog moet gebeuren.',
-  },
-  {
-    icon: Users,
-    titel: 'Gasten & RSVP',
-    beschrijving: 'Nodig gasten uit via jullie eigen trouwsite en zie in één oogopslag wie er komt.',
-  },
-  {
-    icon: Gift,
-    titel: 'Cadeaulijst',
-    beschrijving: 'Een cadeaulijst die gasten zelf kunnen invullen, zonder gedoe met dubbele cadeaus.',
-  },
+const FUNCTIONALITEITEN = [
+  'Takenlijst met AI-suggesties',
+  'Budget bijhouden per categorie',
+  'Leveranciers en offertes beheren',
+  'Gastenlijst en RSVP',
+  'Tafelschikking',
+  'Draaiboek voor de trouwdag',
+  'Trouwwebsite',
+  'Cadeaulijst',
+  'Fotomuur',
+  'Samen plannen met je partner of familie',
 ]
 
 function BrandMark() {
@@ -159,20 +154,12 @@ export function Landing() {
         <div className="pointer-events-none absolute right-0 top-0 h-[400px] w-[400px] -translate-y-1/4 translate-x-1/3 rounded-full bg-rose-200/25 blur-3xl" />
 
         <div className="relative mx-auto max-w-2xl text-center">
-          <span className="mb-6 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-rhino-700 ring-1 ring-inset ring-rhino-900/10">
-            In ontwikkeling — binnenkort voor iedereen
-          </span>
-
           <h1 className="font-serif text-4xl font-medium leading-[1.05] tracking-tight text-rhino-900 sm:text-6xl">
-            Plan jullie bruiloft{' '}
-            <span className="italic text-rose-600 underline decoration-rose-300 underline-offset-4">
-              zonder stress.
-            </span>
+            Binnenkort beschikbaar.
           </h1>
 
           <p className="mx-auto mt-6 max-w-lg text-lg leading-relaxed text-gray-600">
-            Ons Trouwplan wordt op dit moment nog rustig verder gebouwd. Binnenkort
-            gaat de app voor iedereen open — heb je al een account, log dan gewoon in.
+            Ons Trouwplan is nog in ontwikkeling. Heb je al een account? Log dan in.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -188,16 +175,19 @@ export function Landing() {
       </section>
 
       <section className="px-4 py-16 sm:px-6">
-        <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, titel, beschrijving }) => (
-            <Card key={titel} className="text-left">
-              <CardContent className="p-5">
-                <Icon className="mb-3 h-5 w-5 text-rose-600" aria-hidden />
-                <h2 className="text-sm font-semibold text-rhino-900">{titel}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{beschrijving}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mx-auto max-w-xl">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-sm font-semibold text-rhino-900">Functionaliteiten</h2>
+              <ul className="mt-3 space-y-2">
+                {FUNCTIONALITEITEN.map((item) => (
+                  <li key={item} className="text-sm leading-relaxed text-gray-600">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
