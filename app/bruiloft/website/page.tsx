@@ -12,6 +12,7 @@ import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { websiteInfo } from '@/components/bruiloft/faqContent'
 import { Button, Skeleton, useToast } from '@/components/bruiloft/ui'
 import type { PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
+import { cn } from '@/lib/utils'
 import type { Block, WebsitePageInput } from '@/lib/bruiloft/websiteBlocks'
 import { themeVanLegacy } from '@/lib/bruiloft/websiteTheme'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -35,6 +36,8 @@ export default function WebsitePage() {
 
   const convertAttempted = React.useRef(false)
   const [mobielPreviewOpen, setMobielPreviewOpen] = React.useState(false)
+  // Instellingenkolom inklappen zodat het voorbeeld de volle breedte krijgt.
+  const [voorbeeldVolledig, setVoorbeeldVolledig] = React.useState(false)
 
   const home = websitePages.find((p) => p.pageSlug === '') ?? websitePages[0] ?? null
 
@@ -167,7 +170,7 @@ export default function WebsitePage() {
     )
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1400px] overflow-x-hidden pb-24">
+    <div className="mx-auto min-h-screen max-w-[1800px] overflow-x-hidden pb-24">
       <PageHeader
         titel="Trouwwebsite"
         info={<PageInfoButton {...websiteInfo} />}
@@ -186,9 +189,16 @@ export default function WebsitePage() {
         }
       />
 
-      <div className="gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,44%)]">
+      <div
+        className={cn(
+          'gap-6',
+          voorbeeldVolledig
+            ? 'lg:block'
+            : 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(380px,46%)]'
+        )}
+      >
         {/* Linkerkolom: instellingen + blokken */}
-        <div className="min-w-0">
+        <div className={cn('min-w-0', voorbeeldVolledig && 'lg:hidden')}>
           <WebsiteStatusCard
             content={websiteContent}
             onTogglePublicatie={() =>
@@ -212,7 +222,11 @@ export default function WebsitePage() {
         {/* Rechterkolom: live preview (desktop) */}
         <div className="hidden lg:block">
           <div className="sticky top-20 h-[calc(100vh-6rem)]">
-            <LivePreview data={previewData} />
+            <LivePreview
+              data={previewData}
+              volledig={voorbeeldVolledig}
+              onToggleVolledig={() => setVoorbeeldVolledig(!voorbeeldVolledig)}
+            />
           </div>
         </div>
       </div>

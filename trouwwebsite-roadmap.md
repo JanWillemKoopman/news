@@ -60,6 +60,9 @@ architectuurwissels:
 - Blok-achtergronden met foto + overlay; blokbreedtes (smal/breed/volledig).
 - Theme-customizer: volledig palet (achtergrond, kaart, tekst, gedempt, accent), uitgebreide
   fontbibliotheek via `next/font`, ornament-sets (klassiek, botanisch, minimaal, geen).
+- Preview in een iframe (React-portal + gekopieerde stylesheets) zodat óók de mobiel-modus
+  écht de mobiele layout toont: Tailwind-breakpoints reageren op de viewport, niet op de
+  paneelbreedte — de huidige geschaalde weergave is alleen voor desktop waarheidsgetrouw.
 
 ## Fase 3 — Gastervaring
 
