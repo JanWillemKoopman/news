@@ -19,11 +19,16 @@ import {
   HelpCircle,
   Image as ImageIcon,
   LayoutTemplate,
+  MapPin,
+  Milestone,
   Minus,
   Phone,
   Plus,
+  Quote,
   Trash2,
   Type,
+  Users,
+  Video as VideoIcon,
 } from 'lucide-react'
 import * as React from 'react'
 
@@ -35,6 +40,8 @@ import type {
   BlockType,
   FaqBlock,
   GalerijBlock,
+  PersonenBlock,
+  TijdlijnBlock,
 } from '@/lib/bruiloft/websiteBlocks'
 import { BLOCK_TYPE_LABELS, TOEVOEGBARE_TYPES, maakBlock, nieuwBlockId } from '@/lib/bruiloft/websiteBlocks'
 import { createClient } from '@/lib/supabase/client'
@@ -47,6 +54,11 @@ const BLOCK_ICONS: Record<BlockType, React.ElementType> = {
   hero: ImageIcon,
   tekst: Type,
   tekstFoto: LayoutTemplate,
+  quote: Quote,
+  tijdlijn: Milestone,
+  personen: Users,
+  locatie: MapPin,
+  video: VideoIcon,
   programma: CalendarDays,
   countdown: Clock,
   galerij: Camera,
@@ -384,6 +396,31 @@ function BlokInspector({ blok, onWijzig }: { blok: Block; onWijzig: (patch: Part
     case 'hero':
       return (
         <div className="space-y-5">
+          <Veld label="Weergave" hulp="Het opmaaktype van het openingsbeeld.">
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { val: 'fullscreen', label: 'Volledig scherm' },
+                  { val: 'split', label: 'Foto naast tekst' },
+                  { val: 'typografisch', label: 'Alleen typografie' },
+                ] as const
+              ).map(({ val, label }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onWijzig({ variant: val })}
+                  className={cn(
+                    'h-9 rounded-lg border px-3 text-sm transition-colors',
+                    blok.variant === val
+                      ? 'border-primary bg-primary/10 font-medium text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Veld>
           <Veld label="Headerfoto" hulp="De grote foto bovenaan jullie trouwwebsite.">
             <FotoUpload
               huidigUrl={blok.fotoUrl}
@@ -458,7 +495,7 @@ function BlokInspector({ blok, onWijzig }: { blok: Block; onWijzig: (patch: Part
           </Veld>
           <Veld label="Fotopositie">
             <div className="flex gap-2">
-              {(['links', 'rechts'] as const).map((positie) => (
+              {(['links', 'rechts', 'boven'] as const).map((positie) => (
                 <button
                   key={positie}
                   type="button"
@@ -474,6 +511,74 @@ function BlokInspector({ blok, onWijzig }: { blok: Block; onWijzig: (patch: Part
                 </button>
               ))}
             </div>
+          </Veld>
+        </div>
+      )
+
+    case 'quote':
+      return (
+        <div className="space-y-5">
+          <Veld label="Citaat">
+            <Textarea
+              value={blok.citaat}
+              onChange={(e) => onWijzig({ citaat: e.target.value })}
+              rows={3}
+              placeholder="Bijv. jullie trouwbelofte of een dierbaar citaat…"
+            />
+          </Veld>
+          <Veld label="Bron" hulp="Optioneel: wie of wat dit citaat is.">
+            <Input value={blok.bron} onChange={(e) => onWijzig({ bron: e.target.value })} placeholder="Bijv. Onze trouwbelofte" />
+          </Veld>
+        </div>
+      )
+
+    case 'tijdlijn':
+      return <TijdlijnInspector blok={blok} onWijzig={onWijzig} />
+
+    case 'personen':
+      return <PersonenInspector blok={blok} onWijzig={onWijzig} upload={upload} />
+
+    case 'locatie':
+      return (
+        <div className="space-y-5">
+          <TitelVeld waarde={blok.titel} onWijzig={(titel) => onWijzig({ titel })} />
+          <Veld label="Locatienaam">
+            <Input value={blok.naam} onChange={(e) => onWijzig({ naam: e.target.value })} placeholder="Bijv. Landgoed De Reehorst" />
+          </Veld>
+          <Veld label="Adres">
+            <Input value={blok.adres} onChange={(e) => onWijzig({ adres: e.target.value })} placeholder="Straat, postcode en plaats" />
+          </Veld>
+          <Veld label="Route/parkeertips" hulp="Optioneel: extra uitleg voor gasten.">
+            <Textarea
+              value={blok.tekst}
+              onChange={(e) => onWijzig({ tekst: e.target.value })}
+              rows={3}
+              placeholder="Bijv. parkeren kan op het eigen terrein…"
+            />
+          </Veld>
+          <Veld
+            label="Google Maps-insluit-URL"
+            hulp='Open jullie locatie op Google Maps → Delen → Kaart insluiten → kopieer alleen de URL uit src="…".'
+          >
+            <Input
+              value={blok.kaartInsluitUrl}
+              onChange={(e) => onWijzig({ kaartInsluitUrl: e.target.value })}
+              placeholder="https://www.google.com/maps/embed?..."
+            />
+          </Veld>
+        </div>
+      )
+
+    case 'video':
+      return (
+        <div className="space-y-5">
+          <TitelVeld waarde={blok.titel} onWijzig={(titel) => onWijzig({ titel })} />
+          <Veld label="Videolink" hulp="Een YouTube- of Vimeo-link.">
+            <Input
+              value={blok.videoUrl}
+              onChange={(e) => onWijzig({ videoUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=…"
+            />
           </Veld>
         </div>
       )
@@ -733,6 +838,135 @@ function FaqInspector({ blok, onWijzig }: { blok: FaqBlock; onWijzig: (patch: Pa
   )
 }
 
+// ─── Tijdlijn-inspector ("Ons verhaal") ──────────────────────────────────────
+
+function TijdlijnInspector({ blok, onWijzig }: { blok: TijdlijnBlock; onWijzig: (patch: Partial<Block>) => void }) {
+  function updateMoment(id: string, patch: Partial<{ datum: string; titel: string; tekst: string }>) {
+    onWijzig({ momenten: blok.momenten.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
+  }
+
+  return (
+    <div className="space-y-5">
+      <TitelVeld waarde={blok.titel} onWijzig={(titel) => onWijzig({ titel })} />
+
+      {blok.momenten.length === 0 && (
+        <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          Nog geen momenten toegevoegd.
+        </p>
+      )}
+
+      <ul className="space-y-3">
+        {blok.momenten.map((m, i) => (
+          <li key={m.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Moment {i + 1}</span>
+              <button
+                onClick={() => onWijzig({ momenten: blok.momenten.filter((x) => x.id !== m.id) })}
+                className="ml-auto rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Moment verwijderen"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <Input value={m.datum} onChange={(e) => updateMoment(m.id, { datum: e.target.value })} placeholder="Bijv. Zomer 2019" />
+              <Input value={m.titel} onChange={(e) => updateMoment(m.id, { titel: e.target.value })} placeholder="Bijv. Onze eerste date" />
+              <Textarea
+                value={m.tekst}
+                onChange={(e) => updateMoment(m.id, { tekst: e.target.value })}
+                rows={2}
+                placeholder="Vertel er kort iets over…"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        variant="outline"
+        onClick={() =>
+          onWijzig({ momenten: [...blok.momenten, { id: nieuwBlockId(), datum: '', titel: '', tekst: '' }] })
+        }
+        className="w-full"
+      >
+        <Plus className="h-4 w-4" /> Moment toevoegen
+      </Button>
+    </div>
+  )
+}
+
+// ─── Bruidsgevolg-inspector ──────────────────────────────────────────────────
+
+function PersonenInspector({
+  blok,
+  onWijzig,
+  upload,
+}: {
+  blok: PersonenBlock
+  onWijzig: (patch: Partial<Block>) => void
+  upload: (file: File, subfolder: 'header' | 'gallerij' | 'sectie-fotos') => Promise<string>
+}) {
+  function updatePersoon(id: string, patch: Partial<{ naam: string; rol: string; fotoUrl: string }>) {
+    onWijzig({ mensen: blok.mensen.map((p) => (p.id === id ? { ...p, ...patch } : p)) })
+  }
+
+  return (
+    <div className="space-y-5">
+      <TitelVeld waarde={blok.titel} onWijzig={(titel) => onWijzig({ titel })} />
+
+      {blok.mensen.length === 0 && (
+        <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          Nog niemand toegevoegd.
+        </p>
+      )}
+
+      <ul className="space-y-3">
+        {blok.mensen.map((p, i) => (
+          <li key={p.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Persoon {i + 1}</span>
+              <button
+                onClick={() => onWijzig({ mensen: blok.mensen.filter((x) => x.id !== p.id) })}
+                className="ml-auto rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Persoon verwijderen"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <div className="w-20 shrink-0">
+                <FotoUpload
+                  huidigUrl={p.fotoUrl}
+                  onUpload={async (file) => {
+                    const url = await upload(file, 'sectie-fotos')
+                    updatePersoon(p.id, { fotoUrl: url })
+                  }}
+                  onVerwijder={p.fotoUrl ? () => updatePersoon(p.id, { fotoUrl: '' }) : undefined}
+                  label="Foto"
+                />
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input value={p.naam} onChange={(e) => updatePersoon(p.id, { naam: e.target.value })} placeholder="Naam" />
+                <Input value={p.rol} onChange={(e) => updatePersoon(p.id, { rol: e.target.value })} placeholder="Bijv. Getuige" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        variant="outline"
+        onClick={() =>
+          onWijzig({ mensen: [...blok.mensen, { id: nieuwBlockId(), naam: '', rol: '', fotoUrl: '' }] })
+        }
+        className="w-full"
+      >
+        <Plus className="h-4 w-4" /> Persoon toevoegen
+      </Button>
+    </div>
+  )
+}
+
 // ─── Weergave-instellingen (uitlijning, achtergrond, kopfoto) ────────────────
 
 function BlokLayoutVelden({
@@ -750,6 +984,34 @@ function BlokLayoutVelden({
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Weergave
       </p>
+
+      {/* Breedte */}
+      <div>
+        <p className="mb-2 text-xs text-muted-foreground">Breedte</p>
+        <div className="flex gap-2">
+          {(
+            [
+              { val: 'smal', label: 'Smal' },
+              { val: 'breed', label: 'Breed' },
+              { val: 'volledig', label: 'Volledig' },
+            ] as const
+          ).map(({ val, label }) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => onWijzig({ ...huidig, breedte: val })}
+              className={cn(
+                'h-9 rounded-lg border px-3 text-sm transition-colors',
+                (huidig.breedte ?? 'smal') === val
+                  ? 'border-primary bg-primary/10 font-medium text-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Uitlijning */}
       <div>
@@ -867,6 +1129,38 @@ function BlokLayoutVelden({
           label="Afbeelding toevoegen"
           aanbevolenAfmeting="Aanbevolen: 1200×400px"
         />
+      </div>
+
+      {/* Volledige achtergrondfoto */}
+      <div>
+        <p className="mb-1 text-xs text-muted-foreground">Volledige achtergrondfoto</p>
+        <p className="mb-2.5 text-xs text-muted-foreground/70">
+          Vult het hele blok — geschikt in combinatie met breedte &quot;Volledig&quot;.
+        </p>
+        <FotoUpload
+          huidigUrl={huidig.achtergrondFotoUrl ?? ''}
+          onUpload={async (file) => {
+            const url = await upload(file, 'sectie-fotos')
+            onWijzig({ ...huidig, achtergrondFotoUrl: url })
+          }}
+          onVerwijder={huidig.achtergrondFotoUrl ? () => onWijzig({ ...huidig, achtergrondFotoUrl: undefined }) : undefined}
+          label="Achtergrondfoto toevoegen"
+          aanbevolenAfmeting="Aanbevolen: 2000×1200px"
+        />
+        {huidig.achtergrondFotoUrl && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-xs text-muted-foreground">Donkerte van de foto</p>
+            <input
+              type="range"
+              min={0}
+              max={0.8}
+              step={0.05}
+              value={huidig.achtergrondOverlay ?? 0.4}
+              onChange={(e) => onWijzig({ ...huidig, achtergrondOverlay: Number(e.target.value) })}
+              className="w-full accent-primary"
+            />
+          </div>
+        )}
       </div>
     </div>
   )

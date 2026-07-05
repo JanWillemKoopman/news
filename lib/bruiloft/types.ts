@@ -315,7 +315,20 @@ export type TableInput = Omit<Table, 'id'>
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
 export type WeddingThema = 'klassiek' | 'modern' | 'romantisch' | 'rustiek' | 'minimalistisch' | 'botanisch'
-export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora' | 'dancing-script' | 'eb-garamond' | 'great-vibes'
+export type WeddingLettertype =
+  | 'cormorant'
+  | 'playfair'
+  | 'lora'
+  | 'dancing-script'
+  | 'eb-garamond'
+  | 'great-vibes'
+  // Website v3: uitgebreide fontbibliotheek (zie lib/bruiloft/websiteTheme.ts).
+  | 'italiana'
+  | 'marcellus'
+  | 'libre-baskerville'
+  | 'josefin-sans'
+  | 'bodoni-moda'
+  | 'parisienne'
 
 export interface SectieConfig {
   zichtbaar: boolean

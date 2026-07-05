@@ -1,35 +1,138 @@
 'use client'
 
 // Live voorbeeld van de trouwwebsite in de editor: rendert dezelfde
-// PublicWebsiteV2 als de publieke route. De desktop-modus toont een virtueel
-// 1440px-breed scherm dat wordt geschaald naar de paneelbreedte, zodat je
-// écht ziet hoe de site er op een groot scherm uitziet — ook in een smal
-// paneel. De mobiel-modus toont een virtueel 390px-scherm.
+// PublicWebsiteV2 als de publieke route, in een eigen <iframe> zodat de
+// Tailwind-breakpoints (sm:/md:/lg:) reageren op de virtuele
+// schermbreedte van het voorbeeld, en niet op de breedte van de
+// editor-pagina zelf. Zonder iframe zou "mobiel" bijvoorbeeld gewoon de
+// desktop-layout tonen zodra de browser van de gebruiker breed genoeg is —
+// CSS media queries kijken altijd naar de echte viewport, nooit naar hoe
+// klein een element visueel is gemaakt met transform:scale().
+//
+// De iframe krijgt zijn eigen (ongeschaalde) breedte/hoogte — dát bepaalt
+// zijn interne viewport voor media queries — en wordt daarna, samen met
+// zijn wrapper, visueel verkleind met CSS transform zodat het in het
+// paneel past. Transform is puur cosmetisch en verandert niets aan de
+// layout-berekening binnen de iframe.
 
 import { Maximize2, Minimize2, Monitor, Smartphone, X } from 'lucide-react'
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 
 import { PublicWebsiteV2, type PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
+import type { WeddingLettertype } from '@/lib/bruiloft/types'
 import { cn } from '@/lib/utils'
+import { FONT_PREVIEW_URL, LETTERTYPE_CSS_VAR, LETTERTYPE_FONT_STACK } from '@/lib/bruiloft/websiteTheme'
 
 const DESKTOP_BREEDTE = 1440
 const MOBIEL_BREEDTE = 390
+const MIN_HOOGTE = 480
 
 // De publieke route laadt de wedding-lettertypes via next/font
-// (app/trouwen/layout.tsx); in het editor-segment bestaan die
-// CSS-variabelen niet. Voor het voorbeeld wijzen we ze naar de via
-// Google Fonts geladen families (zelfde link als de lettertype-kiezer).
-const FONT_PREVIEW_URL =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Dancing+Script:wght@400;700&family=EB+Garamond:wght@400;700&family=Great+Vibes&family=Lora:wght@400;700&family=Playfair+Display:wght@400;700&display=swap'
+// (app/trouwen/layout.tsx); die CSS-variabelen bestaan niet in de losse
+// iframe-preview. Definieer ze hier zelf, afgeleid van dezelfde
+// bron (websiteTheme.ts) zodat een nieuw lettertype daar automatisch
+// ook in de preview verschijnt.
+const FONT_VAR_CSS = (Object.keys(LETTERTYPE_CSS_VAR) as WeddingLettertype[])
+  .map((key) => {
+    const varNaam = LETTERTYPE_CSS_VAR[key].slice(4, -1) // 'var(--font-x)' -> '--font-x'
+    return `${varNaam}: ${LETTERTYPE_FONT_STACK[key]};`
+  })
+  .join(' ')
 
-const FONT_VARS = {
-  '--font-serif': '"Cormorant Garamond", serif',
-  '--font-playfair': '"Playfair Display", serif',
-  '--font-lora': '"Lora", serif',
-  '--font-dancing': '"Dancing Script", cursive',
-  '--font-garamond': '"EB Garamond", serif',
-  '--font-vibes': '"Great Vibes", cursive',
-} as React.CSSProperties
+const IFRAME_SHELL = '<!DOCTYPE html><html><head></head><body style="margin:0"></body></html>'
+
+// ─── Iframe-canvas: eigen document + gekloonde stylesheets + portal ─────────
+
+function IframeCanvas({
+  breedte,
+  hoogte,
+  onHoogteWijziging,
+  titel,
+  children,
+}: {
+  breedte: number
+  hoogte: number
+  onHoogteWijziging: (h: number) => void
+  titel: string
+  children: React.ReactNode
+}) {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null)
+  const [mountEl, setMountEl] = React.useState<HTMLElement | null>(null)
+  const gekopieerd = React.useRef<Set<string>>(new Set())
+
+  const kopieerStylesheets = React.useCallback((doc: Document) => {
+    const nodes = Array.from(window.document.head.querySelectorAll('link[rel="stylesheet"], style'))
+    for (const node of nodes) {
+      const sleutel = node.tagName === 'LINK' ? (node as HTMLLinkElement).href : node.textContent ?? ''
+      if (!sleutel || gekopieerd.current.has(sleutel)) continue
+      gekopieerd.current.add(sleutel)
+      doc.head.appendChild(node.cloneNode(true))
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe) return
+
+    function initialiseer() {
+      const doc = iframe!.contentDocument
+      if (!doc) return
+      kopieerStylesheets(doc)
+
+      const fontLink = doc.createElement('link')
+      fontLink.rel = 'stylesheet'
+      fontLink.href = FONT_PREVIEW_URL
+      doc.head.appendChild(fontLink)
+
+      const fontVars = doc.createElement('style')
+      fontVars.textContent = `:root { ${FONT_VAR_CSS} }`
+      doc.head.appendChild(fontVars)
+
+      const root = doc.createElement('div')
+      doc.body.appendChild(root)
+      setMountEl(root)
+    }
+
+    iframe.addEventListener('load', initialiseer)
+    return () => iframe.removeEventListener('load', initialiseer)
+  }, [kopieerStylesheets])
+
+  // Vang stylesheets die pas ná de eerste keer worden toegevoegd (bijv.
+  // dev-mode hot-reload chunks) alsnog op.
+  React.useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const doc = iframeRef.current?.contentDocument
+      if (doc) kopieerStylesheets(doc)
+    })
+    observer.observe(window.document.head, { childList: true })
+    return () => observer.disconnect()
+  }, [kopieerStylesheets])
+
+  // Meet de natuurlijke inhoudshoogte en meld wijzigingen (bijv. na het
+  // toevoegen/verwijderen van blokken) terug aan de ouder.
+  React.useEffect(() => {
+    if (!mountEl) return
+    const meet = () => onHoogteWijziging(mountEl.scrollHeight)
+    meet()
+    const ro = new ResizeObserver(meet)
+    ro.observe(mountEl)
+    return () => ro.disconnect()
+  }, [mountEl, onHoogteWijziging])
+
+  return (
+    <iframe
+      ref={iframeRef}
+      title={titel}
+      srcDoc={IFRAME_SHELL}
+      style={{ width: breedte, height: hoogte, border: 0, display: 'block' }}
+    >
+      {mountEl && createPortal(children, mountEl)}
+    </iframe>
+  )
+}
+
+// ─── Hoofdcomponent ──────────────────────────────────────────────────────────
 
 export function LivePreview({
   data,
@@ -45,32 +148,26 @@ export function LivePreview({
   volledig?: boolean
   onToggleVolledig?: () => void
 }) {
-  const [modus, setModus] = React.useState<'desktop' | 'mobiel'>('desktop')
+  // Op de mobiele overlay (open vanaf een telefoon) is de mobiel-weergave
+  // het nuttigst als startpunt; het ingebedde desktop-paneel start desktop.
+  const [modus, setModus] = React.useState<'desktop' | 'mobiel'>(onClose ? 'mobiel' : 'desktop')
   const vlakRef = React.useRef<HTMLDivElement>(null)
-  const [vlak, setVlak] = React.useState({ w: 0, h: 0 })
+  const [vlakBreedte, setVlakBreedte] = React.useState(0)
+  const [hoogte, setHoogte] = React.useState(MIN_HOOGTE)
 
   React.useEffect(() => {
     const el = vlakRef.current
     if (!el) return
-    const meet = () => setVlak({ w: el.clientWidth, h: el.clientHeight })
+    const meet = () => setVlakBreedte(el.clientWidth)
     meet()
     const ro = new ResizeObserver(meet)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
-  React.useEffect(() => {
-    const FONT_ID = 'wedding-font-preview'
-    if (document.getElementById(FONT_ID)) return
-    const link = document.createElement('link')
-    link.id = FONT_ID
-    link.rel = 'stylesheet'
-    link.href = FONT_PREVIEW_URL
-    document.head.appendChild(link)
-  }, [])
-
   const virtueleBreedte = modus === 'desktop' ? DESKTOP_BREEDTE : MOBIEL_BREEDTE
-  const schaal = vlak.w > 0 ? Math.min(1, vlak.w / virtueleBreedte) : 0
+  const schaal = vlakBreedte > 0 ? Math.min(1, vlakBreedte / virtueleBreedte) : 0
+  const zichtbareHoogte = Math.max(hoogte, MIN_HOOGTE)
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-background">
@@ -129,23 +226,20 @@ export function LivePreview({
         )}
       </div>
 
-      {/* Schaalvlak: een virtueel scherm van vaste breedte, geschaald naar
-          de beschikbare paneelbreedte, met eigen scrollgebied. */}
-      <div ref={vlakRef} className="relative flex-1 overflow-hidden bg-muted/20">
+      {/* Scrollgebied: bevat de geschaalde iframe op zijn ware (ongeschaalde)
+          afmetingen, zodat media queries in de iframe zelf de virtuele
+          breedte zien i.p.v. de paneelbreedte. */}
+      <div ref={vlakRef} className="relative flex-1 overflow-y-auto overflow-x-hidden bg-muted/20">
         {schaal > 0 && (
           <div
-            className={cn('overflow-y-auto overscroll-contain bg-white', modus === 'mobiel' && 'border-x border-border shadow-sm')}
-            style={{
-              ...FONT_VARS,
-              width: virtueleBreedte,
-              height: vlak.h / schaal,
-              transform: `scale(${schaal})`,
-              transformOrigin: 'top left',
-              // Mobiel in een breed paneel: centreren op ware grootte.
-              marginLeft: schaal === 1 ? Math.max(0, (vlak.w - virtueleBreedte) / 2) : 0,
-            }}
+            className={cn('mx-auto overflow-hidden bg-white', modus === 'mobiel' && 'border-x border-border shadow-sm')}
+            style={{ width: virtueleBreedte * schaal, height: zichtbareHoogte * schaal }}
           >
-            <PublicWebsiteV2 data={data} />
+            <div style={{ width: virtueleBreedte, height: zichtbareHoogte, transform: `scale(${schaal})`, transformOrigin: 'top left' }}>
+              <IframeCanvas breedte={virtueleBreedte} hoogte={zichtbareHoogte} onHoogteWijziging={setHoogte} titel="Voorbeeld trouwwebsite">
+                <PublicWebsiteV2 data={data} />
+              </IframeCanvas>
+            </div>
           </div>
         )}
       </div>

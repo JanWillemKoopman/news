@@ -6,12 +6,18 @@
 import type { FaqItem, GallerijFoto, ID, WebsiteContent, WebsiteFoto } from './types'
 
 export type BlockUitlijning = 'links' | 'midden' | 'rechts'
+// Contentbreedte van een blok: smal (leestekst), breed (standaard) of
+// volledig (rand-tot-rand, bijv. voor een grote foto-achtergrond).
+export type BlockBreedte = 'smal' | 'breed' | 'volledig'
 
 export interface BlockLayout {
   uitlijning?: BlockUitlijning
   achtergrondKleur?: string        // hex; weggelaten = themakleur
   tekstKleur?: 'licht' | 'donker'  // contrast-override bij eigen achtergrond
   kopFotoUrl?: string              // afbeelding als kop boven het blok
+  breedte?: BlockBreedte           // weggelaten = 'breed'
+  achtergrondFotoUrl?: string      // volledige blok-achtergrond (i.p.v. kopfoto)
+  achtergrondOverlay?: number      // 0..1 donkerte over de achtergrondfoto
 }
 
 interface BlockBasis {
@@ -22,6 +28,9 @@ interface BlockBasis {
 
 export interface HeroBlock extends BlockBasis {
   type: 'hero'
+  // fullscreen = huidige gedrag (full-bleed foto, gecentreerde tekst);
+  // split = foto naast tekst; typografisch = geen foto, alleen grote type.
+  variant: 'fullscreen' | 'split' | 'typografisch'
   fotoUrl: string
   overlay: number      // 0..1 donkerte over de foto
   ondertitel: string   // optionele regel onder de namen
@@ -36,7 +45,47 @@ export interface TekstFotoBlock extends BlockBasis {
   titel: string
   tekst: string
   fotoUrl: string
-  fotoPositie: 'links' | 'rechts'
+  fotoPositie: 'links' | 'rechts' | 'boven'
+}
+export interface QuoteBlock extends BlockBasis {
+  type: 'quote'
+  citaat: string
+  bron: string  // bijv. "Onze trouwbelofte" of een naam
+}
+export interface TijdlijnMoment {
+  id: string
+  datum: string  // vrije tekst, bijv. "Zomer 2019" of een echte datum
+  titel: string
+  tekst: string
+}
+export interface TijdlijnBlock extends BlockBasis {
+  type: 'tijdlijn'
+  titel: string
+  momenten: TijdlijnMoment[]
+}
+export interface Persoon {
+  id: string
+  naam: string
+  rol: string  // bijv. "Getuige" of "Bruidsmeisje"
+  fotoUrl: string
+}
+export interface PersonenBlock extends BlockBasis {
+  type: 'personen'
+  titel: string
+  mensen: Persoon[]
+}
+export interface LocatieBlock extends BlockBasis {
+  type: 'locatie'
+  titel: string
+  naam: string        // bijv. "Landgoed De Reehorst"
+  adres: string
+  tekst: string        // parkeertips, routebeschrijving, etc.
+  kaartInsluitUrl: string  // Google Maps "insluiten"-embed-URL
+}
+export interface VideoBlock extends BlockBasis {
+  type: 'video'
+  titel: string
+  videoUrl: string  // YouTube- of Vimeo-link; renderer zet dit om naar embed
 }
 export interface ProgrammaBlock extends BlockBasis {
   type: 'programma'
@@ -78,6 +127,11 @@ export type Block =
   | HeroBlock
   | TekstBlock
   | TekstFotoBlock
+  | QuoteBlock
+  | TijdlijnBlock
+  | PersonenBlock
+  | LocatieBlock
+  | VideoBlock
   | ProgrammaBlock
   | CountdownBlock
   | GalerijBlock
@@ -92,6 +146,11 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   hero: 'Openingsbeeld',
   tekst: 'Tekst',
   tekstFoto: 'Tekst + foto',
+  quote: 'Citaat',
+  tijdlijn: 'Ons verhaal',
+  personen: 'Bruidsgevolg',
+  locatie: 'Locatie',
+  video: 'Video',
   programma: 'Programma',
   countdown: 'Aftelling',
   galerij: 'Fotogalerij',
@@ -106,6 +165,11 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
 export const TOEVOEGBARE_TYPES: BlockType[] = [
   'tekst',
   'tekstFoto',
+  'quote',
+  'tijdlijn',
+  'personen',
+  'locatie',
+  'video',
   'programma',
   'countdown',
   'galerij',
@@ -123,9 +187,14 @@ export function nieuwBlockId(): string {
 export function maakBlock(type: BlockType): Block {
   const basis = { id: nieuwBlockId(), zichtbaar: true }
   switch (type) {
-    case 'hero':        return { ...basis, type, fotoUrl: '', overlay: 0.35, ondertitel: '' }
+    case 'hero':        return { ...basis, type, variant: 'fullscreen', fotoUrl: '', overlay: 0.35, ondertitel: '' }
     case 'tekst':       return { ...basis, type, titel: '', tekst: '' }
     case 'tekstFoto':   return { ...basis, type, titel: '', tekst: '', fotoUrl: '', fotoPositie: 'rechts' }
+    case 'quote':       return { ...basis, type, citaat: '', bron: '' }
+    case 'tijdlijn':    return { ...basis, type, titel: 'Ons verhaal', momenten: [] }
+    case 'personen':    return { ...basis, type, titel: 'Bruidsgevolg', mensen: [] }
+    case 'locatie':     return { ...basis, type, titel: 'Locatie', naam: '', adres: '', tekst: '', kaartInsluitUrl: '' }
+    case 'video':       return { ...basis, type, titel: '', videoUrl: '' }
     case 'programma':   return { ...basis, type, titel: 'Programma', bron: 'draaiboek', eigenTekst: '' }
     case 'countdown':   return { ...basis, type, titel: 'Aftelling', datum: '' }
     case 'galerij':     return { ...basis, type, titel: "Foto's", stijl: 'raster', fotos: [] }
@@ -152,6 +221,16 @@ export function heeftInhoud(b: Block): boolean {
       return b.tekst.trim().length > 0
     case 'tekstFoto':
       return b.tekst.trim().length > 0 || !!b.fotoUrl
+    case 'quote':
+      return b.citaat.trim().length > 0
+    case 'tijdlijn':
+      return b.momenten.length > 0
+    case 'personen':
+      return b.mensen.length > 0
+    case 'locatie':
+      return !!(b.naam.trim() || b.adres.trim() || b.tekst.trim() || b.kaartInsluitUrl.trim())
+    case 'video':
+      return b.videoUrl.trim().length > 0
     case 'galerij':
       return b.fotos.length > 0
     case 'faq':
@@ -317,7 +396,7 @@ export function converteerOudNaarBlokken(
   })
 
   const hero: HeroBlock = {
-    id: nieuwBlockId(), type: 'hero', zichtbaar: true,
+    id: nieuwBlockId(), type: 'hero', zichtbaar: true, variant: 'fullscreen',
     fotoUrl: content.headerFotoUrl, overlay: content.headerOverlay ?? 0.35, ondertitel: '',
   }
 

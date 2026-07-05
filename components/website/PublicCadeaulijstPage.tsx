@@ -29,12 +29,18 @@ function hexNaarHsl(hex: string): string {
 }
 
 const LETTERTYPE_VAR: Record<WeddingLettertype, string> = {
-  cormorant:        'var(--font-serif)',
-  playfair:         'var(--font-playfair)',
-  lora:             'var(--font-lora)',
-  'dancing-script': 'var(--font-dancing)',
-  'eb-garamond':    'var(--font-garamond)',
-  'great-vibes':    'var(--font-vibes)',
+  cormorant:            'var(--font-serif)',
+  playfair:             'var(--font-playfair)',
+  lora:                 'var(--font-lora)',
+  'dancing-script':     'var(--font-dancing)',
+  'eb-garamond':        'var(--font-garamond)',
+  'great-vibes':        'var(--font-vibes)',
+  italiana:             'var(--font-italiana)',
+  marcellus:            'var(--font-marcellus)',
+  'libre-baskerville':  'var(--font-baskerville)',
+  'josefin-sans':       'var(--font-josefin)',
+  'bodoni-moda':        'var(--font-bodoni)',
+  parisienne:           'var(--font-parisienne)',
 }
 
 function fmtEuro(cents: number) {

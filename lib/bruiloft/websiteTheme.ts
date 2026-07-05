@@ -36,13 +36,42 @@ export interface ThemeTokens {
 
 // CSS-variabelen per lettertype; geladen in app/trouwen/layout.tsx via next/font.
 export const LETTERTYPE_CSS_VAR: Record<WeddingLettertype, string> = {
-  cormorant:        'var(--font-serif)',
-  playfair:         'var(--font-playfair)',
-  lora:             'var(--font-lora)',
-  'dancing-script': 'var(--font-dancing)',
-  'eb-garamond':    'var(--font-garamond)',
-  'great-vibes':    'var(--font-vibes)',
+  cormorant:          'var(--font-serif)',
+  playfair:           'var(--font-playfair)',
+  lora:               'var(--font-lora)',
+  'dancing-script':   'var(--font-dancing)',
+  'eb-garamond':      'var(--font-garamond)',
+  'great-vibes':      'var(--font-vibes)',
+  italiana:           'var(--font-italiana)',
+  marcellus:          'var(--font-marcellus)',
+  'libre-baskerville':'var(--font-baskerville)',
+  'josefin-sans':     'var(--font-josefin)',
+  'bodoni-moda':      'var(--font-bodoni)',
+  parisienne:         'var(--font-parisienne)',
 }
+
+// Fallback font-family-stacks voor contexten zonder de next/font CSS-
+// variabelen (bijv. de geïsoleerde editor-preview-iframe, die de eigen
+// Google Fonts-stylesheet laadt in plaats van de next/font-build-output).
+export const LETTERTYPE_FONT_STACK: Record<WeddingLettertype, string> = {
+  cormorant:           '"Cormorant Garamond", serif',
+  playfair:            '"Playfair Display", serif',
+  lora:                '"Lora", serif',
+  'dancing-script':    '"Dancing Script", cursive',
+  'eb-garamond':       '"EB Garamond", serif',
+  'great-vibes':       '"Great Vibes", cursive',
+  italiana:            '"Italiana", serif',
+  marcellus:           '"Marcellus", serif',
+  'libre-baskerville': '"Libre Baskerville", serif',
+  'josefin-sans':      '"Josefin Sans", sans-serif',
+  'bodoni-moda':       '"Bodoni Moda", serif',
+  parisienne:          '"Parisienne", cursive',
+}
+
+// Google Fonts CSS2-URL voor alle 12 lettertypes: gebruikt door de
+// lettertype-kiezer (preview) en de editor-preview-iframe.
+export const FONT_PREVIEW_URL =
+  'https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;700&family=Dancing+Script:wght@400;700&family=EB+Garamond:wght@400;700&family=Great+Vibes&family=Italiana&family=Josefin+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;700&family=Marcellus&family=Parisienne&family=Playfair+Display:wght@400;700&display=swap'
 
 const BASIS_TEKST = '#262626'
 const BASIS_GEDEMPT = '#6b7280'

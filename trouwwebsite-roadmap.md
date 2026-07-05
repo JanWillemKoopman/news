@@ -50,19 +50,26 @@ architectuurwissels:
   bij het openen van de editor; de publieke route probeert v2 en valt terug op het oude pad
   voor niet-geconverteerde sites. **Geen breaking change voor live sites.**
 
-## Fase 2 — Designvrijheid
+## Fase 2 — Designvrijheid ✅ gebouwd
 
 *Doel: het verschil maken ten opzichte van "invullen" — écht kunnen ontwerpen.*
 
 - Extra bloktypes: citaat/quote, tijdlijn ("ons verhaal"), weddingparty/personen met foto,
-  kaart/locatie, video-embed, meerdere foto+tekst-varianten.
-- Hero-varianten: fullscreen foto, split-layout, puur typografisch.
-- Blok-achtergronden met foto + overlay; blokbreedtes (smal/breed/volledig).
-- Theme-customizer: volledig palet (achtergrond, kaart, tekst, gedempt, accent), uitgebreide
-  fontbibliotheek via `next/font`, ornament-sets (klassiek, botanisch, minimaal, geen).
-- Preview in een iframe (React-portal + gekopieerde stylesheets) zodat óók de mobiel-modus
-  écht de mobiele layout toont: Tailwind-breakpoints reageren op de viewport, niet op de
-  paneelbreedte — de huidige geschaalde weergave is alleen voor desktop waarheidsgetrouw.
+  locatie (adres + Google Maps-embed), video-embed (YouTube/Vimeo), foto+tekst met een derde
+  positie ("boven").
+- Hero-varianten: fullscreen foto, split-layout (foto naast tekst), puur typografisch
+  (gigantische type, geen of vervaagde foto).
+- Blok-achtergronden met volledige foto + donkerte-overlay (naast de bestaande kopfoto);
+  blokbreedtes (smal/breed/volledig, edge-to-edge voor achtergrondfoto's).
+- Theme-customizer: volledig palet (achtergrond, kaart, tekst, subtekst, naast accent),
+  hoeken/sectiestijl/ornament los instelbaar, uitgebreide fontbibliotheek via `next/font`
+  (6 extra: Italiana, Marcellus, Libre Baskerville, Josefin Sans, Bodoni Moda, Parisienne —
+  `WeddingLettertype` in `lib/bruiloft/types.ts` uitgebreid, gedeeld met de cadeaulijst-pagina
+  die dezelfde CSS-variabelen uit `app/trouwen/layout.tsx` gebruikt).
+- Preview in een `<iframe>` (`app/bruiloft/website/components/LivePreview.tsx`): eigen
+  document met gekloonde stylesheets + een React-portal, zodat Tailwind-breakpoints
+  reageren op de virtuele schermbreedte (1440/390px) i.p.v. de paneelbreedte van de editor —
+  ook de mobiel-modus toont nu de echte mobiele layout, niet de desktop-layout verkleind.
 
 ## Fase 3 — Gastervaring
 

@@ -6,11 +6,14 @@ import * as React from 'react'
 import { Input } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
 import type { WebsiteContent, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
-import { THEME_PRESETS, themeVanPreset, type ThemeTokens } from '@/lib/bruiloft/websiteTheme'
+import {
+  FONT_PREVIEW_URL,
+  LETTERTYPE_FONT_STACK,
+  THEME_PRESETS,
+  themeVanPreset,
+  type ThemeTokens,
+} from '@/lib/bruiloft/websiteTheme'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-
-const FONT_PREVIEW_URL =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Dancing+Script:wght@400;700&family=EB+Garamond:wght@400;700&family=Great+Vibes&family=Lora:wght@400;700&family=Playfair+Display:wght@400;700&display=swap'
 
 const PRESET_INFO: { id: WeddingThema; naam: string; beschrijving: string }[] = [
   { id: 'klassiek', naam: 'The Atelier', beschrijving: 'Ornamentele typografie & tijdloos' },
@@ -22,12 +25,18 @@ const PRESET_INFO: { id: WeddingThema; naam: string; beschrijving: string }[] = 
 ]
 
 const LETTERTYPES: { id: WeddingLettertype; naam: string; fontFamily: string }[] = [
-  { id: 'cormorant', naam: 'Cormorant', fontFamily: '"Cormorant Garamond", serif' },
-  { id: 'playfair', naam: 'Playfair', fontFamily: '"Playfair Display", serif' },
-  { id: 'lora', naam: 'Lora', fontFamily: '"Lora", serif' },
-  { id: 'dancing-script', naam: 'Dancing', fontFamily: '"Dancing Script", cursive' },
-  { id: 'eb-garamond', naam: 'Garamond', fontFamily: '"EB Garamond", serif' },
-  { id: 'great-vibes', naam: 'Vibes', fontFamily: '"Great Vibes", cursive' },
+  { id: 'cormorant', naam: 'Cormorant', fontFamily: LETTERTYPE_FONT_STACK.cormorant },
+  { id: 'playfair', naam: 'Playfair', fontFamily: LETTERTYPE_FONT_STACK.playfair },
+  { id: 'lora', naam: 'Lora', fontFamily: LETTERTYPE_FONT_STACK.lora },
+  { id: 'dancing-script', naam: 'Dancing', fontFamily: LETTERTYPE_FONT_STACK['dancing-script'] },
+  { id: 'eb-garamond', naam: 'Garamond', fontFamily: LETTERTYPE_FONT_STACK['eb-garamond'] },
+  { id: 'great-vibes', naam: 'Vibes', fontFamily: LETTERTYPE_FONT_STACK['great-vibes'] },
+  { id: 'italiana', naam: 'Italiana', fontFamily: LETTERTYPE_FONT_STACK.italiana },
+  { id: 'marcellus', naam: 'Marcellus', fontFamily: LETTERTYPE_FONT_STACK.marcellus },
+  { id: 'libre-baskerville', naam: 'Baskerville', fontFamily: LETTERTYPE_FONT_STACK['libre-baskerville'] },
+  { id: 'josefin-sans', naam: 'Josefin', fontFamily: LETTERTYPE_FONT_STACK['josefin-sans'] },
+  { id: 'bodoni-moda', naam: 'Bodoni', fontFamily: LETTERTYPE_FONT_STACK['bodoni-moda'] },
+  { id: 'parisienne', naam: 'Parisienne', fontFamily: LETTERTYPE_FONT_STACK.parisienne },
 ]
 
 const KLEUR_PRESETS = [
@@ -256,72 +265,197 @@ export function ThemaInstellingen({ content, theme }: Props) {
             </div>
           </div>
 
-          {/* Accentkleur + Lettertype */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Accentkleur
-              </p>
-              <div className="mb-3 flex items-center gap-3">
-                <input
-                  type="color"
-                  value={theme.kleuren.accent}
-                  onChange={(e) =>
-                    saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
-                  }
-                  className="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
+          {/* Accentkleur */}
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Accentkleur
+            </p>
+            <div className="mb-3 flex items-center gap-3">
+              <input
+                type="color"
+                value={theme.kleuren.accent}
+                onChange={(e) =>
+                  saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
+                }
+                className="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
+              />
+              <Input
+                value={theme.kleuren.accent}
+                onChange={(e) =>
+                  saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
+                }
+                className="w-28 font-mono text-sm uppercase"
+                maxLength={7}
+                placeholder="#a75573"
+              />
+            </div>
+            <div className="grid grid-cols-9 gap-1.5 sm:grid-cols-[repeat(18,minmax(0,1fr))]">
+              {KLEUR_PRESETS.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: k } })}
+                  className={cn(
+                    'aspect-square w-full rounded-md border-2 transition-transform hover:scale-110',
+                    theme.kleuren.accent === k ? 'border-foreground shadow-sm' : 'border-transparent'
+                  )}
+                  style={{ background: k }}
+                  title={k}
                 />
-                <Input
-                  value={theme.kleuren.accent}
-                  onChange={(e) =>
-                    saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
-                  }
-                  className="w-28 font-mono text-sm uppercase"
-                  maxLength={7}
-                  placeholder="#a75573"
-                />
-              </div>
-              <div className="grid grid-cols-9 gap-1.5">
-                {KLEUR_PRESETS.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: k } })}
-                    className={cn(
-                      'aspect-square w-full rounded-md border-2 transition-transform hover:scale-110',
-                      theme.kleuren.accent === k ? 'border-foreground shadow-sm' : 'border-transparent'
-                    )}
-                    style={{ background: k }}
-                    title={k}
+              ))}
+            </div>
+          </div>
+
+          {/* Overige kleuren (achtergrond, kaart, tekst, gedempt) */}
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Overige kleuren
+            </p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Alleen nodig als je verder wilt afwijken van het gekozen thema.
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {(
+                [
+                  { key: 'achtergrond', label: 'Achtergrond' },
+                  { key: 'kaart', label: 'Kaarten' },
+                  { key: 'tekst', label: 'Tekst' },
+                  { key: 'gedempt', label: 'Subtekst' },
+                ] as const
+              ).map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={theme.kleuren[key]}
+                    onChange={(e) =>
+                      saveTheme({ ...theme, kleuren: { ...theme.kleuren, [key]: e.target.value } })
+                    }
+                    className="h-8 w-8 shrink-0 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
                   />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-foreground">{label}</p>
+                    <p className="truncate font-mono text-[10px] uppercase text-muted-foreground">{theme.kleuren[key]}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Koplettertype */}
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Koplettertype
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              {LETTERTYPES.map((l) => {
+                const gekozen = theme.kopLettertype === l.id
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => saveTheme({ ...theme, kopLettertype: l.id })}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all',
+                      gekozen ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    <span className="text-xl leading-none text-foreground" style={{ fontFamily: l.fontFamily }}>
+                      Jullie dag
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">{l.naam}</span>
+                    {gekozen && <Check className="h-3 w-3 text-primary" />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Vormentaal: hoeken, kaartstijl, ornament */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Hoeken
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {(
+                  [
+                    { val: 'scherp', label: 'Scherp' },
+                    { val: 'zacht', label: 'Zacht' },
+                    { val: 'rond', label: 'Rond' },
+                  ] as const
+                ).map(({ val, label }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => saveTheme({ ...theme, hoeken: val })}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                      theme.hoeken === val
+                        ? 'border-primary bg-primary/10 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Koplettertype
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Sectiestijl
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {LETTERTYPES.map((l) => {
-                  const gekozen = theme.kopLettertype === l.id
-                  return (
-                    <button
-                      key={l.id}
-                      onClick={() => saveTheme({ ...theme, kopLettertype: l.id })}
-                      className={cn(
-                        'flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all',
-                        gekozen ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                      )}
-                    >
-                      <span className="text-xl leading-none text-foreground" style={{ fontFamily: l.fontFamily }}>
-                        Jullie dag
-                      </span>
-                      <span className="text-xs font-medium text-muted-foreground">{l.naam}</span>
-                      {gekozen && <Check className="h-3 w-3 text-primary" />}
-                    </button>
-                  )
-                })}
+              <div className="flex flex-col gap-1.5">
+                {(
+                  [
+                    { val: 'kaart', label: 'Kaart' },
+                    { val: 'accentlijn', label: 'Accentlijn' },
+                    { val: 'open', label: 'Open' },
+                  ] as const
+                ).map(({ val, label }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => saveTheme({ ...theme, kaartStijl: val })}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                      theme.kaartStijl === val
+                        ? 'border-primary bg-primary/10 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Ornament
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {(
+                  [
+                    { val: 'geen', label: 'Geen' },
+                    { val: 'diamant', label: 'Diamant ◆' },
+                    { val: 'blad', label: 'Blad ❧' },
+                    { val: 'ster', label: 'Ster ✦' },
+                  ] as const
+                ).map(({ val, label }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => saveTheme({ ...theme, ornament: val })}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                      theme.ornament === val
+                        ? 'border-primary bg-primary/10 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

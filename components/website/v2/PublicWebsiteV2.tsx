@@ -5,12 +5,12 @@
 // De zes oude templates leven voort als theme-presets; deze renderer is de
 // enige plek met markup. Zie trouwwebsite-roadmap.md.
 
-import { ChevronDown, Gift, Lock, Menu, X } from 'lucide-react'
+import { ChevronDown, Gift, Lock, Menu, Play, X } from 'lucide-react'
 import * as React from 'react'
 
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import type { FaqItem, GallerijFoto, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
-import type { Block, GalerijBlock, HeroBlock, ProgrammaBlock } from '@/lib/bruiloft/websiteBlocks'
+import type { Block, BlockBreedte, GalerijBlock, HeroBlock, ProgrammaBlock } from '@/lib/bruiloft/websiteBlocks'
 import { heeftInhoud } from '@/lib/bruiloft/websiteBlocks'
 import {
   HOEK_RADIUS,
@@ -242,9 +242,32 @@ function Programma({ block, schedule }: { block: ProgrammaBlock; schedule: Sched
   )
 }
 
+// Zet een YouTube- of Vimeo-link om naar een embed-URL. Onherkende links
+// (bijv. losse mp4's) geven null terug — de renderer toont dan een link-out.
+function naarEmbedUrl(url: string): string | null {
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  if (trimmed.includes('youtube.com/embed/') || trimmed.includes('player.vimeo.com/video/')) return trimmed
+  const yt = trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/)
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`
+  const vimeo = trimmed.match(/vimeo\.com\/(\d+)/)
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`
+  return null
+}
+
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
-function Hero({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
+function HeroDatumLocatie({ wedding, kleur }: { wedding: PublicWebsiteV2Data['wedding']; kleur?: React.CSSProperties['color'] }) {
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-3" style={{ opacity: 0.8, fontSize: '0.85rem', letterSpacing: '0.1em', color: kleur }}>
+      {wedding.trouwdatum && <span>{formatDatumNL(wedding.trouwdatum)}</span>}
+      {wedding.trouwdatum && wedding.locatie && <span style={{ fontSize: '7px' }}>◆</span>}
+      {wedding.locatie && <span>{wedding.locatie}</span>}
+    </div>
+  )
+}
+
+function HeroFullscreen({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
   const { wedding, theme } = ctx
   const heeftFoto = !!block.fotoUrl
   return (
@@ -275,10 +298,8 @@ function Hero({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
           {wedding.partner2Naam}
         </h1>
         <Ornament theme={theme} />
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-3" style={{ opacity: 0.8, fontSize: '0.85rem', letterSpacing: '0.1em' }}>
-          {wedding.trouwdatum && <span>{formatDatumNL(wedding.trouwdatum)}</span>}
-          {wedding.trouwdatum && wedding.locatie && <span style={{ fontSize: '7px' }}>◆</span>}
-          {wedding.locatie && <span>{wedding.locatie}</span>}
+        <div className="flex justify-center">
+          <HeroDatumLocatie wedding={wedding} />
         </div>
         {block.ondertitel && (
           <p className="mx-auto mt-4 max-w-md text-sm" style={{ opacity: 0.85 }}>{block.ondertitel}</p>
@@ -288,7 +309,107 @@ function Hero({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
   )
 }
 
+function HeroSplit({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
+  const { wedding, theme } = ctx
+  const heeftFoto = !!block.fotoUrl
+  return (
+    <section className="grid grid-cols-1 md:grid-cols-[55%_45%]" style={{ minHeight: '80vh' }}>
+      <div className="relative order-2 min-h-[45vw] md:order-1 md:min-h-0" style={{ background: 'var(--site-card)' }}>
+        {heeftFoto && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={block.fotoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+      </div>
+      <div className="order-1 flex flex-col justify-center p-8 md:order-2 md:p-14">
+        <h1
+          style={{
+            fontFamily: 'var(--heading-font)',
+            fontStyle: theme.kopCursief ? 'italic' : 'normal',
+            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
+            lineHeight: 1.1,
+            color: 'var(--site-text)',
+          }}
+        >
+          {wedding.partner1Naam}
+          <br />
+          <span style={{ color: 'hsl(var(--primary))' }}>&amp;</span>
+          <br />
+          {wedding.partner2Naam}
+        </h1>
+        <div className="mt-2 h-px w-16" style={{ background: 'hsl(var(--primary))' }} />
+        <div className="mt-5">
+          <HeroDatumLocatie wedding={wedding} kleur="var(--site-muted)" />
+        </div>
+        {block.ondertitel && (
+          <p className="mt-4 max-w-md text-sm" style={{ color: 'var(--site-muted)' }}>{block.ondertitel}</p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function HeroTypografisch({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
+  const { wedding, theme } = ctx
+  return (
+    <section className="relative overflow-hidden" style={{ minHeight: '75vh', display: 'flex', alignItems: 'center' }}>
+      {block.fotoUrl && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={block.fotoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: 0.16 }} />
+          <div className="absolute inset-0" style={{ background: 'color-mix(in srgb, var(--site-bg) 75%, transparent)' }} />
+        </>
+      )}
+      <div className="relative z-10 w-full max-w-4xl px-8 md:px-16">
+        <h1
+          style={{
+            fontFamily: 'var(--heading-font)',
+            fontStyle: theme.kopCursief ? 'italic' : 'normal',
+            fontSize: 'clamp(3rem, 10vw, 8rem)',
+            lineHeight: 0.95,
+            letterSpacing: '-0.02em',
+            color: 'hsl(var(--primary))',
+          }}
+        >
+          {wedding.partner1Naam}
+        </h1>
+        <h1
+          style={{
+            fontFamily: 'var(--heading-font)',
+            fontStyle: theme.kopCursief ? 'italic' : 'normal',
+            fontSize: 'clamp(3rem, 10vw, 8rem)',
+            lineHeight: 0.95,
+            letterSpacing: '-0.02em',
+            color: 'var(--site-text)',
+          }}
+        >
+          &amp; {wedding.partner2Naam}
+        </h1>
+        <div className="mt-10">
+          <HeroDatumLocatie wedding={wedding} kleur="var(--site-muted)" />
+        </div>
+        {block.ondertitel && (
+          <p className="mt-4 max-w-md text-sm" style={{ color: 'var(--site-muted)' }}>{block.ondertitel}</p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function Hero({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
+  switch (block.variant) {
+    case 'split':        return <HeroSplit block={block} ctx={ctx} />
+    case 'typografisch': return <HeroTypografisch block={block} ctx={ctx} />
+    default:              return <HeroFullscreen block={block} ctx={ctx} />
+  }
+}
+
 // ─── Sectie-omhulsel (kaartstijl uit het thema) ──────────────────────────────
+
+const BREEDTE_KLAS: Record<BlockBreedte, string> = {
+  smal: 'max-w-xl',
+  breed: 'max-w-3xl',
+  volledig: 'max-w-none',
+}
 
 function SectieOmhulsel({
   block,
@@ -303,17 +424,21 @@ function SectieOmhulsel({
   const titel = 'titel' in block ? block.titel : ''
   const uitlijnKlas =
     layout?.uitlijning === 'links' ? 'text-left' : layout?.uitlijning === 'rechts' ? 'text-right' : 'text-center'
+  const breedte = layout?.breedte ?? 'smal'
+  const heeftAchtergrondFoto = !!layout?.achtergrondFotoUrl
 
-  const sectieStijl: React.CSSProperties = layout?.achtergrondKleur
-    ? {
-        backgroundColor: layout.achtergrondKleur,
-        ...(layout.tekstKleur === 'licht'
-          ? ({ '--site-text': '#ffffff', '--site-muted': 'rgba(255,255,255,0.72)' } as React.CSSProperties)
-          : layout.tekstKleur === 'donker'
-            ? ({ '--site-text': '#1a1a1a', '--site-muted': 'rgba(0,0,0,0.6)' } as React.CSSProperties)
-            : {}),
-      }
-    : {}
+  // Een volledige achtergrondfoto overschrijft de effen achtergrondkleur en
+  // vraagt (tenzij expliciet anders ingesteld) om lichte tekst voor contrast.
+  const tekstKleurOverride = heeftAchtergrondFoto ? (layout?.tekstKleur ?? 'licht') : layout?.tekstKleur
+
+  const sectieStijl: React.CSSProperties = {
+    ...(layout?.achtergrondKleur && !heeftAchtergrondFoto ? { backgroundColor: layout.achtergrondKleur } : {}),
+    ...(tekstKleurOverride === 'licht'
+      ? ({ '--site-text': '#ffffff', '--site-muted': 'rgba(255,255,255,0.72)' } as React.CSSProperties)
+      : tekstKleurOverride === 'donker'
+        ? ({ '--site-text': '#1a1a1a', '--site-muted': 'rgba(0,0,0,0.6)' } as React.CSSProperties)
+        : {}),
+  }
 
   const kop = titel ? (
     layout?.kopFotoUrl ? (
@@ -344,7 +469,7 @@ function SectieOmhulsel({
       <div
         className="border p-6 shadow-sm"
         style={{
-          background: layout?.achtergrondKleur ? 'transparent' : 'var(--site-card)',
+          background: layout?.achtergrondKleur || heeftAchtergrondFoto ? 'transparent' : 'var(--site-card)',
           borderColor: 'hsl(var(--primary)/0.12)',
           borderRadius: 'var(--site-radius)',
         }}
@@ -356,9 +481,20 @@ function SectieOmhulsel({
     )
 
   return (
-    <section id={`b-${block.id}`} className={`scroll-mt-24 px-4 py-10 ${uitlijnKlas}`} style={sectieStijl}>
-      <div className="mx-auto max-w-xl">
-        {theme.kaartStijl === 'open' && (
+    <section
+      id={`b-${block.id}`}
+      className={`relative scroll-mt-24 overflow-hidden py-10 ${breedte === 'volledig' ? '' : 'px-4'} ${uitlijnKlas}`}
+      style={sectieStijl}
+    >
+      {heeftAchtergrondFoto && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={layout!.achtergrondFotoUrl} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+          <div className="absolute inset-0 -z-10" style={{ background: `rgba(0,0,0,${layout!.achtergrondOverlay ?? 0.4})` }} />
+        </>
+      )}
+      <div className={`mx-auto ${BREEDTE_KLAS[breedte]} ${breedte === 'volledig' ? 'px-4' : ''}`}>
+        {theme.kaartStijl === 'open' && !heeftAchtergrondFoto && (
           <div className="mb-8 h-px w-full" style={{ background: 'hsl(var(--primary)/0.15)' }} />
         )}
         {kop}
@@ -379,11 +515,136 @@ function BlockInhoud({ block, ctx }: { block: Exclude<Block, HeroBlock>; ctx: Re
         // eslint-disable-next-line @next/next/no-img-element
         <img src={block.fotoUrl} alt="" className="h-56 w-full object-cover sm:h-full" style={{ borderRadius: 'var(--site-radius)' }} />
       )
+      const tekst = <p className="whitespace-pre-line" style={{ color: 'var(--site-text)' }}>{block.tekst}</p>
+      if (block.fotoPositie === 'boven') {
+        return (
+          <div className="space-y-6 text-left">
+            {block.fotoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={block.fotoUrl} alt="" className="h-64 w-full object-cover" style={{ borderRadius: 'var(--site-radius)' }} />
+            )}
+            {tekst}
+          </div>
+        )
+      }
       return (
         <div className="grid items-center gap-6 text-left sm:grid-cols-2">
           {block.fotoPositie === 'links' && foto}
-          <p className="whitespace-pre-line" style={{ color: 'var(--site-text)' }}>{block.tekst}</p>
+          {tekst}
           {block.fotoPositie === 'rechts' && foto}
+        </div>
+      )
+    }
+    case 'quote':
+      return (
+        <figure className="space-y-3">
+          <blockquote
+            className="whitespace-pre-line text-2xl leading-snug"
+            style={{ fontFamily: 'var(--heading-font)', fontStyle: 'italic', color: 'var(--site-text)' }}
+          >
+            &ldquo;{block.citaat}&rdquo;
+          </blockquote>
+          {block.bron && (
+            <figcaption className="text-sm uppercase tracking-wide" style={{ color: 'var(--site-muted)' }}>
+              — {block.bron}
+            </figcaption>
+          )}
+        </figure>
+      )
+    case 'tijdlijn':
+      return (
+        <ol className="space-y-8 text-left">
+          {block.momenten.map((m, i) => (
+            <li key={m.id} className="relative pl-6">
+              <span
+                className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full"
+                style={{ background: 'hsl(var(--primary))' }}
+              />
+              {i < block.momenten.length - 1 && (
+                <span
+                  className="absolute left-[4.5px] top-4 bottom-[-1.5rem] w-px"
+                  style={{ background: 'hsl(var(--primary)/0.25)' }}
+                />
+              )}
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--primary))' }}>
+                {m.datum}
+              </p>
+              <p className="mt-1 font-medium" style={{ color: 'var(--site-text)', fontFamily: 'var(--heading-font)' }}>
+                {m.titel}
+              </p>
+              {m.tekst && <p className="mt-1 text-sm" style={{ color: 'var(--site-muted)' }}>{m.tekst}</p>}
+            </li>
+          ))}
+        </ol>
+      )
+    case 'personen':
+      return (
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+          {block.mensen.map((p) => (
+            <div key={p.id} className="flex flex-col items-center gap-2 text-center">
+              {p.fotoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.fotoUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <div
+                  className="h-20 w-20 rounded-full"
+                  style={{ background: 'hsl(var(--primary)/0.12)' }}
+                />
+              )}
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--site-text)' }}>{p.naam}</p>
+                {p.rol && <p className="text-xs" style={{ color: 'var(--site-muted)' }}>{p.rol}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    case 'locatie':
+      return (
+        <div className="space-y-4 text-left">
+          <div>
+            {block.naam && <p className="font-medium" style={{ color: 'var(--site-text)' }}>{block.naam}</p>}
+            {block.adres && <p className="text-sm" style={{ color: 'var(--site-muted)' }}>{block.adres}</p>}
+          </div>
+          {block.tekst && <p className="whitespace-pre-line text-sm" style={{ color: 'var(--site-muted)' }}>{block.tekst}</p>}
+          {block.kaartInsluitUrl && (
+            <div className="overflow-hidden" style={{ borderRadius: 'var(--site-radius)' }}>
+              <iframe
+                src={block.kaartInsluitUrl}
+                className="h-64 w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={block.naam || 'Locatie'}
+              />
+            </div>
+          )}
+        </div>
+      )
+    case 'video': {
+      const embedUrl = naarEmbedUrl(block.videoUrl)
+      if (!embedUrl) {
+        return block.videoUrl ? (
+          <a
+            href={block.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium"
+            style={{ color: 'hsl(var(--primary))' }}
+          >
+            <Play className="h-4 w-4" /> Bekijk de video
+          </a>
+        ) : null
+      }
+      return (
+        <div className="overflow-hidden" style={{ borderRadius: 'var(--site-radius)', aspectRatio: '16 / 9' }}>
+          <iframe
+            src={embedUrl}
+            className="h-full w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+            title={block.titel || 'Video'}
+          />
         </div>
       )
     }
