@@ -427,6 +427,8 @@ export function websitePageFromRow(r: Tables['website_pages']['Row']): WebsitePa
     volgorde: r.volgorde,
     zichtbaar: r.zichtbaar,
     blocks: ((r.blocks as unknown) as Block[]) ?? [],
+    seoTitel: r.seo_titel ?? '',
+    seoOmschrijving: r.seo_omschrijving ?? '',
   }
 }
 
@@ -440,6 +442,8 @@ export function websitePageToRow(
   if (p.volgorde !== undefined) r.volgorde = p.volgorde
   if (p.zichtbaar !== undefined) r.zichtbaar = p.zichtbaar
   if (p.blocks !== undefined) r.blocks = p.blocks as unknown as Tables['website_pages']['Insert']['blocks']
+  if (p.seoTitel !== undefined) r.seo_titel = p.seoTitel
+  if (p.seoOmschrijving !== undefined) r.seo_omschrijving = p.seoOmschrijving
   return r
 }
 

@@ -1202,7 +1202,15 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       const content = get().websiteContent
       if (!content) return
       const blocks = converteerOudNaarBlokken(content, get().websiteFotos)
-      await get().addWebsitePage({ titel: 'Home', pageSlug: '', volgorde: 0, zichtbaar: true, blocks })
+      await get().addWebsitePage({
+        titel: 'Home',
+        pageSlug: '',
+        volgorde: 0,
+        zichtbaar: true,
+        blocks,
+        seoTitel: '',
+        seoOmschrijving: '',
+      })
     },
 
     saveWebsiteContent: async (patch) => {

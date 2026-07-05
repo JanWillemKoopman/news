@@ -686,6 +686,8 @@ export type Database = {
           created_at: string
           id: string
           page_slug: string
+          seo_omschrijving: string
+          seo_titel: string
           titel: string
           updated_at: string
           volgorde: number
@@ -697,6 +699,8 @@ export type Database = {
           created_at?: string
           id?: string
           page_slug?: string
+          seo_omschrijving?: string
+          seo_titel?: string
           titel?: string
           updated_at?: string
           volgorde?: number
@@ -708,6 +712,8 @@ export type Database = {
           created_at?: string
           id?: string
           page_slug?: string
+          seo_omschrijving?: string
+          seo_titel?: string
           titel?: string
           updated_at?: string
           volgorde?: number

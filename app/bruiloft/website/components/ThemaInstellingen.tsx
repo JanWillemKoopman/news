@@ -4,6 +4,7 @@ import { Check, ChevronDown, Loader2, Menu, Palette } from 'lucide-react'
 import * as React from 'react'
 
 import { Input } from '@/components/bruiloft/ui'
+import { extraheerPaletUitAfbeelding } from '@/lib/bruiloft/colorExtract'
 import { cn } from '@/lib/utils'
 import type { WebsiteContent, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
 import {
@@ -64,9 +65,12 @@ function valideerSlugFormaat(s: string) {
 interface Props {
   content: WebsiteContent
   theme: ThemeTokens
+  // Fase 4: huidige headerfoto (uit het hero-blok) — als aanwezig, worden
+  // hieruit automatisch een paar accentkleur-suggesties gehaald.
+  headerFotoUrl?: string
 }
 
-export function ThemaInstellingen({ content, theme }: Props) {
+export function ThemaInstellingen({ content, theme, headerFotoUrl }: Props) {
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
   const checkSlugAvailable = useBruiloftStore((s) => s.checkSlugAvailable)
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -76,6 +80,19 @@ export function ThemaInstellingen({ content, theme }: Props) {
     'idle' | 'checking' | 'beschikbaar' | 'bezet' | 'ongeldig' | 'leeg'
   >('idle')
   const slugTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [kleurSuggesties, setKleurSuggesties] = React.useState<string[]>([])
+
+  React.useEffect(() => {
+    let actief = true
+    if (!headerFotoUrl) {
+      setKleurSuggesties([])
+      return
+    }
+    void extraheerPaletUitAfbeelding(headerFotoUrl).then((kleuren) => {
+      if (actief) setKleurSuggesties(kleuren)
+    })
+    return () => { actief = false }
+  }, [headerFotoUrl])
 
   // Sla het thema op; de legacy-velden (thema/kleurAccent/kopLettertype)
   // gaan mee zodat de losse cadeaulijst-pagina (get_public_registry leest
@@ -304,6 +321,27 @@ export function ThemaInstellingen({ content, theme }: Props) {
                 />
               ))}
             </div>
+
+            {kleurSuggesties.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs text-muted-foreground">Suggesties uit je headerfoto</p>
+                <div className="flex gap-1.5">
+                  {kleurSuggesties.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: k } })}
+                      className={cn(
+                        'h-8 w-8 rounded-md border-2 transition-transform hover:scale-110',
+                        theme.kleuren.accent === k ? 'border-foreground shadow-sm' : 'border-transparent'
+                      )}
+                      style={{ background: k }}
+                      title={k}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Overige kleuren (achtergrond, kaart, tekst, gedempt) */}

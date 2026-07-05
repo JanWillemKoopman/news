@@ -258,6 +258,10 @@ export interface WebsitePage {
   volgorde: number
   zichtbaar: boolean
   blocks: Block[]
+  // Fase 4: optionele SEO/OG-overrides; leeg = afgeleid uit de content
+  // (zie beschrijvingVan/headerFotoVan in de publieke route).
+  seoTitel: string
+  seoOmschrijving: string
 }
 
 export type WebsitePageInput = Omit<WebsitePage, 'id'>
