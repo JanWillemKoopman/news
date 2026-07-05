@@ -28,23 +28,40 @@ create table if not exists public.website_pages (
 );
 create index if not exists idx_website_pages_wedding on public.website_pages(wedding_id);
 
+-- drop/create i.p.v. create-alleen: triggers en policies kennen geen
+-- "if not exists" in Postgres, dit maakt het bestand veilig herhaalbaar.
+drop trigger if exists trg_website_pages_updated_at on public.website_pages;
 create trigger trg_website_pages_updated_at before update on public.website_pages
   for each row execute function public.set_updated_at();
 
 alter table public.website_pages enable row level security;
 
 -- RLS: zelfde grenzen als website_content/website_fotos (module 'website').
+drop policy if exists wp_select on public.website_pages;
 create policy wp_select on public.website_pages for select to authenticated
   using (public.can_view(wedding_id, 'website'));
+drop policy if exists wp_insert on public.website_pages;
 create policy wp_insert on public.website_pages for insert to authenticated
   with check (public.can_edit(wedding_id, 'website'));
+drop policy if exists wp_update on public.website_pages;
 create policy wp_update on public.website_pages for update to authenticated
   using (public.can_edit(wedding_id, 'website')) with check (public.can_edit(wedding_id, 'website'));
+drop policy if exists wp_delete on public.website_pages;
 create policy wp_delete on public.website_pages for delete to authenticated
   using (public.can_edit(wedding_id, 'website'));
 
--- Realtime: wijzigingen live naar de editor (patroon uit 0010).
-alter publication supabase_realtime add table public.website_pages;
+-- Realtime: wijzigingen live naar de editor (patroon uit 0010). Postgres
+-- kent geen "add table if not exists" voor publicaties, dus checken we
+-- eerst of de tabel er al in zit.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'website_pages'
+  ) then
+    alter publication supabase_realtime add table public.website_pages;
+  end if;
+end $$;
 
 -- --- Publieke RPC v2 ---------------------------------------------------
 -- Retourneert null wanneer de site niet gepubliceerd is OF nog geen
