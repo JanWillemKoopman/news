@@ -1,5 +1,15 @@
 # Trouwwebsite — Handover Document
 
+> ⚠️ **Update (website v3):** dit document beschrijft de oorspronkelijke
+> opzet (vaste secties + zes hardgecodeerde templates). Inmiddels is fase 1
+> van **Trouwwebsite 2.0** gebouwd: een theme-engine (design-tokens) en een
+> blokkenmodel met nieuwe editor en live preview. Zie
+> [`trouwwebsite-roadmap.md`](./trouwwebsite-roadmap.md) voor de roadmap en
+> de nieuwe architectuur (`lib/bruiloft/websiteTheme.ts`,
+> `lib/bruiloft/websiteBlocks.ts`, `components/website/v2/`,
+> migratie `0049_website_v3_blocks.sql`). Het hieronder beschreven oude
+> model blijft bestaan als legacy-pad voor nog niet geconverteerde sites.
+
 Dit document beschrijft de trouwwebsite-feature van de Wedding Planner app in
 twee lagen: eerst wat de gebruiker (het bruidspaar) ervaart, daarna hoe dat
 technisch is opgebouwd. Bedoeld als opstappunt voor een developer die deze

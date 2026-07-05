@@ -14,6 +14,7 @@ import {
   weddingFromRow,
   websiteContentFromRow,
   websiteFotoFromRow,
+  websitePageFromRow,
 } from '@/lib/bruiloft/mappers'
 import {
   ALL_EDIT_PERMISSIONS,
@@ -70,6 +71,7 @@ import type {
   WebsiteContentInput,
   WebsiteFoto,
 } from '@/lib/bruiloft/types'
+import { converteerOudNaarBlokken, type WebsitePage, type WebsitePageInput } from '@/lib/bruiloft/websiteBlocks'
 
 // Create-input zonder de velden die de store zelf invult.
 type NewGuest = Omit<GuestInput, 'weddingId'>
@@ -126,6 +128,8 @@ interface BruiloftState {
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
+  // Website v3: pagina's met blokken (zie lib/bruiloft/websiteBlocks.ts).
+  websitePages: WebsitePage[]
   activity: ActivityEntry[]
   taskComments: TaskComment[]
   members: WeddingMember[]
@@ -212,6 +216,13 @@ interface BruiloftActions {
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
+  // Website v3: pagina's met blokken.
+  addWebsitePage: (input: Omit<WebsitePageInput, 'weddingId'>) => Promise<WebsitePage>
+  updateWebsitePage: (id: ID, patch: Partial<Omit<WebsitePageInput, 'weddingId'>>) => Promise<void>
+  deleteWebsitePage: (id: ID) => Promise<void>
+  // Eenmalige converter: zet het oude vaste-secties-model om naar een
+  // Home-pagina met blokken (idempotent; doet niets als er al pagina's zijn).
+  converteerNaarBlokken: () => Promise<void>
   checkSlugAvailable: (slug: string) => Promise<boolean>
   uploadHeaderFoto: (file: File) => Promise<string>
   uploadSectieFoto: (sectieKey: string, file: File) => Promise<string>
@@ -357,6 +368,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     tables: [],
     websiteContent: null,
     websiteFotos: [],
+    websitePages: [],
     activity: [],
     taskComments: [],
     members: [],
@@ -479,6 +491,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tables,
         websiteContent,
         websiteFotos,
+        websitePages,
         activity,
         taskComments,
         members,
@@ -492,6 +505,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
+        safe('website-pagina’s', repository.listWebsitePages(wedding.id), []),
         safe('activiteit', repository.listActivity(wedding.id, 50), []),
         safe('opmerkingen', repository.listTaskComments(wedding.id), []),
         safe('leden', repository.listMembers(wedding.id), []),
@@ -514,6 +528,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tables,
         websiteContent,
         websiteFotos,
+        websitePages,
         activity,
         taskComments,
         members,
@@ -557,6 +572,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tables: [],
         websiteContent: null,
         websiteFotos: [],
+        websitePages: [],
         activity: [],
         taskComments: [],
         members: [],
@@ -657,6 +673,13 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_fotos', filter: wf }, (p) =>
           set({ websiteFotos: applyList(get().websiteFotos, p, (r) => websiteFotoFromRow(r as unknown as Parameters<typeof websiteFotoFromRow>[0])) })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'website_pages', filter: wf }, (p) =>
+          set({
+            websitePages: applyList(get().websitePages, p, (r) =>
+              websitePageFromRow(r as unknown as Parameters<typeof websitePageFromRow>[0])
+            ).sort((a, b) => a.volgorde - b.volgorde),
+          })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'wedding_activity', filter: wf }, (p) =>
           set({ activity: applyList(get().activity, p, (r) => activityFromRow(r as unknown as Parameters<typeof activityFromRow>[0])) })
         )
@@ -721,6 +744,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         tables: [],
         websiteContent: null,
+        websitePages: [],
         activity: [],
         taskComments: [],
         members,
@@ -1137,6 +1161,46 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     },
 
     // --- WebsiteContent ----------------------------------------------------
+
+    // --- Website v3: pagina's met blokken --------------------------------
+
+    addWebsitePage: async (input) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const page = await repository.createWebsitePage({ ...input, weddingId: wedding.id })
+      set({
+        websitePages: [...get().websitePages.filter((p) => p.id !== page.id), page].sort(
+          (a, b) => a.volgorde - b.volgorde
+        ),
+      })
+      return page
+    },
+
+    updateWebsitePage: async (id, patch) => {
+      const page = await repository.updateWebsitePage(id, patch)
+      set({
+        websitePages: get()
+          .websitePages.map((p) => (p.id === id ? page : p))
+          .sort((a, b) => a.volgorde - b.volgorde),
+      })
+    },
+
+    deleteWebsitePage: async (id) => {
+      await repository.deleteWebsitePage(id)
+      set({ websitePages: get().websitePages.filter((p) => p.id !== id) })
+    },
+
+    converteerNaarBlokken: async () => {
+      const { wedding, websitePages } = get()
+      if (!wedding || websitePages.length > 0) return
+      // Nieuwe site zonder website_content-rij: eerst de rij (met defaults)
+      // aanmaken zodat de converter iets heeft om van te vertrekken.
+      if (!get().websiteContent) await get().saveWebsiteContent({})
+      const content = get().websiteContent
+      if (!content) return
+      const blocks = converteerOudNaarBlokken(content, get().websiteFotos)
+      await get().addWebsitePage({ titel: 'Home', pageSlug: '', volgorde: 0, zichtbaar: true, blocks })
+    },
 
     saveWebsiteContent: async (patch) => {
       const wedding = get().wedding

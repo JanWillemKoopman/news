@@ -362,6 +362,9 @@ export interface WebsiteContent {
   sectiesConfig: Record<string, SectieConfig>
   faq: FaqItem[]
   gallerij: GallerijFoto[]
+  // Website v3: design-tokens; null = afleiden uit thema/kleurAccent/
+  // kopLettertype (zie lib/bruiloft/websiteTheme.ts).
+  theme: import('./websiteTheme').ThemeTokens | null
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
@@ -530,4 +533,5 @@ export interface WeddingDatabase {
   scheduleItems: ScheduleItem[]
   tables: Table[]
   websiteContents: WebsiteContent[]
+  websitePages: import('./websiteBlocks').WebsitePage[]
 }

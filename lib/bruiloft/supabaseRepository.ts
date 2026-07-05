@@ -24,6 +24,8 @@ import {
   websiteContentFromRow,
   websiteContentToRow,
   websiteFotoFromRow,
+  websitePageFromRow,
+  websitePageToRow,
   weddingFromRow,
   weddingToRow,
 } from './mappers'
@@ -55,6 +57,7 @@ import type {
   WebsiteContentInput,
   WebsiteFoto,
 } from './types'
+import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
 type Tables = Database['public']['Tables']
 
@@ -403,6 +406,44 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     const { data, error } = await this.db.rpc('check_slug_available', { p_slug: slug })
     if (error) throw error
     return data as boolean
+  }
+
+  // --- Website-pagina's (website v3: blokken) ------------------------
+  async listWebsitePages(weddingId: ID): Promise<WebsitePage[]> {
+    const { data, error } = await this.db
+      .from('website_pages')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(websitePageFromRow)
+  }
+
+  async createWebsitePage(input: WebsitePageInput): Promise<WebsitePage> {
+    const row = websitePageToRow(input) as Tables['website_pages']['Insert']
+    const { data, error } = await this.db
+      .from('website_pages')
+      .insert(row)
+      .select()
+      .single()
+    if (error) throw error
+    return websitePageFromRow(data)
+  }
+
+  async updateWebsitePage(id: ID, patch: Partial<WebsitePageInput>): Promise<WebsitePage> {
+    const { data, error } = await this.db
+      .from('website_pages')
+      .update(websitePageToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return websitePageFromRow(data)
+  }
+
+  async deleteWebsitePage(id: ID): Promise<void> {
+    const { error } = await this.db.from('website_pages').delete().eq('id', id)
+    if (error) throw error
   }
 
   // --- Website-foto's ------------------------------------------------

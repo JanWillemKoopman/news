@@ -5,89 +5,29 @@ import * as React from 'react'
 
 import { Input } from '@/components/bruiloft/ui'
 import { cn } from '@/lib/utils'
-import type {
-  WebsiteContent,
-  WebsiteContentInput,
-  WeddingLettertype,
-  WeddingThema,
-} from '@/lib/bruiloft/types'
+import type { WebsiteContent, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
+import { THEME_PRESETS, themeVanPreset, type ThemeTokens } from '@/lib/bruiloft/websiteTheme'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-
-import { useDebounceOpslaan } from './useDebounceOpslaan'
 
 const FONT_PREVIEW_URL =
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Dancing+Script:wght@400;700&family=EB+Garamond:wght@400;700&family=Great+Vibes&family=Lora:wght@400;700&family=Playfair+Display:wght@400;700&display=swap'
 
-const THEMAS: {
-  id: WeddingThema
-  naam: string
-  beschrijving: string
-  palette: [string, string, string]
-  accentKleur: string
-  kopLettertype: WeddingLettertype
-}[] = [
-  {
-    id: 'klassiek',
-    naam: 'The Atelier',
-    beschrijving: 'Ornamentele typografie & tijdloos',
-    palette: ['#a78ba8', '#faf0f5', '#3d2040'],
-    accentKleur: '#a78ba8',
-    kopLettertype: 'cormorant',
-  },
-  {
-    id: 'modern',
-    naam: 'The Editor',
-    beschrijving: 'Asymmetrisch split-hero & editoriaal',
-    palette: ['#1c1c2e', '#f8f8fc', '#4a4a6a'],
-    accentKleur: '#1c1c2e',
-    kopLettertype: 'playfair',
-  },
-  {
-    id: 'romantisch',
-    naam: 'Le Jardin',
-    beschrijving: 'Warm blush & botanische details',
-    palette: ['#c2829a', '#fef3ef', '#7a3a50'],
-    accentKleur: '#c2829a',
-    kopLettertype: 'dancing-script',
-  },
-  {
-    id: 'rustiek',
-    naam: 'Het Landgoed',
-    beschrijving: 'Linnen secties & warm organisch',
-    palette: ['#8b6341', '#faf5eb', '#3d2a1a'],
-    accentKleur: '#8b6341',
-    kopLettertype: 'lora',
-  },
-  {
-    id: 'minimalistisch',
-    naam: 'Studio',
-    beschrijving: 'Gigantische typografie & witruimte',
-    palette: ['#1a1a1a', '#ffffff', '#606060'],
-    accentKleur: '#1a1a1a',
-    kopLettertype: 'eb-garamond',
-  },
-  {
-    id: 'botanisch',
-    naam: 'De Tuin',
-    beschrijving: 'Groene nav & masonry galerij',
-    palette: ['#2d5a27', '#f0f7f0', '#1a3a16'],
-    accentKleur: '#2d5a27',
-    kopLettertype: 'great-vibes',
-  },
+const PRESET_INFO: { id: WeddingThema; naam: string; beschrijving: string }[] = [
+  { id: 'klassiek', naam: 'The Atelier', beschrijving: 'Ornamentele typografie & tijdloos' },
+  { id: 'modern', naam: 'The Editor', beschrijving: 'Editoriaal & scherp' },
+  { id: 'romantisch', naam: 'Le Jardin', beschrijving: 'Warm blush & rond' },
+  { id: 'rustiek', naam: 'Het Landgoed', beschrijving: 'Linnen & warm organisch' },
+  { id: 'minimalistisch', naam: 'Studio', beschrijving: 'Typografie & witruimte' },
+  { id: 'botanisch', naam: 'De Tuin', beschrijving: 'Weelderig groen' },
 ]
 
-const LETTERTYPES: {
-  id: WeddingLettertype
-  naam: string
-  voorbeeld: string
-  fontFamily: string
-}[] = [
-  { id: 'cormorant', naam: 'Cormorant', voorbeeld: 'Jullie dag', fontFamily: '"Cormorant Garamond", serif' },
-  { id: 'playfair', naam: 'Playfair', voorbeeld: 'Jullie dag', fontFamily: '"Playfair Display", serif' },
-  { id: 'lora', naam: 'Lora', voorbeeld: 'Jullie dag', fontFamily: '"Lora", serif' },
-  { id: 'dancing-script', naam: 'Dancing', voorbeeld: 'Jullie dag', fontFamily: '"Dancing Script", cursive' },
-  { id: 'eb-garamond', naam: 'Garamond', voorbeeld: 'Jullie dag', fontFamily: '"EB Garamond", serif' },
-  { id: 'great-vibes', naam: 'Vibes', voorbeeld: 'Jullie dag', fontFamily: '"Great Vibes", cursive' },
+const LETTERTYPES: { id: WeddingLettertype; naam: string; fontFamily: string }[] = [
+  { id: 'cormorant', naam: 'Cormorant', fontFamily: '"Cormorant Garamond", serif' },
+  { id: 'playfair', naam: 'Playfair', fontFamily: '"Playfair Display", serif' },
+  { id: 'lora', naam: 'Lora', fontFamily: '"Lora", serif' },
+  { id: 'dancing-script', naam: 'Dancing', fontFamily: '"Dancing Script", cursive' },
+  { id: 'eb-garamond', naam: 'Garamond', fontFamily: '"EB Garamond", serif' },
+  { id: 'great-vibes', naam: 'Vibes', fontFamily: '"Great Vibes", cursive' },
 ]
 
 const KLEUR_PRESETS = [
@@ -114,9 +54,10 @@ function valideerSlugFormaat(s: string) {
 
 interface Props {
   content: WebsiteContent
+  theme: ThemeTokens
 }
 
-export function OntwerpInstellingen({ content }: Props) {
+export function ThemaInstellingen({ content, theme }: Props) {
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
   const checkSlugAvailable = useBruiloftStore((s) => s.checkSlugAvailable)
   const wedding = useBruiloftStore((s) => s.wedding)
@@ -127,7 +68,17 @@ export function OntwerpInstellingen({ content }: Props) {
   >('idle')
   const slugTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { stel } = useDebounceOpslaan<WebsiteContentInput>(saveWebsiteContent)
+  // Sla het thema op; de legacy-velden (thema/kleurAccent/kopLettertype)
+  // gaan mee zodat de losse cadeaulijst-pagina (get_public_registry leest
+  // die kolommen) dezelfde stijl houdt.
+  function saveTheme(volgende: ThemeTokens) {
+    void saveWebsiteContent({
+      theme: volgende,
+      thema: volgende.preset,
+      kleurAccent: volgende.kleuren.accent,
+      kopLettertype: volgende.kopLettertype,
+    })
+  }
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -140,7 +91,7 @@ export function OntwerpInstellingen({ content }: Props) {
     document.head.appendChild(link)
   }, [])
 
-  // Auto-genereer slug van partnernamen als er nog geen is
+  // Auto-genereer slug van partnernamen als er nog geen is.
   React.useEffect(() => {
     if (content.slug || !wedding) return
     const base = maakBaseSlug(wedding.partner1Naam, wedding.partner2Naam)
@@ -215,8 +166,8 @@ export function OntwerpInstellingen({ content }: Props) {
                 ? `${herkomst}/trouwen/${slug}`
                 : ''
 
-  const huidigThema = THEMAS.find((t) => t.id === content.thema)
-  const huidigFont = LETTERTYPES.find((l) => l.id === content.kopLettertype)
+  const huidigPreset = PRESET_INFO.find((p) => p.id === theme.preset)
+  const huidigFont = LETTERTYPES.find((l) => l.id === theme.kopLettertype)
 
   return (
     <div className="mb-4 overflow-hidden rounded-xl border border-border bg-card">
@@ -230,15 +181,15 @@ export function OntwerpInstellingen({ content }: Props) {
           <Palette className="h-4 w-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Ontwerp-instellingen</p>
+          <p className="text-sm font-semibold text-foreground">Ontwerp</p>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            <span>{huidigThema?.naam ?? 'Geen template'}</span>
+            <span>{huidigPreset?.naam ?? 'Eigen thema'}</span>
             <span className="mx-1.5 text-border">·</span>
             <span
               className="inline-block h-2.5 w-2.5 rounded-sm align-middle"
-              style={{ background: content.kleurAccent }}
+              style={{ background: theme.kleuren.accent }}
             />
-            <span className="ml-1">{content.kleurAccent}</span>
+            <span className="ml-1">{theme.kleuren.accent}</span>
             <span className="mx-1.5 text-border">·</span>
             <span>{huidigFont?.naam ?? '—'}</span>
           </p>
@@ -251,35 +202,27 @@ export function OntwerpInstellingen({ content }: Props) {
         />
       </button>
 
-      {/* Expanded design settings */}
       {open && (
-        <div className="border-t border-border px-4 py-5 sm:px-5 sm:py-6 space-y-6">
-          {/* Template */}
+        <div className="space-y-6 border-t border-border px-4 py-5 sm:px-5 sm:py-6">
+          {/* Thema-presets */}
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Template
+              Thema
             </p>
             <p className="mb-3 text-xs text-muted-foreground">
-              Elk template heeft een uniek design-concept — inclusief aanbevolen kleur en lettertype.
+              Kies een startpunt — daarna pas je kleur en lettertype los aan.
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {THEMAS.map((t) => {
-                const gekozen = content.thema === t.id
+              {PRESET_INFO.map((p) => {
+                const tokens = THEME_PRESETS[p.id]
+                const gekozen = theme.preset === p.id
                 return (
                   <button
-                    key={t.id}
-                    onClick={() =>
-                      saveWebsiteContent({
-                        thema: t.id,
-                        kleurAccent: t.accentKleur,
-                        kopLettertype: t.kopLettertype,
-                      })
-                    }
+                    key={p.id}
+                    onClick={() => saveTheme(themeVanPreset(p.id))}
                     className={cn(
                       'relative flex flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all',
-                      gekozen
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
+                      gekozen ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                     )}
                   >
                     {gekozen && (
@@ -287,48 +230,25 @@ export function OntwerpInstellingen({ content }: Props) {
                         <Check className="h-3 w-3" />
                       </span>
                     )}
-                    <div
-                      className="relative h-14 overflow-hidden rounded-lg"
-                      style={{ background: t.palette[1] }}
-                    >
-                      <div
-                        className="absolute inset-x-0 top-0 flex h-3.5 items-center gap-1 px-2"
-                        style={{ background: t.palette[0] }}
-                      >
-                        <div
-                          className="h-0.5 flex-1 rounded"
-                          style={{ background: 'rgba(255,255,255,0.4)' }}
-                        />
+                    <div className="relative h-14 overflow-hidden rounded-lg" style={{ background: tokens.kleuren.achtergrond }}>
+                      <div className="absolute inset-x-0 top-0 flex h-3.5 items-center gap-1 px-2" style={{ background: tokens.kleuren.accent }}>
+                        <div className="h-0.5 flex-1 rounded" style={{ background: 'rgba(255,255,255,0.4)' }} />
                       </div>
                       <div className="absolute inset-0 mt-3.5 flex items-center justify-center">
                         <div className="space-y-1 text-center">
-                          <div
-                            className="mx-auto h-1.5 rounded"
-                            style={{ background: t.palette[0] + 'aa', width: '55%' }}
-                          />
-                          <div
-                            className="mx-auto h-1 rounded"
-                            style={{ background: t.palette[0] + '55', width: '35%' }}
-                          />
+                          <div className="mx-auto h-1.5 rounded" style={{ background: tokens.kleuren.accent + 'aa', width: '55%' }} />
+                          <div className="mx-auto h-1 rounded" style={{ background: tokens.kleuren.accent + '55', width: '35%' }} />
                         </div>
                       </div>
                     </div>
                     <div className="flex gap-0.5">
-                      {t.palette.map((kleur, i) => (
-                        <div
-                          key={i}
-                          className="h-2 flex-1 first:rounded-l last:rounded-r"
-                          style={{ background: kleur }}
-                        />
+                      {[tokens.kleuren.accent, tokens.kleuren.achtergrond, tokens.kleuren.kaart].map((kleur, i) => (
+                        <div key={i} className="h-2 flex-1 border border-border/40 first:rounded-l last:rounded-r" style={{ background: kleur }} />
                       ))}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold leading-tight text-foreground">
-                        {t.naam}
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
-                        {t.beschrijving}
-                      </p>
+                      <p className="text-sm font-semibold leading-tight text-foreground">{p.naam}</p>
+                      <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">{p.beschrijving}</p>
                     </div>
                   </button>
                 )
@@ -336,9 +256,8 @@ export function OntwerpInstellingen({ content }: Props) {
             </div>
           </div>
 
-          {/* Accentkleur + Lettertype side by side */}
+          {/* Accentkleur + Lettertype */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {/* Accentkleur */}
             <div>
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Accentkleur
@@ -346,13 +265,17 @@ export function OntwerpInstellingen({ content }: Props) {
               <div className="mb-3 flex items-center gap-3">
                 <input
                   type="color"
-                  value={content.kleurAccent}
-                  onChange={(e) => stel({ kleurAccent: e.target.value })}
+                  value={theme.kleuren.accent}
+                  onChange={(e) =>
+                    saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
+                  }
                   className="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
                 />
                 <Input
-                  value={content.kleurAccent}
-                  onChange={(e) => stel({ kleurAccent: e.target.value })}
+                  value={theme.kleuren.accent}
+                  onChange={(e) =>
+                    saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: e.target.value } })
+                  }
                   className="w-28 font-mono text-sm uppercase"
                   maxLength={7}
                   placeholder="#a75573"
@@ -363,12 +286,10 @@ export function OntwerpInstellingen({ content }: Props) {
                   <button
                     key={k}
                     type="button"
-                    onClick={() => stel({ kleurAccent: k })}
+                    onClick={() => saveTheme({ ...theme, kleuren: { ...theme.kleuren, accent: k } })}
                     className={cn(
                       'aspect-square w-full rounded-md border-2 transition-transform hover:scale-110',
-                      content.kleurAccent === k
-                        ? 'border-foreground shadow-sm'
-                        : 'border-transparent'
+                      theme.kleuren.accent === k ? 'border-foreground shadow-sm' : 'border-transparent'
                     )}
                     style={{ background: k }}
                     title={k}
@@ -377,30 +298,24 @@ export function OntwerpInstellingen({ content }: Props) {
               </div>
             </div>
 
-            {/* Lettertype */}
             <div>
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Koplettertype
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {LETTERTYPES.map((l) => {
-                  const gekozen = content.kopLettertype === l.id
+                  const gekozen = theme.kopLettertype === l.id
                   return (
                     <button
                       key={l.id}
-                      onClick={() => saveWebsiteContent({ kopLettertype: l.id })}
+                      onClick={() => saveTheme({ ...theme, kopLettertype: l.id })}
                       className={cn(
                         'flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all',
-                        gekozen
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
+                        gekozen ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                       )}
                     >
-                      <span
-                        className="text-xl leading-none text-foreground"
-                        style={{ fontFamily: l.fontFamily }}
-                      >
-                        {l.voorbeeld}
+                      <span className="text-xl leading-none text-foreground" style={{ fontFamily: l.fontFamily }}>
+                        Jullie dag
                       </span>
                       <span className="text-xs font-medium text-muted-foreground">{l.naam}</span>
                       {gekozen && <Check className="h-3 w-3 text-primary" />}
@@ -417,42 +332,29 @@ export function OntwerpInstellingen({ content }: Props) {
               Navigatiemenu
             </p>
             <p className="mb-3 text-xs text-muted-foreground">
-              Toon een navigatiebalk bovenaan de website met links naar de secties.
+              Toon een navigatiebalk bovenaan de website met links naar de blokken.
             </p>
             <div className="flex items-center gap-3">
               <button
                 role="switch"
-                aria-checked={content.sectiesConfig['_nav']?.zichtbaar ?? false}
-                onClick={() => {
-                  const huidig = content.sectiesConfig['_nav']?.zichtbaar ?? false
-                  void saveWebsiteContent({
-                    sectiesConfig: {
-                      ...content.sectiesConfig,
-                      '_nav': {
-                        ...(content.sectiesConfig['_nav'] ?? { naam: '_nav', zichtbaar: false }),
-                        zichtbaar: !huidig,
-                      },
-                    },
-                  })
-                }}
+                aria-checked={theme.navZichtbaar}
+                onClick={() => saveTheme({ ...theme, navZichtbaar: !theme.navZichtbaar })}
                 className={cn(
                   'relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  (content.sectiesConfig['_nav']?.zichtbaar ?? false) ? 'bg-primary' : 'bg-input'
+                  theme.navZichtbaar ? 'bg-primary' : 'bg-input'
                 )}
               >
                 <span
                   className={cn(
                     'absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200',
-                    (content.sectiesConfig['_nav']?.zichtbaar ?? false) ? 'left-6' : 'left-1'
+                    theme.navZichtbaar ? 'left-6' : 'left-1'
                   )}
                 />
               </button>
               <div className="flex items-center gap-2">
                 <Menu className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-foreground">
-                  {(content.sectiesConfig['_nav']?.zichtbaar ?? false)
-                    ? 'Menu zichtbaar'
-                    : 'Geen menu (standaard)'}
+                  {theme.navZichtbaar ? 'Menu zichtbaar' : 'Geen menu (standaard)'}
                 </span>
               </div>
             </div>
@@ -477,12 +379,8 @@ export function OntwerpInstellingen({ content }: Props) {
                 placeholder="jan-en-ellemiek"
                 className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/60"
               />
-              {slugStatus === 'checking' && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-              {slugStatus === 'beschikbaar' && (
-                <Check className="h-4 w-4 text-emerald-500" />
-              )}
+              {slugStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              {slugStatus === 'beschikbaar' && <Check className="h-4 w-4 text-emerald-500" />}
             </div>
             {slugFeedback && (
               <p

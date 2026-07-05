@@ -612,6 +612,7 @@ export type Database = {
           secties_config: Json
           slug: string | null
           thema: string
+          theme: Json | null
           updated_at: string
           wedding_id: string
           website_gepubliceerd: boolean
@@ -634,6 +635,7 @@ export type Database = {
           secties_config?: Json
           slug?: string | null
           thema?: string
+          theme?: Json | null
           updated_at?: string
           wedding_id: string
           website_gepubliceerd?: boolean
@@ -656,6 +658,7 @@ export type Database = {
           secties_config?: Json
           slug?: string | null
           thema?: string
+          theme?: Json | null
           updated_at?: string
           wedding_id?: string
           website_gepubliceerd?: boolean
@@ -666,6 +669,50 @@ export type Database = {
             foreignKeyName: "website_content_wedding_id_fkey"
             columns: ["wedding_id"]
             isOneToOne: true
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_pages: {
+        Row: {
+          blocks: Json
+          created_at: string
+          id: string
+          page_slug: string
+          titel: string
+          updated_at: string
+          volgorde: number
+          wedding_id: string
+          zichtbaar: boolean
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          page_slug?: string
+          titel?: string
+          updated_at?: string
+          volgorde?: number
+          wedding_id: string
+          zichtbaar?: boolean
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          page_slug?: string
+          titel?: string
+          updated_at?: string
+          volgorde?: number
+          wedding_id?: string
+          zichtbaar?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_pages_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
             referencedRelation: "weddings"
             referencedColumns: ["id"]
           },
@@ -926,6 +973,7 @@ export type Database = {
       accept_invite: { Args: { p_token: string }; Returns: string }
       check_slug_available: { Args: { p_slug: string }; Returns: boolean }
       get_public_website: { Args: { p_slug: string }; Returns: Json }
+      get_public_website_v2: { Args: { p_slug: string }; Returns: Json }
       can_edit: {
         Args: { p_module: string; p_wedding: string }
         Returns: boolean

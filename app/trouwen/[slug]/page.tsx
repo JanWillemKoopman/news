@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { PublicWebsite, type PublicWebsiteData } from '@/components/website/PublicWebsite'
+import { PublicWebsiteV2, type PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
@@ -35,15 +36,43 @@ async function getRegistryMeta(slug: string): Promise<{ enabled: boolean; passwo
   }
 }
 
-async function getData(slug: string): Promise<{ site: PublicWebsiteData; registry: { enabled: boolean; passwordRequired: boolean; introText: string } | null } | null> {
+interface SiteResult {
+  registry: { enabled: boolean; passwordRequired: boolean; introText: string } | null
+  // v2 (blokkenmodel) heeft voorrang; v1 is het legacy-pad voor sites die
+  // nog niet naar blokken zijn geconverteerd.
+  v2: PublicWebsiteV2Data | null
+  v1: PublicWebsiteData | null
+}
+
+async function getData(slug: string): Promise<SiteResult | null> {
   const supabase = createClient()
-  const [siteRes, registry] = await Promise.all([
+  const [v2Res, v1Res, registry] = await Promise.all([
+    supabase.rpc('get_public_website_v2', { p_slug: slug }),
     supabase.rpc('get_public_website', { p_slug: slug }),
     getRegistryMeta(slug),
   ])
-  if (siteRes.error || !siteRes.data) return null
-  const site = siteRes.data as unknown as PublicWebsiteData
-  return { site, registry }
+  const v2 = !v2Res.error && v2Res.data ? (v2Res.data as unknown as PublicWebsiteV2Data) : null
+  const v1 = !v1Res.error && v1Res.data ? (v1Res.data as unknown as PublicWebsiteData) : null
+  if (!v2 && !v1) return null
+  return { v2, v1, registry }
+}
+
+function beschrijvingVan(result: SiteResult): string {
+  if (result.v2) {
+    const home = result.v2.pages[0]
+    const eersteTekst = home?.blocks.find((b) => b.type === 'tekst' && b.zichtbaar && b.tekst.trim())
+    if (eersteTekst && 'tekst' in eersteTekst) return eersteTekst.tekst.slice(0, 160)
+    return ''
+  }
+  return result.v1?.content.welkomsttekst.slice(0, 160) ?? ''
+}
+
+function headerFotoVan(result: SiteResult): string {
+  if (result.v2) {
+    const hero = result.v2.pages[0]?.blocks.find((b) => b.type === 'hero')
+    return hero && 'fotoUrl' in hero ? hero.fotoUrl : ''
+  }
+  return result.v1?.content.headerFotoUrl ?? ''
 }
 
 export async function generateMetadata({
@@ -53,13 +82,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const result = await getData(params.slug)
   if (!result) return { title: 'Trouwwebsite' }
-  const { partner1Naam, partner2Naam } = result.site.wedding
+  const wedding = result.v2?.wedding ?? result.v1!.wedding
+  const beschrijving = beschrijvingVan(result)
+  const headerFoto = headerFotoVan(result)
   return {
-    title: `${partner1Naam} & ${partner2Naam}`,
-    description: result.site.content.welkomsttekst.slice(0, 160) || `De trouwwebsite van ${partner1Naam} & ${partner2Naam}`,
+    title: `${wedding.partner1Naam} & ${wedding.partner2Naam}`,
+    description: beschrijving || `De trouwwebsite van ${wedding.partner1Naam} & ${wedding.partner2Naam}`,
     openGraph: {
-      title: `${partner1Naam} & ${partner2Naam}`,
-      images: result.site.content.headerFotoUrl ? [result.site.content.headerFotoUrl] : [],
+      title: `${wedding.partner1Naam} & ${wedding.partner2Naam}`,
+      images: headerFoto ? [headerFoto] : [],
     },
   }
 }
@@ -67,5 +98,8 @@ export async function generateMetadata({
 export default async function TrouwWebsitePage({ params }: { params: { slug: string } }) {
   const result = await getData(params.slug)
   if (!result) notFound()
-  return <PublicWebsite data={result.site} registry={result.registry} slug={params.slug} />
+  if (result.v2) {
+    return <PublicWebsiteV2 data={result.v2} registry={result.registry} slug={params.slug} />
+  }
+  return <PublicWebsite data={result.v1!} registry={result.registry} slug={params.slug} />
 }
