@@ -10,19 +10,19 @@ interface GastenStatsStripProps {
 // Eén gecondenseerde samenvattingsstrip in de stijl van TakenStatsStrip, zodat
 // de gastenpagina dezelfde rustige uitstraling krijgt als de takenpagina.
 function CircularProgress({ pct }: { pct: number }) {
-  const r = 26
+  const r = 22
   const circumference = 2 * Math.PI * r
   const offset = circumference - (pct / 100) * circumference
 
   return (
-    <svg width={64} height={64} className="shrink-0 -rotate-90">
-      <circle cx={32} cy={32} r={r} fill="none" stroke="hsl(var(--border))" strokeWidth={4} />
+    <svg width={56} height={56} className="shrink-0 -rotate-90">
+      <circle cx={28} cy={28} r={r} fill="none" stroke="#e5e7eb" strokeWidth={4} />
       <circle
-        cx={32}
-        cy={32}
+        cx={28}
+        cy={28}
         r={r}
         fill="none"
-        stroke="hsl(var(--primary))"
+        stroke="#be123c"
         strokeWidth={4}
         strokeOpacity={0.6}
         strokeLinecap="round"
@@ -31,11 +31,11 @@ function CircularProgress({ pct }: { pct: number }) {
         className="transition-all duration-500"
       />
       <text
-        x={32}
-        y={32}
+        x={28}
+        y={28}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '32px 32px', fontSize: 11, fontWeight: 500, fill: 'hsl(var(--muted-foreground))' }}
+        style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
       >
         {pct}%
       </text>
@@ -56,7 +56,7 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
   return (
     <div className="mb-6 rounded-xl border border-border bg-card shadow-sm">
       {/* Hoofdregel */}
-      <div className="flex items-center gap-4 p-4">
+      <div className="flex items-center gap-4 p-3">
         <CircularProgress pct={pct} />
 
         <div className="min-w-0 flex-1">
