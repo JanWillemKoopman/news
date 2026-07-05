@@ -24,6 +24,8 @@ import {
   websiteContentFromRow,
   websiteContentToRow,
   websiteFotoFromRow,
+  websitePageFromRow,
+  websitePageToRow,
   weddingFromRow,
   weddingToRow,
 } from './mappers'
@@ -55,6 +57,7 @@ import type {
   WebsiteContentInput,
   WebsiteFoto,
 } from './types'
+import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
 type Tables = Database['public']['Tables']
 
@@ -372,14 +375,23 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   }
 
   // --- WebsiteContent ------------------------------------------------
+  // Expliciete kolomlijst i.p.v. '*': sluit site_password (het gehashte
+  // site-wachtwoord) uit van wat naar de browser gaat. Het domeintype
+  // WebsiteContent kent dit veld toch al niet (zie mappers.ts) — dit
+  // voorkomt bovendien dat de hash-string het netwerkverkeer in gaat.
+  private readonly websiteContentKolommen =
+    'id, wedding_id, welkomsttekst, dresscode, cadeaulijst, hotels, routebeschrijving, contact, ' +
+    'slug, website_gepubliceerd, thema, kleur_accent, kop_lettertype, header_foto_url, ' +
+    'header_overlay, secties_config, faq, gallerij, theme, site_password_enabled, created_at, updated_at'
+
   async getWebsiteContent(weddingId: ID): Promise<WebsiteContent | null> {
     const { data, error } = await this.db
       .from('website_content')
-      .select('*')
+      .select(this.websiteContentKolommen)
       .eq('wedding_id', weddingId)
       .maybeSingle()
     if (error) throw error
-    return data ? websiteContentFromRow(data) : null
+    return data ? websiteContentFromRow(data as unknown as Tables['website_content']['Row']) : null
   }
 
   async saveWebsiteContent(
@@ -393,16 +405,54 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     const { data, error } = await this.db
       .from('website_content')
       .upsert(row, { onConflict: 'wedding_id' })
-      .select()
+      .select(this.websiteContentKolommen)
       .single()
     if (error) throw error
-    return websiteContentFromRow(data)
+    return websiteContentFromRow(data as unknown as Tables['website_content']['Row'])
   }
 
   async checkSlugAvailable(slug: string): Promise<boolean> {
     const { data, error } = await this.db.rpc('check_slug_available', { p_slug: slug })
     if (error) throw error
     return data as boolean
+  }
+
+  // --- Website-pagina's (website v3: blokken) ------------------------
+  async listWebsitePages(weddingId: ID): Promise<WebsitePage[]> {
+    const { data, error } = await this.db
+      .from('website_pages')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(websitePageFromRow)
+  }
+
+  async createWebsitePage(input: WebsitePageInput): Promise<WebsitePage> {
+    const row = websitePageToRow(input) as Tables['website_pages']['Insert']
+    const { data, error } = await this.db
+      .from('website_pages')
+      .insert(row)
+      .select()
+      .single()
+    if (error) throw error
+    return websitePageFromRow(data)
+  }
+
+  async updateWebsitePage(id: ID, patch: Partial<WebsitePageInput>): Promise<WebsitePage> {
+    const { data, error } = await this.db
+      .from('website_pages')
+      .update(websitePageToRow(patch))
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return websitePageFromRow(data)
+  }
+
+  async deleteWebsitePage(id: ID): Promise<void> {
+    const { error } = await this.db.from('website_pages').delete().eq('id', id)
+    if (error) throw error
   }
 
   // --- Website-foto's ------------------------------------------------

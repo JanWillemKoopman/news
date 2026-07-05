@@ -29,6 +29,7 @@ import type {
   WebsiteContentInput,
   WebsiteFoto,
 } from './types'
+import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
 export interface WeddingRepository {
   // Wedding. V1 plant één bruiloft, maar de interface is meervoud-klaar.
@@ -89,6 +90,12 @@ export interface WeddingRepository {
     patch: Partial<WebsiteContentInput>
   ): Promise<WebsiteContent>
   checkSlugAvailable(slug: string): Promise<boolean>
+
+  // Website-pagina's (website v3: blokkenmodel, zie websiteBlocks.ts).
+  listWebsitePages(weddingId: ID): Promise<WebsitePage[]>
+  createWebsitePage(input: WebsitePageInput): Promise<WebsitePage>
+  updateWebsitePage(id: ID, patch: Partial<WebsitePageInput>): Promise<WebsitePage>
+  deleteWebsitePage(id: ID): Promise<void>
 
   // Website-foto's (gallerij).
   listWebsiteFotos(weddingId: ID): Promise<WebsiteFoto[]>

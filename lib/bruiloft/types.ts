@@ -315,7 +315,20 @@ export type TableInput = Omit<Table, 'id'>
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
 export type WeddingThema = 'klassiek' | 'modern' | 'romantisch' | 'rustiek' | 'minimalistisch' | 'botanisch'
-export type WeddingLettertype = 'cormorant' | 'playfair' | 'lora' | 'dancing-script' | 'eb-garamond' | 'great-vibes'
+export type WeddingLettertype =
+  | 'cormorant'
+  | 'playfair'
+  | 'lora'
+  | 'dancing-script'
+  | 'eb-garamond'
+  | 'great-vibes'
+  // Website v3: uitgebreide fontbibliotheek (zie lib/bruiloft/websiteTheme.ts).
+  | 'italiana'
+  | 'marcellus'
+  | 'libre-baskerville'
+  | 'josefin-sans'
+  | 'bodoni-moda'
+  | 'parisienne'
 
 export interface SectieConfig {
   zichtbaar: boolean
@@ -362,6 +375,15 @@ export interface WebsiteContent {
   sectiesConfig: Record<string, SectieConfig>
   faq: FaqItem[]
   gallerij: GallerijFoto[]
+  // Website v3: design-tokens; null = afleiden uit thema/kleurAccent/
+  // kopLettertype (zie lib/bruiloft/websiteTheme.ts).
+  theme: import('./websiteTheme').ThemeTokens | null
+  // Website v3 fase 3: site-breed wachtwoord. Het gehashte wachtwoord zelf
+  // (site_password) zit bewust NIET in dit domeintype — dat wordt alleen
+  // server-side gezet via POST /api/trouwen/settings (zie
+  // store/bruiloftStore.ts saveSitePassword), nooit via deze directe
+  // client-upsert-laag.
+  sitePasswordEnabled: boolean
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>
@@ -530,4 +552,5 @@ export interface WeddingDatabase {
   scheduleItems: ScheduleItem[]
   tables: Table[]
   websiteContents: WebsiteContent[]
+  websitePages: import('./websiteBlocks').WebsitePage[]
 }

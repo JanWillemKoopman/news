@@ -30,6 +30,7 @@ import type {
   WebsiteContentInput,
   WebsiteFoto,
 } from './types'
+import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
 const STORAGE_KEY = 'bruiloft-planner-v1'
 const DB_VERSION = 1
@@ -45,6 +46,7 @@ function emptyDb(): WeddingDatabase {
     scheduleItems: [],
     tables: [],
     websiteContents: [],
+    websitePages: [],
   }
 }
 
@@ -127,6 +129,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     db.scheduleItems = db.scheduleItems.filter((s) => s.weddingId !== id)
     db.tables = db.tables.filter((t) => t.weddingId !== id)
     db.websiteContents = db.websiteContents.filter((w) => w.weddingId !== id)
+    db.websitePages = db.websitePages.filter((w) => w.weddingId !== id)
     this.write(db)
   }
 
@@ -401,6 +404,8 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
         sectiesConfig: {},
         faq: [],
         gallerij: [],
+        theme: null,
+        sitePasswordEnabled: false,
         ...patch,
       }
       db.websiteContents.push(content)
@@ -416,6 +421,38 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   async checkSlugAvailable(slug: string): Promise<boolean> {
     const taken = this.read().websiteContents.some((w) => w.slug === slug)
     return !taken
+  }
+
+  // --- Website-pagina's (website v3: blokken) --------------------------------
+
+  async listWebsitePages(weddingId: ID): Promise<WebsitePage[]> {
+    return this.read()
+      .websitePages.filter((p) => p.weddingId === weddingId)
+      .sort((a, b) => a.volgorde - b.volgorde)
+  }
+
+  async createWebsitePage(input: WebsitePageInput): Promise<WebsitePage> {
+    const db = this.read()
+    const page: WebsitePage = { ...input, id: uuid() }
+    db.websitePages.push(page)
+    this.write(db)
+    return page
+  }
+
+  async updateWebsitePage(id: ID, patch: Partial<WebsitePageInput>): Promise<WebsitePage> {
+    const db = this.read()
+    const index = db.websitePages.findIndex((p) => p.id === id)
+    if (index === -1) throw new Error(`WebsitePage ${id} niet gevonden`)
+    const updated: WebsitePage = { ...db.websitePages[index], ...patch }
+    db.websitePages[index] = updated
+    this.write(db)
+    return updated
+  }
+
+  async deleteWebsitePage(id: ID): Promise<void> {
+    const db = this.read()
+    db.websitePages = db.websitePages.filter((p) => p.id !== id)
+    this.write(db)
   }
 
   async listWebsiteFotos(_weddingId: ID): Promise<WebsiteFoto[]> { return [] }

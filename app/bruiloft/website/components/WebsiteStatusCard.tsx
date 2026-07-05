@@ -6,15 +6,15 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import type { WebsiteContent } from '@/lib/bruiloft/types'
 
-const TOTAAL_SECTIES = 10
-
 interface Props {
   content: WebsiteContent
   onTogglePublicatie: () => void
   publiekeUrl: string | null
+  // Blokken van de Home-pagina (website v3) voor de zichtbaar/verborgen-telling.
+  blokken: { zichtbaar: boolean }[]
 }
 
-export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl }: Props) {
+export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl, blokken }: Props) {
   const [gekopieerd, setGekopieerd] = React.useState(false)
 
   async function kopieerUrl() {
@@ -28,10 +28,8 @@ export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl }: 
     }
   }
 
-  const verborgenCount = Object.values(content.sectiesConfig).filter(
-    (s) => s.zichtbaar === false
-  ).length
-  const actieveCount = TOTAAL_SECTIES - verborgenCount
+  const verborgenCount = blokken.filter((b) => !b.zichtbaar).length
+  const actieveCount = blokken.length - verborgenCount
 
   return (
     <div className="mb-4 overflow-hidden rounded-xl border border-border bg-card">
@@ -105,7 +103,7 @@ export function WebsiteStatusCard({ content, onTogglePublicatie, publiekeUrl }: 
         <div className="flex items-center gap-6 border-t border-border px-4 py-3.5 sm:border-l sm:border-t-0 sm:px-6 sm:py-5">
           <div className="text-center">
             <p className="text-2xl font-semibold tabular-nums text-foreground">{actieveCount}</p>
-            <p className="text-xs text-muted-foreground">actieve secties</p>
+            <p className="text-xs text-muted-foreground">actieve blokken</p>
           </div>
           <div className="h-8 w-px bg-border" />
           <div className="text-center">

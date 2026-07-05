@@ -40,6 +40,8 @@ import type {
   WeddingLettertype,
   WeddingThema,
 } from './types'
+import type { Block, WebsitePage, WebsitePageInput } from './websiteBlocks'
+import type { ThemeTokens } from './websiteTheme'
 
 type Tables = Database['public']['Tables']
 
@@ -373,6 +375,8 @@ export function websiteContentFromRow(r: Tables['website_content']['Row']): Webs
     sectiesConfig: ((r.secties_config as unknown) as Record<string, SectieConfig>) ?? DEFAULT_SECTIES_CONFIG,
     faq: ((r.faq as unknown) as FaqItem[]) ?? [],
     gallerij: ((r.gallerij as unknown) as GallerijFoto[]) ?? [],
+    theme: ((r.theme as unknown) as ThemeTokens) ?? null,
+    sitePasswordEnabled: r.site_password_enabled ?? false,
   }
 }
 
@@ -397,6 +401,8 @@ export function websiteContentToRow(
   if (p.sectiesConfig !== undefined) r.secties_config = p.sectiesConfig as unknown as Tables['website_content']['Insert']['secties_config']
   if (p.faq !== undefined) r.faq = p.faq as unknown as Tables['website_content']['Insert']['faq']
   if (p.gallerij !== undefined) r.gallerij = p.gallerij as unknown as Tables['website_content']['Insert']['gallerij']
+  if (p.theme !== undefined) r.theme = p.theme as unknown as Tables['website_content']['Insert']['theme']
+  if (p.sitePasswordEnabled !== undefined) r.site_password_enabled = p.sitePasswordEnabled
   return r
 }
 
@@ -408,6 +414,33 @@ export function websiteFotoFromRow(r: Tables['website_fotos']['Row']): WebsiteFo
     bijschrift: r.bijschrift,
     volgorde: r.volgorde,
   }
+}
+
+// --- WebsitePage (website v3: blokken) --------------------------------
+
+export function websitePageFromRow(r: Tables['website_pages']['Row']): WebsitePage {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    titel: r.titel,
+    pageSlug: r.page_slug,
+    volgorde: r.volgorde,
+    zichtbaar: r.zichtbaar,
+    blocks: ((r.blocks as unknown) as Block[]) ?? [],
+  }
+}
+
+export function websitePageToRow(
+  p: Partial<WebsitePageInput>
+): Partial<Tables['website_pages']['Insert']> {
+  const r: Partial<Tables['website_pages']['Insert']> = {}
+  if (p.weddingId !== undefined) r.wedding_id = p.weddingId
+  if (p.titel !== undefined) r.titel = p.titel
+  if (p.pageSlug !== undefined) r.page_slug = p.pageSlug
+  if (p.volgorde !== undefined) r.volgorde = p.volgorde
+  if (p.zichtbaar !== undefined) r.zichtbaar = p.zichtbaar
+  if (p.blocks !== undefined) r.blocks = p.blocks as unknown as Tables['website_pages']['Insert']['blocks']
+  return r
 }
 
 // --- ActivityEntry (alleen lezen; de DB-trigger schrijft) ------------
