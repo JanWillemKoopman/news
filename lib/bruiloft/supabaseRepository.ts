@@ -375,14 +375,23 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   }
 
   // --- WebsiteContent ------------------------------------------------
+  // Expliciete kolomlijst i.p.v. '*': sluit site_password (het gehashte
+  // site-wachtwoord) uit van wat naar de browser gaat. Het domeintype
+  // WebsiteContent kent dit veld toch al niet (zie mappers.ts) — dit
+  // voorkomt bovendien dat de hash-string het netwerkverkeer in gaat.
+  private readonly websiteContentKolommen =
+    'id, wedding_id, welkomsttekst, dresscode, cadeaulijst, hotels, routebeschrijving, contact, ' +
+    'slug, website_gepubliceerd, thema, kleur_accent, kop_lettertype, header_foto_url, ' +
+    'header_overlay, secties_config, faq, gallerij, theme, site_password_enabled, created_at, updated_at'
+
   async getWebsiteContent(weddingId: ID): Promise<WebsiteContent | null> {
     const { data, error } = await this.db
       .from('website_content')
-      .select('*')
+      .select(this.websiteContentKolommen)
       .eq('wedding_id', weddingId)
       .maybeSingle()
     if (error) throw error
-    return data ? websiteContentFromRow(data) : null
+    return data ? websiteContentFromRow(data as unknown as Tables['website_content']['Row']) : null
   }
 
   async saveWebsiteContent(
@@ -396,10 +405,10 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     const { data, error } = await this.db
       .from('website_content')
       .upsert(row, { onConflict: 'wedding_id' })
-      .select()
+      .select(this.websiteContentKolommen)
       .single()
     if (error) throw error
-    return websiteContentFromRow(data)
+    return websiteContentFromRow(data as unknown as Tables['website_content']['Row'])
   }
 
   async checkSlugAvailable(slug: string): Promise<boolean> {

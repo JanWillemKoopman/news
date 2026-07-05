@@ -9,8 +9,8 @@ import { ChevronDown, Gift, Lock, Menu, Play, X } from 'lucide-react'
 import * as React from 'react'
 
 import { formatDatumNL } from '@/lib/bruiloft/format'
-import type { FaqItem, GallerijFoto, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
-import type { Block, BlockBreedte, GalerijBlock, HeroBlock, ProgrammaBlock } from '@/lib/bruiloft/websiteBlocks'
+import type { FaqItem, GallerijFoto, RsvpStatus, WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
+import type { Block, BlockBreedte, GalerijBlock, HeroBlock, ProgrammaBlock, RsvpBlock } from '@/lib/bruiloft/websiteBlocks'
 import { heeftInhoud } from '@/lib/bruiloft/websiteBlocks'
 import {
   HOEK_RADIUS,
@@ -253,6 +253,281 @@ function naarEmbedUrl(url: string): string | null {
   const vimeo = trimmed.match(/vimeo\.com\/(\d+)/)
   if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`
   return null
+}
+
+// ─── RSVP: zelf opzoeken + bevestigen ────────────────────────────────────────
+// Fase 3: gast zoekt zichzelf op (voornaam + achternaam) via de rate-
+// limited /api/rsvp/zoek-route en bevestigt via /api/rsvp/bevestig — nooit
+// een rsvp_token in de browser, in tegenstelling tot de persoonlijke
+// /rsvp/[token]-links die daarnaast blijven bestaan.
+
+interface GevondenGast {
+  voornaam: string
+  achternaam: string
+  rsvpStatus: RsvpStatus
+  dieetwensen: string
+  heeftPartner: boolean
+  partnerNaam: string
+  aantalKinderen: number
+}
+
+type ZoekStatus = 'idle' | 'zoeken' | 'gevonden' | 'niet-gevonden' | 'meerdere' | 'te-veel-pogingen'
+
+function RsvpZoekForm({
+  slug,
+  onGevonden,
+}: {
+  slug?: string
+  onGevonden: (voornaam: string, achternaam: string, gast: GevondenGast) => void
+}) {
+  const [voornaam, setVoornaam] = React.useState('')
+  const [achternaam, setAchternaam] = React.useState('')
+  const [status, setStatus] = React.useState<ZoekStatus>('idle')
+
+  async function zoek(e: React.FormEvent) {
+    e.preventDefault()
+    if (!slug) return
+    setStatus('zoeken')
+    try {
+      const res = await fetch('/api/rsvp/zoek', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, voornaam, achternaam }),
+      })
+      if (res.status === 429) {
+        setStatus('te-veel-pogingen')
+        return
+      }
+      const data = (await res.json()) as { found: boolean; multiple: boolean; guest?: GevondenGast }
+      if (data.found && data.guest) {
+        onGevonden(voornaam, achternaam, data.guest)
+      } else if (data.multiple) {
+        setStatus('meerdere')
+      } else {
+        setStatus('niet-gevonden')
+      }
+    } catch {
+      setStatus('niet-gevonden')
+    }
+  }
+
+  return (
+    <div>
+      <form onSubmit={zoek} className="flex flex-col gap-3 sm:flex-row">
+        <input
+          value={voornaam}
+          onChange={(e) => setVoornaam(e.target.value)}
+          placeholder="Voornaam"
+          required
+          className="h-10 flex-1 rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none focus:ring-2"
+          style={{ borderRadius: 'var(--site-radius)' }}
+        />
+        <input
+          value={achternaam}
+          onChange={(e) => setAchternaam(e.target.value)}
+          placeholder="Achternaam"
+          required
+          className="h-10 flex-1 rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none focus:ring-2"
+          style={{ borderRadius: 'var(--site-radius)' }}
+        />
+        <button
+          type="submit"
+          disabled={status === 'zoeken'}
+          className="h-10 shrink-0 px-5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
+          style={{ background: 'hsl(var(--primary))', borderRadius: 'var(--site-radius)' }}
+        >
+          {status === 'zoeken' ? 'Bezig…' : 'Zoek mij op'}
+        </button>
+      </form>
+      {status === 'niet-gevonden' && (
+        <p className="mt-3 text-sm" style={{ color: 'var(--site-muted)' }}>
+          We konden je niet vinden. Controleer de spelling, of gebruik je persoonlijke uitnodigingslink.
+        </p>
+      )}
+      {status === 'meerdere' && (
+        <p className="mt-3 text-sm" style={{ color: 'var(--site-muted)' }}>
+          Er zijn meerdere gasten met deze naam gevonden. Gebruik je persoonlijke uitnodigingslink of neem contact op met het bruidspaar.
+        </p>
+      )}
+      {status === 'te-veel-pogingen' && (
+        <p className="mt-3 text-sm" style={{ color: 'var(--site-muted)' }}>
+          Te veel pogingen. Probeer het over een paar minuten opnieuw.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RsvpBevestigForm({
+  slug,
+  voornaam,
+  achternaam,
+  gast,
+}: {
+  slug?: string
+  voornaam: string
+  achternaam: string
+  gast: GevondenGast
+}) {
+  const [status, setStatus] = React.useState<RsvpStatus>(gast.rsvpStatus)
+  const [dieet, setDieet] = React.useState(gast.dieetwensen)
+  const [heeftPartner, setHeeftPartner] = React.useState(gast.heeftPartner)
+  const [partnerNaam, setPartnerNaam] = React.useState(gast.partnerNaam)
+  const [kinderen, setKinderen] = React.useState(gast.aantalKinderen)
+  const [bezig, setBezig] = React.useState(false)
+  const [opgeslagen, setOpgeslagen] = React.useState(false)
+  const [fout, setFout] = React.useState('')
+
+  const komt = status === 'bevestigd'
+  const gekozen = status === 'bevestigd' || status === 'afgemeld'
+
+  async function bevestig(e: React.FormEvent) {
+    e.preventDefault()
+    if (!slug) return
+    setBezig(true)
+    setFout('')
+    try {
+      const res = await fetch('/api/rsvp/bevestig', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          voornaam,
+          achternaam,
+          payload: {
+            rsvpStatus: status,
+            dieetwensen: dieet,
+            heeftPartner,
+            partnerNaam: heeftPartner ? partnerNaam : '',
+            aantalKinderen: Number(kinderen) || 0,
+          },
+        }),
+      })
+      if (!res.ok) {
+        setFout('Er ging iets mis bij het opslaan. Probeer het later opnieuw.')
+        return
+      }
+      setOpgeslagen(true)
+    } catch {
+      setFout('Controleer je verbinding en probeer het opnieuw.')
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  return (
+    <form onSubmit={bevestig} className="space-y-4 text-left">
+      <p style={{ color: 'var(--site-text)' }}>
+        Hoi {gast.voornaam}, ben je erbij?
+      </p>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setStatus('bevestigd')}
+          className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+          style={
+            status === 'bevestigd'
+              ? { background: 'hsl(var(--primary))', color: 'white', borderColor: 'hsl(var(--primary))' }
+              : { borderColor: 'hsl(var(--primary)/0.3)', color: 'var(--site-text)' }
+          }
+        >
+          Ik ben erbij
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatus('afgemeld')}
+          className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+          style={
+            status === 'afgemeld'
+              ? { background: 'hsl(var(--primary))', color: 'white', borderColor: 'hsl(var(--primary))' }
+              : { borderColor: 'hsl(var(--primary)/0.3)', color: 'var(--site-text)' }
+          }
+        >
+          Helaas niet
+        </button>
+      </div>
+
+      {komt && (
+        <>
+          <input
+            value={dieet}
+            onChange={(e) => setDieet(e.target.value)}
+            placeholder="Dieetwensen (optioneel)"
+            className="h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none"
+            style={{ borderRadius: 'var(--site-radius)' }}
+          />
+          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--site-text)' }}>
+            <input
+              type="checkbox"
+              checked={heeftPartner}
+              onChange={(e) => setHeeftPartner(e.target.checked)}
+              className="h-4 w-4"
+              style={{ accentColor: 'hsl(var(--primary))' }}
+            />
+            Ik neem een partner mee
+          </label>
+          {heeftPartner && (
+            <input
+              value={partnerNaam}
+              onChange={(e) => setPartnerNaam(e.target.value)}
+              placeholder="Naam van je partner"
+              className="h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none"
+              style={{ borderRadius: 'var(--site-radius)' }}
+            />
+          )}
+          <input
+            type="number"
+            min={0}
+            value={kinderen || ''}
+            onChange={(e) => setKinderen(Number(e.target.value) || 0)}
+            placeholder="Aantal kinderen"
+            className="h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900 outline-none"
+            style={{ borderRadius: 'var(--site-radius)' }}
+          />
+        </>
+      )}
+
+      <button
+        type="submit"
+        disabled={!gekozen || bezig}
+        className="w-full py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
+        style={{ background: 'hsl(var(--primary))', borderRadius: 'var(--site-radius)' }}
+      >
+        {bezig ? 'Bezig…' : 'Verstuur reactie'}
+      </button>
+      {opgeslagen && (
+        <p className="text-center text-sm font-medium" style={{ color: 'hsl(var(--primary))' }}>
+          Bedankt! Je reactie is opgeslagen.
+        </p>
+      )}
+      {fout && <p className="text-center text-sm font-medium text-red-600">{fout}</p>}
+    </form>
+  )
+}
+
+function RsvpZoeken({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
+  const [gevonden, setGevonden] = React.useState<{ voornaam: string; achternaam: string; gast: GevondenGast } | null>(null)
+
+  if (gevonden) {
+    return (
+      <RsvpBevestigForm
+        slug={ctx.slug}
+        voornaam={gevonden.voornaam}
+        achternaam={gevonden.achternaam}
+        gast={gevonden.gast}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-4 text-left">
+      {block.introTekst && <p style={{ color: 'var(--site-muted)' }}>{block.introTekst}</p>}
+      <RsvpZoekForm
+        slug={ctx.slug}
+        onGevonden={(voornaam, achternaam, gast) => setGevonden({ voornaam, achternaam, gast })}
+      />
+    </div>
+  )
 }
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
@@ -680,6 +955,8 @@ function BlockInhoud({ block, ctx }: { block: Exclude<Block, HeroBlock>; ctx: Re
       return <p className="whitespace-pre-line" style={{ color: 'var(--site-muted)' }}>{block.tekst}</p>
     case 'contact':
       return <p className="whitespace-pre-line" style={{ color: 'var(--site-muted)' }}>{block.tekst}</p>
+    case 'rsvp':
+      return <RsvpZoeken block={block} ctx={ctx} />
     case 'scheiding':
       return <Ornament theme={ctx.theme} />
   }
@@ -687,13 +964,43 @@ function BlockInhoud({ block, ctx }: { block: Exclude<Block, HeroBlock>; ctx: Re
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
 
-function Navigatie({ blokken, ctx }: { blokken: Block[]; ctx: RenderContext }) {
+interface NavItem {
+  key: string
+  label: string
+  href: string
+  actief?: boolean
+}
+
+function Navigatie({
+  pages,
+  activePageSlug,
+  blokken,
+  ctx,
+}: {
+  // Alle zichtbare pagina's (voor pagina-navigatie bij meerdere pagina's).
+  pages: PublicPage[]
+  activePageSlug: string
+  // Blokken van de huidige pagina (voor anchor-navigatie bij precies één pagina).
+  blokken: Block[]
+  ctx: RenderContext
+}) {
   const { theme, wedding, registry, slug } = ctx
   const [open, setOpen] = React.useState(false)
 
-  const items = blokken
-    .filter((b): b is Exclude<Block, HeroBlock> => b.type !== 'hero' && b.type !== 'scheiding')
-    .filter((b) => 'titel' in b && b.titel && b.type !== 'cadeaulijst')
+  // Meerdere pagina's: navigeer tussen pagina's. Eén pagina (huidige status quo):
+  // navigeer met anchors naar blokken binnen die pagina, zoals voorheen.
+  const items: NavItem[] =
+    pages.length > 1
+      ? pages.map((p) => ({
+          key: p.id,
+          label: p.titel || 'Home',
+          href: p.pageSlug ? `/trouwen/${slug}/${p.pageSlug}` : `/trouwen/${slug}`,
+          actief: p.pageSlug === activePageSlug,
+        }))
+      : blokken
+          .filter((b): b is Exclude<Block, HeroBlock> => b.type !== 'hero' && b.type !== 'scheiding')
+          .filter((b) => 'titel' in b && b.titel && b.type !== 'cadeaulijst')
+          .map((b) => ({ key: b.id, label: 'titel' in b ? b.titel : '', href: `#b-${b.id}` }))
 
   const navKleuren =
     theme.navStijl === 'accent'
@@ -709,14 +1016,14 @@ function Navigatie({ blokken, ctx }: { blokken: Block[]; ctx: RenderContext }) {
           {wedding.partner1Naam} &amp; {wedding.partner2Naam}
         </span>
         <ul className="hidden items-center gap-5 md:flex">
-          {items.map((b) => (
-            <li key={b.id}>
+          {items.map((item) => (
+            <li key={item.key}>
               <a
-                href={`#b-${b.id}`}
+                href={item.href}
                 className="text-[10px] uppercase tracking-widest transition-opacity hover:opacity-100"
-                style={{ color: navKleuren.link, opacity: 0.9 }}
+                style={{ color: navKleuren.link, opacity: item.actief ? 1 : 0.9, fontWeight: item.actief ? 600 : undefined }}
               >
-                {'titel' in b ? b.titel : ''}
+                {item.label}
               </a>
             </li>
           ))}
@@ -753,15 +1060,15 @@ function Navigatie({ blokken, ctx }: { blokken: Block[]; ctx: RenderContext }) {
                 </a>
               </li>
             )}
-            {items.map((b) => (
-              <li key={b.id}>
+            {items.map((item) => (
+              <li key={item.key}>
                 <a
-                  href={`#b-${b.id}`}
+                  href={item.href}
                   onClick={() => setOpen(false)}
                   className="block py-2.5 text-[11px] uppercase tracking-widest"
-                  style={{ color: navKleuren.link }}
+                  style={{ color: navKleuren.link, fontWeight: item.actief ? 600 : undefined }}
                 >
-                  {'titel' in b ? b.titel : ''}
+                  {item.label}
                 </a>
               </li>
             ))}
@@ -789,6 +1096,8 @@ export function PublicWebsiteV2({
     data.theme ??
     themeVanLegacy(data.fallback.thema, data.fallback.kleurAccent, data.fallback.kopLettertype)
 
+  // get_public_website_v2 filtert al op zichtbare pagina's; data.pages bevat
+  // dus alleen pagina's die publiek getoond mogen worden.
   const pagina =
     data.pages.find((p) => p.pageSlug === activePageSlug) ?? data.pages[0]
 
@@ -809,7 +1118,9 @@ export function PublicWebsiteV2({
 
   return (
     <div style={{ ...themeCssVars(theme), background: 'var(--site-bg)', color: 'var(--site-text)' }}>
-      {theme.navZichtbaar && <Navigatie blokken={rest} ctx={ctx} />}
+      {theme.navZichtbaar && (
+        <Navigatie pages={data.pages} activePageSlug={pagina?.pageSlug ?? activePageSlug} blokken={rest} ctx={ctx} />
+      )}
       {hero && <Hero block={hero} ctx={ctx} />}
       <main className="pb-24">
         {rest.map((b) => (

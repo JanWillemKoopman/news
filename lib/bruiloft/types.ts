@@ -378,6 +378,12 @@ export interface WebsiteContent {
   // Website v3: design-tokens; null = afleiden uit thema/kleurAccent/
   // kopLettertype (zie lib/bruiloft/websiteTheme.ts).
   theme: import('./websiteTheme').ThemeTokens | null
+  // Website v3 fase 3: site-breed wachtwoord. Het gehashte wachtwoord zelf
+  // (site_password) zit bewust NIET in dit domeintype — dat wordt alleen
+  // server-side gezet via POST /api/trouwen/settings (zie
+  // store/bruiloftStore.ts saveSitePassword), nooit via deze directe
+  // client-upsert-laag.
+  sitePasswordEnabled: boolean
 }
 
 export type WebsiteContentInput = Omit<WebsiteContent, 'id'>

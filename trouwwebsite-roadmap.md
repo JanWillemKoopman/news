@@ -71,16 +71,39 @@ architectuurwissels:
   reageren op de virtuele schermbreedte (1440/390px) i.p.v. de paneelbreedte van de editor —
   ook de mobiel-modus toont nu de echte mobiele layout, niet de desktop-layout verkleind.
 
-## Fase 3 — Gastervaring
+## Fase 3 — Gastervaring ✅ gebouwd
 
 *Doel: de website wordt het middelpunt voor gasten, niet alleen een visitekaartje.*
 
-- Multi-page: pagina's aanmaken/hernoemen/herordenen; automatische navigatie;
-  route `/trouwen/[slug]/[pagina]`.
-- RSVP-blok: gast zoekt zichzelf op (naam of code) en bevestigt direct op de site —
-  rate-limited via de bestaande `rate_limits`-infra; persoonlijke links blijven bestaan.
-- Site-breed wachtwoord: server-side gate + cookie, naar het patroon van
-  `app/api/registry/check-password`.
+- **Multi-page**: pagina's aanmaken/hernoemen/herordenen/verbergen via
+  `app/bruiloft/website/components/PaginaSwitcher.tsx`; publieke route
+  `app/trouwen/[slug]/[[...pagina]]/page.tsx` (optionele catch-all — `[]` = home,
+  `['pagina-slug']` = subpagina); navigatie in `PublicWebsiteV2.tsx` linkt tussen pagina's
+  zodra er meer dan één is (anchor-navigatie binnen één pagina blijft de status quo).
+- **RSVP-blok**: gast zoekt zichzelf op (voornaam + achternaam) en bevestigt direct op de
+  site, via twee rate-limited routes (`app/api/rsvp/zoek`, `app/api/rsvp/bevestig` — 10
+  pogingen/15 min per IP+slug, patroon van `checkRateLimit`) en twee nieuwe
+  `security definer`-RPC's (`find_guest_by_name`, `submit_rsvp_by_name`,
+  `0051_rsvp_self_lookup.sql`) die nooit een `rsvp_token` naar de browser sturen. Bij 0 of
+  >1 gelijknamige matches: neutrale melding (geen enumeratie, geen giswerk). Persoonlijke
+  `/rsvp/[token]`-links blijven ongewijzigd naast dit blok bestaan.
+- **Site-breed wachtwoord**: een échte server-side grens (niet het sessionStorage-patroon
+  van de cadeaulijst) — `website_content.site_password`/`site_password_enabled`
+  (`0050_site_password.sql`), een lichte metadata-RPC (`get_trouwwebsite_lock_meta`, alleen
+  namen + thema, nooit inhoud) die vóór elke render bepaalt of het wachtwoordscherm
+  (`components/website/SiteWachtwoordGate.tsx`) of de echte site getoond wordt, een
+  HMAC-ondertekende httpOnly-cookie (`lib/crypto/siteUnlockCookie.ts`, nieuwe env-var
+  `SITE_PASSWORD_SECRET`) en een eigen instel-route (`app/api/trouwen/settings`, hashing
+  via het bestaande `lib/crypto/password.ts`) zodat het wachtwoord zelf nooit via de
+  directe client-upsert loopt.
+
+**Bekende beperking (geaccepteerd, zelfde risicoklasse als de bestaande
+`registry_settings.password`):** `website_content` staat in de Supabase Realtime-publicatie;
+Postgres/Supabase kennen geen kolom-niveau-uitsluiting voor realtime, dus het gehashte
+`site_password` bereikt in theorie ook wedding-teamleden met website-rechten via de
+realtime-stream (nooit het publiek, nooit de plaintext). REST-selects zijn wel al expliciet
+verengd (`websiteContentKolommen` in `supabaseRepository.ts`) zodat het normale
+laad-/opslagpad de hash niet meer meestuurt.
 
 ## Fase 4 — Premium afwerking
 

@@ -610,6 +610,8 @@ export type Database = {
           kleur_accent: string
           routebeschrijving: string
           secties_config: Json
+          site_password: string | null
+          site_password_enabled: boolean
           slug: string | null
           thema: string
           theme: Json | null
@@ -633,6 +635,8 @@ export type Database = {
           kleur_accent?: string
           routebeschrijving?: string
           secties_config?: Json
+          site_password?: string | null
+          site_password_enabled?: boolean
           slug?: string | null
           thema?: string
           theme?: Json | null
@@ -656,6 +660,8 @@ export type Database = {
           kleur_accent?: string
           routebeschrijving?: string
           secties_config?: Json
+          site_password?: string | null
+          site_password_enabled?: boolean
           slug?: string | null
           thema?: string
           theme?: Json | null
@@ -974,6 +980,12 @@ export type Database = {
       check_slug_available: { Args: { p_slug: string }; Returns: boolean }
       get_public_website: { Args: { p_slug: string }; Returns: Json }
       get_public_website_v2: { Args: { p_slug: string }; Returns: Json }
+      get_trouwwebsite_lock_meta: { Args: { p_slug: string }; Returns: Json }
+      find_guest_by_name: { Args: { p_slug: string; p_voornaam: string; p_achternaam: string }; Returns: Json }
+      submit_rsvp_by_name: {
+        Args: { p_slug: string; p_voornaam: string; p_achternaam: string; p_payload: Json }
+        Returns: undefined
+      }
       can_edit: {
         Args: { p_module: string; p_wedding: string }
         Returns: boolean

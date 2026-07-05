@@ -27,6 +27,7 @@ import {
   Quote,
   Trash2,
   Type,
+  UserCheck,
   Users,
   Video as VideoIcon,
 } from 'lucide-react'
@@ -59,6 +60,7 @@ const BLOCK_ICONS: Record<BlockType, React.ElementType> = {
   personen: Users,
   locatie: MapPin,
   video: VideoIcon,
+  rsvp: UserCheck,
   programma: CalendarDays,
   countdown: Clock,
   galerij: Camera,
@@ -578,6 +580,24 @@ function BlokInspector({ blok, onWijzig }: { blok: Block; onWijzig: (patch: Part
               value={blok.videoUrl}
               onChange={(e) => onWijzig({ videoUrl: e.target.value })}
               placeholder="https://www.youtube.com/watch?v=…"
+            />
+          </Veld>
+        </div>
+      )
+
+    case 'rsvp':
+      return (
+        <div className="space-y-5">
+          <TitelVeld waarde={blok.titel} onWijzig={(titel) => onWijzig({ titel })} />
+          <Veld
+            label="Introtekst"
+            hulp="Gasten zoeken zichzelf op met voornaam + achternaam en bevestigen direct — hun persoonlijke RSVP-link blijft daarnaast ook werken."
+          >
+            <Textarea
+              value={blok.introTekst}
+              onChange={(e) => onWijzig({ introTekst: e.target.value })}
+              rows={2}
+              placeholder="Laat ons weten of je erbij bent…"
             />
           </Veld>
         </div>

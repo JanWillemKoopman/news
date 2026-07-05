@@ -87,6 +87,11 @@ export interface VideoBlock extends BlockBasis {
   titel: string
   videoUrl: string  // YouTube- of Vimeo-link; renderer zet dit om naar embed
 }
+export interface RsvpBlock extends BlockBasis {
+  type: 'rsvp'
+  titel: string
+  introTekst: string  // korte tekst boven het zoekformulier
+}
 export interface ProgrammaBlock extends BlockBasis {
   type: 'programma'
   titel: string
@@ -132,6 +137,7 @@ export type Block =
   | PersonenBlock
   | LocatieBlock
   | VideoBlock
+  | RsvpBlock
   | ProgrammaBlock
   | CountdownBlock
   | GalerijBlock
@@ -151,6 +157,7 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   personen: 'Bruidsgevolg',
   locatie: 'Locatie',
   video: 'Video',
+  rsvp: 'RSVP',
   programma: 'Programma',
   countdown: 'Aftelling',
   galerij: 'Fotogalerij',
@@ -170,6 +177,7 @@ export const TOEVOEGBARE_TYPES: BlockType[] = [
   'personen',
   'locatie',
   'video',
+  'rsvp',
   'programma',
   'countdown',
   'galerij',
@@ -195,6 +203,7 @@ export function maakBlock(type: BlockType): Block {
     case 'personen':    return { ...basis, type, titel: 'Bruidsgevolg', mensen: [] }
     case 'locatie':     return { ...basis, type, titel: 'Locatie', naam: '', adres: '', tekst: '', kaartInsluitUrl: '' }
     case 'video':       return { ...basis, type, titel: '', videoUrl: '' }
+    case 'rsvp':        return { ...basis, type, titel: 'Ben je erbij?', introTekst: 'Laat ons weten of je erbij bent.' }
     case 'programma':   return { ...basis, type, titel: 'Programma', bron: 'draaiboek', eigenTekst: '' }
     case 'countdown':   return { ...basis, type, titel: 'Aftelling', datum: '' }
     case 'galerij':     return { ...basis, type, titel: "Foto's", stijl: 'raster', fotos: [] }
@@ -215,6 +224,7 @@ export function heeftInhoud(b: Block): boolean {
     case 'countdown':
     case 'programma':
     case 'cadeaulijst':
+    case 'rsvp':
       return true
     case 'tekst':
     case 'contact':

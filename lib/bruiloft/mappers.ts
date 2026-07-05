@@ -376,6 +376,7 @@ export function websiteContentFromRow(r: Tables['website_content']['Row']): Webs
     faq: ((r.faq as unknown) as FaqItem[]) ?? [],
     gallerij: ((r.gallerij as unknown) as GallerijFoto[]) ?? [],
     theme: ((r.theme as unknown) as ThemeTokens) ?? null,
+    sitePasswordEnabled: r.site_password_enabled ?? false,
   }
 }
 
@@ -401,6 +402,7 @@ export function websiteContentToRow(
   if (p.faq !== undefined) r.faq = p.faq as unknown as Tables['website_content']['Insert']['faq']
   if (p.gallerij !== undefined) r.gallerij = p.gallerij as unknown as Tables['website_content']['Insert']['gallerij']
   if (p.theme !== undefined) r.theme = p.theme as unknown as Tables['website_content']['Insert']['theme']
+  if (p.sitePasswordEnabled !== undefined) r.site_password_enabled = p.sitePasswordEnabled
   return r
 }
 

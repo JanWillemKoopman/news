@@ -136,11 +136,14 @@ function IframeCanvas({
 
 export function LivePreview({
   data,
+  activePageSlug,
   onClose,
   volledig,
   onToggleVolledig,
 }: {
   data: PublicWebsiteV2Data
+  // Welke pagina getoond wordt (fase 3: multi-page); '' of weggelaten = home.
+  activePageSlug?: string
   // Aanwezig = overlay-variant (mobiel), afwezig = ingebed paneel (desktop).
   onClose?: () => void
   // Ingebed paneel: of de instellingenkolom is ingeklapt (voorbeeld op
@@ -237,7 +240,7 @@ export function LivePreview({
           >
             <div style={{ width: virtueleBreedte, height: zichtbareHoogte, transform: `scale(${schaal})`, transformOrigin: 'top left' }}>
               <IframeCanvas breedte={virtueleBreedte} hoogte={zichtbareHoogte} onHoogteWijziging={setHoogte} titel="Voorbeeld trouwwebsite">
-                <PublicWebsiteV2 data={data} />
+                <PublicWebsiteV2 data={data} activePageSlug={activePageSlug} />
               </IframeCanvas>
             </div>
           </div>

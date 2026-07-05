@@ -405,6 +405,7 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
         faq: [],
         gallerij: [],
         theme: null,
+        sitePasswordEnabled: false,
         ...patch,
       }
       db.websiteContents.push(content)

@@ -19,7 +19,9 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { BlokkenBuilder } from './components/BlokkenBuilder'
 import { LivePreview } from './components/LivePreview'
+import { PaginaSwitcher } from './components/PaginaSwitcher'
 import { RsvpSectie } from './components/RsvpSectie'
+import { SiteWachtwoordInstellingen } from './components/SiteWachtwoordInstellingen'
 import { ThemaInstellingen } from './components/ThemaInstellingen'
 import { WebsiteStatusCard } from './components/WebsiteStatusCard'
 import { useDebounceOpslaan } from './components/useDebounceOpslaan'
@@ -30,7 +32,9 @@ export default function WebsitePage() {
   const websitePages = useBruiloftStore((s) => s.websitePages)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
+  const addWebsitePage = useBruiloftStore((s) => s.addWebsitePage)
   const updateWebsitePage = useBruiloftStore((s) => s.updateWebsitePage)
+  const deleteWebsitePage = useBruiloftStore((s) => s.deleteWebsitePage)
   const converteerNaarBlokken = useBruiloftStore((s) => s.converteerNaarBlokken)
   const { toast } = useToast()
 
@@ -41,14 +45,23 @@ export default function WebsitePage() {
 
   const home = websitePages.find((p) => p.pageSlug === '') ?? websitePages[0] ?? null
 
-  // Lokale blokken-staat: direct zichtbaar in de preview, debounced opgeslagen.
+  // Welke pagina wordt momenteel bewerkt (los van welke het eerst laadt).
+  const [actievePaginaId, setActievePaginaId] = React.useState<string | null>(null)
+  const huidigePagina = websitePages.find((p) => p.id === actievePaginaId) ?? home
+
+  React.useEffect(() => {
+    if (!actievePaginaId && home) setActievePaginaId(home.id)
+  }, [actievePaginaId, home])
+
+  // Lokale blokken-staat van de actieve pagina: direct zichtbaar in de
+  // preview, debounced opgeslagen.
   const [blocks, setBlocks] = React.useState<Block[] | null>(null)
   const blocksPageIdRef = React.useRef<string | null>(null)
 
   const debounce = useDebounceOpslaan<Pick<WebsitePageInput, 'blocks'>>(
     async (patch) => {
-      if (!home) return
-      await updateWebsitePage(home.id, patch)
+      if (!huidigePagina) return
+      await updateWebsitePage(huidigePagina.id, patch)
     },
     700
   )
@@ -66,14 +79,14 @@ export default function WebsitePage() {
   // alleen zolang er geen eigen wijzigingen onderweg zijn (anders zou een
   // realtime-echo het typen onderbreken).
   React.useEffect(() => {
-    if (!home) return
-    if (blocksPageIdRef.current !== home.id) {
-      blocksPageIdRef.current = home.id
-      setBlocks(home.blocks)
+    if (!huidigePagina) return
+    if (blocksPageIdRef.current !== huidigePagina.id) {
+      blocksPageIdRef.current = huidigePagina.id
+      setBlocks(huidigePagina.blocks)
       return
     }
-    if (debounceStatus === 'idle') setBlocks(home.blocks)
-  }, [home, debounceStatus])
+    if (debounceStatus === 'idle') setBlocks(huidigePagina.blocks)
+  }, [huidigePagina, debounceStatus])
 
   React.useEffect(() => {
     if (debounce.status === 'error') {
@@ -87,7 +100,7 @@ export default function WebsitePage() {
 
   if (!wedding) return null
 
-  if (!websiteContent || !home || !blocks) {
+  if (!websiteContent || !home || !huidigePagina || !blocks) {
     return (
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -117,6 +130,29 @@ export default function WebsitePage() {
     debounce.stel({ blocks: next })
   }
 
+  async function onPaginaToevoegen(titel: string, pageSlug: string) {
+    const nieuw = await addWebsitePage({
+      titel,
+      pageSlug,
+      volgorde: websitePages.length,
+      zichtbaar: true,
+      blocks: [],
+    })
+    setActievePaginaId(nieuw.id)
+  }
+
+  async function onPaginaVerwijderen(id: string) {
+    if (id === actievePaginaId) setActievePaginaId(home.id)
+    await deleteWebsitePage(id)
+  }
+
+  async function onPaginaHerorden(nieuweVolgorde: typeof websitePages) {
+    await Promise.all(nieuweVolgorde.map((p, i) => updateWebsitePage(p.id, { volgorde: i })))
+  }
+
+  // Voor pagina's die niet actief bewerkt worden, gebruiken we de blokken
+  // rechtstreeks uit de store; voor de actieve pagina de lokale (nog niet
+  // per se opgeslagen) staat, zodat de preview direct meebeweegt met typen.
   const previewData: PublicWebsiteV2Data = {
     wedding: {
       partner1Naam: wedding.partner1Naam,
@@ -130,7 +166,13 @@ export default function WebsitePage() {
       kleurAccent: websiteContent.kleurAccent,
       kopLettertype: websiteContent.kopLettertype,
     },
-    pages: [{ id: home.id, titel: home.titel, pageSlug: home.pageSlug, volgorde: home.volgorde, blocks }],
+    pages: websitePages.map((p) => ({
+      id: p.id,
+      titel: p.titel,
+      pageSlug: p.pageSlug,
+      volgorde: p.volgorde,
+      blocks: p.id === huidigePagina.id ? blocks : p.blocks,
+    })),
     schedule: scheduleItems
       .filter((s) => s.betrokkenen.includes('gasten'))
       .sort((a, b) => a.tijd.localeCompare(b.tijd))
@@ -212,6 +254,19 @@ export default function WebsitePage() {
 
           <ThemaInstellingen content={websiteContent} theme={theme} />
 
+          <SiteWachtwoordInstellingen content={websiteContent} />
+
+          <PaginaSwitcher
+            paginas={websitePages}
+            actievePaginaId={huidigePagina.id}
+            onSelecteer={setActievePaginaId}
+            onToevoegen={onPaginaToevoegen}
+            onHernoemen={(id, titel) => void updateWebsitePage(id, { titel })}
+            onToggleZichtbaar={(id, zichtbaar) => void updateWebsitePage(id, { zichtbaar })}
+            onVerwijderen={onPaginaVerwijderen}
+            onHerorden={onPaginaHerorden}
+          />
+
           <BlokkenBuilder blocks={blocks} onChange={onBlocksChange} />
 
           <div className="mt-4">
@@ -224,6 +279,7 @@ export default function WebsitePage() {
           <div className="sticky top-20 h-[calc(100vh-6rem)]">
             <LivePreview
               data={previewData}
+              activePageSlug={huidigePagina.pageSlug}
               volledig={voorbeeldVolledig}
               onToggleVolledig={() => setVoorbeeldVolledig(!voorbeeldVolledig)}
             />
@@ -241,7 +297,7 @@ export default function WebsitePage() {
       </button>
       {mobielPreviewOpen && (
         <div className="fixed inset-0 z-50 bg-background p-2 lg:hidden">
-          <LivePreview data={previewData} onClose={() => setMobielPreviewOpen(false)} />
+          <LivePreview data={previewData} activePageSlug={huidigePagina.pageSlug} onClose={() => setMobielPreviewOpen(false)} />
         </div>
       )}
     </div>

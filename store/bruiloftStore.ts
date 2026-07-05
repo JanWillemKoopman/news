@@ -216,6 +216,9 @@ interface BruiloftActions {
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
+  // Website v3 fase 3: site-breed wachtwoord instellen/wijzigen (gehasht
+  // server-side via POST /api/trouwen/settings) of verwijderen (lege string).
+  saveSitePassword: (password: string) => Promise<void>
   // Website v3: pagina's met blokken.
   addWebsitePage: (input: Omit<WebsitePageInput, 'weddingId'>) => Promise<WebsitePage>
   updateWebsitePage: (id: ID, patch: Partial<Omit<WebsitePageInput, 'weddingId'>>) => Promise<void>
@@ -1207,6 +1210,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       const content = await repository.saveWebsiteContent(wedding.id, patch)
       set({ websiteContent: content })
+    },
+
+    saveSitePassword: async (password) => {
+      const wedding = get().wedding
+      if (!wedding) return
+      const res = await fetch('/api/trouwen/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weddingId: wedding.id, password }),
+      })
+      if (!res.ok) throw new Error('Wachtwoord opslaan mislukt')
     },
 
     checkSlugAvailable: async (slug) => {
