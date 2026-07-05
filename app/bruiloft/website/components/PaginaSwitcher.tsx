@@ -46,6 +46,21 @@ interface Props {
   onToggleZichtbaar: (id: string, zichtbaar: boolean) => void
   onVerwijderen: (id: string) => void
   onHerorden: (nieuweVolgorde: WebsitePage[]) => void
+  onSeoWijzigen: (id: string, patch: { seoTitel?: string; seoOmschrijving?: string }) => void
+}
+
+// Kleine debounce voor de SEO-velden: voorkomt een database-schrijf per
+// toetsaanslag. Sync't opnieuw zodra de gebruiker van pagina wisselt.
+function useGedebouncedVeld(waarde: string, onWijzig: (v: string) => void, vertraging = 500) {
+  const [lokaal, setLokaal] = React.useState(waarde)
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  React.useEffect(() => setLokaal(waarde), [waarde])
+  function onChange(v: string) {
+    setLokaal(v)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => onWijzig(v), vertraging)
+  }
+  return [lokaal, onChange] as const
 }
 
 export function PaginaSwitcher({
@@ -57,6 +72,7 @@ export function PaginaSwitcher({
   onToggleZichtbaar,
   onVerwijderen,
   onHerorden,
+  onSeoWijzigen,
 }: Props) {
   const [nieuwOpen, setNieuwOpen] = React.useState(false)
   const [nieuweTitel, setNieuweTitel] = React.useState('')
@@ -210,27 +226,78 @@ export function PaginaSwitcher({
         )}
       </ul>
 
-      {/* Naam van de actieve, niet-home pagina hernoemen (bepaalt niet de URL). */}
+      {/* Naam en SEO van de actieve pagina. */}
       {(() => {
         const actief = geordend.find((p) => p.id === actievePaginaId)
-        if (!actief || actief.pageSlug === '') return null
+        if (!actief) return null
         return (
-          <div className="border-t border-border px-4 py-3 sm:px-5">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Naam van &quot;{actief.titel || 'Naamloos'}&quot;
-            </p>
-            <div className="flex items-center gap-2">
-              <Input
-                value={actief.titel}
-                onChange={(e) => onHernoemen(actief.id, e.target.value)}
-                placeholder="Paginanaam…"
-                className="max-w-xs"
-              />
-              <span className="text-xs text-muted-foreground">/trouwen/…/{actief.pageSlug}</span>
-            </div>
-          </div>
+          <PaginaDetails
+            key={actief.id}
+            pagina={actief}
+            onHernoemen={onHernoemen}
+            onSeoWijzigen={onSeoWijzigen}
+          />
         )
       })()}
+    </div>
+  )
+}
+
+function PaginaDetails({
+  pagina,
+  onHernoemen,
+  onSeoWijzigen,
+}: {
+  pagina: WebsitePage
+  onHernoemen: (id: string, titel: string) => void
+  onSeoWijzigen: (id: string, patch: { seoTitel?: string; seoOmschrijving?: string }) => void
+}) {
+  const [titel, onTitelChange] = useGedebouncedVeld(pagina.titel, (v) => onHernoemen(pagina.id, v))
+  const [seoTitel, onSeoTitelChange] = useGedebouncedVeld(pagina.seoTitel, (v) => onSeoWijzigen(pagina.id, { seoTitel: v }))
+  const [seoOmschrijving, onSeoOmschrijvingChange] = useGedebouncedVeld(pagina.seoOmschrijving, (v) =>
+    onSeoWijzigen(pagina.id, { seoOmschrijving: v })
+  )
+
+  return (
+    <div className="space-y-4 border-t border-border px-4 py-4 sm:px-5">
+      {/* Home heeft geen los adres (pageSlug ''), dus geen bewerkbare naam die de URL bepaalt. */}
+      {pagina.pageSlug !== '' && (
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Naam van &quot;{pagina.titel || 'Naamloos'}&quot;
+          </p>
+          <div className="flex items-center gap-2">
+            <Input
+              value={titel}
+              onChange={(e) => onTitelChange(e.target.value)}
+              placeholder="Paginanaam…"
+              className="max-w-xs"
+            />
+            <span className="text-xs text-muted-foreground">/trouwen/…/{pagina.pageSlug}</span>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          SEO &amp; social preview
+        </p>
+        <p className="mb-2.5 text-xs text-muted-foreground">
+          Optioneel: overschrijft de titel/omschrijving die zoekmachines en social media tonen voor deze pagina.
+        </p>
+        <div className="space-y-2">
+          <Input
+            value={seoTitel}
+            onChange={(e) => onSeoTitelChange(e.target.value)}
+            placeholder="Bijv. Jan & Anna trouwen — 12 juni 2027"
+          />
+          <Input
+            value={seoOmschrijving}
+            onChange={(e) => onSeoOmschrijvingChange(e.target.value)}
+            placeholder="Korte omschrijving voor zoekresultaten en gedeelde links…"
+          />
+        </div>
+      </div>
     </div>
   )
 }

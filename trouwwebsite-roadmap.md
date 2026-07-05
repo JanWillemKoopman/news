@@ -105,15 +105,26 @@ realtime-stream (nooit het publiek, nooit de plaintext). REST-selects zijn wel a
 verengd (`websiteContentKolommen` in `supabaseRepository.ts`) zodat het normale
 laad-/opslagpad de hash niet meer meestuurt.
 
-## Fase 4 — Premium afwerking
+## Fase 4 — Premium afwerking 🔶 deels gebouwd
 
 *Doel: de details die het premium maken.*
 
-- Meertalig NL/EN: per-veld vertalingen met AI-vertaalhulp (bestaande Gemini-infra onder
-  `app/api/ai/`).
-- AI-schrijfhulp per tekstblok (welkomsttekst, ons verhaal, FAQ-suggesties — put uit
-  `lib/bruiloft/aiContext.ts`); kleurenpalet-extractie uit de headerfoto.
-- SEO/OG-verfijning per pagina.
+**Gebouwd:**
+- **SEO/OG per pagina**: `website_pages.seo_titel`/`seo_omschrijving` (`0052_pagina_seo.sql`),
+  bewerkbaar in `PaginaSwitcher.tsx`; `generateMetadata` in de publieke route gebruikt dit als
+  het is ingevuld, anders blijft de bestaande heuristiek (eerste tekstblok) de fallback.
+- **Kleurenpalet-suggesties uit de headerfoto**: client-side canvas-gebaseerde
+  kleurextractie (`lib/bruiloft/colorExtract.ts`, geen nieuwe dependency, geen server-kosten) —
+  toont 3-4 voorgestelde accentkleuren in `ThemaInstellingen.tsx` naast de bestaande presets.
+
+**Bewust nog niet gebouwd (groter gewicht, wachten op akkoord):**
+- **AI-schrijfhulp per tekstblok** (welkomsttekst, ons verhaal, FAQ-suggesties — put uit
+  `lib/bruiloft/aiContext.ts`): introduceert doorlopende Gemini-API-kosten per gebruik door
+  koppels, in tegenstelling tot de rest van deze roadmap.
+- **Meertalig NL/EN**: per-veld vertalingen met AI-vertaalhulp. Vereist een nieuw
+  i18n-datamodel (elk tekstveld dubbel: nl/en) dat alle bloktypes, de renderer én de
+  editor-inspectors raakt — qua omvang vergelijkbaar met een hele eigen fase, niet een
+  toevoeging aan deze.
 - *Later hoofdstuk (buiten deze roadmap): eigen domeinnaam.*
 
 ---

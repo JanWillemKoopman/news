@@ -13,7 +13,7 @@ import { websiteInfo } from '@/components/bruiloft/faqContent'
 import { Button, Skeleton, useToast } from '@/components/bruiloft/ui'
 import type { PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
 import { cn } from '@/lib/utils'
-import type { Block, WebsitePageInput } from '@/lib/bruiloft/websiteBlocks'
+import type { Block, HeroBlock, WebsitePageInput } from '@/lib/bruiloft/websiteBlocks'
 import { themeVanLegacy } from '@/lib/bruiloft/websiteTheme'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -137,6 +137,8 @@ export default function WebsitePage() {
       volgorde: websitePages.length,
       zichtbaar: true,
       blocks: [],
+      seoTitel: '',
+      seoOmschrijving: '',
     })
     setActievePaginaId(nieuw.id)
   }
@@ -252,7 +254,11 @@ export default function WebsitePage() {
             blokken={blocks}
           />
 
-          <ThemaInstellingen content={websiteContent} theme={theme} />
+          <ThemaInstellingen
+            content={websiteContent}
+            theme={theme}
+            headerFotoUrl={blocks.find((b): b is HeroBlock => b.type === 'hero')?.fotoUrl}
+          />
 
           <SiteWachtwoordInstellingen content={websiteContent} />
 
@@ -265,6 +271,7 @@ export default function WebsitePage() {
             onToggleZichtbaar={(id, zichtbaar) => void updateWebsitePage(id, { zichtbaar })}
             onVerwijderen={onPaginaVerwijderen}
             onHerorden={onPaginaHerorden}
+            onSeoWijzigen={(id, patch) => void updateWebsitePage(id, patch)}
           />
 
           <BlokkenBuilder blocks={blocks} onChange={onBlocksChange} />

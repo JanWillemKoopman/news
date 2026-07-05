@@ -37,6 +37,10 @@ export interface PublicPage {
   pageSlug: string
   volgorde: number
   blocks: Block[]
+  // Fase 4: optionele SEO/OG-overrides, alleen gebruikt door generateMetadata
+  // in de publieke route — de renderer zelf leest dit niet.
+  seoTitel?: string
+  seoOmschrijving?: string
 }
 
 export interface PublicWebsiteV2Data {

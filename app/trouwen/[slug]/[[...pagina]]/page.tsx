@@ -85,14 +85,23 @@ function pageSlugVan(pagina: string[] | undefined): string | null {
   return null
 }
 
+// Handmatige SEO-omschrijving (ingesteld in de editor) heeft voorrang;
+// zonder die override gokken we uit het eerste tekstblok van de pagina.
 function beschrijvingVan(result: SiteResult, pageSlug: string): string {
   if (result.v2) {
     const pagina = result.v2.pages.find((p) => p.pageSlug === pageSlug) ?? result.v2.pages[0]
+    if (pagina?.seoOmschrijving?.trim()) return pagina.seoOmschrijving.trim().slice(0, 160)
     const eersteTekst = pagina?.blocks.find((b) => b.type === 'tekst' && b.zichtbaar && b.tekst.trim())
     if (eersteTekst && 'tekst' in eersteTekst) return eersteTekst.tekst.slice(0, 160)
     return ''
   }
   return result.v1?.content.welkomsttekst.slice(0, 160) ?? ''
+}
+
+function seoTitelVan(result: SiteResult, pageSlug: string): string | null {
+  if (!result.v2) return null
+  const pagina = result.v2.pages.find((p) => p.pageSlug === pageSlug) ?? result.v2.pages[0]
+  return pagina?.seoTitel?.trim() || null
 }
 
 function headerFotoVan(result: SiteResult, pageSlug: string): string {
@@ -132,11 +141,13 @@ export async function generateMetadata({
   const wedding = result.v2?.wedding ?? result.v1!.wedding
   const beschrijving = beschrijvingVan(result, pageSlug)
   const headerFoto = headerFotoVan(result, pageSlug)
+  const seoTitel = seoTitelVan(result, pageSlug)
+  const titel = seoTitel || `${wedding.partner1Naam} & ${wedding.partner2Naam}`
   return {
-    title: `${wedding.partner1Naam} & ${wedding.partner2Naam}`,
+    title: titel,
     description: beschrijving || `De trouwwebsite van ${wedding.partner1Naam} & ${wedding.partner2Naam}`,
     openGraph: {
-      title: `${wedding.partner1Naam} & ${wedding.partner2Naam}`,
+      title: titel,
       images: headerFoto ? [headerFoto] : [],
     },
   }
