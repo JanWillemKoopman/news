@@ -258,7 +258,9 @@ function TaskPill({ task }: { task: Task }) {
       {...attributes}
       className={cn(
         'block truncate rounded px-1 text-[10px] leading-tight',
-        klaar ? 'bg-emerald-100 text-emerald-800 line-through' : 'bg-secondary text-secondary-foreground'
+        klaar
+          ? 'bg-secondary/60 text-muted-foreground line-through'
+          : 'bg-secondary text-secondary-foreground'
       )}
     >
       {task.titel}

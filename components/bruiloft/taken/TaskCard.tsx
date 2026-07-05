@@ -3,11 +3,11 @@
 import * as React from 'react'
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
-import { Card, CardContent, OverflowMenu, StatusBadge } from '@/components/bruiloft/ui'
+import { Card, CardContent, OverflowMenu } from '@/components/bruiloft/ui'
 import { dagLabel, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
 import { toegewezenAanLabel } from '@/lib/bruiloft/options'
 import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
-import { cn } from '@/lib/utils'
+import { capFirst, cn } from '@/lib/utils'
 import type { Subtaak, Task, WeddingMember } from '@/lib/bruiloft/types'
 
 import { AvatarStack } from './AvatarStack'
@@ -97,11 +97,7 @@ export function TaskCard({
           transform: swipeX > 0 ? `translateX(-${Math.min(swipeX, 80)}px)` : undefined,
           transition: swipeX === 0 ? 'transform 200ms ease' : undefined,
         }}
-        className={cn(
-          'group relative',
-          selected && 'ring-2 ring-primary',
-          achterstallig && 'border-l-4 border-l-rose-400'
-        )}
+        className={cn('group relative', selected && 'ring-2 ring-primary')}
       >
       <CardContent
         className={cn('flex items-start gap-3 p-3', !compact && 'sm:items-center')}
@@ -179,7 +175,7 @@ export function TaskCard({
 
           <div
             className={cn(
-              'mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground',
+              'mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground',
               !compact && 'sm:mt-0 sm:shrink-0 sm:flex-nowrap'
             )}
           >
@@ -196,11 +192,10 @@ export function TaskCard({
                 ) : null}
               </span>
             ) : null}
-            <span className="inline-flex shrink-0 items-center gap-1.5">
-              <StatusBadge kind="prioriteit" value={effectievePrioriteit(task)} />
-            </span>
+            <span className="shrink-0">· {capFirst(effectievePrioriteit(task))}</span>
             {toegewezenLeden.length > 0 ? (
               <span className="inline-flex min-w-0 shrink items-center gap-1.5">
+                <span className="shrink-0">·</span>
                 <AvatarStack members={toegewezenLeden} />
                 <span className="max-w-[9rem] truncate text-foreground">
                   {toegewezenLeden
@@ -210,21 +205,21 @@ export function TaskCard({
               </span>
             ) : fallbackLabel ? (
               <span className="shrink-0">
-                {toegewezenAanLabel(fallbackLabel, partner1Naam, partner2Naam)}
+                · {toegewezenAanLabel(fallbackLabel, partner1Naam, partner2Naam)}
               </span>
             ) : null}
             {heeftSubtaken ? (
               <button
                 type="button"
                 onClick={() => setExpanded((e) => !e)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground hover:bg-secondary/80"
+                className="inline-flex shrink-0 items-center gap-0.5 hover:text-foreground hover:underline"
               >
+                · {subKlaar}/{task.subtaken.length} subtaken
                 {expanded ? (
                   <ChevronDown className="h-3 w-3" />
                 ) : (
                   <ChevronRight className="h-3 w-3" />
                 )}
-                {subKlaar}/{task.subtaken.length} subtaken
               </button>
             ) : null}
           </div>
