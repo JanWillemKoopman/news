@@ -131,7 +131,7 @@ export function TaskCard({
             'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
             !compact && 'sm:mt-0',
             klaar
-              ? 'border-foreground bg-foreground text-background'
+              ? 'border-muted-foreground/40 bg-muted-foreground/15 text-muted-foreground'
               : 'border-border hover:border-primary'
           )}
         >
