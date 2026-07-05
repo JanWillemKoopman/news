@@ -9,36 +9,12 @@ import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
 import { AIInlineSuggestieCard } from '@/components/bruiloft/taken/AIInlineSuggestieCard'
 import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
 import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
-import { TIJDSBLOK_VOLGORDE, addDays, toISODate } from '@/lib/bruiloft/timeblocks'
+import { defaultDeadlineVoorMaand, groepeerOpDeadlineMaand } from '@/lib/bruiloft/taken/timeline'
 import { cn } from '@/lib/utils'
-import type { ISODate, Task, Tijdsblok, Wedding, WeddingMember } from '@/lib/bruiloft/types'
+import type { ISODate, Task, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 import type { AITaakSuggestie } from '@/app/api/ai/taken/route'
 
 const PRIO_ORDER: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
-
-// Alleen de "X maanden/maand voor"-fasen krijgen de "jullie bruiloft"-suffix in
-// het label; de onderliggende Tijdsblok-waarden (opslag/filters) blijven ongewijzigd.
-const TIJDSBLOK_LABEL: Partial<Record<Tijdsblok, string>> = {
-  '12 maanden voor': '12 maanden voor jullie bruiloft',
-  '9 maanden voor': '9 maanden voor jullie bruiloft',
-  '6 maanden voor': '6 maanden voor jullie bruiloft',
-  '3 maanden voor': '3 maanden voor jullie bruiloft',
-  '1 maand voor': '1 maand voor jullie bruiloft',
-}
-
-function deadlineVoorBlok(blok: Tijdsblok, trouwdatum: ISODate): ISODate {
-  const offsetDagen: Record<Tijdsblok, number> = {
-    '12 maanden voor': -340,
-    '9 maanden voor': -270,
-    '6 maanden voor': -180,
-    '3 maanden voor': -90,
-    '1 maand voor': -25,
-    'laatste week': -7,
-    trouwweek: -1,
-    'na de bruiloft': 14,
-  }
-  return toISODate(addDays(trouwdatum, offsetDagen[blok]))
-}
 
 interface ListViewProps {
   tasks: Task[]
@@ -92,8 +68,9 @@ export function ListView({
   onAiToonWeggeklikt,
   onAiHide,
 }: ListViewProps) {
-  // Handmatig open/dicht geklapte fasesecties (wint van de standaardkeuze).
-  const [blokOverrides, setBlokOverrides] = React.useState<Partial<Record<Tijdsblok, boolean>>>({})
+  // Handmatig open/dicht geklapte maandsecties (wint van de standaardkeuze).
+  const [maandOverrides, setMaandOverrides] = React.useState<Record<string, boolean>>({})
+  const maandGroepen = React.useMemo(() => groepeerOpDeadlineMaand(tasks), [tasks])
 
   if (allTasks.length === 0) {
     return (
@@ -116,10 +93,10 @@ export function ListView({
     )
   }
 
-  // Fasesecties zijn inklapbaar, maar staan standaard allemaal open zodat alle
-  // kaartjes direct zichtbaar zijn. Een klik op de kop klapt dicht; die keuze
-  // wint van de standaard.
-  const blokIsOpen = (blok: Tijdsblok): boolean => blokOverrides[blok] ?? true
+  // Maandsecties zijn inklapbaar, maar staan standaard allemaal open zodat
+  // alle kaartjes direct zichtbaar zijn. Een klik op de kop klapt dicht; die
+  // keuze wint van de standaard.
+  const maandIsOpen = (key: string): boolean => maandOverrides[key] ?? true
 
   return (
     <div className="space-y-8">
@@ -152,22 +129,26 @@ export function ListView({
         onToggleSelect={onToggleSelect}
       />
 
-      {TIJDSBLOK_VOLGORDE.map((blok) => {
-        const blokTaken = tasks
-          .filter((t) => t.tijdsblok === blok)
-          .sort(
-            (a, b) =>
-              a.deadline.localeCompare(b.deadline) ||
-              PRIO_ORDER[effectievePrioriteit(a)] - PRIO_ORDER[effectievePrioriteit(b)]
-          )
-        if (blokTaken.length === 0) return null
-        const open = blokIsOpen(blok)
+      {maandGroepen.length > 0 ? (
+        <p className="px-1 text-sm text-muted-foreground">
+          Hieronder per maand de taken met een deadline — de uiterlijke datum waarop het geregeld
+          moet zijn.
+        </p>
+      ) : null}
+
+      {maandGroepen.map((groep) => {
+        const groepTaken = [...groep.tasks].sort(
+          (a, b) =>
+            a.deadline.localeCompare(b.deadline) ||
+            PRIO_ORDER[effectievePrioriteit(a)] - PRIO_ORDER[effectievePrioriteit(b)]
+        )
+        const open = maandIsOpen(groep.key)
         return (
-          <div key={blok} data-blok={blok} className="border-l-2 border-border pl-4">
+          <div key={groep.key} className="border-l-2 border-border pl-4">
             <button
               type="button"
               aria-expanded={open}
-              onClick={() => setBlokOverrides((prev) => ({ ...prev, [blok]: !open }))}
+              onClick={() => setMaandOverrides((prev) => ({ ...prev, [groep.key]: !open }))}
               className="mb-3 -ml-4 flex w-full items-center gap-2 rounded-md py-1.5 pl-4 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
             >
               {open ? (
@@ -175,14 +156,14 @@ export function ListView({
               ) : (
                 <ChevronRight className="h-3.5 w-3.5 shrink-0" />
               )}
-              {TIJDSBLOK_LABEL[blok] ?? blok}
+              {groep.label}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                {blokTaken.length} {blokTaken.length === 1 ? 'taak' : 'taken'}
+                {groepTaken.length} {groepTaken.length === 1 ? 'taak' : 'taken'}
               </span>
             </button>
             {open ? (
               <div className="space-y-2">
-                {blokTaken.map((t) => (
+                {groepTaken.map((t) => (
                   <TaskCard
                     key={t.id}
                     task={t}
@@ -199,7 +180,7 @@ export function ListView({
                   />
                 ))}
                 <QuickAddTask
-                  defaultDeadline={deadlineVoorBlok(blok, wedding.trouwdatum)}
+                  defaultDeadline={defaultDeadlineVoorMaand(groep.key)}
                   onOpenForm={onOpenForm}
                 />
               </div>
