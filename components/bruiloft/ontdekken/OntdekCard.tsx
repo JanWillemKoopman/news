@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { getCategorieIcoon } from '@/components/bruiloft/leveranciers/categorieIcoon'
 import { Card, CardContent } from '@/components/bruiloft/ui'
 import { formatteerAfstand } from '@/lib/bruiloft/discovery/geo'
@@ -9,36 +11,33 @@ import { OntdekAfbeelding } from './OntdekAfbeelding'
 import { useMijnLijstActie } from './useMijnLijstActie'
 
 // Resultaatkaart in de directory: foto (of neutrale placeholder) met een
-// hartje om te bewaren, daaronder naam, afstand en plaats+provincie. Bewust
-// geen beschrijving en geen aparte knoprij meer — het hartje op de foto
-// dekt "bewaren", de rest van de kaart is puur oriëntatie; wie meer wil
-// weten klikt door naar het detailpaneel.
+// hartje om te bewaren, daaronder naam, afstand en plaats+provincie. De hele
+// kaart is een gewone link naar de detailpagina (via een onzichtbare
+// "gestretchte" link, zodat het hartje er los bovenop klikbaar naast kan
+// bestaan zonder een knop-in-een-link te nestelen) — geen popup, geen eigen
+// klik-state: rechtermuisknop/nieuw tabblad werken zoals verwacht.
 
 interface OntdekCardProps {
   business: OntdekBusiness
-  onOpen: () => void
+  categorieSlug: string
 }
 
-export function OntdekCard({ business, onOpen }: OntdekCardProps) {
+export function OntdekCard({ business, categorieSlug }: OntdekCardProps) {
   const { kanBewerken, toegevoegd, voegToe } = useMijnLijstActie(business)
   const Icoon = getCategorieIcoon(business.categorie)
   const plaatsProvincie = [business.plaats, business.provincie].filter(Boolean).join(', ')
 
   return (
-    <Card
-      role="button"
-      tabIndex={0}
-      aria-label={`Bekijk ${business.naam}`}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen()
-        }
-      }}
-      interactive
-      className="flex flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
+    <Card interactive className="relative flex flex-col overflow-hidden">
+      {/* z-10: zonder expliciete waarde wint de later-in-de-DOM staande
+          afbeelding/placeholder de klik alsnog (gelijke stacking-laag →
+          DOM-volgorde beslist), ook al staat deze link ervóór. */}
+      <Link
+        href={`/bruiloft/ontdekken/${categorieSlug}/${business.id}`}
+        aria-label={`Bekijk ${business.naam}`}
+        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+
       <OntdekAfbeelding business={business} className="h-44 shrink-0">
         <HartKnop toegevoegd={toegevoegd} zichtbaar={kanBewerken} onClick={voegToe} />
       </OntdekAfbeelding>

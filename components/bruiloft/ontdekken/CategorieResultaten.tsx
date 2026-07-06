@@ -28,7 +28,6 @@ import {
   type OntdekSort,
 } from './FilterKolom'
 import { OntdekCard } from './OntdekCard'
-import { useOntdekTabs } from './OntdekTabsContext'
 import { PlaatsZoeker } from './PlaatsZoeker'
 import { locatieQuery, useOntdekLocatie } from './useOntdekLocatie'
 
@@ -46,7 +45,6 @@ interface CategorieResultatenProps {
 export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
   const router = useRouter()
   const wedding = useBruiloftStore((s) => s.wedding)
-  const { openTab } = useOntdekTabs()
 
   const config = configVoorCategorie(categorie)
 
@@ -248,7 +246,7 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((b) => (
-                  <OntdekCard key={b.id} business={b} onOpen={() => openTab(b)} />
+                  <OntdekCard key={b.id} business={b} categorieSlug={config.slug} />
                 ))}
               </div>
 
