@@ -11,7 +11,7 @@ import { normaliseerWebsite } from '../suppliers/linked'
 // Kolommen die de zoek-API selecteert — één bron van waarheid, zodat er
 // nergens per ongeluk extra kolommen meekomen.
 export const ONTDEK_KOLOMMEN =
-  'tpw_id,naam,categorie,straat,postcode,plaats,lat,lon,beschrijving,website,telefoon,email'
+  'tpw_id,naam,categorie,straat,postcode,plaats,provincie,lat,lon,beschrijving,website,telefoon,email,header_image'
 
 // Ruwe rij zoals Supabase die teruggeeft voor bovenstaande selectie.
 export interface OntdekRow {
@@ -21,12 +21,14 @@ export interface OntdekRow {
   straat: string | null
   postcode: string | null
   plaats: string | null
+  provincie: string | null
   lat: number | string | null
   lon: number | string | null
   beschrijving: string | null
   website: string | null
   telefoon: string | null
   email: string | null
+  header_image: string | null
 }
 
 // Wat de UI per leverancier nodig heeft. afstandKm is alleen gevuld wanneer
@@ -38,12 +40,14 @@ export interface OntdekBusiness {
   straat: string
   postcode: string
   plaats: string
+  provincie: string
   lat: number | null
   lon: number | null
   beschrijving: string
   website: string
   telefoon: string
   email: string
+  afbeeldingUrl: string
   afstandKm: number | null
 }
 
@@ -69,12 +73,14 @@ export function mapOntdekRow(row: OntdekRow, afstand: number | null = null): Ont
     straat: str(row.straat),
     postcode: str(row.postcode),
     plaats: str(row.plaats),
+    provincie: str(row.provincie),
     lat: numOrNull(row.lat),
     lon: numOrNull(row.lon),
     beschrijving: str(row.beschrijving),
     website: str(row.website),
     telefoon: str(row.telefoon),
     email: str(row.email),
+    afbeeldingUrl: str(row.header_image),
     afstandKm: afstand,
   }
 }
