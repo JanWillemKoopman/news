@@ -56,12 +56,20 @@ const OntdekTabsContext = React.createContext<OntdekTabsContextValue | null>(nul
 
 export function OntdekTabsProvider({ children }: { children: React.ReactNode }) {
   const [tabs, setTabs] = React.useState<OntdekTab[]>([])
-  const [isDesktop, setIsDesktop] = React.useState<boolean | null>(null)
+  // Lazy initializer: bepaalt de breakpoint synchroon tijdens de eerste
+  // render (client-only, vandaar de typeof-guard), niet pas in een effect.
+  // Belangrijk omdat React child-effects vóór het effect van deze provider
+  // zelf uitvoert — een tabblad dat direct bij het mounten geopend wordt
+  // (bv. door een kind-component) zou anders nog de mobiele capaciteit
+  // (1) zien in plaats van de echte, waardoor te veel tabbladen meteen
+  // geminimaliseerd worden.
+  const [isDesktop, setIsDesktop] = React.useState<boolean | null>(() =>
+    typeof window === 'undefined' ? null : window.matchMedia(BREAKPOINT_QUERY).matches
+  )
 
   React.useEffect(() => {
     const mq = window.matchMedia(BREAKPOINT_QUERY)
     const update = () => setIsDesktop(mq.matches)
-    update()
     mq.addEventListener('change', update)
     return () => mq.removeEventListener('change', update)
   }, [])
