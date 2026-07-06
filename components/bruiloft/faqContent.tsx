@@ -506,21 +506,21 @@ export const ontdekkenInfo: PageInfo = {
   intro: (
     <Intro>
       <p>
-        Op <strong>Ontdekken</strong> doorzoek je alle trouwlocaties en
-        leveranciers in de app, gesorteerd op wat het best bij jullie past. Vind je
-        iets leuks, dan zet je het zo op je eigen lijst bij{' '}
-        <strong>Mijn lijst</strong>.
+        Op <strong>Ontdekken</strong> vind je duizenden trouwlocaties en
+        leveranciers, per categorie doorzoekbaar op plaatsnaam. Vind je iets
+        leuks, dan zet je het zo op je eigen lijst bij <strong>Mijn lijst</strong>.
       </p>
       <QuickStart
         stappen={[
           <>
-            <strong>Zoek</strong> op naam, sfeer of kenmerk.
+            Kies <strong>waar</strong> jullie zoeken (plaatsnaam).
           </>,
           <>
-            Verfijn de resultaten met de <strong>filters</strong>.
+            Kies een <strong>categorie</strong>, van trouwlocatie tot fotograaf.
           </>,
           <>
-            Zet een favoriet op <strong>Mijn lijst</strong>.
+            Zet een favoriet op <strong>Mijn lijst</strong> of vraag direct een
+            offerte aan.
           </>,
         ]}
       />
@@ -528,12 +528,12 @@ export const ontdekkenInfo: PageInfo = {
   ),
   faq: [
     {
-      vraag: 'Hoe zoek ik een leverancier of locatie?',
+      vraag: 'Hoe zoek ik leveranciers in de buurt?',
       antwoord: (
         <p>
-          Typ in de zoekbalk op naam, sfeer of een kenmerk (bijvoorbeeld
-          buitenlocatie of een bepaalde stijl). De resultaten worden direct
-          bijgewerkt.
+          Typ een plaatsnaam in de zoekbalk — elke Nederlandse plaats werkt, ook
+          kleine dorpen. Je ziet dan alle leveranciers binnen de gekozen straal,
+          dichtstbijzijnde eerst, inclusief die uit omliggende plaatsen.
         </p>
       ),
     },
@@ -541,18 +541,10 @@ export const ontdekkenInfo: PageInfo = {
       vraag: 'Hoe verfijn ik de resultaten?',
       antwoord: (
         <p>
-          Gebruik de filters, zoals type leverancier, buiten trouwen of de
-          mogelijkheid tot overnachten. Actieve filters kun je met één klik weer
-          wissen.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Waarop is de volgorde gebaseerd?',
-      antwoord: (
-        <p>
-          De resultaten zijn gesorteerd op hoe goed ze bij jullie bruiloft passen —
-          op basis van gegevens zoals jullie datum, regio en voorkeuren.
+          Pas de <strong>straal</strong> aan (bijvoorbeeld van 15 naar 25 km), zoek
+          binnen de resultaten op naam of trefwoord, of wissel bovenaan van
+          categorie. Per categorie komen er later extra filters bij, zoals
+          prijsindicatie.
         </p>
       ),
     },

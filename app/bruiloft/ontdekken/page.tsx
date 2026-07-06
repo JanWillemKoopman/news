@@ -1,7 +1,7 @@
 'use client'
 
-import { OntdekkenContent } from '@/components/bruiloft/leveranciers/OntdekkenContent'
+import { OntdekkenLanding } from '@/components/bruiloft/ontdekken/OntdekkenLanding'
 
 export default function OntdekkenPage() {
-  return <OntdekkenContent />
+  return <OntdekkenLanding />
 }
