@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
+import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { getCategorieIcoon } from '@/components/bruiloft/leveranciers/categorieIcoon'
 import {
   Button,
@@ -127,6 +128,7 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
         <ArrowLeft className="h-4 w-4" /> Alle categorieën
       </Link>
       <PageHeader titel={categorie} />
+      <LeveranciersTabs />
 
       {/* De belangrijkste filter: waar zoeken jullie? Blijft bovenaan staan. */}
       <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-muted/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
