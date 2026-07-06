@@ -14,13 +14,11 @@ import {
   EmptyState,
   Select,
   Skeleton,
-  useToast,
 } from '@/components/bruiloft/ui'
 import { configVoorCategorie, ONTDEK_CATEGORIEEN } from '@/lib/bruiloft/discovery/categorieConfig'
 import { STRAAL_OPTIES } from '@/lib/bruiloft/discovery/geo'
-import { isInMijnLijst, type OntdekBusiness } from '@/lib/bruiloft/discovery/types'
-import { VENDOR_TYPES, tpwCategorieNaarSlug, type TpwCategorie } from '@/lib/bruiloft/options'
-import { canEdit } from '@/lib/bruiloft/permissions'
+import type { OntdekBusiness } from '@/lib/bruiloft/discovery/types'
+import type { TpwCategorie } from '@/lib/bruiloft/options'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import {
   FilterKolom,
@@ -30,7 +28,7 @@ import {
   type OntdekSort,
 } from './FilterKolom'
 import { OntdekCard } from './OntdekCard'
-import { OntdekDetailModal } from './OntdekDetailModal'
+import { useOntdekTabs } from './OntdekTabsContext'
 import { PlaatsZoeker } from './PlaatsZoeker'
 import { locatieQuery, useOntdekLocatie } from './useOntdekLocatie'
 
@@ -48,13 +46,8 @@ interface CategorieResultatenProps {
 export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
   const router = useRouter()
   const wedding = useBruiloftStore((s) => s.wedding)
-  const vendors = useBruiloftStore((s) => s.vendors)
-  const addVendor = useBruiloftStore((s) => s.addVendor)
-  const updateWedding = useBruiloftStore((s) => s.updateWedding)
-  const permissions = useBruiloftStore((s) => s.permissions)
-  const { toast } = useToast()
+  const { openTab } = useOntdekTabs()
 
-  const kanBewerken = canEdit(permissions, 'leveranciers')
   const config = configVoorCategorie(categorie)
 
   const { geladen, plaats, straal, setPlaats, setStraal } = useOntdekLocatie({ syncUrl: true })
@@ -66,7 +59,6 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
   const [page, setPage] = React.useState(1)
   const [laden, setLaden] = React.useState(true)
   const [fout, setFout] = React.useState<string | null>(null)
-  const [detail, setDetail] = React.useState<OntdekBusiness | null>(null)
 
   const effectieveSort: OntdekSort = plaats ? sort : 'naam'
 
@@ -109,38 +101,6 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
     const t = setTimeout(() => fetchPagina(1, true), 300)
     return () => clearTimeout(t)
   }, [geladen, fetchPagina])
-
-  async function voegToe(b: OntdekBusiness) {
-    const adres = [b.straat, [b.postcode, b.plaats].filter(Boolean).join(' ')]
-      .filter((deel) => deel && deel.trim().length > 0)
-      .join(', ')
-    try {
-      await addVendor({
-        naam: b.naam,
-        type: b.categorie,
-        status: 'te bezoeken',
-        contactpersoon: '',
-        telefoon: b.telefoon,
-        email: b.email,
-        website: b.website,
-        geoffreerdBedrag: 0,
-        notitie: b.beschrijving.length > 280 ? `${b.beschrijving.slice(0, 277)}…` : b.beschrijving,
-        adres,
-        latitude: b.lat,
-        longitude: b.lon,
-        tpwBusinessId: b.id,
-      })
-      // Zorg dat de categorie in de beheerde lijst staat, anders valt deze
-      // leverancier op /bruiloft/leveranciers terug op "Overig".
-      const categorieen = wedding?.vendorCategorieen?.length ? wedding.vendorCategorieen : VENDOR_TYPES
-      if (wedding && !categorieen.includes(b.categorie)) {
-        await updateWedding({ vendorCategorieen: [...categorieen, b.categorie] }).catch(() => {})
-      }
-      toast({ title: 'Toegevoegd aan Mijn lijst', variant: 'success' })
-    } catch {
-      toast({ title: 'Toevoegen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
-    }
-  }
 
   function wisselCategorie(nieuwe: string) {
     const doel = ONTDEK_CATEGORIEEN.find((c) => c.categorie === nieuwe)
@@ -288,14 +248,7 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
             <>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((b) => (
-                  <OntdekCard
-                    key={b.id}
-                    business={b}
-                    kanBewerken={kanBewerken}
-                    toegevoegd={isInMijnLijst(b, vendors)}
-                    onToevoegen={() => voegToe(b)}
-                    onOpen={() => setDetail(b)}
-                  />
+                  <OntdekCard key={b.id} business={b} onOpen={() => openTab(b)} />
                 ))}
               </div>
 
@@ -313,14 +266,6 @@ export function CategorieResultaten({ categorie }: CategorieResultatenProps) {
           )}
         </div>
       </div>
-
-      <OntdekDetailModal
-        business={detail}
-        onOpenChange={(o) => !o && setDetail(null)}
-        kanBewerken={kanBewerken}
-        toegevoegd={detail ? isInMijnLijst(detail, vendors) : false}
-        onToevoegen={() => detail && voegToe(detail)}
-      />
     </div>
   )
 }

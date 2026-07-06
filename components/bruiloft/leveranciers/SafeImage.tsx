@@ -9,9 +9,12 @@ interface SafeImageProps {
   className?: string
   fill?: boolean
   sizes?: string
+  // Extra hook naast de interne fallback (die zelf niets rendert) — voor
+  // aanroepers die bij een mislukte afbeelding een eigen placeholder tonen.
+  onError?: () => void
 }
 
-export function SafeImage({ src, alt, className, fill, sizes }: SafeImageProps) {
+export function SafeImage({ src, alt, className, fill, sizes, onError }: SafeImageProps) {
   const [imageSrc, setImageSrc] = React.useState(src)
   const [hasError, setHasError] = React.useState(false)
 
@@ -36,7 +39,10 @@ export function SafeImage({ src, alt, className, fill, sizes }: SafeImageProps) 
       fill={fill}
       sizes={sizes}
       unoptimized
-      onError={() => setHasError(true)}
+      onError={() => {
+        setHasError(true)
+        onError?.()
+      }}
     />
   )
 }
