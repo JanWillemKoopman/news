@@ -15,18 +15,31 @@
 // paneel past. Transform is puur cosmetisch en verandert niets aan de
 // layout-berekening binnen de iframe.
 
-import { Maximize2, Minimize2, Monitor, Smartphone, X } from 'lucide-react'
+import { Monitor, Smartphone, X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
 import { PublicWebsiteV2, type PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
 import type { WeddingLettertype } from '@/lib/bruiloft/types'
 import { cn } from '@/lib/utils'
-import { FONT_PREVIEW_URL, LETTERTYPE_CSS_VAR, LETTERTYPE_FONT_STACK } from '@/lib/bruiloft/websiteTheme'
+import {
+  FONT_PREVIEW_URL,
+  LETTERTYPE_CSS_VAR,
+  LETTERTYPE_FONT_STACK,
+  PREVIEW_VH_CSS_VAR,
+} from '@/lib/bruiloft/websiteTheme'
 
 const DESKTOP_BREEDTE = 1440
 const MOBIEL_BREEDTE = 390
 const MIN_HOOGTE = 480
+
+// Vaste referentiehoogte voor vh-afhankelijke secties (bijv. een fullscreen
+// hero), los van de werkelijke (aan de inhoud aangepaste) iframe-hoogte —
+// zie PREVIEW_VH_CSS_VAR. Deze waarden benaderen een gangbare browservenster-
+// hoogte per apparaattype, zodat een "65vh"-hero er in de preview net zo
+// proportioneel uitziet als op de live website.
+const DESKTOP_REFERENTIE_HOOGTE = 900
+const MOBIEL_REFERENTIE_HOOGTE = 844
 
 // De publieke route laadt de wedding-lettertypes via next/font
 // (app/trouwen/layout.tsx); die CSS-variabelen bestaan niet in de losse
@@ -47,12 +60,15 @@ const IFRAME_SHELL = '<!DOCTYPE html><html><head></head><body style="margin:0"><
 function IframeCanvas({
   breedte,
   hoogte,
+  referentieHoogte,
   onHoogteWijziging,
   titel,
   children,
 }: {
   breedte: number
   hoogte: number
+  // Vaste vh-referentiehoogte (zie PREVIEW_VH_CSS_VAR), los van `hoogte`.
+  referentieHoogte: number
   onHoogteWijziging: (h: number) => void
   titel: string
   children: React.ReactNode
@@ -60,6 +76,9 @@ function IframeCanvas({
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
   const [mountEl, setMountEl] = React.useState<HTMLElement | null>(null)
   const gekopieerd = React.useRef<Set<string>>(new Set())
+  const wpVhStyleRef = React.useRef<HTMLStyleElement | null>(null)
+  const referentieHoogteRef = React.useRef(referentieHoogte)
+  referentieHoogteRef.current = referentieHoogte
 
   const kopieerStylesheets = React.useCallback((doc: Document) => {
     const nodes = Array.from(window.document.head.querySelectorAll('link[rel="stylesheet"], style'))
@@ -89,6 +108,11 @@ function IframeCanvas({
       fontVars.textContent = `:root { ${FONT_VAR_CSS} }`
       doc.head.appendChild(fontVars)
 
+      const wpVhStyle = doc.createElement('style')
+      wpVhStyle.textContent = `:root { ${PREVIEW_VH_CSS_VAR}: ${referentieHoogteRef.current / 100}px; }`
+      doc.head.appendChild(wpVhStyle)
+      wpVhStyleRef.current = wpVhStyle
+
       const root = doc.createElement('div')
       doc.body.appendChild(root)
       setMountEl(root)
@@ -108,6 +132,14 @@ function IframeCanvas({
     observer.observe(window.document.head, { childList: true })
     return () => observer.disconnect()
   }, [kopieerStylesheets])
+
+  // Referentiehoogte kan wisselen (desktop/mobiel-toggle) zonder dat de
+  // iframe opnieuw laadt; werk de al aanwezige <style> dan bij.
+  React.useEffect(() => {
+    const style = wpVhStyleRef.current
+    if (!style) return
+    style.textContent = `:root { ${PREVIEW_VH_CSS_VAR}: ${referentieHoogte / 100}px; }`
+  }, [referentieHoogte])
 
   // Meet de natuurlijke inhoudshoogte en meld wijzigingen (bijv. na het
   // toevoegen/verwijderen van blokken) terug aan de ouder.
@@ -138,18 +170,12 @@ export function LivePreview({
   data,
   activePageSlug,
   onClose,
-  volledig,
-  onToggleVolledig,
 }: {
   data: PublicWebsiteV2Data
   // Welke pagina getoond wordt (fase 3: multi-page); '' of weggelaten = home.
   activePageSlug?: string
   // Aanwezig = overlay-variant (mobiel), afwezig = ingebed paneel (desktop).
   onClose?: () => void
-  // Ingebed paneel: of de instellingenkolom is ingeklapt (voorbeeld op
-  // volledige breedte) en de knop om dat te wisselen.
-  volledig?: boolean
-  onToggleVolledig?: () => void
 }) {
   // Op de mobiele overlay (open vanaf een telefoon) is de mobiel-weergave
   // het nuttigst als startpunt; het ingebedde desktop-paneel start desktop.
@@ -169,6 +195,7 @@ export function LivePreview({
   }, [])
 
   const virtueleBreedte = modus === 'desktop' ? DESKTOP_BREEDTE : MOBIEL_BREEDTE
+  const virtueleReferentieHoogte = modus === 'desktop' ? DESKTOP_REFERENTIE_HOOGTE : MOBIEL_REFERENTIE_HOOGTE
   const schaal = vlakBreedte > 0 ? Math.min(1, vlakBreedte / virtueleBreedte) : 0
   const zichtbareHoogte = Math.max(hoogte, MIN_HOOGTE)
 
@@ -207,16 +234,6 @@ export function LivePreview({
             <Smartphone className="h-3.5 w-3.5" />
           </button>
         </div>
-        {onToggleVolledig && (
-          <button
-            type="button"
-            onClick={onToggleVolledig}
-            title={volledig ? 'Instellingen tonen' : 'Voorbeeld vergroten'}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            {volledig ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
-        )}
         {onClose && (
           <button
             type="button"
@@ -239,7 +256,13 @@ export function LivePreview({
             style={{ width: virtueleBreedte * schaal, height: zichtbareHoogte * schaal }}
           >
             <div style={{ width: virtueleBreedte, height: zichtbareHoogte, transform: `scale(${schaal})`, transformOrigin: 'top left' }}>
-              <IframeCanvas breedte={virtueleBreedte} hoogte={zichtbareHoogte} onHoogteWijziging={setHoogte} titel="Voorbeeld trouwwebsite">
+              <IframeCanvas
+                breedte={virtueleBreedte}
+                hoogte={zichtbareHoogte}
+                referentieHoogte={virtueleReferentieHoogte}
+                onHoogteWijziging={setHoogte}
+                titel="Voorbeeld trouwwebsite"
+              >
                 <PublicWebsiteV2 data={data} activePageSlug={activePageSlug} />
               </IframeCanvas>
             </div>

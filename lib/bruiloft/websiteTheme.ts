@@ -68,6 +68,16 @@ export const LETTERTYPE_FONT_STACK: Record<WeddingLettertype, string> = {
   parisienne:          '"Parisienne", cursive',
 }
 
+// CSS-variabele voor "1% viewporthoogte" die secties met een vh-afhankelijke
+// minimumhoogte (bijv. een fullscreen hero) gebruiken i.p.v. de rauwe `vh`-
+// eenheid: `calc(var(--wp-vh, 1vh) * 65)`. Op de publieke site is de var niet
+// gezet, dus valt dit terug op de echte `1vh` (huidig gedrag, ongewijzigd).
+// De editor-preview-iframe zet 'm wél, op een vaste referentiehoogte los van
+// de gemeten inhoudshoogte — anders ontstaat een terugkoppelingslus: de
+// iframe-hoogte volgt de inhoudshoogte, en vh-secties volgen op hun beurt de
+// iframe-hoogte, waardoor een fullscreen hero steeds verder opblaast.
+export const PREVIEW_VH_CSS_VAR = '--wp-vh'
+
 // Google Fonts CSS2-URL voor alle 12 lettertypes: gebruikt door de
 // lettertype-kiezer (preview) en de editor-preview-iframe.
 export const FONT_PREVIEW_URL =
