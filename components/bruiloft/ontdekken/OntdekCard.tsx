@@ -23,7 +23,7 @@ interface OntdekCardProps {
 }
 
 export function OntdekCard({ business, categorieSlug }: OntdekCardProps) {
-  const { kanBewerken, toegevoegd, voegToe } = useMijnLijstActie(business)
+  const { kanBewerken, toegevoegd, voegToe, berichtModal } = useMijnLijstActie(business)
   const Icoon = getCategorieIcoon(business.categorie)
   const plaatsProvincie = [business.plaats, business.provincie].filter(Boolean).join(', ')
 
@@ -54,6 +54,8 @@ export function OntdekCard({ business, categorieSlug }: OntdekCardProps) {
         ) : null}
         {plaatsProvincie ? <p className="text-sm text-muted-foreground">{plaatsProvincie}</p> : null}
       </CardContent>
+
+      {berichtModal}
     </Card>
   )
 }

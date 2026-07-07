@@ -29,20 +29,18 @@ export function LeveranciersTabs() {
             aria-current={actief ? 'page' : undefined}
             className={cn(
               'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors sm:flex-none',
+              // Neutrale actieve stijl (kaart+schaduw), consistent met het
+              // tab-idioom van CadeaulijstShell — rose blijft gereserveerd
+              // voor "dit vraagt aandacht", niet voor "hier sta je nu".
               actief
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
             {tab.href === '/bruiloft/leveranciers' && aantal > 0 ? (
-              <span
-                className={cn(
-                  'rounded-full px-1.5 text-xs tabular-nums',
-                  actief ? 'bg-primary-foreground/20' : 'bg-foreground/[0.08]'
-                )}
-              >
+              <span className="rounded-full bg-foreground/[0.08] px-1.5 text-xs tabular-nums">
                 {aantal}
               </span>
             ) : null}

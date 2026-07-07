@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { ArrowLeft, BadgeCheck, Compass, Globe, Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
-import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
+import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { Button, EmptyState, Skeleton } from '@/components/bruiloft/ui'
 import type { OntdekBusiness } from '@/lib/bruiloft/discovery/types'
-import type { VendorContactType } from '@/lib/bruiloft/types'
 import { HartKnop } from './HartKnop'
 import { OntdekAfbeelding } from './OntdekAfbeelding'
 import { useMijnLijstActie } from './useMijnLijstActie'
@@ -75,6 +74,7 @@ export function LeverancierDetailPagina({ id, categorieSlug }: LeverancierDetail
     return (
       <div className="mx-auto max-w-3xl pb-24">
         {TerugLink}
+        <LeveranciersTabs />
         <Skeleton className="h-8 w-64" />
         <Skeleton className="mt-6 h-64 w-full rounded-xl" />
       </div>
@@ -85,6 +85,7 @@ export function LeverancierDetailPagina({ id, categorieSlug }: LeverancierDetail
     return (
       <div className="mx-auto max-w-3xl pb-24">
         {TerugLink}
+        <LeveranciersTabs />
         <EmptyState
           icon={Compass}
           titel={nietGevonden ? 'Leverancier niet gevonden' : 'Laden mislukt'}
@@ -113,8 +114,7 @@ function LeverancierDetailInhoud({
   business: OntdekBusiness
   terugLink: string
 }) {
-  const { kanBewerken, toegevoegd, voegToe } = useMijnLijstActie(business)
-  const [berichtType, setBerichtType] = React.useState<VendorContactType | null>(null)
+  const { kanBewerken, toegevoegd, voegToe, openBericht, berichtModal } = useMijnLijstActie(business)
   const b = business
 
   const onderschrift = [b.categorie, [b.plaats, b.provincie].filter(Boolean).join(', ')]
@@ -136,7 +136,8 @@ function LeverancierDetailInhoud({
       </Link>
 
       <PageHeader titel={b.naam} />
-      {onderschrift ? <p className="-mt-4 mb-6 text-sm text-muted-foreground">{onderschrift}</p> : null}
+      <LeveranciersTabs />
+      {onderschrift ? <p className="-mt-3 mb-6 text-sm text-muted-foreground">{onderschrift}</p> : null}
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <OntdekAfbeelding business={b} className="h-56 sm:h-72">
@@ -201,10 +202,10 @@ function LeverancierDetailInhoud({
 
               {heeftEmail ? (
                 <div className="flex gap-3">
-                  <Button className="flex-1" onClick={() => setBerichtType('offerte')}>
+                  <Button className="flex-1" onClick={() => openBericht('offerte')}>
                     Offerte aanvragen
                   </Button>
-                  <Button variant="outline" className="flex-1" onClick={() => setBerichtType('contact')}>
+                  <Button variant="outline" className="flex-1" onClick={() => openBericht('contact')}>
                     <MessageCircle className="h-4 w-4" /> Contact
                   </Button>
                 </div>
@@ -218,22 +219,7 @@ function LeverancierDetailInhoud({
         </div>
       </div>
 
-      {berichtType ? (
-        <LeverancierBerichtModal
-          open
-          onOpenChange={(o) => !o && setBerichtType(null)}
-          type={berichtType}
-          vendor={{
-            tpwBusinessId: b.id,
-            naam: b.naam,
-            type: b.categorie,
-            email: b.email,
-            telefoon: b.telefoon,
-            website: b.website,
-          }}
-          onSent={() => setBerichtType(null)}
-        />
-      ) : null}
+      {berichtModal}
     </div>
   )
 }
