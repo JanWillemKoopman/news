@@ -16,10 +16,15 @@ import {
   HOEK_RADIUS,
   LETTERTYPE_CSS_VAR,
   ORNAMENT_TEKEN,
+  PREVIEW_VH_CSS_VAR,
   hexNaarHsl,
   themeVanLegacy,
   type ThemeTokens,
 } from '@/lib/bruiloft/websiteTheme'
+
+// 1% viewporthoogte: valt terug op de echte `1vh` als de editor-preview de
+// variabele niet heeft gezet (zie PREVIEW_VH_CSS_VAR).
+const vh = (percentage: number) => `calc(var(${PREVIEW_VH_CSS_VAR}, 1vh) * ${percentage})`
 
 // ─── Datavorm van get_public_website_v2 ──────────────────────────────────────
 
@@ -550,7 +555,7 @@ function HeroFullscreen({ block, ctx }: { block: HeroBlock; ctx: RenderContext }
   const { wedding, theme } = ctx
   const heeftFoto = !!block.fotoUrl
   return (
-    <section className="relative flex min-h-[65vh] items-center justify-center overflow-hidden">
+    <section className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: vh(65) }}>
       {heeftFoto ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -592,7 +597,7 @@ function HeroSplit({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
   const { wedding, theme } = ctx
   const heeftFoto = !!block.fotoUrl
   return (
-    <section className="grid grid-cols-1 md:grid-cols-[55%_45%]" style={{ minHeight: '80vh' }}>
+    <section className="grid grid-cols-1 md:grid-cols-[55%_45%]" style={{ minHeight: vh(80) }}>
       <div className="relative order-2 min-h-[45vw] md:order-1 md:min-h-0" style={{ background: 'var(--site-card)' }}>
         {heeftFoto && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -630,7 +635,7 @@ function HeroSplit({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
 function HeroTypografisch({ block, ctx }: { block: HeroBlock; ctx: RenderContext }) {
   const { wedding, theme } = ctx
   return (
-    <section className="relative overflow-hidden" style={{ minHeight: '75vh', display: 'flex', alignItems: 'center' }}>
+    <section className="relative overflow-hidden" style={{ minHeight: vh(75), display: 'flex', alignItems: 'center' }}>
       {block.fotoUrl && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
