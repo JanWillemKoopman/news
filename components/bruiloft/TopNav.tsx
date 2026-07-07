@@ -10,6 +10,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
 import { useAIAdvies } from './ai/useAIAdvies'
 import { LeveranciersMegaMenu } from './LeveranciersMegaMenu'
+import { SectionMegaMenu } from './SectionMegaMenu'
 import { UserMenu } from './UserMenu'
 
 // Donkere navy header — Riley & Grey-stijl. Bevat het logo (ampersand-mark)
@@ -57,22 +58,7 @@ export function TopNav() {
                 <LeveranciersMegaMenu key={section.key} section={section} isActive={isActiveSection} />
               )
             }
-            return (
-              <Link
-                key={section.key}
-                href={section.href}
-                aria-current={isActiveSection ? 'page' : undefined}
-                className={cn(
-                  'inline-flex items-center rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
-                  isActiveSection
-                    ? 'bg-header-active text-white'
-                    : 'text-white/80 hover:bg-header-active/70 hover:text-white'
-                )}
-              >
-                {section.label}
-              </Link>
-            )
+            return <SectionMegaMenu key={section.key} section={section} isActive={isActiveSection} />
           })}
         </nav>
 
