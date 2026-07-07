@@ -2,12 +2,12 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { ChevronDown, Heart } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/bruiloft/ui'
 import { TPW_CATEGORIE_ITEMS, mijnLeveranciers, type NavSection } from './nav'
+import { useHoverMegaMenu } from './useHoverMegaMenu'
 
 // Volgorde bepaald door de gebruiker — dichtst bij de populairste categorieën
 // op theperfectwedding.nl, vertaald naar onze eigen 20-categorieënlijst.
@@ -32,76 +32,8 @@ interface LeveranciersMegaMenuProps {
 // zichtbaar op md+ (de ouder-<nav> is al hidden md:flex), dus dit is
 // automatisch beperkt tot tablet/desktop.
 export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenuProps) {
-  const pathname = usePathname()
-  const [open, setOpen] = React.useState(false)
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const panelRef = React.useRef<HTMLDivElement>(null)
-  const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Toetsenbordactivatie (Enter/Spatie) geeft click-events met detail 0; een
-  // muisklik of hover heeft dat niet. Alleen dan verplaatsen we focus naar het
-  // eerste menu-item — anders krijgt "Mijn leveranciers" een focusring bij
-  // gewoon hoveren.
-  const openedViaToetsenbord = React.useRef(false)
-
-  function clearCloseTimeout() {
-    if (closeTimeout.current) {
-      clearTimeout(closeTimeout.current)
-      closeTimeout.current = null
-    }
-  }
-
-  function openNow() {
-    clearCloseTimeout()
-    setOpen(true)
-  }
-
-  // Kleine vertraging zodat de muis van de link naar het paneel kan bewegen
-  // zonder dat het menu tussentijds dichtklapt.
-  function scheduleClose() {
-    clearCloseTimeout()
-    closeTimeout.current = setTimeout(() => setOpen(false), 150)
-  }
-
-  React.useEffect(() => {
-    setOpen(false)
-  }, [pathname])
-
-  React.useEffect(() => clearCloseTimeout, [])
-
-  React.useEffect(() => {
-    if (!open) return
-    const el = panelRef.current
-    if (!el) return
-
-    const focusable = () =>
-      Array.from(el.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'))
-
-    if (openedViaToetsenbord.current) {
-      focusable()[0]?.focus()
-    }
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setOpen(false)
-      }
-    }
-
-    // Sluit ook bij een klik/tik buiten menu en trigger — voor toetsenbord- en
-    // touch-gebruikers, die geen mouseleave krijgen.
-    function onPointerDown(e: PointerEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('pointerdown', onPointerDown)
-    }
-  }, [open])
+  const { open, setOpen, containerRef, panelRef, handleMouseEnter, handleMouseLeave, handleTriggerClick } =
+    useHoverMegaMenu()
 
   const populair = POPULAIRE_LABELS.map((label) =>
     TPW_CATEGORIE_ITEMS.find((c) => c.label === label)
@@ -114,20 +46,10 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const overigKolommen = [overig.slice(0, overigHelft), overig.slice(overigHelft)]
 
   return (
-    <div
-      ref={containerRef}
-      onMouseEnter={() => {
-        openedViaToetsenbord.current = false
-        openNow()
-      }}
-      onMouseLeave={scheduleClose}
-    >
+    <div ref={containerRef} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
         type="button"
-        onClick={(e) => {
-          openedViaToetsenbord.current = e.detail === 0
-          openNow()
-        }}
+        onClick={handleTriggerClick}
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
