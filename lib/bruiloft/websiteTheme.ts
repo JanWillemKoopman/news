@@ -1,7 +1,8 @@
-// Theme-engine voor de publieke trouwwebsite (website v3, zie
-// trouwwebsite-roadmap.md). Een thema is data (design-tokens), geen code:
-// de zes oude templates zijn hier presets van geworden, en elk token is
-// daarna individueel door het stel aan te passen.
+// Theme-engine voor de publieke trouwwebsite. Een thema bestaat uit twee
+// lagen: (1) deze design-tokens, individueel door het stel aan te passen,
+// en (2) het preset-veld, dat de structurele renderer kiest — elk van de
+// zes thema's heeft een eigen layout, componentstructuur en bewegingstaal
+// (zie components/website/v2/themes/README.md).
 
 import type { WeddingLettertype, WeddingThema } from './types'
 

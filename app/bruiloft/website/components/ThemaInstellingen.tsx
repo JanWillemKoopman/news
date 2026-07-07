@@ -16,14 +16,92 @@ import {
 } from '@/lib/bruiloft/websiteTheme'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
+// Elk thema is een eigen structurele renderer (layout, componenten en
+// bewegingstaal) — zie components/website/v2/themes/README.md.
 const PRESET_INFO: { id: WeddingThema; naam: string; beschrijving: string }[] = [
-  { id: 'klassiek', naam: 'The Atelier', beschrijving: 'Ornamentele typografie & tijdloos' },
-  { id: 'modern', naam: 'The Editor', beschrijving: 'Editoriaal & scherp' },
-  { id: 'romantisch', naam: 'Le Jardin', beschrijving: 'Warm blush & rond' },
-  { id: 'rustiek', naam: 'Het Landgoed', beschrijving: 'Linnen & warm organisch' },
-  { id: 'minimalistisch', naam: 'Studio', beschrijving: 'Typografie & witruimte' },
-  { id: 'botanisch', naam: 'De Tuin', beschrijving: 'Weelderig groen' },
+  { id: 'klassiek', naam: 'The Atelier', beschrijving: 'Gedrukte uitnodiging — ingelijst & gecentreerd' },
+  { id: 'modern', naam: 'The Editor', beschrijving: 'Magazine — genummerde katernen & marquee' },
+  { id: 'romantisch', naam: 'Le Jardin', beschrijving: 'Liefdesbrief — bogen, script & blush' },
+  { id: 'rustiek', naam: 'Het Landgoed', beschrijving: 'Veldjournaal — linnen, stempels & polaroids' },
+  { id: 'minimalistisch', naam: 'Studio', beschrijving: 'Galeriecatalogus — louter typografie' },
+  { id: 'botanisch', naam: 'De Tuin', beschrijving: 'Serre — bladvormen & rankende takken' },
 ]
+
+// Mini-wireframe per archetype: laat het structuurverschil zien, niet
+// alleen de kleuren.
+function ThumbnailSchets({ id, tokens }: { id: WeddingThema; tokens: ThemeTokens }) {
+  const accent = tokens.kleuren.accent
+  const basis = 'relative h-16 overflow-hidden rounded-lg border border-border/50'
+  const stijl = { background: tokens.kleuren.achtergrond }
+
+  switch (id) {
+    case 'klassiek': // ingelijst & gecentreerd, medaillon
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-1.5 rounded-[2px] border" style={{ borderColor: accent + '66' }} />
+          <div className="absolute inset-2.5 rounded-[2px] border" style={{ borderColor: accent + '33' }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+            <div className="h-2.5 w-2.5 rounded-full border" style={{ borderColor: accent }} />
+            <div className="h-1 w-1/2 rounded" style={{ background: accent + 'aa' }} />
+            <div className="h-0.5 w-1/4 rounded" style={{ background: accent + '55' }} />
+          </div>
+        </div>
+      )
+    case 'modern': // genummerd katern, links uitgelijnd, marquee
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-x-2 top-2 h-0.5" style={{ background: tokens.kleuren.tekst }} />
+          <span className="absolute left-2 top-3 text-[7px] font-bold leading-none" style={{ color: accent }}>Nº 01</span>
+          <div className="absolute left-2 top-6 h-1.5 w-3/5 rounded-sm" style={{ background: tokens.kleuren.tekst + 'dd' }} />
+          <div className="absolute left-2 top-9 h-1 w-2/5 rounded-sm" style={{ background: tokens.kleuren.tekst + '66' }} />
+          <div className="absolute inset-x-0 bottom-0 flex h-3 items-center gap-1 border-t px-1" style={{ borderColor: tokens.kleuren.tekst }}>
+            {[8, 5, 7, 4, 6].map((w, i) => (
+              <span key={i} className="h-0.5 rounded" style={{ width: w * 3, background: tokens.kleuren.tekst + '99' }} />
+            ))}
+          </div>
+        </div>
+      )
+    case 'romantisch': // boogfoto, script, pill
+      return (
+        <div className={basis} style={stijl}>
+          <div
+            className="absolute left-1/2 top-2 h-9 w-8 -translate-x-1/2 border"
+            style={{ background: accent + '44', borderColor: accent + '66', borderRadius: '999px 999px 3px 3px' }}
+          />
+          <div className="absolute bottom-4 left-1/2 h-1 w-1/2 -translate-x-1/2 rounded" style={{ background: accent + 'aa' }} />
+          <div className="absolute bottom-1.5 left-1/2 h-1.5 w-1/3 -translate-x-1/2 rounded-full border" style={{ borderColor: accent + '77' }} />
+        </div>
+      )
+    case 'rustiek': // split + stempel
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-y-0 left-0 w-2/5" style={{ background: accent + '55' }} />
+          <div className="absolute right-2 top-2 h-4 w-6 rotate-[-6deg] border border-dashed" style={{ borderColor: accent, borderRadius: '2px' }} />
+          <div className="absolute left-[45%] top-7 h-1 w-2/5 rounded" style={{ background: tokens.kleuren.tekst + 'aa' }} />
+          <div className="absolute left-[45%] top-10 h-0.5 w-1/4 rounded" style={{ background: tokens.kleuren.tekst + '55' }} />
+        </div>
+      )
+    case 'minimalistisch': // haarlijnen, indexnummer, poster-typo linksonder
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-x-2 top-2 h-px" style={{ background: tokens.kleuren.tekst }} />
+          <span className="absolute left-2 top-3 text-[6px] uppercase tracking-widest" style={{ color: tokens.kleuren.gedempt }}>01</span>
+          <div className="absolute bottom-3 left-2 h-2 w-3/5 rounded-sm" style={{ background: tokens.kleuren.tekst + 'cc' }} />
+          <span className="absolute bottom-3 right-2 text-[6px]" style={{ color: tokens.kleuren.gedempt }}>—</span>
+        </div>
+      )
+    case 'botanisch': // bladvormen + meander
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute left-2 top-2 h-7 w-7" style={{ background: accent + '77', borderRadius: '58% 6% 58% 6%' }} />
+          <div className="absolute right-2 top-3 h-1 w-2/5 rounded" style={{ background: tokens.kleuren.tekst + 'aa' }} />
+          <div className="absolute right-2 top-6 h-0.5 w-1/4 rounded" style={{ background: tokens.kleuren.tekst + '55' }} />
+          <div className="absolute bottom-2 right-3 h-5 w-5" style={{ background: accent + '44', borderRadius: '6% 58% 6% 58%' }} />
+          <div className="absolute bottom-4 left-2 h-0.5 w-1/3 rounded" style={{ background: accent + '88' }} />
+        </div>
+      )
+  }
+}
 
 const LETTERTYPES: { id: WeddingLettertype; naam: string; fontFamily: string }[] = [
   { id: 'cormorant', naam: 'Cormorant', fontFamily: LETTERTYPE_FONT_STACK.cormorant },
@@ -256,17 +334,7 @@ export function ThemaInstellingen({ content, theme, headerFotoUrl }: Props) {
                         <Check className="h-3 w-3" />
                       </span>
                     )}
-                    <div className="relative h-14 overflow-hidden rounded-lg" style={{ background: tokens.kleuren.achtergrond }}>
-                      <div className="absolute inset-x-0 top-0 flex h-3.5 items-center gap-1 px-2" style={{ background: tokens.kleuren.accent }}>
-                        <div className="h-0.5 flex-1 rounded" style={{ background: 'rgba(255,255,255,0.4)' }} />
-                      </div>
-                      <div className="absolute inset-0 mt-3.5 flex items-center justify-center">
-                        <div className="space-y-1 text-center">
-                          <div className="mx-auto h-1.5 rounded" style={{ background: tokens.kleuren.accent + 'aa', width: '55%' }} />
-                          <div className="mx-auto h-1 rounded" style={{ background: tokens.kleuren.accent + '55', width: '35%' }} />
-                        </div>
-                      </div>
-                    </div>
+                    <ThumbnailSchets id={p.id} tokens={tokens} />
                     <div className="flex gap-0.5">
                       {[tokens.kleuren.accent, tokens.kleuren.achtergrond, tokens.kleuren.kaart].map((kleur, i) => (
                         <div key={i} className="h-2 flex-1 border border-border/40 first:rounded-l last:rounded-r" style={{ background: kleur }} />
