@@ -3,8 +3,9 @@ import { capFirst, cn } from '@/lib/utils'
 // Eén betekenisvolle kleur: rose voor "vraagt aandacht", verder overal
 // hetzelfde neutrale grijs. Status wordt onderscheiden door de tekst zelf,
 // niet door een eigen kleur per waarde — zo blijft rose herkenbaar als
-// signaal in plaats van decoratie. Uitzondering: 'geboekt' (leverancier)
-// krijgt bewust een lichtgroene tone, op expliciet verzoek.
+// signaal in plaats van decoratie. Uitzondering: afgeronde/positieve
+// eindstatussen ('geboekt' bij leveranciers, 'bevestigd' bij RSVP) krijgen
+// bewust een lichtgroene tone, op expliciet verzoek.
 type Tone = 'neutral' | 'attention' | 'success'
 
 const toneClasses: Record<Tone, string> = {
@@ -17,7 +18,7 @@ type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit'
 
 const tones: Record<Kind, Record<string, Tone>> = {
   rsvp: {
-    bevestigd: 'neutral',
+    bevestigd: 'success',
     afgemeld: 'attention',
     'geen reactie': 'attention',
     uitgenodigd: 'neutral',
