@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
 import { useAIAdvies } from './ai/useAIAdvies'
+import { LeveranciersMegaMenu } from './LeveranciersMegaMenu'
 import { UserMenu } from './UserMenu'
 
 // Donkere navy header — Riley & Grey-stijl. Bevat het logo (ampersand-mark)
@@ -29,7 +30,7 @@ export function TopNav() {
   const heeftKritiek = zichtbaar.some((a) => a.urgentie === 'kritiek')
 
   return (
-    <header className="bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
+    <header className="relative bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
       <div className="flex h-16 items-center gap-6 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
@@ -51,6 +52,11 @@ export function TopNav() {
         <nav className="ml-2 hidden flex-1 items-center gap-1 md:flex" aria-label="Hoofdmenu">
           {sections.map((section) => {
             const isActiveSection = section.key === active.key
+            if (section.key === 'leveranciers') {
+              return (
+                <LeveranciersMegaMenu key={section.key} section={section} isActive={isActiveSection} />
+              )
+            }
             return (
               <Link
                 key={section.key}
