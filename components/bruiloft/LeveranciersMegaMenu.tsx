@@ -37,6 +37,11 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const containerRef = React.useRef<HTMLDivElement>(null)
   const panelRef = React.useRef<HTMLDivElement>(null)
   const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Toetsenbordactivatie (Enter/Spatie) geeft click-events met detail 0; een
+  // muisklik of hover heeft dat niet. Alleen dan verplaatsen we focus naar het
+  // eerste menu-item — anders krijgt "Mijn leveranciers" een focusring bij
+  // gewoon hoveren.
+  const openedViaToetsenbord = React.useRef(false)
 
   function clearCloseTimeout() {
     if (closeTimeout.current) {
@@ -71,7 +76,9 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
     const focusable = () =>
       Array.from(el.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'))
 
-    focusable()[0]?.focus()
+    if (openedViaToetsenbord.current) {
+      focusable()[0]?.focus()
+    }
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -107,10 +114,20 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const overigKolommen = [overig.slice(0, overigHelft), overig.slice(overigHelft)]
 
   return (
-    <div ref={containerRef} onMouseEnter={openNow} onMouseLeave={scheduleClose}>
+    <div
+      ref={containerRef}
+      onMouseEnter={() => {
+        openedViaToetsenbord.current = false
+        openNow()
+      }}
+      onMouseLeave={scheduleClose}
+    >
       <button
         type="button"
-        onClick={openNow}
+        onClick={(e) => {
+          openedViaToetsenbord.current = e.detail === 0
+          openNow()
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
