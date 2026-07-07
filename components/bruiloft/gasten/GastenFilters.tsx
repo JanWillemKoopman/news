@@ -74,7 +74,7 @@ export function GastenFilters({
     ...alleGasttypen.map((tp) => ({ key: tp, label: tp })),
   ]
   const rsvpOpties = [
-    { key: 'all', label: 'Alle RSVP-statussen' },
+    { key: 'all', label: 'Alle statussen' },
     ...RSVP_STATUSSEN.map((s) => ({ key: s, label: s })),
   ]
 
@@ -183,9 +183,9 @@ export function GastenFilters({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">RSVP</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
                 <Select value={rsvp} onChange={(e) => onRsvp(e.target.value)} className="w-full">
-                  <option value="all">Alle RSVP-statussen</option>
+                  <option value="all">Alle statussen</option>
                   {RSVP_STATUSSEN.map((s) => (
                     <option key={s} value={s}>
                       {s}

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react'
+import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
@@ -70,11 +70,13 @@ function RsvpSelect({
   }
 
   // Eén betekenisvolle kleur: rose voor statussen die actie vragen
-  // ("afgemeld", "geen reactie", "nog niet uitgenodigd"), verder neutraal —
-  // zelfde regel als StatusBadge, hier lokaal omdat dit element klikbaar is.
+  // ("afgemeld", "geen reactie", "nog niet uitgenodigd"), groen voor de
+  // afgeronde positieve status ("bevestigd", zelfde uitzondering als
+  // StatusBadge), verder neutraal — hier lokaal omdat dit element klikbaar is.
   const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20'
+  const groen = 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20'
   const klassen: Record<RsvpStatus, string> = {
-    bevestigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
+    bevestigd: groen,
     afgemeld: rose,
     uitgenodigd: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
     'geen reactie': rose,
@@ -116,12 +118,17 @@ function RsvpSelect({
   )
 }
 
-type SortKolom = 'naam' | 'categorie' | 'type' | 'tafel' | 'rsvp'
+type SortKolom = 'naam' | 'aantal' | 'type' | 'rsvp'
+
+// Totaal aantal personen dat deze gast vertegenwoordigt: de gast zelf, plus
+// een eventuele partner en meegenomen kinderen.
+function aantalPersonen(g: Guest): number {
+  return 1 + (g.heeftPartner ? 1 : 0) + g.aantalKinderen
+}
 
 export default function GastenPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const guests = useBruiloftStore((s) => s.guests)
-  const tables = useBruiloftStore((s) => s.tables)
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
@@ -157,11 +164,6 @@ export default function GastenPage() {
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
-
-  const tafelNamen = React.useMemo(
-    () => new Map(tables.map((t) => [t.id, t.naam])),
-    [tables]
-  )
 
   // Custom categorieën/gasttypes die al bij gasten in gebruik zijn, naast de
   // vaste suggestielijst — zodat ze ook als filter- en formulieroptie verschijnen.
@@ -217,19 +219,10 @@ export default function GastenPage() {
 
   const vergelijk = (a: Guest, b: Guest): number => {
     switch (sortKolom) {
-      case 'categorie':
-        return (
-          categorieLabelVoor(a.categorie, wedding.partner1Naam, wedding.partner2Naam)
-            .localeCompare(categorieLabelVoor(b.categorie, wedding.partner1Naam, wedding.partner2Naam), 'nl') ||
-          naamVergelijk(a, b)
-        )
+      case 'aantal':
+        return aantalPersonen(a) - aantalPersonen(b) || naamVergelijk(a, b)
       case 'type':
         return a.gasttype.localeCompare(b.gasttype, 'nl') || naamVergelijk(a, b)
-      case 'tafel':
-        return (
-          (tafelNamen.get(a.tafelId ?? '') ?? '').localeCompare(tafelNamen.get(b.tafelId ?? '') ?? '', 'nl') ||
-          naamVergelijk(a, b)
-        )
       case 'rsvp':
         return a.rsvpStatus.localeCompare(b.rsvpStatus, 'nl') || naamVergelijk(a, b)
       case 'naam':
@@ -388,24 +381,24 @@ export default function GastenPage() {
             <>
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
-                  <caption className="sr-only">Gastenlijst met categorie, type en RSVP-status</caption>
+                  <caption className="sr-only">Gastenlijst met aantal, type en status per gast</caption>
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <SortableTh kolom="naam" actief={sortKolom === 'naam'} richting={sortRichting} onSort={toggleSort}>
                         Naam
                       </SortableTh>
-                      <SortableTh kolom="categorie" actief={sortKolom === 'categorie'} richting={sortRichting} onSort={toggleSort}>
-                        Categorie
+                      <SortableTh kolom="aantal" actief={sortKolom === 'aantal'} richting={sortRichting} onSort={toggleSort}>
+                        Aantal
                       </SortableTh>
                       <SortableTh kolom="type" actief={sortKolom === 'type'} richting={sortRichting} onSort={toggleSort}>
                         Type
                       </SortableTh>
-                      <SortableTh kolom="tafel" actief={sortKolom === 'tafel'} richting={sortRichting} onSort={toggleSort}>
-                        Tafel
-                      </SortableTh>
                       <SortableTh kolom="rsvp" actief={sortKolom === 'rsvp'} richting={sortRichting} onSort={toggleSort}>
-                        RSVP
+                        Status
                       </SortableTh>
+                      <th scope="col" className="px-4 py-3">
+                        Dieet / notitie
+                      </th>
                       <th scope="col" className="px-4 py-3">
                         <span className="sr-only">Acties</span>
                       </th>
@@ -413,25 +406,33 @@ export default function GastenPage() {
                   </thead>
                   <tbody>
                     {zichtbaar.map((g) => (
-                      <tr key={g.id} className="border-b border-border last:border-0 hover:bg-accent/40">
+                      <tr
+                        key={g.id}
+                        role={kanBewerken ? 'button' : undefined}
+                        tabIndex={kanBewerken ? 0 : undefined}
+                        aria-label={kanBewerken ? `${g.voornaam} ${g.achternaam} bewerken` : undefined}
+                        onClick={kanBewerken ? () => openBewerk(g) : undefined}
+                        onKeyDown={kanBewerken ? (e) => { if (e.key === 'Enter' || e.key === ' ') openBewerk(g) } : undefined}
+                        className={`border-b border-border last:border-0 hover:bg-accent/40${kanBewerken ? ' cursor-pointer' : ''}`}
+                      >
                         <td className="px-4 py-3 font-medium text-foreground">
                           {g.voornaam} {g.achternaam}
-                          {(g.heeftPartner || g.aantalKinderen > 0 || g.dieetwensen) ? (
+                          {(g.heeftPartner || g.aantalKinderen > 0) ? (
                             <span className="block text-xs font-normal text-muted-foreground">
                               {[
                                 g.heeftPartner ? `+ partner${g.partnerNaam ? ` (${g.partnerNaam})` : ''}` : null,
                                 g.aantalKinderen > 0 ? `${g.aantalKinderen} kind(eren)` : null,
-                                g.dieetwensen || null,
                               ].filter(Boolean).join(' · ')}
                             </span>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {categorieLabelVoor(g.categorie, p1, p2)}
+                        <td className="px-4 py-3 text-base font-bold text-foreground">
+                          {aantalPersonen(g)}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{capFirst(g.gasttype)}</td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {tafelNamen.get(g.tafelId ?? '') ?? '—'}
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-foreground/10">
+                            {capFirst(g.gasttype)}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           {kanBewerken ? (
@@ -443,8 +444,16 @@ export default function GastenPage() {
                             <StatusBadge kind="rsvp" value={g.rsvpStatus} />
                           )}
                         </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {g.dieetwensen ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <UtensilsCrossed className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                              {g.dieetwensen}
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="px-4 py-3">
-                          <div className="flex justify-end">
+                          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                             <OverflowMenu
                               label="Acties voor deze gast"
                               items={[
@@ -515,32 +524,34 @@ export default function GastenPage() {
 
                     {/* Actiemenu */}
                     {(g.rsvpCode || kanBewerken) ? (
-                      <OverflowMenu
-                        label="Acties voor deze gast"
-                        align="right"
-                        items={[
-                          ...(g.rsvpCode ? [
-                            {
-                              label: 'Uitnodiging versturen',
-                              icon: Send,
-                              onClick: () => setRsvpTarget(g),
-                            },
-                          ] : []),
-                          ...(kanBewerken ? [
-                            {
-                              label: 'Bewerken',
-                              icon: Pencil,
-                              onClick: () => openBewerk(g),
-                            },
-                            {
-                              label: 'Verwijderen',
-                              icon: Trash2,
-                              danger: true,
-                              onClick: () => setDelGuest(g),
-                            },
-                          ] : []),
-                        ]}
-                      />
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <OverflowMenu
+                          label="Acties voor deze gast"
+                          align="right"
+                          items={[
+                            ...(g.rsvpCode ? [
+                              {
+                                label: 'Uitnodiging versturen',
+                                icon: Send,
+                                onClick: () => setRsvpTarget(g),
+                              },
+                            ] : []),
+                            ...(kanBewerken ? [
+                              {
+                                label: 'Bewerken',
+                                icon: Pencil,
+                                onClick: () => openBewerk(g),
+                              },
+                              {
+                                label: 'Verwijderen',
+                                icon: Trash2,
+                                danger: true,
+                                onClick: () => setDelGuest(g),
+                              },
+                            ] : []),
+                          ]}
+                        />
+                      </div>
                     ) : null}
                   </div>
                 ))}
