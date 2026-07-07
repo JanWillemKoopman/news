@@ -1,0 +1,153 @@
+'use client'
+
+import * as React from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { ChevronDown, Store } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { TPW_CATEGORIE_ITEMS, mijnLeveranciers, type NavSection } from './nav'
+
+// Volgorde bepaald door de gebruiker — dichtst bij de populairste categorieën
+// op theperfectwedding.nl, vertaald naar onze eigen 20-categorieënlijst.
+const POPULAIRE_LABELS = [
+  'Trouwlocaties',
+  'Trouwjurken',
+  'Trouwringen',
+  'Trouwfotografen',
+  'Videografen',
+  'Bloemen',
+]
+
+interface LeveranciersMegaMenuProps {
+  section: NavSection
+  isActive: boolean
+}
+
+// Uitklap-megamenu voor de "Leveranciers"-link in de donkere header. In
+// tegenstelling tot de overige sectielinks navigeert een klik hier niet
+// direct, maar opent een paneel met "Mijn leveranciers" + de populairste
+// categorieën (links) en alle overige categorieën (rechts). Alleen
+// zichtbaar op md+ (de ouder-<nav> is al hidden md:flex), dus dit is
+// automatisch beperkt tot tablet/desktop.
+export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenuProps) {
+  const pathname = usePathname()
+  const [open, setOpen] = React.useState(false)
+  const panelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  React.useEffect(() => {
+    if (!open) return
+    const el = panelRef.current
+    if (!el) return
+
+    const focusable = () =>
+      Array.from(el.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'))
+
+    focusable()[0]?.focus()
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
+  const populair = POPULAIRE_LABELS.map((label) =>
+    TPW_CATEGORIE_ITEMS.find((c) => c.label === label)
+  ).filter((c): c is (typeof TPW_CATEGORIE_ITEMS)[number] => Boolean(c))
+
+  const overig = TPW_CATEGORIE_ITEMS.filter((c) => !POPULAIRE_LABELS.includes(c.label)).sort(
+    (a, b) => a.label.localeCompare(b.label, 'nl')
+  )
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={cn(
+          'inline-flex items-center gap-1 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
+          isActive || open
+            ? 'bg-header-active text-white'
+            : 'text-white/80 hover:bg-header-active/70 hover:text-white'
+        )}
+      >
+        {section.label}
+        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />
+      </button>
+
+      {open ? (
+        <>
+          <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
+          <div
+            ref={panelRef}
+            role="menu"
+            aria-label="Leveranciers"
+            className="absolute inset-x-0 top-full z-50 border-b border-border bg-background text-foreground shadow-xl"
+          >
+            <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:flex-row lg:px-8">
+              {/* Mijn leveranciers + populaire categorieën */}
+              <div className="shrink-0 lg:w-72">
+                <Link
+                  href={mijnLeveranciers.href}
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Store className="h-4 w-4" aria-hidden />
+                  Mijn leveranciers
+                </Link>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {populair.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        role="menuitem"
+                        onClick={() => setOpen(false)}
+                        className="flex flex-col items-center gap-2 rounded-lg p-3 text-center transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <Icon className="h-5 w-5" aria-hidden />
+                        </span>
+                        <span className="text-xs font-medium text-foreground">{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Overige categorieën */}
+              <div className="columns-3 gap-x-8 lg:flex-1 lg:columns-4">
+                {overig.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="mb-1 block break-inside-avoid rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </>
+  )
+}
