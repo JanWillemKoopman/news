@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, Store } from 'lucide-react'
+import { ChevronDown, Heart } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/bruiloft/ui'
@@ -68,6 +68,8 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const overig = TPW_CATEGORIE_ITEMS.filter((c) => !POPULAIRE_LABELS.includes(c.label)).sort(
     (a, b) => a.label.localeCompare(b.label, 'nl')
   )
+  const overigHelft = Math.ceil(overig.length / 2)
+  const overigKolommen = [overig.slice(0, overigHelft), overig.slice(overigHelft)]
 
   return (
     <>
@@ -104,17 +106,17 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
                 onClick={() => setOpen(false)}
                 className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <Store className="h-4 w-4" aria-hidden />
+                <Heart className="h-4 w-4" aria-hidden />
                 Mijn leveranciers
               </Link>
 
               <div className="my-5 h-px bg-border" />
 
-              <div className="flex flex-col gap-8 lg:flex-row">
+              <div className="flex gap-4 lg:gap-8">
                 {/* Populaire categorieën */}
-                <div className="shrink-0 lg:w-72">
+                <div className="w-56 shrink-0 lg:w-72">
                   <h3 className="text-sm font-semibold text-foreground">Begin hier met zoeken</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2 lg:gap-3">
                     {populair.map((item) => {
                       const Icon = item.icon
                       return (
@@ -138,21 +140,25 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
                 </div>
 
                 {/* Overige categorieën */}
-                <div className="lg:flex-1">
+                <div className="flex-1">
                   <h3 className="text-sm font-semibold text-foreground">
                     Zoek alle leveranciers voor een complete bruiloft
                   </h3>
-                  <div className="mt-3 columns-2 gap-x-8">
-                    {overig.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        role="menuitem"
-                        onClick={() => setOpen(false)}
-                        className="mb-1 block break-inside-avoid rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {item.label}
-                      </Link>
+                  <div className="mt-3 flex gap-4">
+                    {overigKolommen.map((kolom, i) => (
+                      <div key={i} className="flex flex-col">
+                        {kolom.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            role="menuitem"
+                            onClick={() => setOpen(false)}
+                            className="rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 </div>
