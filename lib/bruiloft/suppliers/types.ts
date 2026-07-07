@@ -8,6 +8,18 @@ import type { VendorType } from '../types'
 // "Toevoegen aan mijn leveranciers"-knop naadloos aansluiten op public.vendors.
 export type SupplierCategorie = VendorType
 
+// De vaste CHECK-constraint-waarden van public.suppliers.categorie (zie
+// supabase/migrations/0021_suppliers.sql). Losstaand van SupplierCategorie
+// hierboven, dat breder is (bevat ook de TPW_CATEGORIEEN-namen) — deze lijst
+// is specifiek voor het invullen/valideren van die ene kolom, bv. bij het
+// promoveren van een handmatig toegevoegde vendor naar de catalogus.
+export const SUPPLIER_TABLE_CATEGORIEEN = [
+  'locatie', 'catering', 'fotograaf', 'videograaf', 'dj of band',
+  'bloemist', 'kleding', 'vervoer', 'taart', 'overig',
+] as const
+
+export type SupplierTableCategorie = (typeof SUPPLIER_TABLE_CATEGORIEEN)[number]
+
 export interface Supplier {
   id: string
   externalId: string
