@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronDown, Store } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/bruiloft/ui'
 import { TPW_CATEGORIE_ITEMS, mijnLeveranciers, type NavSection } from './nav'
 
 // Volgorde bepaald door de gebruiker — dichtst bij de populairste categorieën
@@ -96,53 +97,65 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
             aria-label="Leveranciers"
             className="absolute inset-x-0 top-full z-50 border-b border-border bg-background text-foreground shadow-xl"
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:flex-row lg:px-8">
-              {/* Mijn leveranciers + populaire categorieën */}
-              <div className="shrink-0 lg:w-72">
-                <Link
-                  href={mijnLeveranciers.href}
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <Store className="h-4 w-4" aria-hidden />
-                  Mijn leveranciers
-                </Link>
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+              <Link
+                href={mijnLeveranciers.href}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Store className="h-4 w-4" aria-hidden />
+                Mijn leveranciers
+              </Link>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {populair.map((item) => {
-                    const Icon = item.icon
-                    return (
+              <div className="my-5 h-px bg-border" />
+
+              <div className="flex flex-col gap-8 lg:flex-row">
+                {/* Populaire categorieën */}
+                <div className="shrink-0 lg:w-72">
+                  <h3 className="text-sm font-semibold text-foreground">Begin hier met zoeken</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {populair.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          role="menuitem"
+                          onClick={() => setOpen(false)}
+                          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+                        >
+                          <Card interactive className="flex flex-col items-center gap-2 p-3 text-center">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                              <Icon className="h-5 w-5" aria-hidden />
+                            </span>
+                            <span className="text-xs font-medium text-foreground">{item.label}</span>
+                          </Card>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Overige categorieën */}
+                <div className="lg:flex-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Zoek alle leveranciers voor een complete bruiloft
+                  </h3>
+                  <div className="mt-3 columns-2 gap-x-8">
+                    {overig.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
                         role="menuitem"
                         onClick={() => setOpen(false)}
-                        className="flex flex-col items-center gap-2 rounded-lg p-3 text-center transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="mb-1 block break-inside-avoid rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                          <Icon className="h-5 w-5" aria-hidden />
-                        </span>
-                        <span className="text-xs font-medium text-foreground">{item.label}</span>
+                        {item.label}
                       </Link>
-                    )
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Overige categorieën */}
-              <div className="columns-3 gap-x-8 lg:flex-1 lg:columns-4">
-                {overig.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    role="menuitem"
-                    onClick={() => setOpen(false)}
-                    className="mb-1 block break-inside-avoid rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
               </div>
             </div>
           </div>
