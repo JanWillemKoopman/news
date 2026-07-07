@@ -34,11 +34,34 @@ interface LeveranciersMegaMenuProps {
 export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenuProps) {
   const pathname = usePathname()
   const [open, setOpen] = React.useState(false)
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const panelRef = React.useRef<HTMLDivElement>(null)
+  const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function clearCloseTimeout() {
+    if (closeTimeout.current) {
+      clearTimeout(closeTimeout.current)
+      closeTimeout.current = null
+    }
+  }
+
+  function openNow() {
+    clearCloseTimeout()
+    setOpen(true)
+  }
+
+  // Kleine vertraging zodat de muis van de link naar het paneel kan bewegen
+  // zonder dat het menu tussentijds dichtklapt.
+  function scheduleClose() {
+    clearCloseTimeout()
+    closeTimeout.current = setTimeout(() => setOpen(false), 150)
+  }
 
   React.useEffect(() => {
     setOpen(false)
   }, [pathname])
+
+  React.useEffect(() => clearCloseTimeout, [])
 
   React.useEffect(() => {
     if (!open) return
@@ -57,8 +80,20 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
       }
     }
 
+    // Sluit ook bij een klik/tik buiten menu en trigger — voor toetsenbord- en
+    // touch-gebruikers, die geen mouseleave krijgen.
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
   }, [open])
 
   const populair = POPULAIRE_LABELS.map((label) =>
@@ -72,10 +107,10 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const overigKolommen = [overig.slice(0, overigHelft), overig.slice(overigHelft)]
 
   return (
-    <>
+    <div ref={containerRef} onMouseEnter={openNow} onMouseLeave={scheduleClose}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={openNow}
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
@@ -91,82 +126,79 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
       </button>
 
       {open ? (
-        <>
-          <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
-          <div
-            ref={panelRef}
-            role="menu"
-            aria-label="Leveranciers"
-            className="absolute inset-x-0 top-full z-50 border-b border-border bg-background text-foreground shadow-xl"
-          >
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-              <Link
-                href={mijnLeveranciers.href}
-                role="menuitem"
-                onClick={() => setOpen(false)}
-                className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <Heart className="h-4 w-4" aria-hidden />
-                Mijn leveranciers
-              </Link>
+        <div
+          ref={panelRef}
+          role="menu"
+          aria-label="Leveranciers"
+          className="absolute inset-x-0 top-full z-50 border-b border-border bg-background text-foreground shadow-xl"
+        >
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <Link
+              href={mijnLeveranciers.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-2 rounded-full bg-rhino-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <Heart className="h-4 w-4" aria-hidden />
+              Mijn leveranciers
+            </Link>
 
-              <div className="my-5 h-px bg-border" />
+            <div className="my-5 h-px bg-border" />
 
-              <div className="flex gap-4 lg:gap-8">
-                {/* Populaire categorieën */}
-                <div className="w-56 shrink-0 lg:w-72">
-                  <h3 className="text-sm font-semibold text-foreground">Begin hier met zoeken</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-2 lg:gap-3">
-                    {populair.map((item) => {
-                      const Icon = item.icon
-                      return (
+            <div className="flex gap-4 lg:gap-8">
+              {/* Populaire categorieën */}
+              <div className="w-56 shrink-0 lg:w-72">
+                <h3 className="text-sm font-semibold text-foreground">Begin hier met zoeken</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2 lg:gap-3">
+                  {populair.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        role="menuitem"
+                        onClick={() => setOpen(false)}
+                        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+                      >
+                        <Card interactive className="flex flex-col items-center gap-2 p-3 text-center">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                            <Icon className="h-5 w-5" aria-hidden />
+                          </span>
+                          <span className="text-xs font-medium text-foreground">{item.label}</span>
+                        </Card>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Overige categorieën */}
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Zoek alle leveranciers voor een complete bruiloft
+                </h3>
+                <div className="mt-3 flex gap-4">
+                  {overigKolommen.map((kolom, i) => (
+                    <div key={i} className="flex flex-col">
+                      {kolom.map((item) => (
                         <Link
                           key={item.href}
                           href={item.href}
                           role="menuitem"
                           onClick={() => setOpen(false)}
-                          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+                          className="rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <Card interactive className="flex flex-col items-center gap-2 p-3 text-center">
-                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                              <Icon className="h-5 w-5" aria-hidden />
-                            </span>
-                            <span className="text-xs font-medium text-foreground">{item.label}</span>
-                          </Card>
+                          {item.label}
                         </Link>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Overige categorieën */}
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Zoek alle leveranciers voor een complete bruiloft
-                  </h3>
-                  <div className="mt-3 flex gap-4">
-                    {overigKolommen.map((kolom, i) => (
-                      <div key={i} className="flex flex-col">
-                        {kolom.map((item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            role="menuitem"
-                            onClick={() => setOpen(false)}
-                            className="rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       ) : null}
-    </>
+    </div>
   )
 }
