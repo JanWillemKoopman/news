@@ -426,7 +426,7 @@ export default function GastenPage() {
                             </span>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 text-base font-bold text-foreground">
+                        <td className="px-4 py-3 font-medium text-foreground">
                           {aantalPersonen(g)}
                         </td>
                         <td className="px-4 py-3">
