@@ -609,7 +609,7 @@ function Faq({ items }: { items: FaqItem[]; ctx: RenderContext }) {
 }
 
 function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
-  const form = useRsvpFormulier(ctx.slug)
+  const form = useRsvpFormulier(ctx.slug, ctx.rsvpVooringevuld)
 
   const kaart = (inhoud: React.ReactNode) => (
     <div

@@ -11,6 +11,7 @@ import * as React from 'react'
 import type { GallerijFoto, RsvpStatus } from '@/lib/bruiloft/types'
 import type { BlockBreedte, BlockLayout, BlockUitlijning } from '@/lib/bruiloft/websiteBlocks'
 import { PREVIEW_VH_CSS_VAR, type ThemeTokens } from '@/lib/bruiloft/websiteTheme'
+import { createClient } from '@/lib/supabase/client'
 
 import type { WeddingInfo } from './types'
 
@@ -152,18 +153,26 @@ export interface RsvpFormulier {
   bevestig: RsvpBevestigState | null
 }
 
-export function useRsvpFormulier(slug?: string): RsvpFormulier {
+// Persoonlijke RSVP-link (/rsvp/[token]): de gast is al geïdentificeerd via
+// het rsvp_token, dus slaat het formulier de "zoek jezelf op"-fase over en
+// bevestigt rechtstreeks via de submit_rsvp-RPC i.p.v. het slug+naam-pad.
+export interface RsvpTokenContext {
+  token: string
+  gast: GevondenGast
+}
+
+export function useRsvpFormulier(slug?: string, tokenContext?: RsvpTokenContext): RsvpFormulier {
   const [voornaam, setVoornaam] = React.useState('')
   const [achternaam, setAchternaam] = React.useState('')
   const [zoekStatus, setZoekStatus] = React.useState<ZoekStatus>('idle')
-  const [gast, setGast] = React.useState<GevondenGast | null>(null)
+  const [gast, setGast] = React.useState<GevondenGast | null>(tokenContext?.gast ?? null)
 
   // Wordt overschreven met gast.rsvpStatus zodra de gast gevonden is.
-  const [keuze, setKeuze] = React.useState<RsvpStatus>('uitgenodigd')
-  const [dieet, setDieet] = React.useState('')
-  const [heeftPartner, setHeeftPartner] = React.useState(false)
-  const [partnerNaam, setPartnerNaam] = React.useState('')
-  const [kinderen, setKinderen] = React.useState(0)
+  const [keuze, setKeuze] = React.useState<RsvpStatus>(tokenContext?.gast.rsvpStatus ?? 'uitgenodigd')
+  const [dieet, setDieet] = React.useState(tokenContext?.gast.dieetwensen ?? '')
+  const [heeftPartner, setHeeftPartner] = React.useState(tokenContext?.gast.heeftPartner ?? false)
+  const [partnerNaam, setPartnerNaam] = React.useState(tokenContext?.gast.partnerNaam ?? '')
+  const [kinderen, setKinderen] = React.useState(tokenContext?.gast.aantalKinderen ?? 0)
   const [bezig, setBezig] = React.useState(false)
   const [opgeslagen, setOpgeslagen] = React.useState(false)
   const [fout, setFout] = React.useState('')
@@ -203,25 +212,36 @@ export function useRsvpFormulier(slug?: string): RsvpFormulier {
 
   async function bevestigSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!slug) return
+    if (!tokenContext && !slug) return
     setBezig(true)
     setFout('')
     try {
+      const payload = {
+        rsvpStatus: keuze,
+        dieetwensen: dieet,
+        heeftPartner,
+        partnerNaam: heeftPartner ? partnerNaam : '',
+        aantalKinderen: Number(kinderen) || 0,
+      }
+
+      if (tokenContext) {
+        const supabase = createClient()
+        const { error } = await supabase.rpc('submit_rsvp', {
+          p_token: tokenContext.token,
+          p_payload: payload,
+        })
+        if (error) {
+          setFout('Er ging iets mis bij het opslaan. Probeer het later opnieuw.')
+          return
+        }
+        setOpgeslagen(true)
+        return
+      }
+
       const res = await fetch('/api/rsvp/bevestig', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
-          voornaam,
-          achternaam,
-          payload: {
-            rsvpStatus: keuze,
-            dieetwensen: dieet,
-            heeftPartner,
-            partnerNaam: heeftPartner ? partnerNaam : '',
-            aantalKinderen: Number(kinderen) || 0,
-          },
-        }),
+        body: JSON.stringify({ slug, voornaam, achternaam, payload }),
       })
       if (!res.ok) {
         setFout('Er ging iets mis bij het opslaan. Probeer het later opnieuw.')

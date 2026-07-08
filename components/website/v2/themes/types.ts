@@ -9,6 +9,8 @@ import type * as React from 'react'
 import type { Block, HeroBlock } from '@/lib/bruiloft/websiteBlocks'
 import type { ThemeTokens } from '@/lib/bruiloft/websiteTheme'
 
+import type { RsvpTokenContext } from './shared'
+
 export interface ScheduleRegel {
   tijd: string
   eindtijd: string
@@ -36,6 +38,9 @@ export interface RenderContext {
   schedule: ScheduleRegel[]
   registry?: RegistryMeta | null
   slug?: string
+  // Persoonlijke RSVP-link (/rsvp/[token]): als gezet, slaat het RSVP-blok
+  // de "zoek jezelf op"-fase over — de gast is al bekend via het token.
+  rsvpVooringevuld?: RsvpTokenContext
 }
 
 // Alle blokken behalve de hero — de hero heeft een eigen renderer.

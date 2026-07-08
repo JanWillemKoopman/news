@@ -1004,6 +1004,7 @@ export type Database = {
         Returns: boolean
       }
       get_public_wedding: { Args: { p_token: string }; Returns: Json }
+      get_rsvp_unlock_meta: { Args: { p_token: string }; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
       is_wedding_member: { Args: { p_wedding: string }; Returns: boolean }
       list_wedding_members: {
