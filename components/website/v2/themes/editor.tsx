@@ -637,7 +637,7 @@ function Veld({
 }
 
 function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
-  const form = useRsvpFormulier(ctx.slug)
+  const form = useRsvpFormulier(ctx.slug, ctx.rsvpVooringevuld)
 
   if (form.fase === 'bevestigen' && form.bevestig) {
     const b = form.bevestig
