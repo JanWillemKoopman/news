@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderVendorContactEmail } from '@/lib/email/templates'
-import { vendorContactRequestFromRow, vendorFromRow } from '@/lib/bruiloft/mappers'
+import { messageFromRow, vendorContactRequestFromRow, vendorFromRow } from '@/lib/bruiloft/mappers'
 import { normaliseerWebsite } from '@/lib/bruiloft/suppliers/linked'
 import { createClient } from '@/lib/supabase/server'
 
@@ -182,9 +182,40 @@ export async function POST(request: NextRequest) {
     console.error('[leveranciers/contact] Log-insert mislukt:', logError)
   }
 
+  // 5. Spiegel-rij in messages (berichtencentrum "Verzonden"). Ook
+  // best-effort: het bericht is al verstuurd en gelogd, dit is puur de
+  // weergave in de mailbox.
+  const afzenderNaam =
+    (members ?? []).find((m: { user_id: string }) => m.user_id === user.id)?.display_name ||
+    user.email ||
+    ''
+  // any: messages ontbreekt nog in de gegenereerde database.types.ts (nieuwe
+  // migratie 0058, types nog niet geregenereerd), zelfde drift-patroon als
+  // tpw_business_id hierboven.
+  const { data: messageRow, error: messageError } = await (supabase as any)
+    .from('messages')
+    .insert({
+      wedding_id: weddingId,
+      direction: 'outbound',
+      type: type === 'offerte' ? 'leverancier_offerte' : 'leverancier_contact',
+      vendor_id: vendorRow!.id,
+      onderwerp,
+      inhoud: bericht,
+      afzender_naam: afzenderNaam,
+      afzender_type: 'gebruiker',
+      verzonden_door: user.id,
+      status: 'verzonden',
+    })
+    .select()
+    .single()
+  if (messageError) {
+    console.error('[leveranciers/contact] Message-insert mislukt:', messageError)
+  }
+
   return NextResponse.json({
     ok: true,
     vendor: vendorFromRow(vendorRow as Parameters<typeof vendorFromRow>[0]),
     contactRequest: logRow ? vendorContactRequestFromRow(logRow) : null,
+    message: messageRow ? messageFromRow(messageRow) : null,
   })
 }

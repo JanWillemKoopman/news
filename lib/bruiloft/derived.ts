@@ -8,6 +8,8 @@ import type {
   ActivityEntry,
   BudgetItem,
   Guest,
+  Message,
+  MessageRead,
   PaymentTerm,
   ScheduleItem,
   StandaardBudgetCategorie,
@@ -312,6 +314,20 @@ export function ongelezenActiviteit(
   return activity.filter(
     (a) => a.actorId !== currentUserId && (!seenAt || a.createdAt > seenAt)
   ).length
+}
+
+// Aantal inkomende berichten dat de huidige gebruiker nog niet gelezen heeft
+// (voor het badge-stipje op het mail-icoon in de header).
+export function ongelezenBerichten(
+  messages: Message[],
+  messageReads: MessageRead[],
+  currentUserId?: string
+): number {
+  if (!currentUserId) return 0
+  const gelezenIds = new Set(
+    messageReads.filter((r) => r.userId === currentUserId).map((r) => r.messageId)
+  )
+  return messages.filter((m) => m.direction === 'inbound' && !gelezenIds.has(m.id)).length
 }
 
 // Recentste feed-items eerst, afgekapt op een limiet.

@@ -11,6 +11,8 @@ import type {
   GuestInput,
   GuestPatch,
   ID,
+  Message,
+  MessageRead,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -63,6 +65,13 @@ export interface WeddingRepository {
   // Contact-/offertegeschiedenis per leverancier (append-only; wordt server-side
   // ingevuld door de /api/leveranciers/contact-route, hier alleen leesbaar).
   listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]>
+
+  // Berichtencentrum (Postvak IN / Verzonden). Inserts gebeuren server-side
+  // (welkomst-trigger, /api/leveranciers/contact-route); hier alleen lezen
+  // + leesstatus bijwerken.
+  listMessages(weddingId: ID): Promise<Message[]>
+  listMessageReads(weddingId: ID): Promise<MessageRead[]>
+  markMessageRead(messageId: ID): Promise<MessageRead>
 
   // BudgetItems
   listBudgetItems(weddingId: ID): Promise<BudgetItem[]>
