@@ -4,7 +4,9 @@ import * as React from 'react'
 import { CalendarClock } from 'lucide-react'
 
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
+import { taakGroepGridClass } from '@/components/bruiloft/taken/views/taakGroepGridClass'
 import { aankomendeTaken } from '@/lib/bruiloft/taken/stats'
+import type { KolomAantal } from '@/components/bruiloft/ui'
 import type { Task, WeddingMember } from '@/lib/bruiloft/types'
 
 interface DezeMaandSectionProps {
@@ -12,6 +14,7 @@ interface DezeMaandSectionProps {
   members: WeddingMember[]
   partner1Naam?: string
   partner2Naam?: string
+  kolommen: KolomAantal
   onToggleStatus: (t: Task) => void
   onEdit: (t: Task) => void
   onDelete: (t: Task) => void
@@ -34,7 +37,7 @@ export function DezeMaandSection(props: DezeMaandSectionProps) {
           {taken.length} {label}
         </span>
       </h2>
-      <div className="space-y-2">
+      <div className={taakGroepGridClass(props.kolommen)}>
         {taken.map((t) => (
           <TaskCard
             key={t.id}
@@ -42,6 +45,7 @@ export function DezeMaandSection(props: DezeMaandSectionProps) {
             members={props.members}
             partner1Naam={props.partner1Naam}
             partner2Naam={props.partner2Naam}
+            compact={props.kolommen === 2}
             onToggleStatus={props.onToggleStatus}
             onEdit={props.onEdit}
             onDelete={props.onDelete}

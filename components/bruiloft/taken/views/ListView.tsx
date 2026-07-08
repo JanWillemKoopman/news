@@ -2,13 +2,14 @@
 
 import * as React from 'react'
 
-import { Button, EmptyState } from '@/components/bruiloft/ui'
+import { Button, EmptyState, type KolomAantal } from '@/components/bruiloft/ui'
 import { ChevronDown, ChevronRight, ListChecks } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
 import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
 import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
 import { defaultDeadlineVoorMaand, groepeerOpDeadlineMaand } from '@/lib/bruiloft/taken/timeline'
+import { taakGroepGridClass } from '@/components/bruiloft/taken/views/taakGroepGridClass'
 import type { ISODate, Task, Wedding, WeddingMember } from '@/lib/bruiloft/types'
 
 const PRIO_ORDER: Record<string, number> = { hoog: 0, midden: 1, laag: 2 }
@@ -18,6 +19,7 @@ interface ListViewProps {
   allTasks: Task[]
   wedding: Wedding
   members: WeddingMember[]
+  kolommen: KolomAantal
   onToggleStatus: (t: Task) => void
   onEdit: (t: Task) => void
   onDelete: (t: Task) => void
@@ -34,6 +36,7 @@ export function ListView({
   allTasks,
   wedding,
   members,
+  kolommen,
   onToggleStatus,
   onEdit,
   onDelete,
@@ -81,6 +84,7 @@ export function ListView({
         members={members}
         partner1Naam={wedding.partner1Naam}
         partner2Naam={wedding.partner2Naam}
+        kolommen={kolommen}
         onToggleStatus={onToggleStatus}
         onEdit={onEdit}
         onDelete={onDelete}
@@ -123,7 +127,7 @@ export function ListView({
               </span>
             </button>
             {open ? (
-              <div className="space-y-2">
+              <div className={taakGroepGridClass(kolommen)}>
                 {groepTaken.map((t) => (
                   <TaskCard
                     key={t.id}
@@ -131,6 +135,7 @@ export function ListView({
                     members={members}
                     partner1Naam={wedding.partner1Naam}
                     partner2Naam={wedding.partner2Naam}
+                    compact={kolommen === 2}
                     onToggleStatus={onToggleStatus}
                     onEdit={onEdit}
                     onDelete={onDelete}
@@ -143,6 +148,7 @@ export function ListView({
                 <QuickAddTask
                   defaultDeadline={defaultDeadlineVoorMaand(groep.key)}
                   onOpenForm={onOpenForm}
+                  className={kolommen > 1 ? 'sm:col-span-full' : undefined}
                 />
               </div>
             ) : null}

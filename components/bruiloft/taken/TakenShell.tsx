@@ -13,7 +13,7 @@ import { TakenFilters } from '@/components/bruiloft/taken/TakenFilters'
 import { BulkActionsBar } from '@/components/bruiloft/taken/BulkActionsBar'
 import { ListView } from '@/components/bruiloft/taken/views/ListView'
 import { CalendarView } from '@/components/bruiloft/taken/views/CalendarView'
-import { Button, ConfirmDialog, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, useToast, type KolomAantal } from '@/components/bruiloft/ui'
 import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/taken/filters'
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { berekenTaakStats } from '@/lib/bruiloft/taken/stats'
@@ -38,6 +38,7 @@ export function TakenShell() {
   const { toast } = useToast()
 
   const [view, setView] = React.useState<View>('lijst')
+  const [kolommen, setKolommen] = React.useState<KolomAantal>(1)
   const [filters, setFilters] = React.useState<TaakFilters>(DEFAULT_FILTERS)
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [formOpen, setFormOpen] = React.useState(false)
@@ -224,6 +225,8 @@ export function TakenShell() {
         members={members}
         view={view}
         onViewChange={setView}
+        kolommen={kolommen}
+        onKolommenChange={setKolommen}
       />
 
       {view === 'lijst' && (
@@ -232,6 +235,7 @@ export function TakenShell() {
           allTasks={tasks}
           wedding={wedding}
           members={members}
+          kolommen={kolommen}
           onToggleStatus={toggleStatus}
           onEdit={openBewerk}
           onDelete={setDelTask}

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { CalendarDays, ChevronDown, LayoutList, Search, SlidersHorizontal, X } from 'lucide-react'
 
-import { Input, Select } from '@/components/bruiloft/ui'
+import { ColumnToggle, Input, Select, type KolomAantal } from '@/components/bruiloft/ui'
 import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
 import { cn } from '@/lib/utils'
 import type { TaakFilters } from '@/lib/bruiloft/taken/filters'
@@ -17,9 +17,19 @@ interface TakenFiltersProps {
   members: WeddingMember[]
   view: View
   onViewChange: (v: View) => void
+  kolommen: KolomAantal
+  onKolommenChange: (v: KolomAantal) => void
 }
 
-export function TakenFilters({ filters, onChange, members, view, onViewChange }: TakenFiltersProps) {
+export function TakenFilters({
+  filters,
+  onChange,
+  members,
+  view,
+  onViewChange,
+  kolommen,
+  onKolommenChange,
+}: TakenFiltersProps) {
   const [filterOpen, setFilterOpen] = React.useState(false)
   const panelRef = React.useRef<HTMLDivElement>(null)
 
@@ -221,6 +231,14 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
         )}
       </div>
 
+      {/* Kolom-keuze — alleen relevant in de lijstweergave, alleen op desktop
+          (mobiel/tablet altijd 1 kolom), zelfde plek als op het draaiboek. */}
+      {view === 'lijst' && (
+        <div className="hidden items-center gap-2 lg:flex">
+          <ColumnToggle waarde={kolommen} onChange={onKolommenChange} opties={[1, 2]} />
+        </div>
+      )}
+
       {/* View switcher */}
       <div className="inline-flex rounded-lg border border-border bg-background p-1">
         <button
@@ -229,7 +247,7 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
             view === 'lijst'
-              ? 'bg-primary text-primary-foreground'
+              ? 'bg-muted-foreground/80 text-background'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
@@ -242,7 +260,7 @@ export function TakenFilters({ filters, onChange, members, view, onViewChange }:
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
             view === 'kalender'
-              ? 'bg-primary text-primary-foreground'
+              ? 'bg-muted-foreground/80 text-background'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >

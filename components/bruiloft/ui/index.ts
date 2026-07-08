@@ -4,6 +4,8 @@
 export { Button, buttonVariants } from './Button'
 export { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './Card'
 export { StatusBadge } from './StatusBadge'
+export { ColumnToggle } from './ColumnToggle'
+export type { KolomAantal } from './ColumnToggle'
 export { Money } from './Money'
 export { EmptyState } from './EmptyState'
 export { FloatingAddButton } from './FloatingAddButton'
