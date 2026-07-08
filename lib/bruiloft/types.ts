@@ -9,7 +9,10 @@ export type ISODateTime = string // volledige ISO timestamp
 
 // --- Wedding ---------------------------------------------------------------
 
-export type VoortgangStatus = 'geboekt' | 'bezig' | 'te_doen'
+// 'niet_van_toepassing' = het bruidspaar heeft expliciet aangegeven dit niet
+// nodig te hebben (bijv. geen videograaf) — anders dan een ontbrekende key,
+// die "nog niet gevraagd/onbekend" betekent.
+export type VoortgangStatus = 'geboekt' | 'bezig' | 'te_doen' | 'niet_van_toepassing'
 
 export type VoortgangCategorie =
   | 'locatie'
