@@ -12,7 +12,6 @@ import { RsvpDeelModal } from '@/components/bruiloft/gasten/RsvpDeelModal'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { gastenInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import {
   Button,
   ConfirmDialog,
@@ -331,8 +330,6 @@ export default function GastenPage() {
         ]}
         fab={kanBewerken ? { label: 'Gast toevoegen', onClick: openNieuw } : undefined}
       />
-
-      <AIInsightCard sectie="/bruiloft/gasten" />
 
       {/* StatsStrip pas tonen bij genoeg gasten zodat de statistieken betekenisvol zijn. */}
       {guests.length >= 5 ? <GastenStatsStrip guests={guests} wedding={wedding} /> : null}

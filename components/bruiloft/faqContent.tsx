@@ -44,8 +44,8 @@ export const overzichtInfo: PageInfo = {
       </p>
       <p>
         Deze pagina combineert automatisch je gegevens uit alle onderdelen —
-        taken, budget, gasten en leveranciers — tot een persoonlijk beeld, met
-        aanbevelingen van de AI-planner erbovenop.
+        taken, budget, gasten en leveranciers — tot een persoonlijk beeld van
+        waar jullie nu staan.
       </p>
       <QuickStart
         stappen={[
@@ -94,10 +94,6 @@ export const overzichtInfo: PageInfo = {
             <strong>Status per onderdeel</strong> — budget, gasten, taken en
             leveranciers in het kort.
           </li>
-          <li>
-            <strong>AI-aanbevelingen</strong> — persoonlijke tips op basis van
-            jullie gegevens.
-          </li>
         </ul>
       ),
     },
@@ -130,16 +126,6 @@ export const overzichtInfo: PageInfo = {
           <strong>Draaiboek</strong>, <strong>Tafelschikking</strong>,{' '}
           <strong>Trouwwebsite</strong> en meer. Op mobiel zitten de minder
           gebruikte onderdelen achter <strong>Meer</strong>.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Wat doet de AI op deze pagina?',
-      antwoord: (
-        <p>
-          De AI-planner kijkt mee met jullie hele planning en zet de
-          belangrijkste tips bovenaan. Wil je een volledig overzicht per
-          onderdeel? Ga dan naar de <strong>AI-assistent</strong>.
         </p>
       ),
     },
@@ -224,15 +210,6 @@ export const takenInfo: PageInfo = {
         </p>
       ),
     },
-    {
-      vraag: 'Wat doen de AI-suggesties?',
-      antwoord: (
-        <p>
-          De AI stelt taken voor die passen bij jullie planning en fase. Voeg een
-          suggestie toe met één klik, of negeer hem als hij niet relevant is.
-        </p>
-      ),
-    },
   ],
 }
 
@@ -251,10 +228,7 @@ export const budgetInfo: PageInfo = {
       </p>
       <p>
         Meer dan een lijstje: koppel je een leverancier, dan telt diens offerte
-        automatisch mee. Met betaaltermijnen blijven deadlines in beeld. En de
-        AI-planner denkt mee — die vergelijkt je budget met dat van vergelijkbare
-        bruiloften, signaleert uitschieters en vergeten posten en wijst je op
-        betalingen die eraan komen.
+        automatisch mee. Met betaaltermijnen blijven deadlines in beeld.
       </p>
       <QuickStart
         stappen={[
@@ -379,17 +353,6 @@ export const budgetInfo: PageInfo = {
           vervaldatum), bijvoorbeeld een aanbetaling en een restbedrag. Vink een
           termijn af zodra die betaald is; het betaalde bedrag en de voortgang
           worden automatisch bijgewerkt.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Wat doet de AI met mijn budget?',
-      antwoord: (
-        <p>
-          Met <strong>Analyseer mijn budget</strong> en de AI-adviestegel denkt de
-          AI-planner mee. Die vergelijkt je budget met dat van vergelijkbare
-          bruiloften, signaleert categorieën die opvallen of die je vergeten bent,
-          en wijst je op betalingen die eraan komen. Het is advies — jij beslist.
         </p>
       ),
     },
@@ -587,8 +550,8 @@ export const draaiboekInfo: PageInfo = {
       <QuickStart
         stappen={[
           <>
-            Start met een <strong>standaard dagindeling</strong> of laat de AI een
-            voorstel maken.
+            Start met een <strong>standaard dagindeling</strong> en bouw die om
+            naar jullie dag.
           </>,
           <>
             Pas <strong>tijden, titels en betrokkenen</strong> aan jullie dag aan.
@@ -607,8 +570,7 @@ export const draaiboekInfo: PageInfo = {
       antwoord: (
         <p>
           Kies <strong>Start met standaard dagindeling</strong> voor een complete
-          basis, of <strong>AI-draaiboek</strong> voor een voorstel op maat. Daarna
-          pas je alles naar wens aan.
+          basis en pas alles daarna naar wens aan.
         </p>
       ),
     },
@@ -1059,92 +1021,6 @@ export const fotomuurInfo: PageInfo = {
         <p>
           In het beheer kun je losse foto’s verwijderen die niet op de muur
           thuishoren.
-        </p>
-      ),
-    },
-  ],
-}
-
-// ── AI-assistent ───────────────────────────────────────────────────────────
-export const aiAssistentInfo: PageInfo = {
-  titel: 'FAQ AI-assistent',
-  intro: (
-    <Intro>
-      <p>
-        De <strong>AI-assistent</strong> geeft jullie een persoonlijk
-        planningsoverzicht. Op basis van al je gegevens beoordeelt de AI per
-        onderdeel — taken, budget, leveranciers, draaiboek, gasten en website — hoe
-        je ervoor staat en welke acties nu het belangrijkst zijn.
-      </p>
-      <QuickStart
-        stappen={[
-          <>
-            Vul de andere onderdelen zo <strong>volledig mogelijk</strong> in.
-          </>,
-          <>
-            Klik op <strong>Ververs advies</strong> voor een actueel overzicht.
-          </>,
-          <>
-            Werk de voorgestelde <strong>acties</strong> per onderdeel af.
-          </>,
-        ]}
-      />
-    </Intro>
-  ),
-  faq: [
-    {
-      vraag: 'Hoe krijg ik advies?',
-      antwoord: (
-        <p>
-          Klik op <strong>Ververs advies</strong>. De AI analyseert jullie planning
-          en stelt per onderdeel een status en concrete acties voor.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Wat betekenen de statussen?',
-      antwoord: (
-        <ul className="list-disc space-y-1 pl-5">
-          <li>
-            <strong>Op schema</strong> — dit onderdeel ligt goed op koers.
-          </li>
-          <li>
-            <strong>Actie vereist</strong> — hier is binnenkort iets te doen.
-          </li>
-          <li>
-            <strong>Kritiek</strong> — dit heeft nu aandacht nodig.
-          </li>
-          <li>
-            <strong>Niet gestart</strong> — hier ben je nog niet mee begonnen.
-          </li>
-        </ul>
-      ),
-    },
-    {
-      vraag: 'Waar baseert de AI zich op?',
-      antwoord: (
-        <p>
-          Op de gegevens die je in de app invult: je taken, budget, gasten,
-          leveranciers, draaiboek en website. Hoe completer je invult, hoe beter het
-          advies.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Wat moet ik met het advies doen?',
-      antwoord: (
-        <p>
-          Het zijn concrete suggesties om je te helpen — jij beslist. Klik door naar
-          een onderdeel om er meteen mee aan de slag te gaan.
-        </p>
-      ),
-    },
-    {
-      vraag: 'Hoe vaak kan ik het verversen?',
-      antwoord: (
-        <p>
-          Wanneer je wilt. Het advies wordt bewaard en is gebaseerd op je actuele
-          gegevens, dus ververs gerust nadat je iets hebt bijgewerkt.
         </p>
       ),
     },

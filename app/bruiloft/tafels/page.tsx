@@ -6,7 +6,6 @@ import { AlertTriangle, Armchair, LayoutGrid, Map, Plus, Printer } from 'lucide-
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { tafelsInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { FloorPlan, type TafelPatch } from '@/components/bruiloft/tafels/FloorPlan'
 import { SeatingBoard } from '@/components/bruiloft/tafels/SeatingBoard'
 import { TableForm } from '@/components/bruiloft/tafels/TableForm'
@@ -125,8 +124,6 @@ export default function TafelsPage() {
         }
         fab={kanBewerken ? { label: 'Tafel toevoegen', onClick: openNieuw } : undefined}
       />
-
-      <AIInsightCard sectie="/bruiloft/tafels" />
 
       {tables.length > 0 ? (
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">

@@ -1,8 +1,6 @@
 // Deterministische conceptberichten voor offerte-/contactaanvragen aan een
-// leverancier. Bewust géén 'server-only' import: de client gebruikt
-// bouwContactTemplate() om de Contact-modal instant te vullen (geen wachttijd),
-// en de server (app/api/ai/leverancier-bericht) gebruikt beide als fallback
-// wanneer Gemini niet beschikbaar is of faalt. Zo staat de Nederlandse
+// leverancier. Gebruikt door LeverancierBerichtModal om de Contact-/
+// Offerte-modal direct te vullen (geen wachttijd). Zo staat de Nederlandse
 // brontekst maar op één plek.
 
 import { formatDatumNL } from '../format'

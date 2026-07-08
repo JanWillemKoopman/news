@@ -87,10 +87,11 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-serif text-xl font-medium text-rhino-900">4. AI-functies</h2>
             <p className="mt-3">
-              Ons Trouwplan bevat AI-functies, zoals budgetadvies en taakvoorstellen. Als je deze
-              gebruikt, sturen we de daarvoor relevante planningsgegevens (bijvoorbeeld je budget,
-              trouwdatum en takenlijst) naar onze AI-dienstverlener (Google) om het advies te
-              genereren. We sturen daarbij geen gastenlijsten of e-mailadressen van gasten mee.
+              Ons Trouwplan gebruikt AI voor één functie: het importeren van een gastenlijst.
+              Wanneer je een bestand uploadt of tekst plakt om gasten in één keer toe te voegen,
+              sturen we die inhoud (die namen en eventuele contactgegevens kan bevatten) naar onze
+              AI-dienstverlener (Google) om er een gestructureerde gastenlijst van te maken. Dit
+              gebeurt alleen wanneer je deze functie zelf gebruikt.
             </p>
           </section>
 
@@ -114,8 +115,9 @@ export default function PrivacyPage() {
                 zoals uitnodigingen en bevestigingen.
               </li>
               <li>
-                <strong className="text-rhino-900">Google</strong> — het genereren van AI-advies
-                (alleen wanneer je een AI-functie gebruikt).
+                <strong className="text-rhino-900">Google</strong> — het verwerken van een
+                geüploade of geplakte gastenlijst tot gestructureerde gegevens (alleen wanneer je
+                de gastenlijst-import gebruikt).
               </li>
             </ul>
             <p className="mt-3">

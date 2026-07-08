@@ -6,7 +6,6 @@ import { aankomendeTermijnen } from '@/lib/bruiloft/derived'
 import { dagenTot } from '@/lib/bruiloft/format'
 import type { BudgetItem, Guest, Task, Vendor, Wedding } from '@/lib/bruiloft/types'
 import { Card, CardContent } from '@/components/bruiloft/ui'
-import { useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 
 interface DashboardIntroProps {
   wedding: Wedding
@@ -18,10 +17,7 @@ interface DashboardIntroProps {
 }
 
 // Korte statusbevestiging bovenaan het dashboard: in één oogopslag waar het
-// koppel staat, gevolgd door de harde feiten (taken/betalingen). De kop komt bij
-// voorkeur van de AI (samenvatting uit dezelfde /api/ai/advice-call — geen extra
-// API-call), met een deterministische terugval tijdens het laden of bij oudere
-// cache zonder samenvatting. De feitenregel eronder is altijd deterministisch.
+// koppel staat, gevolgd door de harde feiten (taken/betalingen).
 function meervoud(n: number, enkel: string, meerv: string): string {
   return `${n} ${n === 1 ? enkel : meerv}`
 }
@@ -34,9 +30,6 @@ export function DashboardIntro({
   guests,
   faseLabel,
 }: DashboardIntroProps) {
-  // Deelt de gecachte advieslaag met het AI-paneel; geen extra AI-call.
-  const { samenvatting } = useAIAdvies()
-
   const dagen = dagenTot(wedding.trouwdatum)
 
   const openTaken = tasks.filter((t) => t.status !== 'klaar')
@@ -58,23 +51,19 @@ export function DashboardIntro({
     guests.length === 0 &&
     openTaken.length === 0
 
-  // Deterministische terugval-kop — feitelijk, zonder loze 'op schema'-claim.
-  let fallbackKop: string
+  // Deterministische kop — feitelijk, zonder loze 'op schema'-claim.
+  let kop: string
   if (dagen < 0) {
-    fallbackKop = 'Gefeliciteerd met jullie huwelijk! Nog een paar dingen om af te ronden.'
+    kop = 'Gefeliciteerd met jullie huwelijk! Nog een paar dingen om af te ronden.'
   } else if (nauwelijksBegonnen) {
-    fallbackKop = 'Tijd om te beginnen — zet jullie eerste stappen voor de bruiloft.'
+    kop = 'Tijd om te beginnen — zet jullie eerste stappen voor de bruiloft.'
   } else if (achterstallig > 0) {
-    fallbackKop = 'Een paar dingen vragen jullie aandacht.'
+    kop = 'Een paar dingen vragen jullie aandacht.'
   } else if (aankomendeTaken === 0 && aankomendeBetalingen === 0) {
-    fallbackKop = 'Goed bijgewerkt — niets wat nu dringend is.'
+    kop = 'Goed bijgewerkt — niets wat nu dringend is.'
   } else {
-    fallbackKop = 'Een paar dingen om binnenkort op te pakken.'
+    kop = 'Een paar dingen om binnenkort op te pakken.'
   }
-
-  // AI-samenvatting heeft voorrang zodra die binnen is.
-  const aiKop = samenvatting?.trim()
-  const kop = aiKop && aiKop.length > 0 ? aiKop : fallbackKop
 
   // Tweede regel: de harde feiten, kort opgesomd (altijd deterministisch).
   const feiten: string[] = []

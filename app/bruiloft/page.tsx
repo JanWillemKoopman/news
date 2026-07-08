@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
-import { AIAdviesPanel } from '@/components/bruiloft/AIAdviesPanel'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
@@ -14,11 +13,8 @@ import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import { Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { berekenGuidance } from '@/lib/bruiloft/guidance'
-import type { NextStep } from '@/lib/bruiloft/guidance'
 import { dagenTot } from '@/lib/bruiloft/format'
-import type { PermissionMap } from '@/lib/bruiloft/permissions'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import { useAIAdvies } from '@/components/bruiloft/ai/useAIAdvies'
 
 const FASE_LABEL: Record<string, string> = {
   '12 maanden voor': '12 maanden voor de bruiloft',
@@ -29,47 +25,6 @@ const FASE_LABEL: Record<string, string> = {
   'laatste week': 'Laatste week',
   trouwweek: 'Trouwweek',
   'na de bruiloft': 'Na de bruiloft',
-}
-
-function DashboardActieBlok({
-  fallbackSteps,
-  trouwdatum,
-  tasks,
-  budgetItems,
-  vendors,
-  guests,
-  wedding,
-  permissions,
-}: {
-  fallbackSteps: NextStep[]
-  trouwdatum: string
-  tasks: React.ComponentProps<typeof UrgenteAandachtspunten>['tasks']
-  budgetItems: React.ComponentProps<typeof UrgenteAandachtspunten>['budgetItems']
-  vendors: React.ComponentProps<typeof UrgenteAandachtspunten>['vendors']
-  guests: React.ComponentProps<typeof UrgenteAandachtspunten>['guests']
-  wedding: React.ComponentProps<typeof UrgenteAandachtspunten>['wedding']
-  permissions: PermissionMap
-}) {
-  const { advies } = useAIAdvies()
-  const heeftAIAdvies = advies !== null && advies.length > 0
-
-  if (heeftAIAdvies) {
-    return (
-      <div className="mb-8">
-        <AIAdviesPanel fallbackSteps={fallbackSteps} trouwdatum={trouwdatum} />
-      </div>
-    )
-  }
-  return (
-    <UrgenteAandachtspunten
-      tasks={tasks}
-      budgetItems={budgetItems}
-      vendors={vendors}
-      guests={guests}
-      wedding={wedding}
-      permissions={permissions}
-    />
-  )
 }
 
 export default function DashboardPage() {
@@ -171,10 +126,8 @@ export default function DashboardPage() {
 
       {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
 
-      {/* Advies om nu te doen (AI); valt terug op urgente aandachtspunten als er nog geen AI-advies is */}
-      <DashboardActieBlok
-        fallbackSteps={guidance.stappen}
-        trouwdatum={wedding.trouwdatum}
+      {/* Urgente aandachtspunten: wat nu vraagt om actie */}
+      <UrgenteAandachtspunten
         tasks={tasks}
         budgetItems={budgetItems}
         vendors={vendors}

@@ -15,7 +15,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 const ACCESS_CODE = '0172'
 
 const FUNCTIONALITEITEN = [
-  'Takenlijst met AI-suggesties',
+  'Takenlijst op tijdlijn',
   'Budget bijhouden per categorie',
   'Leveranciers en offertes beheren',
   'Gastenlijst en RSVP',

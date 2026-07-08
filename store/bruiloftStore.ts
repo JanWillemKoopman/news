@@ -142,9 +142,6 @@ interface BruiloftState {
   // UI: of de "Onze gegevens"-modal open is. App-breed te openen vanuit hero,
   // profielkaart, accountmenu en de profiel-nudge.
   weddingSettingsOpen: boolean
-  // UI: of het AI-coach-paneel open is. Te openen vanuit de topbalk en de
-  // moment-nudge; het paneel zelf staat in WeddingShell.
-  aiCoachOpen: boolean
   // UI: of de keuzescreen getoond moet worden (meerdere bruiloften, geen
   // opgeslagen voorkeur). Wordt gereset zodra de gebruiker een keuze maakt.
   pickingWedding: boolean
@@ -170,8 +167,6 @@ interface BruiloftActions {
   updateWedding: (patch: Partial<WeddingInput>) => Promise<void>
   openWeddingSettings: () => void
   closeWeddingSettings: () => void
-  openAICoach: () => void
-  closeAICoach: () => void
 
   addGuest: (data: NewGuest) => Promise<void>
   // Bulk-import: meerdere gasten in één keer toevoegen (AI-import).
@@ -382,7 +377,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     registryContributions: [],
     registryLoaded: false,
     weddingSettingsOpen: false,
-    aiCoachOpen: false,
     pickingWedding: false,
     creatingWedding: false,
 
@@ -783,9 +777,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     openWeddingSettings: () => set({ weddingSettingsOpen: true }),
     closeWeddingSettings: () => set({ weddingSettingsOpen: false }),
-
-    openAICoach: () => set({ aiCoachOpen: true }),
-    closeAICoach: () => set({ aiCoachOpen: false }),
 
     // --- Guests ------------------------------------------------------------
 

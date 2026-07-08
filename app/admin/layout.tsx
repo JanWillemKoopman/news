@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { Activity, BarChart2, Bug, CalendarHeart, LayoutDashboard, Sparkles, Store, Users } from 'lucide-react'
+import { Activity, BarChart2, Bug, CalendarHeart, LayoutDashboard, Store, Users } from 'lucide-react'
 import Link from 'next/link'
 
 import { createClient } from '@/lib/supabase/server'
@@ -39,7 +39,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Analytics</p>
           <NavItem href="/admin/bruiloften" icon={<CalendarHeart className="h-4 w-4" />} label="Bruiloften" />
           <NavItem href="/admin/gebruik" icon={<Activity className="h-4 w-4" />} label="App Gebruik" />
-          <NavItem href="/admin/ai" icon={<Sparkles className="h-4 w-4" />} label="AI Monitor" />
           <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Content</p>
           <NavItem href="/admin/leveranciers" icon={<Store className="h-4 w-4" />} label="Leveranciers" />
           <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-300">Technisch</p>
@@ -61,7 +60,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/gebruikers" className="text-xs text-gray-600 whitespace-nowrap">Gebruikers</Link>
           <Link href="/admin/bruiloften" className="text-xs text-gray-600 whitespace-nowrap">Bruiloften</Link>
           <Link href="/admin/gebruik" className="text-xs text-gray-600 whitespace-nowrap">Gebruik</Link>
-          <Link href="/admin/ai" className="text-xs text-gray-600 whitespace-nowrap">AI</Link>
           <Link href="/admin/leveranciers" className="text-xs text-gray-600 whitespace-nowrap">Leveranciers</Link>
           <Link href="/admin/bugs" className="text-xs text-gray-600 whitespace-nowrap">Bugs</Link>
           <Link href="/bruiloft" className="text-xs text-blue-600 whitespace-nowrap">← App</Link>
