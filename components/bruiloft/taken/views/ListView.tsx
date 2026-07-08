@@ -135,6 +135,7 @@ export function ListView({
                     members={members}
                     partner1Naam={wedding.partner1Naam}
                     partner2Naam={wedding.partner2Naam}
+                    compact={kolommen === 2}
                     onToggleStatus={onToggleStatus}
                     onEdit={onEdit}
                     onDelete={onDelete}

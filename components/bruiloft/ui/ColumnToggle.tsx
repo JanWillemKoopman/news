@@ -9,22 +9,26 @@ export type KolomAantal = 1 | 2 | 3
 interface ColumnToggleProps {
   waarde: KolomAantal
   onChange: (v: KolomAantal) => void
+  /** Welke kolomaantallen tonen — bv. [1, 2] op taken/budget (geen 3e optie). */
+  opties?: KolomAantal[]
   ariaLabel?: string
   className?: string
 }
 
-const OPTIES: { waarde: KolomAantal; icon: typeof Square; label: string }[] = [
+const ALLE_OPTIES: { waarde: KolomAantal; icon: typeof Square; label: string }[] = [
   { waarde: 1, icon: Square, label: '1 kolom' },
   { waarde: 2, icon: Columns2, label: '2 kolommen' },
   { waarde: 3, icon: Columns3, label: '3 kolommen' },
 ]
 
-// Herbruikbare kolomkeuze (1/2/3), zoals eerst alleen op het draaiboek. De
-// actieve stand is neutraal donkergrijs — geen accentkleur, want kiezen van
-// een weergave vraagt geen aandacht zoals de rose-accent dat betekent.
+// Herbruikbare kolomkeuze, zoals eerst alleen op het draaiboek. De actieve
+// stand is neutraal grijs (blend met het theme) — geen accentkleur, want
+// kiezen van een weergave vraagt geen aandacht zoals de rose-accent dat
+// betekent.
 export function ColumnToggle({
   waarde,
   onChange,
+  opties = [1, 2, 3],
   ariaLabel = 'Aantal kolommen',
   className,
 }: ColumnToggleProps) {
@@ -34,7 +38,7 @@ export function ColumnToggle({
       role="group"
       aria-label={ariaLabel}
     >
-      {OPTIES.map(({ waarde: w, icon: Icon, label }) => (
+      {ALLE_OPTIES.filter((o) => opties.includes(o.waarde)).map(({ waarde: w, icon: Icon, label }) => (
         <button
           key={w}
           type="button"
@@ -44,7 +48,7 @@ export function ColumnToggle({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
             waarde === w
-              ? 'bg-foreground text-background'
+              ? 'bg-muted-foreground/80 text-background'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >

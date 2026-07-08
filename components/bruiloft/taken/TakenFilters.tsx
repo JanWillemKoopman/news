@@ -235,7 +235,7 @@ export function TakenFilters({
           (mobiel/tablet altijd 1 kolom), zelfde plek als op het draaiboek. */}
       {view === 'lijst' && (
         <div className="hidden items-center gap-2 lg:flex">
-          <ColumnToggle waarde={kolommen} onChange={onKolommenChange} />
+          <ColumnToggle waarde={kolommen} onChange={onKolommenChange} opties={[1, 2]} />
         </div>
       )}
 
@@ -247,7 +247,7 @@ export function TakenFilters({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
             view === 'lijst'
-              ? 'bg-foreground text-background'
+              ? 'bg-muted-foreground/80 text-background'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
@@ -260,7 +260,7 @@ export function TakenFilters({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
             view === 'kalender'
-              ? 'bg-foreground text-background'
+              ? 'bg-muted-foreground/80 text-background'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >

@@ -45,6 +45,7 @@ export function DezeMaandSection(props: DezeMaandSectionProps) {
             members={props.members}
             partner1Naam={props.partner1Naam}
             partner2Naam={props.partner2Naam}
+            compact={props.kolommen === 2}
             onToggleStatus={props.onToggleStatus}
             onEdit={props.onEdit}
             onDelete={props.onDelete}

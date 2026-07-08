@@ -263,7 +263,7 @@ export function BudgetList({
         {/* Kolom-keuze — alleen op desktop (mobiel/tablet altijd 1 kolom),
             zelfde plek als op het draaiboek en de takenpagina. */}
         <div className="hidden items-center gap-2 lg:flex">
-          <ColumnToggle waarde={kolommen} onChange={setKolommen} />
+          <ColumnToggle waarde={kolommen} onChange={setKolommen} opties={[1, 2]} />
         </div>
       </div>
 
@@ -280,8 +280,7 @@ export function BudgetList({
       <div
         className={cn(
           kolommen === 1 && 'space-y-3',
-          kolommen === 2 && 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2',
-          kolommen === 3 && 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3'
+          kolommen === 2 && 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2'
         )}
       >
         {gefilterd.map((cat) => (
@@ -372,17 +371,9 @@ function CategorieRij({
           </div>
         </div>
 
-        {/* Progress bar — hidden op kleine schermen */}
-        <div className="hidden w-40 shrink-0 lg:block">
-          <div className={cn('h-1.5 overflow-hidden rounded-full', config.aandacht ? 'bg-rose-100 dark:bg-rose-950/50' : 'bg-muted')}>
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-500',
-                config.aandacht ? 'bg-rose-500' : 'bg-foreground/70'
-              )}
-              style={{ width: `${Math.max(voortgangPct > 0 ? voortgangPct : 0, 0)}%` }}
-            />
-          </div>
+        {/* Percentage betaald — hidden op kleine schermen */}
+        <div className={cn('hidden shrink-0 text-sm lg:block', config.aandacht ? 'text-rose-600' : 'text-muted-foreground')}>
+          {Math.round(Math.max(voortgangPct, 0))}% betaald
         </div>
 
         {/* Amount */}

@@ -134,10 +134,10 @@ export function TaskCard({
           {klaar ? <Check className="h-4 w-4" /> : null}
         </button>
 
-        {/* Op mobiel (en in compacte contexten zoals de kalender-popover)
-            blijft alles onder elkaar staan. Op desktop past titel,
-            omschrijving en metadata op één regel — minder verticale ruimte,
-            de beschikbare breedte wordt benut i.p.v. leeg te blijven.
+        {/* Op mobiel (en in compacte contexten zoals de kalender-popover en de
+            2-koloms takenweergave) blijft alles onder elkaar staan — titel
+            altijd goed leesbaar, metadata op een eigen regel eronder. Op
+            desktop in 1 kolom past titel en metadata op één regel.
             opacity staat hier i.p.v. op de hele Card: opacity < 1 creëert
             een nieuwe stacking-context, en zou anders het "meer"-menu
             (verderop in dezelfde Card) achter latere kaarten in de lijst
@@ -161,16 +161,6 @@ export function TaskCard({
             >
               {task.titel}
             </button>
-            {task.omschrijving && !compact ? (
-              <>
-                <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground sm:hidden">
-                  {task.omschrijving}
-                </p>
-                <p className="hidden text-sm text-muted-foreground sm:block sm:min-w-0 sm:flex-1 sm:truncate">
-                  {task.omschrijving}
-                </p>
-              </>
-            ) : null}
           </div>
 
           <div
