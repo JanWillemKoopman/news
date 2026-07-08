@@ -1,11 +1,10 @@
 'use client'
 
-import { Columns2, Columns3, Search, Square, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 
-import { Input } from '@/components/bruiloft/ui'
-import { cn } from '@/lib/utils'
+import { ColumnToggle, Input, type KolomAantal } from '@/components/bruiloft/ui'
 
-export type KolomAantal = 1 | 2 | 3
+export type { KolomAantal }
 
 interface DraaiboekControlsProps {
   zoek: string
@@ -13,12 +12,6 @@ interface DraaiboekControlsProps {
   kolommen: KolomAantal
   onKolommenChange: (v: KolomAantal) => void
 }
-
-const OPTIES: { waarde: KolomAantal; icon: typeof Square; label: string }[] = [
-  { waarde: 1, icon: Square, label: '1 kolom' },
-  { waarde: 2, icon: Columns2, label: '2 kolommen' },
-  { waarde: 3, icon: Columns3, label: '3 kolommen' },
-]
 
 export function DraaiboekControls({
   zoek,
@@ -51,30 +44,7 @@ export function DraaiboekControls({
 
       {/* Kolom-keuze — alleen op desktop (mobiel/tablet altijd 1 kolom) */}
       <div className="hidden items-center gap-2 lg:flex">
-        <div
-          className="inline-flex rounded-lg border border-border bg-background p-1"
-          role="group"
-          aria-label="Aantal kolommen"
-        >
-          {OPTIES.map(({ waarde, icon: Icon, label }) => (
-            <button
-              key={waarde}
-              type="button"
-              onClick={() => onKolommenChange(waarde)}
-              aria-label={label}
-              aria-pressed={kolommen === waarde}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-                kolommen === waarde
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {waarde}
-            </button>
-          ))}
-        </div>
+        <ColumnToggle waarde={kolommen} onChange={onKolommenChange} />
       </div>
     </div>
   )

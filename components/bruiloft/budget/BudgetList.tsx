@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react'
 
-import { Button, Money } from '@/components/bruiloft/ui'
+import { Button, ColumnToggle, Money, type KolomAantal } from '@/components/bruiloft/ui'
 import {
   effectiefGeoffreerd,
   geboekteLeverancierVoor,
@@ -97,6 +97,7 @@ export function BudgetList({
 }: BudgetListProps) {
   const [zoekterm, setZoekterm] = React.useState('')
   const [filter, setFilter] = React.useState<Filter>('alle')
+  const [kolommen, setKolommen] = React.useState<KolomAantal>(1)
   const [uitgeklapt, setUitgeklapt] = React.useState<Set<string>>(new Set())
   const [filterOpen, setFilterOpen] = React.useState(false)
   const filterPanelRef = React.useRef<HTMLDivElement>(null)
@@ -258,6 +259,12 @@ export function BudgetList({
             </div>
           )}
         </div>
+
+        {/* Kolom-keuze — alleen op desktop (mobiel/tablet altijd 1 kolom),
+            zelfde plek als op het draaiboek en de takenpagina. */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <ColumnToggle waarde={kolommen} onChange={setKolommen} />
+        </div>
       </div>
 
       {/* Section header */}
@@ -270,7 +277,13 @@ export function BudgetList({
       </div>
 
       {/* Category accordion rows */}
-      <div className="space-y-3">
+      <div
+        className={cn(
+          kolommen === 1 && 'space-y-3',
+          kolommen === 2 && 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2',
+          kolommen === 3 && 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3'
+        )}
+      >
         {gefilterd.map((cat) => (
           <CategorieRij
             key={cat.naam}
