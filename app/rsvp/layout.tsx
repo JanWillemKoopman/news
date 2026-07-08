@@ -1,20 +1,8 @@
-import { Cormorant_Garamond } from 'next/font/google'
+import { WeddingFontsShell } from '@/components/website/WeddingFontsShell'
 
-import '../globals.css'
-
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-  adjustFontFallback: false,
-})
-
-// Publieke RSVP-pagina: bruiloft-palet (Riley & Grey-stijl), geen app-navigatie.
+// Persoonlijke RSVP-link: zelfde fontset en .wedding-scope als de publieke
+// trouwwebsite (app/trouwen/layout.tsx) — de pagina rendert immers dezelfde
+// thema-renderer, zie app/rsvp/[token]/[[...pagina]]/page.tsx.
 export default function RsvpLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className={`wedding ${cormorant.variable} min-h-screen bg-rhino-50 text-foreground`}>
-      {children}
-    </div>
-  )
+  return <WeddingFontsShell>{children}</WeddingFontsShell>
 }

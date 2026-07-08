@@ -233,7 +233,6 @@ interface BruiloftActions {
   deleteWebsiteFoto: (id: ID, publicUrl: string) => Promise<void>
   updateFaq: (faq: FaqItem[]) => Promise<void>
   updateGallerij: (gallerij: GallerijFoto[]) => Promise<void>
-  ensureRsvpCodes: () => Promise<void>
 
   addTaskComment: (taskId: ID, body: string) => Promise<void>
   deleteTaskComment: (id: ID) => Promise<void>
@@ -1276,28 +1275,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     updateGallerij: async (gallerij) => {
       await get().saveWebsiteContent({ gallerij })
-    },
-
-    // Geef elke gast zonder code een persoonlijke RSVP-code.
-    ensureRsvpCodes: async () => {
-      const zonderCode = get().guests.filter((g) => !g.rsvpCode)
-      if (zonderCode.length === 0) return
-      const bestaand = new Set(get().guests.map((g) => g.rsvpCode).filter(Boolean))
-      const nieuw = new Map<ID, string>()
-      for (const g of zonderCode) {
-        let code = ''
-        do {
-          code = Math.random().toString(36).slice(2, 8).toUpperCase()
-        } while (bestaand.has(code) || code.length < 6)
-        bestaand.add(code)
-        nieuw.set(g.id, code)
-        await repository.updateGuest(g.id, { rsvpCode: code })
-      }
-      set({
-        guests: get().guests.map((g) =>
-          nieuw.has(g.id) ? { ...g, rsvpCode: nieuw.get(g.id) } : g
-        ),
-      })
     },
 
     // --- Opmerkingen & activiteit ------------------------------------------

@@ -1,19 +1,21 @@
 'use client'
 
-import { Check, Copy, Link2 } from 'lucide-react'
+import { Check, Link2 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button, Card, CardContent, useToast } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent } from '@/components/bruiloft/ui'
 import { gastTellingen } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
+// Elke gast krijgt bij aanmaak automatisch een unieke, geheime RSVP-code
+// (databasedefault op guests.rsvp_token) — er is dus nooit iets te
+// "genereren", alleen te kopiëren. De link toont voortaan dezelfde
+// thematische site als de publieke trouwwebsite, gepersonaliseerd voor die
+// gast (zie app/rsvp/[token]/[[...pagina]]/page.tsx).
 export function RsvpSectie() {
   const guests = useBruiloftStore((s) => s.guests)
-  const ensureRsvpCodes = useBruiloftStore((s) => s.ensureRsvpCodes)
-  const { toast } = useToast()
   const [gekopieerd, setGekopieerd] = React.useState<string | null>(null)
   const [origin, setOrigin] = React.useState('')
-  const [generating, setGenerating] = React.useState(false)
 
   React.useEffect(() => {
     setOrigin(window.location.origin)
@@ -34,32 +36,11 @@ export function RsvpSectie() {
   return (
     <Card>
       <CardContent className="p-4 sm:p-6">
-        {/* Header: op mobiel gestapeld, op desktop naast elkaar */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl text-foreground">RSVP &amp; deellinks</h2>
-            <p className="text-sm text-muted-foreground">
-              {t.bevestigd} bevestigd · {t.afgemeld} afgemeld · {t.geenReactie} geen reactie
-            </p>
-          </div>
-          <Button
-            loading={generating}
-            onClick={async () => {
-              setGenerating(true)
-              try {
-                await ensureRsvpCodes()
-                toast({ title: 'Deellinks klaar', description: 'Elke gast heeft nu een persoonlijke RSVP-link.', variant: 'success' })
-              } catch {
-                toast({ title: 'Aanmaken mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
-              } finally {
-                setGenerating(false)
-              }
-            }}
-            disabled={guests.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <Link2 className="h-4 w-4" /> Genereer deellinks
-          </Button>
+        <div className="mb-4">
+          <h2 className="text-xl text-foreground">RSVP &amp; deellinks</h2>
+          <p className="text-sm text-muted-foreground">
+            {t.bevestigd} bevestigd · {t.afgemeld} afgemeld · {t.geenReactie} geen reactie
+          </p>
         </div>
 
         {guests.length === 0 ? (
@@ -75,7 +56,7 @@ export function RsvpSectie() {
                   <span className="min-w-0 truncate text-sm text-foreground">
                     {g.voornaam} {g.achternaam}
                   </span>
-                  {g.rsvpCode ? (
+                  {link ? (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -85,11 +66,11 @@ export function RsvpSectie() {
                       {gekopieerd === g.id ? (
                         <><Check className="h-4 w-4" /> Gekopieerd</>
                       ) : (
-                        <><Copy className="h-4 w-4" /> Kopieer</>
+                        <><Link2 className="h-4 w-4" /> Kopieer link</>
                       )}
                     </Button>
                   ) : (
-                    <span className="shrink-0 text-xs text-muted-foreground">geen code</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">—</span>
                   )}
                 </li>
               )

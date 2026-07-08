@@ -617,7 +617,7 @@ function Faq({ items, ctx }: { items: FaqItem[]; ctx: RenderContext }) {
 }
 
 function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
-  const form = useRsvpFormulier(ctx.slug)
+  const form = useRsvpFormulier(ctx)
 
   if (form.fase === 'bevestigen' && form.bevestig) {
     const b = form.bevestig

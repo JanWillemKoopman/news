@@ -586,7 +586,7 @@ function Faq({ items }: { items: FaqItem[]; ctx: RenderContext }) {
 }
 
 function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
-  const form = useRsvpFormulier(ctx.slug)
+  const form = useRsvpFormulier(ctx)
 
   const briefkaart = (inhoud: React.ReactNode) => (
     <div
