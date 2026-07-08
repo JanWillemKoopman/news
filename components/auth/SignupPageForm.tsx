@@ -6,10 +6,11 @@ import * as React from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { CheckCircle2 } from 'lucide-react'
 
+import { trackEvent } from '@/lib/analytics'
 import { createClient } from '@/lib/supabase/client'
 import { afleidProvincie } from '@/lib/bruiloft/geo'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from '@/lib/bruiloft/options'
-import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
+import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { PasswordInput } from '@/components/ui/password-input'
 
@@ -26,6 +27,12 @@ const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
   { key: 'dj_of_band', label: 'DJ of band' },
   { key: 'videograaf', label: 'Videograaf' },
   { key: 'bloemist', label: 'Bloemist' },
+]
+
+const CEREMONIE_OPTIES: { value: CeremonieType; label: string }[] = [
+  { value: 'gemeentelijk', label: 'Gemeentelijk' },
+  { value: 'religieus', label: 'Religieus' },
+  { value: 'symbolisch', label: 'Symbolisch' },
 ]
 
 const BUDGET_PRESETS = [
@@ -124,6 +131,7 @@ function WeddingSetup({
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [gasten, setGasten] = React.useState('')
+  const [ceremonietype, setCeremonietype] = React.useState<CeremonieType | null>(null)
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>(DEFAULT_GEREGELDE_ZAKEN)
   const [maakBudget, setMaakBudget] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -173,7 +181,7 @@ function WeddingSetup({
       totaalBudget: Math.max(0, customBudget ? Number(customBudget) || 0 : budget ?? 0),
       aantalDaggasten: aantalGasten,
       aantalAvondgasten: 0,
-      ceremonietype: null,
+      ceremonietype,
       geregeldeZaken,
       takenVoorstellen: { beslist: {}, afgerond: false },
       budgetCategorieen: [...BUDGET_CATEGORIEEN],
@@ -182,6 +190,14 @@ function WeddingSetup({
     }
     try {
       await setupWedding(input, { maakTaken: true, maakBudget })
+      void trackEvent('onboarding_trouwplan_aangemaakt', {
+        pad: 'wizard',
+        heeftDatum: Boolean(trouwdatum),
+        heeftBudget: input.totaalBudget > 0,
+        heeftGasten: aantalGasten > 0,
+        ceremonietype: ceremonietype ?? 'onbekend',
+        maakBudget,
+      })
       router.push('/bruiloft')
     } catch (e) {
       Sentry.captureException(e, { tags: { flow: 'onboarding', stap: 'trouwplan-wizard' } })
@@ -290,6 +306,31 @@ function WeddingSetup({
           />
         </div>
 
+        {/* Ceremonietype */}
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-gray-700">Wat voor ceremonie wordt het?</p>
+          <div className="grid grid-cols-3 gap-2">
+            {CEREMONIE_OPTIES.map(({ value, label }) => {
+              const active = ceremonietype === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCeremonietype(active ? null : value)}
+                  className={`rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                    active
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-gray-200 text-gray-500 hover:border-primary/40 hover:bg-gray-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-1.5 text-xs text-gray-400">Weten jullie het nog niet? Sla deze vraag gewoon over.</p>
+        </div>
+
         {/* Leveranciers */}
         <div>
           <p className="mb-1 text-sm font-medium text-gray-700">Wat hebben jullie al geregeld?</p>
@@ -357,7 +398,7 @@ function WeddingSetup({
                 </span>
               </span>
               <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
-                We zetten alvast kaartjes klaar voor de categorieën die jullie nog moeten regelen.
+                We zetten alvast kaartjes klaar met richtbedragen op basis van jullie budget.
               </p>
             </div>
           </label>
@@ -574,6 +615,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
     }
 
     setLoading(false)
+    void trackEvent('onboarding_account_aangemaakt')
     setPhase('keuze')
   }
 
@@ -610,6 +652,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
       gasttypeCategorieen: [...GASTTYPES],
     }
     await setupWedding(input, { maakTaken: false, maakBudget: false })
+    void trackEvent('onboarding_trouwplan_aangemaakt', { pad: 'leeg' })
     router.push('/bruiloft')
   }
 
@@ -720,6 +763,12 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                         />
                         <span className="text-xs text-gray-500">Datum nog niet bekend</span>
                       </label>
+                      {noDateYet ? (
+                        <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
+                          Geen probleem — we plannen dan zonder deadlines en aftelteller. Zodra
+                          jullie een datum hebben, rekent alles automatisch mee.
+                        </p>
+                      ) : null}
                     </div>
 
                     {error ? (
@@ -747,8 +796,14 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
             </div>
           ) : phase === 'keuze' ? (
             <KeuzeStep
-              onGeholpen={() => setPhase('wizard')}
-              onLeegBeginnen={onLeegBeginnen}
+              onGeholpen={() => {
+                void trackEvent('onboarding_keuze', { keuze: 'geholpen' })
+                setPhase('wizard')
+              }}
+              onLeegBeginnen={() => {
+                void trackEvent('onboarding_keuze', { keuze: 'leeg' })
+                return onLeegBeginnen()
+              }}
             />
           ) : (
             <WeddingSetup

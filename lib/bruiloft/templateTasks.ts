@@ -688,9 +688,20 @@ const VOORTGANG_TAAK_MAPPING: Record<VoortgangCategorie, string[]> = {
   bloemist: ['Bloemist regelen'],
 }
 
+// Bij een symbolische ceremonie is er geen wettelijk traject: deze
+// gemeente-taken vervallen dan.
+const GEMEENTE_TAKEN = [
+  'Ondertrouw en ceremonie bij de gemeente regelen',
+  'Naamskeuze bij de gemeente vastleggen',
+]
+
 // Heeft het bruidspaar deze taak expliciet als "niet nodig" gemarkeerd in de
-// wizard? Dan hoort hij niet in de takenlijst en niet in de voorstellen.
+// wizard, of vervalt hij door het gekozen ceremonietype? Dan hoort hij niet
+// in de takenlijst en niet in de voorstellen.
 function taakNietVanToepassing(titel: string, wedding: Wedding): boolean {
+  if (wedding.ceremonietype === 'symbolisch' && GEMEENTE_TAKEN.includes(titel)) {
+    return true
+  }
   const geregeldeZaken = wedding.geregeldeZaken ?? {}
   for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
     if (status === 'niet_van_toepassing' && VOORTGANG_TAAK_MAPPING[cat]?.includes(titel)) {
@@ -733,7 +744,14 @@ function vervangPartnerNamen(tekst: string, p1: string, p2: string): string {
   return result
 }
 
-export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
+// Sjabloonvoorstel met fase-metadata: de fase en of die fase eigenlijk al
+// voorbij is (natuurlijke deadline vóór vandaag). Extra velden gaan niet mee
+// de database in (taskToRow kent ze niet) — ze sturen alleen de
+// samenstel-flow: verstreken fases worden gebundeld voorgelegd i.p.v. kaart
+// voor kaart.
+export type TemplateTaskVoorstel = TaskInput & { fase: TemplateFase; verstreken: boolean }
+
+export function generateTemplateTasks(wedding: Wedding): TemplateTaskVoorstel[] {
   const p1 = wedding.partner1Naam ?? ''
   const p2 = wedding.partner2Naam ?? ''
   // Gun een vers stel een rustige aanloop: taken vóór de bruiloft krijgen
@@ -744,14 +762,20 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
   // taken krijgen dan geen deadline i.p.v. een ongeldige 'NaN-NaN-NaN'-datum
   // die de database weigert.
   const heeftTrouwdatum = !Number.isNaN(new Date(wedding.trouwdatum).getTime())
+  // Middernacht vandaag: een taak die vandaag "moet" is niet verstreken.
+  const vandaag = new Date()
+  vandaag.setHours(0, 0, 0, 0)
   return TEMPLATE_TASKS.filter((t) => !taakNietVanToepassing(t.titel, wedding)).map((t) => {
     let deadline = ''
+    let verstreken = false
     if (heeftTrouwdatum) {
       let deadlineDate =
         'maanden' in t.offset
           ? addMonths(wedding.trouwdatum, t.offset.maanden)
           : addDays(wedding.trouwdatum, t.offset.dagen)
       const naBruiloft = 'dagen' in t.offset && t.offset.dagen > 0
+      // Natuurlijke deadline al voorbij = deze fase is eigenlijk gepasseerd.
+      verstreken = !naBruiloft && deadlineDate < vandaag
       if (!naBruiloft && deadlineDate < minimumDeadline) {
         const trouwdag = new Date(wedding.trouwdatum)
         deadlineDate = minimumDeadline < trouwdag ? minimumDeadline : trouwdag
@@ -759,6 +783,8 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
       deadline = toISODate(deadlineDate)
     }
     return {
+      fase: t.fase,
+      verstreken,
       weddingId: wedding.id,
       titel: vervangPartnerNamen(t.titel, p1, p2),
       omschrijving: vervangPartnerNamen(t.omschrijving, p1, p2),

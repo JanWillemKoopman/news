@@ -1,11 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { Check, ListChecks, SkipForward, Sparkles } from 'lucide-react'
+import { Check, History, ListChecks, SkipForward, Sparkles } from 'lucide-react'
 
 import { Button, Modal, Progress, StatusBadge, useToast } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { alleVoorstellen, openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
+import { TEMPLATE_FASE_VOLGORDE } from '@/lib/bruiloft/templateTasks'
 import { capFirst } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import type { TakenVoorstellenState, TaskInput } from '@/lib/bruiloft/types'
@@ -41,6 +42,8 @@ export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps
   const { toast } = useToast()
 
   const [bezig, setBezig] = React.useState(false)
+  // Gebruiker koos "toch per stuk beoordelen" voor de verstreken fases.
+  const [verstrekenPerStuk, setVerstrekenPerStuk] = React.useState(false)
 
   if (!wedding) return null
 
@@ -54,6 +57,15 @@ export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps
   const resterend = openVoorstellen(wedding, tasks, state)
   const huidige = resterend[0] ?? null
   const beoordeeld = totaal - resterend.length
+
+  // Fases die eigenlijk al voorbij zijn (wie over 3 maanden trouwt hoeft de
+  // "12 maanden van tevoren"-taken niet stuk voor stuk te beoordelen) worden
+  // als één beslissing voorgelegd in plaats van kaart voor kaart.
+  const verstreken = resterend.filter((t) => t.verstreken)
+  const verstrekenFases = TEMPLATE_FASE_VOLGORDE.filter((f) =>
+    verstreken.some((t) => t.fase === f)
+  )
+  const toonVerstrekenBundel = verstreken.length > 1 && !verstrekenPerStuk
 
   const bewaar = async (next: TakenVoorstellenState) => {
     try {
@@ -74,6 +86,30 @@ export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps
         beslist: { ...state.beslist, [taak.titel]: keuze },
         afgerond: resterend.length <= 1 ? true : state.afgerond,
       })
+    } catch {
+      toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  // Alle voorstellen uit verstreken fases in één keer toevoegen of overslaan.
+  const verstrekenBeslis = async (keuze: 'toegevoegd' | 'overgeslagen') => {
+    if (bezig || verstreken.length === 0) return
+    setBezig(true)
+    try {
+      if (keuze === 'toegevoegd') {
+        await addAITaken(verstreken.map(naarNieuweTaak))
+      }
+      const beslist = { ...state.beslist }
+      for (const t of verstreken) beslist[t.titel] = keuze
+      await bewaar({
+        beslist,
+        afgerond: resterend.length <= verstreken.length ? true : state.afgerond,
+      })
+      if (keuze === 'toegevoegd') {
+        toast({ title: `${verstreken.length} taken toegevoegd`, variant: 'success' })
+      }
     } catch {
       toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     } finally {
@@ -113,7 +149,47 @@ export function TakenSamenstellen({ open, onOpenChange }: TakenSamenstellenProps
       title="Takenlijst samenstellen"
       description="Kies per voorstel of het bij jullie bruiloft past — of voeg alles in één keer toe."
     >
-      {huidige ? (
+      {toonVerstrekenBundel ? (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-muted/40 p-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                <History className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">
+                  {verstreken.length} voorstellen horen bij fases die al voorbij zijn
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Het gaat om {verstrekenFases.map((f) => f.toLowerCase()).join(', ')}. De meeste
+                  stellen hebben dit al geregeld — sla ze over, dan houden we de lijst gefocust op
+                  wat nu telt.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" disabled={bezig} onClick={() => verstrekenBeslis('toegevoegd')}>
+              <Check className="h-4 w-4" /> Toch toevoegen
+            </Button>
+            <Button loading={bezig} onClick={() => verstrekenBeslis('overgeslagen')}>
+              <SkipForward className="h-4 w-4" /> Sla deze {verstreken.length} over
+            </Button>
+          </div>
+
+          <p className="text-center text-xs">
+            <button
+              type="button"
+              disabled={bezig}
+              onClick={() => setVerstrekenPerStuk(true)}
+              className="text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              Liever per stuk beoordelen
+            </button>
+          </p>
+        </div>
+      ) : huidige ? (
         <div className="space-y-4">
           <div>
             <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
