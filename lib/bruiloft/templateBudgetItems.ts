@@ -1,6 +1,8 @@
+import { STANDAARD_VERDELING } from './derived'
 import type {
   BudgetCategorie,
   BudgetItemInput,
+  StandaardBudgetCategorie,
   VoortgangCategorie,
   VoortgangStatus,
   Wedding,
@@ -27,37 +29,43 @@ const UNIVERSELE_BUDGET_ITEMS: { categorie: BudgetCategorie; omschrijving: strin
 ]
 
 export function generateTemplateBudgetItems(wedding: Wedding): BudgetItemInput[] {
-  const items: BudgetItemInput[] = []
+  const kaartjes: { categorie: BudgetCategorie; omschrijving: string }[] = []
   const geregeldeZaken = wedding.geregeldeZaken ?? {}
 
   for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
-    // Geboekt = al geregeld; niet van toepassing = bewust overgeslagen.
-    // In beide gevallen geen budget-kaartje klaarzetten.
-    if (status === 'geboekt' || status === 'niet_van_toepassing') continue
+    // 'Niet van toepassing' = bewust overgeslagen, geen kaartje. 'Geboekt'
+    // krijgt er juist wél een: dat is een bestaande uitgave die in het
+    // budgetoverzicht thuishoort — anders missen precies de grootste posten.
+    if (status === 'niet_van_toepassing') continue
     const mapping = VOORTGANG_BUDGET_ITEMS[cat]
     if (!mapping) continue
-    items.push({
-      weddingId: wedding.id,
-      categorie: mapping.categorie,
-      omschrijving: mapping.omschrijving,
-      geschatBedrag: 0,
-      geoffreerdBedrag: 0,
-      betaaldBedrag: 0,
-      betaaltermijnen: [],
-    })
+    kaartjes.push(mapping)
   }
 
-  for (const { categorie, omschrijving } of UNIVERSELE_BUDGET_ITEMS) {
-    items.push({
-      weddingId: wedding.id,
-      categorie,
-      omschrijving,
-      geschatBedrag: 0,
-      geoffreerdBedrag: 0,
-      betaaldBedrag: 0,
-      betaaltermijnen: [],
-    })
+  kaartjes.push(...UNIVERSELE_BUDGET_ITEMS)
+
+  // Richtbedragen op basis van het totaalbudget en de standaardverdeling,
+  // zodat de budgetpagina direct een verdeeld plan toont i.p.v. lege
+  // kaartjes. Delen meerdere kaartjes een categorie (fotograaf + videograaf),
+  // dan wordt het richtbedrag van die categorie over hen verdeeld.
+  const perCategorie = new Map<string, number>()
+  for (const k of kaartjes) {
+    perCategorie.set(k.categorie, (perCategorie.get(k.categorie) ?? 0) + 1)
+  }
+  const totaal = wedding.totaalBudget ?? 0
+  const richtbedrag = (categorie: BudgetCategorie): number => {
+    const pct = STANDAARD_VERDELING[categorie as StandaardBudgetCategorie]
+    if (!pct || totaal <= 0) return 0
+    return Math.round((totaal * pct) / (perCategorie.get(categorie) ?? 1))
   }
 
-  return items
+  return kaartjes.map(({ categorie, omschrijving }) => ({
+    weddingId: wedding.id,
+    categorie,
+    omschrijving,
+    geschatBedrag: richtbedrag(categorie),
+    geoffreerdBedrag: 0,
+    betaaldBedrag: 0,
+    betaaltermijnen: [],
+  }))
 }

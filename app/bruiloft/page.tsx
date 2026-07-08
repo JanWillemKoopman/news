@@ -4,6 +4,7 @@ import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
+import { LeveranciersStartpunt } from '@/components/bruiloft/LeveranciersStartpunt'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
@@ -123,6 +124,9 @@ export default function DashboardPage() {
       {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
       <OnboardingGids />
       <WelkomstDialog />
+
+      {/* Brug van wizard-antwoorden naar Ontdekken/Mijn leveranciers */}
+      <LeveranciersStartpunt />
 
       {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
 

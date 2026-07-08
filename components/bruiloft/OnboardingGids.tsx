@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Compass,
   Globe,
+  Heart,
   ListChecks,
   PieChart,
   Sparkles,
@@ -71,6 +72,8 @@ export function OnboardingGids() {
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const permissions = useBruiloftStore((s) => s.permissions)
+  const members = useBruiloftStore((s) => s.members)
+  const role = useBruiloftStore((s) => s.role)
 
   // localStorage pas na mount lezen (SSR-veilig), en luisteren naar de
   // welkomstdialoog die de gids expliciet kan tonen.
@@ -110,6 +113,20 @@ export function OnboardingGids() {
           href: '/bruiloft/taken?samenstellen=1',
           klaar: false,
         },
+    // Alleen de eigenaar kan uitnodigen; voor meeplanners is deze stap niet
+    // relevant (die zíjn de uitgenodigde partner).
+    ...(role === 'owner'
+      ? [
+          {
+            key: 'partner',
+            label: 'Nodig je partner uit',
+            uitleg: 'Samen plannen werkt beter — en is leuker.',
+            icon: Heart,
+            href: '/bruiloft/beheer/leden',
+            klaar: members.length > 1,
+          } satisfies Stap,
+        ]
+      : []),
     {
       key: 'budget',
       label: 'Verdeel jullie budget',
@@ -121,7 +138,10 @@ export function OnboardingGids() {
     {
       key: 'gasten',
       label: 'Zet jullie eerste gasten in de lijst',
-      uitleg: 'Begin met de namen die zeker komen.',
+      uitleg:
+        wedding.aantalDaggasten + wedding.aantalAvondgasten > 0
+          ? `Jullie verwachten er ±${wedding.aantalDaggasten + wedding.aantalAvondgasten} — begin met wie zeker komt.`
+          : 'Begin met de namen die zeker komen.',
       icon: Users,
       href: '/bruiloft/gasten',
       klaar: guests.length > 0,

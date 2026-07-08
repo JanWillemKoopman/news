@@ -5,7 +5,7 @@ import { ArrowLeft, CalendarHeart, CheckCircle2, Plus } from 'lucide-react'
 
 import { afleidProvincie } from '@/lib/bruiloft/geo'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from '@/lib/bruiloft/options'
-import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
+import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useToast } from '@/components/bruiloft/ui'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -30,6 +30,12 @@ const VOORTGANG_ITEMS: { key: VoortgangCategorie; label: string }[] = [
 
 const DEFAULT_GEREGELDE_ZAKEN: Partial<Record<VoortgangCategorie, VoortgangStatus>> =
   Object.fromEntries(VOORTGANG_ITEMS.map(({ key }) => [key, 'te_doen' as VoortgangStatus]))
+
+const CEREMONIE_OPTIES: { value: CeremonieType; label: string }[] = [
+  { value: 'gemeentelijk', label: 'Gemeentelijk' },
+  { value: 'religieus', label: 'Religieus' },
+  { value: 'symbolisch', label: 'Symbolisch' },
+]
 
 const inputCls =
   'w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary'
@@ -82,6 +88,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
   const [budget, setBudget] = React.useState<number | null>(null)
   const [customBudget, setCustomBudget] = React.useState('')
   const [gasten, setGasten] = React.useState('')
+  const [ceremonietype, setCeremonietype] = React.useState<CeremonieType | null>(null)
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<
     Partial<Record<VoortgangCategorie, VoortgangStatus>>
   >(DEFAULT_GEREGELDE_ZAKEN)
@@ -115,7 +122,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
       totaalBudget: Math.max(0, customBudget ? Number(customBudget) || 0 : budget ?? 0),
       aantalDaggasten: Math.max(0, Number(gasten) || 0),
       aantalAvondgasten: 0,
-      ceremonietype: null,
+      ceremonietype,
       geregeldeZaken,
       takenVoorstellen: { beslist: {}, afgerond: false },
       budgetCategorieen: [...BUDGET_CATEGORIEEN],
@@ -242,6 +249,12 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                     />
                     <span className="text-xs text-gray-500">Datum nog niet bekend</span>
                   </label>
+                  {noDateYet ? (
+                    <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
+                      Geen probleem — we plannen dan zonder deadlines en aftelteller. Zodra
+                      jullie een datum hebben, rekent alles automatisch mee.
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="pt-2">
@@ -353,6 +366,34 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                 </div>
 
                 <div>
+                  <p className="mb-1.5 text-sm font-medium text-gray-700">
+                    Wat voor ceremonie wordt het?
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CEREMONIE_OPTIES.map(({ value, label }) => {
+                      const active = ceremonietype === value
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setCeremonietype(active ? null : value)}
+                          className={`rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                            active
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-gray-200 text-gray-500 hover:border-primary/40 hover:bg-gray-50'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    Weten jullie het nog niet? Sla deze vraag gewoon over.
+                  </p>
+                </div>
+
+                <div>
                   <p className="mb-1 text-sm font-medium text-gray-700">
                     Wat hebben jullie al geregeld?
                   </p>
@@ -426,8 +467,8 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                         </span>
                       </span>
                       <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
-                        We zetten alvast kaartjes klaar voor de categorieën die jullie nog moeten
-                        regelen.
+                        We zetten alvast kaartjes klaar met richtbedragen op basis van jullie
+                        budget.
                       </p>
                     </div>
                   </label>
