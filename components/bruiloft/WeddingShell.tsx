@@ -10,8 +10,6 @@ import { ScrollContainerContext } from '@/lib/bruiloft/scroll-context'
 import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { Button, EmptyState, Skeleton, ToastProvider } from '@/components/bruiloft/ui'
-import { AICoach } from './ai/AICoach'
-import { AIPromotiePopup } from './ai/AIPromotiePopup'
 import { InstallPrompt } from './InstallPrompt'
 import { Landing } from './Landing'
 import { PullToRefresh } from './PullToRefresh'
@@ -65,7 +63,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
   const closeWeddingSettings = useBruiloftStore((s) => s.closeWeddingSettings)
   const [retrying, setRetrying] = React.useState(false)
   const [isOnline, setIsOnline] = React.useState(true)
-  const [profielNudgeVisible, setProfielNudgeVisible] = React.useState(false)
+  const [, setProfielNudgeVisible] = React.useState(false)
 
   React.useEffect(() => {
     setIsOnline(navigator.onLine)
@@ -118,7 +116,6 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     if (redirectToSetup) router.replace('/aanmelden')
   }, [redirectToSetup, router])
 
-  const isOnAIPage = pathname.includes('ai-wedding-planner')
   const isAccountPage = pathname === '/bruiloft/account'
   const allowed = isAccountPage || canView(permissions, moduleForPath(pathname))
 
@@ -283,9 +280,6 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
       />
       <ProfielNudge onVisibleChange={setProfielNudgeVisible} />
       <InstallPrompt />
-      {!isOnAIPage && !profielNudgeVisible && <AIPromotiePopup />}
-      {/* App-brede AI-coach: zijpaneel op desktop, bottom sheet op mobiel. */}
-      <AICoach />
     </div>
     </ScrollContainerContext.Provider>
   )

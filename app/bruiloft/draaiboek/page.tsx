@@ -1,13 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CalendarClock, Download, Plus, Sparkles } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Download, Plus } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { draaiboekInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
-import { AIVoorgesteldDraaiboekModal } from '@/components/bruiloft/draaiboek/AIVoorgesteldDraaiboekModal'
 import { DraaiboekControls, type KolomAantal } from '@/components/bruiloft/draaiboek/DraaiboekControls'
 import {
   DraaiboekColumns,
@@ -52,7 +50,6 @@ export default function DraaiboekPage() {
   const [editItem, setEditItem] = React.useState<ScheduleItem | null>(null)
   const [delItem, setDelItem] = React.useState<ScheduleItem | null>(null)
   const [templateBezig, setTemplateBezig] = React.useState(false)
-  const [aiOpen, setAiOpen] = React.useState(false)
 
   if (!wedding) return null
 
@@ -147,13 +144,10 @@ export default function DraaiboekPage() {
           ) : null
         }
         meerActies={[
-          ...(kanBewerken ? [{ label: 'AI-draaiboek', icon: Sparkles, onClick: () => setAiOpen(true) }] : []),
           { label: 'Exporteer draaiboek', icon: Download, onClick: exporteer, disabled: exportLijst.length === 0 },
         ]}
         fab={kanBewerken ? { label: 'Onderdeel toevoegen', onClick: openNieuw } : undefined}
       />
-
-      <AIInsightCard sectie="/bruiloft/draaiboek" />
 
       {/* Stats strip — altijd full-width, net als de andere planning-pagina's */}
       {scheduleItems.length > 0 && (
@@ -291,38 +285,6 @@ export default function DraaiboekPage() {
           } catch {
             toast({ title: 'Opslaan mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
           }
-        }}
-      />
-
-      <AIVoorgesteldDraaiboekModal
-        open={aiOpen}
-        onOpenChange={setAiOpen}
-        scheduleItems={scheduleItems}
-        wedding={wedding}
-        onConfirm={async (items) => {
-          let toegevoegd = 0
-          for (const i of items) {
-            try {
-              await addScheduleItem({
-                tijd: i.tijd,
-                eindtijd: i.eindtijd,
-                titel: i.titel,
-                omschrijving: i.omschrijving,
-                locatie: i.locatie,
-                betrokkenen: i.betrokkenen as ScheduleItem['betrokkenen'],
-              })
-              toegevoegd++
-            } catch {
-              // Ga door met de overige onderdelen; we melden het totaal hieronder.
-            }
-          }
-          toast({
-            title:
-              toegevoegd > 0
-                ? `${toegevoegd} ${toegevoegd === 1 ? 'onderdeel' : 'onderdelen'} toegevoegd`
-                : 'Toevoegen mislukt',
-            variant: toegevoegd > 0 ? 'success' : 'error',
-          })
         }}
       />
 

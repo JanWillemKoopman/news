@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Gift, Globe, ListChecks, PartyPopper, Sparkles, Users } from 'lucide-react'
+import { Camera, Gift, Globe, ListChecks, PartyPopper, UserPlus, Users } from 'lucide-react'
 
 import { toonStartgids } from '@/components/bruiloft/OnboardingGids'
 import { Button, Modal } from '@/components/bruiloft/ui'
@@ -24,7 +24,7 @@ const KANSEN: { icon: React.ElementType; titel: string; tekst: string }[] = [
   { icon: Globe, titel: 'Trouwwebsite', tekst: 'Een eigen pagina waar gasten direct RSVP’en.' },
   { icon: Gift, titel: 'Cadeaulijst', tekst: 'Cadeaus én een geldpotje, bijv. voor de huwelijksreis.' },
   { icon: Camera, titel: 'Fotomuur', tekst: 'Gasten uploaden foto’s via een QR-code, live op een scherm.' },
-  { icon: Sparkles, titel: 'Samen + AI', tekst: 'Plan samen met je partner; de AI-assistent denkt mee.' },
+  { icon: UserPlus, titel: 'Samen plannen', tekst: 'Nodig je partner uit en plan alles samen, live bijgewerkt.' },
 ]
 
 // Eenmalig welkomstmoment direct na de onboarding. Stap 1 laat zien wát er

@@ -6,7 +6,6 @@ import { Plus, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { takenInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { TakenSamenstellen } from '@/components/bruiloft/taken/TakenSamenstellen'
 import { TaskForm } from '@/components/bruiloft/taken/TaskForm'
 import { TakenStatsStrip } from '@/components/bruiloft/taken/TakenStatsStrip'
@@ -19,10 +18,8 @@ import { applyFilters, DEFAULT_FILTERS, type TaakFilters } from '@/lib/bruiloft/
 import { useScrollRestore } from '@/lib/bruiloft/useScrollRestore'
 import { berekenTaakStats } from '@/lib/bruiloft/taken/stats'
 import { openVoorstellen } from '@/lib/bruiloft/taken/voorstellen'
-import { buildAIContext } from '@/lib/bruiloft/aiContext'
 import { useBruiloftStore } from '@/store/bruiloftStore'
-import type { ISODate, Task, TaskInput, TaskStatus } from '@/lib/bruiloft/types'
-import type { AITaakSuggestie, AITakenAdvies } from '@/app/api/ai/taken/route'
+import type { ISODate, Task, TaskStatus } from '@/lib/bruiloft/types'
 
 type View = 'lijst' | 'kalender'
 
@@ -32,9 +29,6 @@ export function TakenShell() {
   const vendors = useBruiloftStore((s) => s.vendors)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const members = useBruiloftStore((s) => s.members)
-  const guests = useBruiloftStore((s) => s.guests)
-  const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
-  const websiteContent = useBruiloftStore((s) => s.websiteContent)
   const addTask = useBruiloftStore((s) => s.addTask)
   const updateTask = useBruiloftStore((s) => s.updateTask)
   const deleteTask = useBruiloftStore((s) => s.deleteTask)
@@ -69,87 +63,7 @@ export function TakenShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
 
-  // AI suggestions state
-  const [aiActive, setAiActive] = React.useState(false)
-  const [aiSuggesties, setAiSuggesties] = React.useState<AITaakSuggestie[]>([])
-  const [aiLoading, setAiLoading] = React.useState(false)
-  const [aiError, setAiError] = React.useState<string | null>(null)
-  const [aiNextAvailable, setAiNextAvailable] = React.useState<Date | null>(null)
-  const [dismissedTitels, setDismissedTitels] = React.useState<Set<string>>(new Set())
-
   const gefilterd = React.useMemo(() => applyFilters(tasks, filters), [tasks, filters])
-
-  const zichtbareSuggesties = React.useMemo(
-    () => aiSuggesties.filter((s) => !dismissedTitels.has(s.titel)),
-    [aiSuggesties, dismissedTitels]
-  )
-
-  // Fetch AI suggestions when toggle is turned on
-  React.useEffect(() => {
-    if (!aiActive || !wedding) return
-    if (aiSuggesties.length > 0) return // already loaded
-
-    setAiLoading(true)
-    setAiError(null)
-
-    const context = buildAIContext(wedding, tasks, vendors, budgetItems, guests, scheduleItems, websiteContent)
-    const bestaandeTaken = tasks.map((t) => t.titel)
-
-    fetch('/api/ai/taken', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context, weddingId: wedding.id, bestaandeTaken }),
-    })
-      .then(async (res) => {
-        const body = await res.json().catch(() => ({}))
-        if (!res.ok && !body.advies) {
-          throw new Error(body.error ?? 'Fout bij ophalen suggesties')
-        }
-        return body
-      })
-      .then((json: { advies: AITakenAdvies; next_available_at?: string }) => {
-        setAiSuggesties(json.advies.taken)
-        setAiNextAvailable(json.next_available_at ? new Date(json.next_available_at) : null)
-      })
-      .catch((err: Error) => {
-        setAiError(err.message || 'AI tijdelijk niet beschikbaar')
-      })
-      .finally(() => {
-        setAiLoading(false)
-      })
-  }, [aiActive]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleAiToggle = (val: boolean) => {
-    setAiActive(val)
-    // Bewust geen reset bij verbergen: de suggesties en weggeklikte items
-    // blijven staan zodat opnieuw tonen geen extra AI-run kost (max 1x/uur).
-  }
-
-  const handleAiToonWeggeklikt = () => setDismissedTitels(new Set())
-
-  const handleAiToevoegen = async (s: AITaakSuggestie) => {
-    const newTask: Omit<TaskInput, 'weddingId' | 'tijdsblok'> = {
-      titel: s.titel,
-      omschrijving: s.omschrijving,
-      deadline: s.deadline as ISODate,
-      status: 'open',
-      prioriteit: s.prioriteit,
-      toegewezenAan: s.toegewezenAan,
-      assignees: [],
-      subtaken: [],
-    }
-    try {
-      await addTask(newTask)
-      toast({ title: `"${s.titel}" toegevoegd`, variant: 'success' })
-    } catch {
-      toast({ title: 'Toevoegen mislukt', variant: 'error' })
-      throw new Error('Toevoegen mislukt')
-    }
-  }
-
-  const handleAiDismiss = (titel: string) => {
-    setDismissedTitels((prev) => new Set(Array.from(prev).concat(titel)))
-  }
 
   if (!wedding) return null
 
@@ -268,15 +182,8 @@ export function TakenShell() {
             <Plus className="h-4 w-4" /> Taak toevoegen
           </Button>
         }
-        meerActies={
-          !aiActive
-            ? [{ label: 'Voorgestelde taken', icon: Sparkles, onClick: () => handleAiToggle(true) }]
-            : []
-        }
         fab={{ label: 'Taak toevoegen', onClick: openNieuw }}
       />
-
-      <AIInsightCard sectie="/bruiloft/taken" />
 
       {/* Voorstellen-banner: zolang er sjabloontaken te beoordelen zijn */}
       {voorstellenOver.length > 0 ? (
@@ -334,16 +241,6 @@ export function TakenShell() {
           isSelected={isSelected}
           onToggleSelect={toggleSelect}
           onResetFilters={() => setFilters(DEFAULT_FILTERS)}
-          aiActive={aiActive}
-          aiSuggesties={zichtbareSuggesties}
-          aiLoading={aiLoading}
-          aiError={aiError}
-          aiNextAvailable={aiNextAvailable}
-          aiAantalWeggeklikt={dismissedTitels.size}
-          onAiToevoegen={handleAiToevoegen}
-          onAiDismiss={handleAiDismiss}
-          onAiToonWeggeklikt={handleAiToonWeggeklikt}
-          onAiHide={() => handleAiToggle(false)}
         />
       )}
 

@@ -1,13 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Download, PieChart, Plus, Sparkles, Tags, Wallet } from 'lucide-react'
+import { Download, PieChart, Plus, Tags, Wallet } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { budgetInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
-import { AIBudgetAdvies } from '@/components/bruiloft/budget/AIBudgetAdvies'
 import { BudgetCategoryManageModal } from '@/components/bruiloft/budget/BudgetCategoryManageModal'
 import { BudgetDistributeModal } from '@/components/bruiloft/budget/BudgetDistributeModal'
 import { BudgetItemForm } from '@/components/bruiloft/budget/BudgetItemForm'
@@ -48,7 +46,6 @@ export default function BudgetPage() {
   const savedScroll = React.useRef(0)
   const [deleteItem, setDeleteItem] = React.useState<BudgetItem | null>(null)
   const [distributeOpen, setDistributeOpen] = React.useState(false)
-  const [adviesOpen, setAdviesOpen] = React.useState(false)
   const [budgetEditOpen, setBudgetEditOpen] = React.useState(false)
   const [categoryManageOpen, setCategoryManageOpen] = React.useState(false)
 
@@ -112,7 +109,6 @@ export default function BudgetPage() {
           ) : null
         }
         meerActies={[
-          { label: 'Analyseer mijn budget', icon: Sparkles, onClick: () => setAdviesOpen(true) },
           ...(kanBewerken
             ? [
                 { label: 'Verdeel budget', icon: PieChart, onClick: () => setDistributeOpen(true) },
@@ -124,10 +120,6 @@ export default function BudgetPage() {
         info={<PageInfoButton {...budgetInfo} />}
         fab={kanBewerken ? { label: 'Budgetitem toevoegen', onClick: openNieuw } : undefined}
       />
-
-      <AIBudgetAdvies open={adviesOpen} onClose={() => setAdviesOpen(false)} />
-
-      <AIInsightCard sectie="/bruiloft/budget" />
 
       <div className="mb-6">
         <BudgetSummary

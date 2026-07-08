@@ -8,7 +8,6 @@ import { Compass, FileText, MessageCircle, Pencil, Plus, Search, Store, Tags, Tr
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { leveranciersInfo } from '@/components/bruiloft/faqContent'
-import { AIInsightCard } from '@/components/bruiloft/ai/AIInsightCard'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
 import { DropdownFilter } from '@/components/bruiloft/leveranciers/DropdownFilter'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
@@ -207,8 +206,6 @@ export default function LeveranciersPage() {
         fab={kanBewerken ? { label: 'Leverancier toevoegen', onClick: openNieuw } : undefined}
       />
       <LeveranciersTabs />
-
-      <AIInsightCard sectie="/bruiloft/leveranciers" />
 
       {vendors.length > 0 ? <CategorieVoortgang vendors={vendors} categorieen={categorieen} /> : null}
 

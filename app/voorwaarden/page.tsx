@@ -73,12 +73,12 @@ export default function VoorwaardenPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-medium text-rhino-900">5. AI-advies</h2>
+            <h2 className="font-serif text-xl font-medium text-rhino-900">5. AI-gastenlijst-import</h2>
             <p className="mt-3">
-              De AI-functies (zoals budgetadvies en taakvoorstellen) zijn bedoeld als hulpmiddel
-              en kunnen onjuistheden bevatten. Controleer belangrijke beslissingen — zoals
-              budgetten, contracten en boekingen — altijd zelf. Aan AI-advies kunnen geen rechten
-              worden ontleend.
+              Bij het importeren van een gastenlijst (bestand of geplakte tekst) wordt AI gebruikt
+              om de gegevens om te zetten naar een gestructureerde gastenlijst. Dit resultaat kan
+              onjuistheden bevatten — controleer de geïmporteerde gasten altijd voordat je ze
+              opslaat.
             </p>
           </section>
 
