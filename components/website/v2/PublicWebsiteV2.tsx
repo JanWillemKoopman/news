@@ -18,9 +18,7 @@ import type { WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
 import type { Block, HeroBlock } from '@/lib/bruiloft/websiteBlocks'
 import { heeftInhoud } from '@/lib/bruiloft/websiteBlocks'
 import {
-  HOEK_RADIUS,
-  LETTERTYPE_CSS_VAR,
-  hexNaarHsl,
+  themeCssVars,
   themeVanLegacy,
   type ThemeTokens,
 } from '@/lib/bruiloft/websiteTheme'
@@ -61,21 +59,6 @@ export interface PublicWebsiteV2Data {
   }
   pages: PublicPage[]
   schedule: ScheduleRegel[]
-}
-
-// ─── Theme → CSS-variabelen ──────────────────────────────────────────────────
-
-function themeCssVars(theme: ThemeTokens): React.CSSProperties {
-  return {
-    '--primary': hexNaarHsl(theme.kleuren.accent),
-    '--primary-foreground': '0 0% 100%',
-    '--site-bg': theme.kleuren.achtergrond,
-    '--site-card': theme.kleuren.kaart,
-    '--site-text': theme.kleuren.tekst,
-    '--site-muted': theme.kleuren.gedempt,
-    '--site-radius': HOEK_RADIUS[theme.hoeken],
-    '--heading-font': LETTERTYPE_CSS_VAR[theme.kopLettertype],
-  } as React.CSSProperties
 }
 
 // ─── Hoofdcomponent ──────────────────────────────────────────────────────────

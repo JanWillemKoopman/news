@@ -183,7 +183,7 @@ export function buildAIContext(
   websiteContent: WebsiteContent | null = null
 ): AIWeddingContext {
   const budget = budgetTotalen(budgetItems, vendors, wedding)
-  const gasten = gastTellingen(guests)
+  const gasten = gastTellingen(guests, wedding.gasttypeCategorieen)
 
   const leveranciersStatus: Record<string, 'geboekt' | 'niet-geboekt'> = {}
   for (const type of VENDOR_TYPES) {

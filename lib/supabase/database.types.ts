@@ -922,6 +922,7 @@ export type Database = {
           ceremonietype: string | null
           created_at: string
           created_by: string | null
+          gasttype_categorieen: string[]
           geregelde_zaken: Record<string, string>
           id: string
           locatie: string
@@ -942,6 +943,7 @@ export type Database = {
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          gasttype_categorieen?: string[]
           geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string
@@ -962,6 +964,7 @@ export type Database = {
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          gasttype_categorieen?: string[]
           geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string
@@ -1001,6 +1004,7 @@ export type Database = {
         Returns: boolean
       }
       resolve_rsvp_guest: { Args: { p_token: string }; Returns: Json }
+      get_rsvp_unlock_meta: { Args: { p_token: string }; Returns: Json }
       is_platform_admin: { Args: never; Returns: boolean }
       is_wedding_member: { Args: { p_wedding: string }; Returns: boolean }
       list_wedding_members: {

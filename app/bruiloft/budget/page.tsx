@@ -56,7 +56,7 @@ export default function BudgetPage() {
 
   const categorieen = wedding.budgetCategorieen?.length ? wedding.budgetCategorieen : BUDGET_CATEGORIEEN
 
-  const bevestigdeDaggasten = gastTellingen(guests).bevestigdeDaggasten
+  const bevestigdeDaggasten = gastTellingen(guests, wedding.gasttypeCategorieen).bevestigdeDaggasten
   const afwijkingen = budgetAfwijkingen(budgetItems, vendors, wedding)
 
   const openNieuw = () => {

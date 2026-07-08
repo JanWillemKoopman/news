@@ -1,13 +1,21 @@
 -- =====================================================================
 -- Trouwwebsite RSVP fase 1: de persoonlijke /rsvp/[token]-link toont
 -- voortaan dezelfde thematische site (get_public_website_v2/get_public_website)
--- als de publieke /trouwen/[slug]-route, met een personalisatielaag in het
--- RSVP-blok. resolve_rsvp_guest vervangt get_public_wedding: het geeft
--- alleen de slug + gastgegevens terug (nooit de token zelf), waarna de
--- Next.js-route dezelfde gedeelde site-data-functie aanroept die de
--- publieke route ook gebruikt. Bevestigen blijft via de bestaande
--- submit_rsvp(p_token, p_payload) — die matcht op token, dus zonder de
--- naam-ambiguïteit van submit_rsvp_by_name.
+-- als de publieke /trouwen/[slug]-route — volledige pariteit (alle blokken,
+-- paginanavigatie), niet alleen kleur/lettertype — met een personalisatielaag
+-- in het RSVP-blok. resolve_rsvp_guest geeft alleen de slug + gastgegevens
+-- terug (nooit de token zelf), waarna de Next.js-route dezelfde gedeelde
+-- site-data-functie aanroept die de publieke route ook gebruikt. Bevestigen
+-- gaat via de bestaande submit_rsvp(p_token, p_payload) — die matcht op
+-- token, dus zonder de naam-ambiguïteit van submit_rsvp_by_name.
+--
+-- get_public_wedding (oorspronkelijk 0005, herzien in 0055 voor een eigen,
+-- versimpelde RSVP-pagina) heeft na deze migratie geen aanroepers meer: de
+-- route gebruikt voortaan resolve_rsvp_guest + de gedeelde site-data-laag.
+-- get_rsvp_unlock_meta/auto-unlock uit 0055 blijven wél in gebruik — die
+-- ontgrendelen de wachtwoord-beveiligde publieke site automatisch voor een
+-- gast die via zijn persoonlijke link binnenkomt, ongeacht welke pagina hij
+-- daar te zien krijgt.
 -- =====================================================================
 
 create or replace function public.resolve_rsvp_guest(p_token text)

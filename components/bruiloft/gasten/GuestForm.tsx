@@ -95,10 +95,12 @@ export function GuestForm({
     const extra = extraCategorieen.filter((c) => !GUEST_CATEGORIEEN.includes(c))
     return [...GUEST_CATEGORIEEN, ...extra]
   }, [extraCategorieen])
+  const gasttypeCategorieen = wedding?.gasttypeCategorieen?.length ? wedding.gasttypeCategorieen : GASTTYPES
   const alleGasttypen = React.useMemo(() => {
-    const extra = extraGasttypen.filter((t) => !GASTTYPES.includes(t))
-    return [...GASTTYPES, ...extra]
-  }, [extraGasttypen])
+    const extra = extraGasttypen.filter((t) => !gasttypeCategorieen.includes(t))
+    return [...gasttypeCategorieen, ...extra]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extraGasttypen, wedding?.gasttypeCategorieen])
 
   React.useEffect(() => {
     if (open) {

@@ -4,7 +4,7 @@ import * as React from 'react'
 import { ArrowLeft, CalendarHeart, CheckCircle2, Plus } from 'lucide-react'
 
 import { afleidProvincie } from '@/lib/bruiloft/geo'
-import { BUDGET_CATEGORIEEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
+import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useToast } from '@/components/bruiloft/ui'
 import { useBruiloftStore } from '@/store/bruiloftStore'
@@ -134,6 +134,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
       takenVoorstellen: { beslist: {}, afgerond: false },
       budgetCategorieen: [...BUDGET_CATEGORIEEN],
       vendorCategorieen: [...VENDOR_TYPES],
+      gasttypeCategorieen: [...GASTTYPES],
     }
     try {
       await setupWedding(input, { maakTaken: true, maakBudget })

@@ -4,7 +4,7 @@
 
 import type { Database } from '@/lib/supabase/database.types'
 
-import { BUDGET_CATEGORIEEN, VENDOR_TYPES } from './options'
+import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from './options'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -65,6 +65,7 @@ export function weddingFromRow(r: Tables['weddings']['Row']): Wedding {
     takenVoorstellen: normaliseerTakenVoorstellen(r.taken_voorstellen),
     budgetCategorieen: normaliseerBudgetCategorieen(r.budget_categorieen),
     vendorCategorieen: normaliseerVendorCategorieen(r.vendor_categorieen),
+    gasttypeCategorieen: normaliseerGasttypeCategorieen(r.gasttype_categorieen),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -76,6 +77,10 @@ function normaliseerBudgetCategorieen(v: unknown): string[] {
 
 function normaliseerVendorCategorieen(v: unknown): string[] {
   return Array.isArray(v) ? (v as string[]) : [...VENDOR_TYPES]
+}
+
+function normaliseerGasttypeCategorieen(v: unknown): string[] {
+  return Array.isArray(v) ? (v as string[]) : [...GASTTYPES]
 }
 
 function normaliseerTakenVoorstellen(v: unknown): TakenVoorstellenState {
@@ -102,6 +107,8 @@ export function weddingToRow(p: Partial<WeddingInput>): Partial<Tables['weddings
     r.budget_categorieen = p.budgetCategorieen as unknown as Tables['weddings']['Insert']['budget_categorieen']
   if (p.vendorCategorieen !== undefined)
     r.vendor_categorieen = p.vendorCategorieen as unknown as Tables['weddings']['Insert']['vendor_categorieen']
+  if (p.gasttypeCategorieen !== undefined)
+    r.gasttype_categorieen = p.gasttypeCategorieen as unknown as Tables['weddings']['Insert']['gasttype_categorieen']
   return r
 }
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { PublicWebsite } from '@/components/website/PublicWebsite'
+import { AutoUnlock } from '@/components/website/v2/AutoUnlock'
 import { PublicWebsiteV2 } from '@/components/website/v2/PublicWebsiteV2'
 import type { GevondenGast, TokenGast } from '@/components/website/v2/themes/types'
 import { getSiteData, pageSlugVan } from '@/lib/bruiloft/publicSite'
@@ -12,9 +13,13 @@ import { createClient } from '@/lib/supabase/server'
 // publieke /trouwen/[slug]-route — zelfde data (getSiteData), zelfde
 // thema-renderer — met één verschil: de gast is al herkend vóór de pagina
 // rendert (resolve_rsvp_guest), dus het RSVP-blok slaat de zoekstap over en
-// start meteen gepersonaliseerd (zie themes/shared.tsx). Het sitewachtwoord
-// wordt hier bewust nooit gecontroleerd: de token zelf is het bewijs dat
-// deze bezoeker is uitgenodigd.
+// start meteen gepersonaliseerd (zie themes/shared.tsx). Deze route
+// controleert het sitewachtwoord zelf nooit — de token is het bewijs dat
+// deze bezoeker is uitgenodigd — en <AutoUnlock> zet daarnaast (best-effort,
+// zie app/api/rsvp/auto-unlock) dezelfde ontgrendel-cookie die de publieke
+// /trouwen/{slug}-route zelf ook leest, zodat een gast die van hieruit
+// doorklikt naar de kale sitelink niet alsnog tegen het wachtwoordscherm
+// aanloopt.
 
 interface ResolvedGuest {
   slug: string
@@ -66,14 +71,17 @@ export default async function PersoonlijkeRsvpPage({
     if (pageSlug !== '' && !result.v2.pages.some((p) => p.pageSlug === pageSlug)) notFound()
     const tokenGast: TokenGast = { token: params.token, gast: resolved.guest }
     return (
-      <PublicWebsiteV2
-        data={result.v2}
-        registry={result.registry}
-        slug={resolved.slug}
-        activePageSlug={pageSlug}
-        basisPad={`/rsvp/${params.token}`}
-        tokenGast={tokenGast}
-      />
+      <>
+        <AutoUnlock token={params.token} />
+        <PublicWebsiteV2
+          data={result.v2}
+          registry={result.registry}
+          slug={resolved.slug}
+          activePageSlug={pageSlug}
+          basisPad={`/rsvp/${params.token}`}
+          tokenGast={tokenGast}
+        />
+      </>
     )
   }
 
@@ -82,5 +90,10 @@ export default async function PersoonlijkeRsvpPage({
   // personalisatie (beter dan de oude losse RSVP-pagina, nog niet het volle
   // gepersonaliseerde RSVP-blok van v2).
   if (pageSlug !== '') notFound()
-  return <PublicWebsite data={result.v1!} registry={result.registry} slug={resolved.slug} />
+  return (
+    <>
+      <AutoUnlock token={params.token} />
+      <PublicWebsite data={result.v1!} registry={result.registry} slug={resolved.slug} />
+    </>
+  )
 }
