@@ -7,7 +7,7 @@ import { CheckCircle2 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 import { afleidProvincie } from '@/lib/bruiloft/geo'
-import { BUDGET_CATEGORIEEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
+import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -192,6 +192,7 @@ function WeddingSetup({
       takenVoorstellen: { beslist: {}, afgerond: false },
       budgetCategorieen: [...BUDGET_CATEGORIEEN],
       vendorCategorieen: [...VENDOR_TYPES],
+      gasttypeCategorieen: [...GASTTYPES],
     }
     try {
       await setupWedding(input, { maakTaken: true, maakBudget })
@@ -573,6 +574,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
       takenVoorstellen: { beslist: {}, afgerond: false },
       budgetCategorieen: [...BUDGET_CATEGORIEEN],
       vendorCategorieen: [...VENDOR_TYPES],
+      gasttypeCategorieen: [...GASTTYPES],
     }
     await setupWedding(input, { maakTaken: false, maakBudget: false })
     router.push('/bruiloft')

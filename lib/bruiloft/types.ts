@@ -50,6 +50,10 @@ export interface Wedding {
   // Zelf te beheren lijst leverancierscategorieën (aanvullen/verwijderen), los van
   // de vaste suggestielijst in de UI.
   vendorCategorieen: string[]
+  // Zelf te beheren lijst gasttypes (dag/avond/ceremonie/...), los van de
+  // vaste suggestielijst in de UI. Vervangt de aanname dat elke gast per
+  // definitie een dag- of avondgast is.
+  gasttypeCategorieen: string[]
   createdAt: ISODateTime
   updatedAt: ISODateTime
 }

@@ -161,6 +161,8 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     [guests]
   )
 
+  const gasttypeCategorieen = wedding?.gasttypeCategorieen?.length ? wedding.gasttypeCategorieen : GASTTYPES
+
   const p1 = wedding?.partner1Naam
   const p2 = wedding?.partner2Naam
 
@@ -194,6 +196,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
       fd.append('weddingId', wedding.id)
       fd.append('partner1', wedding.partner1Naam || '')
       fd.append('partner2', wedding.partner2Naam || '')
+      fd.append('gasttypeCategorieen', JSON.stringify(gasttypeCategorieen))
       if (bron === 'bestand' && file) fd.append('file', file)
       if (bron === 'tekst') fd.append('text', tekst)
 
@@ -464,9 +467,12 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
                         onChange={(e) => patch(r._id, { gasttype: e.target.value as NewGuest['gasttype'] })}
                         aria-label="Gasttype"
                       >
-                        {GASTTYPES.map((t) => (
+                        {gasttypeCategorieen.map((t) => (
                           <option key={t} value={t}>{capFirst(t)}</option>
                         ))}
+                        {!gasttypeCategorieen.includes(r.gasttype) ? (
+                          <option value={r.gasttype}>{capFirst(r.gasttype)}</option>
+                        ) : null}
                       </Select>
                       <Select
                         value={r.rsvpStatus}

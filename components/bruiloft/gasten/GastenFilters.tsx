@@ -59,8 +59,10 @@ export function GastenFilters({
     return () => document.removeEventListener('pointerdown', handler)
   }, [open])
 
+  const gasttypeCategorieen = wedding?.gasttypeCategorieen?.length ? wedding.gasttypeCategorieen : GASTTYPES
+
   const alleCategorieen = [...GUEST_CATEGORIEEN, ...extraCategorieen.filter((c) => !GUEST_CATEGORIEEN.includes(c))]
-  const alleGasttypen = [...GASTTYPES, ...extraGasttypen.filter((t) => !GASTTYPES.includes(t))]
+  const alleGasttypen = [...gasttypeCategorieen, ...extraGasttypen.filter((t) => !gasttypeCategorieen.includes(t))]
 
   const categorieOpties = [
     { key: 'all', label: 'Alle categorieën' },

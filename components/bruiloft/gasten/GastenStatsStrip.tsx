@@ -1,10 +1,12 @@
 'use client'
 
 import { gastTellingen } from '@/lib/bruiloft/derived'
-import type { Guest } from '@/lib/bruiloft/types'
+import { capFirst } from '@/lib/utils'
+import type { Guest, Wedding } from '@/lib/bruiloft/types'
 
 interface GastenStatsStripProps {
   guests: Guest[]
+  wedding: Wedding
 }
 
 // Eén gecondenseerde samenvattingsstrip in de stijl van TakenStatsStrip, zodat
@@ -43,8 +45,8 @@ function CircularProgress({ pct }: { pct: number }) {
   )
 }
 
-export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
-  const t = gastTellingen(guests)
+export function GastenStatsStrip({ guests, wedding }: GastenStatsStripProps) {
+  const t = gastTellingen(guests, wedding.gasttypeCategorieen)
   const pct = t.totaal > 0 ? Math.round((t.bevestigd / t.totaal) * 100) : 0
 
   const nogTeReageren = t.nogNietUitgenodigd + t.uitgenodigd + t.geenReactie
@@ -52,6 +54,10 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
     t.afgemeld > 0 ? `${t.afgemeld} afgemeld` : null,
     nogTeReageren > 0 ? `${nogTeReageren} nog te reageren` : null,
   ].filter(Boolean)
+
+  // Alleen categorieën die daadwerkelijk in gebruik zijn, zodat een nog
+  // ongebruikte zelfgemaakte categorie de strip niet onnodig vult.
+  const perTypeInGebruik = t.perType.filter((p) => p.totaal > 0)
 
   return (
     <div className="mb-6 rounded-xl border border-border bg-card shadow-sm">
@@ -72,16 +78,18 @@ export function GastenStatsStrip({ guests }: GastenStatsStripProps) {
         {/* Desktop stat-getallen */}
         <div className="hidden items-center divide-x divide-border sm:flex">
           <StatNum value={t.uitgenodigd} label="uitgenodigd" />
-          <StatNum value={t.daggasten} label="daggasten" />
-          <StatNum value={t.avondgasten} label="avondgasten" />
+          {perTypeInGebruik.map((p) => (
+            <StatNum key={p.type} value={p.totaal} label={capFirst(p.type)} />
+          ))}
         </div>
       </div>
 
       {/* Mobiele stat-rij */}
-      <div className="flex divide-x divide-border border-t border-border sm:hidden">
+      <div className="flex flex-wrap divide-x divide-border border-t border-border sm:hidden">
         <StatNumMobile value={t.uitgenodigd} label="uitgenodigd" />
-        <StatNumMobile value={t.daggasten} label="daggasten" />
-        <StatNumMobile value={t.avondgasten} label="avondgasten" />
+        {perTypeInGebruik.map((p) => (
+          <StatNumMobile key={p.type} value={p.totaal} label={capFirst(p.type)} />
+        ))}
       </div>
     </div>
   )

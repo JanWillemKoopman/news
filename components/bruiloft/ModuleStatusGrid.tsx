@@ -92,7 +92,7 @@ export function ModuleStatusGrid({
   permissions,
 }: ModuleStatusGridProps) {
   const budget = budgetTotalen(budgetItems, vendors, wedding)
-  const gasten = gastTellingen(guests)
+  const gasten = gastTellingen(guests, wedding.gasttypeCategorieen)
   const taken = taakTellingen(tasks)
 
   const budgetPct =
