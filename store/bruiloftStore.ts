@@ -5,6 +5,7 @@ import {
   activityFromRow,
   budgetItemFromRow,
   guestFromRow,
+  messageFromRow,
   scheduleItemFromRow,
   tableFromRow,
   taskCommentFromRow,
@@ -45,6 +46,8 @@ import type {
   GuestInput,
   GuestPatch,
   ID,
+  Message,
+  MessageRead,
   RegistryContribution,
   RegistryItem,
   RegistryItemInput,
@@ -123,6 +126,8 @@ interface BruiloftState {
   tasks: Task[]
   vendors: Vendor[]
   vendorContactRequests: VendorContactRequest[]
+  messages: Message[]
+  messageReads: MessageRead[]
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
   tables: Table[]
@@ -197,6 +202,10 @@ interface BruiloftActions {
   // contactRequest is null in het zeldzame geval dat de e-mail wél is
   // verstuurd maar het loggen daarna onverwacht mislukte.
   sendVendorContact: (payload: SendVendorContactPayload) => Promise<VendorContactRequest | null>
+
+  // Berichtencentrum: markeert een bericht als gelezen voor de huidige
+  // gebruiker (optimistisch + persistent via message_reads).
+  markMessageRead: (id: ID) => Promise<void>
 
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
@@ -360,6 +369,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     tasks: [],
     vendors: [],
     vendorContactRequests: [],
+    messages: [],
+    messageReads: [],
     budgetItems: [],
     scheduleItems: [],
     tables: [],
@@ -482,6 +493,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        messages,
+        messageReads,
         budgetItems,
         scheduleItems,
         tables,
@@ -496,6 +509,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('taken', repository.listTasks(wedding.id), []),
         safe('leveranciers', repository.listVendors(wedding.id), []),
         safe('leveranciers-contact', repository.listVendorContactRequests(wedding.id), []),
+        safe('berichten', repository.listMessages(wedding.id), []),
+        safe('berichten-gelezen', repository.listMessageReads(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
         safe('tafels', repository.listTables(wedding.id), []),
@@ -519,6 +534,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        messages,
+        messageReads,
         budgetItems,
         scheduleItems,
         tables,
@@ -563,6 +580,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks: [],
         vendors: [],
         vendorContactRequests: [],
+        messages: [],
+        messageReads: [],
         budgetItems: [],
         scheduleItems: [],
         tables: [],
@@ -653,6 +672,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
             ),
           })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: wf }, (p) =>
+          set({ messages: applyList(get().messages, p, (r) => messageFromRow(r)) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: wf }, (p) =>
           set({ budgetItems: applyList(get().budgetItems, p, (r) => budgetItemFromRow(r as unknown as Parameters<typeof budgetItemFromRow>[0])) })
         )
@@ -736,6 +758,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests: [],
         vendors: [],
         vendorContactRequests: [],
+        messages: [],
+        messageReads: [],
         budgetItems,
         scheduleItems: [],
         tables: [],
@@ -1068,9 +1092,10 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         const body = await res.json().catch(() => ({}))
         throw new Error((body as { error?: string }).error ?? 'Versturen mislukt')
       }
-      const { vendor, contactRequest } = (await res.json()) as {
+      const { vendor, contactRequest, message } = (await res.json()) as {
         vendor: Vendor
         contactRequest: VendorContactRequest | null
+        message: Message | null
       }
       set({
         vendors: get().vendors.some((v) => v.id === vendor.id)
@@ -1079,8 +1104,23 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         vendorContactRequests: contactRequest
           ? [contactRequest, ...get().vendorContactRequests]
           : get().vendorContactRequests,
+        messages: message ? [message, ...get().messages] : get().messages,
       })
       return contactRequest
+    },
+
+    markMessageRead: async (id) => {
+      const userId = get().currentUser?.id
+      if (!userId) return
+      if (get().messageReads.some((r) => r.messageId === id && r.userId === userId)) return
+      const optimistic: MessageRead = { messageId: id, userId, readAt: new Date().toISOString() }
+      set({ messageReads: [...get().messageReads, optimistic] })
+      try {
+        await repository.markMessageRead(id)
+      } catch (e) {
+        console.error('[store] markMessageRead mislukt', e)
+        set({ messageReads: get().messageReads.filter((r) => r !== optimistic) })
+      }
     },
 
     // --- BudgetItems -------------------------------------------------------

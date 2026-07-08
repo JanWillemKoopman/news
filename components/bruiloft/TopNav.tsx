@@ -1,9 +1,11 @@
 'use client'
 
+import { Inbox } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { ongelezenBerichten } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { activeSection, visibleSections } from './nav'
 import { LeveranciersMegaMenu } from './LeveranciersMegaMenu'
@@ -19,6 +21,9 @@ export function TopNav() {
   const permissions = useBruiloftStore((s) => s.permissions)
   const sections = visibleSections(permissions)
   const active = activeSection(pathname)
+  const ongelezen = useBruiloftStore((s) =>
+    ongelezenBerichten(s.messages, s.messageReads, s.currentUser?.id)
+  )
 
   return (
     <header className="relative bg-header-bg text-white shadow-header md:sticky md:top-0 md:z-40">
@@ -57,6 +62,19 @@ export function TopNav() {
 
         {/* Account-menu (rechts). */}
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/bruiloft/berichten"
+            aria-label={ongelezen > 0 ? `Berichten (${ongelezen} ongelezen)` : 'Berichten'}
+            className="relative rounded-md p-2 text-white transition-colors hover:bg-rhino-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800"
+          >
+            <Inbox className="h-5 w-5" />
+            {ongelezen > 0 ? (
+              <span
+                aria-hidden
+                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500"
+              />
+            ) : null}
+          </Link>
           <UserMenu variant="dark" />
         </div>
       </div>

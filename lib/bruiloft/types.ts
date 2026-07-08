@@ -228,6 +228,41 @@ export interface VendorContactRequest {
   createdAt: ISODateTime
 }
 
+// --- Berichten (Berichtencentrum) -------------------------------------------
+
+// Eén generieke tabel voor het berichtencentrum: zowel inkomende
+// systeem-/AI-berichten aan de gebruiker als uitgaande communicatie naar
+// leveranciers (offerte/contact). Later breidt dit uit met inkomende
+// reacties van leveranciers ('leverancier_reactie').
+export type MessageDirection = 'inbound' | 'outbound'
+export type MessageType = 'systeem' | 'leverancier_offerte' | 'leverancier_contact'
+export type MessageAfzenderType = 'systeem' | 'gebruiker' | 'leverancier'
+export type MessageStatus = 'concept' | 'verzonden'
+
+export interface Message {
+  id: ID
+  weddingId: ID
+  direction: MessageDirection
+  type: MessageType
+  vendorId?: ID
+  onderwerp: string
+  inhoud: string
+  afzenderNaam: string
+  afzenderType: MessageAfzenderType
+  verzondenDoor?: ID
+  status: MessageStatus
+  metadata?: Record<string, unknown>
+  createdAt: ISODateTime
+}
+
+// Leesstatus per gebruiker (een bruiloft heeft vaak meerdere leden, dus
+// "gelezen" is niet gedeeld zoals bij VendorContactRequest).
+export interface MessageRead {
+  messageId: ID
+  userId: ID
+  readAt: ISODateTime
+}
+
 // --- BudgetItem ------------------------------------------------------------
 
 // Categorie is vrije tekst (bruidsparen beheren hun eigen lijst); dit is de

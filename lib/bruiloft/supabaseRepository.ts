@@ -1,7 +1,7 @@
 // Supabase-implementatie van de WeddingRepository. De app verandert niet:
 // dezelfde interface, maar nu met persistente, gedeelde, RLS-beveiligde opslag.
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient, createRawClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/database.types'
 
 import {
@@ -10,6 +10,8 @@ import {
   budgetItemToRow,
   guestFromRow,
   guestToRow,
+  messageFromRow,
+  messageReadFromRow,
   scheduleItemFromRow,
   scheduleItemToRow,
   tableFromRow,
@@ -38,6 +40,8 @@ import type {
   GuestInput,
   GuestPatch,
   ID,
+  Message,
+  MessageRead,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -63,6 +67,10 @@ type Tables = Database['public']['Tables']
 
 export class SupabaseWeddingRepository implements WeddingRepository {
   private db = createClient()
+  // messages/message_reads ontbreken nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0058), vandaar de ongetypeerde client — zelfde patroon
+  // als loadRegistry() in de store.
+  private rawDb = createRawClient()
 
   // --- Wedding -------------------------------------------------------
   async listWeddings(): Promise<Wedding[]> {
@@ -253,6 +261,36 @@ export class SupabaseWeddingRepository implements WeddingRepository {
       .order('created_at', { ascending: false })
     if (error) throw error
     return (data ?? []).map(vendorContactRequestFromRow)
+  }
+
+  // --- Berichtencentrum ------------------------------------------------
+  async listMessages(weddingId: ID): Promise<Message[]> {
+    const { data, error } = await this.rawDb
+      .from('messages')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(messageFromRow)
+  }
+
+  async listMessageReads(weddingId: ID): Promise<MessageRead[]> {
+    const { data, error } = await this.rawDb
+      .from('message_reads')
+      .select('*, messages!inner(wedding_id)')
+      .eq('messages.wedding_id', weddingId)
+    if (error) throw error
+    return (data ?? []).map(messageReadFromRow)
+  }
+
+  async markMessageRead(messageId: ID): Promise<MessageRead> {
+    const { data, error } = await this.rawDb
+      .from('message_reads')
+      .upsert({ message_id: messageId }, { onConflict: 'message_id,user_id' })
+      .select()
+      .single()
+    if (error) throw error
+    return messageReadFromRow(data)
   }
 
   // --- BudgetItems ---------------------------------------------------

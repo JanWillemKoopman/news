@@ -12,6 +12,8 @@ import type {
   CeremonieType,
   Guest,
   GuestPatch,
+  Message,
+  MessageRead,
   PaymentTerm,
   Rol,
   ScheduleItem,
@@ -259,6 +261,36 @@ export function vendorContactRequestFromRow(
     verzondenNaar: r.verzonden_naar,
     verzondenDoor: r.verzonden_door ?? undefined,
     createdAt: r.created_at,
+  }
+}
+
+// --- Berichten (Berichtencentrum) -------------------------------------
+// messages/message_reads ontbreken nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0058; types nog niet geregenereerd) — zelfde any-drift
+// als tpw_business_id hierboven.
+export function messageFromRow(r: any): Message {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    direction: r.direction,
+    type: r.type,
+    vendorId: r.vendor_id ?? undefined,
+    onderwerp: r.onderwerp,
+    inhoud: r.inhoud,
+    afzenderNaam: r.afzender_naam,
+    afzenderType: r.afzender_type,
+    verzondenDoor: r.verzonden_door ?? undefined,
+    status: r.status,
+    metadata: r.metadata ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+export function messageReadFromRow(r: any): MessageRead {
+  return {
+    messageId: r.message_id,
+    userId: r.user_id,
+    readAt: r.read_at,
   }
 }
 

@@ -12,6 +12,8 @@ import type {
   GuestInput,
   GuestPatch,
   ID,
+  Message,
+  MessageRead,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -255,6 +257,20 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   // bijgehouden; deze legacy localStorage-implementatie heeft geen equivalent.
   async listVendorContactRequests(): Promise<VendorContactRequest[]> {
     return []
+  }
+
+  // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;
+  // deze legacy localStorage-implementatie heeft geen equivalent.
+  async listMessages(): Promise<Message[]> {
+    return []
+  }
+
+  async listMessageReads(): Promise<MessageRead[]> {
+    return []
+  }
+
+  async markMessageRead(): Promise<MessageRead> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
   }
 
   // --- BudgetItems ---------------------------------------------------------
