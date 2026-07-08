@@ -68,9 +68,9 @@ export function ScheduleItemCard({
                 </p>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
               {s.betrokkenen.length > 0 ? (
-                <div className="flex flex-wrap justify-end gap-1.5">
+                <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
                   {s.betrokkenen.map((r) => (
                     <span
                       key={r}
