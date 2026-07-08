@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { CheckCircle2 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
@@ -175,7 +176,7 @@ function WeddingSetup({
       // Telling mislukt (netwerk): ga door en laat setupWedding de fout afhandelen.
     }
 
-    const aantalGasten = Number(gasten) || 0
+    const aantalGasten = Math.max(0, Number(gasten) || 0)
     const input: WeddingInput = {
       partner1Naam: partner1Naam.trim() || 'Partner 1',
       partner2Naam: partner2Naam.trim() || 'Partner 2',
@@ -184,7 +185,7 @@ function WeddingSetup({
       woonplaats: woonplaats.trim(),
       // Provincie automatisch afgeleid uit de woonplaats; later verfijnbaar.
       provincie: afleidProvincie(woonplaats) ?? '',
-      totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
+      totaalBudget: Math.max(0, customBudget ? Number(customBudget) || 0 : budget ?? 0),
       aantalDaggasten: aantalGasten,
       aantalAvondgasten: 0,
       ceremonietype: null,
@@ -197,9 +198,10 @@ function WeddingSetup({
     try {
       await setupWedding(input, { maakTaken: true, maakBudget })
       router.push('/bruiloft')
-    } catch {
+    } catch (e) {
+      Sentry.captureException(e, { tags: { flow: 'onboarding', stap: 'trouwplan-wizard' } })
       setSaving(false)
-      setError('Het aanmaken van jullie trouwplan is mislukt. Controleer je verbinding en probeer het opnieuw.')
+      setError('Het aanmaken van jullie trouwplan is mislukt. Probeer het opnieuw — blijft het misgaan, dan werken wij aan een oplossing.')
     }
   }
 
@@ -399,6 +401,7 @@ function KeuzeStep({
   onLeegBeginnen: () => Promise<void>
 }) {
   const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   return (
     <div className="w-full max-w-sm">
@@ -420,7 +423,8 @@ function KeuzeStep({
         <button
           type="button"
           onClick={onGeholpen}
-          className="relative w-full rounded-xl border-2 border-primary bg-primary/5 p-5 text-left transition-all hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          disabled={saving}
+          className="relative w-full rounded-xl border-2 border-primary bg-primary/5 p-5 text-left transition-all hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className="absolute right-4 top-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
             Aanbevolen
@@ -437,10 +441,13 @@ function KeuzeStep({
           type="button"
           onClick={async () => {
             setSaving(true)
+            setError(null)
             try {
               await onLeegBeginnen()
-            } catch {
+            } catch (e) {
+              Sentry.captureException(e, { tags: { flow: 'onboarding', stap: 'leeg-beginnen' } })
               setSaving(false)
+              setError('Het aanmaken van jullie trouwplan is mislukt. Probeer het opnieuw — blijft het misgaan, dan werken wij aan een oplossing.')
             }
           }}
           disabled={saving}
@@ -454,6 +461,10 @@ function KeuzeStep({
             {saving ? 'Even geduld…' : 'Leeg beginnen →'}
           </p>
         </button>
+
+        {error ? (
+          <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+        ) : null}
       </div>
     </div>
   )
