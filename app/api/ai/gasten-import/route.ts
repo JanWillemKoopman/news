@@ -70,7 +70,12 @@ async function bestandNaarTekst(file: File): Promise<string> {
   return buffer.toString('utf-8').slice(0, 200_000)
 }
 
-function buildPrompt(bronTekst: string | null, partner1: string, partner2: string): string {
+function buildPrompt(
+  bronTekst: string | null,
+  partner1: string,
+  partner2: string,
+  gasttypeCategorieen: string[]
+): string {
   const categorieRegels = GUEST_CATEGORIEEN.map((c) => {
     if (c === 'familie partner 1') return `- "familie partner 1" = familie van ${partner1 || 'partner 1'}`
     if (c === 'familie partner 2') return `- "familie partner 2" = familie van ${partner2 || 'partner 2'}`
@@ -86,7 +91,7 @@ Mapping-regels:
 - categorie — kies exact één van deze waarden:
 ${categorieRegels}
   Kies "overig" als je het niet zeker weet.
-- gasttype — exact één van: ${GASTTYPES.join(', ')}. Standaard "daggast" tenzij duidelijk avondgast.
+- gasttype — exact één van: ${gasttypeCategorieen.join(', ')}. Standaard "${gasttypeCategorieen[0] ?? 'daggast'}" tenzij de bron een ander van deze gasttypes duidelijk aangeeft.
 - rsvpStatus — exact één van: ${RSVP_STATUSSEN.join(', ')}. Standaard "nog niet uitgenodigd" tenzij de bron een reactie aangeeft (ja/aanwezig → "bevestigd", nee/afwezig → "afgemeld").
 - heeftPartner — true als er een partner/begeleider/"+1" wordt genoemd. Zet de partnernaam in partnerNaam (leeg als onbekend).
 - aantalKinderen — geheel getal ≥ 0, alleen als de bron kinderen vermeldt; anders 0. Tel kinderen NIET als losse gasten als ze als "X kinderen" bij iemand horen.
@@ -118,7 +123,6 @@ Geef ALLEEN een JSON-object terug in exact dit formaat:
 }
 
 const CATSET = new Set<string>(GUEST_CATEGORIEEN)
-const TYPESET = new Set<string>(GASTTYPES)
 const RSVPSET = new Set<string>(RSVP_STATUSSEN)
 
 function str(v: unknown): string {
@@ -126,15 +130,18 @@ function str(v: unknown): string {
 }
 
 // Saneer een ruwe AI-rij naar een geldige ImportGuest; dwing enums en types af.
-function saneer(raw: unknown): ImportGuest | null {
+// gasttypeCategorieen is de zelfbeheerde lijst van deze bruiloft (standaard
+// GASTTYPES) — een AI-waarde buiten die lijst valt terug op de eerste daarvan.
+function saneer(raw: unknown, gasttypeCategorieen: string[]): ImportGuest | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const voornaam = str(r.voornaam)
   const achternaam = str(r.achternaam)
   if (!voornaam && !achternaam) return null // minstens een naam vereist
 
+  const typeSet = new Set(gasttypeCategorieen)
   const categorie = (CATSET.has(r.categorie as string) ? r.categorie : 'overig') as GuestCategorie
-  const gasttype = (TYPESET.has(r.gasttype as string) ? r.gasttype : 'daggast') as Gasttype
+  const gasttype = (typeSet.has(r.gasttype as string) ? r.gasttype : (gasttypeCategorieen[0] ?? 'daggast')) as Gasttype
   const rsvpStatus = (RSVPSET.has(r.rsvpStatus as string) ? r.rsvpStatus : 'nog niet uitgenodigd') as RsvpStatus
   const heeftPartner = r.heeftPartner === true || str(r.partnerNaam).length > 0
   const aantalKinderen = Math.max(0, Math.round(Number(r.aantalKinderen) || 0))
@@ -178,6 +185,16 @@ export async function POST(request: NextRequest) {
   const partner2 = String(form.get('partner2') || '')
   const tekstInput = String(form.get('text') || '').trim()
   const file = form.get('file')
+
+  let gasttypeCategorieen: string[] = GASTTYPES
+  try {
+    const parsed = JSON.parse(String(form.get('gasttypeCategorieen') || ''))
+    if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string') && parsed.length > 0) {
+      gasttypeCategorieen = parsed
+    }
+  } catch {
+    // ontbrekend/ongeldig veld — val terug op de standaardlijst
+  }
 
   if (!weddingId) {
     return NextResponse.json({ error: 'Ontbrekende weddingId' }, { status: 400 })
@@ -229,7 +246,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const prompt = buildPrompt(bronTekst, partner1, partner2)
+  const prompt = buildPrompt(bronTekst, partner1, partner2, gasttypeCategorieen)
   const startTijd = Date.now()
 
   const genAI = new GoogleGenerativeAI(apiKey)
@@ -274,7 +291,9 @@ export async function POST(request: NextRequest) {
         const cleaned = vol.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
         const parsed = JSON.parse(cleaned) as { samenvatting?: string; gasten?: unknown[] }
         const gasten = Array.isArray(parsed.gasten)
-          ? parsed.gasten.map(saneer).filter((g): g is ImportGuest => g !== null)
+          ? parsed.gasten
+              .map((g) => saneer(g, gasttypeCategorieen))
+              .filter((g): g is ImportGuest => g !== null)
           : []
 
         logAiUsage({

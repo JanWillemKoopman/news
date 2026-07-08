@@ -3,7 +3,7 @@
 // eenvoudig en kunnen er geen oneindige update-loops ontstaan.
 
 import { dagenTot } from './format'
-import { categorieVoorWeergave } from './options'
+import { categorieVoorWeergave, GASTTYPES } from './options'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -113,6 +113,12 @@ export function budgetTotalen(
 
 // --- Gasttellingen ---------------------------------------------------------
 
+export interface GastTellingenPerType {
+  type: string
+  totaal: number
+  bevestigd: number
+}
+
 export interface GastTellingen {
   totaal: number
   nogNietUitgenodigd: number
@@ -120,13 +126,22 @@ export interface GastTellingen {
   bevestigd: number
   afgemeld: number
   geenReactie: number
-  daggasten: number // totaal gemarkeerd als daggast
-  avondgasten: number // totaal gemarkeerd als avondgast
+  // "Dinergasten": elke gast telt hier mee, behalve wie letterlijk als
+  // avondgast gemarkeerd is. Dit is de aanname die budget/catering gebruikt
+  // (zie BudgetList) — zelfgemaakte gasttypes (bijv. "ceremonie") tellen dus
+  // standaard mee als dinergast, tenzij ze expliciet "avondgast" heten.
+  daggasten: number
+  avondgasten: number // totaal expliciet gemarkeerd als avondgast
   bevestigdeDaggasten: number
   bevestigdeAvondgasten: number
+  // Telling per gasttype-categorie van de bruiloft (volgorde van
+  // wedding.gasttypeCategorieen), plus "overig" voor waarden die niet (meer)
+  // in die lijst voorkomen. Gebruikt voor de statistiekenstrip en het
+  // categoriebeheer op de gastenpagina.
+  perType: GastTellingenPerType[]
 }
 
-export function gastTellingen(guests: Guest[]): GastTellingen {
+export function gastTellingen(guests: Guest[], gasttypeCategorieen: string[] = GASTTYPES): GastTellingen {
   const t: GastTellingen = {
     totaal: guests.length,
     nogNietUitgenodigd: 0,
@@ -138,7 +153,12 @@ export function gastTellingen(guests: Guest[]): GastTellingen {
     avondgasten: 0,
     bevestigdeDaggasten: 0,
     bevestigdeAvondgasten: 0,
+    perType: [],
   }
+
+  const perTypeMap = new Map<string, GastTellingenPerType>()
+  for (const c of gasttypeCategorieen) perTypeMap.set(c, { type: c, totaal: 0, bevestigd: 0 })
+
   for (const g of guests) {
     if (g.rsvpStatus === 'nog niet uitgenodigd') t.nogNietUitgenodigd++
     else if (g.rsvpStatus === 'uitgenodigd') t.uitgenodigd++
@@ -146,14 +166,26 @@ export function gastTellingen(guests: Guest[]): GastTellingen {
     else if (g.rsvpStatus === 'afgemeld') t.afgemeld++
     else if (g.rsvpStatus === 'geen reactie') t.geenReactie++
 
-    if (g.gasttype === 'daggast') {
-      t.daggasten++
-      if (g.rsvpStatus === 'bevestigd') t.bevestigdeDaggasten++
-    } else {
+    const bevestigd = g.rsvpStatus === 'bevestigd'
+    if (g.gasttype === 'avondgast') {
       t.avondgasten++
-      if (g.rsvpStatus === 'bevestigd') t.bevestigdeAvondgasten++
+      if (bevestigd) t.bevestigdeAvondgasten++
+    } else {
+      t.daggasten++
+      if (bevestigd) t.bevestigdeDaggasten++
     }
+
+    const weergaveType = categorieVoorWeergave(g.gasttype, gasttypeCategorieen)
+    let bucket = perTypeMap.get(weergaveType)
+    if (!bucket) {
+      bucket = { type: weergaveType, totaal: 0, bevestigd: 0 }
+      perTypeMap.set(weergaveType, bucket)
+    }
+    bucket.totaal++
+    if (bevestigd) bucket.bevestigd++
   }
+
+  t.perType = Array.from(perTypeMap.values())
   return t
 }
 

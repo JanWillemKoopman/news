@@ -317,9 +317,12 @@ function CategorieRij({
   const begroot = data.verwacht > 0 ? data.verwacht : data.geschat
 
   const postenTekst = data.items.length > 1 ? `${data.items.length} posten` : null
+  // "Dinergasten": bevestigde gasten van elk gasttype behalve avondgast (zie
+  // gastTellingen) — telt dus ook mee bij zelfgemaakte gasttypes die niet
+  // letterlijk "avondgast" heten.
   const referentieTekst =
     data.naam === 'catering' && bevestigdeDaggasten > 0
-      ? `${bevestigdeDaggasten} bevestigde daggast${bevestigdeDaggasten === 1 ? '' : 'en'}`
+      ? `${bevestigdeDaggasten} bevestigde gast${bevestigdeDaggasten === 1 ? '' : 'en'} voor het diner`
       : null
 
   // Eén regel die statustekst en voortgang combineert, i.p.v. losse badge +

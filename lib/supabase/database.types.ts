@@ -922,6 +922,7 @@ export type Database = {
           ceremonietype: string | null
           created_at: string
           created_by: string | null
+          gasttype_categorieen: string[]
           geregelde_zaken: Record<string, string>
           id: string
           locatie: string
@@ -942,6 +943,7 @@ export type Database = {
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          gasttype_categorieen?: string[]
           geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string
@@ -962,6 +964,7 @@ export type Database = {
           ceremonietype?: string | null
           created_at?: string
           created_by?: string | null
+          gasttype_categorieen?: string[]
           geregelde_zaken?: Record<string, string>
           id?: string
           locatie?: string

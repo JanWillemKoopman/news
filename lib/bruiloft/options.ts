@@ -51,7 +51,10 @@ export const GUEST_CATEGORIEEN: GuestCategorie[] = [
   'overig',
 ]
 
-export const GASTTYPES: Gasttype[] = ['daggast', 'avondgast']
+// Standaard suggestielijst; bruidsparen kunnen hun eigen lijst uitbreiden,
+// hernoemen of inkorten via wedding.gasttypeCategorieen (zie
+// GastenTypeManageModal) — bijv. wanneer dag/avond niet past bij hun opzet.
+export const GASTTYPES: Gasttype[] = ['daggast', 'avondgast', 'ceremonie']
 
 export const RSVP_STATUSSEN: RsvpStatus[] = [
   'nog niet uitgenodigd',
@@ -130,8 +133,9 @@ export const VENDOR_TYPES: VendorType[] = [
   'overig',
 ]
 
-// Leveranciers waarvan het type niet (meer) in de beheerde lijst staat, vallen terug
-// op 'overig' bij weergave/telling — defensief tegen legacy/verwijderde categorieën.
+// Items (leveranciers, gasten) waarvan de categorie/type niet (meer) in de
+// beheerde lijst staat, vallen terug op 'overig' bij weergave/telling —
+// defensief tegen legacy/verwijderde categorieën.
 export function categorieVoorWeergave(type: string, categorieen: string[]): string {
   return categorieen.includes(type) ? type : 'overig'
 }

@@ -1,12 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users, UtensilsCrossed } from 'lucide-react'
+import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Tags, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
 import { GastenStatsStrip } from '@/components/bruiloft/gasten/GastenStatsStrip'
+import { GastenTypeManageModal } from '@/components/bruiloft/gasten/GastenTypeManageModal'
 import { RsvpDeelModal } from '@/components/bruiloft/gasten/RsvpDeelModal'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -161,9 +162,12 @@ export default function GastenPage() {
   const [formOpen, setFormOpen] = React.useState(false)
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
   const [bulkOpen, setBulkOpen] = React.useState(false)
+  const [typeManageOpen, setTypeManageOpen] = React.useState(false)
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
+
+  const gasttypeCategorieen = wedding?.gasttypeCategorieen?.length ? wedding.gasttypeCategorieen : GASTTYPES
 
   // Custom categorieën/gasttypes die al bij gasten in gebruik zijn, naast de
   // vaste suggestielijst — zodat ze ook als filter- en formulieroptie verschijnen.
@@ -172,8 +176,8 @@ export default function GastenPage() {
     [guests]
   )
   const extraGasttypen = React.useMemo(
-    () => Array.from(new Set(guests.map((g) => g.gasttype).filter((t) => !GASTTYPES.includes(t)))),
-    [guests]
+    () => Array.from(new Set(guests.map((g) => g.gasttype).filter((t) => !gasttypeCategorieen.includes(t)))),
+    [guests, gasttypeCategorieen]
   )
 
   // Zorg dat alle gasten een RSVP-code hebben zodra de pagina geladen is.
@@ -315,6 +319,9 @@ export default function GastenPage() {
                 disabled: guests.length === 0,
               }]
             : []),
+          ...(kanBewerken
+            ? [{ label: 'Gasttypes beheren', icon: Tags, onClick: () => setTypeManageOpen(true) }]
+            : []),
           {
             label: 'Exporteer gastenlijst',
             icon: Download,
@@ -328,7 +335,7 @@ export default function GastenPage() {
       <AIInsightCard sectie="/bruiloft/gasten" />
 
       {/* StatsStrip pas tonen bij genoeg gasten zodat de statistieken betekenisvol zijn. */}
-      {guests.length >= 5 ? <GastenStatsStrip guests={guests} /> : null}
+      {guests.length >= 5 ? <GastenStatsStrip guests={guests} wedding={wedding} /> : null}
 
       {/* ── Gastenlijst container ── */}
       {guests.length === 0 ? (
@@ -602,6 +609,13 @@ export default function GastenPage() {
       />
 
       <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+
+      <GastenTypeManageModal
+        open={typeManageOpen}
+        onOpenChange={setTypeManageOpen}
+        categorieen={gasttypeCategorieen}
+        guests={guests}
+      />
 
       <ConfirmDialog
         open={delGuest !== null}
