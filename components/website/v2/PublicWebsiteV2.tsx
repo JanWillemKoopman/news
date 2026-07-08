@@ -18,19 +18,17 @@ import type { WeddingLettertype, WeddingThema } from '@/lib/bruiloft/types'
 import type { Block, HeroBlock } from '@/lib/bruiloft/websiteBlocks'
 import { heeftInhoud } from '@/lib/bruiloft/websiteBlocks'
 import {
-  HOEK_RADIUS,
-  LETTERTYPE_CSS_VAR,
-  hexNaarHsl,
+  themeCssVars,
   themeVanLegacy,
   type ThemeTokens,
 } from '@/lib/bruiloft/websiteTheme'
 
 import { THEME_RENDERERS } from './themes'
-import type { ContentBlock, NavItem, RegistryMeta, RenderContext, ScheduleRegel } from './themes/types'
+import type { ContentBlock, NavItem, RegistryMeta, RenderContext, ScheduleRegel, TokenGast } from './themes/types'
 
 // Types die extern (route, editor) geïmporteerd worden, her-geëxporteerd
 // zodat bestaande imports blijven werken.
-export type { RegistryMeta, ScheduleRegel } from './themes/types'
+export type { RegistryMeta, ScheduleRegel, TokenGast } from './themes/types'
 
 // ─── Datavorm van get_public_website_v2 ──────────────────────────────────────
 
@@ -63,21 +61,6 @@ export interface PublicWebsiteV2Data {
   schedule: ScheduleRegel[]
 }
 
-// ─── Theme → CSS-variabelen ──────────────────────────────────────────────────
-
-function themeCssVars(theme: ThemeTokens): React.CSSProperties {
-  return {
-    '--primary': hexNaarHsl(theme.kleuren.accent),
-    '--primary-foreground': '0 0% 100%',
-    '--site-bg': theme.kleuren.achtergrond,
-    '--site-card': theme.kleuren.kaart,
-    '--site-text': theme.kleuren.tekst,
-    '--site-muted': theme.kleuren.gedempt,
-    '--site-radius': HOEK_RADIUS[theme.hoeken],
-    '--heading-font': LETTERTYPE_CSS_VAR[theme.kopLettertype],
-  } as React.CSSProperties
-}
-
 // ─── Hoofdcomponent ──────────────────────────────────────────────────────────
 
 export function PublicWebsiteV2({
@@ -85,11 +68,24 @@ export function PublicWebsiteV2({
   registry,
   slug,
   activePageSlug = '',
+  basisPad,
+  tokenGast,
 }: {
   data: PublicWebsiteV2Data
   registry?: RegistryMeta | null
   slug?: string
   activePageSlug?: string
+  // Voorvoegsel voor pagina-navigatielinks bij meerdere pagina's. Standaard
+  // de publieke route (/trouwen/{slug}); de persoonlijke RSVP-link
+  // (app/rsvp/[token]/...) geeft hier '/rsvp/{token}' door zodat een gast
+  // tussen pagina's blijft navigeren binnen zijn eigen gepersonaliseerde
+  // weergave. Cadeaulijst-links blijven altijd slug-based (die pagina is
+  // niet gast-specifiek).
+  basisPad?: string
+  // Aanwezig wanneer de bezoeker via een persoonlijke /rsvp/[token]-link
+  // binnenkwam: het RSVP-blok slaat dan de zoekstap over en start meteen
+  // gepersonaliseerd. Zie themes/shared.tsx (useRsvpFormulier).
+  tokenGast?: TokenGast | null
 }) {
   const theme =
     data.theme ??
@@ -102,7 +98,8 @@ export function PublicWebsiteV2({
   const pagina =
     data.pages.find((p) => p.pageSlug === activePageSlug) ?? data.pages[0]
 
-  const ctx: RenderContext = { theme, wedding: data.wedding, schedule: data.schedule, registry, slug }
+  const ctx: RenderContext = { theme, wedding: data.wedding, schedule: data.schedule, registry, slug, tokenGast }
+  const pad = basisPad ?? `/trouwen/${slug}`
 
   const zichtbaar = (pagina?.blocks ?? []).filter((b) => {
     if (!b.zichtbaar) return false
@@ -130,7 +127,7 @@ export function PublicWebsiteV2({
       ? data.pages.map((p) => ({
           key: p.id,
           label: p.titel || 'Home',
-          href: p.pageSlug ? `/trouwen/${slug}/${p.pageSlug}` : `/trouwen/${slug}`,
+          href: p.pageSlug ? `${pad}/${p.pageSlug}` : pad,
           actief: p.pageSlug === (pagina?.pageSlug ?? activePageSlug),
         }))
       : rest

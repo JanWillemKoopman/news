@@ -6,6 +6,7 @@
 
 import type * as React from 'react'
 
+import type { RsvpStatus } from '@/lib/bruiloft/types'
 import type { Block, HeroBlock } from '@/lib/bruiloft/websiteBlocks'
 import type { ThemeTokens } from '@/lib/bruiloft/websiteTheme'
 
@@ -30,12 +31,33 @@ export interface WeddingInfo {
   locatie: string
 }
 
+// Een via naam-zoeken óf via een persoonlijke RSVP-token herkende gast —
+// zelfde vorm in beide gevallen, zie themes/shared.tsx (useRsvpFormulier).
+export interface GevondenGast {
+  voornaam: string
+  achternaam: string
+  rsvpStatus: RsvpStatus
+  dieetwensen: string
+  heeftPartner: boolean
+  partnerNaam: string
+  aantalKinderen: number
+}
+
+// Aanwezig wanneer de bezoeker via een persoonlijke /rsvp/[token]-link
+// binnenkwam: het RSVP-blok slaat dan de zoekstap over en start meteen
+// gepersonaliseerd, bevestigend via die token i.p.v. naam-matching.
+export interface TokenGast {
+  token: string
+  gast: GevondenGast
+}
+
 export interface RenderContext {
   theme: ThemeTokens
   wedding: WeddingInfo
   schedule: ScheduleRegel[]
   registry?: RegistryMeta | null
   slug?: string
+  tokenGast?: TokenGast | null
 }
 
 // Alle blokken behalve de hero — de hero heeft een eigen renderer.

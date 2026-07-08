@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Download, Link2, Pencil, Plus, Search, Send, Sparkles, Tags, Trash2, Users, UtensilsCrossed } from 'lucide-react'
+import { ChevronsUpDown, Download, Pencil, Plus, Search, Send, Sparkles, Tags, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
@@ -132,7 +132,6 @@ export default function GastenPage() {
   const addGuest = useBruiloftStore((s) => s.addGuest)
   const updateGuest = useBruiloftStore((s) => s.updateGuest)
   const deleteGuest = useBruiloftStore((s) => s.deleteGuest)
-  const ensureRsvpCodes = useBruiloftStore((s) => s.ensureRsvpCodes)
   const permissions = useBruiloftStore((s) => s.permissions)
   const { toast } = useToast()
 
@@ -179,23 +178,7 @@ export default function GastenPage() {
     [guests, gasttypeCategorieen]
   )
 
-  // Zorg dat alle gasten een RSVP-code hebben zodra de pagina geladen is.
-  React.useEffect(() => {
-    if (wedding) void ensureRsvpCodes()
-    // ensureRsvpCodes is een stabiele store-referentie
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wedding?.id])
-
   if (!wedding) return null
-
-  const genereerLinks = async () => {
-    try {
-      await ensureRsvpCodes()
-      toast({ title: 'RSVP-links gereed', description: 'Alle gasten hebben nu een persoonlijke RSVP-link.', variant: 'success' })
-    } catch {
-      toast({ title: 'Genereren mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
-    }
-  }
 
   const updateRsvp = async (g: Guest, status: RsvpStatus) => {
     try {
@@ -309,14 +292,6 @@ export default function GastenPage() {
         meerActies={[
           ...(kanBewerken
             ? [{ label: 'Bulk import', icon: Sparkles, onClick: () => setBulkOpen(true) }]
-            : []),
-          ...(kanBewerken
-            ? [{
-                label: 'Genereer RSVP-links',
-                icon: Link2,
-                onClick: genereerLinks,
-                disabled: guests.length === 0,
-              }]
             : []),
           ...(kanBewerken
             ? [{ label: 'Gasttypes beheren', icon: Tags, onClick: () => setTypeManageOpen(true) }]

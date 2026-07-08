@@ -4,6 +4,8 @@
 // zes thema's heeft een eigen layout, componentstructuur en bewegingstaal
 // (zie components/website/v2/themes/README.md).
 
+import type { CSSProperties } from 'react'
+
 import type { WeddingLettertype, WeddingThema } from './types'
 
 export type OrnamentStijl = 'geen' | 'diamant' | 'blad' | 'ster'
@@ -195,6 +197,23 @@ export const HOEK_RADIUS: Record<HoekStijl, string> = {
   scherp: '0px',
   zacht: '14px',
   rond: '26px',
+}
+
+// Theme-tokens → CSS custom properties. Gebruikt door PublicWebsiteV2 — de
+// publieke trouwwebsite én de persoonlijke RSVP-link renderen beide dezelfde
+// component (zie app/rsvp/[token]/[[...pagina]]/page.tsx), dus is er geen
+// aparte plek meer die dit los zou moeten toepassen.
+export function themeCssVars(theme: ThemeTokens): CSSProperties {
+  return {
+    '--primary': hexNaarHsl(theme.kleuren.accent),
+    '--primary-foreground': '0 0% 100%',
+    '--site-bg': theme.kleuren.achtergrond,
+    '--site-card': theme.kleuren.kaart,
+    '--site-text': theme.kleuren.tekst,
+    '--site-muted': theme.kleuren.gedempt,
+    '--site-radius': HOEK_RADIUS[theme.hoeken],
+    '--heading-font': LETTERTYPE_CSS_VAR[theme.kopLettertype],
+  } as CSSProperties
 }
 
 export function hexNaarHsl(hex: string): string {

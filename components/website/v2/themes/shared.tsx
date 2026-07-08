@@ -12,7 +12,7 @@ import type { GallerijFoto, RsvpStatus } from '@/lib/bruiloft/types'
 import type { BlockBreedte, BlockLayout, BlockUitlijning } from '@/lib/bruiloft/websiteBlocks'
 import { PREVIEW_VH_CSS_VAR, type ThemeTokens } from '@/lib/bruiloft/websiteTheme'
 
-import type { WeddingInfo } from './types'
+import type { GevondenGast, RenderContext, WeddingInfo } from './types'
 
 // Kopstijl volgens de gebruikers-tokens (lettertype + cursief).
 export function kopStijl(theme: ThemeTokens, extra?: React.CSSProperties): React.CSSProperties {
@@ -90,20 +90,17 @@ export function naarEmbedUrl(url: string): string | null {
 }
 
 // ─── RSVP: zelf opzoeken + bevestigen (headless) ─────────────────────────────
-// Gast zoekt zichzelf op (voornaam + achternaam) via de rate-limited
-// /api/rsvp/zoek-route en bevestigt via /api/rsvp/bevestig — nooit een
-// rsvp_token in de browser. Dit contract staat hier één keer; de zes
-// thema's bouwen er hun eigen formulier-markup omheen.
-
-export interface GevondenGast {
-  voornaam: string
-  achternaam: string
-  rsvpStatus: RsvpStatus
-  dieetwensen: string
-  heeftPartner: boolean
-  partnerNaam: string
-  aantalKinderen: number
-}
+// Twee manieren om als gast herkend te worden, met hetzelfde formulier erna:
+// (1) zelf opzoeken op voornaam + achternaam via de rate-limited
+//     /api/rsvp/zoek + /api/rsvp/bevestig — nooit een rsvp_token in de
+//     browser; of
+// (2) een persoonlijke /rsvp/[token]-link: de gast is dan al herkend vóór
+//     de pagina rendert (ctx.tokenGast, server-side opgezocht), de
+//     zoekstap wordt overgeslagen en bevestigen gaat via
+//     /api/rsvp/token-bevestig (matcht op token, geen naam-ambiguïteit
+//     mogelijk).
+// Dit contract staat hier één keer; de zes thema's bouwen er hun eigen
+// formulier-markup omheen.
 
 export type ZoekStatus = 'idle' | 'zoeken' | 'niet-gevonden' | 'meerdere' | 'te-veel-pogingen'
 
@@ -152,18 +149,24 @@ export interface RsvpFormulier {
   bevestig: RsvpBevestigState | null
 }
 
-export function useRsvpFormulier(slug?: string): RsvpFormulier {
-  const [voornaam, setVoornaam] = React.useState('')
-  const [achternaam, setAchternaam] = React.useState('')
-  const [zoekStatus, setZoekStatus] = React.useState<ZoekStatus>('idle')
-  const [gast, setGast] = React.useState<GevondenGast | null>(null)
+export function useRsvpFormulier(ctx: RenderContext): RsvpFormulier {
+  const { slug, tokenGast } = ctx
+  const initieleGast = tokenGast?.gast ?? null
 
-  // Wordt overschreven met gast.rsvpStatus zodra de gast gevonden is.
-  const [keuze, setKeuze] = React.useState<RsvpStatus>('uitgenodigd')
-  const [dieet, setDieet] = React.useState('')
-  const [heeftPartner, setHeeftPartner] = React.useState(false)
-  const [partnerNaam, setPartnerNaam] = React.useState('')
-  const [kinderen, setKinderen] = React.useState(0)
+  // Bij een persoonlijke link is de gast al herkend vóór de eerste render
+  // (server-side opgezocht via resolve_rsvp_guest) — deze lazy initializers
+  // starten het formulier dan meteen in de bevestig-fase, pre-filled. Bij
+  // naam-zoeken (geen tokenGast) starten alle velden leeg, zoals voorheen.
+  const [voornaam, setVoornaam] = React.useState(initieleGast?.voornaam ?? '')
+  const [achternaam, setAchternaam] = React.useState(initieleGast?.achternaam ?? '')
+  const [zoekStatus, setZoekStatus] = React.useState<ZoekStatus>('idle')
+  const [gast, setGast] = React.useState<GevondenGast | null>(initieleGast)
+
+  const [keuze, setKeuze] = React.useState<RsvpStatus>(initieleGast?.rsvpStatus ?? 'uitgenodigd')
+  const [dieet, setDieet] = React.useState(initieleGast?.dieetwensen ?? '')
+  const [heeftPartner, setHeeftPartner] = React.useState(initieleGast?.heeftPartner ?? false)
+  const [partnerNaam, setPartnerNaam] = React.useState(initieleGast?.partnerNaam ?? '')
+  const [kinderen, setKinderen] = React.useState(initieleGast?.aantalKinderen ?? 0)
   const [bezig, setBezig] = React.useState(false)
   const [opgeslagen, setOpgeslagen] = React.useState(false)
   const [fout, setFout] = React.useState('')
@@ -203,26 +206,31 @@ export function useRsvpFormulier(slug?: string): RsvpFormulier {
 
   async function bevestigSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!slug) return
+    if (!tokenGast && !slug) return
     setBezig(true)
     setFout('')
     try {
-      const res = await fetch('/api/rsvp/bevestig', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
-          voornaam,
-          achternaam,
-          payload: {
-            rsvpStatus: keuze,
-            dieetwensen: dieet,
-            heeftPartner,
-            partnerNaam: heeftPartner ? partnerNaam : '',
-            aantalKinderen: Number(kinderen) || 0,
-          },
-        }),
-      })
+      const payload = {
+        rsvpStatus: keuze,
+        dieetwensen: dieet,
+        heeftPartner,
+        partnerNaam: heeftPartner ? partnerNaam : '',
+        aantalKinderen: Number(kinderen) || 0,
+      }
+      // Via een persoonlijke link is de token zelf al de eenduidige
+      // identiteit (geen kans op naam-ambiguïteit) — anders zoals voorheen
+      // op slug + de ingevoerde naam.
+      const res = tokenGast
+        ? await fetch('/api/rsvp/token-bevestig', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: tokenGast.token, payload }),
+          })
+        : await fetch('/api/rsvp/bevestig', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug, voornaam, achternaam, payload }),
+          })
       if (!res.ok) {
         setFout('Er ging iets mis bij het opslaan. Probeer het later opnieuw.')
         return

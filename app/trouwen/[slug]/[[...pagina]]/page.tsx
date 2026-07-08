@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
-import { PublicWebsite, type PublicWebsiteData } from '@/components/website/PublicWebsite'
+import { PublicWebsite } from '@/components/website/PublicWebsite'
 import { SiteWachtwoordGate, type SiteLockMeta } from '@/components/website/SiteWachtwoordGate'
-import { PublicWebsiteV2, type PublicWebsiteV2Data } from '@/components/website/v2/PublicWebsiteV2'
+import { PublicWebsiteV2 } from '@/components/website/v2/PublicWebsiteV2'
 import { cookieNaamVoor, verifieerOntgrendelCookie } from '@/lib/crypto/siteUnlockCookie'
+import { getSiteData, pageSlugVan, type SiteResult } from '@/lib/bruiloft/publicSite'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
 // Lichte, publieke metadata (namen + thema, nooit inhoud) — bepaalt of het
 // wachtwoordscherm getoond moet worden vóórdat de echte inhoud ooit wordt
@@ -23,66 +23,6 @@ function isOntgrendeld(meta: SiteLockMeta): boolean {
   if (!meta.sitePasswordVereist) return true
   const waarde = cookies().get(cookieNaamVoor(meta.weddingId))?.value
   return verifieerOntgrendelCookie(waarde, meta.weddingId)
-}
-
-async function getRegistryMeta(slug: string): Promise<{ enabled: boolean; passwordRequired: boolean; introText: string } | null> {
-  try {
-    const admin = createAdminClient()
-    const rawAdmin = createRawAdminClient()
-
-    const { data: content } = await admin
-      .from('website_content')
-      .select('wedding_id')
-      .eq('slug', slug)
-      .maybeSingle()
-    if (!content) return null
-
-    const { data: settings } = await rawAdmin
-      .from('registry_settings')
-      .select('is_enabled, password, intro_text')
-      .eq('wedding_id', content.wedding_id)
-      .maybeSingle()
-
-    if (!settings) return null
-
-    return {
-      enabled: !!(settings.is_enabled),
-      passwordRequired: !!(settings.password),
-      introText: (settings.intro_text as string) ?? '',
-    }
-  } catch {
-    return null
-  }
-}
-
-interface SiteResult {
-  registry: { enabled: boolean; passwordRequired: boolean; introText: string } | null
-  // v2 (blokkenmodel) heeft voorrang; v1 is het legacy-pad voor sites die
-  // nog niet naar blokken zijn geconverteerd (v1 kent geen sub-pagina's).
-  v2: PublicWebsiteV2Data | null
-  v1: PublicWebsiteData | null
-}
-
-async function getData(slug: string): Promise<SiteResult | null> {
-  const supabase = createClient()
-  const [v2Res, v1Res, registry] = await Promise.all([
-    supabase.rpc('get_public_website_v2', { p_slug: slug }),
-    supabase.rpc('get_public_website', { p_slug: slug }),
-    getRegistryMeta(slug),
-  ])
-  const v2 = !v2Res.error && v2Res.data ? (v2Res.data as unknown as PublicWebsiteV2Data) : null
-  const v1 = !v1Res.error && v1Res.data ? (v1Res.data as unknown as PublicWebsiteData) : null
-  if (!v2 && !v1) return null
-  return { v2, v1, registry }
-}
-
-// `params.pagina` is 0 of 1 segment (optionele catch-all): [] = home,
-// ['programma'] = de pagina met page_slug 'programma'. Meer dan 1 segment
-// bestaat niet in dit model.
-function pageSlugVan(pagina: string[] | undefined): string | null {
-  if (!pagina || pagina.length === 0) return ''
-  if (pagina.length === 1) return pagina[0]
-  return null
 }
 
 // Handmatige SEO-omschrijving (ingesteld in de editor) heeft voorrang;
@@ -135,7 +75,7 @@ export async function generateMetadata({
     }
   }
 
-  const result = await getData(params.slug)
+  const result = await getSiteData(params.slug)
   if (!result) return { title: 'Trouwwebsite' }
   const pageSlug = pageSlugVan(params.pagina) ?? ''
   const wedding = result.v2?.wedding ?? result.v1!.wedding
@@ -171,7 +111,7 @@ export default async function TrouwWebsitePage({
     return <SiteWachtwoordGate slug={params.slug} meta={meta} />
   }
 
-  const result = await getData(params.slug)
+  const result = await getSiteData(params.slug)
   if (!result) notFound()
 
   if (result.v2) {
