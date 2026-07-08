@@ -109,10 +109,12 @@ function WeddingSetup({
   partner1Naam,
   partner2Naam,
   trouwdatum,
+  onBack,
 }: {
   partner1Naam: string
   partner2Naam: string
   trouwdatum: string | null
+  onBack: () => void
 }) {
   const setupWedding = useBruiloftStore((s) => s.setupWedding)
   const router = useRouter()
@@ -123,35 +125,18 @@ function WeddingSetup({
   const [customBudget, setCustomBudget] = React.useState('')
   const [gasten, setGasten] = React.useState('')
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<Partial<Record<VoortgangCategorie, VoortgangStatus>>>(DEFAULT_GEREGELDE_ZAKEN)
-  const [nietNodig, setNietNodig] = React.useState<Set<VoortgangCategorie>>(new Set())
   const [maakBudget, setMaakBudget] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus | 'niet_van_toepassing') {
-    if (status === 'niet_van_toepassing') {
-      setNietNodig((prev) => {
-        const next = new Set(prev)
-        if (next.has(key)) {
-          next.delete(key)
-        } else {
-          next.add(key)
-        }
-        return next
-      })
-      setGeregeldeZaken((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    } else {
-      setNietNodig((prev) => {
-        const next = new Set(prev)
-        next.delete(key)
-        return next
-      })
-      setGeregeldeZaken((prev) => ({ ...prev, [key]: status }))
-    }
+  // 'Niet nodig' wordt als volwaardige status opgeslagen (i.p.v. de categorie
+  // te wissen), zodat de takenvoorstellen en budget-kaartjes de keuze later
+  // kunnen respecteren. Nogmaals klikken zet terug op 'Te doen'.
+  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus) {
+    setGeregeldeZaken((prev) => ({
+      ...prev,
+      [key]: status === 'niet_van_toepassing' && prev[key] === 'niet_van_toepassing' ? 'te_doen' : status,
+    }))
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -217,6 +202,14 @@ function WeddingSetup({
 
   return (
     <div className="w-full max-w-sm">
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={saving}
+        className="mb-4 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        ← Terug
+      </button>
       <div className="mb-6">
         <h2 className="font-serif text-[1.75rem] font-medium leading-tight tracking-tight text-gray-900">
           {begroeting}
@@ -304,7 +297,6 @@ function WeddingSetup({
           <div className="overflow-hidden rounded-xl border border-gray-200">
             {VOORTGANG_ITEMS.map(({ key, label }, i) => {
               const current = geregeldeZaken[key]
-              const isNietNodig = nietNodig.has(key)
               return (
                 <div
                   key={key}
@@ -317,7 +309,7 @@ function WeddingSetup({
                       { status: 'te_doen' as const, label: 'Te doen' },
                       { status: 'niet_van_toepassing' as const, label: 'Niet nodig' },
                     ]).map(({ status, label: btnLabel }) => {
-                      const isActive = status === 'niet_van_toepassing' ? isNietNodig : current === status
+                      const isActive = current === status
                       return (
                         <button
                           key={status}
@@ -546,6 +538,22 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
     })
 
     if (signUpError) {
+      const m = signUpError.message.toLowerCase()
+      // "Al geregistreerd" kan betekenen dat de vorige poging half slaagde
+      // (account aangemaakt, maar inloggen mislukte door bijv. een netwerk-
+      // fout). Probeer dan gewoon in te loggen met de ingevulde gegevens;
+      // pas als dát faalt is het echt een bestaand account van iemand anders.
+      if (m.includes('already registered') || m.includes('already been registered')) {
+        const { error: retryError } = await supabase.auth.signInWithPassword({ email, password })
+        if (!retryError) {
+          setLoading(false)
+          setPhase('keuze')
+          return
+        }
+        setError('Er bestaat al een account met dit e-mailadres. Log in, of gebruik "Wachtwoord vergeten" als je het wachtwoord niet meer weet.')
+        setLoading(false)
+        return
+      }
       setError(mapAuthError(signUpError.message))
       setLoading(false)
       return
@@ -570,6 +578,20 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
   }
 
   async function onLeegBeginnen() {
+    // Zelfde idempotentie als de wizard: bestaat er al een trouwplan (tweede
+    // tab, dubbelklik, terugknop), maak er dan geen tweede aan.
+    try {
+      const { count } = await supabase
+        .from('weddings')
+        .select('id', { count: 'exact', head: true })
+      if (count && count > 0) {
+        router.replace('/bruiloft')
+        return
+      }
+    } catch {
+      // Telling mislukt (netwerk): ga door en laat setupWedding de fout afhandelen.
+    }
+
     const input: WeddingInput = {
       partner1Naam: firstName.trim() || 'Partner 1',
       partner2Naam: partnerName.trim() || 'Partner 2',
@@ -733,6 +755,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
               partner1Naam={firstName}
               partner2Naam={partnerName}
               trouwdatum={noDateYet ? null : weddingDate || null}
+              onBack={() => setPhase('keuze')}
             />
           )}
         </div>

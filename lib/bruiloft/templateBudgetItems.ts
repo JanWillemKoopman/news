@@ -31,7 +31,9 @@ export function generateTemplateBudgetItems(wedding: Wedding): BudgetItemInput[]
   const geregeldeZaken = wedding.geregeldeZaken ?? {}
 
   for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
-    if (status === 'geboekt') continue
+    // Geboekt = al geregeld; niet van toepassing = bewust overgeslagen.
+    // In beide gevallen geen budget-kaartje klaarzetten.
+    if (status === 'geboekt' || status === 'niet_van_toepassing') continue
     const mapping = VOORTGANG_BUDGET_ITEMS[cat]
     if (!mapping) continue
     items.push({

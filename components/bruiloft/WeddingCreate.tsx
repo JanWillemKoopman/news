@@ -85,34 +85,20 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
   const [geregeldeZaken, setGeregeldeZaken] = React.useState<
     Partial<Record<VoortgangCategorie, VoortgangStatus>>
   >(DEFAULT_GEREGELDE_ZAKEN)
-  const [nietNodig, setNietNodig] = React.useState<Set<VoortgangCategorie>>(new Set())
   const [maakBudget, setMaakBudget] = React.useState(true)
   const [bezig, setBezig] = React.useState(false)
 
   const canGoNext =
     partner1.trim() !== '' && partner2.trim() !== '' && (noDateYet || trouwdatum !== '')
 
-  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus | 'niet_van_toepassing') {
-    if (status === 'niet_van_toepassing') {
-      setNietNodig((prev) => {
-        const next = new Set(prev)
-        if (next.has(key)) next.delete(key)
-        else next.add(key)
-        return next
-      })
-      setGeregeldeZaken((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    } else {
-      setNietNodig((prev) => {
-        const next = new Set(prev)
-        next.delete(key)
-        return next
-      })
-      setGeregeldeZaken((prev) => ({ ...prev, [key]: status }))
-    }
+  // 'Niet nodig' wordt als volwaardige status opgeslagen (i.p.v. de categorie
+  // te wissen), zodat de takenvoorstellen en budget-kaartjes de keuze later
+  // kunnen respecteren. Nogmaals klikken zet terug op 'Te doen'.
+  function setVoortgang(key: VoortgangCategorie, status: VoortgangStatus) {
+    setGeregeldeZaken((prev) => ({
+      ...prev,
+      [key]: status === 'niet_van_toepassing' && prev[key] === 'niet_van_toepassing' ? 'te_doen' : status,
+    }))
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -126,8 +112,8 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
       locatie: '',
       woonplaats: woonplaats.trim(),
       provincie: afleidProvincie(woonplaats) ?? '',
-      totaalBudget: customBudget ? Number(customBudget) || 0 : budget ?? 0,
-      aantalDaggasten: Number(gasten) || 0,
+      totaalBudget: Math.max(0, customBudget ? Number(customBudget) || 0 : budget ?? 0),
+      aantalDaggasten: Math.max(0, Number(gasten) || 0),
       aantalAvondgasten: 0,
       ceremonietype: null,
       geregeldeZaken,
@@ -376,7 +362,6 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                   <div className="overflow-hidden rounded-xl border border-gray-200">
                     {VOORTGANG_ITEMS.map(({ key, label }, i) => {
                       const current = geregeldeZaken[key]
-                      const isNietNodig = nietNodig.has(key)
                       return (
                         <div
                           key={key}
@@ -394,10 +379,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                                 },
                               ] as const
                             ).map(({ status, label: btnLabel }) => {
-                              const isActive =
-                                status === 'niet_van_toepassing'
-                                  ? isNietNodig
-                                  : current === status
+                              const isActive = current === status
                               return (
                                 <button
                                   key={status}

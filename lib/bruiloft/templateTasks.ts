@@ -688,6 +688,18 @@ const VOORTGANG_TAAK_MAPPING: Record<VoortgangCategorie, string[]> = {
   bloemist: ['Bloemist regelen'],
 }
 
+// Heeft het bruidspaar deze taak expliciet als "niet nodig" gemarkeerd in de
+// wizard? Dan hoort hij niet in de takenlijst en niet in de voorstellen.
+function taakNietVanToepassing(titel: string, wedding: Wedding): boolean {
+  const geregeldeZaken = wedding.geregeldeZaken ?? {}
+  for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
+    if (status === 'niet_van_toepassing' && VOORTGANG_TAAK_MAPPING[cat]?.includes(titel)) {
+      return true
+    }
+  }
+  return false
+}
+
 function statusVoorTaak(
   titel: string,
   wedding: Wedding
@@ -728,17 +740,24 @@ export function generateTemplateTasks(wedding: Wedding): TaskInput[] {
   // minimaal drie weken vanaf vandaag, zodat een nieuw account niet meteen
   // start met "deadline morgen!"-paniek. Taken ná de bruiloft blijven staan.
   const minimumDeadline = addDays(new Date(), 21)
-  return TEMPLATE_TASKS.map((t) => {
-    let deadlineDate =
-      'maanden' in t.offset
-        ? addMonths(wedding.trouwdatum, t.offset.maanden)
-        : addDays(wedding.trouwdatum, t.offset.dagen)
-    const naBruiloft = 'dagen' in t.offset && t.offset.dagen > 0
-    if (!naBruiloft && deadlineDate < minimumDeadline) {
-      const trouwdag = new Date(wedding.trouwdatum)
-      deadlineDate = minimumDeadline < trouwdag ? minimumDeadline : trouwdag
+  // Zonder (geldige) trouwdatum valt er niets t.o.v. de trouwdag te rekenen:
+  // taken krijgen dan geen deadline i.p.v. een ongeldige 'NaN-NaN-NaN'-datum
+  // die de database weigert.
+  const heeftTrouwdatum = !Number.isNaN(new Date(wedding.trouwdatum).getTime())
+  return TEMPLATE_TASKS.filter((t) => !taakNietVanToepassing(t.titel, wedding)).map((t) => {
+    let deadline = ''
+    if (heeftTrouwdatum) {
+      let deadlineDate =
+        'maanden' in t.offset
+          ? addMonths(wedding.trouwdatum, t.offset.maanden)
+          : addDays(wedding.trouwdatum, t.offset.dagen)
+      const naBruiloft = 'dagen' in t.offset && t.offset.dagen > 0
+      if (!naBruiloft && deadlineDate < minimumDeadline) {
+        const trouwdag = new Date(wedding.trouwdatum)
+        deadlineDate = minimumDeadline < trouwdag ? minimumDeadline : trouwdag
+      }
+      deadline = toISODate(deadlineDate)
     }
-    const deadline = toISODate(deadlineDate)
     return {
       weddingId: wedding.id,
       titel: vervangPartnerNamen(t.titel, p1, p2),
