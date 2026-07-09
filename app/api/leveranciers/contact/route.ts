@@ -131,16 +131,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 2. CC/reply-to: eigenaren + planners van deze bruiloft.
+  // 2. Ledenlijst: alleen nog voor de afzendernaam in het berichtencentrum.
+  // Bewust GEEN cc/reply-to meer naar het bruidspaar: alle communicatie loopt
+  // via de reageer-knop (token-link) zodat reacties in het berichtencentrum
+  // landen i.p.v. in privé-mailboxen. De kopie voor het bruidspaar is de
+  // "Verzonden"-map; de e-mail waarschuwt dat een direct antwoord niet aankomt.
   const { data: members } = await supabase.rpc('list_wedding_members', { p_wedding: weddingId })
-  const ccEmails = Array.from(
-    new Set(
-      (members ?? [])
-        .filter((m: { role: string }) => m.role === 'owner' || m.role === 'planner')
-        .map((m: { email: string | null }) => m.email)
-        .filter((email): email is string => Boolean(email))
-    )
-  )
 
   // Afzendernamen voor in de e-mail ("Anna & Tom").
   const { data: weddingRow } = await supabase
@@ -166,7 +162,6 @@ export async function POST(request: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: vendor.email,
-      ...(ccEmails.length > 0 ? { cc: ccEmails, replyTo: ccEmails } : {}),
       subject,
       html,
     })

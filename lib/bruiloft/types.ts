@@ -254,6 +254,15 @@ export interface MessageActie {
   href: string
 }
 
+// Standaard afwijzingsgrond die een leverancier met één klik kan geven op de
+// publieke reactiepagina (alleen bij offerteaanvragen). Opgeslagen in
+// messages.metadata.afwijzingsGrond op het reactiebericht; de leesbare zin
+// staat gewoon in `inhoud` (zinnen boven badges). De leverancier-pipeline
+// (vendor.status) wijzigt hier bewust NIET automatisch door — die blijft
+// gebruikergestuurd; het bericht linkt naar de leverancier zodat de gebruiker
+// de status zelf in één klik kan bijwerken.
+export type AfwijzingsGrond = 'geen_beschikbaarheid' | 'buiten_werkgebied' | 'past_niet_bij_aanbod'
+
 export interface Message {
   id: ID
   weddingId: ID

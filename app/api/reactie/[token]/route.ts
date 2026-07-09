@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import {
+  AFWIJZINGSGROND_KEYS,
+  afwijzingsGrondDef,
+} from '@/lib/bruiloft/berichten/afwijzingsgronden'
+import type { AfwijzingsGrond } from '@/lib/bruiloft/types'
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderVendorReplyEmail } from '@/lib/email/templates'
 import { checkRateLimit } from '@/lib/rateLimit'
@@ -35,7 +40,7 @@ async function vindGesprek(token: string) {
       : Promise.resolve({ data: null }),
     admin
       .from('messages')
-      .select('inhoud, created_at')
+      .select('inhoud, created_at, metadata')
       .eq('parent_message_id', bericht.id)
       .order('created_at', { ascending: true }),
   ])
@@ -45,10 +50,13 @@ async function vindGesprek(token: string) {
     partnerNamen:
       [wedding?.partner1_naam, wedding?.partner2_naam].filter(Boolean).join(' & ') || 'het bruidspaar',
     vendorNaam: (vendor?.naam as string | undefined) ?? '',
-    reacties: (reacties ?? []).map((r: { inhoud: string; created_at: string }) => ({
-      inhoud: r.inhoud,
-      createdAt: r.created_at,
-    })),
+    reacties: (reacties ?? []).map(
+      (r: { inhoud: string; created_at: string; metadata: Record<string, unknown> | null }) => ({
+        inhoud: r.inhoud,
+        createdAt: r.created_at,
+        afwijzingsGrond: (r.metadata?.afwijzingsGrond as AfwijzingsGrond | undefined) ?? null,
+      })
+    ),
   }
 }
 
@@ -71,6 +79,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   // Bewust minimaal: geen ids, e-mailadressen of wedding-gegevens naar buiten.
   return NextResponse.json({
     ok: true,
+    soort: gesprek.bericht.type === 'leverancier_offerte' ? 'offerte' : 'contact',
     onderwerp: gesprek.bericht.onderwerp,
     bericht: gesprek.bericht.inhoud,
     verzondenOp: gesprek.bericht.created_at,
@@ -80,9 +89,16 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   })
 }
 
-const replySchema = z.object({
-  bericht: z.string().trim().min(1, 'Schrijf eerst een bericht.').max(5000),
-})
+// Een reactie is een vrij bericht, een standaard afwijzingsgrond, of beide
+// (grond + persoonlijke toelichting).
+const replySchema = z
+  .object({
+    bericht: z.string().trim().max(5000).optional(),
+    afwijzingsGrond: z.enum(AFWIJZINGSGROND_KEYS).optional(),
+  })
+  .refine((v) => Boolean(v.bericht?.length) || Boolean(v.afwijzingsGrond), {
+    message: 'Schrijf een bericht of kies een reden.',
+  })
 
 export async function POST(request: NextRequest, { params }: { params: { token: string } }) {
   if (!UUID_RE.test(params.token)) {
@@ -106,6 +122,21 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Ongeldige link' }, { status: 404 })
   }
 
+  // Afwijzingsgrond alleen bij offerteaanvragen — bij een contactbericht
+  // bestaat er niets om af te wijzen.
+  const grond =
+    gesprek.bericht.type === 'leverancier_offerte' ? (parsed.data.afwijzingsGrond ?? null) : null
+  const toelichting = parsed.data.bericht?.trim() ?? ''
+  if (!grond && !toelichting) {
+    return NextResponse.json({ error: 'Ongeldige invoer' }, { status: 400 })
+  }
+
+  // Inhoud is altijd leesbare tekst: de standaardzin van de grond, met een
+  // eventuele persoonlijke toelichting als extra alinea eronder.
+  const inhoud = grond
+    ? [afwijzingsGrondDef(grond).zin, toelichting].filter(Boolean).join('\n\n')
+    : toelichting
+
   const admin = createRawAdminClient()
   const { error } = await admin.from('messages').insert({
     wedding_id: gesprek.bericht.wedding_id,
@@ -113,11 +144,12 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     type: 'leverancier_reactie',
     vendor_id: gesprek.bericht.vendor_id,
     onderwerp: `Re: ${gesprek.bericht.onderwerp}`,
-    inhoud: parsed.data.bericht,
+    inhoud,
     afzender_naam: gesprek.vendorNaam || 'Leverancier',
     afzender_type: 'leverancier',
     status: 'verzonden',
     parent_message_id: gesprek.bericht.id,
+    ...(grond ? { metadata: { afwijzingsGrond: grond } } : {}),
   })
   if (error) {
     console.error('[reactie] Insert mislukt:', error)
@@ -127,7 +159,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
   // Best-effort e-mailnotificatie aan eigenaren + planners: de reactie staat
   // al in het berichtencentrum (realtime), dus een mislukte mail mag de
   // leverancier geen foutmelding geven.
-  await stuurReactieNotificatie(gesprek, parsed.data.bericht).catch((err) =>
+  await stuurReactieNotificatie(gesprek, inhoud).catch((err) =>
     console.error('[reactie] Notificatie-mail mislukt:', err)
   )
 

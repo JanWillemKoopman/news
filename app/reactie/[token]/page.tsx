@@ -3,26 +3,34 @@
 import * as React from 'react'
 import { CheckCircle2, MailX } from 'lucide-react'
 
+import { AFWIJZINGSGRONDEN } from '@/lib/bruiloft/berichten/afwijzingsgronden'
 import { formatDatumNL } from '@/lib/bruiloft/format'
+import type { AfwijzingsGrond } from '@/lib/bruiloft/types'
+import { cn } from '@/lib/utils'
 
 // Publieke reactiepagina voor leveranciers: bereikbaar via de token-link in de
 // offerte-/contact-e-mail, zonder account of login (zelfde model als de
 // persoonlijke RSVP-links). Bewust een kale, rustige pagina in de huisstijl:
-// één taak (reageren), geen navigatie naar de rest van de app.
+// één taak (reageren), geen navigatie naar de rest van de app. Bij een
+// offerteaanvraag kan de leverancier ook met één klik een standaard
+// afwijzingsgrond kiezen (bv. geen plek op de datum), met optionele
+// persoonlijke toelichting.
 
 interface Gesprek {
+  soort: 'offerte' | 'contact'
   onderwerp: string
   bericht: string
   verzondenOp: string
   partnerNamen: string
   vendorNaam: string
-  reacties: { inhoud: string; createdAt: string }[]
+  reacties: { inhoud: string; createdAt: string; afwijzingsGrond: AfwijzingsGrond | null }[]
 }
 
 export default function ReactiePage({ params }: { params: { token: string } }) {
   const [gesprek, setGesprek] = React.useState<Gesprek | null>(null)
   const [laadstatus, setLaadstatus] = React.useState<'laden' | 'ok' | 'ongeldig'>('laden')
   const [reactie, setReactie] = React.useState('')
+  const [grond, setGrond] = React.useState<AfwijzingsGrond | null>(null)
   const [verzendt, setVerzendt] = React.useState(false)
   const [verzonden, setVerzonden] = React.useState(false)
   const [fout, setFout] = React.useState<string | null>(null)
@@ -45,16 +53,24 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
     }
   }, [params.token])
 
+  const gekozenGrond = grond ? AFWIJZINGSGRONDEN.find((g) => g.key === grond) : null
+  // Al eerder afgewezen? Dan de snelkeuzes niet nóg een keer aanbieden.
+  const alAfgewezen = gesprek?.reacties.some((r) => r.afwijzingsGrond) ?? false
+  const kanVersturen = Boolean(grond) || reactie.trim().length > 0
+
   const versturen = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!reactie.trim() || verzendt) return
+    if (!kanVersturen || verzendt) return
     setVerzendt(true)
     setFout(null)
     try {
       const res = await fetch(`/api/reactie/${params.token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bericht: reactie }),
+        body: JSON.stringify({
+          ...(reactie.trim() ? { bericht: reactie } : {}),
+          ...(grond ? { afwijzingsGrond: grond } : {}),
+        }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -128,16 +144,59 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
               </div>
             ) : (
               <form onSubmit={versturen} className="ml-4 rounded-xl border border-border bg-white p-6 shadow-sm sm:ml-8">
+                {/* Snelkeuze: standaard afwijzingsgronden, alleen bij een
+                    offerteaanvraag die nog niet eerder is afgewezen. */}
+                {gesprek.soort === 'offerte' && !alAfgewezen ? (
+                  <div className="mb-5">
+                    <p className="text-sm font-medium text-foreground">Snel reageren</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {AFWIJZINGSGRONDEN.map((g) => {
+                        const actief = grond === g.key
+                        return (
+                          <button
+                            key={g.key}
+                            type="button"
+                            aria-pressed={actief}
+                            onClick={() => setGrond(actief ? null : g.key)}
+                            className={cn(
+                              'rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500',
+                              actief
+                                ? 'border-rose-600 bg-rose-600 text-white'
+                                : 'border-border bg-white text-foreground hover:border-rose-300'
+                            )}
+                          >
+                            {g.knopLabel}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {gekozenGrond ? (
+                      <p className="mt-3 rounded-md bg-accent/50 px-3 py-2 text-sm text-muted-foreground">
+                        Dit bericht gaat naar {gesprek.partnerNamen}:
+                        <span className="mt-1 block whitespace-pre-wrap text-foreground">
+                          &ldquo;{gekozenGrond.zin}&rdquo;
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 <label htmlFor="reactie" className="block text-sm font-medium text-foreground">
-                  Jouw reactie aan {gesprek.partnerNamen}
+                  {gekozenGrond
+                    ? 'Persoonlijke toelichting (optioneel)'
+                    : `Jouw reactie aan ${gesprek.partnerNamen}`}
                 </label>
                 <textarea
                   id="reactie"
-                  rows={6}
+                  rows={gekozenGrond ? 3 : 6}
                   maxLength={5000}
                   value={reactie}
                   onChange={(e) => setReactie(e.target.value)}
-                  placeholder="Schrijf hier je reactie…"
+                  placeholder={
+                    gekozenGrond
+                      ? 'Bijvoorbeeld: rond die periode zitten we helemaal vol…'
+                      : 'Schrijf hier je reactie…'
+                  }
                   className="mt-2 w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                 />
                 {fout ? <p className="mt-2 text-sm text-rose-600">{fout}</p> : null}
@@ -147,7 +206,7 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
                   </p>
                   <button
                     type="submit"
-                    disabled={!reactie.trim() || verzendt}
+                    disabled={!kanVersturen || verzendt}
                     className="shrink-0 rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {verzendt ? 'Versturen…' : 'Reactie versturen'}

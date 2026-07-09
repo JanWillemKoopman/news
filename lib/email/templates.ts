@@ -188,15 +188,23 @@ export function renderVendorContactEmail(p: VendorContactEmailProps): { subject:
       ? `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'vragen' : 'vraagt'} via Ons Trouwplan een offerte bij je aan.`
       : `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'sturen' : 'stuurt'} je een bericht via Ons Trouwplan.`
 
+  const snelreactieHint =
+    p.type === 'offerte'
+      ? ' Geen plek op de gewenste datum? Ook dat laat je daar met één klik weten.'
+      : ''
   const reageerBlok = p.replyUrl
     ? `${ctaKnop(p.replyUrl, 'Reageer op dit bericht')}
     <p style="margin:0 0 8px;font-size:13px;color:#a8a29e;line-height:1.6;">
       Reageren kan direct online — je hebt geen account nodig. Je reactie komt
-      rechtstreeks in het trouwplan van ${escapeHtml(p.afzenderNamen)} terecht.
+      rechtstreeks in het trouwplan van ${escapeHtml(p.afzenderNamen)} terecht.${snelreactieHint}
     </p>
-    <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
+    <p style="margin:0 0 16px;font-size:12px;color:#a8a29e;word-break:break-all;">
       Of kopieer deze link handmatig:<br />
       <a href="${p.replyUrl}" style="color:#be123c;">${p.replyUrl}</a>
+    </p>
+    <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+      <strong>Let op:</strong> een antwoord op deze e-mail komt niet bij
+      ${escapeHtml(p.afzenderNamen)} aan — gebruik de knop hierboven.
     </p>`
     : ''
 
