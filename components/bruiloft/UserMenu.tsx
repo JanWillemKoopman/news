@@ -117,7 +117,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
           />
         ) : (
           <CircleUserRound
-            className={cn('h-8 w-8', dark ? 'text-white' : 'text-muted-foreground')}
+            className={cn('h-5 w-5', dark ? 'text-white' : 'text-muted-foreground')}
             strokeWidth={1.5}
             aria-hidden
           />
