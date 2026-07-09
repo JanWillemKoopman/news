@@ -192,7 +192,7 @@ function SeatRow({
       style={style}
       className={cn(
         'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm',
-        overflow ? 'text-rose-600 dark:text-rose-400' : 'text-foreground',
+        overflow ? 'text-rose-600' : 'text-foreground',
         isDragging && 'opacity-60'
       )}
     >
@@ -280,7 +280,7 @@ function TableCard({
   const seats = seatsForTable(table.capaciteit, gasten)
 
   return (
-    <Card ref={setNodeRef} className={cn('p-4', isOver && 'ring-2 ring-primary', vol && 'border-rose-300 dark:border-rose-900')}>
+    <Card ref={setNodeRef} className={cn('p-4', isOver && 'ring-2 ring-primary', vol && 'border-rose-300')}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <p className="font-medium text-foreground">{table.naam}</p>
@@ -291,7 +291,7 @@ function TableCard({
             className={cn(
               'rounded-full px-2 py-0.5 text-xs font-semibold',
               vol
-                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+                ? 'bg-rose-100 text-rose-800'
                 : 'bg-secondary text-secondary-foreground'
             )}
           >
@@ -311,7 +311,7 @@ function TableCard({
       </div>
 
       {vol ? (
-        <p className="mb-2 inline-flex items-center gap-1 text-xs text-rose-700 dark:text-rose-400">
+        <p className="mb-2 inline-flex items-center gap-1 text-xs text-rose-700">
           <AlertTriangle className="h-3 w-3" /> meer gasten dan stoelen
         </p>
       ) : null}

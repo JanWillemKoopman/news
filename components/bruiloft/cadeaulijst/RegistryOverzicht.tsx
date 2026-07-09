@@ -77,9 +77,9 @@ export function RegistryOverzicht({ isEditor }: Props) {
     <div className="space-y-8">
       {/* Grand total */}
       {totalConfirmed > 0 && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-4">
-          <p className="text-sm text-green-700">Totaal bevestigd ontvangen</p>
-          <p className="mt-0.5 text-2xl font-bold text-green-800">
+        <div className="rounded-xl border border-emerald-600/20 bg-emerald-500/10 px-5 py-4">
+          <p className="text-sm text-emerald-700">Totaal bevestigd ontvangen</p>
+          <p className="mt-0.5 text-2xl font-bold text-emerald-800">
             {formatEuro(totalConfirmed / 100, { cents: true })}
           </p>
         </div>
@@ -196,8 +196,8 @@ export function RegistryOverzicht({ isEditor }: Props) {
                     <div key={item.id} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{item.title}:</span>
                       <span>
-                        <span className="font-medium text-green-700">{formatEuro(confirmed / 100, { cents: true })}</span>
-                        {pending > 0 && <span className="ml-2 text-amber-600">+ {formatEuro(pending / 100, { cents: true })} in behandeling</span>}
+                        <span className="font-medium text-emerald-700">{formatEuro(confirmed / 100, { cents: true })}</span>
+                        {pending > 0 && <span className="ml-2 text-muted-foreground">+ {formatEuro(pending / 100, { cents: true })} in behandeling</span>}
                       </span>
                     </div>
                   )

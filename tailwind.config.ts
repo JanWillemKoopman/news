@@ -9,11 +9,8 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      fontSize: {
-        '2xl': '1rem',
-      },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-sans)', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['var(--font-serif)', '"Cormorant Garamond"', 'Georgia', 'Cambria', 'serif'],
       },
       colors: {
@@ -25,6 +22,7 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          hover: 'hsl(var(--primary-hover))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',

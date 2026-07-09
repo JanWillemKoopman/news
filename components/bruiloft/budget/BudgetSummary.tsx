@@ -88,7 +88,7 @@ export function BudgetSummary({ items, vendors, wedding, onEditTotaalBudget }: B
           <StatNum label="geschat" bedrag={totalen.totaalGeschat} />
           <StatNum label="nog te betalen" bedrag={nogTeBetalen} />
           {overBudget ? (
-            <StatNum label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+            <StatNum label="boven budget" bedrag={overBudgetBedrag} kleur="rose" />
           ) : (
             <StatNum label="budget over" bedrag={totalen.resterendBudget} kleur="groen" />
           )}
@@ -100,7 +100,7 @@ export function BudgetSummary({ items, vendors, wedding, onEditTotaalBudget }: B
         <StatNumMobile label="geschat" bedrag={totalen.totaalGeschat} />
         <StatNumMobile label="nog te betalen" bedrag={nogTeBetalen} />
         {overBudget ? (
-          <StatNumMobile label="boven budget" bedrag={overBudgetBedrag} kleur="amber" />
+          <StatNumMobile label="boven budget" bedrag={overBudgetBedrag} kleur="rose" />
         ) : (
           <StatNumMobile label="budget over" bedrag={totalen.resterendBudget} kleur="groen" />
         )}
@@ -116,7 +116,7 @@ function StatNum({
 }: {
   label: string
   bedrag: number
-  kleur?: 'amber' | 'groen'
+  kleur?: 'rose' | 'groen'
 }) {
   return (
     <div className="px-5 text-center">
@@ -124,8 +124,8 @@ function StatNum({
         bedrag={bedrag}
         className={cn(
           'text-2xl font-bold tabular-nums',
-          kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
-          kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
+          kleur === 'rose' && 'text-rose-600',
+          kleur === 'groen' && 'text-emerald-600',
           !kleur && 'text-foreground'
         )}
       />
@@ -141,7 +141,7 @@ function StatNumMobile({
 }: {
   label: string
   bedrag: number
-  kleur?: 'amber' | 'groen'
+  kleur?: 'rose' | 'groen'
 }) {
   return (
     <div className="flex-1 py-2.5 text-center">
@@ -149,8 +149,8 @@ function StatNumMobile({
         bedrag={bedrag}
         className={cn(
           'text-lg font-bold tabular-nums',
-          kleur === 'amber' && 'text-amber-600 dark:text-amber-400',
-          kleur === 'groen' && 'text-emerald-600 dark:text-emerald-400',
+          kleur === 'rose' && 'text-rose-600',
+          kleur === 'groen' && 'text-emerald-600',
           !kleur && 'text-foreground'
         )}
       />

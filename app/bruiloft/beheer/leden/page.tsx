@@ -153,7 +153,7 @@ export default function SamenPlannenPage() {
                   <div className="flex items-center gap-2">
                     {!isSelf && statuses[m.user_id]?.activated === false ? (
                       <>
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-medium text-rose-700">
                           Nog niet geactiveerd
                         </span>
                         <Button

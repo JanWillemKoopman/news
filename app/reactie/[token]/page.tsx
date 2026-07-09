@@ -161,7 +161,7 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
                             className={cn(
                               'rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500',
                               actief
-                                ? 'border-rose-600 bg-rose-600 text-white'
+                                ? 'border-primary bg-primary text-white'
                                 : 'border-border bg-white text-foreground hover:border-rose-300'
                             )}
                           >
@@ -207,7 +207,7 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
                   <button
                     type="submit"
                     disabled={!kanVersturen || verzendt}
-                    className="shrink-0 rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {verzendt ? 'Versturen…' : 'Reactie versturen'}
                   </button>

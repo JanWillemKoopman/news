@@ -6,6 +6,8 @@ import * as React from 'react'
 
 import { createClient } from '@supabase/supabase-js'
 
+import { Button } from '@/components/bruiloft/ui'
+
 import { mapAuthError } from './authErrors'
 
 export function ForgotPasswordForm() {
@@ -104,7 +106,7 @@ export function ForgotPasswordForm() {
               </div>
 
               {linkVerlopen && (
-                <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <div className="mb-4 rounded-md border border-rose-600/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700">
                   Je herstelLink is verlopen of al gebruikt. Vraag hieronder een nieuwe aan.
                 </div>
               )}
@@ -126,18 +128,14 @@ export function ForgotPasswordForm() {
                 </div>
 
                 {error ? (
-                  <p className="text-sm font-medium text-red-600" role="alert">
+                  <p className="text-sm font-medium text-destructive" role="alert">
                     {error}
                   </p>
                 ) : null}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Even geduld…' : 'Stuur herstellink'}
-                </button>
+                <Button type="submit" loading={loading} className="w-full">
+                  Stuur herstellink
+                </Button>
               </form>
 
               <p className="mt-5 text-center text-sm text-gray-500">

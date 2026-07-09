@@ -90,10 +90,10 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
         aria-expanded={open}
         onClick={() => setOpen((p) => !p)}
         className={cn(
-          'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+          'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
           open
-            ? 'border-border bg-accent text-foreground'
-            : 'border-input bg-background text-foreground hover:bg-accent'
+            ? 'border-foreground/20 bg-muted text-foreground'
+            : 'border-input bg-background text-foreground hover:bg-muted'
         )}
       >
         <MoreHorizontal className="h-4 w-4" />
@@ -120,8 +120,8 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
                   className={cn(
                     'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
                     item.danger
-                      ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                      : 'text-foreground hover:bg-accent'
+                      ? 'text-rose-600 hover:bg-rose-50'
+                      : 'text-foreground hover:bg-muted'
                   )}
                 >
                   {item.icon ? (

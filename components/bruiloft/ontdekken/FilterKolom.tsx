@@ -1,9 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { SlidersHorizontal, Search } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 
-import { Button, Field, Input, Modal, Select } from '@/components/bruiloft/ui'
+import { Button, Checkbox, Field, Modal, SearchInput, Select } from '@/components/bruiloft/ui'
 import type { OntdekCategorieConfig } from '@/lib/bruiloft/discovery/categorieConfig'
 
 export type OntdekSort = 'afstand' | 'naam'
@@ -44,24 +44,20 @@ function FilterVelden({ filters, onChange, config, idPrefix }: FilterVeldenProps
   return (
     <div className="space-y-5">
       <Field label="Zoeken" htmlFor={`${idPrefix}-zoek`}>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id={`${idPrefix}-zoek`}
-            value={filters.q}
-            onChange={(e) => set('q', e.target.value)}
-            placeholder="Naam of trefwoord…"
-            className="bg-background pl-9"
-          />
-        </div>
+        <SearchInput
+          id={`${idPrefix}-zoek`}
+          value={filters.q}
+          onValueChange={(v) => set('q', v)}
+          placeholder="Naam of trefwoord…"
+          className="bg-background"
+        />
       </Field>
 
       <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={filters.alleenMail}
           onChange={(e) => set('alleenMail', e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-primary"
+          className="mt-0.5"
         />
         <span>
           Direct offerte aan te vragen
@@ -129,7 +125,7 @@ export function MobieleFilterKnop({
         <SlidersHorizontal className="h-4 w-4" />
         Filters
         {actief > 0 ? (
-          <span className="rounded-full bg-primary/10 px-1.5 text-xs font-medium text-primary">
+          <span className="rounded-full bg-foreground px-1.5 py-0.5 text-xs font-semibold text-background">
             {actief}
           </span>
         ) : null}

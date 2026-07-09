@@ -51,7 +51,7 @@ export function Routekaart({ route }: RoutekaartProps) {
                   {FASE_LABEL[fase.tijdsblok] ?? fase.tijdsblok}
                 </span>
                 {fase.isHuidig && (
-                  <span className="inline-flex items-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  <span className="inline-flex items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     Nu
                   </span>
                 )}

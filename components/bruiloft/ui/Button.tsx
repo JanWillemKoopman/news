@@ -6,19 +6,20 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Riley & Grey-stijl knoppen: vlakke dusty-rose primaire knop met lichte
-// hover-schaling, krapte typografie en `rounded-md` (6px) hoeken. Outline en
-// ghost-varianten houden zich in en gebruiken de standaard tekstkleuren.
+// hover-schaling, krappe typografie en `rounded-md` (6px) hoeken. Outline en
+// ghost-varianten houden zich in: neutrale tekstkleuren en een grijze
+// (bg-muted) hover — kleur blijft voorbehouden aan de primaire actie.
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-[transform,color,background-color,box-shadow] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-rose-600 text-white shadow-sm hover:bg-rose-500 hover:scale-[1.02] focus-visible:outline-rose-600',
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover hover:scale-[1.02] focus-visible:outline-primary',
         outline:
-          'border border-input bg-background text-foreground hover:bg-accent hover:border-border focus-visible:outline-ring',
+          'border border-input bg-background text-foreground hover:bg-muted hover:border-border focus-visible:outline-ring',
         ghost:
-          'text-foreground hover:bg-accent focus-visible:outline-ring',
+          'text-foreground hover:bg-muted focus-visible:outline-ring',
         secondary:
           'bg-rhino-800 text-white hover:bg-rhino-700 focus-visible:outline-rhino-800',
         destructive:

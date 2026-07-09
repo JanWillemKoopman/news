@@ -10,8 +10,8 @@ type Tone = 'neutral' | 'attention' | 'success'
 
 const toneClasses: Record<Tone, string> = {
   neutral: 'bg-foreground/[0.06] text-muted-foreground ring-foreground/10',
-  attention: 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20',
-  success: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20',
+  attention: 'bg-rose-500/10 text-rose-700 ring-rose-600/20',
+  success: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20',
 }
 
 type Kind = 'rsvp' | 'taak' | 'leverancier' | 'prioriteit'

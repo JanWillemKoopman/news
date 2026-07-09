@@ -26,8 +26,8 @@ interface OntbrekendeTakenModalProps {
 
 const PRIORITEIT_STIP: Record<string, string> = {
   hoog: 'bg-rose-500',
-  midden: 'bg-amber-400',
-  laag: 'bg-slate-300 dark:bg-slate-600',
+  midden: 'bg-foreground/40',
+  laag: 'bg-foreground/15',
 }
 
 export function OntbrekendeTakenModal({
@@ -160,7 +160,7 @@ export function OntbrekendeTakenModal({
               return (
                 <div key={fase} className="overflow-hidden rounded-lg border border-border">
                   {/* Sectieheader */}
-                  <div className="flex items-center gap-2 bg-rose-50/60 px-3 py-2 dark:bg-rose-950/20">
+                  <div className="flex items-center gap-2 bg-rose-50/60 px-3 py-2">
                     <input
                       type="checkbox"
                       checked={alleGeselecteerd}

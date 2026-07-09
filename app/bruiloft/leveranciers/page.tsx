@@ -3,13 +3,12 @@
 import * as React from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Compass, FileText, MessageCircle, Pencil, Plus, Search, Store, Tags, Trash2 } from 'lucide-react'
+import { Compass, FileText, MessageCircle, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { leveranciersInfo } from '@/components/bruiloft/faqContent'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
-import { DropdownFilter } from '@/components/bruiloft/leveranciers/DropdownFilter'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
 import { MijnLijstFilters } from '@/components/bruiloft/leveranciers/MijnLijstFilters'
@@ -27,9 +26,10 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Input,
+  FilterDropdown,
   Money,
   OverflowMenu,
+  SearchInput,
   SortableTh,
   StatusBadge,
   useToast,
@@ -145,7 +145,7 @@ export default function LeveranciersPage() {
       value: c,
       label: capFirst(c),
       count: categorieTellers.get(c) ?? 0,
-      geboekt: geboekteCategorieen.has(c),
+      check: geboekteCategorieen.has(c),
     })),
   ]
   const statusOpties = [
@@ -211,27 +211,24 @@ export default function LeveranciersPage() {
 
       {vendors.length > 0 ? (
         <div className="mb-5 flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={zoek}
-              onChange={(e) => setZoek(e.target.value)}
-              placeholder="Zoek leverancier…"
-              className="pl-9"
-              aria-label="Zoek in jullie leveranciers"
-            />
-          </div>
+          <SearchInput
+            value={zoek}
+            onValueChange={setZoek}
+            placeholder="Zoek leverancier…"
+            aria-label="Zoek in jullie leveranciers"
+            containerClassName="min-w-0 flex-1"
+          />
 
           {/* Desktop: filters direct zichtbaar naast de zoekbalk, zelfde
               ontwerp als de statusfilter op /bruiloft/budget */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
-            <DropdownFilter
+            <FilterDropdown
               value={fType}
               onChange={setFType}
               options={categorieOpties}
               ariaLabel="Filter op categorie"
             />
-            <DropdownFilter
+            <FilterDropdown
               value={fStatus}
               onChange={setFStatus}
               options={statusOpties}

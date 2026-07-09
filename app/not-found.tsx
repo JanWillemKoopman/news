@@ -1,13 +1,5 @@
 import Link from 'next/link'
-import { Cormorant_Garamond } from 'next/font/google'
-
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-  adjustFontFallback: false,
-})
+import { cormorant } from '@/lib/fonts'
 
 export default function NotFound() {
   return (
@@ -22,7 +14,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/bruiloft"
-          className="mt-6 inline-flex items-center justify-center rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-500"
+          className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
         >
           Naar ons trouwplan
         </Link>

@@ -11,14 +11,13 @@ import {
   Pencil,
   Plus,
   RotateCw,
-  Search,
   Trash2,
   UserPlus,
   X,
   ZoomIn,
 } from 'lucide-react'
 
-import { Button, Input, Select } from '@/components/bruiloft/ui'
+import { Button, SearchInput, Select } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
 import {
   placeOnSeatUpdates,
@@ -523,16 +522,14 @@ export function FloorPlan({
               <span className="font-normal text-muted-foreground">({onverdeeld.length})</span>
             </h2>
             {onverdeeld.length > 0 ? (
-              <div className="relative mt-2">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={zoekGast}
-                  onChange={(e) => setZoekGast(e.target.value)}
-                  placeholder="Zoek gast…"
-                  className="h-8 pl-8 text-sm"
-                  aria-label="Zoek onverdeelde gast"
-                />
-              </div>
+              <SearchInput
+                value={zoekGast}
+                onValueChange={setZoekGast}
+                placeholder="Zoek gast…"
+                aria-label="Zoek onverdeelde gast"
+                containerClassName="mt-2"
+                className="h-8 text-sm"
+              />
             ) : null}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -693,7 +690,7 @@ function TafelNode({
               strokeWidth={doelStoel ? 2 : 1.25}
               className={
                 doelStoel
-                  ? 'fill-emerald-50 stroke-emerald-500 dark:fill-emerald-950'
+                  ? 'fill-emerald-50 stroke-emerald-500'
                   : gast
                     ? 'fill-primary stroke-primary'
                     : 'fill-background stroke-foreground/20 [stroke-dasharray:3_3]'
@@ -817,7 +814,7 @@ function TafelPaneel({
                   className={cn(
                     'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm',
                     g ? 'text-foreground' : 'text-muted-foreground/60',
-                    geenStoel && g && 'text-rose-600 dark:text-rose-400'
+                    geenStoel && g && 'text-rose-600'
                   )}
                 >
                   <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">

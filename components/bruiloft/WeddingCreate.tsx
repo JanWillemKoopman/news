@@ -272,8 +272,8 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
             <div className="w-full max-w-sm">
               <div className="mb-6">
                 <div className="mb-3 flex items-center gap-2.5">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
-                  <p className="text-sm font-medium text-green-700">Basisgegevens ingevuld!</p>
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
+                  <p className="text-sm font-medium text-emerald-700">Basisgegevens ingevuld!</p>
                 </div>
                 <h2 className="font-serif text-[1.75rem] font-medium leading-tight tracking-tight text-gray-900">
                   {begroeting}
@@ -429,7 +429,7 @@ function WeddingCreateForm({ onCancel }: { onCancel: () => void }) {
                                   className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
                                     isActive
                                       ? status === 'geboekt'
-                                        ? 'bg-green-100 text-green-700'
+                                        ? 'bg-emerald-100 text-emerald-700'
                                         : status === 'niet_van_toepassing'
                                           ? 'bg-gray-100 text-gray-500'
                                           : 'bg-gray-100 text-gray-700'

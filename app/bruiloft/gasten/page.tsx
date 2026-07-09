@@ -73,8 +73,8 @@ function RsvpSelect({
   // ("afgemeld", "geen reactie", "nog niet uitgenodigd"), groen voor de
   // afgeronde positieve status ("bevestigd", zelfde uitzondering als
   // StatusBadge), verder neutraal — hier lokaal omdat dit element klikbaar is.
-  const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20'
-  const groen = 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20'
+  const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20'
+  const groen = 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20'
   const klassen: Record<RsvpStatus, string> = {
     bevestigd: groen,
     afgemeld: rose,

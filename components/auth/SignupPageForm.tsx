@@ -12,6 +12,7 @@ import { afleidProvincie } from '@/lib/bruiloft/geo'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import type { CeremonieType, VoortgangCategorie, VoortgangStatus, WeddingInput } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { Button } from '@/components/bruiloft/ui'
 import { PasswordInput } from '@/components/ui/password-input'
 
 import { mapAuthError, safeNext } from './authErrors'
@@ -359,7 +360,7 @@ function WeddingSetup({
                           className={`flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
                             isActive
                               ? status === 'geboekt'
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-emerald-100 text-emerald-700'
                                 : status === 'niet_van_toepassing'
                                   ? 'bg-gray-100 text-gray-500'
                                   : 'bg-gray-100 text-gray-700'
@@ -405,16 +406,12 @@ function WeddingSetup({
         </div>
 
         {error ? (
-          <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+          <p className="text-sm font-medium text-destructive" role="alert">{error}</p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex h-11 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? 'Even geduld…' : 'Maak ons trouwplan'}
-        </button>
+        <Button type="submit" loading={saving} size="lg" className="w-full">
+          Maak ons trouwplan
+        </Button>
 
         <p className="text-center text-xs text-gray-400">
           Alle velden zijn optioneel — je kunt dit later altijd aanpassen.
@@ -440,8 +437,8 @@ function KeuzeStep({
     <div className="w-full max-w-sm">
       <div className="mb-8">
         <div className="mb-3 flex items-center gap-2.5">
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
-          <p className="text-sm font-medium text-green-700">Account aangemaakt!</p>
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
+          <p className="text-sm font-medium text-emerald-700">Account aangemaakt!</p>
         </div>
         <h2 className="font-serif text-[1.75rem] font-medium leading-tight tracking-tight text-gray-900">
           Hoe willen jullie beginnen?
@@ -496,7 +493,7 @@ function KeuzeStep({
         </button>
 
         {error ? (
-          <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+          <p className="text-sm font-medium text-destructive" role="alert">{error}</p>
         ) : null}
       </div>
     </div>
@@ -772,7 +769,7 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                     </div>
 
                     {error ? (
-                      <p className="text-sm font-medium text-red-600" role="alert">{error}</p>
+                      <p className="text-sm font-medium text-destructive" role="alert">{error}</p>
                     ) : null}
 
                     <div className="flex items-center gap-3 pt-2">
@@ -782,13 +779,9 @@ export function SignupPageForm({ next, prefillEmail }: { next?: string; prefillE
                       >
                         Inloggen
                       </Link>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex h-10 flex-1 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {loading ? 'Even geduld…' : 'Account aanmaken'}
-                      </button>
+                      <Button type="submit" loading={loading} className="flex-1">
+                        Account aanmaken
+                      </Button>
                     </div>
                   </form>
                 </>
