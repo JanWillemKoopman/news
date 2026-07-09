@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -74,7 +74,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   if (!currentUser) return null
 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
-  const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
 
   async function onSignOut() {
@@ -117,14 +116,11 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
             )}
           />
         ) : (
-          <span
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
-              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-primary text-white ring-transparent'
-            )}
-          >
-            {initials}
-          </span>
+          <CircleUserRound
+            className={cn('h-8 w-8', dark ? 'text-white' : 'text-muted-foreground')}
+            strokeWidth={1.5}
+            aria-hidden
+          />
         )}
         <ChevronDown
           className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
