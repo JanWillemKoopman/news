@@ -30,6 +30,7 @@ export function Modal({
   footer,
 }: ModalProps) {
   const [mobileStyle, setMobileStyle] = React.useState<React.CSSProperties>({})
+  const contentRef = React.useRef<HTMLDivElement>(null)
 
   // Swipe-to-dismiss state (punt 9)
   const swipeStartY = React.useRef(0)
@@ -81,6 +82,18 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-[3px] data-[state=open]:animate-overlay-in" />
         <Dialog.Content
+          ref={contentRef}
+          // Op mobiel opent een geopende sheet anders direct het toetsenbord
+          // (of een native datum/tijdkiezer): niemand heeft nog op een veld
+          // getikt, dus dat voelt als een ongevraagde pop-up. Op desktop is
+          // direct kunnen typen juist prettig, dus daar laten we Radix' eigen
+          // gedrag (focus op het eerste veld) intact.
+          onOpenAutoFocus={(e) => {
+            if (window.innerWidth < 640) {
+              e.preventDefault()
+              contentRef.current?.focus()
+            }
+          }}
           style={{
             ...mobileStyle,
             transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,

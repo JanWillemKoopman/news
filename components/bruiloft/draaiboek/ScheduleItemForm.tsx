@@ -153,7 +153,6 @@ export function ScheduleItemForm({
         <Field label="Titel" htmlFor="titel">
           <Input
             id="titel"
-            autoFocus
             value={form.titel}
             onChange={(e) => set('titel', e.target.value)}
             placeholder="Bijv. Ceremonie"

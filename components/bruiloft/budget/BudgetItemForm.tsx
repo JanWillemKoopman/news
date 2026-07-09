@@ -231,7 +231,6 @@ export function BudgetItemForm({
         >
           <Input
             id="oms"
-            autoFocus
             value={form.omschrijving}
             aria-invalid={omsFout || undefined}
             onChange={(e) => set('omschrijving', e.target.value)}

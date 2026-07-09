@@ -217,7 +217,6 @@ export function Landing() {
         }
       >
         <PasswordInput
-          autoFocus
           value={gateValue}
           onChange={(e) => {
             setGateValue(e.target.value)

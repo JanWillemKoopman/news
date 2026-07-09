@@ -198,7 +198,6 @@ export function VendorForm({
         >
           <Input
             id="naam"
-            autoFocus
             value={form.naam}
             aria-invalid={naamFout || undefined}
             onChange={(e) => set('naam', e.target.value)}

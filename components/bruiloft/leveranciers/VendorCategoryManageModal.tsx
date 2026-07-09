@@ -91,7 +91,6 @@ export function VendorCategoryManageModal({
                     setNieuw(e.target.value)
                   }}
                   placeholder="Bijv. entertainment"
-                  autoFocus
                 />
               </Field>
             </div>
