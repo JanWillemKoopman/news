@@ -218,6 +218,37 @@ export function renderVendorContactEmail(p: VendorContactEmailProps): { subject:
   }
 }
 
+// --- Leveranciersreactie (notificatie aan het bruidspaar) -------------------
+
+export interface VendorReplyEmailProps {
+  vendorNaam: string
+  onderwerp: string // onderwerp van het oorspronkelijke bericht
+  fragment: string // eerste stuk van de reactie
+  berichtenUrl: string
+}
+
+export function renderVendorReplyEmail(p: VendorReplyEmailProps): { subject: string; html: string } {
+  const subject = `${p.vendorNaam} heeft gereageerd — Ons Trouwplan`
+  const inhoud = `
+    <p style="margin:0 0 20px;font-size:16px;color:#1c1917;line-height:1.6;">
+      <strong>${escapeHtml(p.vendorNaam)}</strong> heeft gereageerd op jullie bericht
+      &ldquo;${escapeHtml(p.onderwerp)}&rdquo;.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:20px 24px;">
+          ${berichtNaarHtml(p.fragment)}
+        </td>
+      </tr>
+    </table>
+    ${ctaKnop(p.berichtenUrl, 'Lees de reactie')}
+    <p style="margin:0;font-size:13px;color:#a8a29e;line-height:1.6;">
+      Je vindt de volledige reactie in het berichtencentrum van jullie trouwplan.
+    </p>
+  `
+  return { subject, html: baseHtml('Nieuwe reactie', inhoud) }
+}
+
 // --- Herinneringen-digest --------------------------------------------------
 
 export interface ReminderTaakItem {

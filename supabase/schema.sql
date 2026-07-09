@@ -1202,6 +1202,7 @@ create trigger trg_message_reads_prepare before insert on public.message_reads
 -- systeembericht in Postvak IN, zodat de mailbox niet blijvend leeg oogt.
 -- =====================================================================
 
+-- 0060: welkomstbericht met actieknop (metadata.acties, zie MessageActie).
 create or replace function public.insert_welcome_message()
 returns trigger
 language plpgsql
@@ -1210,16 +1211,19 @@ set search_path = public
 as $$
 begin
   insert into public.messages
-    (wedding_id, direction, type, onderwerp, inhoud, afzender_naam, afzender_type, status)
+    (wedding_id, direction, type, onderwerp, inhoud, afzender_naam, afzender_type, status, metadata)
   values (
     new.id,
     'inbound',
     'systeem',
     'Welkom bij je berichtencentrum',
-    'Hier verschijnen straks updates en tips over jullie bruiloft, en een overzicht van berichten die jullie naar leveranciers hebben gestuurd.',
+    'Hier verschijnen updates en tips over jullie bruiloft, en een overzicht van berichten die jullie naar leveranciers hebben gestuurd. Reageert een leverancier op een offerte- of contactaanvraag, dan valt die reactie hier binnen.',
     'Bruiloft Assistent',
     'systeem',
-    'verzonden'
+    'verzonden',
+    jsonb_build_object('acties', jsonb_build_array(
+      jsonb_build_object('label', 'Ontdek leveranciers', 'href', '/bruiloft/ontdekken')
+    ))
   );
   return new;
 end;

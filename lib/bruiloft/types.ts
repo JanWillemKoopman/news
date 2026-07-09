@@ -246,6 +246,14 @@ export type MessageType =
 export type MessageAfzenderType = 'systeem' | 'gebruiker' | 'leverancier'
 export type MessageStatus = 'concept' | 'verzonden'
 
+// Actieknop bij een bericht (opgeslagen in messages.metadata.acties): brengt
+// de lezer direct naar de plek in de app waar de actie hoort. Alleen interne
+// paden ('/bruiloft/...') — de UI negeert al het andere.
+export interface MessageActie {
+  label: string
+  href: string
+}
+
 export interface Message {
   id: ID
   weddingId: ID

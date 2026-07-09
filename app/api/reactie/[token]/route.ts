@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
+import { renderVendorReplyEmail } from '@/lib/email/templates'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createRawAdminClient } from '@/lib/supabase/admin'
 
@@ -122,5 +124,60 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Versturen mislukt. Probeer het opnieuw.' }, { status: 500 })
   }
 
+  // Best-effort e-mailnotificatie aan eigenaren + planners: de reactie staat
+  // al in het berichtencentrum (realtime), dus een mislukte mail mag de
+  // leverancier geen foutmelding geven.
+  await stuurReactieNotificatie(gesprek, parsed.data.bericht).catch((err) =>
+    console.error('[reactie] Notificatie-mail mislukt:', err)
+  )
+
   return NextResponse.json({ ok: true })
+}
+
+async function stuurReactieNotificatie(
+  gesprek: NonNullable<Awaited<ReturnType<typeof vindGesprek>>>,
+  reactie: string
+) {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+  if (!siteUrl) return // zonder site-URL geen werkende knop in de mail
+
+  const admin = createRawAdminClient()
+  const { data: members } = await admin
+    .from('wedding_members')
+    .select('user_id, role')
+    .eq('wedding_id', gesprek.bericht.wedding_id)
+    .in('role', ['owner', 'planner'])
+  const userIds = (members ?? []).map((m: { user_id: string }) => m.user_id)
+  if (userIds.length === 0) return
+
+  // Zelfde afmeld-voorkeur als de herinneringen-digest: wie e-mails van de
+  // app heeft uitgezet, krijgt ook deze notificatie niet.
+  const { data: profielen } = await admin
+    .from('profiles')
+    .select('email, email_herinneringen')
+    .in('id', userIds)
+  const ontvangers = Array.from(
+    new Set(
+      (profielen ?? [])
+        .filter((p: { email_herinneringen: boolean | null }) => p.email_herinneringen !== false)
+        .map((p: { email: string | null }) => p.email)
+        .filter((email: string | null): email is string => Boolean(email))
+    )
+  )
+  if (ontvangers.length === 0) return
+
+  const { subject, html } = renderVendorReplyEmail({
+    vendorNaam: gesprek.vendorNaam || 'Een leverancier',
+    onderwerp: gesprek.bericht.onderwerp,
+    fragment: reactie.length > 400 ? `${reactie.slice(0, 400)}…` : reactie,
+    berichtenUrl: `${siteUrl}/bruiloft/berichten`,
+  })
+  const resend = getResend()
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: ontvangers,
+    subject,
+    html,
+  })
+  if (error) console.error('[reactie] Resend-fout bij notificatie:', error)
 }
