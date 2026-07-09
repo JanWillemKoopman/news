@@ -80,7 +80,7 @@ function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) 
     item.variant === 'success'
       ? 'text-emerald-600'
       : item.variant === 'error'
-        ? 'text-red-600'
+        ? 'text-destructive'
         : 'text-rose-600'
   return (
     <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border border-border bg-card p-3.5 text-card-foreground shadow-lg animate-slide-up">

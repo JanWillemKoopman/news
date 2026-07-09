@@ -88,7 +88,7 @@ export function RegistryInstellingen() {
               role="switch"
               aria-checked={isEnabled}
               onClick={() => setIsEnabled(!isEnabled)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${isEnabled ? 'bg-rose-600' : 'bg-muted'}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${isEnabled ? 'bg-primary' : 'bg-muted'}`}
             >
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform ${isEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
             </div>
@@ -154,7 +154,7 @@ export function RegistryInstellingen() {
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
               <span className="flex-1 truncate text-muted-foreground">{registryUrl}</span>
               <button onClick={copyLink} className="shrink-0 text-muted-foreground hover:text-foreground" aria-label="Kopieer link">
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <div className="flex gap-2">

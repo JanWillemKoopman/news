@@ -227,7 +227,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
     >
       <a
         href="#hoofdinhoud"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-rose-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-md"
       >
         Naar inhoud
       </a>
@@ -244,7 +244,7 @@ function ShellInner({ children, fontClassName }: WeddingShellProps) {
           </div>
           {/* Offline banner (punt 14) */}
           {!isOnline && (
-            <div className="sticky top-0 z-30 flex items-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+            <div className="sticky top-0 z-30 flex items-center gap-2 bg-rose-500/10 px-4 py-2 text-sm text-rose-700">
               <CloudOff className="h-4 w-4 shrink-0" />
               <span>Je bent offline — wijzigingen worden niet opgeslagen</span>
             </div>

@@ -74,7 +74,7 @@ function AccountMenu({ onRequestAccess }: { onRequestAccess: (target: string) =>
         aria-expanded={open}
         className="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-3 text-sm font-medium text-rhino-800 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-semibold text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
           {(currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()}
         </span>
         {currentUser.displayName || currentUser.email}

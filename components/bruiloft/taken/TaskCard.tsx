@@ -84,7 +84,7 @@ export function TaskCard({
       {/* Rode laag achter de kaart, zichtbaar bij links-vegen */}
       <div
         aria-hidden
-        className="absolute inset-y-0 right-0 flex items-center justify-end rounded-xl bg-rose-600 pr-5 text-white"
+        className="absolute inset-y-0 right-0 flex items-center justify-end rounded-xl bg-primary pr-5 text-white"
         style={{ width: `${Math.min(swipeX, 80)}px`, opacity: swipeX > 10 ? 1 : 0 }}
       >
         <Trash2 className="h-5 w-5 shrink-0" />
@@ -172,11 +172,11 @@ export function TaskCard({
             {task.deadline ? (
               <span className="inline-flex shrink-0 items-center gap-1">
                 {achterstallig ? (
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600" />
                 ) : null}
                 {formatDatumNL(task.deadline)}
                 {!klaar ? (
-                  <span className={cn(achterstallig && 'font-medium text-rose-600 dark:text-rose-400')}>
+                  <span className={cn(achterstallig && 'font-medium text-rose-600')}>
                     · {dagLabel(d)}
                   </span>
                 ) : null}

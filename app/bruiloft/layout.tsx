@@ -1,17 +1,7 @@
 import type { Metadata } from 'next'
-import { Cormorant_Garamond } from 'next/font/google'
 
 import { WeddingShell } from '@/components/bruiloft/WeddingShell'
-
-// Elegante serif voor display-teksten. Cormorant Garamond is de dichtstbij
-// gratis variant van het huis-lettertype LT Soul, dat Riley & Grey gebruikt.
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-  adjustFontFallback: false,
-})
+import { cormorant } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: 'Ons Trouwplan',

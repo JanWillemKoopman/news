@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 
+import { Select } from '@/components/bruiloft/ui'
+
 const MAANDEN = [
   'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
   'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December',
@@ -29,9 +31,6 @@ interface DateRollerProps {
   onChange: (v: string) => void
 }
 
-const sel =
-  'h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 cursor-pointer'
-
 export function DateRoller({ value, onChange }: DateRollerProps) {
   const today = new Date()
   const START_YEAR = today.getFullYear() - 1
@@ -49,38 +48,38 @@ export function DateRoller({ value, onChange }: DateRollerProps) {
 
   return (
     <div className="flex gap-2">
-      <select
+      <Select
         value={clampedDay}
         onChange={(e) => update(year, month, Number(e.target.value))}
-        className={`w-16 ${sel}`}
+        className="w-16"
         aria-label="Dag"
       >
         {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
           <option key={d} value={d}>{String(d).padStart(2, '0')}</option>
         ))}
-      </select>
+      </Select>
 
-      <select
+      <Select
         value={month}
         onChange={(e) => update(year, Number(e.target.value), clampedDay)}
-        className={`flex-1 ${sel}`}
+        className="flex-1"
         aria-label="Maand"
       >
         {MAANDEN.map((naam, i) => (
           <option key={i + 1} value={i + 1}>{naam}</option>
         ))}
-      </select>
+      </Select>
 
-      <select
+      <Select
         value={year}
         onChange={(e) => update(Number(e.target.value), month, clampedDay)}
-        className={`w-20 ${sel}`}
+        className="w-20"
         aria-label="Jaar"
       >
         {Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i).map((y) => (
           <option key={y} value={y}>{y}</option>
         ))}
-      </select>
+      </Select>
     </div>
   )
 }

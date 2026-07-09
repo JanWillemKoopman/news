@@ -16,8 +16,8 @@ interface VolgendeStappenProps {
 }
 
 const URGENTIE_STIJL: Record<NextStep['urgentie'], string> = {
-  kritiek: 'bg-rose-100 text-rose-700',
-  binnenkort: 'bg-amber-100 text-amber-700',
+  kritiek: 'bg-rose-500/10 text-rose-700',
+  binnenkort: 'bg-foreground/10 text-foreground',
   normaal: 'bg-muted text-muted-foreground',
 }
 

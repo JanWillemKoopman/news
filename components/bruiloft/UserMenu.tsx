@@ -120,7 +120,7 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
           <span
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
-              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
+              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-primary text-white ring-transparent'
             )}
           >
             {initials}
