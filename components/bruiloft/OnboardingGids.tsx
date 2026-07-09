@@ -204,7 +204,7 @@ export function OnboardingGids() {
 
         <Progress value={(gedaan / stappen.length) * 100} className="mt-4 h-1.5" />
 
-        <ul className="mt-4 grid gap-1 sm:grid-cols-2">
+        <ul className="mt-4 grid grid-cols-1 gap-1 sm:grid-cols-2">
           {stappen.map((stap, i) => {
             const eersteActief = !stap.klaar && stappen.slice(0, i).every((s) => s.klaar)
             return (
