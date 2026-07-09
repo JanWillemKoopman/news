@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { Inbox as InboxIcon, Send, FileText } from 'lucide-react'
 
 import { Card, EmptyState, Modal } from '@/components/bruiloft/ui'
@@ -128,7 +129,36 @@ export function BerichtenOverzicht() {
         className="sm:max-w-lg"
       >
         {geselecteerd ? (
-          <p className="whitespace-pre-wrap text-sm text-foreground">{geselecteerd.inhoud}</p>
+          <div className="space-y-4">
+            {/* Bij een leveranciersreactie: het eigen bericht waarop gereageerd
+                is als citaat erboven, zodat de context niet opgezocht hoeft te
+                worden. */}
+            {(() => {
+              const origineel = geselecteerd.parentMessageId
+                ? messages.find((m) => m.id === geselecteerd.parentMessageId)
+                : undefined
+              return origineel ? (
+                <div className="rounded-md border-l-2 border-border bg-accent/50 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    In antwoord op &ldquo;{origineel.onderwerp}&rdquo; · {tijdGeleden(origineel.createdAt)}
+                  </p>
+                  <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs text-muted-foreground">
+                    {origineel.inhoud}
+                  </p>
+                </div>
+              ) : null
+            })()}
+            <p className="whitespace-pre-wrap text-sm text-foreground">{geselecteerd.inhoud}</p>
+            {geselecteerd.vendorId ? (
+              <Link
+                href="/bruiloft/leveranciers"
+                className="inline-block text-sm text-rose-600 hover:text-rose-500"
+                onClick={() => setGeselecteerd(null)}
+              >
+                Bekijk leverancier →
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </Modal>
     </div>

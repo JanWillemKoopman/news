@@ -1115,7 +1115,7 @@ create table public.messages (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   direction text not null check (direction in ('inbound', 'outbound')),
-  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact')),
+  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact', 'leverancier_reactie')),
   vendor_id uuid references public.vendors(id) on delete set null,
   onderwerp text not null default '',
   inhoud text not null default '',
@@ -1124,9 +1124,16 @@ create table public.messages (
   verzonden_door uuid references auth.users(id) on delete set null,
   status text not null default 'verzonden' check (status in ('concept', 'verzonden')),
   metadata jsonb,
+  -- Reageren-zonder-login (0059): uitgaande leveranciersberichten krijgen een
+  -- reply_token voor de knop in de e-mail; reacties koppelen terug via
+  -- parent_message_id. Zelfde token-model als de persoonlijke RSVP-links.
+  reply_token uuid unique,
+  parent_message_id uuid references public.messages(id) on delete set null,
   created_at timestamptz not null default now()
 );
 create index idx_messages_wedding on public.messages(wedding_id, created_at desc);
+create index idx_messages_parent on public.messages(parent_message_id)
+  where parent_message_id is not null;
 
 alter table public.messages enable row level security;
 

@@ -233,12 +233,16 @@ export interface VendorContactRequest {
 
 // --- Berichten (Berichtencentrum) -------------------------------------------
 
-// Eén generieke tabel voor het berichtencentrum: zowel inkomende
-// systeem-/AI-berichten aan de gebruiker als uitgaande communicatie naar
-// leveranciers (offerte/contact). Later breidt dit uit met inkomende
-// reacties van leveranciers ('leverancier_reactie').
+// Eén generieke tabel voor het berichtencentrum: inkomende systeem-/AI-
+// berichten aan de gebruiker, uitgaande communicatie naar leveranciers
+// (offerte/contact) én inkomende reacties van leveranciers daarop
+// ('leverancier_reactie', geplaatst via de token-link in de e-mail).
 export type MessageDirection = 'inbound' | 'outbound'
-export type MessageType = 'systeem' | 'leverancier_offerte' | 'leverancier_contact'
+export type MessageType =
+  | 'systeem'
+  | 'leverancier_offerte'
+  | 'leverancier_contact'
+  | 'leverancier_reactie'
 export type MessageAfzenderType = 'systeem' | 'gebruiker' | 'leverancier'
 export type MessageStatus = 'concept' | 'verzonden'
 
@@ -255,6 +259,8 @@ export interface Message {
   verzondenDoor?: ID
   status: MessageStatus
   metadata?: Record<string, unknown>
+  // Bij een leveranciersreactie: het uitgaande bericht waarop gereageerd is.
+  parentMessageId?: ID
   createdAt: ISODateTime
 }
 

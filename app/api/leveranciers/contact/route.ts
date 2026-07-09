@@ -142,8 +142,25 @@ export async function POST(request: NextRequest) {
     )
   )
 
+  // Afzendernamen voor in de e-mail ("Anna & Tom").
+  const { data: weddingRow } = await supabase
+    .from('weddings')
+    .select('partner1_naam, partner2_naam')
+    .eq('id', weddingId)
+    .maybeSingle()
+  const afzenderNamen =
+    [weddingRow?.partner1_naam, weddingRow?.partner2_naam].filter(Boolean).join(' & ') ||
+    'Een bruidspaar'
+
+  // Reageer-token: de knop in de e-mail laat de leverancier zonder account
+  // reageren via /reactie/<token>; de reactie landt als inbound bericht in
+  // het berichtencentrum. Token wordt hieronder op de messages-rij bewaard.
+  const replyToken = crypto.randomUUID()
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+  const replyUrl = siteUrl ? `${siteUrl}/reactie/${replyToken}` : null
+
   // 3. Versturen.
-  const { subject, html } = renderVendorContactEmail({ onderwerp, bericht })
+  const { subject, html } = renderVendorContactEmail({ type, onderwerp, bericht, afzenderNamen, replyUrl })
   try {
     const resend = getResend()
     const { error: sendError } = await resend.emails.send({
@@ -205,6 +222,9 @@ export async function POST(request: NextRequest) {
       afzender_type: 'gebruiker',
       verzonden_door: user.id,
       status: 'verzonden',
+      // Zonder deze rij werkt de reageer-knop in de zojuist verstuurde e-mail
+      // niet (token onvindbaar); de insert-fout hieronder wordt daarom gelogd.
+      reply_token: replyToken,
     })
     .select()
     .single()
