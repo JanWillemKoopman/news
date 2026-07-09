@@ -131,7 +131,6 @@ export function ScheduleItemForm({
             <Input
               id="tijd"
               type="time"
-              autoFocus
               value={form.tijd}
               onChange={(e) => set('tijd', e.target.value)}
               required
@@ -154,6 +153,7 @@ export function ScheduleItemForm({
         <Field label="Titel" htmlFor="titel">
           <Input
             id="titel"
+            autoFocus
             value={form.titel}
             onChange={(e) => set('titel', e.target.value)}
             placeholder="Bijv. Ceremonie"
