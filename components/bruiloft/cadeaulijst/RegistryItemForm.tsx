@@ -194,7 +194,6 @@ export function RegistryItemForm({ open, onOpenChange, initial }: Props) {
 
         <Field label="Titel" required error={errors.title}>
           <Input
-            autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={type === 'gift' ? 'bv. KitchenAid staafmixer' : 'bv. Huwelijksreis'}

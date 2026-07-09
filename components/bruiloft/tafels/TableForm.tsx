@@ -68,7 +68,6 @@ export function TableForm({ open, onOpenChange, initial, onSubmit }: TableFormPr
         <Field label="Naam" htmlFor="naam">
           <Input
             id="naam"
-            autoFocus
             value={form.naam}
             onChange={(e) => setForm((f) => ({ ...f, naam: e.target.value }))}
             placeholder="Bijv. Tafel 1 / Familie"

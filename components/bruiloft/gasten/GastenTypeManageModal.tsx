@@ -89,7 +89,6 @@ export function GastenTypeManageModal({
                     setNieuw(e.target.value)
                   }}
                   placeholder="Bijv. ceremonie"
-                  autoFocus
                 />
               </Field>
             </div>

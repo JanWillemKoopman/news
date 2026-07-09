@@ -43,7 +43,6 @@ export function TotaalBudgetEditModal({ open, onOpenChange, huidigBudget }: Tota
             value={waarde}
             onChange={(e) => setWaarde(e.target.value)}
             required
-            autoFocus
           />
         </Field>
         <div className="flex justify-end gap-3 pt-2">
