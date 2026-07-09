@@ -1,13 +1,31 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { Inbox as InboxIcon, Send, FileText } from 'lucide-react'
 
 import { Card, EmptyState, Modal } from '@/components/bruiloft/ui'
 import { tijdGeleden } from '@/lib/bruiloft/format'
 import { cn } from '@/lib/utils'
-import type { Message } from '@/lib/bruiloft/types'
+import type { Message, MessageActie } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+
+// Leest de actieknoppen uit metadata.acties, defensief: alleen goedgevormde
+// items met een intern pad ('/...') tellen mee — metadata komt uit de database
+// en kan door toekomstige afzenders (AI, cron) gevuld zijn.
+function berichtActies(bericht: Message): MessageActie[] {
+  const raw = bericht.metadata?.acties
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (a): a is MessageActie =>
+      typeof a === 'object' &&
+      a !== null &&
+      typeof (a as MessageActie).label === 'string' &&
+      typeof (a as MessageActie).href === 'string' &&
+      (a as MessageActie).href.startsWith('/') &&
+      !(a as MessageActie).href.startsWith('//')
+  )
+}
 
 type Tab = 'postvak-in' | 'verzonden' | 'concepten'
 
@@ -128,7 +146,57 @@ export function BerichtenOverzicht() {
         className="sm:max-w-lg"
       >
         {geselecteerd ? (
-          <p className="whitespace-pre-wrap text-sm text-foreground">{geselecteerd.inhoud}</p>
+          <div className="space-y-4">
+            {/* Bij een leveranciersreactie: het eigen bericht waarop gereageerd
+                is als citaat erboven, zodat de context niet opgezocht hoeft te
+                worden. */}
+            {(() => {
+              const origineel = geselecteerd.parentMessageId
+                ? messages.find((m) => m.id === geselecteerd.parentMessageId)
+                : undefined
+              return origineel ? (
+                <div className="rounded-md border-l-2 border-border bg-accent/50 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    In antwoord op &ldquo;{origineel.onderwerp}&rdquo; · {tijdGeleden(origineel.createdAt)}
+                  </p>
+                  <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs text-muted-foreground">
+                    {origineel.inhoud}
+                  </p>
+                </div>
+              ) : null
+            })()}
+            <p className="whitespace-pre-wrap text-sm text-foreground">{geselecteerd.inhoud}</p>
+            {/* Actieknoppen: uit metadata.acties (systeem-/AI-berichten) plus de
+                afgeleide leverancier-link. Gewone links, geen tweede
+                knoppensysteem — één rose accent volstaat. */}
+            {(() => {
+              const acties = berichtActies(geselecteerd)
+              if (acties.length === 0 && !geselecteerd.vendorId) return null
+              return (
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {acties.map((a) => (
+                    <Link
+                      key={a.href + a.label}
+                      href={a.href}
+                      className="text-sm text-rose-600 hover:text-rose-500"
+                      onClick={() => setGeselecteerd(null)}
+                    >
+                      {a.label} →
+                    </Link>
+                  ))}
+                  {geselecteerd.vendorId ? (
+                    <Link
+                      href="/bruiloft/leveranciers"
+                      className="text-sm text-rose-600 hover:text-rose-500"
+                      onClick={() => setGeselecteerd(null)}
+                    >
+                      Bekijk leverancier →
+                    </Link>
+                  ) : null}
+                </div>
+              )
+            })()}
+          </div>
         ) : null}
       </Modal>
     </div>

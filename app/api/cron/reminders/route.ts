@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { dagenTot } from '@/lib/bruiloft/format'
+import { dagenTot, dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 import { betalingMijlpaal, taakMijlpaal } from '@/lib/bruiloft/reminders'
-import type { PaymentTerm } from '@/lib/bruiloft/types'
+import type { MessageActie, PaymentTerm } from '@/lib/bruiloft/types'
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import {
   renderReminderDigestEmail,
   type ReminderBetalingItem,
   type ReminderTaakItem,
 } from '@/lib/email/templates'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
 // Draait server-side met de service-role; nooit cachen.
 export const runtime = 'nodejs'
@@ -195,6 +195,17 @@ export async function GET(request: NextRequest) {
   let mislukt = 0
   const resend = pendingByUser.size > 0 ? getResend() : null
 
+  // Dezelfde herinneringen ook als bericht in het berichtencentrum, één
+  // gebundeld systeembericht per bruiloft (i.p.v. per ontvanger — de mailbox
+  // is gedeeld). Items dedupen we per bruiloft: meerdere ontvangers krijgen
+  // dezelfde taak/betaaltermijn maar het bericht noemt 'm één keer.
+  interface WeddingBericht {
+    taken: ReminderTaakItem[]
+    betalingen: ReminderBetalingItem[]
+    keys: Set<string>
+  }
+  const berichtPerWedding = new Map<string, WeddingBericht>()
+
   for (const p of Array.from(pendingByUser.values())) {
     if (p.taken.length === 0 && p.betalingen.length === 0) continue
     const { subject, html } = renderReminderDigestEmail({
@@ -228,7 +239,61 @@ export async function GET(request: NextRequest) {
     const { error: logError } = await admin.from('reminder_log').insert(p.logRows)
     if (logError) console.error('[cron/reminders] logfout:', logError)
     verstuurd++
+
+    // Verzamel de zojuist verstuurde items per bruiloft voor het
+    // berichtencentrum. p.logRows loopt 1-op-1 met [taken..., betalingen...].
+    p.logRows.forEach((row, i) => {
+      const itemKey = `${row.soort}|${row.ref_id}|${row.mijlpaal}`
+      let wb = berichtPerWedding.get(row.wedding_id)
+      if (!wb) {
+        wb = { taken: [], betalingen: [], keys: new Set() }
+        berichtPerWedding.set(row.wedding_id, wb)
+      }
+      if (wb.keys.has(itemKey)) return
+      wb.keys.add(itemKey)
+      if (row.soort === 'taak') wb.taken.push(p.taken[i])
+      else wb.betalingen.push(p.betalingen[i - p.taken.length])
+    })
   }
 
-  return NextResponse.json({ ok: true, ontvangers: pendingByUser.size, verstuurd, mislukt })
+  // --- Spiegel naar het berichtencentrum -----------------------------------
+  let berichten = 0
+  if (berichtPerWedding.size > 0) {
+    // raw: messages ontbreekt nog in de gegenereerde database.types.ts.
+    const rawAdmin = createRawAdminClient()
+    for (const [weddingId, wb] of Array.from(berichtPerWedding.entries())) {
+      const regels = [
+        ...wb.taken.map(
+          (t) => `• ${t.titel} — deadline ${formatDatumNL(t.deadline)} (${dagLabel(t.dagen)})`
+        ),
+        ...wb.betalingen.map(
+          (b) =>
+            `• ${b.omschrijving} — ${formatEuro(b.bedrag)}, vervalt ${formatDatumNL(b.vervaldatum)} (${dagLabel(b.dagen)})`
+        ),
+      ]
+      const aantal = wb.taken.length + wb.betalingen.length
+      const acties: MessageActie[] = [
+        ...(wb.taken.length > 0 ? [{ label: 'Bekijk taken', href: '/bruiloft/taken' }] : []),
+        ...(wb.betalingen.length > 0 ? [{ label: 'Bekijk budget', href: '/bruiloft/budget' }] : []),
+      ]
+      const { error } = await rawAdmin.from('messages').insert({
+        wedding_id: weddingId,
+        direction: 'inbound',
+        type: 'systeem',
+        onderwerp:
+          aantal === 1
+            ? 'Herinnering voor jullie planning'
+            : `${aantal} herinneringen voor jullie planning`,
+        inhoud: `Dit staat er binnenkort aan te komen:\n\n${regels.join('\n')}`,
+        afzender_naam: 'Bruiloft Assistent',
+        afzender_type: 'systeem',
+        status: 'verzonden',
+        metadata: { acties },
+      })
+      if (error) console.error('[cron/reminders] bericht-insert mislukt:', error)
+      else berichten++
+    }
+  }
+
+  return NextResponse.json({ ok: true, ontvangers: pendingByUser.size, verstuurd, mislukt, berichten })
 }
