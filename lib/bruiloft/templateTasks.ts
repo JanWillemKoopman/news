@@ -695,12 +695,70 @@ const GEMEENTE_TAKEN = [
   'Naamskeuze bij de gemeente vastleggen',
 ]
 
+// De kernset: de ±30 taken die vrijwel elke Nederlandse bruiloft nodig heeft.
+// Alleen deze worden bij het samenstellen van de takenlijst voorgesteld —
+// 77 kaartjes doornemen is te veel gevraagd. De overige sjablonen blijven
+// bestaan als naslag/uitbreidingsruimte, maar worden niet meer opgedrongen;
+// eigen taken toevoegen kan altijd.
+const KERN_TAKEN = new Set<string>([
+  // 12 maanden van tevoren
+  'Budget en globale gastenlijst bepalen',
+  'Trouwlocatie zoeken en boeken',
+  'Ondertrouw en ceremonie bij de gemeente regelen',
+  'Getuigen vragen',
+  // 9–10 maanden van tevoren
+  'Fotograaf vastleggen',
+  'Catering kiezen en boeken',
+  'Muziek of DJ boeken',
+  'Trouwambtenaar (Babs) regelen',
+  'Videograaf zoeken en boeken',
+  'Save-the-dates versturen',
+  'Trouwwebsite opzetten',
+  // 6 maanden van tevoren
+  'Trouwringen uitzoeken',
+  'Trouwkleding partner 1 uitzoeken',
+  'Trouwkleding partner 2 uitzoeken',
+  'Bloemist regelen',
+  'Make-up artist en kapper boeken',
+  'Huwelijksreis boeken',
+  // 4–5 maanden van tevoren
+  'Cadeaulijst of huwelijksbijdrage opstellen',
+  'Vervoer voor het bruidspaar regelen',
+  // 3 maanden van tevoren
+  'Uitnodigingen versturen',
+  'Bruidstaart bestellen',
+  'Programma van de dag opstellen',
+  // 1–2 maanden van tevoren
+  "RSVP's verzamelen en definitieve gastenlijst maken",
+  'Alle leveranciers en tijden bevestigen',
+  // Laatste weken
+  'Definitief aantal gasten doorgeven aan catering',
+  'Tafelschikking definitief maken',
+  'Definitief tijdschema voor de trouwdag maken',
+  'Betalingen en fooien klaarleggen',
+  // Laatste week
+  'Trouwringen ophalen',
+  'Noodtasje voor de trouwdag inpakken',
+  // Na de bruiloft
+  'Bedankkaarten versturen',
+  'Foto- en videogalerij downloaden en delen',
+])
+
 // Heeft het bruidspaar deze taak expliciet als "niet nodig" gemarkeerd in de
-// wizard, of vervalt hij door het gekozen ceremonietype? Dan hoort hij niet
-// in de takenlijst en niet in de voorstellen.
+// wizard, vervalt hij door het gekozen ceremonietype, of is hij al beantwoord
+// door de wizard zelf? Dan hoort hij niet in de takenlijst en niet in de
+// voorstellen — er wordt dus ook geen vooraf-afgevinkt kaartje van gemaakt.
 function taakNietVanToepassing(titel: string, wedding: Wedding): boolean {
   if (wedding.ceremonietype === 'symbolisch' && GEMEENTE_TAKEN.includes(titel)) {
     return true
+  }
+  // Budget én verwacht gastenaantal zijn al in de wizard ingevuld: deze taak
+  // is dan feitelijk gedaan. Geen kaartje aanmaken (ook geen afgevinkt
+  // kaartje — dat oogt als een taak die niemand heeft uitgevoerd).
+  if (titel === 'Budget en globale gastenlijst bepalen') {
+    const heeftBudget = (wedding.totaalBudget ?? 0) > 0
+    const heeftGasten = (wedding.aantalDaggasten ?? 0) > 0 || (wedding.aantalAvondgasten ?? 0) > 0
+    if (heeftBudget && heeftGasten) return true
   }
   const geregeldeZaken = wedding.geregeldeZaken ?? {}
   for (const [cat, status] of Object.entries(geregeldeZaken) as [VoortgangCategorie, VoortgangStatus][]) {
@@ -725,14 +783,6 @@ function statusVoorTaak(
     }
   }
 
-  // Budget én gastenlijst ingevuld → de eerste planningstaken zijn gedaan
-  if (titel === 'Budget en globale gastenlijst bepalen') {
-    const heeftBudget = (wedding.totaalBudget ?? 0) > 0
-    const heeftGasten = (wedding.aantalDaggasten ?? 0) > 0 || (wedding.aantalAvondgasten ?? 0) > 0
-    if (heeftBudget && heeftGasten) return 'klaar'
-    if (heeftBudget || heeftGasten) return 'bezig'
-  }
-
   return 'open'
 }
 
@@ -749,7 +799,12 @@ function vervangPartnerNamen(tekst: string, p1: string, p2: string): string {
 // de database in (taskToRow kent ze niet) — ze sturen alleen de
 // samenstel-flow: verstreken fases worden gebundeld voorgelegd i.p.v. kaart
 // voor kaart.
-export type TemplateTaskVoorstel = TaskInput & { fase: TemplateFase; verstreken: boolean }
+export type TemplateTaskVoorstel = TaskInput & {
+  fase: TemplateFase
+  verstreken: boolean
+  // Hoort deze taak bij de kernset van ±30 die we actief voorstellen?
+  kern: boolean
+}
 
 export function generateTemplateTasks(wedding: Wedding): TemplateTaskVoorstel[] {
   const p1 = wedding.partner1Naam ?? ''
@@ -785,6 +840,7 @@ export function generateTemplateTasks(wedding: Wedding): TemplateTaskVoorstel[] 
     return {
       fase: t.fase,
       verstreken,
+      kern: KERN_TAKEN.has(t.titel),
       weddingId: wedding.id,
       titel: vervangPartnerNamen(t.titel, p1, p2),
       omschrijving: vervangPartnerNamen(t.omschrijving, p1, p2),
