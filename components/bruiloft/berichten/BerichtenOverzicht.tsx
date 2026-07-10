@@ -142,29 +142,16 @@ export function BerichtenOverzicht() {
   }
 
   return (
-    <div className="flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm md:h-[calc(100vh-13rem)]">
-      {/* Mobiel: lijst óf detail, nooit beide tegelijk. */}
-      <div className={cn('flex min-h-0 flex-1 flex-col md:hidden', mobielWeergave === 'detail' && 'hidden')}>
-        <div className="border-b border-border p-3">
-          <SearchInput
-            value={zoek}
-            onValueChange={setZoek}
-            placeholder="Zoek in berichten…"
-            aria-label="Zoek in berichten"
-          />
-        </div>
+    <div>
+      {/* Mappen: één horizontale balk boven de mailbox, zelfde plek en
+          vormgeving op mobiel en desktop. */}
+      <div className="mb-4 rounded-xl border border-border bg-card shadow-sm">
         <FolderNav folder={folder} onChange={kiesFolder} ongelezenPostvakIn={ongelezenPostvakIn} />
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <MessageList {...lijstProps} />
-        </div>
-      </div>
-      <div className={cn('min-h-0 flex-1 md:hidden', mobielWeergave === 'lijst' && 'hidden')}>
-        <MessageDetail {...detailProps} onBack={() => setMobielWeergave('lijst')} />
       </div>
 
-      {/* Desktop: twee kolommen permanent naast elkaar. */}
-      <div className="hidden min-h-0 flex-1 md:flex">
-        <div className="flex w-[320px] shrink-0 flex-col border-r border-border lg:w-[360px]">
+      <div className="flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm md:h-[calc(100vh-16rem)]">
+        {/* Mobiel: lijst óf detail, nooit beide tegelijk. */}
+        <div className={cn('flex min-h-0 flex-1 flex-col md:hidden', mobielWeergave === 'detail' && 'hidden')}>
           <div className="border-b border-border p-3">
             <SearchInput
               value={zoek}
@@ -173,13 +160,32 @@ export function BerichtenOverzicht() {
               aria-label="Zoek in berichten"
             />
           </div>
-          <FolderNav folder={folder} onChange={kiesFolder} ongelezenPostvakIn={ongelezenPostvakIn} />
           <div className="min-h-0 flex-1 overflow-y-auto">
             <MessageList {...lijstProps} />
           </div>
         </div>
-        <div className="min-h-0 flex-1">
-          <MessageDetail {...detailProps} />
+        <div className={cn('min-h-0 flex-1 md:hidden', mobielWeergave === 'lijst' && 'hidden')}>
+          <MessageDetail {...detailProps} onBack={() => setMobielWeergave('lijst')} />
+        </div>
+
+        {/* Desktop: twee kolommen permanent naast elkaar. */}
+        <div className="hidden min-h-0 flex-1 md:flex">
+          <div className="flex w-[320px] shrink-0 flex-col border-r border-border lg:w-[360px]">
+            <div className="border-b border-border p-3">
+              <SearchInput
+                value={zoek}
+                onValueChange={setZoek}
+                placeholder="Zoek in berichten…"
+                aria-label="Zoek in berichten"
+              />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <MessageList {...lijstProps} />
+            </div>
+          </div>
+          <div className="min-h-0 flex-1">
+            <MessageDetail {...detailProps} />
+          </div>
         </div>
       </div>
     </div>
