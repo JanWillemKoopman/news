@@ -25,9 +25,25 @@ export interface OntdekCategorieConfig {
   slug: string
   // Eén zin voor het categorie-kaartje op de ontdekpagina.
   omschrijving: string
+  // Sfeervolle foto voor de prominente top-6-kaart op /bruiloft/ontdekken.
+  // Nog niet ingevuld — zolang dit leeg is toont die kaart de neutrale
+  // icoon-placeholder (zie CategorieAfbeelding.tsx).
+  afbeeldingUrl?: string
   // Categoriespecifieke filters — nu overal leeg, zie toelichting hierboven.
   filters: OntdekFilterDef[]
 }
+
+// Top 6 populairste categorieën — gedeeld tussen het Leveranciers-megamenu
+// (LeveranciersMegaMenu.tsx) en de Ontdekken-overzichtspagina, zodat beide
+// dezelfde "belangrijkste categorieën" prominent tonen.
+export const POPULAIRE_CATEGORIEEN: TpwCategorie[] = [
+  'Trouwlocaties',
+  'Trouwjurken',
+  'Trouwringen',
+  'Trouwfotografen',
+  'Videografen',
+  'Bloemen',
+]
 
 const OMSCHRIJVINGEN: Record<TpwCategorie, string> = {
   Trouwlocaties: 'Kastelen, landgoederen, strand en meer',

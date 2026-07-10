@@ -9,19 +9,53 @@ import { ontdekkenInfo } from '@/components/bruiloft/faqContent'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { getCategorieIcoon } from '@/components/bruiloft/leveranciers/categorieIcoon'
 import { Card, CardContent } from '@/components/bruiloft/ui'
-import { ONTDEK_CATEGORIEEN } from '@/lib/bruiloft/discovery/categorieConfig'
-import { PlaatsZoeker } from './PlaatsZoeker'
-import { locatieQuery, useOntdekLocatie } from './useOntdekLocatie'
+import { ONTDEK_CATEGORIEEN, POPULAIRE_CATEGORIEEN, type OntdekCategorieConfig } from '@/lib/bruiloft/discovery/categorieConfig'
+import { CategorieAfbeelding } from './CategorieAfbeelding'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-// Overzichtspagina van de leveranciersdirectory: eerst "waar zoeken jullie?",
-// daaronder de categorie-keuze. Beide stappen zijn optioneel-in-volgorde:
-// wie meteen een categorie kiest, kan de plaats ook op de categoriepagina
-// nog kiezen (de zoekbalk staat daar bovenaan).
+// Overzichtspagina van de leveranciersdirectory: puur categorieën kiezen, geen
+// geografische zoekbalk (die hoort op de resultatenpagina). Links staan de 4
+// meest gezochte categorieën (subset van dezelfde lijst als het
+// Leveranciers-megamenu) gestapeld met een brede, niet te hoge foto; rechts
+// daarvan de overige categorieën als compacte blokjes. Op mobiel vervalt het
+// onderscheid: daar telt overzicht zwaarder dan sfeer, dus staat alles in één
+// compacte lijst zonder afbeeldingen.
+
+const UITGELICHT_AANTAL = 4
+
+// Icoon + naam + aantal — de enige informatie die op deze pagina per
+// categorie getoond wordt (geen tagline, zie omschrijving die bewust alleen
+// nog als aria-label meegaat voor schermlezers).
+function CategorieIcoonNaamTelling({
+  config,
+  telling,
+  iconClassName,
+}: {
+  config: OntdekCategorieConfig
+  telling?: number
+  iconClassName?: string
+}) {
+  const Icoon = getCategorieIcoon(config.categorie)
+  return (
+    <>
+      <span
+        className={
+          iconClassName ??
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground'
+        }
+      >
+        <Icoon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1 truncate font-medium text-foreground">{config.categorie}</span>
+      {telling != null ? (
+        <span className="shrink-0 text-xs text-muted-foreground">{telling.toLocaleString('nl-NL')}</span>
+      ) : null}
+    </>
+  )
+}
 
 export function OntdekkenLanding() {
   const wedding = useBruiloftStore((s) => s.wedding)
-  const { plaats, straal, setPlaats } = useOntdekLocatie()
 
   const [tellingen, setTellingen] = React.useState<Record<string, number> | null>(null)
 
@@ -47,61 +81,92 @@ export function OntdekkenLanding() {
   const zichtbaar = ONTDEK_CATEGORIEEN.filter(
     (c) => tellingen == null || (tellingen[c.categorie] ?? 0) > 0
   )
+  // `zichtbaar` volgt al de TPW-categorie-volgorde, dus filteren op de
+  // populaire lijst geeft die namen automatisch al in POPULAIRE_CATEGORIEEN-
+  // volgorde (Trouwlocaties, Trouwjurken, Trouwringen, Trouwfotografen, ...).
+  const populair = zichtbaar.filter((c) => POPULAIRE_CATEGORIEEN.includes(c.categorie))
+  const uitgelicht = populair.slice(0, UITGELICHT_AANTAL)
+  const overig = zichtbaar.filter((c) => !uitgelicht.some((u) => u.categorie === c.categorie))
+  // Uitgelicht eerst, dan de rest — zelfde volgorde op mobiel en desktop.
+  const alleOpVolgorde = [...uitgelicht, ...overig]
+
+  const totaal = tellingen
+    ? Object.values(tellingen).reduce((som, n) => som + n, 0)
+    : null
+  const titel = totaal != null ? `Ontdek ${totaal.toLocaleString('nl-NL')} leveranciers` : 'Ontdekken'
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl pb-24">
-      <PageHeader titel="Ontdekken" info={<PageInfoButton {...ontdekkenInfo} />} />
+      <PageHeader titel={titel} info={<PageInfoButton {...ontdekkenInfo} />} />
       <LeveranciersTabs />
 
-      <div className="mb-8 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-8">
-        <h2 className="font-serif text-2xl text-foreground">Leveranciers in jullie buurt</h2>
-        <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-          Van trouwlocatie tot fotograaf: zoek op plaatsnaam en ontdek wat er in de omgeving te
-          vinden is — ook in de dorpen eromheen.
-        </p>
-        <div className="mt-5 max-w-xl">
-          <PlaatsZoeker value={plaats} onChange={setPlaats} variant="hero" inputId="ontdek-plaats" />
-        </div>
-        {plaats ? (
-          <p className="mt-2.5 text-xs text-muted-foreground">
-            Jullie zoeken rond {plaats.naam}
-            {plaats.gemeente && plaats.gemeente !== plaats.naam
-              ? ` (gemeente ${plaats.gemeente})`
-              : ''}
-            . Kies hieronder een categorie.
-          </p>
-        ) : null}
+      {/* Mobiel: één compacte lijst, geen afbeeldingen — overzicht weegt hier
+          zwaarder dan sfeer. */}
+      <div className="divide-y divide-border rounded-xl border border-border bg-card shadow-sm sm:hidden">
+        {alleOpVolgorde.map((c) => (
+          <Link
+            key={c.categorie}
+            href={`/bruiloft/ontdekken/${c.slug}`}
+            aria-label={`${c.categorie}: ${c.omschrijving}`}
+            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          >
+            <CategorieIcoonNaamTelling config={c} telling={tellingen?.[c.categorie]} />
+          </Link>
+        ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {zichtbaar.map((c) => {
-          const Icoon = getCategorieIcoon(c.categorie)
-          const telling = tellingen?.[c.categorie]
-          return (
-            <Link
-              key={c.categorie}
-              href={`/bruiloft/ontdekken/${c.slug}${locatieQuery(plaats, straal)}`}
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
-            >
-              <Card interactive className="h-full">
-                <CardContent className="flex h-full items-start gap-3 p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <Icoon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
+      {/* Desktop/tablet: links de uitgelichte categorieën gestapeld met een
+          brede, niet te hoge foto; rechts de overige categorieën als
+          compacte blokjes, beide kolommen even hoog beleefd. */}
+      <div className="hidden gap-6 sm:flex">
+        {uitgelicht.length > 0 ? (
+          <div className="flex w-64 shrink-0 flex-col gap-3 lg:w-80">
+            {uitgelicht.map((c) => (
+              <Link
+                key={c.categorie}
+                href={`/bruiloft/ontdekken/${c.slug}`}
+                aria-label={`${c.categorie}: ${c.omschrijving}`}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+              >
+                <Card interactive className="overflow-hidden">
+                  {/* Plek voor de definitieve categoriefoto: vul
+                      `afbeeldingUrl` in lib/bruiloft/discovery/categorieConfig.ts —
+                      zolang die leeg is toont dit vlak de neutrale icoon-placeholder. */}
+                  <CategorieAfbeelding
+                    categorie={c.categorie}
+                    afbeeldingUrl={c.afbeeldingUrl}
+                    className="aspect-[2/1]"
+                  />
+                  <CardContent className="p-3">
                     <p className="font-medium text-foreground">{c.categorie}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{c.omschrijving}</p>
-                    {telling != null && telling > 0 ? (
-                      <p className="mt-1.5 text-xs text-muted-foreground">
-                        {telling.toLocaleString('nl-NL')} leveranciers
+                    {tellingen?.[c.categorie] != null ? (
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {tellingen[c.categorie].toLocaleString('nl-NL')} leveranciers
                       </p>
                     ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          )
-        })}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
+        {overig.length > 0 ? (
+          <div className="grid min-w-0 flex-1 auto-rows-min grid-cols-2 gap-2 lg:grid-cols-3">
+            {overig.map((c) => (
+              <Link
+                key={c.categorie}
+                href={`/bruiloft/ontdekken/${c.slug}`}
+                aria-label={`${c.categorie}: ${c.omschrijving}`}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+              >
+                <Card interactive className="flex items-center gap-3 p-3">
+                  <CategorieIcoonNaamTelling config={c} telling={tellingen?.[c.categorie]} />
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   )
