@@ -7,7 +7,6 @@ import { BerichtenPreview } from '@/components/bruiloft/BerichtenPreview'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
-import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import { Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
@@ -121,9 +120,6 @@ export default function DashboardPage() {
 
       {/* ── VASTE KERN: altijd zichtbaar ── */}
       <BerichtenPreview />
-
-      {/* Eenmalig welkomstmoment voor nieuwe gebruikers */}
-      <WelkomstDialog />
 
       {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">
