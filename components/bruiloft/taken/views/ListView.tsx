@@ -7,7 +7,7 @@ import { ChevronDown, ChevronRight, ListChecks } from 'lucide-react'
 import { TaskCard } from '@/components/bruiloft/taken/TaskCard'
 import { QuickAddTask } from '@/components/bruiloft/taken/QuickAddTask'
 import { DezeMaandSection } from '@/components/bruiloft/taken/views/DezeMaandSection'
-import { effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
+import { aankomendeTaken, effectievePrioriteit } from '@/lib/bruiloft/taken/stats'
 import { defaultDeadlineVoorMaand, groepeerOpDeadlineMaand } from '@/lib/bruiloft/taken/timeline'
 import { taakGroepGridClass } from '@/components/bruiloft/taken/views/taakGroepGridClass'
 import type { ISODate, Task, Wedding, WeddingMember } from '@/lib/bruiloft/types'
@@ -49,7 +49,12 @@ export function ListView({
 }: ListViewProps) {
   // Handmatig open/dicht geklapte maandsecties (wint van de standaardkeuze).
   const [maandOverrides, setMaandOverrides] = React.useState<Record<string, boolean>>({})
-  const maandGroepen = React.useMemo(() => groepeerOpDeadlineMaand(tasks), [tasks])
+  // Taken die al in "Nu aan de beurt" staan niet nogmaals in hun maandgroep
+  // tonen — dezelfde taak twee keer op één scherm oogt als een fout.
+  const maandGroepen = React.useMemo(() => {
+    const urgentIds = new Set(aankomendeTaken(tasks).map((t) => t.id))
+    return groepeerOpDeadlineMaand(tasks.filter((t) => !urgentIds.has(t.id)))
+  }, [tasks])
 
   if (allTasks.length === 0) {
     return (
@@ -96,8 +101,8 @@ export function ListView({
 
       {maandGroepen.length > 0 ? (
         <p className="px-1 text-sm text-muted-foreground">
-          Hieronder per maand de taken met een deadline — de uiterlijke datum waarop het geregeld
-          moet zijn.
+          Hieronder per maand de overige taken met hun deadline — de uiterlijke datum waarop het
+          geregeld moet zijn.
         </p>
       ) : null}
 
@@ -109,7 +114,7 @@ export function ListView({
         )
         const open = maandIsOpen(groep.key)
         return (
-          <div key={groep.key} className="border-l-2 border-border pl-4">
+          <div key={groep.key} className="group/maand border-l-2 border-border pl-4">
             <button
               type="button"
               aria-expanded={open}

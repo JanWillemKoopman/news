@@ -13,11 +13,15 @@ interface QuickAddTaskProps {
 
 export function QuickAddTask({ defaultDeadline, onOpenForm, className }: QuickAddTaskProps) {
   return (
+    // Alleen op apparaten mét hover (muis/trackpad) pas zichtbaar bij hover
+    // over de maandgroep of bij toetsenbordfocus — tien keer dezelfde regel op
+    // één scherm is ruis. Op touch bestaat hover niet, dus daar blijft hij staan.
     <button
       type="button"
-      onClick={() => onOpenForm('')}
+      onClick={() => onOpenForm(defaultDeadline)}
       className={cn(
-        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground',
+        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-opacity hover:bg-accent/40 hover:text-foreground',
+        '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover/maand:opacity-100',
         className
       )}
     >
