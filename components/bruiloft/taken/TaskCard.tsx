@@ -146,16 +146,16 @@ export function TaskCard({
           className={cn(
             'min-w-0 flex-1 transition-opacity',
             klaar && 'opacity-60',
-            !compact && 'sm:flex sm:items-center sm:gap-4'
+            !compact && 'sm:flex sm:items-start sm:gap-4'
           )}
         >
-          <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-3')}>
+          <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-start sm:gap-3')}>
             <button
               type="button"
               onClick={() => onEdit(task)}
               className={cn(
-                'text-left font-medium text-foreground hover:underline',
-                !compact && 'sm:shrink-0 sm:truncate sm:max-w-[15rem]',
+                'min-w-0 text-left font-medium text-foreground hover:underline',
+                !compact && 'sm:min-w-0 sm:flex-1',
                 klaar && 'line-through'
               )}
             >
