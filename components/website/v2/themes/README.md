@@ -1,13 +1,21 @@
-# Trouwwebsite-thema's — zes structurele archetypes
+# Trouwwebsite-thema's — negen structurele archetypes
 
-Dit document is het ontwerpvoorstel én de levende documentatie voor de zes
-thema-renderers. Vóór deze redesign waren de zes thema's alleen
+Dit document is het ontwerpvoorstel én de levende documentatie voor de
+negen thema-renderers. Vóór de eerste redesign waren de thema's alleen
 token-presets (kleur, lettertype, hoekradius) op één gedeelde renderer —
 waardoor alle sites structureel identiek aanvoelden. Nu is elk thema een
 **eigen renderer** met eigen layoutstructuur, eigen componentgedrag en een
 eigen bewegingstaal. `theme.preset` bepaalt welke renderer wordt gebruikt;
 de tokens (kleuren, lettertype, hoeken, ornament) blijven daarbinnen
 individueel aanpasbaar.
+
+De eerste zes (Atelier, Editor, Jardin, Landgoed, Studio, Tuin) dekten een
+breed spectrum van bruiloftstijlen, maar misten de **exclusieve, zwarte-das
+"luxe klassiek"**-hoek — het segment waar Riley & Grey met collecties als
+*Aesthete*, *Stardust* en hun "Black & White Moment"/"Vintage Vows"-stijlen
+sterk in is. Drie nieuwe archetypes (Crest, Savoy, Cover) vullen dat aan,
+elk met een eigen, onderling verschillende interpretatie van "luxe":
+formeel-heraldisch, jaren-'20-glamour, en hoge-mode-editorial.
 
 **Toets**: haal alle kleur weg en je moet nog steeds direct zien welk thema
 het is — puur op layout en componentvorm.
@@ -29,6 +37,9 @@ components/website/v2/
     landgoed.tsx        ← rustiek       → "Het Landgoed"
     studio.tsx          ← minimalistisch→ "Studio"
     tuin.tsx            ← botanisch     → "De Tuin"
+    crest.tsx           ← gala          → "The Crest"
+    savoy.tsx           ← artdeco       → "The Savoy"
+    cover.tsx           ← couture       → "The Cover"
 ```
 
 Elke renderer implementeert **alle** bloktypes (hero ×3 varianten, tekst,
@@ -55,7 +66,7 @@ Gedeelde regels voor álle thema's:
 - De **editor-preview** (iframe) toont reveals direct (het hele document
   is daar "in beeld") en opent geen lightbox.
 
-## De zes archetypes
+## De negen archetypes
 
 ### 1. The Atelier (`klassiek`) — de gedrukte uitnodiging
 Letterpress-trouwkaart als website. Alles gecentreerd en **ingelijst**:
@@ -149,6 +160,71 @@ SVG-takken als sectieornamenten, organische asymmetrie.
 - **Personen**: bladgesneden portretten (wisselende richting).
 - **Beweging**: organische groei — 550–700ms met veer-easing
   `cubic-bezier(.34,1.56,.64,1)`, schaal 94%→100%, wiegende bladeren.
+
+### 7. The Crest (`gala`) — de zwarte-das-uitnodiging
+Formeel, heraldisch, gegraveerd. Ivoor en marmerwit met marineblauw en
+mat goud; een **wapenschild-monogram** i.p.v. een medaillon, dubbele
+graveerlijnen als kader, alles scherp (geen ronde hoeken — dit is geen
+ambachtelijke drukkerij, dit is een staatsiedrukwerk).
+- **Hero**: symmetrisch, wapenschild boven de namen, dubbele
+  graveerlijst om het hele scherm, datum in gespatieerde kleinkapitaal
+  onder een goudlijn.
+- **Countdown**: staafklok — vier smalle marmeren zuilen met Romeinse
+  cijfers eronder i.p.v. Arabische.
+- **Tijdlijn**: notarieel register — jaartal in een zegel-rondje, dunne
+  goudlijn, entries als "artikelen" met een doorlopend volgnummer.
+- **RSVP**: formeel antwoordkaart — velden met dubbele onderlijn, een
+  wasZegel-knop die bij hover "smelt" (schaal + gloed) i.p.v. verschuift.
+- **Galerij**: galerijportretten — zware gouden lijst per foto, geen
+  masonry, strikt raster.
+- **Programma**: menukaart met Romeinse cijfers per gang.
+- **Personen**: rechthoekige portretten in een dunne gouden lijst,
+  functietitel in kleinkapitaal eronder als een naamplaatje.
+- **Beweging**: statig-plechtig — 1200–1600ms `cubic-bezier(.19,1,.22,1)`,
+  goudlijnen die zich van het midden naar buiten uittekenen, knoppen die
+  "ingedrukt" ogen (inset-schaduw) i.p.v. optillen.
+
+### 8. The Savoy (`artdeco`) — de glamourclub
+Jaren-'20 art-decoglamour: goud op diep smaragd, een **volledig donker
+thema** (uniek onder de negen — elke andere site is licht). Geometrische
+waaiers, getrapte ziggoerat-randen, symmetrische zonnestraal-motieven
+i.p.v. organische ornamenten.
+- **Hero**: zonnestraal-motief achter de namen, getrapte gouden lijst in
+  de hoeken, naam in brede gespatieerde hoofdletters.
+- **Countdown**: waaiervormige segmenten — elke tijdseenheid een "punt"
+  van een geopende waaier.
+- **Tijdlijn**: getrapte ziggoerat-markeringen i.p.v. bolletjes, entries
+  afwisselend links/rechts van een gouden middenlijn.
+- **RSVP**: kaart met getrapte hoekornamenten, focus laat een gouden
+  waaier openvouwen achter het actieve veld.
+- **Galerij**: getrapte fotolijsten, om-en-om gespiegelde hoekornamenten.
+- **Personen**: geometrisch gemaskeerde portretten (achtkant), naam in
+  wijd gespatieerde hoofdletters.
+- **Beweging**: glamoureus — 500–700ms met een lichte overshoot
+  (`cubic-bezier(.34,1.2,.4,1)`), een gouden glans die bij hover over
+  knoppen "veegt", waaiers die openklappen bij binnenkomst.
+
+### 9. The Cover (`couture`) — de tijdschriftomslag
+Hoge-mode-editorial: monumentale Bodoni-koppen over dramatische
+zwart-witfotografie, alsof het bruidspaar op de cover van een
+modetijdschrift staat. Een steekvlam roodaccent (zoals een cover-line of
+prijskaartje) tegen verder puur zwart-wit.
+- **Hero**: full-bleed zwart-witfoto, enorme Bodoni-namen die half over
+  de foto vallen, een mastkop-balkje ("Nº 01 · [datum]") zoals een
+  tijdschriftlogo.
+- **Countdown**: statistiek-stijl — reusachtige cijfers zoals een
+  tijdschrift-infographic, geen kaders.
+- **Tijdlijn**: inhoudsopgave — stippellijn-leaders tussen jaartal en
+  titel, "paginanummer"-tag rechts.
+- **RSVP**: "abonneer"-kaart, vet zwart knop met rode onderstreping bij
+  hover, velden met dunne onderlijn.
+- **Galerij**: redactionele fotoserie — afwisselend full-bleed en
+  ingekaderd, cursieve bijschriften zoals fotocredits.
+- **Personen**: contactvel in zwart-wit, kleurt niet bij hover (in
+  tegenstelling tot The Editor) — juist de terughoudendheid is chic.
+- **Beweging**: zelfverzekerd-elegant — 400–600ms `cubic-bezier(.4,0,.2,1)`,
+  zachte cross-fades met een vleug schaal (subtiele Ken Burns-beweging),
+  onderstrepingen die bij hover langzaam groeien; nooit een bounce of snap.
 
 ## Roadmap-notities
 

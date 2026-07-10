@@ -931,6 +931,11 @@ function renderGalerij(gallerij: GallerijFoto[], thema: WeddingThema) {
 // MAIN: PublicWebsite
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// gala/artdeco/couture zijn nieuw in website v3 (zie components/website/v2/
+// themes) en hebben geen eigen legacy v1-template — een site kan dit thema
+// alleen kiezen via de v3-editor, die meteen naar het blokkenmodel
+// converteert, dus dit pad is in de praktijk onbereikbaar. De dichtstbije
+// bestaande v1-template dient als veilige terugval.
 const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
   klassiek:        (p) => <KlassiekTemplate {...p} />,
   modern:          (p) => <ModernTemplate {...p} />,
@@ -938,6 +943,9 @@ const TEMPLATES: Record<WeddingThema, (props: TplProps) => React.ReactNode> = {
   rustiek:         (p) => <RustiekTemplate {...p} />,
   minimalistisch:  (p) => <PuurTemplate {...p} />,
   botanisch:       (p) => <BotanischTemplate {...p} />,
+  gala:            (p) => <KlassiekTemplate {...p} />,
+  artdeco:         (p) => <ModernTemplate {...p} />,
+  couture:         (p) => <ModernTemplate {...p} />,
 }
 
 export function PublicWebsite({ data, registry, slug }: { data: PublicWebsiteData; registry?: RegistryMeta | null; slug?: string }) {

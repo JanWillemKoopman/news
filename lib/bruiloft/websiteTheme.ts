@@ -162,6 +162,45 @@ export const THEME_PRESETS: Record<WeddingThema, ThemeTokens> = {
     navZichtbaar: false,
     navStijl: 'accent',
   },
+  // The Crest — zwarte-das gala, ivoor/marmer met marineblauw en goud,
+  // wapenschild-monogram, dubbele graveerlijnen.
+  gala: {
+    preset: 'gala',
+    kopLettertype: 'marcellus',
+    kopCursief: false,
+    kleuren: { accent: '#a9812f', achtergrond: '#faf8f3', kaart: '#ffffff', tekst: '#12202c', gedempt: '#5b6b78' },
+    hoeken: 'scherp',
+    kaartStijl: 'kaart',
+    ornament: 'diamant',
+    navZichtbaar: false,
+    navStijl: 'donker',
+  },
+  // The Savoy — jaren '20 art-decoglamour, goud op diep smaragd, geometrische
+  // waaiers en getrapte lijsten.
+  artdeco: {
+    preset: 'artdeco',
+    kopLettertype: 'italiana',
+    kopCursief: false,
+    kleuren: { accent: '#c9a44c', achtergrond: '#0f1e1a', kaart: '#152720', tekst: '#f5ecd9', gedempt: '#c9b48a' },
+    hoeken: 'scherp',
+    kaartStijl: 'kaart',
+    ornament: 'ster',
+    navZichtbaar: false,
+    navStijl: 'accent',
+  },
+  // The Cover — hoge-mode-editorial in zwart-wit, monumentale Bodoni-koppen
+  // over fotografie, tijdschriftomslag-vormtaal.
+  couture: {
+    preset: 'couture',
+    kopLettertype: 'bodoni-moda',
+    kopCursief: false,
+    kleuren: { accent: '#c8102e', achtergrond: '#ffffff', kaart: '#ffffff', tekst: '#111111', gedempt: '#6b6b6b' },
+    hoeken: 'scherp',
+    kaartStijl: 'open',
+    ornament: 'geen',
+    navZichtbaar: false,
+    navStijl: 'licht',
+  },
 }
 
 export function themeVanPreset(thema: WeddingThema): ThemeTokens {
