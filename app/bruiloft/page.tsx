@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
+import { BerichtenPreview } from '@/components/bruiloft/BerichtenPreview'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { LeveranciersStartpunt } from '@/components/bruiloft/LeveranciersStartpunt'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
@@ -107,10 +108,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Samen plannen — direct onder de Hero, alleen zichtbaar zolang de
-          partner nog geen account heeft (verbergt zichzelf zodra die meeplant). */}
-      <PartnerUitnodigen />
-
       {/* Korte statusbevestiging: waar staan jullie nu, vóór de details. */}
       <DashboardIntro
         wedding={wedding}
@@ -121,16 +118,10 @@ export default function DashboardPage() {
         faseLabel={faseLabel}
       />
 
-      {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
-      <OnboardingGids />
-      <WelkomstDialog />
-
-      {/* Brug van wizard-antwoorden naar Ontdekken/Mijn leveranciers */}
-      <LeveranciersStartpunt />
-
-      {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
-
-      {/* Urgente aandachtspunten: wat nu vraagt om actie */}
+      {/* ── VASTE KERN: altijd zichtbaar, in deze volgorde ──
+          Hero → DashboardIntro → urgente aandachtspunten (tijdskritisch wint
+          altijd) → Berichten (het centrale communicatiepunt) → … →
+          ModuleStatusGrid. */}
       <UrgenteAandachtspunten
         tasks={tasks}
         budgetItems={budgetItems}
@@ -139,6 +130,19 @@ export default function DashboardPage() {
         wedding={wedding}
         permissions={permissions}
       />
+
+      <BerichtenPreview />
+
+      {/* Samen plannen — alleen zichtbaar zolang de partner nog geen account
+          heeft (verbergt zichzelf zodra die meeplant). */}
+      <PartnerUitnodigen />
+
+      {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
+      <OnboardingGids />
+      <WelkomstDialog />
+
+      {/* Brug van wizard-antwoorden naar Ontdekken/Mijn leveranciers */}
+      <LeveranciersStartpunt />
 
       {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">
