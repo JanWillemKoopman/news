@@ -123,7 +123,7 @@ function StatNum({
       <Money
         bedrag={bedrag}
         className={cn(
-          'text-2xl font-bold tabular-nums',
+          'text-xl font-bold tabular-nums',
           kleur === 'rose' && 'text-rose-600',
           kleur === 'groen' && 'text-emerald-600',
           !kleur && 'text-foreground'

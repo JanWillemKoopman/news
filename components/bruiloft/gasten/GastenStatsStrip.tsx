@@ -98,7 +98,7 @@ export function GastenStatsStrip({ guests, wedding }: GastenStatsStripProps) {
 function StatNum({ value, label }: { value: number; label: string }) {
   return (
     <div className="px-5 text-center">
-      <p className="text-2xl font-bold tabular-nums text-foreground">{value}</p>
+      <p className="text-xl font-bold tabular-nums text-foreground">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )
