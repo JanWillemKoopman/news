@@ -54,7 +54,7 @@ export function MessageDetail({
 }: MessageDetailProps) {
   if (!thread) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center md:h-full md:py-0">
         <Mail className="h-10 w-10 text-gray-300" />
         <p className="text-sm text-muted-foreground">Selecteer een bericht om te lezen.</p>
       </div>
@@ -68,7 +68,7 @@ export function MessageDetail({
   const kanReageren = thread.kanReageren && thread.heeftLeverancierReactie
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col md:h-full">
       <div className="flex items-start gap-2 border-b border-border px-4 py-3 sm:px-6">
         {onBack ? (
           <Button variant="ghost" size="icon" className="-ml-2 shrink-0 md:hidden" onClick={onBack} aria-label="Terug naar lijst">
@@ -114,7 +114,7 @@ export function MessageDetail({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      <div className="px-4 py-4 sm:px-6 md:min-h-0 md:flex-1 md:overflow-y-auto">
         <div className="divide-y divide-border">
           {thread.berichten.map((bericht) => (
             <MessageBubble key={bericht.id} bericht={bericht} />
