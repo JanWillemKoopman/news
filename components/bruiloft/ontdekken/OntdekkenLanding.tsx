@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { ontdekkenInfo } from '@/components/bruiloft/faqContent'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
+import { Card } from '@/components/bruiloft/ui'
 import { ONTDEK_CATEGORIEEN, POPULAIRE_CATEGORIEEN, type OntdekCategorieConfig } from '@/lib/bruiloft/discovery/categorieConfig'
 import { CategorieAfbeelding } from './CategorieAfbeelding'
 import { cn } from '@/lib/utils'
@@ -137,23 +138,25 @@ export function OntdekkenLanding() {
           <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
             Meer categorieën
           </h2>
-          <div className="mt-3 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
-            {overig.map((c) => (
-              <Link
-                key={c.categorie}
-                href={`/bruiloft/ontdekken/${c.slug}`}
-                aria-label={`${c.categorie}: ${c.omschrijving}`}
-                className="-mx-3 flex items-baseline justify-between gap-4 rounded-lg border-b border-border px-3 py-3.5 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-              >
-                <span className="min-w-0 truncate font-medium text-foreground">{c.categorie}</span>
-                {tellingen?.[c.categorie] != null ? (
-                  <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                    {tellingen[c.categorie].toLocaleString('nl-NL')}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
-          </div>
+          <Card className="mt-3 p-2 sm:p-3">
+            <div className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+              {overig.map((c) => (
+                <Link
+                  key={c.categorie}
+                  href={`/bruiloft/ontdekken/${c.slug}`}
+                  aria-label={`${c.categorie}: ${c.omschrijving}`}
+                  className="flex items-baseline justify-between gap-4 rounded-lg border-b border-border px-2 py-3.5 transition-colors last:border-b-0 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                >
+                  <span className="min-w-0 truncate font-medium text-foreground">{c.categorie}</span>
+                  {tellingen?.[c.categorie] != null ? (
+                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {tellingen[c.categorie].toLocaleString('nl-NL')}
+                    </span>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          </Card>
         </section>
       ) : null}
     </div>
