@@ -2,10 +2,11 @@
 
 // Site-breed wachtwoord voor de trouwwebsite (fase 3). De schakelaar
 // (sitePasswordEnabled) gaat via de normale saveWebsiteContent-laag; het
-// wachtwoord zelf gaat altijd via saveSitePassword (server-side hashing,
-// zie app/api/trouwen/settings/route.ts) — nooit via de directe
-// client-upsert, en nooit automatisch meegestuurd bij een ongewijzigd veld
-// (voorkomt dat een leeg/onaangeraakt veld per ongeluk het wachtwoord wist).
+// wachtwoord zelf gaat altijd via saveSitePassword/fetchSitePassword
+// (server-side omkeerbaar versleuteld, zie app/api/trouwen/settings/
+// route.ts) — nooit via de directe client-upsert, en nooit automatisch
+// meegestuurd bij een ongewijzigd veld (voorkomt dat een leeg/onaangeraakt
+// veld per ongeluk het wachtwoord wist).
 
 import { Check, ChevronDown, KeyRound, Loader2 } from 'lucide-react'
 import * as React from 'react'
@@ -18,11 +19,27 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 export function SiteWachtwoordInstellingen({ content }: { content: WebsiteContent }) {
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
   const saveSitePassword = useBruiloftStore((s) => s.saveSitePassword)
+  const fetchSitePassword = useBruiloftStore((s) => s.fetchSitePassword)
   const { toast } = useToast()
 
   const [open, setOpen] = React.useState(false)
   const [wachtwoord, setWachtwoord] = React.useState('')
   const [opslaan, setOpslaan] = React.useState(false)
+  // Huidige (ontsleutelde) wachtwoordwaarde, alleen opgehaald zodra de kaart
+  // opengeklapt wordt. huidigWachtwoord is null zolang onbekend, niet
+  // ingesteld, óf ingesteld in het oude niet-omkeerbare formaat.
+  const [huidigWachtwoord, setHuidigWachtwoord] = React.useState<string | null>(null)
+  const [huidigIngesteld, setHuidigIngesteld] = React.useState(false)
+  const [wachtwoordGeladen, setWachtwoordGeladen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!open || wachtwoordGeladen) return
+    setWachtwoordGeladen(true)
+    void fetchSitePassword().then(({ password, isSet }) => {
+      setHuidigWachtwoord(password)
+      setHuidigIngesteld(isSet)
+    })
+  }, [open, wachtwoordGeladen, fetchSitePassword])
 
   async function toggleEnabled() {
     await saveWebsiteContent({ sitePasswordEnabled: !content.sitePasswordEnabled })
@@ -31,7 +48,9 @@ export function SiteWachtwoordInstellingen({ content }: { content: WebsiteConten
   async function wachtwoordOpslaan() {
     setOpslaan(true)
     try {
-      await saveSitePassword(wachtwoord)
+      const result = await saveSitePassword(wachtwoord)
+      setHuidigWachtwoord(result.password)
+      setHuidigIngesteld(!!result.password)
       setWachtwoord('')
       toast({
         title: wachtwoord ? 'Wachtwoord ingesteld' : 'Wachtwoord verwijderd',
@@ -113,6 +132,19 @@ export function SiteWachtwoordInstellingen({ content }: { content: WebsiteConten
                 Opslaan
               </button>
             </div>
+            {huidigWachtwoord && (
+              <p className="mt-2.5 text-sm text-foreground">
+                Je wachtwoord voor je trouwwebsite is:{' '}
+                <span className="font-mono font-semibold">{huidigWachtwoord}</span>
+              </p>
+            )}
+            {!huidigWachtwoord && huidigIngesteld && (
+              <p className="mt-2.5 text-xs text-muted-foreground">
+                Er staat een wachtwoord ingesteld van vóór deze functie, waardoor de waarde niet
+                meer getoond kan worden. Sla hierboven een nieuw wachtwoord op om dit voortaan te
+                kunnen zien.
+              </p>
+            )}
           </div>
         </div>
       )}

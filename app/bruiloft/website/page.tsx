@@ -19,7 +19,7 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 
 import { BlokkenBuilder } from './components/BlokkenBuilder'
 import { LivePreview } from './components/LivePreview'
-import { PaginaSwitcher } from './components/PaginaSwitcher'
+import { PaginaInstellingen } from './components/PaginaInstellingen'
 import { RsvpSectie } from './components/RsvpSectie'
 import { SiteWachtwoordInstellingen } from './components/SiteWachtwoordInstellingen'
 import { ThemaInstellingen } from './components/ThemaInstellingen'
@@ -36,9 +36,7 @@ export default function WebsitePage() {
   const websitePages = useBruiloftStore((s) => s.websitePages)
   const scheduleItems = useBruiloftStore((s) => s.scheduleItems)
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
-  const addWebsitePage = useBruiloftStore((s) => s.addWebsitePage)
   const updateWebsitePage = useBruiloftStore((s) => s.updateWebsitePage)
-  const deleteWebsitePage = useBruiloftStore((s) => s.deleteWebsitePage)
   const converteerNaarBlokken = useBruiloftStore((s) => s.converteerNaarBlokken)
   const { toast } = useToast()
 
@@ -68,17 +66,12 @@ export default function WebsitePage() {
     })
   }
 
+  // De trouwwebsite bestaat altijd uit precies één pagina (Home) — geen
+  // paginabeheer of -wissel meer.
   const home = websitePages.find((p) => p.pageSlug === '') ?? websitePages[0] ?? null
+  const huidigePagina = home
 
-  // Welke pagina wordt momenteel bewerkt (los van welke het eerst laadt).
-  const [actievePaginaId, setActievePaginaId] = React.useState<string | null>(null)
-  const huidigePagina = websitePages.find((p) => p.id === actievePaginaId) ?? home
-
-  React.useEffect(() => {
-    if (!actievePaginaId && home) setActievePaginaId(home.id)
-  }, [actievePaginaId, home])
-
-  // Lokale blokken-staat van de actieve pagina: direct zichtbaar in de
+  // Lokale blokken-staat van de pagina: direct zichtbaar in de
   // preview, debounced opgeslagen.
   const [blocks, setBlocks] = React.useState<Block[] | null>(null)
   const blocksPageIdRef = React.useRef<string | null>(null)
@@ -153,28 +146,6 @@ export default function WebsitePage() {
   function onBlocksChange(next: Block[]) {
     setBlocks(next)
     debounce.stel({ blocks: next })
-  }
-
-  async function onPaginaToevoegen(titel: string, pageSlug: string) {
-    const nieuw = await addWebsitePage({
-      titel,
-      pageSlug,
-      volgorde: websitePages.length,
-      zichtbaar: true,
-      blocks: [],
-      seoTitel: '',
-      seoOmschrijving: '',
-    })
-    setActievePaginaId(nieuw.id)
-  }
-
-  async function onPaginaVerwijderen(id: string) {
-    if (id === actievePaginaId) setActievePaginaId(home.id)
-    await deleteWebsitePage(id)
-  }
-
-  async function onPaginaHerorden(nieuweVolgorde: typeof websitePages) {
-    await Promise.all(nieuweVolgorde.map((p, i) => updateWebsitePage(p.id, { volgorde: i })))
   }
 
   // Voor pagina's die niet actief bewerkt worden, gebruiken we de blokken
@@ -314,16 +285,9 @@ export default function WebsitePage() {
 
           <SiteWachtwoordInstellingen content={websiteContent} />
 
-          <PaginaSwitcher
-            paginas={websitePages}
-            actievePaginaId={huidigePagina.id}
-            onSelecteer={setActievePaginaId}
-            onToevoegen={onPaginaToevoegen}
-            onHernoemen={(id, titel) => void updateWebsitePage(id, { titel })}
-            onToggleZichtbaar={(id, zichtbaar) => void updateWebsitePage(id, { zichtbaar })}
-            onVerwijderen={onPaginaVerwijderen}
-            onHerorden={onPaginaHerorden}
-            onSeoWijzigen={(id, patch) => void updateWebsitePage(id, patch)}
+          <PaginaInstellingen
+            pagina={huidigePagina}
+            onWijzig={(patch) => void updateWebsitePage(huidigePagina.id, patch)}
           />
 
           <BlokkenBuilder blocks={blocks} onChange={onBlocksChange} />
