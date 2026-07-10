@@ -116,6 +116,7 @@ export default function DashboardPage() {
         vendors={vendors}
         guests={guests}
         faseLabel={faseLabel}
+        permissions={permissions}
       />
 
       {/* ── VASTE KERN: altijd zichtbaar ── */}
