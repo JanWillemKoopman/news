@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, User, UserCog } from 'lucide-react'
+import { Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, User, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -239,16 +239,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 Samen plannen
               </Link>
             ) : null}
-
-            <Link
-              href="/bruiloft/activiteit"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-            >
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              Recente activiteit
-            </Link>
 
             <Link
               href="/bruiloft/account"
