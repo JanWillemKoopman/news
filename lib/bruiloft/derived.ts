@@ -317,7 +317,7 @@ export function ongelezenActiviteit(
 }
 
 // Aantal inkomende berichten dat de huidige gebruiker nog niet gelezen heeft
-// (voor het badge-stipje op het mail-icoon in de header).
+// (voor het aantal-badge op het mail-icoon in de header).
 export function ongelezenBerichten(
   messages: Message[],
   messageReads: MessageRead[],

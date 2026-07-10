@@ -71,8 +71,10 @@ export function TopNav() {
             {ongelezen > 0 ? (
               <span
                 aria-hidden
-                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500"
-              />
+                className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-header-bg"
+              >
+                {ongelezen > 99 ? '99+' : ongelezen}
+              </span>
             ) : null}
           </Link>
           <UserMenu variant="dark" />
