@@ -14,12 +14,13 @@ import { CategorieAfbeelding } from './CategorieAfbeelding'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
 // Overzichtspagina van de leveranciersdirectory: puur categorieën kiezen, geen
-// geografische zoekbalk (die hoort op de resultatenpagina). Links staan de 4
-// meest gezochte categorieën (subset van dezelfde lijst als het
-// Leveranciers-megamenu) gestapeld met een brede, niet te hoge foto; rechts
-// daarvan de overige categorieën als compacte blokjes. Op mobiel vervalt het
-// onderscheid: daar telt overzicht zwaarder dan sfeer, dus staat alles in één
-// compacte lijst zonder afbeeldingen.
+// geografische zoekbalk (die hoort op de resultatenpagina). Bovenaan (rij 1-2)
+// de 4 meest gezochte categorieën (subset van dezelfde lijst als het
+// Leveranciers-megamenu) met een brede, niet te hoge foto, 2 per rij.
+// Daaronder (rij 3-4) de overige categorieën als compacte blokjes, verdeeld
+// over twee banden. Op mobiel vervalt het onderscheid: daar telt overzicht
+// zwaarder dan sfeer, dus staat alles in één compacte lijst zonder
+// afbeeldingen.
 
 const UITGELICHT_AANTAL = 4
 
@@ -115,12 +116,14 @@ export function OntdekkenLanding() {
         ))}
       </div>
 
-      {/* Desktop/tablet: links de uitgelichte categorieën gestapeld met een
-          brede, niet te hoge foto; rechts de overige categorieën als
-          compacte blokjes, beide kolommen even hoog beleefd. */}
-      <div className="hidden gap-6 sm:flex">
+      {/* Desktop/tablet: rij 1 en 2 zijn de uitgelichte categorieën met foto
+          (2 per rij, zelfde kaartgrootte als voorheen — alleen de indeling
+          wijzigt van 1 kolom naar 2 per rij). Rij 3 en 4 verdelen de overige
+          categorieën in twee compacte banden eronder, met dezelfde
+          kaartgrootte als voorheen. */}
+      <div className="hidden sm:block">
         {uitgelicht.length > 0 ? (
-          <div className="flex w-64 shrink-0 flex-col gap-3 lg:w-80">
+          <div className="mb-8 grid max-w-[34rem] grid-cols-2 gap-3 lg:max-w-[42rem] lg:gap-4">
             {uitgelicht.map((c) => (
               <Link
                 key={c.categorie}
@@ -151,22 +154,34 @@ export function OntdekkenLanding() {
           </div>
         ) : null}
 
-        {overig.length > 0 ? (
-          <div className="grid min-w-0 flex-1 auto-rows-min grid-cols-2 gap-2 lg:grid-cols-3">
-            {overig.map((c) => (
-              <Link
-                key={c.categorie}
-                href={`/bruiloft/ontdekken/${c.slug}`}
-                aria-label={`${c.categorie}: ${c.omschrijving}`}
-                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
-              >
-                <Card interactive className="flex items-center gap-3 p-3">
-                  <CategorieIcoonNaamTelling config={c} telling={tellingen?.[c.categorie]} />
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : null}
+        {overig.length > 0
+          ? (() => {
+              const helft = Math.ceil(overig.length / 2)
+              const banden = [overig.slice(0, helft), overig.slice(helft)]
+              return (
+                <div className="flex flex-col gap-4">
+                  {banden.map((band, i) =>
+                    band.length > 0 ? (
+                      <div key={i} className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+                        {band.map((c) => (
+                          <Link
+                            key={c.categorie}
+                            href={`/bruiloft/ontdekken/${c.slug}`}
+                            aria-label={`${c.categorie}: ${c.omschrijving}`}
+                            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+                          >
+                            <Card interactive className="flex items-center gap-3 p-3">
+                              <CategorieIcoonNaamTelling config={c} telling={tellingen?.[c.categorie]} />
+                            </Card>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )
+            })()
+          : null}
       </div>
     </div>
   )
