@@ -7,7 +7,10 @@ import type { Prioriteit, Task, TaskStatus, ToegewezenAan } from '../types'
 export type AssigneeFilter = 'all' | 'unassigned' | string
 
 export interface TaakFilters {
-  status: 'all' | TaskStatus
+  // Meerdere statussen tegelijk aan/uit te vinken. Standaard alleen 'open' en
+  // 'bezig' aangevinkt: het overzicht toont wat nog moet gebeuren, afgeronde
+  // taken verberg je expliciet aan- of uitvinkend via het filter.
+  status: TaskStatus[]
   prioriteit: 'all' | Prioriteit
   // Combineert assignees (multi) en legacy toegewezenAan.
   toegewezen: AssigneeFilter | ToegewezenAan
@@ -15,10 +18,18 @@ export interface TaakFilters {
 }
 
 export const DEFAULT_FILTERS: TaakFilters = {
-  status: 'all',
+  status: ['open', 'bezig'],
   prioriteit: 'all',
   toegewezen: 'all',
   zoek: '',
+}
+
+// Vergelijkt twee statusselecties ongeacht volgorde — gebruikt om te bepalen
+// of het statusfilter nog op de standaardselectie staat (voor de
+// "actief"-badge en de "Wis filters"-knop).
+export function isDefaultStatusSelectie(status: TaskStatus[]): boolean {
+  if (status.length !== DEFAULT_FILTERS.status.length) return false
+  return DEFAULT_FILTERS.status.every((s) => status.includes(s))
 }
 
 const LEGACY_LABELS: ToegewezenAan[] = ['partner 1', 'partner 2', 'samen', 'getuige', 'overig']
@@ -40,7 +51,7 @@ function matchToegewezen(task: Task, value: TaakFilters['toegewezen']): boolean 
 export function applyFilters(tasks: Task[], filters: TaakFilters): Task[] {
   const zoek = filters.zoek.trim().toLowerCase()
   return tasks.filter((t) => {
-    if (filters.status !== 'all' && t.status !== filters.status) return false
+    if (!filters.status.includes(t.status)) return false
     if (filters.prioriteit !== 'all' && effectievePrioriteit(t) !== filters.prioriteit) return false
     if (!matchToegewezen(t, filters.toegewezen)) return false
     if (zoek) {
