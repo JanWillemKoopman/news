@@ -1,5 +1,4 @@
 import {
-  Activity,
   Armchair,
   Cake,
   CalendarClock,
@@ -54,7 +53,6 @@ const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijs
 const fotomuur: NavItem = { label: 'Fotomuur', href: '/bruiloft/fotomuur', icon: Camera, module: 'website' }
 const leden: NavItem = { label: 'Samen plannen', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
-const activiteit: NavItem = { label: 'Activiteit', href: '/bruiloft/activiteit', icon: Activity, module: 'dashboard' }
 
 // TPW-categorieën — elk een eigen pagina onder /bruiloft/ontdekken/[slug].
 const catTrouwlocaties: NavItem = { label: 'Trouwlocaties', href: '/bruiloft/ontdekken/trouwlocaties', icon: MapPin, module: 'leveranciers' }
@@ -104,7 +102,6 @@ export const TPW_CATEGORIE_ITEMS: NavItem[] = [
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
   dashboard,
-  activiteit,
   taken,
   budget,
   mijnLeveranciers,
