@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+import { sendWelcomeEmailOnce } from '@/lib/email/welcome'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
@@ -54,6 +55,14 @@ export async function POST(request: Request) {
   if (updateError) {
     console.error('[reset-password] updateUserById error:', updateError)
     return NextResponse.json({ error: updateError.message }, { status: 400 })
+  }
+
+  // Uitgenodigd account dat zojuist zijn eerste wachtwoord instelde: het
+  // account is nu compleet, dus stuur (eenmalig) de bevestigingsmail.
+  try {
+    await sendWelcomeEmailOnce(userId, { onlyIfInvited: true })
+  } catch (err) {
+    console.error('[reset-password] welkomstmail mislukt:', err)
   }
 
   return NextResponse.json({ success: true })

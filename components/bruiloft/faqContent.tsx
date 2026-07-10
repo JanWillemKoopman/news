@@ -1034,19 +1034,22 @@ export const ledenInfo: PageInfo = {
     <Intro>
       <p>
         Op <strong>Samen plannen</strong> regel je wie er met jullie meewerkt aan
-        het trouwplan. Nodig je partner (of bijvoorbeeld een getuige) uit, zodat
-        jullie dezelfde gegevens beheren.
+        het trouwplan. Nodig je partner, getuige of ceremoniemeester uit met een
+        rol, en bepaal per onderdeel wat elke rol mag zien of bewerken.
       </p>
       <QuickStart
         stappen={[
           <>
-            <strong>Nodig je partner uit</strong> via zijn of haar e-mailadres.
+            <strong>Nodig een lid uit</strong> via zijn of haar e-mailadres en
+            kies een rol.
           </>,
           <>
-            Zij krijgen een <strong>link</strong> om een account te maken.
+            Diegene krijgt een <strong>e-mail</strong> met een knop om een
+            wachtwoord in te stellen.
           </>,
           <>
-            <strong>Beheer</strong> wie toegang heeft.
+            Stel bij <strong>Rollen en rechten</strong> per onderdeel in wat elke
+            rol kan.
           </>,
         ]}
       />
@@ -1054,20 +1057,58 @@ export const ledenInfo: PageInfo = {
   ),
   faq: [
     {
-      vraag: 'Hoe nodig ik mijn partner uit?',
+      vraag: 'Hoe nodig ik iemand uit?',
       antwoord: (
         <p>
-          Vul het e-mailadres van je partner in. Diegene ontvangt een
-          uitnodigingslink en kan daarmee een account aanmaken om mee te plannen.
+          Klik op <strong>Lid uitnodigen</strong>, vul het e-mailadres in en kies
+          een rol. Diegene ontvangt een uitnodigingsmail met een knop om een
+          wachtwoord in te stellen; daarmee is het account meteen compleet en
+          heeft diegene direct toegang.
         </p>
       ),
     },
     {
-      vraag: 'Wat kan een medeplanner zien en doen?',
+      vraag: 'Welke rollen zijn er?',
       antwoord: (
         <p>
-          Iedereen die hier toegang heeft werkt samen aan hetzelfde trouwplan en
-          ziet dezelfde gegevens.
+          <strong>Eigenaar</strong> (het bruidspaar) ziet en bewerkt alles en
+          beheert leden en rechten. <strong>Planner</strong> helpt breed mee,
+          <strong> helper</strong> helpt met specifieke onderdelen en een
+          <strong> kijker</strong> kan alleen meekijken. Wat een planner, helper
+          of kijker per onderdeel precies kan, stel je zelf in bij{' '}
+          <strong>Rollen en rechten</strong>.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan leden beheren?',
+      antwoord: (
+        <p>
+          Alleen eigenaren kunnen leden uitnodigen, rollen wijzigen, rechten
+          instellen en toegang intrekken. Andere leden zien op deze pagina wel
+          wie er meewerkt en welke rechten er gelden, maar kunnen niets wijzigen.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Kan ik bepalen wie het budget (of een ander onderdeel) ziet?',
+      antwoord: (
+        <p>
+          Ja. Kies bij <strong>Rollen en rechten</strong> een rol en stel per
+          onderdeel — zoals budget, gasten of de website — in of die rol{' '}
+          <strong>niets</strong>, <strong>zien</strong> of{' '}
+          <strong>bewerken</strong> mag. De wijziging geldt direct voor alle
+          leden met die rol.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe wijzig ik iemands rol?',
+      antwoord: (
+        <p>
+          Open het menu achter het lid en kies <strong>Rol wijzigen</strong>. Er
+          blijft altijd minstens één eigenaar; de laatste eigenaar kan dus geen
+          andere rol krijgen.
         </p>
       ),
     },
@@ -1075,8 +1116,10 @@ export const ledenInfo: PageInfo = {
       vraag: 'Iemand heeft de uitnodiging niet ontvangen — wat nu?',
       antwoord: (
         <p>
-          Je kunt opnieuw een link sturen vanuit de ledenlijst, zodat diegene
-          alsnog een wachtwoord kan instellen.
+          Zolang een account nog niet geactiveerd is, zie je dat bij het lid
+          staan. Kies in het menu achter het lid{' '}
+          <strong>Uitnodiging opnieuw versturen</strong>; diegene krijgt dan een
+          nieuwe link om een wachtwoord in te stellen.
         </p>
       ),
     },
@@ -1084,18 +1127,19 @@ export const ledenInfo: PageInfo = {
       vraag: 'Hoe trek ik iemands toegang in?',
       antwoord: (
         <p>
-          Gebruik <strong>Toegang intrekken</strong> bij het betreffende lid. Die
-          persoon kan dan niet meer bij jullie bruiloft.
+          Kies in het menu achter het lid <strong>Toegang intrekken</strong>. Die
+          persoon kan dan niet meer bij jullie bruiloft; opnieuw uitnodigen kan
+          altijd.
         </p>
       ),
     },
     {
-      vraag: 'Hoe verwijder ik de hele bruiloft?',
+      vraag: 'Waar verwijder ik de hele bruiloft?',
       antwoord: (
         <p>
-          Onderaan staat <strong>Bruiloft verwijderen</strong> (alleen voor de
-          eigenaar). Let op: alle gegevens worden dan permanent verwijderd en dit
-          kan niet ongedaan worden gemaakt.
+          Dat staat tegenwoordig op de <strong>Account</strong>-pagina, onderaan
+          bij de gevaarzone (alleen zichtbaar voor eigenaren). Let op: alle
+          gegevens worden dan permanent verwijderd.
         </p>
       ),
     },

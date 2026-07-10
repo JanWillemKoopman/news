@@ -112,9 +112,10 @@ create index idx_wedding_members_user on public.wedding_members(user_id);
 create table public.wedding_role_permissions (
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   role text not null check (role in ('planner', 'helper', 'viewer')),
+  -- 0062: 'registry' (cadeaulijst) toegevoegd aan de instelbare modules.
   module text not null check (module in (
     'dashboard', 'taken', 'budget', 'leveranciers', 'gasten',
-    'website', 'draaiboek', 'tafels', 'beheer'
+    'website', 'draaiboek', 'tafels', 'registry', 'beheer'
   )),
   level text not null check (level in ('none', 'view', 'edit')),
   primary key (wedding_id, role, module)
@@ -347,6 +348,7 @@ begin
     (new.id, 'planner', 'leveranciers', 'view'),
     (new.id, 'planner', 'budget', 'none'),
     (new.id, 'planner', 'website', 'none'),
+    (new.id, 'planner', 'registry', 'view'),
     (new.id, 'planner', 'beheer', 'none'),
     (new.id, 'helper', 'dashboard', 'view'),
     (new.id, 'helper', 'taken', 'edit'),
@@ -356,6 +358,7 @@ begin
     (new.id, 'helper', 'leveranciers', 'none'),
     (new.id, 'helper', 'budget', 'none'),
     (new.id, 'helper', 'website', 'none'),
+    (new.id, 'helper', 'registry', 'none'),
     (new.id, 'helper', 'beheer', 'none'),
     (new.id, 'viewer', 'dashboard', 'view'),
     (new.id, 'viewer', 'taken', 'view'),
@@ -365,6 +368,7 @@ begin
     (new.id, 'viewer', 'leveranciers', 'none'),
     (new.id, 'viewer', 'budget', 'none'),
     (new.id, 'viewer', 'website', 'none'),
+    (new.id, 'viewer', 'registry', 'none'),
     (new.id, 'viewer', 'beheer', 'none')
   on conflict do nothing;
 

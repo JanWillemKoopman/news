@@ -429,6 +429,60 @@ function HerinneringenSection() {
 
 // ── Gevaarzone ───────────────────────────────────────────────────────────────
 
+// Alleen eigenaren kunnen de bruiloft verwijderen. Dit blok stond eerder op
+// "Samen plannen", maar hoort bij de gevaarzone naast account-verwijderen.
+function BruiloftVerwijderenSection() {
+  const router = useRouter()
+  const wedding = useBruiloftStore((s) => s.wedding)
+  const role = useBruiloftStore((s) => s.role)
+  const deleteActiveWedding = useBruiloftStore((s) => s.deleteActiveWedding)
+  const { toast } = useToast()
+  const [confirm, setConfirm] = React.useState(false)
+  const [busy, setBusy] = React.useState(false)
+
+  if (!wedding || role !== 'owner') return null
+
+  async function onDelete() {
+    setBusy(true)
+    try {
+      await deleteActiveWedding()
+      router.push('/bruiloft')
+      router.refresh()
+    } catch {
+      setBusy(false)
+      setConfirm(false)
+      toast({ title: 'Verwijderen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
+    }
+  }
+
+  return (
+    <>
+      <Card className="mb-6 border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">Bruiloft verwijderen</CardTitle>
+          <CardDescription>
+            Verwijder deze bruiloft en alle bijbehorende gegevens (gasten, taken, budget,
+            leveranciers, draaiboek, tafels en website). Dit kan niet ongedaan worden gemaakt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={() => setConfirm(true)} loading={busy}>
+            Bruiloft verwijderen
+          </Button>
+        </CardContent>
+      </Card>
+      <ConfirmDialog
+        open={confirm}
+        onOpenChange={(o) => !o && setConfirm(false)}
+        title="Bruiloft definitief verwijderen?"
+        description={`Alle gegevens van "${wedding.partner1Naam} & ${wedding.partner2Naam}" worden permanent verwijderd.`}
+        bevestigLabel="Ja, verwijder bruiloft"
+        onConfirm={onDelete}
+      />
+    </>
+  )
+}
+
 function GevaarZoneSection() {
   const router = useRouter()
   const signOut = useBruiloftStore((s) => s.signOut)
@@ -567,6 +621,7 @@ export default function AccountPage() {
       <HerinneringenSection />
       <WachtwoordSection />
       <hr className="my-4 border-border" />
+      <BruiloftVerwijderenSection />
       <GevaarZoneSection />
     </div>
   )

@@ -71,6 +71,9 @@ export function ResetPasswordForm() {
       setLoading(false)
       return
     }
+    // Uitgenodigde leden landen hier na hun eerste wachtwoord: hun account is
+    // nu compleet, dus stuur (eenmalig) de bevestigingsmail. Fire-and-forget.
+    void fetch('/api/account/welcome', { method: 'POST' }).catch(() => {})
     setDone(true)
     setLoading(false)
     router.push('/inloggen?succes=wachtwoord_gewijzigd')

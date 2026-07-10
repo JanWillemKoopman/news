@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
     type: 'invite',
     email,
     options: {
-      data: { display_name: partnerNaam },
+      // `uitgenodigd` stuurt de eenmalige welkomstmail aan zodra dit account
+      // straks een wachtwoord instelt (zie lib/email/welcome.ts).
+      data: { display_name: partnerNaam, uitgenodigd: true },
     },
   })
 
