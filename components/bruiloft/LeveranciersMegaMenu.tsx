@@ -6,19 +6,9 @@ import { ChevronDown, Heart } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/bruiloft/ui'
+import { POPULAIRE_CATEGORIEEN } from '@/lib/bruiloft/discovery/categorieConfig'
 import { TPW_CATEGORIE_ITEMS, mijnLeveranciers, type NavSection } from './nav'
 import { useHoverMegaMenu } from './useHoverMegaMenu'
-
-// Volgorde bepaald door de gebruiker — dichtst bij de populairste categorieën
-// op theperfectwedding.nl, vertaald naar onze eigen 20-categorieënlijst.
-const POPULAIRE_LABELS = [
-  'Trouwlocaties',
-  'Trouwjurken',
-  'Trouwringen',
-  'Trouwfotografen',
-  'Videografen',
-  'Bloemen',
-]
 
 interface LeveranciersMegaMenuProps {
   section: NavSection
@@ -35,11 +25,11 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
   const { open, setOpen, containerRef, panelRef, handleMouseEnter, handleMouseLeave, handleTriggerClick } =
     useHoverMegaMenu()
 
-  const populair = POPULAIRE_LABELS.map((label) =>
+  const populair = POPULAIRE_CATEGORIEEN.map((label) =>
     TPW_CATEGORIE_ITEMS.find((c) => c.label === label)
   ).filter((c): c is (typeof TPW_CATEGORIE_ITEMS)[number] => Boolean(c))
 
-  const overig = TPW_CATEGORIE_ITEMS.filter((c) => !POPULAIRE_LABELS.includes(c.label)).sort(
+  const overig = TPW_CATEGORIE_ITEMS.filter((c) => !(POPULAIRE_CATEGORIEEN as string[]).includes(c.label)).sort(
     (a, b) => a.label.localeCompare(b.label, 'nl')
   )
   const overigHelft = Math.ceil(overig.length / 2)
