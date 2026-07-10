@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ChevronDown, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/bruiloft/ui'
@@ -43,7 +43,7 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
-          'inline-flex items-center gap-1 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
+          'inline-flex items-center rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-rhino-800',
           isActive || open
             ? 'bg-header-active text-white'
@@ -51,7 +51,6 @@ export function LeveranciersMegaMenu({ section, isActive }: LeveranciersMegaMenu
         )}
       >
         {section.label}
-        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
 
       {open ? (
