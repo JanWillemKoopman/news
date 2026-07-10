@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { verifyPassword } from '@/lib/crypto/password'
+import { verifySitePassword } from '@/lib/crypto/sitePassword'
 import { cookieNaamVoor, maakOntgrendelCookieWaarde } from '@/lib/crypto/siteUnlockCookie'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  const ok = await verifyPassword(password, content.site_password)
+  const ok = await verifySitePassword(password, content.site_password)
   if (!ok) return NextResponse.json({ ok: false })
 
   const { waarde, maxAge } = maakOntgrendelCookieWaarde(content.wedding_id)

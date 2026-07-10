@@ -231,13 +231,22 @@ interface BruiloftActions {
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
-  // Website v3 fase 3: site-breed wachtwoord instellen/wijzigen (gehasht
-  // server-side via POST /api/trouwen/settings) of verwijderen (lege string).
-  saveSitePassword: (password: string) => Promise<void>
-  // Website v3: pagina's met blokken.
+  // Website v3 fase 3: site-breed wachtwoord instellen/wijzigen (omkeerbaar
+  // versleuteld server-side via PATCH /api/trouwen/settings, zodat het
+  // teruggetoond kan worden) of verwijderen (lege string). Retourneert het
+  // zojuist opgeslagen wachtwoord zodat de editor het meteen kan tonen.
+  saveSitePassword: (password: string) => Promise<{ password: string | null }>
+  // Haalt het huidige (ontsleutelde) trouwwebsite-wachtwoord op, voor de
+  // "je wachtwoord is..."-regel in de editor. isSet blijft true en password
+  // is null wanneer een ouder wachtwoord nog in het niet-omkeerbare
+  // legacy-formaat staat (vóór deze functionaliteit werd toegevoegd).
+  fetchSitePassword: () => Promise<{ password: string | null; isSet: boolean }>
+  // Website v3: de (enige) pagina met blokken. addWebsitePage is intern nog
+  // nodig voor converteerNaarBlokken (eenmalige aanmaak van de Home-pagina);
+  // er is bewust geen UI (meer) om zelf extra pagina's toe te voegen of te
+  // verwijderen — de trouwwebsite bestaat altijd uit precies één pagina.
   addWebsitePage: (input: Omit<WebsitePageInput, 'weddingId'>) => Promise<WebsitePage>
   updateWebsitePage: (id: ID, patch: Partial<Omit<WebsitePageInput, 'weddingId'>>) => Promise<void>
-  deleteWebsitePage: (id: ID) => Promise<void>
   // Eenmalige converter: zet het oude vaste-secties-model om naar een
   // Home-pagina met blokken (idempotent; doet niets als er al pagina's zijn).
   converteerNaarBlokken: () => Promise<void>
@@ -1300,11 +1309,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
-    deleteWebsitePage: async (id) => {
-      await repository.deleteWebsitePage(id)
-      set({ websitePages: get().websitePages.filter((p) => p.id !== id) })
-    },
-
     converteerNaarBlokken: async () => {
       const { wedding, websitePages } = get()
       if (!wedding || websitePages.length > 0) return
@@ -1334,13 +1338,22 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     saveSitePassword: async (password) => {
       const wedding = get().wedding
-      if (!wedding) return
+      if (!wedding) return { password: null }
       const res = await fetch('/api/trouwen/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weddingId: wedding.id, password }),
       })
       if (!res.ok) throw new Error('Wachtwoord opslaan mislukt')
+      return res.json()
+    },
+
+    fetchSitePassword: async () => {
+      const wedding = get().wedding
+      if (!wedding) return { password: null, isSet: false }
+      const res = await fetch(`/api/trouwen/settings?weddingId=${wedding.id}`)
+      if (!res.ok) throw new Error('Wachtwoord ophalen mislukt')
+      return res.json()
     },
 
     checkSlugAvailable: async (slug) => {
