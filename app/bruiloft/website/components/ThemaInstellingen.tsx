@@ -25,6 +25,9 @@ const PRESET_INFO: { id: WeddingThema; naam: string; beschrijving: string }[] = 
   { id: 'rustiek', naam: 'Het Landgoed', beschrijving: 'Veldjournaal — linnen, stempels & polaroids' },
   { id: 'minimalistisch', naam: 'Studio', beschrijving: 'Galeriecatalogus — louter typografie' },
   { id: 'botanisch', naam: 'De Tuin', beschrijving: 'Serre — bladvormen & rankende takken' },
+  { id: 'gala', naam: 'The Crest', beschrijving: 'Zwarte-das-uitnodiging — wapenschild, marmer & goud' },
+  { id: 'artdeco', naam: 'The Savoy', beschrijving: 'Glamourclub — jaren ’20, waaiers & smaragd' },
+  { id: 'couture', naam: 'The Cover', beschrijving: 'Modetijdschrift — Bodoni-koppen in zwart-wit' },
 ]
 
 // Mini-wireframe per archetype: laat het structuurverschil zien, niet
@@ -98,6 +101,40 @@ function ThumbnailSchets({ id, tokens }: { id: WeddingThema; tokens: ThemeTokens
           <div className="absolute right-2 top-6 h-0.5 w-1/4 rounded" style={{ background: tokens.kleuren.tekst + '55' }} />
           <div className="absolute bottom-2 right-3 h-5 w-5" style={{ background: accent + '44', borderRadius: '6% 58% 6% 58%' }} />
           <div className="absolute bottom-4 left-2 h-0.5 w-1/3 rounded" style={{ background: accent + '88' }} />
+        </div>
+      )
+    case 'gala': // wapenschild, dubbele graveerlijst
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-1.5 border" style={{ borderColor: accent + '88' }} />
+          <div className="absolute inset-[7px] border" style={{ borderColor: accent + '40' }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+            <div className="h-2 w-2 rounded-sm border" style={{ borderColor: accent, transform: 'rotate(45deg)' }} />
+            <div className="h-1 w-2/5 rounded-sm" style={{ background: tokens.kleuren.tekst + 'aa' }} />
+          </div>
+        </div>
+      )
+    case 'artdeco': // donker, zonnestraal + getrapte hoek
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 120%, ' + accent + '33, transparent 60%)' }} />
+          <div className="absolute left-0 top-0 h-4 w-4" style={{ borderTop: `2px solid ${accent}`, borderLeft: `2px solid ${accent}` }} />
+          <div className="absolute bottom-0 right-0 h-4 w-4" style={{ borderBottom: `2px solid ${accent}`, borderRight: `2px solid ${accent}` }} />
+          <div className="absolute inset-x-0 bottom-3 flex justify-center">
+            <div className="h-1.5 w-1.5 rounded-sm" style={{ background: accent, transform: 'rotate(45deg)' }} />
+          </div>
+        </div>
+      )
+    case 'couture': // mastkop-balk + monumentale letter
+      return (
+        <div className={basis} style={stijl}>
+          <div className="absolute inset-x-2 top-2 flex items-center justify-between border-b border-t py-0.5" style={{ borderColor: tokens.kleuren.tekst }}>
+            <span className="text-[6px] font-bold" style={{ color: accent }}>Nº 01</span>
+            <span className="text-[6px] font-bold" style={{ color: accent }}>—</span>
+          </div>
+          <div className="absolute inset-x-0 bottom-1.5 text-center text-xl font-bold leading-none" style={{ color: tokens.kleuren.tekst, fontFamily: 'Georgia, serif' }}>
+            Aa
+          </div>
         </div>
       )
   }

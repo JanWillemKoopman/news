@@ -318,7 +318,16 @@ export type TableInput = Omit<Table, 'id'>
 
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
-export type WeddingThema = 'klassiek' | 'modern' | 'romantisch' | 'rustiek' | 'minimalistisch' | 'botanisch'
+export type WeddingThema =
+  | 'klassiek'
+  | 'modern'
+  | 'romantisch'
+  | 'rustiek'
+  | 'minimalistisch'
+  | 'botanisch'
+  | 'gala'
+  | 'artdeco'
+  | 'couture'
 export type WeddingLettertype =
   | 'cormorant'
   | 'playfair'

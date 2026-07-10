@@ -752,6 +752,9 @@ function BotanischLayout({ registry, slug, unlocked, onUnlocked, reservedIds, on
 
 // ─── Template map ─────────────────────────────────────────────────────────────
 
+// gala/artdeco/couture zijn nieuw in website v3 en hebben geen eigen
+// cadeaulijst-layout — de dichtstbije bestaande layout dient als terugval
+// (zie components/website/PublicWebsite.tsx voor dezelfde afweging).
 const LAYOUTS: Record<WeddingThema, React.ComponentType<TplProps>> = {
   klassiek:       KlassiekLayout,
   modern:         ModernLayout,
@@ -759,6 +762,9 @@ const LAYOUTS: Record<WeddingThema, React.ComponentType<TplProps>> = {
   rustiek:        RustiekLayout,
   minimalistisch: PuurLayout,
   botanisch:      BotanischLayout,
+  gala:           KlassiekLayout,
+  artdeco:        ModernLayout,
+  couture:        ModernLayout,
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
