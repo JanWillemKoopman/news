@@ -109,8 +109,8 @@ function StatNum({
       <p
         className={
           highlight
-            ? 'text-2xl font-bold tabular-nums text-rose-600'
-            : 'text-2xl font-bold tabular-nums text-foreground'
+            ? 'text-xl font-bold tabular-nums text-rose-600'
+            : 'text-xl font-bold tabular-nums text-foreground'
         }
       >
         {value}
