@@ -226,6 +226,46 @@ export function renderVendorContactEmail(p: VendorContactEmailProps): { subject:
   }
 }
 
+// --- Vervolgbericht in een bestaand leveranciersgesprek ---------------------
+
+export interface VendorFollowUpEmailProps {
+  onderwerp: string
+  bericht: string
+  afzenderNamen: string
+  // Zelfde reageer-link als het openingsbericht: het gesprek deelt één token.
+  replyUrl: string | null
+}
+
+export function renderVendorFollowUpEmail(p: VendorFollowUpEmailProps): { subject: string; html: string } {
+  const introRegel = `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'hebben' : 'heeft'} gereageerd in jullie gesprek via Ons Trouwplan.`
+
+  const reageerBlok = p.replyUrl
+    ? `${ctaKnop(p.replyUrl, 'Reageer op dit bericht')}
+    <p style="margin:0 0 16px;font-size:13px;color:#a8a29e;line-height:1.6;">
+      Reageren kan direct online — je hebt geen account nodig. Je reactie komt
+      rechtstreeks in het gesprek met ${escapeHtml(p.afzenderNamen)} terecht.
+    </p>
+    <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+      <strong>Let op:</strong> een antwoord op deze e-mail komt niet bij
+      ${escapeHtml(p.afzenderNamen)} aan — gebruik de knop hierboven.
+    </p>`
+    : ''
+
+  const inhoud = `
+    <p style="margin:0 0 20px;font-size:16px;color:#1c1917;line-height:1.6;">${introRegel}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:20px 24px;">
+          <p style="margin:0 0 12px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(p.onderwerp)}</p>
+          ${berichtNaarHtml(p.bericht)}
+        </td>
+      </tr>
+    </table>
+    ${reageerBlok}
+  `
+  return { subject: `Re: ${p.onderwerp}`, html: baseHtml('Nieuw bericht in jullie gesprek', inhoud) }
+}
+
 // --- Leveranciersreactie (notificatie aan het bruidspaar) -------------------
 
 export interface VendorReplyEmailProps {

@@ -206,6 +206,17 @@ interface BruiloftActions {
   // Berichtencentrum: markeert een bericht als gelezen voor de huidige
   // gebruiker (optimistisch + persistent via message_reads).
   markMessageRead: (id: ID) => Promise<void>
+  // Archiveren/verwijderen zijn gedeeld voor de hele bruiloft (optimistisch,
+  // met rollback bij een mislukte server-call — zelfde patroon als hierboven).
+  archiveMessage: (id: ID) => Promise<void>
+  unarchiveMessage: (id: ID) => Promise<void>
+  trashMessage: (id: ID) => Promise<void>
+  restoreMessage: (id: ID) => Promise<void>
+  // Vervolgbericht van het bruidspaar binnen een bestaand leveranciersgesprek:
+  // stuurt (via /api/berichten/[id]/reply) een e-mail naar de leverancier met
+  // dezelfde reageer-link als het openingsbericht, en voegt het nieuwe
+  // uitgaande bericht toe aan de thread.
+  replyToMessage: (id: ID, bericht: string) => Promise<Message>
 
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
@@ -1121,6 +1132,77 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         console.error('[store] markMessageRead mislukt', e)
         set({ messageReads: get().messageReads.filter((r) => r !== optimistic) })
       }
+    },
+
+    archiveMessage: async (id) => {
+      const voor = get().messages
+      set({
+        messages: voor.map((m) =>
+          m.id === id ? { ...m, archivedAt: new Date().toISOString() } : m
+        ),
+      })
+      try {
+        await repository.archiveMessage(id)
+      } catch (e) {
+        console.error('[store] archiveMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    unarchiveMessage: async (id) => {
+      const voor = get().messages
+      set({ messages: voor.map((m) => (m.id === id ? { ...m, archivedAt: undefined } : m)) })
+      try {
+        await repository.unarchiveMessage(id)
+      } catch (e) {
+        console.error('[store] unarchiveMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    trashMessage: async (id) => {
+      const voor = get().messages
+      set({
+        messages: voor.map((m) =>
+          m.id === id ? { ...m, deletedAt: new Date().toISOString() } : m
+        ),
+      })
+      try {
+        await repository.trashMessage(id)
+      } catch (e) {
+        console.error('[store] trashMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    restoreMessage: async (id) => {
+      const voor = get().messages
+      set({ messages: voor.map((m) => (m.id === id ? { ...m, deletedAt: undefined } : m)) })
+      try {
+        await repository.restoreMessage(id)
+      } catch (e) {
+        console.error('[store] restoreMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    replyToMessage: async (id, bericht) => {
+      const res = await fetch(`/api/berichten/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bericht }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? 'Versturen mislukt')
+      }
+      const { message } = (await res.json()) as { message: Message }
+      set({ messages: [message, ...get().messages] })
+      return message
     },
 
     // --- BudgetItems -------------------------------------------------------

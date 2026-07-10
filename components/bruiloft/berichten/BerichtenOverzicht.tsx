@@ -1,204 +1,191 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
-import { Inbox as InboxIcon, Send, FileText } from 'lucide-react'
 
-import { Card, EmptyState, Modal } from '@/components/bruiloft/ui'
-import { tijdGeleden } from '@/lib/bruiloft/format'
+import { SearchInput, useToast } from '@/components/bruiloft/ui'
+import {
+  buildThreads,
+  conceptBerichten,
+  threadsVoorFolder,
+  verzondenBerichten,
+  type BerichtFolder,
+  type Thread,
+} from '@/lib/bruiloft/berichten/threads'
+import { ongelezenBerichten } from '@/lib/bruiloft/derived'
+import { canEdit } from '@/lib/bruiloft/permissions'
+import type { ID, Message } from '@/lib/bruiloft/types'
 import { cn } from '@/lib/utils'
-import type { Message, MessageActie } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
+import { FolderNav } from './FolderNav'
+import { MessageDetail } from './MessageDetail'
+import { MessageList } from './MessageList'
 
-// Leest de actieknoppen uit metadata.acties, defensief: alleen goedgevormde
-// items met een intern pad ('/...') tellen mee — metadata komt uit de database
-// en kan door toekomstige afzenders (AI, cron) gevuld zijn.
-function berichtActies(bericht: Message): MessageActie[] {
-  const raw = bericht.metadata?.acties
-  if (!Array.isArray(raw)) return []
-  return raw.filter(
-    (a): a is MessageActie =>
-      typeof a === 'object' &&
-      a !== null &&
-      typeof (a as MessageActie).label === 'string' &&
-      typeof (a as MessageActie).href === 'string' &&
-      (a as MessageActie).href.startsWith('/') &&
-      !(a as MessageActie).href.startsWith('//')
-  )
-}
-
-type Tab = 'postvak-in' | 'verzonden' | 'concepten'
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'postvak-in', label: 'Postvak IN' },
-  { key: 'verzonden', label: 'Verzonden' },
-  { key: 'concepten', label: 'Concepten' },
-]
-
-// Eén scherm: tabs (Postvak IN / Verzonden / Concepten) + lijst + detail in een
-// modal — geen Gmail-achtig split-pane, dat zou op mobiel moeten wrappen.
+// Echte-mailboxervaring: links de berichtenlijst (met mappen bovenaan),
+// rechts de volledige inhoud van het geselecteerde gesprek — op desktop
+// permanent naast elkaar, op mobiel schakelt de kolom om (lijst ↔ detail)
+// i.p.v. te wrappen naar een rommelige tweede rij.
 export function BerichtenOverzicht() {
   const messages = useBruiloftStore((s) => s.messages)
   const messageReads = useBruiloftStore((s) => s.messageReads)
   const currentUserId = useBruiloftStore((s) => s.currentUser?.id)
   const vendors = useBruiloftStore((s) => s.vendors)
   const markMessageRead = useBruiloftStore((s) => s.markMessageRead)
+  const archiveMessage = useBruiloftStore((s) => s.archiveMessage)
+  const unarchiveMessage = useBruiloftStore((s) => s.unarchiveMessage)
+  const trashMessage = useBruiloftStore((s) => s.trashMessage)
+  const restoreMessage = useBruiloftStore((s) => s.restoreMessage)
+  const replyToMessage = useBruiloftStore((s) => s.replyToMessage)
+  const permissions = useBruiloftStore((s) => s.permissions)
+  const heeftEditRechten = canEdit(permissions, 'leveranciers')
+  const { toast } = useToast()
 
-  const [tab, setTab] = React.useState<Tab>('postvak-in')
-  const [geselecteerd, setGeselecteerd] = React.useState<Message | null>(null)
+  const [folder, setFolder] = React.useState<BerichtFolder>('postvak-in')
+  const [selectedThreadId, setSelectedThreadId] = React.useState<ID | null>(null)
+  const [mobielWeergave, setMobielWeergave] = React.useState<'lijst' | 'detail'>('lijst')
+  const [zoek, setZoek] = React.useState('')
 
   const gelezenIds = React.useMemo(
     () => new Set(messageReads.filter((r) => r.userId === currentUserId).map((r) => r.messageId)),
     [messageReads, currentUserId]
   )
+  const threads = React.useMemo(() => buildThreads(messages, gelezenIds), [messages, gelezenIds])
+  const threadsById = React.useMemo(() => new Map(threads.map((t) => [t.id, t])), [threads])
+  const ongelezenPostvakIn = ongelezenBerichten(messages, messageReads, currentUserId)
 
-  const zichtbaar = React.useMemo(() => {
-    const gesorteerd = [...messages].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    if (tab === 'postvak-in') return gesorteerd.filter((m) => m.direction === 'inbound')
-    if (tab === 'verzonden') return gesorteerd.filter((m) => m.direction === 'outbound')
-    return gesorteerd.filter((m) => m.status === 'concept')
-  }, [messages, tab])
+  const vendorNaamVoor = (vendorId?: ID) => (vendorId ? vendors.find((v) => v.id === vendorId)?.naam : undefined)
 
-  const openen = (bericht: Message) => {
-    setGeselecteerd(bericht)
-    if (bericht.direction === 'inbound' && !gelezenIds.has(bericht.id)) {
-      markMessageRead(bericht.id)
+  const zoekterm = zoek.trim().toLowerCase()
+  const matchThread = (t: Thread): boolean => {
+    if (!zoekterm) return true
+    const vendorNaam = vendorNaamVoor(t.vendorId) ?? ''
+    const doorzoekbaar = [t.onderwerp, vendorNaam, ...t.berichten.map((m) => `${m.afzenderNaam} ${m.inhoud}`)]
+      .join(' ')
+      .toLowerCase()
+    return doorzoekbaar.includes(zoekterm)
+  }
+  const matchBericht = (m: Message): boolean => {
+    if (!zoekterm) return true
+    const vendorNaam = vendorNaamVoor(m.vendorId) ?? ''
+    return `${m.onderwerp} ${m.afzenderNaam} ${m.inhoud} ${vendorNaam}`.toLowerCase().includes(zoekterm)
+  }
+
+  const isPlat = folder === 'verzonden' || folder === 'concepten'
+  const zichtbareThreads = isPlat ? [] : threadsVoorFolder(threads, folder).filter(matchThread)
+  const zichtbareBerichten = !isPlat
+    ? []
+    : (folder === 'verzonden' ? verzondenBerichten(messages) : conceptBerichten(messages)).filter(matchBericht)
+
+  const kiesFolder = (f: BerichtFolder) => {
+    setFolder(f)
+    setSelectedThreadId(null)
+    setMobielWeergave('lijst')
+  }
+
+  const openThread = (threadId: ID) => {
+    setSelectedThreadId(threadId)
+    setMobielWeergave('detail')
+    const thread = threadsById.get(threadId)
+    if (!thread) return
+    for (const m of thread.berichten) {
+      if (m.direction === 'inbound' && !gelezenIds.has(m.id)) {
+        markMessageRead(m.id).catch(() => {})
+      }
     }
   }
 
+  const voerActieUit = async (id: ID, fn: (id: ID) => Promise<void>, label: string) => {
+    const thread = threadsById.get(id)
+    if (!thread) return
+    try {
+      await Promise.all(thread.berichten.map((m) => fn(m.id)))
+      toast({ title: label, variant: 'success' })
+      if (selectedThreadId === id) {
+        setSelectedThreadId(null)
+        setMobielWeergave('lijst')
+      }
+    } catch {
+      toast({ title: 'Actie mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    }
+  }
+
+  const archiveerId = (id: ID) => voerActieUit(id, archiveMessage, 'Gesprek gearchiveerd')
+  const unarchiveerId = (id: ID) => voerActieUit(id, unarchiveMessage, 'Teruggezet naar postvak in')
+  const verwijderId = (id: ID) => voerActieUit(id, trashMessage, 'Gesprek verwijderd')
+  const herstelId = (id: ID) => voerActieUit(id, restoreMessage, 'Gesprek hersteld')
+
+  const geselecteerdeThread = selectedThreadId ? (threadsById.get(selectedThreadId) ?? null) : null
+  const geselecteerdeVendorNaam = geselecteerdeThread ? vendorNaamVoor(geselecteerdeThread.vendorId) : undefined
+
+  const reageerOpGeselecteerd = async (tekst: string) => {
+    if (!selectedThreadId) return
+    await replyToMessage(selectedThreadId, tekst)
+  }
+
+  const lijstProps = {
+    folder,
+    threads: zichtbareThreads,
+    berichten: zichtbareBerichten,
+    vendors,
+    geselecteerdId: selectedThreadId,
+    onSelect: openThread,
+    onArchive: archiveerId,
+    onUnarchive: unarchiveerId,
+    onTrash: verwijderId,
+    onRestore: herstelId,
+  }
+
+  const detailProps = {
+    thread: geselecteerdeThread,
+    vendorNaam: geselecteerdeVendorNaam,
+    heeftEditRechten,
+    onArchive: () => geselecteerdeThread && archiveerId(geselecteerdeThread.id),
+    onUnarchive: () => geselecteerdeThread && unarchiveerId(geselecteerdeThread.id),
+    onTrash: () => geselecteerdeThread && verwijderId(geselecteerdeThread.id),
+    onRestore: () => geselecteerdeThread && herstelId(geselecteerdeThread.id),
+    onReply: reageerOpGeselecteerd,
+  }
+
   return (
-    <div>
-      <div className="mb-4 flex gap-1 border-b border-border">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={cn(
-              'border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-              tab === t.key
-                ? 'border-rose-600 text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm md:h-[calc(100vh-13rem)]">
+      {/* Mobiel: lijst óf detail, nooit beide tegelijk. */}
+      <div className={cn('flex min-h-0 flex-1 flex-col md:hidden', mobielWeergave === 'detail' && 'hidden')}>
+        <div className="border-b border-border p-3">
+          <SearchInput
+            value={zoek}
+            onValueChange={setZoek}
+            placeholder="Zoek in berichten…"
+            aria-label="Zoek in berichten"
+          />
+        </div>
+        <FolderNav folder={folder} onChange={kiesFolder} ongelezenPostvakIn={ongelezenPostvakIn} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <MessageList {...lijstProps} />
+        </div>
+      </div>
+      <div className={cn('min-h-0 flex-1 md:hidden', mobielWeergave === 'lijst' && 'hidden')}>
+        <MessageDetail {...detailProps} onBack={() => setMobielWeergave('lijst')} />
       </div>
 
-      {zichtbaar.length === 0 ? (
-        <EmptyState
-          icon={tab === 'postvak-in' ? InboxIcon : tab === 'verzonden' ? Send : FileText}
-          titel={
-            tab === 'postvak-in'
-              ? 'Nog geen berichten'
-              : tab === 'verzonden'
-                ? 'Nog niets verstuurd'
-                : 'Nog geen concepten'
-          }
-          beschrijving={
-            tab === 'postvak-in'
-              ? 'Hier verschijnen straks updates en tips over jullie bruiloft.'
-              : tab === 'verzonden'
-                ? 'Offertes en berichten die jullie naar leveranciers sturen, verschijnen hier.'
-                : 'Concepten opslaan komt in een volgende versie.'
-          }
-        />
-      ) : (
-        <ul className="space-y-2">
-          {zichtbaar.map((m) => {
-            const ongelezen = m.direction === 'inbound' && !gelezenIds.has(m.id)
-            const vendorNaam = m.vendorId ? vendors.find((v) => v.id === m.vendorId)?.naam : undefined
-            return (
-              <li key={m.id}>
-                <Card
-                  interactive
-                  onClick={() => openen(m)}
-                  className="flex items-start gap-3 px-4 py-3"
-                >
-                  {ongelezen ? (
-                    <span aria-hidden className="mt-2 h-2 w-2 shrink-0 rounded-full bg-rose-500" />
-                  ) : (
-                    <span aria-hidden className="mt-2 h-2 w-2 shrink-0" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('truncate text-sm', ongelezen ? 'font-semibold text-foreground' : 'text-foreground')}>
-                      {m.afzenderNaam}
-                      {vendorNaam ? <span className="font-normal text-muted-foreground"> · {vendorNaam}</span> : null}
-                    </p>
-                    <p className={cn('truncate text-sm', ongelezen ? 'font-medium text-foreground' : 'text-muted-foreground')}>
-                      {m.onderwerp}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">{tijdGeleden(m.createdAt)}</span>
-                </Card>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-
-      <Modal
-        open={geselecteerd !== null}
-        onOpenChange={(open) => !open && setGeselecteerd(null)}
-        title={geselecteerd?.onderwerp ?? ''}
-        description={geselecteerd ? `${geselecteerd.afzenderNaam} · ${tijdGeleden(geselecteerd.createdAt)}` : undefined}
-        className="sm:max-w-lg"
-      >
-        {geselecteerd ? (
-          <div className="space-y-4">
-            {/* Bij een leveranciersreactie: het eigen bericht waarop gereageerd
-                is als citaat erboven, zodat de context niet opgezocht hoeft te
-                worden. */}
-            {(() => {
-              const origineel = geselecteerd.parentMessageId
-                ? messages.find((m) => m.id === geselecteerd.parentMessageId)
-                : undefined
-              return origineel ? (
-                <div className="rounded-md border-l-2 border-border bg-accent/50 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">
-                    In antwoord op &ldquo;{origineel.onderwerp}&rdquo; · {tijdGeleden(origineel.createdAt)}
-                  </p>
-                  <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs text-muted-foreground">
-                    {origineel.inhoud}
-                  </p>
-                </div>
-              ) : null
-            })()}
-            <p className="whitespace-pre-wrap text-sm text-foreground">{geselecteerd.inhoud}</p>
-            {/* Actieknoppen: uit metadata.acties (systeem-/AI-berichten) plus de
-                afgeleide leverancier-link. Gewone links, geen tweede
-                knoppensysteem — één rose accent volstaat. */}
-            {(() => {
-              const acties = berichtActies(geselecteerd)
-              if (acties.length === 0 && !geselecteerd.vendorId) return null
-              return (
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {acties.map((a) => (
-                    <Link
-                      key={a.href + a.label}
-                      href={a.href}
-                      className="text-sm text-rose-600 hover:text-rose-500"
-                      onClick={() => setGeselecteerd(null)}
-                    >
-                      {a.label} →
-                    </Link>
-                  ))}
-                  {geselecteerd.vendorId ? (
-                    <Link
-                      href="/bruiloft/leveranciers"
-                      className="text-sm text-rose-600 hover:text-rose-500"
-                      onClick={() => setGeselecteerd(null)}
-                    >
-                      Bekijk leverancier →
-                    </Link>
-                  ) : null}
-                </div>
-              )
-            })()}
+      {/* Desktop: twee kolommen permanent naast elkaar. */}
+      <div className="hidden min-h-0 flex-1 md:flex">
+        <div className="flex w-[320px] shrink-0 flex-col border-r border-border lg:w-[360px]">
+          <div className="border-b border-border p-3">
+            <SearchInput
+              value={zoek}
+              onValueChange={setZoek}
+              placeholder="Zoek in berichten…"
+              aria-label="Zoek in berichten"
+            />
           </div>
-        ) : null}
-      </Modal>
+          <FolderNav folder={folder} onChange={kiesFolder} ongelezenPostvakIn={ongelezenPostvakIn} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <MessageList {...lijstProps} />
+          </div>
+        </div>
+        <div className="min-h-0 flex-1">
+          <MessageDetail {...detailProps} />
+        </div>
+      </div>
     </div>
   )
 }

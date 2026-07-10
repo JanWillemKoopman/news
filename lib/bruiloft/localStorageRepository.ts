@@ -273,6 +273,22 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
   }
 
+  async archiveMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async unarchiveMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async trashMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async restoreMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
   // --- BudgetItems ---------------------------------------------------------
 
   async listBudgetItems(weddingId: ID): Promise<BudgetItem[]> {
