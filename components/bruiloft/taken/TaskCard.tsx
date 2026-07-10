@@ -1,7 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  SquareCheck,
+  Trash2,
+} from 'lucide-react'
 
 import { Card, CardContent, OverflowMenu } from '@/components/bruiloft/ui'
 import { dagLabel, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
@@ -220,6 +228,11 @@ export function TaskCard({
             label={`Acties voor ${task.titel}`}
             items={[
               { label: 'Bewerken', icon: Pencil, onClick: () => onEdit(task) },
+              // Startpunt van de selectiemodus: dit selecteert deze taak,
+              // waarna de checkboxes op alle kaarten verschijnen (selectable).
+              ...(onToggleSelect && !selectable
+                ? [{ label: 'Selecteren', icon: SquareCheck, onClick: () => onToggleSelect(task) }]
+                : []),
               { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(task) },
             ]}
           />

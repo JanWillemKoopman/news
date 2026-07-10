@@ -66,6 +66,19 @@ export function TakenShell() {
 
   const gefilterd = React.useMemo(() => applyFilters(tasks, filters), [tasks, filters])
 
+  // Escape verlaat de selectiemodus — zelfde uitgang als "Annuleren" in de
+  // balk. Niet wanneer een dialoog open is: die vangt Escape zelf af en de
+  // bulk-bevestiging leunt op de selectie.
+  const dialoogOpen = formOpen || delBulkOpen || delTask !== null || samenstellenOpen
+  React.useEffect(() => {
+    if (selectedIds.size === 0 || dialoogOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedIds(new Set())
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedIds.size, dialoogOpen])
+
   if (!wedding) return null
 
   const stats = berekenTaakStats(tasks)
