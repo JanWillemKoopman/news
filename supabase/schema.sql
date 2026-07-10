@@ -1115,7 +1115,7 @@ create table public.messages (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   direction text not null check (direction in ('inbound', 'outbound')),
-  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact', 'leverancier_reactie')),
+  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact', 'leverancier_reactie', 'leverancier_vervolg')),
   vendor_id uuid references public.vendors(id) on delete set null,
   onderwerp text not null default '',
   inhoud text not null default '',
@@ -1129,6 +1129,10 @@ create table public.messages (
   -- parent_message_id. Zelfde token-model als de persoonlijke RSVP-links.
   reply_token uuid unique,
   parent_message_id uuid references public.messages(id) on delete set null,
+  -- Archiveren/verwijderen (0061): zacht en herstelbaar, gedeeld per
+  -- bruiloft (geen per-gebruiker staat zoals message_reads).
+  archived_at timestamptz,
+  deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
 create index idx_messages_wedding on public.messages(wedding_id, created_at desc);
@@ -1146,11 +1150,49 @@ create policy messages_select on public.messages for select to authenticated
 create policy messages_insert on public.messages for insert to authenticated
   with check (public.can_edit(wedding_id, 'leveranciers'));
 
-grant select, insert on public.messages to authenticated;
+-- Updaten mag elk lid van de bruiloft, maar alleen archived_at/deleted_at:
+-- messages_guard_update() (0061) dwingt de rest van de rij onveranderd af.
+create policy messages_update on public.messages for update to authenticated
+  using (public.is_wedding_member(wedding_id))
+  with check (public.is_wedding_member(wedding_id));
+
+grant select, insert, update on public.messages to authenticated;
 revoke all on public.messages from anon;
 
 alter table public.messages replica identity full;
 alter publication supabase_realtime add table public.messages;
+
+-- De client mag alleen archiveren/verwijderen/herstellen (archived_at en
+-- deleted_at), nooit de inhoud van een bericht wijzigen. RLS bepaalt WIE
+-- (elk lid van de bruiloft), deze trigger bepaalt WAT er mag veranderen —
+-- zelfde tweedeling als message_reads_prepare hieronder.
+create or replace function public.messages_guard_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.wedding_id := old.wedding_id;
+  new.direction := old.direction;
+  new.type := old.type;
+  new.vendor_id := old.vendor_id;
+  new.onderwerp := old.onderwerp;
+  new.inhoud := old.inhoud;
+  new.afzender_naam := old.afzender_naam;
+  new.afzender_type := old.afzender_type;
+  new.verzonden_door := old.verzonden_door;
+  new.status := old.status;
+  new.metadata := old.metadata;
+  new.reply_token := old.reply_token;
+  new.parent_message_id := old.parent_message_id;
+  new.created_at := old.created_at;
+  return new;
+end;
+$$;
+
+create trigger trg_messages_guard_update before update on public.messages
+  for each row execute function public.messages_guard_update();
 
 -- =====================================================================
 -- message_reads: per-gebruiker leesstatus (een bruiloft heeft vaak meerdere

@@ -243,6 +243,7 @@ export type MessageType =
   | 'leverancier_offerte'
   | 'leverancier_contact'
   | 'leverancier_reactie'
+  | 'leverancier_vervolg'
 export type MessageAfzenderType = 'systeem' | 'gebruiker' | 'leverancier'
 export type MessageStatus = 'concept' | 'verzonden'
 
@@ -276,8 +277,13 @@ export interface Message {
   verzondenDoor?: ID
   status: MessageStatus
   metadata?: Record<string, unknown>
-  // Bij een leveranciersreactie: het uitgaande bericht waarop gereageerd is.
+  // Bij een leveranciersreactie/-vervolgbericht: het uitgaande bericht waarmee
+  // het gesprek begon (de thread-root, niet per se het vorige bericht).
   parentMessageId?: ID
+  // Archiveren/verwijderen: zacht en herstelbaar, gedeeld voor de hele
+  // bruiloft (geen per-gebruiker staat zoals MessageRead hieronder).
+  archivedAt?: ISODateTime
+  deletedAt?: ISODateTime
   createdAt: ISODateTime
 }
 

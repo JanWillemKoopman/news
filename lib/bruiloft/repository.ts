@@ -66,12 +66,18 @@ export interface WeddingRepository {
   // ingevuld door de /api/leveranciers/contact-route, hier alleen leesbaar).
   listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]>
 
-  // Berichtencentrum (Postvak IN / Verzonden). Inserts gebeuren server-side
-  // (welkomst-trigger, /api/leveranciers/contact-route); hier alleen lezen
-  // + leesstatus bijwerken.
+  // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
+  // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,
+  // /api/berichten/[id]/reply-route); hier alleen lezen + leesstatus en
+  // archief-/verwijderstaat bijwerken (die laatste is gedeeld per bruiloft,
+  // geen per-gebruiker staat zoals leesstatus).
   listMessages(weddingId: ID): Promise<Message[]>
   listMessageReads(weddingId: ID): Promise<MessageRead[]>
   markMessageRead(messageId: ID): Promise<MessageRead>
+  archiveMessage(messageId: ID): Promise<Message>
+  unarchiveMessage(messageId: ID): Promise<Message>
+  trashMessage(messageId: ID): Promise<Message>
+  restoreMessage(messageId: ID): Promise<Message>
 
   // BudgetItems
   listBudgetItems(weddingId: ID): Promise<BudgetItem[]>

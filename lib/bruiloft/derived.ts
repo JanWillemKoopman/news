@@ -327,7 +327,9 @@ export function ongelezenBerichten(
   const gelezenIds = new Set(
     messageReads.filter((r) => r.userId === currentUserId).map((r) => r.messageId)
   )
-  return messages.filter((m) => m.direction === 'inbound' && !gelezenIds.has(m.id)).length
+  return messages.filter(
+    (m) => m.direction === 'inbound' && !gelezenIds.has(m.id) && !m.archivedAt && !m.deletedAt
+  ).length
 }
 
 // Recentste feed-items eerst, afgekapt op een limiet.

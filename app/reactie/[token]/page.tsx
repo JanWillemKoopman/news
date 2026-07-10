@@ -23,7 +23,12 @@ interface Gesprek {
   verzondenOp: string
   partnerNamen: string
   vendorNaam: string
-  reacties: { inhoud: string; createdAt: string; afwijzingsGrond: AfwijzingsGrond | null }[]
+  reacties: {
+    inhoud: string
+    createdAt: string
+    afwijzingsGrond: AfwijzingsGrond | null
+    vanBruidspaar: boolean
+  }[]
 }
 
 export default function ReactiePage({ params }: { params: { token: string } }) {
@@ -122,11 +127,19 @@ export default function ReactiePage({ params }: { params: { token: string } }) {
               </p>
             </div>
 
-            {/* Eerder gegeven reacties (mini-thread). */}
+            {/* Eerder gegeven reacties (mini-thread): eigen reacties ingesprongen
+                als antwoord, vervolgberichten van het bruidspaar op dezelfde
+                breedte als het openingsbericht. */}
             {gesprek.reacties.map((r, i) => (
-              <div key={i} className="ml-4 rounded-xl border border-border bg-white p-5 shadow-sm sm:ml-8">
+              <div
+                key={i}
+                className={cn(
+                  'rounded-xl border border-border bg-white p-5 shadow-sm',
+                  !r.vanBruidspaar && 'ml-4 sm:ml-8'
+                )}
+              >
                 <p className="text-xs text-muted-foreground">
-                  Jouw reactie · {formatDatumNL(r.createdAt)}
+                  {r.vanBruidspaar ? gesprek.partnerNamen : 'Jouw reactie'} · {formatDatumNL(r.createdAt)}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{r.inhoud}</p>
               </div>

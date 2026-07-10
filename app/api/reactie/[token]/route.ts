@@ -40,7 +40,7 @@ async function vindGesprek(token: string) {
       : Promise.resolve({ data: null }),
     admin
       .from('messages')
-      .select('inhoud, created_at, metadata')
+      .select('inhoud, created_at, metadata, direction')
       .eq('parent_message_id', bericht.id)
       .order('created_at', { ascending: true }),
   ])
@@ -50,11 +50,20 @@ async function vindGesprek(token: string) {
     partnerNamen:
       [wedding?.partner1_naam, wedding?.partner2_naam].filter(Boolean).join(' & ') || 'het bruidspaar',
     vendorNaam: (vendor?.naam as string | undefined) ?? '',
+    // Een gesprek kan naast leverancierreacties ook vervolgberichten van het
+    // bruidspaar bevatten (verstuurd vanuit het berichtencentrum) — beide
+    // delen hetzelfde token/parent_message_id, dus onderscheid ze op richting.
     reacties: (reacties ?? []).map(
-      (r: { inhoud: string; created_at: string; metadata: Record<string, unknown> | null }) => ({
+      (r: {
+        inhoud: string
+        created_at: string
+        metadata: Record<string, unknown> | null
+        direction: 'inbound' | 'outbound'
+      }) => ({
         inhoud: r.inhoud,
         createdAt: r.created_at,
         afwijzingsGrond: (r.metadata?.afwijzingsGrond as AfwijzingsGrond | undefined) ?? null,
+        vanBruidspaar: r.direction === 'outbound',
       })
     ),
   }

@@ -293,6 +293,36 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return messageReadFromRow(data)
   }
 
+  // Archiveren/verwijderen: alleen archived_at/deleted_at zijn schrijfbaar
+  // vanaf de client — messages_guard_update() (migratie 0061) dwingt dat af,
+  // ook als hier per ongeluk meer velden meegestuurd zouden worden.
+  private async patchMessage(messageId: ID, patch: Record<string, unknown>): Promise<Message> {
+    const { data, error } = await this.rawDb
+      .from('messages')
+      .update(patch)
+      .eq('id', messageId)
+      .select()
+      .single()
+    if (error) throw error
+    return messageFromRow(data)
+  }
+
+  async archiveMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { archived_at: new Date().toISOString() })
+  }
+
+  async unarchiveMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { archived_at: null })
+  }
+
+  async trashMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { deleted_at: new Date().toISOString() })
+  }
+
+  async restoreMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { deleted_at: null })
+  }
+
   // --- BudgetItems ---------------------------------------------------
   async listBudgetItems(weddingId: ID): Promise<BudgetItem[]> {
     const { data, error } = await this.db

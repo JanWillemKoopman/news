@@ -21,7 +21,7 @@ export function BerichtenPreview() {
   const ongelezen = ongelezenBerichten(messages, messageReads, currentUserId)
 
   const laatsteInbound = messages
-    .filter((m) => m.direction === 'inbound')
+    .filter((m) => m.direction === 'inbound' && !m.archivedAt && !m.deletedAt)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] as Message | undefined
 
   const titel =

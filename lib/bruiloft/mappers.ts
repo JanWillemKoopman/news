@@ -285,6 +285,8 @@ export function messageFromRow(r: any): Message {
     // reply_token wordt bewust NIET gemapt: die hoort alleen in de e-mail aan
     // de leverancier thuis, niet in de client-state.
     parentMessageId: r.parent_message_id ?? undefined,
+    archivedAt: r.archived_at ?? undefined,
+    deletedAt: r.deleted_at ?? undefined,
     createdAt: r.created_at,
   }
 }
