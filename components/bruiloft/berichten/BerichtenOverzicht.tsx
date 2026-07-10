@@ -14,7 +14,6 @@ import {
 import { ongelezenBerichten } from '@/lib/bruiloft/derived'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import type { ID, Message } from '@/lib/bruiloft/types'
-import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 import { FolderNav } from './FolderNav'
 import { MessageDetail } from './MessageDetail'
@@ -149,9 +148,31 @@ export function BerichtenOverzicht() {
         <FolderNav folder={folder} onChange={kiesFolder} ongelezenPostvakIn={ongelezenPostvakIn} />
       </div>
 
-      <div className="flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm md:h-[calc(100vh-16rem)]">
-        {/* Mobiel: lijst óf detail, nooit beide tegelijk. */}
-        <div className={cn('flex min-h-0 flex-1 flex-col md:hidden', mobielWeergave === 'detail' && 'hidden')}>
+      {/* Mobiel: normale paginascroll — geen vaste hoogte, geen intern
+          scrollpaneel, dus niets blijft "plakken" bovenaan. Lijst óf detail,
+          nooit beide tegelijk. */}
+      <div className="rounded-xl border border-border bg-card shadow-sm md:hidden">
+        {mobielWeergave === 'lijst' ? (
+          <>
+            <div className="border-b border-border p-3">
+              <SearchInput
+                value={zoek}
+                onValueChange={setZoek}
+                placeholder="Zoek in berichten…"
+                aria-label="Zoek in berichten"
+              />
+            </div>
+            <MessageList {...lijstProps} />
+          </>
+        ) : (
+          <MessageDetail {...detailProps} onBack={() => setMobielWeergave('lijst')} />
+        )}
+      </div>
+
+      {/* Desktop: twee kolommen permanent naast elkaar, elk met een eigen
+          interne scroll (zoals Gmail/Outlook) binnen een vaste hoogte. */}
+      <div className="hidden h-[calc(100vh-16rem)] min-h-[480px] overflow-hidden rounded-xl border border-border bg-card shadow-sm md:flex">
+        <div className="flex w-[320px] shrink-0 flex-col border-r border-border lg:w-[360px]">
           <div className="border-b border-border p-3">
             <SearchInput
               value={zoek}
@@ -164,28 +185,8 @@ export function BerichtenOverzicht() {
             <MessageList {...lijstProps} />
           </div>
         </div>
-        <div className={cn('min-h-0 flex-1 md:hidden', mobielWeergave === 'lijst' && 'hidden')}>
-          <MessageDetail {...detailProps} onBack={() => setMobielWeergave('lijst')} />
-        </div>
-
-        {/* Desktop: twee kolommen permanent naast elkaar. */}
-        <div className="hidden min-h-0 flex-1 md:flex">
-          <div className="flex w-[320px] shrink-0 flex-col border-r border-border lg:w-[360px]">
-            <div className="border-b border-border p-3">
-              <SearchInput
-                value={zoek}
-                onValueChange={setZoek}
-                placeholder="Zoek in berichten…"
-                aria-label="Zoek in berichten"
-              />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <MessageList {...lijstProps} />
-            </div>
-          </div>
-          <div className="min-h-0 flex-1">
-            <MessageDetail {...detailProps} />
-          </div>
+        <div className="min-h-0 flex-1">
+          <MessageDetail {...detailProps} />
         </div>
       </div>
     </div>
