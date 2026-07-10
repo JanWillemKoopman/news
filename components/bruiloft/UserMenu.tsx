@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, UserCog } from 'lucide-react'
+import { Activity, Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, User, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -115,17 +115,25 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               dark ? 'ring-rhino-700' : 'ring-transparent'
             )}
           />
+        ) : dark ? (
+          // Rond avatar-vlak: licht wit-transparant cirkeltje met wit poppetje,
+          // zoals notificatie-avatars in mobiele apps.
+          <span
+            aria-hidden
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white"
+          >
+            <User className="h-[18px] w-[18px]" />
+          </span>
         ) : (
           <CircleUserRound
-            className={cn('h-6 w-6', dark ? 'text-white' : 'text-muted-foreground')}
+            className="h-6 w-6 text-muted-foreground"
             strokeWidth={1.5}
             aria-hidden
           />
         )}
-        <ChevronDown
-          className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
-          aria-hidden
-        />
+        {dark ? null : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+        )}
       </button>
 
       {open ? (
