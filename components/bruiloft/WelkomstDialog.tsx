@@ -4,7 +4,6 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Camera, Gift, Globe, ListChecks, PartyPopper, UserPlus, Users } from 'lucide-react'
 
-import { toonStartgids } from '@/components/bruiloft/OnboardingGids'
 import { Button, Modal } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
@@ -63,7 +62,6 @@ export function WelkomstDialog() {
   }
 
   const startSamenstellen = () => {
-    toonStartgids(wedding.id)
     sluit()
     router.push('/bruiloft/taken?samenstellen=1')
   }
