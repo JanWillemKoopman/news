@@ -128,10 +128,6 @@ export function BerichtenOverzicht() {
     vendors,
     geselecteerdId: selectedThreadId,
     onSelect: openThread,
-    onArchive: archiveerId,
-    onUnarchive: unarchiveerId,
-    onTrash: verwijderId,
-    onRestore: herstelId,
   }
 
   const detailProps = {
