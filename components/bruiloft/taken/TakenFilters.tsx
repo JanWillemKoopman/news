@@ -4,10 +4,12 @@ import * as React from 'react'
 import { CalendarDays, LayoutList } from 'lucide-react'
 
 import {
+  Checkbox,
   ColumnToggle,
   FilterDropdown,
   FilterPanel,
   FilterVeld,
+  MultiFilterDropdown,
   SearchInput,
   SegmentedControl,
   Select,
@@ -15,8 +17,8 @@ import {
   type KolomAantal,
 } from '@/components/bruiloft/ui'
 import { PRIORITEITEN, TASK_STATUSSEN } from '@/lib/bruiloft/options'
-import type { TaakFilters } from '@/lib/bruiloft/taken/filters'
-import type { WeddingMember } from '@/lib/bruiloft/types'
+import { DEFAULT_FILTERS, isDefaultStatusSelectie, type TaakFilters } from '@/lib/bruiloft/taken/filters'
+import type { TaskStatus, WeddingMember } from '@/lib/bruiloft/types'
 
 type View = 'lijst' | 'kalender'
 
@@ -40,21 +42,27 @@ export function TakenFilters({
   onKolommenChange,
 }: TakenFiltersProps) {
   const activeFilterCount = [
-    filters.status !== 'all',
+    !isDefaultStatusSelectie(filters.status),
     filters.prioriteit !== 'all',
     filters.toegewezen !== 'all',
   ].filter(Boolean).length
 
   const wisFilters = () =>
-    onChange({ ...filters, status: 'all', prioriteit: 'all', toegewezen: 'all' })
+    onChange({ ...filters, status: DEFAULT_FILTERS.status, prioriteit: 'all', toegewezen: 'all' })
 
-  const statusOpties = [
-    { value: 'all', label: 'Alle statussen' },
-    ...TASK_STATUSSEN.map((s) => ({
-      value: s,
-      label: s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1),
-    })),
-  ]
+  const statusOpties = TASK_STATUSSEN.map((s) => ({
+    value: s,
+    label: s === 'bezig' ? 'In uitvoering' : s.charAt(0).toUpperCase() + s.slice(1),
+  }))
+
+  const toggleStatus = (value: TaskStatus) => {
+    onChange({
+      ...filters,
+      status: filters.status.includes(value)
+        ? filters.status.filter((s) => s !== value)
+        : [...filters.status, value],
+    })
+  }
   const prioriteitOpties = [
     { value: 'all', label: 'Alle prioriteiten' },
     ...PRIORITEITEN.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) })),
@@ -77,10 +85,12 @@ export function TakenFilters({
 
       {/* Status/Prioriteit/Toegewezen aan — inline op desktop, naast de zoekbalk */}
       <div className="hidden items-center gap-2 lg:flex">
-        <FilterDropdown
-          value={filters.status}
+        <MultiFilterDropdown
+          label="Status"
+          values={filters.status}
           options={statusOpties}
-          onChange={(v) => onChange({ ...filters, status: v as TaakFilters['status'] })}
+          onChange={(v) => onChange({ ...filters, status: v as TaskStatus[] })}
+          isActive={!isDefaultStatusSelectie(filters.status)}
           ariaLabel="Filter op status"
         />
         <FilterDropdown
@@ -101,17 +111,20 @@ export function TakenFilters({
       {/* Filterknop + paneel — enige weg naar de filters onder de lg-breakpoint */}
       <FilterPanel activeCount={activeFilterCount} onWis={wisFilters} className="lg:hidden">
         <FilterVeld label="Status">
-          <Select
-            value={filters.status}
-            onChange={(e) => onChange({ ...filters, status: e.target.value as TaakFilters['status'] })}
-            className="w-full"
-          >
+          <div className="flex flex-col gap-1.5">
             {statusOpties.map((o) => (
-              <option key={o.value} value={o.value}>
+              <label
+                key={o.value}
+                className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-1 text-sm text-foreground"
+              >
+                <Checkbox
+                  checked={filters.status.includes(o.value)}
+                  onChange={() => toggleStatus(o.value)}
+                />
                 {o.label}
-              </option>
+              </label>
             ))}
-          </Select>
+          </div>
         </FilterVeld>
         <FilterVeld label="Prioriteit">
           <Select
