@@ -7,7 +7,6 @@ import { Button } from '@/components/bruiloft/ui'
 import { tijdGeleden } from '@/lib/bruiloft/format'
 import type { Thread } from '@/lib/bruiloft/berichten/threads'
 import type { Message, MessageActie } from '@/lib/bruiloft/types'
-import { cn } from '@/lib/utils'
 import { ReplyComposer } from './ReplyComposer'
 
 interface MessageDetailProps {
@@ -116,7 +115,7 @@ export function MessageDetail({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-        <div className="space-y-3">
+        <div className="divide-y divide-border">
           {thread.berichten.map((bericht) => (
             <MessageBubble key={bericht.id} bericht={bericht} />
           ))}
@@ -143,17 +142,12 @@ export function MessageDetail({
 }
 
 function MessageBubble({ bericht }: { bericht: Message }) {
-  const eigen = bericht.direction === 'outbound'
   const acties = berichtActies(bericht)
   return (
-    <div
-      className={cn(
-        'max-w-[85%] rounded-xl border border-border p-4',
-        eigen ? 'ml-auto bg-card' : 'mr-auto bg-muted/50'
-      )}
-    >
+    <div className="py-4 first:pt-0 last:pb-0">
       <p className="text-xs text-muted-foreground">
-        {bericht.afzenderNaam} · {tijdGeleden(bericht.createdAt)}
+        <span className="font-medium text-foreground">{bericht.afzenderNaam}</span> ·{' '}
+        {tijdGeleden(bericht.createdAt)}
       </p>
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{bericht.inhoud}</p>
       {acties.length > 0 ? (

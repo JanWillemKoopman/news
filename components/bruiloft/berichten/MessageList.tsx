@@ -1,10 +1,9 @@
 'use client'
 
-import { Archive, ArchiveRestore, FileText, Inbox, Send, Trash2 } from 'lucide-react'
+import { Archive, FileText, Inbox, Send, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-import { EmptyState, OverflowMenu } from '@/components/bruiloft/ui'
-import type { OverflowMenuItem } from '@/components/bruiloft/ui'
+import { EmptyState } from '@/components/bruiloft/ui'
 import { tijdGeleden } from '@/lib/bruiloft/format'
 import type { BerichtFolder, Thread } from '@/lib/bruiloft/berichten/threads'
 import type { ID, Message, Vendor } from '@/lib/bruiloft/types'
@@ -17,10 +16,6 @@ interface MessageListProps {
   vendors: Vendor[]
   geselecteerdId: ID | null
   onSelect: (threadId: ID) => void
-  onArchive: (threadId: ID) => void
-  onUnarchive: (threadId: ID) => void
-  onTrash: (threadId: ID) => void
-  onRestore: (threadId: ID) => void
 }
 
 const LEEG: Record<BerichtFolder, { icon: LucideIcon; titel: string; beschrijving: string }> = {
@@ -51,48 +46,9 @@ const LEEG: Record<BerichtFolder, { icon: LucideIcon; titel: string; beschrijvin
   },
 }
 
-interface RijActieHandlers {
-  onArchive: (id: ID) => void
-  onUnarchive: (id: ID) => void
-  onTrash: (id: ID) => void
-  onRestore: (id: ID) => void
-}
-
-// Acties horen bij de werkelijke staat van het gesprek (gearchiveerd/
-// verwijderd), niet bij de map die je toevallig aan het bekijken bent —
-// zo blijven ze kloppend, ook als "Verzonden"/"Concepten" straks ooit een
-// item uit een al-gearchiveerd gesprek zouden tonen.
-function rijActies(archived: boolean, deleted: boolean, threadId: ID, h: RijActieHandlers): OverflowMenuItem[] {
-  if (deleted) {
-    return [{ label: 'Herstellen', icon: ArchiveRestore, onClick: () => h.onRestore(threadId) }]
-  }
-  if (archived) {
-    return [
-      { label: 'Terug naar postvak in', icon: ArchiveRestore, onClick: () => h.onUnarchive(threadId) },
-      { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => h.onTrash(threadId) },
-    ]
-  }
-  return [
-    { label: 'Archiveren', icon: Archive, onClick: () => h.onArchive(threadId) },
-    { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => h.onTrash(threadId) },
-  ]
-}
-
-export function MessageList({
-  folder,
-  threads,
-  berichten,
-  vendors,
-  geselecteerdId,
-  onSelect,
-  onArchive,
-  onUnarchive,
-  onTrash,
-  onRestore,
-}: MessageListProps) {
+export function MessageList({ folder, threads, berichten, vendors, geselecteerdId, onSelect }: MessageListProps) {
   const isPlat = folder === 'verzonden' || folder === 'concepten'
   const leeg = LEEG[folder]
-  const handlers: RijActieHandlers = { onArchive, onUnarchive, onTrash, onRestore }
 
   const aantal = isPlat ? berichten.length : threads.length
   if (aantal === 0) {
@@ -115,7 +71,6 @@ export function MessageList({
                 tijd={m.createdAt}
                 ongelezen={false}
                 geselecteerd={geselecteerdId === threadId}
-                acties={rijActies(false, false, threadId, handlers)}
                 onClick={() => onSelect(threadId)}
               />
             )
@@ -131,7 +86,6 @@ export function MessageList({
                 tijd={t.laatste.createdAt}
                 ongelezen={t.ongelezen}
                 geselecteerd={geselecteerdId === t.id}
-                acties={rijActies(t.archived, t.deleted, t.id, handlers)}
                 onClick={() => onSelect(t.id)}
               />
             )
@@ -146,7 +100,6 @@ function MessageRow({
   tijd,
   ongelezen,
   geselecteerd,
-  acties,
   onClick,
 }: {
   naam: string
@@ -154,7 +107,6 @@ function MessageRow({
   tijd: string
   ongelezen: boolean
   geselecteerd: boolean
-  acties: OverflowMenuItem[]
   onClick: () => void
 }) {
   return (
@@ -188,9 +140,6 @@ function MessageRow({
           </p>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">{tijdGeleden(tijd)}</span>
-        <div onClick={(e) => e.stopPropagation()}>
-          <OverflowMenu label={`Acties voor ${naam}`} items={acties} />
-        </div>
       </div>
     </li>
   )
