@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { MoreHorizontal } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ interface Positie {
   right?: number
 }
 
-// Ingetogen "•••"-menu voor secundaire acties, zodat de header één primaire
+// Ingetogen potlood-menu voor secundaire acties, zodat de header één primaire
 // knop houdt. Het paneel rendert via een portal naar document.body met een
 // vaste positie t.o.v. de knop, zodat het niet afgesneden wordt zodra de knop
 // in een container met overflow staat (bv. een horizontaal scrollbare tabel —
@@ -90,13 +90,11 @@ export function OverflowMenu({ items, label = 'Meer acties', align = 'right' }: 
         aria-expanded={open}
         onClick={() => setOpen((p) => !p)}
         className={cn(
-          'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-          open
-            ? 'border-foreground/20 bg-muted text-foreground'
-            : 'border-input bg-background text-foreground hover:bg-muted'
+          'inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          open ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         )}
       >
-        <MoreHorizontal className="h-4 w-4" />
+        <Pencil className="h-4 w-4" />
       </button>
 
       {open && positie
