@@ -1,10 +1,11 @@
 'use client'
 
-import { Bell, Camera, KeyRound, Mail, Trash2, User } from 'lucide-react'
+import { Bell, Calendar, Camera, Check, Copy, KeyRound, Link2, Mail, Trash2, User } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
+import { AppleIcon, GoogleIcon, OutlookIcon } from '@/components/bruiloft/icons/BrandIcons'
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { accountInfo } from '@/components/bruiloft/faqContent'
@@ -427,30 +428,202 @@ function HerinneringenSection() {
   )
 }
 
+// ── Agenda synchroniseren ────────────────────────────────────────────────────
+
+function AgendaSynchroniserenSection() {
+  const wedding = useBruiloftStore((s) => s.wedding)
+  const share = useBruiloftStore((s) => s.agendaShare)
+  const enableAgendaShare = useBruiloftStore((s) => s.enableAgendaShare)
+  const disableAgendaShare = useBruiloftStore((s) => s.disableAgendaShare)
+  const { toast } = useToast()
+
+  const [origin, setOrigin] = React.useState('')
+  React.useEffect(() => { setOrigin(window.location.origin) }, [])
+
+  const [busy, setBusy] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
+
+  if (!wedding) return null
+
+  const httpsUrl = share && origin ? `${origin}/api/agenda/${share.token}.ics` : null
+  // webcal:// opent op iPhone/Mac (en in Outlook) direct het abonneer-scherm.
+  const webcalUrl = httpsUrl ? httpsUrl.replace(/^https?:\/\//, 'webcal://') : null
+  const googleUrl = webcalUrl
+    ? `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`
+    : null
+
+  async function zetAan() {
+    setBusy(true)
+    try {
+      await enableAgendaShare()
+      toast({ title: 'Agenda-koppeling aangezet' })
+    } catch {
+      toast({ title: 'Koppeling aanzetten mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function zetUit() {
+    setBusy(true)
+    try {
+      await disableAgendaShare()
+      toast({
+        title: 'Koppeling gestopt',
+        description: 'De agenda ontvangt geen updates meer. Opnieuw koppelen geeft een nieuwe link.',
+      })
+    } catch {
+      toast({ title: 'Stoppen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copyLink() {
+    if (!httpsUrl) return
+    try {
+      await navigator.clipboard.writeText(httpsUrl)
+      setCopied(true)
+      toast({ title: 'Link gekopieerd', description: 'Plak hem in je agenda-app bij "abonneren via URL".' })
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast({ title: 'Kopiëren mislukt', description: 'Geef toegang tot het klembord en probeer opnieuw.', variant: 'error' })
+    }
+  }
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          Agenda synchroniseren
+        </CardTitle>
+        <CardDescription>
+          Je krijgt een persoonlijke agenda-link (een &ldquo;abonnement&rdquo;). Daarmee verschijnen de
+          trouwdag, leveranciersafspraken, taak-deadlines en betaaltermijnen automatisch in je
+          eigen agenda-app — en blijven ze vanzelf actueel als er in de app iets wijzigt.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {share ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              De koppeling staat aan. Kies hieronder je agenda-app om je te abonneren. Het kan bij
+              sommige agenda-apps een paar uur duren voordat een wijziging zichtbaar is. De link
+              werkt ook voor de agenda van je partner.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {googleUrl ? (
+                <a
+                  href={googleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-border px-2 py-3 text-center text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <GoogleIcon className="h-5 w-5" />
+                  Google
+                </a>
+              ) : null}
+              {webcalUrl ? (
+                <a
+                  href={webcalUrl}
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-border px-2 py-3 text-center text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <AppleIcon className="h-5 w-5" />
+                  Apple
+                </a>
+              ) : null}
+              {webcalUrl ? (
+                <a
+                  href={webcalUrl}
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-border px-2 py-3 text-center text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <OutlookIcon className="h-5 w-5" />
+                  Outlook
+                </a>
+              ) : null}
+            </div>
+            {httpsUrl ? (
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate font-mono text-xs text-muted-foreground">{httpsUrl}</span>
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="shrink-0 rounded p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Kopieer link"
+                >
+                  {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+            ) : null}
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={zetUit} loading={busy}>
+                Koppeling stoppen
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Nog niet gekoppeld. Zet &apos;m aan om de link te krijgen voor Google Agenda, Apple Agenda
+              of Outlook. Stoppen kan altijd — de link werkt dan direct niet meer.
+            </p>
+            <Button variant="outline" onClick={zetAan} loading={busy}>
+              Agenda-koppeling aanzetten
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Gevaarzone ───────────────────────────────────────────────────────────────
 
 // Alleen eigenaren kunnen de bruiloft verwijderen. Dit blok stond eerder op
 // "Samen plannen", maar hoort bij de gevaarzone naast account-verwijderen.
+const BRUILOFT_BEVESTIG_ZIN = 'Verwijder mijn bruiloft'
+
 function BruiloftVerwijderenSection() {
   const router = useRouter()
   const wedding = useBruiloftStore((s) => s.wedding)
   const role = useBruiloftStore((s) => s.role)
+  const currentUser = useBruiloftStore((s) => s.currentUser)
   const deleteActiveWedding = useBruiloftStore((s) => s.deleteActiveWedding)
   const { toast } = useToast()
   const [confirm, setConfirm] = React.useState(false)
+  const [bevestiging, setBevestiging] = React.useState('')
   const [busy, setBusy] = React.useState(false)
 
   if (!wedding || role !== 'owner') return null
 
+  function openConfirm() {
+    setBevestiging('')
+    setConfirm(true)
+  }
+
   async function onDelete() {
+    if (!bevestiging) return
     setBusy(true)
     try {
+      if (bevestiging.trim() !== BRUILOFT_BEVESTIG_ZIN) {
+        const supabase = createClient()
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: currentUser?.email ?? '',
+          password: bevestiging,
+        })
+        if (signInError) {
+          setBusy(false)
+          toast({ title: 'Onjuist wachtwoord of bevestigingszin', variant: 'error' })
+          return
+        }
+      }
       await deleteActiveWedding()
       router.push('/bruiloft')
       router.refresh()
     } catch {
       setBusy(false)
-      setConfirm(false)
       toast({ title: 'Verwijderen mislukt', description: 'Probeer het later opnieuw.', variant: 'error' })
     }
   }
@@ -461,24 +634,38 @@ function BruiloftVerwijderenSection() {
         <CardHeader>
           <CardTitle className="text-destructive">Bruiloft verwijderen</CardTitle>
           <CardDescription>
-            Verwijder deze bruiloft en alle bijbehorende gegevens (gasten, taken, budget,
-            leveranciers, draaiboek, tafels en website). Dit kan niet ongedaan worden gemaakt.
+            Verwijder alleen deze bruiloft en alle bijbehorende gegevens (gasten, taken, budget,
+            leveranciers, draaiboek, tafels en website) — je account zelf blijft bestaan. Dit kan
+            niet ongedaan worden gemaakt.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" onClick={() => setConfirm(true)} loading={busy}>
+          <Button variant="destructive" onClick={openConfirm} loading={busy}>
             Bruiloft verwijderen
           </Button>
         </CardContent>
       </Card>
       <ConfirmDialog
         open={confirm}
-        onOpenChange={(o) => !o && setConfirm(false)}
+        onOpenChange={(o) => { if (!o) { setConfirm(false); setBevestiging('') } }}
         title="Bruiloft definitief verwijderen?"
         description={`Alle gegevens van "${wedding.partner1Naam} & ${wedding.partner2Naam}" worden permanent verwijderd.`}
         bevestigLabel="Ja, verwijder bruiloft"
         onConfirm={onDelete}
-      />
+      >
+        <p className="mb-3 text-sm text-muted-foreground">
+          Vul je wachtwoord in, of typ{' '}
+          <span className="font-medium text-foreground">&ldquo;{BRUILOFT_BEVESTIG_ZIN}&rdquo;</span>{' '}
+          om te bevestigen.
+        </p>
+        <Input
+          placeholder={`Wachtwoord of "${BRUILOFT_BEVESTIG_ZIN}"`}
+          value={bevestiging}
+          onChange={(e) => setBevestiging(e.target.value)}
+          autoComplete="off"
+          className="mb-4"
+        />
+      </ConfirmDialog>
     </>
   )
 }
@@ -524,9 +711,10 @@ function GevaarZoneSection() {
         <CardHeader>
           <CardTitle className="text-destructive">Account verwijderen</CardTitle>
           <CardDescription>
-            Dit verwijdert je account definitief. Bruiloften waarvan jij de enige eigenaar bent —
-            inclusief alle gasten, taken en budget — worden ook verwijderd. Dit kan niet ongedaan
-            worden gemaakt.
+            Dit verwijdert je hele account en inlog definitief, inclusief alle bruiloften waarvan
+            jij de enige eigenaar bent. Wil je alleen déze bruiloft kwijt en je account houden?
+            Gebruik hierboven &ldquo;Bruiloft verwijderen&rdquo;. Dit kan niet ongedaan worden
+            gemaakt.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -619,6 +807,7 @@ export default function AccountPage() {
       <ProfielFotoSection />
       <GegevensSection />
       <HerinneringenSection />
+      <AgendaSynchroniserenSection />
       <WachtwoordSection />
       <hr className="my-4 border-border" />
       <BruiloftVerwijderenSection />
