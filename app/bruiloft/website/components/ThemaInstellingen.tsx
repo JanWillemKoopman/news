@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronDown, Loader2, Menu, Palette } from 'lucide-react'
+import { Check, ChevronDown, Menu, Palette } from 'lucide-react'
 import * as React from 'react'
 
 import { Input } from '@/components/bruiloft/ui'
@@ -163,20 +163,6 @@ const KLEUR_PRESETS = [
   '#c2829a', '#2d5a27',
 ]
 
-function maakBaseSlug(naam1: string, naam2: string): string {
-  const normalize = (s: string) =>
-    s.toLowerCase()
-      .replace(/[àáâãäå]/g, 'a').replace(/[èéêë]/g, 'e').replace(/[ìíîï]/g, 'i')
-      .replace(/[òóôõö]/g, 'o').replace(/[ùúûü]/g, 'u').replace(/[ýÿ]/g, 'y')
-      .replace(/[ñ]/g, 'n').replace(/[ç]/g, 'c')
-      .replace(/[^a-z0-9]/g, '')
-  return (normalize(naam1) + normalize(naam2)).slice(0, 45)
-}
-
-function valideerSlugFormaat(s: string) {
-  return /^[a-z0-9-]{3,50}$/.test(s)
-}
-
 interface Props {
   content: WebsiteContent
   theme: ThemeTokens
@@ -187,14 +173,7 @@ interface Props {
 
 export function ThemaInstellingen({ content, theme, headerFotoUrl }: Props) {
   const saveWebsiteContent = useBruiloftStore((s) => s.saveWebsiteContent)
-  const checkSlugAvailable = useBruiloftStore((s) => s.checkSlugAvailable)
-  const wedding = useBruiloftStore((s) => s.wedding)
   const [open, setOpen] = React.useState(false)
-  const [slug, setSlug] = React.useState(content.slug ?? '')
-  const [slugStatus, setSlugStatus] = React.useState<
-    'idle' | 'checking' | 'beschikbaar' | 'bezet' | 'ongeldig' | 'leeg'
-  >('idle')
-  const slugTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const [kleurSuggesties, setKleurSuggesties] = React.useState<string[]>([])
 
   React.useEffect(() => {
@@ -231,81 +210,6 @@ export function ThemaInstellingen({ content, theme, headerFotoUrl }: Props) {
     link.href = FONT_PREVIEW_URL
     document.head.appendChild(link)
   }, [])
-
-  // Auto-genereer slug van partnernamen als er nog geen is.
-  React.useEffect(() => {
-    if (content.slug || !wedding) return
-    const base = maakBaseSlug(wedding.partner1Naam, wedding.partner2Naam)
-    if (base.length < 3) return
-
-    let cancelled = false
-    async function vindBeschikbareSlug() {
-      const kandidaten = [base, ...Array.from({ length: 9 }, (_, i) => `${base}${i + 1}`)]
-      for (const kandidaat of kandidaten) {
-        if (cancelled || kandidaat.length > 50) continue
-        try {
-          const beschikbaar = await checkSlugAvailable(kandidaat)
-          if (beschikbaar && !cancelled) {
-            setSlug(kandidaat)
-            setSlugStatus('beschikbaar')
-            await saveWebsiteContent({ slug: kandidaat })
-            return
-          }
-        } catch {
-          return
-        }
-      }
-    }
-    void vindBeschikbareSlug()
-    return () => { cancelled = true }
-  }, [content.slug, wedding, checkSlugAvailable, saveWebsiteContent])
-
-  function onSlugWijziging(e: React.ChangeEvent<HTMLInputElement>) {
-    const waarde = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    setSlug(waarde)
-    if (slugTimerRef.current) clearTimeout(slugTimerRef.current)
-    if (waarde.length === 0) {
-      setSlugStatus('leeg')
-      return
-    }
-    setSlugStatus('idle')
-    if (!valideerSlugFormaat(waarde)) {
-      setSlugStatus('ongeldig')
-      return
-    }
-    setSlugStatus('checking')
-    slugTimerRef.current = setTimeout(async () => {
-      try {
-        const beschikbaar = await checkSlugAvailable(waarde)
-        if (waarde === content.slug) {
-          setSlugStatus('beschikbaar')
-        } else {
-          setSlugStatus(beschikbaar ? 'beschikbaar' : 'bezet')
-        }
-        if (beschikbaar || waarde === content.slug) {
-          await saveWebsiteContent({ slug: waarde })
-        }
-      } catch {
-        setSlugStatus('idle')
-      }
-    }, 600)
-  }
-
-  const herkomst = typeof window !== 'undefined' ? window.location.origin : ''
-  const slugFeedback =
-    slugStatus === 'leeg'
-      ? 'Vul een website-adres in'
-      : slugStatus === 'checking'
-        ? 'Beschikbaarheid controleren…'
-        : slugStatus === 'beschikbaar'
-          ? `✓ ${herkomst}/trouwen/${slug}`
-          : slugStatus === 'bezet'
-            ? 'Deze URL is al in gebruik'
-            : slugStatus === 'ongeldig'
-              ? 'Gebruik kleine letters, cijfers en koppeltekens (min. 3 tekens)'
-              : slug
-                ? `${herkomst}/trouwen/${slug}`
-                : ''
 
   const huidigPreset = PRESET_INFO.find((p) => p.id === theme.preset)
   const huidigFont = LETTERTYPES.find((l) => l.id === theme.kopLettertype)
@@ -635,44 +539,6 @@ export function ThemaInstellingen({ content, theme, headerFotoUrl }: Props) {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Website-adres (slug) */}
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Website-adres
-            </p>
-            <p className="mb-2.5 text-xs text-muted-foreground">
-              Kies een persoonlijke URL voor jullie publieke trouwwebsite.
-            </p>
-            <div className={cn(
-              'flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm',
-              slugStatus === 'leeg' ? 'border-destructive' : 'border-border'
-            )}>
-              <span className="shrink-0 text-muted-foreground">/trouwen/</span>
-              <input
-                value={slug}
-                onChange={onSlugWijziging}
-                placeholder="jan-en-ellemiek"
-                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/60"
-              />
-              {slugStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              {slugStatus === 'beschikbaar' && <Check className="h-4 w-4 text-emerald-500" />}
-            </div>
-            {slugFeedback && (
-              <p
-                className={cn(
-                  'mt-1.5 break-all text-xs',
-                  slugStatus === 'bezet' || slugStatus === 'ongeldig' || slugStatus === 'leeg'
-                    ? 'text-destructive'
-                    : slugStatus === 'beschikbaar'
-                      ? 'text-emerald-600'
-                      : 'text-muted-foreground'
-                )}
-              >
-                {slugFeedback}
-              </p>
-            )}
           </div>
         </div>
       )}
