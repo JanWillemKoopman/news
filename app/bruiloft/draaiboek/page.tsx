@@ -1,12 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, CalendarClock, Download, Plus } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Download, Plus, Share2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { draaiboekInfo } from '@/components/bruiloft/faqContent'
 import { DraaiboekControls, type KolomAantal } from '@/components/bruiloft/draaiboek/DraaiboekControls'
+import { DraaiboekDeelModal } from '@/components/bruiloft/draaiboek/DraaiboekDeelModal'
 import {
   DraaiboekColumns,
   RolFilterKnop,
@@ -50,6 +51,7 @@ export default function DraaiboekPage() {
   const [editItem, setEditItem] = React.useState<ScheduleItem | null>(null)
   const [delItem, setDelItem] = React.useState<ScheduleItem | null>(null)
   const [templateBezig, setTemplateBezig] = React.useState(false)
+  const [deelOpen, setDeelOpen] = React.useState(false)
 
   if (!wedding) return null
 
@@ -143,7 +145,17 @@ export default function DraaiboekPage() {
             </Button>
           ) : null
         }
+        secundaireActie={
+          kanBewerken && scheduleItems.length > 0 ? (
+            <Button variant="outline" onClick={() => setDeelOpen(true)}>
+              <Share2 className="h-4 w-4" /> Delen
+            </Button>
+          ) : undefined
+        }
         meerActies={[
+          ...(kanBewerken && scheduleItems.length > 0
+            ? [{ label: 'Draaiboek delen', icon: Share2, onClick: () => setDeelOpen(true) }]
+            : []),
           { label: 'Exporteer draaiboek', icon: Download, onClick: exporteer, disabled: exportLijst.length === 0 },
         ]}
         fab={kanBewerken ? { label: 'Onderdeel toevoegen', onClick: openNieuw } : undefined}
@@ -267,6 +279,8 @@ export default function DraaiboekPage() {
           )}
         </div>
       )}
+
+      <DraaiboekDeelModal open={deelOpen} onOpenChange={setDeelOpen} />
 
       <ScheduleItemForm
         open={formOpen}

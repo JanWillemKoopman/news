@@ -8,6 +8,7 @@ import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
@@ -272,6 +273,20 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteVendorDocument(): Promise<void> {
     throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  // Draaiboek delen vereist de publieke (Supabase-)leeskant; deze legacy
+  // localStorage-implementatie heeft geen equivalent.
+  async getDraaiboekShare(): Promise<DraaiboekShare | null> {
+    return null
+  }
+
+  async createDraaiboekShare(): Promise<DraaiboekShare> {
+    throw new Error('Draaiboek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteDraaiboekShare(): Promise<void> {
+    throw new Error('Draaiboek delen wordt niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;

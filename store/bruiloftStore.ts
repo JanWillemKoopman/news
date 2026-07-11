@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import {
   activityFromRow,
   budgetItemFromRow,
+  draaiboekShareFromRow,
   guestFromRow,
   messageFromRow,
   scheduleItemFromRow,
@@ -47,6 +48,7 @@ import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  DraaiboekShare,
   FaqItem,
   GallerijFoto,
   Guest,
@@ -140,6 +142,8 @@ interface BruiloftState {
   messageReads: MessageRead[]
   budgetItems: BudgetItem[]
   scheduleItems: ScheduleItem[]
+  // Publieke deel-link van het draaiboek; null = delen staat uit.
+  draaiboekShare: DraaiboekShare | null
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
@@ -243,6 +247,11 @@ interface BruiloftActions {
   addScheduleItem: (data: NewScheduleItem) => Promise<void>
   updateScheduleItem: (id: ID, patch: Partial<ScheduleItemInput>) => Promise<void>
   deleteScheduleItem: (id: ID) => Promise<void>
+
+  // Draaiboek delen: aanzetten maakt de publieke link (token), stoppen
+  // verwijdert de rij waardoor de link per direct ongeldig is.
+  enableDraaiboekShare: () => Promise<DraaiboekShare>
+  disableDraaiboekShare: () => Promise<void>
 
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
@@ -412,6 +421,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     messageReads: [],
     budgetItems: [],
     scheduleItems: [],
+    draaiboekShare: null,
     tables: [],
     websiteContent: null,
     websiteFotos: [],
@@ -537,6 +547,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messageReads,
         budgetItems,
         scheduleItems,
+        draaiboekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -554,6 +565,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('berichten-gelezen', repository.listMessageReads(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
+        safe('draaiboek-delen', repository.getDraaiboekShare(wedding.id), null),
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
@@ -580,6 +592,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messageReads,
         budgetItems,
         scheduleItems,
+        draaiboekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -627,6 +640,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messageReads: [],
         budgetItems: [],
         scheduleItems: [],
+        draaiboekShare: null,
         tables: [],
         websiteContent: null,
         websiteFotos: [],
@@ -730,6 +744,11 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: wf }, (p) =>
           set({ tables: applyList(get().tables, p, (r) => tableFromRow(r as unknown as Parameters<typeof tableFromRow>[0])) })
         )
+        // Eén rij per bruiloft (zelfde patroon als website_content hieronder).
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'draaiboek_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ draaiboekShare: null })
+          else set({ draaiboekShare: draaiboekShareFromRow(p.new) })
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
@@ -809,6 +828,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messageReads: [],
         budgetItems,
         scheduleItems: [],
+        draaiboekShare: null,
         tables: [],
         websiteContent: null,
         websitePages: [],
@@ -1312,6 +1332,28 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     },
 
     // --- ScheduleItems -----------------------------------------------------
+
+    enableDraaiboekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      // Bestaat er al een share (bv. net door je partner aangezet), dan is
+      // die link de waarheid — geen tweede rij proberen te maken.
+      const bestaand = get().draaiboekShare ?? (await repository.getDraaiboekShare(wedding.id))
+      if (bestaand) {
+        set({ draaiboekShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createDraaiboekShare(wedding.id)
+      set({ draaiboekShare: share })
+      return share
+    },
+
+    disableDraaiboekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteDraaiboekShare(wedding.id)
+      set({ draaiboekShare: null })
+    },
 
     addScheduleItem: async (data) => {
       const wedding = get().wedding
