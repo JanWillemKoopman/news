@@ -1187,7 +1187,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     getVendorDocumentUrl: async (doc) => {
       const supabase = createClient()
-      return createVendorDocumentUrl(supabase, doc.storagePath)
+      return createVendorDocumentUrl(supabase, doc.storagePath, doc.naam)
     },
 
     sendVendorContact: async (payload) => {
