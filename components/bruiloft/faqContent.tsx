@@ -378,7 +378,8 @@ export const leveranciersInfo: PageInfo = {
         Op <strong>Mijn lijst</strong> beheer je alle partijen voor jullie
         dag — van locatie en catering tot fotograaf en band. Je houdt per
         leverancier de status bij (van oriëntatie tot geboekt), het offertebedrag
-        en de contactgegevens.
+        en de contactgegevens, en je bewaart er de offertes en contracten als
+        documenten.
       </p>
       <p>
         Geboekte bedragen kun je koppelen aan je budget, zodat je financiële
@@ -428,6 +429,18 @@ export const leveranciersInfo: PageInfo = {
           De status laat zien waar je in het proces zit — van eerste oriëntatie tot
           definitief <strong>geboekt</strong>. Met de filterchips toon je snel
           alleen leveranciers met een bepaalde status.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar bewaar ik offertes en contracten?',
+      antwoord: (
+        <p>
+          Klik op een leverancier en scroll naar <strong>Documenten</strong>.
+          Daar upload je offertes, contracten en facturen (pdf, foto of
+          Word/Excel). Een paperclip in de lijst laat zien bij welke
+          leveranciers documenten bewaard zijn. Alleen jullie en wie jullie
+          hebben uitgenodigd kunnen ze openen.
         </p>
       ),
     },

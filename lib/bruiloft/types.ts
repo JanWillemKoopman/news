@@ -231,6 +231,28 @@ export interface VendorContactRequest {
   createdAt: ISODateTime
 }
 
+// Documentenkluis per leverancier: metadata van geüploade offertes,
+// contracten en facturen. Het bestand zelf staat in de private
+// storage-bucket 'vendor-documents' onder storagePath; downloads lopen via
+// signed URLs (zie lib/supabase/storage.ts).
+export type VendorDocumentSoort = 'offerte' | 'contract' | 'factuur' | 'overig'
+
+export interface VendorDocument {
+  id: ID
+  weddingId: ID
+  vendorId: ID
+  naam: string // weergavenaam (origineel bestandsnaam)
+  soort: VendorDocumentSoort
+  storagePath: string
+  mimeType: string
+  grootte: number // bytes
+  geuploadDoor?: ID
+  createdAt: ISODateTime
+}
+
+// geuploadDoor wordt server-side gezet (trigger), createdAt door de database.
+export type VendorDocumentInput = Omit<VendorDocument, 'id' | 'geuploadDoor' | 'createdAt'>
+
 // --- Berichten (Berichtencentrum) -------------------------------------------
 
 // Eén generieke tabel voor het berichtencentrum: inkomende systeem-/AI-

@@ -8,6 +8,7 @@ import { capFirst } from '@/lib/utils'
 import { categorieVoorWeergave } from '@/lib/bruiloft/options'
 import type { Vendor, VendorContactType } from '@/lib/bruiloft/types'
 import { getCategorieIcoon } from './categorieIcoon'
+import { VendorDocumenten } from './VendorDocumenten'
 
 function websiteHref(website: string): string {
   return /^https?:\/\//i.test(website) ? website : `https://${website}`
@@ -121,6 +122,8 @@ export function VendorDetailModal({
             ) : null}
           </div>
         ) : null}
+
+        <VendorDocumenten vendorId={vendor.id} kanBewerken={kanBewerken} />
       </div>
     </Modal>
   )

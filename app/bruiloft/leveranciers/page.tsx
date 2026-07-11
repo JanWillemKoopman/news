@@ -3,7 +3,7 @@
 import * as React from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Compass, FileText, MessageCircle, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
+import { Compass, FileText, MessageCircle, Paperclip, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -46,6 +46,7 @@ type SortKolom = 'naam' | 'type' | 'status' | 'bedrag' | 'adres'
 export default function LeveranciersPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const vendors = useBruiloftStore((s) => s.vendors)
+  const vendorDocuments = useBruiloftStore((s) => s.vendorDocuments)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const updateVendor = useBruiloftStore((s) => s.updateVendor)
@@ -132,6 +133,13 @@ export default function LeveranciersPage() {
   }
   const totaalBinnenType = Array.from(statusTellers.values()).reduce((a, b) => a + b, 0)
   const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
+
+  // Documenten per leverancier — de paperclip in de lijst laat zien dat er
+  // iets bewaard is én maakt de documentenkluis in de detailpopup vindbaar.
+  const documentTellers = new Map<ID, number>()
+  for (const d of vendorDocuments) {
+    documentTellers.set(d.vendorId, (documentTellers.get(d.vendorId) ?? 0) + 1)
+  }
 
   // Tellers per categorie (afwijkende/legacy types tellen mee onder Overig).
   const categorieTellers = new Map<string, number>()
@@ -322,6 +330,7 @@ export default function LeveranciersPage() {
               <tbody>
                 {gesorteerd.map((v) => {
                   const kanContact = kanBewerken && Boolean(v.email)
+                  const aantalDocumenten = documentTellers.get(v.id) ?? 0
                   return (
                     <tr
                       key={v.id}
@@ -337,7 +346,20 @@ export default function LeveranciersPage() {
                       aria-label={`Meer informatie over ${v.naam}`}
                       className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/40"
                     >
-                      <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          {v.naam}
+                          {aantalDocumenten > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-xs font-normal text-muted-foreground"
+                              aria-label={`${aantalDocumenten} ${aantalDocumenten === 1 ? 'document' : 'documenten'}`}
+                            >
+                              <Paperclip className="h-3.5 w-3.5" aria-hidden />
+                              {aantalDocumenten}
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {capFirst(categorieVoorWeergave(v.type, categorieen))}
                       </td>
@@ -376,6 +398,7 @@ export default function LeveranciersPage() {
           <div className="divide-y divide-border rounded-xl border border-border bg-card shadow-sm md:hidden">
             {gesorteerd.map((v) => {
               const kanContact = kanBewerken && Boolean(v.email)
+              const aantalDocumenten = documentTellers.get(v.id) ?? 0
               return (
                 <div
                   key={v.id}
@@ -394,7 +417,18 @@ export default function LeveranciersPage() {
                   )}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{v.naam}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <span className="truncate">{v.naam}</span>
+                      {aantalDocumenten > 0 ? (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-normal text-muted-foreground"
+                          aria-label={`${aantalDocumenten} ${aantalDocumenten === 1 ? 'document' : 'documenten'}`}
+                        >
+                          <Paperclip className="h-3 w-3" aria-hidden />
+                          {aantalDocumenten}
+                        </span>
+                      ) : null}
+                    </p>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {capFirst(categorieVoorWeergave(v.type, categorieen))}
                       {v.adres ? ` · ${v.adres}` : ''}

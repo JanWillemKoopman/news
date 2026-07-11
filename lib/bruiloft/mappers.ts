@@ -28,6 +28,7 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
   VendorInput,
   VoortgangCategorie,
   VoortgangStatus,
@@ -260,6 +261,25 @@ export function vendorContactRequestFromRow(
     bericht: r.bericht,
     verzondenNaar: r.verzonden_naar,
     verzondenDoor: r.verzonden_door ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Documentenkluis ---------------------------------------------------
+// vendor_documents ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0068; types nog niet geregenereerd) — zelfde any-drift
+// als messages hieronder.
+export function vendorDocumentFromRow(r: any): VendorDocument {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    vendorId: r.vendor_id,
+    naam: r.naam,
+    soort: r.soort,
+    storagePath: r.storage_path,
+    mimeType: r.mime_type,
+    grootte: num(r.grootte),
+    geuploadDoor: r.geupload_door ?? undefined,
     createdAt: r.created_at,
   }
 }

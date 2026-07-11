@@ -11,6 +11,7 @@ import {
   taskCommentFromRow,
   taskFromRow,
   vendorContactRequestFromRow,
+  vendorDocumentFromRow,
   vendorFromRow,
   weddingFromRow,
   websiteContentFromRow,
@@ -35,7 +36,13 @@ import {
 } from '@/lib/bruiloft/templateTasks'
 import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
 import { createClient, createRawClient } from '@/lib/supabase/client'
-import { uploadWeddingMedia, deleteWeddingMedia } from '@/lib/supabase/storage'
+import {
+  createVendorDocumentUrl,
+  deleteVendorDocumentFile,
+  deleteWeddingMedia,
+  uploadVendorDocument,
+  uploadWeddingMedia,
+} from '@/lib/supabase/storage'
 import type {
   ActivityEntry,
   BudgetItem,
@@ -66,6 +73,8 @@ import type {
   Vendor,
   VendorContactRequest,
   VendorContactType,
+  VendorDocument,
+  VendorDocumentSoort,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -126,6 +135,7 @@ interface BruiloftState {
   tasks: Task[]
   vendors: Vendor[]
   vendorContactRequests: VendorContactRequest[]
+  vendorDocuments: VendorDocument[]
   messages: Message[]
   messageReads: MessageRead[]
   budgetItems: BudgetItem[]
@@ -202,6 +212,14 @@ interface BruiloftActions {
   // contactRequest is null in het zeldzame geval dat de e-mail wél is
   // verstuurd maar het loggen daarna onverwacht mislukte.
   sendVendorContact: (payload: SendVendorContactPayload) => Promise<VendorContactRequest | null>
+
+  // Documentenkluis: uploadt het bestand naar de private storage-bucket en
+  // bewaart de metadata-rij; verwijderen ruimt beide op (bestand best-effort,
+  // ná de rij — een wees-bestand is onschuldiger dan een dode rij).
+  addVendorDocument: (vendorId: ID, file: File, soort: VendorDocumentSoort) => Promise<VendorDocument>
+  deleteVendorDocument: (id: ID) => Promise<void>
+  // Kortlevende signed URL om een document te openen (private bucket).
+  getVendorDocumentUrl: (doc: VendorDocument) => Promise<string>
 
   // Berichtencentrum: markeert een bericht als gelezen voor de huidige
   // gebruiker (optimistisch + persistent via message_reads).
@@ -389,6 +407,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     tasks: [],
     vendors: [],
     vendorContactRequests: [],
+    vendorDocuments: [],
     messages: [],
     messageReads: [],
     budgetItems: [],
@@ -513,6 +532,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        vendorDocuments,
         messages,
         messageReads,
         budgetItems,
@@ -529,6 +549,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('taken', repository.listTasks(wedding.id), []),
         safe('leveranciers', repository.listVendors(wedding.id), []),
         safe('leveranciers-contact', repository.listVendorContactRequests(wedding.id), []),
+        safe('leveranciers-documenten', repository.listVendorDocuments(wedding.id), []),
         safe('berichten', repository.listMessages(wedding.id), []),
         safe('berichten-gelezen', repository.listMessageReads(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
@@ -554,6 +575,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        vendorDocuments,
         messages,
         messageReads,
         budgetItems,
@@ -600,6 +622,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks: [],
         vendors: [],
         vendorContactRequests: [],
+        vendorDocuments: [],
         messages: [],
         messageReads: [],
         budgetItems: [],
@@ -692,6 +715,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
             ),
           })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_documents', filter: wf }, (p) =>
+          set({ vendorDocuments: applyList(get().vendorDocuments, p, vendorDocumentFromRow) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: wf }, (p) =>
           set({ messages: applyList(get().messages, p, (r) => messageFromRow(r)) })
         )
@@ -778,6 +804,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests: [],
         vendors: [],
         vendorContactRequests: [],
+        vendorDocuments: [],
         messages: [],
         messageReads: [],
         budgetItems,
@@ -1098,6 +1125,49 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           b.vendorId === id ? { ...b, vendorId: undefined } : b
         ),
       })
+    },
+
+    addVendorDocument: async (vendorId, file, soort) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const storagePath = await uploadVendorDocument(supabase, wedding.id, vendorId, file)
+      try {
+        const doc = await repository.createVendorDocument({
+          weddingId: wedding.id,
+          vendorId,
+          naam: file.name,
+          soort,
+          storagePath,
+          mimeType: file.type,
+          grootte: file.size,
+        })
+        // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier.
+        if (!get().vendorDocuments.some((d) => d.id === doc.id)) {
+          set({ vendorDocuments: [doc, ...get().vendorDocuments] })
+        }
+        return doc
+      } catch (e) {
+        // Metadata-rij mislukt: het zojuist geüploade bestand niet laten
+        // rondslingeren in de bucket.
+        await deleteVendorDocumentFile(supabase, storagePath).catch(() => undefined)
+        throw e
+      }
+    },
+
+    deleteVendorDocument: async (id) => {
+      const doc = get().vendorDocuments.find((d) => d.id === id)
+      await repository.deleteVendorDocument(id)
+      set({ vendorDocuments: get().vendorDocuments.filter((d) => d.id !== id) })
+      if (doc) {
+        const supabase = createClient()
+        await deleteVendorDocumentFile(supabase, doc.storagePath).catch(() => undefined)
+      }
+    },
+
+    getVendorDocumentUrl: async (doc) => {
+      const supabase = createClient()
+      return createVendorDocumentUrl(supabase, doc.storagePath)
     },
 
     sendVendorContact: async (payload) => {
