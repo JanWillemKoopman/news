@@ -401,6 +401,15 @@ export interface DraaiboekShare {
   createdAt: ISODateTime
 }
 
+// Agenda-koppeling (ICS-abonnement): zelfde aan/uit-model als DraaiboekShare,
+// maar de token voedt /api/agenda/[token] (trouwdag, afspraken, deadlines,
+// betaaltermijnen) in plaats van een publieke pagina.
+export interface AgendaShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
 // Wat de publieke pagina (/draaiboek/[token]) van de RPC krijgt: alleen de
 // dagindeling plus namen/datum/locatie — bewust géén andere plannergegevens.
 export interface PublicDraaiboekItem {

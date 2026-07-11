@@ -6,6 +6,7 @@
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AgendaShare,
   BudgetItem,
   BudgetItemInput,
   DraaiboekShare,
@@ -287,6 +288,19 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteDraaiboekShare(): Promise<void> {
     throw new Error('Draaiboek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  // Idem voor de agenda-koppeling (ICS-feed draait server-side).
+  async getAgendaShare(): Promise<AgendaShare | null> {
+    return null
+  }
+
+  async createAgendaShare(): Promise<AgendaShare> {
+    throw new Error('De agenda-koppeling wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteAgendaShare(): Promise<void> {
+    throw new Error('De agenda-koppeling wordt niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;
