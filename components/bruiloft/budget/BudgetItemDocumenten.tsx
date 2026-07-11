@@ -11,9 +11,13 @@ import { useBruiloftStore } from '@/store/bruiloftStore'
 
 const SOORTEN: BudgetItemDocumentSoort[] = ['offerte', 'contract', 'factuur', 'overig']
 
-// Zelfde limiet als de storage-bucket (migratie 0072) — hier alvast checken
+// Zelfde limiet als de storage-bucket (migratie 0075) — hier alvast checken
 // zodat de gebruiker een nette melding krijgt i.p.v. een storage-fout.
 const MAX_BYTES = 20 * 1024 * 1024
+
+// Zelfde limiet als de trigger in migratie 0076 — hier alvast checken zodat
+// de gebruiker een nette melding krijgt i.p.v. een database-foutmelding.
+const MAX_DOCUMENTEN = 10
 
 const TOEGESTANE_EXTENSIES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'doc', 'docx', 'xls', 'xlsx', 'txt']
 const ACCEPT = TOEGESTANE_EXTENSIES.map((e) => `.${e}`).join(',')
@@ -40,8 +44,8 @@ interface BudgetItemDocumentenProps {
 }
 
 // Documentenkluis-sectie bij een budgetpost: offertes, contracten en
-// facturen bewaren. Bestanden staan in een private bucket; openen gaat via
-// een kortlevende signed URL uit de store. Zelfde patroon als
+// facturen bewaren. Bestanden staan in een private bucket; downloaden gaat
+// via een kortlevende signed URL uit de store. Zelfde patroon als
 // VendorDocumenten bij leveranciers.
 export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDocumentenProps) {
   const alleDocumenten = useBruiloftStore((s) => s.budgetItemDocuments)
@@ -58,8 +62,18 @@ export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDo
   const [uploadt, setUploadt] = React.useState(false)
   const [delDoc, setDelDoc] = React.useState<BudgetItemDocument | null>(null)
 
+  const limietBereikt = documenten.length >= MAX_DOCUMENTEN
+
   const kiesBestand = (file: File | null) => {
     if (!file) return
+    if (limietBereikt) {
+      toast({
+        title: 'Limiet bereikt',
+        description: `Maximaal ${MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een.`,
+        variant: 'error',
+      })
+      return
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
     if (!TOEGESTANE_EXTENSIES.includes(ext)) {
       toast({
@@ -84,24 +98,35 @@ export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDo
       await addBudgetItemDocument(budgetItemId, pendingFile, pendingSoort)
       setPendingFile(null)
       toast({ title: 'Document opgeslagen', variant: 'success' })
-    } catch {
-      toast({ title: 'Uploaden mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } catch (e) {
+      const limiet = e instanceof Error && e.message.includes('Maximaal 10 documenten')
+      toast({
+        title: limiet ? 'Limiet bereikt' : 'Uploaden mislukt',
+        description: limiet
+          ? `Maximaal ${MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een.`
+          : 'Probeer het opnieuw.',
+        variant: 'error',
+      })
     } finally {
       setUploadt(false)
     }
   }
 
-  const open = async (doc: BudgetItemDocument) => {
-    // Venster vóór de await openen: anders blokkeren popup-blockers de tab
-    // omdat de klik dan al "voorbij" is.
-    const venster = window.open('', '_blank', 'noopener')
+  // Signed URL heeft Content-Disposition: attachment (zie createBudgetItemDocumentUrl),
+  // dus dit downloadt het bestand i.p.v. het (mogelijk mislukt) in de browser te
+  // tonen — zo hoeven we niet per bestandsformaat te regelen dat het weergegeven wordt.
+  const download = async (doc: BudgetItemDocument) => {
     try {
       const url = await getBudgetItemDocumentUrl(doc)
-      if (venster) venster.location.href = url
-      else window.location.href = url
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.naam
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
     } catch {
-      venster?.close()
-      toast({ title: 'Openen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+      toast({ title: 'Downloaden mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
   }
 
@@ -134,7 +159,7 @@ export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDo
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <button
                   type="button"
-                  onClick={() => open(doc)}
+                  onClick={() => download(doc)}
                   className="min-w-0 flex-1 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="block truncate text-sm font-medium text-foreground hover:underline">
@@ -212,9 +237,15 @@ export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDo
               size="sm"
               className="mt-3"
               onClick={() => fileInputRef.current?.click()}
+              disabled={limietBereikt}
             >
               <Plus className="h-4 w-4" /> Document toevoegen
             </Button>
+            {limietBereikt ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Maximaal {MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een om een nieuwe toe te voegen.
+              </p>
+            ) : null}
           </>
         )
       ) : null}

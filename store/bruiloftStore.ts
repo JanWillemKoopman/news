@@ -1433,7 +1433,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     getBudgetItemDocumentUrl: async (doc) => {
       const supabase = createClient()
-      return createBudgetItemDocumentUrl(supabase, doc.storagePath)
+      return createBudgetItemDocumentUrl(supabase, doc.storagePath, doc.naam)
     },
 
     // --- ScheduleItems -----------------------------------------------------

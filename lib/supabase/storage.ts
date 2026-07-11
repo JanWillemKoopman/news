@@ -83,7 +83,7 @@ export async function deleteVendorDocumentFile(
 
 // --- Documentenkluis (budgetposten, private bucket) --------------------
 // Zelfde opzet als vendor-documents hierboven, maar dan 'budget-documents'
-// (migratie 0072) — offertes/contracten/facturen gekoppeld aan een
+// (migratie 0075) — offertes/contracten/facturen gekoppeld aan een
 // budgetpost in plaats van een leverancier.
 
 const BUDGET_DOCUMENTS_BUCKET = 'budget-documents'
@@ -105,14 +105,18 @@ export async function uploadBudgetItemDocument(
 }
 
 // Kortlevende download-link; RLS staat signen alleen toe voor leden van de
-// bijbehorende bruiloft.
+// bijbehorende bruiloft. `download` forceert Content-Disposition: attachment
+// zodat de browser het bestand altijd downloadt i.p.v. probeert weer te
+// geven — anders faalt dat stil voor bestandstypen die de browser niet kan
+// tonen (bv. .docx, .xlsx).
 export async function createBudgetItemDocumentUrl(
   supabase: SupabaseClient,
-  storagePath: string
+  storagePath: string,
+  bestandsnaam: string
 ): Promise<string> {
   const { data, error } = await supabase.storage
     .from(BUDGET_DOCUMENTS_BUCKET)
-    .createSignedUrl(storagePath, 60 * 5)
+    .createSignedUrl(storagePath, 60 * 5, { download: bestandsnaam })
   if (error) throw error
   return data.signedUrl
 }

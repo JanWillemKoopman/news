@@ -500,7 +500,7 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   // --- Documentenkluis (budgetposten) ---------------------------------
   // budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
-  // (nieuwe migratie 0072), vandaar rawDb — zelfde patroon als vendor_documents.
+  // (nieuwe migratie 0075), vandaar rawDb — zelfde patroon als vendor_documents.
   async listBudgetItemDocuments(weddingId: ID): Promise<BudgetItemDocument[]> {
     const { data, error } = await this.rawDb
       .from('budget_item_documents')

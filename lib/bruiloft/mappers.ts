@@ -301,7 +301,7 @@ export function vendorDocumentFromRow(r: any): VendorDocument {
 }
 
 // budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
-// (nieuwe migratie 0072) — zelfde any-drift als vendor_documents hierboven.
+// (nieuwe migratie 0075) — zelfde any-drift als vendor_documents hierboven.
 export function budgetItemDocumentFromRow(r: any): BudgetItemDocument {
   return {
     id: r.id,
