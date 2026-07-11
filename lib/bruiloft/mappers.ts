@@ -7,6 +7,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from './options'
 import type {
   ActivityEntry,
+  AgendaShare,
   BudgetItem,
   BudgetItemInput,
   CeremonieType,
@@ -298,6 +299,15 @@ export function vendorDocumentFromRow(r: any): VendorDocument {
 // (nieuwe migratie 0069; types nog niet geregenereerd) — zelfde any-drift
 // als vendor_documents hierboven.
 export function draaiboekShareFromRow(r: any): DraaiboekShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// agenda_shares: zelfde drift-situatie (migratie 0071) en zelfde vorm.
+export function agendaShareFromRow(r: any): AgendaShare {
   return {
     weddingId: r.wedding_id,
     token: r.token,

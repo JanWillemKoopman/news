@@ -5,6 +5,7 @@
 
 import type {
   ActivityEntry,
+  AgendaShare,
   BudgetItem,
   BudgetItemInput,
   DraaiboekShare,
@@ -82,6 +83,11 @@ export interface WeddingRepository {
   getDraaiboekShare(weddingId: ID): Promise<DraaiboekShare | null>
   createDraaiboekShare(weddingId: ID): Promise<DraaiboekShare>
   deleteDraaiboekShare(weddingId: ID): Promise<void>
+
+  // Agenda-koppeling (ICS-abonnement); de leeskant is /api/agenda/[token].
+  getAgendaShare(weddingId: ID): Promise<AgendaShare | null>
+  createAgendaShare(weddingId: ID): Promise<AgendaShare>
+  deleteAgendaShare(weddingId: ID): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,

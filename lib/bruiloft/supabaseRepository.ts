@@ -6,6 +6,7 @@ import type { Database } from '@/lib/supabase/database.types'
 
 import {
   activityFromRow,
+  agendaShareFromRow,
   budgetItemFromRow,
   budgetItemToRow,
   draaiboekShareFromRow,
@@ -36,6 +37,7 @@ import {
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AgendaShare,
   BudgetItem,
   BudgetItemInput,
   DraaiboekShare,
@@ -329,6 +331,33 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   async deleteDraaiboekShare(weddingId: ID): Promise<void> {
     const { error } = await this.rawDb.from('draaiboek_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
+  // --- Agenda-koppeling ------------------------------------------------
+  // agenda_shares: zelfde drift-situatie als draaiboek_shares (0071).
+  async getAgendaShare(weddingId: ID): Promise<AgendaShare | null> {
+    const { data, error } = await this.rawDb
+      .from('agenda_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? agendaShareFromRow(data) : null
+  }
+
+  async createAgendaShare(weddingId: ID): Promise<AgendaShare> {
+    const { data, error } = await this.rawDb
+      .from('agenda_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return agendaShareFromRow(data)
+  }
+
+  async deleteAgendaShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('agenda_shares').delete().eq('wedding_id', weddingId)
     if (error) throw error
   }
 
