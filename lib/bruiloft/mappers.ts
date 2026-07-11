@@ -216,6 +216,11 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     geoffreerdBedrag: num(r.geoffreerd_bedrag),
     notitie: r.notitie,
     adres: r.adres,
+    // afspraak_datum/afspraak_tijd ontbreken in de gegenereerde
+    // database.types.ts (nieuwe migratie 0070) — zelfde any-drift als
+    // tpw_business_id hieronder.
+    afspraakDatum: (r as any).afspraak_datum ?? null,
+    afspraakTijd: (r as any).afspraak_tijd ?? '',
     latitude: r.latitude ?? null,
     longitude: r.longitude ?? null,
     budgetItemId: r.budget_item_id ?? undefined,
@@ -238,6 +243,9 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.geoffreerdBedrag !== undefined) r.geoffreerd_bedrag = p.geoffreerdBedrag
   if (p.notitie !== undefined) r.notitie = p.notitie
   if (p.adres !== undefined) r.adres = p.adres
+  // afspraak_datum/afspraak_tijd: zie any-drift-toelichting in vendorFromRow.
+  if (p.afspraakDatum !== undefined) (r as any).afspraak_datum = p.afspraakDatum || null
+  if (p.afspraakTijd !== undefined) (r as any).afspraak_tijd = p.afspraakTijd
   if (p.latitude !== undefined) r.latitude = p.latitude
   if (p.longitude !== undefined) r.longitude = p.longitude
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null

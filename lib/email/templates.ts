@@ -1,4 +1,4 @@
-import { dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
+import { afspraakRelatief, dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 
 function escapeHtml(str: string): string {
   return String(str)
@@ -380,11 +380,19 @@ export interface ReminderBetalingItem {
   dagen: number // dagen tot vervaldatum (negatief = te laat)
 }
 
+export interface ReminderAfspraakItem {
+  leverancier: string
+  datum: string // ISO 'YYYY-MM-DD'
+  tijd: string // 'HH:MM', leeg = geen tijd geprikt
+  dagen: number // dagen tot de afspraak (0 = vandaag)
+}
+
 export interface ReminderDigestProps {
   ontvangerNaam: string
   partnerNamen: string
   taken: ReminderTaakItem[]
   betalingen: ReminderBetalingItem[]
+  afspraken: ReminderAfspraakItem[]
   dashboardUrl: string
 }
 
@@ -398,7 +406,7 @@ function reminderRegel(hoofd: string, sub: string): string {
 }
 
 export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: string; html: string } {
-  const aantal = p.taken.length + p.betalingen.length
+  const aantal = p.taken.length + p.betalingen.length + p.afspraken.length
   const subject =
     aantal === 1
       ? 'Herinnering voor jullie bruiloft — Ons Trouwplan'
@@ -429,6 +437,20 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
        </table>`
     : ''
 
+  const afsprakenBlok = p.afspraken.length
+    ? `<p style="margin:24px 0 8px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">Afspraken</p>
+       <table width="100%" cellpadding="0" cellspacing="0">
+         ${p.afspraken
+           .map((a) =>
+             reminderRegel(
+               `Afspraak bij ${escapeHtml(a.leverancier || 'leverancier')}`,
+               `${formatDatumNL(a.datum)}${a.tijd ? ` om ${a.tijd}` : ''} · ${afspraakRelatief(a.dagen)}`
+             )
+           )
+           .join('')}
+       </table>`
+    : ''
+
   const inhoud = `
     <p style="margin:0 0 8px;font-size:16px;color:#1c1917;line-height:1.6;">
       Hoi <strong>${escapeHtml(p.ontvangerNaam || 'daar')}</strong>,
@@ -437,6 +459,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
       Een vriendelijke herinnering voor de planning van de bruiloft van
       <strong>${escapeHtml(p.partnerNamen)}</strong>. Dit staat er binnenkort aan te komen:
     </p>
+    ${afsprakenBlok}
     ${takenBlok}
     ${betalingenBlok}
     ${ctaKnop(p.dashboardUrl, 'Naar het trouwplan')}

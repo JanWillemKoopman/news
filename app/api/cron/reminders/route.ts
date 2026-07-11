@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { dagenTot, dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
-import { betalingMijlpaal, taakMijlpaal } from '@/lib/bruiloft/reminders'
+import { afspraakRelatief, dagenTot, dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
+import { afspraakMijlpaal, betalingMijlpaal, taakMijlpaal } from '@/lib/bruiloft/reminders'
 import type { MessageActie, PaymentTerm } from '@/lib/bruiloft/types'
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import {
   renderReminderDigestEmail,
+  type ReminderAfspraakItem,
   type ReminderBetalingItem,
   type ReminderTaakItem,
 } from '@/lib/email/templates'
@@ -15,11 +16,11 @@ import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type Mijlpaal = '7d' | '1d' | '14d' | '3d' | 'te-laat'
+type Mijlpaal = '7d' | '1d' | '14d' | '3d' | '0d' | 'te-laat'
 
 interface LogRow {
   wedding_id: string
-  soort: 'taak' | 'betaaltermijn'
+  soort: 'taak' | 'betaaltermijn' | 'afspraak'
   ref_id: string
   mijlpaal: Mijlpaal
   user_id: string
@@ -33,6 +34,7 @@ interface Pending {
   partnerNamen: string
   taken: ReminderTaakItem[]
   betalingen: ReminderBetalingItem[]
+  afspraken: ReminderAfspraakItem[]
   logRows: LogRow[]
 }
 
@@ -54,20 +56,33 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient()
+  // raw: voor tabellen/kolommen die nog niet in de gegenereerde
+  // database.types.ts staan (messages, vendors.afspraak_datum — 0058/0070).
+  const rawAdmin = createRawAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
   const dashboardUrl = `${siteUrl}/bruiloft`
 
-  const [weddingsRes, membersRes, profilesRes, tasksRes, budgetRes, logRes] = await Promise.all([
+  const [weddingsRes, membersRes, profilesRes, tasksRes, budgetRes, vendorsRes, logRes] = await Promise.all([
     admin.from('weddings').select('id, partner1_naam, partner2_naam'),
     admin.from('wedding_members').select('wedding_id, user_id, role'),
     admin.from('profiles').select('id, email, display_name, email_herinneringen'),
     admin.from('tasks').select('id, wedding_id, titel, deadline, status, assignees').neq('status', 'klaar'),
     admin.from('budget_items').select('id, wedding_id, omschrijving, betaaltermijnen'),
+    rawAdmin
+      .from('vendors')
+      .select('id, wedding_id, naam, status, afspraak_datum, afspraak_tijd')
+      .not('afspraak_datum', 'is', null),
     admin.from('reminder_log').select('soort, ref_id, mijlpaal, user_id'),
   ])
 
   const firstError =
-    weddingsRes.error ?? membersRes.error ?? profilesRes.error ?? tasksRes.error ?? budgetRes.error ?? logRes.error
+    weddingsRes.error ??
+    membersRes.error ??
+    profilesRes.error ??
+    tasksRes.error ??
+    budgetRes.error ??
+    vendorsRes.error ??
+    logRes.error
   if (firstError) {
     console.error('[cron/reminders] queryfout:', firstError)
     return NextResponse.json({ error: 'Databasefout' }, { status: 500 })
@@ -78,6 +93,14 @@ export async function GET(request: NextRequest) {
   const profiles = profilesRes.data ?? []
   const tasks = tasksRes.data ?? []
   const budgetItems = budgetRes.data ?? []
+  const vendorsMetAfspraak = (vendorsRes.data ?? []) as unknown as {
+    id: string
+    wedding_id: string
+    naam: string
+    status: string
+    afspraak_datum: string
+    afspraak_tijd: string
+  }[]
   const log = logRes.data ?? []
 
   // --- Lookups ---
@@ -115,6 +138,7 @@ export async function GET(request: NextRequest) {
         partnerNamen: weddingNamen.get(weddingId) ?? 'het bruidspaar',
         taken: [],
         betalingen: [],
+        afspraken: [],
         logRows: [],
       }
       pendingByUser.set(userId, p)
@@ -190,6 +214,39 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // --- Afspraken bij leveranciers (alleen naar de owners) ---
+  for (const v of vendorsMetAfspraak) {
+    // Een afspraak bij een afgewezen leverancier is achterhaald.
+    if (v.status === 'afgewezen') continue
+    const dagen = dagenTot(v.afspraak_datum)
+    const mijlpaal = afspraakMijlpaal(dagen)
+    if (!mijlpaal) continue
+
+    const ontvangers = ownersByWedding.get(v.wedding_id) ?? []
+    for (const userId of ontvangers) {
+      const key = `afspraak|${v.id}|${mijlpaal}|${userId}`
+      if (alSent.has(key)) continue
+      const info = ontvangerOk(userId)
+      if (!info) continue
+      const p = pendingVoor(userId, info, v.wedding_id)
+      p.afspraken.push({
+        leverancier: v.naam || 'Leverancier',
+        datum: v.afspraak_datum,
+        tijd: v.afspraak_tijd || '',
+        dagen,
+      })
+      p.logRows.push({
+        wedding_id: v.wedding_id,
+        soort: 'afspraak',
+        ref_id: v.id,
+        mijlpaal,
+        user_id: userId,
+        email: info.email,
+      })
+      alSent.add(key)
+    }
+  }
+
   // --- Versturen + loggen ---
   let verstuurd = 0
   let mislukt = 0
@@ -202,17 +259,19 @@ export async function GET(request: NextRequest) {
   interface WeddingBericht {
     taken: ReminderTaakItem[]
     betalingen: ReminderBetalingItem[]
+    afspraken: ReminderAfspraakItem[]
     keys: Set<string>
   }
   const berichtPerWedding = new Map<string, WeddingBericht>()
 
   for (const p of Array.from(pendingByUser.values())) {
-    if (p.taken.length === 0 && p.betalingen.length === 0) continue
+    if (p.taken.length === 0 && p.betalingen.length === 0 && p.afspraken.length === 0) continue
     const { subject, html } = renderReminderDigestEmail({
       ontvangerNaam: p.naam,
       partnerNamen: p.partnerNamen,
       taken: p.taken,
       betalingen: p.betalingen,
+      afspraken: p.afspraken,
       dashboardUrl,
     })
 
@@ -241,28 +300,32 @@ export async function GET(request: NextRequest) {
     verstuurd++
 
     // Verzamel de zojuist verstuurde items per bruiloft voor het
-    // berichtencentrum. p.logRows loopt 1-op-1 met [taken..., betalingen...].
+    // berichtencentrum. p.logRows loopt 1-op-1 met
+    // [taken..., betalingen..., afspraken...].
     p.logRows.forEach((row, i) => {
       const itemKey = `${row.soort}|${row.ref_id}|${row.mijlpaal}`
       let wb = berichtPerWedding.get(row.wedding_id)
       if (!wb) {
-        wb = { taken: [], betalingen: [], keys: new Set() }
+        wb = { taken: [], betalingen: [], afspraken: [], keys: new Set() }
         berichtPerWedding.set(row.wedding_id, wb)
       }
       if (wb.keys.has(itemKey)) return
       wb.keys.add(itemKey)
       if (row.soort === 'taak') wb.taken.push(p.taken[i])
-      else wb.betalingen.push(p.betalingen[i - p.taken.length])
+      else if (row.soort === 'betaaltermijn') wb.betalingen.push(p.betalingen[i - p.taken.length])
+      else wb.afspraken.push(p.afspraken[i - p.taken.length - p.betalingen.length])
     })
   }
 
   // --- Spiegel naar het berichtencentrum -----------------------------------
   let berichten = 0
   if (berichtPerWedding.size > 0) {
-    // raw: messages ontbreekt nog in de gegenereerde database.types.ts.
-    const rawAdmin = createRawAdminClient()
     for (const [weddingId, wb] of Array.from(berichtPerWedding.entries())) {
       const regels = [
+        ...wb.afspraken.map(
+          (a) =>
+            `• Afspraak bij ${a.leverancier} — ${formatDatumNL(a.datum)}${a.tijd ? ` om ${a.tijd}` : ''} (${afspraakRelatief(a.dagen)})`
+        ),
         ...wb.taken.map(
           (t) => `• ${t.titel} — deadline ${formatDatumNL(t.deadline)} (${dagLabel(t.dagen)})`
         ),
@@ -271,8 +334,11 @@ export async function GET(request: NextRequest) {
             `• ${b.omschrijving} — ${formatEuro(b.bedrag)}, vervalt ${formatDatumNL(b.vervaldatum)} (${dagLabel(b.dagen)})`
         ),
       ]
-      const aantal = wb.taken.length + wb.betalingen.length
+      const aantal = wb.taken.length + wb.betalingen.length + wb.afspraken.length
       const acties: MessageActie[] = [
+        ...(wb.afspraken.length > 0
+          ? [{ label: 'Bekijk leveranciers', href: '/bruiloft/leveranciers' }]
+          : []),
         ...(wb.taken.length > 0 ? [{ label: 'Bekijk taken', href: '/bruiloft/taken' }] : []),
         ...(wb.betalingen.length > 0 ? [{ label: 'Bekijk budget', href: '/bruiloft/budget' }] : []),
       ]

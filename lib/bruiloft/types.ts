@@ -201,6 +201,10 @@ export interface Vendor {
   geoffreerdBedrag: number // in euro
   notitie: string
   adres: string
+  // Eerstvolgende afspraak (bezichtiging, proeverij, gesprek): datum +
+  // optionele tijd ('HH:MM', leeg = alleen een dag geprikt).
+  afspraakDatum?: ISODate | null
+  afspraakTijd: string
   // Coördinaten voor de kaartweergave; null zolang adres nog niet (succesvol)
   // gegeocodeerd is (of leeg is).
   latitude?: number | null

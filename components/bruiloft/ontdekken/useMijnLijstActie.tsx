@@ -54,6 +54,8 @@ export function useMijnLijstActie(business: OntdekBusiness) {
         geoffreerdBedrag: 0,
         notitie: b.beschrijving.length > 280 ? `${b.beschrijving.slice(0, 277)}…` : b.beschrijving,
         adres,
+        afspraakDatum: null,
+        afspraakTijd: '',
         latitude: b.lat,
         longitude: b.lon,
         tpwBusinessId: b.id,

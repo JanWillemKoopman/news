@@ -433,6 +433,18 @@ export const leveranciersInfo: PageInfo = {
       ),
     },
     {
+      vraag: 'Hoe plan ik een bezichtiging of afspraak in?',
+      antwoord: (
+        <p>
+          Open de leverancier, kies <strong>Bewerken</strong> en vul onder{' '}
+          <em>Meer details</em> de afspraakdatum (en eventueel tijd) in. Komende
+          afspraken staan bovenaan je lijst en op het dashboard, en jullie
+          krijgen er automatisch een herinnering voor — drie dagen en één dag
+          vooraf, en op de dag zelf.
+        </p>
+      ),
+    },
+    {
       vraag: 'Waar bewaar ik offertes en contracten?',
       antwoord: (
         <p>
