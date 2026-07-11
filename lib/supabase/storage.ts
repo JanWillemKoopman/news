@@ -80,3 +80,46 @@ export async function deleteVendorDocumentFile(
 ): Promise<void> {
   await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath])
 }
+
+// --- Documentenkluis (budgetposten, private bucket) --------------------
+// Zelfde opzet als vendor-documents hierboven, maar dan 'budget-documents'
+// (migratie 0072) — offertes/contracten/facturen gekoppeld aan een
+// budgetpost in plaats van een leverancier.
+
+const BUDGET_DOCUMENTS_BUCKET = 'budget-documents'
+
+export async function uploadBudgetItemDocument(
+  supabase: SupabaseClient,
+  weddingId: string,
+  budgetItemId: string,
+  file: File
+): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+  const naam = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const pad = `${weddingId}/budget/${budgetItemId}/${naam}`
+  const { error } = await supabase.storage
+    .from(BUDGET_DOCUMENTS_BUCKET)
+    .upload(pad, file, { upsert: false, contentType: file.type })
+  if (error) throw error
+  return pad
+}
+
+// Kortlevende download-link; RLS staat signen alleen toe voor leden van de
+// bijbehorende bruiloft.
+export async function createBudgetItemDocumentUrl(
+  supabase: SupabaseClient,
+  storagePath: string
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(BUDGET_DOCUMENTS_BUCKET)
+    .createSignedUrl(storagePath, 60 * 5)
+  if (error) throw error
+  return data.signedUrl
+}
+
+export async function deleteBudgetItemDocumentFile(
+  supabase: SupabaseClient,
+  storagePath: string
+): Promise<void> {
+  await supabase.storage.from(BUDGET_DOCUMENTS_BUCKET).remove([storagePath])
+}

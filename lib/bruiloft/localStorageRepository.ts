@@ -9,6 +9,7 @@ import type {
   AdresShare,
   AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
   BudgetItemInput,
   DraaiboekShare,
   Guest,
@@ -274,6 +275,20 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   }
 
   async deleteVendorDocument(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  // De documentenkluis vereist Supabase Storage; deze legacy localStorage-
+  // implementatie heeft geen equivalent.
+  async listBudgetItemDocuments(): Promise<BudgetItemDocument[]> {
+    return []
+  }
+
+  async createBudgetItemDocument(): Promise<BudgetItemDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteBudgetItemDocument(): Promise<void> {
     throw new Error('Documenten worden niet ondersteund zonder Supabase')
   }
 

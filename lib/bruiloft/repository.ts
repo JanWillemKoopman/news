@@ -8,6 +8,8 @@ import type {
   AdresShare,
   AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentInput,
   BudgetItemInput,
   DraaiboekShare,
   Guest,
@@ -114,6 +116,13 @@ export interface WeddingRepository {
   createBudgetItems(inputs: BudgetItemInput[]): Promise<BudgetItem[]>
   updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem>
   deleteBudgetItem(id: ID): Promise<void>
+
+  // Documentenkluis per budgetpost (metadata; het bestand zelf staat in de
+  // private storage-bucket, zie lib/supabase/storage.ts). Geen update: een
+  // document vervang je door verwijderen + opnieuw uploaden.
+  listBudgetItemDocuments(weddingId: ID): Promise<BudgetItemDocument[]>
+  createBudgetItemDocument(input: BudgetItemDocumentInput): Promise<BudgetItemDocument>
+  deleteBudgetItemDocument(id: ID): Promise<void>
 
   // ScheduleItems (trouwdag-draaiboek)
   listScheduleItems(weddingId: ID): Promise<ScheduleItem[]>
