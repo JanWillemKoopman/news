@@ -1452,11 +1452,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       }
       const user = get().currentUser
       if (!user) return
+      // patch.email wordt bewust NIET lokaal toegepast: een e-mailwijziging is
+      // pas geldig na bevestiging via de mail (zie /api/profiel + 0067). Tot
+      // die tijd blijft currentUser.email het geverifieerde adres; na
+      // bevestiging + herladen leest init het nieuwe adres uit profiles.
       set({
         currentUser: {
           ...user,
           ...(patch.displayName !== undefined && { displayName: patch.displayName }),
-          ...(patch.email !== undefined && { email: patch.email }),
           ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
           ...(patch.emailHerinneringen !== undefined && { emailHerinneringen: patch.emailHerinneringen }),
         },

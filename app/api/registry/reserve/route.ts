@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     p_message: message || null,
   })
 
-  if (rpcError) {
+  if (rpcError || !result) {
     console.error('[registry/reserve] RPC error:', rpcError)
     return NextResponse.json({ error: 'Reservering mislukt' }, { status: 500 })
   }

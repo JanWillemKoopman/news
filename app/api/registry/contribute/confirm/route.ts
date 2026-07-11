@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 import {
   renderRegistryContributionPendingEmail,
@@ -16,7 +16,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
   const rateLimit = await checkRateLimit(`registry:confirm:${ip}`, 5, 60 * 60)
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })

@@ -5,6 +5,7 @@ import { ROLE_DESCRIPTIONS, ROLE_LABELS, type WeddingRole } from '@/lib/bruiloft
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderMemberInviteEmail } from '@/lib/email/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPlatformAdmin } from '@/lib/supabase/authz'
 import { createClient } from '@/lib/supabase/server'
 
 const bodySchema = z.object({
@@ -48,7 +49,9 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
   if (!membership || membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Alleen eigenaren kunnen leden uitnodigen.' }, { status: 403 })
+    if (!(await isPlatformAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: 'Alleen eigenaren kunnen leden uitnodigen.' }, { status: 403 })
+    }
   }
 
   const { data: wedding, error: weddingError } = await supabase

@@ -8,7 +8,7 @@ import {
 import type { AfwijzingsGrond } from '@/lib/bruiloft/types'
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderVendorReplyEmail } from '@/lib/email/templates'
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createRawAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     return NextResponse.json({ error: 'Ongeldige link' }, { status: 404 })
   }
 
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
   const rateLimit = await checkRateLimit(`reactie:context:${ip}`, 30, 15 * 60)
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: 'Te veel verzoeken. Probeer het later opnieuw.' }, { status: 429 })
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Ongeldige link' }, { status: 404 })
   }
 
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
   const rateLimit = await checkRateLimit(`reactie:plaats:${ip}:${params.token}`, 5, 15 * 60)
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: 'Te veel reacties kort achter elkaar. Probeer het later opnieuw.' }, { status: 429 })

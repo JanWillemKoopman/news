@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { decryptSitePassword, encryptSitePassword } from '@/lib/crypto/sitePassword'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPlatformAdmin } from '@/lib/supabase/authz'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -33,7 +34,9 @@ async function verifieerEigenaar(weddingId: string) {
     .eq('wedding_id', weddingId)
     .eq('user_id', user.id)
     .maybeSingle()
-  if (!member || member.role !== 'owner') return null
+  if (!member || member.role !== 'owner') {
+    if (!(await isPlatformAdmin(supabase, user.id))) return null
+  }
 
   return admin
 }

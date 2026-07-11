@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 // Bevestigen via de persoonlijke RSVP-link (token in de URL, zie
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { token, payload } = parsed.data
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
 
   const rateLimit = await checkRateLimit(`rsvp:token-bevestig:${ip}:${token}`, 10, 15 * 60)
   if (!rateLimit.allowed) {

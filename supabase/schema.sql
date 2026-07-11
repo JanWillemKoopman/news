@@ -66,6 +66,29 @@ create trigger trg_on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Houdt profiles.email gelijk aan het GEVERIFIEERDE auth-adres (zie 0067):
+-- /api/profiel schrijft profiles.email niet meer direct, deze trigger synct
+-- zodra auth.users.email daadwerkelijk verandert (pas ná bevestiging).
+create or replace function public.sync_profile_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is distinct from old.email then
+    update public.profiles
+       set email = new.email, updated_at = now()
+     where id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_sync_profile_email
+  after update of email on auth.users
+  for each row execute function public.sync_profile_email();
+
 -- ============================================================
 -- supabase/migrations/0003_core_tables.sql
 -- ============================================================
@@ -554,8 +577,18 @@ $$;
 
 create or replace function public.can_edit(p_wedding uuid, p_module text)
 returns boolean language sql stable security definer set search_path = public as $$
-  -- platform_admin is bewust read-only (support), niet schrijvend.
-  select public.module_level(p_wedding, p_module) = 'edit';
+  -- platform_admin mag content bewerken (zie 0064); eigenaar-exclusieve acties
+  -- (leden/rechten/verwijderen) lopen via can_manage_wedding() (zie 0065).
+  select public.is_platform_admin()
+      or public.module_level(p_wedding, p_module) = 'edit';
+$$;
+
+-- Owner-exclusieve beheeracties (leden, rechten-matrix, bruiloft verwijderen)
+-- lopen via deze helper i.p.v. een kale member_role(...)='owner'-check, zodat
+-- de platform_admin-uitzondering op één plek staat (zie 0065).
+create or replace function public.can_manage_wedding(p_wedding uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.member_role(p_wedding) = 'owner' or public.is_platform_admin();
 $$;
 
 -- =====================================================================
@@ -591,40 +624,40 @@ create policy weddings_insert on public.weddings for insert to authenticated
 create policy weddings_update on public.weddings for update to authenticated
   using (public.can_edit(id, 'beheer')) with check (public.can_edit(id, 'beheer'));
 create policy weddings_delete on public.weddings for delete to authenticated
-  using (public.member_role(id) = 'owner');
+  using (public.can_manage_wedding(id));
 
 -- --- wedding_members (owner beheert leden) --------------------------
 create policy members_select on public.wedding_members for select to authenticated
   using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
 create policy members_insert on public.wedding_members for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy members_update on public.wedding_members for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy members_delete on public.wedding_members for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- --- wedding_role_permissions (owner stelt de matrix in) ------------
 create policy wrp_select on public.wedding_role_permissions for select to authenticated
   using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
 create policy wrp_insert on public.wedding_role_permissions for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy wrp_update on public.wedding_role_permissions for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy wrp_delete on public.wedding_role_permissions for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- --- wedding_invites (e-mails -> alleen owner ziet ze) -------------
 create policy invites_select on public.wedding_invites for select to authenticated
-  using (public.member_role(wedding_id) = 'owner' or public.is_platform_admin());
+  using (public.can_manage_wedding(wedding_id));
 create policy invites_insert on public.wedding_invites for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy invites_update on public.wedding_invites for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy invites_delete on public.wedding_invites for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- =====================================================================
 -- Entiteittabellen: elke tabel mapt op zijn module in de rechten-matrix.
@@ -1049,7 +1082,7 @@ create policy comments_select on public.task_comments for select to authenticate
 create policy comments_insert on public.task_comments for insert to authenticated
   with check (public.can_edit(wedding_id, 'taken'));
 create policy comments_delete on public.task_comments for delete to authenticated
-  using (author_id = auth.uid() or public.member_role(wedding_id) = 'owner');
+  using (author_id = auth.uid() or public.can_manage_wedding(wedding_id));
 
 -- Server-autoritatief: auteur + naam invullen en de taak-tenant valideren.
 create or replace function public.task_comments_prepare()

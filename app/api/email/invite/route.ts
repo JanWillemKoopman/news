@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { FROM_ADDRESS, getResend } from '@/lib/email/resend'
 import { renderInviteEmail } from '@/lib/email/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPlatformAdmin } from '@/lib/supabase/authz'
 import { createClient } from '@/lib/supabase/server'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -46,7 +47,9 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
   if (!membership || membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    if (!(await isPlatformAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    }
   }
 
   // Haal bruiloftsnamen op voor de e-mailtekst.
