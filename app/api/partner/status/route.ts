@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPlatformAdmin } from '@/lib/supabase/authz'
 import { createClient } from '@/lib/supabase/server'
 
 // Geeft per lid terug of het account al geactiveerd is (ingelogd / e-mail
@@ -29,7 +30,9 @@ export async function GET(request: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
   if (!membership || membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    if (!(await isPlatformAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    }
   }
 
   const { data: members } = await admin
