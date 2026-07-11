@@ -15,6 +15,10 @@ const SOORTEN: VendorDocumentSoort[] = ['offerte', 'contract', 'factuur', 'overi
 // zodat de gebruiker een nette melding krijgt i.p.v. een storage-fout.
 const MAX_BYTES = 20 * 1024 * 1024
 
+// Zelfde limiet als de trigger in migratie 0074 — hier alvast checken zodat
+// de gebruiker een nette melding krijgt i.p.v. een database-foutmelding.
+const MAX_DOCUMENTEN = 10
+
 const TOEGESTANE_EXTENSIES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'doc', 'docx', 'xls', 'xlsx', 'txt']
 const ACCEPT = TOEGESTANE_EXTENSIES.map((e) => `.${e}`).join(',')
 
@@ -57,8 +61,18 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
   const [uploadt, setUploadt] = React.useState(false)
   const [delDoc, setDelDoc] = React.useState<VendorDocument | null>(null)
 
+  const limietBereikt = documenten.length >= MAX_DOCUMENTEN
+
   const kiesBestand = (file: File | null) => {
     if (!file) return
+    if (limietBereikt) {
+      toast({
+        title: 'Limiet bereikt',
+        description: `Maximaal ${MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een.`,
+        variant: 'error',
+      })
+      return
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
     if (!TOEGESTANE_EXTENSIES.includes(ext)) {
       toast({
@@ -83,8 +97,15 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
       await addVendorDocument(vendorId, pendingFile, pendingSoort)
       setPendingFile(null)
       toast({ title: 'Document opgeslagen', variant: 'success' })
-    } catch {
-      toast({ title: 'Uploaden mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+    } catch (e) {
+      const limiet = e instanceof Error && e.message.includes('Maximaal 10 documenten')
+      toast({
+        title: limiet ? 'Limiet bereikt' : 'Uploaden mislukt',
+        description: limiet
+          ? `Maximaal ${MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een.`
+          : 'Probeer het opnieuw.',
+        variant: 'error',
+      })
     } finally {
       setUploadt(false)
     }
@@ -215,9 +236,15 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
               size="sm"
               className="mt-3"
               onClick={() => fileInputRef.current?.click()}
+              disabled={limietBereikt}
             >
               <Plus className="h-4 w-4" /> Document toevoegen
             </Button>
+            {limietBereikt ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Maximaal {MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een om een nieuwe toe te voegen.
+              </p>
+            ) : null}
           </>
         )
       ) : null}
