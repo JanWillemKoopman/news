@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { FileText, Plus, Trash2 } from 'lucide-react'
 
-import { Button, ConfirmDialog, Select, useToast } from '@/components/bruiloft/ui'
+import { Button, ConfirmDialog, Field, Select, useToast } from '@/components/bruiloft/ui'
 import { capFirst } from '@/lib/utils'
 import { formatDatumKort } from '@/lib/bruiloft/format'
 import type { ID, VendorDocument, VendorDocumentSoort } from '@/lib/bruiloft/types'
@@ -15,7 +15,18 @@ const SOORTEN: VendorDocumentSoort[] = ['offerte', 'contract', 'factuur', 'overi
 // zodat de gebruiker een nette melding krijgt i.p.v. een storage-fout.
 const MAX_BYTES = 20 * 1024 * 1024
 
-const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.txt'
+const TOEGESTANE_EXTENSIES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'doc', 'docx', 'xls', 'xlsx', 'txt']
+const ACCEPT = TOEGESTANE_EXTENSIES.map((e) => `.${e}`).join(',')
+
+// Slimme voorzet voor het soort, op basis van de bestandsnaam — de gebruiker
+// hoeft dan meestal alleen nog op Opslaan te klikken.
+function raadSoort(bestandsnaam: string): VendorDocumentSoort {
+  const n = bestandsnaam.toLowerCase()
+  if (n.includes('contract') || n.includes('overeenkomst')) return 'contract'
+  if (n.includes('factuur') || n.includes('invoice')) return 'factuur'
+  if (n.includes('offerte') || n.includes('prijs') || n.includes('quote')) return 'offerte'
+  return 'overig'
+}
 
 function formatGrootte(bytes: number): string {
   if (bytes <= 0) return ''
@@ -48,10 +59,20 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
 
   const kiesBestand = (file: File | null) => {
     if (!file) return
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+    if (!TOEGESTANE_EXTENSIES.includes(ext)) {
+      toast({
+        title: 'Dit bestandstype kan niet',
+        description: 'Kies een pdf, foto of Word/Excel-bestand.',
+        variant: 'error',
+      })
+      return
+    }
     if (file.size > MAX_BYTES) {
       toast({ title: 'Bestand te groot', description: 'Maximaal 20 MB per document.', variant: 'error' })
       return
     }
+    setPendingSoort(raadSoort(file.name))
     setPendingFile(file)
   }
 
@@ -91,7 +112,9 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
 
       {documenten.length === 0 && !pendingFile ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Bewaar hier de offertes, contracten en facturen van deze leverancier.
+          {kanBewerken
+            ? 'Bewaar hier de offertes, contracten en facturen van deze leverancier — als pdf, foto of Word/Excel-bestand. Alleen jullie kunnen ze zien.'
+            : 'Hier staan de offertes, contracten en facturen van deze leverancier.'}
         </p>
       ) : null}
 
@@ -137,19 +160,29 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
       {kanBewerken ? (
         pendingFile ? (
           <div className="mt-3 space-y-3 rounded-lg bg-muted/50 p-3">
-            <p className="truncate text-sm font-medium text-foreground">{pendingFile.name}</p>
-            <Select
-              value={pendingSoort}
-              onChange={(e) => setPendingSoort(e.target.value as VendorDocumentSoort)}
-              aria-label="Soort document"
-              disabled={uploadt}
-            >
-              {SOORTEN.map((s) => (
-                <option key={s} value={s}>
-                  {capFirst(s)}
-                </option>
-              ))}
-            </Select>
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                {pendingFile.name}
+              </p>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {formatGrootte(pendingFile.size)}
+              </span>
+            </div>
+            <Field label="Wat voor document is dit?" htmlFor="vd-soort">
+              <Select
+                id="vd-soort"
+                value={pendingSoort}
+                onChange={(e) => setPendingSoort(e.target.value as VendorDocumentSoort)}
+                disabled={uploadt}
+              >
+                {SOORTEN.map((s) => (
+                  <option key={s} value={s}>
+                    {capFirst(s)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setPendingFile(null)} disabled={uploadt}>
                 Annuleren

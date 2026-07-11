@@ -98,8 +98,6 @@ export function VendorDetailModal({
           </p>
         ) : null}
 
-        <VendorDocumenten vendorId={vendor.id} kanBewerken={kanBewerken} />
-
         {vendor.website || vendor.email || vendor.telefoon ? (
           <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-sm">
             {vendor.website ? (
@@ -124,6 +122,8 @@ export function VendorDetailModal({
             ) : null}
           </div>
         ) : null}
+
+        <VendorDocumenten vendorId={vendor.id} kanBewerken={kanBewerken} />
       </div>
     </Modal>
   )
