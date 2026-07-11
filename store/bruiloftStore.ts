@@ -3,6 +3,7 @@ import { create } from 'zustand'
 
 import {
   activityFromRow,
+  adresShareFromRow,
   agendaShareFromRow,
   budgetItemFromRow,
   draaiboekShareFromRow,
@@ -47,6 +48,7 @@ import {
 } from '@/lib/supabase/storage'
 import type {
   ActivityEntry,
+  AdresShare,
   AgendaShare,
   BudgetItem,
   BudgetItemInput,
@@ -148,6 +150,8 @@ interface BruiloftState {
   draaiboekShare: DraaiboekShare | null
   // Agenda-koppeling (ICS-abonnement); null = koppeling staat uit.
   agendaShare: AgendaShare | null
+  // Adreslink (adressen verzamelen); null = link staat uit.
+  adresShare: AdresShare | null
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
@@ -260,6 +264,10 @@ interface BruiloftActions {
   // Agenda-koppeling: zelfde aan/uit-model als het draaiboek-delen.
   enableAgendaShare: () => Promise<AgendaShare>
   disableAgendaShare: () => Promise<void>
+
+  // Adreslink: idem.
+  enableAdresShare: () => Promise<AdresShare>
+  disableAdresShare: () => Promise<void>
 
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
@@ -431,6 +439,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     scheduleItems: [],
     draaiboekShare: null,
     agendaShare: null,
+    adresShare: null,
     tables: [],
     websiteContent: null,
     websiteFotos: [],
@@ -558,6 +567,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems,
         draaiboekShare,
         agendaShare,
+        adresShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -577,6 +587,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
         safe('draaiboek-delen', repository.getDraaiboekShare(wedding.id), null),
         safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
+        safe('adreslink', repository.getAdresShare(wedding.id), null),
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
@@ -605,6 +616,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems,
         draaiboekShare,
         agendaShare,
+        adresShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -654,6 +666,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         draaiboekShare: null,
         agendaShare: null,
+        adresShare: null,
         tables: [],
         websiteContent: null,
         websiteFotos: [],
@@ -766,6 +779,10 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           if (p.eventType === 'DELETE') set({ agendaShare: null })
           else set({ agendaShare: agendaShareFromRow(p.new) })
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'adres_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ adresShare: null })
+          else set({ adresShare: adresShareFromRow(p.new) })
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
@@ -847,6 +864,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         scheduleItems: [],
         draaiboekShare: null,
         agendaShare: null,
+        adresShare: null,
         tables: [],
         websiteContent: null,
         websitePages: [],
@@ -1393,6 +1411,26 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       await repository.deleteAgendaShare(wedding.id)
       set({ agendaShare: null })
+    },
+
+    enableAdresShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const bestaand = get().adresShare ?? (await repository.getAdresShare(wedding.id))
+      if (bestaand) {
+        set({ adresShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createAdresShare(wedding.id)
+      set({ adresShare: share })
+      return share
+    },
+
+    disableAdresShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteAdresShare(wedding.id)
+      set({ adresShare: null })
     },
 
     addScheduleItem: async (data) => {

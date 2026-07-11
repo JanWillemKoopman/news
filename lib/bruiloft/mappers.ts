@@ -7,6 +7,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from './options'
 import type {
   ActivityEntry,
+  AdresShare,
   AgendaShare,
   BudgetItem,
   BudgetItemInput,
@@ -138,6 +139,10 @@ export function guestFromRow(r: Tables['guests']['Row']): Guest {
     tafelId: r.tafel_id ?? undefined,
     stoelIndex: r.stoel_index ?? undefined,
     rsvpCode: r.rsvp_token ?? undefined,
+    // verzoeknummer/rsvp_bericht ontbreken in de gegenereerde
+    // database.types.ts (migratie 0073) — zelfde any-drift als elders.
+    verzoeknummer: (r as any).verzoeknummer ?? '',
+    rsvpBericht: (r as any).rsvp_bericht ?? '',
   }
 }
 
@@ -308,6 +313,15 @@ export function draaiboekShareFromRow(r: any): DraaiboekShare {
 
 // agenda_shares: zelfde drift-situatie (migratie 0071) en zelfde vorm.
 export function agendaShareFromRow(r: any): AgendaShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// adres_shares: idem (migratie 0072).
+export function adresShareFromRow(r: any): AdresShare {
   return {
     weddingId: r.wedding_id,
     token: r.token,

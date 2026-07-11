@@ -133,6 +133,10 @@ export interface RsvpBevestigState {
   setPartnerNaam: (v: string) => void
   kinderen: number
   setKinderen: (n: number) => void
+  verzoeknummer: string
+  setVerzoeknummer: (v: string) => void
+  bericht: string
+  setBericht: (v: string) => void
   bezig: boolean
   opgeslagen: boolean
   fout: string
@@ -167,6 +171,8 @@ export function useRsvpFormulier(ctx: RenderContext): RsvpFormulier {
   const [heeftPartner, setHeeftPartner] = React.useState(initieleGast?.heeftPartner ?? false)
   const [partnerNaam, setPartnerNaam] = React.useState(initieleGast?.partnerNaam ?? '')
   const [kinderen, setKinderen] = React.useState(initieleGast?.aantalKinderen ?? 0)
+  const [verzoeknummer, setVerzoeknummer] = React.useState(initieleGast?.verzoeknummer ?? '')
+  const [bericht, setBericht] = React.useState(initieleGast?.bericht ?? '')
   const [bezig, setBezig] = React.useState(false)
   const [opgeslagen, setOpgeslagen] = React.useState(false)
   const [fout, setFout] = React.useState('')
@@ -193,6 +199,10 @@ export function useRsvpFormulier(ctx: RenderContext): RsvpFormulier {
         setHeeftPartner(data.guest.heeftPartner)
         setPartnerNaam(data.guest.partnerNaam)
         setKinderen(data.guest.aantalKinderen)
+        // Bij naam-zoeken bewust leeg (privacy): eerder ingevulde wensen
+        // komen alleen via de persoonlijke token-link terug.
+        setVerzoeknummer(data.guest.verzoeknummer ?? '')
+        setBericht(data.guest.bericht ?? '')
         setZoekStatus('idle')
       } else if (data.multiple) {
         setZoekStatus('meerdere')
@@ -216,6 +226,8 @@ export function useRsvpFormulier(ctx: RenderContext): RsvpFormulier {
         heeftPartner,
         partnerNaam: heeftPartner ? partnerNaam : '',
         aantalKinderen: Number(kinderen) || 0,
+        verzoeknummer,
+        bericht,
       }
       // Via een persoonlijke link is de token zelf al de eenduidige
       // identiteit (geen kans op naam-ambiguïteit) — anders zoals voorheen
@@ -254,7 +266,9 @@ export function useRsvpFormulier(ctx: RenderContext): RsvpFormulier {
     bevestig: gast
       ? {
           gast, keuze, setKeuze, dieet, setDieet, heeftPartner, setHeeftPartner,
-          partnerNaam, setPartnerNaam, kinderen, setKinderen, bezig, opgeslagen, fout,
+          partnerNaam, setPartnerNaam, kinderen, setKinderen,
+          verzoeknummer, setVerzoeknummer, bericht, setBericht,
+          bezig, opgeslagen, fout,
           komt: keuze === 'bevestigd',
           gekozen: keuze === 'bevestigd' || keuze === 'afgemeld',
           submit: bevestigSubmit,

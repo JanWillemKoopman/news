@@ -6,6 +6,7 @@ import type { Database } from '@/lib/supabase/database.types'
 
 import {
   activityFromRow,
+  adresShareFromRow,
   agendaShareFromRow,
   budgetItemFromRow,
   budgetItemToRow,
@@ -37,6 +38,7 @@ import {
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AdresShare,
   AgendaShare,
   BudgetItem,
   BudgetItemInput,
@@ -358,6 +360,33 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   async deleteAgendaShare(weddingId: ID): Promise<void> {
     const { error } = await this.rawDb.from('agenda_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
+  // --- Adreslink ---------------------------------------------------------
+  // adres_shares: zelfde drift-situatie als de andere shares (0072).
+  async getAdresShare(weddingId: ID): Promise<AdresShare | null> {
+    const { data, error } = await this.rawDb
+      .from('adres_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? adresShareFromRow(data) : null
+  }
+
+  async createAdresShare(weddingId: ID): Promise<AdresShare> {
+    const { data, error } = await this.rawDb
+      .from('adres_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return adresShareFromRow(data)
+  }
+
+  async deleteAdresShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('adres_shares').delete().eq('wedding_id', weddingId)
     if (error) throw error
   }
 

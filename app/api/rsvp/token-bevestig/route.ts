@@ -17,6 +17,8 @@ const bodySchema = z.object({
     heeftPartner: z.boolean().optional(),
     partnerNaam: z.string().max(200).optional(),
     aantalKinderen: z.number().int().min(0).max(20).optional(),
+    verzoeknummer: z.string().max(200).optional(),
+    bericht: z.string().max(1000).optional(),
   }),
 })
 

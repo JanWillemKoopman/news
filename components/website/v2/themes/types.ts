@@ -41,6 +41,10 @@ export interface GevondenGast {
   heeftPartner: boolean
   partnerNaam: string
   aantalKinderen: number
+  // Alleen gevuld via de persoonlijke token-link (resolve_rsvp_guest);
+  // find_guest_by_name geeft ze bewust niet terug (privacy, zie 0066).
+  verzoeknummer?: string
+  bericht?: string
 }
 
 // Aanwezig wanneer de bezoeker via een persoonlijke /rsvp/[token]-link

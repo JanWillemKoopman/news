@@ -693,6 +693,29 @@ export const gastenInfo: PageInfo = {
       ),
     },
     {
+      vraag: 'Hoe verzamel ik adressen voor de uitnodigingen?',
+      antwoord: (
+        <p>
+          Kies in het menu <strong>Adressen verzamelen</strong> en zet de
+          adreslink aan. Stuur die ene link rond (bijvoorbeeld in de
+          familie-app): iedereen vult zelf zijn adres in en het verschijnt
+          vanzelf op de gastenlijst — bij de bestaande gast als de naam al
+          bekend is, anders als nieuwe gast.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar vind ik de muziekwensen en berichten van gasten?',
+      antwoord: (
+        <p>
+          Gasten kunnen bij hun RSVP een verzoeknummer en een persoonlijk
+          bericht achterlaten. Kies in het menu{' '}
+          <strong>Muziekwensen &amp; berichten</strong> voor het overzicht —
+          de muziekwensen kopieer je met één klik voor jullie DJ.
+        </p>
+      ),
+    },
+    {
       vraag: 'Hoe houd ik bij wie er komt?',
       antwoord: (
         <p>

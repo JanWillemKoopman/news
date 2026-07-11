@@ -674,6 +674,12 @@ function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
             <Veld label="Dieetwensen (optioneel)">
               <input value={b.dieet} onChange={(e) => b.setDieet(e.target.value)} className="ed-veld" />
             </Veld>
+            <Veld label="Muziekwens (optioneel)">
+              <input value={b.verzoeknummer} onChange={(e) => b.setVerzoeknummer(e.target.value)} placeholder="Artiest — nummer" className="ed-veld" />
+            </Veld>
+            <Veld label="Bericht voor het bruidspaar (optioneel)">
+              <input value={b.bericht} onChange={(e) => b.setBericht(e.target.value)} className="ed-veld" />
+            </Veld>
             <label className="flex min-h-12 cursor-pointer items-center gap-3 text-sm font-semibold" style={{ color: 'var(--site-text)' }}>
               <input
                 type="checkbox"

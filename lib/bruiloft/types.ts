@@ -98,6 +98,10 @@ export interface Guest {
   tafelId?: ID // tafelschikking
   stoelIndex?: number // vaste plek aan de tafel (0-gebaseerd); leeg = automatisch
   rsvpCode?: string // persoonlijke code voor de publieke RSVP
+  // Via de RSVP achtergelaten muziekwens en persoonlijk bericht (0073).
+  // Optioneel zodat bestaande gast-aanmaak-flows ongewijzigd blijven.
+  verzoeknummer?: string
+  rsvpBericht?: string
 }
 
 export type GuestInput = Omit<Guest, 'id'>
@@ -405,6 +409,14 @@ export interface DraaiboekShare {
 // maar de token voedt /api/agenda/[token] (trouwdag, afspraken, deadlines,
 // betaaltermijnen) in plaats van een publieke pagina.
 export interface AgendaShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Adreslink: genodigden geven via /adres/[token] hun adres door voor de
+// uitnodigingen; zelfde aan/uit-model als de andere shares.
+export interface AdresShare {
   weddingId: ID
   token: string
   createdAt: ISODateTime
