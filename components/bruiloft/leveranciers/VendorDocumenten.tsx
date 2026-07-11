@@ -41,7 +41,7 @@ interface VendorDocumentenProps {
 
 // Documentenkluis-sectie in de leveranciers-detailmodal: offertes, contracten
 // en facturen bij deze leverancier bewaren. Bestanden staan in een private
-// bucket; openen gaat via een kortlevende signed URL uit de store.
+// bucket; downloaden gaat via een kortlevende signed URL uit de store.
 export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProps) {
   const alleDocumenten = useBruiloftStore((s) => s.vendorDocuments)
   const addVendorDocument = useBruiloftStore((s) => s.addVendorDocument)
@@ -90,17 +90,21 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
     }
   }
 
-  const open = async (doc: VendorDocument) => {
-    // Venster vóór de await openen: anders blokkeren popup-blockers de tab
-    // omdat de klik dan al "voorbij" is.
-    const venster = window.open('', '_blank', 'noopener')
+  // Signed URL heeft Content-Disposition: attachment (zie createVendorDocumentUrl),
+  // dus dit downloadt het bestand i.p.v. het (mogelijk mislukt) in de browser te
+  // tonen — zo hoeven we niet per bestandsformaat te regelen dat het weergegeven wordt.
+  const download = async (doc: VendorDocument) => {
     try {
       const url = await getVendorDocumentUrl(doc)
-      if (venster) venster.location.href = url
-      else window.location.href = url
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.naam
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
     } catch {
-      venster?.close()
-      toast({ title: 'Openen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
+      toast({ title: 'Downloaden mislukt', description: 'Probeer het opnieuw.', variant: 'error' })
     }
   }
 
@@ -133,7 +137,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <button
                   type="button"
-                  onClick={() => open(doc)}
+                  onClick={() => download(doc)}
                   className="min-w-0 flex-1 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="block truncate text-sm font-medium text-foreground hover:underline">

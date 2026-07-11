@@ -58,14 +58,18 @@ export async function uploadVendorDocument(
 }
 
 // Kortlevende download-link; RLS staat signen alleen toe voor leden van de
-// bijbehorende bruiloft.
+// bijbehorende bruiloft. `download` forceert Content-Disposition: attachment
+// zodat de browser het bestand altijd downloadt i.p.v. probeert weer te
+// geven — anders faalt dat stil voor bestandstypen die de browser niet kan
+// tonen (bv. .docx, .xlsx).
 export async function createVendorDocumentUrl(
   supabase: SupabaseClient,
-  storagePath: string
+  storagePath: string,
+  bestandsnaam: string
 ): Promise<string> {
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(storagePath, 60 * 5)
+    .createSignedUrl(storagePath, 60 * 5, { download: bestandsnaam })
   if (error) throw error
   return data.signedUrl
 }
