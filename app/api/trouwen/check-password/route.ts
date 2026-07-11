@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { verifySitePassword } from '@/lib/crypto/sitePassword'
 import { cookieNaamVoor, maakOntgrendelCookieWaarde } from '@/lib/crypto/siteUnlockCookie'
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const bodySchema = z.object({
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { slug, password } = parsed.data
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
 
   const rateLimit = await checkRateLimit(`trouwen:password:${ip}:${slug}`, 10, 15 * 60)
   if (!rateLimit.allowed) {

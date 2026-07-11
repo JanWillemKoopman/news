@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export async function PATCH(req: Request) {
@@ -24,6 +25,19 @@ export async function PATCH(req: Request) {
   }
   const { displayName, email, avatarUrl, emailHerinneringen } = parsed.data
 
+  // E-mailwijziging triggert een auth-bevestigingsmail; rate-limit dat per
+  // gebruiker zodat het niet als mailspam-kanaal misbruikt kan worden.
+  const isEmailChange = email !== undefined && email.trim().toLowerCase() !== user.email
+  if (isEmailChange) {
+    const rateLimit = await checkRateLimit(`profiel:email:${user.id}`, 5, 60 * 60)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Te veel e-mailwijzigingen. Probeer het later opnieuw.' },
+        { status: 429 },
+      )
+    }
+  }
+
   const profilePatch: {
     updated_at: string
     display_name?: string
@@ -44,9 +58,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
-  if (email !== undefined && email.trim().toLowerCase() !== user.email) {
+  if (isEmailChange) {
     const { error: authError } = await supabase.auth.updateUser({
-      email: email.trim().toLowerCase(),
+      email: email!.trim().toLowerCase(),
     })
     if (authError) {
       return NextResponse.json({ error: authError.message }, { status: 500 })
