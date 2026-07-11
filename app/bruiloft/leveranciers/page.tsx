@@ -3,7 +3,7 @@
 import * as React from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Compass, FileText, MessageCircle, Paperclip, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
+import { CalendarClock, Compass, FileText, MessageCircle, Paperclip, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
@@ -35,6 +35,7 @@ import {
   useToast,
 } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
+import { afspraakRelatief, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { categorieVoorWeergave, VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { geboektePerCategorie } from '@/lib/bruiloft/derived'
@@ -134,6 +135,17 @@ export default function LeveranciersPage() {
   const totaalBinnenType = Array.from(statusTellers.values()).reduce((a, b) => a + b, 0)
   const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
 
+  // Eerstvolgende afspraken (vandaag of later) — de agenda van de
+  // oriëntatiefase, als rustige klikbare regels boven de lijst.
+  const komendeAfspraken = vendors
+    .filter((v) => v.afspraakDatum && dagenTot(v.afspraakDatum) >= 0)
+    .sort((a, b) =>
+      `${a.afspraakDatum}T${a.afspraakTijd || '99:99'}`.localeCompare(
+        `${b.afspraakDatum}T${b.afspraakTijd || '99:99'}`
+      )
+    )
+    .slice(0, 3)
+
   // Documenten per leverancier — de paperclip in de lijst laat zien dat er
   // iets bewaard is én maakt de documentenkluis in de detailpopup vindbaar.
   const documentTellers = new Map<ID, number>()
@@ -216,6 +228,32 @@ export default function LeveranciersPage() {
       <LeveranciersTabs />
 
       {vendors.length > 0 ? <CategorieVoortgang vendors={vendors} categorieen={categorieen} /> : null}
+
+      {komendeAfspraken.length > 0 ? (
+        <div className="mb-5 divide-y divide-border rounded-xl border border-border bg-card shadow-sm">
+          {komendeAfspraken.map((v) => {
+            const dagen = dagenTot(v.afspraakDatum!)
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => openDetail(v)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              >
+                <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  <span className="font-medium text-foreground">
+                    {formatDatumNL(v.afspraakDatum!)}
+                    {v.afspraakTijd ? ` om ${v.afspraakTijd}` : ''}
+                  </span>
+                  <span className="text-muted-foreground"> — afspraak bij {v.naam}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{afspraakRelatief(dagen)}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       {vendors.length > 0 ? (
         <div className="mb-5 flex items-center gap-2">

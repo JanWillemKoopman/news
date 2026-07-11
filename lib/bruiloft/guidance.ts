@@ -4,7 +4,7 @@
 // blijft de begeleiding voorspelbaar en eenvoudig te testen.
 
 import { gastTellingen, taakTellingen } from './derived'
-import { dagenTot, dagLabel } from './format'
+import { afspraakRelatief, dagenTot, dagLabel, formatDatumNL } from './format'
 import { deriveTijdsblok, toISODate, TIJDSBLOK_VOLGORDE } from './timeblocks'
 import type {
   BudgetItem,
@@ -254,14 +254,34 @@ export function volgendeStappen(input: GuidanceInput): NextStep[] {
     })
   }
 
-  // 2. Nudges.
+  // 2. Komende afspraken bij leveranciers (bezichtiging/proeverij/gesprek):
+  // binnen een week is dat concreet genoeg om op het dashboard te staan.
+  const afspraakStappen: { step: NextStep; deadline: string }[] = []
+  for (const v of input.vendors) {
+    if (!v.afspraakDatum) continue
+    const dagen = dagenTot(v.afspraakDatum)
+    if (dagen < 0 || dagen > 7) continue
+    afspraakStappen.push({
+      deadline: v.afspraakDatum,
+      step: {
+        id: `afspraak-${v.id}`,
+        titel: `Afspraak bij ${v.naam}`,
+        omschrijving: `${formatDatumNL(v.afspraakDatum)}${v.afspraakTijd ? ` om ${v.afspraakTijd}` : ''} · ${afspraakRelatief(dagen)}`,
+        href: '/bruiloft/leveranciers',
+        urgentie: dagen <= 1 ? 'binnenkort' : 'normaal',
+        bron: 'nudge',
+      },
+    })
+  }
+
+  // 3. Nudges.
   const nudgeStappen = NUDGE_REGELS.filter((r) => r.geldt(input)).map((r) => ({
     deadline: '', // nudges hebben geen deadline; sorteren op urgentie
     step: r.maak(input),
   }))
 
-  // 3. Combineren en sorteren: urgentie eerst, daarbinnen taken op deadline.
-  return [...taakStappen, ...nudgeStappen]
+  // 4. Combineren en sorteren: urgentie eerst, daarbinnen op datum.
+  return [...taakStappen, ...afspraakStappen, ...nudgeStappen]
     .sort((a, b) => {
       const u = URGENTIE_RANG[a.step.urgentie] - URGENTIE_RANG[b.step.urgentie]
       if (u !== 0) return u
