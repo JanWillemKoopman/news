@@ -5,6 +5,7 @@
 
 import type {
   ActivityEntry,
+  AdresShare,
   AgendaShare,
   BudgetItem,
   BudgetItemInput,
@@ -88,6 +89,11 @@ export interface WeddingRepository {
   getAgendaShare(weddingId: ID): Promise<AgendaShare | null>
   createAgendaShare(weddingId: ID): Promise<AgendaShare>
   deleteAgendaShare(weddingId: ID): Promise<void>
+
+  // Adreslink (adressen verzamelen); de publieke kant is /adres/[token].
+  getAdresShare(weddingId: ID): Promise<AdresShare | null>
+  createAdresShare(weddingId: ID): Promise<AdresShare>
+  deleteAdresShare(weddingId: ID): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,

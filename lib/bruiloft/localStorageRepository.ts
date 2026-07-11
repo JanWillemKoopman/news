@@ -6,6 +6,7 @@
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AdresShare,
   AgendaShare,
   BudgetItem,
   BudgetItemInput,
@@ -301,6 +302,19 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteAgendaShare(): Promise<void> {
     throw new Error('De agenda-koppeling wordt niet ondersteund zonder Supabase')
+  }
+
+  // Idem voor de adreslink (publieke kant draait server-side).
+  async getAdresShare(): Promise<AdresShare | null> {
+    return null
+  }
+
+  async createAdresShare(): Promise<AdresShare> {
+    throw new Error('De adreslink wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteAdresShare(): Promise<void> {
+    throw new Error('De adreslink wordt niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;

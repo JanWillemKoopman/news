@@ -537,6 +537,8 @@ function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
         {b.komt && (
           <div className="space-y-5">
             <Veld label="Dieetwensen (optioneel)"><input value={b.dieet} onChange={(e) => b.setDieet(e.target.value)} className="co-veld" /></Veld>
+            <Veld label="Muziekwens (optioneel)"><input value={b.verzoeknummer} onChange={(e) => b.setVerzoeknummer(e.target.value)} placeholder="Artiest — nummer" className="co-veld" /></Veld>
+            <Veld label="Bericht voor het bruidspaar (optioneel)"><input value={b.bericht} onChange={(e) => b.setBericht(e.target.value)} className="co-veld" /></Veld>
             <label className="flex min-h-12 cursor-pointer items-center gap-3 text-sm font-medium" style={{ color: 'var(--site-text)' }}>
               <input type="checkbox" checked={b.heeftPartner} onChange={(e) => b.setHeeftPartner(e.target.checked)} className="h-4 w-4" style={{ accentColor: 'var(--site-text)' }} />
               Ik neem een partner mee
