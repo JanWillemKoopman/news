@@ -5,6 +5,7 @@ import {
   activityFromRow,
   adresShareFromRow,
   agendaShareFromRow,
+  budgetItemDocumentFromRow,
   budgetItemFromRow,
   draaiboekShareFromRow,
   guestFromRow,
@@ -40,9 +41,12 @@ import {
 import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
 import { createClient, createRawClient } from '@/lib/supabase/client'
 import {
+  createBudgetItemDocumentUrl,
   createVendorDocumentUrl,
+  deleteBudgetItemDocumentFile,
   deleteVendorDocumentFile,
   deleteWeddingMedia,
+  uploadBudgetItemDocument,
   uploadVendorDocument,
   uploadWeddingMedia,
 } from '@/lib/supabase/storage'
@@ -51,6 +55,8 @@ import type {
   AdresShare,
   AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentSoort,
   BudgetItemInput,
   DraaiboekShare,
   FaqItem,
@@ -145,6 +151,7 @@ interface BruiloftState {
   messages: Message[]
   messageReads: MessageRead[]
   budgetItems: BudgetItem[]
+  budgetItemDocuments: BudgetItemDocument[]
   scheduleItems: ScheduleItem[]
   // Publieke deel-link van het draaiboek; null = delen staat uit.
   draaiboekShare: DraaiboekShare | null
@@ -251,6 +258,16 @@ interface BruiloftActions {
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
   deleteBudgetItem: (id: ID) => Promise<void>
+
+  // Documentenkluis per budgetpost: zelfde patroon als de leveranciers-
+  // documenten hierboven (private bucket + signed URLs).
+  addBudgetItemDocument: (
+    budgetItemId: ID,
+    file: File,
+    soort: BudgetItemDocumentSoort
+  ) => Promise<BudgetItemDocument>
+  deleteBudgetItemDocument: (id: ID) => Promise<void>
+  getBudgetItemDocumentUrl: (doc: BudgetItemDocument) => Promise<string>
 
   addScheduleItem: (data: NewScheduleItem) => Promise<void>
   updateScheduleItem: (id: ID, patch: Partial<ScheduleItemInput>) => Promise<void>
@@ -436,6 +453,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     messages: [],
     messageReads: [],
     budgetItems: [],
+    budgetItemDocuments: [],
     scheduleItems: [],
     draaiboekShare: null,
     agendaShare: null,
@@ -564,6 +582,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messages,
         messageReads,
         budgetItems,
+        budgetItemDocuments,
         scheduleItems,
         draaiboekShare,
         agendaShare,
@@ -584,6 +603,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('berichten', repository.listMessages(wedding.id), []),
         safe('berichten-gelezen', repository.listMessageReads(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
+        safe('budget-documenten', repository.listBudgetItemDocuments(wedding.id), []),
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
         safe('draaiboek-delen', repository.getDraaiboekShare(wedding.id), null),
         safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
@@ -613,6 +633,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messages,
         messageReads,
         budgetItems,
+        budgetItemDocuments,
         scheduleItems,
         draaiboekShare,
         agendaShare,
@@ -663,6 +684,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messages: [],
         messageReads: [],
         budgetItems: [],
+        budgetItemDocuments: [],
         scheduleItems: [],
         draaiboekShare: null,
         agendaShare: null,
@@ -764,6 +786,9 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: wf }, (p) =>
           set({ budgetItems: applyList(get().budgetItems, p, (r) => budgetItemFromRow(r as unknown as Parameters<typeof budgetItemFromRow>[0])) })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_item_documents', filter: wf }, (p) =>
+          set({ budgetItemDocuments: applyList(get().budgetItemDocuments, p, budgetItemDocumentFromRow) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_items', filter: wf }, (p) =>
           set({ scheduleItems: applyList(get().scheduleItems, p, (r) => scheduleItemFromRow(r as unknown as Parameters<typeof scheduleItemFromRow>[0])) })
         )
@@ -861,6 +886,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         messages: [],
         messageReads: [],
         budgetItems,
+        budgetItemDocuments: [],
         scheduleItems: [],
         draaiboekShare: null,
         agendaShare: null,
@@ -1365,6 +1391,49 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           v.budgetItemId === id ? { ...v, budgetItemId: undefined } : v
         ),
       })
+    },
+
+    addBudgetItemDocument: async (budgetItemId, file, soort) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const storagePath = await uploadBudgetItemDocument(supabase, wedding.id, budgetItemId, file)
+      try {
+        const doc = await repository.createBudgetItemDocument({
+          weddingId: wedding.id,
+          budgetItemId,
+          naam: file.name,
+          soort,
+          storagePath,
+          mimeType: file.type,
+          grootte: file.size,
+        })
+        // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier.
+        if (!get().budgetItemDocuments.some((d) => d.id === doc.id)) {
+          set({ budgetItemDocuments: [doc, ...get().budgetItemDocuments] })
+        }
+        return doc
+      } catch (e) {
+        // Metadata-rij mislukt: het zojuist geüploade bestand niet laten
+        // rondslingeren in de bucket.
+        await deleteBudgetItemDocumentFile(supabase, storagePath).catch(() => undefined)
+        throw e
+      }
+    },
+
+    deleteBudgetItemDocument: async (id) => {
+      const doc = get().budgetItemDocuments.find((d) => d.id === id)
+      await repository.deleteBudgetItemDocument(id)
+      set({ budgetItemDocuments: get().budgetItemDocuments.filter((d) => d.id !== id) })
+      if (doc) {
+        const supabase = createClient()
+        await deleteBudgetItemDocumentFile(supabase, doc.storagePath).catch(() => undefined)
+      }
+    },
+
+    getBudgetItemDocumentUrl: async (doc) => {
+      const supabase = createClient()
+      return createBudgetItemDocumentUrl(supabase, doc.storagePath, doc.naam)
     },
 
     // --- ScheduleItems -----------------------------------------------------

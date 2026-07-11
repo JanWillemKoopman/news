@@ -365,6 +365,28 @@ export interface BudgetItem {
 
 export type BudgetItemInput = Omit<BudgetItem, 'id'>
 
+// Documentenkluis per budgetpost: metadata van geüploade offertes,
+// contracten en facturen. Het bestand zelf staat in de private
+// storage-bucket 'budget-documents' onder storagePath; downloads lopen via
+// signed URLs (zie lib/supabase/storage.ts). Zelfde vorm als VendorDocument.
+export type BudgetItemDocumentSoort = 'offerte' | 'contract' | 'factuur' | 'overig'
+
+export interface BudgetItemDocument {
+  id: ID
+  weddingId: ID
+  budgetItemId: ID
+  naam: string // weergavenaam (origineel bestandsnaam)
+  soort: BudgetItemDocumentSoort
+  storagePath: string
+  mimeType: string
+  grootte: number // bytes
+  geuploadDoor?: ID
+  createdAt: ISODateTime
+}
+
+// geuploadDoor wordt server-side gezet (trigger), createdAt door de database.
+export type BudgetItemDocumentInput = Omit<BudgetItemDocument, 'id' | 'geuploadDoor' | 'createdAt'>
+
 // --- ScheduleItem (trouwdag-draaiboek) -------------------------------------
 
 // Rollen waarop een draaiboekonderdeel betrekking heeft (voor filteren/export).
