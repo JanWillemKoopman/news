@@ -1,9 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarHeart, CalendarPlus, MapPin, Settings2 } from 'lucide-react'
+import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
-import { AgendaKoppelingModal } from '@/components/bruiloft/AgendaKoppelingModal'
 import { BerichtenPreview } from '@/components/bruiloft/BerichtenPreview'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
@@ -36,7 +35,6 @@ export default function DashboardPage() {
   const permissions = useBruiloftStore((s) => s.permissions)
 
   const [settingsOpen, setSettingsOpen] = React.useState(false)
-  const [agendaOpen, setAgendaOpen] = React.useState(false)
 
   if (!wedding) return null
 
@@ -104,14 +102,6 @@ export default function DashboardPage() {
               <Settings2 className="h-3.5 w-3.5" />
               Gegevens bewerken
             </button>
-            <button
-              type="button"
-              onClick={() => setAgendaOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
-            >
-              <CalendarPlus className="h-3.5 w-3.5" />
-              Zet in je agenda
-            </button>
           </div>
         </CardContent>
       </Card>
@@ -152,8 +142,6 @@ export default function DashboardPage() {
         onOpenChange={setSettingsOpen}
         wedding={wedding}
       />
-
-      <AgendaKoppelingModal open={agendaOpen} onOpenChange={setAgendaOpen} />
     </div>
   )
 }
