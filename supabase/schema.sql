@@ -66,6 +66,29 @@ create trigger trg_on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Houdt profiles.email gelijk aan het GEVERIFIEERDE auth-adres (zie 0067):
+-- /api/profiel schrijft profiles.email niet meer direct, deze trigger synct
+-- zodra auth.users.email daadwerkelijk verandert (pas ná bevestiging).
+create or replace function public.sync_profile_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is distinct from old.email then
+    update public.profiles
+       set email = new.email, updated_at = now()
+     where id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_sync_profile_email
+  after update of email on auth.users
+  for each row execute function public.sync_profile_email();
+
 -- ============================================================
 -- supabase/migrations/0003_core_tables.sql
 -- ============================================================

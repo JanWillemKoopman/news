@@ -41,12 +41,14 @@ export async function PATCH(req: Request) {
   const profilePatch: {
     updated_at: string
     display_name?: string
-    email?: string
     avatar_url?: string | null
     email_herinneringen?: boolean
   } = { updated_at: new Date().toISOString() }
   if (displayName !== undefined) profilePatch.display_name = displayName.trim()
-  if (email !== undefined) profilePatch.email = email.trim().toLowerCase()
+  // profiles.email wordt bewust NIET hier geschreven: het nieuwe adres is nog
+  // onbevestigd. auth.updateUser() hieronder stuurt de bevestigingsmail, en de
+  // trg_sync_profile_email-trigger (0067) synct profiles.email pas zodra
+  // auth.users.email daadwerkelijk verandert (ná bevestiging).
   if (avatarUrl !== undefined) profilePatch.avatar_url = avatarUrl
   if (emailHerinneringen !== undefined) profilePatch.email_herinneringen = emailHerinneringen
 
