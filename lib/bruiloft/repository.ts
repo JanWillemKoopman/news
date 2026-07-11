@@ -7,6 +7,7 @@ import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
@@ -74,6 +75,13 @@ export interface WeddingRepository {
   listVendorDocuments(weddingId: ID): Promise<VendorDocument[]>
   createVendorDocument(input: VendorDocumentInput): Promise<VendorDocument>
   deleteVendorDocument(id: ID): Promise<void>
+
+  // Draaiboek delen via publieke link (één per bruiloft; null = delen uit).
+  // De publieke leeskant loopt via de anon-RPC get_public_draaiboek, niet
+  // via deze repository.
+  getDraaiboekShare(weddingId: ID): Promise<DraaiboekShare | null>
+  createDraaiboekShare(weddingId: ID): Promise<DraaiboekShare>
+  deleteDraaiboekShare(weddingId: ID): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,

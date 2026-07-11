@@ -387,6 +387,36 @@ export interface ScheduleItem {
 
 export type ScheduleItemInput = Omit<ScheduleItem, 'id'>
 
+// --- Draaiboek delen ---------------------------------------------------------
+
+// Publieke deel-link van het draaiboek (voor leveranciers/ceremoniemeester).
+// Eén per bruiloft: rij bestaat = delen staat aan; verwijderen = link dood.
+export interface DraaiboekShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Wat de publieke pagina (/draaiboek/[token]) van de RPC krijgt: alleen de
+// dagindeling plus namen/datum/locatie — bewust géén andere plannergegevens.
+export interface PublicDraaiboekItem {
+  id: ID
+  tijd: string
+  eindtijd: string
+  titel: string
+  omschrijving: string
+  locatie: string
+  betrokkenen: Rol[]
+}
+
+export interface PublicDraaiboekData {
+  partner1Naam: string
+  partner2Naam: string
+  trouwdatum: string | null
+  locatie: string
+  items: PublicDraaiboekItem[]
+}
+
 // --- Table (tafelschikking) ------------------------------------------------
 
 export type TafelVorm = 'rond' | 'vierkant' | 'langwerpig'

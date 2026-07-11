@@ -570,14 +570,26 @@ export const draaiboekInfo: PageInfo = {
             Pas <strong>tijden, titels en betrokkenen</strong> aan jullie dag aan.
           </>,
           <>
-            <strong>Filter of exporteer</strong> per betrokkene, bijvoorbeeld voor
-            de fotograaf.
+            <strong>Deel</strong> het draaiboek via een link met je
+            ceremoniemeester en leveranciers.
           </>,
         ]}
       />
     </Intro>
   ),
   faq: [
+    {
+      vraag: 'Hoe deel ik het draaiboek met leveranciers of de ceremoniemeester?',
+      antwoord: (
+        <p>
+          Klik op <strong>Delen</strong> en zet delen aan. Je krijgt één link die
+          je via WhatsApp of e-mail doorstuurt; de ontvanger heeft geen account
+          nodig en ziet altijd de actuele versie. Die kan filteren op zijn eigen
+          rol en het schema printen. Via <strong>Stop met delen</strong> maak je
+          de link direct ongeldig.
+        </p>
+      ),
+    },
     {
       vraag: 'Hoe begin ik snel met een draaiboek?',
       antwoord: (

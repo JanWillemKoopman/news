@@ -10,6 +10,7 @@ import type {
   BudgetItem,
   BudgetItemInput,
   CeremonieType,
+  DraaiboekShare,
   Guest,
   GuestPatch,
   Message,
@@ -280,6 +281,18 @@ export function vendorDocumentFromRow(r: any): VendorDocument {
     mimeType: r.mime_type,
     grootte: num(r.grootte),
     geuploadDoor: r.geupload_door ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Draaiboek delen ---------------------------------------------------
+// draaiboek_shares ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0069; types nog niet geregenereerd) — zelfde any-drift
+// als vendor_documents hierboven.
+export function draaiboekShareFromRow(r: any): DraaiboekShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
     createdAt: r.created_at,
   }
 }

@@ -8,6 +8,7 @@ import {
   activityFromRow,
   budgetItemFromRow,
   budgetItemToRow,
+  draaiboekShareFromRow,
   guestFromRow,
   guestToRow,
   messageFromRow,
@@ -37,6 +38,7 @@ import type {
   ActivityEntry,
   BudgetItem,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
@@ -299,6 +301,34 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   async deleteVendorDocument(id: ID): Promise<void> {
     const { error } = await this.rawDb.from('vendor_documents').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Draaiboek delen -------------------------------------------------
+  // draaiboek_shares ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0069), vandaar rawDb — zelfde patroon als messages.
+  async getDraaiboekShare(weddingId: ID): Promise<DraaiboekShare | null> {
+    const { data, error } = await this.rawDb
+      .from('draaiboek_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? draaiboekShareFromRow(data) : null
+  }
+
+  async createDraaiboekShare(weddingId: ID): Promise<DraaiboekShare> {
+    const { data, error } = await this.rawDb
+      .from('draaiboek_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return draaiboekShareFromRow(data)
+  }
+
+  async deleteDraaiboekShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('draaiboek_shares').delete().eq('wedding_id', weddingId)
     if (error) throw error
   }
 
