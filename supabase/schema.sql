@@ -554,8 +554,10 @@ $$;
 
 create or replace function public.can_edit(p_wedding uuid, p_module text)
 returns boolean language sql stable security definer set search_path = public as $$
-  -- platform_admin is bewust read-only (support), niet schrijvend.
-  select public.module_level(p_wedding, p_module) = 'edit';
+  -- platform_admin mag content bewerken (zie 0064); eigenaar-exclusieve acties
+  -- (leden/rechten/verwijderen) blijven via member_role(...) = 'owner'.
+  select public.is_platform_admin()
+      or public.module_level(p_wedding, p_module) = 'edit';
 $$;
 
 -- =====================================================================
