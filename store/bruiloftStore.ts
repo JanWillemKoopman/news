@@ -9,6 +9,7 @@ import {
   draaiboekShareFromRow,
   guestFromRow,
   messageFromRow,
+  moodBoardItemFromRow,
   scheduleItemFromRow,
   tableFromRow,
   taskCommentFromRow,
@@ -61,6 +62,8 @@ import type {
   ID,
   Message,
   MessageRead,
+  MoodBoardBron,
+  MoodBoardItem,
   RegistryContribution,
   RegistryItem,
   RegistryItemInput,
@@ -152,6 +155,8 @@ interface BruiloftState {
   agendaShare: AgendaShare | null
   // Adreslink (adressen verzamelen); null = link staat uit.
   adresShare: AdresShare | null
+  // Moodboard: één plat, op volgorde gesorteerd bord per bruiloft.
+  moodBoardItems: MoodBoardItem[]
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
@@ -268,6 +273,24 @@ interface BruiloftActions {
   // Adreslink: idem.
   enableAdresShare: () => Promise<AdresShare>
   disableAdresShare: () => Promise<void>
+
+  // Moodboard: toevoegen komt altijd achteraan (hoogste volgorde + 1).
+  // reorder herberekent de volgorde van de volledige lijst na een drag en
+  // persisteert die in één bulk-call.
+  addMoodBoardItem: (input: {
+    categorie: string
+    url: string
+    bron: MoodBoardBron
+    bronUrl: string | null
+    titel: string
+  }) => Promise<MoodBoardItem>
+  // Uploadt het bestand naar Storage en maakt daarna de rij aan; mislukt de
+  // rij-insert, dan wordt het zojuist geüploade bestand weer opgeruimd
+  // (zelfde patroon als addVendorDocument).
+  uploadMoodBoardImage: (file: File, categorie: string, titel: string) => Promise<MoodBoardItem>
+  updateMoodBoardItem: (id: ID, patch: { categorie?: string; titel?: string }) => Promise<void>
+  deleteMoodBoardItem: (id: ID) => Promise<void>
+  reorderMoodBoardItems: (orderedIds: ID[]) => Promise<void>
 
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
@@ -440,6 +463,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     draaiboekShare: null,
     agendaShare: null,
     adresShare: null,
+    moodBoardItems: [],
     tables: [],
     websiteContent: null,
     websiteFotos: [],
@@ -568,6 +592,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         draaiboekShare,
         agendaShare,
         adresShare,
+        moodBoardItems,
         tables,
         websiteContent,
         websiteFotos,
@@ -588,6 +613,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('draaiboek-delen', repository.getDraaiboekShare(wedding.id), null),
         safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
         safe('adreslink', repository.getAdresShare(wedding.id), null),
+        safe('moodboard', repository.listMoodBoardItems(wedding.id), []),
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
@@ -617,6 +643,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         draaiboekShare,
         agendaShare,
         adresShare,
+        moodBoardItems,
         tables,
         websiteContent,
         websiteFotos,
@@ -667,6 +694,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         draaiboekShare: null,
         agendaShare: null,
         adresShare: null,
+        moodBoardItems: [],
         tables: [],
         websiteContent: null,
         websiteFotos: [],
@@ -783,6 +811,13 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
           if (p.eventType === 'DELETE') set({ adresShare: null })
           else set({ adresShare: adresShareFromRow(p.new) })
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mood_board_items', filter: wf }, (p) =>
+          set({
+            moodBoardItems: applyList(get().moodBoardItems, p, moodBoardItemFromRow).sort(
+              (a, b) => a.volgorde - b.volgorde
+            ),
+          })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
@@ -865,6 +900,7 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         draaiboekShare: null,
         agendaShare: null,
         adresShare: null,
+        moodBoardItems: [],
         tables: [],
         websiteContent: null,
         websitePages: [],
@@ -1431,6 +1467,66 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       if (!wedding) return
       await repository.deleteAdresShare(wedding.id)
       set({ adresShare: null })
+    },
+
+    addMoodBoardItem: async (input) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const volgende = get().moodBoardItems.reduce((max, i) => Math.max(max, i.volgorde), -1) + 1
+      const item = await repository.createMoodBoardItem(wedding.id, input, volgende)
+      // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier
+      // (zelfde patroon als addVendorDocument).
+      if (!get().moodBoardItems.some((i) => i.id === item.id)) {
+        set({ moodBoardItems: [...get().moodBoardItems, item] })
+      }
+      return item
+    },
+
+    uploadMoodBoardImage: async (file, categorie, titel) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const url = await uploadWeddingMedia(supabase, wedding.id, file, 'moodboard')
+      try {
+        return await get().addMoodBoardItem({ categorie, url, bron: 'upload', bronUrl: null, titel })
+      } catch (e) {
+        await deleteWeddingMedia(supabase, url).catch(() => undefined)
+        throw e
+      }
+    },
+
+    updateMoodBoardItem: async (id, patch) => {
+      const item = await repository.updateMoodBoardItem(id, patch)
+      set({ moodBoardItems: get().moodBoardItems.map((i) => (i.id === id ? item : i)) })
+    },
+
+    deleteMoodBoardItem: async (id) => {
+      const item = get().moodBoardItems.find((i) => i.id === id)
+      await repository.deleteMoodBoardItem(id)
+      set({ moodBoardItems: get().moodBoardItems.filter((i) => i.id !== id) })
+      if (item?.bron === 'upload') {
+        const supabase = createClient()
+        await deleteWeddingMedia(supabase, item.url).catch(() => undefined)
+      }
+    },
+
+    reorderMoodBoardItems: async (orderedIds) => {
+      // Optimistisch: direct de nieuwe volgorde tonen, pas daarna persisteren
+      // — een drag moet meteen soepel aanvoelen, niet wachten op de server.
+      const huidig = get().moodBoardItems
+      const volgordeMap = new Map(orderedIds.map((id, idx) => [id, idx]))
+      const herordend = huidig
+        .map((i) => (volgordeMap.has(i.id) ? { ...i, volgorde: volgordeMap.get(i.id)! } : i))
+        .sort((a, b) => a.volgorde - b.volgorde)
+      set({ moodBoardItems: herordend })
+      try {
+        await repository.reorderMoodBoardItems(orderedIds.map((id, idx) => ({ id, volgorde: idx })))
+      } catch (e) {
+        // Terugdraaien bij een mislukte persist, anders loopt de UI blijvend
+        // uit de pas met de server.
+        set({ moodBoardItems: huidig })
+        throw e
+      }
     },
 
     addScheduleItem: async (data) => {

@@ -8,6 +8,7 @@ import {
   Flower2,
   Gift,
   Globe,
+  Images,
   Laugh,
   LayoutDashboard,
   ListChecks,
@@ -43,6 +44,7 @@ export interface NavItem {
 const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
+const moodboard: NavItem = { label: 'Moodboard', href: '/bruiloft/moodboard', icon: Images, module: 'moodboard' }
 export const mijnLeveranciers: NavItem = { label: 'Mijn lijst', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
 const leverancierZoeken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
@@ -104,6 +106,7 @@ export const NAV_ITEMS: NavItem[] = [
   dashboard,
   taken,
   budget,
+  moodboard,
   mijnLeveranciers,
   leverancierZoeken,
   ...TPW_CATEGORIE_ITEMS,
@@ -147,7 +150,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, draaiboek],
+    items: [taken, budget, draaiboek, moodboard],
     module: 'taken',
   },
   {

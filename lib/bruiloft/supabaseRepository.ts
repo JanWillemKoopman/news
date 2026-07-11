@@ -15,6 +15,7 @@ import {
   guestToRow,
   messageFromRow,
   messageReadFromRow,
+  moodBoardItemFromRow,
   scheduleItemFromRow,
   scheduleItemToRow,
   tableFromRow,
@@ -49,6 +50,8 @@ import type {
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MoodBoardItemInput,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -388,6 +391,74 @@ export class SupabaseWeddingRepository implements WeddingRepository {
   async deleteAdresShare(weddingId: ID): Promise<void> {
     const { error } = await this.rawDb.from('adres_shares').delete().eq('wedding_id', weddingId)
     if (error) throw error
+  }
+
+  // --- Moodboard ---------------------------------------------------------
+  // mood_board_items: zelfde drift-situatie als de andere nieuwe tabellen
+  // (0074).
+  async listMoodBoardItems(weddingId: ID): Promise<MoodBoardItem[]> {
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(moodBoardItemFromRow)
+  }
+
+  async createMoodBoardItem(
+    weddingId: ID,
+    input: MoodBoardItemInput,
+    volgorde: number
+  ): Promise<MoodBoardItem> {
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .insert({
+        wedding_id: weddingId,
+        categorie: input.categorie,
+        url: input.url,
+        bron: input.bron,
+        bron_url: input.bronUrl,
+        titel: input.titel,
+        volgorde,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return moodBoardItemFromRow(data)
+  }
+
+  async updateMoodBoardItem(
+    id: ID,
+    patch: Partial<Pick<MoodBoardItem, 'categorie' | 'titel'>>
+  ): Promise<MoodBoardItem> {
+    const row: Record<string, unknown> = {}
+    if (patch.categorie !== undefined) row.categorie = patch.categorie
+    if (patch.titel !== undefined) row.titel = patch.titel
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return moodBoardItemFromRow(data)
+  }
+
+  async deleteMoodBoardItem(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('mood_board_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void> {
+    // PostgREST kent geen "bulk update met per-rij andere waarde" in één
+    // call; dit gebeurt alleen ná een drag (niet hot-path), dus N parallelle
+    // updates is prima.
+    const results = await Promise.all(
+      updates.map((u) => this.rawDb.from('mood_board_items').update({ volgorde: u.volgorde }).eq('id', u.id))
+    )
+    const fout = results.find((r) => r.error)
+    if (fout?.error) throw fout.error
   }
 
   // --- Berichtencentrum ------------------------------------------------

@@ -17,6 +17,7 @@ import type {
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -315,6 +316,28 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async deleteAdresShare(): Promise<void> {
     throw new Error('De adreslink wordt niet ondersteund zonder Supabase')
+  }
+
+  // Het moodboard vereist Supabase Storage/realtime; deze legacy
+  // localStorage-implementatie heeft geen equivalent.
+  async listMoodBoardItems(): Promise<MoodBoardItem[]> {
+    return []
+  }
+
+  async createMoodBoardItem(): Promise<MoodBoardItem> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async updateMoodBoardItem(): Promise<MoodBoardItem> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMoodBoardItem(): Promise<void> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async reorderMoodBoardItems(): Promise<void> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;

@@ -442,6 +442,38 @@ export interface PublicDraaiboekData {
   items: PublicDraaiboekItem[]
 }
 
+// --- Moodboard ---------------------------------------------------------
+
+// Vrije tekst (net als BudgetCategorie/VendorType): de vaste lijst in
+// lib/bruiloft/moodboardCategorieen.ts is een suggestie, geen CHECK-lijst.
+export type MoodBoardCategorie = string
+
+export type MoodBoardBron = 'upload' | 'link'
+
+export interface MoodBoardItem {
+  id: ID
+  weddingId: ID
+  categorie: MoodBoardCategorie
+  // Altijd de directe afbeeldings-URL: bij bron='upload' een publieke
+  // wedding-media-URL, bij bron='link' een rechtstreekse hotlink naar de
+  // bron (niet gedownload — net als Pinterest zelf).
+  url: string
+  bron: MoodBoardBron
+  // Alleen bij bron='link': de paginalink waar de gebruiker 'm vandaan
+  // pinde ("Bekijk bron" in de lightbox).
+  bronUrl: string | null
+  titel: string
+  volgorde: number
+  createdBy?: ID
+  createdAt: ISODateTime
+}
+
+// weddingId/volgorde/createdBy/createdAt worden door de store/server ingevuld.
+export type MoodBoardItemInput = Omit<
+  MoodBoardItem,
+  'id' | 'weddingId' | 'volgorde' | 'createdBy' | 'createdAt'
+>
+
 // --- Table (tafelschikking) ------------------------------------------------
 
 export type TafelVorm = 'rond' | 'vierkant' | 'langwerpig'
