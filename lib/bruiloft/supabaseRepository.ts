@@ -21,6 +21,7 @@ import {
   taskFromRow,
   taskToRow,
   vendorContactRequestFromRow,
+  vendorDocumentFromRow,
   vendorFromRow,
   vendorToRow,
   websiteContentFromRow,
@@ -52,6 +53,8 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
+  VendorDocumentInput,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -261,6 +264,42 @@ export class SupabaseWeddingRepository implements WeddingRepository {
       .order('created_at', { ascending: false })
     if (error) throw error
     return (data ?? []).map(vendorContactRequestFromRow)
+  }
+
+  // --- Documentenkluis -------------------------------------------------
+  // vendor_documents ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0068), vandaar rawDb — zelfde patroon als messages.
+  async listVendorDocuments(weddingId: ID): Promise<VendorDocument[]> {
+    const { data, error } = await this.rawDb
+      .from('vendor_documents')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(vendorDocumentFromRow)
+  }
+
+  async createVendorDocument(input: VendorDocumentInput): Promise<VendorDocument> {
+    const { data, error } = await this.rawDb
+      .from('vendor_documents')
+      .insert({
+        wedding_id: input.weddingId,
+        vendor_id: input.vendorId,
+        naam: input.naam,
+        soort: input.soort,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        grootte: input.grootte,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return vendorDocumentFromRow(data)
+  }
+
+  async deleteVendorDocument(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('vendor_documents').delete().eq('id', id)
+    if (error) throw error
   }
 
   // --- Berichtencentrum ------------------------------------------------

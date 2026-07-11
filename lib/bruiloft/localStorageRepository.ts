@@ -23,6 +23,7 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
   VendorInput,
   Wedding,
   WeddingDatabase,
@@ -257,6 +258,20 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   // bijgehouden; deze legacy localStorage-implementatie heeft geen equivalent.
   async listVendorContactRequests(): Promise<VendorContactRequest[]> {
     return []
+  }
+
+  // De documentenkluis vereist Supabase Storage; deze legacy localStorage-
+  // implementatie heeft geen equivalent.
+  async listVendorDocuments(): Promise<VendorDocument[]> {
+    return []
+  }
+
+  async createVendorDocument(): Promise<VendorDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteVendorDocument(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;

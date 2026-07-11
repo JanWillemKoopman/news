@@ -23,6 +23,8 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
+  VendorDocumentInput,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -65,6 +67,13 @@ export interface WeddingRepository {
   // Contact-/offertegeschiedenis per leverancier (append-only; wordt server-side
   // ingevuld door de /api/leveranciers/contact-route, hier alleen leesbaar).
   listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]>
+
+  // Documentenkluis per leverancier (metadata; het bestand zelf staat in de
+  // private storage-bucket, zie lib/supabase/storage.ts). Geen update: een
+  // document vervang je door verwijderen + opnieuw uploaden.
+  listVendorDocuments(weddingId: ID): Promise<VendorDocument[]>
+  createVendorDocument(input: VendorDocumentInput): Promise<VendorDocument>
+  deleteVendorDocument(id: ID): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,
