@@ -127,3 +127,48 @@ export async function deleteBudgetItemDocumentFile(
 ): Promise<void> {
   await supabase.storage.from(BUDGET_DOCUMENTS_BUCKET).remove([storagePath])
 }
+
+// --- Documentenverkenner (private bucket) -------------------------------
+// Zelfde opzet als vendor-documents/budget-documents hierboven, maar dan
+// 'wedding-documents' (migratie 0079) — de centrale documentenmap. De
+// mapindeling is metadata (documents.folder_id), niet het storage-pad:
+// een bestand verplaatsen is dan een metadata-update, geen storage-move.
+
+const WEDDING_DOCUMENTS_BUCKET = 'wedding-documents'
+
+export async function uploadWeddingDocument(
+  supabase: SupabaseClient,
+  weddingId: string,
+  file: File
+): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+  const naam = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const pad = `${weddingId}/documenten/${naam}`
+  const { error } = await supabase.storage
+    .from(WEDDING_DOCUMENTS_BUCKET)
+    .upload(pad, file, { upsert: false, contentType: file.type })
+  if (error) throw error
+  return pad
+}
+
+// Kortlevende download-link; RLS staat signen alleen toe voor leden van de
+// bijbehorende bruiloft. `download` forceert Content-Disposition: attachment
+// — zelfde reden als bij createVendorDocumentUrl.
+export async function createWeddingDocumentUrl(
+  supabase: SupabaseClient,
+  storagePath: string,
+  bestandsnaam: string
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(WEDDING_DOCUMENTS_BUCKET)
+    .createSignedUrl(storagePath, 60 * 5, { download: bestandsnaam })
+  if (error) throw error
+  return data.signedUrl
+}
+
+export async function deleteWeddingDocumentFile(
+  supabase: SupabaseClient,
+  storagePath: string
+): Promise<void> {
+  await supabase.storage.from(WEDDING_DOCUMENTS_BUCKET).remove([storagePath])
+}

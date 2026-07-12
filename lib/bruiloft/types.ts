@@ -464,6 +464,36 @@ export interface PublicDraaiboekData {
   items: PublicDraaiboekItem[]
 }
 
+// --- Documenten ------------------------------------------------------------
+
+// Eigen map in de documentenverkenner; parentId null = hoofdmap. De
+// automatische systeemmappen (Leveranciers, Budget) bestaan alleen in de
+// client — die aggregeren vendor_documents/budget_item_documents en staan
+// niet in deze tabel.
+export interface DocumentFolder {
+  id: ID
+  weddingId: ID
+  parentId: ID | null
+  naam: string
+  createdBy?: ID
+  createdAt: ISODateTime
+}
+
+// Eigen geüpload bestand in de documentenverkenner. folderId null =
+// hoofdmap. Genoemd WeddingDocument (niet Document) om niet te botsen met
+// het DOM-type.
+export interface WeddingDocument {
+  id: ID
+  weddingId: ID
+  folderId: ID | null
+  naam: string // weergavenaam (origineel bestandsnaam), hernoembaar
+  storagePath: string
+  mimeType: string
+  grootte: number // bytes
+  geuploadDoor?: ID
+  createdAt: ISODateTime
+}
+
 // --- Muziek --------------------------------------------------------------
 
 // De secties van de muzieklijst. 'niet_draaien' is de "niet draaien"-lijst

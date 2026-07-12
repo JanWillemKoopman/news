@@ -6,6 +6,7 @@ import {
   CarFront,
   ClipboardList,
   Flower2,
+  FolderOpen,
   Gift,
   Globe,
   Images,
@@ -49,6 +50,7 @@ export const mijnLeveranciers: NavItem = { label: 'Mijn lijst', href: '/bruiloft
 const leverancierZoeken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
 const muziek: NavItem = { label: 'Muziek', href: '/bruiloft/muziek', icon: Music, module: 'muziek' }
+const documenten: NavItem = { label: 'Documenten', href: '/bruiloft/documenten', icon: FolderOpen, module: 'documenten' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
 const website: NavItem = { label: 'Trouwwebsite', href: '/bruiloft/website', icon: Globe, module: 'website' }
@@ -109,6 +111,7 @@ export const NAV_ITEMS: NavItem[] = [
   budget,
   moodboard,
   muziek,
+  documenten,
   mijnLeveranciers,
   leverancierZoeken,
   ...TPW_CATEGORIE_ITEMS,
@@ -152,7 +155,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, draaiboek, muziek, moodboard],
+    items: [taken, budget, draaiboek, muziek, moodboard, documenten],
     module: 'taken',
   },
   {

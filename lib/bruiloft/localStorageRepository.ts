@@ -11,6 +11,7 @@ import type {
   BudgetItem,
   BudgetItemDocument,
   BudgetItemInput,
+  DocumentFolder,
   DraaiboekShare,
   Guest,
   GuestInput,
@@ -21,6 +22,7 @@ import type {
   MoodBoardItem,
   MusicTrack,
   MuziekShare,
+  WeddingDocument,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -355,6 +357,40 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async reorderMoodBoardItems(): Promise<void> {
     throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  // De documentenverkenner vereist Supabase Storage; deze legacy
+  // localStorage-implementatie heeft geen equivalent.
+  async listDocumentFolders(): Promise<DocumentFolder[]> {
+    return []
+  }
+
+  async createDocumentFolder(): Promise<DocumentFolder> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async updateDocumentFolder(): Promise<DocumentFolder> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteDocumentFolder(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async listWeddingDocuments(): Promise<WeddingDocument[]> {
+    return []
+  }
+
+  async createWeddingDocument(): Promise<WeddingDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async updateWeddingDocument(): Promise<WeddingDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteWeddingDocument(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
   }
 
   // De muzieklijst vereist Supabase (RSVP-suggesties en de publieke

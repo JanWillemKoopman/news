@@ -13,6 +13,7 @@ import type {
   BudgetItemDocument,
   BudgetItemInput,
   CeremonieType,
+  DocumentFolder,
   DraaiboekShare,
   Guest,
   GuestPatch,
@@ -47,6 +48,7 @@ import type {
   WebsiteContent,
   WebsiteContentInput,
   WebsiteFoto,
+  WeddingDocument,
   WeddingLettertype,
   WeddingThema,
 } from './types'
@@ -364,6 +366,35 @@ export function moodBoardItemFromRow(r: any): MoodBoardItem {
     titel: r.titel,
     volgorde: num(r.volgorde),
     createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Documenten --------------------------------------------------------
+// document_folders/documents ontbreken nog in de gegenereerde
+// database.types.ts (nieuwe migratie 0079) — zelfde any-drift als
+// vendor_documents hierboven.
+export function documentFolderFromRow(r: any): DocumentFolder {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    parentId: r.parent_id ?? null,
+    naam: r.naam,
+    createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+export function weddingDocumentFromRow(r: any): WeddingDocument {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    folderId: r.folder_id ?? null,
+    naam: r.naam,
+    storagePath: r.storage_path,
+    mimeType: r.mime_type,
+    grootte: num(r.grootte),
+    geuploadDoor: r.geupload_door ?? undefined,
     createdAt: r.created_at,
   }
 }

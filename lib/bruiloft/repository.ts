@@ -11,6 +11,7 @@ import type {
   BudgetItemDocument,
   BudgetItemDocumentInput,
   BudgetItemInput,
+  DocumentFolder,
   DraaiboekShare,
   Guest,
   GuestInput,
@@ -42,6 +43,7 @@ import type {
   WebsiteContent,
   WebsiteContentInput,
   WebsiteFoto,
+  WeddingDocument,
 } from './types'
 import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
@@ -109,6 +111,20 @@ export interface WeddingRepository {
   deleteMoodBoardItem(id: ID): Promise<void>
   // Bulk-herordenen na een drag: elke rij krijgt zijn nieuwe volgorde.
   reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void>
+
+  // Documentenverkenner: eigen mappen (vrije boom, parentId null = hoofdmap)
+  // en eigen bestanden. De leveranciers- en budgetdocumenten verschijnen op
+  // de pagina als systeemmappen maar blijven in hun eigen tabellen — die
+  // lopen via listVendorDocuments/listBudgetItemDocuments hierboven.
+  listDocumentFolders(weddingId: ID): Promise<DocumentFolder[]>
+  createDocumentFolder(weddingId: ID, naam: string, parentId: ID | null): Promise<DocumentFolder>
+  updateDocumentFolder(id: ID, patch: Partial<Pick<DocumentFolder, 'naam' | 'parentId'>>): Promise<DocumentFolder>
+  deleteDocumentFolder(id: ID): Promise<void>
+
+  listWeddingDocuments(weddingId: ID): Promise<WeddingDocument[]>
+  createWeddingDocument(input: Omit<WeddingDocument, 'id' | 'geuploadDoor' | 'createdAt'>): Promise<WeddingDocument>
+  updateWeddingDocument(id: ID, patch: Partial<Pick<WeddingDocument, 'naam' | 'folderId'>>): Promise<WeddingDocument>
+  deleteWeddingDocument(id: ID): Promise<void>
 
   // Muziek: één platte lijst per bruiloft, gesectioneerd op moment.
   // Gastsuggesties komen binnen via de RSVP-RPC's (server-side), niet via
