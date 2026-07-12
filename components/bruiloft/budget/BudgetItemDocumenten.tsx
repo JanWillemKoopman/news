@@ -6,16 +6,16 @@ import { FileText, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog, Field, Select, useToast } from '@/components/bruiloft/ui'
 import { capFirst } from '@/lib/utils'
 import { formatDatumKort } from '@/lib/bruiloft/format'
-import type { ID, VendorDocument, VendorDocumentSoort } from '@/lib/bruiloft/types'
+import type { BudgetItemDocument, BudgetItemDocumentSoort, ID } from '@/lib/bruiloft/types'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-const SOORTEN: VendorDocumentSoort[] = ['offerte', 'contract', 'factuur', 'overig']
+const SOORTEN: BudgetItemDocumentSoort[] = ['offerte', 'contract', 'factuur', 'overig']
 
-// Zelfde limiet als de storage-bucket (migratie 0068) — hier alvast checken
+// Zelfde limiet als de storage-bucket (migratie 0075) — hier alvast checken
 // zodat de gebruiker een nette melding krijgt i.p.v. een storage-fout.
 const MAX_BYTES = 20 * 1024 * 1024
 
-// Zelfde limiet als de trigger in migratie 0074 — hier alvast checken zodat
+// Zelfde limiet als de trigger in migratie 0076 — hier alvast checken zodat
 // de gebruiker een nette melding krijgt i.p.v. een database-foutmelding.
 const MAX_DOCUMENTEN = 10
 
@@ -24,7 +24,7 @@ const ACCEPT = TOEGESTANE_EXTENSIES.map((e) => `.${e}`).join(',')
 
 // Slimme voorzet voor het soort, op basis van de bestandsnaam — de gebruiker
 // hoeft dan meestal alleen nog op Opslaan te klikken.
-function raadSoort(bestandsnaam: string): VendorDocumentSoort {
+function raadSoort(bestandsnaam: string): BudgetItemDocumentSoort {
   const n = bestandsnaam.toLowerCase()
   if (n.includes('contract') || n.includes('overeenkomst')) return 'contract'
   if (n.includes('factuur') || n.includes('invoice')) return 'factuur'
@@ -38,28 +38,29 @@ function formatGrootte(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
 }
 
-interface VendorDocumentenProps {
-  vendorId: ID
+interface BudgetItemDocumentenProps {
+  budgetItemId: ID
   kanBewerken: boolean
 }
 
-// Documentenkluis-sectie in de leveranciers-detailmodal: offertes, contracten
-// en facturen bij deze leverancier bewaren. Bestanden staan in een private
-// bucket; downloaden gaat via een kortlevende signed URL uit de store.
-export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProps) {
-  const alleDocumenten = useBruiloftStore((s) => s.vendorDocuments)
-  const addVendorDocument = useBruiloftStore((s) => s.addVendorDocument)
-  const deleteVendorDocument = useBruiloftStore((s) => s.deleteVendorDocument)
-  const getVendorDocumentUrl = useBruiloftStore((s) => s.getVendorDocumentUrl)
+// Documentenkluis-sectie bij een budgetpost: offertes, contracten en
+// facturen bewaren. Bestanden staan in een private bucket; downloaden gaat
+// via een kortlevende signed URL uit de store. Zelfde patroon als
+// VendorDocumenten bij leveranciers.
+export function BudgetItemDocumenten({ budgetItemId, kanBewerken }: BudgetItemDocumentenProps) {
+  const alleDocumenten = useBruiloftStore((s) => s.budgetItemDocuments)
+  const addBudgetItemDocument = useBruiloftStore((s) => s.addBudgetItemDocument)
+  const deleteBudgetItemDocument = useBruiloftStore((s) => s.deleteBudgetItemDocument)
+  const getBudgetItemDocumentUrl = useBruiloftStore((s) => s.getBudgetItemDocumentUrl)
   const { toast } = useToast()
 
-  const documenten = alleDocumenten.filter((d) => d.vendorId === vendorId)
+  const documenten = alleDocumenten.filter((d) => d.budgetItemId === budgetItemId)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [pendingFile, setPendingFile] = React.useState<File | null>(null)
-  const [pendingSoort, setPendingSoort] = React.useState<VendorDocumentSoort>('offerte')
+  const [pendingSoort, setPendingSoort] = React.useState<BudgetItemDocumentSoort>('offerte')
   const [uploadt, setUploadt] = React.useState(false)
-  const [delDoc, setDelDoc] = React.useState<VendorDocument | null>(null)
+  const [delDoc, setDelDoc] = React.useState<BudgetItemDocument | null>(null)
 
   const limietBereikt = documenten.length >= MAX_DOCUMENTEN
 
@@ -68,7 +69,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
     if (limietBereikt) {
       toast({
         title: 'Limiet bereikt',
-        description: `Maximaal ${MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een.`,
+        description: `Maximaal ${MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een.`,
         variant: 'error',
       })
       return
@@ -94,7 +95,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
     if (!pendingFile) return
     setUploadt(true)
     try {
-      await addVendorDocument(vendorId, pendingFile, pendingSoort)
+      await addBudgetItemDocument(budgetItemId, pendingFile, pendingSoort)
       setPendingFile(null)
       toast({ title: 'Document opgeslagen', variant: 'success' })
     } catch (e) {
@@ -102,7 +103,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
       toast({
         title: limiet ? 'Limiet bereikt' : 'Uploaden mislukt',
         description: limiet
-          ? `Maximaal ${MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een.`
+          ? `Maximaal ${MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een.`
           : 'Probeer het opnieuw.',
         variant: 'error',
       })
@@ -111,12 +112,12 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
     }
   }
 
-  // Signed URL heeft Content-Disposition: attachment (zie createVendorDocumentUrl),
+  // Signed URL heeft Content-Disposition: attachment (zie createBudgetItemDocumentUrl),
   // dus dit downloadt het bestand i.p.v. het (mogelijk mislukt) in de browser te
   // tonen — zo hoeven we niet per bestandsformaat te regelen dat het weergegeven wordt.
-  const download = async (doc: VendorDocument) => {
+  const download = async (doc: BudgetItemDocument) => {
     try {
-      const url = await getVendorDocumentUrl(doc)
+      const url = await getBudgetItemDocumentUrl(doc)
       const a = document.createElement('a')
       a.href = url
       a.download = doc.naam
@@ -138,8 +139,8 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
       {documenten.length === 0 && !pendingFile ? (
         <p className="mt-2 text-sm text-muted-foreground">
           {kanBewerken
-            ? 'Bewaar hier de offertes, contracten en facturen van deze leverancier — als pdf, foto of Word/Excel-bestand. Alleen jullie kunnen ze zien.'
-            : 'Hier staan de offertes, contracten en facturen van deze leverancier.'}
+            ? 'Bewaar hier de offertes, contracten en facturen bij deze budgetpost — als pdf, foto of Word/Excel-bestand. Alleen jullie kunnen ze zien.'
+            : 'Hier staan de offertes, contracten en facturen bij deze budgetpost.'}
         </p>
       ) : null}
 
@@ -194,11 +195,11 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
                 {formatGrootte(pendingFile.size)}
               </span>
             </div>
-            <Field label="Wat voor document is dit?" htmlFor="vd-soort">
+            <Field label="Wat voor document is dit?" htmlFor="bd-soort">
               <Select
-                id="vd-soort"
+                id="bd-soort"
                 value={pendingSoort}
-                onChange={(e) => setPendingSoort(e.target.value as VendorDocumentSoort)}
+                onChange={(e) => setPendingSoort(e.target.value as BudgetItemDocumentSoort)}
                 disabled={uploadt}
               >
                 {SOORTEN.map((s) => (
@@ -242,7 +243,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
             </Button>
             {limietBereikt ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                Maximaal {MAX_DOCUMENTEN} documenten per leverancier — verwijder er eerst een om een nieuwe toe te voegen.
+                Maximaal {MAX_DOCUMENTEN} documenten per budgetpost — verwijder er eerst een om een nieuwe toe te voegen.
               </p>
             ) : null}
           </>
@@ -257,7 +258,7 @@ export function VendorDocumenten({ vendorId, kanBewerken }: VendorDocumentenProp
         onConfirm={async () => {
           if (!delDoc) return
           try {
-            await deleteVendorDocument(delDoc.id)
+            await deleteBudgetItemDocument(delDoc.id)
             toast({ title: 'Document verwijderd', variant: 'success' })
           } catch {
             toast({ title: 'Verwijderen mislukt', description: 'Probeer het opnieuw.', variant: 'error' })

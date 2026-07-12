@@ -8,6 +8,7 @@ import {
   activityFromRow,
   adresShareFromRow,
   agendaShareFromRow,
+  budgetItemDocumentFromRow,
   budgetItemFromRow,
   budgetItemToRow,
   draaiboekShareFromRow,
@@ -42,6 +43,8 @@ import type {
   AdresShare,
   AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentInput,
   BudgetItemInput,
   DraaiboekShare,
   Guest,
@@ -563,6 +566,42 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   async deleteBudgetItem(id: ID): Promise<void> {
     const { error } = await this.db.from('budget_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Documentenkluis (budgetposten) ---------------------------------
+  // budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0075), vandaar rawDb — zelfde patroon als vendor_documents.
+  async listBudgetItemDocuments(weddingId: ID): Promise<BudgetItemDocument[]> {
+    const { data, error } = await this.rawDb
+      .from('budget_item_documents')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(budgetItemDocumentFromRow)
+  }
+
+  async createBudgetItemDocument(input: BudgetItemDocumentInput): Promise<BudgetItemDocument> {
+    const { data, error } = await this.rawDb
+      .from('budget_item_documents')
+      .insert({
+        wedding_id: input.weddingId,
+        budget_item_id: input.budgetItemId,
+        naam: input.naam,
+        soort: input.soort,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        grootte: input.grootte,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return budgetItemDocumentFromRow(data)
+  }
+
+  async deleteBudgetItemDocument(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('budget_item_documents').delete().eq('id', id)
     if (error) throw error
   }
 

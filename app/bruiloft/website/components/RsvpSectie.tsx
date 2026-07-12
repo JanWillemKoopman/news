@@ -3,7 +3,7 @@
 import { Check, Link2 } from 'lucide-react'
 import * as React from 'react'
 
-import { Button, Card, CardContent } from '@/components/bruiloft/ui'
+import { Button, Card, CardContent, StatusBadge } from '@/components/bruiloft/ui'
 import { gastTellingen } from '@/lib/bruiloft/derived'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
@@ -53,9 +53,12 @@ export function RsvpSectie() {
               const link = g.rsvpCode ? `${origin}/rsvp/${g.rsvpCode}` : ''
               return (
                 <li key={g.id} className="flex min-h-[48px] items-center justify-between gap-3 py-2">
-                  <span className="min-w-0 truncate text-sm text-foreground">
-                    {g.voornaam} {g.achternaam}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 truncate text-sm text-foreground">
+                      {g.voornaam} {g.achternaam}
+                    </span>
+                    <StatusBadge kind="rsvp" value={g.rsvpStatus} className="shrink-0" />
+                  </div>
                   {link ? (
                     <Button
                       variant="ghost"

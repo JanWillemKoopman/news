@@ -10,6 +10,7 @@ import type {
   AdresShare,
   AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
   BudgetItemInput,
   CeremonieType,
   DraaiboekShare,
@@ -290,6 +291,23 @@ export function vendorDocumentFromRow(r: any): VendorDocument {
     id: r.id,
     weddingId: r.wedding_id,
     vendorId: r.vendor_id,
+    naam: r.naam,
+    soort: r.soort,
+    storagePath: r.storage_path,
+    mimeType: r.mime_type,
+    grootte: num(r.grootte),
+    geuploadDoor: r.geupload_door ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0075) — zelfde any-drift als vendor_documents hierboven.
+export function budgetItemDocumentFromRow(r: any): BudgetItemDocument {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    budgetItemId: r.budget_item_id,
     naam: r.naam,
     soort: r.soort,
     storagePath: r.storage_path,

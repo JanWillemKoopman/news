@@ -274,7 +274,6 @@ export default function WebsitePage() {
               })
             }
             publiekeUrl={publiekeUrl}
-            blokken={blocks}
           />
 
           <ThemaInstellingen

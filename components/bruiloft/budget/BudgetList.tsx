@@ -24,6 +24,7 @@ import {
   SearchInput,
   type KolomAantal,
 } from '@/components/bruiloft/ui'
+import { BudgetItemDocumenten } from '@/components/bruiloft/budget/BudgetItemDocumenten'
 import {
   effectiefGeoffreerd,
   geboekteLeverancierVoor,
@@ -41,6 +42,7 @@ interface BudgetListProps {
   afwijkendeItemIds?: Set<string>
   // Beheerde lijst budgetcategorieën, bepaalt de weergavevolgorde.
   categorieen: string[]
+  kanBewerken: boolean
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -98,6 +100,7 @@ export function BudgetList({
   bevestigdeDaggasten,
   afwijkendeItemIds,
   categorieen,
+  kanBewerken,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -220,6 +223,7 @@ export function BudgetList({
             bevestigdeDaggasten={bevestigdeDaggasten}
             afwijkendeItemIds={afwijkendeItemIds}
             vendors={vendors}
+            kanBewerken={kanBewerken}
             onToggle={() => toggleCategorie(cat.naam)}
             onEdit={onEdit}
             onDelete={onDelete}
@@ -237,6 +241,7 @@ function CategorieRij({
   bevestigdeDaggasten,
   afwijkendeItemIds,
   vendors,
+  kanBewerken,
   onToggle,
   onEdit,
   onDelete,
@@ -247,6 +252,7 @@ function CategorieRij({
   bevestigdeDaggasten: number
   afwijkendeItemIds?: Set<string>
   vendors: Vendor[]
+  kanBewerken: boolean
   onToggle: () => void
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
@@ -326,6 +332,7 @@ function CategorieRij({
               item={item}
               vendors={vendors}
               afwijkend={afwijkendeItemIds?.has(item.id) ?? false}
+              kanBewerken={kanBewerken}
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleTerm={onToggleTerm}
@@ -341,6 +348,7 @@ function ItemRij({
   item,
   vendors,
   afwijkend,
+  kanBewerken,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -348,6 +356,7 @@ function ItemRij({
   item: BudgetItem
   vendors: Vendor[]
   afwijkend: boolean
+  kanBewerken: boolean
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -427,6 +436,10 @@ function ItemRij({
           </ul>
         </div>
       ) : null}
+
+      <div className="mt-3">
+        <BudgetItemDocumenten budgetItemId={item.id} kanBewerken={kanBewerken} />
+      </div>
     </div>
   )
 }
