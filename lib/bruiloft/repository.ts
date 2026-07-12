@@ -18,6 +18,8 @@ import type {
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MoodBoardItemInput,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -96,6 +98,14 @@ export interface WeddingRepository {
   getAdresShare(weddingId: ID): Promise<AdresShare | null>
   createAdresShare(weddingId: ID): Promise<AdresShare>
   deleteAdresShare(weddingId: ID): Promise<void>
+
+  // Moodboard: één plat, geordend bord per bruiloft.
+  listMoodBoardItems(weddingId: ID): Promise<MoodBoardItem[]>
+  createMoodBoardItem(weddingId: ID, input: MoodBoardItemInput, volgorde: number): Promise<MoodBoardItem>
+  updateMoodBoardItem(id: ID, patch: Partial<Pick<MoodBoardItem, 'categorie' | 'titel'>>): Promise<MoodBoardItem>
+  deleteMoodBoardItem(id: ID): Promise<void>
+  // Bulk-herordenen na een drag: elke rij krijgt zijn nieuwe volgorde.
+  reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,

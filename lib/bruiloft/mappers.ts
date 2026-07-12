@@ -18,6 +18,7 @@ import type {
   GuestPatch,
   Message,
   MessageRead,
+  MoodBoardItem,
   PaymentTerm,
   Rol,
   ScheduleItem,
@@ -343,6 +344,24 @@ export function adresShareFromRow(r: any): AdresShare {
   return {
     weddingId: r.wedding_id,
     token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Moodboard -----------------------------------------------------------
+// mood_board_items ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0077) — zelfde any-drift als vendor_documents hierboven.
+export function moodBoardItemFromRow(r: any): MoodBoardItem {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    categorie: r.categorie,
+    url: r.url,
+    bron: r.bron,
+    bronUrl: r.bron_url ?? null,
+    titel: r.titel,
+    volgorde: num(r.volgorde),
+    createdBy: r.created_by ?? undefined,
     createdAt: r.created_at,
   }
 }

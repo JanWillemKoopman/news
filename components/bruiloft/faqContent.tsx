@@ -1280,3 +1280,77 @@ export const accountInfo: PageInfo = {
     },
   ],
 }
+
+export const moodboardInfo: PageInfo = {
+  titel: 'FAQ Moodboard',
+  intro: (
+    <Intro>
+      <p>
+        Het <strong>Moodboard</strong> is jullie inspiratiebord — sfeerbeelden
+        voor kleuren, jurk, bloemen, decoratie en meer, allemaal op één plek.
+      </p>
+      <p>
+        Sleep tegels om ze te herordenen, tik een tegel aan om &apos;m groot te
+        bekijken, en filter op categorie om snel te zien wat er al is.
+      </p>
+      <QuickStart
+        stappen={[
+          <>
+            <strong>Upload eigen foto&apos;s</strong> of <strong>plak een link</strong>{' '}
+            naar inspiratie die je online vond.
+          </>,
+          <>
+            Geef elke categorie een plek en <strong>versleep tegels</strong> om
+            jullie favorieten bovenaan te zetten.
+          </>,
+          <>
+            <strong>Filter</strong> op categorie om per onderdeel (bv. bloemen)
+            te overzien wat jullie mooi vinden.
+          </>,
+        ]}
+      />
+    </Intro>
+  ),
+  faq: [
+    {
+      vraag: 'Hoe voeg ik een foto toe?',
+      antwoord: (
+        <p>
+          Klik op <strong>Toevoegen</strong>. Je kunt eigen foto&apos;s uploaden
+          (ook meerdere tegelijk, of slepen vanaf je bureaublad), of een link
+          plakken naar een pin, blog of webshop — de app haalt de afbeelding
+          er automatisch bij.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe verander ik de volgorde?',
+      antwoord: (
+        <p>
+          Sleep een tegel aan het greepje linksboven naar de gewenste plek.
+          Herordenen kan alleen in de weergave <strong>Alles</strong> — bij een
+          actief categoriefilter staat de volgorde vast.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar bewaar ik de bron van een gepinde foto?',
+      antwoord: (
+        <p>
+          Tik de tegel aan om de lightbox te openen — daar staat een knop{' '}
+          <strong>Bekijk bron</strong> die teruggaat naar de oorspronkelijke
+          pagina (bijvoorbeeld de webshop).
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan het moodboard zien of bewerken?',
+      antwoord: (
+        <p>
+          Dat stel je in bij <strong>Samen plannen</strong>, net als bij elk
+          ander onderdeel — per rol kies je niets, zien of bewerken.
+        </p>
+      ),
+    },
+  ],
+}
