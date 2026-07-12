@@ -405,7 +405,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           ) : null}
 
           {aantalDup > 0 ? (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
+            <div className="flex items-start gap-2 rounded-lg border border-rose-600/20 bg-rose-500/10 p-3 text-sm text-rose-700">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{aantalDup} mogelijke {aantalDup === 1 ? 'dubbel' : 'dubbelen'} gevonden (zelfde naam staat al in de lijst). Deze zijn standaard uitgevinkt.</span>
             </div>
@@ -447,7 +447,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
                       />
                     </div>
                     {r._dup ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-medium text-rose-700">
                         <AlertTriangle className="h-3 w-3" /> Mogelijk dubbel
                       </span>
                     ) : null}

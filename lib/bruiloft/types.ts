@@ -98,6 +98,10 @@ export interface Guest {
   tafelId?: ID // tafelschikking
   stoelIndex?: number // vaste plek aan de tafel (0-gebaseerd); leeg = automatisch
   rsvpCode?: string // persoonlijke code voor de publieke RSVP
+  // Via de RSVP achtergelaten muziekwens en persoonlijk bericht (0073).
+  // Optioneel zodat bestaande gast-aanmaak-flows ongewijzigd blijven.
+  verzoeknummer?: string
+  rsvpBericht?: string
 }
 
 export type GuestInput = Omit<Guest, 'id'>
@@ -201,6 +205,10 @@ export interface Vendor {
   geoffreerdBedrag: number // in euro
   notitie: string
   adres: string
+  // Eerstvolgende afspraak (bezichtiging, proeverij, gesprek): datum +
+  // optionele tijd ('HH:MM', leeg = alleen een dag geprikt).
+  afspraakDatum?: ISODate | null
+  afspraakTijd: string
   // Coördinaten voor de kaartweergave; null zolang adres nog niet (succesvol)
   // gegeocodeerd is (of leeg is).
   latitude?: number | null
@@ -231,16 +239,60 @@ export interface VendorContactRequest {
   createdAt: ISODateTime
 }
 
+// Documentenkluis per leverancier: metadata van geüploade offertes,
+// contracten en facturen. Het bestand zelf staat in de private
+// storage-bucket 'vendor-documents' onder storagePath; downloads lopen via
+// signed URLs (zie lib/supabase/storage.ts).
+export type VendorDocumentSoort = 'offerte' | 'contract' | 'factuur' | 'overig'
+
+export interface VendorDocument {
+  id: ID
+  weddingId: ID
+  vendorId: ID
+  naam: string // weergavenaam (origineel bestandsnaam)
+  soort: VendorDocumentSoort
+  storagePath: string
+  mimeType: string
+  grootte: number // bytes
+  geuploadDoor?: ID
+  createdAt: ISODateTime
+}
+
+// geuploadDoor wordt server-side gezet (trigger), createdAt door de database.
+export type VendorDocumentInput = Omit<VendorDocument, 'id' | 'geuploadDoor' | 'createdAt'>
+
 // --- Berichten (Berichtencentrum) -------------------------------------------
 
-// Eén generieke tabel voor het berichtencentrum: zowel inkomende
-// systeem-/AI-berichten aan de gebruiker als uitgaande communicatie naar
-// leveranciers (offerte/contact). Later breidt dit uit met inkomende
-// reacties van leveranciers ('leverancier_reactie').
+// Eén generieke tabel voor het berichtencentrum: inkomende systeem-/AI-
+// berichten aan de gebruiker, uitgaande communicatie naar leveranciers
+// (offerte/contact) én inkomende reacties van leveranciers daarop
+// ('leverancier_reactie', geplaatst via de token-link in de e-mail).
 export type MessageDirection = 'inbound' | 'outbound'
-export type MessageType = 'systeem' | 'leverancier_offerte' | 'leverancier_contact'
+export type MessageType =
+  | 'systeem'
+  | 'leverancier_offerte'
+  | 'leverancier_contact'
+  | 'leverancier_reactie'
+  | 'leverancier_vervolg'
 export type MessageAfzenderType = 'systeem' | 'gebruiker' | 'leverancier'
 export type MessageStatus = 'concept' | 'verzonden'
+
+// Actieknop bij een bericht (opgeslagen in messages.metadata.acties): brengt
+// de lezer direct naar de plek in de app waar de actie hoort. Alleen interne
+// paden ('/bruiloft/...') — de UI negeert al het andere.
+export interface MessageActie {
+  label: string
+  href: string
+}
+
+// Standaard afwijzingsgrond die een leverancier met één klik kan geven op de
+// publieke reactiepagina (alleen bij offerteaanvragen). Opgeslagen in
+// messages.metadata.afwijzingsGrond op het reactiebericht; de leesbare zin
+// staat gewoon in `inhoud` (zinnen boven badges). De leverancier-pipeline
+// (vendor.status) wijzigt hier bewust NIET automatisch door — die blijft
+// gebruikergestuurd; het bericht linkt naar de leverancier zodat de gebruiker
+// de status zelf in één klik kan bijwerken.
+export type AfwijzingsGrond = 'geen_beschikbaarheid' | 'buiten_werkgebied' | 'past_niet_bij_aanbod'
 
 export interface Message {
   id: ID
@@ -255,6 +307,13 @@ export interface Message {
   verzondenDoor?: ID
   status: MessageStatus
   metadata?: Record<string, unknown>
+  // Bij een leveranciersreactie/-vervolgbericht: het uitgaande bericht waarmee
+  // het gesprek begon (de thread-root, niet per se het vorige bericht).
+  parentMessageId?: ID
+  // Archiveren/verwijderen: zacht en herstelbaar, gedeeld voor de hele
+  // bruiloft (geen per-gebruiker staat zoals MessageRead hieronder).
+  archivedAt?: ISODateTime
+  deletedAt?: ISODateTime
   createdAt: ISODateTime
 }
 
@@ -306,6 +365,28 @@ export interface BudgetItem {
 
 export type BudgetItemInput = Omit<BudgetItem, 'id'>
 
+// Documentenkluis per budgetpost: metadata van geüploade offertes,
+// contracten en facturen. Het bestand zelf staat in de private
+// storage-bucket 'budget-documents' onder storagePath; downloads lopen via
+// signed URLs (zie lib/supabase/storage.ts). Zelfde vorm als VendorDocument.
+export type BudgetItemDocumentSoort = 'offerte' | 'contract' | 'factuur' | 'overig'
+
+export interface BudgetItemDocument {
+  id: ID
+  weddingId: ID
+  budgetItemId: ID
+  naam: string // weergavenaam (origineel bestandsnaam)
+  soort: BudgetItemDocumentSoort
+  storagePath: string
+  mimeType: string
+  grootte: number // bytes
+  geuploadDoor?: ID
+  createdAt: ISODateTime
+}
+
+// geuploadDoor wordt server-side gezet (trigger), createdAt door de database.
+export type BudgetItemDocumentInput = Omit<BudgetItemDocument, 'id' | 'geuploadDoor' | 'createdAt'>
+
 // --- ScheduleItem (trouwdag-draaiboek) -------------------------------------
 
 // Rollen waarop een draaiboekonderdeel betrekking heeft (voor filteren/export).
@@ -336,6 +417,151 @@ export interface ScheduleItem {
 
 export type ScheduleItemInput = Omit<ScheduleItem, 'id'>
 
+// --- Draaiboek delen ---------------------------------------------------------
+
+// Publieke deel-link van het draaiboek (voor leveranciers/ceremoniemeester).
+// Eén per bruiloft: rij bestaat = delen staat aan; verwijderen = link dood.
+export interface DraaiboekShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Agenda-koppeling (ICS-abonnement): zelfde aan/uit-model als DraaiboekShare,
+// maar de token voedt /api/agenda/[token] (trouwdag, afspraken, deadlines,
+// betaaltermijnen) in plaats van een publieke pagina.
+export interface AgendaShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Adreslink: genodigden geven via /adres/[token] hun adres door voor de
+// uitnodigingen; zelfde aan/uit-model als de andere shares.
+export interface AdresShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Wat de publieke pagina (/draaiboek/[token]) van de RPC krijgt: alleen de
+// dagindeling plus namen/datum/locatie — bewust géén andere plannergegevens.
+export interface PublicDraaiboekItem {
+  id: ID
+  tijd: string
+  eindtijd: string
+  titel: string
+  omschrijving: string
+  locatie: string
+  betrokkenen: Rol[]
+}
+
+export interface PublicDraaiboekData {
+  partner1Naam: string
+  partner2Naam: string
+  trouwdatum: string | null
+  locatie: string
+  items: PublicDraaiboekItem[]
+}
+
+// --- Muziek --------------------------------------------------------------
+
+// De secties van de muzieklijst. 'niet_draaien' is de "niet draaien"-lijst
+// voor de DJ — bewust een moment en geen aparte structuur (zie migratie 0078).
+export type MuziekMoment = 'ceremonie' | 'borrel' | 'diner' | 'feest' | 'niet_draaien'
+
+export type MusicTrackBron = 'paar' | 'gast'
+
+// Gastsuggesties (via de RSVP) komen binnen als 'voorgesteld'; het paar
+// keurt goed of verwijdert. Eigen nummers zijn meteen 'goedgekeurd'.
+export type MusicTrackStatus = 'voorgesteld' | 'goedgekeurd'
+
+export interface MusicTrack {
+  id: ID
+  weddingId: ID
+  titel: string
+  artiest: string
+  moment: MuziekMoment
+  // Vrije notitie voor de DJ ("openingsdans", "vader-dochterdans", ...).
+  opmerking: string
+  // Optionele link naar Spotify/YouTube; puur ter referentie.
+  url: string
+  bron: MusicTrackBron
+  // Alleen bij bron='gast': wie het nummer aandroeg.
+  gastNaam: string
+  guestId: ID | null
+  status: MusicTrackStatus
+  volgorde: number
+  createdBy?: ID
+  createdAt: ISODateTime
+}
+
+// Wat de gebruiker zelf invult; bron/status/volgorde vult de store/server in.
+export type MusicTrackInput = Pick<
+  MusicTrack,
+  'titel' | 'artiest' | 'moment' | 'opmerking' | 'url'
+>
+
+// Publieke deel-link van de muzieklijst (voor de DJ of band): zelfde
+// aan/uit-model als DraaiboekShare.
+export interface MuziekShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Wat de publieke pagina (/muziek/[token]) van de RPC krijgt: alleen
+// goedgekeurde nummers plus namen/datum — bewust géén andere plannergegevens.
+export interface PublicMuziekTrack {
+  id: ID
+  titel: string
+  artiest: string
+  moment: MuziekMoment
+  opmerking: string
+  url: string
+  bron: MusicTrackBron
+  gastNaam: string
+}
+
+export interface PublicMuziekData {
+  partner1Naam: string
+  partner2Naam: string
+  trouwdatum: string | null
+  tracks: PublicMuziekTrack[]
+}
+
+// --- Moodboard ---------------------------------------------------------
+
+// Vrije tekst (net als BudgetCategorie/VendorType): de vaste lijst in
+// lib/bruiloft/moodboardCategorieen.ts is een suggestie, geen CHECK-lijst.
+export type MoodBoardCategorie = string
+
+export type MoodBoardBron = 'upload' | 'link'
+
+export interface MoodBoardItem {
+  id: ID
+  weddingId: ID
+  categorie: MoodBoardCategorie
+  // Altijd de directe afbeeldings-URL: bij bron='upload' een publieke
+  // wedding-media-URL, bij bron='link' een rechtstreekse hotlink naar de
+  // bron (niet gedownload — net als Pinterest zelf).
+  url: string
+  bron: MoodBoardBron
+  // Alleen bij bron='link': de paginalink waar de gebruiker 'm vandaan
+  // pinde ("Bekijk bron" in de lightbox).
+  bronUrl: string | null
+  titel: string
+  volgorde: number
+  createdBy?: ID
+  createdAt: ISODateTime
+}
+
+// weddingId/volgorde/createdBy/createdAt worden door de store/server ingevuld.
+export type MoodBoardItemInput = Omit<
+  MoodBoardItem,
+  'id' | 'weddingId' | 'volgorde' | 'createdBy' | 'createdAt'
+>
+
 // --- Table (tafelschikking) ------------------------------------------------
 
 export type TafelVorm = 'rond' | 'vierkant' | 'langwerpig'
@@ -356,7 +582,16 @@ export type TableInput = Omit<Table, 'id'>
 
 // --- WebsiteContent (publieke trouwwebsite) --------------------------------
 
-export type WeddingThema = 'klassiek' | 'modern' | 'romantisch' | 'rustiek' | 'minimalistisch' | 'botanisch'
+export type WeddingThema =
+  | 'klassiek'
+  | 'modern'
+  | 'romantisch'
+  | 'rustiek'
+  | 'minimalistisch'
+  | 'botanisch'
+  | 'gala'
+  | 'artdeco'
+  | 'couture'
 export type WeddingLettertype =
   | 'cormorant'
   | 'playfair'

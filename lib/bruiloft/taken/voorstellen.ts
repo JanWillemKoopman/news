@@ -6,12 +6,13 @@
 import { generateTemplateTasks, type TemplateTaskVoorstel } from '../templateTasks'
 import type { TakenVoorstellenState, Task, Wedding } from '../types'
 
-// Alle open sjabloonvoorstellen die nog niet als taak bestaan (dedupe op
+// Alle open kern-sjabloonvoorstellen die nog niet als taak bestaan (dedupe op
 // titel, zodat ook een meeplannende partner geen dubbelen veroorzaakt).
+// Alleen de kernset (±30) wordt voorgesteld: kwaliteit boven kwantiteit.
 export function alleVoorstellen(wedding: Wedding, tasks: Task[]): TemplateTaskVoorstel[] {
   const bestaand = new Set(tasks.map((t) => t.titel))
   return generateTemplateTasks(wedding).filter(
-    (t) => t.status === 'open' && !bestaand.has(t.titel)
+    (t) => t.kern && t.status === 'open' && !bestaand.has(t.titel)
   )
 }
 

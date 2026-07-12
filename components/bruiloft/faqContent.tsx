@@ -378,7 +378,8 @@ export const leveranciersInfo: PageInfo = {
         Op <strong>Mijn lijst</strong> beheer je alle partijen voor jullie
         dag — van locatie en catering tot fotograaf en band. Je houdt per
         leverancier de status bij (van oriëntatie tot geboekt), het offertebedrag
-        en de contactgegevens.
+        en de contactgegevens, en je bewaart er de offertes en contracten als
+        documenten.
       </p>
       <p>
         Geboekte bedragen kun je koppelen aan je budget, zodat je financiële
@@ -428,6 +429,30 @@ export const leveranciersInfo: PageInfo = {
           De status laat zien waar je in het proces zit — van eerste oriëntatie tot
           definitief <strong>geboekt</strong>. Met de filterchips toon je snel
           alleen leveranciers met een bepaalde status.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe plan ik een bezichtiging of afspraak in?',
+      antwoord: (
+        <p>
+          Open de leverancier, kies <strong>Bewerken</strong> en vul onder{' '}
+          <em>Meer details</em> de afspraakdatum (en eventueel tijd) in. Komende
+          afspraken staan bovenaan je lijst en op het dashboard, en jullie
+          krijgen er automatisch een herinnering voor — drie dagen en één dag
+          vooraf, en op de dag zelf.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar bewaar ik offertes en contracten?',
+      antwoord: (
+        <p>
+          Klik op een leverancier en scroll naar <strong>Documenten</strong>.
+          Daar upload je offertes, contracten en facturen (pdf, foto of
+          Word/Excel). Een paperclip in de lijst laat zien bij welke
+          leveranciers documenten bewaard zijn. Alleen jullie en wie jullie
+          hebben uitgenodigd kunnen ze openen.
         </p>
       ),
     },
@@ -557,14 +582,26 @@ export const draaiboekInfo: PageInfo = {
             Pas <strong>tijden, titels en betrokkenen</strong> aan jullie dag aan.
           </>,
           <>
-            <strong>Filter of exporteer</strong> per betrokkene, bijvoorbeeld voor
-            de fotograaf.
+            <strong>Deel</strong> het draaiboek via een link met je
+            ceremoniemeester en leveranciers.
           </>,
         ]}
       />
     </Intro>
   ),
   faq: [
+    {
+      vraag: 'Hoe deel ik het draaiboek met leveranciers of de ceremoniemeester?',
+      antwoord: (
+        <p>
+          Klik op <strong>Delen</strong> en zet delen aan. Je krijgt één link die
+          je via WhatsApp of e-mail doorstuurt; de ontvanger heeft geen account
+          nodig en ziet altijd de actuele versie. Die kan filteren op zijn eigen
+          rol en het schema printen. Via <strong>Stop met delen</strong> maak je
+          de link direct ongeldig.
+        </p>
+      ),
+    },
     {
       vraag: 'Hoe begin ik snel met een draaiboek?',
       antwoord: (
@@ -652,6 +689,29 @@ export const gastenInfo: PageInfo = {
         <p>
           Klik op <strong>Gast toevoegen</strong> (of de zwevende +-knop). Vul de
           naam in en eventueel categorie, type, partner, kinderen en dieetwensen.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe verzamel ik adressen voor de uitnodigingen?',
+      antwoord: (
+        <p>
+          Kies in het menu <strong>Adressen verzamelen</strong> en zet de
+          adreslink aan. Stuur die ene link rond (bijvoorbeeld in de
+          familie-app): iedereen vult zelf zijn adres in en het verschijnt
+          vanzelf op de gastenlijst — bij de bestaande gast als de naam al
+          bekend is, anders als nieuwe gast.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar vind ik de muziekwensen en berichten van gasten?',
+      antwoord: (
+        <p>
+          Gasten kunnen bij hun RSVP een verzoeknummer en een persoonlijk
+          bericht achterlaten. Kies in het menu{' '}
+          <strong>Muziekwensen &amp; berichten</strong> voor het overzicht —
+          de muziekwensen kopieer je met één klik voor jullie DJ.
         </p>
       ),
     },
@@ -1034,19 +1094,22 @@ export const ledenInfo: PageInfo = {
     <Intro>
       <p>
         Op <strong>Samen plannen</strong> regel je wie er met jullie meewerkt aan
-        het trouwplan. Nodig je partner (of bijvoorbeeld een getuige) uit, zodat
-        jullie dezelfde gegevens beheren.
+        het trouwplan. Nodig je partner, getuige of ceremoniemeester uit met een
+        rol, en bepaal per onderdeel wat elke rol mag zien of bewerken.
       </p>
       <QuickStart
         stappen={[
           <>
-            <strong>Nodig je partner uit</strong> via zijn of haar e-mailadres.
+            <strong>Nodig een lid uit</strong> via zijn of haar e-mailadres en
+            kies een rol.
           </>,
           <>
-            Zij krijgen een <strong>link</strong> om een account te maken.
+            Diegene krijgt een <strong>e-mail</strong> met een knop om een
+            wachtwoord in te stellen.
           </>,
           <>
-            <strong>Beheer</strong> wie toegang heeft.
+            Stel bij <strong>Rollen en rechten</strong> per onderdeel in wat elke
+            rol kan.
           </>,
         ]}
       />
@@ -1054,20 +1117,58 @@ export const ledenInfo: PageInfo = {
   ),
   faq: [
     {
-      vraag: 'Hoe nodig ik mijn partner uit?',
+      vraag: 'Hoe nodig ik iemand uit?',
       antwoord: (
         <p>
-          Vul het e-mailadres van je partner in. Diegene ontvangt een
-          uitnodigingslink en kan daarmee een account aanmaken om mee te plannen.
+          Klik op <strong>Lid uitnodigen</strong>, vul het e-mailadres in en kies
+          een rol. Diegene ontvangt een uitnodigingsmail met een knop om een
+          wachtwoord in te stellen; daarmee is het account meteen compleet en
+          heeft diegene direct toegang.
         </p>
       ),
     },
     {
-      vraag: 'Wat kan een medeplanner zien en doen?',
+      vraag: 'Welke rollen zijn er?',
       antwoord: (
         <p>
-          Iedereen die hier toegang heeft werkt samen aan hetzelfde trouwplan en
-          ziet dezelfde gegevens.
+          <strong>Eigenaar</strong> (het bruidspaar) ziet en bewerkt alles en
+          beheert leden en rechten. <strong>Planner</strong> helpt breed mee,
+          <strong> helper</strong> helpt met specifieke onderdelen en een
+          <strong> kijker</strong> kan alleen meekijken. Wat een planner, helper
+          of kijker per onderdeel precies kan, stel je zelf in bij{' '}
+          <strong>Rollen en rechten</strong>.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan leden beheren?',
+      antwoord: (
+        <p>
+          Alleen eigenaren kunnen leden uitnodigen, rollen wijzigen, rechten
+          instellen en toegang intrekken. Andere leden zien op deze pagina wel
+          wie er meewerkt en welke rechten er gelden, maar kunnen niets wijzigen.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Kan ik bepalen wie het budget (of een ander onderdeel) ziet?',
+      antwoord: (
+        <p>
+          Ja. Kies bij <strong>Rollen en rechten</strong> een rol en stel per
+          onderdeel — zoals budget, gasten of de website — in of die rol{' '}
+          <strong>niets</strong>, <strong>zien</strong> of{' '}
+          <strong>bewerken</strong> mag. De wijziging geldt direct voor alle
+          leden met die rol.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe wijzig ik iemands rol?',
+      antwoord: (
+        <p>
+          Open het menu achter het lid en kies <strong>Rol wijzigen</strong>. Er
+          blijft altijd minstens één eigenaar; de laatste eigenaar kan dus geen
+          andere rol krijgen.
         </p>
       ),
     },
@@ -1075,8 +1176,10 @@ export const ledenInfo: PageInfo = {
       vraag: 'Iemand heeft de uitnodiging niet ontvangen — wat nu?',
       antwoord: (
         <p>
-          Je kunt opnieuw een link sturen vanuit de ledenlijst, zodat diegene
-          alsnog een wachtwoord kan instellen.
+          Zolang een account nog niet geactiveerd is, zie je dat bij het lid
+          staan. Kies in het menu achter het lid{' '}
+          <strong>Uitnodiging opnieuw versturen</strong>; diegene krijgt dan een
+          nieuwe link om een wachtwoord in te stellen.
         </p>
       ),
     },
@@ -1084,18 +1187,19 @@ export const ledenInfo: PageInfo = {
       vraag: 'Hoe trek ik iemands toegang in?',
       antwoord: (
         <p>
-          Gebruik <strong>Toegang intrekken</strong> bij het betreffende lid. Die
-          persoon kan dan niet meer bij jullie bruiloft.
+          Kies in het menu achter het lid <strong>Toegang intrekken</strong>. Die
+          persoon kan dan niet meer bij jullie bruiloft; opnieuw uitnodigen kan
+          altijd.
         </p>
       ),
     },
     {
-      vraag: 'Hoe verwijder ik de hele bruiloft?',
+      vraag: 'Waar verwijder ik de hele bruiloft?',
       antwoord: (
         <p>
-          Onderaan staat <strong>Bruiloft verwijderen</strong> (alleen voor de
-          eigenaar). Let op: alle gegevens worden dan permanent verwijderd en dit
-          kan niet ongedaan worden gemaakt.
+          Dat staat tegenwoordig op de <strong>Account</strong>-pagina, onderaan
+          bij de gevaarzone (alleen zichtbaar voor eigenaren). Let op: alle
+          gegevens worden dan permanent verwijderd.
         </p>
       ),
     },
@@ -1171,6 +1275,170 @@ export const accountInfo: PageInfo = {
           Niet hier, maar op het <strong>Overzicht</strong> via de knop{' '}
           <em>Bewerken</em>. Daar stel je de trouwdatum, locatie, het totaalbudget
           en de gastenaantallen in.
+        </p>
+      ),
+    },
+  ],
+}
+
+export const moodboardInfo: PageInfo = {
+  titel: 'FAQ Moodboard',
+  intro: (
+    <Intro>
+      <p>
+        Het <strong>Moodboard</strong> is jullie inspiratiebord — sfeerbeelden
+        voor kleuren, jurk, bloemen, decoratie en meer, allemaal op één plek.
+      </p>
+      <p>
+        Sleep tegels om ze te herordenen, tik een tegel aan om &apos;m groot te
+        bekijken, en filter op categorie om snel te zien wat er al is.
+      </p>
+      <QuickStart
+        stappen={[
+          <>
+            <strong>Upload eigen foto&apos;s</strong> of <strong>plak een link</strong>{' '}
+            naar inspiratie die je online vond.
+          </>,
+          <>
+            Geef elke categorie een plek en <strong>versleep tegels</strong> om
+            jullie favorieten bovenaan te zetten.
+          </>,
+          <>
+            <strong>Filter</strong> op categorie om per onderdeel (bv. bloemen)
+            te overzien wat jullie mooi vinden.
+          </>,
+        ]}
+      />
+    </Intro>
+  ),
+  faq: [
+    {
+      vraag: 'Hoe voeg ik een foto toe?',
+      antwoord: (
+        <p>
+          Klik op <strong>Toevoegen</strong>. Je kunt eigen foto&apos;s uploaden
+          (ook meerdere tegelijk, of slepen vanaf je bureaublad), of een link
+          plakken naar een pin, blog of webshop — de app haalt de afbeelding
+          er automatisch bij.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Hoe verander ik de volgorde?',
+      antwoord: (
+        <p>
+          Sleep een tegel aan het greepje linksboven naar de gewenste plek.
+          Herordenen kan alleen in de weergave <strong>Alles</strong> — bij een
+          actief categoriefilter staat de volgorde vast.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waar bewaar ik de bron van een gepinde foto?',
+      antwoord: (
+        <p>
+          Tik de tegel aan om de lightbox te openen — daar staat een knop{' '}
+          <strong>Bekijk bron</strong> die teruggaat naar de oorspronkelijke
+          pagina (bijvoorbeeld de webshop).
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan het moodboard zien of bewerken?',
+      antwoord: (
+        <p>
+          Dat stel je in bij <strong>Samen plannen</strong>, net als bij elk
+          ander onderdeel — per rol kies je niets, zien of bewerken.
+        </p>
+      ),
+    },
+  ],
+}
+
+// ── Muziek ─────────────────────────────────────────────────────────────────
+export const muziekInfo: PageInfo = {
+  titel: 'FAQ Muziek',
+  intro: (
+    <Intro>
+      <p>
+        Op <strong>Muziek</strong> verzamelen jullie de nummers voor elke fase
+        van de dag: ceremonie, borrel, diner en feest — plus een{' '}
+        <strong>niet draaien</strong>-lijst met nummers die de DJ moet
+        overslaan.
+      </p>
+      <p>
+        Gasten dragen via de RSVP op jullie trouwwebsite hun verzoeknummers
+        aan; die komen hier als suggestie binnen en jullie beslissen wat de
+        lijst in gaat.
+      </p>
+      <QuickStart
+        stappen={[
+          <>
+            <strong>Voeg nummers toe</strong> per moment van de dag — noteer
+            bij bijzondere nummers waarvoor ze zijn (bv. openingsdans).
+          </>,
+          <>
+            <strong>Beoordeel de suggesties</strong> die gasten via de RSVP
+            achterlaten: toevoegen aan een moment, of verwijderen.
+          </>,
+          <>
+            <strong>Deel de lijst</strong> via een link met jullie DJ of band —
+            die ziet altijd de actuele versie, zonder account.
+          </>,
+        ]}
+      />
+    </Intro>
+  ),
+  faq: [
+    {
+      vraag: 'Hoe dragen gasten nummers aan?',
+      antwoord: (
+        <p>
+          In het RSVP-formulier op jullie trouwwebsite zit een veld voor een
+          verzoeknummer. Wat gasten daar invullen verschijnt hier automatisch
+          als suggestie, met de naam van de gast erbij. Jullie houden het
+          laatste woord: pas na goedkeuren staat het nummer in de lijst.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wat ziet de DJ via de deel-link?',
+      antwoord: (
+        <p>
+          Alleen de goedgekeurde nummers, per moment van de dag, plus de
+          niet-draaien-lijst en jullie opmerkingen — geen andere
+          plannergegevens. De link toont altijd de actuele versie; stoppen met
+          delen maakt hem per direct ongeldig.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waarvoor is de niet draaien-lijst?',
+      antwoord: (
+        <p>
+          Voor nummers die jullie echt niet willen horen — ook niet als een
+          gast erom vraagt. DJ&apos;s vragen hier standaard naar; met deze
+          lijst is dat in één keer geregeld.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Kan ik een link naar Spotify of YouTube bewaren?',
+      antwoord: (
+        <p>
+          Ja, elk nummer heeft een optioneel linkveld. Handig als een nummer
+          meerdere versies heeft (live, akoestisch) en je zeker wilt weten dat
+          de DJ de juiste pakt.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan de muzieklijst zien of bewerken?',
+      antwoord: (
+        <p>
+          Dat stel je in bij <strong>Samen plannen</strong>, net als bij elk
+          ander onderdeel — per rol kies je niets, zien of bewerken. Handig:
+          geef getuigen bewerkrechten en laat ze meebouwen aan de feestlijst.
         </p>
       ),
     },

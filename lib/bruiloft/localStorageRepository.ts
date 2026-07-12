@@ -6,14 +6,21 @@
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AdresShare,
+  AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MusicTrack,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -23,6 +30,7 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
   VendorInput,
   Wedding,
   WeddingDatabase,
@@ -259,6 +267,127 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
     return []
   }
 
+  // De documentenkluis vereist Supabase Storage; deze legacy localStorage-
+  // implementatie heeft geen equivalent.
+  async listVendorDocuments(): Promise<VendorDocument[]> {
+    return []
+  }
+
+  async createVendorDocument(): Promise<VendorDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteVendorDocument(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  // De documentenkluis vereist Supabase Storage; deze legacy localStorage-
+  // implementatie heeft geen equivalent.
+  async listBudgetItemDocuments(): Promise<BudgetItemDocument[]> {
+    return []
+  }
+
+  async createBudgetItemDocument(): Promise<BudgetItemDocument> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  async deleteBudgetItemDocument(): Promise<void> {
+    throw new Error('Documenten worden niet ondersteund zonder Supabase')
+  }
+
+  // Draaiboek delen vereist de publieke (Supabase-)leeskant; deze legacy
+  // localStorage-implementatie heeft geen equivalent.
+  async getDraaiboekShare(): Promise<DraaiboekShare | null> {
+    return null
+  }
+
+  async createDraaiboekShare(): Promise<DraaiboekShare> {
+    throw new Error('Draaiboek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteDraaiboekShare(): Promise<void> {
+    throw new Error('Draaiboek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  // Idem voor de agenda-koppeling (ICS-feed draait server-side).
+  async getAgendaShare(): Promise<AgendaShare | null> {
+    return null
+  }
+
+  async createAgendaShare(): Promise<AgendaShare> {
+    throw new Error('De agenda-koppeling wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteAgendaShare(): Promise<void> {
+    throw new Error('De agenda-koppeling wordt niet ondersteund zonder Supabase')
+  }
+
+  // Idem voor de adreslink (publieke kant draait server-side).
+  async getAdresShare(): Promise<AdresShare | null> {
+    return null
+  }
+
+  async createAdresShare(): Promise<AdresShare> {
+    throw new Error('De adreslink wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteAdresShare(): Promise<void> {
+    throw new Error('De adreslink wordt niet ondersteund zonder Supabase')
+  }
+
+  // Het moodboard vereist Supabase Storage/realtime; deze legacy
+  // localStorage-implementatie heeft geen equivalent.
+  async listMoodBoardItems(): Promise<MoodBoardItem[]> {
+    return []
+  }
+
+  async createMoodBoardItem(): Promise<MoodBoardItem> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async updateMoodBoardItem(): Promise<MoodBoardItem> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMoodBoardItem(): Promise<void> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  async reorderMoodBoardItems(): Promise<void> {
+    throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  // De muzieklijst vereist Supabase (RSVP-suggesties en de publieke
+  // deel-link draaien server-side); deze legacy localStorage-implementatie
+  // heeft geen equivalent.
+  async listMusicTracks(): Promise<MusicTrack[]> {
+    return []
+  }
+
+  async createMusicTrack(): Promise<MusicTrack> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async updateMusicTrack(): Promise<MusicTrack> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMusicTrack(): Promise<void> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async getMuziekShare(): Promise<MuziekShare | null> {
+    return null
+  }
+
+  async createMuziekShare(): Promise<MuziekShare> {
+    throw new Error('Muziek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMuziekShare(): Promise<void> {
+    throw new Error('Muziek delen wordt niet ondersteund zonder Supabase')
+  }
+
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;
   // deze legacy localStorage-implementatie heeft geen equivalent.
   async listMessages(): Promise<Message[]> {
@@ -270,6 +399,22 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
   }
 
   async markMessageRead(): Promise<MessageRead> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async archiveMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async unarchiveMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async trashMessage(): Promise<Message> {
+    throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
+  }
+
+  async restoreMessage(): Promise<Message> {
     throw new Error('Berichtencentrum is niet beschikbaar in de lokale (offline) modus.')
   }
 

@@ -3,13 +3,10 @@
 import * as React from 'react'
 import { CalendarHeart, MapPin, Settings2 } from 'lucide-react'
 
+import { BerichtenPreview } from '@/components/bruiloft/BerichtenPreview'
 import { DashboardIntro } from '@/components/bruiloft/DashboardIntro'
-import { LeveranciersStartpunt } from '@/components/bruiloft/LeveranciersStartpunt'
 import { ModuleStatusGrid } from '@/components/bruiloft/ModuleStatusGrid'
-import { OnboardingGids } from '@/components/bruiloft/OnboardingGids'
 import { PartnerUitnodigen } from '@/components/bruiloft/PartnerUitnodigen'
-import { UrgenteAandachtspunten } from '@/components/bruiloft/UrgenteAandachtspunten'
-import { WelkomstDialog } from '@/components/bruiloft/WelkomstDialog'
 import { WeddingSettingsForm } from '@/components/bruiloft/WeddingSettingsForm'
 import { Card, CardContent } from '@/components/bruiloft/ui'
 import { formatDatumNL } from '@/lib/bruiloft/format'
@@ -96,14 +93,16 @@ export default function DashboardPage() {
               </span>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            Gegevens bewerken
-          </button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Gegevens bewerken
+            </button>
+          </div>
         </CardContent>
       </Card>
 
@@ -119,26 +118,11 @@ export default function DashboardPage() {
         vendors={vendors}
         guests={guests}
         faseLabel={faseLabel}
-      />
-
-      {/* Begeleide start voor nieuwe gebruikers: gids + eenmalig welkom */}
-      <OnboardingGids />
-      <WelkomstDialog />
-
-      {/* Brug van wizard-antwoorden naar Ontdekken/Mijn leveranciers */}
-      <LeveranciersStartpunt />
-
-      {/* ── HARDE FEITEN (uit jullie profiel) — eerst wat aandacht vraagt ── */}
-
-      {/* Urgente aandachtspunten: wat nu vraagt om actie */}
-      <UrgenteAandachtspunten
-        tasks={tasks}
-        budgetItems={budgetItems}
-        vendors={vendors}
-        guests={guests}
-        wedding={wedding}
         permissions={permissions}
       />
+
+      {/* ── VASTE KERN: altijd zichtbaar ── */}
+      <BerichtenPreview />
 
       {/* Status in één oogopslag: Budget · Gasten · Taken · Leveranciers */}
       <div className="mb-8">

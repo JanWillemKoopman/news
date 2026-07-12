@@ -160,7 +160,6 @@ export function TaskForm({
         >
           <Input
             id="titel"
-            autoFocus
             enterKeyHint="next"
             value={form.titel}
             aria-invalid={titelFout || undefined}
@@ -175,7 +174,7 @@ export function TaskForm({
           />
         </Field>
         {form.deadline && form.deadline < new Date().toISOString().slice(0, 10) ? (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-rose-600">
             Let op: deze deadline ligt al in het verleden. De taak verschijnt direct als achterstallig.
           </p>
         ) : null}

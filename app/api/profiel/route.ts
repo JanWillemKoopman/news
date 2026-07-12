@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { checkRateLimit } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 export async function PATCH(req: Request) {
@@ -24,15 +25,30 @@ export async function PATCH(req: Request) {
   }
   const { displayName, email, avatarUrl, emailHerinneringen } = parsed.data
 
+  // E-mailwijziging triggert een auth-bevestigingsmail; rate-limit dat per
+  // gebruiker zodat het niet als mailspam-kanaal misbruikt kan worden.
+  const isEmailChange = email !== undefined && email.trim().toLowerCase() !== user.email
+  if (isEmailChange) {
+    const rateLimit = await checkRateLimit(`profiel:email:${user.id}`, 5, 60 * 60)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Te veel e-mailwijzigingen. Probeer het later opnieuw.' },
+        { status: 429 },
+      )
+    }
+  }
+
   const profilePatch: {
     updated_at: string
     display_name?: string
-    email?: string
     avatar_url?: string | null
     email_herinneringen?: boolean
   } = { updated_at: new Date().toISOString() }
   if (displayName !== undefined) profilePatch.display_name = displayName.trim()
-  if (email !== undefined) profilePatch.email = email.trim().toLowerCase()
+  // profiles.email wordt bewust NIET hier geschreven: het nieuwe adres is nog
+  // onbevestigd. auth.updateUser() hieronder stuurt de bevestigingsmail, en de
+  // trg_sync_profile_email-trigger (0067) synct profiles.email pas zodra
+  // auth.users.email daadwerkelijk verandert (ná bevestiging).
   if (avatarUrl !== undefined) profilePatch.avatar_url = avatarUrl
   if (emailHerinneringen !== undefined) profilePatch.email_herinneringen = emailHerinneringen
 
@@ -44,9 +60,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
-  if (email !== undefined && email.trim().toLowerCase() !== user.email) {
+  if (isEmailChange) {
     const { error: authError } = await supabase.auth.updateUser({
-      email: email.trim().toLowerCase(),
+      email: email!.trim().toLowerCase(),
     })
     if (authError) {
       return NextResponse.json({ error: authError.message }, { status: 500 })

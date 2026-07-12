@@ -7,21 +7,75 @@ import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { ontdekkenInfo } from '@/components/bruiloft/faqContent'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
-import { getCategorieIcoon } from '@/components/bruiloft/leveranciers/categorieIcoon'
-import { Card, CardContent } from '@/components/bruiloft/ui'
-import { ONTDEK_CATEGORIEEN } from '@/lib/bruiloft/discovery/categorieConfig'
-import { PlaatsZoeker } from './PlaatsZoeker'
-import { locatieQuery, useOntdekLocatie } from './useOntdekLocatie'
+import { Card } from '@/components/bruiloft/ui'
+import { ONTDEK_CATEGORIEEN, POPULAIRE_CATEGORIEEN, type OntdekCategorieConfig } from '@/lib/bruiloft/discovery/categorieConfig'
+import { CategorieAfbeelding } from './CategorieAfbeelding'
+import { cn } from '@/lib/utils'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
-// Overzichtspagina van de leveranciersdirectory: eerst "waar zoeken jullie?",
-// daaronder de categorie-keuze. Beide stappen zijn optioneel-in-volgorde:
-// wie meteen een categorie kiest, kan de plaats ook op de categoriepagina
-// nog kiezen (de zoekbalk staat daar bovenaan).
+// Overzichtspagina van de leveranciersdirectory: puur categorieën kiezen, geen
+// geografische zoekbalk (die hoort op de resultatenpagina). Twee lagen:
+//
+// 1. De populaire categorieën als grote beeldkaarten in een editorial grid
+//    (à la Riley & Grey): de 1e en 4e kaart nemen dubbele breedte, zodat
+//    Trouwlocaties en Trouwfotografen vanzelf de blikvangers zijn. Naam en
+//    aantal staan als witte tekst óp het beeldvlak — zodra `afbeeldingUrl`
+//    in categorieConfig.ts gevuld wordt, is dit meteen de definitieve look;
+//    tot die tijd toont hetzelfde vlak de neutrale icoon-placeholder.
+// 2. De overige categorieën als rustige tekstregels (naam + aantal) met
+//    hairlines ertussen, verdeeld over kolommen — vindbaar maar bewust
+//    ondergeschikt aan de beeldkaarten erboven.
+
+function formatTelling(n: number) {
+  return `${n.toLocaleString('nl-NL')} leveranciers`
+}
+
+// Grote beeldkaart voor een populaire categorie. `breed` laat de kaart twee
+// kolommen beslaan — dat spanpatroon bepaalt de hiërarchie binnen het grid.
+function UitgelichteCategorieKaart({
+  config,
+  telling,
+  breed,
+}: {
+  config: OntdekCategorieConfig
+  telling?: number
+  breed: boolean
+}) {
+  return (
+    <Link
+      href={`/bruiloft/ontdekken/${config.slug}`}
+      aria-label={`${config.categorie}: ${config.omschrijving}`}
+      className={cn(
+        'group relative block h-40 overflow-hidden rounded-xl border border-border bg-card shadow-sm',
+        'transition-[box-shadow,border-color] duration-150 ease-out hover:border-rose-300 hover:shadow-md',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'sm:h-52 lg:h-60',
+        breed && 'col-span-2'
+      )}
+    >
+      <CategorieAfbeelding
+        categorie={config.categorie}
+        afbeeldingUrl={config.afbeeldingUrl}
+        className="h-full transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+      />
+      {/* Donkere verloop-scrim onderin zodat de witte tekst leesbaar blijft,
+          zowel op de placeholder als straks op echte foto's. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-rhino-950/70 via-rhino-950/15 to-transparent"
+      />
+      <div className="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+        <p className="text-base font-medium text-white lg:text-lg">{config.categorie}</p>
+        {telling != null ? (
+          <p className="mt-0.5 text-sm text-white/80">{formatTelling(telling)}</p>
+        ) : null}
+      </div>
+    </Link>
+  )
+}
 
 export function OntdekkenLanding() {
   const wedding = useBruiloftStore((s) => s.wedding)
-  const { plaats, straal, setPlaats } = useOntdekLocatie()
 
   const [tellingen, setTellingen] = React.useState<Record<string, number> | null>(null)
 
@@ -47,62 +101,64 @@ export function OntdekkenLanding() {
   const zichtbaar = ONTDEK_CATEGORIEEN.filter(
     (c) => tellingen == null || (tellingen[c.categorie] ?? 0) > 0
   )
+  // `zichtbaar` volgt al de TPW-categorie-volgorde, dus filteren op de
+  // populaire lijst geeft die namen automatisch al in POPULAIRE_CATEGORIEEN-
+  // volgorde (Trouwlocaties, Trouwjurken, Trouwringen, Trouwfotografen, ...).
+  const uitgelicht = zichtbaar.filter((c) => POPULAIRE_CATEGORIEEN.includes(c.categorie))
+  const overig = zichtbaar.filter((c) => !POPULAIRE_CATEGORIEEN.includes(c.categorie))
+
+  const totaal = tellingen
+    ? Object.values(tellingen).reduce((som, n) => som + n, 0)
+    : null
+  const titel = totaal != null ? `Ontdek ${totaal.toLocaleString('nl-NL')} leveranciers` : 'Ontdekken'
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl pb-24">
-      <PageHeader titel="Ontdekken" info={<PageInfoButton {...ontdekkenInfo} />} />
+      <PageHeader titel={titel} info={<PageInfoButton {...ontdekkenInfo} />} />
       <LeveranciersTabs />
 
-      <div className="mb-8 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-8">
-        <h2 className="font-serif text-2xl text-foreground">Leveranciers in jullie buurt</h2>
-        <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-          Van trouwlocatie tot fotograaf: zoek op plaatsnaam en ontdek wat er in de omgeving te
-          vinden is — ook in de dorpen eromheen.
-        </p>
-        <div className="mt-5 max-w-xl">
-          <PlaatsZoeker value={plaats} onChange={setPlaats} variant="hero" inputId="ontdek-plaats" />
-        </div>
-        {plaats ? (
-          <p className="mt-2.5 text-xs text-muted-foreground">
-            Jullie zoeken rond {plaats.naam}
-            {plaats.gemeente && plaats.gemeente !== plaats.naam
-              ? ` (gemeente ${plaats.gemeente})`
-              : ''}
-            . Kies hieronder een categorie.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {zichtbaar.map((c) => {
-          const Icoon = getCategorieIcoon(c.categorie)
-          const telling = tellingen?.[c.categorie]
-          return (
-            <Link
+      {uitgelicht.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          {uitgelicht.map((c, i) => (
+            <UitgelichteCategorieKaart
               key={c.categorie}
-              href={`/bruiloft/ontdekken/${c.slug}${locatieQuery(plaats, straal)}`}
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
-            >
-              <Card interactive className="h-full">
-                <CardContent className="flex h-full items-start gap-3 p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <Icoon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground">{c.categorie}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{c.omschrijving}</p>
-                    {telling != null && telling > 0 ? (
-                      <p className="mt-1.5 text-xs text-muted-foreground">
-                        {telling.toLocaleString('nl-NL')} leveranciers
-                      </p>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          )
-        })}
-      </div>
+              config={c}
+              telling={tellingen?.[c.categorie]}
+              // Het editorial-spanpatroon: kaart 1 en 4 (Trouwlocaties en
+              // Trouwfotografen) beslaan twee kolommen, de rest één — zo
+              // vullen zes kaarten precies twee rijen zonder gaten.
+              breed={i % 3 === 0}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {overig.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+            Meer categorieën
+          </h2>
+          <Card className="mt-3 p-2 sm:p-3">
+            <div className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+              {overig.map((c) => (
+                <Link
+                  key={c.categorie}
+                  href={`/bruiloft/ontdekken/${c.slug}`}
+                  aria-label={`${c.categorie}: ${c.omschrijving}`}
+                  className="flex items-baseline justify-between gap-4 rounded-lg border-b border-border px-2 py-3.5 transition-colors last:border-b-0 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                >
+                  <span className="min-w-0 truncate font-medium text-foreground">{c.categorie}</span>
+                  {tellingen?.[c.categorie] != null ? (
+                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {tellingen[c.categorie].toLocaleString('nl-NL')}
+                    </span>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          </Card>
+        </section>
+      ) : null}
     </div>
   )
 }

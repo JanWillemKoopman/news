@@ -1,7 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  SquareCheck,
+  Trash2,
+} from 'lucide-react'
 
 import { Card, CardContent, OverflowMenu } from '@/components/bruiloft/ui'
 import { dagLabel, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
@@ -84,7 +92,7 @@ export function TaskCard({
       {/* Rode laag achter de kaart, zichtbaar bij links-vegen */}
       <div
         aria-hidden
-        className="absolute inset-y-0 right-0 flex items-center justify-end rounded-xl bg-rose-600 pr-5 text-white"
+        className="absolute inset-y-0 right-0 flex items-center justify-end rounded-xl bg-primary pr-5 text-white"
         style={{ width: `${Math.min(swipeX, 80)}px`, opacity: swipeX > 10 ? 1 : 0 }}
       >
         <Trash2 className="h-5 w-5 shrink-0" />
@@ -146,16 +154,16 @@ export function TaskCard({
           className={cn(
             'min-w-0 flex-1 transition-opacity',
             klaar && 'opacity-60',
-            !compact && 'sm:flex sm:items-center sm:gap-4'
+            !compact && 'sm:flex sm:items-start sm:gap-4'
           )}
         >
-          <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-3')}>
+          <div className={cn('min-w-0', !compact && 'sm:flex sm:min-w-0 sm:flex-1 sm:items-start sm:gap-3')}>
             <button
               type="button"
               onClick={() => onEdit(task)}
               className={cn(
-                'text-left font-medium text-foreground hover:underline',
-                !compact && 'sm:shrink-0 sm:truncate sm:max-w-[15rem]',
+                'min-w-0 text-left font-medium text-foreground hover:underline',
+                !compact && 'sm:min-w-0 sm:flex-1',
                 klaar && 'line-through'
               )}
             >
@@ -172,11 +180,11 @@ export function TaskCard({
             {task.deadline ? (
               <span className="inline-flex shrink-0 items-center gap-1">
                 {achterstallig ? (
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600" />
                 ) : null}
                 {formatDatumNL(task.deadline)}
                 {!klaar ? (
-                  <span className={cn(achterstallig && 'font-medium text-rose-600 dark:text-rose-400')}>
+                  <span className={cn(achterstallig && 'font-medium text-rose-600')}>
                     · {dagLabel(d)}
                   </span>
                 ) : null}
@@ -220,6 +228,11 @@ export function TaskCard({
             label={`Acties voor ${task.titel}`}
             items={[
               { label: 'Bewerken', icon: Pencil, onClick: () => onEdit(task) },
+              // Startpunt van de selectiemodus: dit selecteert deze taak,
+              // waarna de checkboxes op alle kaarten verschijnen (selectable).
+              ...(onToggleSelect && !selectable
+                ? [{ label: 'Selecteren', icon: SquareCheck, onClick: () => onToggleSelect(task) }]
+                : []),
               { label: 'Verwijderen', icon: Trash2, danger: true, onClick: () => onDelete(task) },
             ]}
           />

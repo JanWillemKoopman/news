@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { verifyPassword } from '@/lib/crypto/password'
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
 const bodySchema = z.object({
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { slug, password } = parsed.data
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
 
   const rateLimit = await checkRateLimit(`registry:password:${ip}:${slug}`, 10, 15 * 60)
   if (!rateLimit.allowed) {

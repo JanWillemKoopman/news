@@ -23,28 +23,28 @@ function CircularProgress({ pct }: { pct: number }) {
         cy={28}
         r={r}
         fill="none"
-        stroke="#e5e7eb"
         strokeWidth={4}
+        className="stroke-border"
       />
       <circle
         cx={28}
         cy={28}
         r={r}
         fill="none"
-        stroke="#be123c"
         strokeWidth={4}
         strokeOpacity={0.6}
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
-        className="transition-all duration-500"
+        className="stroke-rose-700 transition-all duration-500"
       />
       <text
         x={28}
         y={28}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px', fontSize: 11, fontWeight: 500, fill: '#6b7280' }}
+        className="fill-muted-foreground"
+        style={{ transform: 'rotate(90deg)', transformOrigin: '28px 28px', fontSize: 11, fontWeight: 500 }}
       >
         {pct}%
       </text>
@@ -109,8 +109,8 @@ function StatNum({
       <p
         className={
           highlight
-            ? 'text-2xl font-bold tabular-nums text-rose-600'
-            : 'text-2xl font-bold tabular-nums text-foreground'
+            ? 'text-xl font-bold tabular-nums text-rose-600'
+            : 'text-xl font-bold tabular-nums text-foreground'
         }
       >
         {value}

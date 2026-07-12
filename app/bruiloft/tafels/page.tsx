@@ -167,8 +167,8 @@ export default function TafelsPage() {
       ) : null}
 
       {tables.length > 0 && stoelen < pool.length ? (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
           <span>Er zijn {pool.length - stoelen} gasten zonder stoel. Voeg meer tafels toe of vergroot de capaciteit.</span>
         </div>
       ) : null}

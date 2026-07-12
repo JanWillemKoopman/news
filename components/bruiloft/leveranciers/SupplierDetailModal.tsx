@@ -136,7 +136,7 @@ export function SupplierDetailModal({
         )}
 
         {s.ratingGemiddeld != null && s.ratingGemiddeld > 0 && (
-          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-900/20">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
             <Star className="h-5 w-5 shrink-0 fill-amber-400 text-amber-400" />
             <div>
               <span className="text-lg font-semibold text-foreground">

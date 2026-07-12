@@ -16,7 +16,15 @@ import {
   X,
 } from 'lucide-react'
 
-import { Button, ColumnToggle, Money, type KolomAantal } from '@/components/bruiloft/ui'
+import {
+  Button,
+  ColumnToggle,
+  FilterDropdown,
+  Money,
+  SearchInput,
+  type KolomAantal,
+} from '@/components/bruiloft/ui'
+import { BudgetItemDocumenten } from '@/components/bruiloft/budget/BudgetItemDocumenten'
 import {
   effectiefGeoffreerd,
   geboekteLeverancierVoor,
@@ -34,6 +42,7 @@ interface BudgetListProps {
   afwijkendeItemIds?: Set<string>
   // Beheerde lijst budgetcategorieën, bepaalt de weergavevolgorde.
   categorieen: string[]
+  kanBewerken: boolean
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -91,6 +100,7 @@ export function BudgetList({
   bevestigdeDaggasten,
   afwijkendeItemIds,
   categorieen,
+  kanBewerken,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -99,19 +109,6 @@ export function BudgetList({
   const [filter, setFilter] = React.useState<Filter>('alle')
   const [kolommen, setKolommen] = React.useState<KolomAantal>(1)
   const [uitgeklapt, setUitgeklapt] = React.useState<Set<string>>(new Set())
-  const [filterOpen, setFilterOpen] = React.useState(false)
-  const filterPanelRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    if (!filterOpen) return
-    function handler(e: MouseEvent) {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
-        setFilterOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [filterOpen])
 
   const categories = React.useMemo<CategorieData[]>(() => {
     // Volgorde: de beheerde lijst eerst, daarna categorieën die alleen nog
@@ -175,90 +172,25 @@ export function BudgetList({
     <div className="space-y-4">
       {/* Search + expand button */}
       <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Zoek categorie..."
-            value={zoekterm}
-            onChange={(e) => setZoekterm(e.target.value)}
-            className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-          {zoekterm && (
-            <button
-              type="button"
-              onClick={() => setZoekterm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={toggleAlles}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-        >
+        <SearchInput
+          value={zoekterm}
+          onValueChange={setZoekterm}
+          placeholder="Zoek categorie…"
+          aria-label="Zoek categorie"
+          containerClassName="flex-1"
+        />
+        <Button variant="outline" onClick={toggleAlles} className="shrink-0">
           {alleUitgeklapt
             ? <ChevronsDownUp className="h-4 w-4" />
             : <ChevronsUpDown className="h-4 w-4" />}
           <span>{alleUitgeklapt ? 'Inklappen' : 'Uitklappen'}</span>
-        </button>
-        <div className="relative" ref={filterPanelRef}>
-          <button
-            type="button"
-            onClick={() => setFilterOpen((p) => !p)}
-            className={cn(
-              'inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors',
-              filterOpen
-                ? 'border-foreground/20 bg-muted text-foreground'
-                : 'border-input bg-background text-foreground hover:bg-muted'
-            )}
-          >
-            <span>{FILTERS.find((f) => f.key === filter)?.label}</span>
-            <span
-              className={cn(
-                'rounded-full px-1.5 py-0.5 text-xs font-semibold',
-                filter !== 'alle'
-                  ? 'bg-foreground text-background'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {counts[filter]}
-            </span>
-            <ChevronDown className={cn('h-4 w-4 transition-transform', filterOpen && 'rotate-180')} />
-          </button>
-
-          {filterOpen && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-lg border border-border bg-background shadow-lg">
-              {FILTERS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => { setFilter(key); setFilterOpen(false) }}
-                  className={cn(
-                    'flex w-full items-center justify-between px-3 py-2.5 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg',
-                    filter === key
-                      ? 'bg-muted font-medium text-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  )}
-                >
-                  <span>{label}</span>
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-0.5 text-xs font-semibold',
-                      filter === key
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {counts[key]}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        </Button>
+        <FilterDropdown
+          value={filter}
+          onChange={(v) => setFilter(v as Filter)}
+          options={FILTERS.map(({ key, label }) => ({ value: key, label, count: counts[key] }))}
+          ariaLabel="Filter op status"
+        />
 
         {/* Kolom-keuze — alleen op desktop (mobiel/tablet altijd 1 kolom),
             zelfde plek als op het draaiboek en de takenpagina. */}
@@ -291,6 +223,7 @@ export function BudgetList({
             bevestigdeDaggasten={bevestigdeDaggasten}
             afwijkendeItemIds={afwijkendeItemIds}
             vendors={vendors}
+            kanBewerken={kanBewerken}
             onToggle={() => toggleCategorie(cat.naam)}
             onEdit={onEdit}
             onDelete={onDelete}
@@ -308,6 +241,7 @@ function CategorieRij({
   bevestigdeDaggasten,
   afwijkendeItemIds,
   vendors,
+  kanBewerken,
   onToggle,
   onEdit,
   onDelete,
@@ -318,6 +252,7 @@ function CategorieRij({
   bevestigdeDaggasten: number
   afwijkendeItemIds?: Set<string>
   vendors: Vendor[]
+  kanBewerken: boolean
   onToggle: () => void
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
@@ -397,6 +332,7 @@ function CategorieRij({
               item={item}
               vendors={vendors}
               afwijkend={afwijkendeItemIds?.has(item.id) ?? false}
+              kanBewerken={kanBewerken}
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleTerm={onToggleTerm}
@@ -412,6 +348,7 @@ function ItemRij({
   item,
   vendors,
   afwijkend,
+  kanBewerken,
   onEdit,
   onDelete,
   onToggleTerm,
@@ -419,6 +356,7 @@ function ItemRij({
   item: BudgetItem
   vendors: Vendor[]
   afwijkend: boolean
+  kanBewerken: boolean
   onEdit?: (item: BudgetItem) => void
   onDelete?: (item: BudgetItem) => void
   onToggleTerm?: (item: BudgetItem, termId: string, betaald: boolean) => void
@@ -430,7 +368,7 @@ function ItemRij({
   const rest = restBedrag(item, vendors)
 
   return (
-    <div className={cn('px-5 py-3.5', afwijkend && 'bg-rose-50/60 dark:bg-rose-950/20')}>
+    <div className={cn('px-5 py-3.5', afwijkend && 'bg-rose-50/60')}>
       {/* Item title + actions */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -498,6 +436,10 @@ function ItemRij({
           </ul>
         </div>
       ) : null}
+
+      <div className="mt-3">
+        <BudgetItemDocumenten budgetItemId={item.id} kanBewerken={kanBewerken} />
+      </div>
     </div>
   )
 }

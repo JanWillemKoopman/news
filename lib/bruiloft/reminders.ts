@@ -8,6 +8,7 @@
 
 export type TaakMijlpaal = '7d' | '1d' | 'te-laat'
 export type BetalingMijlpaal = '14d' | '3d' | 'te-laat'
+export type AfspraakMijlpaal = '3d' | '1d' | '0d'
 
 // 'dagen' = aantal dagen tot de deadline (negatief = in het verleden).
 export function taakMijlpaal(dagen: number): TaakMijlpaal | null {
@@ -22,5 +23,16 @@ export function betalingMijlpaal(dagen: number): BetalingMijlpaal | null {
   if (dagen < 0) return 'te-laat'
   if (dagen <= 3) return '3d'
   if (dagen <= 14) return '14d'
+  return null
+}
+
+// 'dagen' = aantal dagen tot de afspraak (bezichtiging/proeverij/gesprek).
+// Geen 'te-laat': een verstreken afspraak is geweest, niet te laat — daar
+// herinneren we niet aan.
+export function afspraakMijlpaal(dagen: number): AfspraakMijlpaal | null {
+  if (dagen < 0) return null
+  if (dagen === 0) return '0d'
+  if (dagen <= 1) return '1d'
+  if (dagen <= 3) return '3d'
   return null
 }

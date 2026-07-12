@@ -5,14 +5,24 @@
 
 import type {
   ActivityEntry,
+  AdresShare,
+  AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentInput,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MoodBoardItemInput,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -23,6 +33,8 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
+  VendorDocumentInput,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -66,12 +78,67 @@ export interface WeddingRepository {
   // ingevuld door de /api/leveranciers/contact-route, hier alleen leesbaar).
   listVendorContactRequests(weddingId: ID): Promise<VendorContactRequest[]>
 
-  // Berichtencentrum (Postvak IN / Verzonden). Inserts gebeuren server-side
-  // (welkomst-trigger, /api/leveranciers/contact-route); hier alleen lezen
-  // + leesstatus bijwerken.
+  // Documentenkluis per leverancier (metadata; het bestand zelf staat in de
+  // private storage-bucket, zie lib/supabase/storage.ts). Geen update: een
+  // document vervang je door verwijderen + opnieuw uploaden.
+  listVendorDocuments(weddingId: ID): Promise<VendorDocument[]>
+  createVendorDocument(input: VendorDocumentInput): Promise<VendorDocument>
+  deleteVendorDocument(id: ID): Promise<void>
+
+  // Draaiboek delen via publieke link (één per bruiloft; null = delen uit).
+  // De publieke leeskant loopt via de anon-RPC get_public_draaiboek, niet
+  // via deze repository.
+  getDraaiboekShare(weddingId: ID): Promise<DraaiboekShare | null>
+  createDraaiboekShare(weddingId: ID): Promise<DraaiboekShare>
+  deleteDraaiboekShare(weddingId: ID): Promise<void>
+
+  // Agenda-koppeling (ICS-abonnement); de leeskant is /api/agenda/[token].
+  getAgendaShare(weddingId: ID): Promise<AgendaShare | null>
+  createAgendaShare(weddingId: ID): Promise<AgendaShare>
+  deleteAgendaShare(weddingId: ID): Promise<void>
+
+  // Adreslink (adressen verzamelen); de publieke kant is /adres/[token].
+  getAdresShare(weddingId: ID): Promise<AdresShare | null>
+  createAdresShare(weddingId: ID): Promise<AdresShare>
+  deleteAdresShare(weddingId: ID): Promise<void>
+
+  // Moodboard: één plat, geordend bord per bruiloft.
+  listMoodBoardItems(weddingId: ID): Promise<MoodBoardItem[]>
+  createMoodBoardItem(weddingId: ID, input: MoodBoardItemInput, volgorde: number): Promise<MoodBoardItem>
+  updateMoodBoardItem(id: ID, patch: Partial<Pick<MoodBoardItem, 'categorie' | 'titel'>>): Promise<MoodBoardItem>
+  deleteMoodBoardItem(id: ID): Promise<void>
+  // Bulk-herordenen na een drag: elke rij krijgt zijn nieuwe volgorde.
+  reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void>
+
+  // Muziek: één platte lijst per bruiloft, gesectioneerd op moment.
+  // Gastsuggesties komen binnen via de RSVP-RPC's (server-side), niet via
+  // deze repository; de publieke DJ-kant loopt via de anon-RPC
+  // get_public_muziek.
+  listMusicTracks(weddingId: ID): Promise<MusicTrack[]>
+  createMusicTrack(weddingId: ID, input: MusicTrackInput, volgorde: number): Promise<MusicTrack>
+  updateMusicTrack(
+    id: ID,
+    patch: Partial<Pick<MusicTrack, 'titel' | 'artiest' | 'moment' | 'opmerking' | 'url' | 'status' | 'volgorde'>>
+  ): Promise<MusicTrack>
+  deleteMusicTrack(id: ID): Promise<void>
+
+  // Muzieklijst delen met de DJ via publieke link (één per bruiloft).
+  getMuziekShare(weddingId: ID): Promise<MuziekShare | null>
+  createMuziekShare(weddingId: ID): Promise<MuziekShare>
+  deleteMuziekShare(weddingId: ID): Promise<void>
+
+  // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
+  // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,
+  // /api/berichten/[id]/reply-route); hier alleen lezen + leesstatus en
+  // archief-/verwijderstaat bijwerken (die laatste is gedeeld per bruiloft,
+  // geen per-gebruiker staat zoals leesstatus).
   listMessages(weddingId: ID): Promise<Message[]>
   listMessageReads(weddingId: ID): Promise<MessageRead[]>
   markMessageRead(messageId: ID): Promise<MessageRead>
+  archiveMessage(messageId: ID): Promise<Message>
+  unarchiveMessage(messageId: ID): Promise<Message>
+  trashMessage(messageId: ID): Promise<Message>
+  restoreMessage(messageId: ID): Promise<Message>
 
   // BudgetItems
   listBudgetItems(weddingId: ID): Promise<BudgetItem[]>
@@ -79,6 +146,13 @@ export interface WeddingRepository {
   createBudgetItems(inputs: BudgetItemInput[]): Promise<BudgetItem[]>
   updateBudgetItem(id: ID, patch: Partial<BudgetItemInput>): Promise<BudgetItem>
   deleteBudgetItem(id: ID): Promise<void>
+
+  // Documentenkluis per budgetpost (metadata; het bestand zelf staat in de
+  // private storage-bucket, zie lib/supabase/storage.ts). Geen update: een
+  // document vervang je door verwijderen + opnieuw uploaden.
+  listBudgetItemDocuments(weddingId: ID): Promise<BudgetItemDocument[]>
+  createBudgetItemDocument(input: BudgetItemDocumentInput): Promise<BudgetItemDocument>
+  deleteBudgetItemDocument(id: ID): Promise<void>
 
   // ScheduleItems (trouwdag-draaiboek)
   listScheduleItems(weddingId: ID): Promise<ScheduleItem[]>

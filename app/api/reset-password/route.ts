@@ -1,9 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { sendWelcomeEmailOnce } from '@/lib/email/welcome'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request)
+  const rateLimit = await checkRateLimit(`reset-password:${ip}`, 10, 15 * 60)
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: 'Te veel pogingen. Probeer het later opnieuw.' }, { status: 429 })
+  }
+
   const { token_hash, type, password } = await request.json()
 
   if (!token_hash || !type || !password) {
@@ -54,6 +62,14 @@ export async function POST(request: Request) {
   if (updateError) {
     console.error('[reset-password] updateUserById error:', updateError)
     return NextResponse.json({ error: updateError.message }, { status: 400 })
+  }
+
+  // Uitgenodigd account dat zojuist zijn eerste wachtwoord instelde: het
+  // account is nu compleet, dus stuur (eenmalig) de bevestigingsmail.
+  try {
+    await sendWelcomeEmailOnce(userId, { onlyIfInvited: true })
+  } catch (err) {
+    console.error('[reset-password] welkomstmail mislukt:', err)
   }
 
   return NextResponse.json({ success: true })

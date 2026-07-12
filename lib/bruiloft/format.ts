@@ -65,6 +65,15 @@ export function dagLabel(dagen: number): string {
   return `${laat} ${laat === 1 ? 'dag' : 'dagen'} te laat`
 }
 
+// Relatief label voor een afspraakdatum. Bewust geen "te laat" (zoals
+// dagLabel): een verstreken afspraak is geweest, niet te laat.
+export function afspraakRelatief(dagen: number): string {
+  if (dagen === 0) return 'vandaag'
+  if (dagen === 1) return 'morgen'
+  if (dagen > 1) return `over ${dagen} dagen`
+  return 'geweest'
+}
+
 // Korte, Nederlandse "tijd geleden" voor de activiteitenfeed.
 export function tijdGeleden(value: string | Date): string {
   const d = toDate(value)

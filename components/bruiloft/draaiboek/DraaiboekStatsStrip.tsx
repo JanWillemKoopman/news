@@ -58,7 +58,7 @@ export function DraaiboekStatsStrip({ items, minPauze }: DraaiboekStatsStripProp
 function StatNum({ value, label, danger }: { value: number; label: string; danger?: boolean }) {
   return (
     <div className="px-5 text-center">
-      <p className={`text-2xl font-bold tabular-nums ${danger ? 'text-rose-600' : 'text-foreground'}`}>{value}</p>
+      <p className={`text-xl font-bold tabular-nums ${danger ? 'text-rose-600' : 'text-foreground'}`}>{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )

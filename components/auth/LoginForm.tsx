@@ -7,6 +7,7 @@ import * as React from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useBruiloftStore } from '@/store/bruiloftStore'
 
+import { Button } from '@/components/bruiloft/ui'
 import { PasswordInput } from '@/components/ui/password-input'
 
 import { mapAuthError, safeNext } from './authErrors'
@@ -75,7 +76,7 @@ export function LoginForm({
           </div>
 
           {succes === 'wachtwoord_gewijzigd' && (
-            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            <div className="mb-4 rounded-md border border-emerald-600/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700">
               Wachtwoord succesvol gewijzigd. Log in met je nieuwe wachtwoord.
             </div>
           )}
@@ -111,18 +112,14 @@ export function LoginForm({
             </div>
 
             {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
+              <p className="text-sm font-medium text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? 'Even geduld…' : 'Inloggen'}
-            </button>
+            <Button type="submit" loading={loading} className="w-full">
+              Inloggen
+            </Button>
           </form>
 
           <div className="mt-5 space-y-2 text-center text-sm text-gray-500">

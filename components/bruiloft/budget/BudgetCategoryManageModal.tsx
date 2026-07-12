@@ -86,7 +86,6 @@ export function BudgetCategoryManageModal({
                     setNieuw(e.target.value)
                   }}
                   placeholder="Bijv. huwelijksreis"
-                  autoFocus
                 />
               </Field>
             </div>

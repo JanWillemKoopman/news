@@ -27,7 +27,7 @@ export function FloatingAddButton({ label, onClick, visible }: FloatingAddButton
         type="button"
         aria-label={label}
         onClick={onClick}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-600/85 text-white shadow-md backdrop-blur-sm transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-rose-500 hover:opacity-100 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 md:h-14 md:w-14 md:bg-rose-600 md:shadow-lg md:backdrop-blur-none md:hover:scale-105"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/85 text-primary-foreground shadow-md backdrop-blur-sm transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-primary-hover hover:opacity-100 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:h-14 md:w-14 md:bg-primary md:shadow-lg md:backdrop-blur-none md:hover:scale-105"
       >
         <Plus className="h-5 w-5 md:h-6 md:w-6" />
       </button>

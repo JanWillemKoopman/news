@@ -286,7 +286,6 @@ export function GuestForm({
                 <Input
                   id="vn"
                   ref={voornaamRef}
-                  autoFocus
                   enterKeyHint="next"
                   value={form.voornaam}
                   aria-invalid={naamFout || undefined}

@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+
+import { createRawAdminClient } from '@/lib/supabase/admin'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -21,12 +22,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Alleen afbeeldingen toegestaan' }, { status: 415 })
     }
 
-    // Anon-client: de foto-wall policies laten anon toe als de muur actief is.
-    // Geen service-role key nodig.
-    const supabase = createClient<any>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    // Service-role client: er bestaan bewust GEEN anon-INSERT-policies op
+    // photo_wall_photos of de photo-wall storage-bucket (zie migratie 0028) —
+    // gastuploads lopen daarom via de server met de service-role key. De
+    // autorisatie zit hieronder in de route zelf: get_photo_wall valideert de
+    // slug en we weigeren als de muur niet actief is. Moderatie bepaalt of de
+    // foto direct zichtbaar is (is_approved).
+    const supabase = createRawAdminClient()
 
     // Haal bruiloft + instellingen op via SECURITY DEFINER RPC (werkt als anon)
     const { data: wall, error: wallError } = await supabase.rpc('get_photo_wall', { p_slug: slug })
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
     const weddingId: string = wall.weddingId
     const moderationRequired: boolean = wall.settings?.moderationRequired ?? false
 
-    // Upload naar Storage (photo_wall_anon_upload policy staat dit toe)
+    // Upload naar Storage via de service-role (geen anon-policy op deze bucket).
     const bytes = await file.arrayBuffer()
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const { data: { publicUrl } } = supabase.storage.from('photo-wall').getPublicUrl(storagePath)
 
-    // Sla op in database (pwp_insert_anon policy staat dit toe als muur actief is)
+    // Sla op in database via de service-role (geen anon-INSERT-policy op deze tabel).
     const { data: photo, error: insertError } = await supabase
       .from('photo_wall_photos')
       .insert({

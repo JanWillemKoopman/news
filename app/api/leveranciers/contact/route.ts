@@ -131,25 +131,37 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 2. CC/reply-to: eigenaren + planners van deze bruiloft.
+  // 2. Ledenlijst: alleen nog voor de afzendernaam in het berichtencentrum.
+  // Bewust GEEN cc/reply-to meer naar het bruidspaar: alle communicatie loopt
+  // via de reageer-knop (token-link) zodat reacties in het berichtencentrum
+  // landen i.p.v. in privé-mailboxen. De kopie voor het bruidspaar is de
+  // "Verzonden"-map; de e-mail waarschuwt dat een direct antwoord niet aankomt.
   const { data: members } = await supabase.rpc('list_wedding_members', { p_wedding: weddingId })
-  const ccEmails = Array.from(
-    new Set(
-      (members ?? [])
-        .filter((m: { role: string }) => m.role === 'owner' || m.role === 'planner')
-        .map((m: { email: string | null }) => m.email)
-        .filter((email): email is string => Boolean(email))
-    )
-  )
+
+  // Afzendernamen voor in de e-mail ("Anna & Tom").
+  const { data: weddingRow } = await supabase
+    .from('weddings')
+    .select('partner1_naam, partner2_naam')
+    .eq('id', weddingId)
+    .maybeSingle()
+  const afzenderNamen =
+    [weddingRow?.partner1_naam, weddingRow?.partner2_naam].filter(Boolean).join(' & ') ||
+    'Een bruidspaar'
+
+  // Reageer-token: de knop in de e-mail laat de leverancier zonder account
+  // reageren via /reactie/<token>; de reactie landt als inbound bericht in
+  // het berichtencentrum. Token wordt hieronder op de messages-rij bewaard.
+  const replyToken = crypto.randomUUID()
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+  const replyUrl = siteUrl ? `${siteUrl}/reactie/${replyToken}` : null
 
   // 3. Versturen.
-  const { subject, html } = renderVendorContactEmail({ onderwerp, bericht })
+  const { subject, html } = renderVendorContactEmail({ type, onderwerp, bericht, afzenderNamen, replyUrl })
   try {
     const resend = getResend()
     const { error: sendError } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: vendor.email,
-      ...(ccEmails.length > 0 ? { cc: ccEmails, replyTo: ccEmails } : {}),
       subject,
       html,
     })
@@ -205,6 +217,9 @@ export async function POST(request: NextRequest) {
       afzender_type: 'gebruiker',
       verzonden_door: user.id,
       status: 'verzonden',
+      // Zonder deze rij werkt de reageer-knop in de zojuist verstuurde e-mail
+      // niet (token onvindbaar); de insert-fout hieronder wordt daarom gelogd.
+      reply_token: replyToken,
     })
     .select()
     .single()

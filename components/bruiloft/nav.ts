@@ -1,5 +1,4 @@
 import {
-  Activity,
   Armchair,
   Cake,
   CalendarClock,
@@ -9,6 +8,7 @@ import {
   Flower2,
   Gift,
   Globe,
+  Images,
   Laugh,
   LayoutDashboard,
   ListChecks,
@@ -44,9 +44,11 @@ export interface NavItem {
 const dashboard: NavItem = { label: 'Overzicht', href: '/bruiloft', icon: LayoutDashboard, module: 'dashboard' }
 const taken: NavItem = { label: 'Taken', href: '/bruiloft/taken', icon: ListChecks, module: 'taken' }
 const budget: NavItem = { label: 'Budget', href: '/bruiloft/budget', icon: Wallet, module: 'budget' }
+const moodboard: NavItem = { label: 'Moodboard', href: '/bruiloft/moodboard', icon: Images, module: 'moodboard' }
 export const mijnLeveranciers: NavItem = { label: 'Mijn lijst', href: '/bruiloft/leveranciers', icon: Store, module: 'leveranciers' }
 const leverancierZoeken: NavItem = { label: 'Ontdekken', href: '/bruiloft/ontdekken', icon: Search, module: 'leveranciers' }
 const draaiboek: NavItem = { label: 'Draaiboek', href: '/bruiloft/draaiboek', icon: CalendarClock, module: 'draaiboek' }
+const muziek: NavItem = { label: 'Muziek', href: '/bruiloft/muziek', icon: Music, module: 'muziek' }
 const gasten: NavItem = { label: 'Gastenlijst', href: '/bruiloft/gasten', icon: Users, module: 'gasten' }
 const tafels: NavItem = { label: 'Tafelschikking', href: '/bruiloft/tafels', icon: Armchair, module: 'tafels' }
 const website: NavItem = { label: 'Trouwwebsite', href: '/bruiloft/website', icon: Globe, module: 'website' }
@@ -54,7 +56,6 @@ const cadeaulijst: NavItem = { label: 'Cadeaulijst', href: '/bruiloft/cadeaulijs
 const fotomuur: NavItem = { label: 'Fotomuur', href: '/bruiloft/fotomuur', icon: Camera, module: 'website' }
 const leden: NavItem = { label: 'Samen plannen', href: '/bruiloft/beheer/leden', icon: ShieldCheck, module: 'beheer' }
 const account: NavItem = { label: 'Account', href: '/bruiloft/account', icon: Settings, module: 'dashboard' }
-const activiteit: NavItem = { label: 'Activiteit', href: '/bruiloft/activiteit', icon: Activity, module: 'dashboard' }
 
 // TPW-categorieën — elk een eigen pagina onder /bruiloft/ontdekken/[slug].
 const catTrouwlocaties: NavItem = { label: 'Trouwlocaties', href: '/bruiloft/ontdekken/trouwlocaties', icon: MapPin, module: 'leveranciers' }
@@ -104,9 +105,10 @@ export const TPW_CATEGORIE_ITEMS: NavItem[] = [
 // Platte lijst (voor lookups en actief-detectie).
 export const NAV_ITEMS: NavItem[] = [
   dashboard,
-  activiteit,
   taken,
   budget,
+  moodboard,
+  muziek,
   mijnLeveranciers,
   leverancierZoeken,
   ...TPW_CATEGORIE_ITEMS,
@@ -150,7 +152,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Plannen',
     icon: ClipboardList,
     href: '/bruiloft/taken',
-    items: [taken, budget, draaiboek],
+    items: [taken, budget, draaiboek, muziek, moodboard],
     module: 'taken',
   },
   {

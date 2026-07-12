@@ -66,6 +66,29 @@ create trigger trg_on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Houdt profiles.email gelijk aan het GEVERIFIEERDE auth-adres (zie 0067):
+-- /api/profiel schrijft profiles.email niet meer direct, deze trigger synct
+-- zodra auth.users.email daadwerkelijk verandert (pas ná bevestiging).
+create or replace function public.sync_profile_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is distinct from old.email then
+    update public.profiles
+       set email = new.email, updated_at = now()
+     where id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_sync_profile_email
+  after update of email on auth.users
+  for each row execute function public.sync_profile_email();
+
 -- ============================================================
 -- supabase/migrations/0003_core_tables.sql
 -- ============================================================
@@ -112,9 +135,10 @@ create index idx_wedding_members_user on public.wedding_members(user_id);
 create table public.wedding_role_permissions (
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   role text not null check (role in ('planner', 'helper', 'viewer')),
+  -- 0062: 'registry' (cadeaulijst) toegevoegd aan de instelbare modules.
   module text not null check (module in (
     'dashboard', 'taken', 'budget', 'leveranciers', 'gasten',
-    'website', 'draaiboek', 'tafels', 'beheer'
+    'website', 'draaiboek', 'tafels', 'registry', 'beheer'
   )),
   level text not null check (level in ('none', 'view', 'edit')),
   primary key (wedding_id, role, module)
@@ -347,6 +371,7 @@ begin
     (new.id, 'planner', 'leveranciers', 'view'),
     (new.id, 'planner', 'budget', 'none'),
     (new.id, 'planner', 'website', 'none'),
+    (new.id, 'planner', 'registry', 'view'),
     (new.id, 'planner', 'beheer', 'none'),
     (new.id, 'helper', 'dashboard', 'view'),
     (new.id, 'helper', 'taken', 'edit'),
@@ -356,6 +381,7 @@ begin
     (new.id, 'helper', 'leveranciers', 'none'),
     (new.id, 'helper', 'budget', 'none'),
     (new.id, 'helper', 'website', 'none'),
+    (new.id, 'helper', 'registry', 'none'),
     (new.id, 'helper', 'beheer', 'none'),
     (new.id, 'viewer', 'dashboard', 'view'),
     (new.id, 'viewer', 'taken', 'view'),
@@ -365,6 +391,7 @@ begin
     (new.id, 'viewer', 'leveranciers', 'none'),
     (new.id, 'viewer', 'budget', 'none'),
     (new.id, 'viewer', 'website', 'none'),
+    (new.id, 'viewer', 'registry', 'none'),
     (new.id, 'viewer', 'beheer', 'none')
   on conflict do nothing;
 
@@ -550,8 +577,18 @@ $$;
 
 create or replace function public.can_edit(p_wedding uuid, p_module text)
 returns boolean language sql stable security definer set search_path = public as $$
-  -- platform_admin is bewust read-only (support), niet schrijvend.
-  select public.module_level(p_wedding, p_module) = 'edit';
+  -- platform_admin mag content bewerken (zie 0064); eigenaar-exclusieve acties
+  -- (leden/rechten/verwijderen) lopen via can_manage_wedding() (zie 0065).
+  select public.is_platform_admin()
+      or public.module_level(p_wedding, p_module) = 'edit';
+$$;
+
+-- Owner-exclusieve beheeracties (leden, rechten-matrix, bruiloft verwijderen)
+-- lopen via deze helper i.p.v. een kale member_role(...)='owner'-check, zodat
+-- de platform_admin-uitzondering op één plek staat (zie 0065).
+create or replace function public.can_manage_wedding(p_wedding uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.member_role(p_wedding) = 'owner' or public.is_platform_admin();
 $$;
 
 -- =====================================================================
@@ -587,40 +624,40 @@ create policy weddings_insert on public.weddings for insert to authenticated
 create policy weddings_update on public.weddings for update to authenticated
   using (public.can_edit(id, 'beheer')) with check (public.can_edit(id, 'beheer'));
 create policy weddings_delete on public.weddings for delete to authenticated
-  using (public.member_role(id) = 'owner');
+  using (public.can_manage_wedding(id));
 
 -- --- wedding_members (owner beheert leden) --------------------------
 create policy members_select on public.wedding_members for select to authenticated
   using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
 create policy members_insert on public.wedding_members for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy members_update on public.wedding_members for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy members_delete on public.wedding_members for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- --- wedding_role_permissions (owner stelt de matrix in) ------------
 create policy wrp_select on public.wedding_role_permissions for select to authenticated
   using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
 create policy wrp_insert on public.wedding_role_permissions for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy wrp_update on public.wedding_role_permissions for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy wrp_delete on public.wedding_role_permissions for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- --- wedding_invites (e-mails -> alleen owner ziet ze) -------------
 create policy invites_select on public.wedding_invites for select to authenticated
-  using (public.member_role(wedding_id) = 'owner' or public.is_platform_admin());
+  using (public.can_manage_wedding(wedding_id));
 create policy invites_insert on public.wedding_invites for insert to authenticated
-  with check (public.member_role(wedding_id) = 'owner');
+  with check (public.can_manage_wedding(wedding_id));
 create policy invites_update on public.wedding_invites for update to authenticated
-  using (public.member_role(wedding_id) = 'owner')
-  with check (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id))
+  with check (public.can_manage_wedding(wedding_id));
 create policy invites_delete on public.wedding_invites for delete to authenticated
-  using (public.member_role(wedding_id) = 'owner');
+  using (public.can_manage_wedding(wedding_id));
 
 -- =====================================================================
 -- Entiteittabellen: elke tabel mapt op zijn module in de rechten-matrix.
@@ -1045,7 +1082,7 @@ create policy comments_select on public.task_comments for select to authenticate
 create policy comments_insert on public.task_comments for insert to authenticated
   with check (public.can_edit(wedding_id, 'taken'));
 create policy comments_delete on public.task_comments for delete to authenticated
-  using (author_id = auth.uid() or public.member_role(wedding_id) = 'owner');
+  using (author_id = auth.uid() or public.can_manage_wedding(wedding_id));
 
 -- Server-autoritatief: auteur + naam invullen en de taak-tenant valideren.
 create or replace function public.task_comments_prepare()
@@ -1115,7 +1152,7 @@ create table public.messages (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid not null references public.weddings(id) on delete cascade,
   direction text not null check (direction in ('inbound', 'outbound')),
-  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact')),
+  type text not null check (type in ('systeem', 'leverancier_offerte', 'leverancier_contact', 'leverancier_reactie', 'leverancier_vervolg')),
   vendor_id uuid references public.vendors(id) on delete set null,
   onderwerp text not null default '',
   inhoud text not null default '',
@@ -1124,9 +1161,20 @@ create table public.messages (
   verzonden_door uuid references auth.users(id) on delete set null,
   status text not null default 'verzonden' check (status in ('concept', 'verzonden')),
   metadata jsonb,
+  -- Reageren-zonder-login (0059): uitgaande leveranciersberichten krijgen een
+  -- reply_token voor de knop in de e-mail; reacties koppelen terug via
+  -- parent_message_id. Zelfde token-model als de persoonlijke RSVP-links.
+  reply_token uuid unique,
+  parent_message_id uuid references public.messages(id) on delete set null,
+  -- Archiveren/verwijderen (0061): zacht en herstelbaar, gedeeld per
+  -- bruiloft (geen per-gebruiker staat zoals message_reads).
+  archived_at timestamptz,
+  deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
 create index idx_messages_wedding on public.messages(wedding_id, created_at desc);
+create index idx_messages_parent on public.messages(parent_message_id)
+  where parent_message_id is not null;
 
 alter table public.messages enable row level security;
 
@@ -1139,11 +1187,49 @@ create policy messages_select on public.messages for select to authenticated
 create policy messages_insert on public.messages for insert to authenticated
   with check (public.can_edit(wedding_id, 'leveranciers'));
 
-grant select, insert on public.messages to authenticated;
+-- Updaten mag elk lid van de bruiloft, maar alleen archived_at/deleted_at:
+-- messages_guard_update() (0061) dwingt de rest van de rij onveranderd af.
+create policy messages_update on public.messages for update to authenticated
+  using (public.is_wedding_member(wedding_id))
+  with check (public.is_wedding_member(wedding_id));
+
+grant select, insert, update on public.messages to authenticated;
 revoke all on public.messages from anon;
 
 alter table public.messages replica identity full;
 alter publication supabase_realtime add table public.messages;
+
+-- De client mag alleen archiveren/verwijderen/herstellen (archived_at en
+-- deleted_at), nooit de inhoud van een bericht wijzigen. RLS bepaalt WIE
+-- (elk lid van de bruiloft), deze trigger bepaalt WAT er mag veranderen —
+-- zelfde tweedeling als message_reads_prepare hieronder.
+create or replace function public.messages_guard_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.wedding_id := old.wedding_id;
+  new.direction := old.direction;
+  new.type := old.type;
+  new.vendor_id := old.vendor_id;
+  new.onderwerp := old.onderwerp;
+  new.inhoud := old.inhoud;
+  new.afzender_naam := old.afzender_naam;
+  new.afzender_type := old.afzender_type;
+  new.verzonden_door := old.verzonden_door;
+  new.status := old.status;
+  new.metadata := old.metadata;
+  new.reply_token := old.reply_token;
+  new.parent_message_id := old.parent_message_id;
+  new.created_at := old.created_at;
+  return new;
+end;
+$$;
+
+create trigger trg_messages_guard_update before update on public.messages
+  for each row execute function public.messages_guard_update();
 
 -- =====================================================================
 -- message_reads: per-gebruiker leesstatus (een bruiloft heeft vaak meerdere
@@ -1195,6 +1281,7 @@ create trigger trg_message_reads_prepare before insert on public.message_reads
 -- systeembericht in Postvak IN, zodat de mailbox niet blijvend leeg oogt.
 -- =====================================================================
 
+-- 0060: welkomstbericht met actieknop (metadata.acties, zie MessageActie).
 create or replace function public.insert_welcome_message()
 returns trigger
 language plpgsql
@@ -1203,16 +1290,19 @@ set search_path = public
 as $$
 begin
   insert into public.messages
-    (wedding_id, direction, type, onderwerp, inhoud, afzender_naam, afzender_type, status)
+    (wedding_id, direction, type, onderwerp, inhoud, afzender_naam, afzender_type, status, metadata)
   values (
     new.id,
     'inbound',
     'systeem',
     'Welkom bij je berichtencentrum',
-    'Hier verschijnen straks updates en tips over jullie bruiloft, en een overzicht van berichten die jullie naar leveranciers hebben gestuurd.',
+    'Hier verschijnen updates en tips over jullie bruiloft, en een overzicht van berichten die jullie naar leveranciers hebben gestuurd. Reageert een leverancier op een offerte- of contactaanvraag, dan valt die reactie hier binnen.',
     'Bruiloft Assistent',
     'systeem',
-    'verzonden'
+    'verzonden',
+    jsonb_build_object('acties', jsonb_build_array(
+      jsonb_build_object('label', 'Ontdek leveranciers', 'href', '/bruiloft/ontdekken')
+    ))
   );
   return new;
 end;
@@ -1221,3 +1311,1273 @@ $$;
 create trigger trg_insert_welcome_message
   after insert on public.weddings
   for each row execute function public.insert_welcome_message();
+
+-- =====================================================================
+-- vendor_documents: de documentenkluis per leverancier (offertes,
+-- contracten, facturen). Metadata staat hier; de bestanden zelf staan in
+-- de PRIVATE storage-bucket 'vendor-documents' (pad:
+-- <wedding_id>/leveranciers/<vendor_id>/<bestandsnaam>). Downloads lopen
+-- via signed URLs — de bucket is bewust niet publiek, dit zijn
+-- privé-administratiestukken (anders dan wedding-media/photo-wall).
+-- Rechten volgen de leveranciers-module: lezen mag elk lid van de
+-- bruiloft, schrijven vereist can_edit(wedding_id, 'leveranciers') —
+-- zelfde principe als vendors zelf.
+-- =====================================================================
+
+create table public.vendor_documents (
+  id uuid primary key default gen_random_uuid(),
+  wedding_id uuid not null references public.weddings(id) on delete cascade,
+  vendor_id uuid not null references public.vendors(id) on delete cascade,
+  naam text not null,
+  soort text not null default 'overig'
+    check (soort in ('offerte', 'contract', 'factuur', 'overig')),
+  storage_path text not null,
+  mime_type text not null default '',
+  grootte integer not null default 0, -- bytes
+  geupload_door uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index idx_vendor_documents_wedding
+  on public.vendor_documents(wedding_id, created_at desc);
+create index idx_vendor_documents_vendor on public.vendor_documents(vendor_id);
+
+alter table public.vendor_documents enable row level security;
+
+create policy vendor_documents_select on public.vendor_documents
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy vendor_documents_insert on public.vendor_documents
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'leveranciers'));
+create policy vendor_documents_delete on public.vendor_documents
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'leveranciers'));
+
+grant select, insert, delete on public.vendor_documents to authenticated;
+revoke all on public.vendor_documents from anon;
+
+-- Server-autoritatief: geupload_door is altijd de ingelogde gebruiker
+-- (zelfde patroon als message_reads_prepare in 0058).
+create or replace function public.vendor_documents_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.geupload_door := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_vendor_documents_prepare before insert on public.vendor_documents
+  for each row execute function public.vendor_documents_prepare();
+
+alter table public.vendor_documents replica identity full;
+alter publication supabase_realtime add table public.vendor_documents;
+
+-- --- Storage: private vendor-documents bucket -------------------------
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'vendor-documents',
+  'vendor-documents',
+  false, -- privé: alleen via RLS/signed URLs, nooit een publieke URL
+  20971520, -- 20 MB
+  array[
+    'application/pdf',
+    'image/jpeg', 'image/png', 'image/webp', 'image/heic',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain'
+  ]
+)
+on conflict (id) do nothing;
+
+-- Lezen (en dus signed URLs aanmaken): alleen leden van de bruiloft.
+create policy "vendor_documents_read" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'vendor-documents'
+    and public.is_wedding_member(((storage.foldername(name))[1])::uuid)
+  );
+
+-- Uploaden: alleen wie de leveranciers-module mag bewerken.
+create policy "vendor_documents_upload" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'vendor-documents'
+    and public.can_edit(((storage.foldername(name))[1])::uuid, 'leveranciers')
+  );
+
+-- Verwijderen: idem.
+create policy "vendor_documents_remove" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'vendor-documents'
+    and public.can_edit(((storage.foldername(name))[1])::uuid, 'leveranciers')
+  );
+
+-- =====================================================================
+-- draaiboek_shares: het draaiboek delen met leveranciers/ceremoniemeester
+-- via een publieke (token-)link, zonder dat de ontvanger een account nodig
+-- heeft. Eén share per bruiloft: delen staat aan (rij bestaat) of uit (geen
+-- rij); stoppen verwijdert de rij en maakt de link per direct ongeldig.
+--
+-- Bewust een eigen tabel en GEEN kolom op weddings: weddings_update vereist
+-- can_edit('beheer'), terwijl delen ook moet kunnen voor een lid met alleen
+-- draaiboek-rechten. Deze tabel volgt daarom de draaiboek-module, net als
+-- schedule_items zelf.
+-- =====================================================================
+
+create table public.draaiboek_shares (
+  wedding_id uuid primary key references public.weddings(id) on delete cascade,
+  token uuid not null unique default gen_random_uuid(),
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.draaiboek_shares enable row level security;
+
+create policy draaiboek_shares_select on public.draaiboek_shares
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy draaiboek_shares_insert on public.draaiboek_shares
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'draaiboek'));
+create policy draaiboek_shares_delete on public.draaiboek_shares
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'draaiboek'));
+
+grant select, insert, delete on public.draaiboek_shares to authenticated;
+revoke all on public.draaiboek_shares from anon;
+
+-- Server-autoritatief: created_by is altijd de ingelogde gebruiker (zelfde
+-- patroon als vendor_documents_prepare in 0068).
+create or replace function public.draaiboek_shares_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_draaiboek_shares_prepare before insert on public.draaiboek_shares
+  for each row execute function public.draaiboek_shares_prepare();
+
+alter table public.draaiboek_shares replica identity full;
+alter publication supabase_realtime add table public.draaiboek_shares;
+
+-- =====================================================================
+-- get_public_draaiboek: leest het draaiboek voor de publieke deelpagina
+-- (/draaiboek/[token]) — anon-aanroepbaar, SECURITY DEFINER, en geeft
+-- uitsluitend de dagindeling + namen/datum/locatie terug (geen e-mail,
+-- budget of andere plannergegevens). Sorteren op dagvolgorde (05:00-anker,
+-- zie lib/bruiloft/draaiboek.ts) doet de client.
+-- =====================================================================
+
+create or replace function public.get_public_draaiboek(p_token uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_wedding_id uuid;
+  v_result jsonb;
+begin
+  select wedding_id into v_wedding_id
+  from public.draaiboek_shares
+  where token = p_token;
+
+  if not found then
+    return null;
+  end if;
+
+  select jsonb_build_object(
+    'partner1Naam', w.partner1_naam,
+    'partner2Naam', w.partner2_naam,
+    'trouwdatum', w.trouwdatum,
+    'locatie', w.locatie,
+    'items', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', s.id,
+          'tijd', s.tijd,
+          'eindtijd', s.eindtijd,
+          'titel', s.titel,
+          'omschrijving', s.omschrijving,
+          'locatie', s.locatie,
+          'betrokkenen', s.betrokkenen
+        )
+        order by s.tijd
+      )
+      from public.schedule_items s
+      where s.wedding_id = w.id
+    ), '[]'::jsonb)
+  )
+  into v_result
+  from public.weddings w
+  where w.id = v_wedding_id;
+
+  return v_result;
+end;
+$$;
+revoke all on function public.get_public_draaiboek(uuid) from public;
+grant execute on function public.get_public_draaiboek(uuid) to anon, authenticated;
+
+-- =====================================================================
+-- Afspraken/bezichtigingen bij leveranciers. Eén (eerstvolgende) afspraak
+-- per leverancier: datum + optionele tijd — bezichtiging, proeverij of
+-- kennismakingsgesprek. Bewust géén aparte afsprakentabel: het mentale
+-- model is "wanneer gaan we langs bij deze leverancier", historie hoort
+-- in de notitie. RLS van vendors dekt deze kolommen automatisch.
+-- =====================================================================
+
+alter table public.vendors
+  add column afspraak_datum date,
+  add column afspraak_tijd text not null default '';
+
+-- --- reminder_log: afspraken meenemen in de dagelijkse herinneringen --
+-- Op productie bleek reminder_log (migratie 0011) nooit aangemaakt — de
+-- database is destijds opgezet vanuit een schema.sql waar 0011 niet in
+-- zat, waardoor de herinneringen-cron op die query faalde. Daarom hier
+-- create-if-not-exists (met dezelfde definitie als 0011), gevolgd door
+-- het verruimen van de checks: nieuwe soort 'afspraak' (ref_id =
+-- vendors.id) en mijlpaal '0d' (de dag zelf). Een verstreken afspraak
+-- krijgt bewust geen 'te-laat': die is geweest, niet te laat.
+create table if not exists public.reminder_log (
+  id         uuid        primary key default gen_random_uuid(),
+  wedding_id uuid        not null references public.weddings(id) on delete cascade,
+  soort      text        not null check (soort in ('taak', 'betaaltermijn')),
+  ref_id     text        not null,  -- tasks.id, betaaltermijn.id of vendors.id
+  mijlpaal   text        not null check (mijlpaal in ('7d', '1d', '14d', '3d', 'te-laat')),
+  user_id    uuid        not null references auth.users(id) on delete cascade,
+  email      text        not null default '',
+  sent_at    timestamptz not null default now(),
+  unique (soort, ref_id, mijlpaal, user_id)
+);
+create index if not exists idx_reminder_log_wedding on public.reminder_log(wedding_id);
+
+-- RLS aan, geen policies: alleen de service-role (cron) schrijft/leest.
+alter table public.reminder_log enable row level security;
+
+alter table public.reminder_log drop constraint if exists reminder_log_soort_check;
+alter table public.reminder_log
+  add constraint reminder_log_soort_check
+  check (soort in ('taak', 'betaaltermijn', 'afspraak'));
+
+alter table public.reminder_log drop constraint if exists reminder_log_mijlpaal_check;
+alter table public.reminder_log
+  add constraint reminder_log_mijlpaal_check
+  check (mijlpaal in ('7d', '1d', '14d', '3d', '0d', 'te-laat'));
+
+-- =====================================================================
+-- agenda_shares: de agenda-koppeling (ICS-abonnement) per bruiloft. Eén
+-- token per bruiloft; de feed op /api/agenda/[token] toont de trouwdag,
+-- leveranciersafspraken, taak-deadlines en betaaltermijnen. Zelfde
+-- aan/uit-model als draaiboek_shares: rij bestaat = koppeling actief,
+-- verwijderen maakt de link per direct ongeldig.
+--
+-- Rechten: élk lid van de bruiloft mag de koppeling beheren — de feed
+-- bundelt gegevens uit meerdere modules (taken/budget/leveranciers) en
+-- toont niets wat een lid in de app niet ook al kan zien; er is dus geen
+-- enkele module-permissie die hier logisch leidend is.
+-- =====================================================================
+
+create table public.agenda_shares (
+  wedding_id uuid primary key references public.weddings(id) on delete cascade,
+  token uuid not null unique default gen_random_uuid(),
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.agenda_shares enable row level security;
+
+create policy agenda_shares_select on public.agenda_shares
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy agenda_shares_insert on public.agenda_shares
+  for insert to authenticated
+  with check (public.is_wedding_member(wedding_id));
+create policy agenda_shares_delete on public.agenda_shares
+  for delete to authenticated
+  using (public.is_wedding_member(wedding_id));
+
+grant select, insert, delete on public.agenda_shares to authenticated;
+revoke all on public.agenda_shares from anon;
+
+-- Server-autoritatief: created_by is altijd de ingelogde gebruiker (zelfde
+-- patroon als draaiboek_shares_prepare in 0069).
+create or replace function public.agenda_shares_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_agenda_shares_prepare before insert on public.agenda_shares
+  for each row execute function public.agenda_shares_prepare();
+
+alter table public.agenda_shares replica identity full;
+alter publication supabase_realtime add table public.agenda_shares;
+
+-- =====================================================================
+-- adres_shares: adressen verzamelen via een publieke deel-link. Het
+-- bruidspaar deelt één link (WhatsApp/e-mail); genodigden geven daar hun
+-- adres (en optioneel e-mail/telefoon) door, dat op de gastenlijst landt —
+-- gematcht op naam of als nieuwe gast. Zelfde aan/uit-model als
+-- draaiboek_shares/agenda_shares: rij bestaat = link actief.
+-- Rechten volgen de gasten-module (net als guests zelf).
+-- =====================================================================
+
+create table public.adres_shares (
+  wedding_id uuid primary key references public.weddings(id) on delete cascade,
+  token uuid not null unique default gen_random_uuid(),
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.adres_shares enable row level security;
+
+create policy adres_shares_select on public.adres_shares
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy adres_shares_insert on public.adres_shares
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'gasten'));
+create policy adres_shares_delete on public.adres_shares
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'gasten'));
+
+grant select, insert, delete on public.adres_shares to authenticated;
+revoke all on public.adres_shares from anon;
+
+create or replace function public.adres_shares_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_adres_shares_prepare before insert on public.adres_shares
+  for each row execute function public.adres_shares_prepare();
+
+alter table public.adres_shares replica identity full;
+alter publication supabase_realtime add table public.adres_shares;
+
+-- =====================================================================
+-- get_adres_share_meta: de publieke adres-pagina (/adres/[token]) toont
+-- alleen voor wíe je je adres doorgeeft — de partnernamen, meer niet.
+-- Het indienen zelf loopt via /api/adres (service-role + rate limit),
+-- niet via een RPC: de match-op-naam-logica leeft in TypeScript.
+-- =====================================================================
+
+create or replace function public.get_adres_share_meta(p_token uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_wedding_id uuid;
+  v_result jsonb;
+begin
+  select wedding_id into v_wedding_id from public.adres_shares where token = p_token;
+  if not found then
+    return null;
+  end if;
+
+  select jsonb_build_object(
+    'partner1Naam', w.partner1_naam,
+    'partner2Naam', w.partner2_naam
+  )
+  into v_result
+  from public.weddings w
+  where w.id = v_wedding_id;
+
+  return v_result;
+end;
+$$;
+revoke all on function public.get_adres_share_meta(uuid) from public;
+grant execute on function public.get_adres_share_meta(uuid) to anon, authenticated;
+
+-- =====================================================================
+-- RSVP-wensen: gasten kunnen bij het bevestigen een muziekwens
+-- (verzoeknummer) en een persoonlijk bericht aan het bruidspaar
+-- achterlaten. Twee kolommen op guests; submit_rsvp en resolve_rsvp_guest
+-- nemen ze mee. find_guest_by_name blijft bewust ongemoeid: bij zoeken op
+-- naam lekken we geen eerder ingevulde antwoorden (zie 0066) — prefill
+-- gebeurt alleen via de persoonlijke token-link.
+-- =====================================================================
+
+alter table public.guests
+  add column verzoeknummer text not null default '',
+  add column rsvp_bericht text not null default '';
+
+-- --- submit_rsvp: nieuwe payload-sleutels 'verzoeknummer' en 'bericht' --
+create or replace function public.submit_rsvp(p_token text, p_payload jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_guest public.guests;
+  v_status text := p_payload ->> 'rsvpStatus';
+begin
+  select * into v_guest from public.guests
+  where rsvp_token = p_token and rsvp_token_revoked = false;
+  if not found then
+    raise exception 'Ongeldige of ingetrokken uitnodiging';
+  end if;
+
+  if v_status is not null and v_status not in ('bevestigd', 'afgemeld') then
+    raise exception 'Ongeldige RSVP-status';
+  end if;
+
+  update public.guests set
+    rsvp_status = coalesce(v_status, rsvp_status),
+    dieetwensen = coalesce(p_payload ->> 'dieetwensen', dieetwensen),
+    heeft_partner = coalesce((p_payload ->> 'heeftPartner')::boolean, heeft_partner),
+    partner_naam = coalesce(p_payload ->> 'partnerNaam', partner_naam),
+    aantal_kinderen = coalesce((p_payload ->> 'aantalKinderen')::integer, aantal_kinderen),
+    verzoeknummer = coalesce(left(p_payload ->> 'verzoeknummer', 200), verzoeknummer),
+    rsvp_bericht = coalesce(left(p_payload ->> 'bericht', 1000), rsvp_bericht),
+    rsvp_submitted_at = now()
+  where id = v_guest.id;
+end;
+$$;
+
+-- --- submit_rsvp_by_name: zelfde payload-uitbreiding (naam-zoekroute) ---
+create or replace function public.submit_rsvp_by_name(
+  p_slug text,
+  p_voornaam text,
+  p_achternaam text,
+  p_payload jsonb
+)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_wedding_id uuid;
+  v_guest      public.guests;
+  v_matches    int;
+  v_status     text := p_payload ->> 'rsvpStatus';
+begin
+  select wedding_id into v_wedding_id
+  from public.website_content
+  where slug = lower(trim(p_slug)) and website_gepubliceerd = true;
+
+  if v_wedding_id is null then
+    raise exception 'Ongeldige trouwwebsite';
+  end if;
+
+  select count(*) into v_matches
+  from public.guests
+  where wedding_id = v_wedding_id
+    and lower(trim(voornaam)) = lower(trim(p_voornaam))
+    and lower(trim(achternaam)) = lower(trim(p_achternaam));
+
+  if v_matches <> 1 then
+    raise exception 'Gast niet eenduidig gevonden';
+  end if;
+
+  select * into v_guest
+  from public.guests
+  where wedding_id = v_wedding_id
+    and lower(trim(voornaam)) = lower(trim(p_voornaam))
+    and lower(trim(achternaam)) = lower(trim(p_achternaam))
+  limit 1;
+
+  if v_status is not null and v_status not in ('bevestigd', 'afgemeld') then
+    raise exception 'Ongeldige RSVP-status';
+  end if;
+
+  update public.guests set
+    rsvp_status        = coalesce(v_status, rsvp_status),
+    dieetwensen         = coalesce(p_payload ->> 'dieetwensen', dieetwensen),
+    heeft_partner       = coalesce((p_payload ->> 'heeftPartner')::boolean, heeft_partner),
+    partner_naam        = coalesce(p_payload ->> 'partnerNaam', partner_naam),
+    aantal_kinderen     = coalesce((p_payload ->> 'aantalKinderen')::integer, aantal_kinderen),
+    verzoeknummer       = coalesce(left(p_payload ->> 'verzoeknummer', 200), verzoeknummer),
+    rsvp_bericht        = coalesce(left(p_payload ->> 'bericht', 1000), rsvp_bericht),
+    rsvp_submitted_at   = coalesce(rsvp_submitted_at, now())
+  where id = v_guest.id;
+end;
+$$;
+
+-- --- resolve_rsvp_guest: prefill via de persoonlijke link ---------------
+create or replace function public.resolve_rsvp_guest(p_token text)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_guest public.guests;
+  v_slug  text;
+begin
+  select * into v_guest from public.guests
+  where rsvp_token = p_token and rsvp_token_revoked = false;
+
+  if not found then
+    return null;
+  end if;
+
+  select slug into v_slug
+  from public.website_content
+  where wedding_id = v_guest.wedding_id;
+
+  if v_slug is null then
+    return null;
+  end if;
+
+  return jsonb_build_object(
+    'slug', v_slug,
+    'guest', jsonb_build_object(
+      'voornaam',        v_guest.voornaam,
+      'achternaam',      v_guest.achternaam,
+      'rsvpStatus',      v_guest.rsvp_status,
+      'dieetwensen',     v_guest.dieetwensen,
+      'heeftPartner',    v_guest.heeft_partner,
+      'partnerNaam',     v_guest.partner_naam,
+      'aantalKinderen',  v_guest.aantal_kinderen,
+      'verzoeknummer',   v_guest.verzoeknummer,
+      'bericht',         v_guest.rsvp_bericht,
+      'rsvpSubmittedAt', v_guest.rsvp_submitted_at
+    )
+  );
+end;
+$$;
+
+-- =====================================================================
+-- Limiet op vendor_documents: maximaal 10 documenten per leverancier,
+-- zodat de storage niet ongecontroleerd kan volgroeien. Serverautoritatief
+-- via een trigger — de insert loopt rechtstreeks vanuit de client tegen
+-- Supabase, dus een UI-check alleen is niet genoeg (en botst anders stil
+-- bij twee gelijktijdige uploads door verschillende gebruikers).
+-- =====================================================================
+
+create or replace function public.vendor_documents_check_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (select count(*) from public.vendor_documents where vendor_id = new.vendor_id) >= 10 then
+    raise exception 'Maximaal 10 documenten per leverancier';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_vendor_documents_check_limit before insert on public.vendor_documents
+  for each row execute function public.vendor_documents_check_limit();
+
+-- =====================================================================
+-- budget_item_documents: documentenkluis per budgetpost (offertes,
+-- contracten, facturen) — zelfde patroon als vendor_documents, maar
+-- gekoppeld aan budget_items in plaats van vendors. Metadata staat hier; de
+-- bestanden zelf staan in de PRIVATE storage-bucket 'budget-documents' (pad:
+-- <wedding_id>/budget/<budget_item_id>/<bestandsnaam>). Downloads lopen via
+-- signed URLs — bewust niet publiek, dit zijn privé-administratiestukken.
+-- Rechten volgen de budget-module: lezen mag elk lid van de bruiloft,
+-- schrijven vereist can_edit(wedding_id, 'budget').
+-- =====================================================================
+
+create table public.budget_item_documents (
+  id uuid primary key default gen_random_uuid(),
+  wedding_id uuid not null references public.weddings(id) on delete cascade,
+  budget_item_id uuid not null references public.budget_items(id) on delete cascade,
+  naam text not null,
+  soort text not null default 'overig'
+    check (soort in ('offerte', 'contract', 'factuur', 'overig')),
+  storage_path text not null,
+  mime_type text not null default '',
+  grootte integer not null default 0, -- bytes
+  geupload_door uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index idx_budget_item_documents_wedding
+  on public.budget_item_documents(wedding_id, created_at desc);
+create index idx_budget_item_documents_item on public.budget_item_documents(budget_item_id);
+
+alter table public.budget_item_documents enable row level security;
+
+create policy budget_item_documents_select on public.budget_item_documents
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy budget_item_documents_insert on public.budget_item_documents
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'budget'));
+create policy budget_item_documents_delete on public.budget_item_documents
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'budget'));
+
+grant select, insert, delete on public.budget_item_documents to authenticated;
+revoke all on public.budget_item_documents from anon;
+
+-- Server-autoritatief: geupload_door is altijd de ingelogde gebruiker
+-- (zelfde patroon als vendor_documents_prepare).
+create or replace function public.budget_item_documents_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.geupload_door := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_budget_item_documents_prepare before insert on public.budget_item_documents
+  for each row execute function public.budget_item_documents_prepare();
+
+alter table public.budget_item_documents replica identity full;
+alter publication supabase_realtime add table public.budget_item_documents;
+
+-- --- Storage: private budget-documents bucket -------------------------
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'budget-documents',
+  'budget-documents',
+  false, -- privé: alleen via RLS/signed URLs, nooit een publieke URL
+  20971520, -- 20 MB
+  array[
+    'application/pdf',
+    'image/jpeg', 'image/png', 'image/webp', 'image/heic',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain'
+  ]
+)
+on conflict (id) do nothing;
+
+-- Lezen (en dus signed URLs aanmaken): alleen leden van de bruiloft.
+create policy "budget_item_documents_read" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'budget-documents'
+    and public.is_wedding_member(((storage.foldername(name))[1])::uuid)
+  );
+
+-- Uploaden: alleen wie de budget-module mag bewerken.
+create policy "budget_item_documents_upload" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'budget-documents'
+    and public.can_edit(((storage.foldername(name))[1])::uuid, 'budget')
+  );
+
+-- Verwijderen: idem.
+create policy "budget_item_documents_remove" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'budget-documents'
+    and public.can_edit(((storage.foldername(name))[1])::uuid, 'budget')
+  );
+
+-- =====================================================================
+-- Limiet op budget_item_documents: maximaal 10 documenten per budgetpost —
+-- zelfde patroon als vendor_documents_check_limit hierboven.
+-- =====================================================================
+
+create or replace function public.budget_item_documents_check_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (select count(*) from public.budget_item_documents where budget_item_id = new.budget_item_id) >= 10 then
+    raise exception 'Maximaal 10 documenten per budgetpost';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_budget_item_documents_check_limit before insert on public.budget_item_documents
+  for each row execute function public.budget_item_documents_check_limit();
+
+-- =====================================================================
+-- Moodboard: inspiratiebeelden voor de droomfase van de planning — een
+-- Pinterest-achtig bord waarop het bruidspaar (en wie ze uitnodigen) foto's
+-- verzamelt en ordent. Nieuwe module 'moodboard' in de rechten-matrix,
+-- zodat rollen er net als bij elke andere module apart voor ingesteld
+-- kunnen worden.
+-- =====================================================================
+
+-- --- 1. Rechten-matrix uitbreiden -------------------------------------
+alter table public.wedding_role_permissions
+  drop constraint if exists wedding_role_permissions_module_check;
+alter table public.wedding_role_permissions
+  add constraint wedding_role_permissions_module_check
+  check (module in (
+    'dashboard', 'taken', 'budget', 'leveranciers', 'gasten',
+    'website', 'draaiboek', 'tafels', 'registry', 'beheer', 'moodboard'
+  ));
+
+-- Seed-functie bijwerken zodat nieuwe bruiloften moodboard-rechten krijgen
+-- (zelfde functie als 0003/0062; alleen de insert-lijst breidt uit).
+create or replace function public.add_creator_as_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := coalesce(new.created_by, auth.uid());
+begin
+  if v_uid is not null then
+    insert into public.wedding_members (wedding_id, user_id, role)
+    values (new.id, v_uid, 'owner')
+    on conflict do nothing;
+  end if;
+
+  insert into public.wedding_role_permissions (wedding_id, role, module, level)
+  values
+    (new.id, 'planner', 'dashboard', 'view'),
+    (new.id, 'planner', 'taken', 'edit'),
+    (new.id, 'planner', 'draaiboek', 'edit'),
+    (new.id, 'planner', 'tafels', 'edit'),
+    (new.id, 'planner', 'gasten', 'view'),
+    (new.id, 'planner', 'leveranciers', 'view'),
+    (new.id, 'planner', 'budget', 'none'),
+    (new.id, 'planner', 'website', 'none'),
+    (new.id, 'planner', 'registry', 'view'),
+    (new.id, 'planner', 'moodboard', 'edit'),
+    (new.id, 'planner', 'beheer', 'none'),
+    (new.id, 'helper', 'dashboard', 'view'),
+    (new.id, 'helper', 'taken', 'edit'),
+    (new.id, 'helper', 'draaiboek', 'view'),
+    (new.id, 'helper', 'tafels', 'none'),
+    (new.id, 'helper', 'gasten', 'none'),
+    (new.id, 'helper', 'leveranciers', 'none'),
+    (new.id, 'helper', 'budget', 'none'),
+    (new.id, 'helper', 'website', 'none'),
+    (new.id, 'helper', 'registry', 'none'),
+    (new.id, 'helper', 'moodboard', 'view'),
+    (new.id, 'helper', 'beheer', 'none'),
+    (new.id, 'viewer', 'dashboard', 'view'),
+    (new.id, 'viewer', 'taken', 'view'),
+    (new.id, 'viewer', 'draaiboek', 'view'),
+    (new.id, 'viewer', 'tafels', 'view'),
+    (new.id, 'viewer', 'gasten', 'none'),
+    (new.id, 'viewer', 'leveranciers', 'none'),
+    (new.id, 'viewer', 'budget', 'none'),
+    (new.id, 'viewer', 'website', 'none'),
+    (new.id, 'viewer', 'registry', 'none'),
+    (new.id, 'viewer', 'moodboard', 'view'),
+    (new.id, 'viewer', 'beheer', 'none')
+  on conflict do nothing;
+
+  return new;
+end;
+$$;
+
+-- Backfill: bestaande bruiloften krijgen dezelfde moodboard-defaults.
+insert into public.wedding_role_permissions (wedding_id, role, module, level)
+select w.id, r.role, 'moodboard', r.level
+from public.weddings w
+cross join (values ('planner', 'edit'), ('helper', 'view'), ('viewer', 'view')) as r(role, level)
+on conflict do nothing;
+
+-- --- 2. mood_board_items -----------------------------------------------
+-- Eén plat bord per bruiloft (geen aparte "borden"-tabel: één moodboard
+-- houdt de droomfase laagdrempelig, filteren gebeurt via categorie). `url`
+-- is altijd de directe afbeeldings-URL — bij een upload een publieke
+-- 'wedding-media'-URL (subfolder 'moodboard', RLS daar is al op
+-- wedding-lidmaatschap ingericht, zie 0010), bij een pin de rechtstreekse
+-- hotlink naar de bron (bewust niet gedownload, net als Pinterest zelf).
+-- Zelfde vorm als website_fotos.url/registry_items.image_url elders in dit
+-- schema: één url-kolom, geen aparte storage-path-modellering.
+create table public.mood_board_items (
+  id uuid primary key default gen_random_uuid(),
+  wedding_id uuid not null references public.weddings(id) on delete cascade,
+  categorie text not null default 'overig',
+  url text not null,
+  bron text not null default 'upload' check (bron in ('upload', 'link')),
+  -- Alleen bij bron='link': de paginalink waar de gebruiker 'm vandaan
+  -- pinde, voor "Bekijk bron" in de lightbox.
+  bron_url text,
+  titel text not null default '',
+  volgorde integer not null default 0,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index idx_mood_board_items_wedding on public.mood_board_items(wedding_id, volgorde);
+
+alter table public.mood_board_items enable row level security;
+
+create policy mood_board_items_select on public.mood_board_items
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy mood_board_items_insert on public.mood_board_items
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'moodboard'));
+create policy mood_board_items_update on public.mood_board_items
+  for update to authenticated
+  using (public.can_edit(wedding_id, 'moodboard'))
+  with check (public.can_edit(wedding_id, 'moodboard'));
+create policy mood_board_items_delete on public.mood_board_items
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'moodboard'));
+
+grant select, insert, update, delete on public.mood_board_items to authenticated;
+revoke all on public.mood_board_items from anon;
+
+-- Server-autoritatief: created_by is altijd de ingelogde gebruiker (zelfde
+-- patroon als vendor_documents_prepare in 0068).
+create or replace function public.mood_board_items_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_mood_board_items_prepare before insert on public.mood_board_items
+  for each row execute function public.mood_board_items_prepare();
+
+alter table public.mood_board_items replica identity full;
+alter publication supabase_realtime add table public.mood_board_items;
+
+-- =====================================================================
+-- Muziek: nummers verzamelen per moment van de dag (ceremonie, borrel,
+-- diner, feest) plus een "niet draaien"-lijst voor de DJ.
+--
+-- Drie onderdelen:
+--   1. Nieuwe module 'muziek' in de rechten-matrix (eigen tabblad onder
+--      Plannen; rollen krijgen er net als bij moodboard aparte rechten voor).
+--   2. music_tracks: de nummers zelf. Eigen nummers van het paar staan
+--      direct op 'goedgekeurd'; wat gasten via de RSVP aandragen komt
+--      binnen als 'voorgesteld' (bron 'gast') en het paar beslist — het
+--      bruidspaar houdt vetorecht over de dansvloer.
+--   3. music_shares + get_public_muziek: één publieke deel-link per
+--      bruiloft zodat de DJ (of band) de actuele lijst kan inzien zonder
+--      account — zelfde aan/uit-model als draaiboek_shares (0069).
+--
+-- De RSVP-flow blijft hetzelfde ene verzoeknummer-veld (0073); de
+-- submit-functies schrijven de wens voortaan óók als suggestie in
+-- music_tracks, zodat alles op de Muziek-pagina samenkomt.
+-- =====================================================================
+
+-- --- 1. Rechten-matrix uitbreiden -------------------------------------
+alter table public.wedding_role_permissions
+  drop constraint if exists wedding_role_permissions_module_check;
+alter table public.wedding_role_permissions
+  add constraint wedding_role_permissions_module_check
+  check (module in (
+    'dashboard', 'taken', 'budget', 'leveranciers', 'gasten',
+    'website', 'draaiboek', 'tafels', 'registry', 'beheer', 'moodboard',
+    'muziek'
+  ));
+
+-- Seed-functie bijwerken zodat nieuwe bruiloften muziek-rechten krijgen
+-- (zelfde functie als 0003/0062/0077; alleen de insert-lijst breidt uit).
+create or replace function public.add_creator_as_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := coalesce(new.created_by, auth.uid());
+begin
+  if v_uid is not null then
+    insert into public.wedding_members (wedding_id, user_id, role)
+    values (new.id, v_uid, 'owner')
+    on conflict do nothing;
+  end if;
+
+  insert into public.wedding_role_permissions (wedding_id, role, module, level)
+  values
+    (new.id, 'planner', 'dashboard', 'view'),
+    (new.id, 'planner', 'taken', 'edit'),
+    (new.id, 'planner', 'draaiboek', 'edit'),
+    (new.id, 'planner', 'tafels', 'edit'),
+    (new.id, 'planner', 'gasten', 'view'),
+    (new.id, 'planner', 'leveranciers', 'view'),
+    (new.id, 'planner', 'budget', 'none'),
+    (new.id, 'planner', 'website', 'none'),
+    (new.id, 'planner', 'registry', 'view'),
+    (new.id, 'planner', 'moodboard', 'edit'),
+    (new.id, 'planner', 'muziek', 'edit'),
+    (new.id, 'planner', 'beheer', 'none'),
+    (new.id, 'helper', 'dashboard', 'view'),
+    (new.id, 'helper', 'taken', 'edit'),
+    (new.id, 'helper', 'draaiboek', 'view'),
+    (new.id, 'helper', 'tafels', 'none'),
+    (new.id, 'helper', 'gasten', 'none'),
+    (new.id, 'helper', 'leveranciers', 'none'),
+    (new.id, 'helper', 'budget', 'none'),
+    (new.id, 'helper', 'website', 'none'),
+    (new.id, 'helper', 'registry', 'none'),
+    (new.id, 'helper', 'moodboard', 'view'),
+    (new.id, 'helper', 'muziek', 'edit'),
+    (new.id, 'helper', 'beheer', 'none'),
+    (new.id, 'viewer', 'dashboard', 'view'),
+    (new.id, 'viewer', 'taken', 'view'),
+    (new.id, 'viewer', 'draaiboek', 'view'),
+    (new.id, 'viewer', 'tafels', 'view'),
+    (new.id, 'viewer', 'gasten', 'none'),
+    (new.id, 'viewer', 'leveranciers', 'none'),
+    (new.id, 'viewer', 'budget', 'none'),
+    (new.id, 'viewer', 'website', 'none'),
+    (new.id, 'viewer', 'registry', 'none'),
+    (new.id, 'viewer', 'moodboard', 'view'),
+    (new.id, 'viewer', 'muziek', 'view'),
+    (new.id, 'viewer', 'beheer', 'none')
+  on conflict do nothing;
+
+  return new;
+end;
+$$;
+
+-- Backfill: bestaande bruiloften krijgen dezelfde muziek-defaults. Helper
+-- mag bewerken (muziek verzamelen is bij uitstek iets voor getuigen), net
+-- als bij taken.
+insert into public.wedding_role_permissions (wedding_id, role, module, level)
+select w.id, r.role, 'muziek', r.level
+from public.weddings w
+cross join (values ('planner', 'edit'), ('helper', 'edit'), ('viewer', 'view')) as r(role, level)
+on conflict do nothing;
+
+-- --- 2. music_tracks ---------------------------------------------------
+-- Eén platte lijst per bruiloft; `moment` bepaalt de sectie op de pagina.
+-- 'niet_draaien' is bewust een moment en geen aparte tabel: het gedraagt
+-- zich identiek (toevoegen, opmerking, verwijderen) en de DJ leest het als
+-- gewoon nog een sectie van dezelfde lijst.
+create table public.music_tracks (
+  id uuid primary key default gen_random_uuid(),
+  wedding_id uuid not null references public.weddings(id) on delete cascade,
+  titel text not null,
+  artiest text not null default '',
+  moment text not null default 'feest'
+    check (moment in ('ceremonie', 'borrel', 'diner', 'feest', 'niet_draaien')),
+  -- Vrije notitie voor de DJ ("openingsdans", "vader-dochterdans", ...).
+  opmerking text not null default '',
+  -- Optionele link naar Spotify/YouTube; puur ter referentie, we embedden niets.
+  url text not null default '',
+  -- 'gast' = via de RSVP aangedragen; gast_naam/guest_id zeggen door wie.
+  -- guest_id is set-null zodat de wens blijft staan als de gast verdwijnt.
+  bron text not null default 'paar' check (bron in ('paar', 'gast')),
+  gast_naam text not null default '',
+  guest_id uuid references public.guests(id) on delete set null,
+  -- Gastsuggesties komen binnen als 'voorgesteld'; het paar keurt goed of
+  -- verwijdert. Eigen nummers zijn meteen 'goedgekeurd'.
+  status text not null default 'goedgekeurd'
+    check (status in ('voorgesteld', 'goedgekeurd')),
+  volgorde integer not null default 0,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index idx_music_tracks_wedding on public.music_tracks(wedding_id, moment, volgorde);
+
+alter table public.music_tracks enable row level security;
+
+create policy music_tracks_select on public.music_tracks
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy music_tracks_insert on public.music_tracks
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'muziek'));
+create policy music_tracks_update on public.music_tracks
+  for update to authenticated
+  using (public.can_edit(wedding_id, 'muziek'))
+  with check (public.can_edit(wedding_id, 'muziek'));
+create policy music_tracks_delete on public.music_tracks
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'muziek'));
+
+grant select, insert, update, delete on public.music_tracks to authenticated;
+revoke all on public.music_tracks from anon;
+
+-- Server-autoritatief: created_by is altijd de ingelogde gebruiker (zelfde
+-- patroon als mood_board_items_prepare in 0077). RSVP-suggesties lopen via
+-- SECURITY DEFINER-functies en hebben geen auth.uid(); daar blijft
+-- created_by dan null — precies goed, de gast ís geen app-gebruiker.
+create or replace function public.music_tracks_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_music_tracks_prepare before insert on public.music_tracks
+  for each row execute function public.music_tracks_prepare();
+
+alter table public.music_tracks replica identity full;
+alter publication supabase_realtime add table public.music_tracks;
+
+-- --- 3. music_shares: de lijst delen met de DJ -------------------------
+-- Eén share per bruiloft: rij bestaat = delen staat aan; verwijderen maakt
+-- de link per direct ongeldig. Eigen tabel en geen kolom op weddings, om
+-- dezelfde reden als draaiboek_shares (0069): delen moet ook kunnen voor
+-- een lid met alleen muziek-rechten.
+create table public.music_shares (
+  wedding_id uuid primary key references public.weddings(id) on delete cascade,
+  token uuid not null unique default gen_random_uuid(),
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.music_shares enable row level security;
+
+create policy music_shares_select on public.music_shares
+  for select to authenticated
+  using (public.is_wedding_member(wedding_id) or public.is_platform_admin());
+create policy music_shares_insert on public.music_shares
+  for insert to authenticated
+  with check (public.can_edit(wedding_id, 'muziek'));
+create policy music_shares_delete on public.music_shares
+  for delete to authenticated
+  using (public.can_edit(wedding_id, 'muziek'));
+
+grant select, insert, delete on public.music_shares to authenticated;
+revoke all on public.music_shares from anon;
+
+create or replace function public.music_shares_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.created_by := auth.uid();
+  return new;
+end;
+$$;
+
+create trigger trg_music_shares_prepare before insert on public.music_shares
+  for each row execute function public.music_shares_prepare();
+
+alter table public.music_shares replica identity full;
+alter publication supabase_realtime add table public.music_shares;
+
+-- =====================================================================
+-- get_public_muziek: leest de muzieklijst voor de publieke deelpagina
+-- (/muziek/[token]) — anon-aanroepbaar, SECURITY DEFINER, en geeft
+-- uitsluitend goedgekeurde nummers + namen/datum terug. Nog niet
+-- beoordeelde gastsuggesties blijven privé tot het paar ze goedkeurt.
+-- =====================================================================
+
+create or replace function public.get_public_muziek(p_token uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_wedding_id uuid;
+  v_result jsonb;
+begin
+  select wedding_id into v_wedding_id
+  from public.music_shares
+  where token = p_token;
+
+  if not found then
+    return null;
+  end if;
+
+  select jsonb_build_object(
+    'partner1Naam', w.partner1_naam,
+    'partner2Naam', w.partner2_naam,
+    'trouwdatum', w.trouwdatum,
+    'tracks', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', t.id,
+          'titel', t.titel,
+          'artiest', t.artiest,
+          'moment', t.moment,
+          'opmerking', t.opmerking,
+          'url', t.url,
+          'bron', t.bron,
+          'gastNaam', t.gast_naam
+        )
+        order by t.moment, t.volgorde, t.created_at
+      )
+      from public.music_tracks t
+      where t.wedding_id = w.id and t.status = 'goedgekeurd'
+    ), '[]'::jsonb)
+  )
+  into v_result
+  from public.weddings w
+  where w.id = v_wedding_id;
+
+  return v_result;
+end;
+$$;
+revoke all on function public.get_public_muziek(uuid) from public;
+grant execute on function public.get_public_muziek(uuid) to anon, authenticated;
+
+-- =====================================================================
+-- RSVP-koppeling: het verzoeknummer uit de RSVP (0073) belandt voortaan
+-- óók als suggestie in music_tracks. Alleen bij een nieuwe of gewijzigde
+-- wens (anders zou elke her-inzending een duplicaat maken); een eerdere,
+-- nog niet beoordeelde suggestie van dezelfde gast wordt dan vervangen —
+-- al goedgekeurde nummers blijven staan.
+-- =====================================================================
+
+create or replace function public.rsvp_verzoeknummer_naar_muziek(
+  p_guest public.guests,
+  p_wens text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_wens is null or p_wens = '' or p_wens = p_guest.verzoeknummer then
+    return;
+  end if;
+
+  delete from public.music_tracks
+  where guest_id = p_guest.id and status = 'voorgesteld';
+
+  insert into public.music_tracks (wedding_id, titel, moment, bron, gast_naam, guest_id, status)
+  values (
+    p_guest.wedding_id,
+    p_wens,
+    'feest',
+    'gast',
+    trim(p_guest.voornaam || ' ' || p_guest.achternaam),
+    p_guest.id,
+    'voorgesteld'
+  );
+end;
+$$;
+revoke all on function public.rsvp_verzoeknummer_naar_muziek(public.guests, text) from public;
+
+-- --- submit_rsvp: wens doorzetten naar music_tracks --------------------
+create or replace function public.submit_rsvp(p_token text, p_payload jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_guest public.guests;
+  v_status text := p_payload ->> 'rsvpStatus';
+  v_wens text := left(trim(coalesce(p_payload ->> 'verzoeknummer', '')), 200);
+begin
+  select * into v_guest from public.guests
+  where rsvp_token = p_token and rsvp_token_revoked = false;
+  if not found then
+    raise exception 'Ongeldige of ingetrokken uitnodiging';
+  end if;
+
+  if v_status is not null and v_status not in ('bevestigd', 'afgemeld') then
+    raise exception 'Ongeldige RSVP-status';
+  end if;
+
+  perform public.rsvp_verzoeknummer_naar_muziek(v_guest, v_wens);
+
+  update public.guests set
+    rsvp_status = coalesce(v_status, rsvp_status),
+    dieetwensen = coalesce(p_payload ->> 'dieetwensen', dieetwensen),
+    heeft_partner = coalesce((p_payload ->> 'heeftPartner')::boolean, heeft_partner),
+    partner_naam = coalesce(p_payload ->> 'partnerNaam', partner_naam),
+    aantal_kinderen = coalesce((p_payload ->> 'aantalKinderen')::integer, aantal_kinderen),
+    verzoeknummer = coalesce(left(p_payload ->> 'verzoeknummer', 200), verzoeknummer),
+    rsvp_bericht = coalesce(left(p_payload ->> 'bericht', 1000), rsvp_bericht),
+    rsvp_submitted_at = now()
+  where id = v_guest.id;
+end;
+$$;
+
+-- --- submit_rsvp_by_name: zelfde doorzetting (naam-zoekroute) -----------
+create or replace function public.submit_rsvp_by_name(
+  p_slug text,
+  p_voornaam text,
+  p_achternaam text,
+  p_payload jsonb
+)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_wedding_id uuid;
+  v_guest      public.guests;
+  v_matches    int;
+  v_status     text := p_payload ->> 'rsvpStatus';
+  v_wens       text := left(trim(coalesce(p_payload ->> 'verzoeknummer', '')), 200);
+begin
+  select wedding_id into v_wedding_id
+  from public.website_content
+  where slug = lower(trim(p_slug)) and website_gepubliceerd = true;
+
+  if v_wedding_id is null then
+    raise exception 'Ongeldige trouwwebsite';
+  end if;
+
+  select count(*) into v_matches
+  from public.guests
+  where wedding_id = v_wedding_id
+    and lower(trim(voornaam)) = lower(trim(p_voornaam))
+    and lower(trim(achternaam)) = lower(trim(p_achternaam));
+
+  if v_matches <> 1 then
+    raise exception 'Gast niet eenduidig gevonden';
+  end if;
+
+  select * into v_guest
+  from public.guests
+  where wedding_id = v_wedding_id
+    and lower(trim(voornaam)) = lower(trim(p_voornaam))
+    and lower(trim(achternaam)) = lower(trim(p_achternaam))
+  limit 1;
+
+  if v_status is not null and v_status not in ('bevestigd', 'afgemeld') then
+    raise exception 'Ongeldige RSVP-status';
+  end if;
+
+  perform public.rsvp_verzoeknummer_naar_muziek(v_guest, v_wens);
+
+  update public.guests set
+    rsvp_status        = coalesce(v_status, rsvp_status),
+    dieetwensen         = coalesce(p_payload ->> 'dieetwensen', dieetwensen),
+    heeft_partner       = coalesce((p_payload ->> 'heeftPartner')::boolean, heeft_partner),
+    partner_naam        = coalesce(p_payload ->> 'partnerNaam', partner_naam),
+    aantal_kinderen     = coalesce((p_payload ->> 'aantalKinderen')::integer, aantal_kinderen),
+    verzoeknummer       = coalesce(left(p_payload ->> 'verzoeknummer', 200), verzoeknummer),
+    rsvp_bericht        = coalesce(left(p_payload ->> 'bericht', 1000), rsvp_bericht),
+    rsvp_submitted_at   = coalesce(rsvp_submitted_at, now())
+  where id = v_guest.id;
+end;
+$$;
+
+-- --- Backfill: eerder achtergelaten RSVP-wensen worden suggesties -------
+-- Gasten die vóór deze migratie al een verzoeknummer achterlieten horen
+-- ook op de Muziek-pagina te verschijnen (als 'voorgesteld', het paar
+-- beoordeelt ze net als nieuwe suggesties).
+insert into public.music_tracks (wedding_id, titel, moment, bron, gast_naam, guest_id, status)
+select
+  g.wedding_id,
+  left(trim(g.verzoeknummer), 200),
+  'feest',
+  'gast',
+  trim(g.voornaam || ' ' || g.achternaam),
+  g.id,
+  'voorgesteld'
+from public.guests g
+where trim(g.verzoeknummer) <> '';

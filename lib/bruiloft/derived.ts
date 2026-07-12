@@ -317,7 +317,7 @@ export function ongelezenActiviteit(
 }
 
 // Aantal inkomende berichten dat de huidige gebruiker nog niet gelezen heeft
-// (voor het badge-stipje op het mail-icoon in de header).
+// (voor het aantal-badge op het mail-icoon in de header).
 export function ongelezenBerichten(
   messages: Message[],
   messageReads: MessageRead[],
@@ -327,7 +327,9 @@ export function ongelezenBerichten(
   const gelezenIds = new Set(
     messageReads.filter((r) => r.userId === currentUserId).map((r) => r.messageId)
   )
-  return messages.filter((m) => m.direction === 'inbound' && !gelezenIds.has(m.id)).length
+  return messages.filter(
+    (m) => m.direction === 'inbound' && !gelezenIds.has(m.id) && !m.archivedAt && !m.deletedAt
+  ).length
 }
 
 // Recentste feed-items eerst, afgekapt op een limiet.

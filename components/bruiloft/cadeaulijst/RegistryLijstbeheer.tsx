@@ -185,7 +185,7 @@ function RegistryItemCard({ item, index, total, reservation, contributions, isEd
 
         {isGift ? (
           <div className="mt-auto flex items-center justify-between">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${isReserved ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${isReserved ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
               {isReserved ? '✓ Gereserveerd' : 'Beschikbaar'}
             </span>
             {item.shopUrl && (
@@ -202,7 +202,7 @@ function RegistryItemCard({ item, index, total, reservation, contributions, isEd
             </div>
             {targetCents > 0 && <Progress value={progressPct} className="h-1.5" />}
             {contributions.pending > 0 && (
-              <p className="text-xs text-amber-600">{formatEuro(contributions.pending / 100, { cents: true })} in behandeling</p>
+              <p className="text-xs text-muted-foreground">{formatEuro(contributions.pending / 100, { cents: true })} in behandeling</p>
             )}
             <p className="text-xs text-muted-foreground">{contributions.count} bijdrage{contributions.count !== 1 ? 's' : ''}</p>
           </div>

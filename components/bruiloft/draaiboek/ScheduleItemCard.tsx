@@ -49,7 +49,7 @@ export function ScheduleItemCard({
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
               <p className="font-medium text-foreground">{s.titel}</p>
               {s.locatie ? (
@@ -68,45 +68,43 @@ export function ScheduleItemCard({
                 </p>
               ) : null}
             </div>
-            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
-              {s.betrokkenen.length > 0 ? (
-                <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
-                  {s.betrokkenen.map((r) => (
-                    <span
-                      key={r}
-                      className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
-                    >
-                      {capFirst(r)}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              {kanBewerken && (
-                <div className="flex shrink-0 gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Bewerken"
-                    onClick={() => onEdit(s)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Verwijderen"
-                    onClick={() => onDelete(s)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-            </div>
+            {kanBewerken && (
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Bewerken"
+                  onClick={() => onEdit(s)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Verwijderen"
+                  onClick={() => onDelete(s)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
           </div>
+          {s.betrokkenen.length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {s.betrokkenen.map((r) => (
+                <span
+                  key={r}
+                  className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                >
+                  {capFirst(r)}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {s.omschrijving ? (
-            <p className="mt-1 text-sm text-muted-foreground">{s.omschrijving}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">{s.omschrijving}</p>
           ) : null}
         </div>
       </CardContent>

@@ -45,6 +45,8 @@ function leeg(categorieen: string[]): NewVendor {
     geoffreerdBedrag: 0,
     notitie: '',
     adres: '',
+    afspraakDatum: null,
+    afspraakTijd: '',
     budgetItemId: undefined,
   }
 }
@@ -61,6 +63,8 @@ function vanVendor(v: Vendor): NewVendor {
     geoffreerdBedrag: v.geoffreerdBedrag,
     notitie: v.notitie,
     adres: v.adres,
+    afspraakDatum: v.afspraakDatum ?? null,
+    afspraakTijd: v.afspraakTijd,
     budgetItemId: v.budgetItemId,
   }
 }
@@ -198,7 +202,6 @@ export function VendorForm({
         >
           <Input
             id="naam"
-            autoFocus
             value={form.naam}
             aria-invalid={naamFout || undefined}
             onChange={(e) => set('naam', e.target.value)}
@@ -314,6 +317,32 @@ export function VendorForm({
                 value={form.adres}
                 onChange={(e) => set('adres', e.target.value)}
                 placeholder="Straat huisnummer, plaats"
+              />
+            </Field>
+          </div>
+
+          {/* Afspraak (bezichtiging/proeverij/gesprek): tijd is optioneel —
+              alleen een dag prikken is ook prima. */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Afspraak" htmlFor="afspraak-datum">
+              <Input
+                id="afspraak-datum"
+                type="date"
+                value={form.afspraakDatum ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value
+                  // Datum wissen wist ook de tijd — een tijd zonder dag is niets.
+                  setForm((f) => ({ ...f, afspraakDatum: v || null, afspraakTijd: v ? f.afspraakTijd : '' }))
+                }}
+              />
+            </Field>
+            <Field label="Tijd (optioneel)" htmlFor="afspraak-tijd">
+              <Input
+                id="afspraak-tijd"
+                type="time"
+                value={form.afspraakTijd}
+                disabled={!form.afspraakDatum}
+                onChange={(e) => set('afspraakTijd', e.target.value)}
               />
             </Field>
           </div>

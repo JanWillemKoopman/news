@@ -1,6 +1,7 @@
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+import { sendWelcomeEmailOnce } from '@/lib/email/welcome'
 import { createClient } from '@/lib/supabase/server'
 
 // Alternatief op /auth/callback voor e-mailsjablonen die token_hash gebruiken.
@@ -14,8 +15,17 @@ export async function GET(request: Request) {
 
   if (tokenHash && type) {
     const supabase = createClient()
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash })
+    const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash })
     if (!error) {
+      // Nieuw account via registratie bevestigd: stuur (eenmalig) de
+      // welkomst-/bevestigingsmail. Best-effort — nooit de login blokkeren.
+      if ((type === 'signup' || type === 'email') && data.user) {
+        try {
+          await sendWelcomeEmailOnce(data.user.id)
+        } catch (err) {
+          console.error('[auth/confirm] welkomstmail mislukt:', err)
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

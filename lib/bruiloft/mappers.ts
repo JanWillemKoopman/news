@@ -7,13 +7,20 @@ import type { Database } from '@/lib/supabase/database.types'
 import { BUDGET_CATEGORIEEN, GASTTYPES, VENDOR_TYPES } from './options'
 import type {
   ActivityEntry,
+  AdresShare,
+  AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
   BudgetItemInput,
   CeremonieType,
+  DraaiboekShare,
   Guest,
   GuestPatch,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MusicTrack,
+  MuziekShare,
   PaymentTerm,
   Rol,
   ScheduleItem,
@@ -28,6 +35,7 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
   VendorInput,
   VoortgangCategorie,
   VoortgangStatus,
@@ -135,6 +143,10 @@ export function guestFromRow(r: Tables['guests']['Row']): Guest {
     tafelId: r.tafel_id ?? undefined,
     stoelIndex: r.stoel_index ?? undefined,
     rsvpCode: r.rsvp_token ?? undefined,
+    // verzoeknummer/rsvp_bericht ontbreken in de gegenereerde
+    // database.types.ts (migratie 0073) — zelfde any-drift als elders.
+    verzoeknummer: (r as any).verzoeknummer ?? '',
+    rsvpBericht: (r as any).rsvp_bericht ?? '',
   }
 }
 
@@ -214,6 +226,11 @@ export function vendorFromRow(r: Tables['vendors']['Row']): Vendor {
     geoffreerdBedrag: num(r.geoffreerd_bedrag),
     notitie: r.notitie,
     adres: r.adres,
+    // afspraak_datum/afspraak_tijd ontbreken in de gegenereerde
+    // database.types.ts (nieuwe migratie 0070) — zelfde any-drift als
+    // tpw_business_id hieronder.
+    afspraakDatum: (r as any).afspraak_datum ?? null,
+    afspraakTijd: (r as any).afspraak_tijd ?? '',
     latitude: r.latitude ?? null,
     longitude: r.longitude ?? null,
     budgetItemId: r.budget_item_id ?? undefined,
@@ -236,6 +253,9 @@ export function vendorToRow(p: Partial<VendorInput>): Partial<Tables['vendors'][
   if (p.geoffreerdBedrag !== undefined) r.geoffreerd_bedrag = p.geoffreerdBedrag
   if (p.notitie !== undefined) r.notitie = p.notitie
   if (p.adres !== undefined) r.adres = p.adres
+  // afspraak_datum/afspraak_tijd: zie any-drift-toelichting in vendorFromRow.
+  if (p.afspraakDatum !== undefined) (r as any).afspraak_datum = p.afspraakDatum || null
+  if (p.afspraakTijd !== undefined) (r as any).afspraak_tijd = p.afspraakTijd
   if (p.latitude !== undefined) r.latitude = p.latitude
   if (p.longitude !== undefined) r.longitude = p.longitude
   if (p.budgetItemId !== undefined) r.budget_item_id = p.budgetItemId ?? null
@@ -264,6 +284,122 @@ export function vendorContactRequestFromRow(
   }
 }
 
+// --- Documentenkluis ---------------------------------------------------
+// vendor_documents ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0068; types nog niet geregenereerd) — zelfde any-drift
+// als messages hieronder.
+export function vendorDocumentFromRow(r: any): VendorDocument {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    vendorId: r.vendor_id,
+    naam: r.naam,
+    soort: r.soort,
+    storagePath: r.storage_path,
+    mimeType: r.mime_type,
+    grootte: num(r.grootte),
+    geuploadDoor: r.geupload_door ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0075) — zelfde any-drift als vendor_documents hierboven.
+export function budgetItemDocumentFromRow(r: any): BudgetItemDocument {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    budgetItemId: r.budget_item_id,
+    naam: r.naam,
+    soort: r.soort,
+    storagePath: r.storage_path,
+    mimeType: r.mime_type,
+    grootte: num(r.grootte),
+    geuploadDoor: r.geupload_door ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Draaiboek delen ---------------------------------------------------
+// draaiboek_shares ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0069; types nog niet geregenereerd) — zelfde any-drift
+// als vendor_documents hierboven.
+export function draaiboekShareFromRow(r: any): DraaiboekShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// agenda_shares: zelfde drift-situatie (migratie 0071) en zelfde vorm.
+export function agendaShareFromRow(r: any): AgendaShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// adres_shares: idem (migratie 0072).
+export function adresShareFromRow(r: any): AdresShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Moodboard -----------------------------------------------------------
+// mood_board_items ontbreekt nog in de gegenereerde database.types.ts
+// (nieuwe migratie 0077) — zelfde any-drift als vendor_documents hierboven.
+export function moodBoardItemFromRow(r: any): MoodBoardItem {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    categorie: r.categorie,
+    url: r.url,
+    bron: r.bron,
+    bronUrl: r.bron_url ?? null,
+    titel: r.titel,
+    volgorde: num(r.volgorde),
+    createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Muziek ----------------------------------------------------------------
+// music_tracks/music_shares ontbreken nog in de gegenereerde
+// database.types.ts (nieuwe migratie 0078) — zelfde any-drift als
+// vendor_documents hierboven.
+export function musicTrackFromRow(r: any): MusicTrack {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    titel: r.titel,
+    artiest: r.artiest,
+    moment: r.moment,
+    opmerking: r.opmerking,
+    url: r.url,
+    bron: r.bron,
+    gastNaam: r.gast_naam,
+    guestId: r.guest_id ?? null,
+    status: r.status,
+    volgorde: num(r.volgorde),
+    createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// music_shares: zelfde vorm als draaiboek_shares (0069).
+export function muziekShareFromRow(r: any): MuziekShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
+    createdAt: r.created_at,
+  }
+}
+
 // --- Berichten (Berichtencentrum) -------------------------------------
 // messages/message_reads ontbreken nog in de gegenereerde database.types.ts
 // (nieuwe migratie 0058; types nog niet geregenereerd) — zelfde any-drift
@@ -282,6 +418,11 @@ export function messageFromRow(r: any): Message {
     verzondenDoor: r.verzonden_door ?? undefined,
     status: r.status,
     metadata: r.metadata ?? undefined,
+    // reply_token wordt bewust NIET gemapt: die hoort alleen in de e-mail aan
+    // de leverancier thuis, niet in de client-state.
+    parentMessageId: r.parent_message_id ?? undefined,
+    archivedAt: r.archived_at ?? undefined,
+    deletedAt: r.deleted_at ?? undefined,
     createdAt: r.created_at,
   }
 }

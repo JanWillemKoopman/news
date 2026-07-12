@@ -6,12 +6,19 @@ import type { Database } from '@/lib/supabase/database.types'
 
 import {
   activityFromRow,
+  adresShareFromRow,
+  agendaShareFromRow,
+  budgetItemDocumentFromRow,
   budgetItemFromRow,
   budgetItemToRow,
+  draaiboekShareFromRow,
   guestFromRow,
   guestToRow,
   messageFromRow,
   messageReadFromRow,
+  moodBoardItemFromRow,
+  musicTrackFromRow,
+  muziekShareFromRow,
   scheduleItemFromRow,
   scheduleItemToRow,
   tableFromRow,
@@ -21,6 +28,7 @@ import {
   taskFromRow,
   taskToRow,
   vendorContactRequestFromRow,
+  vendorDocumentFromRow,
   vendorFromRow,
   vendorToRow,
   websiteContentFromRow,
@@ -34,14 +42,24 @@ import {
 import type { WeddingRepository } from './repository'
 import type {
   ActivityEntry,
+  AdresShare,
+  AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentInput,
   BudgetItemInput,
+  DraaiboekShare,
   Guest,
   GuestInput,
   GuestPatch,
   ID,
   Message,
   MessageRead,
+  MoodBoardItem,
+  MoodBoardItemInput,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -52,6 +70,8 @@ import type {
   TaskInput,
   Vendor,
   VendorContactRequest,
+  VendorDocument,
+  VendorDocumentInput,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -263,6 +283,280 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     return (data ?? []).map(vendorContactRequestFromRow)
   }
 
+  // --- Documentenkluis -------------------------------------------------
+  // vendor_documents ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0068), vandaar rawDb — zelfde patroon als messages.
+  async listVendorDocuments(weddingId: ID): Promise<VendorDocument[]> {
+    const { data, error } = await this.rawDb
+      .from('vendor_documents')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(vendorDocumentFromRow)
+  }
+
+  async createVendorDocument(input: VendorDocumentInput): Promise<VendorDocument> {
+    const { data, error } = await this.rawDb
+      .from('vendor_documents')
+      .insert({
+        wedding_id: input.weddingId,
+        vendor_id: input.vendorId,
+        naam: input.naam,
+        soort: input.soort,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        grootte: input.grootte,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return vendorDocumentFromRow(data)
+  }
+
+  async deleteVendorDocument(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('vendor_documents').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Draaiboek delen -------------------------------------------------
+  // draaiboek_shares ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0069), vandaar rawDb — zelfde patroon als messages.
+  async getDraaiboekShare(weddingId: ID): Promise<DraaiboekShare | null> {
+    const { data, error } = await this.rawDb
+      .from('draaiboek_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? draaiboekShareFromRow(data) : null
+  }
+
+  async createDraaiboekShare(weddingId: ID): Promise<DraaiboekShare> {
+    const { data, error } = await this.rawDb
+      .from('draaiboek_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return draaiboekShareFromRow(data)
+  }
+
+  async deleteDraaiboekShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('draaiboek_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
+  // --- Agenda-koppeling ------------------------------------------------
+  // agenda_shares: zelfde drift-situatie als draaiboek_shares (0071).
+  async getAgendaShare(weddingId: ID): Promise<AgendaShare | null> {
+    const { data, error } = await this.rawDb
+      .from('agenda_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? agendaShareFromRow(data) : null
+  }
+
+  async createAgendaShare(weddingId: ID): Promise<AgendaShare> {
+    const { data, error } = await this.rawDb
+      .from('agenda_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return agendaShareFromRow(data)
+  }
+
+  async deleteAgendaShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('agenda_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
+  // --- Adreslink ---------------------------------------------------------
+  // adres_shares: zelfde drift-situatie als de andere shares (0072).
+  async getAdresShare(weddingId: ID): Promise<AdresShare | null> {
+    const { data, error } = await this.rawDb
+      .from('adres_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? adresShareFromRow(data) : null
+  }
+
+  async createAdresShare(weddingId: ID): Promise<AdresShare> {
+    const { data, error } = await this.rawDb
+      .from('adres_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return adresShareFromRow(data)
+  }
+
+  async deleteAdresShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('adres_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
+  // --- Moodboard ---------------------------------------------------------
+  // mood_board_items: zelfde drift-situatie als de andere nieuwe tabellen
+  // (0077).
+  async listMoodBoardItems(weddingId: ID): Promise<MoodBoardItem[]> {
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(moodBoardItemFromRow)
+  }
+
+  async createMoodBoardItem(
+    weddingId: ID,
+    input: MoodBoardItemInput,
+    volgorde: number
+  ): Promise<MoodBoardItem> {
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .insert({
+        wedding_id: weddingId,
+        categorie: input.categorie,
+        url: input.url,
+        bron: input.bron,
+        bron_url: input.bronUrl,
+        titel: input.titel,
+        volgorde,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return moodBoardItemFromRow(data)
+  }
+
+  async updateMoodBoardItem(
+    id: ID,
+    patch: Partial<Pick<MoodBoardItem, 'categorie' | 'titel'>>
+  ): Promise<MoodBoardItem> {
+    const row: Record<string, unknown> = {}
+    if (patch.categorie !== undefined) row.categorie = patch.categorie
+    if (patch.titel !== undefined) row.titel = patch.titel
+    const { data, error } = await this.rawDb
+      .from('mood_board_items')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return moodBoardItemFromRow(data)
+  }
+
+  async deleteMoodBoardItem(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('mood_board_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void> {
+    // PostgREST kent geen "bulk update met per-rij andere waarde" in één
+    // call; dit gebeurt alleen ná een drag (niet hot-path), dus N parallelle
+    // updates is prima.
+    const results = await Promise.all(
+      updates.map((u) => this.rawDb.from('mood_board_items').update({ volgorde: u.volgorde }).eq('id', u.id))
+    )
+    const fout = results.find((r) => r.error)
+    if (fout?.error) throw fout.error
+  }
+
+  // --- Muziek --------------------------------------------------------
+  // music_tracks/music_shares: zelfde drift-situatie als de andere nieuwe
+  // tabellen (0078).
+  async listMusicTracks(weddingId: ID): Promise<MusicTrack[]> {
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(musicTrackFromRow)
+  }
+
+  async createMusicTrack(
+    weddingId: ID,
+    input: MusicTrackInput,
+    volgorde: number
+  ): Promise<MusicTrack> {
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .insert({
+        wedding_id: weddingId,
+        titel: input.titel,
+        artiest: input.artiest,
+        moment: input.moment,
+        opmerking: input.opmerking,
+        url: input.url,
+        volgorde,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return musicTrackFromRow(data)
+  }
+
+  async updateMusicTrack(
+    id: ID,
+    patch: Partial<Pick<MusicTrack, 'titel' | 'artiest' | 'moment' | 'opmerking' | 'url' | 'status' | 'volgorde'>>
+  ): Promise<MusicTrack> {
+    const row: Record<string, unknown> = {}
+    if (patch.titel !== undefined) row.titel = patch.titel
+    if (patch.artiest !== undefined) row.artiest = patch.artiest
+    if (patch.moment !== undefined) row.moment = patch.moment
+    if (patch.opmerking !== undefined) row.opmerking = patch.opmerking
+    if (patch.url !== undefined) row.url = patch.url
+    if (patch.status !== undefined) row.status = patch.status
+    if (patch.volgorde !== undefined) row.volgorde = patch.volgorde
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return musicTrackFromRow(data)
+  }
+
+  async deleteMusicTrack(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('music_tracks').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async getMuziekShare(weddingId: ID): Promise<MuziekShare | null> {
+    const { data, error } = await this.rawDb
+      .from('music_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? muziekShareFromRow(data) : null
+  }
+
+  async createMuziekShare(weddingId: ID): Promise<MuziekShare> {
+    const { data, error } = await this.rawDb
+      .from('music_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return muziekShareFromRow(data)
+  }
+
+  async deleteMuziekShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('music_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
+  }
+
   // --- Berichtencentrum ------------------------------------------------
   async listMessages(weddingId: ID): Promise<Message[]> {
     const { data, error } = await this.rawDb
@@ -291,6 +585,36 @@ export class SupabaseWeddingRepository implements WeddingRepository {
       .single()
     if (error) throw error
     return messageReadFromRow(data)
+  }
+
+  // Archiveren/verwijderen: alleen archived_at/deleted_at zijn schrijfbaar
+  // vanaf de client — messages_guard_update() (migratie 0061) dwingt dat af,
+  // ook als hier per ongeluk meer velden meegestuurd zouden worden.
+  private async patchMessage(messageId: ID, patch: Record<string, unknown>): Promise<Message> {
+    const { data, error } = await this.rawDb
+      .from('messages')
+      .update(patch)
+      .eq('id', messageId)
+      .select()
+      .single()
+    if (error) throw error
+    return messageFromRow(data)
+  }
+
+  async archiveMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { archived_at: new Date().toISOString() })
+  }
+
+  async unarchiveMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { archived_at: null })
+  }
+
+  async trashMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { deleted_at: new Date().toISOString() })
+  }
+
+  async restoreMessage(messageId: ID): Promise<Message> {
+    return this.patchMessage(messageId, { deleted_at: null })
   }
 
   // --- BudgetItems ---------------------------------------------------
@@ -335,6 +659,42 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   async deleteBudgetItem(id: ID): Promise<void> {
     const { error } = await this.db.from('budget_items').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // --- Documentenkluis (budgetposten) ---------------------------------
+  // budget_item_documents ontbreekt nog in de gegenereerde database.types.ts
+  // (nieuwe migratie 0075), vandaar rawDb — zelfde patroon als vendor_documents.
+  async listBudgetItemDocuments(weddingId: ID): Promise<BudgetItemDocument[]> {
+    const { data, error } = await this.rawDb
+      .from('budget_item_documents')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(budgetItemDocumentFromRow)
+  }
+
+  async createBudgetItemDocument(input: BudgetItemDocumentInput): Promise<BudgetItemDocument> {
+    const { data, error } = await this.rawDb
+      .from('budget_item_documents')
+      .insert({
+        wedding_id: input.weddingId,
+        budget_item_id: input.budgetItemId,
+        naam: input.naam,
+        soort: input.soort,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        grootte: input.grootte,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return budgetItemDocumentFromRow(data)
+  }
+
+  async deleteBudgetItemDocument(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('budget_item_documents').delete().eq('id', id)
     if (error) throw error
   }
 

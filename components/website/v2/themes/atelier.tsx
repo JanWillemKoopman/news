@@ -637,6 +637,8 @@ function Rsvp({ block, ctx }: { block: RsvpBlock; ctx: RenderContext }) {
         {b.komt && (
           <div className="space-y-5 text-left">
             <input value={b.dieet} onChange={(e) => b.setDieet(e.target.value)} placeholder="Dieetwensen (optioneel)" className="at-veld" />
+            <input value={b.verzoeknummer} onChange={(e) => b.setVerzoeknummer(e.target.value)} placeholder="Muziekwens: artiest — nummer (optioneel)" className="at-veld" />
+            <input value={b.bericht} onChange={(e) => b.setBericht(e.target.value)} placeholder="Bericht voor het bruidspaar (optioneel)" className="at-veld" />
             <label className="flex min-h-12 cursor-pointer items-center gap-3 text-sm" style={{ color: 'var(--site-text)' }}>
               <input
                 type="checkbox"

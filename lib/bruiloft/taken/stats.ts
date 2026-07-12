@@ -41,10 +41,12 @@ export function berekenTaakStats(tasks: Task[]): TaakStats {
   return { totaal, open, bezig, klaar, achterstallig, aankomend30Dagen, pctKlaar }
 }
 
-// Taken met deadline binnen 30 dagen die nog niet klaar zijn — cross-tijdsblok.
+// Taken die nu aandacht vragen: achterstallig óf deadline binnen 30 dagen,
+// en nog niet klaar — cross-tijdsblok. Achterstallig sorteert vanzelf bovenaan
+// (oudste deadline eerst).
 export function aankomendeTaken(tasks: Task[]): Task[] {
   return tasks
-    .filter((t) => t.status !== 'klaar' && binnenDertigDagen(t.deadline))
+    .filter((t) => t.status !== 'klaar' && dagenTot(t.deadline) <= 30)
     .sort((a, b) => a.deadline.localeCompare(b.deadline))
 }
 

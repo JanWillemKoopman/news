@@ -106,7 +106,7 @@ export function RsvpDeelModal({ guest, onOpenChange, weddingId }: RsvpDeelModalP
               className="shrink-0 rounded p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Kopieer link"
             >
-              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
             </button>
           </div>
         ) : null}

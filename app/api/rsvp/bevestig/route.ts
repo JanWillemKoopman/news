@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createClient } from '@/lib/supabase/server'
 
 const bodySchema = z.object({
@@ -14,6 +14,8 @@ const bodySchema = z.object({
     heeftPartner: z.boolean().optional(),
     partnerNaam: z.string().max(200).optional(),
     aantalKinderen: z.number().int().min(0).max(20).optional(),
+    verzoeknummer: z.string().max(200).optional(),
+    bericht: z.string().max(1000).optional(),
   }),
 })
 
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { slug, voornaam, achternaam, payload } = parsed.data
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
 
   const rateLimit = await checkRateLimit(`rsvp:bevestig:${ip}:${slug}`, 10, 15 * 60)
   if (!rateLimit.allowed) {

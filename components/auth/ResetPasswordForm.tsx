@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 
+import { Button } from '@/components/bruiloft/ui'
 import { PasswordInput } from '@/components/ui/password-input'
 
 import { mapAuthError } from './authErrors'
@@ -70,6 +71,9 @@ export function ResetPasswordForm() {
       setLoading(false)
       return
     }
+    // Uitgenodigde leden landen hier na hun eerste wachtwoord: hun account is
+    // nu compleet, dus stuur (eenmalig) de bevestigingsmail. Fire-and-forget.
+    void fetch('/api/account/welcome', { method: 'POST' }).catch(() => {})
     setDone(true)
     setLoading(false)
     router.push('/inloggen?succes=wachtwoord_gewijzigd')
@@ -136,18 +140,14 @@ export function ResetPasswordForm() {
             </div>
 
             {error ? (
-              <p className="text-sm font-medium text-red-600" role="alert">
+              <p className="text-sm font-medium text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
 
-            <button
-              type="submit"
-              disabled={loading || done}
-              className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading || done ? 'Even geduld…' : 'Wachtwoord opslaan'}
-            </button>
+            <Button type="submit" loading={loading || done} className="w-full">
+              Wachtwoord opslaan
+            </Button>
           </form>
         </div>
       </div>

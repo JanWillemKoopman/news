@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
+import { isPlatformAdmin } from '@/lib/supabase/authz'
 import { hashPassword } from '@/lib/crypto/password'
 
 export const runtime = 'nodejs'
@@ -42,7 +43,9 @@ export async function PATCH(request: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
   if (!member || member.role !== 'owner') {
-    return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    if (!(await isPlatformAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: 'Geen toegang' }, { status: 403 })
+    }
   }
 
   const dbPatch: Record<string, unknown> = { updated_at: new Date().toISOString() }

@@ -131,7 +131,6 @@ export function ScheduleItemForm({
             <Input
               id="tijd"
               type="time"
-              autoFocus
               value={form.tijd}
               onChange={(e) => set('tijd', e.target.value)}
               required

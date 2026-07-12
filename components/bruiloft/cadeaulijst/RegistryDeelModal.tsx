@@ -45,7 +45,7 @@ export function RegistryDeelModal({ open, onOpenChange }: Props) {
     >
       <div className="space-y-4">
         {!isEnabled && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="rounded-lg border border-rose-600/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700">
             De cadeaulijst is momenteel niet zichtbaar voor gasten. Zet hem aan via <strong>Instellingen</strong>.
           </div>
         )}
@@ -61,14 +61,14 @@ export function RegistryDeelModal({ open, onOpenChange }: Props) {
                 className="shrink-0 rounded p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Kopieer link"
               >
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
 
             {/* Action buttons */}
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" onClick={copyLink} className="w-full">
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                 {copied ? 'Gekopieerd!' : 'Kopieer link'}
               </Button>
 

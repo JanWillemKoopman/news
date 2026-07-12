@@ -3,13 +3,12 @@
 import * as React from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Compass, FileText, MessageCircle, Pencil, Plus, Search, Store, Tags, Trash2 } from 'lucide-react'
+import { CalendarClock, Compass, FileText, MessageCircle, Paperclip, Pencil, Plus, Store, Tags, Trash2 } from 'lucide-react'
 
 import { PageHeader } from '@/components/bruiloft/PageHeader'
 import { PageInfoButton } from '@/components/bruiloft/PageInfoButton'
 import { leveranciersInfo } from '@/components/bruiloft/faqContent'
 import { CategorieVoortgang } from '@/components/bruiloft/leveranciers/CategorieVoortgang'
-import { DropdownFilter } from '@/components/bruiloft/leveranciers/DropdownFilter'
 import { LeveranciersTabs } from '@/components/bruiloft/leveranciers/LeveranciersTabs'
 import { LeverancierBerichtModal } from '@/components/bruiloft/leveranciers/LeverancierBerichtModal'
 import { MijnLijstFilters } from '@/components/bruiloft/leveranciers/MijnLijstFilters'
@@ -27,14 +26,16 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Input,
+  FilterDropdown,
   Money,
   OverflowMenu,
+  SearchInput,
   SortableTh,
   StatusBadge,
   useToast,
 } from '@/components/bruiloft/ui'
 import { capFirst, cn } from '@/lib/utils'
+import { afspraakRelatief, dagenTot, formatDatumNL } from '@/lib/bruiloft/format'
 import { canEdit } from '@/lib/bruiloft/permissions'
 import { categorieVoorWeergave, VENDOR_STATUSSEN, VENDOR_TYPES } from '@/lib/bruiloft/options'
 import { geboektePerCategorie } from '@/lib/bruiloft/derived'
@@ -46,6 +47,7 @@ type SortKolom = 'naam' | 'type' | 'status' | 'bedrag' | 'adres'
 export default function LeveranciersPage() {
   const wedding = useBruiloftStore((s) => s.wedding)
   const vendors = useBruiloftStore((s) => s.vendors)
+  const vendorDocuments = useBruiloftStore((s) => s.vendorDocuments)
   const budgetItems = useBruiloftStore((s) => s.budgetItems)
   const addVendor = useBruiloftStore((s) => s.addVendor)
   const updateVendor = useBruiloftStore((s) => s.updateVendor)
@@ -133,6 +135,24 @@ export default function LeveranciersPage() {
   const totaalBinnenType = Array.from(statusTellers.values()).reduce((a, b) => a + b, 0)
   const geboekteCategorieen = geboektePerCategorie(vendors, categorieen)
 
+  // Eerstvolgende afspraken (vandaag of later) — de agenda van de
+  // oriëntatiefase, als rustige klikbare regels boven de lijst.
+  const komendeAfspraken = vendors
+    .filter((v) => v.afspraakDatum && dagenTot(v.afspraakDatum) >= 0)
+    .sort((a, b) =>
+      `${a.afspraakDatum}T${a.afspraakTijd || '99:99'}`.localeCompare(
+        `${b.afspraakDatum}T${b.afspraakTijd || '99:99'}`
+      )
+    )
+    .slice(0, 3)
+
+  // Documenten per leverancier — de paperclip in de lijst laat zien dat er
+  // iets bewaard is én maakt de documentenkluis in de detailpopup vindbaar.
+  const documentTellers = new Map<ID, number>()
+  for (const d of vendorDocuments) {
+    documentTellers.set(d.vendorId, (documentTellers.get(d.vendorId) ?? 0) + 1)
+  }
+
   // Tellers per categorie (afwijkende/legacy types tellen mee onder Overig).
   const categorieTellers = new Map<string, number>()
   for (const v of vendors) {
@@ -145,7 +165,7 @@ export default function LeveranciersPage() {
       value: c,
       label: capFirst(c),
       count: categorieTellers.get(c) ?? 0,
-      geboekt: geboekteCategorieen.has(c),
+      check: geboekteCategorieen.has(c),
     })),
   ]
   const statusOpties = [
@@ -209,29 +229,52 @@ export default function LeveranciersPage() {
 
       {vendors.length > 0 ? <CategorieVoortgang vendors={vendors} categorieen={categorieen} /> : null}
 
+      {komendeAfspraken.length > 0 ? (
+        <div className="mb-5 divide-y divide-border rounded-xl border border-border bg-card shadow-sm">
+          {komendeAfspraken.map((v) => {
+            const dagen = dagenTot(v.afspraakDatum!)
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => openDetail(v)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              >
+                <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  <span className="font-medium text-foreground">
+                    {formatDatumNL(v.afspraakDatum!)}
+                    {v.afspraakTijd ? ` om ${v.afspraakTijd}` : ''}
+                  </span>
+                  <span className="text-muted-foreground"> — afspraak bij {v.naam}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{afspraakRelatief(dagen)}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
       {vendors.length > 0 ? (
         <div className="mb-5 flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={zoek}
-              onChange={(e) => setZoek(e.target.value)}
-              placeholder="Zoek leverancier…"
-              className="pl-9"
-              aria-label="Zoek in jullie leveranciers"
-            />
-          </div>
+          <SearchInput
+            value={zoek}
+            onValueChange={setZoek}
+            placeholder="Zoek leverancier…"
+            aria-label="Zoek in jullie leveranciers"
+            containerClassName="min-w-0 flex-1"
+          />
 
           {/* Desktop: filters direct zichtbaar naast de zoekbalk, zelfde
               ontwerp als de statusfilter op /bruiloft/budget */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
-            <DropdownFilter
+            <FilterDropdown
               value={fType}
               onChange={setFType}
               options={categorieOpties}
               ariaLabel="Filter op categorie"
             />
-            <DropdownFilter
+            <FilterDropdown
               value={fStatus}
               onChange={setFStatus}
               options={statusOpties}
@@ -325,6 +368,7 @@ export default function LeveranciersPage() {
               <tbody>
                 {gesorteerd.map((v) => {
                   const kanContact = kanBewerken && Boolean(v.email)
+                  const aantalDocumenten = documentTellers.get(v.id) ?? 0
                   return (
                     <tr
                       key={v.id}
@@ -340,7 +384,20 @@ export default function LeveranciersPage() {
                       aria-label={`Meer informatie over ${v.naam}`}
                       className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/40"
                     >
-                      <td className="px-4 py-3 font-medium text-foreground">{v.naam}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          {v.naam}
+                          {aantalDocumenten > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-xs font-normal text-muted-foreground"
+                              aria-label={`${aantalDocumenten} ${aantalDocumenten === 1 ? 'document' : 'documenten'}`}
+                            >
+                              <Paperclip className="h-3.5 w-3.5" aria-hidden />
+                              {aantalDocumenten}
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {capFirst(categorieVoorWeergave(v.type, categorieen))}
                       </td>
@@ -379,6 +436,7 @@ export default function LeveranciersPage() {
           <div className="divide-y divide-border rounded-xl border border-border bg-card shadow-sm md:hidden">
             {gesorteerd.map((v) => {
               const kanContact = kanBewerken && Boolean(v.email)
+              const aantalDocumenten = documentTellers.get(v.id) ?? 0
               return (
                 <div
                   key={v.id}
@@ -397,7 +455,18 @@ export default function LeveranciersPage() {
                   )}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{v.naam}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <span className="truncate">{v.naam}</span>
+                      {aantalDocumenten > 0 ? (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-normal text-muted-foreground"
+                          aria-label={`${aantalDocumenten} ${aantalDocumenten === 1 ? 'document' : 'documenten'}`}
+                        >
+                          <Paperclip className="h-3 w-3" aria-hidden />
+                          {aantalDocumenten}
+                        </span>
+                      ) : null}
+                    </p>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {capFirst(categorieVoorWeergave(v.type, categorieen))}
                       {v.adres ? ` · ${v.adres}` : ''}

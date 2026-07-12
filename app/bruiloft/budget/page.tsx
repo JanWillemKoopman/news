@@ -159,6 +159,7 @@ export default function BudgetPage() {
           bevestigdeDaggasten={bevestigdeDaggasten}
           afwijkendeItemIds={afwijkingen.itemIds}
           categorieen={categorieen}
+          kanBewerken={kanBewerken}
           onEdit={kanBewerken ? openBewerk : undefined}
           onDelete={kanBewerken ? setDeleteItem : undefined}
           onToggleTerm={kanBewerken ? toggleTerm : undefined}

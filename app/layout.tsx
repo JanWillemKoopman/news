@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { GlobalErrorHandler } from '@/components/admin/GlobalErrorHandler'
 import { ErrorBoundary } from '@/components/admin/ErrorBoundary'
-
-const inter = Inter({ subsets: ['latin'] })
+import { inter } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: {
@@ -31,7 +29,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl" className="bg-background">
-      <body className={`${inter.className} min-h-dvh bg-white text-foreground antialiased`}>
+      <body className={`${inter.variable} min-h-dvh bg-white font-sans text-foreground antialiased`}>
         <GlobalErrorHandler />
         <ErrorBoundary>
           {children}

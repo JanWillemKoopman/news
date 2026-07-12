@@ -1,4 +1,4 @@
-import { dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
+import { afspraakRelatief, dagLabel, formatDatumNL, formatEuro } from '@/lib/bruiloft/format'
 
 function escapeHtml(str: string): string {
   return String(str)
@@ -126,6 +126,74 @@ export function renderPartnerInviteEmail(p: PartnerInviteEmailProps): { subject:
   return { subject, html: baseHtml('Stel je wachtwoord in', inhoud) }
 }
 
+// --- Lid uitnodigen met rol (ledenbeheer) -----------------------------------
+
+export interface MemberInviteEmailProps {
+  inviterNamen: string
+  rolLabel: string
+  rolOmschrijving: string
+  actionUrl: string
+  // true = het account bestond al; de mail nodigt dan uit om (opnieuw) een
+  // wachtwoord in te stellen i.p.v. een account aan te maken.
+  heeftAccount: boolean
+}
+
+export function renderMemberInviteEmail(p: MemberInviteEmailProps): { subject: string; html: string } {
+  const subject = `${p.inviterNamen} nodigt je uit als ${p.rolLabel.toLowerCase()} — Ons Trouwplan`
+  const intro = p.heeftAccount
+    ? `<strong>${escapeHtml(p.inviterNamen)}</strong> nodigt je uit om mee te werken aan hun trouwplan
+       op Ons Trouwplan. Je hebt al een account; stel eventueel een nieuw wachtwoord in en je kunt direct meekijken.`
+    : `<strong>${escapeHtml(p.inviterNamen)}</strong> nodigt je uit om mee te werken aan hun trouwplan
+       op Ons Trouwplan. Stel een wachtwoord in en je account is meteen klaar.`
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">${intro}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:16px 20px;">
+          <p style="margin:0 0 4px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">Jouw rol</p>
+          <p style="margin:0;font-size:15px;color:#1c1917;line-height:1.6;"><strong>${escapeHtml(p.rolLabel)}</strong> — ${escapeHtml(p.rolOmschrijving)}</p>
+        </td>
+      </tr>
+    </table>
+    ${ctaKnop(p.actionUrl, 'Wachtwoord instellen')}
+    <p style="margin:0;font-size:12px;color:#a8a29e;word-break:break-all;">
+      Of kopieer deze link handmatig:<br />
+      <a href="${p.actionUrl}" style="color:#be123c;">${p.actionUrl}</a>
+    </p>
+  `
+  return { subject, html: baseHtml('Je bent uitgenodigd', inhoud) }
+}
+
+// --- Welkomstbevestiging na het aanmaken van een account --------------------
+
+export interface WelcomeEmailProps {
+  naam: string
+  dashboardUrl: string
+}
+
+export function renderWelcomeEmail(p: WelcomeEmailProps): { subject: string; html: string } {
+  const subject = 'Je account is klaar — Ons Trouwplan'
+  const inhoud = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1c1917;line-height:1.6;">
+      Hoi <strong>${escapeHtml(p.naam || 'daar')}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;color:#57534e;line-height:1.6;">
+      Je account bij Ons Trouwplan is aangemaakt en klaar voor gebruik. Vanaf nu
+      log je in met je e-mailadres en het wachtwoord dat je zojuist hebt ingesteld.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#57534e;line-height:1.6;">
+      In het trouwplan vind je alles op één plek: taken, budget, gasten, het
+      draaiboek en meer.
+    </p>
+    ${ctaKnop(p.dashboardUrl, 'Naar het trouwplan')}
+    <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+      Heb je dit account niet zelf aangemaakt? Neem dan contact met ons op, dan
+      lossen we het samen op.
+    </p>
+  `
+  return { subject, html: baseHtml('Welkom bij Ons Trouwplan', inhoud) }
+}
+
 export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: string } {
   const subject = `Uitnodiging — ${p.partnerNamen} vragen om jouw reactie`
   const datumRegel = p.trouwdatum
@@ -159,8 +227,13 @@ export function renderRsvpEmail(p: RsvpEmailProps): { subject: string; html: str
 // --- Leverancierscontact (offerte-/contactaanvraag) ------------------------
 
 export interface VendorContactEmailProps {
+  type: 'offerte' | 'contact'
   onderwerp: string
   bericht: string // vrije tekst, alinea's gescheiden door een lege regel
+  // "Anna & Tom" — de afzenders zoals de leverancier ze te zien krijgt.
+  afzenderNamen: string
+  // Publieke reageer-link (token). null = geen knop tonen (site-URL onbekend).
+  replyUrl: string | null
 }
 
 // Zet vrije tekst (zoals bewerkt in de compose-modal) om naar veilige HTML:
@@ -178,8 +251,118 @@ function berichtNaarHtml(bericht: string): string {
 }
 
 export function renderVendorContactEmail(p: VendorContactEmailProps): { subject: string; html: string } {
-  const inhoud = berichtNaarHtml(p.bericht)
-  return { subject: p.onderwerp, html: baseHtml(p.onderwerp, inhoud) }
+  const introRegel =
+    p.type === 'offerte'
+      ? `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'vragen' : 'vraagt'} via Ons Trouwplan een offerte bij je aan.`
+      : `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'sturen' : 'stuurt'} je een bericht via Ons Trouwplan.`
+
+  const snelreactieHint =
+    p.type === 'offerte'
+      ? ' Geen plek op de gewenste datum? Ook dat laat je daar met één klik weten.'
+      : ''
+  const reageerBlok = p.replyUrl
+    ? `${ctaKnop(p.replyUrl, 'Reageer op dit bericht')}
+    <p style="margin:0 0 8px;font-size:13px;color:#a8a29e;line-height:1.6;">
+      Reageren kan direct online — je hebt geen account nodig. Je reactie komt
+      rechtstreeks in het trouwplan van ${escapeHtml(p.afzenderNamen)} terecht.${snelreactieHint}
+    </p>
+    <p style="margin:0 0 16px;font-size:12px;color:#a8a29e;word-break:break-all;">
+      Of kopieer deze link handmatig:<br />
+      <a href="${p.replyUrl}" style="color:#be123c;">${p.replyUrl}</a>
+    </p>
+    <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+      <strong>Let op:</strong> een antwoord op deze e-mail komt niet bij
+      ${escapeHtml(p.afzenderNamen)} aan — gebruik de knop hierboven.
+    </p>`
+    : ''
+
+  const inhoud = `
+    <p style="margin:0 0 20px;font-size:16px;color:#1c1917;line-height:1.6;">${introRegel}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:20px 24px;">
+          <p style="margin:0 0 12px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(p.onderwerp)}</p>
+          ${berichtNaarHtml(p.bericht)}
+        </td>
+      </tr>
+    </table>
+    ${reageerBlok}
+  `
+  return {
+    subject: p.onderwerp,
+    html: baseHtml(p.type === 'offerte' ? 'Offerteaanvraag' : 'Nieuw bericht', inhoud),
+  }
+}
+
+// --- Vervolgbericht in een bestaand leveranciersgesprek ---------------------
+
+export interface VendorFollowUpEmailProps {
+  onderwerp: string
+  bericht: string
+  afzenderNamen: string
+  // Zelfde reageer-link als het openingsbericht: het gesprek deelt één token.
+  replyUrl: string | null
+}
+
+export function renderVendorFollowUpEmail(p: VendorFollowUpEmailProps): { subject: string; html: string } {
+  const introRegel = `<strong>${escapeHtml(p.afzenderNamen)}</strong> ${p.afzenderNamen.includes('&') ? 'hebben' : 'heeft'} gereageerd in jullie gesprek via Ons Trouwplan.`
+
+  const reageerBlok = p.replyUrl
+    ? `${ctaKnop(p.replyUrl, 'Reageer op dit bericht')}
+    <p style="margin:0 0 16px;font-size:13px;color:#a8a29e;line-height:1.6;">
+      Reageren kan direct online — je hebt geen account nodig. Je reactie komt
+      rechtstreeks in het gesprek met ${escapeHtml(p.afzenderNamen)} terecht.
+    </p>
+    <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+      <strong>Let op:</strong> een antwoord op deze e-mail komt niet bij
+      ${escapeHtml(p.afzenderNamen)} aan — gebruik de knop hierboven.
+    </p>`
+    : ''
+
+  const inhoud = `
+    <p style="margin:0 0 20px;font-size:16px;color:#1c1917;line-height:1.6;">${introRegel}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:20px 24px;">
+          <p style="margin:0 0 12px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(p.onderwerp)}</p>
+          ${berichtNaarHtml(p.bericht)}
+        </td>
+      </tr>
+    </table>
+    ${reageerBlok}
+  `
+  return { subject: `Re: ${p.onderwerp}`, html: baseHtml('Nieuw bericht in jullie gesprek', inhoud) }
+}
+
+// --- Leveranciersreactie (notificatie aan het bruidspaar) -------------------
+
+export interface VendorReplyEmailProps {
+  vendorNaam: string
+  onderwerp: string // onderwerp van het oorspronkelijke bericht
+  fragment: string // eerste stuk van de reactie
+  berichtenUrl: string
+}
+
+export function renderVendorReplyEmail(p: VendorReplyEmailProps): { subject: string; html: string } {
+  const subject = `${p.vendorNaam} heeft gereageerd — Ons Trouwplan`
+  const inhoud = `
+    <p style="margin:0 0 20px;font-size:16px;color:#1c1917;line-height:1.6;">
+      <strong>${escapeHtml(p.vendorNaam)}</strong> heeft gereageerd op jullie bericht
+      &ldquo;${escapeHtml(p.onderwerp)}&rdquo;.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background:#faf9f8;border-left:3px solid #be123c;border-radius:0 8px 8px 0;padding:20px 24px;">
+          ${berichtNaarHtml(p.fragment)}
+        </td>
+      </tr>
+    </table>
+    ${ctaKnop(p.berichtenUrl, 'Lees de reactie')}
+    <p style="margin:0;font-size:13px;color:#a8a29e;line-height:1.6;">
+      Je vindt de volledige reactie in het berichtencentrum van jullie trouwplan.
+    </p>
+  `
+  return { subject, html: baseHtml('Nieuwe reactie', inhoud) }
 }
 
 // --- Herinneringen-digest --------------------------------------------------
@@ -197,11 +380,19 @@ export interface ReminderBetalingItem {
   dagen: number // dagen tot vervaldatum (negatief = te laat)
 }
 
+export interface ReminderAfspraakItem {
+  leverancier: string
+  datum: string // ISO 'YYYY-MM-DD'
+  tijd: string // 'HH:MM', leeg = geen tijd geprikt
+  dagen: number // dagen tot de afspraak (0 = vandaag)
+}
+
 export interface ReminderDigestProps {
   ontvangerNaam: string
   partnerNamen: string
   taken: ReminderTaakItem[]
   betalingen: ReminderBetalingItem[]
+  afspraken: ReminderAfspraakItem[]
   dashboardUrl: string
 }
 
@@ -215,7 +406,7 @@ function reminderRegel(hoofd: string, sub: string): string {
 }
 
 export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: string; html: string } {
-  const aantal = p.taken.length + p.betalingen.length
+  const aantal = p.taken.length + p.betalingen.length + p.afspraken.length
   const subject =
     aantal === 1
       ? 'Herinnering voor jullie bruiloft — Ons Trouwplan'
@@ -246,6 +437,20 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
        </table>`
     : ''
 
+  const afsprakenBlok = p.afspraken.length
+    ? `<p style="margin:24px 0 8px;font-size:13px;color:#9f6271;letter-spacing:0.08em;text-transform:uppercase;">Afspraken</p>
+       <table width="100%" cellpadding="0" cellspacing="0">
+         ${p.afspraken
+           .map((a) =>
+             reminderRegel(
+               `Afspraak bij ${escapeHtml(a.leverancier || 'leverancier')}`,
+               `${formatDatumNL(a.datum)}${a.tijd ? ` om ${a.tijd}` : ''} · ${afspraakRelatief(a.dagen)}`
+             )
+           )
+           .join('')}
+       </table>`
+    : ''
+
   const inhoud = `
     <p style="margin:0 0 8px;font-size:16px;color:#1c1917;line-height:1.6;">
       Hoi <strong>${escapeHtml(p.ontvangerNaam || 'daar')}</strong>,
@@ -254,6 +459,7 @@ export function renderReminderDigestEmail(p: ReminderDigestProps): { subject: st
       Een vriendelijke herinnering voor de planning van de bruiloft van
       <strong>${escapeHtml(p.partnerNamen)}</strong>. Dit staat er binnenkort aan te komen:
     </p>
+    ${afsprakenBlok}
     ${takenBlok}
     ${betalingenBlok}
     ${ctaKnop(p.dashboardUrl, 'Naar het trouwplan')}

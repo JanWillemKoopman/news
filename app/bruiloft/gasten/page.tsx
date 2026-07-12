@@ -1,8 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronsUpDown, Download, Pencil, Plus, Search, Send, Sparkles, Tags, Trash2, Users, UtensilsCrossed } from 'lucide-react'
+import { ChevronsUpDown, Download, MailPlus, Music, Pencil, Plus, Search, Send, Sparkles, Tags, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 
+import { AdressenVerzamelModal } from '@/components/bruiloft/gasten/AdressenVerzamelModal'
+import { GastenWensenModal } from '@/components/bruiloft/gasten/GastenWensenModal'
 import { GuestForm } from '@/components/bruiloft/gasten/GuestForm'
 import { BulkImportDialog } from '@/components/bruiloft/gasten/BulkImportDialog'
 import { GastenFilters } from '@/components/bruiloft/gasten/GastenFilters'
@@ -73,8 +75,8 @@ function RsvpSelect({
   // ("afgemeld", "geen reactie", "nog niet uitgenodigd"), groen voor de
   // afgeronde positieve status ("bevestigd", zelfde uitzondering als
   // StatusBadge), verder neutraal — hier lokaal omdat dit element klikbaar is.
-  const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300 dark:ring-rose-400/20'
-  const groen = 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300 dark:ring-emerald-400/20'
+  const rose = 'bg-rose-500/10 text-rose-700 ring-rose-600/20'
+  const groen = 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20'
   const klassen: Record<RsvpStatus, string> = {
     bevestigd: groen,
     afgemeld: rose,
@@ -161,6 +163,8 @@ export default function GastenPage() {
   const [editGuest, setEditGuest] = React.useState<Guest | null>(null)
   const [bulkOpen, setBulkOpen] = React.useState(false)
   const [typeManageOpen, setTypeManageOpen] = React.useState(false)
+  const [adresOpen, setAdresOpen] = React.useState(false)
+  const [wensenOpen, setWensenOpen] = React.useState(false)
   const [delGuest, setDelGuest] = React.useState<Guest | null>(null)
 
   const [rsvpTarget, setRsvpTarget] = React.useState<Guest | null>(null)
@@ -291,11 +295,15 @@ export default function GastenPage() {
         }
         meerActies={[
           ...(kanBewerken
+            ? [{ label: 'Adressen verzamelen', icon: MailPlus, onClick: () => setAdresOpen(true) }]
+            : []),
+          ...(kanBewerken
             ? [{ label: 'Bulk import', icon: Sparkles, onClick: () => setBulkOpen(true) }]
             : []),
           ...(kanBewerken
             ? [{ label: 'Gasttypes beheren', icon: Tags, onClick: () => setTypeManageOpen(true) }]
             : []),
+          { label: 'Muziekwensen & berichten', icon: Music, onClick: () => setWensenOpen(true) },
           {
             label: 'Exporteer gastenlijst',
             icon: Download,
@@ -581,6 +589,10 @@ export default function GastenPage() {
       />
 
       <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+
+      <AdressenVerzamelModal open={adresOpen} onOpenChange={setAdresOpen} />
+
+      <GastenWensenModal open={wensenOpen} onOpenChange={setWensenOpen} />
 
       <GastenTypeManageModal
         open={typeManageOpen}

@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin'
 
 const MAX_AMOUNT_CENTS = 1_000_000 // €10.000 maximum per bijdrage
@@ -24,7 +24,7 @@ function generateReference(slug: string, itemId: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(request)
   const rateLimit = await checkRateLimit(`registry:contribute:${ip}`, 10, 60 * 60)
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: 'Te veel verzoeken' }, { status: 429 })

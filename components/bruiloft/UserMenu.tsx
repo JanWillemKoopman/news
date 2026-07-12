@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, Check, ChevronDown, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, UserCog } from 'lucide-react'
+import { Check, ChevronDown, CircleUserRound, Heart, LayoutDashboard, LogOut, Plus, Settings2, ShieldCheck, User, UserCog } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -74,7 +74,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
   if (!currentUser) return null
 
   const displayLabel = currentUser.displayName || currentUser.email || 'Account'
-  const initials = (currentUser.displayName || currentUser.email || '?').slice(0, 1).toUpperCase()
   const dark = variant === 'dark'
 
   async function onSignOut() {
@@ -116,20 +115,25 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
               dark ? 'ring-rhino-700' : 'ring-transparent'
             )}
           />
-        ) : (
+        ) : dark ? (
+          // Rond avatar-vlak: licht wit-transparant cirkeltje met wit poppetje,
+          // zoals notificatie-avatars in mobiele apps.
           <span
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ring-2',
-              dark ? 'bg-white text-rhino-800 ring-rhino-700' : 'bg-rose-600 text-white ring-transparent'
-            )}
+            aria-hidden
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white"
           >
-            {initials}
+            <User className="h-[18px] w-[18px]" />
           </span>
+        ) : (
+          <CircleUserRound
+            className="h-6 w-6 text-muted-foreground"
+            strokeWidth={1.5}
+            aria-hidden
+          />
         )}
-        <ChevronDown
-          className={cn('h-4 w-4', dark ? 'text-rhino-200' : 'text-muted-foreground')}
-          aria-hidden
-        />
+        {dark ? null : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+        )}
       </button>
 
       {open ? (
@@ -235,16 +239,6 @@ export function UserMenu({ variant = 'light', compact = false }: UserMenuProps) 
                 Samen plannen
               </Link>
             ) : null}
-
-            <Link
-              href="/bruiloft/activiteit"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-            >
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              Recente activiteit
-            </Link>
 
             <Link
               href="/bruiloft/account"

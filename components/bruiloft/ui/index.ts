@@ -2,6 +2,16 @@
 // gedeelde shadcn-primitives (die binnen .wedding het warme palet overnemen).
 
 export { Button, buttonVariants } from './Button'
+export { SearchInput } from './SearchInput'
+export { FilterDropdown } from './FilterDropdown'
+export type { FilterDropdownOption } from './FilterDropdown'
+export { MultiFilterDropdown } from './MultiFilterDropdown'
+export type { MultiFilterOption } from './MultiFilterDropdown'
+export { FilterPanel, FilterVeld, WisFilters } from './FilterPanel'
+export { SegmentedControl } from './SegmentedControl'
+export type { SegmentedOption } from './SegmentedControl'
+export { Checkbox } from './Checkbox'
+export { useDismiss } from './useDismiss'
 export { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './Card'
 export { StatusBadge } from './StatusBadge'
 export { ColumnToggle } from './ColumnToggle'

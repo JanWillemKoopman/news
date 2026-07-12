@@ -3,14 +3,22 @@ import { create } from 'zustand'
 
 import {
   activityFromRow,
+  adresShareFromRow,
+  agendaShareFromRow,
+  budgetItemDocumentFromRow,
   budgetItemFromRow,
+  draaiboekShareFromRow,
   guestFromRow,
   messageFromRow,
+  moodBoardItemFromRow,
+  musicTrackFromRow,
+  muziekShareFromRow,
   scheduleItemFromRow,
   tableFromRow,
   taskCommentFromRow,
   taskFromRow,
   vendorContactRequestFromRow,
+  vendorDocumentFromRow,
   vendorFromRow,
   weddingFromRow,
   websiteContentFromRow,
@@ -35,11 +43,25 @@ import {
 } from '@/lib/bruiloft/templateTasks'
 import { addDays, addMonths, deriveTijdsblok, toISODate } from '@/lib/bruiloft/timeblocks'
 import { createClient, createRawClient } from '@/lib/supabase/client'
-import { uploadWeddingMedia, deleteWeddingMedia } from '@/lib/supabase/storage'
+import {
+  createBudgetItemDocumentUrl,
+  createVendorDocumentUrl,
+  deleteBudgetItemDocumentFile,
+  deleteVendorDocumentFile,
+  deleteWeddingMedia,
+  uploadBudgetItemDocument,
+  uploadVendorDocument,
+  uploadWeddingMedia,
+} from '@/lib/supabase/storage'
 import type {
   ActivityEntry,
+  AdresShare,
+  AgendaShare,
   BudgetItem,
+  BudgetItemDocument,
+  BudgetItemDocumentSoort,
   BudgetItemInput,
+  DraaiboekShare,
   FaqItem,
   GallerijFoto,
   Guest,
@@ -48,6 +70,12 @@ import type {
   ID,
   Message,
   MessageRead,
+  MoodBoardBron,
+  MoodBoardItem,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekMoment,
+  MuziekShare,
   RegistryContribution,
   RegistryItem,
   RegistryItemInput,
@@ -66,6 +94,8 @@ import type {
   Vendor,
   VendorContactRequest,
   VendorContactType,
+  VendorDocument,
+  VendorDocumentSoort,
   VendorInput,
   Wedding,
   WeddingInput,
@@ -126,10 +156,24 @@ interface BruiloftState {
   tasks: Task[]
   vendors: Vendor[]
   vendorContactRequests: VendorContactRequest[]
+  vendorDocuments: VendorDocument[]
   messages: Message[]
   messageReads: MessageRead[]
   budgetItems: BudgetItem[]
+  budgetItemDocuments: BudgetItemDocument[]
   scheduleItems: ScheduleItem[]
+  // Publieke deel-link van het draaiboek; null = delen staat uit.
+  draaiboekShare: DraaiboekShare | null
+  // Agenda-koppeling (ICS-abonnement); null = koppeling staat uit.
+  agendaShare: AgendaShare | null
+  // Adreslink (adressen verzamelen); null = link staat uit.
+  adresShare: AdresShare | null
+  // Moodboard: één plat, op volgorde gesorteerd bord per bruiloft.
+  moodBoardItems: MoodBoardItem[]
+  // Muziek: alle nummers (eigen + gastsuggesties), gesectioneerd op moment.
+  musicTracks: MusicTrack[]
+  // Publieke deel-link van de muzieklijst (voor de DJ); null = delen uit.
+  muziekShare: MuziekShare | null
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
@@ -203,30 +247,111 @@ interface BruiloftActions {
   // verstuurd maar het loggen daarna onverwacht mislukte.
   sendVendorContact: (payload: SendVendorContactPayload) => Promise<VendorContactRequest | null>
 
+  // Documentenkluis: uploadt het bestand naar de private storage-bucket en
+  // bewaart de metadata-rij; verwijderen ruimt beide op (bestand best-effort,
+  // ná de rij — een wees-bestand is onschuldiger dan een dode rij).
+  addVendorDocument: (vendorId: ID, file: File, soort: VendorDocumentSoort) => Promise<VendorDocument>
+  deleteVendorDocument: (id: ID) => Promise<void>
+  // Kortlevende signed URL om een document te openen (private bucket).
+  getVendorDocumentUrl: (doc: VendorDocument) => Promise<string>
+
   // Berichtencentrum: markeert een bericht als gelezen voor de huidige
   // gebruiker (optimistisch + persistent via message_reads).
   markMessageRead: (id: ID) => Promise<void>
+  // Archiveren/verwijderen zijn gedeeld voor de hele bruiloft (optimistisch,
+  // met rollback bij een mislukte server-call — zelfde patroon als hierboven).
+  archiveMessage: (id: ID) => Promise<void>
+  unarchiveMessage: (id: ID) => Promise<void>
+  trashMessage: (id: ID) => Promise<void>
+  restoreMessage: (id: ID) => Promise<void>
+  // Vervolgbericht van het bruidspaar binnen een bestaand leveranciersgesprek:
+  // stuurt (via /api/berichten/[id]/reply) een e-mail naar de leverancier met
+  // dezelfde reageer-link als het openingsbericht, en voegt het nieuwe
+  // uitgaande bericht toe aan de thread.
+  replyToMessage: (id: ID, bericht: string) => Promise<Message>
 
   addBudgetItem: (data: NewBudgetItem) => Promise<void>
   updateBudgetItem: (id: ID, patch: Partial<BudgetItemInput>) => Promise<void>
   deleteBudgetItem: (id: ID) => Promise<void>
 
+  // Documentenkluis per budgetpost: zelfde patroon als de leveranciers-
+  // documenten hierboven (private bucket + signed URLs).
+  addBudgetItemDocument: (
+    budgetItemId: ID,
+    file: File,
+    soort: BudgetItemDocumentSoort
+  ) => Promise<BudgetItemDocument>
+  deleteBudgetItemDocument: (id: ID) => Promise<void>
+  getBudgetItemDocumentUrl: (doc: BudgetItemDocument) => Promise<string>
+
   addScheduleItem: (data: NewScheduleItem) => Promise<void>
   updateScheduleItem: (id: ID, patch: Partial<ScheduleItemInput>) => Promise<void>
   deleteScheduleItem: (id: ID) => Promise<void>
+
+  // Draaiboek delen: aanzetten maakt de publieke link (token), stoppen
+  // verwijdert de rij waardoor de link per direct ongeldig is.
+  enableDraaiboekShare: () => Promise<DraaiboekShare>
+  disableDraaiboekShare: () => Promise<void>
+
+  // Agenda-koppeling: zelfde aan/uit-model als het draaiboek-delen.
+  enableAgendaShare: () => Promise<AgendaShare>
+  disableAgendaShare: () => Promise<void>
+
+  // Adreslink: idem.
+  enableAdresShare: () => Promise<AdresShare>
+  disableAdresShare: () => Promise<void>
+
+  // Moodboard: toevoegen komt altijd achteraan (hoogste volgorde + 1).
+  // reorder herberekent de volgorde van de volledige lijst na een drag en
+  // persisteert die in één bulk-call.
+  addMoodBoardItem: (input: {
+    categorie: string
+    url: string
+    bron: MoodBoardBron
+    bronUrl: string | null
+    titel: string
+  }) => Promise<MoodBoardItem>
+  // Uploadt het bestand naar Storage en maakt daarna de rij aan; mislukt de
+  // rij-insert, dan wordt het zojuist geüploade bestand weer opgeruimd
+  // (zelfde patroon als addVendorDocument).
+  uploadMoodBoardImage: (file: File, categorie: string, titel: string) => Promise<MoodBoardItem>
+  updateMoodBoardItem: (id: ID, patch: { categorie?: string; titel?: string }) => Promise<void>
+  deleteMoodBoardItem: (id: ID) => Promise<void>
+  reorderMoodBoardItems: (orderedIds: ID[]) => Promise<void>
+
+  // Muziek: eigen nummers komen direct goedgekeurd in de lijst; wat gasten
+  // via de RSVP aandragen staat op 'voorgesteld' tot het paar het goedkeurt
+  // (met een moment) of verwijdert.
+  addMusicTrack: (input: MusicTrackInput) => Promise<MusicTrack>
+  updateMusicTrack: (id: ID, patch: Partial<MusicTrackInput>) => Promise<void>
+  deleteMusicTrack: (id: ID) => Promise<void>
+  approveMusicTrack: (id: ID, moment: MuziekMoment) => Promise<void>
+
+  // Muzieklijst delen met de DJ: zelfde aan/uit-model als het draaiboek.
+  enableMuziekShare: () => Promise<MuziekShare>
+  disableMuziekShare: () => Promise<void>
 
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
   deleteTable: (id: ID) => Promise<void>
 
   saveWebsiteContent: (patch: Partial<WebsiteContentInput>) => Promise<void>
-  // Website v3 fase 3: site-breed wachtwoord instellen/wijzigen (gehasht
-  // server-side via POST /api/trouwen/settings) of verwijderen (lege string).
-  saveSitePassword: (password: string) => Promise<void>
-  // Website v3: pagina's met blokken.
+  // Website v3 fase 3: site-breed wachtwoord instellen/wijzigen (omkeerbaar
+  // versleuteld server-side via PATCH /api/trouwen/settings, zodat het
+  // teruggetoond kan worden) of verwijderen (lege string). Retourneert het
+  // zojuist opgeslagen wachtwoord zodat de editor het meteen kan tonen.
+  saveSitePassword: (password: string) => Promise<{ password: string | null }>
+  // Haalt het huidige (ontsleutelde) trouwwebsite-wachtwoord op, voor de
+  // "je wachtwoord is..."-regel in de editor. isSet blijft true en password
+  // is null wanneer een ouder wachtwoord nog in het niet-omkeerbare
+  // legacy-formaat staat (vóór deze functionaliteit werd toegevoegd).
+  fetchSitePassword: () => Promise<{ password: string | null; isSet: boolean }>
+  // Website v3: de (enige) pagina met blokken. addWebsitePage is intern nog
+  // nodig voor converteerNaarBlokken (eenmalige aanmaak van de Home-pagina);
+  // er is bewust geen UI (meer) om zelf extra pagina's toe te voegen of te
+  // verwijderen — de trouwwebsite bestaat altijd uit precies één pagina.
   addWebsitePage: (input: Omit<WebsitePageInput, 'weddingId'>) => Promise<WebsitePage>
   updateWebsitePage: (id: ID, patch: Partial<Omit<WebsitePageInput, 'weddingId'>>) => Promise<void>
-  deleteWebsitePage: (id: ID) => Promise<void>
   // Eenmalige converter: zet het oude vaste-secties-model om naar een
   // Home-pagina met blokken (idempotent; doet niets als er al pagina's zijn).
   converteerNaarBlokken: () => Promise<void>
@@ -369,10 +494,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     tasks: [],
     vendors: [],
     vendorContactRequests: [],
+    vendorDocuments: [],
     messages: [],
     messageReads: [],
     budgetItems: [],
+    budgetItemDocuments: [],
     scheduleItems: [],
+    draaiboekShare: null,
+    agendaShare: null,
+    adresShare: null,
+    moodBoardItems: [],
+    musicTracks: [],
+    muziekShare: null,
     tables: [],
     websiteContent: null,
     websiteFotos: [],
@@ -493,10 +626,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        vendorDocuments,
         messages,
         messageReads,
         budgetItems,
+        budgetItemDocuments,
         scheduleItems,
+        draaiboekShare,
+        agendaShare,
+        adresShare,
+        moodBoardItems,
+        musicTracks,
+        muziekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -509,10 +650,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('taken', repository.listTasks(wedding.id), []),
         safe('leveranciers', repository.listVendors(wedding.id), []),
         safe('leveranciers-contact', repository.listVendorContactRequests(wedding.id), []),
+        safe('leveranciers-documenten', repository.listVendorDocuments(wedding.id), []),
         safe('berichten', repository.listMessages(wedding.id), []),
         safe('berichten-gelezen', repository.listMessageReads(wedding.id), []),
         safe('budget', repository.listBudgetItems(wedding.id), []),
+        safe('budget-documenten', repository.listBudgetItemDocuments(wedding.id), []),
         safe('draaiboek', repository.listScheduleItems(wedding.id), []),
+        safe('draaiboek-delen', repository.getDraaiboekShare(wedding.id), null),
+        safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
+        safe('adreslink', repository.getAdresShare(wedding.id), null),
+        safe('moodboard', repository.listMoodBoardItems(wedding.id), []),
+        safe('muziek', repository.listMusicTracks(wedding.id), []),
+        safe('muziek-delen', repository.getMuziekShare(wedding.id), null),
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
@@ -534,10 +683,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks,
         vendors,
         vendorContactRequests,
+        vendorDocuments,
         messages,
         messageReads,
         budgetItems,
+        budgetItemDocuments,
         scheduleItems,
+        draaiboekShare,
+        agendaShare,
+        adresShare,
+        moodBoardItems,
+        musicTracks,
+        muziekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -580,10 +737,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         tasks: [],
         vendors: [],
         vendorContactRequests: [],
+        vendorDocuments: [],
         messages: [],
         messageReads: [],
         budgetItems: [],
+        budgetItemDocuments: [],
         scheduleItems: [],
+        draaiboekShare: null,
+        agendaShare: null,
+        adresShare: null,
+        moodBoardItems: [],
+        musicTracks: [],
+        muziekShare: null,
         tables: [],
         websiteContent: null,
         websiteFotos: [],
@@ -672,11 +837,17 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
             ),
           })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_documents', filter: wf }, (p) =>
+          set({ vendorDocuments: applyList(get().vendorDocuments, p, vendorDocumentFromRow) })
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: wf }, (p) =>
           set({ messages: applyList(get().messages, p, (r) => messageFromRow(r)) })
         )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: wf }, (p) =>
           set({ budgetItems: applyList(get().budgetItems, p, (r) => budgetItemFromRow(r as unknown as Parameters<typeof budgetItemFromRow>[0])) })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_item_documents', filter: wf }, (p) =>
+          set({ budgetItemDocuments: applyList(get().budgetItemDocuments, p, budgetItemDocumentFromRow) })
         )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_items', filter: wf }, (p) =>
           set({ scheduleItems: applyList(get().scheduleItems, p, (r) => scheduleItemFromRow(r as unknown as Parameters<typeof scheduleItemFromRow>[0])) })
@@ -684,6 +855,38 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: wf }, (p) =>
           set({ tables: applyList(get().tables, p, (r) => tableFromRow(r as unknown as Parameters<typeof tableFromRow>[0])) })
         )
+        // Eén rij per bruiloft (zelfde patroon als website_content hieronder).
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'draaiboek_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ draaiboekShare: null })
+          else set({ draaiboekShare: draaiboekShareFromRow(p.new) })
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ agendaShare: null })
+          else set({ agendaShare: agendaShareFromRow(p.new) })
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'adres_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ adresShare: null })
+          else set({ adresShare: adresShareFromRow(p.new) })
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mood_board_items', filter: wf }, (p) =>
+          set({
+            moodBoardItems: applyList(get().moodBoardItems, p, moodBoardItemFromRow).sort(
+              (a, b) => a.volgorde - b.volgorde
+            ),
+          })
+        )
+        // Ook RSVP-suggesties van gasten druppelen zo live binnen.
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'music_tracks', filter: wf }, (p) =>
+          set({
+            musicTracks: applyList(get().musicTracks, p, musicTrackFromRow).sort(
+              (a, b) => a.volgorde - b.volgorde || a.createdAt.localeCompare(b.createdAt)
+            ),
+          })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'music_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ muziekShare: null })
+          else set({ muziekShare: muziekShareFromRow(p.new) })
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
@@ -758,10 +961,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         guests: [],
         vendors: [],
         vendorContactRequests: [],
+        vendorDocuments: [],
         messages: [],
         messageReads: [],
         budgetItems,
+        budgetItemDocuments: [],
         scheduleItems: [],
+        draaiboekShare: null,
+        agendaShare: null,
+        adresShare: null,
+        moodBoardItems: [],
+        musicTracks: [],
+        muziekShare: null,
         tables: [],
         websiteContent: null,
         websitePages: [],
@@ -1080,6 +1291,49 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
+    addVendorDocument: async (vendorId, file, soort) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const storagePath = await uploadVendorDocument(supabase, wedding.id, vendorId, file)
+      try {
+        const doc = await repository.createVendorDocument({
+          weddingId: wedding.id,
+          vendorId,
+          naam: file.name,
+          soort,
+          storagePath,
+          mimeType: file.type,
+          grootte: file.size,
+        })
+        // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier.
+        if (!get().vendorDocuments.some((d) => d.id === doc.id)) {
+          set({ vendorDocuments: [doc, ...get().vendorDocuments] })
+        }
+        return doc
+      } catch (e) {
+        // Metadata-rij mislukt: het zojuist geüploade bestand niet laten
+        // rondslingeren in de bucket.
+        await deleteVendorDocumentFile(supabase, storagePath).catch(() => undefined)
+        throw e
+      }
+    },
+
+    deleteVendorDocument: async (id) => {
+      const doc = get().vendorDocuments.find((d) => d.id === id)
+      await repository.deleteVendorDocument(id)
+      set({ vendorDocuments: get().vendorDocuments.filter((d) => d.id !== id) })
+      if (doc) {
+        const supabase = createClient()
+        await deleteVendorDocumentFile(supabase, doc.storagePath).catch(() => undefined)
+      }
+    },
+
+    getVendorDocumentUrl: async (doc) => {
+      const supabase = createClient()
+      return createVendorDocumentUrl(supabase, doc.storagePath, doc.naam)
+    },
+
     sendVendorContact: async (payload) => {
       const wedding = get().wedding
       if (!wedding) throw new Error('Geen actieve bruiloft')
@@ -1123,6 +1377,77 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       }
     },
 
+    archiveMessage: async (id) => {
+      const voor = get().messages
+      set({
+        messages: voor.map((m) =>
+          m.id === id ? { ...m, archivedAt: new Date().toISOString() } : m
+        ),
+      })
+      try {
+        await repository.archiveMessage(id)
+      } catch (e) {
+        console.error('[store] archiveMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    unarchiveMessage: async (id) => {
+      const voor = get().messages
+      set({ messages: voor.map((m) => (m.id === id ? { ...m, archivedAt: undefined } : m)) })
+      try {
+        await repository.unarchiveMessage(id)
+      } catch (e) {
+        console.error('[store] unarchiveMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    trashMessage: async (id) => {
+      const voor = get().messages
+      set({
+        messages: voor.map((m) =>
+          m.id === id ? { ...m, deletedAt: new Date().toISOString() } : m
+        ),
+      })
+      try {
+        await repository.trashMessage(id)
+      } catch (e) {
+        console.error('[store] trashMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    restoreMessage: async (id) => {
+      const voor = get().messages
+      set({ messages: voor.map((m) => (m.id === id ? { ...m, deletedAt: undefined } : m)) })
+      try {
+        await repository.restoreMessage(id)
+      } catch (e) {
+        console.error('[store] restoreMessage mislukt', e)
+        set({ messages: voor })
+        throw e
+      }
+    },
+
+    replyToMessage: async (id, bericht) => {
+      const res = await fetch(`/api/berichten/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bericht }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error((body as { error?: string }).error ?? 'Versturen mislukt')
+      }
+      const { message } = (await res.json()) as { message: Message }
+      set({ messages: [message, ...get().messages] })
+      return message
+    },
+
     // --- BudgetItems -------------------------------------------------------
 
     addBudgetItem: async (data) => {
@@ -1150,7 +1475,230 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
+    addBudgetItemDocument: async (budgetItemId, file, soort) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const storagePath = await uploadBudgetItemDocument(supabase, wedding.id, budgetItemId, file)
+      try {
+        const doc = await repository.createBudgetItemDocument({
+          weddingId: wedding.id,
+          budgetItemId,
+          naam: file.name,
+          soort,
+          storagePath,
+          mimeType: file.type,
+          grootte: file.size,
+        })
+        // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier.
+        if (!get().budgetItemDocuments.some((d) => d.id === doc.id)) {
+          set({ budgetItemDocuments: [doc, ...get().budgetItemDocuments] })
+        }
+        return doc
+      } catch (e) {
+        // Metadata-rij mislukt: het zojuist geüploade bestand niet laten
+        // rondslingeren in de bucket.
+        await deleteBudgetItemDocumentFile(supabase, storagePath).catch(() => undefined)
+        throw e
+      }
+    },
+
+    deleteBudgetItemDocument: async (id) => {
+      const doc = get().budgetItemDocuments.find((d) => d.id === id)
+      await repository.deleteBudgetItemDocument(id)
+      set({ budgetItemDocuments: get().budgetItemDocuments.filter((d) => d.id !== id) })
+      if (doc) {
+        const supabase = createClient()
+        await deleteBudgetItemDocumentFile(supabase, doc.storagePath).catch(() => undefined)
+      }
+    },
+
+    getBudgetItemDocumentUrl: async (doc) => {
+      const supabase = createClient()
+      return createBudgetItemDocumentUrl(supabase, doc.storagePath, doc.naam)
+    },
+
     // --- ScheduleItems -----------------------------------------------------
+
+    enableDraaiboekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      // Bestaat er al een share (bv. net door je partner aangezet), dan is
+      // die link de waarheid — geen tweede rij proberen te maken.
+      const bestaand = get().draaiboekShare ?? (await repository.getDraaiboekShare(wedding.id))
+      if (bestaand) {
+        set({ draaiboekShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createDraaiboekShare(wedding.id)
+      set({ draaiboekShare: share })
+      return share
+    },
+
+    disableDraaiboekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteDraaiboekShare(wedding.id)
+      set({ draaiboekShare: null })
+    },
+
+    enableAgendaShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      // Zelfde idempotentie als enableDraaiboekShare: een al bestaande
+      // koppeling (bv. net door je partner aangezet) is de waarheid.
+      const bestaand = get().agendaShare ?? (await repository.getAgendaShare(wedding.id))
+      if (bestaand) {
+        set({ agendaShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createAgendaShare(wedding.id)
+      set({ agendaShare: share })
+      return share
+    },
+
+    disableAgendaShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteAgendaShare(wedding.id)
+      set({ agendaShare: null })
+    },
+
+    enableAdresShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const bestaand = get().adresShare ?? (await repository.getAdresShare(wedding.id))
+      if (bestaand) {
+        set({ adresShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createAdresShare(wedding.id)
+      set({ adresShare: share })
+      return share
+    },
+
+    disableAdresShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteAdresShare(wedding.id)
+      set({ adresShare: null })
+    },
+
+    addMoodBoardItem: async (input) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const volgende = get().moodBoardItems.reduce((max, i) => Math.max(max, i.volgorde), -1) + 1
+      const item = await repository.createMoodBoardItem(wedding.id, input, volgende)
+      // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier
+      // (zelfde patroon als addVendorDocument).
+      if (!get().moodBoardItems.some((i) => i.id === item.id)) {
+        set({ moodBoardItems: [...get().moodBoardItems, item] })
+      }
+      return item
+    },
+
+    uploadMoodBoardImage: async (file, categorie, titel) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const url = await uploadWeddingMedia(supabase, wedding.id, file, 'moodboard')
+      try {
+        return await get().addMoodBoardItem({ categorie, url, bron: 'upload', bronUrl: null, titel })
+      } catch (e) {
+        await deleteWeddingMedia(supabase, url).catch(() => undefined)
+        throw e
+      }
+    },
+
+    updateMoodBoardItem: async (id, patch) => {
+      const item = await repository.updateMoodBoardItem(id, patch)
+      set({ moodBoardItems: get().moodBoardItems.map((i) => (i.id === id ? item : i)) })
+    },
+
+    deleteMoodBoardItem: async (id) => {
+      const item = get().moodBoardItems.find((i) => i.id === id)
+      await repository.deleteMoodBoardItem(id)
+      set({ moodBoardItems: get().moodBoardItems.filter((i) => i.id !== id) })
+      if (item?.bron === 'upload') {
+        const supabase = createClient()
+        await deleteWeddingMedia(supabase, item.url).catch(() => undefined)
+      }
+    },
+
+    reorderMoodBoardItems: async (orderedIds) => {
+      // Optimistisch: direct de nieuwe volgorde tonen, pas daarna persisteren
+      // — een drag moet meteen soepel aanvoelen, niet wachten op de server.
+      const huidig = get().moodBoardItems
+      const volgordeMap = new Map(orderedIds.map((id, idx) => [id, idx]))
+      const herordend = huidig
+        .map((i) => (volgordeMap.has(i.id) ? { ...i, volgorde: volgordeMap.get(i.id)! } : i))
+        .sort((a, b) => a.volgorde - b.volgorde)
+      set({ moodBoardItems: herordend })
+      try {
+        await repository.reorderMoodBoardItems(orderedIds.map((id, idx) => ({ id, volgorde: idx })))
+      } catch (e) {
+        // Terugdraaien bij een mislukte persist, anders loopt de UI blijvend
+        // uit de pas met de server.
+        set({ moodBoardItems: huidig })
+        throw e
+      }
+    },
+
+    addMusicTrack: async (input) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const volgende = get().musicTracks.reduce((max, t) => Math.max(max, t.volgorde), -1) + 1
+      const track = await repository.createMusicTrack(wedding.id, input, volgende)
+      // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier
+      // (zelfde patroon als addMoodBoardItem).
+      if (!get().musicTracks.some((t) => t.id === track.id)) {
+        set({ musicTracks: [...get().musicTracks, track] })
+      }
+      return track
+    },
+
+    updateMusicTrack: async (id, patch) => {
+      const track = await repository.updateMusicTrack(id, patch)
+      set({ musicTracks: get().musicTracks.map((t) => (t.id === id ? track : t)) })
+    },
+
+    deleteMusicTrack: async (id) => {
+      await repository.deleteMusicTrack(id)
+      set({ musicTracks: get().musicTracks.filter((t) => t.id !== id) })
+    },
+
+    // Gastsuggestie goedkeuren: de gekozen sectie in, achteraan.
+    approveMusicTrack: async (id, moment) => {
+      const volgende = get().musicTracks.reduce((max, t) => Math.max(max, t.volgorde), -1) + 1
+      const track = await repository.updateMusicTrack(id, {
+        status: 'goedgekeurd',
+        moment,
+        volgorde: volgende,
+      })
+      set({ musicTracks: get().musicTracks.map((t) => (t.id === id ? track : t)) })
+    },
+
+    enableMuziekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      // Zelfde idempotentie als enableDraaiboekShare: een al bestaande link
+      // (bv. net door je partner aangezet) is de waarheid.
+      const bestaand = get().muziekShare ?? (await repository.getMuziekShare(wedding.id))
+      if (bestaand) {
+        set({ muziekShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createMuziekShare(wedding.id)
+      set({ muziekShare: share })
+      return share
+    },
+
+    disableMuziekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteMuziekShare(wedding.id)
+      set({ muziekShare: null })
+    },
 
     addScheduleItem: async (data) => {
       const wedding = get().wedding
@@ -1218,11 +1766,6 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       })
     },
 
-    deleteWebsitePage: async (id) => {
-      await repository.deleteWebsitePage(id)
-      set({ websitePages: get().websitePages.filter((p) => p.id !== id) })
-    },
-
     converteerNaarBlokken: async () => {
       const { wedding, websitePages } = get()
       if (!wedding || websitePages.length > 0) return
@@ -1252,13 +1795,22 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
 
     saveSitePassword: async (password) => {
       const wedding = get().wedding
-      if (!wedding) return
+      if (!wedding) return { password: null }
       const res = await fetch('/api/trouwen/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weddingId: wedding.id, password }),
       })
       if (!res.ok) throw new Error('Wachtwoord opslaan mislukt')
+      return res.json()
+    },
+
+    fetchSitePassword: async () => {
+      const wedding = get().wedding
+      if (!wedding) return { password: null, isSet: false }
+      const res = await fetch(`/api/trouwen/settings?weddingId=${wedding.id}`)
+      if (!res.ok) throw new Error('Wachtwoord ophalen mislukt')
+      return res.json()
     },
 
     checkSlugAvailable: async (slug) => {
@@ -1357,11 +1909,14 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
       }
       const user = get().currentUser
       if (!user) return
+      // patch.email wordt bewust NIET lokaal toegepast: een e-mailwijziging is
+      // pas geldig na bevestiging via de mail (zie /api/profiel + 0067). Tot
+      // die tijd blijft currentUser.email het geverifieerde adres; na
+      // bevestiging + herladen leest init het nieuwe adres uit profiles.
       set({
         currentUser: {
           ...user,
           ...(patch.displayName !== undefined && { displayName: patch.displayName }),
-          ...(patch.email !== undefined && { email: patch.email }),
           ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl ?? undefined }),
           ...(patch.emailHerinneringen !== undefined && { emailHerinneringen: patch.emailHerinneringen }),
         },
