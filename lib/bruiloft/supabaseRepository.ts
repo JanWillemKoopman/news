@@ -395,7 +395,7 @@ export class SupabaseWeddingRepository implements WeddingRepository {
 
   // --- Moodboard ---------------------------------------------------------
   // mood_board_items: zelfde drift-situatie als de andere nieuwe tabellen
-  // (0074).
+  // (0077).
   async listMoodBoardItems(weddingId: ID): Promise<MoodBoardItem[]> {
     const { data, error } = await this.rawDb
       .from('mood_board_items')

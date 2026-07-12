@@ -332,7 +332,7 @@ export function adresShareFromRow(r: any): AdresShare {
 
 // --- Moodboard -----------------------------------------------------------
 // mood_board_items ontbreekt nog in de gegenereerde database.types.ts
-// (nieuwe migratie 0074) — zelfde any-drift als vendor_documents hierboven.
+// (nieuwe migratie 0077) — zelfde any-drift als vendor_documents hierboven.
 export function moodBoardItemFromRow(r: any): MoodBoardItem {
   return {
     id: r.id,
