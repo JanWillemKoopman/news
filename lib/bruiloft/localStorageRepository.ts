@@ -19,6 +19,8 @@ import type {
   Message,
   MessageRead,
   MoodBoardItem,
+  MusicTrack,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -353,6 +355,37 @@ export class LocalStorageWeddingRepository implements WeddingRepository {
 
   async reorderMoodBoardItems(): Promise<void> {
     throw new Error('Het moodboard wordt niet ondersteund zonder Supabase')
+  }
+
+  // De muzieklijst vereist Supabase (RSVP-suggesties en de publieke
+  // deel-link draaien server-side); deze legacy localStorage-implementatie
+  // heeft geen equivalent.
+  async listMusicTracks(): Promise<MusicTrack[]> {
+    return []
+  }
+
+  async createMusicTrack(): Promise<MusicTrack> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async updateMusicTrack(): Promise<MusicTrack> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMusicTrack(): Promise<void> {
+    throw new Error('De muzieklijst wordt niet ondersteund zonder Supabase')
+  }
+
+  async getMuziekShare(): Promise<MuziekShare | null> {
+    return null
+  }
+
+  async createMuziekShare(): Promise<MuziekShare> {
+    throw new Error('Muziek delen wordt niet ondersteund zonder Supabase')
+  }
+
+  async deleteMuziekShare(): Promise<void> {
+    throw new Error('Muziek delen wordt niet ondersteund zonder Supabase')
   }
 
   // Het berichtencentrum is uitsluitend server-side (Supabase) bijgehouden;

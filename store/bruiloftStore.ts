@@ -11,6 +11,8 @@ import {
   guestFromRow,
   messageFromRow,
   moodBoardItemFromRow,
+  musicTrackFromRow,
+  muziekShareFromRow,
   scheduleItemFromRow,
   tableFromRow,
   taskCommentFromRow,
@@ -70,6 +72,10 @@ import type {
   MessageRead,
   MoodBoardBron,
   MoodBoardItem,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekMoment,
+  MuziekShare,
   RegistryContribution,
   RegistryItem,
   RegistryItemInput,
@@ -164,6 +170,10 @@ interface BruiloftState {
   adresShare: AdresShare | null
   // Moodboard: één plat, op volgorde gesorteerd bord per bruiloft.
   moodBoardItems: MoodBoardItem[]
+  // Muziek: alle nummers (eigen + gastsuggesties), gesectioneerd op moment.
+  musicTracks: MusicTrack[]
+  // Publieke deel-link van de muzieklijst (voor de DJ); null = delen uit.
+  muziekShare: MuziekShare | null
   tables: Table[]
   websiteContent: WebsiteContent | null
   websiteFotos: WebsiteFoto[]
@@ -308,6 +318,18 @@ interface BruiloftActions {
   updateMoodBoardItem: (id: ID, patch: { categorie?: string; titel?: string }) => Promise<void>
   deleteMoodBoardItem: (id: ID) => Promise<void>
   reorderMoodBoardItems: (orderedIds: ID[]) => Promise<void>
+
+  // Muziek: eigen nummers komen direct goedgekeurd in de lijst; wat gasten
+  // via de RSVP aandragen staat op 'voorgesteld' tot het paar het goedkeurt
+  // (met een moment) of verwijdert.
+  addMusicTrack: (input: MusicTrackInput) => Promise<MusicTrack>
+  updateMusicTrack: (id: ID, patch: Partial<MusicTrackInput>) => Promise<void>
+  deleteMusicTrack: (id: ID) => Promise<void>
+  approveMusicTrack: (id: ID, moment: MuziekMoment) => Promise<void>
+
+  // Muzieklijst delen met de DJ: zelfde aan/uit-model als het draaiboek.
+  enableMuziekShare: () => Promise<MuziekShare>
+  disableMuziekShare: () => Promise<void>
 
   addTable: (data: NewTable) => Promise<void>
   updateTable: (id: ID, patch: Partial<TableInput>) => Promise<void>
@@ -482,6 +504,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     agendaShare: null,
     adresShare: null,
     moodBoardItems: [],
+    musicTracks: [],
+    muziekShare: null,
     tables: [],
     websiteContent: null,
     websiteFotos: [],
@@ -612,6 +636,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare,
         adresShare,
         moodBoardItems,
+        musicTracks,
+        muziekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -634,6 +660,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
         safe('adreslink', repository.getAdresShare(wedding.id), null),
         safe('moodboard', repository.listMoodBoardItems(wedding.id), []),
+        safe('muziek', repository.listMusicTracks(wedding.id), []),
+        safe('muziek-delen', repository.getMuziekShare(wedding.id), null),
         safe('tafels', repository.listTables(wedding.id), []),
         safe('website-inhoud', repository.getWebsiteContent(wedding.id), null),
         safe('website-foto’s', repository.listWebsiteFotos(wedding.id), []),
@@ -665,6 +693,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare,
         adresShare,
         moodBoardItems,
+        musicTracks,
+        muziekShare,
         tables,
         websiteContent,
         websiteFotos,
@@ -717,6 +747,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare: null,
         adresShare: null,
         moodBoardItems: [],
+        musicTracks: [],
+        muziekShare: null,
         tables: [],
         websiteContent: null,
         websiteFotos: [],
@@ -843,6 +875,18 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
             ),
           })
         )
+        // Ook RSVP-suggesties van gasten druppelen zo live binnen.
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'music_tracks', filter: wf }, (p) =>
+          set({
+            musicTracks: applyList(get().musicTracks, p, musicTrackFromRow).sort(
+              (a, b) => a.volgorde - b.volgorde || a.createdAt.localeCompare(b.createdAt)
+            ),
+          })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'music_shares', filter: wf }, (p) => {
+          if (p.eventType === 'DELETE') set({ muziekShare: null })
+          else set({ muziekShare: muziekShareFromRow(p.new) })
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content', filter: wf }, (p) => {
           if (p.eventType === 'DELETE') set({ websiteContent: null })
           else set({ websiteContent: websiteContentFromRow(p.new as unknown as Parameters<typeof websiteContentFromRow>[0]) })
@@ -927,6 +971,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare: null,
         adresShare: null,
         moodBoardItems: [],
+        musicTracks: [],
+        muziekShare: null,
         tables: [],
         websiteContent: null,
         websitePages: [],
@@ -1596,6 +1642,62 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         set({ moodBoardItems: huidig })
         throw e
       }
+    },
+
+    addMusicTrack: async (input) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const volgende = get().musicTracks.reduce((max, t) => Math.max(max, t.volgorde), -1) + 1
+      const track = await repository.createMusicTrack(wedding.id, input, volgende)
+      // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier
+      // (zelfde patroon als addMoodBoardItem).
+      if (!get().musicTracks.some((t) => t.id === track.id)) {
+        set({ musicTracks: [...get().musicTracks, track] })
+      }
+      return track
+    },
+
+    updateMusicTrack: async (id, patch) => {
+      const track = await repository.updateMusicTrack(id, patch)
+      set({ musicTracks: get().musicTracks.map((t) => (t.id === id ? track : t)) })
+    },
+
+    deleteMusicTrack: async (id) => {
+      await repository.deleteMusicTrack(id)
+      set({ musicTracks: get().musicTracks.filter((t) => t.id !== id) })
+    },
+
+    // Gastsuggestie goedkeuren: de gekozen sectie in, achteraan.
+    approveMusicTrack: async (id, moment) => {
+      const volgende = get().musicTracks.reduce((max, t) => Math.max(max, t.volgorde), -1) + 1
+      const track = await repository.updateMusicTrack(id, {
+        status: 'goedgekeurd',
+        moment,
+        volgorde: volgende,
+      })
+      set({ musicTracks: get().musicTracks.map((t) => (t.id === id ? track : t)) })
+    },
+
+    enableMuziekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      // Zelfde idempotentie als enableDraaiboekShare: een al bestaande link
+      // (bv. net door je partner aangezet) is de waarheid.
+      const bestaand = get().muziekShare ?? (await repository.getMuziekShare(wedding.id))
+      if (bestaand) {
+        set({ muziekShare: bestaand })
+        return bestaand
+      }
+      const share = await repository.createMuziekShare(wedding.id)
+      set({ muziekShare: share })
+      return share
+    },
+
+    disableMuziekShare: async () => {
+      const wedding = get().wedding
+      if (!wedding) return
+      await repository.deleteMuziekShare(wedding.id)
+      set({ muziekShare: null })
     },
 
     addScheduleItem: async (data) => {

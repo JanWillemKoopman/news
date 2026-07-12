@@ -464,6 +464,72 @@ export interface PublicDraaiboekData {
   items: PublicDraaiboekItem[]
 }
 
+// --- Muziek --------------------------------------------------------------
+
+// De secties van de muzieklijst. 'niet_draaien' is de "niet draaien"-lijst
+// voor de DJ — bewust een moment en geen aparte structuur (zie migratie 0078).
+export type MuziekMoment = 'ceremonie' | 'borrel' | 'diner' | 'feest' | 'niet_draaien'
+
+export type MusicTrackBron = 'paar' | 'gast'
+
+// Gastsuggesties (via de RSVP) komen binnen als 'voorgesteld'; het paar
+// keurt goed of verwijdert. Eigen nummers zijn meteen 'goedgekeurd'.
+export type MusicTrackStatus = 'voorgesteld' | 'goedgekeurd'
+
+export interface MusicTrack {
+  id: ID
+  weddingId: ID
+  titel: string
+  artiest: string
+  moment: MuziekMoment
+  // Vrije notitie voor de DJ ("openingsdans", "vader-dochterdans", ...).
+  opmerking: string
+  // Optionele link naar Spotify/YouTube; puur ter referentie.
+  url: string
+  bron: MusicTrackBron
+  // Alleen bij bron='gast': wie het nummer aandroeg.
+  gastNaam: string
+  guestId: ID | null
+  status: MusicTrackStatus
+  volgorde: number
+  createdBy?: ID
+  createdAt: ISODateTime
+}
+
+// Wat de gebruiker zelf invult; bron/status/volgorde vult de store/server in.
+export type MusicTrackInput = Pick<
+  MusicTrack,
+  'titel' | 'artiest' | 'moment' | 'opmerking' | 'url'
+>
+
+// Publieke deel-link van de muzieklijst (voor de DJ of band): zelfde
+// aan/uit-model als DraaiboekShare.
+export interface MuziekShare {
+  weddingId: ID
+  token: string
+  createdAt: ISODateTime
+}
+
+// Wat de publieke pagina (/muziek/[token]) van de RPC krijgt: alleen
+// goedgekeurde nummers plus namen/datum — bewust géén andere plannergegevens.
+export interface PublicMuziekTrack {
+  id: ID
+  titel: string
+  artiest: string
+  moment: MuziekMoment
+  opmerking: string
+  url: string
+  bron: MusicTrackBron
+  gastNaam: string
+}
+
+export interface PublicMuziekData {
+  partner1Naam: string
+  partner2Naam: string
+  trouwdatum: string | null
+  tracks: PublicMuziekTrack[]
+}
+
 // --- Moodboard ---------------------------------------------------------
 
 // Vrije tekst (net als BudgetCategorie/VendorType): de vaste lijst in

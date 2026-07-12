@@ -19,6 +19,8 @@ import type {
   Message,
   MessageRead,
   MoodBoardItem,
+  MusicTrack,
+  MuziekShare,
   PaymentTerm,
   Rol,
   ScheduleItem,
@@ -362,6 +364,38 @@ export function moodBoardItemFromRow(r: any): MoodBoardItem {
     titel: r.titel,
     volgorde: num(r.volgorde),
     createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// --- Muziek ----------------------------------------------------------------
+// music_tracks/music_shares ontbreken nog in de gegenereerde
+// database.types.ts (nieuwe migratie 0078) — zelfde any-drift als
+// vendor_documents hierboven.
+export function musicTrackFromRow(r: any): MusicTrack {
+  return {
+    id: r.id,
+    weddingId: r.wedding_id,
+    titel: r.titel,
+    artiest: r.artiest,
+    moment: r.moment,
+    opmerking: r.opmerking,
+    url: r.url,
+    bron: r.bron,
+    gastNaam: r.gast_naam,
+    guestId: r.guest_id ?? null,
+    status: r.status,
+    volgorde: num(r.volgorde),
+    createdBy: r.created_by ?? undefined,
+    createdAt: r.created_at,
+  }
+}
+
+// music_shares: zelfde vorm als draaiboek_shares (0069).
+export function muziekShareFromRow(r: any): MuziekShare {
+  return {
+    weddingId: r.wedding_id,
+    token: r.token,
     createdAt: r.created_at,
   }
 }

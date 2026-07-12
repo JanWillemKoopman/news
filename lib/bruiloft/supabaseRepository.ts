@@ -17,6 +17,8 @@ import {
   messageFromRow,
   messageReadFromRow,
   moodBoardItemFromRow,
+  musicTrackFromRow,
+  muziekShareFromRow,
   scheduleItemFromRow,
   scheduleItemToRow,
   tableFromRow,
@@ -55,6 +57,9 @@ import type {
   MessageRead,
   MoodBoardItem,
   MoodBoardItemInput,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -462,6 +467,94 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     )
     const fout = results.find((r) => r.error)
     if (fout?.error) throw fout.error
+  }
+
+  // --- Muziek --------------------------------------------------------
+  // music_tracks/music_shares: zelfde drift-situatie als de andere nieuwe
+  // tabellen (0078).
+  async listMusicTracks(weddingId: ID): Promise<MusicTrack[]> {
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('volgorde', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(musicTrackFromRow)
+  }
+
+  async createMusicTrack(
+    weddingId: ID,
+    input: MusicTrackInput,
+    volgorde: number
+  ): Promise<MusicTrack> {
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .insert({
+        wedding_id: weddingId,
+        titel: input.titel,
+        artiest: input.artiest,
+        moment: input.moment,
+        opmerking: input.opmerking,
+        url: input.url,
+        volgorde,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return musicTrackFromRow(data)
+  }
+
+  async updateMusicTrack(
+    id: ID,
+    patch: Partial<Pick<MusicTrack, 'titel' | 'artiest' | 'moment' | 'opmerking' | 'url' | 'status' | 'volgorde'>>
+  ): Promise<MusicTrack> {
+    const row: Record<string, unknown> = {}
+    if (patch.titel !== undefined) row.titel = patch.titel
+    if (patch.artiest !== undefined) row.artiest = patch.artiest
+    if (patch.moment !== undefined) row.moment = patch.moment
+    if (patch.opmerking !== undefined) row.opmerking = patch.opmerking
+    if (patch.url !== undefined) row.url = patch.url
+    if (patch.status !== undefined) row.status = patch.status
+    if (patch.volgorde !== undefined) row.volgorde = patch.volgorde
+    const { data, error } = await this.rawDb
+      .from('music_tracks')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return musicTrackFromRow(data)
+  }
+
+  async deleteMusicTrack(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('music_tracks').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async getMuziekShare(weddingId: ID): Promise<MuziekShare | null> {
+    const { data, error } = await this.rawDb
+      .from('music_shares')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? muziekShareFromRow(data) : null
+  }
+
+  async createMuziekShare(weddingId: ID): Promise<MuziekShare> {
+    const { data, error } = await this.rawDb
+      .from('music_shares')
+      .insert({ wedding_id: weddingId })
+      .select()
+      .single()
+    if (error) throw error
+    return muziekShareFromRow(data)
+  }
+
+  async deleteMuziekShare(weddingId: ID): Promise<void> {
+    const { error } = await this.rawDb.from('music_shares').delete().eq('wedding_id', weddingId)
+    if (error) throw error
   }
 
   // --- Berichtencentrum ------------------------------------------------

@@ -1354,3 +1354,93 @@ export const moodboardInfo: PageInfo = {
     },
   ],
 }
+
+// ── Muziek ─────────────────────────────────────────────────────────────────
+export const muziekInfo: PageInfo = {
+  titel: 'FAQ Muziek',
+  intro: (
+    <Intro>
+      <p>
+        Op <strong>Muziek</strong> verzamelen jullie de nummers voor elke fase
+        van de dag: ceremonie, borrel, diner en feest — plus een{' '}
+        <strong>niet draaien</strong>-lijst met nummers die de DJ moet
+        overslaan.
+      </p>
+      <p>
+        Gasten dragen via de RSVP op jullie trouwwebsite hun verzoeknummers
+        aan; die komen hier als suggestie binnen en jullie beslissen wat de
+        lijst in gaat.
+      </p>
+      <QuickStart
+        stappen={[
+          <>
+            <strong>Voeg nummers toe</strong> per moment van de dag — noteer
+            bij bijzondere nummers waarvoor ze zijn (bv. openingsdans).
+          </>,
+          <>
+            <strong>Beoordeel de suggesties</strong> die gasten via de RSVP
+            achterlaten: toevoegen aan een moment, of verwijderen.
+          </>,
+          <>
+            <strong>Deel de lijst</strong> via een link met jullie DJ of band —
+            die ziet altijd de actuele versie, zonder account.
+          </>,
+        ]}
+      />
+    </Intro>
+  ),
+  faq: [
+    {
+      vraag: 'Hoe dragen gasten nummers aan?',
+      antwoord: (
+        <p>
+          In het RSVP-formulier op jullie trouwwebsite zit een veld voor een
+          verzoeknummer. Wat gasten daar invullen verschijnt hier automatisch
+          als suggestie, met de naam van de gast erbij. Jullie houden het
+          laatste woord: pas na goedkeuren staat het nummer in de lijst.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wat ziet de DJ via de deel-link?',
+      antwoord: (
+        <p>
+          Alleen de goedgekeurde nummers, per moment van de dag, plus de
+          niet-draaien-lijst en jullie opmerkingen — geen andere
+          plannergegevens. De link toont altijd de actuele versie; stoppen met
+          delen maakt hem per direct ongeldig.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Waarvoor is de niet draaien-lijst?',
+      antwoord: (
+        <p>
+          Voor nummers die jullie echt niet willen horen — ook niet als een
+          gast erom vraagt. DJ&apos;s vragen hier standaard naar; met deze
+          lijst is dat in één keer geregeld.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Kan ik een link naar Spotify of YouTube bewaren?',
+      antwoord: (
+        <p>
+          Ja, elk nummer heeft een optioneel linkveld. Handig als een nummer
+          meerdere versies heeft (live, akoestisch) en je zeker wilt weten dat
+          de DJ de juiste pakt.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan de muzieklijst zien of bewerken?',
+      antwoord: (
+        <p>
+          Dat stel je in bij <strong>Samen plannen</strong>, net als bij elk
+          ander onderdeel — per rol kies je niets, zien of bewerken. Handig:
+          geef getuigen bewerkrechten en laat ze meebouwen aan de feestlijst.
+        </p>
+      ),
+    },
+  ],
+}

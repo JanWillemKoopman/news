@@ -20,6 +20,9 @@ import type {
   MessageRead,
   MoodBoardItem,
   MoodBoardItemInput,
+  MusicTrack,
+  MusicTrackInput,
+  MuziekShare,
   ScheduleItem,
   ScheduleItemInput,
   Table,
@@ -106,6 +109,23 @@ export interface WeddingRepository {
   deleteMoodBoardItem(id: ID): Promise<void>
   // Bulk-herordenen na een drag: elke rij krijgt zijn nieuwe volgorde.
   reorderMoodBoardItems(updates: { id: ID; volgorde: number }[]): Promise<void>
+
+  // Muziek: één platte lijst per bruiloft, gesectioneerd op moment.
+  // Gastsuggesties komen binnen via de RSVP-RPC's (server-side), niet via
+  // deze repository; de publieke DJ-kant loopt via de anon-RPC
+  // get_public_muziek.
+  listMusicTracks(weddingId: ID): Promise<MusicTrack[]>
+  createMusicTrack(weddingId: ID, input: MusicTrackInput, volgorde: number): Promise<MusicTrack>
+  updateMusicTrack(
+    id: ID,
+    patch: Partial<Pick<MusicTrack, 'titel' | 'artiest' | 'moment' | 'opmerking' | 'url' | 'status' | 'volgorde'>>
+  ): Promise<MusicTrack>
+  deleteMusicTrack(id: ID): Promise<void>
+
+  // Muzieklijst delen met de DJ via publieke link (één per bruiloft).
+  getMuziekShare(weddingId: ID): Promise<MuziekShare | null>
+  createMuziekShare(weddingId: ID): Promise<MuziekShare>
+  deleteMuziekShare(weddingId: ID): Promise<void>
 
   // Berichtencentrum (Postvak IN / Verzonden / Archief / Verwijderd). Inserts
   // gebeuren server-side (welkomst-trigger, /api/leveranciers/contact-route,

@@ -12,6 +12,7 @@ export const MODULES = [
   'tafels',
   'registry',
   'moodboard',
+  'muziek',
   'beheer',
 ] as const
 
@@ -51,6 +52,7 @@ export const MODULE_LABELS: Record<Module, string> = {
   tafels: 'Tafels',
   registry: 'Cadeaulijst',
   moodboard: 'Moodboard',
+  muziek: 'Muziek',
   beheer: 'Beheer (leden & instellingen)',
 }
 
@@ -86,6 +88,7 @@ export const MODULE_DESCRIPTIONS: Record<Module, string> = {
   tafels: 'De tafelschikking.',
   registry: 'De cadeaulijst en bijdragen van gasten.',
   moodboard: 'Het inspiratiebord met sfeerbeelden voor de bruiloft.',
+  muziek: 'De muzieklijst per moment en de wensen van gasten.',
   beheer: 'De bruiloftsgegevens (namen, datum, budgetinstelling).',
 }
 

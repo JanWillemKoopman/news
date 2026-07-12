@@ -75,6 +75,17 @@ export function GastenWensenModal({ open, onOpenChange }: GastenWensenModalProps
                   </li>
                 ))}
               </ul>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Deze wensen staan ook als suggestie op{' '}
+                <Link
+                  href="/bruiloft/muziek"
+                  className="font-medium text-rose-700 underline-offset-2 hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Muziek
+                </Link>
+                {' '}— daar keur je ze goed en deel je de lijst met jullie DJ.
+              </p>
               {!heeftDj ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Nog geen DJ of band geboekt?{' '}
