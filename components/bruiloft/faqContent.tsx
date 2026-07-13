@@ -1444,3 +1444,83 @@ export const muziekInfo: PageInfo = {
     },
   ],
 }
+
+// ── Documenten ─────────────────────────────────────────────────────────────
+export const documentenInfo: PageInfo = {
+  titel: 'FAQ Documenten',
+  intro: (
+    <Intro>
+      <p>
+        <strong>Documenten</strong> is de centrale map van jullie bruiloft —
+        contracten, offertes, speeches, draaiboeken en al het andere dat nu
+        verspreid op je computer staat, hier op één plek.
+      </p>
+      <p>
+        Werkt als de verkenner op je computer: mappen, uploaden (ook slepen),
+        hernoemen, verplaatsen en zoeken. Documenten die je bij een
+        leverancier of budgetpost bewaart, verschijnen hier automatisch.
+      </p>
+      <QuickStart
+        stappen={[
+          <>
+            Begin met de <strong>standaardmappen</strong> of maak je eigen
+            indeling.
+          </>,
+          <>
+            <strong>Upload of sleep</strong> bestanden in de map waar ze
+            horen — pdf, foto of Word/Excel, tot 20 MB per stuk.
+          </>,
+          <>
+            Kwijt? <strong>Zoek</strong> bovenaan — dat zoekt in alles,
+            inclusief de leveranciers- en budgetdocumenten.
+          </>,
+        ]}
+      />
+    </Intro>
+  ),
+  faq: [
+    {
+      vraag: 'Waar komen de mappen "Leveranciers" en "Budget" vandaan?',
+      antwoord: (
+        <p>
+          Die vullen zichzelf met de documenten die je bij{' '}
+          <strong>Mijn leveranciers</strong> en <strong>Budget</strong>{' '}
+          bewaart. Het bestand staat maar op één plek — hier zie je het ook,
+          maar beheren (toevoegen/verwijderen) doe je bij de leverancier of
+          budgetpost zelf.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wat gebeurt er met de bestanden als ik een map verwijder?',
+      antwoord: (
+        <p>
+          Niets ergs: de bestanden in die map verhuizen automatisch naar de
+          hoofdmap. Een map verwijderen gooit dus nooit documenten weg.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Wie kan deze documenten zien?',
+      antwoord: (
+        <p>
+          Alleen wie jullie toegang geven. De bestanden staan in een
+          afgeschermde opslag — er bestaat geen publieke link naartoe. Per rol
+          stel je bij <strong>Samen plannen</strong> in wie de documentenmap
+          ziet of beheert; standaard staat die alleen voor jullie zelf open.
+        </p>
+      ),
+    },
+    {
+      vraag: 'Welke bestanden kan ik uploaden?',
+      antwoord: (
+        <p>
+          Pdf&apos;s, foto&apos;s (jpg, png, webp, heic), Word- en
+          Excel-bestanden en tekstbestanden, tot 20 MB per stuk en 200
+          documenten per bruiloft. Je kunt meerdere bestanden tegelijk
+          uploaden of slepen.
+        </p>
+      ),
+    },
+  ],
+}

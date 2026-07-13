@@ -7,6 +7,7 @@ import {
   agendaShareFromRow,
   budgetItemDocumentFromRow,
   budgetItemFromRow,
+  documentFolderFromRow,
   draaiboekShareFromRow,
   guestFromRow,
   messageFromRow,
@@ -24,6 +25,7 @@ import {
   websiteContentFromRow,
   websiteFotoFromRow,
   websitePageFromRow,
+  weddingDocumentFromRow,
 } from '@/lib/bruiloft/mappers'
 import {
   ALL_EDIT_PERMISSIONS,
@@ -46,11 +48,14 @@ import { createClient, createRawClient } from '@/lib/supabase/client'
 import {
   createBudgetItemDocumentUrl,
   createVendorDocumentUrl,
+  createWeddingDocumentUrl,
   deleteBudgetItemDocumentFile,
   deleteVendorDocumentFile,
+  deleteWeddingDocumentFile,
   deleteWeddingMedia,
   uploadBudgetItemDocument,
   uploadVendorDocument,
+  uploadWeddingDocument,
   uploadWeddingMedia,
 } from '@/lib/supabase/storage'
 import type {
@@ -61,6 +66,7 @@ import type {
   BudgetItemDocument,
   BudgetItemDocumentSoort,
   BudgetItemInput,
+  DocumentFolder,
   DraaiboekShare,
   FaqItem,
   GallerijFoto,
@@ -103,6 +109,7 @@ import type {
   WebsiteContent,
   WebsiteContentInput,
   WebsiteFoto,
+  WeddingDocument,
 } from '@/lib/bruiloft/types'
 import { converteerOudNaarBlokken, type WebsitePage, type WebsitePageInput } from '@/lib/bruiloft/websiteBlocks'
 
@@ -170,6 +177,11 @@ interface BruiloftState {
   adresShare: AdresShare | null
   // Moodboard: één plat, op volgorde gesorteerd bord per bruiloft.
   moodBoardItems: MoodBoardItem[]
+  // Documentenverkenner: eigen mappen en bestanden. De leveranciers- en
+  // budgetdocumenten (vendorDocuments/budgetItemDocuments hierboven) tonen
+  // op de pagina als systeemmappen — die blijven in hun eigen slices.
+  documentFolders: DocumentFolder[]
+  weddingDocuments: WeddingDocument[]
   // Muziek: alle nummers (eigen + gastsuggesties), gesectioneerd op moment.
   musicTracks: MusicTrack[]
   // Publieke deel-link van de muzieklijst (voor de DJ); null = delen uit.
@@ -318,6 +330,19 @@ interface BruiloftActions {
   updateMoodBoardItem: (id: ID, patch: { categorie?: string; titel?: string }) => Promise<void>
   deleteMoodBoardItem: (id: ID) => Promise<void>
   reorderMoodBoardItems: (orderedIds: ID[]) => Promise<void>
+
+  // Documentenverkenner. Uploaden zet eerst het bestand in de private
+  // bucket en maakt daarna de metadata-rij; mislukt die, dan wordt het
+  // zojuist geüploade bestand weer opgeruimd (zelfde patroon als
+  // addVendorDocument). Een map verwijderen laat de bestanden erin
+  // terugvallen naar de hoofdmap (ON DELETE SET NULL in de database).
+  addDocumentFolder: (naam: string, parentId: ID | null) => Promise<DocumentFolder>
+  renameDocumentFolder: (id: ID, naam: string) => Promise<void>
+  deleteDocumentFolder: (id: ID) => Promise<void>
+  uploadDocument: (file: File, folderId: ID | null) => Promise<WeddingDocument>
+  updateWeddingDocument: (id: ID, patch: { naam?: string; folderId?: ID | null }) => Promise<void>
+  deleteWeddingDocument: (id: ID) => Promise<void>
+  getWeddingDocumentUrl: (doc: WeddingDocument) => Promise<string>
 
   // Muziek: eigen nummers komen direct goedgekeurd in de lijst; wat gasten
   // via de RSVP aandragen staat op 'voorgesteld' tot het paar het goedkeurt
@@ -504,6 +529,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
     agendaShare: null,
     adresShare: null,
     moodBoardItems: [],
+    documentFolders: [],
+    weddingDocuments: [],
     musicTracks: [],
     muziekShare: null,
     tables: [],
@@ -636,6 +663,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare,
         adresShare,
         moodBoardItems,
+        documentFolders,
+        weddingDocuments,
         musicTracks,
         muziekShare,
         tables,
@@ -660,6 +689,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         safe('agenda-koppeling', repository.getAgendaShare(wedding.id), null),
         safe('adreslink', repository.getAdresShare(wedding.id), null),
         safe('moodboard', repository.listMoodBoardItems(wedding.id), []),
+        safe('documenten-mappen', repository.listDocumentFolders(wedding.id), []),
+        safe('documenten', repository.listWeddingDocuments(wedding.id), []),
         safe('muziek', repository.listMusicTracks(wedding.id), []),
         safe('muziek-delen', repository.getMuziekShare(wedding.id), null),
         safe('tafels', repository.listTables(wedding.id), []),
@@ -693,6 +724,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare,
         adresShare,
         moodBoardItems,
+        documentFolders,
+        weddingDocuments,
         musicTracks,
         muziekShare,
         tables,
@@ -747,6 +780,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare: null,
         adresShare: null,
         moodBoardItems: [],
+        documentFolders: [],
+        weddingDocuments: [],
         musicTracks: [],
         muziekShare: null,
         tables: [],
@@ -875,6 +910,20 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
             ),
           })
         )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'document_folders', filter: wf }, (p) =>
+          set({
+            documentFolders: applyList(get().documentFolders, p, documentFolderFromRow).sort((a, b) =>
+              a.naam.localeCompare(b.naam, 'nl')
+            ),
+          })
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: wf }, (p) =>
+          set({
+            weddingDocuments: applyList(get().weddingDocuments, p, weddingDocumentFromRow).sort((a, b) =>
+              a.naam.localeCompare(b.naam, 'nl')
+            ),
+          })
+        )
         // Ook RSVP-suggesties van gasten druppelen zo live binnen.
         .on('postgres_changes', { event: '*', schema: 'public', table: 'music_tracks', filter: wf }, (p) =>
           set({
@@ -971,6 +1020,8 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         agendaShare: null,
         adresShare: null,
         moodBoardItems: [],
+        documentFolders: [],
+        weddingDocuments: [],
         musicTracks: [],
         muziekShare: null,
         tables: [],
@@ -1642,6 +1693,110 @@ export const useBruiloftStore = create<BruiloftState & BruiloftActions>()(
         set({ moodBoardItems: huidig })
         throw e
       }
+    },
+
+    addDocumentFolder: async (naam, parentId) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const folder = await repository.createDocumentFolder(wedding.id, naam, parentId)
+      // Realtime levert dezelfde rij ook nog; dubbelen voorkomen we hier
+      // (zelfde patroon als addMoodBoardItem).
+      if (!get().documentFolders.some((f) => f.id === folder.id)) {
+        set({
+          documentFolders: [...get().documentFolders, folder].sort((a, b) =>
+            a.naam.localeCompare(b.naam, 'nl')
+          ),
+        })
+      }
+      return folder
+    },
+
+    renameDocumentFolder: async (id, naam) => {
+      const folder = await repository.updateDocumentFolder(id, { naam })
+      set({
+        documentFolders: get()
+          .documentFolders.map((f) => (f.id === id ? folder : f))
+          .sort((a, b) => a.naam.localeCompare(b.naam, 'nl')),
+      })
+    },
+
+    deleteDocumentFolder: async (id) => {
+      // De database laat bestanden in de map terugvallen naar de hoofdmap
+      // (folder_id → null) en ruimt submappen op (cascade); lokaal spiegelen
+      // we dat zodat de UI niet hoeft te herladen.
+      await repository.deleteDocumentFolder(id)
+      const verdwenen = new Set<ID>([id])
+      let gegroeid = true
+      while (gegroeid) {
+        gegroeid = false
+        for (const f of get().documentFolders) {
+          if (f.parentId && verdwenen.has(f.parentId) && !verdwenen.has(f.id)) {
+            verdwenen.add(f.id)
+            gegroeid = true
+          }
+        }
+      }
+      set({
+        documentFolders: get().documentFolders.filter((f) => !verdwenen.has(f.id)),
+        weddingDocuments: get().weddingDocuments.map((d) =>
+          d.folderId && verdwenen.has(d.folderId) ? { ...d, folderId: null } : d
+        ),
+      })
+    },
+
+    uploadDocument: async (file, folderId) => {
+      const wedding = get().wedding
+      if (!wedding) throw new Error('Geen actieve bruiloft')
+      const supabase = createClient()
+      const storagePath = await uploadWeddingDocument(supabase, wedding.id, file)
+      try {
+        const doc = await repository.createWeddingDocument({
+          weddingId: wedding.id,
+          folderId,
+          naam: file.name,
+          storagePath,
+          mimeType: file.type,
+          grootte: file.size,
+        })
+        if (!get().weddingDocuments.some((d) => d.id === doc.id)) {
+          set({
+            weddingDocuments: [...get().weddingDocuments, doc].sort((a, b) =>
+              a.naam.localeCompare(b.naam, 'nl')
+            ),
+          })
+        }
+        return doc
+      } catch (e) {
+        // Metadata-rij mislukt: het zojuist geüploade bestand weer opruimen,
+        // anders blijft er een wees-bestand achter in de bucket.
+        await deleteWeddingDocumentFile(supabase, storagePath).catch(() => undefined)
+        throw e
+      }
+    },
+
+    updateWeddingDocument: async (id, patch) => {
+      const doc = await repository.updateWeddingDocument(id, patch)
+      set({
+        weddingDocuments: get()
+          .weddingDocuments.map((d) => (d.id === id ? doc : d))
+          .sort((a, b) => a.naam.localeCompare(b.naam, 'nl')),
+      })
+    },
+
+    deleteWeddingDocument: async (id) => {
+      const doc = get().weddingDocuments.find((d) => d.id === id)
+      await repository.deleteWeddingDocument(id)
+      set({ weddingDocuments: get().weddingDocuments.filter((d) => d.id !== id) })
+      // Bestand best-effort opruimen ná de rij — een wees-bestand is
+      // onschuldiger dan een dode rij (zelfde patroon als deleteVendorDocument).
+      if (doc) {
+        const supabase = createClient()
+        await deleteWeddingDocumentFile(supabase, doc.storagePath).catch(() => undefined)
+      }
+    },
+
+    getWeddingDocumentUrl: async (doc) => {
+      return createWeddingDocumentUrl(createClient(), doc.storagePath, doc.naam)
     },
 
     addMusicTrack: async (input) => {

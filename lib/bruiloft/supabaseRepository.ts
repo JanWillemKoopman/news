@@ -11,6 +11,7 @@ import {
   budgetItemDocumentFromRow,
   budgetItemFromRow,
   budgetItemToRow,
+  documentFolderFromRow,
   draaiboekShareFromRow,
   guestFromRow,
   guestToRow,
@@ -36,6 +37,7 @@ import {
   websiteFotoFromRow,
   websitePageFromRow,
   websitePageToRow,
+  weddingDocumentFromRow,
   weddingFromRow,
   weddingToRow,
 } from './mappers'
@@ -48,6 +50,7 @@ import type {
   BudgetItemDocument,
   BudgetItemDocumentInput,
   BudgetItemInput,
+  DocumentFolder,
   DraaiboekShare,
   Guest,
   GuestInput,
@@ -80,6 +83,7 @@ import type {
   WebsiteContent,
   WebsiteContentInput,
   WebsiteFoto,
+  WeddingDocument,
 } from './types'
 import type { WebsitePage, WebsitePageInput } from './websiteBlocks'
 
@@ -467,6 +471,102 @@ export class SupabaseWeddingRepository implements WeddingRepository {
     )
     const fout = results.find((r) => r.error)
     if (fout?.error) throw fout.error
+  }
+
+  // --- Documentenverkenner ---------------------------------------------
+  // document_folders/documents: zelfde drift-situatie als de andere nieuwe
+  // tabellen (0079).
+  async listDocumentFolders(weddingId: ID): Promise<DocumentFolder[]> {
+    const { data, error } = await this.rawDb
+      .from('document_folders')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('naam', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(documentFolderFromRow)
+  }
+
+  async createDocumentFolder(weddingId: ID, naam: string, parentId: ID | null): Promise<DocumentFolder> {
+    const { data, error } = await this.rawDb
+      .from('document_folders')
+      .insert({ wedding_id: weddingId, naam, parent_id: parentId })
+      .select()
+      .single()
+    if (error) throw error
+    return documentFolderFromRow(data)
+  }
+
+  async updateDocumentFolder(
+    id: ID,
+    patch: Partial<Pick<DocumentFolder, 'naam' | 'parentId'>>
+  ): Promise<DocumentFolder> {
+    const row: Record<string, unknown> = {}
+    if (patch.naam !== undefined) row.naam = patch.naam
+    if (patch.parentId !== undefined) row.parent_id = patch.parentId
+    const { data, error } = await this.rawDb
+      .from('document_folders')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return documentFolderFromRow(data)
+  }
+
+  async deleteDocumentFolder(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('document_folders').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async listWeddingDocuments(weddingId: ID): Promise<WeddingDocument[]> {
+    const { data, error } = await this.rawDb
+      .from('documents')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('naam', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map(weddingDocumentFromRow)
+  }
+
+  async createWeddingDocument(
+    input: Omit<WeddingDocument, 'id' | 'geuploadDoor' | 'createdAt'>
+  ): Promise<WeddingDocument> {
+    const { data, error } = await this.rawDb
+      .from('documents')
+      .insert({
+        wedding_id: input.weddingId,
+        folder_id: input.folderId,
+        naam: input.naam,
+        storage_path: input.storagePath,
+        mime_type: input.mimeType,
+        grootte: input.grootte,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return weddingDocumentFromRow(data)
+  }
+
+  async updateWeddingDocument(
+    id: ID,
+    patch: Partial<Pick<WeddingDocument, 'naam' | 'folderId'>>
+  ): Promise<WeddingDocument> {
+    const row: Record<string, unknown> = {}
+    if (patch.naam !== undefined) row.naam = patch.naam
+    if (patch.folderId !== undefined) row.folder_id = patch.folderId
+    const { data, error } = await this.rawDb
+      .from('documents')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return weddingDocumentFromRow(data)
+  }
+
+  async deleteWeddingDocument(id: ID): Promise<void> {
+    const { error } = await this.rawDb.from('documents').delete().eq('id', id)
+    if (error) throw error
   }
 
   // --- Muziek --------------------------------------------------------
