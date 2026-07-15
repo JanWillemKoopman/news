@@ -34,7 +34,11 @@ packages = ["src/mmm_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+# Keep the default loop fast; the end-to-end Bayesian fit is opt-in via `-m slow`.
+addopts = "-ra -m 'not slow'"
+markers = [
+    "slow: end-to-end Bayesian fit — needs the [model] extra, runs in ~30s",
+]
 
 [tool.uv]
 # Keep dev + build tooling reproducible without pulling the model stack by default.

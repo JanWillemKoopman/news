@@ -11,16 +11,26 @@ niet elke keer opnieuw.
 |------|--------|--------|
 | Data-ingestie & kwaliteitschecks (multi-source alignment) | `mmm_core.ingestion` | ✅ |
 | Adstock / Hill-saturatie transformaties | `mmm_core.transforms` | ✅ |
-| Bayesiaans model (PyMC + numpyro) | `mmm_core.model` (gepland) | ⬜ |
-| Attributie + response curves + budgetoptimalisatie | `mmm_core.attribution` (gepland) | ⬜ |
-| Diagnostiek (R-hat, ESS, divergenties, coverage) | `mmm_core.diagnostics` (gepland) | ⬜ |
+| Modelconfig + ground-truth simulator + sanity-checks | `mmm_core.model` (config/simulate/validation) | ✅ |
+| Bayesiaans model (PyMC + numpyro) + attributie + diagnostiek | `mmm_core.model` (build/fit) | ✅ |
+| Response curves + mROAS + budgetoptimalisatie | `mmm_core.optimize` (gepland) | ⬜ |
+
+De fit levert per kanaal — elk mét credible interval (p3/p50/p97) — absolute
+contributie, contribution share, ROAS, adstock-half-life en verzadigingspunt, plus een
+baseline en diagnostiek (R-hat, ESS, divergenties, R², MAPE, predictive coverage). De
+`FitSummary.to_json_dict()` is precies de geaggregeerde JSON die de Modal-worker straks
+naar Postgres schrijft; de ruwe trace gaat als `.nc` naar Storage.
+
+Nog te doen (de "Toekomst & Planning"-statistieken): steady-state response curves,
+marginale ROAS (mROAS), optimale budgetallocatie en voorspelde omzet bij +x% budget.
 
 ## Ontwikkelen
 
 ```bash
 cd mmm/packages/mmm-core
 uv sync --extra dev          # installeert numpy/pandas + pytest (niet de zware model-stack)
-uv run pytest                # draait de testsuite
+uv run pytest                # snelle suite (fit-tests worden overgeslagen)
+uv run pytest -m slow        # end-to-end fit tegen ground truth (~30s, vereist [model])
 ```
 
 De Bayesiaanse stack (PyMC/numpyro/ArviZ) zit bewust in de optionele extra `model` en
