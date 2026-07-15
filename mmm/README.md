@@ -34,8 +34,11 @@ vertrouwen.
    migratie klaar; migratie nog toe te passen op de database.
 3. ✅ **Rollen + Row Level Security** in Supabase — in `supabase/migrations/0001_mmm_init.sql`
    (builder vs. client, strikt gescheiden).
-4. ⬜ Wizard + chatpaneel (bouwersrol).
-5. ⬜ Klantdashboard (afgeschermd, altijd met zichtbare onzekerheidsmarges).
+4. 🟡 **Wizard (bouwersrol)** — skelet klaar in `app/` (project → data → model → fit →
+   resultaten → publiceren). Het **chatpaneel** is nog een lege huls tot de
+   productie-Anthropic-key gekoppeld is.
+5. 🟡 **Klantdashboard** — afgeschermde read-only weergave in `app/dashboard/[projectId]`,
+   altijd met zichtbare onzekerheidsmarges (gedeelde `SummaryView`).
 6. ⬜ Generaliseren naar uiteenlopende databronnen (kolom-mapping als eigen stap,
    kanaaltype i.p.v. kanaalnaam raden). Testen met ≥2 echt verschillende bedrijven.
 
