@@ -68,6 +68,109 @@ class Diagnostics:
 
 
 @dataclass
+class QualityGate:
+    """An automatic verdict on whether a fit is trustworthy enough to show a client.
+
+    ``verdict`` is ``"pass"`` / ``"warn"`` / ``"fail"``. ``reasons`` are human-readable
+    (Dutch) explanations for anything that is not clean; ``checks`` is the per-check
+    boolean map. A ``fail`` means do not publish without investigating.
+    """
+
+    verdict: str
+    reasons: list[str]
+    checks: dict[str, bool]
+
+
+# Gate thresholds — deliberately explicit so the bar is auditable, not hidden in code.
+_RHAT_FAIL, _RHAT_WARN = 1.1, 1.05
+_DIVERGENCE_FAIL_FRAC = 0.02      # >2% of samples diverging is a hard fail
+_ESS_WARN = 400.0
+_COVERAGE_TOL = 0.1
+_R2_WARN = 0.3
+_CV_MAPE_WARN = 0.25
+
+
+def _quality_gate(
+    d: "Diagnostics",
+    n_samples: int,
+    *,
+    placebo_ok: bool | None = None,
+    cv_mape: float | None = None,
+) -> "QualityGate":
+    """Turn diagnostics (+ optional placebo/CV results) into a pass/warn/fail verdict."""
+    checks: dict[str, bool] = {}
+    fails: list[str] = []
+    warns: list[str] = []
+
+    checks["converged_r_hat"] = d.max_r_hat <= _RHAT_FAIL
+    if d.max_r_hat > _RHAT_FAIL:
+        fails.append(f"model niet geconvergeerd (max R-hat {d.max_r_hat:.3f} > {_RHAT_FAIL})")
+    elif d.max_r_hat > _RHAT_WARN:
+        warns.append(f"convergentie krap (max R-hat {d.max_r_hat:.3f})")
+
+    div_frac = d.n_divergences / max(n_samples, 1)
+    checks["few_divergences"] = div_frac <= _DIVERGENCE_FAIL_FRAC
+    if div_frac > _DIVERGENCE_FAIL_FRAC:
+        fails.append(f"te veel divergenties ({d.n_divergences}, {div_frac:.1%} van de samples)")
+    elif d.n_divergences > 0:
+        warns.append(f"{d.n_divergences} divergentie(s) — resultaat met voorzichtigheid lezen")
+
+    checks["decomposition_adds_up"] = d.decomposition_ok
+    if not d.decomposition_ok:
+        fails.append("decompositie telt niet op tot het totaal")
+
+    checks["enough_ess"] = d.min_ess_bulk >= _ESS_WARN
+    if d.min_ess_bulk < _ESS_WARN:
+        warns.append(f"lage effectieve steekproef (min ESS {d.min_ess_bulk:.0f})")
+
+    checks["coverage_ok"] = abs(d.interval_coverage_94 - 0.94) <= _COVERAGE_TOL
+    if not checks["coverage_ok"]:
+        warns.append(f"onzekerheidsdekking wijkt af ({d.interval_coverage_94:.0%} i.p.v. 94%)")
+
+    checks["explains_data"] = d.r2 >= _R2_WARN
+    if d.r2 < _R2_WARN:
+        warns.append(f"model verklaart weinig (R² {d.r2:.2f})")
+
+    if placebo_ok is not None:
+        checks["placebo_clean"] = placebo_ok
+        if not placebo_ok:
+            fails.append("placebo-test gezakt: een random kanaal krijgt een te grote bijdrage")
+
+    if cv_mape is not None:
+        checks["cross_validation_ok"] = cv_mape <= _CV_MAPE_WARN
+        if cv_mape > _CV_MAPE_WARN:
+            warns.append(f"zwakke generalisatie (out-of-sample MAPE {cv_mape:.0%})")
+
+    verdict = "fail" if fails else ("warn" if warns else "pass")
+    return QualityGate(verdict=verdict, reasons=fails + warns, checks=checks)
+
+
+@dataclass
+class CurvePoint:
+    weekly_spend: float
+    contribution: Interval            # steady-state KPI contribution at this spend
+    extrapolated: bool                # beyond the historically-tested max spend
+
+
+@dataclass
+class ResponseCurve:
+    name: str
+    current_weekly_spend: float       # average weekly spend over the window
+    marginal_roas_at_current: Interval  # return on the next euro at current spend
+    points: list[CurvePoint]
+
+
+@dataclass
+class OptimalAllocation:
+    """Best split of the *current* total weekly budget across channels (steady state)."""
+
+    total_weekly_budget: float
+    per_channel: dict[str, float]
+    predicted_contribution: Interval
+    capped_channels: list[str]
+
+
+@dataclass
 class FitSummary:
     kpi: str
     n_weeks: int
@@ -77,6 +180,9 @@ class FitSummary:
     diagnostics: Diagnostics
     draws: int
     chains: int
+    quality_gate: QualityGate | None = None
+    response_curves: list[ResponseCurve] = field(default_factory=list)
+    optimal_allocation: OptimalAllocation | None = None
 
     def to_json_dict(self) -> dict:
         """A plain, JSON-serializable dict (what the worker writes to Postgres)."""
@@ -216,6 +322,11 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         decomposition_ok=decomp.ok,
     )
 
+    response_curves, optimal_allocation = _planning_outputs(built, idata)
+    n_draws = int(idata.posterior.sizes["draw"])
+    n_chains = int(idata.posterior.sizes["chain"])
+    quality_gate = _quality_gate(diagnostics, n_draws * n_chains)
+
     return FitSummary(
         kpi=config.kpi,
         n_weeks=len(built.dates),
@@ -223,9 +334,63 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         baseline_contribution=baseline,
         channels=channels,
         diagnostics=diagnostics,
-        draws=int(idata.posterior.sizes["draw"]),
-        chains=int(idata.posterior.sizes["chain"]),
+        draws=n_draws,
+        chains=n_chains,
+        quality_gate=quality_gate,
+        response_curves=response_curves,
+        optimal_allocation=optimal_allocation,
     )
+
+
+def _planning_outputs(built: BuiltModel, idata) -> tuple[list[ResponseCurve], "OptimalAllocation | None"]:
+    """Response curves + best reallocation of the current budget, from the one posterior.
+
+    Pure post-processing of the fitted samples — no re-sampling — so it is cheap enough to
+    run on every fit. Wrapped defensively: a planning-output failure (e.g. the optimizer
+    not converging) must never fail an otherwise-good fit.
+    """
+    from mmm_core.optimize import (
+        Interval as _OI,
+        extract_channel_responses,
+        marginal_roas,
+        optimize_budget,
+        response_curve,
+    )
+
+    def _iv(x: _OI) -> Interval:
+        return Interval(x.p3, x.p50, x.p97)
+
+    curves: list[ResponseCurve] = []
+    allocation: OptimalAllocation | None = None
+    try:
+        responses = extract_channel_responses(built, idata)
+        for i, r in enumerate(responses):
+            current = float(built.spend[:, i].mean())
+            pts = [
+                CurvePoint(p.weekly_spend, _iv(p.contribution), p.extrapolated)
+                for p in response_curve(r, n_points=25)
+            ]
+            curves.append(
+                ResponseCurve(
+                    name=r.name,
+                    current_weekly_spend=current,
+                    marginal_roas_at_current=_iv(marginal_roas(r, current)),
+                    points=pts,
+                )
+            )
+        total_current = float(sum(built.spend[:, i].mean() for i in range(built.spend.shape[1])))
+        if total_current > 0:
+            alloc = optimize_budget(responses, total_current)
+            allocation = OptimalAllocation(
+                total_weekly_budget=alloc.total_budget,
+                per_channel=alloc.per_channel,
+                predicted_contribution=_iv(alloc.predicted_contribution),
+                capped_channels=alloc.capped_channels,
+            )
+    except Exception:
+        # planning outputs are a bonus on top of the fit; never let them break it
+        return curves, allocation
+    return curves, allocation
 
 
 def fit_model(

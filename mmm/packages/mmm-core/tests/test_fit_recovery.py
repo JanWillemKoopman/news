@@ -149,6 +149,13 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
     assert np.isfinite(summary.channels[0].saturation_point.p50)  # logistic sat-point finite
     json.dumps(summary.to_json_dict())   # summary stays JSON-serializable
 
+    # planning outputs + quality gate are populated on every fit
+    assert summary.quality_gate is not None and summary.quality_gate.verdict in {"pass", "warn", "fail"}
+    assert len(summary.response_curves) == 2
+    assert summary.response_curves[0].points and summary.response_curves[0].points[-1].weekly_spend > 0
+    assert summary.optimal_allocation is not None
+    assert sum(summary.optimal_allocation.per_channel.values()) > 0
+
     # response/optimize must also work end-to-end for the mixed-saturation posterior.
     from mmm_core.optimize import extract_channel_responses, optimize_budget, response_curve
 

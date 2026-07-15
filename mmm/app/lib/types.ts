@@ -146,6 +146,32 @@ export interface ChannelResult {
   total_spend: number;
 }
 
+export interface QualityGate {
+  verdict: "pass" | "warn" | "fail";
+  reasons: string[];
+  checks: Record<string, boolean>;
+}
+
+export interface CurvePoint {
+  weekly_spend: number;
+  contribution: Interval;
+  extrapolated: boolean;
+}
+
+export interface ResponseCurve {
+  name: string;
+  current_weekly_spend: number;
+  marginal_roas_at_current: Interval;
+  points: CurvePoint[];
+}
+
+export interface OptimalAllocation {
+  total_weekly_budget: number;
+  per_channel: Record<string, number>;
+  predicted_contribution: Interval;
+  capped_channels: string[];
+}
+
 export interface FitSummary {
   kpi: string;
   n_weeks: number;
@@ -163,4 +189,7 @@ export interface FitSummary {
   };
   draws: number;
   chains: number;
+  quality_gate?: QualityGate | null;
+  response_curves?: ResponseCurve[];
+  optimal_allocation?: OptimalAllocation | null;
 }
