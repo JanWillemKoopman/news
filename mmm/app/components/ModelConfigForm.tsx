@@ -1,8 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SourceFile } from "@/lib/types";
+import { useWizardChat } from "@/components/WizardChatContext";
+
+const DEFAULT_SAMPLE = { draws: 1000, tune: 1000, chains: 4 };
+
+// The architect's tool output carries `reasoning` for the chat bubble, but that's not
+// part of the job config itself; `sample` (compute cost) is deliberately left for the
+// wizard to default rather than letting the model pick it.
+function configFromProposal(proposal: unknown): string {
+  const { reasoning: _reasoning, ...rest } = proposal as { reasoning?: string; sources: unknown; model: unknown };
+  return JSON.stringify({ ...rest, sample: DEFAULT_SAMPLE }, null, 2);
+}
 
 // A JSON editor for the job config. For technical builders this is a fine MVP; later the
 // chat panel generates this config from the data and hands it here to run.
@@ -39,6 +50,13 @@ export function ModelConfigForm({
   const [text, setText] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { pendingConfig, clearPendingConfig } = useWizardChat();
+
+  useEffect(() => {
+    if (pendingConfig === null) return;
+    setText(configFromProposal(pendingConfig));
+    clearPendingConfig();
+  }, [pendingConfig, clearPendingConfig]);
 
   async function onRun() {
     setError(null);

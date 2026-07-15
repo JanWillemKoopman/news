@@ -35,8 +35,9 @@ vertrouwen.
 3. ✅ **Rollen + Row Level Security** in Supabase — in `supabase/migrations/0001_mmm_init.sql`
    (builder vs. client, strikt gescheiden).
 4. 🟡 **Wizard (bouwersrol)** — skelet klaar in `app/` (project → data → model → fit →
-   resultaten → publiceren). Het **chatpaneel** is nog een lege huls tot de
-   productie-Anthropic-key gekoppeld is.
+   resultaten → publiceren). Het **chatpaneel** (`app/api/chat`, Claude Sonnet 5) is
+   gebouwd en beoordeelt data + stelt een modelconfiguratie voor — werkt zodra
+   `ANTHROPIC_API_KEY` in Vercel staat; nog niet end-to-end live getest.
 5. 🟡 **Klantdashboard** — afgeschermde read-only weergave in `app/dashboard/[projectId]`,
    altijd met zichtbare onzekerheidsmarges (gedeelde `SummaryView`).
 6. ⬜ Generaliseren naar uiteenlopende databronnen (kolom-mapping als eigen stap,
