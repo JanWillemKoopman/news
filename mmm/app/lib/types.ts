@@ -54,7 +54,16 @@ export interface ModelRun {
 export interface JobConfig {
   sources: SourceConfig[];
   model: ModelConfig;
+  event_dummies?: EventDummyConfig[];
   sample?: { draws?: number; tune?: number; chains?: number };
+}
+
+// A 0/1 control column for named ISO weeks (anomalies, one-off promotions, ...) —
+// added to the master dataset without editing the raw source file. Declared names are
+// appended to `model.control_columns` automatically by mmm-worker/jobspec.py.
+export interface EventDummyConfig {
+  name: string;
+  weeks: [number, number][]; // [iso_year, iso_week] pairs
 }
 
 export interface SourceConfig {

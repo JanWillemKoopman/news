@@ -76,6 +76,23 @@ def test_invalid_config_is_permanent_failure():
     assert fit.calls == []
 
 
+def test_event_dummy_flows_through_to_the_fit():
+    # 84 daily rows from Monday 2022-01-03 span ISO weeks (2022, 1) .. (2022, 12).
+    files = {"rev.csv": _csv("2022-01-03", 84, "revenue", 1000.0),
+             "g.csv": _csv("2022-01-03", 84, "spend", 50.0)}
+    config = _overlapping_config()
+    config["event_dummies"] = [{"name": "dummy_2022w2", "weeks": [[2022, 2]]}]
+    store = FakeJobStore(_job(config))
+    fit = make_stub_fit()
+
+    result = run_job(store, FakeStorage(files), "job-1", fit_fn=fit, netcdf_bytes=lambda i: b"")
+
+    assert result["status"] == "succeeded"
+    call = fit.calls[0]
+    assert "dummy_2022w2" in call["columns"]
+    assert "dummy_2022w2" in call["model"].control_columns
+
+
 def test_trace_upload_failure_does_not_lose_summary():
     files = {"rev.csv": _csv("2022-01-03", 84, "revenue", 1000.0),
              "g.csv": _csv("2022-01-03", 84, "spend", 50.0)}

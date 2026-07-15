@@ -4,6 +4,7 @@ import pytest
 
 from mmm_core import (
     ColumnSpec,
+    EventDummySpec,
     Role,
     Severity,
     SourceSpec,
@@ -190,3 +191,37 @@ def test_output_is_sorted_gap_free_and_unique():
 def test_empty_sources_raises():
     with pytest.raises(ValueError):
         build_master_dataset([])
+
+
+# --- event dummies ---------------------------------------------------------------
+
+def test_event_dummy_marks_only_the_specified_week():
+    # 14 daily rows of spend from Monday 2022-01-03 -> ISO weeks (2022, 1) and (2022, 2).
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="dummy_w1", weeks=((2022, 1),))],
+    )
+    assert result.data["dummy_w1"].tolist() == [1.0, 0.0]
+    assert result.column_roles["dummy_w1"] is Role.CONTROL
+    assert "event_dummy_outside_window" not in result.report.codes()
+
+
+def test_event_dummy_outside_window_is_flagged_and_all_zero():
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="dummy_far", weeks=((2019, 1),))],
+    )
+    assert result.data["dummy_far"].tolist() == [0.0, 0.0]
+    assert "event_dummy_outside_window" in result.report.codes()
+
+
+def test_event_dummy_name_collision_is_an_error():
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="spend", weeks=((2022, 1),))],
+    )
+    assert "event_dummy_name_collision" in result.report.codes()
+    assert result.report.has_errors

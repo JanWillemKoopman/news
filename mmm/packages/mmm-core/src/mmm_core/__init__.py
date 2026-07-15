@@ -8,11 +8,13 @@ in later steps and get their own subpackages.
 from mmm_core.ingestion import (
     BuildResult,
     ColumnSpec,
+    EventDummySpec,
     QualityIssue,
     QualityReport,
     Role,
     Severity,
     SourceSpec,
+    build_event_dummy,
     build_master_dataset,
 )
 from mmm_core.transforms import (
@@ -26,11 +28,13 @@ from mmm_core.transforms import (
 __all__ = [
     "BuildResult",
     "ColumnSpec",
+    "EventDummySpec",
     "QualityIssue",
     "QualityReport",
     "Role",
     "Severity",
     "SourceSpec",
+    "build_event_dummy",
     "build_master_dataset",
     "adstock_weights",
     "alpha_from_half_life",

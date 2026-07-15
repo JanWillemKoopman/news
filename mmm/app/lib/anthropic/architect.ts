@@ -23,6 +23,7 @@ Regels:
 - Rol ("role") per kolom: "kpi" voor de doelvariabele (waar het model omzet/leads probeert te verklaren), "spend" voor marketinguitgaven of -volume per kanaal (ook niet-monetair, zoals e-mailverzendingen — die worden net zo behandeld: opgeteld per week, nul als er die week niks was), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die je NIET als marketingkanaal wilt laten meewegen met een eigen na-ijl/verzadigingseffect.
 - Wees expliciet over onzekerheid. Als een kolomnaam meerdere interpretaties toelaat (bijvoorbeeld "google_sales" kan een campagnenaam zijn, geen garantie), zeg dat in "reasoning" — dit gaat naar een mens die het kan corrigeren voordat er iets draait.
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
+- Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week (een storing, eenmalige actie, evenement) die geen structureel onderdeel van het patroon is? Stel dan een "event_dummies"-item voor (naam + ISO-jaar/weeknummer) in plaats van de ruwe data te laten liggen — dat geeft het model een controlekolom voor precies die week, zonder dat de bouwer het brondbestand hoeft te bewerken. Doe dit alleen als je de week echt in de data ziet, nooit uit voorzorg.
 - Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag, roep de tool niet aan.
 - Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.`;
 
@@ -109,8 +110,27 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
         required: ["kpi", "channels", "control_columns", "add_trend", "seasonality_periods", "n_fourier_modes"],
         additionalProperties: false,
       },
+      event_dummies: {
+        type: "array",
+        description:
+          "0/1-controlekolommen voor specifieke ISO-weken met een duidelijke, in de data zichtbare uitschieter (storing, eenmalige actie). Leeg laten als er geen zijn.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Kolomnaam, bv. 'dummy_2025w45'." },
+            weeks: {
+              type: "array",
+              description:
+                "Lijst van [iso_jaar, iso_weeknummer]-paren waarop deze dummy 1 is (elk paar exact 2 gehele getallen).",
+              items: { type: "array", items: { type: "integer" } },
+            },
+          },
+          required: ["name", "weeks"],
+          additionalProperties: false,
+        },
+      },
     },
-    required: ["reasoning", "sources", "model"],
+    required: ["reasoning", "sources", "model", "event_dummies"],
     additionalProperties: false,
   },
   strict: true,

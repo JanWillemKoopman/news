@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from mmm_core.ingestion.dates import detect_date_column, to_week_start
+from mmm_core.ingestion.events import EventDummySpec, build_event_dummy
 from mmm_core.ingestion.quality import QualityReport, Severity
 from mmm_core.ingestion.spec import Role, SourceSpec, aggregation_for
 
@@ -200,11 +201,41 @@ def _flag_year_end_anomalies(
             )
 
 
+def _apply_event_dummies(
+    data: pd.DataFrame,
+    event_dummies: list[EventDummySpec],
+    report: QualityReport,
+) -> dict[str, Role]:
+    """Attach one 0/1 control column per event dummy, post window-trim."""
+    roles: dict[str, Role] = {}
+    for spec in event_dummies:
+        if spec.name in data.columns:
+            report.add(
+                "event_dummy_name_collision", Severity.ERROR,
+                f"event dummy {spec.name!r} collides with an existing column name",
+                column=spec.name,
+            )
+            continue
+        dummy = build_event_dummy(data.index, spec)
+        if dummy.sum() == 0:
+            report.add(
+                "event_dummy_outside_window", Severity.WARNING,
+                f"event dummy {spec.name!r} has no active week inside the analysis "
+                f"window ({data.index.min().date()}..{data.index.max().date()}); it "
+                f"will be all zero and have no effect on the fit",
+                column=spec.name, weeks=[f"{y}-W{w:02d}" for y, w in spec.weeks],
+            )
+        data[spec.name] = dummy.to_numpy()
+        roles[spec.name] = Role.CONTROL
+    return roles
+
+
 def build_master_dataset(
     sources: list[tuple[SourceSpec, pd.DataFrame]],
     *,
     correlation_threshold: float = _DEFAULT_CORR_THRESHOLD,
     impute_spend_zero: bool = True,
+    event_dummies: list[EventDummySpec] | None = None,
 ) -> BuildResult:
     """Align several uploaded sources into one gap-free ISO-week master dataset.
 
@@ -215,6 +246,9 @@ def build_master_dataset(
         impute_spend_zero: Whether to fill missing spend weeks with 0 *inside* the
             analysis window (recommended; a missing spend week means the channel ran
             no ads that week).
+        event_dummies: Optional 0/1 control columns for named ISO weeks (anomalies,
+            one-off promotions, ...), added after the window is trimmed so the
+            builder never has to hand-edit a source file to flag one.
 
     Returns:
         A :class:`BuildResult`. If there is no overlapping window across the essential
@@ -307,6 +341,9 @@ def build_master_dataset(
                 f"imputed {total_filled} missing spend week(s) with 0 inside the window",
                 per_column=filled,
             )
+
+    if event_dummies:
+        column_roles.update(_apply_event_dummies(data, list(event_dummies), report))
 
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)

@@ -67,7 +67,9 @@ def make_stub_fit(summary=None):
     calls = []
 
     def fit_fn(data, model, **kwargs):
-        calls.append({"n_rows": len(data), "kwargs": kwargs})
+        calls.append(
+            {"n_rows": len(data), "columns": list(data.columns), "model": model, "kwargs": kwargs}
+        )
         return (summary or StubSummary()), object()  # (summary, fake idata)
 
     fit_fn.calls = calls

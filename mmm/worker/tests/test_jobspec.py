@@ -56,3 +56,25 @@ def test_bad_role_raises():
     cfg["sources"][0]["columns"][0]["role"] = "not-a-role"
     with pytest.raises(ValueError):
         parse_job_config(cfg)
+
+
+def test_event_dummies_are_parsed_and_appended_to_control_columns():
+    cfg = _valid_config()
+    cfg["event_dummies"] = [{"name": "dummy_2025w45", "weeks": [[2025, 45]]}]
+    spec = parse_job_config(cfg)
+    assert spec.event_dummies[0].name == "dummy_2025w45"
+    assert spec.event_dummies[0].weeks == ((2025, 45),)
+    assert "dummy_2025w45" in spec.model.control_columns
+
+
+def test_event_dummy_already_listed_as_control_is_not_duplicated():
+    cfg = _valid_config()
+    cfg["model"]["control_columns"] = ["dummy_2025w45"]
+    cfg["event_dummies"] = [{"name": "dummy_2025w45", "weeks": [[2025, 45]]}]
+    spec = parse_job_config(cfg)
+    assert spec.model.control_columns.count("dummy_2025w45") == 1
+
+
+def test_no_event_dummies_defaults_to_empty():
+    spec = parse_job_config(_valid_config())
+    assert spec.event_dummies == ()
