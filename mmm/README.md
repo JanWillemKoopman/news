@@ -29,19 +29,24 @@ vertrouwen.
 
 ## Bouwvolgorde
 
-1. **Statistische kern eerst** (`packages/mmm-core`) — los van alle UI, met tests tegen
-   synthetische data. **← we zitten hier.**
-2. Job-queue end-to-end (Modal leest uit Supabase Storage, fit, schrijft resultaat terug).
-3. Rollen + Row Level Security in Supabase.
-4. Wizard + chatpaneel (bouwersrol).
-5. Klantdashboard (afgeschermd, altijd met zichtbare onzekerheidsmarges).
-6. Generaliseren naar uiteenlopende databronnen (kolom-mapping als eigen stap,
+1. ✅ **Statistische kern** (`packages/mmm-core`) — compleet en getest tegen ground truth.
+2. ✅ **Job-queue end-to-end** (`worker/` op Modal + `supabase/` schema) — worker-code en
+   migratie klaar; migratie nog toe te passen op de database.
+3. ✅ **Rollen + Row Level Security** in Supabase — in `supabase/migrations/0001_mmm_init.sql`
+   (builder vs. client, strikt gescheiden).
+4. ⬜ Wizard + chatpaneel (bouwersrol).
+5. ⬜ Klantdashboard (afgeschermd, altijd met zichtbare onzekerheidsmarges).
+6. ⬜ Generaliseren naar uiteenlopende databronnen (kolom-mapping als eigen stap,
    kanaaltype i.p.v. kanaalnaam raden). Testen met ≥2 echt verschillende bedrijven.
 
 ## Mappen
 
 - `packages/mmm-core/` — de bevroren statistische kernbibliotheek (Python, `uv`).
   Begin hier. Zie `packages/mmm-core/README.md`.
+- `worker/` — de asynchrone Modal-worker die de fit off-request draait. Zie
+  `worker/README.md`.
+- `supabase/migrations/` — schema + Row Level Security (MMM in een eigen `mmm`-schema,
+  geïsoleerd van de overige tabellen in het project).
+- `.env.example` — benodigde environment variables (secrets nooit committen).
 
-Volgende mappen komen er bij latere stappen bij (`worker/` voor Modal, `app/` voor de
-Next.js-wizard, `supabase/` voor migraties/RLS).
+Volgende map komt bij stap 4 (`app/` voor de Next.js-wizard).
