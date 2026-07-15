@@ -7,6 +7,7 @@ export type ChannelType = "intent" | "brand" | "generic";
 export type AdstockType = "geometric" | "delayed";
 export type SaturationType = "hill" | "logistic";
 export type LikelihoodType = "normal" | "student_t";
+export type TrendType = "linear" | "piecewise";
 export type FillStrategy = "zero" | "ffill" | "bfill" | "interpolate" | "mean" | "median";
 
 export interface Project {
@@ -121,6 +122,8 @@ export interface ModelConfig {
   channels: ChannelConfig[];
   control_columns?: string[];
   add_trend?: boolean;
+  trend_type?: TrendType;
+  n_changepoints?: number;
   seasonality_periods?: number | null;
   n_fourier_modes?: number;
   likelihood?: LikelihoodType;

@@ -173,6 +173,25 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
 
 
 @pytest.mark.slow
+def test_piecewise_trend_captures_a_structural_break():
+    # a baseline with a sharp upward bend halfway through — a linear trend can't follow it.
+    ds = simulate_mmm(
+        [ChannelDGP("search", half_life=1.0, half_saturation=90.0, beta=2500.0)],
+        n_weeks=90, noise_sd=120.0, seed=5, trend_per_week=2.0,
+    )
+    data = ds.data.copy()
+    t = np.arange(len(data))
+    data["kpi"] = data["kpi"].to_numpy() + np.where(t > 50, (t - 50) * 40.0, 0.0)
+
+    common = dict(kpi="kpi", channels=(ChannelConfig("search", ChannelType.INTENT),))
+    s_lin, _ = fit_model(data, ModelConfig(**common, trend_type=TrendType.LINEAR), draws=200, tune=200, chains=2, seed=0)
+    s_pw, _ = fit_model(data, ModelConfig(**common, trend_type=TrendType.PIECEWISE, n_changepoints=8),
+                        draws=200, tune=200, chains=2, seed=0)
+    assert s_pw.diagnostics.decomposition_ok
+    assert s_pw.diagnostics.r2 > s_lin.diagnostics.r2  # the bend is captured
+
+
+@pytest.mark.slow
 def test_posterior_predict_reproduces_in_sample_mu(fitted):
     # Predicting on the training frame must reconstruct the model's own fitted KPI
     # (this pins predict.py to build.py component-for-component).

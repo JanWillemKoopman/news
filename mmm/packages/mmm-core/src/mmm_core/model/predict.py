@@ -17,8 +17,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from mmm_core.model.build import BuiltModel, _HILL_EPS, _fourier_features
-from mmm_core.model.config import AdstockType, SaturationType
+from mmm_core.model.build import (
+    BuiltModel,
+    _HILL_EPS,
+    _fourier_features,
+    changepoint_locations,
+    changepoint_matrix,
+)
+from mmm_core.model.config import AdstockType, SaturationType, TrendType
 from mmm_core.transforms import (
     delayed_adstock,
     geometric_adstock,
@@ -82,6 +88,10 @@ def posterior_predict(built: BuiltModel, idata, data: pd.DataFrame) -> dict:
     if config.add_trend:
         trend = _flat(idata, "trend")
         baseline = baseline + np.outer(t_scaled, trend)
+        if config.trend_type is TrendType.PIECEWISE:
+            A = changepoint_matrix(t_scaled, changepoint_locations(config.n_changepoints))
+            delta = _flat(idata, "trend_delta")            # (n_cp, S)
+            baseline = baseline + np.einsum("tj,js->ts", A, delta)
 
     if config.seasonality_periods and config.n_fourier_modes > 0:
         fourier = _fourier_features(t, config.seasonality_periods, config.n_fourier_modes)

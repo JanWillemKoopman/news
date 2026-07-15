@@ -6,6 +6,7 @@ from mmm_core.model import (
     ChannelType,
     LikelihoodType,
     SaturationType,
+    TrendType,
 )
 from mmm_worker.jobspec import parse_job_config
 
@@ -119,6 +120,22 @@ def test_model_likelihood_and_baseline_priors_are_parsed():
     assert spec.model.likelihood is LikelihoodType.STUDENT_T
     assert spec.model.student_t_nu == 6.0
     assert spec.model.priors.control_sigma == 0.3
+
+
+def test_trend_type_and_changepoints_are_parsed():
+    cfg = _valid_config()
+    cfg["model"]["trend_type"] = "piecewise"
+    cfg["model"]["n_changepoints"] = 10
+    cfg["model"]["priors"] = {"changepoint_scale": 0.2}
+    spec = parse_job_config(cfg)
+    assert spec.model.trend_type is TrendType.PIECEWISE
+    assert spec.model.n_changepoints == 10
+    assert spec.model.priors.changepoint_scale == 0.2
+
+
+def test_default_trend_type_is_linear():
+    spec = parse_job_config(_valid_config())
+    assert spec.model.trend_type is TrendType.LINEAR
 
 
 def test_control_fill_is_parsed_on_source_column():

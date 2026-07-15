@@ -47,6 +47,7 @@ from mmm_core.model import (
     LikelihoodType,
     ModelConfig,
     SaturationType,
+    TrendType,
 )
 
 _ALLOWED_SAMPLE_KEYS = {"draws", "tune", "chains", "target_accept", "seed"}
@@ -156,6 +157,8 @@ def parse_job_config(config: dict) -> JobSpec:
         channels=channels,
         control_columns=tuple(control_columns),
         add_trend=bool(m.get("add_trend", True)),
+        trend_type=TrendType(m.get("trend_type", "linear")),
+        n_changepoints=int(m.get("n_changepoints", 6)),
         seasonality_periods=m.get("seasonality_periods", 52.0),
         n_fourier_modes=int(m.get("n_fourier_modes", 2)),
         likelihood=LikelihoodType(m.get("likelihood", "normal")),

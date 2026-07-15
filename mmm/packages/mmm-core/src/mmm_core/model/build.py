@@ -32,6 +32,7 @@ from mmm_core.model.config import (
     LikelihoodType,
     ModelConfig,
     SaturationType,
+    TrendType,
 )
 from mmm_core.transforms import alpha_from_half_life
 
@@ -56,6 +57,25 @@ def _fourier_features(t: np.ndarray, period: float, n_modes: int) -> np.ndarray:
         cols.append(np.sin(2 * np.pi * k * t / period))
         cols.append(np.cos(2 * np.pi * k * t / period))
     return np.column_stack(cols)
+
+
+def changepoint_locations(n_changepoints: int) -> np.ndarray:
+    """Evenly-spaced changepoint positions in the ``[0, 1]`` scaled-time interval.
+
+    Placed across the first ~80% of the window (Prophet's convention): late changepoints
+    have too little data after them to be identifiable and would just fit noise.
+    """
+    return np.linspace(0.0, 0.8, n_changepoints + 1)[1:]
+
+
+def changepoint_matrix(t_scaled: np.ndarray, changepoints: np.ndarray) -> np.ndarray:
+    """Piecewise-linear basis ``A[i, j] = max(t_scaled[i] - changepoints[j], 0)``.
+
+    Adding ``A @ delta`` to a base slope bends the trend at each changepoint by ``delta_j``.
+    Works unchanged for out-of-sample weeks (``t_scaled > 1``), so forecasts extend the
+    last segment's slope rather than inventing a new bend.
+    """
+    return np.maximum(t_scaled[:, None] - changepoints[None, :], 0.0)
 
 
 def _pt_geometric_adstock(x, alpha, l_max: int):
@@ -201,6 +221,13 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
         if config.add_trend:
             trend = pm.Normal("trend", mu=0.0, sigma=bp.trend_sigma)
             mu = mu + trend * t_scaled
+            if config.trend_type is TrendType.PIECEWISE:
+                cps = changepoint_locations(config.n_changepoints)
+                A = changepoint_matrix(t_scaled, cps)
+                delta = pm.Laplace(
+                    "trend_delta", mu=0.0, b=bp.changepoint_scale, shape=len(cps)
+                )
+                mu = mu + pt.dot(A, delta)
 
         if config.seasonality_periods and config.n_fourier_modes > 0:
             fourier = _fourier_features(t, config.seasonality_periods, config.n_fourier_modes)

@@ -6,6 +6,7 @@ import type {
   LikelihoodType,
   SaturationType,
   SourceFile,
+  TrendType,
 } from "@/lib/types";
 
 // The "architect": reviews uploaded data and proposes a job config for the wizard's
@@ -29,7 +30,8 @@ Regels:
 - Kanaaltype ("channel_type"): "intent" voor kanalen die al bestaande koopintentie vangen (zoekwoorden op eigen merknaam, marktplaatsen, iemand die al actief zoekt), "brand" voor kanalen die vooral nieuwe aandacht/vraag opbouwen (social ads, prospecting, display), "generic" als je het niet zeker weet.
 - Na-ijlvorm ("adstock"): "geometric" (standaard) voor digitale kanalen, waarbij het effect direct piekt en daarna afneemt. Kies "delayed" alleen voor offline/merkkanalen die pas na een paar weken hun piek bereiken (tv, radio, out-of-home, soms video) — het effect bouwt op en dooft daarna uit.
 - Verzadigingsvorm ("saturation"): "hill" (standaard) is flexibel en kan een S-curve aan. Kies "logistic" als er weinig of ruisige data is; die vorm heeft één parameter minder en is dan robuuster.
-- Ruismodel ("likelihood") op modelniveau: "normal" (standaard). Kies "student_t" als de KPI duidelijke uitschieters/pieken heeft (bijv. losse actieweken, anomalieën) die je niet allemaal als event-dummy wfilt afvangen — die zware-staart-verdeling laat het model niet door enkele extreme weken meesleuren.
+- Ruismodel ("likelihood") op modelniveau: "normal" (standaard). Kies "student_t" als de KPI duidelijke uitschieters/pieken heeft (bijv. losse actieweken, anomalieën) die je niet allemaal als event-dummy wilt afvangen — die zware-staart-verdeling laat het model niet door enkele extreme weken meesleuren.
+- Trendvorm ("trend_type") op modelniveau: "linear" (standaard, één rechte trend). Kies "piecewise" als de basislijn duidelijk van richting verandert in de periode (een structurele knik/versnelling/vertraging, bijv. na een herpositionering of marktverandering) — dan mag de trend op een paar punten buigen.
 - Rol ("role") per kolom: "kpi" voor de doelvariabele (waar het model omzet/leads probeert te verklaren), "spend" voor marketinguitgaven of -volume per kanaal (ook niet-monetair, zoals e-mailverzendingen — die worden net zo behandeld: opgeteld per week, nul als er die week niks was), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die je NIET als marketingkanaal wilt laten meewegen met een eigen na-ijl/verzadigingseffect.
 - Wees expliciet over onzekerheid. Als een kolomnaam meerdere interpretaties toelaat (bijvoorbeeld "google_sales" kan een campagnenaam zijn, geen garantie), zeg dat in "reasoning" — dit gaat naar een mens die het kan corrigeren voordat er iets draait.
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
@@ -124,6 +126,11 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
           },
           control_columns: { type: "array", items: { type: "string" } },
           add_trend: { type: "boolean" },
+          trend_type: {
+            type: "string",
+            enum: ["linear", "piecewise"] satisfies TrendType[],
+            description: "'linear' (standaard) of 'piecewise' bij een duidelijke structurele knik in de basislijn.",
+          },
           seasonality_periods: { type: ["number", "null"] },
           n_fourier_modes: { type: "integer" },
           likelihood: {
@@ -132,7 +139,7 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
             description: "'normal' (standaard) of 'student_t' bij een KPI met duidelijke uitschieters.",
           },
         },
-        required: ["kpi", "channels", "control_columns", "add_trend", "seasonality_periods", "n_fourier_modes", "likelihood"],
+        required: ["kpi", "channels", "control_columns", "add_trend", "trend_type", "seasonality_periods", "n_fourier_modes", "likelihood"],
         additionalProperties: false,
       },
       event_dummies: {

@@ -14,6 +14,7 @@ from mmm_core.model.config import (
     LikelihoodType,
     ModelConfig,
     SaturationType,
+    TrendType,
     default_half_life,
 )
 from mmm_core.model.simulate import (
@@ -39,6 +40,7 @@ __all__ = [
     "LikelihoodType",
     "ModelConfig",
     "SaturationType",
+    "TrendType",
     "default_half_life",
     "ChannelDGP",
     "SimulatedDataset",

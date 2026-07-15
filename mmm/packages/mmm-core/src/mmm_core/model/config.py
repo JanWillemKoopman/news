@@ -43,6 +43,13 @@ class LikelihoodType(str, Enum):
     STUDENT_T = "student_t"  # heavy-tailed: robust to outlier weeks/promos/anomalies
 
 
+class TrendType(str, Enum):
+    """Shape of the baseline time trend (only used when ``add_trend`` is on)."""
+
+    LINEAR = "linear"        # one straight slope over the whole window (default)
+    PIECEWISE = "piecewise"  # piecewise-linear with changepoints — captures drift/breaks
+
+
 # Prior-centre for the adstock half-life (in weeks) per channel type. These *center* a
 # weakly-informative prior; the data still moves them. Intent channels fade within a
 # week or two; brand channels linger for over a month.
@@ -124,10 +131,12 @@ class BaselinePriors:
 
     Args:
         intercept_sigma: Normal scale on the intercept (scaled-KPI units).
-        trend_sigma: Normal scale on the linear trend coefficient.
+        trend_sigma: Normal scale on the (base) trend slope.
         season_sigma: Normal scale on each Fourier seasonality coefficient.
         control_sigma: Normal scale on each control coefficient (standardized controls).
         noise_sigma: HalfNormal scale on the observation-noise sigma.
+        changepoint_scale: Laplace scale on each piecewise-trend changepoint step. Smaller
+            = a stiffer trend that resists bending; larger = more responsive to breaks.
     """
 
     intercept_sigma: float = 0.25
@@ -135,6 +144,7 @@ class BaselinePriors:
     season_sigma: float = 0.1
     control_sigma: float = 0.5
     noise_sigma: float = 0.1
+    changepoint_scale: float = 0.1
 
 
 @dataclass(frozen=True)
@@ -145,7 +155,9 @@ class ModelConfig:
         kpi: Column name of the KPI (target) in the master dataset.
         channels: The media channels to attribute.
         control_columns: Exogenous controls (e.g. price) entered linearly.
-        add_trend: Include a linear time trend as baseline component.
+        add_trend: Include a time trend as baseline component.
+        trend_type: Shape of that trend (linear or piecewise/changepoint).
+        n_changepoints: Number of changepoints for a piecewise trend (ignored otherwise).
         seasonality_periods: Seasonal cycle length in weeks (52 = yearly). ``None`` off.
         n_fourier_modes: Number of Fourier pairs for the seasonal term.
         likelihood: Observation noise model (Normal or Student-T).
@@ -158,6 +170,8 @@ class ModelConfig:
     channels: tuple[ChannelConfig, ...]
     control_columns: tuple[str, ...] = ()
     add_trend: bool = True
+    trend_type: TrendType = TrendType.LINEAR
+    n_changepoints: int = 6
     seasonality_periods: float | None = 52.0
     n_fourier_modes: int = 2
     likelihood: LikelihoodType = LikelihoodType.NORMAL
@@ -172,6 +186,8 @@ class ModelConfig:
             raise ValueError("channel names must be unique")
         if self.likelihood is LikelihoodType.STUDENT_T and self.student_t_nu <= 2:
             raise ValueError("student_t_nu must be > 2 for a finite-variance likelihood")
+        if self.trend_type is TrendType.PIECEWISE and self.n_changepoints < 1:
+            raise ValueError("a piecewise trend needs at least one changepoint")
 
     @property
     def channel_names(self) -> list[str]:
