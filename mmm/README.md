@@ -30,6 +30,12 @@ vertrouwen.
 ## Bouwvolgorde
 
 1. ✅ **Statistische kern** (`packages/mmm-core`) — compleet en getest tegen ground truth.
+   Inmiddels een volledige *gereedschapskist*: meerdere adstock- (geometric/delayed) en
+   saturatievormen (Hill/logistic), instelbaar ruismodel (normal/student_t), volledig
+   instelbare priors, feature-engineering & cleaning (`mmm_core.features`), out-of-sample
+   voorspelling (`mmm_core.model.predict`) en evaluatie (`mmm_core.evaluation`:
+   cross-validatie, placebo, prior-predictive, modelvergelijking). Alle defaults
+   reproduceren het originele model; elke uitbreiding is per klant opt-in via de config.
 2. ✅ **Job-queue end-to-end** (`worker/` op Modal + `supabase/` schema) — worker-code en
    migratie klaar; migratie nog toe te passen op de database.
 3. ✅ **Rollen + Row Level Security** in Supabase — in `supabase/migrations/0001_mmm_init.sql`
