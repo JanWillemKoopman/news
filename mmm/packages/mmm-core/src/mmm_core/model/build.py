@@ -251,6 +251,19 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
             )
             mu = mu + contribution
 
+            # Experiment calibration: nudge the channel's *implied* total ROAS toward a
+            # measured value via a soft (Gaussian) penalty. Contribution is scaled KPI, so
+            # multiply by y_max; spend is in original units. Skipped for zero-spend channels.
+            if channel.calibration is not None:
+                total_spend_c = float(spend[:, i].sum())
+                if total_spend_c > 0:
+                    implied_roas = pt.sum(contribution) * y_max / total_spend_c
+                    cal = channel.calibration
+                    pm.Potential(
+                        f"calib_{channel.name}",
+                        -0.5 * ((implied_roas - cal.roas) / cal.sd) ** 2,
+                    )
+
         pm.Deterministic("mu", mu, dims="date")
         sigma = pm.HalfNormal("sigma", sigma=bp.noise_sigma)
         if config.likelihood is LikelihoodType.STUDENT_T:

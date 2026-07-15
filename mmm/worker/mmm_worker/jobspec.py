@@ -46,6 +46,7 @@ from mmm_core.model import (
     ChannelType,
     LikelihoodType,
     ModelConfig,
+    RoasCalibration,
     SaturationType,
     TrendType,
 )
@@ -103,6 +104,12 @@ def _baseline_priors(d: dict | None) -> BaselinePriors:
     return BaselinePriors(**{k: float(v) for k, v in d.items()})
 
 
+def _parse_calibration(d: dict | None) -> RoasCalibration | None:
+    if not d:
+        return None
+    return RoasCalibration(roas=float(_require(d, "roas", "calibration")), sd=float(_require(d, "sd", "calibration")))
+
+
 def _parse_channel(c: dict) -> ChannelConfig:
     return ChannelConfig(
         name=_require(c, "name", "channel"),
@@ -112,6 +119,7 @@ def _parse_channel(c: dict) -> ChannelConfig:
         adstock=AdstockType(c.get("adstock", "geometric")),
         saturation=SaturationType(c.get("saturation", "hill")),
         priors=_channel_priors(c.get("priors")),
+        calibration=_parse_calibration(c.get("calibration")),
     )
 
 

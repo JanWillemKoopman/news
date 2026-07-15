@@ -96,6 +96,32 @@ class ChannelPriors:
 
 
 @dataclass(frozen=True)
+class RoasCalibration:
+    """An experimentally-measured ROAS to calibrate a channel against.
+
+    When a channel has a real incrementality result — a geo-experiment or lift test —
+    fold it in here. It enters the fit as a *soft* prior on the channel's implied total
+    ROAS (incremental KPI per unit spend), pulling the estimate toward the experiment
+    while still letting strong data disagree. This is the calibration step that lifts MMM
+    from "plausible" to "trustworthy enough to steer budget on".
+
+    Args:
+        roas: Measured incremental ROAS (KPI units returned per unit of spend).
+        sd: Uncertainty (standard deviation) on that measurement. Smaller = trust the
+            experiment more; larger = let the MMM data dominate.
+    """
+
+    roas: float
+    sd: float
+
+    def __post_init__(self) -> None:
+        if self.roas < 0:
+            raise ValueError("calibration roas must be >= 0")
+        if self.sd <= 0:
+            raise ValueError("calibration sd must be > 0")
+
+
+@dataclass(frozen=True)
 class ChannelConfig:
     """One media channel's configuration in the model.
 
@@ -108,6 +134,8 @@ class ChannelConfig:
         adstock: Carry-over shape (geometric or delayed).
         saturation: Diminishing-returns shape (Hill or logistic).
         priors: Prior hyper-parameters (see :class:`ChannelPriors`).
+        calibration: Optional experiment-based ROAS calibration (see
+            :class:`RoasCalibration`).
     """
 
     name: str
@@ -117,6 +145,7 @@ class ChannelConfig:
     adstock: AdstockType = AdstockType.GEOMETRIC
     saturation: SaturationType = SaturationType.HILL
     priors: ChannelPriors = field(default_factory=ChannelPriors)
+    calibration: RoasCalibration | None = None
 
     def half_life_prior_center(self) -> float:
         return self.expected_half_life or default_half_life(self.channel_type)

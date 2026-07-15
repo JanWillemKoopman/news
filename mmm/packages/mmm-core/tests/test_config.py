@@ -10,6 +10,7 @@ from mmm_core.model import (
     ChannelType,
     LikelihoodType,
     ModelConfig,
+    RoasCalibration,
     SaturationType,
 )
 
@@ -94,3 +95,21 @@ def test_config_is_frozen():
     ch = ChannelConfig("a")
     with pytest.raises(dataclasses.FrozenInstanceError):
         ch.l_max = 6  # type: ignore[misc]
+
+
+# --- roas calibration ------------------------------------------------------------
+
+def test_calibration_defaults_to_none():
+    assert ChannelConfig("a").calibration is None
+
+
+def test_calibration_validates_inputs():
+    with pytest.raises(ValueError):
+        RoasCalibration(roas=-1.0, sd=0.5)
+    with pytest.raises(ValueError):
+        RoasCalibration(roas=2.0, sd=0.0)
+
+
+def test_calibration_attaches_to_channel():
+    ch = ChannelConfig("a", calibration=RoasCalibration(roas=3.0, sd=0.5))
+    assert ch.calibration.roas == 3.0

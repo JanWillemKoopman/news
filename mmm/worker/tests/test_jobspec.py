@@ -149,6 +149,19 @@ def test_control_fill_is_parsed_on_source_column():
     assert price_col.fill == "interpolate"
 
 
+def test_channel_calibration_is_parsed():
+    cfg = _valid_config()
+    cfg["model"]["channels"][0]["calibration"] = {"roas": 4.0, "sd": 0.8}
+    spec = parse_job_config(cfg)
+    cal = spec.model.channels[0].calibration
+    assert cal is not None and cal.roas == 4.0 and cal.sd == 0.8
+
+
+def test_no_calibration_defaults_to_none():
+    spec = parse_job_config(_valid_config())
+    assert spec.model.channels[0].calibration is None
+
+
 def test_unknown_channel_prior_field_raises():
     cfg = _valid_config()
     cfg["model"]["channels"][0]["priors"] = {"not_a_prior": 1.0}

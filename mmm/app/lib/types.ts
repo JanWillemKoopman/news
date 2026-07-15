@@ -107,6 +107,12 @@ export interface BaselinePriors {
   noise_sigma?: number;
 }
 
+// An experimentally-measured ROAS (from a lift/geo test) to calibrate a channel against.
+export interface RoasCalibration {
+  roas: number;
+  sd: number;
+}
+
 export interface ChannelConfig {
   name: string;
   channel_type?: ChannelType;
@@ -115,6 +121,7 @@ export interface ChannelConfig {
   adstock?: AdstockType;
   saturation?: SaturationType;
   priors?: ChannelPriors;
+  calibration?: RoasCalibration | null;
 }
 
 export interface ModelConfig {

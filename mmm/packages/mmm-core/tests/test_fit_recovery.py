@@ -28,6 +28,7 @@ from mmm_core.model import (  # noqa: E402
     LikelihoodType,
     ModelConfig,
     SaturationType,
+    TrendType,
     simulate_mmm,
 )
 from mmm_core.model.build import build_model  # noqa: E402
@@ -170,6 +171,33 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
     assert all(b >= a - 1e-6 for a, b in zip(mids, mids[1:]))
     alloc = optimize_budget(responses, total_budget=sum(r.hist_max_weekly_spend for r in responses))
     assert alloc.predicted_contribution.p50 > 0
+
+
+@pytest.mark.slow
+def test_calibration_pulls_roas_toward_the_experiment():
+    from mmm_core.model import RoasCalibration
+
+    ds = simulate_mmm(
+        [ChannelDGP("search", half_life=1.0, half_saturation=90.0, beta=2500.0)],
+        n_weeks=80, noise_sd=120.0, seed=7,
+    )
+    base = ModelConfig(kpi="kpi", channels=(ChannelConfig("search", ChannelType.INTENT),))
+    s0, _ = fit_model(ds.data, base, draws=250, tune=250, chains=2, seed=0)
+    roas0 = s0.channels[0].roas.p50
+
+    target = roas0 * 0.5  # an experiment that disagrees with the raw MMM estimate
+    cal = ModelConfig(
+        kpi="kpi",
+        channels=(
+            ChannelConfig(
+                "search", ChannelType.INTENT,
+                calibration=RoasCalibration(roas=target, sd=roas0 * 0.03),
+            ),
+        ),
+    )
+    s1, _ = fit_model(ds.data, cal, draws=250, tune=250, chains=2, seed=0)
+    roas1 = s1.channels[0].roas.p50
+    assert abs(roas1 - target) < abs(roas0 - target)  # moved toward the experiment
 
 
 @pytest.mark.slow
