@@ -1,7 +1,12 @@
 import pytest
 
 from mmm_core import Role
-from mmm_core.model import ChannelType
+from mmm_core.model import (
+    AdstockType,
+    ChannelType,
+    LikelihoodType,
+    SaturationType,
+)
 from mmm_worker.jobspec import parse_job_config
 
 
@@ -78,3 +83,64 @@ def test_event_dummy_already_listed_as_control_is_not_duplicated():
 def test_no_event_dummies_defaults_to_empty():
     spec = parse_job_config(_valid_config())
     assert spec.event_dummies == ()
+
+
+# --- toolbox fields --------------------------------------------------------------
+
+def test_defaults_reproduce_original_model():
+    spec = parse_job_config(_valid_config())
+    ch = spec.model.channels[0]
+    assert ch.adstock is AdstockType.GEOMETRIC
+    assert ch.saturation is SaturationType.HILL
+    assert spec.model.likelihood is LikelihoodType.NORMAL
+
+
+def test_channel_adstock_saturation_and_priors_are_parsed():
+    cfg = _valid_config()
+    cfg["model"]["channels"][0].update(
+        {"adstock": "delayed", "saturation": "logistic", "priors": {"beta_sigma": 0.3, "delayed_peak_weeks": 1.0}}
+    )
+    spec = parse_job_config(cfg)
+    ch = spec.model.channels[0]
+    assert ch.adstock is AdstockType.DELAYED
+    assert ch.saturation is SaturationType.LOGISTIC
+    assert ch.priors.beta_sigma == 0.3
+    assert ch.priors.delayed_peak_weeks == 1.0
+    # unspecified priors keep their defaults
+    assert ch.priors.adstock_concentration == 20.0
+
+
+def test_model_likelihood_and_baseline_priors_are_parsed():
+    cfg = _valid_config()
+    cfg["model"]["likelihood"] = "student_t"
+    cfg["model"]["student_t_nu"] = 6.0
+    cfg["model"]["priors"] = {"control_sigma": 0.3}
+    spec = parse_job_config(cfg)
+    assert spec.model.likelihood is LikelihoodType.STUDENT_T
+    assert spec.model.student_t_nu == 6.0
+    assert spec.model.priors.control_sigma == 0.3
+
+
+def test_control_fill_is_parsed_on_source_column():
+    cfg = _valid_config()
+    cfg["sources"].append(
+        {"name": "price", "storage_path": "p.csv", "date_column": "date", "essential": False,
+         "columns": [{"name": "price", "role": "control", "fill": "interpolate"}]}
+    )
+    spec = parse_job_config(cfg)
+    price_col = spec.sources[-1].spec.columns[0]
+    assert price_col.fill == "interpolate"
+
+
+def test_unknown_channel_prior_field_raises():
+    cfg = _valid_config()
+    cfg["model"]["channels"][0]["priors"] = {"not_a_prior": 1.0}
+    with pytest.raises(ValueError):
+        parse_job_config(cfg)
+
+
+def test_bad_adstock_type_raises():
+    cfg = _valid_config()
+    cfg["model"]["channels"][0]["adstock"] = "not-a-shape"
+    with pytest.raises(ValueError):
+        parse_job_config(cfg)

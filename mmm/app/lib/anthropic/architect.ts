@@ -1,5 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ColumnRole, ChannelType, SourceFile } from "@/lib/types";
+import type {
+  AdstockType,
+  ChannelType,
+  ColumnRole,
+  LikelihoodType,
+  SaturationType,
+  SourceFile,
+} from "@/lib/types";
 
 // The "architect": reviews uploaded data and proposes a job config for the wizard's
 // existing /api/jobs endpoint. It never runs the statistical fit itself — mmm-core on
@@ -20,6 +27,9 @@ const SYSTEM_INSTRUCTIONS = `Je bent de technische architect binnen een Media Mi
 Regels:
 - Baseer elke keuze op wat je daadwerkelijk in de kolomnamen en voorbeeldrijen ziet. Verzin geen zakelijke context die er niet is.
 - Kanaaltype ("channel_type"): "intent" voor kanalen die al bestaande koopintentie vangen (zoekwoorden op eigen merknaam, marktplaatsen, iemand die al actief zoekt), "brand" voor kanalen die vooral nieuwe aandacht/vraag opbouwen (social ads, prospecting, display), "generic" als je het niet zeker weet.
+- Na-ijlvorm ("adstock"): "geometric" (standaard) voor digitale kanalen, waarbij het effect direct piekt en daarna afneemt. Kies "delayed" alleen voor offline/merkkanalen die pas na een paar weken hun piek bereiken (tv, radio, out-of-home, soms video) — het effect bouwt op en dooft daarna uit.
+- Verzadigingsvorm ("saturation"): "hill" (standaard) is flexibel en kan een S-curve aan. Kies "logistic" als er weinig of ruisige data is; die vorm heeft één parameter minder en is dan robuuster.
+- Ruismodel ("likelihood") op modelniveau: "normal" (standaard). Kies "student_t" als de KPI duidelijke uitschieters/pieken heeft (bijv. losse actieweken, anomalieën) die je niet allemaal als event-dummy wfilt afvangen — die zware-staart-verdeling laat het model niet door enkele extreme weken meesleuren.
 - Rol ("role") per kolom: "kpi" voor de doelvariabele (waar het model omzet/leads probeert te verklaren), "spend" voor marketinguitgaven of -volume per kanaal (ook niet-monetair, zoals e-mailverzendingen — die worden net zo behandeld: opgeteld per week, nul als er die week niks was), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die je NIET als marketingkanaal wilt laten meewegen met een eigen na-ijl/verzadigingseffect.
 - Wees expliciet over onzekerheid. Als een kolomnaam meerdere interpretaties toelaat (bijvoorbeeld "google_sales" kan een campagnenaam zijn, geen garantie), zeg dat in "reasoning" — dit gaat naar een mens die het kan corrigeren voordat er iets draait.
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
@@ -97,8 +107,18 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
               properties: {
                 name: { type: "string" },
                 channel_type: { type: "string", enum: ["intent", "brand", "generic"] satisfies ChannelType[] },
+                adstock: {
+                  type: "string",
+                  enum: ["geometric", "delayed"] satisfies AdstockType[],
+                  description: "'geometric' (standaard, digitaal) of 'delayed' (offline/merk, piek na enkele weken).",
+                },
+                saturation: {
+                  type: "string",
+                  enum: ["hill", "logistic"] satisfies SaturationType[],
+                  description: "'hill' (standaard) of 'logistic' (robuuster bij weinig/ruisige data).",
+                },
               },
-              required: ["name", "channel_type"],
+              required: ["name", "channel_type", "adstock", "saturation"],
               additionalProperties: false,
             },
           },
@@ -106,8 +126,13 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
           add_trend: { type: "boolean" },
           seasonality_periods: { type: ["number", "null"] },
           n_fourier_modes: { type: "integer" },
+          likelihood: {
+            type: "string",
+            enum: ["normal", "student_t"] satisfies LikelihoodType[],
+            description: "'normal' (standaard) of 'student_t' bij een KPI met duidelijke uitschieters.",
+          },
         },
-        required: ["kpi", "channels", "control_columns", "add_trend", "seasonality_periods", "n_fourier_modes"],
+        required: ["kpi", "channels", "control_columns", "add_trend", "seasonality_periods", "n_fourier_modes", "likelihood"],
         additionalProperties: false,
       },
       event_dummies: {

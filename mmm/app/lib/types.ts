@@ -4,6 +4,10 @@ export type ProjectStatus = "draft" | "published" | "archived";
 export type JobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 export type ColumnRole = "kpi" | "spend" | "control";
 export type ChannelType = "intent" | "brand" | "generic";
+export type AdstockType = "geometric" | "delayed";
+export type SaturationType = "hill" | "logistic";
+export type LikelihoodType = "normal" | "student_t";
+export type FillStrategy = "zero" | "ffill" | "bfill" | "interpolate" | "mean" | "median";
 
 export interface Project {
   id: string;
@@ -71,16 +75,57 @@ export interface SourceConfig {
   storage_path: string;
   date_column?: string;
   essential?: boolean;
-  columns: { name: string; role: ColumnRole; output_name?: string }[];
+  columns: {
+    name: string;
+    role: ColumnRole;
+    output_name?: string;
+    // control columns only: how to fill missing weeks inside the analysis window.
+    fill?: FillStrategy;
+  }[];
+}
+
+// Prior overrides for one channel (any subset; omitted keys keep mmm-core defaults).
+export interface ChannelPriors {
+  beta_sigma?: number;
+  adstock_concentration?: number;
+  delayed_peak_weeks?: number;
+  delayed_peak_sigma?: number;
+  hill_slope_a?: number;
+  hill_slope_b?: number;
+  halfsat_a?: number;
+  halfsat_b?: number;
+  logistic_lam_sigma?: number;
+}
+
+// Prior overrides for the baseline (non-media) components.
+export interface BaselinePriors {
+  intercept_sigma?: number;
+  trend_sigma?: number;
+  season_sigma?: number;
+  control_sigma?: number;
+  noise_sigma?: number;
+}
+
+export interface ChannelConfig {
+  name: string;
+  channel_type?: ChannelType;
+  l_max?: number;
+  expected_half_life?: number | null;
+  adstock?: AdstockType;
+  saturation?: SaturationType;
+  priors?: ChannelPriors;
 }
 
 export interface ModelConfig {
   kpi: string;
-  channels: { name: string; channel_type?: ChannelType; l_max?: number }[];
+  channels: ChannelConfig[];
   control_columns?: string[];
   add_trend?: boolean;
   seasonality_periods?: number | null;
   n_fourier_modes?: number;
+  likelihood?: LikelihoodType;
+  student_t_nu?: number;
+  priors?: BaselinePriors;
 }
 
 // --- Fit summary (the JSON mmm-core writes; what the dashboard reads) ---
