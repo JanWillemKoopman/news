@@ -8,7 +8,8 @@ import { SourceUpload } from "@/components/SourceUpload";
 import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
-import { ChatPanelShell } from "@/components/ChatPanelShell";
+import { ChatPanel } from "@/components/ChatPanel";
+import { WizardChatProvider } from "@/components/WizardChatContext";
 import type { Job, ModelRun, Project, SourceFile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -49,41 +50,43 @@ export default async function ProjectDetail({ params }: { params: { id: string }
           action={<StatusBadge status={p.status} />}
         />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-neutral-700">1 · Data</h2>
-              <Card>
-                <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
-              </Card>
-            </section>
+        <WizardChatProvider>
+          <div className="mt-6 grid gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">1 · Data</h2>
+                <Card>
+                  <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
+                </Card>
+              </section>
 
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-neutral-700">2 · Model configureren</h2>
-              <Card>
-                <ModelConfigForm projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
-              </Card>
-            </section>
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">2 · Model configureren</h2>
+                <Card>
+                  <ModelConfigForm projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
+                </Card>
+              </section>
 
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-neutral-700">3 · Fits</h2>
-              <Card>
-                <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
-              </Card>
-            </section>
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">3 · Fits</h2>
+                <Card>
+                  <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
+                </Card>
+              </section>
 
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-neutral-700">4 · Resultaten</h2>
-              <Card>
-                <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
-              </Card>
-            </section>
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">4 · Resultaten</h2>
+                <Card>
+                  <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
+                </Card>
+              </section>
+            </div>
+
+            <div className="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">
+              <ChatPanel projectId={p.id} />
+            </div>
           </div>
-
-          <div className="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">
-            <ChatPanelShell />
-          </div>
-        </div>
+        </WizardChatProvider>
       </main>
     </>
   );
