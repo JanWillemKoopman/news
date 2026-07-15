@@ -19,14 +19,22 @@ Flow:
 from __future__ import annotations
 
 import os
+import pathlib
 
 import modal
 
-# Image: the frozen core + its heavy model stack + the Supabase client. The local
-# mmm-core and mmm-worker sources are added so the exact tested code runs on Modal.
+# mmm-core is a local package (mmm/packages/mmm-core), never published to PyPI, so it
+# cannot be `pip install`-ed by name. We copy its source into the build context and
+# install it from that local path instead — this needs no local pip/editable install on
+# the machine running `modal deploy`, just the source tree from the git clone.
+_HERE = pathlib.Path(__file__).parent
+_MMM_CORE_DIR = (_HERE.parent.parent / "packages" / "mmm-core").resolve()
+
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .pip_install("mmm-core[model]", "supabase>=2.6", "pandas>=2.1", "openpyxl>=3.1")
+    .add_local_dir(str(_MMM_CORE_DIR), remote_path="/root/mmm-core", copy=True)
+    .run_commands("pip install '/root/mmm-core[model]'")
+    .pip_install("supabase>=2.6", "pandas>=2.1", "openpyxl>=3.1")
     .add_local_python_source("mmm_worker")
 )
 
