@@ -1,0 +1,31 @@
+# Context-control for Claude Code — keep large, generated, or vendored trees
+# out of automatic scans so sessions stay fast and focused.
+
+# --- JavaScript / Next.js (wedding-planner app in repo root) ---
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# --- Python / mmm-core ---
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.egg-info/
+**/.ipynb_checkpoints/
+
+# --- Data & model artifacts (never committed, can be huge) ---
+**/*.nc            # ArviZ InferenceData (raw posterior traces)
+**/*.parquet
+**/*.feather
+mmm/**/data/local/
+
+# --- Misc ---
+.DS_Store
+*.log
+.env*.local
