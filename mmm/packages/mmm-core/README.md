@@ -10,7 +10,7 @@ niet elke keer opnieuw.
 | Stap | Module | Status |
 |------|--------|--------|
 | Data-ingestie & kwaliteitschecks (multi-source alignment) | `mmm_core.ingestion` | ✅ |
-| Adstock / Hill-saturatie transformaties | `mmm_core.transforms` (gepland) | ⬜ |
+| Adstock / Hill-saturatie transformaties | `mmm_core.transforms` | ✅ |
 | Bayesiaans model (PyMC + numpyro) | `mmm_core.model` (gepland) | ⬜ |
 | Attributie + response curves + budgetoptimalisatie | `mmm_core.attribution` (gepland) | ⬜ |
 | Diagnostiek (R-hat, ESS, divergenties, coverage) | `mmm_core.diagnostics` (gepland) | ⬜ |
