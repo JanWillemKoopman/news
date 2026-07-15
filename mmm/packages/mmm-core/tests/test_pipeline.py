@@ -225,3 +225,46 @@ def test_event_dummy_name_collision_is_an_error():
     )
     assert "event_dummy_name_collision" in result.report.codes()
     assert result.report.has_errors
+
+
+# --- control fill strategy -------------------------------------------------------
+
+def test_control_gap_left_as_nan_by_default_and_warned():
+    # revenue + spend span the window; a non-essential control has an interior gap.
+    kpi = daily_frame("2022-01-03", 84, 1000.0, date_col="date", value_col="revenue")
+    spend = daily_frame("2022-01-03", 84, 50.0, date_col="date", value_col="spend")
+    price = daily_frame("2022-01-03", 84, 9.99, date_col="date", value_col="price")
+    # drop the second week of price entirely -> a gap inside the window.
+    price = price[~price["date"].between("2022-01-10", "2022-01-16")]
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+        (_spec("p", "price", Role.CONTROL, "date", essential=False), price),
+    ])
+    assert "control_gaps" in result.report.codes()
+    assert result.data["price"].isna().any()
+
+
+def test_control_gap_filled_when_strategy_set():
+    kpi = daily_frame("2022-01-03", 84, 1000.0, date_col="date", value_col="revenue")
+    spend = daily_frame("2022-01-03", 84, 50.0, date_col="date", value_col="spend")
+    price = daily_frame("2022-01-03", 84, 9.99, date_col="date", value_col="price")
+    price = price[~price["date"].between("2022-01-10", "2022-01-16")]
+    price_spec = SourceSpec(
+        name="p",
+        columns=(ColumnSpec("price", Role.CONTROL, fill="ffill"),),
+        date_column="date",
+        essential=False,
+    )
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+        (price_spec, price),
+    ])
+    assert "control_filled" in result.report.codes()
+    assert not result.data["price"].isna().any()
+
+
+def test_fill_on_non_control_column_rejected_by_spec():
+    with pytest.raises(ValueError):
+        ColumnSpec("spend", Role.SPEND, fill="zero")
