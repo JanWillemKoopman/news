@@ -37,7 +37,7 @@ class SupabaseJobStore(JobStore):
 
     def mark_running(self, job_id: str) -> None:
         self._table("jobs").update(
-            {"status": "running", "started_at": "now()", "attempts": None}
+            {"status": "running", "started_at": "now()"}
         ).eq("id", job_id).execute()
 
     def mark_succeeded(self, job_id: str) -> None:
