@@ -3,7 +3,9 @@ import pytest
 
 from mmm_core.optimize import (
     ChannelResponse,
+    allocate_incremental_budget,
     average_roas,
+    efficiency_frontier,
     marginal_roas,
     optimize_budget,
     predict_total_contribution,
@@ -92,3 +94,61 @@ def test_negative_budget_raises():
     ch = _channel("x")
     with pytest.raises(ValueError):
         optimize_budget([ch], total_budget=0.0)
+
+
+# --- constraints -----------------------------------------------------------------
+
+def test_min_spend_is_respected():
+    strong = _channel("strong", beta=0.6, seed=1)
+    weak = _channel("weak", beta=0.2, seed=2)
+    # force a floor on the weak channel that the optimiser would otherwise starve.
+    alloc = optimize_budget([strong, weak], total_budget=600.0, min_spend={"weak": 250.0})
+    assert alloc.per_channel["weak"] >= 250.0 - 1e-6
+    assert sum(alloc.per_channel.values()) == pytest.approx(600.0, rel=1e-3)
+
+
+def test_max_spend_caps_below_safety_cap():
+    strong = _channel("strong", beta=0.6, seed=1)
+    weak = _channel("weak", beta=0.2, seed=2)
+    alloc = optimize_budget([strong, weak], total_budget=600.0, max_spend={"strong": 100.0})
+    assert alloc.per_channel["strong"] <= 100.0 + 1e-6
+
+
+def test_min_spend_exceeding_budget_raises():
+    ch = _channel("x")
+    with pytest.raises(ValueError):
+        optimize_budget([ch], total_budget=100.0, min_spend={"x": 200.0})
+
+
+# --- efficiency frontier ---------------------------------------------------------
+
+def test_efficiency_frontier_is_increasing_and_concave_ish():
+    strong = _channel("strong", beta=0.6, seed=1)
+    weak = _channel("weak", beta=0.3, seed=2)
+    pts = efficiency_frontier([strong, weak], budgets=[200.0, 400.0, 800.0, 1200.0])
+    contribs = [p.predicted_contribution.p50 for p in pts]
+    # more budget never predicts less contribution
+    assert all(b >= a - 1e-6 for a, b in zip(contribs, contribs[1:]))
+    # diminishing returns: the first increment adds more than the last
+    gains = [b - a for a, b in zip(contribs, contribs[1:])]
+    assert gains[0] >= gains[-1] - 1e-6
+
+
+# --- incremental budget ----------------------------------------------------------
+
+def test_incremental_budget_never_cuts_below_current_and_spends_extra_well():
+    strong = _channel("strong", beta=0.6, hist_max=800.0, seed=1)
+    weak = _channel("weak", beta=0.2, hist_max=800.0, seed=2)
+    current = {"strong": 100.0, "weak": 100.0}
+    alloc = allocate_incremental_budget([strong, weak], extra_budget=200.0, current=current)
+    assert alloc.per_channel["strong"] >= 100.0 - 1e-6
+    assert alloc.per_channel["weak"] >= 100.0 - 1e-6
+    assert sum(alloc.per_channel.values()) == pytest.approx(400.0, rel=1e-3)
+    # the extra should favour the stronger channel
+    assert alloc.per_channel["strong"] - 100.0 > alloc.per_channel["weak"] - 100.0
+
+
+def test_incremental_zero_extra_returns_current():
+    ch = _channel("x", hist_max=800.0)
+    alloc = allocate_incremental_budget([ch], extra_budget=0.0, current={"x": 150.0})
+    assert alloc.per_channel["x"] == pytest.approx(150.0, rel=1e-3)

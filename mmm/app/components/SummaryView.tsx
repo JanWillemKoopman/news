@@ -1,4 +1,10 @@
-import type { FitSummary, Interval, OptimalAllocation, ResponseCurve } from "@/lib/types";
+import type {
+  FitSummary,
+  FrontierPoint,
+  Interval,
+  OptimalAllocation,
+  ResponseCurve,
+} from "@/lib/types";
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits, minimumFractionDigits: digits });
@@ -52,13 +58,38 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
 
 // "Same weekly budget, better split" — the optimizer's suggested reallocation, next to
 // what each channel currently gets and what the next euro returns there.
+// One honest sentence about whether spending more in total is worth it, read off the
+// efficiency frontier: compare the optimal contribution at the current total vs +50%.
+function frontierInsight(frontier: FrontierPoint[] | undefined, current: number, kpi: string) {
+  if (!frontier || frontier.length < 2) return null;
+  const sorted = [...frontier].sort((a, b) => a.total_weekly_budget - b.total_weekly_budget);
+  const nearest = (target: number) =>
+    sorted.reduce((best, p) =>
+      Math.abs(p.total_weekly_budget - target) < Math.abs(best.total_weekly_budget - target) ? p : best,
+    );
+  const base = nearest(current);
+  const more = nearest(current * 1.5);
+  if (more.total_weekly_budget <= base.total_weekly_budget * 1.01) return null;
+  const extraSpend = more.total_weekly_budget - base.total_weekly_budget;
+  const extraKpi = more.predicted_contribution.p50 - base.predicted_contribution.p50;
+  return (
+    <p className="text-sm text-neutral-600">
+      Ongeveer <span className="font-medium">{fmt(extraSpend)}</span> meer budget per week levert naar
+      schatting <span className="font-medium">{fmt(extraKpi)}</span> extra {kpi} per week op — daarna
+      vlakt het rendement af (zie de onzekerheidsmarges).
+    </p>
+  );
+}
+
 function BudgetAdvice({
   allocation,
   curves,
+  frontier,
   kpi,
 }: {
   allocation: OptimalAllocation;
   curves: ResponseCurve[];
+  frontier?: FrontierPoint[];
   kpi: string;
 }) {
   const byName = new Map(curves.map((c) => [c.name, c]));
@@ -113,6 +144,7 @@ function BudgetAdvice({
           </tbody>
         </table>
       </div>
+      {frontierInsight(frontier, allocation.total_weekly_budget, kpi)}
     </div>
   );
 }
@@ -177,6 +209,7 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
         <BudgetAdvice
           allocation={summary.optimal_allocation}
           curves={summary.response_curves}
+          frontier={summary.efficiency_frontier}
           kpi={summary.kpi}
         />
       )}

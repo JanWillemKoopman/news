@@ -155,6 +155,11 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
     assert summary.response_curves[0].points and summary.response_curves[0].points[-1].weekly_spend > 0
     assert summary.optimal_allocation is not None
     assert sum(summary.optimal_allocation.per_channel.values()) > 0
+    # efficiency frontier: more total budget never predicts less contribution
+    fr = summary.efficiency_frontier
+    assert len(fr) >= 2
+    contribs = [p.predicted_contribution.p50 for p in fr]
+    assert all(b >= a - 1e-6 for a, b in zip(contribs, contribs[1:]))
 
     # response/optimize must also work end-to-end for the mixed-saturation posterior.
     from mmm_core.optimize import extract_channel_responses, optimize_budget, response_curve

@@ -172,6 +172,11 @@ export interface OptimalAllocation {
   capped_channels: string[];
 }
 
+export interface FrontierPoint {
+  total_weekly_budget: number;
+  predicted_contribution: Interval;
+}
+
 export interface FitSummary {
   kpi: string;
   n_weeks: number;
@@ -192,4 +197,5 @@ export interface FitSummary {
   quality_gate?: QualityGate | null;
   response_curves?: ResponseCurve[];
   optimal_allocation?: OptimalAllocation | null;
+  efficiency_frontier?: FrontierPoint[];
 }

@@ -171,6 +171,12 @@ class OptimalAllocation:
 
 
 @dataclass
+class FrontierPoint:
+    total_weekly_budget: float
+    predicted_contribution: Interval   # marketing KPI at the optimal split of this budget
+
+
+@dataclass
 class FitSummary:
     kpi: str
     n_weeks: int
@@ -183,6 +189,7 @@ class FitSummary:
     quality_gate: QualityGate | None = None
     response_curves: list[ResponseCurve] = field(default_factory=list)
     optimal_allocation: OptimalAllocation | None = None
+    efficiency_frontier: list[FrontierPoint] = field(default_factory=list)
 
     def to_json_dict(self) -> dict:
         """A plain, JSON-serializable dict (what the worker writes to Postgres)."""
@@ -322,7 +329,7 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         decomposition_ok=decomp.ok,
     )
 
-    response_curves, optimal_allocation = _planning_outputs(built, idata)
+    response_curves, optimal_allocation, efficiency_frontier = _planning_outputs(built, idata)
     n_draws = int(idata.posterior.sizes["draw"])
     n_chains = int(idata.posterior.sizes["chain"])
     quality_gate = _quality_gate(diagnostics, n_draws * n_chains)
@@ -339,11 +346,15 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         quality_gate=quality_gate,
         response_curves=response_curves,
         optimal_allocation=optimal_allocation,
+        efficiency_frontier=efficiency_frontier,
     )
 
 
-def _planning_outputs(built: BuiltModel, idata) -> tuple[list[ResponseCurve], "OptimalAllocation | None"]:
-    """Response curves + best reallocation of the current budget, from the one posterior.
+def _planning_outputs(
+    built: BuiltModel, idata
+) -> tuple[list[ResponseCurve], "OptimalAllocation | None", list[FrontierPoint]]:
+    """Response curves, best reallocation of the current budget, and an efficiency frontier
+    around it — all from the one posterior.
 
     Pure post-processing of the fitted samples — no re-sampling — so it is cheap enough to
     run on every fit. Wrapped defensively: a planning-output failure (e.g. the optimizer
@@ -351,6 +362,7 @@ def _planning_outputs(built: BuiltModel, idata) -> tuple[list[ResponseCurve], "O
     """
     from mmm_core.optimize import (
         Interval as _OI,
+        efficiency_frontier as _frontier,
         extract_channel_responses,
         marginal_roas,
         optimize_budget,
@@ -362,6 +374,7 @@ def _planning_outputs(built: BuiltModel, idata) -> tuple[list[ResponseCurve], "O
 
     curves: list[ResponseCurve] = []
     allocation: OptimalAllocation | None = None
+    frontier: list[FrontierPoint] = []
     try:
         responses = extract_channel_responses(built, idata)
         for i, r in enumerate(responses):
@@ -387,10 +400,17 @@ def _planning_outputs(built: BuiltModel, idata) -> tuple[list[ResponseCurve], "O
                 predicted_contribution=_iv(alloc.predicted_contribution),
                 capped_channels=alloc.capped_channels,
             )
+            # Sweep total budget around today's level so the client can see whether
+            # spending more (or less) in total is worth it — diminishing returns made visible.
+            budgets = [total_current * f for f in (0.5, 0.75, 1.0, 1.25, 1.5, 2.0)]
+            frontier = [
+                FrontierPoint(total_weekly_budget=p.total_budget, predicted_contribution=_iv(p.predicted_contribution))
+                for p in _frontier(responses, budgets)
+            ]
     except Exception:
         # planning outputs are a bonus on top of the fit; never let them break it
-        return curves, allocation
-    return curves, allocation
+        return curves, allocation, frontier
+    return curves, allocation, frontier
 
 
 def fit_model(

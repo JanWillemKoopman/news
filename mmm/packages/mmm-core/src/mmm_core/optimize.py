@@ -173,19 +173,38 @@ def optimize_budget(
     total_budget: float,
     *,
     cap_factor: float = _DEFAULT_CAP_FACTOR,
+    min_spend: dict[str, float] | None = None,
+    max_spend: dict[str, float] | None = None,
 ) -> Allocation:
     """Split ``total_budget`` across channels to maximise the (median) steady-state KPI.
 
-    Optimises on the posterior-median response curves (subject to each channel's safety
-    cap), then evaluates the resulting allocation across the full posterior to attach a
-    credible interval to the predicted contribution.
+    Optimises on the posterior-median response curves, then evaluates the resulting
+    allocation across the full posterior to attach a credible interval.
+
+    Args:
+        cap_factor: Safety margin above each channel's historical max spend; the optimiser
+            never allocates beyond this (extrapolation guard from the build plan).
+        min_spend: Optional per-channel lower bounds (e.g. contractual minimums or "don't
+            drop below current"). Their sum must not exceed ``total_budget``.
+        max_spend: Optional per-channel upper bounds, applied *on top of* the safety cap
+            (the tighter of the two wins).
     """
     from scipy.optimize import minimize
 
     if total_budget <= 0:
         raise ValueError("total_budget must be > 0")
 
+    min_spend = min_spend or {}
+    max_spend = max_spend or {}
+    n = len(channels)
+    lows = np.array([max(0.0, min_spend.get(c.name, 0.0)) for c in channels])
     caps = np.array([c.cap(cap_factor) for c in channels])
+    highs = np.array([min(caps[i], max_spend.get(c.name, caps[i])) for i, c in enumerate(channels)])
+    if np.any(lows > highs + 1e-9):
+        raise ValueError("a channel's min_spend exceeds its cap/max_spend")
+    if float(lows.sum()) > total_budget + 1e-6:
+        raise ValueError("sum of min_spend exceeds total_budget")
+
     # Median parameters give a smooth deterministic objective for the optimiser.
     def _median_shape(c):
         if c.saturation == "logistic":
@@ -204,14 +223,16 @@ def optimize_budget(
     def neg_total(x):
         return -sum(contrib_median(xi, p) for xi, p in zip(x, med))
 
-    n = len(channels)
-    feasible_total = min(total_budget, float(caps.sum()))
-    x0 = np.full(n, feasible_total / n)
-    bounds = [(0.0, cap) for cap in caps]
+    feasible_total = min(total_budget, float(highs.sum()))
+    feasible_total = max(feasible_total, float(lows.sum()))
+    # Start feasible: minimums plus an even share of the remaining budget.
+    slack = feasible_total - float(lows.sum())
+    x0 = lows + (slack / n if n else 0.0)
+    bounds = list(zip(lows, highs))
     constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - feasible_total}]
 
     res = minimize(neg_total, x0, method="SLSQP", bounds=bounds, constraints=constraints)
-    alloc = {c.name: float(max(xi, 0.0)) for c, xi in zip(channels, res.x)}
+    alloc = {c.name: float(np.clip(xi, lo, hi)) for c, xi, lo, hi in zip(channels, res.x, lows, highs)}
 
     capped = [c.name for c, xi in zip(channels, res.x) if xi >= c.cap(cap_factor) - 1e-6]
     predicted = predict_total_contribution(channels, alloc)
@@ -221,6 +242,55 @@ def optimize_budget(
         predicted_contribution=predicted,
         capped_channels=capped,
     )
+
+
+@dataclass
+class FrontierPoint:
+    total_budget: float
+    allocation: dict[str, float]
+    predicted_contribution: Interval
+
+
+def efficiency_frontier(
+    channels: list[ChannelResponse],
+    budgets: list[float],
+    *,
+    cap_factor: float = _DEFAULT_CAP_FACTOR,
+    min_spend: dict[str, float] | None = None,
+    max_spend: dict[str, float] | None = None,
+) -> list[FrontierPoint]:
+    """Optimal allocation at each total budget — the diminishing-returns curve of *total*
+    spend. Answers "how much should we spend in total?", not just "how to split it".
+    """
+    points: list[FrontierPoint] = []
+    for b in sorted(budgets):
+        alloc = optimize_budget(
+            channels, b, cap_factor=cap_factor, min_spend=min_spend, max_spend=max_spend
+        )
+        points.append(
+            FrontierPoint(
+                total_budget=alloc.total_budget,
+                allocation=alloc.per_channel,
+                predicted_contribution=alloc.predicted_contribution,
+            )
+        )
+    return points
+
+
+def allocate_incremental_budget(
+    channels: list[ChannelResponse],
+    extra_budget: float,
+    current: dict[str, float],
+    *,
+    cap_factor: float = _DEFAULT_CAP_FACTOR,
+) -> Allocation:
+    """Where should an *additional* ``extra_budget`` go, without cutting any channel below
+    its current spend? Optimises the new total with each channel's current spend as a floor
+    — so the delta lands wherever the next euro returns most."""
+    if extra_budget < 0:
+        raise ValueError("extra_budget must be >= 0")
+    total = float(sum(current.values())) + extra_budget
+    return optimize_budget(channels, total, cap_factor=cap_factor, min_spend=current)
 
 
 def extract_channel_responses(built, idata) -> list[ChannelResponse]:
