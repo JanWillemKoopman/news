@@ -34,7 +34,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .add_local_dir(str(_MMM_CORE_DIR), remote_path="/root/mmm-core", copy=True)
     .run_commands("pip install '/root/mmm-core[model]'")
-    .pip_install("supabase>=2.6", "pandas>=2.1", "openpyxl>=3.1")
+    .pip_install("supabase>=2.6", "pandas>=2.1", "openpyxl>=3.1", "fastapi[standard]")
     .add_local_python_source("mmm_worker")
 )
 
