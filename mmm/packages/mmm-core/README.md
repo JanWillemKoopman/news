@@ -13,7 +13,7 @@ niet elke keer opnieuw.
 | Adstock / Hill-saturatie transformaties | `mmm_core.transforms` | ✅ |
 | Modelconfig + ground-truth simulator + sanity-checks | `mmm_core.model` (config/simulate/validation) | ✅ |
 | Bayesiaans model (PyMC + numpyro) + attributie + diagnostiek | `mmm_core.model` (build/fit) | ✅ |
-| Response curves + mROAS + budgetoptimalisatie | `mmm_core.optimize` (gepland) | ⬜ |
+| Response curves + mROAS + budgetoptimalisatie | `mmm_core.optimize` | ✅ |
 
 De fit levert per kanaal — elk mét credible interval (p3/p50/p97) — absolute
 contributie, contribution share, ROAS, adstock-half-life en verzadigingspunt, plus een
@@ -21,8 +21,14 @@ baseline en diagnostiek (R-hat, ESS, divergenties, R², MAPE, predictive coverag
 `FitSummary.to_json_dict()` is precies de geaggregeerde JSON die de Modal-worker straks
 naar Postgres schrijft; de ruwe trace gaat als `.nc` naar Storage.
 
-Nog te doen (de "Toekomst & Planning"-statistieken): steady-state response curves,
-marginale ROAS (mROAS), optimale budgetallocatie en voorspelde omzet bij +x% budget.
+`mmm_core.optimize` levert de "Toekomst & Planning"-statistieken: steady-state response
+curves (hard begrensd tot net boven het historisch geteste maximum, extrapolatie
+gemarkeerd), marginale ROAS (mROAS) via de helling van de curve, optimale budgetallocatie
+(`optimize_budget`, respecteert veiligheidscaps) en voorspelde omzet bij een gegeven
+budget — alles met credible interval uit de posterior.
+
+**De statistische kern (stap 1) is hiermee compleet en getest.** Volgende stap in de
+bouwvolgorde: de Modal-worker die deze kern async draait vanuit Supabase (stap 2).
 
 ## Ontwikkelen
 

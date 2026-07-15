@@ -25,6 +25,7 @@ from mmm_core.model import (  # noqa: E402
     ModelConfig,
     simulate_mmm,
 )
+from mmm_core.model.build import build_model  # noqa: E402
 from mmm_core.model.fit import fit_model  # noqa: E402
 
 
@@ -48,12 +49,13 @@ def fitted():
         ),
     )
     summary, idata = fit_model(ds.data, cfg, draws=500, tune=500, chains=2, seed=0)
-    return ds, summary
+    built = build_model(ds.data, cfg)  # cheap: builds the graph, no sampling
+    return ds, summary, built, idata
 
 
 @pytest.mark.slow
 def test_model_fits_well(fitted):
-    _, summary = fitted
+    _, summary, _, _ = fitted
     d = summary.diagnostics
     assert d.r2 > 0.7
     assert d.decomposition_ok
@@ -62,7 +64,7 @@ def test_model_fits_well(fitted):
 
 @pytest.mark.slow
 def test_true_contribution_share_within_credible_interval(fitted):
-    ds, summary = fitted
+    ds, summary, _, _ = fitted
     true_shares = ds.true_contribution_share()
     for ch in summary.channels:
         ci = ch.contribution_share
@@ -74,7 +76,7 @@ def test_true_contribution_share_within_credible_interval(fitted):
 
 @pytest.mark.slow
 def test_true_adstock_half_life_within_credible_interval(fitted):
-    ds, summary = fitted
+    ds, summary, _, _ = fitted
     truth = {c.name: c.half_life for c in ds.channels}
     for ch in summary.channels:
         ci = ch.adstock_half_life_weeks
@@ -83,7 +85,7 @@ def test_true_adstock_half_life_within_credible_interval(fitted):
 
 @pytest.mark.slow
 def test_predictive_coverage_is_reasonable(fitted):
-    _, summary = fitted
+    _, summary, _, _ = fitted
     # a 94% predictive interval should cover most weeks (not far below nominal).
     assert 0.80 <= summary.diagnostics.interval_coverage_94 <= 1.0
 
@@ -92,7 +94,31 @@ def test_predictive_coverage_is_reasonable(fitted):
 def test_summary_is_json_serializable(fitted):
     import json
 
-    _, summary = fitted
+    _, summary, _, _ = fitted
     blob = json.dumps(summary.to_json_dict())
     assert '"contribution_share"' in blob
     assert '"adstock_half_life_weeks"' in blob
+
+
+@pytest.mark.slow
+def test_response_curves_and_optimization_from_real_posterior(fitted):
+    from mmm_core.optimize import (
+        extract_channel_responses,
+        optimize_budget,
+        response_curve,
+    )
+
+    _, _, built, idata = fitted
+    responses = extract_channel_responses(built, idata)
+    assert {r.name for r in responses} == {"search", "video"}
+
+    # a real posterior yields a monotone, uncertainty-bearing response curve.
+    curve = response_curve(responses[0], n_points=20)
+    mids = [p.contribution.p50 for p in curve]
+    assert all(b >= a - 1e-6 for a, b in zip(mids, mids[1:]))
+    assert curve[-1].contribution.p97 > curve[-1].contribution.p3  # visible uncertainty
+
+    total_hist = sum(r.hist_max_weekly_spend for r in responses)
+    alloc = optimize_budget(responses, total_budget=total_hist)
+    assert sum(alloc.per_channel.values()) == pytest.approx(total_hist, rel=1e-2)
+    assert alloc.predicted_contribution.p50 > 0
