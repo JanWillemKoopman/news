@@ -161,6 +161,89 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
 
 
 @pytest.mark.slow
+def test_posterior_predict_reproduces_in_sample_mu(fitted):
+    # Predicting on the training frame must reconstruct the model's own fitted KPI
+    # (this pins predict.py to build.py component-for-component).
+    ds, _, built, idata = fitted
+    from mmm_core.model.predict import posterior_predict
+
+    pred = posterior_predict(built, idata, ds.data)
+    mu_mean = (idata.posterior["mu"].mean(("chain", "draw")).to_numpy()) * float(built.scalers["y_max"])
+    assert np.allclose(pred["kpi_mean"], mu_mean, rtol=1e-3, atol=1e-6)
+
+
+@pytest.mark.slow
+def test_time_series_cv_with_real_fit_scores_out_of_sample(fitted):
+    # A well-specified model should *forecast* the held-out weeks closely. We assert on
+    # MAPE (absolute closeness), not R2: on 8-week windows R2 is variance-normalized by a
+    # tiny denominator and stays volatile even when the point forecast is good — MAPE is
+    # the honest generalization signal here.
+    ds, _, _, _ = fitted
+    from mmm_core.evaluation import time_series_cv
+
+    res = time_series_cv(
+        ds.data,
+        ModelConfig(
+            kpi="kpi",
+            channels=(ChannelConfig("search", ChannelType.INTENT), ChannelConfig("video", ChannelType.BRAND)),
+        ),
+        min_train_weeks=70,
+        horizon=8,
+        step=8,
+        sample_kwargs=dict(draws=150, tune=150, chains=1, random_seed=0),
+    )
+    assert len(res.folds) >= 2
+    assert all(np.isfinite(f.r2) and np.isfinite(f.mape) for f in res.folds)
+    assert res.mean_mape < 0.15  # out-of-sample forecasts within ~15% on average
+
+
+@pytest.mark.slow
+def test_prior_predictive_check_admits_the_data(fitted):
+    ds, _, _, _ = fitted
+    from mmm_core.evaluation import prior_predictive_check
+
+    cfg = ModelConfig(
+        kpi="kpi",
+        channels=(ChannelConfig("search", ChannelType.INTENT), ChannelConfig("video", ChannelType.BRAND)),
+    )
+    res = prior_predictive_check(ds.data, cfg, draws=300, seed=0)
+    assert res.admits_observed  # priors are wide enough to have produced the data
+
+
+@pytest.mark.slow
+def test_placebo_channel_gets_negligible_share(fitted):
+    ds, _, _, _ = fitted
+    from mmm_core.evaluation import add_placebo_channel, judge_placebo
+
+    cfg = ModelConfig(
+        kpi="kpi",
+        channels=(ChannelConfig("search", ChannelType.INTENT), ChannelConfig("video", ChannelType.BRAND)),
+    )
+    data2, cfg2 = add_placebo_channel(ds.data, cfg, name="placebo", seed=1)
+    summary, _ = fit_model(data2, cfg2, draws=200, tune=200, chains=2, seed=0)
+    res = judge_placebo(summary, "placebo", share_threshold=0.1)
+    assert res.ok, res.detail
+
+
+@pytest.mark.slow
+def test_compare_models_ranks_two_fits(fitted):
+    ds, _, built, idata = fitted
+    from mmm_core.evaluation import compare_models
+
+    # a second, deliberately weaker config (no seasonality/trend) to compare against.
+    weak_cfg = ModelConfig(
+        kpi="kpi",
+        channels=(ChannelConfig("search", ChannelType.INTENT), ChannelConfig("video", ChannelType.BRAND)),
+        add_trend=False,
+        seasonality_periods=None,
+    )
+    weak_summary, weak_idata = fit_model(ds.data, weak_cfg, draws=200, tune=200, chains=2, seed=1)
+    weak_built = build_model(ds.data, weak_cfg)
+    table = compare_models({"full": (built, idata), "weak": (weak_built, weak_idata)})
+    assert set(table.index) == {"full", "weak"}
+
+
+@pytest.mark.slow
 def test_response_curves_and_optimization_from_real_posterior(fitted):
     from mmm_core.optimize import (
         extract_channel_responses,

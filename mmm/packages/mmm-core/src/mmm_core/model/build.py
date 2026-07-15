@@ -171,8 +171,11 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
     spend_scaled = spend / x_max_safe
 
     # Validate & standardize controls up front — an unfilled gap here would otherwise
-    # propagate NaN silently through the whole of `mu` and corrupt the fit.
+    # propagate NaN silently through the whole of `mu` and corrupt the fit. The training
+    # mean/std are kept so out-of-sample prediction standardizes new weeks identically.
     control_scaled: dict[str, np.ndarray] = {}
+    control_mean: dict[str, float] = {}
+    control_std: dict[str, float] = {}
     for ctrl in config.control_columns:
         raw = data[ctrl].to_numpy(dtype=float)
         if not np.isfinite(raw).all():
@@ -180,8 +183,11 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
                 f"control column {ctrl!r} contains missing/non-finite values; impute or "
                 f"drop it before fitting (see mmm_core.features / ingestion fill options)"
             )
-        std = raw.std() or 1.0
-        control_scaled[ctrl] = (raw - raw.mean()) / std
+        mean = float(raw.mean())
+        std = float(raw.std()) or 1.0
+        control_mean[ctrl] = mean
+        control_std[ctrl] = std
+        control_scaled[ctrl] = (raw - mean) / std
 
     t = np.arange(n, dtype=float)
     t_scaled = t / (n - 1)
@@ -227,7 +233,14 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
         else:
             pm.Normal("y", mu=mu, sigma=sigma, observed=y_scaled, dims="date")
 
-    scalers = {"y_max": y_max, "x_max": x_max_safe, "t": t}
+    scalers = {
+        "y_max": y_max,
+        "x_max": x_max_safe,
+        "t": t,
+        "n_train": n,
+        "control_mean": control_mean,
+        "control_std": control_std,
+    }
     return BuiltModel(
         model=model, scalers=scalers, config=config, dates=dates, spend=spend, kpi=kpi
     )

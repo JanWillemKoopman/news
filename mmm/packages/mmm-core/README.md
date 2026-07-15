@@ -10,9 +10,12 @@ niet elke keer opnieuw.
 | Stap | Module | Status |
 |------|--------|--------|
 | Data-ingestie & kwaliteitschecks (multi-source alignment) | `mmm_core.ingestion` | ✅ |
-| Adstock / Hill-saturatie transformaties | `mmm_core.transforms` | ✅ |
+| Feature-engineering & cleaning (seasonality, dummy's, lags, fill, outliers) | `mmm_core.features` | ✅ |
+| Adstock (geometric/delayed) + saturatie (Hill/logistic) transformaties | `mmm_core.transforms` | ✅ |
 | Modelconfig + ground-truth simulator + sanity-checks | `mmm_core.model` (config/simulate/validation) | ✅ |
 | Bayesiaans model (PyMC + numpyro) + attributie + diagnostiek | `mmm_core.model` (build/fit) | ✅ |
+| Out-of-sample voorspelling (forecast / what-if) | `mmm_core.model.predict` | ✅ |
+| Evaluatie: cross-validatie, placebo, prior-predictive, modelvergelijking | `mmm_core.evaluation` | ✅ |
 | Response curves + mROAS + budgetoptimalisatie | `mmm_core.optimize` | ✅ |
 
 De fit levert per kanaal — elk mét credible interval (p3/p50/p97) — absolute
@@ -20,6 +23,29 @@ contributie, contribution share, ROAS, adstock-half-life en verzadigingspunt, pl
 baseline en diagnostiek (R-hat, ESS, divergenties, R², MAPE, predictive coverage). De
 `FitSummary.to_json_dict()` is precies de geaggregeerde JSON die de Modal-worker straks
 naar Postgres schrijft; de ruwe trace gaat als `.nc` naar Storage.
+
+### De gereedschapskist (per klant instelbaar, defaults = het originele model)
+
+De kern is een *toolbox*, geen vast model. Claude (of jij, via de JSON-config) kiest per
+klant welk gereedschap past — zonder de wiskunde te herschrijven:
+
+- **Na-ijl (adstock)** per kanaal: `geometric` (digitaal, piekt direct) of `delayed`
+  (tv/radio/offline, piekt na enkele weken).
+- **Verzadiging (saturation)** per kanaal: `hill` (flexibel, kan S-curve) of `logistic`
+  (robuuster bij weinig data).
+- **Ruismodel (likelihood)**: `normal` of `student_t` (zware staart, robuust tegen
+  uitschieterweken).
+- **Priors** volledig instelbaar via `ChannelPriors` (per kanaal) en `BaselinePriors`
+  (intercept/trend/seizoen/controls/ruis) — tighten of loosen wat je weet.
+- **Extra variabelen** via `mmm_core.features`: extra seizoenscycli (Fourier), terugkerende
+  kalenderdummy's (Black Friday, kerst), eenmalige event-dummy's, lags, smoothing.
+- **Cleaning**: control-gaten vullen (`fill`-strategie in de ingestie), outliers markeren
+  (robuuste MAD), winsorizen.
+- **Betrouwbaarheid**: time-series cross-validatie (out-of-sample R²/MAPE), placebo-test
+  (random kanaal moet ~0 bijdragen), prior-predictive check, modelvergelijking (ArviZ LOO).
+
+Elke keuze heeft een veilige default die exact het originele geometric+Hill+Normal-model
+reproduceert, dus bestaande configs blijven identiek fitten.
 
 `mmm_core.optimize` levert de "Toekomst & Planning"-statistieken: steady-state response
 curves (hard begrensd tot net boven het historisch geteste maximum, extrapolatie
