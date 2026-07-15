@@ -10,10 +10,22 @@ Secrets come from a Modal Secret named ``mmm-supabase`` holding:
 Flow:
     * ``enqueue`` (web endpoint) — the Next.js backend POSTs a job_id after inserting a
       'queued' job; we spawn ``run_fit`` and return immediately.
-    * ``run_fit`` — the long-running fit (timeout 1h). Reads sources from Storage, runs
-      mmm-core, writes the summary to Postgres and the .nc trace to Storage.
+    * ``run_fit`` — the fit itself, capped at RUN_TIMEOUT_SECONDS and at most
+      MAX_CONCURRENT_RUNS containers at once (see below). Reads sources from Storage,
+      runs mmm-core, writes the summary to Postgres and the .nc trace to Storage.
     * ``poll_queue`` (every minute) — safety net that picks up any 'queued' jobs that
       were never enqueued (e.g. a dropped web call).
+
+Cost guardrails (deliberately conservative while testing on small datasets):
+    * MAX_CONCURRENT_RUNS caps how many fits Modal will ever run at once. Excess
+      invocations queue on Modal's side rather than erroring here — the actual
+      user-facing rejection ("er draaien al 2 fits") happens earlier, in the wizard's
+      /api/jobs route, which checks in-flight job count before creating a job at all.
+      This constant is the infrastructure-level backstop for that check, not a
+      replacement for it. Keep both in sync if you ever change the limit.
+    * RUN_TIMEOUT_SECONDS caps a single fit's maximum runtime. 15 minutes is generous
+      headroom for the small test datasets in use now; raise it deliberately (and
+      re-check MAX_CONCURRENT_RUNS's cost impact) before fitting larger, real datasets.
 """
 
 from __future__ import annotations
@@ -42,6 +54,9 @@ app = modal.App("mmm-worker")
 
 _SECRET = modal.Secret.from_name("mmm-supabase")
 
+MAX_CONCURRENT_RUNS = 2
+RUN_TIMEOUT_SECONDS = 15 * 60
+
 
 def _run(job_id: str) -> dict:
     from mmm_worker.runner import run_job
@@ -68,7 +83,12 @@ def _run(job_id: str) -> dict:
     return run_job(jobstore, _Split(), job_id)
 
 
-@app.function(image=image, secrets=[_SECRET], timeout=3600)
+@app.function(
+    image=image,
+    secrets=[_SECRET],
+    timeout=RUN_TIMEOUT_SECONDS,
+    max_containers=MAX_CONCURRENT_RUNS,
+)
 def run_fit(job_id: str) -> dict:
     return _run(job_id)
 
