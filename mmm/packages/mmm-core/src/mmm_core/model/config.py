@@ -1,8 +1,11 @@
 """Model configuration: how a channel enters the model, and its prior expectations.
 
 This is exactly the surface Claude *parameterizes* per client — which channel is
-intent-driven vs. brand-building, how long its carry-over is expected to last, whether
-to add a seasonality/trend term — without ever rewriting the model maths itself.
+intent-driven vs. brand-building, how long its carry-over is expected to last, which
+carry-over/saturation shape to use, which likelihood fits the KPI, and how tight each
+prior should be — without ever rewriting the model maths itself. Every default here
+reproduces the original single-shape (geometric + Hill + Normal) model, so existing
+configs keep fitting identically; the new fields only *widen* the toolbox.
 """
 
 from __future__ import annotations
@@ -17,6 +20,27 @@ class ChannelType(str, Enum):
     INTENT = "intent"   # captures existing demand (search, marketplaces) -> short carry-over
     BRAND = "brand"     # builds future demand (prospecting, video) -> long carry-over
     GENERIC = "generic" # unknown / mixed -> weakly-informative middle
+
+
+class AdstockType(str, Enum):
+    """Which carry-over shape a channel uses."""
+
+    GEOMETRIC = "geometric"  # peaks immediately, decays geometrically (digital default)
+    DELAYED = "delayed"      # peaks `theta` weeks later then decays (TV/radio/OOH)
+
+
+class SaturationType(str, Enum):
+    """Which diminishing-returns shape a channel uses."""
+
+    HILL = "hill"          # kappa (half-saturation) + slope; can be S-shaped
+    LOGISTIC = "logistic"  # single steepness lam; robust when data is thin
+
+
+class LikelihoodType(str, Enum):
+    """Observation noise model for the KPI."""
+
+    NORMAL = "normal"        # symmetric Gaussian noise (default)
+    STUDENT_T = "student_t"  # heavy-tailed: robust to outlier weeks/promos/anomalies
 
 
 # Prior-centre for the adstock half-life (in weeks) per channel type. These *center* a
@@ -34,6 +58,37 @@ def default_half_life(channel_type: ChannelType) -> float:
 
 
 @dataclass(frozen=True)
+class ChannelPriors:
+    """Prior hyper-parameters for one channel. Defaults reproduce the original model.
+
+    All are weakly-informative centres/scales the data can still move; expose them so
+    the architect can tighten a prior when it has real knowledge (e.g. a channel whose
+    effect is known to be small), or loosen it when the data should dominate.
+
+    Args:
+        beta_sigma: HalfNormal scale on the channel effect (scaled-KPI units). Smaller
+            = a stronger "this channel does little" prior.
+        adstock_concentration: Concentration of the Beta prior on geometric retention
+            ``alpha`` — higher pins the half-life closer to its expected value.
+        delayed_peak_weeks: Prior centre for the peak lag ``theta`` (delayed adstock).
+        delayed_peak_sigma: Prior scale for ``theta``.
+        hill_slope_a, hill_slope_b: Gamma(a, b) prior on the Hill slope.
+        halfsat_a, halfsat_b: Beta(a, b) prior on the Hill half-saturation (scaled spend).
+        logistic_lam_sigma: HalfNormal scale on the logistic steepness ``lam`` (scaled).
+    """
+
+    beta_sigma: float = 0.5
+    adstock_concentration: float = 20.0
+    delayed_peak_weeks: float = 2.0
+    delayed_peak_sigma: float = 1.5
+    hill_slope_a: float = 3.0
+    hill_slope_b: float = 3.0
+    halfsat_a: float = 2.0
+    halfsat_b: float = 2.0
+    logistic_lam_sigma: float = 2.0
+
+
+@dataclass(frozen=True)
 class ChannelConfig:
     """One media channel's configuration in the model.
 
@@ -41,17 +96,45 @@ class ChannelConfig:
         name: Column name of the channel's spend in the master dataset.
         channel_type: Behaviour class, drives the default adstock prior.
         l_max: Maximum adstock carry-over lag in weeks.
-        expected_half_life: Centre of the adstock half-life prior (weeks). Defaults to
-            the per-type value; override when you have channel-specific knowledge.
+        expected_half_life: Centre of the adstock half-life prior (weeks) for geometric
+            adstock. Defaults to the per-type value; override with channel knowledge.
+        adstock: Carry-over shape (geometric or delayed).
+        saturation: Diminishing-returns shape (Hill or logistic).
+        priors: Prior hyper-parameters (see :class:`ChannelPriors`).
     """
 
     name: str
     channel_type: ChannelType = ChannelType.GENERIC
     l_max: int = 12
     expected_half_life: float | None = None
+    adstock: AdstockType = AdstockType.GEOMETRIC
+    saturation: SaturationType = SaturationType.HILL
+    priors: ChannelPriors = field(default_factory=ChannelPriors)
 
     def half_life_prior_center(self) -> float:
         return self.expected_half_life or default_half_life(self.channel_type)
+
+
+@dataclass(frozen=True)
+class BaselinePriors:
+    """Prior scales for the model's non-media (baseline) components.
+
+    Defaults reproduce the original model. Widen a scale to let a component move more;
+    tighten it to hold a component near zero.
+
+    Args:
+        intercept_sigma: Normal scale on the intercept (scaled-KPI units).
+        trend_sigma: Normal scale on the linear trend coefficient.
+        season_sigma: Normal scale on each Fourier seasonality coefficient.
+        control_sigma: Normal scale on each control coefficient (standardized controls).
+        noise_sigma: HalfNormal scale on the observation-noise sigma.
+    """
+
+    intercept_sigma: float = 0.25
+    trend_sigma: float = 0.5
+    season_sigma: float = 0.1
+    control_sigma: float = 0.5
+    noise_sigma: float = 0.1
 
 
 @dataclass(frozen=True)
@@ -65,6 +148,10 @@ class ModelConfig:
         add_trend: Include a linear time trend as baseline component.
         seasonality_periods: Seasonal cycle length in weeks (52 = yearly). ``None`` off.
         n_fourier_modes: Number of Fourier pairs for the seasonal term.
+        likelihood: Observation noise model (Normal or Student-T).
+        student_t_nu: Degrees of freedom for the Student-T likelihood (lower = heavier
+            tails / more outlier-robust). Ignored for the Normal likelihood.
+        priors: Baseline-component prior scales (see :class:`BaselinePriors`).
     """
 
     kpi: str
@@ -73,6 +160,9 @@ class ModelConfig:
     add_trend: bool = True
     seasonality_periods: float | None = 52.0
     n_fourier_modes: int = 2
+    likelihood: LikelihoodType = LikelihoodType.NORMAL
+    student_t_nu: float = 4.0
+    priors: BaselinePriors = field(default_factory=BaselinePriors)
 
     def __post_init__(self) -> None:
         if not self.channels:
@@ -80,6 +170,8 @@ class ModelConfig:
         names = [c.name for c in self.channels]
         if len(names) != len(set(names)):
             raise ValueError("channel names must be unique")
+        if self.likelihood is LikelihoodType.STUDENT_T and self.student_t_nu <= 2:
+            raise ValueError("student_t_nu must be > 2 for a finite-variance likelihood")
 
     @property
     def channel_names(self) -> list[str]:

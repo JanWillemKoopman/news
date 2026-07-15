@@ -17,7 +17,13 @@ import numpy as np
 import pandas as pd
 
 from mmm_core.model.build import BuiltModel, build_model
-from mmm_core.model.config import ModelConfig
+from mmm_core.model.config import (
+    AdstockType,
+    ChannelConfig,
+    LikelihoodType,
+    ModelConfig,
+    SaturationType,
+)
 from mmm_core.model.validation import check_decomposition_adds_up, interval_coverage
 from mmm_core.transforms import half_life_from_alpha
 
@@ -93,6 +99,34 @@ def _flat(idata, name: str) -> np.ndarray:
     return da.stack(sample=("chain", "draw")).to_numpy()
 
 
+def _channel_param_names(ch: ChannelConfig) -> list[str]:
+    """The scalar RV names this channel registers, given its adstock/saturation choice.
+
+    Kept in lock-step with :func:`mmm_core.model.build._adstock_rvs` /
+    ``_saturation_rvs`` so diagnostics never ask ArviZ for a variable that isn't there.
+    """
+    names = [f"beta_{ch.name}", f"alpha_{ch.name}"]
+    if ch.adstock is AdstockType.DELAYED:
+        names.append(f"theta_{ch.name}")
+    if ch.saturation is SaturationType.HILL:
+        names += [f"halfsat_{ch.name}", f"slope_{ch.name}"]
+    else:  # logistic
+        names.append(f"lam_{ch.name}")
+    return names
+
+
+def _saturation_point_samples(idata, ch: ChannelConfig, x_max_i: float) -> np.ndarray:
+    """Weekly spend at half the channel's ceiling (original units), per saturation family.
+
+    For Hill this is ``kappa`` directly; for logistic it is ``ln(3)/lam`` — both the
+    spend at which the response reaches half its maximum, so they are comparable.
+    """
+    if ch.saturation is SaturationType.HILL:
+        return _flat(idata, f"halfsat_{ch.name}") * x_max_i
+    lam = _flat(idata, f"lam_{ch.name}")               # steepness on scaled spend
+    return (np.log(3.0) / lam) * x_max_i
+
+
 def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     """Turn a fitted model + InferenceData into the dashboard summary."""
     import arviz as az
@@ -117,7 +151,7 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
 
         alpha = _flat(idata, f"alpha_{ch.name}")
         half_life = np.array([half_life_from_alpha(float(a)) for a in np.clip(alpha, 1e-6, 1 - 1e-9)])
-        half_sat_spend = _flat(idata, f"halfsat_{ch.name}") * x_max[i]
+        half_sat_spend = _saturation_point_samples(idata, ch, x_max[i])
 
         channels.append(
             ChannelResult(
@@ -138,9 +172,9 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     baseline = Interval.from_samples(baseline_total)
 
     # --- diagnostics ---
-    var_names = ["intercept", "sigma"] + [
-        f"{p}_{ch.name}" for ch in config.channels for p in ("alpha", "beta", "halfsat", "slope")
-    ]
+    var_names = ["intercept", "sigma"]
+    for ch in config.channels:
+        var_names += _channel_param_names(ch)
     summ = az.summary(idata, var_names=var_names)
     max_r_hat = float(summ["r_hat"].max())
     min_ess = float(summ["ess_bulk"].min())
@@ -157,7 +191,11 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     # y ~ Normal(mu, sigma) and check how often the actual KPI lands in the 94% interval.
     sigma = _flat(idata, "sigma")                              # (sample,)
     rng = np.random.default_rng(0)
-    y_pred = (mu + sigma[None, :] * rng.standard_normal(mu.shape)) * y_max
+    if config.likelihood is LikelihoodType.STUDENT_T:
+        noise = rng.standard_t(config.student_t_nu, size=mu.shape)
+    else:
+        noise = rng.standard_normal(mu.shape)
+    y_pred = (mu + sigma[None, :] * noise) * y_max
     lo = np.percentile(y_pred, 3, axis=1)
     hi = np.percentile(y_pred, 97, axis=1)
     coverage = interval_coverage(kpi, lo, hi)

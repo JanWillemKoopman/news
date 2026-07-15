@@ -22,40 +22,59 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# Numerical offset mirroring the model's Hill (mmm_core.model.build._HILL_EPS).
+# Numerical offset mirroring the model's saturation (mmm_core.model.build._HILL_EPS).
 _HILL_EPS = 1e-6
 # Default safety margin above the historically tested maximum weekly spend.
 _DEFAULT_CAP_FACTOR = 1.2
+
+
+def _hill_shape(u, half_saturation, slope):
+    return (u + _HILL_EPS) ** slope / (
+        half_saturation ** slope + (u + _HILL_EPS) ** slope
+    )
+
+
+def _logistic_shape(u, lam):
+    e = np.exp(-lam * (u + _HILL_EPS))
+    return (1.0 - e) / (1.0 + e)
 
 
 @dataclass
 class ChannelResponse:
     """Posterior response parameters for one channel, in real spend/KPI units.
 
+    Steady-state response is ``beta * saturation(spend/x_max)``: at a constant weekly
+    spend any *normalized* adstock (geometric or delayed) is the identity, so only the
+    saturation shape matters here — this holds for every adstock the model offers.
+
     Attributes are posterior sample arrays of shape ``(n_samples,)`` unless noted.
 
     Args:
         name: Channel name.
         beta: Channel ceiling (scaled-KPI units), posterior samples.
-        half_saturation: Half-saturation on *scaled* spend in ``(0, 1]``, posterior.
-        slope: Hill slope, posterior.
         x_max: Spend scaler (the max weekly spend used to scale the channel at fit time).
         y_max: KPI scaler.
         hist_max_weekly_spend: Highest weekly spend actually observed for this channel.
+        saturation: ``"hill"`` or ``"logistic"``.
+        half_saturation: Hill half-saturation on *scaled* spend (posterior); Hill only.
+        slope: Hill slope (posterior); Hill only.
+        lam: Logistic steepness on *scaled* spend (posterior); logistic only.
     """
 
     name: str
     beta: np.ndarray
-    half_saturation: np.ndarray
-    slope: np.ndarray
     x_max: float
     y_max: float
     hist_max_weekly_spend: float
+    saturation: str = "hill"
+    half_saturation: np.ndarray | None = None
+    slope: np.ndarray | None = None
+    lam: np.ndarray | None = None
 
-    def _hill(self, u: float) -> np.ndarray:
-        return (u + _HILL_EPS) ** self.slope / (
-            self.half_saturation ** self.slope + (u + _HILL_EPS) ** self.slope
-        )
+    def _shape(self, u: float) -> np.ndarray:
+        if self.saturation == "logistic":
+            return _logistic_shape(u, self.lam)
+        return _hill_shape(u, self.half_saturation, self.slope)
 
     def contribution_samples(self, weekly_spend: float) -> np.ndarray:
         """Steady-state KPI contribution at a constant ``weekly_spend`` (posterior samples).
@@ -66,7 +85,7 @@ class ChannelResponse:
         if weekly_spend < 0:
             raise ValueError("weekly_spend must be non-negative")
         u = weekly_spend / self.x_max
-        return self.beta * (self._hill(u) - self._hill(0.0)) * self.y_max
+        return self.beta * (self._shape(u) - self._shape(0.0)) * self.y_max
 
     def cap(self, cap_factor: float = _DEFAULT_CAP_FACTOR) -> float:
         return self.hist_max_weekly_spend * cap_factor
@@ -168,16 +187,19 @@ def optimize_budget(
 
     caps = np.array([c.cap(cap_factor) for c in channels])
     # Median parameters give a smooth deterministic objective for the optimiser.
-    med = [
-        (np.median(c.beta), np.median(c.half_saturation), np.median(c.slope), c.x_max, c.y_max)
-        for c in channels
-    ]
+    def _median_shape(c):
+        if c.saturation == "logistic":
+            lam = np.median(c.lam)
+            return lambda u: _logistic_shape(u, lam)
+        hs, slope = np.median(c.half_saturation), np.median(c.slope)
+        return lambda u: _hill_shape(u, hs, slope)
+
+    med = [(np.median(c.beta), _median_shape(c), c.x_max, c.y_max) for c in channels]
 
     def contrib_median(x, params):
-        beta, hs, slope, x_max, y_max = params
+        beta, shape, x_max, y_max = params
         u = x / x_max
-        g = (u + _HILL_EPS) ** slope / (hs ** slope + (u + _HILL_EPS) ** slope)
-        return beta * g * y_max
+        return beta * (shape(u) - shape(0.0)) * y_max
 
     def neg_total(x):
         return -sum(contrib_median(xi, p) for xi, p in zip(x, med))
@@ -203,6 +225,8 @@ def optimize_budget(
 
 def extract_channel_responses(built, idata) -> list[ChannelResponse]:
     """Build :class:`ChannelResponse` objects from a fitted model + InferenceData."""
+    from mmm_core.model.config import SaturationType
+
     y_max = float(built.scalers["y_max"])
     x_max = np.asarray(built.scalers["x_max"], dtype=float)
     responses = []
@@ -210,15 +234,22 @@ def extract_channel_responses(built, idata) -> list[ChannelResponse]:
         def flat(var):
             return idata.posterior[var].stack(sample=("chain", "draw")).to_numpy()
 
-        responses.append(
-            ChannelResponse(
-                name=ch.name,
-                beta=flat(f"beta_{ch.name}"),
-                half_saturation=flat(f"halfsat_{ch.name}"),
-                slope=flat(f"slope_{ch.name}"),
-                x_max=float(x_max[i]),
-                y_max=y_max,
-                hist_max_weekly_spend=float(built.spend[:, i].max()),
-            )
+        common = dict(
+            name=ch.name,
+            beta=flat(f"beta_{ch.name}"),
+            x_max=float(x_max[i]),
+            y_max=y_max,
+            hist_max_weekly_spend=float(built.spend[:, i].max()),
         )
+        if ch.saturation is SaturationType.LOGISTIC:
+            responses.append(ChannelResponse(saturation="logistic", lam=flat(f"lam_{ch.name}"), **common))
+        else:
+            responses.append(
+                ChannelResponse(
+                    saturation="hill",
+                    half_saturation=flat(f"halfsat_{ch.name}"),
+                    slope=flat(f"slope_{ch.name}"),
+                    **common,
+                )
+            )
     return responses

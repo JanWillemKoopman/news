@@ -6,9 +6,14 @@ so config, simulation and validation stay usable without the model extra install
 """
 
 from mmm_core.model.config import (
+    AdstockType,
+    BaselinePriors,
     ChannelConfig,
+    ChannelPriors,
     ChannelType,
+    LikelihoodType,
     ModelConfig,
+    SaturationType,
     default_half_life,
 )
 from mmm_core.model.simulate import (
@@ -26,9 +31,14 @@ from mmm_core.model.validation import (
 )
 
 __all__ = [
+    "AdstockType",
+    "BaselinePriors",
     "ChannelConfig",
+    "ChannelPriors",
     "ChannelType",
+    "LikelihoodType",
     "ModelConfig",
+    "SaturationType",
     "default_half_life",
     "ChannelDGP",
     "SimulatedDataset",

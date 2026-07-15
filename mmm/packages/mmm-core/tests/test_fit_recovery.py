@@ -18,11 +18,16 @@ import pytest
 pytest.importorskip("pymc")
 pytest.importorskip("numpyro")
 
+import numpy as np  # noqa: E402
+
 from mmm_core.model import (  # noqa: E402
+    AdstockType,
     ChannelConfig,
     ChannelDGP,
     ChannelType,
+    LikelihoodType,
     ModelConfig,
+    SaturationType,
     simulate_mmm,
 )
 from mmm_core.model.build import build_model  # noqa: E402
@@ -98,6 +103,61 @@ def test_summary_is_json_serializable(fitted):
     blob = json.dumps(summary.to_json_dict())
     assert '"contribution_share"' in blob
     assert '"adstock_half_life_weeks"' in blob
+
+
+@pytest.fixture(scope="module")
+def fitted_full_toolbox():
+    """A fit that exercises every new capability at once: delayed adstock, logistic
+    saturation, a Student-T likelihood and a control column."""
+    warnings.filterwarnings("ignore")
+    ds = simulate_mmm(
+        [
+            ChannelDGP("search", half_life=1.0, half_saturation=90.0, beta=2500.0),
+            ChannelDGP("tv", half_life=5.0, half_saturation=220.0, beta=1800.0, slope=1.4),
+        ],
+        n_weeks=90,
+        noise_sd=120.0,
+        seed=11,
+    )
+    data = ds.data.copy()
+    rng = np.random.default_rng(3)
+    data["price"] = 10.0 + rng.normal(0.0, 0.5, len(data))
+    cfg = ModelConfig(
+        kpi="kpi",
+        channels=(
+            ChannelConfig("search", ChannelType.INTENT, saturation=SaturationType.LOGISTIC),
+            ChannelConfig("tv", ChannelType.BRAND, adstock=AdstockType.DELAYED),
+        ),
+        control_columns=("price",),
+        likelihood=LikelihoodType.STUDENT_T,
+        student_t_nu=5.0,
+    )
+    summary, idata = fit_model(data, cfg, draws=400, tune=400, chains=2, seed=0)
+    built = build_model(data, cfg)
+    return ds, summary, built, idata
+
+
+@pytest.mark.slow
+def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
+    import json
+
+    _, summary, built, idata = fitted_full_toolbox
+    d = summary.diagnostics
+    assert d.decomposition_ok            # baseline + channels reconstruct the fit
+    assert d.max_r_hat < 1.1             # converged
+    assert d.r2 > 0.7                    # explains the data
+    assert np.isfinite(summary.channels[0].saturation_point.p50)  # logistic sat-point finite
+    json.dumps(summary.to_json_dict())   # summary stays JSON-serializable
+
+    # response/optimize must also work end-to-end for the mixed-saturation posterior.
+    from mmm_core.optimize import extract_channel_responses, optimize_budget, response_curve
+
+    responses = extract_channel_responses(built, idata)
+    curve = response_curve(responses[0], n_points=15)
+    mids = [p.contribution.p50 for p in curve]
+    assert all(b >= a - 1e-6 for a, b in zip(mids, mids[1:]))
+    alloc = optimize_budget(responses, total_budget=sum(r.hist_max_weekly_spend for r in responses))
+    assert alloc.predicted_contribution.p50 > 0
 
 
 @pytest.mark.slow

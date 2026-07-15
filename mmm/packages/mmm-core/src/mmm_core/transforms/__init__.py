@@ -7,15 +7,25 @@ linear model: ``response = beta * hill_saturation(geometric_adstock(spend))``.
 from mmm_core.transforms.adstock import (
     adstock_weights,
     alpha_from_half_life,
+    delayed_adstock,
+    delayed_adstock_weights,
     geometric_adstock,
     half_life_from_alpha,
 )
-from mmm_core.transforms.saturation import hill_saturation
+from mmm_core.transforms.saturation import (
+    hill_saturation,
+    logistic_saturation,
+    saturation_half_point,
+)
 
 __all__ = [
     "adstock_weights",
     "alpha_from_half_life",
+    "delayed_adstock",
+    "delayed_adstock_weights",
     "geometric_adstock",
     "half_life_from_alpha",
     "hill_saturation",
+    "logistic_saturation",
+    "saturation_half_point",
 ]

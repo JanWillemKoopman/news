@@ -1,9 +1,15 @@
 """Assemble the Bayesian MMM as a PyMC model.
 
-The adstock and Hill transforms are written symbolically in PyTensor here (mirroring the
-numpy versions in ``mmm_core.transforms``, which the tests pin), so their parameters are
-sampled rather than fixed. Each channel's contribution is registered as a
+The adstock and saturation transforms are written symbolically in PyTensor here
+(mirroring the numpy versions in ``mmm_core.transforms``, which the tests pin), so their
+parameters are sampled rather than fixed. Each channel's contribution is registered as a
 ``Deterministic`` so the fit can extract a decomposition and validate that it adds up.
+
+The model is a *toolbox*, not a single fixed shape: per channel you choose the carry-over
+(geometric or delayed/peaked) and the saturation (Hill or logistic); for the KPI you
+choose the likelihood (Normal or heavy-tailed Student-T). Every prior is a field on the
+config, so Claude can tune it per client. The defaults reproduce the original
+geometric + Hill + Normal model exactly.
 
 Everything is fit in a scaled space (each channel's spend by its max, the KPI by its
 max) so the priors are scale-free and NUTS is well-conditioned; the scalers are returned
@@ -20,14 +26,18 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from mmm_core.model.config import ModelConfig
+from mmm_core.model.config import (
+    AdstockType,
+    ChannelConfig,
+    LikelihoodType,
+    ModelConfig,
+    SaturationType,
+)
 from mmm_core.transforms import alpha_from_half_life
 
 # Small offset so adstocked spend is never exactly 0 inside x**slope, which would make
 # the gradient w.r.t. the Hill slope undefined and stall NUTS.
 _HILL_EPS = 1e-6
-# Concentration of the Beta prior placed on each channel's adstock retention.
-_ALPHA_CONCENTRATION = 20.0
 
 
 @dataclass
@@ -53,6 +63,22 @@ def _pt_geometric_adstock(x, alpha, l_max: int):
 
     weights = alpha ** pt.arange(l_max)
     weights = weights / pt.sum(weights)
+    return _pt_convolve(x, weights, l_max)
+
+
+def _pt_delayed_adstock(x, alpha, theta, l_max: int):
+    import pytensor.tensor as pt
+
+    lags = pt.arange(l_max)
+    weights = alpha ** ((lags - theta) ** 2)
+    weights = weights / pt.sum(weights)
+    return _pt_convolve(x, weights, l_max)
+
+
+def _pt_convolve(x, weights, l_max: int):
+    """Causal convolution of ``x`` with a length-``l_max`` lag-weight vector."""
+    import pytensor.tensor as pt
+
     length = x.shape[0]
     acc = weights[0] * x
     for lag in range(1, l_max):
@@ -65,6 +91,56 @@ def _pt_hill(x, half_saturation, slope):
     xs = (x + _HILL_EPS) ** slope
     ks = half_saturation ** slope
     return xs / (ks + xs)
+
+
+def _pt_logistic(x, lam):
+    import pytensor.tensor as pt
+
+    e = pt.exp(-lam * (x + _HILL_EPS))
+    return (1.0 - e) / (1.0 + e)
+
+
+def _adstock_rvs(pm, channel: ChannelConfig):
+    """Sample a channel's adstock parameters and return ``(apply_fn, {name: rv})``.
+
+    ``apply_fn(x)`` applies the symbolic carry-over to a spend tensor.
+    """
+    name = channel.name
+    priors = channel.priors
+    alpha_center = alpha_from_half_life(channel.half_life_prior_center())
+    conc = priors.adstock_concentration
+    alpha = pm.Beta(
+        f"alpha_{name}",
+        alpha=alpha_center * conc,
+        beta=(1.0 - alpha_center) * conc,
+    )
+    if channel.adstock is AdstockType.GEOMETRIC:
+        return (lambda x: _pt_geometric_adstock(x, alpha, channel.l_max)), {"alpha": alpha}
+
+    theta = pm.TruncatedNormal(
+        f"theta_{name}",
+        mu=priors.delayed_peak_weeks,
+        sigma=priors.delayed_peak_sigma,
+        lower=0.0,
+        upper=float(channel.l_max - 1),
+    )
+    return (
+        lambda x: _pt_delayed_adstock(x, alpha, theta, channel.l_max),
+        {"alpha": alpha, "theta": theta},
+    )
+
+
+def _saturation_rvs(pm, channel: ChannelConfig):
+    """Sample a channel's saturation parameters and return ``(apply_fn, {name: rv})``."""
+    name = channel.name
+    priors = channel.priors
+    if channel.saturation is SaturationType.HILL:
+        half_sat = pm.Beta(f"halfsat_{name}", alpha=priors.halfsat_a, beta=priors.halfsat_b)
+        slope = pm.Gamma(f"slope_{name}", alpha=priors.hill_slope_a, beta=priors.hill_slope_b)
+        return (lambda x: _pt_hill(x, half_sat, slope)), {"halfsat": half_sat, "slope": slope}
+
+    lam = pm.HalfNormal(f"lam_{name}", sigma=priors.logistic_lam_sigma)
+    return (lambda x: _pt_logistic(x, lam)), {"lam": lam}
 
 
 def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
@@ -88,56 +164,68 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
     y_scaled = kpi / y_max
 
     spend = np.column_stack([data[c.name].to_numpy(dtype=float) for c in config.channels])
+    if not np.isfinite(spend).all():
+        raise ValueError("a channel spend column contains missing/non-finite values; clean it first")
     x_max = spend.max(axis=0)
     x_max_safe = np.where(x_max > 0, x_max, 1.0)
     spend_scaled = spend / x_max_safe
 
+    # Validate & standardize controls up front — an unfilled gap here would otherwise
+    # propagate NaN silently through the whole of `mu` and corrupt the fit.
+    control_scaled: dict[str, np.ndarray] = {}
+    for ctrl in config.control_columns:
+        raw = data[ctrl].to_numpy(dtype=float)
+        if not np.isfinite(raw).all():
+            raise ValueError(
+                f"control column {ctrl!r} contains missing/non-finite values; impute or "
+                f"drop it before fitting (see mmm_core.features / ingestion fill options)"
+            )
+        std = raw.std() or 1.0
+        control_scaled[ctrl] = (raw - raw.mean()) / std
+
     t = np.arange(n, dtype=float)
     t_scaled = t / (n - 1)
+    bp = config.priors
 
     coords = {"date": dates, "channel": list(config.channel_names)}
     with pm.Model(coords=coords) as model:
-        intercept = pm.Normal("intercept", mu=float(np.median(y_scaled)), sigma=0.25)
+        intercept = pm.Normal("intercept", mu=float(np.median(y_scaled)), sigma=bp.intercept_sigma)
         mu = intercept + pt.zeros(n)
 
         if config.add_trend:
-            trend = pm.Normal("trend", mu=0.0, sigma=0.5)
+            trend = pm.Normal("trend", mu=0.0, sigma=bp.trend_sigma)
             mu = mu + trend * t_scaled
 
         if config.seasonality_periods and config.n_fourier_modes > 0:
             fourier = _fourier_features(t, config.seasonality_periods, config.n_fourier_modes)
-            season = pm.Normal("season", mu=0.0, sigma=0.1, shape=fourier.shape[1])
+            season = pm.Normal("season", mu=0.0, sigma=bp.season_sigma, shape=fourier.shape[1])
             mu = mu + pt.dot(fourier, season)
 
         for ctrl in config.control_columns:
-            raw = data[ctrl].to_numpy(dtype=float)
-            std = raw.std() or 1.0
-            ctrl_scaled = (raw - raw.mean()) / std
-            coef = pm.Normal(f"control_{ctrl}", mu=0.0, sigma=0.5)
-            mu = mu + coef * ctrl_scaled
+            coef = pm.Normal(f"control_{ctrl}", mu=0.0, sigma=bp.control_sigma)
+            mu = mu + coef * control_scaled[ctrl]
 
         for i, channel in enumerate(config.channels):
-            alpha_center = alpha_from_half_life(channel.half_life_prior_center())
-            alpha = pm.Beta(
-                f"alpha_{channel.name}",
-                alpha=alpha_center * _ALPHA_CONCENTRATION,
-                beta=(1.0 - alpha_center) * _ALPHA_CONCENTRATION,
-            )
-            half_sat = pm.Beta(f"halfsat_{channel.name}", alpha=2.0, beta=2.0)
-            slope = pm.Gamma(f"slope_{channel.name}", alpha=3.0, beta=3.0)
-            beta = pm.HalfNormal(f"beta_{channel.name}", sigma=0.5)  # media cannot hurt sales
+            beta = pm.HalfNormal(f"beta_{channel.name}", sigma=channel.priors.beta_sigma)  # media cannot hurt sales
+            apply_adstock, _ = _adstock_rvs(pm, channel)
+            apply_saturation, _ = _saturation_rvs(pm, channel)
 
             x_channel = pt.as_tensor_variable(spend_scaled[:, i])
-            adstocked = _pt_geometric_adstock(x_channel, alpha, channel.l_max)
-            saturated = _pt_hill(adstocked, half_sat, slope)
+            adstocked = apply_adstock(x_channel)
+            saturated = apply_saturation(adstocked)
             contribution = pm.Deterministic(
                 f"contrib_{channel.name}", beta * saturated, dims="date"
             )
             mu = mu + contribution
 
         pm.Deterministic("mu", mu, dims="date")
-        sigma = pm.HalfNormal("sigma", sigma=0.1)
-        pm.Normal("y", mu=mu, sigma=sigma, observed=y_scaled, dims="date")
+        sigma = pm.HalfNormal("sigma", sigma=bp.noise_sigma)
+        if config.likelihood is LikelihoodType.STUDENT_T:
+            pm.StudentT(
+                "y", nu=config.student_t_nu, mu=mu, sigma=sigma, observed=y_scaled, dims="date"
+            )
+        else:
+            pm.Normal("y", mu=mu, sigma=sigma, observed=y_scaled, dims="date")
 
     scalers = {"y_max": y_max, "x_max": x_max_safe, "t": t}
     return BuiltModel(

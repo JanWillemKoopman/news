@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from mmm_core.transforms import hill_saturation
+from mmm_core.transforms import (
+    hill_saturation,
+    logistic_saturation,
+    saturation_half_point,
+)
 
 
 def test_zero_spend_gives_zero_response():
@@ -64,3 +68,58 @@ def test_invalid_parameters_raise(kwargs):
 def test_negative_spend_raises():
     with pytest.raises(ValueError):
         hill_saturation(np.array([-1.0, 2.0]), half_saturation=100.0)
+
+
+# --- logistic saturation ---------------------------------------------------------
+
+def test_logistic_zero_spend_gives_zero_response():
+    assert logistic_saturation(0.0, lam=0.5) == 0.0
+
+
+def test_logistic_is_monotonic_and_bounded():
+    x = np.linspace(0, 1000, 300)
+    y = logistic_saturation(x, lam=0.01)
+    assert np.all(np.diff(y) >= 0)
+    assert np.all((y >= 0.0) & (y < 1.0))
+
+
+def test_logistic_saturates_towards_one():
+    assert logistic_saturation(1e6, lam=1.0) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_logistic_steeper_lam_saturates_sooner():
+    x = 50.0
+    assert logistic_saturation(x, lam=0.1) > logistic_saturation(x, lam=0.01)
+
+
+def test_logistic_per_channel_lam_on_2d_input():
+    x = np.full((4, 2), 50.0)
+    y = logistic_saturation(x, lam=np.array([0.01, 0.1]))
+    assert np.all(y[:, 1] > y[:, 0])
+
+
+@pytest.mark.parametrize("bad_lam", [0.0, -1.0])
+def test_logistic_invalid_lam_raises(bad_lam):
+    with pytest.raises(ValueError):
+        logistic_saturation(10.0, lam=bad_lam)
+
+
+def test_logistic_negative_spend_raises():
+    with pytest.raises(ValueError):
+        logistic_saturation(np.array([-1.0, 2.0]), lam=0.5)
+
+
+# --- comparable half-point across families ---------------------------------------
+
+def test_saturation_half_point_hill_is_kappa():
+    assert saturation_half_point("hill", {"half_saturation": 250.0}) == 250.0
+
+
+def test_saturation_half_point_logistic_reaches_half_response():
+    half = saturation_half_point("logistic", {"lam": 0.02})
+    assert logistic_saturation(half, lam=0.02) == pytest.approx(0.5)
+
+
+def test_saturation_half_point_unknown_family_raises():
+    with pytest.raises(ValueError):
+        saturation_half_point("nope", {})
