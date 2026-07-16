@@ -37,7 +37,12 @@ Regels:
 export function buildDeepAnalysisRequest(summary: FitSummary): Anthropic.Beta.Messages.MessageCreateParamsNonStreaming {
   return {
     model: ARCHITECT_ANALYST_MODEL,
-    max_tokens: 8192,
+    // A live test against a 2-channel synthetic FitSummary already used ~8.6K output
+    // tokens (5 charts + narrative) against an 8192 cap — the server-tool loop's
+    // cumulative usage can exceed a single sub-turn's budget. Real fits with more
+    // channels need more room; 16000 gives headroom without requiring streaming
+    // (well under the ~16K non-streaming SDK-timeout guideline).
+    max_tokens: 16000,
     thinking: { type: "adaptive" },
     output_config: { effort: "high" },
     betas: [CODE_EXECUTION_BETA],
