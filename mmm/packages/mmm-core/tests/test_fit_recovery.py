@@ -19,6 +19,7 @@ pytest.importorskip("pymc")
 pytest.importorskip("numpyro")
 
 import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 from mmm_core.model import (  # noqa: E402
     AdstockType,
@@ -171,6 +172,56 @@ def test_full_toolbox_variant_is_internally_consistent(fitted_full_toolbox):
     assert all(b >= a - 1e-6 for a, b in zip(mids, mids[1:]))
     alloc = optimize_budget(responses, total_budget=sum(r.hist_max_weekly_spend for r in responses))
     assert alloc.predicted_contribution.p50 > 0
+
+
+@pytest.mark.slow
+def test_poisson_count_likelihood_fits_and_decomposes():
+    from mmm_core.transforms import alpha_from_half_life, geometric_adstock, hill_saturation
+
+    rng = np.random.default_rng(3)
+    n = 90
+    idx = pd.date_range("2023-01-02", periods=n, freq="7D", name="week_start")
+
+    def spend(base, seed):
+        r = np.random.default_rng(seed)
+        s = np.exp(np.log(base) + np.cumsum(r.normal(0, 0.3, n)) * 0.1)
+        return np.maximum(s * (1 + (r.random(n) < 0.1) * r.uniform(0.3, 1.0, n)), 0.0)
+
+    def effect(sp, hl, hs, beta):
+        ad = geometric_adstock(sp, alpha_from_half_life(hl), 12, True)
+        return beta * hill_saturation(ad / ad.max(), hs, 1.0)
+
+    s_search, s_social = spend(100, 1), spend(80, 2)
+    log_mu = (
+        np.log(20.0) + 0.003 * np.arange(n) + 0.15 * np.sin(2 * np.pi * np.arange(n) / 52)
+        + effect(s_search, 1.0, 0.4, 0.5) + effect(s_social, 3.0, 0.5, 0.35)
+    )
+    leads = rng.poisson(np.exp(log_mu)).astype(float)
+    data = pd.DataFrame({"leads": leads, "search": s_search, "social": s_social}, index=idx)
+
+    cfg = ModelConfig(
+        kpi="leads",
+        channels=(ChannelConfig("search", ChannelType.INTENT), ChannelConfig("social", ChannelType.BRAND)),
+        likelihood=LikelihoodType.POISSON,
+    )
+    summary, idata = fit_model(data, cfg, draws=250, tune=250, chains=2, seed=0)
+    d = summary.diagnostics
+    assert d.max_r_hat < 1.1
+    assert d.decomposition_ok                    # exact by the counterfactual allocation
+    assert d.r2 > 0.3
+    # every channel a non-negative share; media doesn't swallow the whole KPI
+    shares = [c.contribution_share.p50 for c in summary.channels]
+    assert all(s >= 0 for s in shares) and sum(shares) < 1.0
+    import json
+    json.dumps(summary.to_json_dict())
+
+    # predict.py reconstructs exp(mu) on the log link
+    from mmm_core.model.predict import posterior_predict
+
+    built = build_model(data, cfg)
+    pred = posterior_predict(built, idata, data)
+    exp_mu = np.exp(idata.posterior["mu"]).mean(("chain", "draw")).to_numpy()
+    assert np.allclose(pred["kpi_mean"], exp_mu, rtol=1e-2, atol=1e-6)
 
 
 @pytest.mark.slow

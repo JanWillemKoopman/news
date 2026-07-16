@@ -240,26 +240,79 @@ def _saturation_point_samples(idata, ch: ChannelConfig, x_max_i: float) -> np.nd
     return (np.log(3.0) / lam) * x_max_i
 
 
+def _posterior_predictive_band(built: BuiltModel, idata, expected: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """3rd/97th-percentile posterior-predictive band per week, drawn from the right link."""
+    config = built.config
+    rng = np.random.default_rng(0)
+    if config.likelihood is LikelihoodType.POISSON:
+        y = rng.poisson(np.clip(expected, 0.0, None))
+    elif config.likelihood is LikelihoodType.NEGATIVE_BINOMIAL:
+        alpha = _flat(idata, "nb_alpha")[None, :]              # (1, S)
+        mean = np.clip(expected, 1e-9, None)
+        p = np.clip(alpha / (alpha + mean), 1e-9, 1.0)
+        y = rng.negative_binomial(np.broadcast_to(alpha, expected.shape), p)
+    else:
+        y_max = float(built.scalers["y_max"])
+        sigma = _flat(idata, "sigma")                          # (S,)
+        if config.likelihood is LikelihoodType.STUDENT_T:
+            noise = rng.standard_t(config.student_t_nu, size=expected.shape)
+        else:
+            noise = rng.standard_normal(expected.shape)
+        y = expected + sigma[None, :] * y_max * noise
+    lo = np.percentile(y, 3, axis=1)
+    hi = np.percentile(y, 97, axis=1)
+    return lo, hi
+
+
+def _weekly_attribution(built: BuiltModel, idata) -> tuple[np.ndarray, dict[str, np.ndarray], np.ndarray]:
+    """Per-week posterior KPI, per-channel contribution, and baseline — link-aware.
+
+    Returns ``(expected, channel_week, baseline_week)`` as ``(T, S)`` arrays in original
+    KPI units. For the additive link this is exact; for the count (log) link the media
+    effect is multiplicative, so each channel's *standalone* counterfactual lift is scaled
+    to add up to the total media effect (a Shapley-style proportional allocation). In both
+    cases ``baseline_week + sum(channel_week) == expected`` holds, so the decomposition
+    check stays exact.
+    """
+    config = built.config
+    y_max = float(built.scalers["y_max"])
+    mu = _flat(idata, "mu")                                     # (T, S)
+    contribs = {ch.name: _flat(idata, f"contrib_{ch.name}") for ch in config.channels}
+
+    if config.likelihood.is_count:
+        expected = np.exp(mu)                                   # count units
+        sum_contrib = sum(contribs.values())
+        baseline_week = np.exp(mu - sum_contrib)               # exp(baseline log-effect)
+        total_media = expected - baseline_week                 # >= 0
+        raw = {n: expected - np.exp(mu - c) for n, c in contribs.items()}  # standalone lift
+        sum_raw = sum(raw.values())
+        with np.errstate(invalid="ignore", divide="ignore"):
+            channel_week = {
+                n: np.where(sum_raw > 0, r / sum_raw, 0.0) * total_media for n, r in raw.items()
+            }
+        return expected, channel_week, baseline_week
+
+    expected = mu * y_max
+    channel_week = {n: c * y_max for n, c in contribs.items()}
+    baseline_week = expected - sum(channel_week.values())
+    return expected, channel_week, baseline_week
+
+
 def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     """Turn a fitted model + InferenceData into the dashboard summary."""
     import arviz as az
 
     config = built.config
-    y_max = float(built.scalers["y_max"])
     x_max = np.asarray(built.scalers["x_max"], dtype=float)
     kpi = built.kpi
     kpi_total = float(kpi.sum())
 
+    expected, channel_week, baseline_week = _weekly_attribution(built, idata)
+
     # --- per-channel attribution (in original KPI / spend units) ---
     channels: list[ChannelResult] = []
-    total_channel_contrib_per_sample = None
     for i, ch in enumerate(config.channels):
-        contrib = _flat(idata, f"contrib_{ch.name}")          # (date, sample), scaled
-        contrib_total = contrib.sum(axis=0) * y_max            # (sample,), KPI units
-        total_channel_contrib_per_sample = (
-            contrib_total if total_channel_contrib_per_sample is None
-            else total_channel_contrib_per_sample + contrib_total
-        )
+        contrib_total = channel_week[ch.name].sum(axis=0)      # (sample,), KPI units
         spend_total = float(built.spend[:, i].sum())
 
         alpha = _flat(idata, f"alpha_{ch.name}")
@@ -279,13 +332,14 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         )
 
     # --- baseline (everything not attributed to marketing) ---
-    mu = _flat(idata, "mu")                                     # (date, sample), scaled
-    mu_total = mu.sum(axis=0) * y_max
-    baseline_total = mu_total - total_channel_contrib_per_sample
-    baseline = Interval.from_samples(baseline_total)
+    baseline = Interval.from_samples(baseline_week.sum(axis=0))
 
     # --- diagnostics ---
-    var_names = ["intercept", "sigma"]
+    var_names = ["intercept"]
+    if config.likelihood is LikelihoodType.NEGATIVE_BINOMIAL:
+        var_names.append("nb_alpha")
+    elif not config.likelihood.is_count:
+        var_names.append("sigma")
     for ch in config.channels:
         var_names += _channel_param_names(ch)
     summ = az.summary(idata, var_names=var_names)
@@ -293,31 +347,20 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     min_ess = float(summ["ess_bulk"].min())
     n_div = int(idata.sample_stats["diverging"].to_numpy().sum())
 
-    mu_mean = mu.mean(axis=1) * y_max                           # posterior-mean fit, KPI units
+    mu_mean = expected.mean(axis=1)                            # posterior-mean fit, KPI units
     resid = kpi - mu_mean
     ss_res = float(np.sum(resid ** 2))
     ss_tot = float(np.sum((kpi - kpi.mean()) ** 2)) or 1.0
     r2 = 1.0 - ss_res / ss_tot
     mape = float(np.mean(np.abs(resid) / np.where(kpi != 0, np.abs(kpi), np.nan)))
 
-    # Predictive coverage (the plan's diagnostic): draw from the posterior predictive
-    # y ~ Normal(mu, sigma) and check how often the actual KPI lands in the 94% interval.
-    sigma = _flat(idata, "sigma")                              # (sample,)
-    rng = np.random.default_rng(0)
-    if config.likelihood is LikelihoodType.STUDENT_T:
-        noise = rng.standard_t(config.student_t_nu, size=mu.shape)
-    else:
-        noise = rng.standard_normal(mu.shape)
-    y_pred = (mu + sigma[None, :] * noise) * y_max
-    lo = np.percentile(y_pred, 3, axis=1)
-    hi = np.percentile(y_pred, 97, axis=1)
+    # Predictive coverage: draw from the posterior predictive appropriate to the link.
+    lo, hi = _posterior_predictive_band(built, idata, expected)
     coverage = interval_coverage(kpi, lo, hi)
 
-    components = {ch.name: _flat(idata, f"contrib_{ch.name}").mean(axis=1) for ch in config.channels}
-    components["baseline"] = (mu.mean(axis=1) - sum(
-        _flat(idata, f"contrib_{ch.name}").mean(axis=1) for ch in config.channels
-    ))
-    decomp = check_decomposition_adds_up(mu.mean(axis=1), components)
+    components = {n: cw.mean(axis=1) for n, cw in channel_week.items()}
+    components["baseline"] = baseline_week.mean(axis=1)
+    decomp = check_decomposition_adds_up(expected.mean(axis=1), components)
 
     diagnostics = Diagnostics(
         max_r_hat=max_r_hat,
@@ -375,6 +418,11 @@ def _planning_outputs(
     curves: list[ResponseCurve] = []
     allocation: OptimalAllocation | None = None
     frontier: list[FrontierPoint] = []
+    # Response curves/optimization assume the additive steady-state form; the count (log)
+    # link is multiplicative, so its planning outputs need a different derivation — skipped
+    # here (a documented next increment) rather than reported subtly wrong.
+    if built.config.likelihood.is_count:
+        return curves, allocation, frontier
     try:
         responses = extract_channel_responses(built, idata)
         for i, r in enumerate(responses):

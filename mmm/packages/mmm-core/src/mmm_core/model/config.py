@@ -37,10 +37,22 @@ class SaturationType(str, Enum):
 
 
 class LikelihoodType(str, Enum):
-    """Observation noise model for the KPI."""
+    """Observation noise model for the KPI.
 
-    NORMAL = "normal"        # symmetric Gaussian noise (default)
-    STUDENT_T = "student_t"  # heavy-tailed: robust to outlier weeks/promos/anomalies
+    The first two are *additive* (linear link): the KPI is baseline + summed channel
+    contributions. The count families use a *log link* (KPI = exp(baseline + effects)),
+    which fits low-count integer KPIs (e.g. 5–50 leads/week) far better than a Gaussian —
+    at the cost of a multiplicative decomposition, so attribution is done by counterfactual.
+    """
+
+    NORMAL = "normal"                      # symmetric Gaussian noise (default, additive)
+    STUDENT_T = "student_t"                # heavy-tailed, additive: robust to outlier weeks
+    POISSON = "poisson"                    # counts, log link: mean == variance
+    NEGATIVE_BINOMIAL = "negative_binomial"  # counts, log link: overdispersed (var > mean)
+
+    @property
+    def is_count(self) -> bool:
+        return self in (LikelihoodType.POISSON, LikelihoodType.NEGATIVE_BINOMIAL)
 
 
 class TrendType(str, Enum):

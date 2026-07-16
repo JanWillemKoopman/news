@@ -180,8 +180,15 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
     kpi = data[config.kpi].to_numpy(dtype=float)
     if not np.isfinite(kpi).all():
         raise ValueError("KPI column contains missing/non-finite values; clean it first")
-    y_max = float(kpi.max())
-    y_scaled = kpi / y_max
+    is_count = config.likelihood.is_count
+    if is_count:
+        if np.any(kpi < 0) or np.any(kpi != np.round(kpi)):
+            raise ValueError(
+                "a count likelihood (poisson/negative_binomial) needs a non-negative "
+                "integer KPI; use 'normal'/'student_t' for continuous KPIs"
+            )
+    y_max = float(kpi.max()) or 1.0
+    y_scaled = kpi / y_max  # additive link only; the count link works on raw counts
 
     spend = np.column_stack([data[c.name].to_numpy(dtype=float) for c in config.channels])
     if not np.isfinite(spend).all():
@@ -215,7 +222,12 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
 
     coords = {"date": dates, "channel": list(config.channel_names)}
     with pm.Model(coords=coords) as model:
-        intercept = pm.Normal("intercept", mu=float(np.median(y_scaled)), sigma=bp.intercept_sigma)
+        if is_count:
+            # Log link: the intercept is the log baseline count; centre it at the log mean
+            # and give it room (a factor e^1 ~ 2.7x) since we work in log space here.
+            intercept = pm.Normal("intercept", mu=float(np.log(max(kpi.mean(), 1.0))), sigma=1.0)
+        else:
+            intercept = pm.Normal("intercept", mu=float(np.median(y_scaled)), sigma=bp.intercept_sigma)
         mu = intercept + pt.zeros(n)
 
         if config.add_trend:
@@ -255,6 +267,11 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
             # measured value via a soft (Gaussian) penalty. Contribution is scaled KPI, so
             # multiply by y_max; spend is in original units. Skipped for zero-spend channels.
             if channel.calibration is not None:
+                if is_count:
+                    raise ValueError(
+                        "ROAS calibration is not yet supported with a count likelihood "
+                        "(the implied-ROAS penalty assumes the additive link)"
+                    )
                 total_spend_c = float(spend[:, i].sum())
                 if total_spend_c > 0:
                     implied_roas = pt.sum(contribution) * y_max / total_spend_c
@@ -264,14 +281,26 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
                         -0.5 * ((implied_roas - cal.roas) / cal.sd) ** 2,
                     )
 
+        # For the additive link `mu` is the KPI on the [0,1] scaled axis; for the count
+        # link it is the log-expected count. Downstream (fit/predict) branches on the same
+        # config.likelihood, so this single Deterministic serves both.
         pm.Deterministic("mu", mu, dims="date")
-        sigma = pm.HalfNormal("sigma", sigma=bp.noise_sigma)
-        if config.likelihood is LikelihoodType.STUDENT_T:
-            pm.StudentT(
-                "y", nu=config.student_t_nu, mu=mu, sigma=sigma, observed=y_scaled, dims="date"
-            )
+        if is_count:
+            y_count = np.rint(kpi).astype("int64")
+            expected = pt.exp(mu)
+            if config.likelihood is LikelihoodType.POISSON:
+                pm.Poisson("y", mu=expected, observed=y_count, dims="date")
+            else:  # negative binomial
+                nb_alpha = pm.Gamma("nb_alpha", alpha=2.0, beta=0.1)  # dispersion; large -> Poisson
+                pm.NegativeBinomial("y", mu=expected, alpha=nb_alpha, observed=y_count, dims="date")
         else:
-            pm.Normal("y", mu=mu, sigma=sigma, observed=y_scaled, dims="date")
+            sigma = pm.HalfNormal("sigma", sigma=bp.noise_sigma)
+            if config.likelihood is LikelihoodType.STUDENT_T:
+                pm.StudentT(
+                    "y", nu=config.student_t_nu, mu=mu, sigma=sigma, observed=y_scaled, dims="date"
+                )
+            else:
+                pm.Normal("y", mu=mu, sigma=sigma, observed=y_scaled, dims="date")
 
     scalers = {
         "y_max": y_max,

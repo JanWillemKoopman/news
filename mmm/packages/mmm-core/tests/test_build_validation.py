@@ -11,7 +11,13 @@ import pytest
 
 pytest.importorskip("pymc")
 
-from mmm_core.model import ChannelConfig, ChannelType, ModelConfig  # noqa: E402
+from mmm_core.model import (  # noqa: E402
+    ChannelConfig,
+    ChannelType,
+    LikelihoodType,
+    ModelConfig,
+    RoasCalibration,
+)
 from mmm_core.model.build import build_model  # noqa: E402
 
 
@@ -59,3 +65,30 @@ def test_clean_control_builds_without_error():
     df["price"] = 9.99
     built = build_model(df, _cfg(control_columns=("price",)))
     assert "control_price" in built.model.named_vars
+
+
+def test_count_likelihood_rejects_non_integer_kpi():
+    df = _frame()
+    df["kpi"] = df["kpi"] + 0.5  # clearly non-integer
+    with pytest.raises(ValueError, match="integer KPI"):
+        build_model(df, _cfg(likelihood=LikelihoodType.POISSON))
+
+
+def test_count_likelihood_accepts_integer_kpi():
+    df = _frame()
+    df["kpi"] = np.arange(len(df), dtype=float) + 5.0  # whole numbers
+    built = build_model(df, _cfg(likelihood=LikelihoodType.NEGATIVE_BINOMIAL))
+    assert "nb_alpha" in built.model.named_vars
+    assert "sigma" not in built.model.named_vars  # count link has no Gaussian noise term
+
+
+def test_calibration_with_count_likelihood_is_rejected():
+    df = _frame()
+    df["kpi"] = np.arange(len(df), dtype=float) + 5.0
+    cfg = ModelConfig(
+        kpi="kpi",
+        channels=(ChannelConfig("google", ChannelType.INTENT, calibration=RoasCalibration(2.0, 0.5)),),
+        likelihood=LikelihoodType.POISSON,
+    )
+    with pytest.raises(ValueError, match="calibration is not yet supported"):
+        build_model(df, cfg)

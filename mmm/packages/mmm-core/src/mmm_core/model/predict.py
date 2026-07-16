@@ -119,5 +119,6 @@ def posterior_predict(built: BuiltModel, idata, data: pd.DataFrame) -> dict:
         components[ch.name] = contrib
         mu = mu + contrib
 
-    kpi = mu * y_max
+    # Additive link: KPI = mu * y_max. Count (log) link: KPI = exp(mu).
+    kpi = np.exp(mu) if config.likelihood.is_count else mu * y_max
     return {"kpi": kpi, "kpi_mean": kpi.mean(axis=1), "components": components, "dates": data.index}

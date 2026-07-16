@@ -6,7 +6,7 @@ export type ColumnRole = "kpi" | "spend" | "control";
 export type ChannelType = "intent" | "brand" | "generic";
 export type AdstockType = "geometric" | "delayed";
 export type SaturationType = "hill" | "logistic";
-export type LikelihoodType = "normal" | "student_t";
+export type LikelihoodType = "normal" | "student_t" | "poisson" | "negative_binomial";
 export type TrendType = "linear" | "piecewise";
 export type FillStrategy = "zero" | "ffill" | "bfill" | "interpolate" | "mean" | "median";
 
