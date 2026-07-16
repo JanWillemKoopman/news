@@ -1,0 +1,56 @@
+import type { DatasetQuality } from "@/lib/types";
+
+// Renders an ingestion QualityReport as sentences, not a wall of badges: errors/warnings
+// get the rose accent (they need attention), info stays neutral. Mirrors the philosophy
+// already used for the fit's quality gate banner in SummaryView.
+export function QualityReportView({ quality }: { quality: DatasetQuality | null }) {
+  const issues = quality?.issues ?? [];
+  if (issues.length === 0) {
+    return <p className="text-sm text-neutral-500">Geen bijzonderheden gevonden.</p>;
+  }
+
+  const errors = issues.filter((i) => i.severity === "error");
+  const warnings = issues.filter((i) => i.severity === "warning");
+  const infos = issues.filter((i) => i.severity === "info");
+
+  return (
+    <div className="space-y-3">
+      {errors.length > 0 && (
+        <div>
+          <p className="text-sm font-medium text-rose-700">
+            {errors.length} {errors.length === 1 ? "fout" : "fouten"} — dit blokkeert samenvoegen:
+          </p>
+          <ul className="mt-1 space-y-1 text-sm text-rose-700">
+            {errors.map((issue, i) => (
+              <li key={i}>• {issue.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div>
+          <p className="text-sm font-medium text-neutral-800">
+            {warnings.length} {warnings.length === 1 ? "waarschuwing" : "waarschuwingen"} — de moeite van het bekijken waard:
+          </p>
+          <ul className="mt-1 space-y-1 text-sm text-neutral-600">
+            {warnings.map((issue, i) => (
+              <li key={i}>• {issue.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {infos.length > 0 && (
+        <details className="text-sm text-neutral-500">
+          <summary className="cursor-pointer select-none">
+            {infos.length} info-melding{infos.length === 1 ? "" : "en"}
+          </summary>
+          <ul className="mt-1 space-y-1 pl-3">
+            {infos.map((issue, i) => (
+              <li key={i}>• {issue.message}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}

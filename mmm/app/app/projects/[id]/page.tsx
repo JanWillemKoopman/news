@@ -5,12 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, PageHeader, StatusBadge, TopBar } from "@/components/ui";
 import { NoBuilderAccess } from "@/components/NoAccess";
 import { SourceUpload } from "@/components/SourceUpload";
+import { DataPrepSection } from "@/components/DataPrepSection";
 import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
 import { ChatPanel } from "@/components/ChatPanel";
 import { WizardChatProvider } from "@/components/WizardChatContext";
-import type { Job, ModelRun, Project, SourceFile } from "@/lib/types";
+import type { Dataset, Job, ModelRun, Project, SourceFile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,19 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   if (!project) notFound();
   const p = project as Project;
 
-  const [{ data: sources }, { data: jobs }, { data: runs }] = await Promise.all([
+  const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }] = await Promise.all([
     supabase.schema("mmm").from("source_files").select("*").eq("project_id", p.id).order("created_at"),
     supabase.schema("mmm").from("jobs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
     supabase.schema("mmm").from("model_runs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
+    supabase
+      .schema("mmm")
+      .from("datasets")
+      .select("*")
+      .eq("project_id", p.id)
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
+  const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
 
   return (
     <>
@@ -61,21 +70,36 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               </section>
 
               <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">2 · Model configureren</h2>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">2 · Data voorbereiden</h2>
                 <Card>
-                  <ModelConfigForm projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
+                  <DataPrepSection
+                    projectId={p.id}
+                    sources={(sources ?? []) as SourceFile[]}
+                    initialDataset={latestDataset}
+                  />
                 </Card>
               </section>
 
               <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">3 · Fits</h2>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">3 · Model configureren</h2>
+                <Card>
+                  <ModelConfigForm
+                    projectId={p.id}
+                    sources={(sources ?? []) as SourceFile[]}
+                    approvedDataset={latestDataset?.status === "approved" ? latestDataset : null}
+                  />
+                </Card>
+              </section>
+
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">4 · Fits</h2>
                 <Card>
                   <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
                 </Card>
               </section>
 
               <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">4 · Resultaten</h2>
+                <h2 className="mb-2 text-sm font-semibold text-neutral-700">5 · Resultaten</h2>
                 <Card>
                   <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
                 </Card>

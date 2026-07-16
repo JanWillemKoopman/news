@@ -9,6 +9,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   proposedConfig?: unknown;
+  proposedRecipe?: unknown;
 }
 
 // Extracts the plain-text bubble content from a stored Anthropic content-block array
@@ -22,7 +23,7 @@ function textFromBlocks(content: unknown): string {
 }
 
 export function ChatPanel({ projectId }: { projectId: string }) {
-  const { applyConfig } = useWizardChat();
+  const { applyConfig, applyRecipe } = useWizardChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,10 +49,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  async function send() {
-    const text = input.trim();
+  async function send(preset?: string) {
+    const text = (preset ?? input).trim();
     if (!text || busy) return;
-    setInput("");
+    if (!preset) setInput("");
     setError(null);
     setMessages((prev) => [...prev, { role: "user", text }]);
     setBusy(true);
@@ -70,7 +71,12 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     const data = await res.json();
     setMessages((prev) => [
       ...prev,
-      { role: "assistant", text: data.reply || "(geen tekstuele reactie)", proposedConfig: data.proposedConfig },
+      {
+        role: "assistant",
+        text: data.reply || "(geen tekstuele reactie)",
+        proposedConfig: data.proposedConfig,
+        proposedRecipe: data.proposedRecipe,
+      },
     ]);
   }
 
@@ -85,8 +91,9 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         {!loaded && <p className="text-sm text-neutral-400">Laden…</p>}
         {loaded && messages.length === 0 && (
           <p className="text-sm text-neutral-400">
-            Vraag de architect om de geüploade data te beoordelen en een modelconfiguratie voor
-            te stellen.
+            Vraag de architect om de geüploade bestanden te controleren en samen te voegen,
+            om daarna een modelconfiguratie voor te stellen. Na een fit kun je hem ook
+            vragen de resultaten uit te leggen, te beoordelen of te verbeteren.
           </p>
         )}
         {messages.map((m, i) => (
@@ -99,6 +106,17 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             >
               {m.text}
             </div>
+            {m.proposedRecipe != null && (
+              <div className="mt-1">
+                <button
+                  onClick={() => applyRecipe(m.proposedRecipe)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Recept overnemen in de tabel
+                </button>
+              </div>
+            )}
             {m.proposedConfig != null && (
               <div className="mt-1">
                 <button
@@ -118,7 +136,38 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
       {error && <p className="px-4 pb-1 text-xs text-rose-600">{error}</p>}
 
-      <div className="flex items-end gap-2 border-t border-neutral-100 p-3">
+      <div className="flex flex-wrap gap-1.5 border-t border-neutral-100 px-3 pt-2">
+        <button
+          onClick={() => send("Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Stel een samenvoegrecept voor
+        </button>
+        <button
+          onClick={() => send("Beoordeel de laatste dataset-voorbereiding: leg het kwaliteitsrapport uit en zeg of het klaar is om goed te keuren.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Beoordeel de dataset
+        </button>
+        <button
+          onClick={() => send("Kijk naar de goedgekeurde dataset en stel een modelconfiguratie voor.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Stel een configuratie voor
+        </button>
+        <button
+          onClick={() => send("Beoordeel de laatste fit: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Beoordeel de laatste fit
+        </button>
+      </div>
+
+      <div className="flex items-end gap-2 p-3">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -129,11 +178,11 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             }
           }}
           rows={2}
-          placeholder="Bijv. 'Kijk naar de geüploade data en stel een configuratie voor.'"
+          placeholder="Bijv. 'Stel een samenvoegrecept voor.' of, na een fit, 'Leg de resultaten uit / kan dit beter?'"
           className="flex-1 resize-none rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
         />
         <button
-          onClick={send}
+          onClick={() => send()}
           disabled={busy || !input.trim()}
           className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
         >

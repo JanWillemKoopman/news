@@ -7,10 +7,13 @@ import { StatusBadge } from "@/components/ui";
 import type { Job } from "@/lib/types";
 
 // Live job list: subscribes to Realtime so status flips (queued -> running -> succeeded)
-// appear without a refresh, and refreshes the page data when a job finishes.
+// appear without a refresh, and refreshes the page data when a job finishes. Only shows
+// 'fit' jobs — 'prepare' jobs have their own status view in the data-prep section, keyed
+// off the dataset row (which carries the same lifecycle in more useful shape: quality
+// report, preview) rather than the raw job.
 export function JobList({ projectId, initialJobs }: { projectId: string; initialJobs: Job[] }) {
   const router = useRouter();
-  const [jobs, setJobs] = useState<Job[]>(initialJobs);
+  const [jobs, setJobs] = useState<Job[]>(initialJobs.filter((j) => j.type === "fit"));
 
   useEffect(() => {
     const supabase = createClient();
@@ -21,6 +24,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         { event: "*", schema: "mmm", table: "jobs", filter: `project_id=eq.${projectId}` },
         (payload) => {
           const row = payload.new as Job;
+          if (row.type !== "fit") return;
           setJobs((prev) => {
             const next = prev.filter((j) => j.id !== row.id);
             return [row, ...next].sort((a, b) => b.created_at.localeCompare(a.created_at));

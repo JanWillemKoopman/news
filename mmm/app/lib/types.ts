@@ -32,11 +32,12 @@ export interface SourceFile {
 export interface Job {
   id: string;
   project_id: string;
-  type: "fit";
+  type: "fit" | "prepare";
   status: JobStatus;
-  config: JobConfig;
+  config: JobConfig | PrepareRecipe;
   error: string | null;
   attempts: number;
+  dataset_id?: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -83,6 +84,65 @@ export interface SourceConfig {
     // control columns only: how to fill missing weeks inside the analysis window.
     fill?: FillStrategy;
   }[];
+}
+
+// --- Data preparation (the recipe + result of merging raw uploads into one master
+// table, BEFORE the model config step) ---
+
+export type DatasetStatus = "draft" | "preparing" | "prepared" | "failed" | "approved";
+
+// The recipe is exactly the merge instructions: which files, which column -> which role,
+// how to fill control gaps, and which weeks to flag as event dummies. No model settings —
+// those come later, once the definitive master table exists.
+export interface PrepareRecipe {
+  sources: SourceConfig[];
+  event_dummies?: EventDummyConfig[];
+}
+
+export interface DatasetColumnSummary {
+  role: ColumnRole | null;
+  n_missing: number;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+}
+
+export interface DatasetPreview {
+  columns: { name: string; role: ColumnRole | null }[];
+  n_weeks: number;
+  head: Record<string, string | number | null>[];
+  tail: Record<string, string | number | null>[];
+  summary: Record<string, DatasetColumnSummary>;
+}
+
+// Mirrors mmm_core.ingestion.quality.QualityReport's to-JSON shape.
+export interface QualityIssue {
+  code: string;
+  severity: "info" | "warning" | "error";
+  message: string;
+  source?: string | null;
+  [key: string]: unknown;
+}
+export interface DatasetQuality {
+  issues: QualityIssue[];
+}
+
+export interface Dataset {
+  id: string;
+  project_id: string;
+  status: DatasetStatus;
+  recipe: PrepareRecipe;
+  master_path: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  n_weeks: number | null;
+  column_roles: Record<string, ColumnRole> | null;
+  quality: DatasetQuality | null;
+  preview: DatasetPreview | null;
+  error: string | null;
+  created_at: string;
+  prepared_at: string | null;
+  approved_at: string | null;
 }
 
 // Prior overrides for one channel (any subset; omitted keys keep mmm-core defaults).
