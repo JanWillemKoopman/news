@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 
-from mmm_core import ColumnSpec, EventDummySpec, Role, SourceSpec
+from mmm_core import ColumnSpec, EventDummySpec, FeatureSpec, Role, SourceSpec, TransformSpec
 from mmm_core.model import (
     AdstockType,
     BaselinePriors,
@@ -60,6 +60,7 @@ _BASELINE_PRIOR_FIELDS = {f.name for f in fields(BaselinePriors)}
 class SourceRef:
     spec: SourceSpec
     storage_path: str
+    transforms: tuple[TransformSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,7 @@ class JobSpec:
     model: ModelConfig
     sample: dict
     event_dummies: tuple[EventDummySpec, ...] = ()
+    features: tuple[FeatureSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -77,12 +79,24 @@ class PrepareSpec:
 
     sources: list[SourceRef]
     event_dummies: tuple[EventDummySpec, ...] = ()
+    features: tuple[FeatureSpec, ...] = ()
 
 
 def _require(d: dict, key: str, ctx: str):
     if key not in d:
         raise ValueError(f"job config: missing {key!r} in {ctx}")
     return d[key]
+
+
+# The architect's tool schema is strict: optional numeric fields are declared nullable and
+# always present, so the model emits an explicit ``null`` to mean "use the default" rather
+# than omitting the key. Treat ``None`` exactly like an absent key here.
+def _opt_int(value, default: int) -> int:
+    return default if value is None else int(value)
+
+
+def _opt_float(value, default: float) -> float:
+    return default if value is None else float(value)
 
 
 def _parse_event_dummies(config: dict) -> tuple[EventDummySpec, ...]:
@@ -95,13 +109,36 @@ def _parse_event_dummies(config: dict) -> tuple[EventDummySpec, ...]:
     return tuple(specs)
 
 
+def _parse_features(config: dict) -> tuple[FeatureSpec, ...]:
+    """Parse declarative derived-feature specs (lag/rolling/ratio/interaction/...).
+
+    The architect's strict tool schema always sends a fixed ``params`` object with a null
+    for every parameter it isn't using; null params are dropped here so mmm-core applies
+    the op's own defaults. Op/arity validation lives in :class:`FeatureSpec`.
+    """
+    specs = []
+    for f in config.get("features", ()) or ():
+        raw_params = f.get("params") or {}
+        params = {k: v for k, v in raw_params.items() if v is not None}
+        specs.append(
+            FeatureSpec(
+                name=_require(f, "name", "feature"),
+                op=_require(f, "op", "feature"),
+                inputs=tuple(f.get("inputs") or ()),
+                params=params,
+            )
+        )
+    return tuple(specs)
+
+
 def _channel_priors(d: dict | None) -> ChannelPriors:
     if not d:
         return ChannelPriors()
     unknown = set(d) - _CHANNEL_PRIOR_FIELDS
     if unknown:
         raise ValueError(f"job config: unknown channel prior field(s) {sorted(unknown)}")
-    return ChannelPriors(**{k: float(v) for k, v in d.items()})
+    # null == "keep the default" (the strict schema always sends every prior key).
+    return ChannelPriors(**{k: float(v) for k, v in d.items() if v is not None})
 
 
 def _baseline_priors(d: dict | None) -> BaselinePriors:
@@ -110,7 +147,7 @@ def _baseline_priors(d: dict | None) -> BaselinePriors:
     unknown = set(d) - _BASELINE_PRIOR_FIELDS
     if unknown:
         raise ValueError(f"job config: unknown model prior field(s) {sorted(unknown)}")
-    return BaselinePriors(**{k: float(v) for k, v in d.items()})
+    return BaselinePriors(**{k: float(v) for k, v in d.items() if v is not None})
 
 
 def _parse_calibration(d: dict | None) -> RoasCalibration | None:
@@ -122,14 +159,28 @@ def _parse_calibration(d: dict | None) -> RoasCalibration | None:
 def _parse_channel(c: dict) -> ChannelConfig:
     return ChannelConfig(
         name=_require(c, "name", "channel"),
-        channel_type=ChannelType(c.get("channel_type", "generic")),
-        l_max=int(c.get("l_max", 12)),
+        channel_type=ChannelType(c.get("channel_type") or "generic"),
+        l_max=_opt_int(c.get("l_max"), 12),
         expected_half_life=c.get("expected_half_life"),
         adstock=AdstockType(c.get("adstock", "geometric")),
         saturation=SaturationType(c.get("saturation", "hill")),
         priors=_channel_priors(c.get("priors")),
         calibration=_parse_calibration(c.get("calibration")),
     )
+
+
+def _parse_transforms(source: dict) -> tuple[TransformSpec, ...]:
+    """Parse a source's optional raw-table cleaning/reshaping transforms.
+
+    Op/arity is validated by :class:`TransformSpec`; params stay a free-form dict that
+    mmm-core validates per op at build time (null params are dropped so op defaults apply).
+    """
+    specs = []
+    for t in source.get("transforms", ()) or ():
+        raw_params = t.get("params") or {}
+        params = {k: v for k, v in raw_params.items() if v is not None}
+        specs.append(TransformSpec(op=_require(t, "op", "transform"), params=params))
+    return tuple(specs)
 
 
 def _parse_sources(config: dict) -> list[SourceRef]:
@@ -153,13 +204,28 @@ def _parse_sources(config: dict) -> list[SourceRef]:
             date_column=s.get("date_column"),
             essential=s.get("essential", True),
         )
-        sources.append(SourceRef(spec=spec, storage_path=_require(s, "storage_path", "source")))
+        sources.append(
+            SourceRef(
+                spec=spec,
+                storage_path=_require(s, "storage_path", "source"),
+                transforms=_parse_transforms(s),
+            )
+        )
     return sources
 
 
+def source_transforms_map(sources: list[SourceRef]) -> dict[str, list[TransformSpec]]:
+    """The per-source transform lists keyed by source name, for build_master_dataset."""
+    return {ref.spec.name: list(ref.transforms) for ref in sources if ref.transforms}
+
+
 def parse_prepare_config(config: dict) -> PrepareSpec:
-    """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies, no model)."""
-    return PrepareSpec(sources=_parse_sources(config), event_dummies=_parse_event_dummies(config))
+    """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies + features)."""
+    return PrepareSpec(
+        sources=_parse_sources(config),
+        event_dummies=_parse_event_dummies(config),
+        features=_parse_features(config),
+    )
 
 
 def parse_job_config(config: dict) -> JobSpec:
@@ -182,14 +248,20 @@ def parse_job_config(config: dict) -> JobSpec:
         channels=channels,
         control_columns=tuple(control_columns),
         add_trend=bool(m.get("add_trend", True)),
-        trend_type=TrendType(m.get("trend_type", "linear")),
-        n_changepoints=int(m.get("n_changepoints", 6)),
+        trend_type=TrendType(m.get("trend_type") or "linear"),
+        n_changepoints=_opt_int(m.get("n_changepoints"), 6),
         seasonality_periods=m.get("seasonality_periods", 52.0),
-        n_fourier_modes=int(m.get("n_fourier_modes", 2)),
-        likelihood=LikelihoodType(m.get("likelihood", "normal")),
-        student_t_nu=float(m.get("student_t_nu", 4.0)),
+        n_fourier_modes=_opt_int(m.get("n_fourier_modes"), 2),
+        likelihood=LikelihoodType(m.get("likelihood") or "normal"),
+        student_t_nu=_opt_float(m.get("student_t_nu"), 4.0),
         priors=_baseline_priors(m.get("priors")),
     )
 
     sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
-    return JobSpec(sources=sources, model=model, sample=sample, event_dummies=event_dummies)
+    return JobSpec(
+        sources=sources,
+        model=model,
+        sample=sample,
+        event_dummies=event_dummies,
+        features=_parse_features(config),
+    )

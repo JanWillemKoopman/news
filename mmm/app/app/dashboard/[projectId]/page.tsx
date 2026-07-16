@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { AnalysisView } from "@/components/AnalysisView";
 import { Card, PageHeader, TopBar } from "@/components/ui";
 import { SummaryView } from "@/components/SummaryView";
 import type { ModelRun, Project } from "@/lib/types";
@@ -44,6 +45,7 @@ export default async function ClientDashboard({ params }: { params: { projectId:
         {latest ? (
           <Card>
             <SummaryView summary={latest.summary} />
+            {latest.analysis && <AnalysisView analysis={latest.analysis} />}
           </Card>
         ) : (
           <p className="text-sm text-neutral-500">

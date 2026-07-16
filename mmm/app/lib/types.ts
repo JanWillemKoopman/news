@@ -43,12 +43,31 @@ export interface Job {
   finished_at: string | null;
 }
 
+// A generated chart image (base64 data URL) produced by the deep-analysis step.
+export interface AnalysisChart {
+  filename: string;
+  mime_type: string;
+  data_url: string;
+}
+
+// The deep-analysis step's output: a written interpretation plus charts, generated
+// on-demand from the (already computed) FitSummary via Claude's sandboxed code
+// execution. Distinct from the chat architect's own inline discussion of results —
+// this is a heavier, explicitly-triggered "genereer diepgaande analyse" action.
+export interface RunAnalysis {
+  text: string;
+  charts: AnalysisChart[];
+  model: string;
+  generated_at: string;
+}
+
 export interface ModelRun {
   id: string;
   project_id: string;
   job_id: string | null;
   summary: FitSummary;
   quality: unknown;
+  analysis: RunAnalysis | null;
   inference_data_path: string | null;
   is_published: boolean;
   created_at: string;
@@ -61,6 +80,7 @@ export interface JobConfig {
   sources: SourceConfig[];
   model: ModelConfig;
   event_dummies?: EventDummyConfig[];
+  features?: FeatureSpec[];
   sample?: { draws?: number; tune?: number; chains?: number };
 }
 
@@ -72,11 +92,35 @@ export interface EventDummyConfig {
   weeks: [number, number][]; // [iso_year, iso_week] pairs
 }
 
+// A raw-table cleaning/reshaping step applied to one source BEFORE role-mapping (mirrors
+// mmm_core.ingestion.transforms.TransformSpec). Gives the architect room to tidy messy
+// uploads — rename, filter, dedupe, unit/currency conversion, combine/split columns,
+// recode categories, force a date parse, long→wide pivot — deterministically.
+export type TransformOp =
+  | "rename"
+  | "drop_columns"
+  | "filter_rows"
+  | "drop_duplicates"
+  | "scale"
+  | "combine"
+  | "split"
+  | "recode"
+  | "parse_date"
+  | "pivot";
+
+export interface TransformSpec {
+  op: TransformOp;
+  // Op-specific parameters (see the architect tool description / mmm-core for each op).
+  params?: Record<string, unknown>;
+}
+
 export interface SourceConfig {
   name: string;
   storage_path: string;
   date_column?: string;
   essential?: boolean;
+  // Raw cleaning/reshaping applied to this file before role-mapping, in order.
+  transforms?: TransformSpec[];
   columns: {
     name: string;
     role: ColumnRole;
@@ -84,6 +128,31 @@ export interface SourceConfig {
     // control columns only: how to fill missing weeks inside the analysis window.
     fill?: FillStrategy;
   }[];
+}
+
+// A derived feature: a new control column computed from existing master columns during
+// the merge (mirrors mmm_core.ingestion.feature_engineering.FeatureSpec). Lets the
+// architect propose engineered variables (lags, rolling means, ratios/shares,
+// interactions, transforms, recurring calendar dummies) without hand-editing raw data.
+export type FeatureOp =
+  | "lag"
+  | "rolling_mean"
+  | "rolling_sum"
+  | "diff"
+  | "ratio"
+  | "product"
+  | "sum"
+  | "log1p"
+  | "zscore"
+  | "winsorize"
+  | "recurring_week_dummy";
+
+export interface FeatureSpec {
+  name: string;
+  op: FeatureOp;
+  inputs: string[];
+  // Op-specific params (weeks/window/lower_q/upper_q/iso_weeks); omitted → op defaults.
+  params?: Record<string, number | number[] | null>;
 }
 
 // --- Data preparation (the recipe + result of merging raw uploads into one master
@@ -97,6 +166,7 @@ export type DatasetStatus = "draft" | "preparing" | "prepared" | "failed" | "app
 export interface PrepareRecipe {
   sources: SourceConfig[];
   event_dummies?: EventDummyConfig[];
+  features?: FeatureSpec[];
 }
 
 export interface DatasetColumnSummary {
@@ -165,6 +235,8 @@ export interface BaselinePriors {
   season_sigma?: number;
   control_sigma?: number;
   noise_sigma?: number;
+  // Laplace scale on each piecewise-trend changepoint step (smaller = stiffer trend).
+  changepoint_scale?: number;
 }
 
 // An experimentally-measured ROAS (from a lift/geo test) to calibrate a channel against.

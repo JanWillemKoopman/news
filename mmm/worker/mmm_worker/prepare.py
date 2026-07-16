@@ -18,7 +18,7 @@ import pandas as pd
 
 from mmm_core import build_master_dataset
 
-from mmm_worker.jobspec import parse_prepare_config
+from mmm_worker.jobspec import parse_prepare_config, source_transforms_map
 from mmm_worker.ports import DatasetStore, JobStore, Storage
 from mmm_worker.tables import read_table
 
@@ -105,7 +105,12 @@ def run_prepare(
             raw = storage.download(ref.storage_path)
             frames.append((ref.spec, read_table(ref.storage_path, raw)))
 
-        build = build_master_dataset(frames, event_dummies=list(spec.event_dummies))
+        build = build_master_dataset(
+            frames,
+            event_dummies=list(spec.event_dummies),
+            features=list(spec.features),
+            source_transforms=source_transforms_map(spec.sources),
+        )
         quality = _quality_to_json(build.report)
 
         if build.report.has_errors or build.window is None:
