@@ -43,12 +43,31 @@ export interface Job {
   finished_at: string | null;
 }
 
+// A generated chart image (base64 data URL) produced by the deep-analysis step.
+export interface AnalysisChart {
+  filename: string;
+  mime_type: string;
+  data_url: string;
+}
+
+// The deep-analysis step's output: a written interpretation plus charts, generated
+// on-demand from the (already computed) FitSummary via Claude's sandboxed code
+// execution. Distinct from the chat architect's own inline discussion of results —
+// this is a heavier, explicitly-triggered "genereer diepgaande analyse" action.
+export interface RunAnalysis {
+  text: string;
+  charts: AnalysisChart[];
+  model: string;
+  generated_at: string;
+}
+
 export interface ModelRun {
   id: string;
   project_id: string;
   job_id: string | null;
   summary: FitSummary;
   quality: unknown;
+  analysis: RunAnalysis | null;
   inference_data_path: string | null;
   is_published: boolean;
   created_at: string;
