@@ -48,10 +48,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
-  async function send() {
-    const text = input.trim();
+  async function send(preset?: string) {
+    const text = (preset ?? input).trim();
     if (!text || busy) return;
-    setInput("");
+    if (!preset) setInput("");
     setError(null);
     setMessages((prev) => [...prev, { role: "user", text }]);
     setBusy(true);
@@ -119,7 +119,24 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
       {error && <p className="px-4 pb-1 text-xs text-rose-600">{error}</p>}
 
-      <div className="flex items-end gap-2 border-t border-neutral-100 p-3">
+      <div className="flex flex-wrap gap-1.5 border-t border-neutral-100 px-3 pt-2">
+        <button
+          onClick={() => send("Kijk naar de geüploade data en stel een modelconfiguratie voor.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Stel een configuratie voor
+        </button>
+        <button
+          onClick={() => send("Beoordeel de laatste fit: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.")}
+          disabled={busy}
+          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+        >
+          Beoordeel de laatste fit
+        </button>
+      </div>
+
+      <div className="flex items-end gap-2 p-3">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -134,7 +151,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
           className="flex-1 resize-none rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
         />
         <button
-          onClick={send}
+          onClick={() => send()}
           disabled={busy || !input.trim()}
           className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
         >
