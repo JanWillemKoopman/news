@@ -70,6 +70,15 @@ class JobSpec:
     event_dummies: tuple[EventDummySpec, ...] = ()
 
 
+@dataclass(frozen=True)
+class PrepareSpec:
+    """The recipe for a data-prep run: merge these sources (with this mapping) and check
+    them, but do not fit. This is the ``config`` of a ``type='prepare'`` job."""
+
+    sources: list[SourceRef]
+    event_dummies: tuple[EventDummySpec, ...] = ()
+
+
 def _require(d: dict, key: str, ctx: str):
     if key not in d:
         raise ValueError(f"job config: missing {key!r} in {ctx}")
@@ -123,12 +132,10 @@ def _parse_channel(c: dict) -> ChannelConfig:
     )
 
 
-def parse_job_config(config: dict) -> JobSpec:
-    """Validate and parse a job ``config`` dict into a :class:`JobSpec`."""
+def _parse_sources(config: dict) -> list[SourceRef]:
     raw_sources = _require(config, "sources", "config")
     if not raw_sources:
-        raise ValueError("job config: at least one source is required")
-
+        raise ValueError("config: at least one source is required")
     sources: list[SourceRef] = []
     for s in raw_sources:
         cols = tuple(
@@ -147,7 +154,17 @@ def parse_job_config(config: dict) -> JobSpec:
             essential=s.get("essential", True),
         )
         sources.append(SourceRef(spec=spec, storage_path=_require(s, "storage_path", "source")))
+    return sources
 
+
+def parse_prepare_config(config: dict) -> PrepareSpec:
+    """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies, no model)."""
+    return PrepareSpec(sources=_parse_sources(config), event_dummies=_parse_event_dummies(config))
+
+
+def parse_job_config(config: dict) -> JobSpec:
+    """Validate and parse a job ``config`` dict into a :class:`JobSpec`."""
+    sources = _parse_sources(config)
     event_dummies = _parse_event_dummies(config)
 
     m = _require(config, "model", "config")

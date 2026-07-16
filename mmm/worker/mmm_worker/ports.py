@@ -35,3 +35,25 @@ class Storage(Protocol):
     def download(self, path: str) -> bytes: ...
 
     def upload(self, path: str, data: bytes, content_type: str) -> None: ...
+
+
+class DatasetStore(Protocol):
+    """Persistence for the data-prep artifact (the mmm.datasets row)."""
+
+    def get_dataset(self, dataset_id: str) -> dict:
+        """Return the dataset row (must include 'id', 'project_id')."""
+
+    def mark_dataset_prepared(
+        self,
+        dataset_id: str,
+        *,
+        master_path: str,
+        window_start: str,
+        window_end: str,
+        n_weeks: int,
+        column_roles: dict,
+        quality: dict,
+        preview: dict,
+    ) -> None: ...
+
+    def mark_dataset_failed(self, dataset_id: str, *, quality: dict, error: str) -> None: ...

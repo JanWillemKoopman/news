@@ -54,6 +54,22 @@ class FakeStorage:
         self.uploads[path] = data
 
 
+class FakeDatasetStore:
+    def __init__(self, dataset: dict | None = None):
+        self.dataset = dataset or {"id": "ds-1", "project_id": "proj-1"}
+        self.prepared: dict | None = None
+        self.failed: dict | None = None
+
+    def get_dataset(self, dataset_id: str) -> dict:
+        return self.dataset
+
+    def mark_dataset_prepared(self, dataset_id, **fields) -> None:
+        self.prepared = {"id": dataset_id, **fields}
+
+    def mark_dataset_failed(self, dataset_id, *, quality, error) -> None:
+        self.failed = {"id": dataset_id, "quality": quality, "error": error}
+
+
 @dataclass
 class StubSummary:
     payload: dict = field(default_factory=lambda: {"channels": [], "kpi": "revenue"})

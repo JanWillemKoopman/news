@@ -69,6 +69,41 @@ class SupabaseJobStore(JobStore):
         return row.data[0]["id"]
 
 
+class SupabaseDatasetStore:
+    def __init__(self, client, schema: str = _SCHEMA):
+        self._client = client
+        self._schema = schema
+
+    def _table(self):
+        return self._client.schema(self._schema).table("datasets")
+
+    def get_dataset(self, dataset_id: str) -> dict:
+        return self._table().select("*").eq("id", dataset_id).single().execute().data
+
+    def mark_dataset_prepared(
+        self, dataset_id, *, master_path, window_start, window_end, n_weeks, column_roles, quality, preview
+    ) -> None:
+        self._table().update(
+            {
+                "status": "prepared",
+                "master_path": master_path,
+                "window_start": window_start,
+                "window_end": window_end,
+                "n_weeks": n_weeks,
+                "column_roles": column_roles,
+                "quality": quality,
+                "preview": preview,
+                "error": None,
+                "prepared_at": "now()",
+            }
+        ).eq("id", dataset_id).execute()
+
+    def mark_dataset_failed(self, dataset_id, *, quality, error) -> None:
+        self._table().update(
+            {"status": "failed", "quality": quality, "error": error, "prepared_at": "now()"}
+        ).eq("id", dataset_id).execute()
+
+
 class SupabaseStorage(Storage):
     def __init__(self, client, bucket: str):
         self._bucket = client.storage.from_(bucket)

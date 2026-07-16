@@ -59,8 +59,10 @@ RUN_TIMEOUT_SECONDS = 15 * 60
 
 
 def _run(job_id: str) -> dict:
+    from mmm_worker.prepare import run_prepare
     from mmm_worker.runner import run_job
     from mmm_worker.supabase_backends import (
+        SupabaseDatasetStore,
         SupabaseJobStore,
         SupabaseStorage,
         make_client,
@@ -69,7 +71,8 @@ def _run(job_id: str) -> dict:
     client = make_client()
     jobstore = SupabaseJobStore(client)
     storage = SupabaseStorage(client, os.environ.get("MMM_RAW_BUCKET", "mmm-raw-data"))
-    # Uploads (the .nc trace) go to the artifacts bucket; downloads (raw data) to raw.
+    # Uploads (the .nc trace, the merged master) go to the artifacts bucket; downloads
+    # (raw data) come from raw.
     artifacts = SupabaseStorage(client, os.environ.get("MMM_ARTIFACTS_BUCKET", "mmm-artifacts"))
 
     # Compose a storage that downloads from raw and uploads to artifacts.
@@ -80,6 +83,11 @@ def _run(job_id: str) -> dict:
         def upload(self, path, data, content_type):
             return artifacts.upload(path, data, content_type)
 
+    # One queue, two job types: a fast 'prepare' (merge + quality-check the raw uploads
+    # into one master table) and the heavy 'fit'. Dispatch on the job's type.
+    job = jobstore.get_job(job_id)
+    if job.get("type") == "prepare":
+        return run_prepare(jobstore, SupabaseDatasetStore(client), _Split(), job_id)
     return run_job(jobstore, _Split(), job_id)
 
 
