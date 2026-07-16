@@ -41,19 +41,27 @@ uv run pytest                                         # 9 tests, geen cloud nodi
 - `supabase_backends.py` — concrete Supabase-adapters (service_role, omzeilt RLS).
 - `modal_app.py` — de Modal-app (`run_fit`, `enqueue`, `poll_queue`).
 
-## Deployen (jij, lokaal, met je eigen Modal-token)
+## Deployen
 
-Secrets komen uit een Modal Secret `mmm-supabase` — **nooit in git of chat**:
+Zie **[`DEPLOY.md`](./DEPLOY.md)** voor de stap-voor-stap-instructies. Twee manieren:
+
+- **Zonder laptop, via GitHub** (aanbevolen): het tabblad *Actions* → workflow
+  *"Deploy MMM worker (Modal)"* → *Run workflow*. Vereist eenmalig twee GitHub-secrets
+  (`MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`) uit modal.com > Settings > API Tokens.
+- **Vanaf je laptop**: `python -m modal deploy mmm_worker/modal_app.py`.
+
+Secrets komen uit een Modal Secret `mmm-supabase` (al aangemaakt, hoeft niet opnieuw) —
+**nooit in git of chat**:
 
 ```
-SUPABASE_URL=https://pzpoptfljgrskebnuggt.supabase.co
+SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...        # geheim (Supabase > Project Settings > API)
 MMM_RAW_BUCKET=mmm-raw-data
 MMM_ARTIFACTS_BUCKET=mmm-artifacts
 ```
 
 ```bash
+# alleen nodig als de secret ooit opnieuw gezet moet worden:
 modal secret create mmm-supabase SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
     MMM_RAW_BUCKET=mmm-raw-data MMM_ARTIFACTS_BUCKET=mmm-artifacts
-modal deploy mmm_worker/modal_app.py
 ```
