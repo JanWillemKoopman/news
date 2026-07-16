@@ -129,9 +129,15 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
                   name: { type: "string" },
                   role: { type: "string", enum: ["kpi", "spend", "control"] satisfies ColumnRole[] },
                   output_name: { type: ["string", "null"] },
+                  // Nullable enum: strict-mode schema validation rejects an `enum` combined with
+                  // a union `type: ["string","null"]` ("Enum value 'zero' does not match declared
+                  // type"), so express the nullability with anyOf instead — a string from the
+                  // fixed set, or null.
                   fill: {
-                    type: ["string", "null"],
-                    enum: ["zero", "ffill", "bfill", "interpolate", "mean", "median", null] satisfies (FillStrategy | null)[],
+                    anyOf: [
+                      { type: "string", enum: ["zero", "ffill", "bfill", "interpolate", "mean", "median"] satisfies FillStrategy[] },
+                      { type: "null" },
+                    ],
                     description: "Alleen voor 'control'-kolommen: hoe ontbrekende weken te vullen. null = niet vullen (gat blijft zichtbaar).",
                   },
                 },
