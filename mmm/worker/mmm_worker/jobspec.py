@@ -85,6 +85,17 @@ def _require(d: dict, key: str, ctx: str):
     return d[key]
 
 
+# The architect's tool schema is strict: optional numeric fields are declared nullable and
+# always present, so the model emits an explicit ``null`` to mean "use the default" rather
+# than omitting the key. Treat ``None`` exactly like an absent key here.
+def _opt_int(value, default: int) -> int:
+    return default if value is None else int(value)
+
+
+def _opt_float(value, default: float) -> float:
+    return default if value is None else float(value)
+
+
 def _parse_event_dummies(config: dict) -> tuple[EventDummySpec, ...]:
     specs = []
     for d in config.get("event_dummies", ()):
@@ -101,7 +112,8 @@ def _channel_priors(d: dict | None) -> ChannelPriors:
     unknown = set(d) - _CHANNEL_PRIOR_FIELDS
     if unknown:
         raise ValueError(f"job config: unknown channel prior field(s) {sorted(unknown)}")
-    return ChannelPriors(**{k: float(v) for k, v in d.items()})
+    # null == "keep the default" (the strict schema always sends every prior key).
+    return ChannelPriors(**{k: float(v) for k, v in d.items() if v is not None})
 
 
 def _baseline_priors(d: dict | None) -> BaselinePriors:
@@ -110,7 +122,7 @@ def _baseline_priors(d: dict | None) -> BaselinePriors:
     unknown = set(d) - _BASELINE_PRIOR_FIELDS
     if unknown:
         raise ValueError(f"job config: unknown model prior field(s) {sorted(unknown)}")
-    return BaselinePriors(**{k: float(v) for k, v in d.items()})
+    return BaselinePriors(**{k: float(v) for k, v in d.items() if v is not None})
 
 
 def _parse_calibration(d: dict | None) -> RoasCalibration | None:
@@ -122,8 +134,8 @@ def _parse_calibration(d: dict | None) -> RoasCalibration | None:
 def _parse_channel(c: dict) -> ChannelConfig:
     return ChannelConfig(
         name=_require(c, "name", "channel"),
-        channel_type=ChannelType(c.get("channel_type", "generic")),
-        l_max=int(c.get("l_max", 12)),
+        channel_type=ChannelType(c.get("channel_type") or "generic"),
+        l_max=_opt_int(c.get("l_max"), 12),
         expected_half_life=c.get("expected_half_life"),
         adstock=AdstockType(c.get("adstock", "geometric")),
         saturation=SaturationType(c.get("saturation", "hill")),
@@ -182,12 +194,12 @@ def parse_job_config(config: dict) -> JobSpec:
         channels=channels,
         control_columns=tuple(control_columns),
         add_trend=bool(m.get("add_trend", True)),
-        trend_type=TrendType(m.get("trend_type", "linear")),
-        n_changepoints=int(m.get("n_changepoints", 6)),
+        trend_type=TrendType(m.get("trend_type") or "linear"),
+        n_changepoints=_opt_int(m.get("n_changepoints"), 6),
         seasonality_periods=m.get("seasonality_periods", 52.0),
-        n_fourier_modes=int(m.get("n_fourier_modes", 2)),
-        likelihood=LikelihoodType(m.get("likelihood", "normal")),
-        student_t_nu=float(m.get("student_t_nu", 4.0)),
+        n_fourier_modes=_opt_int(m.get("n_fourier_modes"), 2),
+        likelihood=LikelihoodType(m.get("likelihood") or "normal"),
+        student_t_nu=_opt_float(m.get("student_t_nu"), 4.0),
         priors=_baseline_priors(m.get("priors")),
     )
 

@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type {
   AdstockType,
+  BaselinePriors,
+  ChannelPriors,
   ChannelType,
   ColumnRole,
   FillStrategy,
@@ -63,6 +65,15 @@ Stap 2 — Modelconfiguratie (nadat de dataset is goedgekeurd):
 - Is er een goedgekeurde dataset, gebruik dan bij voorkeur die ene samengevoegde master-tabel als bron in plaats van de losse ruwe bestanden opnieuw te mappen.
 - Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt.
 
+Stap 2 — parameter-tuning en afgeleide features (fijnafstemming, optioneel):
+De config-tool heeft naast bovenstaande basiskeuzes ook fijnafstem-velden. Grondregel: laat elk fijnafstem-veld op null tenzij je een concrete, uitlegbare reden hebt — null betekent "gebruik de geteste standaard". Een eerste voorstel houdt priors en kalibratie vrijwel altijd op null; fijnafstemming komt pas als de data of een fit-resultaat erom vraagt. Leg elke afwijking uit in "reasoning".
+- Seizoen als afgeleide feature: "seasonality_periods" (52 = jaarlijks, 26 = halfjaarlijks, null = uit) en "n_fourier_modes" (hoe fijn het patroon mag zijn; standaard 2). Zet seizoen aan als de KPI een duidelijk terugkerend patroon heeft; hou het aantal modes laag bij weinig weken data om overfitting te voorkomen.
+- Trend-flexibiliteit: bij trend_type="piecewise" bepaalt "n_changepoints" hoeveel knikken de basislijn mag maken (standaard 6). Meer knikken = flexibeler maar gevoeliger voor ruis/divergenties.
+- Na-ijl per kanaal: "l_max" (maximale carry-over in weken, standaard 12) en "expected_half_life" (verwachte halfwaardetijd als je concrete kennis hebt). Verhoog l_max voor merk/offline-kanalen met lange nawerking; laat expected_half_life meestal null en laat het kanaaltype de prior bepalen.
+- Robuustheid: "student_t_nu" (lager = zwaardere staarten, moet > 2) alleen instellen bij likelihood="student_t".
+- Priors ("priors" op model- én kanaalniveau): schalen die je alleen aanraakt met echte kennis — verklein een sigma om een component dicht bij nul te houden, vergroot 'm om de data meer te laten bewegen. Bij twijfel: null laten.
+- Kalibratie ("calibration" per kanaal): alleen invullen als de bouwer een echt lift-/geo-experiment heeft — vul de gemeten "roas" en de onzekerheid "sd" in. Dit trekt de schatting zacht naar het experiment. Zonder experiment: null.
+
 Algemeen:
 - Roep pas een tool aan zodra je zeker genoeg bent. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag.
 - Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.
@@ -73,7 +84,7 @@ Zodra er een fit is gedraaid, krijg je in de context een sectie "Laatste fit / r
 Diagnose-vuistregels (oorzaak → voorstel):
 - Kwaliteitspoort "fail/warn" door slechte convergentie (max R-hat > 1.1, veel divergenties): het model is te complex voor deze data. Vereenvoudig — minder Fourier-modes (n_fourier_modes omlaag), zet trend uit of hou 'm linear i.p.v. piecewise, of laat een zwak kanaal weg. Meer 'tune'/hogere target_accept kan ook helpen; adviseer dat in tekst (compute-instelling, niet in de tool).
 - Fit MISLUKT vóór het samplen (data-kwaliteitsfout): lees de foutmelding letterlijk. "Geen overlappende periode" → controleer welke bron de periode inkort; "ontbrekende kolom" of "control bevat NaN" → corrigeer de kolomrol, laat de control weg of geef 'm een fill-strategie. Stel de gecorrigeerde config voor.
-- Een kanaal krijgt een onwaarschijnlijk hoog aandeel of ROAS: mogelijk confounding of een ontbrekende verklarende variabele. Stel voor een control toe te voegen, of — als de bouwer een lift/geo-experiment heeft — adviseer experiment-kalibratie (RoasCalibration) in tekst.
+- Een kanaal krijgt een onwaarschijnlijk hoog aandeel of ROAS: mogelijk confounding of een ontbrekende verklarende variabele. Stel voor een control toe te voegen, of — als de bouwer een lift/geo-experiment heeft — voeg een "calibration" (roas + sd) toe aan dat kanaal in de config.
 - Lage voorspellende dekking of losse uitschieterweken die het model meesleuren: overweeg "student_t", of een event-dummy voor die specifieke week.
 - Slechte generalisatie als er cross-validatie is gedraaid (out-of-sample veel slechter dan in-sample): vereenvoudig het model.
 - Herhaal nooit klakkeloos dezelfde config die net faalde of "warn" gaf — verander gericht wat de diagnose aanwijst, en zeg wat je veranderde en waarom.`;
@@ -237,8 +248,69 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
                   enum: ["hill", "logistic"] satisfies SaturationType[],
                   description: "'hill' (standaard) of 'logistic' (robuuster bij weinig/ruisige data).",
                 },
+                l_max: {
+                  type: ["integer", "null"],
+                  description:
+                    "Maximale na-ijl-duur (weken) van dit kanaal. null = standaard (12). Verhoog voor merk/offline-kanalen met lange carry-over, verlaag voor puur intent.",
+                },
+                expected_half_life: {
+                  type: ["number", "null"],
+                  description:
+                    "Verwachte halfwaardetijd (weken) van het na-ijl-effect als je daar concrete kennis over hebt; null = laat het kanaaltype de prior bepalen.",
+                },
+                priors: {
+                  anyOf: [
+                    {
+                      type: "object",
+                      description:
+                        "Fijnafstemming van de kanaal-priors. Zet alleen een veld als je een reden hebt; laat de rest null (= mmm-core-standaard).",
+                      properties: {
+                        beta_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op het kanaaleffect; kleiner = sterkere 'dit kanaal doet weinig'-prior." },
+                        adstock_concentration: { type: ["number", "null"], description: "Concentratie van de retentie-prior; hoger pint de halfwaardetijd dichter bij de verwachting." },
+                        delayed_peak_weeks: { type: ["number", "null"], description: "Prior-centrum voor de piek-lag (delayed adstock)." },
+                        delayed_peak_sigma: { type: ["number", "null"], description: "Prior-schaal voor de piek-lag." },
+                        hill_slope_a: { type: ["number", "null"], description: "Gamma(a,b)-prior op de Hill-helling — a." },
+                        hill_slope_b: { type: ["number", "null"], description: "Gamma(a,b)-prior op de Hill-helling — b." },
+                        halfsat_a: { type: ["number", "null"], description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — a." },
+                        halfsat_b: { type: ["number", "null"], description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — b." },
+                        logistic_lam_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op de logistische steilheid." },
+                      },
+                      required: [
+                        "beta_sigma",
+                        "adstock_concentration",
+                        "delayed_peak_weeks",
+                        "delayed_peak_sigma",
+                        "hill_slope_a",
+                        "hill_slope_b",
+                        "halfsat_a",
+                        "halfsat_b",
+                        "logistic_lam_sigma",
+                      ] satisfies (keyof ChannelPriors)[],
+                      additionalProperties: false,
+                    },
+                    { type: "null" },
+                  ],
+                  description: "Kanaal-prior-overrides, of null om alle standaarden te houden.",
+                },
+                calibration: {
+                  anyOf: [
+                    {
+                      type: "object",
+                      description:
+                        "Experimenteel gemeten ROAS (uit een lift-/geo-test) om dit kanaal aan te kalibreren. Alleen invullen als de bouwer een echt experiment heeft.",
+                      properties: {
+                        roas: { type: "number", description: "Gemeten incrementele ROAS (KPI per eenheid spend), ≥ 0." },
+                        sd: { type: "number", description: "Onzekerheid (standaarddeviatie) op die meting, > 0. Kleiner = vertrouw het experiment meer." },
+                      },
+                      required: ["roas", "sd"],
+                      additionalProperties: false,
+                    },
+                    { type: "null" },
+                  ],
+                  description: "ROAS-kalibratie uit een experiment, of null als er geen experiment is.",
+                },
               },
-              required: ["name", "channel_type", "adstock", "saturation"],
+              required: ["name", "channel_type", "adstock", "saturation", "l_max", "expected_half_life", "priors", "calibration"],
               additionalProperties: false,
             },
           },
@@ -249,16 +321,74 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
             enum: ["linear", "piecewise"] satisfies TrendType[],
             description: "'linear' (standaard) of 'piecewise' bij een duidelijke structurele knik in de basislijn.",
           },
-          seasonality_periods: { type: ["number", "null"] },
-          n_fourier_modes: { type: "integer" },
+          n_changepoints: {
+            type: ["integer", "null"],
+            description:
+              "Aantal knikpunten voor een 'piecewise' trend (genegeerd bij 'linear'). null = standaard (6). Meer = flexibeler, maar hogere kans op overfitting/divergenties.",
+          },
+          seasonality_periods: {
+            type: ["number", "null"],
+            description:
+              "Lengte van de seizoenscyclus in weken als afgeleide feature (52 = jaarlijks, 26 = halfjaarlijks). null = seizoen uit. Zet aan als de KPI een terugkerend patroon heeft.",
+          },
+          n_fourier_modes: {
+            type: ["integer", "null"],
+            description:
+              "Aantal Fourier-paren voor de seizoensterm — hoe fijn het seizoenspatroon mag zijn. null = standaard (2). Meer modes = grilliger seizoen (voorzichtig bij weinig data).",
+          },
           likelihood: {
             type: "string",
             enum: ["normal", "student_t", "poisson", "negative_binomial"] satisfies LikelihoodType[],
             description:
               "'normal' (standaard, continue KPI), 'student_t' (uitschieters), 'poisson'/'negative_binomial' (lage-aantallen tellingen zoals leads).",
           },
+          student_t_nu: {
+            type: ["number", "null"],
+            description:
+              "Vrijheidsgraden voor de student_t-likelihood (lager = zwaardere staarten / robuuster tegen uitschieters, moet > 2). null = standaard (4). Alleen relevant bij likelihood='student_t'.",
+          },
+          priors: {
+            anyOf: [
+              {
+                type: "object",
+                description:
+                  "Fijnafstemming van de basislijn-priors (intercept, trend, seizoen, controls, ruis). Zet alleen een veld met een reden; laat de rest null (= standaard).",
+                properties: {
+                  intercept_sigma: { type: ["number", "null"], description: "Normal-schaal op het intercept." },
+                  trend_sigma: { type: ["number", "null"], description: "Normal-schaal op de trendhelling." },
+                  season_sigma: { type: ["number", "null"], description: "Normal-schaal op elke Fourier-seizoenscoëfficiënt." },
+                  control_sigma: { type: ["number", "null"], description: "Normal-schaal op elke control-coëfficiënt." },
+                  noise_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op de observatieruis." },
+                  changepoint_scale: { type: ["number", "null"], description: "Laplace-schaal per knikpunt bij piecewise trend; kleiner = stuggere trend." },
+                },
+                required: [
+                  "intercept_sigma",
+                  "trend_sigma",
+                  "season_sigma",
+                  "control_sigma",
+                  "noise_sigma",
+                  "changepoint_scale",
+                ] satisfies (keyof BaselinePriors)[],
+                additionalProperties: false,
+              },
+              { type: "null" },
+            ],
+            description: "Basislijn-prior-overrides, of null om alle standaarden te houden.",
+          },
         },
-        required: ["kpi", "channels", "control_columns", "add_trend", "trend_type", "seasonality_periods", "n_fourier_modes", "likelihood"],
+        required: [
+          "kpi",
+          "channels",
+          "control_columns",
+          "add_trend",
+          "trend_type",
+          "n_changepoints",
+          "seasonality_periods",
+          "n_fourier_modes",
+          "likelihood",
+          "student_t_nu",
+          "priors",
+        ],
         additionalProperties: false,
       },
       event_dummies: {

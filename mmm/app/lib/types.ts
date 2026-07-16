@@ -165,6 +165,8 @@ export interface BaselinePriors {
   season_sigma?: number;
   control_sigma?: number;
   noise_sigma?: number;
+  // Laplace scale on each piecewise-trend changepoint step (smaller = stiffer trend).
+  changepoint_scale?: number;
 }
 
 // An experimentally-measured ROAS (from a lift/geo test) to calibrate a channel against.
