@@ -29,6 +29,7 @@ import pandas as pd
 
 from mmm_core.ingestion.dates import detect_date_column, to_week_start
 from mmm_core.ingestion.events import EventDummySpec, build_event_dummy
+from mmm_core.ingestion.feature_engineering import FeatureSpec, build_feature
 from mmm_core.ingestion.quality import QualityReport, Severity
 from mmm_core.ingestion.spec import Role, SourceSpec, aggregation_for
 
@@ -235,12 +236,54 @@ def _apply_event_dummies(
     return roles
 
 
+def _apply_features(
+    data: pd.DataFrame,
+    features: list[FeatureSpec],
+    report: QualityReport,
+) -> dict[str, Role]:
+    """Compute each derived feature against the master and attach it as a control column.
+
+    Features are applied *after* event dummies (so a feature may reference a dummy) and in
+    order (so a feature may build on an earlier one). A feature that references a missing
+    column, collides with an existing name, or cannot be computed is reported as an error
+    and skipped — never silently dropped.
+    """
+    roles: dict[str, Role] = {}
+    for spec in features:
+        if spec.name in data.columns:
+            report.add(
+                "feature_name_collision", Severity.ERROR,
+                f"derived feature {spec.name!r} collides with an existing column name",
+                column=spec.name,
+            )
+            continue
+        try:
+            series = build_feature(spec, data)
+        except Exception as exc:
+            report.add(
+                "feature_error", Severity.ERROR,
+                f"derived feature {spec.name!r} could not be computed: {exc}",
+                column=spec.name,
+            )
+            continue
+        data[spec.name] = series.to_numpy()
+        roles[spec.name] = Role.CONTROL
+        report.add(
+            "feature_added", Severity.INFO,
+            f"derived feature {spec.name!r} added as a control column (op={spec.op}, "
+            f"inputs={list(spec.inputs)})",
+            column=spec.name,
+        )
+    return roles
+
+
 def build_master_dataset(
     sources: list[tuple[SourceSpec, pd.DataFrame]],
     *,
     correlation_threshold: float = _DEFAULT_CORR_THRESHOLD,
     impute_spend_zero: bool = True,
     event_dummies: list[EventDummySpec] | None = None,
+    features: list[FeatureSpec] | None = None,
 ) -> BuildResult:
     """Align several uploaded sources into one gap-free ISO-week master dataset.
 
@@ -254,6 +297,9 @@ def build_master_dataset(
         event_dummies: Optional 0/1 control columns for named ISO weeks (anomalies,
             one-off promotions, ...), added after the window is trimmed so the
             builder never has to hand-edit a source file to flag one.
+        features: Optional derived control columns computed from the aligned master
+            (lags, rolling means, ratios/shares, interactions, transforms, recurring
+            calendar dummies), applied after event dummies and in order.
 
     Returns:
         A :class:`BuildResult`. If there is no overlapping window across the essential
@@ -364,6 +410,11 @@ def build_master_dataset(
 
     if event_dummies:
         column_roles.update(_apply_event_dummies(data, list(event_dummies), report))
+
+    # Derived features come after event dummies so a feature may reference a dummy, and
+    # after imputation so their inputs are already gap-free.
+    if features:
+        column_roles.update(_apply_features(data, list(features), report))
 
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)

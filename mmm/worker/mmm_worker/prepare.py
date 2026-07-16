@@ -105,7 +105,9 @@ def run_prepare(
             raw = storage.download(ref.storage_path)
             frames.append((ref.spec, read_table(ref.storage_path, raw)))
 
-        build = build_master_dataset(frames, event_dummies=list(spec.event_dummies))
+        build = build_master_dataset(
+            frames, event_dummies=list(spec.event_dummies), features=list(spec.features)
+        )
         quality = _quality_to_json(build.report)
 
         if build.report.has_errors or build.window is None:

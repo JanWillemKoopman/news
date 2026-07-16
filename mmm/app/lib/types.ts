@@ -61,6 +61,7 @@ export interface JobConfig {
   sources: SourceConfig[];
   model: ModelConfig;
   event_dummies?: EventDummyConfig[];
+  features?: FeatureSpec[];
   sample?: { draws?: number; tune?: number; chains?: number };
 }
 
@@ -86,6 +87,31 @@ export interface SourceConfig {
   }[];
 }
 
+// A derived feature: a new control column computed from existing master columns during
+// the merge (mirrors mmm_core.ingestion.feature_engineering.FeatureSpec). Lets the
+// architect propose engineered variables (lags, rolling means, ratios/shares,
+// interactions, transforms, recurring calendar dummies) without hand-editing raw data.
+export type FeatureOp =
+  | "lag"
+  | "rolling_mean"
+  | "rolling_sum"
+  | "diff"
+  | "ratio"
+  | "product"
+  | "sum"
+  | "log1p"
+  | "zscore"
+  | "winsorize"
+  | "recurring_week_dummy";
+
+export interface FeatureSpec {
+  name: string;
+  op: FeatureOp;
+  inputs: string[];
+  // Op-specific params (weeks/window/lower_q/upper_q/iso_weeks); omitted → op defaults.
+  params?: Record<string, number | number[] | null>;
+}
+
 // --- Data preparation (the recipe + result of merging raw uploads into one master
 // table, BEFORE the model config step) ---
 
@@ -97,6 +123,7 @@ export type DatasetStatus = "draft" | "preparing" | "prepared" | "failed" | "app
 export interface PrepareRecipe {
   sources: SourceConfig[];
   event_dummies?: EventDummyConfig[];
+  features?: FeatureSpec[];
 }
 
 export interface DatasetColumnSummary {

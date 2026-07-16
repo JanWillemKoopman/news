@@ -5,6 +5,7 @@ import type {
   ChannelPriors,
   ChannelType,
   ColumnRole,
+  FeatureOp,
   FillStrategy,
   LikelihoodType,
   SaturationType,
@@ -50,6 +51,7 @@ Meerdere ruwe bestanden moeten worden samengevoegd tot één wekelijkse master-t
 - Rol ("role") per kolom: "kpi" voor de doelvariabele, "spend" voor marketinguitgaven/-volume per kanaal (ook niet-monetair, zoals e-mailverzendingen), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die geen eigen kanaal-effect krijgen.
 - Voor een "control"-kolom mag je een "fill"-strategie voorstellen ("zero"/"ffill"/"bfill"/"interpolate"/"mean"/"median") als je verwacht dat er gaten in zitten; laat 'm weg als je dat niet weet — dan blijft een gat gewoon zichtbaar in het kwaliteitsrapport in plaats van dat je iets verzint.
 - Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week? Stel een "event_dummies"-item voor (naam + ISO-jaar/weeknummer).
+- Afgeleide variabelen ("features"): naast de ruwe kolommen kun je nieuwe verklarende kolommen láten berekenen uit bestaande kolommen — ze worden als control toegevoegd aan de master en kun je later in de modelstap als control gebruiken. Beschikbare bewerkingen: "lag" (vertraagd effect, bv. prijs van vorige week), "rolling_mean"/"rolling_sum" (gladstrijken/optellen over een venster), "diff" (weekverschil), "ratio" (aandeel, bv. eigen spend / totale spend — veilig bij deling door 0), "product" (interactie tussen twee kolommen), "sum" (totaal van meerdere kolommen, bv. totale spend), "log1p" (heavy tail temperen), "zscore" (standaardiseren), "winsorize" (uitschieters knippen), "recurring_week_dummy" (1 op ISO-weken die elk jaar terugkomen, bv. Black Friday week 48). Grondregel: stel alleen een feature voor met een concrete, uitlegbare reden (in "reasoning"); verzin geen variabelen zonder onderbouwing. Gebruik unieke snake_case-namen; "inputs" moeten bestaande kolom-outputnamen zijn; features mogen op elkaar voortbouwen (volgorde telt). Interacties/ratio's zijn vooral zinvol als je een echt vermoeden hebt (bv. dat prijs het effect van een kanaal moduleert), niet als standaard-toevoeging.
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie per bestand hebt gekregen — verzin nooit een eigen pad.
 - Zodra het recept is gecontroleerd (de bouwer heeft op "Controleer & voeg samen" geklikt), krijg je een sectie "Data-voorbereiding" met het kwaliteitsrapport en een preview van het resultaat. Bespreek dat in gewone taal: welke periode, welke bijzonderheden (bijna-identieke kanalen, gaten, anomalieën), en stel alleen een NIEUW recept voor als er echt iets moet veranderen — herhaal nooit klakkeloos een recept dat al is goedgekeurd of dat net gefaald is zonder de oorzaak aan te pakken.
 - Mislukte samenvoeging (bijv. "geen overlappende periode"): lees de foutmelding letterlijk, achterhaal welke bron de periode inperkt of welke kolom fout staat, en stel een gecorrigeerd recept voor.
@@ -115,7 +117,7 @@ function buildDataContextBlock(ctx: ProjectDataContext): string {
 const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
   name: "propose_prepare_recipe",
   description:
-    "Stel een concreet samenvoeg-recept voor: welke bestanden, met welke datumkolom, en welke rol per kolom, om tot één wekelijkse master-tabel te komen. Roep dit pas aan als je zeker genoeg bent; nog niet klaar om te fitten, alleen om samen te voegen en te controleren.",
+    "Stel een concreet samenvoeg-recept voor: welke bestanden, met welke datumkolom, welke rol per kolom, plus optionele afgeleide variabelen (features), om tot één wekelijkse master-tabel te komen. Roep dit pas aan als je zeker genoeg bent; nog niet klaar om te fitten, alleen om samen te voegen en te controleren.",
   input_schema: {
     type: "object",
     properties: {
@@ -179,8 +181,61 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
           additionalProperties: false,
         },
       },
+      features: {
+        type: "array",
+        description:
+          "Afgeleide variabelen die tijdens de samenvoeging worden berekend uit bestaande master-kolommen en als control-kolom worden toegevoegd (lags, voortschrijdend gemiddelde, ratio's/aandelen, interacties, transformaties, terugkerende kalender-dummy's). Leeg laten als er geen zijn.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Naam van de nieuwe kolom, snake_case, uniek. Bv. 'google_lag1' of 'spend_share'." },
+            op: {
+              type: "string",
+              enum: [
+                "lag",
+                "rolling_mean",
+                "rolling_sum",
+                "diff",
+                "ratio",
+                "product",
+                "sum",
+                "log1p",
+                "zscore",
+                "winsorize",
+                "recurring_week_dummy",
+              ] satisfies FeatureOp[],
+              description:
+                "Bewerking: lag (verschuiven), rolling_mean/rolling_sum (venster), diff (weekverschil), ratio (a/b, veilig bij 0), product/sum (interactie of totaal van 2+ kolommen), log1p, zscore, winsorize (uitschieters knippen), recurring_week_dummy (1 op ISO-weken, elk jaar).",
+            },
+            inputs: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Bestaande master-kolomnamen die deze feature gebruikt. Precies 1 voor unaire ops (lag/rolling/diff/log1p/zscore/winsorize), precies 2 voor ratio (teller, noemer), 2+ voor product/sum, leeg voor recurring_week_dummy.",
+            },
+            params: {
+              type: "object",
+              description: "Bewerkings-parameters; laat de niet-gebruikte op null.",
+              properties: {
+                weeks: { type: ["integer", "null"], description: "lag: aantal weken verschuiven (≥1); diff: aantal weken verschil (standaard 1)." },
+                window: { type: ["integer", "null"], description: "rolling_mean/rolling_sum: venstergrootte in weken (≥1)." },
+                lower_q: { type: ["number", "null"], description: "winsorize: onderste kwantiel om op te knippen (bv. 0.01)." },
+                upper_q: { type: ["number", "null"], description: "winsorize: bovenste kwantiel (bv. 0.99)." },
+                iso_weeks: {
+                  anyOf: [{ type: "array", items: { type: "integer" } }, { type: "null" }],
+                  description: "recurring_week_dummy: ISO-weeknummers die elk jaar op 1 staan (bv. [48] voor Black Friday).",
+                },
+              },
+              required: ["weeks", "window", "lower_q", "upper_q", "iso_weeks"],
+              additionalProperties: false,
+            },
+          },
+          required: ["name", "op", "inputs", "params"],
+          additionalProperties: false,
+        },
+      },
     },
-    required: ["reasoning", "sources", "event_dummies"],
+    required: ["reasoning", "sources", "event_dummies", "features"],
     additionalProperties: false,
   },
   strict: true,

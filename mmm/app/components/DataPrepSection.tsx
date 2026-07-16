@@ -12,6 +12,7 @@ import type {
   Dataset,
   DatasetStatus,
   EventDummyConfig,
+  FeatureSpec,
   FillStrategy,
   PrepareRecipe,
   SourceFile,
@@ -64,7 +65,20 @@ function sniffHeaders(text: string): string[] {
     .filter(Boolean);
 }
 
-function draftFromRecipe(recipe: PrepareRecipe, files: SourceFile[]): { sources: DraftSource[]; dummies: DraftDummy[] } {
+// A compact one-line label for a derived feature, e.g. "google_lag1 = lag(google) · weeks 1".
+function featureLabel(f: FeatureSpec): string {
+  const args = f.inputs.join(", ");
+  const params = Object.entries(f.params ?? {})
+    .filter(([, v]) => v !== null && v !== undefined)
+    .map(([k, v]) => `${k} ${Array.isArray(v) ? v.join("/") : v}`)
+    .join(", ");
+  return `${f.name} = ${f.op}(${args})${params ? ` · ${params}` : ""}`;
+}
+
+function draftFromRecipe(
+  recipe: PrepareRecipe,
+  files: SourceFile[],
+): { sources: DraftSource[]; dummies: DraftDummy[]; features: FeatureSpec[] } {
   const byPath = new Map(files.map((f) => [f.storage_path, f]));
   const sources: DraftSource[] = recipe.sources.map((s) => ({
     file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, created_at: "" },
@@ -80,7 +94,7 @@ function draftFromRecipe(recipe: PrepareRecipe, files: SourceFile[]): { sources:
   const dummies: DraftDummy[] = (recipe.event_dummies ?? []).flatMap((d, i) =>
     d.weeks.map(([y, w], j) => ({ key: `${i}-${j}`, name: d.weeks.length > 1 ? `${d.name}_${y}w${w}` : d.name, iso_year: y, iso_week: w })),
   );
-  return { sources, dummies };
+  return { sources, dummies, features: recipe.features ?? [] };
 }
 
 export function DataPrepSection({
@@ -96,6 +110,9 @@ export function DataPrepSection({
   const { pendingRecipe, clearPendingRecipe } = useWizardChat();
   const [drafts, setDrafts] = useState<DraftSource[]>([]);
   const [dummies, setDummies] = useState<DraftDummy[]>([]);
+  // Derived features are authored by the architect (they carry op-specific params); the
+  // builder reviews and can remove them here before merging.
+  const [features, setFeatures] = useState<FeatureSpec[]>([]);
   const [newDummy, setNewDummy] = useState({ name: "", iso_year: new Date().getFullYear(), iso_week: 1 });
   const [dataset, setDataset] = useState<Dataset | null>(initialDataset);
   const [busy, setBusy] = useState(false);
@@ -135,9 +152,13 @@ export function DataPrepSection({
   // overwrites the editor" pattern as ModelConfigForm's proposed config.
   useEffect(() => {
     if (pendingRecipe == null) return;
-    const { sources: draftSources, dummies: draftDummies } = draftFromRecipe(pendingRecipe as PrepareRecipe, sources);
+    const { sources: draftSources, dummies: draftDummies, features: draftFeatures } = draftFromRecipe(
+      pendingRecipe as PrepareRecipe,
+      sources,
+    );
     setDrafts(draftSources);
     setDummies(draftDummies);
+    setFeatures(draftFeatures);
     clearPendingRecipe();
   }, [pendingRecipe, sources, clearPendingRecipe]);
 
@@ -201,7 +222,11 @@ export function DataPrepSection({
     }
 
     const event_dummies: EventDummyConfig[] = dummies.map((d) => ({ name: d.name, weeks: [[d.iso_year, d.iso_week]] }));
-    const recipe: PrepareRecipe = { sources: recipeSources, event_dummies: event_dummies.length ? event_dummies : undefined };
+    const recipe: PrepareRecipe = {
+      sources: recipeSources,
+      event_dummies: event_dummies.length ? event_dummies : undefined,
+      features: features.length ? features : undefined,
+    };
 
     setBusy(true);
     setError(null);
@@ -388,6 +413,32 @@ export function DataPrepSection({
                   Toevoegen
                 </button>
               </div>
+            </div>
+          </details>
+
+          <details className="rounded-lg border border-neutral-200 p-3 text-sm" open={features.length > 0}>
+            <summary className="cursor-pointer select-none font-medium text-neutral-800">
+              Afgeleide variabelen (features){features.length > 0 ? ` — ${features.length}` : ""}
+            </summary>
+            <div className="mt-3 space-y-2">
+              {features.length === 0 ? (
+                <p className="text-xs text-neutral-400">
+                  Nog geen afgeleide variabelen. Vraag de architect in de chat om er een voor te stellen
+                  (bv. een lag, een ratio/aandeel, een interactie of een terugkerende kalender-dummy).
+                </p>
+              ) : (
+                features.map((f) => (
+                  <div key={f.name} className="flex items-center gap-2 text-xs text-neutral-600">
+                    <span className="flex-1 font-mono">{featureLabel(f)}</span>
+                    <button
+                      onClick={() => setFeatures((prev) => prev.filter((x) => x.name !== f.name))}
+                      className="text-rose-600 hover:underline"
+                    >
+                      verwijderen
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </details>
 

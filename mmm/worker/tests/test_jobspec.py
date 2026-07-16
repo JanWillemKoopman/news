@@ -220,6 +220,48 @@ def test_null_seasonality_turns_it_off():
     assert spec.model.seasonality_periods is None
 
 
+# --- derived features -------------------------------------------------------------
+
+def test_features_are_parsed_with_null_params_dropped():
+    cfg = _valid_config()
+    # The strict tool schema always sends every param key, using null for the unused ones.
+    cfg["features"] = [
+        {
+            "name": "google_lag1",
+            "op": "lag",
+            "inputs": ["google_spend"],
+            "params": {"weeks": 1, "window": None, "lower_q": None, "upper_q": None, "iso_weeks": None},
+        }
+    ]
+    spec = parse_job_config(cfg)
+    assert spec.features[0].name == "google_lag1"
+    assert spec.features[0].op == "lag"
+    assert spec.features[0].inputs == ("google_spend",)
+    assert spec.features[0].params == {"weeks": 1}  # nulls dropped
+
+
+def test_prepare_config_parses_features():
+    from mmm_worker.jobspec import parse_prepare_config
+
+    cfg = _valid_config()
+    cfg["dataset_id"] = "ds1"
+    cfg["features"] = [{"name": "tot", "op": "sum", "inputs": ["google_spend", "google_spend"], "params": {}}]
+    spec = parse_prepare_config(cfg)
+    assert spec.features[0].op == "sum"
+
+
+def test_no_features_defaults_to_empty():
+    spec = parse_job_config(_valid_config())
+    assert spec.features == ()
+
+
+def test_unknown_feature_op_raises():
+    cfg = _valid_config()
+    cfg["features"] = [{"name": "x", "op": "not_an_op", "inputs": ["google_spend"], "params": {}}]
+    with pytest.raises(ValueError):
+        parse_job_config(cfg)
+
+
 def test_bad_adstock_type_raises():
     cfg = _valid_config()
     cfg["model"]["channels"][0]["adstock"] = "not-a-shape"

@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 
-from mmm_core import ColumnSpec, EventDummySpec, Role, SourceSpec
+from mmm_core import ColumnSpec, EventDummySpec, FeatureSpec, Role, SourceSpec
 from mmm_core.model import (
     AdstockType,
     BaselinePriors,
@@ -68,6 +68,7 @@ class JobSpec:
     model: ModelConfig
     sample: dict
     event_dummies: tuple[EventDummySpec, ...] = ()
+    features: tuple[FeatureSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,7 @@ class PrepareSpec:
 
     sources: list[SourceRef]
     event_dummies: tuple[EventDummySpec, ...] = ()
+    features: tuple[FeatureSpec, ...] = ()
 
 
 def _require(d: dict, key: str, ctx: str):
@@ -103,6 +105,28 @@ def _parse_event_dummies(config: dict) -> tuple[EventDummySpec, ...]:
             (int(pair[0]), int(pair[1])) for pair in _require(d, "weeks", "event dummy")
         )
         specs.append(EventDummySpec(name=_require(d, "name", "event dummy"), weeks=weeks))
+    return tuple(specs)
+
+
+def _parse_features(config: dict) -> tuple[FeatureSpec, ...]:
+    """Parse declarative derived-feature specs (lag/rolling/ratio/interaction/...).
+
+    The architect's strict tool schema always sends a fixed ``params`` object with a null
+    for every parameter it isn't using; null params are dropped here so mmm-core applies
+    the op's own defaults. Op/arity validation lives in :class:`FeatureSpec`.
+    """
+    specs = []
+    for f in config.get("features", ()) or ():
+        raw_params = f.get("params") or {}
+        params = {k: v for k, v in raw_params.items() if v is not None}
+        specs.append(
+            FeatureSpec(
+                name=_require(f, "name", "feature"),
+                op=_require(f, "op", "feature"),
+                inputs=tuple(f.get("inputs") or ()),
+                params=params,
+            )
+        )
     return tuple(specs)
 
 
@@ -170,8 +194,12 @@ def _parse_sources(config: dict) -> list[SourceRef]:
 
 
 def parse_prepare_config(config: dict) -> PrepareSpec:
-    """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies, no model)."""
-    return PrepareSpec(sources=_parse_sources(config), event_dummies=_parse_event_dummies(config))
+    """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies + features)."""
+    return PrepareSpec(
+        sources=_parse_sources(config),
+        event_dummies=_parse_event_dummies(config),
+        features=_parse_features(config),
+    )
 
 
 def parse_job_config(config: dict) -> JobSpec:
@@ -204,4 +232,10 @@ def parse_job_config(config: dict) -> JobSpec:
     )
 
     sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
-    return JobSpec(sources=sources, model=model, sample=sample, event_dummies=event_dummies)
+    return JobSpec(
+        sources=sources,
+        model=model,
+        sample=sample,
+        event_dummies=event_dummies,
+        features=_parse_features(config),
+    )
