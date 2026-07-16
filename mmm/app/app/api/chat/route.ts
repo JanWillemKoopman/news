@@ -3,7 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildRequest } from "@/lib/anthropic/architect";
-import type { SourceFile } from "@/lib/types";
+import type { ArchitectFitContext } from "@/lib/anthropic/fitContext";
+import type { FitSummary, JobConfig, JobStatus, SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
 const PREVIEW_LINES = 15;
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  const [{ data: sources }, { data: priorRows }] = await Promise.all([
+  const [{ data: sources }, { data: priorRows }, { data: latestRun }, { data: latestJob }] = await Promise.all([
     supabase.schema("mmm").from("source_files").select("*").eq("project_id", projectId).order("created_at"),
     supabase
       .schema("mmm")
@@ -70,7 +71,39 @@ export async function POST(request: Request) {
       .select("role, content")
       .eq("project_id", projectId)
       .order("created_at"),
+    // The latest fit result and the latest job give the architect its "resultaatinzicht":
+    // it can interpret a completed fit or diagnose a failed one.
+    supabase
+      .schema("mmm")
+      .from("model_runs")
+      .select("summary, created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .schema("mmm")
+      .from("jobs")
+      .select("status, error, config, created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  const fit: ArchitectFitContext = {
+    latestRun: latestRun
+      ? { summary: latestRun.summary as FitSummary, created_at: latestRun.created_at as string }
+      : null,
+    latestJob: latestJob
+      ? {
+          status: latestJob.status as JobStatus,
+          error: (latestJob.error as string | null) ?? null,
+          config: latestJob.config as JobConfig,
+          created_at: latestJob.created_at as string,
+        }
+      : null,
+  };
 
   const sourceFiles = (sources ?? []) as SourceFile[];
   const previews = await Promise.all(
@@ -99,7 +132,7 @@ export async function POST(request: Request) {
   const client = new Anthropic({ apiKey });
   let response: Anthropic.Message;
   try {
-    response = await client.messages.create(buildRequest({ sources: previews }, history));
+    response = await client.messages.create(buildRequest({ sources: previews, fit }, history));
   } catch (err) {
     return NextResponse.json({ error: `Claude API-fout: ${(err as Error).message}` }, { status: 502 });
   }

@@ -1,0 +1,119 @@
+import type { FitSummary, JobConfig, JobStatus, Interval } from "@/lib/types";
+
+// Turns a project's latest fit result (or failed/running job) into a compact Dutch text
+// block for the architect, and decides which model should reason about it. Kept pure and
+// free of Next/Supabase so it can be unit-smoke-tested in isolation.
+
+export interface ArchitectFitContext {
+  latestRun: { summary: FitSummary; created_at: string } | null;
+  latestJob: { status: JobStatus; error: string | null; config: JobConfig; created_at: string } | null;
+}
+
+const ARCHITECT_CONFIG_MODEL = "claude-sonnet-5";
+const ARCHITECT_ANALYST_MODEL = "claude-opus-4-8";
+
+// There is something to *reason about* (not just propose from scratch) when a fit has
+// completed or a job has failed — that is when the pricier analyst model earns its keep.
+export function hasFitResults(ctx: ArchitectFitContext): boolean {
+  if (ctx.latestRun) return true;
+  return ctx.latestJob?.status === "failed";
+}
+
+export function pickArchitectModel(ctx: ArchitectFitContext): { model: string; effort: "medium" | "high" } {
+  // Opus for interpreting results / diagnosing failures (deep reasoning); Sonnet for the
+  // bounded "read the columns, propose a config" task. Effort stays medium to keep cost in
+  // check — the task is well-scoped even for the analyst.
+  return hasFitResults(ctx)
+    ? { model: ARCHITECT_ANALYST_MODEL, effort: "medium" }
+    : { model: ARCHITECT_CONFIG_MODEL, effort: "medium" };
+}
+
+function pct(n: number | undefined): string {
+  return n === undefined || Number.isNaN(n) ? "?" : `${(n * 100).toFixed(1)}%`;
+}
+function num(n: number | undefined, digits = 2): string {
+  return n === undefined || Number.isNaN(n) ? "?" : n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
+}
+function iv(x: Interval, render: (n: number) => string): string {
+  return `${render(x.p50)} [${render(x.p3)}–${render(x.p97)}]`;
+}
+
+function formatModelShape(config: JobConfig): string {
+  const m = config.model;
+  const chans = m.channels
+    .map((c) => `${c.name}(${c.channel_type ?? "generic"}/${c.adstock ?? "geometric"}/${c.saturation ?? "hill"})`)
+    .join(", ");
+  const parts = [
+    `kpi=${m.kpi}`,
+    `likelihood=${m.likelihood ?? "normal"}`,
+    `trend=${m.add_trend === false ? "geen" : (m.trend_type ?? "linear")}`,
+    `seizoen=${m.seasonality_periods ?? "uit"}`,
+    m.control_columns && m.control_columns.length ? `controls=[${m.control_columns.join(", ")}]` : "controls=[]",
+  ];
+  return `${parts.join(", ")}; kanalen: ${chans}`;
+}
+
+function formatSummary(summary: FitSummary, createdAt: string): string {
+  const d = summary.diagnostics;
+  const gate = summary.quality_gate;
+  const lines: string[] = [];
+  lines.push(`Laatste fit (gedraaid ${createdAt.slice(0, 10)}) — KPI "${summary.kpi}", ${summary.n_weeks} weken (${summary.window[0]} t/m ${summary.window[1]}).`);
+  if (gate) {
+    lines.push(`Kwaliteitspoort: ${gate.verdict.toUpperCase()}${gate.reasons.length ? " — " + gate.reasons.join("; ") : "."}`);
+  }
+  lines.push(
+    `Diagnostiek: R²=${num(d.r2)}, MAPE=${pct(d.mape)}, dekking(94%)=${pct(d.interval_coverage_94)}, ` +
+      `max R-hat=${num(d.max_r_hat, 3)}, divergenties=${d.n_divergences}, decompositie-ok=${d.decomposition_ok ? "ja" : "nee"}.`,
+  );
+  lines.push(`Baseline (verkoop zonder marketing), mediaan: ${num(summary.baseline_contribution.p50, 0)} ${summary.kpi}.`);
+  lines.push("Per kanaal (mediaan [p3–p97]):");
+  for (const ch of summary.channels) {
+    lines.push(
+      `  • ${ch.name}: aandeel ${iv(ch.contribution_share, pct)}, ROAS ${iv(ch.roas, (n) => num(n))}, ` +
+        `adstock-halfwaardetijd ${iv(ch.adstock_half_life_weeks, (n) => num(n, 1) + "wk")}, ` +
+        `verzadigingspunt ${iv(ch.saturation_point, (n) => num(n, 0))}, totale spend ${num(ch.total_spend, 0)}.`,
+    );
+  }
+  if (summary.optimal_allocation) {
+    const oa = summary.optimal_allocation;
+    const split = Object.entries(oa.per_channel).map(([k, v]) => `${k}=${num(v, 0)}`).join(", ");
+    lines.push(
+      `Budgetadvies bij zelfde weekbudget (${num(oa.total_weekly_budget, 0)}): ${split} → ` +
+        `geschat ${num(oa.predicted_contribution.p50, 0)} ${summary.kpi}/wk.`,
+    );
+  }
+  return lines.join("\n");
+}
+
+export function formatFitContextBlock(ctx: ArchitectFitContext): string {
+  const { latestRun, latestJob } = ctx;
+
+  // A failed job that is newer than the last successful run is the most relevant thing to
+  // reason about (the builder just tried something and it broke).
+  const jobFailedAndNewest =
+    latestJob?.status === "failed" &&
+    (!latestRun || new Date(latestJob.created_at) > new Date(latestRun.created_at));
+
+  if (jobFailedAndNewest && latestJob) {
+    return [
+      `De laatste fit is MISLUKT (${latestJob.created_at.slice(0, 10)}).`,
+      `Foutmelding: ${latestJob.error ?? "(geen melding opgeslagen)"}`,
+      `Configuratie die faalde: ${formatModelShape(latestJob.config)}`,
+      "Diagnosticeer de oorzaak en stel een concrete, aangepaste configuratie voor die dit oplost.",
+    ].join("\n");
+  }
+
+  if (latestRun) {
+    let block = formatSummary(latestRun.summary, latestRun.created_at);
+    if (latestJob && (latestJob.status === "queued" || latestJob.status === "running")) {
+      block += `\n\nLet op: er draait/wacht nu ook een nieuwe fit (status: ${latestJob.status}).`;
+    }
+    return block;
+  }
+
+  if (latestJob && (latestJob.status === "queued" || latestJob.status === "running")) {
+    return `Er draait nu een fit (status: ${latestJob.status}); er is nog geen afgerond resultaat om te bespreken.`;
+  }
+
+  return "Er is nog geen fit gedraaid voor dit project — er zijn nog geen resultaten om te bespreken.";
+}

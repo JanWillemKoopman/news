@@ -86,7 +86,8 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         {loaded && messages.length === 0 && (
           <p className="text-sm text-neutral-400">
             Vraag de architect om de geüploade data te beoordelen en een modelconfiguratie voor
-            te stellen.
+            te stellen. Na een fit kun je hem ook vragen de resultaten uit te leggen, te
+            beoordelen of te verbeteren.
           </p>
         )}
         {messages.map((m, i) => (
@@ -129,7 +130,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             }
           }}
           rows={2}
-          placeholder="Bijv. 'Kijk naar de geüploade data en stel een configuratie voor.'"
+          placeholder="Bijv. 'Stel een configuratie voor.' of, na een fit, 'Leg de resultaten uit / kan dit beter?'"
           className="flex-1 resize-none rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
         />
         <button

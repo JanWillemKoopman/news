@@ -8,18 +8,22 @@ import type {
   SourceFile,
   TrendType,
 } from "@/lib/types";
+import {
+  formatFitContextBlock,
+  pickArchitectModel,
+  type ArchitectFitContext,
+} from "@/lib/anthropic/fitContext";
 
-// The "architect": reviews uploaded data and proposes a job config for the wizard's
-// existing /api/jobs endpoint. It never runs the statistical fit itself — mmm-core on
-// Modal does that (see mmm/worker). This module only decides *what to configure*.
+// The "architect": an MMM expert that (1) reviews uploaded data and proposes a job config
+// for the wizard's existing /api/jobs endpoint, and (2) once a fit has run, reads the
+// results back, interprets them in plain language, and proposes an *improved* config or
+// diagnoses a failure. It never runs the statistical fit itself — mmm-core on Modal does
+// that (see mmm/worker) — and it never runs anything on its own: it proposes, the builder
+// clicks. This module only decides *what to configure* and *how to read the outcome*.
 //
-// Model choice: Sonnet 5, not Opus. This is a bounded, structured task (map known
-// columns to known roles, using a fixed schema) rather than open-ended agentic work —
-// exactly the profile where Sonnet is the right cost/quality tradeoff, per the pricing
-// discussion with the user. `effort: "medium"` (the default) balances reasoning depth
-// against cost; adaptive thinking stays on so the model can weigh ambiguous column
-// names before committing to a role.
-export const ARCHITECT_MODEL = "claude-sonnet-5";
+// Two models, picked by context (see pickArchitectModel): cheap Sonnet 5 for the bounded
+// "map columns to a config" task; Opus for the deeper reasoning of interpreting results
+// and diagnosing failures. Adaptive thinking stays on; effort is medium to bound cost.
 
 // Kept small and stable so it caches well: this text is byte-identical on every
 // request, from every builder, for every project — the ideal prompt-cache candidate.
@@ -37,10 +41,22 @@ Regels:
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
 - Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week (een storing, eenmalige actie, evenement) die geen structureel onderdeel van het patroon is? Stel dan een "event_dummies"-item voor (naam + ISO-jaar/weeknummer) in plaats van de ruwe data te laten liggen — dat geeft het model een controlekolom voor precies die week, zonder dat de bouwer het brondbestand hoeft te bewerken. Doe dit alleen als je de week echt in de data ziet, nooit uit voorzorg.
 - Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag, roep de tool niet aan.
-- Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.`;
+- Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.
+
+Resultaten lezen en verbeteren:
+Zodra er een fit is gedraaid, krijg je in de context een sectie "Laatste fit / resultaten". Dan is je taak niet alleen voorstellen, maar ook uitleggen en verbeteren. Vat in gewone taal samen wat de uitkomst zegt (welke kanalen werken, wat de baseline is, of het model betrouwbaar is), noem eerlijk de onzekerheid, en als er iets mis of te verbeteren is: leg de vermoedelijke oorzaak uit én roep de tool aan met een concrete, aangepaste configuratie die de bouwer met één klik kan overnemen.
+
+Diagnose-vuistregels (oorzaak → voorstel):
+- Kwaliteitspoort "fail/warn" door slechte convergentie (max R-hat > 1.1, veel divergenties): het model is te complex voor deze data. Vereenvoudig — minder Fourier-modes (n_fourier_modes omlaag), zet trend uit of hou 'm linear i.p.v. piecewise, of laat een zwak kanaal weg. Meer 'tune'/hogere target_accept kan ook helpen; adviseer dat in tekst (compute-instelling, niet in de tool).
+- Fit MISLUKT vóór het samplen (data-kwaliteitsfout): lees de foutmelding letterlijk. "Geen overlappende periode" → controleer welke bron de periode inkort; "ontbrekende kolom" of "control bevat NaN" → corrigeer de kolomrol, laat de control weg of geef 'm een fill-strategie. Stel de gecorrigeerde config voor.
+- Een kanaal krijgt een onwaarschijnlijk hoog aandeel of ROAS: mogelijk confounding of een ontbrekende verklarende variabele. Stel voor een control toe te voegen, of — als de bouwer een lift/geo-experiment heeft — adviseer experiment-kalibratie (RoasCalibration) in tekst.
+- Lage voorspellende dekking of losse uitschieterweken die het model meesleuren: overweeg "student_t", of een event-dummy voor die specifieke week.
+- Slechte generalisatie als er cross-validatie is gedraaid (out-of-sample veel slechter dan in-sample): vereenvoudig het model.
+- Herhaal nooit klakkeloos dezelfde config die net faalde of "warn" gaf — verander gericht wat de diagnose aanwijst, en zeg wat je veranderde en waarom.`;
 
 interface ProjectDataContext {
   sources: { file: SourceFile; preview: string | null }[];
+  fit: ArchitectFitContext;
 }
 
 function buildDataContextBlock(ctx: ProjectDataContext): string {
@@ -174,25 +190,26 @@ export function buildRequest(
   history: Anthropic.MessageParam[],
 ): Anthropic.MessageCreateParamsNonStreaming {
   const dataContext = buildDataContextBlock(ctx);
+  const resultsContext = formatFitContextBlock(ctx.fit);
+  const { model, effort } = pickArchitectModel(ctx.fit);
 
+  // Model routing: Sonnet for proposing a config from data; Opus once there is a fit
+  // result (or failure) to reason about. Adaptive thinking + medium effort in both cases.
   return {
-    model: ARCHITECT_MODEL,
+    model,
     max_tokens: 4096,
-    // Adaptive thinking stays on (Sonnet 5 default) so the model can weigh ambiguous
-    // column-role assignments before answering — a real business decision, worth the
-    // small extra cost. `effort: "medium"` keeps this bounded rather than defaulting
-    // to `high`, since this is a structured single-purpose task, not agentic coding.
     thinking: { type: "adaptive" },
-    output_config: { effort: "medium" },
+    output_config: { effort },
     tools: [PROPOSE_CONFIG_TOOL],
-    // Two cache breakpoints: the fixed instructions (identical across every builder,
-    // every project, forever) and the per-project data context (identical across every
-    // turn of one editing session, until new data is uploaded). Both are placed before
-    // the conversation history, matching the mandatory tools -> system -> messages
-    // render order so nothing downstream invalidates them.
+    // Cache breakpoints on the two stable blocks: the fixed instructions (byte-identical
+    // for everyone, forever) and the per-project uploaded-data context (stable across a
+    // session until new data is uploaded). The fit-results block is placed AFTER them,
+    // uncached — it changes whenever a new fit finishes, and keeping it past the last
+    // breakpoint means a fresh result never invalidates the cached prefix.
     system: [
       { type: "text", text: SYSTEM_INSTRUCTIONS, cache_control: { type: "ephemeral" } },
       { type: "text", text: dataContext, cache_control: { type: "ephemeral" } },
+      { type: "text", text: `Laatste fit / resultaten voor dit project:\n\n${resultsContext}` },
     ],
     messages: history,
   };
