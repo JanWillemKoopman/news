@@ -1,5 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ColumnRole, ChannelType, SourceFile } from "@/lib/types";
+import type {
+  AdstockType,
+  ChannelType,
+  ColumnRole,
+  LikelihoodType,
+  SaturationType,
+  SourceFile,
+  TrendType,
+} from "@/lib/types";
 
 // The "architect": reviews uploaded data and proposes a job config for the wizard's
 // existing /api/jobs endpoint. It never runs the statistical fit itself — mmm-core on
@@ -20,9 +28,14 @@ const SYSTEM_INSTRUCTIONS = `Je bent de technische architect binnen een Media Mi
 Regels:
 - Baseer elke keuze op wat je daadwerkelijk in de kolomnamen en voorbeeldrijen ziet. Verzin geen zakelijke context die er niet is.
 - Kanaaltype ("channel_type"): "intent" voor kanalen die al bestaande koopintentie vangen (zoekwoorden op eigen merknaam, marktplaatsen, iemand die al actief zoekt), "brand" voor kanalen die vooral nieuwe aandacht/vraag opbouwen (social ads, prospecting, display), "generic" als je het niet zeker weet.
+- Na-ijlvorm ("adstock"): "geometric" (standaard) voor digitale kanalen, waarbij het effect direct piekt en daarna afneemt. Kies "delayed" alleen voor offline/merkkanalen die pas na een paar weken hun piek bereiken (tv, radio, out-of-home, soms video) — het effect bouwt op en dooft daarna uit.
+- Verzadigingsvorm ("saturation"): "hill" (standaard) is flexibel en kan een S-curve aan. Kies "logistic" als er weinig of ruisige data is; die vorm heeft één parameter minder en is dan robuuster.
+- Ruismodel ("likelihood") op modelniveau: "normal" (standaard) voor een continue KPI (omzet). Kies "student_t" als die KPI duidelijke uitschieters/pieken heeft. Kies "poisson" of "negative_binomial" als de KPI een telling is met láge aantallen per week (bijv. 5–50 leads) — dan modelleren we op tellingen i.p.v. een normale verdeling. Gebruik "negative_binomial" i.p.v. "poisson" als de tellingen sterker schommelen dan een Poisson toelaat (overdispersie). Tellingsmodellen alleen bij hele getallen ≥ 0.
+- Trendvorm ("trend_type") op modelniveau: "linear" (standaard, één rechte trend). Kies "piecewise" als de basislijn duidelijk van richting verandert in de periode (een structurele knik/versnelling/vertraging, bijv. na een herpositionering of marktverandering) — dan mag de trend op een paar punten buigen.
 - Rol ("role") per kolom: "kpi" voor de doelvariabele (waar het model omzet/leads probeert te verklaren), "spend" voor marketinguitgaven of -volume per kanaal (ook niet-monetair, zoals e-mailverzendingen — die worden net zo behandeld: opgeteld per week, nul als er die week niks was), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die je NIET als marketingkanaal wilt laten meewegen met een eigen na-ijl/verzadigingseffect.
 - Wees expliciet over onzekerheid. Als een kolomnaam meerdere interpretaties toelaat (bijvoorbeeld "google_sales" kan een campagnenaam zijn, geen garantie), zeg dat in "reasoning" — dit gaat naar een mens die het kan corrigeren voordat er iets draait.
 - Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
+- Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week (een storing, eenmalige actie, evenement) die geen structureel onderdeel van het patroon is? Stel dan een "event_dummies"-item voor (naam + ISO-jaar/weeknummer) in plaats van de ruwe data te laten liggen — dat geeft het model een controlekolom voor precies die week, zonder dat de bouwer het brondbestand hoeft te bewerken. Doe dit alleen als je de week echt in de data ziet, nooit uit voorzorg.
 - Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag, roep de tool niet aan.
 - Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.`;
 
@@ -96,21 +109,61 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
               properties: {
                 name: { type: "string" },
                 channel_type: { type: "string", enum: ["intent", "brand", "generic"] satisfies ChannelType[] },
+                adstock: {
+                  type: "string",
+                  enum: ["geometric", "delayed"] satisfies AdstockType[],
+                  description: "'geometric' (standaard, digitaal) of 'delayed' (offline/merk, piek na enkele weken).",
+                },
+                saturation: {
+                  type: "string",
+                  enum: ["hill", "logistic"] satisfies SaturationType[],
+                  description: "'hill' (standaard) of 'logistic' (robuuster bij weinig/ruisige data).",
+                },
               },
-              required: ["name", "channel_type"],
+              required: ["name", "channel_type", "adstock", "saturation"],
               additionalProperties: false,
             },
           },
           control_columns: { type: "array", items: { type: "string" } },
           add_trend: { type: "boolean" },
+          trend_type: {
+            type: "string",
+            enum: ["linear", "piecewise"] satisfies TrendType[],
+            description: "'linear' (standaard) of 'piecewise' bij een duidelijke structurele knik in de basislijn.",
+          },
           seasonality_periods: { type: ["number", "null"] },
           n_fourier_modes: { type: "integer" },
+          likelihood: {
+            type: "string",
+            enum: ["normal", "student_t", "poisson", "negative_binomial"] satisfies LikelihoodType[],
+            description:
+              "'normal' (standaard, continue KPI), 'student_t' (uitschieters), 'poisson'/'negative_binomial' (lage-aantallen tellingen zoals leads).",
+          },
         },
-        required: ["kpi", "channels", "control_columns", "add_trend", "seasonality_periods", "n_fourier_modes"],
+        required: ["kpi", "channels", "control_columns", "add_trend", "trend_type", "seasonality_periods", "n_fourier_modes", "likelihood"],
         additionalProperties: false,
       },
+      event_dummies: {
+        type: "array",
+        description:
+          "0/1-controlekolommen voor specifieke ISO-weken met een duidelijke, in de data zichtbare uitschieter (storing, eenmalige actie). Leeg laten als er geen zijn.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Kolomnaam, bv. 'dummy_2025w45'." },
+            weeks: {
+              type: "array",
+              description:
+                "Lijst van [iso_jaar, iso_weeknummer]-paren waarop deze dummy 1 is (elk paar exact 2 gehele getallen).",
+              items: { type: "array", items: { type: "integer" } },
+            },
+          },
+          required: ["name", "weeks"],
+          additionalProperties: false,
+        },
+      },
     },
-    required: ["reasoning", "sources", "model"],
+    required: ["reasoning", "sources", "model", "event_dummies"],
     additionalProperties: false,
   },
   strict: true,

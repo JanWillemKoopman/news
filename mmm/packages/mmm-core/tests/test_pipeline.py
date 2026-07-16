@@ -4,6 +4,7 @@ import pytest
 
 from mmm_core import (
     ColumnSpec,
+    EventDummySpec,
     Role,
     Severity,
     SourceSpec,
@@ -190,3 +191,80 @@ def test_output_is_sorted_gap_free_and_unique():
 def test_empty_sources_raises():
     with pytest.raises(ValueError):
         build_master_dataset([])
+
+
+# --- event dummies ---------------------------------------------------------------
+
+def test_event_dummy_marks_only_the_specified_week():
+    # 14 daily rows of spend from Monday 2022-01-03 -> ISO weeks (2022, 1) and (2022, 2).
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="dummy_w1", weeks=((2022, 1),))],
+    )
+    assert result.data["dummy_w1"].tolist() == [1.0, 0.0]
+    assert result.column_roles["dummy_w1"] is Role.CONTROL
+    assert "event_dummy_outside_window" not in result.report.codes()
+
+
+def test_event_dummy_outside_window_is_flagged_and_all_zero():
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="dummy_far", weeks=((2019, 1),))],
+    )
+    assert result.data["dummy_far"].tolist() == [0.0, 0.0]
+    assert "event_dummy_outside_window" in result.report.codes()
+
+
+def test_event_dummy_name_collision_is_an_error():
+    df = daily_frame("2022-01-03", 14, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset(
+        [(_spec("g", "spend", Role.SPEND, "date"), df)],
+        event_dummies=[EventDummySpec(name="spend", weeks=((2022, 1),))],
+    )
+    assert "event_dummy_name_collision" in result.report.codes()
+    assert result.report.has_errors
+
+
+# --- control fill strategy -------------------------------------------------------
+
+def test_control_gap_left_as_nan_by_default_and_warned():
+    # revenue + spend span the window; a non-essential control has an interior gap.
+    kpi = daily_frame("2022-01-03", 84, 1000.0, date_col="date", value_col="revenue")
+    spend = daily_frame("2022-01-03", 84, 50.0, date_col="date", value_col="spend")
+    price = daily_frame("2022-01-03", 84, 9.99, date_col="date", value_col="price")
+    # drop the second week of price entirely -> a gap inside the window.
+    price = price[~price["date"].between("2022-01-10", "2022-01-16")]
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+        (_spec("p", "price", Role.CONTROL, "date", essential=False), price),
+    ])
+    assert "control_gaps" in result.report.codes()
+    assert result.data["price"].isna().any()
+
+
+def test_control_gap_filled_when_strategy_set():
+    kpi = daily_frame("2022-01-03", 84, 1000.0, date_col="date", value_col="revenue")
+    spend = daily_frame("2022-01-03", 84, 50.0, date_col="date", value_col="spend")
+    price = daily_frame("2022-01-03", 84, 9.99, date_col="date", value_col="price")
+    price = price[~price["date"].between("2022-01-10", "2022-01-16")]
+    price_spec = SourceSpec(
+        name="p",
+        columns=(ColumnSpec("price", Role.CONTROL, fill="ffill"),),
+        date_column="date",
+        essential=False,
+    )
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+        (price_spec, price),
+    ])
+    assert "control_filled" in result.report.codes()
+    assert not result.data["price"].isna().any()
+
+
+def test_fill_on_non_control_column_rejected_by_spec():
+    with pytest.raises(ValueError):
+        ColumnSpec("spend", Role.SPEND, fill="zero")

@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from mmm_core.ingestion.dates import detect_date_column, to_week_start
+from mmm_core.ingestion.events import EventDummySpec, build_event_dummy
 from mmm_core.ingestion.quality import QualityReport, Severity
 from mmm_core.ingestion.spec import Role, SourceSpec, aggregation_for
 
@@ -53,7 +54,7 @@ class BuildResult:
 
 def _prepare_source(
     spec: SourceSpec, df: pd.DataFrame, report: QualityReport
-) -> tuple[pd.DataFrame, dict[str, Role]]:
+) -> tuple[pd.DataFrame, dict[str, Role], dict[str, str]]:
     """Clean, date-index and aggregate a single source to ISO-week level."""
     df = df.copy()
 
@@ -86,6 +87,7 @@ def _prepare_source(
 
     agg: dict[str, str] = {}
     roles: dict[str, Role] = {}
+    fills: dict[str, str] = {}
     for col in spec.columns:
         if col.name not in df.columns:
             report.add(
@@ -105,24 +107,27 @@ def _prepare_source(
         df[col.name] = numeric
         agg[col.name] = aggregation_for(col.role)
         roles[col.resolved_name()] = col.role
+        if col.fill is not None:
+            fills[col.resolved_name()] = col.fill
 
     if not agg:
         # Every declared column was missing — return an empty, correctly-typed frame.
         empty = pd.DataFrame(index=pd.DatetimeIndex([], name="week_start"))
-        return empty, roles
+        return empty, roles, fills
 
     weekly = df.groupby("_week").agg(agg)
     weekly = weekly.rename(columns={c.name: c.resolved_name() for c in spec.columns if c.name in agg})
     weekly.index.name = "week_start"
-    return weekly.sort_index(), roles
+    return weekly.sort_index(), roles, fills
 
 
 def _resolve_collisions(
     weekly_by_source: dict[str, pd.DataFrame],
     roles_by_source: dict[str, dict[str, Role]],
+    fills_by_source: dict[str, dict[str, str]],
     report: QualityReport,
-) -> tuple[dict[str, pd.DataFrame], dict[str, Role]]:
-    """Prefix column names that appear in more than one source, and merge role maps."""
+) -> tuple[dict[str, pd.DataFrame], dict[str, Role], dict[str, str]]:
+    """Prefix column names that appear in more than one source, and merge role/fill maps."""
     owners: dict[str, list[str]] = defaultdict(list)
     for src, weekly in weekly_by_source.items():
         for name in weekly.columns:
@@ -130,15 +135,16 @@ def _resolve_collisions(
 
     renamed: dict[str, pd.DataFrame] = {}
     merged_roles: dict[str, Role] = {}
+    merged_fills: dict[str, str] = {}
     for src, weekly in weekly_by_source.items():
         rename_map: dict[str, str] = {}
         for name in weekly.columns:
-            if len(owners[name]) > 1:
-                new_name = f"{src}_{name}"
-                rename_map[name] = new_name
-                merged_roles[new_name] = roles_by_source[src][name]
-            else:
-                merged_roles[name] = roles_by_source[src][name]
+            final = f"{src}_{name}" if len(owners[name]) > 1 else name
+            if final != name:
+                rename_map[name] = final
+            merged_roles[final] = roles_by_source[src][name]
+            if name in fills_by_source.get(src, {}):
+                merged_fills[final] = fills_by_source[src][name]
         if rename_map:
             report.add(
                 "column_name_collision", Severity.WARNING,
@@ -147,7 +153,7 @@ def _resolve_collisions(
                 source=src, renamed=rename_map,
             )
         renamed[src] = weekly.rename(columns=rename_map)
-    return renamed, merged_roles
+    return renamed, merged_roles, merged_fills
 
 
 def _flag_near_identical(
@@ -200,11 +206,41 @@ def _flag_year_end_anomalies(
             )
 
 
+def _apply_event_dummies(
+    data: pd.DataFrame,
+    event_dummies: list[EventDummySpec],
+    report: QualityReport,
+) -> dict[str, Role]:
+    """Attach one 0/1 control column per event dummy, post window-trim."""
+    roles: dict[str, Role] = {}
+    for spec in event_dummies:
+        if spec.name in data.columns:
+            report.add(
+                "event_dummy_name_collision", Severity.ERROR,
+                f"event dummy {spec.name!r} collides with an existing column name",
+                column=spec.name,
+            )
+            continue
+        dummy = build_event_dummy(data.index, spec)
+        if dummy.sum() == 0:
+            report.add(
+                "event_dummy_outside_window", Severity.WARNING,
+                f"event dummy {spec.name!r} has no active week inside the analysis "
+                f"window ({data.index.min().date()}..{data.index.max().date()}); it "
+                f"will be all zero and have no effect on the fit",
+                column=spec.name, weeks=[f"{y}-W{w:02d}" for y, w in spec.weeks],
+            )
+        data[spec.name] = dummy.to_numpy()
+        roles[spec.name] = Role.CONTROL
+    return roles
+
+
 def build_master_dataset(
     sources: list[tuple[SourceSpec, pd.DataFrame]],
     *,
     correlation_threshold: float = _DEFAULT_CORR_THRESHOLD,
     impute_spend_zero: bool = True,
+    event_dummies: list[EventDummySpec] | None = None,
 ) -> BuildResult:
     """Align several uploaded sources into one gap-free ISO-week master dataset.
 
@@ -215,6 +251,9 @@ def build_master_dataset(
         impute_spend_zero: Whether to fill missing spend weeks with 0 *inside* the
             analysis window (recommended; a missing spend week means the channel ran
             no ads that week).
+        event_dummies: Optional 0/1 control columns for named ISO weeks (anomalies,
+            one-off promotions, ...), added after the window is trimmed so the
+            builder never has to hand-edit a source file to flag one.
 
     Returns:
         A :class:`BuildResult`. If there is no overlapping window across the essential
@@ -227,17 +266,19 @@ def build_master_dataset(
 
     weekly_by_source: dict[str, pd.DataFrame] = {}
     roles_by_source: dict[str, dict[str, Role]] = {}
+    fills_by_source: dict[str, dict[str, str]] = {}
     essential_spans: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {}
 
     for spec, df in sources:
-        weekly, roles = _prepare_source(spec, df, report)
+        weekly, roles, fills = _prepare_source(spec, df, report)
         weekly_by_source[spec.name] = weekly
         roles_by_source[spec.name] = roles
+        fills_by_source[spec.name] = fills
         if spec.essential and not weekly.empty:
             essential_spans[spec.name] = (weekly.index.min(), weekly.index.max())
 
-    weekly_by_source, column_roles = _resolve_collisions(
-        weekly_by_source, roles_by_source, report
+    weekly_by_source, column_roles, column_fills = _resolve_collisions(
+        weekly_by_source, roles_by_source, fills_by_source, report
     )
 
     # Outer-join everything first, so we can also see out-of-window coverage if needed.
@@ -288,11 +329,24 @@ def build_master_dataset(
             )
     for col in control_cols:
         n_gaps = int(data[col].isna().sum())
-        if n_gaps:
+        if not n_gaps:
+            continue
+        strategy = column_fills.get(col)
+        if strategy is not None:
+            from mmm_core.features import fill_missing
+
+            data[col] = fill_missing(data[col], strategy)
+            report.add(
+                "control_filled", Severity.INFO,
+                f"control column {col!r} had {n_gaps} missing week(s), filled with "
+                f"strategy {strategy!r}",
+                column=col, count=n_gaps, strategy=strategy,
+            )
+        else:
             report.add(
                 "control_gaps", Severity.WARNING,
                 f"control column {col!r} has {n_gaps} missing week(s) inside the window "
-                f"(left as missing — decide how to handle before modelling)",
+                f"(left as missing — set a `fill` strategy or clean it before modelling)",
                 column=col, count=n_gaps,
             )
 
@@ -307,6 +361,9 @@ def build_master_dataset(
                 f"imputed {total_filled} missing spend week(s) with 0 inside the window",
                 per_column=filled,
             )
+
+    if event_dummies:
+        column_roles.update(_apply_event_dummies(data, list(event_dummies), report))
 
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)

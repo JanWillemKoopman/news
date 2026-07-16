@@ -22,40 +22,59 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# Numerical offset mirroring the model's Hill (mmm_core.model.build._HILL_EPS).
+# Numerical offset mirroring the model's saturation (mmm_core.model.build._HILL_EPS).
 _HILL_EPS = 1e-6
 # Default safety margin above the historically tested maximum weekly spend.
 _DEFAULT_CAP_FACTOR = 1.2
+
+
+def _hill_shape(u, half_saturation, slope):
+    return (u + _HILL_EPS) ** slope / (
+        half_saturation ** slope + (u + _HILL_EPS) ** slope
+    )
+
+
+def _logistic_shape(u, lam):
+    e = np.exp(-lam * (u + _HILL_EPS))
+    return (1.0 - e) / (1.0 + e)
 
 
 @dataclass
 class ChannelResponse:
     """Posterior response parameters for one channel, in real spend/KPI units.
 
+    Steady-state response is ``beta * saturation(spend/x_max)``: at a constant weekly
+    spend any *normalized* adstock (geometric or delayed) is the identity, so only the
+    saturation shape matters here — this holds for every adstock the model offers.
+
     Attributes are posterior sample arrays of shape ``(n_samples,)`` unless noted.
 
     Args:
         name: Channel name.
         beta: Channel ceiling (scaled-KPI units), posterior samples.
-        half_saturation: Half-saturation on *scaled* spend in ``(0, 1]``, posterior.
-        slope: Hill slope, posterior.
         x_max: Spend scaler (the max weekly spend used to scale the channel at fit time).
         y_max: KPI scaler.
         hist_max_weekly_spend: Highest weekly spend actually observed for this channel.
+        saturation: ``"hill"`` or ``"logistic"``.
+        half_saturation: Hill half-saturation on *scaled* spend (posterior); Hill only.
+        slope: Hill slope (posterior); Hill only.
+        lam: Logistic steepness on *scaled* spend (posterior); logistic only.
     """
 
     name: str
     beta: np.ndarray
-    half_saturation: np.ndarray
-    slope: np.ndarray
     x_max: float
     y_max: float
     hist_max_weekly_spend: float
+    saturation: str = "hill"
+    half_saturation: np.ndarray | None = None
+    slope: np.ndarray | None = None
+    lam: np.ndarray | None = None
 
-    def _hill(self, u: float) -> np.ndarray:
-        return (u + _HILL_EPS) ** self.slope / (
-            self.half_saturation ** self.slope + (u + _HILL_EPS) ** self.slope
-        )
+    def _shape(self, u: float) -> np.ndarray:
+        if self.saturation == "logistic":
+            return _logistic_shape(u, self.lam)
+        return _hill_shape(u, self.half_saturation, self.slope)
 
     def contribution_samples(self, weekly_spend: float) -> np.ndarray:
         """Steady-state KPI contribution at a constant ``weekly_spend`` (posterior samples).
@@ -66,7 +85,7 @@ class ChannelResponse:
         if weekly_spend < 0:
             raise ValueError("weekly_spend must be non-negative")
         u = weekly_spend / self.x_max
-        return self.beta * (self._hill(u) - self._hill(0.0)) * self.y_max
+        return self.beta * (self._shape(u) - self._shape(0.0)) * self.y_max
 
     def cap(self, cap_factor: float = _DEFAULT_CAP_FACTOR) -> float:
         return self.hist_max_weekly_spend * cap_factor
@@ -154,42 +173,66 @@ def optimize_budget(
     total_budget: float,
     *,
     cap_factor: float = _DEFAULT_CAP_FACTOR,
+    min_spend: dict[str, float] | None = None,
+    max_spend: dict[str, float] | None = None,
 ) -> Allocation:
     """Split ``total_budget`` across channels to maximise the (median) steady-state KPI.
 
-    Optimises on the posterior-median response curves (subject to each channel's safety
-    cap), then evaluates the resulting allocation across the full posterior to attach a
-    credible interval to the predicted contribution.
+    Optimises on the posterior-median response curves, then evaluates the resulting
+    allocation across the full posterior to attach a credible interval.
+
+    Args:
+        cap_factor: Safety margin above each channel's historical max spend; the optimiser
+            never allocates beyond this (extrapolation guard from the build plan).
+        min_spend: Optional per-channel lower bounds (e.g. contractual minimums or "don't
+            drop below current"). Their sum must not exceed ``total_budget``.
+        max_spend: Optional per-channel upper bounds, applied *on top of* the safety cap
+            (the tighter of the two wins).
     """
     from scipy.optimize import minimize
 
     if total_budget <= 0:
         raise ValueError("total_budget must be > 0")
 
+    min_spend = min_spend or {}
+    max_spend = max_spend or {}
+    n = len(channels)
+    lows = np.array([max(0.0, min_spend.get(c.name, 0.0)) for c in channels])
     caps = np.array([c.cap(cap_factor) for c in channels])
+    highs = np.array([min(caps[i], max_spend.get(c.name, caps[i])) for i, c in enumerate(channels)])
+    if np.any(lows > highs + 1e-9):
+        raise ValueError("a channel's min_spend exceeds its cap/max_spend")
+    if float(lows.sum()) > total_budget + 1e-6:
+        raise ValueError("sum of min_spend exceeds total_budget")
+
     # Median parameters give a smooth deterministic objective for the optimiser.
-    med = [
-        (np.median(c.beta), np.median(c.half_saturation), np.median(c.slope), c.x_max, c.y_max)
-        for c in channels
-    ]
+    def _median_shape(c):
+        if c.saturation == "logistic":
+            lam = np.median(c.lam)
+            return lambda u: _logistic_shape(u, lam)
+        hs, slope = np.median(c.half_saturation), np.median(c.slope)
+        return lambda u: _hill_shape(u, hs, slope)
+
+    med = [(np.median(c.beta), _median_shape(c), c.x_max, c.y_max) for c in channels]
 
     def contrib_median(x, params):
-        beta, hs, slope, x_max, y_max = params
+        beta, shape, x_max, y_max = params
         u = x / x_max
-        g = (u + _HILL_EPS) ** slope / (hs ** slope + (u + _HILL_EPS) ** slope)
-        return beta * g * y_max
+        return beta * (shape(u) - shape(0.0)) * y_max
 
     def neg_total(x):
         return -sum(contrib_median(xi, p) for xi, p in zip(x, med))
 
-    n = len(channels)
-    feasible_total = min(total_budget, float(caps.sum()))
-    x0 = np.full(n, feasible_total / n)
-    bounds = [(0.0, cap) for cap in caps]
+    feasible_total = min(total_budget, float(highs.sum()))
+    feasible_total = max(feasible_total, float(lows.sum()))
+    # Start feasible: minimums plus an even share of the remaining budget.
+    slack = feasible_total - float(lows.sum())
+    x0 = lows + (slack / n if n else 0.0)
+    bounds = list(zip(lows, highs))
     constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - feasible_total}]
 
     res = minimize(neg_total, x0, method="SLSQP", bounds=bounds, constraints=constraints)
-    alloc = {c.name: float(max(xi, 0.0)) for c, xi in zip(channels, res.x)}
+    alloc = {c.name: float(np.clip(xi, lo, hi)) for c, xi, lo, hi in zip(channels, res.x, lows, highs)}
 
     capped = [c.name for c, xi in zip(channels, res.x) if xi >= c.cap(cap_factor) - 1e-6]
     predicted = predict_total_contribution(channels, alloc)
@@ -201,8 +244,59 @@ def optimize_budget(
     )
 
 
+@dataclass
+class FrontierPoint:
+    total_budget: float
+    allocation: dict[str, float]
+    predicted_contribution: Interval
+
+
+def efficiency_frontier(
+    channels: list[ChannelResponse],
+    budgets: list[float],
+    *,
+    cap_factor: float = _DEFAULT_CAP_FACTOR,
+    min_spend: dict[str, float] | None = None,
+    max_spend: dict[str, float] | None = None,
+) -> list[FrontierPoint]:
+    """Optimal allocation at each total budget — the diminishing-returns curve of *total*
+    spend. Answers "how much should we spend in total?", not just "how to split it".
+    """
+    points: list[FrontierPoint] = []
+    for b in sorted(budgets):
+        alloc = optimize_budget(
+            channels, b, cap_factor=cap_factor, min_spend=min_spend, max_spend=max_spend
+        )
+        points.append(
+            FrontierPoint(
+                total_budget=alloc.total_budget,
+                allocation=alloc.per_channel,
+                predicted_contribution=alloc.predicted_contribution,
+            )
+        )
+    return points
+
+
+def allocate_incremental_budget(
+    channels: list[ChannelResponse],
+    extra_budget: float,
+    current: dict[str, float],
+    *,
+    cap_factor: float = _DEFAULT_CAP_FACTOR,
+) -> Allocation:
+    """Where should an *additional* ``extra_budget`` go, without cutting any channel below
+    its current spend? Optimises the new total with each channel's current spend as a floor
+    — so the delta lands wherever the next euro returns most."""
+    if extra_budget < 0:
+        raise ValueError("extra_budget must be >= 0")
+    total = float(sum(current.values())) + extra_budget
+    return optimize_budget(channels, total, cap_factor=cap_factor, min_spend=current)
+
+
 def extract_channel_responses(built, idata) -> list[ChannelResponse]:
     """Build :class:`ChannelResponse` objects from a fitted model + InferenceData."""
+    from mmm_core.model.config import SaturationType
+
     y_max = float(built.scalers["y_max"])
     x_max = np.asarray(built.scalers["x_max"], dtype=float)
     responses = []
@@ -210,15 +304,22 @@ def extract_channel_responses(built, idata) -> list[ChannelResponse]:
         def flat(var):
             return idata.posterior[var].stack(sample=("chain", "draw")).to_numpy()
 
-        responses.append(
-            ChannelResponse(
-                name=ch.name,
-                beta=flat(f"beta_{ch.name}"),
-                half_saturation=flat(f"halfsat_{ch.name}"),
-                slope=flat(f"slope_{ch.name}"),
-                x_max=float(x_max[i]),
-                y_max=y_max,
-                hist_max_weekly_spend=float(built.spend[:, i].max()),
-            )
+        common = dict(
+            name=ch.name,
+            beta=flat(f"beta_{ch.name}"),
+            x_max=float(x_max[i]),
+            y_max=y_max,
+            hist_max_weekly_spend=float(built.spend[:, i].max()),
         )
+        if ch.saturation is SaturationType.LOGISTIC:
+            responses.append(ChannelResponse(saturation="logistic", lam=flat(f"lam_{ch.name}"), **common))
+        else:
+            responses.append(
+                ChannelResponse(
+                    saturation="hill",
+                    half_saturation=flat(f"halfsat_{ch.name}"),
+                    slope=flat(f"slope_{ch.name}"),
+                    **common,
+                )
+            )
     return responses

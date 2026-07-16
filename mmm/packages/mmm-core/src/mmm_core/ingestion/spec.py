@@ -33,6 +33,12 @@ def aggregation_for(role: Role) -> str:
     return _AGGREGATION[role]
 
 
+# Fill strategies allowed for a control column with gaps inside the analysis window.
+# None (default) keeps the original behaviour: leave the gap as NaN and warn — the model
+# will then refuse to fit until it is resolved, which is the safe default.
+_CONTROL_FILL_STRATEGIES = ("zero", "ffill", "bfill", "interpolate", "mean", "median")
+
+
 @dataclass(frozen=True)
 class ColumnSpec:
     """One value column within a source.
@@ -43,11 +49,23 @@ class ColumnSpec:
         output_name: Name to use in the master table. Defaults to ``name``; if two
             sources resolve to the same output name the pipeline auto-prefixes both
             with their source name and records a collision warning.
+        fill: For control columns only — how to fill missing weeks inside the analysis
+            window (``zero``/``ffill``/``bfill``/``interpolate``/``mean``/``median``).
+            ``None`` leaves gaps as NaN (the model then refuses to fit them).
     """
 
     name: str
     role: Role
     output_name: str | None = None
+    fill: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.fill is not None and self.fill not in _CONTROL_FILL_STRATEGIES:
+            raise ValueError(
+                f"unknown fill strategy {self.fill!r}; use one of {_CONTROL_FILL_STRATEGIES}"
+            )
+        if self.fill is not None and self.role is not Role.CONTROL:
+            raise ValueError("fill is only meaningful for control columns")
 
     def resolved_name(self) -> str:
         return self.output_name or self.name
