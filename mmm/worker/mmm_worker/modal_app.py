@@ -71,11 +71,11 @@ def _run(job_id: str) -> dict:
     client = make_client()
     jobstore = SupabaseJobStore(client)
     storage = SupabaseStorage(client, os.environ.get("MMM_RAW_BUCKET", "mmm-raw-data"))
-    # Uploads (the .nc trace, the merged master) go to the artifacts bucket; downloads
-    # (raw data) come from raw.
+    # The .nc trace goes to the artifacts bucket; raw source downloads come from raw.
     artifacts = SupabaseStorage(client, os.environ.get("MMM_ARTIFACTS_BUCKET", "mmm-artifacts"))
 
-    # Compose a storage that downloads from raw and uploads to artifacts.
+    # Compose a storage that downloads from raw and uploads to artifacts (for the fit's
+    # heavy trace).
     class _Split:
         def download(self, path):
             return storage.download(path)
@@ -87,7 +87,11 @@ def _run(job_id: str) -> dict:
     # into one master table) and the heavy 'fit'. Dispatch on the job's type.
     job = jobstore.get_job(job_id)
     if job.get("type") == "prepare":
-        return run_prepare(jobstore, SupabaseDatasetStore(client), _Split(), job_id)
+        # 'prepare' downloads raw sources AND writes its merged master file back into the
+        # SAME (raw) bucket — the master file becomes an ordinary source for a later fit
+        # job, which only ever downloads from the raw bucket. Writing it to artifacts
+        # instead would make it invisible to that download.
+        return run_prepare(jobstore, SupabaseDatasetStore(client), storage, job_id)
     return run_job(jobstore, _Split(), job_id)
 
 
