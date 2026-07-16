@@ -4,7 +4,12 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildRequest } from "@/lib/anthropic/architect";
 import type { ArchitectFitContext } from "@/lib/anthropic/fitContext";
-import type { FitSummary, JobConfig, JobStatus, SourceFile } from "@/lib/types";
+import type { ArchitectDatasetContext } from "@/lib/anthropic/datasetContext";
+import type { Dataset, FitSummary, JobConfig, JobStatus, SourceFile } from "@/lib/types";
+
+// Tool names the architect can call — kept here so the route and the frontend agree on
+// what a "proposal" in the persisted/returned payload means.
+const PROPOSAL_TOOLS = ["propose_prepare_recipe", "propose_model_config"] as const;
 
 const RAW_BUCKET = "mmm-raw-data";
 const PREVIEW_LINES = 15;
@@ -63,46 +68,62 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  const [{ data: sources }, { data: priorRows }, { data: latestRun }, { data: latestJob }] = await Promise.all([
-    supabase.schema("mmm").from("source_files").select("*").eq("project_id", projectId).order("created_at"),
-    supabase
-      .schema("mmm")
-      .from("chat_messages")
-      .select("role, content")
-      .eq("project_id", projectId)
-      .order("created_at"),
-    // The latest fit result and the latest job give the architect its "resultaatinzicht":
-    // it can interpret a completed fit or diagnose a failed one.
-    supabase
-      .schema("mmm")
-      .from("model_runs")
-      .select("summary, created_at")
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .schema("mmm")
-      .from("jobs")
-      .select("status, error, config, created_at")
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const [{ data: sources }, { data: priorRows }, { data: latestRun }, { data: latestFitJob }, { data: latestDataset }] =
+    await Promise.all([
+      supabase.schema("mmm").from("source_files").select("*").eq("project_id", projectId).order("created_at"),
+      supabase
+        .schema("mmm")
+        .from("chat_messages")
+        .select("role, content")
+        .eq("project_id", projectId)
+        .order("created_at"),
+      // The latest fit result and the latest FIT job give the architect its "resultaatinzicht":
+      // it can interpret a completed fit or diagnose a failed one. Filtered to type='fit' —
+      // the jobs table now also carries 'prepare' jobs, which are a different context (below).
+      supabase
+        .schema("mmm")
+        .from("model_runs")
+        .select("summary, created_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .schema("mmm")
+        .from("jobs")
+        .select("status, error, config, created_at")
+        .eq("project_id", projectId)
+        .eq("type", "fit")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      // The latest dataset (merge recipe + quality report) gives the architect its
+      // data-preparation context — the step before modelling.
+      supabase
+        .schema("mmm")
+        .from("datasets")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const fit: ArchitectFitContext = {
     latestRun: latestRun
       ? { summary: latestRun.summary as FitSummary, created_at: latestRun.created_at as string }
       : null,
-    latestJob: latestJob
+    latestJob: latestFitJob
       ? {
-          status: latestJob.status as JobStatus,
-          error: (latestJob.error as string | null) ?? null,
-          config: latestJob.config as JobConfig,
-          created_at: latestJob.created_at as string,
+          status: latestFitJob.status as JobStatus,
+          error: (latestFitJob.error as string | null) ?? null,
+          config: latestFitJob.config as JobConfig,
+          created_at: latestFitJob.created_at as string,
         }
       : null,
+  };
+  const dataset: ArchitectDatasetContext = {
+    latestDataset: (latestDataset as Dataset | null) ?? null,
   };
 
   const sourceFiles = (sources ?? []) as SourceFile[];
@@ -132,13 +153,16 @@ export async function POST(request: Request) {
   const client = new Anthropic({ apiKey });
   let response: Anthropic.Message;
   try {
-    response = await client.messages.create(buildRequest({ sources: previews, fit }, history));
+    response = await client.messages.create(buildRequest({ sources: previews, dataset, fit }, history));
   } catch (err) {
     return NextResponse.json({ error: `Claude API-fout: ${(err as Error).message}` }, { status: 502 });
   }
 
+  // Whichever of the architect's two proposal tools was called (recipe or config) — at
+  // most one, per the system prompt's design, but detect by name rather than assume.
   const toolUse = response.content.find(
-    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "propose_model_config",
+    (b): b is Anthropic.ToolUseBlock =>
+      b.type === "tool_use" && (PROPOSAL_TOOLS as readonly string[]).includes(b.name),
   );
   const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text");
   const replyText = textBlocks.map((b) => b.text).join("\n\n");
@@ -163,7 +187,8 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     reply: replyText,
-    proposedConfig: toolUse ? toolUse.input : null,
+    proposedConfig: toolUse?.name === "propose_model_config" ? toolUse.input : null,
+    proposedRecipe: toolUse?.name === "propose_prepare_recipe" ? toolUse.input : null,
     usage: response.usage,
   });
 }

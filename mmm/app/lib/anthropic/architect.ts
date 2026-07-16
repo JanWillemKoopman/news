@@ -3,44 +3,68 @@ import type {
   AdstockType,
   ChannelType,
   ColumnRole,
+  FillStrategy,
   LikelihoodType,
   SaturationType,
   SourceFile,
   TrendType,
 } from "@/lib/types";
 import {
+  ARCHITECT_ANALYST_MODEL,
+  ARCHITECT_CONFIG_MODEL,
   formatFitContextBlock,
-  pickArchitectModel,
+  hasFitResults,
   type ArchitectFitContext,
 } from "@/lib/anthropic/fitContext";
+import {
+  datasetNeedsAnalysis,
+  formatDatasetContextBlock,
+  type ArchitectDatasetContext,
+} from "@/lib/anthropic/datasetContext";
 
-// The "architect": an MMM expert that (1) reviews uploaded data and proposes a job config
-// for the wizard's existing /api/jobs endpoint, and (2) once a fit has run, reads the
-// results back, interprets them in plain language, and proposes an *improved* config or
-// diagnoses a failure. It never runs the statistical fit itself — mmm-core on Modal does
-// that (see mmm/worker) — and it never runs anything on its own: it proposes, the builder
-// clicks. This module only decides *what to configure* and *how to read the outcome*.
+// The "architect": an MMM expert with three roles, all human-in-the-loop (it proposes,
+// the builder clicks — it never runs anything itself):
+//   1. Data preparation — reviews raw uploads and proposes a MERGE RECIPE (which file,
+//      which column -> role, fills, event dummies) for the mmm-core ingestion step, and
+//      once that merge has run, reads the quality report back and proposes fixes.
+//   2. Model configuration — once a dataset is approved, proposes a job config for the
+//      wizard's /api/jobs endpoint.
+//   3. Results — once a fit has run, reads the outcome back, interprets it in plain
+//      language, and proposes an improved config or diagnoses a failure.
+// It never invents the statistical mathematics itself — mmm-core (frozen, tested Python)
+// does that; this module only decides *what to configure* and *how to read the outcome*.
 //
-// Two models, picked by context (see pickArchitectModel): cheap Sonnet 5 for the bounded
-// "map columns to a config" task; Opus for the deeper reasoning of interpreting results
-// and diagnosing failures. Adaptive thinking stays on; effort is medium to bound cost.
+// Two models, picked by context (see pickModel below): cheap Sonnet 5 for the bounded
+// "map columns to a config/recipe" tasks; Opus for the deeper reasoning of interpreting a
+// quality report, fit results, or diagnosing a failure. Adaptive thinking stays on;
+// effort is medium to bound cost.
 
 // Kept small and stable so it caches well: this text is byte-identical on every
 // request, from every builder, for every project — the ideal prompt-cache candidate.
-const SYSTEM_INSTRUCTIONS = `Je bent de technische architect binnen een Media Mix Model (MMM) wizard. Een bouwer (een technische collega) heeft ruwe marketingdata geüpload — wekelijkse KPI-cijfers (omzet/leads) en uitgaven per kanaal. Jouw taak: die data beoordelen en een concrete modelconfiguratie voorstellen voor de bevroren, geteste statistische kern (mmm-core). Jij verzint nooit de statistische wiskunde zelf — je kiest alleen instellingen (welke kolom is de KPI, welke zijn kanalen, welk kanaaltype, welke datumkolom) die de kern gebruikt.
+const SYSTEM_INSTRUCTIONS = `Je bent de technische architect binnen een Media Mix Model (MMM) wizard. Een bouwer (een technische collega) heeft ruwe marketingdata geüpload — wekelijkse KPI-cijfers (omzet/leads) en uitgaven per kanaal, soms in meerdere losse bestanden. Jij begeleidt twee stappen, ná elkaar: (1) die ruwe bestanden controleren en samenvoegen tot één definitieve dataset, en pas daarna (2) een modelconfiguratie voorstellen voor de bevroren, geteste statistische kern (mmm-core). Jij verzint nooit de statistische wiskunde zelf — je kiest alleen instellingen die de kern gebruikt.
 
-Regels:
+Stap 1 — Data voorbereiden (vóórdat er gemodelleerd wordt):
+Meerdere ruwe bestanden moeten worden samengevoegd tot één wekelijkse master-tabel voordat er iets gefit kan worden. Jouw taak hier is een concreet SAMENVOEG-RECEPT voorstellen met de tool "propose_prepare_recipe": per bestand de datumkolom en per kolom de rol ("kpi"/"spend"/"control") — dezelfde rollen als in stap 2, maar hier gaat het puur om het samenvoegen, nog niet om het model. Regels voor dit recept:
+- Rol ("role") per kolom: "kpi" voor de doelvariabele, "spend" voor marketinguitgaven/-volume per kanaal (ook niet-monetair, zoals e-mailverzendingen), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die geen eigen kanaal-effect krijgen.
+- Voor een "control"-kolom mag je een "fill"-strategie voorstellen ("zero"/"ffill"/"bfill"/"interpolate"/"mean"/"median") als je verwacht dat er gaten in zitten; laat 'm weg als je dat niet weet — dan blijft een gat gewoon zichtbaar in het kwaliteitsrapport in plaats van dat je iets verzint.
+- Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week? Stel een "event_dummies"-item voor (naam + ISO-jaar/weeknummer).
+- Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie per bestand hebt gekregen — verzin nooit een eigen pad.
+- Zodra het recept is gecontroleerd (de bouwer heeft op "Controleer & voeg samen" geklikt), krijg je een sectie "Data-voorbereiding" met het kwaliteitsrapport en een preview van het resultaat. Bespreek dat in gewone taal: welke periode, welke bijzonderheden (bijna-identieke kanalen, gaten, anomalieën), en stel alleen een NIEUW recept voor als er echt iets moet veranderen — herhaal nooit klakkeloos een recept dat al is goedgekeurd of dat net gefaald is zonder de oorzaak aan te pakken.
+- Mislukte samenvoeging (bijv. "geen overlappende periode"): lees de foutmelding letterlijk, achterhaal welke bron de periode inperkt of welke kolom fout staat, en stel een gecorrigeerd recept voor.
+
+Stap 2 — Modelconfiguratie (nadat de dataset is goedgekeurd):
 - Baseer elke keuze op wat je daadwerkelijk in de kolomnamen en voorbeeldrijen ziet. Verzin geen zakelijke context die er niet is.
 - Kanaaltype ("channel_type"): "intent" voor kanalen die al bestaande koopintentie vangen (zoekwoorden op eigen merknaam, marktplaatsen, iemand die al actief zoekt), "brand" voor kanalen die vooral nieuwe aandacht/vraag opbouwen (social ads, prospecting, display), "generic" als je het niet zeker weet.
 - Na-ijlvorm ("adstock"): "geometric" (standaard) voor digitale kanalen, waarbij het effect direct piekt en daarna afneemt. Kies "delayed" alleen voor offline/merkkanalen die pas na een paar weken hun piek bereiken (tv, radio, out-of-home, soms video) — het effect bouwt op en dooft daarna uit.
 - Verzadigingsvorm ("saturation"): "hill" (standaard) is flexibel en kan een S-curve aan. Kies "logistic" als er weinig of ruisige data is; die vorm heeft één parameter minder en is dan robuuster.
 - Ruismodel ("likelihood") op modelniveau: "normal" (standaard) voor een continue KPI (omzet). Kies "student_t" als die KPI duidelijke uitschieters/pieken heeft. Kies "poisson" of "negative_binomial" als de KPI een telling is met láge aantallen per week (bijv. 5–50 leads) — dan modelleren we op tellingen i.p.v. een normale verdeling. Gebruik "negative_binomial" i.p.v. "poisson" als de tellingen sterker schommelen dan een Poisson toelaat (overdispersie). Tellingsmodellen alleen bij hele getallen ≥ 0.
 - Trendvorm ("trend_type") op modelniveau: "linear" (standaard, één rechte trend). Kies "piecewise" als de basislijn duidelijk van richting verandert in de periode (een structurele knik/versnelling/vertraging, bijv. na een herpositionering of marktverandering) — dan mag de trend op een paar punten buigen.
-- Rol ("role") per kolom: "kpi" voor de doelvariabele (waar het model omzet/leads probeert te verklaren), "spend" voor marketinguitgaven of -volume per kanaal (ook niet-monetair, zoals e-mailverzendingen — die worden net zo behandeld: opgeteld per week, nul als er die week niks was), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die je NIET als marketingkanaal wilt laten meewegen met een eigen na-ijl/verzadigingseffect.
 - Wees expliciet over onzekerheid. Als een kolomnaam meerdere interpretaties toelaat (bijvoorbeeld "google_sales" kan een campagnenaam zijn, geen garantie), zeg dat in "reasoning" — dit gaat naar een mens die het kan corrigeren voordat er iets draait.
-- Gebruik voor "storage_path" ALTIJD exact het pad dat je in de contextsectie hieronder per bestand hebt gekregen — verzin nooit een eigen pad.
-- Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week (een storing, eenmalige actie, evenement) die geen structureel onderdeel van het patroon is? Stel dan een "event_dummies"-item voor (naam + ISO-jaar/weeknummer) in plaats van de ruwe data te laten liggen — dat geeft het model een controlekolom voor precies die week, zonder dat de bouwer het brondbestand hoeft te bewerken. Doe dit alleen als je de week echt in de data ziet, nooit uit voorzorg.
-- Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag, roep de tool niet aan.
+- Is er een goedgekeurde dataset, gebruik dan bij voorkeur die ene samengevoegde master-tabel als bron in plaats van de losse ruwe bestanden opnieuw te mappen.
+- Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt.
+
+Algemeen:
+- Roep pas een tool aan zodra je zeker genoeg bent. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag.
 - Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.
 
 Resultaten lezen en verbeteren:
@@ -56,6 +80,7 @@ Diagnose-vuistregels (oorzaak → voorstel):
 
 interface ProjectDataContext {
   sources: { file: SourceFile; preview: string | null }[];
+  dataset: ArchitectDatasetContext;
   fit: ArchitectFitContext;
 }
 
@@ -72,6 +97,77 @@ function buildDataContextBlock(ctx: ProjectDataContext): string {
   });
   return `Geüploade bronbestanden voor dit project:\n\n${parts.join("\n\n")}`;
 }
+
+// The PrepareRecipe shape (mirrors mmm_worker.jobspec.parse_prepare_config +
+// lib/types.ts's PrepareRecipe): which raw files, mapped to which column roles, merge
+// into the one master table. No model settings — that is a separate, later tool.
+const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
+  name: "propose_prepare_recipe",
+  description:
+    "Stel een concreet samenvoeg-recept voor: welke bestanden, met welke datumkolom, en welke rol per kolom, om tot één wekelijkse master-tabel te komen. Roep dit pas aan als je zeker genoeg bent; nog niet klaar om te fitten, alleen om samen te voegen en te controleren.",
+  input_schema: {
+    type: "object",
+    properties: {
+      reasoning: {
+        type: "string",
+        description:
+          "Korte, voor de bouwer leesbare uitleg van de mapping-keuzes — inclusief expliciete onzekerheden die gecontroleerd moeten worden.",
+      },
+      sources: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Korte naam voor deze bron, bv. 'weekly_data'." },
+            storage_path: { type: "string" },
+            date_column: { type: ["string", "null"] },
+            columns: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  role: { type: "string", enum: ["kpi", "spend", "control"] satisfies ColumnRole[] },
+                  output_name: { type: ["string", "null"] },
+                  fill: {
+                    type: ["string", "null"],
+                    enum: ["zero", "ffill", "bfill", "interpolate", "mean", "median", null] satisfies (FillStrategy | null)[],
+                    description: "Alleen voor 'control'-kolommen: hoe ontbrekende weken te vullen. null = niet vullen (gat blijft zichtbaar).",
+                  },
+                },
+                required: ["name", "role", "output_name", "fill"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["name", "storage_path", "date_column", "columns"],
+          additionalProperties: false,
+        },
+      },
+      event_dummies: {
+        type: "array",
+        description:
+          "0/1-controlekolommen voor specifieke ISO-weken met een duidelijke, in de data zichtbare uitschieter. Leeg laten als er geen zijn.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Kolomnaam, bv. 'dummy_2025w45'." },
+            weeks: {
+              type: "array",
+              description: "Lijst van [iso_jaar, iso_weeknummer]-paren waarop deze dummy 1 is.",
+              items: { type: "array", items: { type: "integer" } },
+            },
+          },
+          required: ["name", "weeks"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["reasoning", "sources", "event_dummies"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
 
 // The full JobConfig shape (mirrors mmm/worker/mmm_worker/jobspec.py + lib/types.ts),
 // minus `sample` — the wizard applies its own default draws/tune/chains rather than
@@ -190,25 +286,31 @@ export function buildRequest(
   history: Anthropic.MessageParam[],
 ): Anthropic.MessageCreateParamsNonStreaming {
   const dataContext = buildDataContextBlock(ctx);
+  const datasetContext = formatDatasetContextBlock(ctx.dataset);
   const resultsContext = formatFitContextBlock(ctx.fit);
-  const { model, effort } = pickArchitectModel(ctx.fit);
 
-  // Model routing: Sonnet for proposing a config from data; Opus once there is a fit
-  // result (or failure) to reason about. Adaptive thinking + medium effort in both cases.
+  // Model routing: Sonnet for the bounded "propose a recipe/config from data" tasks;
+  // Opus once there is something to actually reason about — a quality report, a fit
+  // result, or a failure of either. Adaptive thinking + medium effort in both cases.
+  const needsAnalysis = datasetNeedsAnalysis(ctx.dataset) || hasFitResults(ctx.fit);
+  const model = needsAnalysis ? ARCHITECT_ANALYST_MODEL : ARCHITECT_CONFIG_MODEL;
+
   return {
     model,
     max_tokens: 4096,
     thinking: { type: "adaptive" },
-    output_config: { effort },
-    tools: [PROPOSE_CONFIG_TOOL],
+    output_config: { effort: "medium" },
+    tools: [PROPOSE_PREPARE_RECIPE_TOOL, PROPOSE_CONFIG_TOOL],
     // Cache breakpoints on the two stable blocks: the fixed instructions (byte-identical
     // for everyone, forever) and the per-project uploaded-data context (stable across a
-    // session until new data is uploaded). The fit-results block is placed AFTER them,
-    // uncached — it changes whenever a new fit finishes, and keeping it past the last
-    // breakpoint means a fresh result never invalidates the cached prefix.
+    // session until new data is uploaded). The dataset and fit-results blocks are placed
+    // AFTER them, uncached — both change whenever a prepare/fit finishes, and keeping
+    // them past the last breakpoint means a fresh result never invalidates the cached
+    // prefix.
     system: [
       { type: "text", text: SYSTEM_INSTRUCTIONS, cache_control: { type: "ephemeral" } },
       { type: "text", text: dataContext, cache_control: { type: "ephemeral" } },
+      { type: "text", text: `Data-voorbereiding voor dit project:\n\n${datasetContext}` },
       { type: "text", text: `Laatste fit / resultaten voor dit project:\n\n${resultsContext}` },
     ],
     messages: history,

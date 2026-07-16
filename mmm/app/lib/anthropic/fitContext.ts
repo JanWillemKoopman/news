@@ -9,23 +9,18 @@ export interface ArchitectFitContext {
   latestJob: { status: JobStatus; error: string | null; config: JobConfig; created_at: string } | null;
 }
 
-const ARCHITECT_CONFIG_MODEL = "claude-sonnet-5";
-const ARCHITECT_ANALYST_MODEL = "claude-opus-4-8";
+// The two models the architect can reason with, and the single place their IDs live —
+// architect.ts imports these rather than hard-coding model names a second time. Model
+// routing itself (which combines fit AND dataset context) lives in architect.ts, since
+// that request-builder is the one place that sees both.
+export const ARCHITECT_CONFIG_MODEL = "claude-sonnet-5";
+export const ARCHITECT_ANALYST_MODEL = "claude-opus-4-8";
 
 // There is something to *reason about* (not just propose from scratch) when a fit has
 // completed or a job has failed — that is when the pricier analyst model earns its keep.
 export function hasFitResults(ctx: ArchitectFitContext): boolean {
   if (ctx.latestRun) return true;
   return ctx.latestJob?.status === "failed";
-}
-
-export function pickArchitectModel(ctx: ArchitectFitContext): { model: string; effort: "medium" | "high" } {
-  // Opus for interpreting results / diagnosing failures (deep reasoning); Sonnet for the
-  // bounded "read the columns, propose a config" task. Effort stays medium to keep cost in
-  // check — the task is well-scoped even for the analyst.
-  return hasFitResults(ctx)
-    ? { model: ARCHITECT_ANALYST_MODEL, effort: "medium" }
-    : { model: ARCHITECT_CONFIG_MODEL, effort: "medium" };
 }
 
 function pct(n: number | undefined): string {
