@@ -10,6 +10,7 @@ import type {
   LikelihoodType,
   SaturationType,
   SourceFile,
+  TransformOp,
   TrendType,
 } from "@/lib/types";
 import {
@@ -47,7 +48,8 @@ import {
 const SYSTEM_INSTRUCTIONS = `Je bent de technische architect binnen een Media Mix Model (MMM) wizard. Een bouwer (een technische collega) heeft ruwe marketingdata geüpload — wekelijkse KPI-cijfers (omzet/leads) en uitgaven per kanaal, soms in meerdere losse bestanden. Jij begeleidt twee stappen, ná elkaar: (1) die ruwe bestanden controleren en samenvoegen tot één definitieve dataset, en pas daarna (2) een modelconfiguratie voorstellen voor de bevroren, geteste statistische kern (mmm-core). Jij verzint nooit de statistische wiskunde zelf — je kiest alleen instellingen die de kern gebruikt.
 
 Stap 1 — Data voorbereiden (vóórdat er gemodelleerd wordt):
-Meerdere ruwe bestanden moeten worden samengevoegd tot één wekelijkse master-tabel voordat er iets gefit kan worden. Jouw taak hier is een concreet SAMENVOEG-RECEPT voorstellen met de tool "propose_prepare_recipe": per bestand de datumkolom en per kolom de rol ("kpi"/"spend"/"control") — dezelfde rollen als in stap 2, maar hier gaat het puur om het samenvoegen, nog niet om het model. Regels voor dit recept:
+Meerdere ruwe bestanden moeten worden samengevoegd tot één wekelijkse master-tabel voordat er iets gefit kan worden. Jouw taak hier is een concreet SAMENVOEG-RECEPT voorstellen met de tool "propose_prepare_recipe": per bestand eventuele opschoon-/hervorm-bewerkingen, de datumkolom en per kolom de rol ("kpi"/"spend"/"control") — dezelfde rollen als in stap 2, maar hier gaat het puur om het samenvoegen, nog niet om het model. Regels voor dit recept:
+- Ruwe data opschonen/hervormen ("transforms" per bestand): je hebt volledige ruimte om elk bestand eerst fit-klaar te maken, met een reeks getypeerde bewerkingen die vóór de roltoewijzing draaien (in volgorde; een latere bewerking ziet het resultaat van de vorige). Beschikbaar: "rename" (kolom hernoemen), "drop_columns", "filter_rows" (rijen houden op een voorwaarde), "drop_duplicates", "scale" (lineair omrekenen — centen→euro's, valutakoers, andere eenheid), "combine" (kolommen optellen/vermenigvuldigen/plakken), "split" (een samengestelde kolom splitsen), "recode" (categoriewaarden hermappen/typfouten herstellen), "parse_date" (een dubbelzinnig of niet-standaard datumformaat forceren met een format-string of dayfirst), "pivot" (een 'lang' bestand met kolommen als week/kanaal/spend omzetten naar 'breed' met één kolom per kanaal). Stel alleen bewerkingen voor die je op basis van de voorbeeldrijen daadwerkelijk nodig acht, en leg in "reasoning" uit waarom. Kolomnamen die je in de rollen of als datumkolom gebruikt, verwijzen naar de namen ná de bewerkingen.
 - Rol ("role") per kolom: "kpi" voor de doelvariabele, "spend" voor marketinguitgaven/-volume per kanaal (ook niet-monetair, zoals e-mailverzendingen), "control" voor overige verklarende variabelen (bijvoorbeeld prijs) die geen eigen kanaal-effect krijgen.
 - Voor een "control"-kolom mag je een "fill"-strategie voorstellen ("zero"/"ffill"/"bfill"/"interpolate"/"mean"/"median") als je verwacht dat er gaten in zitten; laat 'm weg als je dat niet weet — dan blijft een gat gewoon zichtbaar in het kwaliteitsrapport in plaats van dat je iets verzint.
 - Zie je in de voorbeeldrijen een duidelijke uitschieter in één specifieke week? Stel een "event_dummies"-item voor (naam + ISO-jaar/weeknummer).
@@ -158,6 +160,38 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
                 additionalProperties: false,
               },
             },
+            transforms: {
+              type: "array",
+              description:
+                "Ruwe opschoon-/hervorm-bewerkingen op DIT bestand, in volgorde, VÓÓR de roltoewijzing. Gebruik dit om een bestand fit-klaar te maken. Laat leeg als het bestand al netjes is (één rij per week/dag, aparte kolommen per kanaal, eenduidige datum). Verzin nooit een bewerking zonder aanleiding in de voorbeeldrijen.",
+              items: {
+                type: "object",
+                properties: {
+                  op: {
+                    type: "string",
+                    enum: [
+                      "rename",
+                      "drop_columns",
+                      "filter_rows",
+                      "drop_duplicates",
+                      "scale",
+                      "combine",
+                      "split",
+                      "recode",
+                      "parse_date",
+                      "pivot",
+                    ] satisfies TransformOp[],
+                    description:
+                      "Bewerking. Parameters (in 'params'): rename {from, to}; drop_columns {columns:[..]}; filter_rows {column, compare:eq|ne|lt|le|gt|ge|in|not_in|contains, value of values:[..]}; drop_duplicates {subset?:[..]}; scale {column, factor, offset?} (bv. centen→euro's factor 0.01, of valutakoers); combine {columns:[..], into, how:sum|product|concat, sep?}; split {column, into_columns:[..], sep}; recode {column, mapping:[{from,to}], default?}; parse_date {column, format? (bv. \"%d/%m/%Y\"), dayfirst?} — gebruik dit om een dubbelzinnig datumformaat te forceren; pivot {index, columns, values, aggfunc:sum|mean} — zet een 'lang' bestand (kolommen week/kanaal/spend) om naar 'breed' (één kolom per kanaal).",
+                  },
+                  params: {
+                    type: "object",
+                    description: "Parameters horend bij 'op' (zie de opsomming bij 'op'). Alleen de relevante velden invullen.",
+                  },
+                },
+                required: ["op", "params"],
+              },
+            },
           },
           required: ["name", "storage_path", "date_column", "columns"],
           additionalProperties: false,
@@ -238,7 +272,10 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
     required: ["reasoning", "sources", "event_dummies", "features"],
     additionalProperties: false,
   },
-  strict: true,
+  // Not `strict`: the per-source `transforms[].params` are a free-form object (their shape
+  // depends on `op`), which strict-mode's additionalProperties:false forbids. The worker
+  // (jobspec.py + mmm-core) validates every op and its params, and the builder reviews the
+  // proposed recipe before it runs, so the schema here is guidance rather than enforced.
 };
 
 // The full JobConfig shape (mirrors mmm/worker/mmm_worker/jobspec.py + lib/types.ts),

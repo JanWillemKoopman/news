@@ -32,6 +32,7 @@ from mmm_core.ingestion.events import EventDummySpec, build_event_dummy
 from mmm_core.ingestion.feature_engineering import FeatureSpec, build_feature
 from mmm_core.ingestion.quality import QualityReport, Severity
 from mmm_core.ingestion.spec import Role, SourceSpec, aggregation_for
+from mmm_core.ingestion.transforms import TransformSpec, apply_transforms
 
 # A robust-z threshold above which a year-end KPI point is flagged as a possible anomaly.
 _ANOMALY_Z = 5.0
@@ -284,6 +285,7 @@ def build_master_dataset(
     impute_spend_zero: bool = True,
     event_dummies: list[EventDummySpec] | None = None,
     features: list[FeatureSpec] | None = None,
+    source_transforms: dict[str, list[TransformSpec]] | None = None,
 ) -> BuildResult:
     """Align several uploaded sources into one gap-free ISO-week master dataset.
 
@@ -300,6 +302,10 @@ def build_master_dataset(
         features: Optional derived control columns computed from the aligned master
             (lags, rolling means, ratios/shares, interactions, transforms, recurring
             calendar dummies), applied after event dummies and in order.
+        source_transforms: Optional per-source raw-table transforms (keyed by source
+            name) — cleaning/reshaping (rename, filter, dedupe, unit conversion, combine/
+            split, recode, force date parse, long->wide pivot) applied to each raw frame
+            before role-mapping and weekly aggregation.
 
     Returns:
         A :class:`BuildResult`. If there is no overlapping window across the essential
@@ -315,7 +321,13 @@ def build_master_dataset(
     fills_by_source: dict[str, dict[str, str]] = {}
     essential_spans: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {}
 
+    transforms_by_source = source_transforms or {}
     for spec, df in sources:
+        # Raw cleaning/reshaping first (rename, filter, unit conversion, pivot, ...), so the
+        # role-mapping and weekly aggregation below see the tidied frame.
+        pre = transforms_by_source.get(spec.name)
+        if pre:
+            df = apply_transforms(df, list(pre), report, spec.name)
         weekly, roles, fills = _prepare_source(spec, df, report)
         weekly_by_source[spec.name] = weekly
         roles_by_source[spec.name] = roles

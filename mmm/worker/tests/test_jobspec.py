@@ -262,6 +262,36 @@ def test_unknown_feature_op_raises():
         parse_job_config(cfg)
 
 
+# --- per-source transforms --------------------------------------------------------
+
+def test_source_transforms_are_parsed_and_mapped():
+    from mmm_worker.jobspec import source_transforms_map
+
+    cfg = _valid_config()
+    cfg["sources"][1]["transforms"] = [
+        {"op": "scale", "params": {"column": "spend", "factor": 0.01, "offset": None}},
+        {"op": "rename", "params": {"from": "spend", "to": "google_spend"}},
+    ]
+    spec = parse_job_config(cfg)
+    google_ref = spec.sources[1]
+    assert [t.op for t in google_ref.transforms] == ["scale", "rename"]
+    assert google_ref.transforms[0].params == {"column": "spend", "factor": 0.01}  # null offset dropped
+    mapping = source_transforms_map(spec.sources)
+    assert "google" in mapping and len(mapping["google"]) == 2
+
+
+def test_unknown_transform_op_raises():
+    cfg = _valid_config()
+    cfg["sources"][0]["transforms"] = [{"op": "not_a_transform", "params": {}}]
+    with pytest.raises(ValueError):
+        parse_job_config(cfg)
+
+
+def test_no_transforms_defaults_to_empty():
+    spec = parse_job_config(_valid_config())
+    assert all(ref.transforms == () for ref in spec.sources)
+
+
 def test_bad_adstock_type_raises():
     cfg = _valid_config()
     cfg["model"]["channels"][0]["adstock"] = "not-a-shape"

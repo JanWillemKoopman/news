@@ -16,7 +16,7 @@ import tempfile
 
 from mmm_core import build_master_dataset
 
-from mmm_worker.jobspec import parse_job_config
+from mmm_worker.jobspec import parse_job_config, source_transforms_map
 from mmm_worker.ports import JobStore, Storage
 from mmm_worker.tables import read_table
 
@@ -81,7 +81,10 @@ def run_job(
             frames.append((ref.spec, read_table(ref.storage_path, raw)))
 
         build = build_master_dataset(
-            frames, event_dummies=list(spec.event_dummies), features=list(spec.features)
+            frames,
+            event_dummies=list(spec.event_dummies),
+            features=list(spec.features),
+            source_transforms=source_transforms_map(spec.sources),
         )
         quality = _quality_to_json(build.report)
 

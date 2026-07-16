@@ -16,6 +16,7 @@ import type {
   FillStrategy,
   PrepareRecipe,
   SourceFile,
+  TransformSpec,
 } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
@@ -45,6 +46,8 @@ interface DraftSource {
   file: SourceFile;
   included: boolean;
   date_column: string; // "" = auto-detect
+  // Raw cleaning/reshaping steps (architect-authored) applied before role-mapping.
+  transforms: TransformSpec[];
   columns: DraftColumn[];
 }
 interface DraftDummy {
@@ -63,6 +66,15 @@ function sniffHeaders(text: string): string[] {
     .split(sep)
     .map((h) => h.trim().replace(/^"|"$/g, ""))
     .filter(Boolean);
+}
+
+// A compact one-line label for a raw transform, e.g. "scale · column omzet_cent, factor 0.01".
+function transformLabel(t: TransformSpec): string {
+  const params = Object.entries(t.params ?? {})
+    .filter(([, v]) => v !== null && v !== undefined)
+    .map(([k, v]) => `${k} ${typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join(", ");
+  return `${t.op}${params ? ` · ${params}` : ""}`;
 }
 
 // A compact one-line label for a derived feature, e.g. "google_lag1 = lag(google) · weeks 1".
@@ -84,6 +96,7 @@ function draftFromRecipe(
     file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, created_at: "" },
     included: true,
     date_column: s.date_column ?? "",
+    transforms: s.transforms ?? [],
     columns: s.columns.map((c) => ({
       name: c.name,
       role: c.role,
@@ -137,6 +150,7 @@ export function DataPrepSection({
           file,
           included: true,
           date_column: "",
+          transforms: [],
           columns: headers.map((name) => ({ name, role: "", output_name: "", fill: "" })),
         });
       }
@@ -205,6 +219,7 @@ export function DataPrepSection({
         name: s.file.name.replace(/\.[^.]+$/, ""),
         storage_path: s.file.storage_path,
         date_column: s.date_column || undefined,
+        transforms: s.transforms.length ? s.transforms : undefined,
         columns: s.columns
           .filter((c) => c.role !== "")
           .map((c) => ({
@@ -214,7 +229,7 @@ export function DataPrepSection({
             fill: c.role === "control" && c.fill ? c.fill : undefined,
           })),
       }))
-      .filter((s) => s.columns.length > 0);
+      .filter((s) => s.columns.length > 0 || (s.transforms?.length ?? 0) > 0);
 
     if (recipeSources.length === 0) {
       setError("Wijs voor minstens één bestand minimaal één kolom een rol toe voordat je samenvoegt.");
@@ -296,6 +311,30 @@ export function DataPrepSection({
                     />
                   </label>
                 </div>
+                {src.transforms.length > 0 && (
+                  <div className="mb-2 space-y-1 rounded border border-neutral-100 bg-neutral-50 p-2">
+                    <p className="text-xs font-medium text-neutral-500">
+                      Opschoonstappen (vóór roltoewijzing, in volgorde):
+                    </p>
+                    {src.transforms.map((t, tIdx) => (
+                      <div key={`${t.op}-${tIdx}`} className="flex items-center gap-2 text-xs text-neutral-600">
+                        <span className="flex-1 font-mono">{tIdx + 1}. {transformLabel(t)}</span>
+                        <button
+                          onClick={() =>
+                            setDrafts((prev) =>
+                              prev.map((s, i) =>
+                                i !== sIdx ? s : { ...s, transforms: s.transforms.filter((_, j) => j !== tIdx) },
+                              ),
+                            )
+                          }
+                          className="text-rose-600 hover:underline"
+                        >
+                          verwijderen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {src.columns.length === 0 ? (
                   <p className="text-xs text-neutral-400">
                     Geen kolommen automatisch herkend (bv. een xlsx-bestand) — vraag de architect om een

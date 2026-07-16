@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 
-from mmm_core import ColumnSpec, EventDummySpec, FeatureSpec, Role, SourceSpec
+from mmm_core import ColumnSpec, EventDummySpec, FeatureSpec, Role, SourceSpec, TransformSpec
 from mmm_core.model import (
     AdstockType,
     BaselinePriors,
@@ -60,6 +60,7 @@ _BASELINE_PRIOR_FIELDS = {f.name for f in fields(BaselinePriors)}
 class SourceRef:
     spec: SourceSpec
     storage_path: str
+    transforms: tuple[TransformSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -168,6 +169,20 @@ def _parse_channel(c: dict) -> ChannelConfig:
     )
 
 
+def _parse_transforms(source: dict) -> tuple[TransformSpec, ...]:
+    """Parse a source's optional raw-table cleaning/reshaping transforms.
+
+    Op/arity is validated by :class:`TransformSpec`; params stay a free-form dict that
+    mmm-core validates per op at build time (null params are dropped so op defaults apply).
+    """
+    specs = []
+    for t in source.get("transforms", ()) or ():
+        raw_params = t.get("params") or {}
+        params = {k: v for k, v in raw_params.items() if v is not None}
+        specs.append(TransformSpec(op=_require(t, "op", "transform"), params=params))
+    return tuple(specs)
+
+
 def _parse_sources(config: dict) -> list[SourceRef]:
     raw_sources = _require(config, "sources", "config")
     if not raw_sources:
@@ -189,8 +204,19 @@ def _parse_sources(config: dict) -> list[SourceRef]:
             date_column=s.get("date_column"),
             essential=s.get("essential", True),
         )
-        sources.append(SourceRef(spec=spec, storage_path=_require(s, "storage_path", "source")))
+        sources.append(
+            SourceRef(
+                spec=spec,
+                storage_path=_require(s, "storage_path", "source"),
+                transforms=_parse_transforms(s),
+            )
+        )
     return sources
+
+
+def source_transforms_map(sources: list[SourceRef]) -> dict[str, list[TransformSpec]]:
+    """The per-source transform lists keyed by source name, for build_master_dataset."""
+    return {ref.spec.name: list(ref.transforms) for ref in sources if ref.transforms}
 
 
 def parse_prepare_config(config: dict) -> PrepareSpec:

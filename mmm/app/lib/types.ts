@@ -73,11 +73,35 @@ export interface EventDummyConfig {
   weeks: [number, number][]; // [iso_year, iso_week] pairs
 }
 
+// A raw-table cleaning/reshaping step applied to one source BEFORE role-mapping (mirrors
+// mmm_core.ingestion.transforms.TransformSpec). Gives the architect room to tidy messy
+// uploads — rename, filter, dedupe, unit/currency conversion, combine/split columns,
+// recode categories, force a date parse, long→wide pivot — deterministically.
+export type TransformOp =
+  | "rename"
+  | "drop_columns"
+  | "filter_rows"
+  | "drop_duplicates"
+  | "scale"
+  | "combine"
+  | "split"
+  | "recode"
+  | "parse_date"
+  | "pivot";
+
+export interface TransformSpec {
+  op: TransformOp;
+  // Op-specific parameters (see the architect tool description / mmm-core for each op).
+  params?: Record<string, unknown>;
+}
+
 export interface SourceConfig {
   name: string;
   storage_path: string;
   date_column?: string;
   essential?: boolean;
+  // Raw cleaning/reshaping applied to this file before role-mapping, in order.
+  transforms?: TransformSpec[];
   columns: {
     name: string;
     role: ColumnRole;
