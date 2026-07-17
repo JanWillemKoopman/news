@@ -2,57 +2,96 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ColumnRole, Dataset, SourceFile } from "@/lib/types";
+import type {
+  AdstockType,
+  ChannelConfig,
+  ChannelType,
+  ColumnRole,
+  Dataset,
+  JobConfig,
+  LikelihoodType,
+  SaturationType,
+  SourceFile,
+  TrendType,
+} from "@/lib/types";
 import { useWizardChat } from "@/components/WizardChatContext";
 
-const DEFAULT_SAMPLE = { draws: 1000, tune: 1000, chains: 4 };
+type SamplePreset = "fast" | "standard" | "thorough";
+const SAMPLE_PRESETS: Record<SamplePreset, { draws: number; tune: number; chains: number }> = {
+  fast: { draws: 300, tune: 300, chains: 2 },
+  standard: { draws: 1000, tune: 1000, chains: 4 },
+  thorough: { draws: 2000, tune: 2000, chains: 4 },
+};
+const PRESET_LABEL: Record<SamplePreset, { title: string; hint: string }> = {
+  fast: { title: "Snel (verkennen)", hint: "Minder scherpe onzekerheidsmarges, geschikt om snel te itereren" },
+  standard: { title: "Standaard", hint: "Goede balans tussen snelheid en betrouwbaarheid" },
+  thorough: { title: "Grondig (publiceren)", hint: "Langzamer, scherpere marges — voor het definitieve model" },
+};
 
-// The architect's tool output carries `reasoning` for the chat bubble, but that's not
-// part of the job config itself; `sample` (compute cost) is deliberately left for the
-// wizard to default rather than letting the model pick it.
-function configFromProposal(proposal: unknown): string {
-  const { reasoning: _reasoning, ...rest } = proposal as { reasoning?: string; sources: unknown; model: unknown };
-  return JSON.stringify({ ...rest, sample: DEFAULT_SAMPLE }, null, 2);
+function matchPreset(sample: { draws?: number; tune?: number; chains?: number } | undefined): SamplePreset | "custom" {
+  if (!sample) return "standard";
+  for (const [key, preset] of Object.entries(SAMPLE_PRESETS) as [SamplePreset, typeof SAMPLE_PRESETS.fast][]) {
+    if (sample.draws === preset.draws && sample.tune === preset.tune && sample.chains === preset.chains) return key;
+  }
+  return "custom";
 }
 
-// Once a dataset is approved, the merge step already decided every column's role — the
-// fit config just points at that one file and echoes the roles back, instead of asking
-// the builder to re-map raw files from scratch.
-function templateFromDataset(dataset: Dataset): string {
+const CHANNEL_TYPE_OPTIONS: { value: ChannelType; label: string }[] = [
+  { value: "generic", label: "Generiek" },
+  { value: "intent", label: "Intent (zoekt actief — kort effect)" },
+  { value: "brand", label: "Merk (lang effect)" },
+];
+const ADSTOCK_OPTIONS: { value: AdstockType; label: string }[] = [
+  { value: "geometric", label: "Geometrisch (piekt meteen)" },
+  { value: "delayed", label: "Vertraagd (piekt later — TV/radio/OOH)" },
+];
+const SATURATION_OPTIONS: { value: SaturationType; label: string }[] = [
+  { value: "hill", label: "Hill" },
+  { value: "logistic", label: "Logistic" },
+];
+const LIKELIHOOD_OPTIONS: { value: LikelihoodType; label: string }[] = [
+  { value: "normal", label: "Normaal" },
+  { value: "student_t", label: "Student-t (robuust tegen uitschieters)" },
+  { value: "poisson", label: "Poisson (telgegevens)" },
+  { value: "negative_binomial", label: "Negative binomial (overdispersed telgegevens)" },
+];
+const TREND_OPTIONS: { value: TrendType; label: string }[] = [
+  { value: "linear", label: "Lineair" },
+  { value: "piecewise", label: "Piecewise (knikpunten)" },
+];
+
+function templateConfigFromDataset(dataset: Dataset): JobConfig {
   const roles = dataset.column_roles ?? {};
   const byRole = (role: ColumnRole) => Object.entries(roles).filter(([, r]) => r === role).map(([name]) => name);
-  const kpi = byRole("kpi")[0] ?? "REPLACE_ME";
-  const config = {
+  const kpi = byRole("kpi")[0] ?? "";
+  return {
     sources: [
       {
         name: "master",
-        storage_path: dataset.master_path,
+        storage_path: dataset.master_path ?? "",
         date_column: "week_start",
         columns: Object.entries(roles).map(([name, role]) => ({ name, role })),
       },
     ],
     model: {
       kpi,
-      channels: byRole("spend").map((name) => ({ name, channel_type: "generic" })),
+      channels: byRole("spend").map((name) => ({ name, channel_type: "generic" as ChannelType })),
       control_columns: byRole("control"),
       add_trend: true,
       seasonality_periods: 52,
       n_fourier_modes: 2,
     },
-    sample: DEFAULT_SAMPLE,
+    sample: SAMPLE_PRESETS.standard,
   };
-  return JSON.stringify(config, null, 2);
 }
 
-// Fallback for when no dataset has been approved yet: a JSON editor pointing straight at
-// the raw uploads, with placeholders the builder (or the architect) fills in.
-function templateFromRawSources(sources: SourceFile[]): string {
-  const config = {
+function templateConfigFromRawSources(sources: SourceFile[]): JobConfig {
+  return {
     sources: sources.map((s) => ({
       name: s.name.replace(/\.[^.]+$/, ""),
       storage_path: s.storage_path,
-      date_column: null,
-      columns: [{ name: "REPLACE_ME", role: "spend" }],
+      date_column: undefined,
+      columns: [{ name: "REPLACE_ME", role: "spend" as ColumnRole }],
     })),
     model: {
       kpi: "REPLACE_ME",
@@ -62,9 +101,28 @@ function templateFromRawSources(sources: SourceFile[]): string {
       seasonality_periods: 52,
       n_fourier_modes: 2,
     },
-    sample: DEFAULT_SAMPLE,
+    sample: SAMPLE_PRESETS.standard,
   };
-  return JSON.stringify(config, null, 2);
+}
+
+// The architect's tool output carries `reasoning` for the chat bubble, but that's not
+// part of the job config itself; `sample` (compute cost) is deliberately left for the
+// wizard to default rather than letting the model pick it.
+function configFromProposal(proposal: unknown): JobConfig {
+  const { reasoning: _reasoning, ...rest } = proposal as { reasoning?: string } & JobConfig;
+  return { ...rest, sample: SAMPLE_PRESETS.standard };
+}
+
+function validate(config: JobConfig): string | null {
+  if (!config.model?.kpi || config.model.kpi === "REPLACE_ME") return "Kies een KPI-kolom.";
+  if (!config.model?.channels || config.model.channels.length === 0) return "Voeg minstens één kanaal toe.";
+  for (const ch of config.model.channels) {
+    if (!ch.name || ch.name === "REPLACE_ME") return "Elk kanaal moet een geldige kolomnaam hebben.";
+  }
+  if (!config.sources?.length || config.sources.some((s) => !s.storage_path)) {
+    return "Geen geldige brondata gevonden — keur eerst een dataset goed bij stap 3.";
+  }
+  return null;
 }
 
 export function ModelConfigForm({
@@ -77,42 +135,102 @@ export function ModelConfigForm({
   approvedDataset: Dataset | null;
 }) {
   const router = useRouter();
-  const initial = useMemo(
-    () => (approvedDataset ? templateFromDataset(approvedDataset) : templateFromRawSources(sources)),
+  const template = useMemo(
+    () => (approvedDataset ? templateConfigFromDataset(approvedDataset) : templateConfigFromRawSources(sources)),
     [approvedDataset, sources],
   );
-  const [text, setText] = useState(initial);
+  const [config, setConfig] = useState<JobConfig>(template);
+  // The structured form needs real column names (only known once a dataset is
+  // approved); without that, fall back to the plain JSON editor exactly as before.
+  const [mode, setMode] = useState<"form" | "json">(approvedDataset ? "form" : "json");
+  const [jsonText, setJsonText] = useState(() => JSON.stringify(template, null, 2));
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { pendingConfig, clearPendingConfig } = useWizardChat();
 
-  // Re-seed the editor whenever the underlying source changes (a dataset just got
-  // approved, or the raw file list changed) — same "start from the latest known-good
-  // input" behaviour as before, just now dataset-aware.
+  const kpiOptions = useMemo(() => {
+    const roles = approvedDataset?.column_roles ?? {};
+    return Object.entries(roles).filter(([, r]) => r === "kpi").map(([name]) => name);
+  }, [approvedDataset]);
+  const controlOptions = useMemo(() => {
+    const roles = approvedDataset?.column_roles ?? {};
+    return Object.entries(roles).filter(([, r]) => r === "control").map(([name]) => name);
+  }, [approvedDataset]);
+
+  // Re-seed whenever the underlying source changes (a dataset just got approved, or the
+  // raw file list changed) — same "start from the latest known-good input" as before.
   useEffect(() => {
-    setText(initial);
-  }, [initial]);
+    setConfig(template);
+    setJsonText(JSON.stringify(template, null, 2));
+    setMode(approvedDataset ? "form" : "json");
+    setJsonError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template]);
 
   useEffect(() => {
     if (pendingConfig === null) return;
-    setText(configFromProposal(pendingConfig));
+    const next = configFromProposal(pendingConfig);
+    setConfig(next);
+    setJsonText(JSON.stringify(next, null, 2));
+    setMode(approvedDataset ? "form" : "json");
     clearPendingConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingConfig, clearPendingConfig]);
+
+  function updateConfig(patch: Partial<JobConfig>) {
+    const next = { ...config, ...patch };
+    setConfig(next);
+    setJsonText(JSON.stringify(next, null, 2));
+  }
+  function updateModel(patch: Partial<JobConfig["model"]>) {
+    updateConfig({ model: { ...config.model, ...patch } });
+  }
+  function updateChannel(idx: number, patch: Partial<ChannelConfig>) {
+    updateModel({ channels: config.model.channels.map((c, i) => (i === idx ? { ...c, ...patch } : c)) });
+  }
+
+  function switchToJson() {
+    setJsonText(JSON.stringify(config, null, 2));
+    setMode("json");
+  }
+  function switchToForm() {
+    try {
+      const parsed = JSON.parse(jsonText) as JobConfig;
+      setConfig(parsed);
+      setJsonError(null);
+      setMode("form");
+    } catch (e) {
+      setJsonError("Ongeldige JSON: " + (e as Error).message);
+    }
+  }
+
+  const preset = matchPreset(config.sample);
+  const validationError = mode === "form" ? validate(config) : null;
 
   async function onRun() {
     setError(null);
-    let config: unknown;
-    try {
-      config = JSON.parse(text);
-    } catch (e) {
-      setError("Ongeldige JSON: " + (e as Error).message);
-      return;
+    let payload: unknown;
+    if (mode === "json") {
+      try {
+        payload = JSON.parse(jsonText);
+      } catch (e) {
+        setError("Ongeldige JSON: " + (e as Error).message);
+        return;
+      }
+    } else {
+      const v = validate(config);
+      if (v) {
+        setError(v);
+        return;
+      }
+      payload = config;
     }
     setBusy(true);
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, config, dataset_id: approvedDataset?.id ?? null }),
+      body: JSON.stringify({ project_id: projectId, config: payload, dataset_id: approvedDataset?.id ?? null }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -122,24 +240,242 @@ export function ModelConfigForm({
     router.refresh();
   }
 
+  const canSubmit = sources.length > 0 || !!approvedDataset;
+
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-neutral-500">
-        {approvedDataset
-          ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan."
-          : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 2 voor een ingevulde start."}
-      </p>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        spellCheck={false}
-        rows={16}
-        className="w-full rounded-lg border border-neutral-300 p-3 font-mono text-xs outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
-      />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-neutral-500">
+          {approvedDataset
+            ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan."
+            : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
+        </p>
+        {approvedDataset && (
+          <button
+            onClick={mode === "form" ? switchToJson : switchToForm}
+            className="flex-none rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:bg-neutral-50"
+          >
+            {mode === "form" ? "Geavanceerd (JSON)" : "Terug naar formulier"}
+          </button>
+        )}
+      </div>
+
+      {mode === "form" ? (
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-neutral-500">
+              KPI-kolom
+              <select
+                value={config.model.kpi}
+                onChange={(e) => updateModel({ kpi: e.target.value })}
+                className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+              >
+                {kpiOptions.length === 0 && <option value="">geen KPI-kolom gevonden</option>}
+                {kpiOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+              Kanalen ({config.model.channels.length})
+            </p>
+            <div className="space-y-3">
+              {config.model.channels.map((ch, i) => (
+                <div key={ch.name} className="rounded-lg border border-neutral-200 p-3">
+                  <p className="mb-2 text-sm font-medium text-neutral-900">{ch.name}</p>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <label className="text-xs text-neutral-500">
+                      Type
+                      <select
+                        value={ch.channel_type ?? "generic"}
+                        onChange={(e) => updateChannel(i, { channel_type: e.target.value as ChannelType })}
+                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                      >
+                        {CHANNEL_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-xs text-neutral-500">
+                      Adstock (carry-over)
+                      <select
+                        value={ch.adstock ?? "geometric"}
+                        onChange={(e) => updateChannel(i, { adstock: e.target.value as AdstockType })}
+                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                      >
+                        {ADSTOCK_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-xs text-neutral-500">
+                      Saturatie
+                      <select
+                        value={ch.saturation ?? "hill"}
+                        onChange={(e) => updateChannel(i, { saturation: e.target.value as SaturationType })}
+                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                      >
+                        {SATURATION_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              ))}
+              {config.model.channels.length === 0 && (
+                <p className="text-sm text-neutral-400">
+                  Geen spend-kolommen gevonden in de goedgekeurde dataset — ga terug naar stap 3.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {controlOptions.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                Control-kolommen
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {controlOptions.map((name) => {
+                  const active = (config.model.control_columns ?? []).includes(name);
+                  return (
+                    <button
+                      key={name}
+                      onClick={() =>
+                        updateModel({
+                          control_columns: active
+                            ? (config.model.control_columns ?? []).filter((c) => c !== name)
+                            : [...(config.model.control_columns ?? []), name],
+                        })
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                        active
+                          ? "border-rose-200 bg-rose-50 text-rose-700"
+                          : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <details className="rounded-lg border border-neutral-200 p-3 text-sm">
+            <summary className="cursor-pointer select-none font-medium text-neutral-800">
+              Trend, seizoen &amp; ruismodel
+            </summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+                <input
+                  type="checkbox"
+                  checked={config.model.add_trend ?? true}
+                  onChange={(e) => updateModel({ add_trend: e.target.checked })}
+                />
+                Trend meenemen
+              </label>
+              {config.model.add_trend && (
+                <label className="text-xs text-neutral-500">
+                  Trendvorm
+                  <select
+                    value={config.model.trend_type ?? "linear"}
+                    onChange={(e) => updateModel({ trend_type: e.target.value as TrendType })}
+                    className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                  >
+                    {TREND_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label className="text-xs text-neutral-500">
+                Seizoensperiode (weken, leeg = geen)
+                <input
+                  type="number"
+                  value={config.model.seasonality_periods ?? ""}
+                  onChange={(e) =>
+                    updateModel({ seasonality_periods: e.target.value === "" ? null : Number(e.target.value) })
+                  }
+                  className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                />
+              </label>
+              <label className="text-xs text-neutral-500">
+                Ruismodel
+                <select
+                  value={config.model.likelihood ?? "normal"}
+                  onChange={(e) => updateModel({ likelihood: e.target.value as LikelihoodType })}
+                  className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                >
+                  {LIKELIHOOD_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <div>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">Sampling</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(Object.keys(SAMPLE_PRESETS) as SamplePreset[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => updateConfig({ sample: SAMPLE_PRESETS[key] })}
+                  className={`rounded-lg border p-2.5 text-left transition ${
+                    preset === key ? "border-rose-300 bg-rose-50" : "border-neutral-200 hover:bg-neutral-50"
+                  }`}
+                >
+                  <p className={`text-sm font-medium ${preset === key ? "text-rose-700" : "text-neutral-900"}`}>
+                    {PRESET_LABEL[key].title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">{PRESET_LABEL[key].hint}</p>
+                </button>
+              ))}
+            </div>
+            {preset === "custom" && (
+              <p className="mt-1.5 text-xs text-neutral-400">
+                Aangepaste sampling ({config.sample?.draws} draws · {config.sample?.tune} tune ·{" "}
+                {config.sample?.chains} chains) — via een architect-voorstel of het JSON-formulier.
+              </p>
+            )}
+          </div>
+
+          {validationError && <p className="text-sm text-rose-600">{validationError}</p>}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            spellCheck={false}
+            rows={16}
+            className="w-full rounded-lg border border-neutral-300 p-3 font-mono text-xs outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+          />
+          {jsonError && <p className="text-sm text-rose-600">{jsonError}</p>}
+        </div>
+      )}
+
       {error && <p className="text-sm text-rose-600">{error}</p>}
       <button
         onClick={onRun}
-        disabled={busy || (sources.length === 0 && !approvedDataset)}
+        disabled={busy || !canSubmit || (mode === "form" && !!validationError)}
         className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
       >
         {busy ? "Starten…" : "Fit starten"}
