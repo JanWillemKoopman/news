@@ -8,7 +8,7 @@ from mmm_core.model import (
     SaturationType,
     TrendType,
 )
-from mmm_worker.jobspec import parse_job_config
+from mmm_worker.jobspec import parse_hier_job_config, parse_job_config
 
 
 def _valid_config():
@@ -297,3 +297,55 @@ def test_bad_adstock_type_raises():
     cfg["model"]["channels"][0]["adstock"] = "not-a-shape"
     with pytest.raises(ValueError):
         parse_job_config(cfg)
+
+
+# --- hierarchical (multi-region) job configs --------------------------------------
+
+def _hier_config():
+    region_sources = [
+        {"name": "revenue", "storage_path": "rev.csv", "date_column": "week",
+         "columns": [{"name": "revenue", "role": "kpi"}]},
+        {"name": "google", "storage_path": "g.csv", "date_column": "date",
+         "columns": [{"name": "spend", "role": "spend", "output_name": "google_spend"}]},
+    ]
+    return {
+        "regions": {
+            "NL": {"sources": region_sources},
+            "BE": {"sources": region_sources},
+        },
+        "model": {
+            "kpi": "revenue",
+            "channels": [{"name": "google_spend", "channel_type": "intent", "l_max": 8}],
+        },
+        "sample": {"draws": 200, "tune": 200, "chains": 2},
+    }
+
+
+def test_parse_hier_valid_config():
+    spec = parse_hier_job_config(_hier_config())
+    assert set(spec.regions) == {"NL", "BE"}
+    assert spec.regions["NL"][0].storage_path == "rev.csv"
+    assert spec.model.kpi == "revenue"
+    assert spec.model.channels[0].l_max == 8
+    assert spec.sample == {"draws": 200, "tune": 200, "chains": 2}
+
+
+def test_hier_missing_regions_raises():
+    cfg = _hier_config()
+    del cfg["regions"]
+    with pytest.raises(ValueError):
+        parse_hier_job_config(cfg)
+
+
+def test_hier_single_region_raises():
+    cfg = _hier_config()
+    del cfg["regions"]["BE"]
+    with pytest.raises(ValueError):
+        parse_hier_job_config(cfg)
+
+
+def test_hier_event_dummies_and_control_columns_flow_through_shared_parser():
+    cfg = _hier_config()
+    cfg["event_dummies"] = [{"name": "dummy_2025w45", "weeks": [[2025, 45]]}]
+    spec = parse_hier_job_config(cfg)
+    assert "dummy_2025w45" in spec.model.control_columns

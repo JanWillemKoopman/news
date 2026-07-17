@@ -149,7 +149,7 @@ function draftFromRecipe(
 ): { sources: DraftSource[]; dummies: DraftDummy[]; features: FeatureSpec[] } {
   const byPath = new Map(files.map((f) => [f.storage_path, f]));
   const sources: DraftSource[] = recipe.sources.map((s) => ({
-    file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, created_at: "" },
+    file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, preview: null, created_at: "" },
     included: true,
     date_column: s.date_column ?? "",
     transforms: s.transforms ?? [],

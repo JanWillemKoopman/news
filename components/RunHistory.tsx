@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ModelRun } from "@/lib/types";
+import { isHierSummary, type ModelRun } from "@/lib/types";
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -19,6 +19,11 @@ function verdictLabel(run: ModelRun): { text: string; rose: boolean } {
   if (verdict === "warn") return { text: "let op", rose: true };
   return { text: "geslaagd", rose: false };
 }
+
+// A hierarchical run's `summary` has no diagnostics.r2/mape/quality_gate and no
+// contribution_share per channel — CompareTable and the R²/MAPE row below assume the
+// single-region FitSummary shape, so hierarchical runs get a simplified row instead and
+// are excluded from the two-run comparison.
 
 // Every fit run stays available (not just the latest) so a builder can go back to an
 // earlier, better run, or compare two side by side before deciding which becomes the
@@ -64,30 +69,50 @@ export function RunHistory({
 
       <ul className="space-y-1.5">
         {runs.map((run) => {
-          const v = verdictLabel(run);
           const isSelected = run.id === selectedId;
           const isCompared = compareIds.includes(run.id);
+          const hier = isHierSummary(run.summary);
           return (
             <li key={run.id}>
               <button
-                onClick={() => (compareMode ? toggleCompare(run.id) : onSelect(run.id))}
+                onClick={() => {
+                  if (compareMode) {
+                    if (!hier) toggleCompare(run.id); // hierarchical runs can't be compared
+                  } else {
+                    onSelect(run.id);
+                  }
+                }}
+                disabled={compareMode && hier}
                 className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition ${
-                  compareMode
-                    ? isCompared
-                      ? "border-accent/40 bg-accent-dim"
-                      : "border-border hover:bg-surface-2"
-                    : isSelected
-                      ? "border-accent/40 bg-accent-dim"
-                      : "border-border hover:bg-surface-2"
+                  compareMode && hier
+                    ? "cursor-not-allowed border-border opacity-50"
+                    : compareMode
+                      ? isCompared
+                        ? "border-accent/40 bg-accent-dim"
+                        : "border-border hover:bg-surface-2"
+                      : isSelected
+                        ? "border-accent/40 bg-accent-dim"
+                        : "border-border hover:bg-surface-2"
                 }`}
               >
                 <span className="flex-1 text-fg">{dateLabel(run.created_at)}</span>
-                <span className="text-xs text-fg-muted">
-                  R² {fmt(run.summary.diagnostics.r2, 2)} · MAPE {pct(run.summary.diagnostics.mape)}
-                </span>
-                <span className={`text-xs font-medium ${v.rose ? "text-danger" : "text-fg-faint"}`}>
-                  {v.text}
-                </span>
+                {isHierSummary(run.summary) ? (
+                  <span className="text-xs text-fg-muted">Hiërarchisch — {run.summary.regions.length} regio&apos;s</span>
+                ) : (
+                  <>
+                    <span className="text-xs text-fg-muted">
+                      R² {fmt(run.summary.diagnostics.r2, 2)} · MAPE {pct(run.summary.diagnostics.mape)}
+                    </span>
+                    {(() => {
+                      const v = verdictLabel(run);
+                      return (
+                        <span className={`text-xs font-medium ${v.rose ? "text-danger" : "text-fg-faint"}`}>
+                          {v.text}
+                        </span>
+                      );
+                    })()}
+                  </>
+                )}
                 {run.is_published && (
                   <span className="rounded-full border border-accent/30 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent">
                     gepubliceerd

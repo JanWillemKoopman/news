@@ -60,7 +60,7 @@ export function computePipelineSteps({
   runs: ModelRun[];
 }): StepMeta[] {
   const hasSources = sources.length > 0;
-  const fitJobs = jobs.filter((j) => j.type === "fit");
+  const fitJobs = jobs.filter((j) => j.type === "fit" || j.type === "fit_hierarchical");
   const latestFitJob = fitJobs[0] ?? null;
 
   let focused = false;

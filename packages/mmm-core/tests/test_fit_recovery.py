@@ -215,6 +215,38 @@ def test_poisson_count_likelihood_fits_and_decomposes():
     import json
     json.dumps(summary.to_json_dict())
 
+    # Planning outputs (response curves / budget optimisation) are no longer skipped for
+    # count likelihoods — see mmm_core.optimize.optimize_budget_count /
+    # ChannelResponse.contribution_samples's log-link branch.
+    assert len(summary.response_curves) == 2
+    for curve in summary.response_curves:
+        # exactly 0 at zero spend, by construction (own_log_effect(0) == 0 identically).
+        first = curve.points[0]
+        assert first.weekly_spend == 0.0
+        assert abs(first.contribution.p3) < 1e-6
+        assert abs(first.contribution.p50) < 1e-6
+        assert abs(first.contribution.p97) < 1e-6
+        # monotonically non-decreasing in spend: beta > 0 and the saturation shape is
+        # monotonic per posterior sample, and exp() preserves that ordering, so every
+        # percentile of the curve must be non-decreasing too (not just the median).
+        p50s = [p.contribution.p50 for p in curve.points]
+        assert all(b >= a - 1e-9 for a, b in zip(p50s, p50s[1:]))
+    assert summary.optimal_allocation is not None
+    # _planning_outputs' `total_current` is the *average weekly* spend per channel summed
+    # (built.spend[:, i].mean()), not each channel's total_spend over the whole window —
+    # that's the sum over all `n_weeks` weeks, so divide it back out here.
+    total_current_weekly = sum(c.total_spend for c in summary.channels) / summary.n_weeks
+    assert summary.optimal_allocation.total_weekly_budget == pytest.approx(total_current_weekly, rel=1e-6)
+    assert summary.optimal_allocation.predicted_contribution.p50 > 0
+    assert len(summary.efficiency_frontier) == 6
+    # Sweep spans 0.5x..2x today's spend: the top of the sweep should out-predict the
+    # bottom, and every point should predict some positive contribution. (Not asserting
+    # strict step-by-step monotonicity: SLSQP on the non-convex Hill-saturation objective
+    # can land in slightly different local optima between adjacent budget levels.)
+    frontier_p50 = [p.predicted_contribution.p50 for p in summary.efficiency_frontier]
+    assert all(v > 0 for v in frontier_p50)
+    assert frontier_p50[-1] > frontier_p50[0]
+
     # predict.py reconstructs exp(mu) on the log link
     from mmm_core.model.predict import posterior_predict
 

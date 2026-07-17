@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 
 // Publish a model run to the client dashboard: mark the run published and flip the
 // project to 'published'. Builder-only (enforced by RLS and this guard).
+//
+// Delegates to the mmm.publish_run() RPC (0008_publish_run_rpc.sql) so the run update,
+// project update, and un-publishing any previous "champion" run of this project happen
+// atomically in one transaction — a partial failure can no longer leave the run and
+// project status out of sync, and republishing a newer run always clears the older one.
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
@@ -16,25 +21,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   const supabase = createClient();
-  const now = new Date().toISOString();
-
-  const { error: runErr } = await supabase
+  const { error } = await supabase
     .schema("mmm")
-    .from("model_runs")
-    .update({ is_published: true, published_at: now })
-    .eq("id", body.model_run_id)
-    .eq("project_id", params.id);
-  if (runErr) {
-    return NextResponse.json({ error: runErr.message }, { status: 400 });
-  }
-
-  const { error: projErr } = await supabase
-    .schema("mmm")
-    .from("projects")
-    .update({ status: "published", published_at: now })
-    .eq("id", params.id);
-  if (projErr) {
-    return NextResponse.json({ error: projErr.message }, { status: 400 });
+    .rpc("publish_run", { p_project_id: params.id, p_model_run_id: body.model_run_id });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
