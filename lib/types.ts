@@ -26,6 +26,10 @@ export interface SourceFile {
   name: string;
   storage_path: string;
   role_hint: string | null;
+  // First ~15 lines of a CSV source, cached at upload time (SourceUpload.tsx) so the chat
+  // architect route doesn't re-download the file from Storage on every turn. Null for
+  // binary formats (xlsx) and for files uploaded before this column existed.
+  preview: string | null;
   created_at: string;
 }
 
@@ -34,7 +38,7 @@ export type JobProgress = "downloading" | "building_dataset" | "sampling" | "sav
 export interface Job {
   id: string;
   project_id: string;
-  type: "fit" | "prepare";
+  type: "fit" | "prepare" | "fit_hierarchical";
   status: JobStatus;
   progress: JobProgress | null;
   config: JobConfig | PrepareRecipe;
@@ -84,7 +88,13 @@ export interface JobConfig {
   model: ModelConfig;
   event_dummies?: EventDummyConfig[];
   features?: FeatureSpec[];
-  sample?: { draws?: number; tune?: number; chains?: number };
+  // Mirrors _ALLOWED_SAMPLE_KEYS in worker/mmm_worker/jobspec.py — any other key is
+  // silently dropped by the worker rather than rejected.
+  sample?: { draws?: number; tune?: number; chains?: number; target_accept?: number; seed?: number };
+  // Opt-in extra reliability checks (mmm_worker.jobspec.EvaluationSpec), both default off
+  // — each is a full extra fit (or several, for CV folds), so leave unchecked unless the
+  // builder wants the longer wait.
+  evaluation?: { cross_validation?: boolean; placebo?: boolean };
 }
 
 // A 0/1 control column for named ISO weeks (anomalies, one-off promotions, ...) —
@@ -343,4 +353,42 @@ export interface FitSummary {
   response_curves?: ResponseCurve[];
   optimal_allocation?: OptimalAllocation | null;
   efficiency_frontier?: FrontierPoint[];
+}
+
+// --- Hierarchical (multi-region) fit summary ---
+//
+// Mirrors mmm_core.model.hierarchical.HierSummary.to_json_dict(), with a `kind` field
+// added by mmm_worker.runner.run_hier_job() so the wizard can tell a hierarchical summary
+// apart from a single-region FitSummary in the same `model_runs.summary` jsonb column.
+// Deliberately a separate, unrelated shape rather than folded into FitSummary — a
+// hierarchical run has no response_curves/optimal_allocation/quality_gate (see
+// mmm_core.model.hierarchical) and the wizard only renders it via HierarchicalSummaryView,
+// never SummaryView.
+
+export interface HierChannelResult {
+  name: string;
+  global_contribution_share: Interval;
+  global_roas: Interval;
+  per_region_share: Record<string, Interval>;
+}
+
+export interface HierDiagnostics {
+  max_r_hat: number;
+  n_divergences: number;
+  r2_pooled: number;
+  decomposition_ok: boolean;
+}
+
+export interface HierSummary {
+  kind: "hierarchical";
+  kpi: string;
+  regions: string[];
+  n_weeks: number;
+  channels: HierChannelResult[];
+  diagnostics: HierDiagnostics;
+}
+
+/** True when a stored `model_runs.summary` is a hierarchical (multi-region) result. */
+export function isHierSummary(summary: unknown): summary is HierSummary {
+  return Boolean(summary) && typeof summary === "object" && (summary as { kind?: unknown }).kind === "hierarchical";
 }

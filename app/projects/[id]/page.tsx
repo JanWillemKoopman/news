@@ -37,7 +37,16 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }] = await Promise.all([
     supabase.schema("mmm").from("source_files").select("*").eq("project_id", p.id).order("created_at"),
     supabase.schema("mmm").from("jobs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
-    supabase.schema("mmm").from("model_runs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
+    // Trimmed columns: `analysis` holds base64 PNG data URLs from the deep-analysis step
+    // and can be sizeable per run. RunHistory only needs summary.quality_gate + dates for
+    // every run; ResultsView only ever shows `analysis` for the newest run — fetched
+    // separately below instead of dragging every historical run's analysis along here.
+    supabase
+      .schema("mmm")
+      .from("model_runs")
+      .select("id, project_id, job_id, summary, quality, is_published, created_at, published_at")
+      .eq("project_id", p.id)
+      .order("created_at", { ascending: false }),
     supabase
       .schema("mmm")
       .from("datasets")
@@ -47,11 +56,28 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       .limit(1),
   ]);
   const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
+
+  const runsList = (runs ?? []) as ModelRun[];
+  let latestAnalysis: ModelRun["analysis"] = null;
+  if (runsList[0]) {
+    const { data: analysisRow } = await supabase
+      .schema("mmm")
+      .from("model_runs")
+      .select("analysis")
+      .eq("id", runsList[0].id)
+      .maybeSingle();
+    latestAnalysis = (analysisRow?.analysis as ModelRun["analysis"]) ?? null;
+  }
+  const runsWithAnalysis: ModelRun[] = runsList.map((r, i) => ({
+    ...r,
+    analysis: i === 0 ? latestAnalysis : null,
+    inference_data_path: null,
+  }));
   const pipelineSteps = computePipelineSteps({
     sources: (sources ?? []) as SourceFile[],
     dataset: latestDataset,
     jobs: (jobs ?? []) as Job[],
-    runs: (runs ?? []) as ModelRun[],
+    runs: runsWithAnalysis,
   });
 
   return (
@@ -103,7 +129,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   </PipelineStep>
 
                   <PipelineStep id="results" number={6}>
-                    <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
+                    <ResultsView projectId={p.id} runs={runsWithAnalysis} />
                   </PipelineStep>
                 </PipelineShell>
               </div>

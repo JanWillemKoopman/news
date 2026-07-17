@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnalysisView } from "@/components/AnalysisView";
+import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
 import { RunHistory } from "@/components/RunHistory";
 import { SummaryView } from "@/components/SummaryView";
 import { StatusBadge } from "@/components/ui";
-import type { ModelRun, RunAnalysis } from "@/lib/types";
+import { isHierSummary, type ModelRun, type RunAnalysis } from "@/lib/types";
 
 export function ResultsView({ projectId, runs }: { projectId: string; runs: ModelRun[] }) {
   const router = useRouter();
@@ -64,10 +65,16 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
     router.refresh();
   }
 
+  const viewedIsHierarchical = isHierSummary(viewedRun.summary);
+
   return (
     <div className="space-y-5">
       <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} />
-      <SummaryView summary={viewedRun.summary} />
+      {isHierSummary(viewedRun.summary) ? (
+        <HierarchicalSummaryView summary={viewedRun.summary} />
+      ) : (
+        <SummaryView summary={viewedRun.summary} />
+      )}
       <div className="flex items-center gap-3 border-t border-border pt-4">
         {viewedRun.is_published ? (
           <StatusBadge status="published" />
@@ -82,7 +89,10 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
         )}
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
-      {viewedRun.id === latestRun.id && (
+      {/* Deep analysis assumes the single-region FitSummary shape (it feeds the summary
+          JSON straight to Claude's code-execution tool) — not offered for a hierarchical
+          run, which has no response curves / quality gate for it to interpret. */}
+      {viewedRun.id === latestRun.id && !viewedIsHierarchical && (
         <div className="border-t border-border pt-4">
           <p className="mb-2 text-sm text-fg-muted">
             Laat Claude deze uitkomst verder analyseren en op maat gemaakte grafieken maken (kan even duren).

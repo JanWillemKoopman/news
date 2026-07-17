@@ -8,6 +8,9 @@ license = { text = "UNLICENSED" }
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
+    # Used unconditionally by mmm_core.optimize (SLSQP budget optimisation) — not part of
+    # the heavy [model] extra, since optimize.py needs no PyMC/numpyro to run.
+    "scipy>=1.11",
 ]
 
 [project.optional-dependencies]

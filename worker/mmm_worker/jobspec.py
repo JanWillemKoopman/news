@@ -31,11 +31,23 @@ The full toolbox is opt-in per field (defaults reproduce the original model):
     * per control column: ``fill`` ("zero"|"ffill"|"bfill"|"interpolate"|"mean"|"median").
     * ``event_dummies``: 0/1 control columns for named ISO weeks; their names are appended
       to ``model.control_columns`` automatically.
+    * ``evaluation``: optional ``{"cross_validation": bool, "placebo": bool}``, both
+      default ``false``. Opt-in extra reliability checks run once after the main fit
+      succeeds and folded into the quality gate (see :class:`EvaluationSpec`); each
+      roughly doubles the job's compute cost, so leave both off unless asked for.
+
+A separate job type, ``fit_hierarchical``, fits a multi-region model instead
+(:func:`parse_hier_job_config`): its config replaces top-level ``sources`` with
+``regions`` — ``{"<region name>": {"sources": [...]}}``, one entry per region, each using
+the same column-role recipe as a single-region job — and is otherwise shaped like a normal
+fit job (``model``, ``event_dummies``, ``features``, ``sample``). See
+:func:`mmm_core.ingestion.build_master_datasets_by_region` and
+:func:`mmm_core.model.hierarchical.fit_hierarchical`.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 
 from mmm_core import ColumnSpec, EventDummySpec, FeatureSpec, Role, SourceSpec, TransformSpec
 from mmm_core.model import (
@@ -64,8 +76,35 @@ class SourceRef:
 
 
 @dataclass(frozen=True)
+class EvaluationSpec:
+    """Opt-in extra reliability checks run once, after the main fit succeeds.
+
+    Both default off: each roughly doubles (or worse) the job's compute time — a
+    cross-validation fold or the placebo test is itself a full extra fit — so they must
+    never run unless the builder explicitly asks for them. See
+    :func:`mmm_core.model.fit.recompute_quality_gate`.
+    """
+
+    cross_validation: bool = False
+    placebo: bool = False
+
+
+@dataclass(frozen=True)
 class JobSpec:
     sources: list[SourceRef]
+    model: ModelConfig
+    sample: dict
+    event_dummies: tuple[EventDummySpec, ...] = ()
+    features: tuple[FeatureSpec, ...] = ()
+    evaluation: EvaluationSpec = field(default_factory=EvaluationSpec)
+
+
+@dataclass(frozen=True)
+class HierJobSpec:
+    """The parsed config of a ``type='fit_hierarchical'`` job — see
+    :func:`parse_hier_job_config`."""
+
+    regions: dict[str, list[SourceRef]]
     model: ModelConfig
     sample: dict
     event_dummies: tuple[EventDummySpec, ...] = ()
@@ -219,6 +258,17 @@ def source_transforms_map(sources: list[SourceRef]) -> dict[str, list[TransformS
     return {ref.spec.name: list(ref.transforms) for ref in sources if ref.transforms}
 
 
+def _parse_evaluation(config: dict) -> EvaluationSpec:
+    d = config.get("evaluation") or {}
+    unknown = set(d) - {"cross_validation", "placebo"}
+    if unknown:
+        raise ValueError(f"job config: unknown evaluation field(s) {sorted(unknown)}")
+    return EvaluationSpec(
+        cross_validation=bool(d.get("cross_validation", False)),
+        placebo=bool(d.get("placebo", False)),
+    )
+
+
 def parse_prepare_config(config: dict) -> PrepareSpec:
     """Parse a ``type='prepare'`` job's ``config`` (sources + event dummies + features)."""
     return PrepareSpec(
@@ -228,11 +278,8 @@ def parse_prepare_config(config: dict) -> PrepareSpec:
     )
 
 
-def parse_job_config(config: dict) -> JobSpec:
-    """Validate and parse a job ``config`` dict into a :class:`JobSpec`."""
-    sources = _parse_sources(config)
-    event_dummies = _parse_event_dummies(config)
-
+def _parse_model(config: dict, event_dummies: tuple[EventDummySpec, ...]) -> ModelConfig:
+    """Parse the ``model`` block shared by single-region and hierarchical job configs."""
     m = _require(config, "model", "config")
     channels = tuple(_parse_channel(c) for c in _require(m, "channels", "model"))
 
@@ -243,7 +290,7 @@ def parse_job_config(config: dict) -> JobSpec:
         if spec_dummy.name not in control_columns:
             control_columns.append(spec_dummy.name)
 
-    model = ModelConfig(
+    return ModelConfig(
         kpi=_require(m, "kpi", "model"),
         channels=channels,
         control_columns=tuple(control_columns),
@@ -257,9 +304,49 @@ def parse_job_config(config: dict) -> JobSpec:
         priors=_baseline_priors(m.get("priors")),
     )
 
+
+def parse_job_config(config: dict) -> JobSpec:
+    """Validate and parse a job ``config`` dict into a :class:`JobSpec`."""
+    sources = _parse_sources(config)
+    event_dummies = _parse_event_dummies(config)
+    model = _parse_model(config, event_dummies)
     sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
     return JobSpec(
         sources=sources,
+        model=model,
+        sample=sample,
+        event_dummies=event_dummies,
+        features=_parse_features(config),
+        evaluation=_parse_evaluation(config),
+    )
+
+
+def parse_hier_job_config(config: dict) -> HierJobSpec:
+    """Parse a hierarchical/multi-region fit job's config (job ``type='fit_hierarchical'``).
+
+    Same shape as :func:`parse_job_config`, except ``sources`` is nested one level under
+    ``regions``::
+
+        {"regions": {"NL": {"sources": [...]}, "BE": {"sources": [...]}},
+         "model": {...same shape as a single-region job...}, "sample": {...}}
+
+    Each region's ``sources`` are parsed exactly like a single-region job's — the same
+    recipe (KPI/channel/control column names) is expected to apply to every region's own
+    files, since :func:`mmm_core.model.hierarchical.build_hierarchical_model` requires
+    every region to expose the same columns. See
+    :func:`mmm_core.ingestion.build_master_datasets_by_region` for how the regions are
+    merged and aligned to a shared weekly window before fitting.
+    """
+    raw_regions = _require(config, "regions", "config")
+    if not raw_regions or len(raw_regions) < 2:
+        raise ValueError("config: a hierarchical job needs at least two regions")
+    regions = {region: _parse_sources(region_config) for region, region_config in raw_regions.items()}
+
+    event_dummies = _parse_event_dummies(config)
+    model = _parse_model(config, event_dummies)
+    sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
+    return HierJobSpec(
+        regions=regions,
         model=model,
         sample=sample,
         event_dummies=event_dummies,
