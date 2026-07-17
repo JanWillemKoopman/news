@@ -22,8 +22,63 @@ function textFromBlocks(content: unknown): string {
     .join("\n\n");
 }
 
+// Which quick-actions make sense depends on which step the builder is actually looking
+// at — the architect only really has something useful to say about data, the merge
+// recipe, the model config, or a fit's results, so offer the 2-3 that fit instead of one
+// fixed set of four for every step.
+const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> = {
+  data: [
+    {
+      label: "Stel een samenvoegrecept voor",
+      message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
+    },
+  ],
+  eda: [
+    {
+      label: "Wat valt op in deze data?",
+      message: "Wat valt je op in de geüploade bestanden? Let op gaten, uitschieters of vreemde periodes.",
+    },
+  ],
+  dataprep: [
+    {
+      label: "Stel een samenvoegrecept voor",
+      message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
+    },
+    {
+      label: "Beoordeel de dataset",
+      message:
+        "Beoordeel de laatste dataset-voorbereiding: leg het kwaliteitsrapport uit en zeg of het klaar is om goed te keuren.",
+    },
+  ],
+  config: [
+    {
+      label: "Stel een configuratie voor",
+      message: "Kijk naar de goedgekeurde dataset en stel een modelconfiguratie voor.",
+    },
+  ],
+  fits: [
+    {
+      label: "Beoordeel de laatste fit",
+      message:
+        "Leg uit waarom de laatste fit is mislukt of geslaagd, en of de configuratie beter kan.",
+    },
+  ],
+  results: [
+    {
+      label: "Beoordeel de laatste fit",
+      message: "Beoordeel de laatste fit: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.",
+    },
+  ],
+};
+const DEFAULT_QUICK_ACTIONS = [
+  STEP_QUICK_ACTIONS.data[0],
+  STEP_QUICK_ACTIONS.dataprep[1],
+  STEP_QUICK_ACTIONS.config[0],
+  STEP_QUICK_ACTIONS.results[0],
+];
+
 export function ChatPanel({ projectId }: { projectId: string }) {
-  const { applyConfig, applyRecipe } = useWizardChat();
+  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage, activeStepId } = useWizardChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,6 +103,16 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
+
+  // A result view elsewhere on the page (e.g. a quality-gate warning) can hand a
+  // specific, pre-filled question to the architect via sendToChat(). Waits for any
+  // in-flight message to finish rather than dropping it.
+  useEffect(() => {
+    if (pendingChatMessage == null || busy) return;
+    clearPendingChatMessage();
+    send(pendingChatMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingChatMessage, busy]);
 
   async function send(preset?: string) {
     const text = (preset ?? input).trim();
@@ -137,34 +202,16 @@ export function ChatPanel({ projectId }: { projectId: string }) {
       {error && <p className="px-4 pb-1 text-xs text-rose-600">{error}</p>}
 
       <div className="flex flex-wrap gap-1.5 border-t border-neutral-100 px-3 pt-2">
-        <button
-          onClick={() => send("Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.")}
-          disabled={busy}
-          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
-        >
-          Stel een samenvoegrecept voor
-        </button>
-        <button
-          onClick={() => send("Beoordeel de laatste dataset-voorbereiding: leg het kwaliteitsrapport uit en zeg of het klaar is om goed te keuren.")}
-          disabled={busy}
-          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
-        >
-          Beoordeel de dataset
-        </button>
-        <button
-          onClick={() => send("Kijk naar de goedgekeurde dataset en stel een modelconfiguratie voor.")}
-          disabled={busy}
-          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
-        >
-          Stel een configuratie voor
-        </button>
-        <button
-          onClick={() => send("Beoordeel de laatste fit: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.")}
-          disabled={busy}
-          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
-        >
-          Beoordeel de laatste fit
-        </button>
+        {(activeStepId ? STEP_QUICK_ACTIONS[activeStepId] ?? DEFAULT_QUICK_ACTIONS : DEFAULT_QUICK_ACTIONS).map((action) => (
+          <button
+            key={action.label}
+            onClick={() => send(action.message)}
+            disabled={busy}
+            className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+          >
+            {action.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-end gap-2 p-3">

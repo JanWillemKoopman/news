@@ -4,16 +4,52 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { StatusBadge } from "@/components/ui";
-import type { Job } from "@/lib/types";
+import type { Job, JobProgress } from "@/lib/types";
 
-// Live job list: subscribes to Realtime so status flips (queued -> running -> succeeded)
-// appear without a refresh, and refreshes the page data when a job finishes. Only shows
-// 'fit' jobs — 'prepare' jobs have their own status view in the data-prep section, keyed
-// off the dataset row (which carries the same lifecycle in more useful shape: quality
-// report, preview) rather than the raw job.
+const PROGRESS_LABEL: Record<JobProgress, string> = {
+  downloading: "Brondata laden",
+  building_dataset: "Dataset opbouwen",
+  sampling: "Model fitten (sampling)",
+  saving: "Resultaten opslaan",
+};
+
+function elapsedLabel(fromIso: string, now: number): string {
+  const from = new Date(fromIso).getTime();
+  const seconds = Math.max(0, Math.floor((now - from) / 1000));
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m} min ${s.toString().padStart(2, "0")} s` : `${s} s`;
+}
+
+function phaseLine(job: Job, now: number): string {
+  if (job.status === "queued") return `In wachtrij — ${elapsedLabel(job.created_at, now)}`;
+  if (job.status === "running") {
+    const phase = job.progress ? PROGRESS_LABEL[job.progress] : "Wordt gestart";
+    return job.started_at ? `${phase} — ${elapsedLabel(job.started_at, now)} bezig` : phase;
+  }
+  if (job.status === "succeeded" && job.started_at && job.finished_at) {
+    return `Geslaagd in ${elapsedLabel(job.started_at, new Date(job.finished_at).getTime())}`;
+  }
+  if (job.status === "cancelled") return "Geannuleerd";
+  return "";
+}
+
+// Live job list: subscribes to Realtime so status/progress flips (queued -> running ->
+// succeeded, plus phase updates while running) appear without a refresh, and refreshes
+// the page data when a job finishes. Only shows 'fit' jobs — 'prepare' jobs have their
+// own status view in the data-prep section, keyed off the dataset row.
 export function JobList({ projectId, initialJobs }: { projectId: string; initialJobs: Job[] }) {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>(initialJobs.filter((j) => j.type === "fit"));
+  const [now, setNow] = useState(() => Date.now());
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  useEffect(() => {
+    const hasActive = jobs.some((j) => j.status === "queued" || j.status === "running");
+    if (!hasActive) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [jobs]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -38,6 +74,18 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
     };
   }, [projectId, router]);
 
+  async function cancelQueued(job: Job) {
+    setCancelling(job.id);
+    const supabase = createClient();
+    await supabase
+      .schema("mmm")
+      .from("jobs")
+      .update({ status: "cancelled" })
+      .eq("id", job.id)
+      .eq("status", "queued"); // guard: never cancel a job that already started picking up
+    setCancelling(null);
+  }
+
   if (jobs.length === 0) {
     return <p className="text-sm text-neutral-500">Nog geen fits gestart.</p>;
   }
@@ -45,12 +93,32 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   return (
     <ul className="divide-y divide-neutral-100 text-sm">
       {jobs.map((job) => (
-        <li key={job.id} className="flex items-center justify-between py-2">
-          <div>
-            <span className="font-mono text-xs text-neutral-400">{job.id.slice(0, 8)}</span>
-            {job.error && <p className="mt-0.5 text-xs text-rose-600">{job.error}</p>}
+        <li key={job.id} className="py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-neutral-700">{phaseLine(job, now)}</p>
+              {job.status === "failed" && (
+                <p className="mt-1 text-xs text-rose-600">{job.error ?? "Onbekende fout."}</p>
+              )}
+            </div>
+            <div className="flex flex-none items-center gap-2">
+              {job.status === "queued" && (
+                <button
+                  onClick={() => cancelQueued(job)}
+                  disabled={cancelling === job.id}
+                  className="rounded-lg border border-neutral-200 px-2.5 py-1 text-xs text-neutral-500 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-50"
+                >
+                  {cancelling === job.id ? "…" : "Annuleren"}
+                </button>
+              )}
+              <StatusBadge status={job.status} />
+            </div>
           </div>
-          <StatusBadge status={job.status} />
+          {job.status === "running" && (
+            <p className="mt-1 text-xs text-neutral-400">
+              Een lopende fit kan nu niet worden geannuleerd — wacht tot deze klaar is.
+            </p>
+          )}
         </li>
       ))}
     </ul>

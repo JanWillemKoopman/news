@@ -2,15 +2,18 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Card, PageHeader, StatusBadge, TopBar } from "@/components/ui";
+import { PageHeader, StatusBadge, TopBar } from "@/components/ui";
 import { NoBuilderAccess } from "@/components/NoAccess";
 import { SourceUpload } from "@/components/SourceUpload";
+import { EdaSection } from "@/components/EdaSection";
 import { DataPrepSection } from "@/components/DataPrepSection";
 import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
 import { ChatPanel } from "@/components/ChatPanel";
 import { WizardChatProvider } from "@/components/WizardChatContext";
+import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
+import { computePipelineSteps } from "@/lib/pipelineStatus";
 import type { Dataset, Job, ModelRun, Project, SourceFile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +46,12 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       .limit(1),
   ]);
   const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
+  const pipelineSteps = computePipelineSteps({
+    sources: (sources ?? []) as SourceFile[],
+    dataset: latestDataset,
+    jobs: (jobs ?? []) as Job[],
+    runs: (runs ?? []) as ModelRun[],
+  });
 
   return (
     <>
@@ -61,49 +70,40 @@ export default async function ProjectDetail({ params }: { params: { id: string }
 
         <WizardChatProvider>
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
-              <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">1 · Data</h2>
-                <Card>
+            <div className="lg:col-span-2">
+              <PipelineShell steps={pipelineSteps}>
+                <PipelineStep id="data" number={1}>
                   <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
-                </Card>
-              </section>
+                </PipelineStep>
 
-              <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">2 · Data voorbereiden</h2>
-                <Card>
+                <PipelineStep id="eda" number={2}>
+                  <EdaSection sources={(sources ?? []) as SourceFile[]} />
+                </PipelineStep>
+
+                <PipelineStep id="dataprep" number={3}>
                   <DataPrepSection
                     projectId={p.id}
                     sources={(sources ?? []) as SourceFile[]}
                     initialDataset={latestDataset}
                   />
-                </Card>
-              </section>
+                </PipelineStep>
 
-              <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">3 · Model configureren</h2>
-                <Card>
+                <PipelineStep id="config" number={4}>
                   <ModelConfigForm
                     projectId={p.id}
                     sources={(sources ?? []) as SourceFile[]}
                     approvedDataset={latestDataset?.status === "approved" ? latestDataset : null}
                   />
-                </Card>
-              </section>
+                </PipelineStep>
 
-              <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">4 · Fits</h2>
-                <Card>
+                <PipelineStep id="fits" number={5}>
                   <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
-                </Card>
-              </section>
+                </PipelineStep>
 
-              <section>
-                <h2 className="mb-2 text-sm font-semibold text-neutral-700">5 · Resultaten</h2>
-                <Card>
+                <PipelineStep id="results" number={6}>
                   <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
-                </Card>
-              </section>
+                </PipelineStep>
+              </PipelineShell>
             </div>
 
             <div className="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">

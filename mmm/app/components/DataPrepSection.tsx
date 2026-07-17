@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
 import { StatusBadge } from "@/components/ui";
 import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
+import { extractNumericValues } from "@/lib/eda";
+import { computeDataHealth } from "@/lib/dataHealth";
 import type {
   ColumnRole,
   Dataset,
@@ -57,15 +60,68 @@ interface DraftDummy {
   iso_week: number;
 }
 
-function sniffHeaders(text: string): string[] {
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
-  const commaCount = (firstLine.match(/,/g) ?? []).length;
-  const semiCount = (firstLine.match(/;/g) ?? []).length;
-  const sep = semiCount > commaCount ? ";" : ",";
-  return firstLine
-    .split(sep)
-    .map((h) => h.trim().replace(/^"|"$/g, ""))
-    .filter(Boolean);
+// Conservative on purpose: a chat transcript for this very app shows the architect
+// second-guessing itself over "google_sales" (a spend column despite the name) — so this
+// only suggests a role for the one pattern that's rarely ambiguous, and always as a
+// click-to-accept badge, never a silently pre-filled dropdown.
+const SPEND_NAME_HINT = /spend|\bcost\b|kosten|budget/i;
+function suggestRole(columnName: string): ColumnRole | null {
+  return SPEND_NAME_HINT.test(columnName) ? "spend" : null;
+}
+
+// Tiny inline sparkline (no axes/tooltip) so a builder can eyeball a column's shape while
+// assigning it a role, without leaving this table for the EDA step.
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const w = 64;
+  const h = 20;
+  const points = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * w;
+      const y = max === min ? h / 2 : h - ((v - min) / (max - min)) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-none overflow-visible">
+      <polyline points={points} fill="none" stroke="#e11d48" strokeWidth={1.25} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// A one-glance "is this ready to model?" readout, computed for free from the merge
+// result already on the dataset row — before the builder spends a fit (and the wait
+// that comes with it) on data that was never going to fit well.
+function DataHealthMeter({ dataset }: { dataset: Dataset }) {
+  const health = computeDataHealth(dataset);
+  if (!health) return null;
+  return (
+    <div className="rounded-lg border border-neutral-200 p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+          <div
+            className={`h-full rounded-full ${health.band === "goed" ? "bg-neutral-800" : "bg-rose-500"}`}
+            style={{ width: `${health.score}%` }}
+          />
+        </div>
+        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-neutral-900" : "text-rose-700"}`}>
+          {health.band === "goed" ? "Gereed om te modelleren" : health.band === "redelijk" ? "Bruikbaar, met kanttekeningen" : "Nog niet klaar om te modelleren"}
+        </p>
+      </div>
+      {health.reasons.length > 0 && (
+        <ul className="mt-2 space-y-0.5 text-xs text-neutral-500">
+          {health.reasons.map((r, i) => (
+            <li key={i}>• {r}</li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-neutral-400">
+        Sterk samenhangende kanalen zijn hier niet meegenomen — bekijk daarvoor de correlatiematrix bij stap 2 (EDA).
+      </p>
+    </div>
+  );
 }
 
 // A compact one-line label for a raw transform, e.g. "scale · column omzet_cent, factor 0.01".
@@ -110,6 +166,48 @@ function draftFromRecipe(
   return { sources, dummies, features: recipe.features ?? [] };
 }
 
+// A one-sentence summary of what an architect-proposed recipe actually changed, shown
+// right after it's applied — the table itself is the detailed view, this is the "one
+// sentence" confirmation that something specific happened, not a silent full overwrite.
+function summarizeApply(
+  prevSources: DraftSource[],
+  nextSources: DraftSource[],
+  prevDummies: DraftDummy[],
+  nextDummies: DraftDummy[],
+  prevFeatures: FeatureSpec[],
+  nextFeatures: FeatureSpec[],
+): string {
+  const roleKey = (path: string, col: string) => `${path}:${col}`;
+  const prevRoles = new Map<string, ColumnRole | "">();
+  for (const s of prevSources) for (const c of s.columns) prevRoles.set(roleKey(s.file.storage_path, c.name), c.role);
+  let changedRoles = 0;
+  for (const s of nextSources) {
+    for (const c of s.columns) {
+      const prev = prevRoles.get(roleKey(s.file.storage_path, c.name)) ?? "";
+      if (prev !== c.role) changedRoles++;
+    }
+  }
+
+  const prevTransformCount = prevSources.reduce((n, s) => n + s.transforms.length, 0);
+  const nextTransformCount = nextSources.reduce((n, s) => n + s.transforms.length, 0);
+  const featureDelta = nextFeatures.length - prevFeatures.length;
+  const dummyDelta = nextDummies.length - prevDummies.length;
+
+  const parts: string[] = [];
+  if (changedRoles > 0) parts.push(`${changedRoles} kolomrol${changedRoles === 1 ? "" : "len"} aangepast`);
+  if (nextTransformCount !== prevTransformCount) {
+    parts.push(`${nextTransformCount} opschoonstap${nextTransformCount === 1 ? "" : "pen"} (was ${prevTransformCount})`);
+  }
+  if (featureDelta !== 0) {
+    parts.push(`${featureDelta > 0 ? "+" : ""}${featureDelta} afgeleide variabele${Math.abs(featureDelta) === 1 ? "" : "n"}`);
+  }
+  if (dummyDelta !== 0) {
+    parts.push(`${dummyDelta > 0 ? "+" : ""}${dummyDelta} event-dummy${Math.abs(dummyDelta) === 1 ? "" : "'s"}`);
+  }
+  if (parts.length === 0) return "Recept overgenomen — geen wijzigingen ten opzichte van de huidige tabel.";
+  return `Recept overgenomen: ${parts.join(", ")}.`;
+}
+
 export function DataPrepSection({
   projectId,
   sources,
@@ -130,9 +228,12 @@ export function DataPrepSection({
   const [dataset, setDataset] = useState<Dataset | null>(initialDataset);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sourceValues, setSourceValues] = useState<Record<string, Record<string, number[]>>>({});
+  const [applyDiff, setApplyDiff] = useState<string | null>(null);
   const knownPaths = useMemo(() => new Set(drafts.map((d) => d.file.storage_path)), [drafts]);
 
-  // Seed a draft row (with sniffed headers) for any uploaded file not yet represented.
+  // Seed a draft row (with sniffed headers) for any uploaded file not yet represented, and
+  // cache each numeric column's values for the sparklines below.
   useEffect(() => {
     const missing = sources.filter((f) => !knownPaths.has(f.storage_path));
     if (missing.length === 0) return;
@@ -144,7 +245,18 @@ export function DataPrepSection({
         let headers: string[] = [];
         if (/\.csv$/i.test(file.name)) {
           const { data } = await supabase.storage.from(RAW_BUCKET).download(file.storage_path);
-          if (data) headers = sniffHeaders(await data.text());
+          if (data) {
+            const text = await data.text();
+            const parsed = Papa.parse<Record<string, unknown>>(text, {
+              header: true,
+              dynamicTyping: true,
+              skipEmptyLines: true,
+            });
+            headers = parsed.meta.fields ?? [];
+            const values: Record<string, number[]> = {};
+            for (const col of headers) values[col] = extractNumericValues(parsed.data, col);
+            if (!cancelled) setSourceValues((prev) => ({ ...prev, [file.storage_path]: values }));
+          }
         }
         added.push({
           file,
@@ -163,17 +275,20 @@ export function DataPrepSection({
   }, [sources, knownPaths]);
 
   // A recipe proposed by the architect fully replaces the current draft — same "apply
-  // overwrites the editor" pattern as ModelConfigForm's proposed config.
+  // overwrites the editor" pattern as ModelConfigForm's proposed config — but confirms
+  // itself with a one-sentence summary of what actually changed.
   useEffect(() => {
     if (pendingRecipe == null) return;
     const { sources: draftSources, dummies: draftDummies, features: draftFeatures } = draftFromRecipe(
       pendingRecipe as PrepareRecipe,
       sources,
     );
+    setApplyDiff(summarizeApply(drafts, draftSources, dummies, draftDummies, features, draftFeatures));
     setDrafts(draftSources);
     setDummies(draftDummies);
     setFeatures(draftFeatures);
     clearPendingRecipe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRecipe, sources, clearPendingRecipe]);
 
   // Live dataset status: prepare jobs run off-request, so reflect draft -> preparing ->
@@ -284,6 +399,15 @@ export function DataPrepSection({
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
 
+          {applyDiff && (
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <span>{applyDiff}</span>
+              <button onClick={() => setApplyDiff(null)} className="flex-none text-rose-400 hover:text-rose-600" aria-label="Sluiten">
+                ×
+              </button>
+            </div>
+          )}
+
           <div className="space-y-4">
             {drafts.map((src, sIdx) => (
               <div key={src.file.storage_path} className="rounded-lg border border-neutral-200 p-3">
@@ -342,29 +466,47 @@ export function DataPrepSection({
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[480px] text-sm">
+                    <table className="w-full min-w-[560px] text-sm">
                       <thead>
                         <tr className="text-left text-xs uppercase tracking-wide text-neutral-400">
                           <th className="py-1 pr-3 font-medium">Kolom</th>
+                          <th className="py-1 pr-3 font-medium">Verloop</th>
                           <th className="py-1 pr-3 font-medium">Rol</th>
                           <th className="py-1 pr-3 font-medium">Naam in dataset</th>
                           <th className="py-1 pr-3 font-medium">Gaten vullen</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {src.columns.map((col, cIdx) => (
+                        {src.columns.map((col, cIdx) => {
+                          const values = sourceValues[src.file.storage_path]?.[col.name] ?? [];
+                          const suggestion = col.role === "" ? suggestRole(col.name) : null;
+                          return (
                           <tr key={col.name}>
                             <td className="py-1.5 pr-3 text-neutral-800">{col.name}</td>
                             <td className="py-1.5 pr-3">
-                              <select
-                                value={col.role}
-                                onChange={(e) => updateColumn(sIdx, cIdx, { role: e.target.value as ColumnRole | "" })}
-                                className="rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-rose-500"
-                              >
-                                {ROLE_OPTIONS.map((o) => (
-                                  <option key={o.value} value={o.value}>{o.label}</option>
-                                ))}
-                              </select>
+                              <Sparkline values={values} />
+                            </td>
+                            <td className="py-1.5 pr-3">
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  value={col.role}
+                                  onChange={(e) => updateColumn(sIdx, cIdx, { role: e.target.value as ColumnRole | "" })}
+                                  className="rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-rose-500"
+                                >
+                                  {ROLE_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                  ))}
+                                </select>
+                                {suggestion && (
+                                  <button
+                                    onClick={() => updateColumn(sIdx, cIdx, { role: suggestion })}
+                                    title="Kolomnaam suggereert deze rol — klik om over te nemen"
+                                    className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100"
+                                  >
+                                    voorstel: {ROLE_OPTIONS.find((o) => o.value === suggestion)?.label}
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="py-1.5 pr-3">
                               <input
@@ -389,7 +531,8 @@ export function DataPrepSection({
                               </select>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -506,6 +649,8 @@ export function DataPrepSection({
           {dataset.status === "failed" && (
             <p className="text-sm text-rose-600">{dataset.error ?? "Samenvoegen is mislukt."}</p>
           )}
+
+          <DataHealthMeter dataset={dataset} />
 
           {dataset.quality && <QualityReportView quality={dataset.quality} />}
           {dataset.preview && <DatasetPreviewTable preview={dataset.preview} />}

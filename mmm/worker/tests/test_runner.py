@@ -38,6 +38,7 @@ def test_happy_path_persists_summary_and_uploads_trace():
 
     assert result["status"] == "succeeded"
     assert store.status == "succeeded"
+    assert store.progress == "saving"  # last phase written before completion
     assert len(store.runs) == 1
     assert store.runs[0]["summary"]["kpi"] == "revenue"
     # bogus sample key filtered out before reaching the fit
@@ -59,6 +60,7 @@ def test_data_quality_error_fails_job_without_fitting():
     assert result["status"] == "failed"
     assert result["reason"] == "data_quality"
     assert store.status == "failed"
+    assert store.progress == "building_dataset"  # never advanced to "sampling"
     assert fit.calls == []          # never fitted
     assert store.runs == []
 

@@ -16,6 +16,11 @@ class JobStore(Protocol):
 
     def mark_running(self, job_id: str) -> None: ...
 
+    def update_progress(self, job_id: str, phase: str) -> None:
+        """Best-effort coarse phase update while a fit is in flight (see the
+        `downloading`/`building_dataset`/`sampling`/`saving` phases in runner.py). Never
+        allowed to fail the job — a progress write is purely informational."""
+
     def mark_succeeded(self, job_id: str) -> None: ...
 
     def mark_failed(self, job_id: str, error: str) -> None: ...

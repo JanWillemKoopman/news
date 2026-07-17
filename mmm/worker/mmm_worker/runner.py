@@ -75,11 +75,13 @@ def run_job(
         return {"status": "failed", "reason": "invalid_config", "error": str(exc)}
 
     try:
+        jobstore.update_progress(job_id, "downloading")
         frames = []
         for ref in spec.sources:
             raw = storage.download(ref.storage_path)
             frames.append((ref.spec, read_table(ref.storage_path, raw)))
 
+        jobstore.update_progress(job_id, "building_dataset")
         build = build_master_dataset(
             frames,
             event_dummies=list(spec.event_dummies),
@@ -93,8 +95,10 @@ def run_job(
             jobstore.mark_failed(job_id, f"data quality errors: {reason}")
             return {"status": "failed", "reason": "data_quality", "quality": quality}
 
+        jobstore.update_progress(job_id, "sampling")
         summary, idata = fit_fn(build.data, spec.model, **spec.sample)
 
+        jobstore.update_progress(job_id, "saving")
         # Heavy trace -> Storage; small summary -> Postgres.
         artifact_path: str | None = None
         try:

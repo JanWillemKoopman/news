@@ -40,6 +40,12 @@ class SupabaseJobStore(JobStore):
             {"status": "running", "started_at": "now()"}
         ).eq("id", job_id).execute()
 
+    def update_progress(self, job_id: str, phase: str) -> None:
+        try:
+            self._table("jobs").update({"progress": phase}).eq("id", job_id).execute()
+        except Exception:
+            pass  # informational only — never let a progress write fail the job
+
     def mark_succeeded(self, job_id: str) -> None:
         self._table("jobs").update(
             {"status": "succeeded", "finished_at": "now()"}
