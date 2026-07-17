@@ -70,13 +70,13 @@ Stap 2 — Modelconfiguratie (nadat de dataset is goedgekeurd):
 - Gebruik de tool "propose_model_config" pas zodra je een concreet, verdedigbaar voorstel hebt.
 
 Stap 2 — parameter-tuning en afgeleide features (fijnafstemming, optioneel):
-De config-tool heeft naast bovenstaande basiskeuzes ook fijnafstem-velden. Grondregel: laat elk fijnafstem-veld op null tenzij je een concrete, uitlegbare reden hebt — null betekent "gebruik de geteste standaard". Een eerste voorstel houdt priors en kalibratie vrijwel altijd op null; fijnafstemming komt pas als de data of een fit-resultaat erom vraagt. Leg elke afwijking uit in "reasoning".
-- Seizoen als afgeleide feature: "seasonality_periods" (52 = jaarlijks, 26 = halfjaarlijks, null = uit) en "n_fourier_modes" (hoe fijn het patroon mag zijn; standaard 2). Zet seizoen aan als de KPI een duidelijk terugkerend patroon heeft; hou het aantal modes laag bij weinig weken data om overfitting te voorkomen.
-- Trend-flexibiliteit: bij trend_type="piecewise" bepaalt "n_changepoints" hoeveel knikken de basislijn mag maken (standaard 6). Meer knikken = flexibeler maar gevoeliger voor ruis/divergenties.
-- Na-ijl per kanaal: "l_max" (maximale carry-over in weken, standaard 12) en "expected_half_life" (verwachte halfwaardetijd als je concrete kennis hebt). Verhoog l_max voor merk/offline-kanalen met lange nawerking; laat expected_half_life meestal null en laat het kanaaltype de prior bepalen.
+De config-tool heeft naast bovenstaande basiskeuzes ook fijnafstem-velden. Grondregel: laat elk fijnafstem-veld helemaal WEG tenzij je een concrete, uitlegbare reden hebt — weglaten betekent "gebruik de geteste standaard". Een eerste voorstel laat priors en kalibratie vrijwel altijd weg; fijnafstemming komt pas als de data of een fit-resultaat erom vraagt. Leg elke afwijking uit in "reasoning".
+- Seizoen als afgeleide feature: "seasonality_periods" (52 = jaarlijks, 26 = halfjaarlijks; laat weg voor de standaard 52/aan, zet 'm op null om seizoen expliciet uit te zetten — dit is het enige veld waar null iets anders betekent dan weglaten) en "n_fourier_modes" (hoe fijn het patroon mag zijn; weglaten = standaard 2). Zet seizoen aan als de KPI een duidelijk terugkerend patroon heeft; hou het aantal modes laag bij weinig weken data om overfitting te voorkomen.
+- Trend-flexibiliteit: bij trend_type="piecewise" bepaalt "n_changepoints" hoeveel knikken de basislijn mag maken (weglaten = standaard 6). Meer knikken = flexibeler maar gevoeliger voor ruis/divergenties.
+- Na-ijl per kanaal: "l_max" (maximale carry-over in weken, weglaten = standaard 12) en "expected_half_life" (verwachte halfwaardetijd als je concrete kennis hebt). Verhoog l_max voor merk/offline-kanalen met lange nawerking; laat expected_half_life meestal weg en laat het kanaaltype de prior bepalen.
 - Robuustheid: "student_t_nu" (lager = zwaardere staarten, moet > 2) alleen instellen bij likelihood="student_t".
-- Priors ("priors" op model- én kanaalniveau): schalen die je alleen aanraakt met echte kennis — verklein een sigma om een component dicht bij nul te houden, vergroot 'm om de data meer te laten bewegen. Bij twijfel: null laten.
-- Kalibratie ("calibration" per kanaal): alleen invullen als de bouwer een echt lift-/geo-experiment heeft — vul de gemeten "roas" en de onzekerheid "sd" in. Dit trekt de schatting zacht naar het experiment. Zonder experiment: null.
+- Priors ("priors" op model- én kanaalniveau): schalen die je alleen aanraakt met echte kennis — verklein een sigma om een component dicht bij nul te houden, vergroot 'm om de data meer te laten bewegen. Bij twijfel: het hele veld weglaten.
+- Kalibratie ("calibration" per kanaal): alleen invullen als de bouwer een echt lift-/geo-experiment heeft — vul de gemeten "roas" en de onzekerheid "sd" in. Dit trekt de schatting zacht naar het experiment. Zonder experiment: helemaal weglaten.
 
 Algemeen:
 - Roep pas een tool aan zodra je zeker genoeg bent. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag.
@@ -136,7 +136,14 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
           properties: {
             name: { type: "string", description: "Korte naam voor deze bron, bv. 'weekly_data'." },
             storage_path: { type: "string" },
-            date_column: { type: ["string", "null"] },
+            // Optional fields: omit rather than send an explicit null. Anthropic's strict-schema
+            // compiler caps the number of nullable/union-typed parameters per request at 16 —
+            // every one of these previously used `type: [".., "null"]` purely to mean "use the
+            // default", which "field absent" already means just as well (the worker's .get(key)
+            // treats a missing key and an explicit null identically), so there is nothing to gain
+            // from the union type here. Keep union types reserved for fields where null carries a
+            // DIFFERENT meaning than omission (see seasonality_periods in propose_model_config).
+            date_column: { type: "string", description: "Laat weg om automatisch te detecteren." },
             columns: {
               type: "array",
               items: {
@@ -144,20 +151,14 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
                 properties: {
                   name: { type: "string" },
                   role: { type: "string", enum: ["kpi", "spend", "control"] satisfies ColumnRole[] },
-                  output_name: { type: ["string", "null"] },
-                  // Nullable enum: strict-mode schema validation rejects an `enum` combined with
-                  // a union `type: ["string","null"]` ("Enum value 'zero' does not match declared
-                  // type"), so express the nullability with anyOf instead — a string from the
-                  // fixed set, or null.
+                  output_name: { type: "string", description: "Laat weg om de originele kolomnaam te gebruiken." },
                   fill: {
-                    anyOf: [
-                      { type: "string", enum: ["zero", "ffill", "bfill", "interpolate", "mean", "median"] satisfies FillStrategy[] },
-                      { type: "null" },
-                    ],
-                    description: "Alleen voor 'control'-kolommen: hoe ontbrekende weken te vullen. null = niet vullen (gat blijft zichtbaar).",
+                    type: "string",
+                    enum: ["zero", "ffill", "bfill", "interpolate", "mean", "median"] satisfies FillStrategy[],
+                    description: "Alleen voor 'control'-kolommen: hoe ontbrekende weken te vullen. Laat weg om niet te vullen (gat blijft zichtbaar).",
                   },
                 },
-                required: ["name", "role", "output_name", "fill"],
+                required: ["name", "role"],
                 additionalProperties: false,
               },
             },
@@ -194,7 +195,7 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
               },
             },
           },
-          required: ["name", "storage_path", "date_column", "columns"],
+          required: ["name", "storage_path", "columns"],
           additionalProperties: false,
         },
       },
@@ -250,18 +251,18 @@ const PROPOSE_PREPARE_RECIPE_TOOL: Anthropic.Tool = {
             },
             params: {
               type: "object",
-              description: "Bewerkings-parameters; laat de niet-gebruikte op null.",
+              description: "Bewerkings-parameters; laat de niet-gebruikte weg.",
               properties: {
-                weeks: { type: ["integer", "null"], description: "lag: aantal weken verschuiven (≥1); diff: aantal weken verschil (standaard 1)." },
-                window: { type: ["integer", "null"], description: "rolling_mean/rolling_sum: venstergrootte in weken (≥1)." },
-                lower_q: { type: ["number", "null"], description: "winsorize: onderste kwantiel om op te knippen (bv. 0.01)." },
-                upper_q: { type: ["number", "null"], description: "winsorize: bovenste kwantiel (bv. 0.99)." },
+                weeks: { type: "integer", description: "lag: aantal weken verschuiven (≥1); diff: aantal weken verschil (standaard 1)." },
+                window: { type: "integer", description: "rolling_mean/rolling_sum: venstergrootte in weken (≥1)." },
+                lower_q: { type: "number", description: "winsorize: onderste kwantiel om op te knippen (bv. 0.01)." },
+                upper_q: { type: "number", description: "winsorize: bovenste kwantiel (bv. 0.99)." },
                 iso_weeks: {
-                  anyOf: [{ type: "array", items: { type: "integer" } }, { type: "null" }],
+                  type: "array",
+                  items: { type: "integer" },
                   description: "recurring_week_dummy: ISO-weeknummers die elk jaar op 1 staan (bv. [48] voor Black Friday).",
                 },
               },
-              required: ["weeks", "window", "lower_q", "upper_q", "iso_weeks"],
               additionalProperties: false,
             },
           },
@@ -301,7 +302,7 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
           properties: {
             name: { type: "string", description: "Korte naam voor deze bron, bv. 'weekly_data'." },
             storage_path: { type: "string" },
-            date_column: { type: ["string", "null"] },
+            date_column: { type: "string", description: "Laat weg om automatisch te detecteren." },
             columns: {
               type: "array",
               items: {
@@ -309,14 +310,14 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
                 properties: {
                   name: { type: "string" },
                   role: { type: "string", enum: ["kpi", "spend", "control"] satisfies ColumnRole[] },
-                  output_name: { type: ["string", "null"] },
+                  output_name: { type: "string", description: "Laat weg om de originele kolomnaam te gebruiken." },
                 },
-                required: ["name", "role", "output_name"],
+                required: ["name", "role"],
                 additionalProperties: false,
               },
             },
           },
-          required: ["name", "storage_path", "date_column", "columns"],
+          required: ["name", "storage_path", "columns"],
           additionalProperties: false,
         },
       },
@@ -342,68 +343,45 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
                   description: "'hill' (standaard) of 'logistic' (robuuster bij weinig/ruisige data).",
                 },
                 l_max: {
-                  type: ["integer", "null"],
+                  type: "integer",
                   description:
-                    "Maximale na-ijl-duur (weken) van dit kanaal. null = standaard (12). Verhoog voor merk/offline-kanalen met lange carry-over, verlaag voor puur intent.",
+                    "Maximale na-ijl-duur (weken) van dit kanaal. Laat weg voor de standaard (12). Verhoog voor merk/offline-kanalen met lange carry-over, verlaag voor puur intent.",
                 },
                 expected_half_life: {
-                  type: ["number", "null"],
+                  type: "number",
                   description:
-                    "Verwachte halfwaardetijd (weken) van het na-ijl-effect als je daar concrete kennis over hebt; null = laat het kanaaltype de prior bepalen.",
+                    "Verwachte halfwaardetijd (weken) van het na-ijl-effect als je daar concrete kennis over hebt; laat weg om het kanaaltype de prior te laten bepalen.",
                 },
                 priors: {
-                  anyOf: [
-                    {
-                      type: "object",
-                      description:
-                        "Fijnafstemming van de kanaal-priors. Zet alleen een veld als je een reden hebt; laat de rest null (= mmm-core-standaard).",
-                      properties: {
-                        beta_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op het kanaaleffect; kleiner = sterkere 'dit kanaal doet weinig'-prior." },
-                        adstock_concentration: { type: ["number", "null"], description: "Concentratie van de retentie-prior; hoger pint de halfwaardetijd dichter bij de verwachting." },
-                        delayed_peak_weeks: { type: ["number", "null"], description: "Prior-centrum voor de piek-lag (delayed adstock)." },
-                        delayed_peak_sigma: { type: ["number", "null"], description: "Prior-schaal voor de piek-lag." },
-                        hill_slope_a: { type: ["number", "null"], description: "Gamma(a,b)-prior op de Hill-helling — a." },
-                        hill_slope_b: { type: ["number", "null"], description: "Gamma(a,b)-prior op de Hill-helling — b." },
-                        halfsat_a: { type: ["number", "null"], description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — a." },
-                        halfsat_b: { type: ["number", "null"], description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — b." },
-                        logistic_lam_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op de logistische steilheid." },
-                      },
-                      required: [
-                        "beta_sigma",
-                        "adstock_concentration",
-                        "delayed_peak_weeks",
-                        "delayed_peak_sigma",
-                        "hill_slope_a",
-                        "hill_slope_b",
-                        "halfsat_a",
-                        "halfsat_b",
-                        "logistic_lam_sigma",
-                      ] satisfies (keyof ChannelPriors)[],
-                      additionalProperties: false,
-                    },
-                    { type: "null" },
-                  ],
-                  description: "Kanaal-prior-overrides, of null om alle standaarden te houden.",
+                  type: "object",
+                  description:
+                    "Fijnafstemming van de kanaal-priors. Zet alleen een veld als je een reden hebt; laat de rest weg (= mmm-core-standaard).",
+                  properties: {
+                    beta_sigma: { type: "number", description: "HalfNormal-schaal op het kanaaleffect; kleiner = sterkere 'dit kanaal doet weinig'-prior." },
+                    adstock_concentration: { type: "number", description: "Concentratie van de retentie-prior; hoger pint de halfwaardetijd dichter bij de verwachting." },
+                    delayed_peak_weeks: { type: "number", description: "Prior-centrum voor de piek-lag (delayed adstock)." },
+                    delayed_peak_sigma: { type: "number", description: "Prior-schaal voor de piek-lag." },
+                    hill_slope_a: { type: "number", description: "Gamma(a,b)-prior op de Hill-helling — a." },
+                    hill_slope_b: { type: "number", description: "Gamma(a,b)-prior op de Hill-helling — b." },
+                    halfsat_a: { type: "number", description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — a." },
+                    halfsat_b: { type: "number", description: "Beta(a,b)-prior op het Hill-halfverzadigingspunt — b." },
+                    logistic_lam_sigma: { type: "number", description: "HalfNormal-schaal op de logistische steilheid." },
+                  } satisfies Record<keyof ChannelPriors, unknown>,
+                  additionalProperties: false,
                 },
                 calibration: {
-                  anyOf: [
-                    {
-                      type: "object",
-                      description:
-                        "Experimenteel gemeten ROAS (uit een lift-/geo-test) om dit kanaal aan te kalibreren. Alleen invullen als de bouwer een echt experiment heeft.",
-                      properties: {
-                        roas: { type: "number", description: "Gemeten incrementele ROAS (KPI per eenheid spend), ≥ 0." },
-                        sd: { type: "number", description: "Onzekerheid (standaarddeviatie) op die meting, > 0. Kleiner = vertrouw het experiment meer." },
-                      },
-                      required: ["roas", "sd"],
-                      additionalProperties: false,
-                    },
-                    { type: "null" },
-                  ],
-                  description: "ROAS-kalibratie uit een experiment, of null als er geen experiment is.",
+                  type: "object",
+                  description:
+                    "Experimenteel gemeten ROAS (uit een lift-/geo-test) om dit kanaal aan te kalibreren. Alleen invullen als de bouwer een echt experiment heeft; anders helemaal weglaten.",
+                  properties: {
+                    roas: { type: "number", description: "Gemeten incrementele ROAS (KPI per eenheid spend), ≥ 0." },
+                    sd: { type: "number", description: "Onzekerheid (standaarddeviatie) op die meting, > 0. Kleiner = vertrouw het experiment meer." },
+                  },
+                  required: ["roas", "sd"],
+                  additionalProperties: false,
                 },
               },
-              required: ["name", "channel_type", "adstock", "saturation", "l_max", "expected_half_life", "priors", "calibration"],
+              required: ["name", "channel_type", "adstock", "saturation"],
               additionalProperties: false,
             },
           },
@@ -415,19 +393,26 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
             description: "'linear' (standaard) of 'piecewise' bij een duidelijke structurele knik in de basislijn.",
           },
           n_changepoints: {
-            type: ["integer", "null"],
+            type: "integer",
             description:
-              "Aantal knikpunten voor een 'piecewise' trend (genegeerd bij 'linear'). null = standaard (6). Meer = flexibeler, maar hogere kans op overfitting/divergenties.",
+              "Aantal knikpunten voor een 'piecewise' trend (genegeerd bij 'linear'). Laat weg voor de standaard (6). Meer = flexibeler, maar hogere kans op overfitting/divergenties.",
           },
+          // The one deliberately nullable/union-typed field left in these two tools: null here
+          // means "season explicitly off", which is a different instruction than omitting the
+          // field (== keep the tested default, season on at 52). Every other optional field in
+          // both tools uses plain omission instead, to stay well under Anthropic's 16-parameter
+          // cap on nullable/union-typed schema fields per request (see the comment above
+          // `date_column` in propose_prepare_recipe for the full story — we hit that limit with
+          // ~35 nullable fields and this is the fix).
           seasonality_periods: {
             type: ["number", "null"],
             description:
-              "Lengte van de seizoenscyclus in weken als afgeleide feature (52 = jaarlijks, 26 = halfjaarlijks). null = seizoen uit. Zet aan als de KPI een terugkerend patroon heeft.",
+              "Lengte van de seizoenscyclus in weken als afgeleide feature (52 = jaarlijks, 26 = halfjaarlijks). null = seizoen expliciet uit. Laat weg voor de standaard (52, seizoen aan). Zet aan als de KPI een terugkerend patroon heeft.",
           },
           n_fourier_modes: {
-            type: ["integer", "null"],
+            type: "integer",
             description:
-              "Aantal Fourier-paren voor de seizoensterm — hoe fijn het seizoenspatroon mag zijn. null = standaard (2). Meer modes = grilliger seizoen (voorzichtig bij weinig data).",
+              "Aantal Fourier-paren voor de seizoensterm — hoe fijn het seizoenspatroon mag zijn. Laat weg voor de standaard (2). Meer modes = grilliger seizoen (voorzichtig bij weinig data).",
           },
           likelihood: {
             type: "string",
@@ -436,52 +421,26 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
               "'normal' (standaard, continue KPI), 'student_t' (uitschieters), 'poisson'/'negative_binomial' (lage-aantallen tellingen zoals leads).",
           },
           student_t_nu: {
-            type: ["number", "null"],
+            type: "number",
             description:
-              "Vrijheidsgraden voor de student_t-likelihood (lager = zwaardere staarten / robuuster tegen uitschieters, moet > 2). null = standaard (4). Alleen relevant bij likelihood='student_t'.",
+              "Vrijheidsgraden voor de student_t-likelihood (lager = zwaardere staarten / robuuster tegen uitschieters, moet > 2). Laat weg voor de standaard (4). Alleen relevant bij likelihood='student_t'.",
           },
           priors: {
-            anyOf: [
-              {
-                type: "object",
-                description:
-                  "Fijnafstemming van de basislijn-priors (intercept, trend, seizoen, controls, ruis). Zet alleen een veld met een reden; laat de rest null (= standaard).",
-                properties: {
-                  intercept_sigma: { type: ["number", "null"], description: "Normal-schaal op het intercept." },
-                  trend_sigma: { type: ["number", "null"], description: "Normal-schaal op de trendhelling." },
-                  season_sigma: { type: ["number", "null"], description: "Normal-schaal op elke Fourier-seizoenscoëfficiënt." },
-                  control_sigma: { type: ["number", "null"], description: "Normal-schaal op elke control-coëfficiënt." },
-                  noise_sigma: { type: ["number", "null"], description: "HalfNormal-schaal op de observatieruis." },
-                  changepoint_scale: { type: ["number", "null"], description: "Laplace-schaal per knikpunt bij piecewise trend; kleiner = stuggere trend." },
-                },
-                required: [
-                  "intercept_sigma",
-                  "trend_sigma",
-                  "season_sigma",
-                  "control_sigma",
-                  "noise_sigma",
-                  "changepoint_scale",
-                ] satisfies (keyof BaselinePriors)[],
-                additionalProperties: false,
-              },
-              { type: "null" },
-            ],
-            description: "Basislijn-prior-overrides, of null om alle standaarden te houden.",
+            type: "object",
+            description:
+              "Fijnafstemming van de basislijn-priors (intercept, trend, seizoen, controls, ruis). Zet alleen een veld met een reden; laat de rest weg (= standaard).",
+            properties: {
+              intercept_sigma: { type: "number", description: "Normal-schaal op het intercept." },
+              trend_sigma: { type: "number", description: "Normal-schaal op de trendhelling." },
+              season_sigma: { type: "number", description: "Normal-schaal op elke Fourier-seizoenscoëfficiënt." },
+              control_sigma: { type: "number", description: "Normal-schaal op elke control-coëfficiënt." },
+              noise_sigma: { type: "number", description: "HalfNormal-schaal op de observatieruis." },
+              changepoint_scale: { type: "number", description: "Laplace-schaal per knikpunt bij piecewise trend; kleiner = stuggere trend." },
+            } satisfies Record<keyof BaselinePriors, unknown>,
+            additionalProperties: false,
           },
         },
-        required: [
-          "kpi",
-          "channels",
-          "control_columns",
-          "add_trend",
-          "trend_type",
-          "n_changepoints",
-          "seasonality_periods",
-          "n_fourier_modes",
-          "likelihood",
-          "student_t_nu",
-          "priors",
-        ],
+        required: ["kpi", "channels", "control_columns", "add_trend", "trend_type", "seasonality_periods", "likelihood"],
         additionalProperties: false,
       },
       event_dummies: {
@@ -507,7 +466,12 @@ const PROPOSE_CONFIG_TOOL: Anthropic.Tool = {
     required: ["reasoning", "sources", "model", "event_dummies"],
     additionalProperties: false,
   },
-  strict: true,
+  // Not `strict`: strict mode requires every property to be listed in `required` (its whole
+  // validation guarantee depends on that), which is incompatible with the optional (omit-to-
+  // default) tuning fields above — and those fields being genuinely optional rather than
+  // nullable-and-required is exactly what keeps this tool under Anthropic's 16-parameter cap
+  // on nullable/union-typed schema fields per request. mmm-core/jobspec.py validates every
+  // field at run time regardless, and the builder reviews the proposed config before it runs.
 };
 
 export function buildRequest(
