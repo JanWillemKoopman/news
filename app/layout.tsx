@@ -1,40 +1,15 @@
-import type { Metadata, Viewport } from 'next'
-import './globals.css'
-import { GlobalErrorHandler } from '@/components/admin/GlobalErrorHandler'
-import { ErrorBoundary } from '@/components/admin/ErrorBoundary'
-import { inter } from '@/lib/fonts'
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Ons Trouwplan',
-    template: '%s · Ons Trouwplan',
-  },
-  description: 'Plan jullie bruiloft samen — gasten, budget, taken, draaiboek en meer.',
-  manifest: '/manifest.webmanifest',
-  // Installeerbaar als fullscreen app op iOS (titel + standalone launch).
-  appleWebApp: { capable: true, title: 'Ons Trouwplan', statusBarStyle: 'default' },
-}
-
-// De body heeft zelf geen achtergrond; elke (sub-)route zet die via een eigen
-// wrapper (.wedding voor /bruiloft). De document-achtergrond is wit (gelijk
-// aan het canvas binnen de app), zodat er geen lek ontstaat bij overscroll.
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
-  themeColor: '#2a4862',
-}
+  title: "MMM Wizard",
+  description: "Bouw een Bayesiaans media mix model en publiceer een klantdashboard.",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" className="bg-background">
-      <body className={`${inter.variable} min-h-dvh bg-white font-sans text-foreground antialiased`}>
-        <GlobalErrorHandler />
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-      </body>
+    <html lang="nl">
+      <body>{children}</body>
     </html>
-  )
+  );
 }

@@ -1,31 +1,30 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-import type { Database } from './database.types'
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-// Supabase-client voor Server Components, Route Handlers en Server Actions.
-// Leest/schrijft de sessie via cookies. Schrijven faalt stil in een puur
-// renderende Server Component — de middleware ververst de sessie daar.
+// Server-side Supabase client bound to the request cookies (RLS runs as the signed-in
+// user). Used in server components and route handlers.
 export function createClient() {
-  const cookieStore = cookies()
-  return createServerClient<Database>(
+  const cookieStore = cookies();
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }: CookieToSet) =>
+              cookieStore.set(name, value, options),
+            );
           } catch {
-            // Aangeroepen vanuit een Server Component; veilig te negeren.
+            // Called from a Server Component — safe to ignore; middleware refreshes.
           }
         },
       },
-    }
-  )
+    },
+  );
 }
