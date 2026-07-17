@@ -13,6 +13,7 @@ class FakeJobStore:
     def __init__(self, job: dict):
         self.job = job
         self.status = job.get("status", "queued")
+        self.progress: str | None = None
         self.error: str | None = None
         self.runs: list[dict] = []
 
@@ -21,6 +22,9 @@ class FakeJobStore:
 
     def mark_running(self, job_id: str) -> None:
         self.status = "running"
+
+    def update_progress(self, job_id: str, phase: str) -> None:
+        self.progress = phase
 
     def mark_succeeded(self, job_id: str) -> None:
         self.status = "succeeded"

@@ -29,11 +29,14 @@ export interface SourceFile {
   created_at: string;
 }
 
+export type JobProgress = "downloading" | "building_dataset" | "sampling" | "saving";
+
 export interface Job {
   id: string;
   project_id: string;
   type: "fit" | "prepare";
   status: JobStatus;
+  progress: JobProgress | null;
   config: JobConfig | PrepareRecipe;
   error: string | null;
   attempts: number;

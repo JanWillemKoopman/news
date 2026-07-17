@@ -29,10 +29,17 @@ function dataprepSummary(dataset: Dataset | null): string | undefined {
   return "Nog niet samengevoegd";
 }
 
+const PROGRESS_LABEL: Record<string, string> = {
+  downloading: "brondata laden",
+  building_dataset: "dataset opbouwen",
+  sampling: "model fitten",
+  saving: "resultaten opslaan",
+};
+
 function fitJobSummary(job: Job): string {
   if (job.status === "succeeded") return "Laatste fit geslaagd";
   if (job.status === "failed") return job.error ?? "Laatste fit mislukt";
-  if (job.status === "running") return "Fit loopt…";
+  if (job.status === "running") return `Fit loopt — ${job.progress ? PROGRESS_LABEL[job.progress] : "wordt gestart"}`;
   if (job.status === "queued") return "Fit staat in de wachtrij";
   return "Laatste fit geannuleerd";
 }
