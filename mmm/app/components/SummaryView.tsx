@@ -1,4 +1,7 @@
+"use client";
+
 import { ResultsCharts } from "@/components/ResultsCharts";
+import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type {
   FitSummary,
   FrontierPoint,
@@ -39,6 +42,7 @@ function Metric({ label, value, warn }: { label: string; value: string; warn?: b
 // Automatic verdict on whether the fit is trustworthy. Silence means "pass" — we only
 // speak up (in the single rose accent) when something needs attention.
 function QualityBanner({ summary }: { summary: FitSummary }) {
+  const chat = useWizardChatOptional(); // null on the client dashboard — no chat there
   const gate = summary.quality_gate;
   if (!gate || gate.verdict === "pass") return null;
   const heading =
@@ -53,6 +57,18 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
           <li key={i}>• {r}</li>
         ))}
       </ul>
+      {chat && (
+        <button
+          onClick={() =>
+            chat.sendToChat(
+              `De kwaliteitspoort van de laatste fit geeft "${gate.verdict === "fail" ? "mislukt" : "let op"}" met deze reden(en): ${gate.reasons.join("; ")}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
+            )
+          }
+          className="mt-3 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+        >
+          Vraag de architect om dit te verbeteren
+        </button>
+      )}
     </div>
   );
 }

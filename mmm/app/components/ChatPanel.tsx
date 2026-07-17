@@ -23,7 +23,7 @@ function textFromBlocks(content: unknown): string {
 }
 
 export function ChatPanel({ projectId }: { projectId: string }) {
-  const { applyConfig, applyRecipe } = useWizardChat();
+  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage } = useWizardChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,6 +48,16 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
+
+  // A result view elsewhere on the page (e.g. a quality-gate warning) can hand a
+  // specific, pre-filled question to the architect via sendToChat(). Waits for any
+  // in-flight message to finish rather than dropping it.
+  useEffect(() => {
+    if (pendingChatMessage == null || busy) return;
+    clearPendingChatMessage();
+    send(pendingChatMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingChatMessage, busy]);
 
   async function send(preset?: string) {
     const text = (preset ?? input).trim();

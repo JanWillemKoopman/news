@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui";
 import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { extractNumericValues } from "@/lib/eda";
+import { computeDataHealth } from "@/lib/dataHealth";
 import type {
   ColumnRole,
   Dataset,
@@ -87,6 +88,39 @@ function Sparkline({ values }: { values: number[] }) {
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-none overflow-visible">
       <polyline points={points} fill="none" stroke="#e11d48" strokeWidth={1.25} strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// A one-glance "is this ready to model?" readout, computed for free from the merge
+// result already on the dataset row — before the builder spends a fit (and the wait
+// that comes with it) on data that was never going to fit well.
+function DataHealthMeter({ dataset }: { dataset: Dataset }) {
+  const health = computeDataHealth(dataset);
+  if (!health) return null;
+  return (
+    <div className="rounded-lg border border-neutral-200 p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+          <div
+            className={`h-full rounded-full ${health.band === "goed" ? "bg-neutral-800" : "bg-rose-500"}`}
+            style={{ width: `${health.score}%` }}
+          />
+        </div>
+        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-neutral-900" : "text-rose-700"}`}>
+          {health.band === "goed" ? "Gereed om te modelleren" : health.band === "redelijk" ? "Bruikbaar, met kanttekeningen" : "Nog niet klaar om te modelleren"}
+        </p>
+      </div>
+      {health.reasons.length > 0 && (
+        <ul className="mt-2 space-y-0.5 text-xs text-neutral-500">
+          {health.reasons.map((r, i) => (
+            <li key={i}>• {r}</li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-neutral-400">
+        Sterk samenhangende kanalen zijn hier niet meegenomen — bekijk daarvoor de correlatiematrix bij stap 2 (EDA).
+      </p>
+    </div>
   );
 }
 
@@ -615,6 +649,8 @@ export function DataPrepSection({
           {dataset.status === "failed" && (
             <p className="text-sm text-rose-600">{dataset.error ?? "Samenvoegen is mislukt."}</p>
           )}
+
+          <DataHealthMeter dataset={dataset} />
 
           {dataset.quality && <QualityReportView quality={dataset.quality} />}
           {dataset.preview && <DatasetPreviewTable preview={dataset.preview} />}
