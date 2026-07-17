@@ -197,7 +197,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
             {yCols.map((yCol) => (
               <div key={yCol}>
                 <p className="mb-1 text-xs font-medium text-neutral-700">{yCol}</p>
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={180} className="overflow-hidden">
                   {chartType === "line" ? (
                     <LineChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
@@ -221,8 +221,11 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
             {yCols.length === 0 && <p className="text-sm text-neutral-400">Kies hierboven één of meer kolommen.</p>}
           </div>
 
-          <div className="grid gap-4 border-t border-neutral-100 pt-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
-            <div>
+          {/* min-w-0 on the first cell keeps the histogram from being pushed around by
+              the stats column if its content ever gets wide — see PipelineShell.tsx for
+              the fuller explanation and the Playwright repro that motivated this. */}
+          <div className="grid gap-4 border-t border-neutral-100 pt-4 sm:grid-cols-[1fr_14rem]">
+            <div className="min-w-0">
               <label className="text-xs text-neutral-500">
                 Kolomstatistieken voor
                 <select
@@ -255,7 +258,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
             {hist.length > 0 && (
               <div>
                 <p className="mb-1 text-xs text-neutral-500">Verdeling</p>
-                <ResponsiveContainer width="100%" height={120}>
+                <ResponsiveContainer width="100%" height={120} className="overflow-hidden">
                   <BarChart data={hist} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                     <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#a3a3a3" }} interval={2} />
                     <YAxis hide />

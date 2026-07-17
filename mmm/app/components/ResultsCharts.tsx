@@ -108,7 +108,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
     <div className="space-y-6">
       <div className="grid gap-6 sm:grid-cols-2">
         <ChartCard title="Aandeel per kanaal" hint="Mediaan met onzekerheidsmarge (p3–p97)">
-          <ResponsiveContainer width="100%" height={shareHeight}>
+          <ResponsiveContainer width="100%" height={shareHeight} className="overflow-hidden">
             <BarChart data={shareData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => `${v}%`} />
@@ -122,7 +122,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
         </ChartCard>
 
         <ChartCard title="ROAS per kanaal" hint="Mediaan met onzekerheidsmarge (p3–p97)">
-          <ResponsiveContainer width="100%" height={roasHeight}>
+          <ResponsiveContainer width="100%" height={roasHeight} className="overflow-hidden">
             <BarChart data={roasData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} />
@@ -152,7 +152,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               return (
                 <div key={curve.name}>
                   <p className="mb-1 text-xs font-medium text-neutral-700">{curve.name}</p>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={160} className="overflow-hidden">
                     <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                       <XAxis dataKey="spend" tick={AXIS} tickFormatter={(v) => fmt(v)} />
@@ -181,7 +181,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
 
       {frontier && frontier.length > 1 && (
         <ChartCard title="Efficiency frontier" hint="Totaal weekbudget vs. voorspelde contributie — waar het rendement afvlakt">
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={200} className="overflow-hidden">
             <AreaChart
               data={[...frontier].sort((a, b) => a.total_weekly_budget - b.total_weekly_budget).map((f) => ({
                 budget: f.total_weekly_budget,
@@ -215,7 +215,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
 
       {reallocData.length > 0 && (
         <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — rose = meer, grijs = minder">
-          <ResponsiveContainer width="100%" height={reallocHeight}>
+          <ResponsiveContainer width="100%" height={reallocHeight} className="overflow-hidden">
             <BarChart data={reallocData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />

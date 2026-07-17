@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useWizardChat } from "@/components/WizardChatContext";
 
 interface ChatMessage {
@@ -146,12 +146,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-neutral-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-3 text-sm font-medium text-neutral-700">
-        <MessageSquare className="h-4 w-4 text-rose-500" />
-        Claude-assistent
-      </div>
-
+    <div className="flex h-full min-h-[28rem] flex-col lg:min-h-0">
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
         {!loaded && <p className="text-sm text-neutral-400">Laden…</p>}
         {loaded && messages.length === 0 && (

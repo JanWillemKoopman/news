@@ -57,7 +57,15 @@ export function PipelineShell({ steps, children }: { steps: StepMeta[]; children
       <MobileStepIndicator />
       <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:items-start lg:gap-8">
         <PipelineRail />
-        <div className="space-y-4">{children}</div>
+        {/* min-w-0: without it, a grid item's minimum width defaults to its content's
+            intrinsic width — a wide chart (e.g. many x-axis tick labels) would then force
+            this whole column wider than its track and visually bleed into the chat
+            column next to it instead of shrinking to fit. Verified with a before/after
+            Playwright repro: without min-w-0 an unconstrained child pushes this column's
+            sibling (the chat panel) out of place; with it, the column stays correctly
+            sized and the overflowing content is contained by the chart's own
+            overflow-hidden instead. */}
+        <div className="min-w-0 space-y-4">{children}</div>
       </div>
     </PipelineCtx.Provider>
   );
