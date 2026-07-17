@@ -5,6 +5,7 @@ import pytest
 from mmm_core.features import (
     date_span_dummy,
     fill_missing,
+    flag_local_outliers,
     flag_outliers,
     fourier_seasonality,
     lagged_feature,
@@ -114,6 +115,31 @@ def test_flag_outliers_catches_a_spike():
     mask = flag_outliers(s, z=5.0)
     assert bool(mask.iloc[-1]) is True
     assert mask.iloc[:-1].sum() == 0
+
+
+def test_flag_local_outliers_catches_a_spike_hidden_by_a_long_run_trend():
+    # A 3-year upward-trending series (mirrors a real weekly KPI regime shift): the
+    # global median/MAD is wide enough to span the whole trend, so a single local spike
+    # can hide from flag_outliers while still standing out against its own neighbours.
+    rng = np.random.default_rng(2)
+    n = 156
+    trend = np.linspace(550.0, 950.0, n)
+    baseline = trend + rng.normal(0.0, 15.0, n)
+    spike_pos = 100
+    baseline[spike_pos] = trend[spike_pos] + 400.0  # a sharp one-week jump
+    s = pd.Series(baseline, index=_weeks(n=n))
+
+    local_mask = flag_local_outliers(s, window=9, z=5.0)
+    assert bool(local_mask.iloc[spike_pos]) is True
+    assert local_mask.sum() == 1
+
+    global_mask = flag_outliers(s, z=5.0)
+    assert bool(global_mask.iloc[spike_pos]) is False
+
+
+def test_flag_local_outliers_rejects_short_window():
+    with pytest.raises(ValueError):
+        flag_local_outliers(pd.Series([1.0, 2.0, 3.0]), window=2)
 
 
 def test_winsorize_clips_extremes():
