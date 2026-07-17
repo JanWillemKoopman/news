@@ -1,3 +1,4 @@
+import { ResultsCharts } from "@/components/ResultsCharts";
 import type {
   FitSummary,
   FrontierPoint,
@@ -106,44 +107,49 @@ function BudgetAdvice({
           {fmt(allocation.predicted_contribution.p97)}).
         </p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead>
-            <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
-              <th className="py-2 pr-4 font-medium">Kanaal</th>
-              <th className="py-2 pr-4 font-medium">Nu per week</th>
-              <th className="py-2 pr-4 font-medium">Advies per week</th>
-              <th className="py-2 pr-4 font-medium">Rendement volgende euro</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {Object.entries(allocation.per_channel).map(([name, advised]) => {
-              const curve = byName.get(name);
-              const current = curve?.current_weekly_spend ?? 0;
-              const up = advised > current * 1.01;
-              const down = advised < current * 0.99;
-              return (
-                <tr key={name}>
-                  <td className="py-3 pr-4 font-medium text-neutral-900">{name}</td>
-                  <td className="py-3 pr-4 text-neutral-600">{fmt(current)}</td>
-                  <td className="py-3 pr-4">
-                    <span className="font-medium text-neutral-900">{fmt(advised)}</span>{" "}
-                    {up && <span className="text-xs text-rose-600">↑</span>}
-                    {down && <span className="text-xs text-neutral-400">↓</span>}
-                  </td>
-                  <td className="py-3 pr-4">
-                    {curve ? (
-                      <IntervalCell value={curve.marginal_roas_at_current} render={(n) => fmt(n, 2)} />
-                    ) : (
-                      <span className="text-neutral-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <details>
+        <summary className="cursor-pointer select-none text-xs font-medium text-neutral-500">
+          Cijfers per kanaal (tabel)
+        </summary>
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
+                <th className="py-2 pr-4 font-medium">Kanaal</th>
+                <th className="py-2 pr-4 font-medium">Nu per week</th>
+                <th className="py-2 pr-4 font-medium">Advies per week</th>
+                <th className="py-2 pr-4 font-medium">Rendement volgende euro</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {Object.entries(allocation.per_channel).map(([name, advised]) => {
+                const curve = byName.get(name);
+                const current = curve?.current_weekly_spend ?? 0;
+                const up = advised > current * 1.01;
+                const down = advised < current * 0.99;
+                return (
+                  <tr key={name}>
+                    <td className="py-3 pr-4 font-medium text-neutral-900">{name}</td>
+                    <td className="py-3 pr-4 text-neutral-600">{fmt(current)}</td>
+                    <td className="py-3 pr-4">
+                      <span className="font-medium text-neutral-900">{fmt(advised)}</span>{" "}
+                      {up && <span className="text-xs text-rose-600">↑</span>}
+                      {down && <span className="text-xs text-neutral-400">↓</span>}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {curve ? (
+                        <IntervalCell value={curve.marginal_roas_at_current} render={(n) => fmt(n, 2)} />
+                      ) : (
+                        <span className="text-neutral-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
       {frontierInsight(frontier, allocation.total_weekly_budget, kpi)}
     </div>
   );
@@ -172,7 +178,13 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
         {summary.kpi}.
       </p>
 
-      <div className="overflow-x-auto">
+      <ResultsCharts summary={summary} />
+
+      <details className="border-t border-neutral-100 pt-4">
+        <summary className="cursor-pointer select-none text-sm font-medium text-neutral-900">
+          Cijfers per kanaal (tabel)
+        </summary>
+        <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
@@ -203,7 +215,8 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+      </details>
 
       {summary.optimal_allocation && summary.response_curves && summary.response_curves.length > 0 && (
         <BudgetAdvice
