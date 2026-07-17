@@ -11,6 +11,7 @@ import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
 import { ChatPanel } from "@/components/ChatPanel";
+import { ChatDock } from "@/components/ChatDock";
 import { WizardChatProvider } from "@/components/WizardChatContext";
 import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
 import { computePipelineSteps } from "@/lib/pipelineStatus";
@@ -56,7 +57,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   return (
     <>
       <TopBar email={viewer.email} />
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-[1800px] px-6 py-8 lg:px-10">
         <div className="mb-6">
           <Link href="/projects" className="text-sm text-neutral-500 hover:text-neutral-800">
             ← Projecten
@@ -69,8 +70,8 @@ export default async function ProjectDetail({ params }: { params: { id: string }
         />
 
         <WizardChatProvider>
-          <div className="mt-6 grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
+            <div className="min-w-0 flex-1">
               <PipelineShell steps={pipelineSteps}>
                 <PipelineStep id="data" number={1}>
                   <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
@@ -106,9 +107,9 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               </PipelineShell>
             </div>
 
-            <div className="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">
+            <ChatDock>
               <ChatPanel projectId={p.id} />
-            </div>
+            </ChatDock>
           </div>
         </WizardChatProvider>
       </main>
