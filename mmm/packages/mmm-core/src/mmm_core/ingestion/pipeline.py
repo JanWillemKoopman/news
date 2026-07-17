@@ -208,6 +208,35 @@ def _flag_year_end_anomalies(
             )
 
 
+def _flag_kpi_outliers(data: pd.DataFrame, kpi_cols: list[str], report: QualityReport) -> None:
+    """Warn on individual weeks that stand out sharply against their local neighbours.
+
+    :func:`_flag_year_end_anomalies` only looks at turn-of-year weeks with a global
+    median/MAD, so a mid-year spike on a multi-year, trending KPI slips through
+    unreported: the AI architect then only sees the dataset's head/tail preview and an
+    aggregate max, and can't name the actual outlier week. This runs a local (rolling-
+    window) robust-z test across the *whole* window instead, so a one-off spike is
+    reported by name (week + value) regardless of where it falls in the year or how
+    much the series has drifted since.
+    """
+    from mmm_core.features import flag_local_outliers
+
+    for col in kpi_cols:
+        series = data[col]
+        if series.notna().sum() < 8:
+            continue
+        flagged = flag_local_outliers(series).fillna(False).to_numpy()
+        if flagged.any():
+            weeks = [ts.date().isoformat() for ts in data.index[flagged]]
+            values = [float(v) for v in series[flagged]]
+            report.add(
+                "kpi_outlier_weeks", Severity.WARNING,
+                f"{col!r} has locally anomalous value(s) in week(s) {weeks} "
+                f"(values {values}); consider an event dummy for the specific week(s)",
+                column=col, weeks=weeks, values=values,
+            )
+
+
 def _apply_event_dummies(
     data: pd.DataFrame,
     event_dummies: list[EventDummySpec],
@@ -430,6 +459,7 @@ def build_master_dataset(
 
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)
+    _flag_kpi_outliers(data, kpi_cols, report)
 
     # Sanity checks on the output contract itself.
     assert data.index.is_unique, "master index has duplicate weeks"

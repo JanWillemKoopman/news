@@ -165,6 +165,32 @@ def test_year_end_anomaly_is_flagged():
     assert "year_end_anomaly" in result.report.codes()
 
 
+def test_kpi_outlier_week_is_flagged_on_a_trending_series():
+    # A multi-year, upward-trending weekly KPI (mirrors a real regime-shifting KPI) with
+    # one mid-year one-week spike. The turn-of-year check must NOT catch this (the spike
+    # isn't near year-end); the new local-outlier check must name the exact week.
+    n_days = 156 * 7
+    kpi = daily_frame("2022-01-03", n_days, 1000.0, date_col="date", value_col="revenue")
+    weeks = pd.date_range("2022-01-03", periods=156, freq="7D")
+    trend = np.linspace(550.0, 950.0, 156)
+    for i, week_start in enumerate(weeks):
+        mask = kpi["date"].between(week_start, week_start + pd.Timedelta(days=6))
+        kpi.loc[mask, "revenue"] = trend[i] / 7.0  # daily rows sum to the weekly trend value
+    spike_week = weeks[100]
+    spike_mask = kpi["date"].between(spike_week, spike_week + pd.Timedelta(days=6))
+    kpi.loc[spike_mask, "revenue"] = (trend[100] + 400.0) / 7.0
+
+    spend = daily_frame("2022-01-03", n_days, 50.0, date_col="date", value_col="spend")
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+    ])
+    assert "kpi_outlier_weeks" in result.report.codes()
+    outlier_issue = next(i for i in result.report.issues if i.code == "kpi_outlier_weeks")
+    assert spike_week.date().isoformat() in outlier_issue.details["weeks"]
+    assert "year_end_anomaly" not in result.report.codes()
+
+
 # --- misc contracts -------------------------------------------------------------
 
 def test_date_column_autodetected_when_not_specified():

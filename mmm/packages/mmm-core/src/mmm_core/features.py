@@ -29,6 +29,7 @@ __all__ = [
     "log1p_feature",
     "fill_missing",
     "flag_outliers",
+    "flag_local_outliers",
     "winsorize",
 ]
 
@@ -154,6 +155,27 @@ def flag_outliers(series: pd.Series, z: float = 5.0) -> pd.Series:
     if not scale or np.isnan(scale):
         return pd.Series(False, index=series.index, name=series.name)
     robust_z = (series - median) / scale
+    return robust_z.abs() > z
+
+
+def flag_local_outliers(series: pd.Series, window: int = 9, z: float = 5.0) -> pd.Series:
+    """Boolean mask of points that are robust-z outliers relative to a CENTERED ROLLING
+    window (local median/MAD), rather than the whole series' median/MAD.
+
+    :func:`flag_outliers` compares every point to one global median/MAD, which is the
+    wrong tool for a multi-year weekly KPI that trends or shifts level over time: a
+    single-week spike can hide inside a global MAD wide enough to span years of drift, but
+    still stands out sharply against its immediate neighbors. This looks at each point in
+    the context of the ``window`` weeks centered on it instead, so a local spike is caught
+    regardless of the series' long-run shape.
+    """
+    if window < 3:
+        raise ValueError("window must be >= 3")
+    min_periods = max(3, window // 2)
+    rolling_median = series.rolling(window, center=True, min_periods=min_periods).median()
+    rolling_mad = (series - rolling_median).abs().rolling(window, center=True, min_periods=min_periods).median()
+    scale = (rolling_mad * 1.4826).replace(0.0, np.nan)
+    robust_z = (series - rolling_median) / scale
     return robust_z.abs() > z
 
 
