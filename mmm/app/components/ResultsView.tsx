@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnalysisView } from "@/components/AnalysisView";
+import { RunHistory } from "@/components/RunHistory";
 import { SummaryView } from "@/components/SummaryView";
 import { StatusBadge } from "@/components/ui";
 import type { ModelRun, RunAnalysis } from "@/lib/types";
@@ -16,13 +17,18 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
   // Optimistic local copy so the analysis renders immediately after generation, without
   // waiting on router.refresh() to re-fetch the server component.
   const [analysis, setAnalysis] = useState<RunAnalysis | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   if (runs.length === 0) {
     return <p className="text-sm text-neutral-500">Nog geen resultaten. Start een fit hierboven.</p>;
   }
 
-  const latest = runs[0];
-  const shownAnalysis = analysis ?? latest.analysis;
+  // The analysis section (step "diepgaande analyse", explicitly out of scope for this
+  // pass) always targets the newest run, exactly as before — run selection below only
+  // changes which run's SUMMARY and PUBLISH state are shown, a separate concern.
+  const latestRun = runs[0];
+  const shownAnalysis = analysis ?? latestRun.analysis;
+  const viewedRun = runs.find((r) => r.id === selectedRunId) ?? latestRun;
 
   async function publish() {
     setBusy(true);
@@ -30,7 +36,7 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
     const res = await fetch(`/api/projects/${projectId}/publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model_run_id: latest.id }),
+      body: JSON.stringify({ model_run_id: viewedRun.id }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -46,7 +52,7 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
     const res = await fetch("/api/analysis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, model_run_id: latest.id }),
+      body: JSON.stringify({ project_id: projectId, model_run_id: latestRun.id }),
     });
     setAnalyzing(false);
     if (!res.ok) {
@@ -60,23 +66,10 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
 
   return (
     <div className="space-y-5">
-      <SummaryView summary={latest.summary} />
-      <div className="border-t border-neutral-100 pt-4">
-        <p className="mb-2 text-sm text-neutral-500">
-          Laat Claude deze uitkomst verder analyseren en op maat gemaakte grafieken maken (kan even duren).
-        </p>
-        <button
-          onClick={generateAnalysis}
-          disabled={analyzing}
-          className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
-        >
-          {analyzing ? "Analyse wordt gegenereerd…" : shownAnalysis ? "Analyse opnieuw genereren" : "Genereer diepgaande analyse"}
-        </button>
-        {analysisError && <p className="mt-2 text-sm text-rose-600">{analysisError}</p>}
-      </div>
-      {shownAnalysis && <AnalysisView analysis={shownAnalysis} />}
+      <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} />
+      <SummaryView summary={viewedRun.summary} />
       <div className="flex items-center gap-3 border-t border-neutral-100 pt-4">
-        {latest.is_published ? (
+        {viewedRun.is_published ? (
           <StatusBadge status="published" />
         ) : (
           <button
@@ -89,6 +82,22 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
         )}
         {error && <p className="text-sm text-rose-600">{error}</p>}
       </div>
+      {viewedRun.id === latestRun.id && (
+        <div className="border-t border-neutral-100 pt-4">
+          <p className="mb-2 text-sm text-neutral-500">
+            Laat Claude deze uitkomst verder analyseren en op maat gemaakte grafieken maken (kan even duren).
+          </p>
+          <button
+            onClick={generateAnalysis}
+            disabled={analyzing}
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+          >
+            {analyzing ? "Analyse wordt gegenereerd…" : shownAnalysis ? "Analyse opnieuw genereren" : "Genereer diepgaande analyse"}
+          </button>
+          {analysisError && <p className="mt-2 text-sm text-rose-600">{analysisError}</p>}
+          {shownAnalysis && <AnalysisView analysis={shownAnalysis} />}
+        </div>
+      )}
     </div>
   );
 }
