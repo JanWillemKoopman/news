@@ -148,9 +148,9 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   return (
     <div className="flex h-full min-h-[28rem] flex-col lg:min-h-0">
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-        {!loaded && <p className="text-sm text-neutral-400">Laden…</p>}
+        {!loaded && <p className="text-sm text-fg-faint">Laden…</p>}
         {loaded && messages.length === 0 && (
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-fg-muted">
             Vraag de architect om de geüploade bestanden te controleren en samen te voegen,
             om daarna een modelconfiguratie voor te stellen. Na een fit kun je hem ook
             vragen de resultaten uit te leggen, te beoordelen of te verbeteren.
@@ -161,7 +161,9 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             <div
               className={
                 "inline-block max-w-[90%] whitespace-pre-wrap rounded-lg px-3 py-2 text-left text-sm " +
-                (m.role === "user" ? "bg-rose-600 text-white" : "bg-neutral-100 text-neutral-800")
+                (m.role === "user"
+                  ? "bg-accent text-bg"
+                  : "border border-border bg-surface-2 text-fg")
               }
             >
               {m.text}
@@ -170,7 +172,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               <div className="mt-1">
                 <button
                   onClick={() => applyRecipe(m.proposedRecipe)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
                   Recept overnemen in de tabel
@@ -181,7 +183,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               <div className="mt-1">
                 <button
                   onClick={() => applyConfig(m.proposedConfig)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
                   Voorstel overnemen in de editor
@@ -190,19 +192,19 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             )}
           </div>
         ))}
-        {busy && <p className="text-sm text-neutral-400">Denkt na…</p>}
+        {busy && <p className="text-sm text-fg-faint">Denkt na…</p>}
         <div ref={bottomRef} />
       </div>
 
-      {error && <p className="px-4 pb-1 text-xs text-rose-600">{error}</p>}
+      {error && <p className="px-4 pb-1 text-xs text-danger">{error}</p>}
 
-      <div className="flex flex-wrap gap-1.5 border-t border-neutral-100 px-3 pt-2">
+      <div className="flex flex-wrap gap-1.5 border-t border-border px-3 pt-2">
         {(activeStepId ? STEP_QUICK_ACTIONS[activeStepId] ?? DEFAULT_QUICK_ACTIONS : DEFAULT_QUICK_ACTIONS).map((action) => (
           <button
             key={action.label}
             onClick={() => send(action.message)}
             disabled={busy}
-            className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+            className="rounded-full border border-border px-3 py-1 text-xs text-fg-muted transition hover:border-accent/40 hover:bg-accent-dim hover:text-accent disabled:opacity-50"
           >
             {action.label}
           </button>
@@ -221,12 +223,12 @@ export function ChatPanel({ projectId }: { projectId: string }) {
           }}
           rows={2}
           placeholder="Bijv. 'Stel een samenvoegrecept voor.' of, na een fit, 'Leg de resultaten uit / kan dit beter?'"
-          className="flex-1 resize-none rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+          className="flex-1 resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
         />
         <button
           onClick={() => send()}
           disabled={busy || !input.trim()}
-          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-faint"
         >
           Stuur
         </button>

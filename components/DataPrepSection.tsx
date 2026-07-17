@@ -86,7 +86,7 @@ function Sparkline({ values }: { values: number[] }) {
     .join(" ");
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-none overflow-visible">
-      <polyline points={points} fill="none" stroke="#e11d48" strokeWidth={1.25} strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke="#7FEE64" strokeWidth={1.25} strokeLinejoin="round" />
     </svg>
   );
 }
@@ -98,26 +98,26 @@ function DataHealthMeter({ dataset }: { dataset: Dataset }) {
   const health = computeDataHealth(dataset);
   if (!health) return null;
   return (
-    <div className="rounded-lg border border-neutral-200 p-3">
+    <div className="rounded-lg border border-border p-3">
       <div className="flex items-center gap-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
           <div
-            className={`h-full rounded-full ${health.band === "goed" ? "bg-neutral-800" : "bg-rose-500"}`}
+            className={`h-full rounded-full ${health.band === "goed" ? "bg-surface-3" : "bg-danger"}`}
             style={{ width: `${health.score}%` }}
           />
         </div>
-        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-neutral-900" : "text-rose-700"}`}>
+        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-fg" : "text-danger"}`}>
           {health.band === "goed" ? "Gereed om te modelleren" : health.band === "redelijk" ? "Bruikbaar, met kanttekeningen" : "Nog niet klaar om te modelleren"}
         </p>
       </div>
       {health.reasons.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-xs text-neutral-500">
+        <ul className="mt-2 space-y-0.5 text-xs text-fg-muted">
           {health.reasons.map((r, i) => (
             <li key={i}>• {r}</li>
           ))}
         </ul>
       )}
-      <p className="mt-2 text-xs text-neutral-400">
+      <p className="mt-2 text-xs text-fg-faint">
         Sterk samenhangende kanalen zijn hier niet meegenomen — bekijk daarvoor de correlatiematrix bij stap 2 (EDA).
       </p>
     </div>
@@ -391,18 +391,18 @@ export function DataPrepSection({
   return (
     <div className="space-y-5">
       {sources.length === 0 ? (
-        <p className="text-sm text-neutral-500">Upload eerst bestanden hierboven om ze te kunnen samenvoegen.</p>
+        <p className="text-sm text-fg-muted">Upload eerst bestanden hierboven om ze te kunnen samenvoegen.</p>
       ) : (
         <>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-fg-muted">
             Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de architect om een
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
 
           {applyDiff && (
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-danger/30 bg-danger-dim px-3 py-2 text-sm text-danger">
               <span>{applyDiff}</span>
-              <button onClick={() => setApplyDiff(null)} className="flex-none text-rose-400 hover:text-rose-600" aria-label="Sluiten">
+              <button onClick={() => setApplyDiff(null)} className="flex-none text-danger/70 hover:text-danger" aria-label="Sluiten">
                 ×
               </button>
             </div>
@@ -410,9 +410,9 @@ export function DataPrepSection({
 
           <div className="space-y-4">
             {drafts.map((src, sIdx) => (
-              <div key={src.file.storage_path} className="rounded-lg border border-neutral-200 p-3">
+              <div key={src.file.storage_path} className="rounded-lg border border-border p-3">
                 <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-neutral-800">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-fg">
                     <input
                       type="checkbox"
                       checked={src.included}
@@ -422,7 +422,7 @@ export function DataPrepSection({
                     />
                     {src.file.name}
                   </label>
-                  <label className="ml-auto flex items-center gap-1.5 text-xs text-neutral-500">
+                  <label className="ml-auto flex items-center gap-1.5 text-xs text-fg-muted">
                     Datumkolom:
                     <input
                       type="text"
@@ -431,17 +431,17 @@ export function DataPrepSection({
                         setDrafts((prev) => prev.map((s, i) => (i !== sIdx ? s : { ...s, date_column: e.target.value })))
                       }
                       placeholder="automatisch detecteren"
-                      className="rounded border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-rose-500"
+                      className="rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
                     />
                   </label>
                 </div>
                 {src.transforms.length > 0 && (
-                  <div className="mb-2 space-y-1 rounded border border-neutral-100 bg-neutral-50 p-2">
-                    <p className="text-xs font-medium text-neutral-500">
+                  <div className="mb-2 space-y-1 rounded border border-border bg-surface-2 p-2">
+                    <p className="text-xs font-medium text-fg-muted">
                       Opschoonstappen (vóór roltoewijzing, in volgorde):
                     </p>
                     {src.transforms.map((t, tIdx) => (
-                      <div key={`${t.op}-${tIdx}`} className="flex items-center gap-2 text-xs text-neutral-600">
+                      <div key={`${t.op}-${tIdx}`} className="flex items-center gap-2 text-xs text-fg-muted">
                         <span className="flex-1 font-mono">{tIdx + 1}. {transformLabel(t)}</span>
                         <button
                           onClick={() =>
@@ -451,7 +451,7 @@ export function DataPrepSection({
                               ),
                             )
                           }
-                          className="text-rose-600 hover:underline"
+                          className="text-danger hover:underline"
                         >
                           verwijderen
                         </button>
@@ -460,7 +460,7 @@ export function DataPrepSection({
                   </div>
                 )}
                 {src.columns.length === 0 ? (
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-fg-faint">
                     Geen kolommen automatisch herkend (bv. een xlsx-bestand) — vraag de architect om een
                     voorstel, of noem de kolomnamen in de chat.
                   </p>
@@ -468,7 +468,7 @@ export function DataPrepSection({
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[560px] text-sm">
                       <thead>
-                        <tr className="text-left text-xs uppercase tracking-wide text-neutral-400">
+                        <tr className="text-left text-xs uppercase tracking-wide text-fg-faint">
                           <th className="py-1 pr-3 font-medium">Kolom</th>
                           <th className="py-1 pr-3 font-medium">Verloop</th>
                           <th className="py-1 pr-3 font-medium">Rol</th>
@@ -476,13 +476,13 @@ export function DataPrepSection({
                           <th className="py-1 pr-3 font-medium">Gaten vullen</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-100">
+                      <tbody className="divide-y divide-border">
                         {src.columns.map((col, cIdx) => {
                           const values = sourceValues[src.file.storage_path]?.[col.name] ?? [];
                           const suggestion = col.role === "" ? suggestRole(col.name) : null;
                           return (
                           <tr key={col.name}>
-                            <td className="py-1.5 pr-3 text-neutral-800">{col.name}</td>
+                            <td className="py-1.5 pr-3 text-fg">{col.name}</td>
                             <td className="py-1.5 pr-3">
                               <Sparkline values={values} />
                             </td>
@@ -491,7 +491,7 @@ export function DataPrepSection({
                                 <select
                                   value={col.role}
                                   onChange={(e) => updateColumn(sIdx, cIdx, { role: e.target.value as ColumnRole | "" })}
-                                  className="rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-rose-500"
+                                  className="rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50"
                                 >
                                   {ROLE_OPTIONS.map((o) => (
                                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -501,7 +501,7 @@ export function DataPrepSection({
                                   <button
                                     onClick={() => updateColumn(sIdx, cIdx, { role: suggestion })}
                                     title="Kolomnaam suggereert deze rol — klik om over te nemen"
-                                    className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100"
+                                    className="rounded-full border border-danger/30 bg-danger-dim px-2 py-0.5 text-[11px] font-medium text-danger hover:bg-danger-dim"
                                   >
                                     voorstel: {ROLE_OPTIONS.find((o) => o.value === suggestion)?.label}
                                   </button>
@@ -515,7 +515,7 @@ export function DataPrepSection({
                                 onChange={(e) => updateColumn(sIdx, cIdx, { output_name: e.target.value })}
                                 placeholder={col.name}
                                 disabled={col.role === ""}
-                                className="w-32 rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-rose-500 disabled:bg-neutral-50 disabled:text-neutral-300"
+                                className="w-32 rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50 disabled:bg-surface-2 disabled:text-fg-faint"
                               />
                             </td>
                             <td className="py-1.5 pr-3">
@@ -523,7 +523,7 @@ export function DataPrepSection({
                                 value={col.fill}
                                 onChange={(e) => updateColumn(sIdx, cIdx, { fill: e.target.value as FillStrategy | "" })}
                                 disabled={col.role !== "control"}
-                                className="rounded border border-neutral-300 px-1.5 py-1 text-xs outline-none focus:border-rose-500 disabled:bg-neutral-50 disabled:text-neutral-300"
+                                className="rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50 disabled:bg-surface-2 disabled:text-fg-faint"
                               >
                                 {FILL_OPTIONS.map((o) => (
                                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -541,43 +541,43 @@ export function DataPrepSection({
             ))}
           </div>
 
-          <details className="rounded-lg border border-neutral-200 p-3 text-sm">
-            <summary className="cursor-pointer select-none font-medium text-neutral-800">
+          <details className="rounded-lg border border-border p-3 text-sm">
+            <summary className="cursor-pointer select-none font-medium text-fg">
               Eenmalige uitschieters (event-dummy&apos;s){dummies.length > 0 ? ` — ${dummies.length}` : ""}
             </summary>
             <div className="mt-3 space-y-2">
               {dummies.map((d) => (
-                <div key={d.key} className="flex items-center gap-2 text-xs text-neutral-600">
+                <div key={d.key} className="flex items-center gap-2 text-xs text-fg-muted">
                   <span className="flex-1">{d.name} — {d.iso_year} week {d.iso_week}</span>
                   <button
                     onClick={() => setDummies((prev) => prev.filter((x) => x.key !== d.key))}
-                    className="text-rose-600 hover:underline"
+                    className="text-danger hover:underline"
                   >
                     verwijderen
                   </button>
                 </div>
               ))}
               <div className="flex flex-wrap items-end gap-2">
-                <label className="text-xs text-neutral-500">
+                <label className="text-xs text-fg-muted">
                   Naam
                   <input
                     type="text"
                     value={newDummy.name}
                     onChange={(e) => setNewDummy((d) => ({ ...d, name: e.target.value }))}
                     placeholder="storing_week"
-                    className="block w-32 rounded border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-rose-500"
+                    className="block w-32 rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
                   />
                 </label>
-                <label className="text-xs text-neutral-500">
+                <label className="text-xs text-fg-muted">
                   ISO-jaar
                   <input
                     type="number"
                     value={newDummy.iso_year}
                     onChange={(e) => setNewDummy((d) => ({ ...d, iso_year: Number(e.target.value) }))}
-                    className="block w-20 rounded border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-rose-500"
+                    className="block w-20 rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
                   />
                 </label>
-                <label className="text-xs text-neutral-500">
+                <label className="text-xs text-fg-muted">
                   ISO-week
                   <input
                     type="number"
@@ -585,12 +585,12 @@ export function DataPrepSection({
                     max={53}
                     value={newDummy.iso_week}
                     onChange={(e) => setNewDummy((d) => ({ ...d, iso_week: Number(e.target.value) }))}
-                    className="block w-16 rounded border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-rose-500"
+                    className="block w-16 rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
                   />
                 </label>
                 <button
                   onClick={addDummy}
-                  className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
+                  className="rounded border border-border-strong px-2 py-1 text-xs text-fg-muted hover:bg-surface-2"
                 >
                   Toevoegen
                 </button>
@@ -598,23 +598,23 @@ export function DataPrepSection({
             </div>
           </details>
 
-          <details className="rounded-lg border border-neutral-200 p-3 text-sm" open={features.length > 0}>
-            <summary className="cursor-pointer select-none font-medium text-neutral-800">
+          <details className="rounded-lg border border-border p-3 text-sm" open={features.length > 0}>
+            <summary className="cursor-pointer select-none font-medium text-fg">
               Afgeleide variabelen (features){features.length > 0 ? ` — ${features.length}` : ""}
             </summary>
             <div className="mt-3 space-y-2">
               {features.length === 0 ? (
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-fg-faint">
                   Nog geen afgeleide variabelen. Vraag de architect in de chat om er een voor te stellen
                   (bv. een lag, een ratio/aandeel, een interactie of een terugkerende kalender-dummy).
                 </p>
               ) : (
                 features.map((f) => (
-                  <div key={f.name} className="flex items-center gap-2 text-xs text-neutral-600">
+                  <div key={f.name} className="flex items-center gap-2 text-xs text-fg-muted">
                     <span className="flex-1 font-mono">{featureLabel(f)}</span>
                     <button
                       onClick={() => setFeatures((prev) => prev.filter((x) => x.name !== f.name))}
-                      className="text-rose-600 hover:underline"
+                      className="text-danger hover:underline"
                     >
                       verwijderen
                     </button>
@@ -624,11 +624,11 @@ export function DataPrepSection({
             </div>
           </details>
 
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
           <button
             onClick={submit}
             disabled={busy || datasetBusy}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy || datasetBusy ? "Bezig…" : "Controleer & voeg samen"}
           </button>
@@ -636,18 +636,18 @@ export function DataPrepSection({
       )}
 
       {dataset && (
-        <div className="space-y-4 border-t border-neutral-100 pt-4">
+        <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center gap-3">
             <StatusBadge status={mapDatasetStatus(dataset.status)} />
             {dataset.n_weeks != null && dataset.window_start && dataset.window_end && (
-              <p className="text-sm text-neutral-600">
+              <p className="text-sm text-fg-muted">
                 {dataset.window_start} t/m {dataset.window_end} ({dataset.n_weeks} weken)
               </p>
             )}
           </div>
 
           {dataset.status === "failed" && (
-            <p className="text-sm text-rose-600">{dataset.error ?? "Samenvoegen is mislukt."}</p>
+            <p className="text-sm text-danger">{dataset.error ?? "Samenvoegen is mislukt."}</p>
           )}
 
           <DataHealthMeter dataset={dataset} />
@@ -659,13 +659,13 @@ export function DataPrepSection({
             <button
               onClick={approve}
               disabled={busy}
-              className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? "Bezig…" : "Goedkeuren als definitieve dataset"}
             </button>
           )}
           {dataset.status === "approved" && (
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-fg-muted">
               Deze dataset is goedgekeurd en is het definitieve bestand voor de modelstap hieronder.
             </p>
           )}

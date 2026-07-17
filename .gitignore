@@ -5,3 +5,4 @@ build/
 .env*.local
 *.tsbuildinfo
 next-env.d.ts
+.claude/hooks/.npm-install-stamp

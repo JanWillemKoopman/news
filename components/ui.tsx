@@ -1,10 +1,58 @@
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
-export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+// Modal-stijl paneel: donkere surface, 1px border met lage opacity, zachte shadow.
+export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-neutral-200 bg-white p-5 ${className}`}>{children}</div>
+    <div className={`rounded-[10px] border border-border bg-surface shadow-panel ${className}`}>{children}</div>
   );
+}
+
+// Behouden als alias: bestaande imports van `Card` blijven werken, met dezelfde
+// padding-conventie als voorheen (p-5).
+export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <Panel className={`p-5 ${className}`}>{children}</Panel>;
+}
+
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+
+const BUTTON_VARIANT: Record<ButtonVariant, string> = {
+  // Felgroen accent met glow-hover — Modal's signature CTA.
+  primary:
+    "bg-accent text-bg font-medium hover:bg-accent-hover hover:shadow-glow-sm disabled:bg-surface-3 disabled:text-fg-faint disabled:shadow-none",
+  secondary:
+    "border border-border bg-surface-2 text-fg hover:border-border-strong hover:bg-surface-3 disabled:text-fg-faint",
+  ghost: "text-fg-muted hover:bg-surface-2 hover:text-fg",
+  danger: "border border-danger/40 bg-danger-dim text-danger hover:bg-danger/20",
+};
+
+export function Button({
+  variant = "primary",
+  className = "",
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  return (
+    <button
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow-sm disabled:cursor-not-allowed ${BUTTON_VARIANT[variant]} ${className}`}
+      {...props}
+    />
+  );
+}
+
+const FIELD_BASE =
+  "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/50 focus:outline-none focus:shadow-glow-sm";
+
+export function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={`${FIELD_BASE} ${className}`} {...props} />;
+}
+
+export function Textarea({ className = "", ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={`${FIELD_BASE} ${className}`} {...props} />;
+}
+
+export function Select({ className = "", ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={`${FIELD_BASE} ${className}`} {...props} />;
 }
 
 export function PageHeader({
@@ -19,8 +67,8 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-neutral-900">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-neutral-500">{subtitle}</p>}
+        <h1 className="text-xl font-semibold tracking-tight text-fg">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-fg-muted">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -38,21 +86,23 @@ const STATUS_LABEL: Record<JobStatus | ProjectStatus, string> = {
   cancelled: "Geannuleerd",
 };
 
-// Neutral by default; rose only when something needs attention (running/failed/draft).
+// Groen = goed/klaar, rood = mislukt/aandacht, amber = bezig, neutraal = rest.
 const STATUS_TONE: Record<JobStatus | ProjectStatus, string> = {
-  draft: "bg-rose-50 text-rose-700",
-  published: "bg-neutral-100 text-neutral-600",
-  archived: "bg-neutral-100 text-neutral-500",
-  queued: "bg-neutral-100 text-neutral-600",
-  running: "bg-rose-50 text-rose-700",
-  succeeded: "bg-neutral-100 text-neutral-700",
-  failed: "bg-rose-100 text-rose-700",
-  cancelled: "bg-neutral-100 text-neutral-500",
+  draft: "border border-border bg-surface-2 text-fg-muted",
+  published: "border border-accent/30 bg-accent-dim text-accent",
+  archived: "border border-border bg-surface-2 text-fg-faint",
+  queued: "border border-border bg-surface-2 text-fg-muted",
+  running: "border border-warn/30 bg-warn-dim text-warn",
+  succeeded: "border border-accent/30 bg-accent-dim text-accent",
+  failed: "border border-danger/30 bg-danger-dim text-danger",
+  cancelled: "border border-border bg-surface-2 text-fg-faint",
 };
 
 export function StatusBadge({ status }: { status: JobStatus | ProjectStatus }) {
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[status]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[status]}`}
+    >
       {STATUS_LABEL[status]}
     </span>
   );
@@ -76,9 +126,9 @@ export const MMM_GLOSSARY: Record<string, string> = {
 // glossary, so the explanation stays exactly where the jargon appears.
 export function Term({ children, definition }: { children: React.ReactNode; definition: string }) {
   return (
-    <span className="group relative inline-flex cursor-help items-center border-b border-dotted border-neutral-400">
+    <span className="group relative inline-flex cursor-help items-center border-b border-dotted border-fg-faint">
       {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-56 -translate-x-1/2 rounded-lg bg-neutral-900 px-2.5 py-1.5 text-xs font-normal normal-case leading-snug tracking-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-56 -translate-x-1/2 rounded-lg border border-border-strong bg-surface-3 px-2.5 py-1.5 text-xs font-normal normal-case leading-snug tracking-normal text-fg opacity-0 shadow-panel transition-opacity group-hover:opacity-100">
         {definition}
       </span>
     </span>
@@ -87,14 +137,16 @@ export function Term({ children, definition }: { children: React.ReactNode; defi
 
 export function TopBar({ email }: { email: string | null }) {
   return (
-    <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3">
-      <Link href="/projects" className="text-sm font-semibold tracking-tight">
+    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-bg/80 px-6 py-3 backdrop-blur">
+      <Link href="/projects" className="group flex items-center gap-2 text-sm font-semibold tracking-tight text-fg">
+        <span className="h-4 w-4 rounded-[4px] bg-accent shadow-glow-sm transition group-hover:bg-accent-hover" />
         MMM Wizard
       </Link>
-      <div className="flex items-center gap-3 text-sm text-neutral-500">
-        {email}
+      <div className="flex items-center gap-3 text-sm text-fg-muted">
+        <span className="font-mono text-xs text-fg-faint">{email}</span>
         <form action="/auth/signout" method="post">
-          <button className="rounded-lg border border-neutral-300 px-3 py-1 text-neutral-700 transition hover:bg-neutral-50">
+          <button className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-fg-muted transition hover:border-border-strong hover:text-fg">
+            <LogOut className="h-3.5 w-3.5" />
             Uitloggen
           </button>
         </form>

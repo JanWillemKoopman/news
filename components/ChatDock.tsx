@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MessageSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { MessageSquare, X } from "lucide-react";
 
 const STORAGE_KEY = "mmm-chat-open";
 
-// Owns the chat's card chrome, header and collapse/expand state — separate from
-// ChatPanel (the conversation itself) so the width/visibility behavior lives in one
-// place. Collapsed: a slim strip on desktop (pipeline reclaims the width) / a compact
-// bar on mobile. Expanded: a genuinely wide, prominent panel — not a squeezed sidebar —
-// because a chat you can barely read isn't a chat you'll actually use.
-export function ChatDock({ children }: { children: React.ReactNode }) {
+// De chat-open-state leeft in een context zodat zowel het (fixed) chat-paneel
+// als de hoofdcontent hem kunnen lezen — de content reserveert op brede schermen
+// rechts ruimte wanneer de chat open is, i.p.v. eronder te verdwijnen.
+interface ChatOpenValue {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  hydrated: boolean;
+}
+const ChatOpenCtx = createContext<ChatOpenValue | null>(null);
+
+export function ChatDockProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   const [hydrated, setHydrated] = useState(false);
 
@@ -23,30 +28,80 @@ export function ChatDock({ children }: { children: React.ReactNode }) {
     if (hydrated) window.localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
   }, [open, hydrated]);
 
+  return <ChatOpenCtx.Provider value={{ open, setOpen, hydrated }}>{children}</ChatOpenCtx.Provider>;
+}
+
+function useChatOpen(): ChatOpenValue {
+  const ctx = useContext(ChatOpenCtx);
+  if (!ctx) throw new Error("Chat components must be used within ChatDockProvider");
+  return ctx;
+}
+
+// Wrapper om de hoofdcontent: reserveert op xl rechts ruimte voor het open paneel,
+// zodat de fixed chat niets overlapt. Op kleiner scherm schuift de chat als
+// drawer over de content (met backdrop) en wordt hier geen ruimte gereserveerd.
+export function ChatMain({ children }: { children: React.ReactNode }) {
+  const { open } = useChatOpen();
   return (
-    <div
-      className={`flex flex-none flex-col rounded-xl border border-neutral-200 bg-white transition-[width] duration-200 lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)] ${
-        open ? "w-full lg:w-[26rem] xl:w-[32rem]" : "w-full lg:w-14"
-      }`}
-    >
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={`flex items-center rounded-t-xl border-b border-neutral-100 px-4 py-3 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 ${
-          open ? "justify-between gap-2" : "justify-center gap-2 lg:flex-col lg:gap-1.5"
+    <div className={`transition-[padding] duration-200 ${open ? "xl:pr-[31rem]" : "xl:pr-14"}`}>{children}</div>
+  );
+}
+
+// De chatbot: sticky/fixed tegen de rechter-viewportrand, volledige hoogte,
+// in- en uitklapbaar. Ingeklapt = een slanke verticale handle tegen de rand.
+export function ChatDock({ children }: { children: React.ReactNode }) {
+  const { open, setOpen } = useChatOpen();
+
+  return (
+    <>
+      {/* Backdrop — alleen zichtbaar/klikbaar op kleiner scherm wanneer open. */}
+      {open && (
+        <button
+          aria-label="Chat sluiten"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm xl:hidden"
+        />
+      )}
+
+      {/* Ingeklapte handle, tegen de rechterrand geplakt. */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Chat openen"
+          className="group fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-2 rounded-l-xl border border-r-0 border-border bg-surface px-2.5 py-4 text-fg-muted shadow-panel transition hover:bg-surface-2 hover:text-fg"
+        >
+          <MessageSquare className="h-5 w-5 text-accent" />
+          <span
+            className="text-xs font-medium tracking-wide"
+            style={{ writingMode: "vertical-rl" }}
+          >
+            Claude-assistent
+          </span>
+        </button>
+      )}
+
+      {/* Het paneel — schuift vanaf rechts in. */}
+      <aside
+        aria-hidden={!open}
+        className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-[26rem] flex-col border-l border-border bg-surface shadow-panel transition-transform duration-200 xl:max-w-[30rem] ${
+          open ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
       >
-        <span className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 flex-none text-rose-500" />
-          <span className={open ? "" : "lg:hidden"}>Claude-assistent</span>
-        </span>
-        {open ? (
-          <PanelRightClose className="h-4 w-4 flex-none text-neutral-400" />
-        ) : (
-          <PanelRightOpen className="h-4 w-4 flex-none text-neutral-400" />
-        )}
-      </button>
-      <div className={open ? "min-h-0 flex-1" : "hidden"}>{children}</div>
-    </div>
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <span className="flex items-center gap-2 text-sm font-medium text-fg">
+            <MessageSquare className="h-4 w-4 flex-none text-accent" />
+            Claude-assistent
+          </span>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Chat inklappen"
+            className="rounded-md p-1 text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1">{children}</div>
+      </aside>
+    </>
   );
 }

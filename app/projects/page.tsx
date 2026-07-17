@@ -33,18 +33,18 @@ export default async function ProjectsPage() {
         </Card>
 
         {projects.length === 0 ? (
-          <p className="text-sm text-neutral-500">Nog geen projecten. Maak er hierboven één aan.</p>
+          <p className="text-sm text-fg-muted">Nog geen projecten. Maak er hierboven één aan.</p>
         ) : (
           <ul className="space-y-3">
             {projects.map((p) => (
               <li key={p.id}>
                 <Link href={`/projects/${p.id}`}>
-                  <Card className="transition hover:border-neutral-300">
+                  <Card className="transition hover:border-border-strong">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-neutral-900">{p.name}</p>
+                        <p className="font-medium text-fg">{p.name}</p>
                         {p.client_company && (
-                          <p className="text-sm text-neutral-500">{p.client_company}</p>
+                          <p className="text-sm text-fg-muted">{p.client_company}</p>
                         )}
                       </div>
                       <StatusBadge status={p.status} />

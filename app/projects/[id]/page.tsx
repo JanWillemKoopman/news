@@ -11,7 +11,7 @@ import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
 import { ChatPanel } from "@/components/ChatPanel";
-import { ChatDock } from "@/components/ChatDock";
+import { ChatDock, ChatDockProvider, ChatMain } from "@/components/ChatDock";
 import { WizardChatProvider } from "@/components/WizardChatContext";
 import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
 import { computePipelineSteps } from "@/lib/pipelineStatus";
@@ -57,62 +57,64 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   return (
     <>
       <TopBar email={viewer.email} />
-      <main className="mx-auto max-w-[1800px] px-6 py-8 lg:px-10">
-        <div className="mb-6">
-          <Link href="/projects" className="text-sm text-neutral-500 hover:text-neutral-800">
-            ← Projecten
-          </Link>
-        </div>
-        <PageHeader
-          title={p.name}
-          subtitle={p.client_company ?? undefined}
-          action={<StatusBadge status={p.status} />}
-        />
+      <WizardChatProvider>
+        <ChatDockProvider>
+          <ChatMain>
+            <main className="mx-auto max-w-[1800px] px-6 py-8 lg:px-10">
+              <div className="mb-6">
+                <Link href="/projects" className="text-sm text-fg-muted transition hover:text-fg">
+                  ← Projecten
+                </Link>
+              </div>
+              <PageHeader
+                title={p.name}
+                subtitle={p.client_company ?? undefined}
+                action={<StatusBadge status={p.status} />}
+              />
 
-        <WizardChatProvider>
-          <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
-            <div className="min-w-0 flex-1">
-              <PipelineShell steps={pipelineSteps}>
-                <PipelineStep id="data" number={1}>
-                  <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
-                </PipelineStep>
+              <div className="mt-6">
+                <PipelineShell steps={pipelineSteps}>
+                  <PipelineStep id="data" number={1}>
+                    <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
+                  </PipelineStep>
 
-                <PipelineStep id="eda" number={2}>
-                  <EdaSection sources={(sources ?? []) as SourceFile[]} />
-                </PipelineStep>
+                  <PipelineStep id="eda" number={2}>
+                    <EdaSection sources={(sources ?? []) as SourceFile[]} />
+                  </PipelineStep>
 
-                <PipelineStep id="dataprep" number={3}>
-                  <DataPrepSection
-                    projectId={p.id}
-                    sources={(sources ?? []) as SourceFile[]}
-                    initialDataset={latestDataset}
-                  />
-                </PipelineStep>
+                  <PipelineStep id="dataprep" number={3}>
+                    <DataPrepSection
+                      projectId={p.id}
+                      sources={(sources ?? []) as SourceFile[]}
+                      initialDataset={latestDataset}
+                    />
+                  </PipelineStep>
 
-                <PipelineStep id="config" number={4}>
-                  <ModelConfigForm
-                    projectId={p.id}
-                    sources={(sources ?? []) as SourceFile[]}
-                    approvedDataset={latestDataset?.status === "approved" ? latestDataset : null}
-                  />
-                </PipelineStep>
+                  <PipelineStep id="config" number={4}>
+                    <ModelConfigForm
+                      projectId={p.id}
+                      sources={(sources ?? []) as SourceFile[]}
+                      approvedDataset={latestDataset?.status === "approved" ? latestDataset : null}
+                    />
+                  </PipelineStep>
 
-                <PipelineStep id="fits" number={5}>
-                  <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
-                </PipelineStep>
+                  <PipelineStep id="fits" number={5}>
+                    <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
+                  </PipelineStep>
 
-                <PipelineStep id="results" number={6}>
-                  <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
-                </PipelineStep>
-              </PipelineShell>
-            </div>
+                  <PipelineStep id="results" number={6}>
+                    <ResultsView projectId={p.id} runs={(runs ?? []) as ModelRun[]} />
+                  </PipelineStep>
+                </PipelineShell>
+              </div>
+            </main>
+          </ChatMain>
 
-            <ChatDock>
-              <ChatPanel projectId={p.id} />
-            </ChatDock>
-          </div>
-        </WizardChatProvider>
-      </main>
+          <ChatDock>
+            <ChatPanel projectId={p.id} />
+          </ChatDock>
+        </ChatDockProvider>
+      </WizardChatProvider>
     </>
   );
 }

@@ -130,7 +130,7 @@ export function SourceUpload({
   return (
     <div className="space-y-3">
       {sources.length === 0 ? (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-fg-muted">
           Nog geen bestanden. Upload je KPI- en spend-bestanden (CSV of XLSX).
         </p>
       ) : (
@@ -140,11 +140,11 @@ export function SourceUpload({
             return (
               <li
                 key={s.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-neutral-800">{s.name}</p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="truncate text-sm font-medium text-fg">{s.name}</p>
+                  <p className="text-xs text-fg-muted">
                     {s3 === "loading" && "Bestand wordt gelezen…"}
                     {s3 === "error" && "Kon dit bestand niet lezen"}
                     {s3 && s3 !== "loading" && s3 !== "error" && (
@@ -160,7 +160,7 @@ export function SourceUpload({
                   onClick={() => remove(s)}
                   disabled={deletingId === s.id}
                   aria-label={`${s.name} verwijderen`}
-                  className="flex-none rounded-lg p-2 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                  className="flex-none rounded-lg p-2 text-fg-faint transition hover:bg-danger-dim hover:text-danger disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -178,12 +178,12 @@ export function SourceUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         className={`flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition ${
-          dragOver ? "border-rose-400 bg-rose-50" : "border-neutral-200"
+          dragOver ? "border-accent/50 bg-accent-dim" : "border-border"
         }`}
       >
-        <Upload className="h-5 w-5 text-neutral-400" />
-        <p className="text-sm text-neutral-500">Sleep bestanden hierheen, of</p>
-        <label className="inline-flex cursor-pointer items-center rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">
+        <Upload className="h-5 w-5 text-fg-faint" />
+        <p className="text-sm text-fg-muted">Sleep bestanden hierheen, of</p>
+        <label className="inline-flex cursor-pointer items-center rounded-lg border border-border-strong px-3 py-2 text-sm font-medium text-fg transition hover:bg-surface-2">
           {busy ? "Uploaden…" : "Bestand(en) kiezen"}
           <input
             type="file"
@@ -195,7 +195,7 @@ export function SourceUpload({
           />
         </label>
       </div>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }
