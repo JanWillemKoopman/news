@@ -19,10 +19,10 @@ import type { FitSummary } from "@/lib/types";
 
 // Deterministic, zero-cost charts drawn straight from the numbers already in FitSummary —
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
-const ROSE = "#e11d48";
-const NEUTRAL = "#a3a3a3";
-const GRID = "#e5e5e5";
-const AXIS = { fontSize: 11, fill: "#a3a3a3" };
+const ACCENT = "#7FEE64";
+const NEUTRAL = "#6B6B73";
+const GRID = "rgba(255,255,255,0.08)";
+const AXIS = { fontSize: 11, fill: "#9A9AA3" };
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -31,8 +31,8 @@ function fmt(n: number, digits = 0): string {
 function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-sm font-medium text-neutral-900">{title}</p>
-      {hint && <p className="mb-1 text-xs text-neutral-500">{hint}</p>}
+      <p className="text-sm font-medium text-fg">{title}</p>
+      {hint && <p className="mb-1 text-xs text-fg-muted">{hint}</p>}
       {children}
     </div>
   );
@@ -42,9 +42,9 @@ function ShareTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs shadow-sm">
-      <p className="font-medium text-neutral-900">{fmt(d.p50 as number, 1)}%</p>
-      <p className="text-neutral-500">
+    <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-sm">
+      <p className="font-medium text-fg">{fmt(d.p50 as number, 1)}%</p>
+      <p className="text-fg-muted">
         {fmt(d.p3 as number, 1)}% – {fmt(d.p97 as number, 1)}%
       </p>
     </div>
@@ -55,9 +55,9 @@ function RoasTooltip({ active, payload }: { active?: boolean; payload?: { payloa
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs shadow-sm">
-      <p className="font-medium text-neutral-900">{fmt(d.p50 as number, 2)}</p>
-      <p className="text-neutral-500">
+    <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-sm">
+      <p className="font-medium text-fg">{fmt(d.p50 as number, 2)}</p>
+      <p className="text-fg-muted">
         {fmt(d.p3 as number, 2)} – {fmt(d.p97 as number, 2)}
       </p>
     </div>
@@ -113,9 +113,9 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => `${v}%`} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<ShareTooltip />} cursor={{ fill: "#fafafa" }} />
-              <Bar dataKey="p50" fill={ROSE} radius={[0, 3, 3, 0]} barSize={14}>
-                <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ROSE} strokeOpacity={0.5} />
+              <Tooltip content={<ShareTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+              <Bar dataKey="p50" fill={ACCENT} radius={[0, 3, 3, 0]} barSize={14}>
+                <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ACCENT} strokeOpacity={0.5} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -127,9 +127,9 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<RoasTooltip />} cursor={{ fill: "#fafafa" }} />
-              <Bar dataKey="p50" fill={ROSE} radius={[0, 3, 3, 0]} barSize={14}>
-                <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ROSE} strokeOpacity={0.5} />
+              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+              <Bar dataKey="p50" fill={ACCENT} radius={[0, 3, 3, 0]} barSize={14}>
+                <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ACCENT} strokeOpacity={0.5} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -138,8 +138,8 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
 
       {curves.length > 0 && (
         <div>
-          <p className="text-sm font-medium text-neutral-900">Respons- en verzadigingscurves</p>
-          <p className="mb-2 text-xs text-neutral-500">
+          <p className="text-sm font-medium text-fg">Respons- en verzadigingscurves</p>
+          <p className="mb-2 text-xs text-fg-muted">
             Contributie bij toenemende wekelijkse spend; de stippellijn markeert de huidige spend.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -151,7 +151,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               }));
               return (
                 <div key={curve.name}>
-                  <p className="mb-1 text-xs font-medium text-neutral-700">{curve.name}</p>
+                  <p className="mb-1 text-xs font-medium text-fg">{curve.name}</p>
                   <ResponsiveContainer width="100%" height={160} className="overflow-hidden">
                     <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
@@ -162,13 +162,13 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
                         labelFormatter={(v) => `Spend: ${fmt(Number(v))}`}
                         contentStyle={{ fontSize: 12 }}
                       />
-                      <Area dataKey="band" stroke="none" fill={ROSE} fillOpacity={0.12} />
-                      <Line type="monotone" dataKey="p50" stroke={ROSE} strokeWidth={2} dot={false} />
+                      <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} />
+                      <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
                       <ReferenceLine
                         x={curve.current_weekly_spend}
-                        stroke="#525252"
+                        stroke="#9A9AA3"
                         strokeDasharray="4 4"
-                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#525252" }}
+                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#9A9AA3" }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -198,14 +198,14 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
                 labelFormatter={(v) => `Budget: ${fmt(Number(v))}`}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Area dataKey="band" stroke="none" fill={ROSE} fillOpacity={0.12} />
-              <Line type="monotone" dataKey="p50" stroke={ROSE} strokeWidth={2} dot={false} />
+              <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} />
+              <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
               {allocation && (
                 <ReferenceLine
                   x={allocation.total_weekly_budget}
-                  stroke="#525252"
+                  stroke="#9A9AA3"
                   strokeDasharray="4 4"
-                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#525252" }}
+                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#9A9AA3" }}
                 />
               )}
             </AreaChart>
@@ -231,7 +231,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               />
               <Bar dataKey="delta" radius={[0, 3, 3, 0]} barSize={14}>
                 {reallocData.map((d) => (
-                  <Cell key={d.name} fill={d.delta >= 0 ? ROSE : NEUTRAL} />
+                  <Cell key={d.name} fill={d.delta >= 0 ? ACCENT : NEUTRAL} />
                 ))}
               </Bar>
             </BarChart>

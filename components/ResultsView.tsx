@@ -20,7 +20,7 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   if (runs.length === 0) {
-    return <p className="text-sm text-neutral-500">Nog geen resultaten. Start een fit hierboven.</p>;
+    return <p className="text-sm text-fg-muted">Nog geen resultaten. Start een fit hierboven.</p>;
   }
 
   // The analysis section (step "diepgaande analyse", explicitly out of scope for this
@@ -68,33 +68,33 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
     <div className="space-y-5">
       <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} />
       <SummaryView summary={viewedRun.summary} />
-      <div className="flex items-center gap-3 border-t border-neutral-100 pt-4">
+      <div className="flex items-center gap-3 border-t border-border pt-4">
         {viewedRun.is_published ? (
           <StatusBadge status="published" />
         ) : (
           <button
             onClick={publish}
             disabled={busy}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Publiceren…" : "Publiceer naar klantdashboard"}
           </button>
         )}
-        {error && <p className="text-sm text-rose-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
       {viewedRun.id === latestRun.id && (
-        <div className="border-t border-neutral-100 pt-4">
-          <p className="mb-2 text-sm text-neutral-500">
+        <div className="border-t border-border pt-4">
+          <p className="mb-2 text-sm text-fg-muted">
             Laat Claude deze uitkomst verder analyseren en op maat gemaakte grafieken maken (kan even duren).
           </p>
           <button
             onClick={generateAnalysis}
             disabled={analyzing}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
           >
             {analyzing ? "Analyse wordt gegenereerd…" : shownAnalysis ? "Analyse opnieuw genereren" : "Genereer diepgaande analyse"}
           </button>
-          {analysisError && <p className="mt-2 text-sm text-rose-600">{analysisError}</p>}
+          {analysisError && <p className="mt-2 text-sm text-danger">{analysisError}</p>}
           {shownAnalysis && <AnalysisView analysis={shownAnalysis} />}
         </div>
       )}

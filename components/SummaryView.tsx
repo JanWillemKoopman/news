@@ -23,8 +23,8 @@ function pct(n: number): string {
 function IntervalCell({ value, render }: { value: Interval; render: (n: number) => string }) {
   return (
     <div>
-      <div className="font-medium text-neutral-900">{render(value.p50)}</div>
-      <div className="text-xs text-neutral-400">
+      <div className="font-medium text-fg">{render(value.p50)}</div>
+      <div className="text-xs text-fg-faint">
         {render(value.p3)} – {render(value.p97)}
       </div>
     </div>
@@ -34,8 +34,8 @@ function IntervalCell({ value, render }: { value: Interval; render: (n: number) 
 function Metric({ label, value, warn }: { label: React.ReactNode; value: string; warn?: boolean }) {
   return (
     <div>
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={`text-sm font-medium ${warn ? "text-rose-600" : "text-neutral-900"}`}>{value}</div>
+      <div className="text-xs text-fg-muted">{label}</div>
+      <div className={`text-sm font-medium ${warn ? "text-danger" : "text-fg"}`}>{value}</div>
     </div>
   );
 }
@@ -51,9 +51,9 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
       ? "Deze uitkomst is nog niet betrouwbaar genoeg om te publiceren."
       : "Let op bij het interpreteren van deze uitkomst.";
   return (
-    <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-      <p className="text-sm font-medium text-rose-800">{heading}</p>
-      <ul className="mt-2 space-y-1 text-sm text-rose-700">
+    <div className="rounded-lg border border-danger/30 bg-danger-dim p-4">
+      <p className="text-sm font-medium text-danger">{heading}</p>
+      <ul className="mt-2 space-y-1 text-sm text-danger">
         {gate.reasons.map((r, i) => (
           <li key={i}>• {r}</li>
         ))}
@@ -65,7 +65,7 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
               `De kwaliteitspoort van de laatste fit geeft "${gate.verdict === "fail" ? "mislukt" : "let op"}" met deze reden(en): ${gate.reasons.join("; ")}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
             )
           }
-          className="mt-3 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+          className="mt-3 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger-dim"
         >
           Vraag de architect om dit te verbeteren
         </button>
@@ -91,7 +91,7 @@ function frontierInsight(frontier: FrontierPoint[] | undefined, current: number,
   const extraSpend = more.total_weekly_budget - base.total_weekly_budget;
   const extraKpi = more.predicted_contribution.p50 - base.predicted_contribution.p50;
   return (
-    <p className="text-sm text-neutral-600">
+    <p className="text-sm text-fg-muted">
       Ongeveer <span className="font-medium">{fmt(extraSpend)}</span> meer budget per week levert naar
       schatting <span className="font-medium">{fmt(extraKpi)}</span> extra {kpi} per week op — daarna
       vlakt het rendement af (zie de onzekerheidsmarges).
@@ -114,8 +114,8 @@ function BudgetAdvice({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-sm font-medium text-neutral-900">Budgetadvies</h3>
-        <p className="text-sm text-neutral-600">
+        <h3 className="text-sm font-medium text-fg">Budgetadvies</h3>
+        <p className="text-sm text-fg-muted">
           Bij hetzelfde totale weekbudget van{" "}
           <span className="font-medium">{fmt(allocation.total_weekly_budget)}</span> haalt deze
           verdeling naar schatting{" "}
@@ -125,20 +125,20 @@ function BudgetAdvice({
         </p>
       </div>
       <details>
-        <summary className="cursor-pointer select-none text-xs font-medium text-neutral-500">
+        <summary className="cursor-pointer select-none text-xs font-medium text-fg-muted">
           Cijfers per kanaal (tabel)
         </summary>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
-              <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-fg-faint">
                 <th className="py-2 pr-4 font-medium">Kanaal</th>
                 <th className="py-2 pr-4 font-medium">Nu per week</th>
                 <th className="py-2 pr-4 font-medium">Advies per week</th>
                 <th className="py-2 pr-4 font-medium">Rendement volgende euro</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-border">
               {Object.entries(allocation.per_channel).map(([name, advised]) => {
                 const curve = byName.get(name);
                 const current = curve?.current_weekly_spend ?? 0;
@@ -146,18 +146,18 @@ function BudgetAdvice({
                 const down = advised < current * 0.99;
                 return (
                   <tr key={name}>
-                    <td className="py-3 pr-4 font-medium text-neutral-900">{name}</td>
-                    <td className="py-3 pr-4 text-neutral-600">{fmt(current)}</td>
+                    <td className="py-3 pr-4 font-medium text-fg">{name}</td>
+                    <td className="py-3 pr-4 text-fg-muted">{fmt(current)}</td>
                     <td className="py-3 pr-4">
-                      <span className="font-medium text-neutral-900">{fmt(advised)}</span>{" "}
-                      {up && <span className="text-xs text-rose-600">↑</span>}
-                      {down && <span className="text-xs text-neutral-400">↓</span>}
+                      <span className="font-medium text-fg">{fmt(advised)}</span>{" "}
+                      {up && <span className="text-xs text-danger">↑</span>}
+                      {down && <span className="text-xs text-fg-faint">↓</span>}
                     </td>
                     <td className="py-3 pr-4">
                       {curve ? (
                         <IntervalCell value={curve.marginal_roas_at_current} render={(n) => fmt(n, 2)} />
                       ) : (
-                        <span className="text-neutral-400">—</span>
+                        <span className="text-fg-faint">—</span>
                       )}
                     </td>
                   </tr>
@@ -195,7 +195,7 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
         />
       </div>
 
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-fg-muted">
         De periode <span className="font-medium">{summary.window[0]}</span> t/m{" "}
         <span className="font-medium">{summary.window[1]}</span> ({summary.n_weeks} weken). De
         baseline — verkoop zonder marketing — is ongeveer{" "}
@@ -205,14 +205,14 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
 
       <ResultsCharts summary={summary} />
 
-      <details className="border-t border-neutral-100 pt-4">
-        <summary className="cursor-pointer select-none text-sm font-medium text-neutral-900">
+      <details className="border-t border-border pt-4">
+        <summary className="cursor-pointer select-none text-sm font-medium text-fg">
           Cijfers per kanaal (tabel)
         </summary>
         <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
-            <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-fg-faint">
               <th className="py-2 pr-4 font-medium">Kanaal</th>
               <th className="py-2 pr-4 font-medium">Aandeel</th>
               <th className="py-2 pr-4 font-medium">
@@ -226,10 +226,10 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-border">
             {summary.channels.map((ch) => (
               <tr key={ch.name}>
-                <td className="py-3 pr-4 font-medium text-neutral-900">{ch.name}</td>
+                <td className="py-3 pr-4 font-medium text-fg">{ch.name}</td>
                 <td className="py-3 pr-4">
                   <IntervalCell value={ch.contribution_share} render={pct} />
                 </td>
@@ -259,7 +259,7 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
       )}
 
       {!d.decomposition_ok && (
-        <p className="text-sm text-rose-600">
+        <p className="text-sm text-danger">
           Let op: de decompositie telt niet netjes op tot het totaal — behandel deze uitkomst met
           voorzichtigheid.
         </p>

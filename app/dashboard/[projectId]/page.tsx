@@ -48,11 +48,11 @@ export default async function ClientDashboard({ params }: { params: { projectId:
             {latest.analysis && <AnalysisView analysis={latest.analysis} />}
           </Card>
         ) : (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-fg-muted">
             Er is nog geen gepubliceerd resultaat voor dit project.
           </p>
         )}
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-fg-faint">
           Elke waarde toont de mediaan met een 94%-betrouwbaarheidsinterval. Brede marges bij
           data-arme kanalen zijn een eerlijke weergave van onzekerheid, geen fout.
         </p>

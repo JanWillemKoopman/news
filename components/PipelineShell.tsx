@@ -1,15 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronDown } from "lucide-react";
+import { createContext, useContext, useEffect, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AlertCircle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { StepMeta, StepStatus } from "@/lib/pipelineStatus";
 
 interface PipelineCtxValue {
   steps: StepMeta[];
-  openIds: string[];
-  toggle: (id: string) => void;
-  openAndScroll: (id: string) => void;
+  activeId: string;
+  goTo: (id: string) => void;
 }
 
 const PipelineCtx = createContext<PipelineCtxValue | null>(null);
@@ -20,87 +20,79 @@ function usePipeline(): PipelineCtxValue {
   return ctx;
 }
 
-export function PipelineShell({ steps, children }: { steps: StepMeta[]; children: React.ReactNode }) {
-  const initialOpen = useMemo(
-    () => steps.filter((s) => s.status === "active" || s.status === "attention").map((s) => s.id),
-    // Only ever re-derive on mount — once the builder starts opening/closing sections
-    // themselves, a server refresh (e.g. Realtime status change) shouldn't yank a
-    // section shut or open underneath them.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+// De stap waarop we defaulten als de URL nog geen ?step= heeft: eerst iets dat
+// aandacht vraagt, anders de "actieve" stap, anders de eerste.
+function defaultStepId(steps: StepMeta[]): string {
+  return (
+    steps.find((s) => s.status === "attention")?.id ??
+    steps.find((s) => s.status === "active")?.id ??
+    steps[0].id
   );
-  const [openIds, setOpenIds] = useState<string[]>(initialOpen);
-  // Lets the chat panel (a sibling under the same provider) offer step-relevant quick
-  // actions instead of one fixed set — informational only, chat works fine without it.
+}
+
+export function PipelineShell({ steps, children }: { steps: StepMeta[]; children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const chat = useWizardChatOptional();
 
-  useEffect(() => {
-    if (initialOpen[0]) chat?.setActiveStepId(initialOpen[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const fallback = useMemo(() => defaultStepId(steps), [steps]);
+  const requested = searchParams.get("step");
+  // Alleen een geldige stap-id uit de URL accepteren; anders de default.
+  const activeId = steps.some((s) => s.id === requested) ? (requested as string) : fallback;
 
-  function toggle(id: string) {
-    setOpenIds((prev) => {
-      const opening = !prev.includes(id);
-      if (opening) chat?.setActiveStepId(id);
-      return opening ? [...prev, id] : prev.filter((x) => x !== id);
-    });
+  // Houd de chat context-bewust van de zichtbare stap.
+  useEffect(() => {
+    chat?.setActiveStepId(activeId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  function goTo(id: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("step", id);
+    // replace i.p.v. push: elke stapwissel is geen aparte history-entry-per-klik-lawine,
+    // maar de URL blijft deelbaar en browser terug/vooruit werkt tussen navigaties.
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    document.getElementById("wizard-step-top")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  function openAndScroll(id: string) {
-    setOpenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    chat?.setActiveStepId(id);
-    document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+
+  const activeIndex = steps.findIndex((s) => s.id === activeId);
+  const prev = activeIndex > 0 ? steps[activeIndex - 1] : null;
+  const next = activeIndex < steps.length - 1 ? steps[activeIndex + 1] : null;
 
   return (
-    <PipelineCtx.Provider value={{ steps, openIds, toggle, openAndScroll }}>
-      <MobileStepIndicator />
-      <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:items-start lg:gap-8">
-        <PipelineRail />
-        {/* min-w-0: without it, a grid item's minimum width defaults to its content's
-            intrinsic width — a wide chart (e.g. many x-axis tick labels) would then force
-            this whole column wider than its track and visually bleed into the chat
-            column next to it instead of shrinking to fit. Verified with a before/after
-            Playwright repro: without min-w-0 an unconstrained child pushes this column's
-            sibling (the chat panel) out of place; with it, the column stays correctly
-            sized and the overflowing content is contained by the chart's own
-            overflow-hidden instead. */}
-        <div className="min-w-0 space-y-4">{children}</div>
-      </div>
+    <PipelineCtx.Provider value={{ steps, activeId, goTo }}>
+      <div id="wizard-step-top" className="scroll-mt-24" />
+      <WizardStepper />
+      <div className="mt-5 space-y-4">{children}</div>
+      <StepNav prev={prev} next={next} onGo={goTo} />
     </PipelineCtx.Provider>
   );
 }
 
-function StepDot({ status, number, small }: { status: StepStatus; number: number; small?: boolean }) {
-  const size = small ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm";
+function StepDot({ status, number }: { status: StepStatus; number: number }) {
+  const base = "flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-mono font-semibold";
   if (status === "done") {
     return (
-      <span className={`flex ${size} flex-none items-center justify-center rounded-full bg-neutral-800 text-white`}>
-        <Check className={small ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      <span className={`${base} bg-accent/15 text-accent ring-1 ring-inset ring-accent/40`}>
+        <Check className="h-4 w-4" />
       </span>
     );
   }
   if (status === "attention") {
     return (
-      <span className={`flex ${size} flex-none items-center justify-center rounded-full bg-rose-600 text-white`}>
-        <AlertCircle className={small ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      <span className={`${base} bg-danger-dim text-danger ring-1 ring-inset ring-danger/50`}>
+        <AlertCircle className="h-4 w-4" />
       </span>
     );
   }
   if (status === "active") {
-    return (
-      <span
-        className={`flex ${size} flex-none items-center justify-center rounded-full bg-rose-600 font-semibold text-white`}
-      >
-        {number}
-      </span>
-    );
+    return <span className={`${base} bg-accent text-bg shadow-glow-sm`}>{number}</span>;
   }
-  // available / locked
   return (
     <span
-      className={`flex ${size} flex-none items-center justify-center rounded-full border font-semibold ${
-        status === "locked" ? "border-neutral-200 text-neutral-300" : "border-neutral-300 text-neutral-500"
+      className={`${base} ring-1 ring-inset ${
+        status === "locked" ? "text-fg-faint ring-border" : "text-fg-muted ring-border-strong"
       }`}
     >
       {number}
@@ -108,50 +100,85 @@ function StepDot({ status, number, small }: { status: StepStatus; number: number
   );
 }
 
-function PipelineRail() {
-  const { steps, openIds, openAndScroll } = usePipeline();
+function WizardStepper() {
+  const { steps, activeId, goTo } = usePipeline();
   return (
-    <nav aria-label="Voortgang" className="hidden lg:block lg:sticky lg:top-8">
-      <ol>
-        {steps.map((s, i) => (
-          <li key={s.id}>
-            <button
-              onClick={() => openAndScroll(s.id)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-neutral-50"
-            >
-              <StepDot status={s.status} number={i + 1} small />
-              <span
-                className={`text-sm ${
-                  openIds.includes(s.id) || s.status === "active" || s.status === "attention"
-                    ? "font-medium text-neutral-900"
-                    : s.status === "locked"
-                      ? "text-neutral-400"
-                      : "text-neutral-600"
+    <nav
+      aria-label="Stappen"
+      className="sticky top-[3.25rem] z-20 -mx-1 overflow-x-auto rounded-[10px] border border-border bg-surface/80 px-1 py-1.5 backdrop-blur"
+    >
+      <ol className="flex min-w-max items-center gap-1">
+        {steps.map((s, i) => {
+          const isActive = s.id === activeId;
+          return (
+            <li key={s.id} className="flex items-center">
+              <button
+                onClick={() => goTo(s.id)}
+                aria-current={isActive ? "step" : undefined}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition ${
+                  isActive ? "bg-surface-3" : "hover:bg-surface-2"
                 }`}
               >
-                {s.title}
-              </span>
-            </button>
-            {i < steps.length - 1 && <div className="ml-[1.55rem] h-3 w-px bg-neutral-200" />}
-          </li>
-        ))}
+                <StepDot status={s.status} number={i + 1} />
+                <span className="flex flex-col">
+                  <span
+                    className={`whitespace-nowrap text-sm ${
+                      isActive
+                        ? "font-medium text-fg"
+                        : s.status === "attention"
+                          ? "text-danger"
+                          : s.status === "locked"
+                            ? "text-fg-faint"
+                            : "text-fg-muted"
+                    }`}
+                  >
+                    {s.title}
+                  </span>
+                </span>
+              </button>
+              {i < steps.length - 1 && <span className="mx-0.5 h-px w-4 flex-none bg-border" aria-hidden />}
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );
 }
 
-function MobileStepIndicator() {
-  const { steps } = usePipeline();
-  const attention = steps.find((s) => s.status === "attention");
-  const active = steps.find((s) => s.status === "active");
-  const highlight = attention ?? active;
-  if (!highlight) return null;
-  const idx = steps.findIndex((s) => s.id === highlight.id);
+function StepNav({
+  prev,
+  next,
+  onGo,
+}: {
+  prev: StepMeta | null;
+  next: StepMeta | null;
+  onGo: (id: string) => void;
+}) {
   return (
-    <p className={`mb-4 text-sm lg:hidden ${attention ? "font-medium text-rose-700" : "text-neutral-500"}`}>
-      Stap {idx + 1} van {steps.length} · {highlight.title}
-      {attention ? " — aandacht nodig" : ""}
-    </p>
+    <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
+      {prev ? (
+        <button
+          onClick={() => onGo(prev.id)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-fg-muted transition hover:border-border-strong hover:text-fg"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">{prev.title}</span>
+          <span className="sm:hidden">Vorige</span>
+        </button>
+      ) : (
+        <span />
+      )}
+      {next && (
+        <button
+          onClick={() => onGo(next.id)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg transition hover:border-border-strong hover:bg-surface-3"
+        >
+          <span className="hidden sm:inline">{next.title}</span>
+          <span className="sm:hidden">Volgende</span>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -164,41 +191,29 @@ export function PipelineStep({
   number: number;
   children: React.ReactNode;
 }) {
-  const { steps, openIds, toggle } = usePipeline();
+  const { steps, activeId } = usePipeline();
   const meta = steps.find((s) => s.id === id);
   if (!meta) throw new Error(`Unknown pipeline step id: ${id}`);
-  const open = openIds.includes(id);
+  const active = id === activeId;
 
   return (
-    <section id={`step-${id}`} className="scroll-mt-8">
-      <div
-        className={`rounded-xl border bg-white ${
-          meta.status === "attention" ? "border-rose-200" : "border-neutral-200"
-        }`}
-      >
-        <button
-          onClick={() => toggle(id)}
-          className="flex w-full items-center gap-3 px-5 py-4 text-left"
-          aria-expanded={open}
-        >
+    // Alle stappen blijven in de DOM (hidden wanneer inactief) zodat getypte
+    // drafts — een geconfigureerde JSON, een bewerkte rollen-tabel — een
+    // stapwissel overleven. Alleen de actieve stap is zichtbaar.
+    <section id={`step-${id}`} className={active ? "" : "hidden"} aria-hidden={!active}>
+      <div className="rounded-[10px] border border-border bg-surface shadow-panel">
+        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
           <StepDot status={meta.status} number={number} />
           <div className="min-w-0 flex-1">
             <h2
-              className={`text-sm font-semibold ${
-                meta.status === "attention" ? "text-rose-700" : "text-neutral-900"
-              }`}
+              className={`text-sm font-semibold ${meta.status === "attention" ? "text-danger" : "text-fg"}`}
             >
               {meta.title}
             </h2>
-            {!open && meta.summary && <p className="mt-0.5 truncate text-xs text-neutral-500">{meta.summary}</p>}
+            {meta.summary && <p className="mt-0.5 truncate text-xs text-fg-muted">{meta.summary}</p>}
           </div>
-          <ChevronDown
-            className={`h-4 w-4 flex-none text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`}
-          />
-        </button>
-        {/* Rendered (not unmounted) while collapsed, so drafts inside (e.g. a typed
-            config, an edited role table) survive a collapse/expand toggle. */}
-        <div className={open ? "px-5 pb-5" : "hidden"}>{children}</div>
+        </div>
+        <div className="px-5 py-5">{children}</div>
       </div>
     </section>
   );

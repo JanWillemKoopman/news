@@ -6,7 +6,7 @@ import type { DatasetQuality } from "@/lib/types";
 export function QualityReportView({ quality }: { quality: DatasetQuality | null }) {
   const issues = quality?.issues ?? [];
   if (issues.length === 0) {
-    return <p className="text-sm text-neutral-500">Geen bijzonderheden gevonden.</p>;
+    return <p className="text-sm text-fg-muted">Geen bijzonderheden gevonden.</p>;
   }
 
   const errors = issues.filter((i) => i.severity === "error");
@@ -17,10 +17,10 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
     <div className="space-y-3">
       {errors.length > 0 && (
         <div>
-          <p className="text-sm font-medium text-rose-700">
+          <p className="text-sm font-medium text-danger">
             {errors.length} {errors.length === 1 ? "fout" : "fouten"} — dit blokkeert samenvoegen:
           </p>
-          <ul className="mt-1 space-y-1 text-sm text-rose-700">
+          <ul className="mt-1 space-y-1 text-sm text-danger">
             {errors.map((issue, i) => (
               <li key={i}>• {issue.message}</li>
             ))}
@@ -29,10 +29,10 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
       )}
       {warnings.length > 0 && (
         <div>
-          <p className="text-sm font-medium text-neutral-800">
+          <p className="text-sm font-medium text-fg">
             {warnings.length} {warnings.length === 1 ? "waarschuwing" : "waarschuwingen"} — de moeite van het bekijken waard:
           </p>
-          <ul className="mt-1 space-y-1 text-sm text-neutral-600">
+          <ul className="mt-1 space-y-1 text-sm text-fg-muted">
             {warnings.map((issue, i) => (
               <li key={i}>• {issue.message}</li>
             ))}
@@ -40,7 +40,7 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
         </div>
       )}
       {infos.length > 0 && (
-        <details className="text-sm text-neutral-500">
+        <details className="text-sm text-fg-muted">
           <summary className="cursor-pointer select-none">
             {infos.length} info-melding{infos.length === 1 ? "" : "en"}
           </summary>

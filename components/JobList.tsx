@@ -87,18 +87,18 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   }
 
   if (jobs.length === 0) {
-    return <p className="text-sm text-neutral-500">Nog geen fits gestart.</p>;
+    return <p className="text-sm text-fg-muted">Nog geen fits gestart.</p>;
   }
 
   return (
-    <ul className="divide-y divide-neutral-100 text-sm">
+    <ul className="divide-y divide-border text-sm">
       {jobs.map((job) => (
         <li key={job.id} className="py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-neutral-700">{phaseLine(job, now)}</p>
+              <p className="text-fg">{phaseLine(job, now)}</p>
               {job.status === "failed" && (
-                <p className="mt-1 text-xs text-rose-600">{job.error ?? "Onbekende fout."}</p>
+                <p className="mt-1 text-xs text-danger">{job.error ?? "Onbekende fout."}</p>
               )}
             </div>
             <div className="flex flex-none items-center gap-2">
@@ -106,7 +106,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
                 <button
                   onClick={() => cancelQueued(job)}
                   disabled={cancelling === job.id}
-                  className="rounded-lg border border-neutral-200 px-2.5 py-1 text-xs text-neutral-500 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-50"
+                  className="rounded-lg border border-border px-2.5 py-1 text-xs text-fg-muted transition hover:border-danger/30 hover:text-danger disabled:opacity-50"
                 >
                   {cancelling === job.id ? "…" : "Annuleren"}
                 </button>
@@ -115,7 +115,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
             </div>
           </div>
           {job.status === "running" && (
-            <p className="mt-1 text-xs text-neutral-400">
+            <p className="mt-1 text-xs text-fg-faint">
               Een lopende fit kan nu niet worden geannuleerd — wacht tot deze klaar is.
             </p>
           )}

@@ -18,7 +18,7 @@ import { classifyColumns, computeColumnStats, computeCorrelationMatrix, histogra
 import type { SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
-const ROSE = "#e11d48";
+const ACCENT = "#7FEE64";
 
 interface ParsedTable {
   columns: string[];
@@ -33,11 +33,11 @@ function fmt(n: number, digits = 1): string {
 // A single-hue (rose) magnitude scale for |correlation| — sign is carried by a +/− label,
 // not a second hue, so the app's one-accent-color rule holds even for a polarity metric.
 function correlationCellStyle(r: number): React.CSSProperties {
-  if (Number.isNaN(r)) return { color: "#a3a3a3" };
+  if (Number.isNaN(r)) return { color: "#9A9AA3" };
   const strength = Math.min(Math.abs(r), 1);
   return {
-    backgroundColor: `rgba(225, 29, 72, ${(strength * 0.35).toFixed(2)})`,
-    color: strength > 0.55 ? "#881337" : "#525252",
+    backgroundColor: `rgba(127, 238, 100, ${(strength * 0.35).toFixed(2)})`,
+    color: strength > 0.55 ? "#0B0B0E" : "#9A9AA3",
   };
 }
 
@@ -96,7 +96,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
 
   if (csvSources.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-fg-muted">
         Upload eerst een CSV-bestand bij stap 1 om de data hier te kunnen verkennen.
       </p>
     );
@@ -113,7 +113,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-fg-muted">
         Verken een geüpload bestand: stel zelf een grafiek samen en bekijk kerncijfers per kolom. Geen
         AI nodig — dit draait volledig in de browser. Vraag de assistent hiernaast gerust om iets uit te
         leggen wat je hier ziet.
@@ -126,8 +126,8 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
             onClick={() => setSelectedPath(s.storage_path)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
               selectedPath === s.storage_path
-                ? "border-rose-200 bg-rose-50 text-rose-700"
-                : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                ? "border-danger/30 bg-danger-dim text-danger"
+                : "border-border text-fg-muted hover:bg-surface-2"
             }`}
           >
             {s.name}
@@ -135,20 +135,20 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
         ))}
       </div>
 
-      {table === "loading" && <p className="text-sm text-neutral-400">Bestand wordt geladen…</p>}
-      {table === "error" && <p className="text-sm text-rose-600">Kon dit bestand niet lezen.</p>}
+      {table === "loading" && <p className="text-sm text-fg-faint">Bestand wordt geladen…</p>}
+      {table === "error" && <p className="text-sm text-danger">Kon dit bestand niet lezen.</p>}
 
       {ready && (
         <>
-          <div className="space-y-3 rounded-lg border border-neutral-200 p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Grafiek samenstellen</p>
+          <div className="space-y-3 rounded-lg border border-border p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-fg-faint">Grafiek samenstellen</p>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="text-xs text-neutral-500">
+              <label className="text-xs text-fg-muted">
                 X-as (tijd)
                 <select
                   value={xCol}
                   onChange={(e) => setXCol(e.target.value)}
-                  className="mt-1 block rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                  className="mt-1 block rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                 >
                   {ready.columns.map((c) => (
                     <option key={c} value={c}>
@@ -157,12 +157,12 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                   ))}
                 </select>
               </label>
-              <label className="text-xs text-neutral-500">
+              <label className="text-xs text-fg-muted">
                 Type
                 <select
                   value={chartType}
                   onChange={(e) => setChartType(e.target.value as "line" | "bar")}
-                  className="mt-1 block rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                  className="mt-1 block rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                 >
                   <option value="line">Lijn</option>
                   <option value="bar">Staaf</option>
@@ -170,7 +170,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
               </label>
             </div>
             <div>
-              <p className="mb-1.5 text-xs text-neutral-500">Kolommen (meerdere mogelijk — elk krijgt een eigen grafiek):</p>
+              <p className="mb-1.5 text-xs text-fg-muted">Kolommen (meerdere mogelijk — elk krijgt een eigen grafiek):</p>
               <div className="flex flex-wrap gap-1.5">
                 {ready.columns
                   .filter((c) => c !== xCol)
@@ -180,8 +180,8 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                       onClick={() => toggleYCol(c)}
                       className={`rounded-full border px-2.5 py-1 text-xs transition ${
                         yCols.includes(c)
-                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                          : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                          ? "border-danger/30 bg-danger-dim text-danger"
+                          : "border-border text-fg-muted hover:bg-surface-2"
                       }`}
                     >
                       {c}
@@ -196,42 +196,42 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
           <div className="space-y-4">
             {yCols.map((yCol) => (
               <div key={yCol}>
-                <p className="mb-1 text-xs font-medium text-neutral-700">{yCol}</p>
+                <p className="mb-1 text-xs font-medium text-fg">{yCol}</p>
                 <ResponsiveContainer width="100%" height={180} className="overflow-hidden">
                   {chartType === "line" ? (
                     <LineChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#a3a3a3" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#a3a3a3" }} width={48} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
                       <Tooltip contentStyle={{ fontSize: 12 }} />
-                      <Line type="monotone" dataKey={yCol} stroke={ROSE} strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey={yCol} stroke={ACCENT} strokeWidth={2} dot={false} />
                     </LineChart>
                   ) : (
                     <BarChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#a3a3a3" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#a3a3a3" }} width={48} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
                       <Tooltip contentStyle={{ fontSize: 12 }} />
-                      <Bar dataKey={yCol} fill={ROSE} radius={[2, 2, 0, 0]} />
+                      <Bar dataKey={yCol} fill={ACCENT} radius={[2, 2, 0, 0]} />
                     </BarChart>
                   )}
                 </ResponsiveContainer>
               </div>
             ))}
-            {yCols.length === 0 && <p className="text-sm text-neutral-400">Kies hierboven één of meer kolommen.</p>}
+            {yCols.length === 0 && <p className="text-sm text-fg-faint">Kies hierboven één of meer kolommen.</p>}
           </div>
 
           {/* min-w-0 on the first cell keeps the histogram from being pushed around by
               the stats column if its content ever gets wide — see PipelineShell.tsx for
               the fuller explanation and the Playwright repro that motivated this. */}
-          <div className="grid gap-4 border-t border-neutral-100 pt-4 sm:grid-cols-[1fr_14rem]">
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-[1fr_14rem]">
             <div className="min-w-0">
-              <label className="text-xs text-neutral-500">
+              <label className="text-xs text-fg-muted">
                 Kolomstatistieken voor
                 <select
                   value={statsCol}
                   onChange={(e) => setStatsCol(e.target.value)}
-                  className="ml-2 rounded border border-neutral-300 px-2 py-1 text-sm outline-none focus:border-rose-500"
+                  className="ml-2 rounded border border-border-strong px-2 py-1 text-sm outline-none focus:border-accent/50"
                 >
                   {numericColumns.map((c) => (
                     <option key={c} value={c}>
@@ -252,18 +252,18 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                   <Stat label="p25 – p75" value={`${fmt(stats.p25, 0)} – ${fmt(stats.p75, 0)}`} />
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-neutral-400">Geen numerieke kolom geselecteerd.</p>
+                <p className="mt-2 text-sm text-fg-faint">Geen numerieke kolom geselecteerd.</p>
               )}
             </div>
             {hist.length > 0 && (
               <div>
-                <p className="mb-1 text-xs text-neutral-500">Verdeling</p>
+                <p className="mb-1 text-xs text-fg-muted">Verdeling</p>
                 <ResponsiveContainer width="100%" height={120} className="overflow-hidden">
                   <BarChart data={hist} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#a3a3a3" }} interval={2} />
+                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#9A9AA3" }} interval={2} />
                     <YAxis hide />
                     <Tooltip contentStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="count" fill={ROSE} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="count" fill={ACCENT} radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -271,9 +271,9 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
           </div>
 
           {corrMatrix && (
-            <div className="border-t border-neutral-100 pt-4">
-              <p className="mb-1 text-sm font-medium text-neutral-900">Correlatie tussen kolommen</p>
-              <p className="mb-2 text-xs text-neutral-500">
+            <div className="border-t border-border pt-4">
+              <p className="mb-1 text-sm font-medium text-fg">Correlatie tussen kolommen</p>
+              <p className="mb-2 text-xs text-fg-muted">
                 Sterk samenhangende spend-kolommen (donker, ver van 0) zijn een risico voor het model —
                 het wordt dan lastig hun losse effect te scheiden.
               </p>
@@ -283,7 +283,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                     <tr>
                       <th className="p-1.5" />
                       {numericColumns.map((c) => (
-                        <th key={c} className="p-1.5 text-left font-medium text-neutral-500">
+                        <th key={c} className="p-1.5 text-left font-medium text-fg-muted">
                           {c}
                         </th>
                       ))}
@@ -292,7 +292,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                   <tbody>
                     {numericColumns.map((rowCol, i) => (
                       <tr key={rowCol}>
-                        <td className="whitespace-nowrap p-1.5 font-medium text-neutral-700">{rowCol}</td>
+                        <td className="whitespace-nowrap p-1.5 font-medium text-fg">{rowCol}</td>
                         {numericColumns.map((_, j) => {
                           const r = corrMatrix[i][j];
                           return (
@@ -317,8 +317,8 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div>
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={`text-sm font-medium ${warn ? "text-rose-600" : "text-neutral-900"}`}>{value}</div>
+      <div className="text-xs text-fg-muted">{label}</div>
+      <div className={`text-sm font-medium ${warn ? "text-danger" : "text-fg"}`}>{value}</div>
     </div>
   );
 }

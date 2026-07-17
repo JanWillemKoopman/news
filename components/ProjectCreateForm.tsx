@@ -34,32 +34,32 @@ export function ProjectCreateForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
       <div className="grow">
-        <label className="block text-xs font-medium text-neutral-600">Projectnaam</label>
+        <label className="block text-xs font-medium text-fg-muted">Projectnaam</label>
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Q3-attributie"
-          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+          className="mt-1 w-full rounded-lg border border-border-strong px-3 py-2 text-sm outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
         />
       </div>
       <div className="grow">
-        <label className="block text-xs font-medium text-neutral-600">Klant (optioneel)</label>
+        <label className="block text-xs font-medium text-fg-muted">Klant (optioneel)</label>
         <input
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder="Acme BV"
-          className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+          className="mt-1 w-full rounded-lg border border-border-strong px-3 py-2 text-sm outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
         />
       </div>
       <button
         type="submit"
         disabled={busy}
-        className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Bezig…" : "Project aanmaken"}
       </button>
-      {error && <p className="w-full text-sm text-rose-600">{error}</p>}
+      {error && <p className="w-full text-sm text-danger">{error}</p>}
     </form>
   );
 }

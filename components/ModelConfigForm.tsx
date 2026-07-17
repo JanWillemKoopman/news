@@ -245,7 +245,7 @@ export function ModelConfigForm({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-fg-muted">
           {approvedDataset
             ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan."
             : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
@@ -253,7 +253,7 @@ export function ModelConfigForm({
         {approvedDataset && (
           <button
             onClick={mode === "form" ? switchToJson : switchToForm}
-            className="flex-none rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:bg-neutral-50"
+            className="flex-none rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-fg-muted transition hover:bg-surface-2"
           >
             {mode === "form" ? "Geavanceerd (JSON)" : "Terug naar formulier"}
           </button>
@@ -263,12 +263,12 @@ export function ModelConfigForm({
       {mode === "form" ? (
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs text-neutral-500">
+            <label className="text-xs text-fg-muted">
               KPI-kolom
               <select
                 value={config.model.kpi}
                 onChange={(e) => updateModel({ kpi: e.target.value })}
-                className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
               >
                 {kpiOptions.length === 0 && <option value="">geen KPI-kolom gevonden</option>}
                 {kpiOptions.map((name) => (
@@ -281,20 +281,20 @@ export function ModelConfigForm({
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-faint">
               Kanalen ({config.model.channels.length})
             </p>
             <div className="space-y-3">
               {config.model.channels.map((ch, i) => (
-                <div key={ch.name} className="rounded-lg border border-neutral-200 p-3">
-                  <p className="mb-2 text-sm font-medium text-neutral-900">{ch.name}</p>
+                <div key={ch.name} className="rounded-lg border border-border p-3">
+                  <p className="mb-2 text-sm font-medium text-fg">{ch.name}</p>
                   <div className="grid gap-2 sm:grid-cols-3">
-                    <label className="text-xs text-neutral-500">
+                    <label className="text-xs text-fg-muted">
                       Type
                       <select
                         value={ch.channel_type ?? "generic"}
                         onChange={(e) => updateChannel(i, { channel_type: e.target.value as ChannelType })}
-                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                        className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                       >
                         {CHANNEL_TYPE_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -303,12 +303,12 @@ export function ModelConfigForm({
                         ))}
                       </select>
                     </label>
-                    <label className="text-xs text-neutral-500">
+                    <label className="text-xs text-fg-muted">
                       Adstock (carry-over)
                       <select
                         value={ch.adstock ?? "geometric"}
                         onChange={(e) => updateChannel(i, { adstock: e.target.value as AdstockType })}
-                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                        className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                       >
                         {ADSTOCK_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -317,12 +317,12 @@ export function ModelConfigForm({
                         ))}
                       </select>
                     </label>
-                    <label className="text-xs text-neutral-500">
+                    <label className="text-xs text-fg-muted">
                       Saturatie
                       <select
                         value={ch.saturation ?? "hill"}
                         onChange={(e) => updateChannel(i, { saturation: e.target.value as SaturationType })}
-                        className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                        className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                       >
                         {SATURATION_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -335,7 +335,7 @@ export function ModelConfigForm({
                 </div>
               ))}
               {config.model.channels.length === 0 && (
-                <p className="text-sm text-neutral-400">
+                <p className="text-sm text-fg-faint">
                   Geen spend-kolommen gevonden in de goedgekeurde dataset — ga terug naar stap 3.
                 </p>
               )}
@@ -344,7 +344,7 @@ export function ModelConfigForm({
 
           {controlOptions.length > 0 && (
             <div>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-faint">
                 Control-kolommen
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -362,8 +362,8 @@ export function ModelConfigForm({
                       }
                       className={`rounded-full border px-2.5 py-1 text-xs transition ${
                         active
-                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                          : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                          ? "border-danger/30 bg-danger-dim text-danger"
+                          : "border-border text-fg-muted hover:bg-surface-2"
                       }`}
                     >
                       {name}
@@ -374,12 +374,12 @@ export function ModelConfigForm({
             </div>
           )}
 
-          <details className="rounded-lg border border-neutral-200 p-3 text-sm">
-            <summary className="cursor-pointer select-none font-medium text-neutral-800">
+          <details className="rounded-lg border border-border p-3 text-sm">
+            <summary className="cursor-pointer select-none font-medium text-fg">
               Trend, seizoen &amp; ruismodel
             </summary>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+              <label className="flex items-center gap-1.5 text-xs text-fg-muted">
                 <input
                   type="checkbox"
                   checked={config.model.add_trend ?? true}
@@ -388,12 +388,12 @@ export function ModelConfigForm({
                 Trend meenemen
               </label>
               {config.model.add_trend && (
-                <label className="text-xs text-neutral-500">
+                <label className="text-xs text-fg-muted">
                   Trendvorm
                   <select
                     value={config.model.trend_type ?? "linear"}
                     onChange={(e) => updateModel({ trend_type: e.target.value as TrendType })}
-                    className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                    className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                   >
                     {TREND_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -403,7 +403,7 @@ export function ModelConfigForm({
                   </select>
                 </label>
               )}
-              <label className="text-xs text-neutral-500">
+              <label className="text-xs text-fg-muted">
                 Seizoensperiode (weken, leeg = geen)
                 <input
                   type="number"
@@ -411,15 +411,15 @@ export function ModelConfigForm({
                   onChange={(e) =>
                     updateModel({ seasonality_periods: e.target.value === "" ? null : Number(e.target.value) })
                   }
-                  className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                  className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                 />
               </label>
-              <label className="text-xs text-neutral-500">
+              <label className="text-xs text-fg-muted">
                 Ruismodel
                 <select
                   value={config.model.likelihood ?? "normal"}
                   onChange={(e) => updateModel({ likelihood: e.target.value as LikelihoodType })}
-                  className="mt-1 block w-full rounded border border-neutral-300 px-2 py-1.5 text-sm outline-none focus:border-rose-500"
+                  className="mt-1 block w-full rounded border border-border-strong px-2 py-1.5 text-sm outline-none focus:border-accent/50"
                 >
                   {LIKELIHOOD_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -432,32 +432,32 @@ export function ModelConfigForm({
           </details>
 
           <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">Sampling</p>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-faint">Sampling</p>
             <div className="grid gap-2 sm:grid-cols-3">
               {(Object.keys(SAMPLE_PRESETS) as SamplePreset[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => updateConfig({ sample: SAMPLE_PRESETS[key] })}
                   className={`rounded-lg border p-2.5 text-left transition ${
-                    preset === key ? "border-rose-300 bg-rose-50" : "border-neutral-200 hover:bg-neutral-50"
+                    preset === key ? "border-accent/40 bg-accent-dim" : "border-border hover:bg-surface-2"
                   }`}
                 >
-                  <p className={`text-sm font-medium ${preset === key ? "text-rose-700" : "text-neutral-900"}`}>
+                  <p className={`text-sm font-medium ${preset === key ? "text-danger" : "text-fg"}`}>
                     {PRESET_LABEL[key].title}
                   </p>
-                  <p className="mt-0.5 text-xs text-neutral-500">{PRESET_LABEL[key].hint}</p>
+                  <p className="mt-0.5 text-xs text-fg-muted">{PRESET_LABEL[key].hint}</p>
                 </button>
               ))}
             </div>
             {preset === "custom" && (
-              <p className="mt-1.5 text-xs text-neutral-400">
+              <p className="mt-1.5 text-xs text-fg-faint">
                 Aangepaste sampling ({config.sample?.draws} draws · {config.sample?.tune} tune ·{" "}
                 {config.sample?.chains} chains) — via een architect-voorstel of het JSON-formulier.
               </p>
             )}
           </div>
 
-          {validationError && <p className="text-sm text-rose-600">{validationError}</p>}
+          {validationError && <p className="text-sm text-danger">{validationError}</p>}
         </div>
       ) : (
         <div className="space-y-2">
@@ -466,17 +466,17 @@ export function ModelConfigForm({
             onChange={(e) => setJsonText(e.target.value)}
             spellCheck={false}
             rows={16}
-            className="w-full rounded-lg border border-neutral-300 p-3 font-mono text-xs outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+            className="w-full rounded-lg border border-border-strong p-3 font-mono text-xs outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
           />
-          {jsonError && <p className="text-sm text-rose-600">{jsonError}</p>}
+          {jsonError && <p className="text-sm text-danger">{jsonError}</p>}
         </div>
       )}
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         onClick={onRun}
         disabled={busy || !canSubmit || (mode === "form" && !!validationError)}
-        className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Starten…" : "Fit starten"}
       </button>
