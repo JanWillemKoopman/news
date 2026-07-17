@@ -1,20 +1,12 @@
-import { createBrowserClient } from '@supabase/ssr'
+"use client";
 
-import type { Database } from './database.types'
+import { createBrowserClient } from "@supabase/ssr";
 
-// Supabase-client voor de browser (Client Components). Gebruikt de publieke
-// anon-key; RLS bepaalt wat deze gebruiker mag zien/doen.
+// Browser-side Supabase client (publishable key). All mmm tables live in the `mmm`
+// schema, so queries use `.schema("mmm")`; auth stays on the default schema.
 export function createClient() {
-  return createBrowserClient<Database>(
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
-// Untyped variant for tables added after the last type generation (e.g. registry tables).
-export function createRawClient(): ReturnType<typeof createBrowserClient<any>> {
-  return createBrowserClient<any>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  );
 }

@@ -50,5 +50,5 @@ jobs:
       - name: Deploy the worker
         # Zelfde commando als lokaal, alleen non-interactief geauthenticeerd via de tokens.
         # Het zware image (pymc e.d.) wordt op Modal gebouwd, niet op deze runner.
-        working-directory: mmm/worker
+        working-directory: worker
         run: modal deploy mmm_worker/modal_app.py
