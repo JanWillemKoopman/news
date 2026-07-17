@@ -15,13 +15,22 @@ interface ChatOpenValue {
 }
 const ChatOpenCtx = createContext<ChatOpenValue | null>(null);
 
+// Breedte (px) vanaf waar het paneel náást de content past i.p.v. eroverheen —
+// gelijk aan Tailwind's `xl`. Daaronder is de chat een overlay-drawer, dus daar
+// starten we ingeklapt: eerst de content, chat op één tik.
+const DESKTOP_MIN = 1280;
+
 export function ChatDockProvider({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
+  // Start ingeklapt (deterministisch voor SSR — geen flits van een volscherm-chat
+  // op mobiel). Na mount bepalen we de standaard: open op desktop, dicht daaronder,
+  // tenzij de gebruiker eerder zelf een keuze maakte.
+  const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored != null) setOpen(stored === "1");
+    else setOpen(window.innerWidth >= DESKTOP_MIN);
     setHydrated(true);
   }, []);
   useEffect(() => {

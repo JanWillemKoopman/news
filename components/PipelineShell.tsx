@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
@@ -102,8 +102,25 @@ function StepDot({ status, number }: { status: StepStatus; number: number }) {
 
 function WizardStepper() {
   const { steps, activeId, goTo } = usePipeline();
+  const navRef = useRef<HTMLElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+
+  // Op tablet/mobiel past de stepper niet in beeld en scrollt hij horizontaal:
+  // centreer de actieve chip zodat je altijd ziet waar je bent — zonder de pagina
+  // verticaal te laten springen (daarom scrollBy op de nav zelf, geen scrollIntoView).
+  useEffect(() => {
+    const nav = navRef.current;
+    const btn = activeRef.current;
+    if (!nav || !btn) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const delta = btnRect.left - navRect.left - (nav.clientWidth / 2 - btn.clientWidth / 2);
+    nav.scrollBy({ left: delta, behavior: "smooth" });
+  }, [activeId]);
+
   return (
     <nav
+      ref={navRef}
       aria-label="Stappen"
       className="sticky top-[3.25rem] z-20 -mx-1 overflow-x-auto rounded-[10px] border border-border bg-surface/80 px-1 py-1.5 backdrop-blur"
     >
@@ -113,6 +130,7 @@ function WizardStepper() {
           return (
             <li key={s.id} className="flex items-center">
               <button
+                ref={isActive ? activeRef : undefined}
                 onClick={() => goTo(s.id)}
                 aria-current={isActive ? "step" : undefined}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition ${
