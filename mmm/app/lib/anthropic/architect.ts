@@ -38,10 +38,11 @@ import {
 // It never invents the statistical mathematics itself — mmm-core (frozen, tested Python)
 // does that; this module only decides *what to configure* and *how to read the outcome*.
 //
-// Two models, picked by context (see pickModel below): cheap Sonnet 5 for the bounded
-// "map columns to a config/recipe" tasks; Opus for the deeper reasoning of interpreting a
-// quality report, fit results, or diagnosing a failure. Adaptive thinking stays on;
-// effort is medium to bound cost.
+// Two roles, picked by context (see buildRequest below): the bounded "map columns to a
+// config/recipe" tasks vs. the deeper reasoning of interpreting a quality report, fit
+// results, or diagnosing a failure — both currently on claude-sonnet-5 (see
+// ARCHITECT_CONFIG_MODEL/ARCHITECT_ANALYST_MODEL in fitContext.ts). Adaptive thinking
+// stays on; effort is medium to bound cost.
 
 // Kept small and stable so it caches well: this text is byte-identical on every
 // request, from every builder, for every project — the ideal prompt-cache candidate.
@@ -483,9 +484,10 @@ export function buildRequest(
   const datasetContext = formatDatasetContextBlock(ctx.dataset);
   const resultsContext = formatFitContextBlock(ctx.fit);
 
-  // Model routing: Sonnet for the bounded "propose a recipe/config from data" tasks;
-  // Opus once there is something to actually reason about — a quality report, a fit
-  // result, or a failure of either. Adaptive thinking + medium effort in both cases.
+  // Model routing: config role for the bounded "propose a recipe/config from data"
+  // tasks; analyst role once there is something to actually reason about — a quality
+  // report, a fit result, or a failure of either. Both point at the same model today
+  // (see fitContext.ts); adaptive thinking + medium effort in both cases.
   const needsAnalysis = datasetNeedsAnalysis(ctx.dataset) || hasFitResults(ctx.fit);
   const model = needsAnalysis ? ARCHITECT_ANALYST_MODEL : ARCHITECT_CONFIG_MODEL;
 

@@ -9,15 +9,17 @@ export interface ArchitectFitContext {
   latestJob: { status: JobStatus; error: string | null; config: JobConfig; created_at: string } | null;
 }
 
-// The two models the architect can reason with, and the single place their IDs live —
+// The two roles the architect can reason in, and the single place their model IDs live —
 // architect.ts imports these rather than hard-coding model names a second time. Model
 // routing itself (which combines fit AND dataset context) lives in architect.ts, since
-// that request-builder is the one place that sees both.
+// that request-builder is the one place that sees both. Both roles currently point at the
+// same model (claude-sonnet-5) to keep cost down; kept as two constants so either can be
+// pointed at a stronger model again later without touching the routing logic.
 export const ARCHITECT_CONFIG_MODEL = "claude-sonnet-5";
-export const ARCHITECT_ANALYST_MODEL = "claude-opus-4-8";
+export const ARCHITECT_ANALYST_MODEL = "claude-sonnet-5";
 
 // There is something to *reason about* (not just propose from scratch) when a fit has
-// completed or a job has failed — that is when the pricier analyst model earns its keep.
+// completed or a job has failed — that is when the analyst role kicks in.
 export function hasFitResults(ctx: ArchitectFitContext): boolean {
   if (ctx.latestRun) return true;
   return ctx.latestJob?.status === "failed";
