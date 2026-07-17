@@ -18,6 +18,10 @@ interface WizardChatValue {
   pendingChatMessage: string | null;
   sendToChat: (message: string) => void;
   clearPendingChatMessage: () => void;
+  // Which pipeline step the builder currently has open — lets the chat panel offer
+  // quick-actions relevant to what's actually on screen instead of one fixed set.
+  activeStepId: string | null;
+  setActiveStepId: (id: string) => void;
 }
 
 const WizardChatContext = createContext<WizardChatValue | null>(null);
@@ -26,6 +30,7 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
   const [pendingConfig, setPendingConfig] = useState<unknown | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<unknown | null>(null);
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null);
+  const [activeStepId, setActiveStepId] = useState<string | null>(null);
   return (
     <WizardChatContext.Provider
       value={{
@@ -38,6 +43,8 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
         pendingChatMessage,
         sendToChat: setPendingChatMessage,
         clearPendingChatMessage: () => setPendingChatMessage(null),
+        activeStepId,
+        setActiveStepId,
       }}
     >
       {children}

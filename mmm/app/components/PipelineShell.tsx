@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Check, ChevronDown } from "lucide-react";
+import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { StepMeta, StepStatus } from "@/lib/pipelineStatus";
 
 interface PipelineCtxValue {
@@ -29,12 +30,25 @@ export function PipelineShell({ steps, children }: { steps: StepMeta[]; children
     [],
   );
   const [openIds, setOpenIds] = useState<string[]>(initialOpen);
+  // Lets the chat panel (a sibling under the same provider) offer step-relevant quick
+  // actions instead of one fixed set — informational only, chat works fine without it.
+  const chat = useWizardChatOptional();
+
+  useEffect(() => {
+    if (initialOpen[0]) chat?.setActiveStepId(initialOpen[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggle(id: string) {
-    setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setOpenIds((prev) => {
+      const opening = !prev.includes(id);
+      if (opening) chat?.setActiveStepId(id);
+      return opening ? [...prev, id] : prev.filter((x) => x !== id);
+    });
   }
   function openAndScroll(id: string) {
     setOpenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    chat?.setActiveStepId(id);
     document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

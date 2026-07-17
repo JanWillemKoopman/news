@@ -1,6 +1,7 @@
 "use client";
 
 import { ResultsCharts } from "@/components/ResultsCharts";
+import { MMM_GLOSSARY, Term } from "@/components/ui";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type {
   FitSummary,
@@ -30,7 +31,7 @@ function IntervalCell({ value, render }: { value: Interval; render: (n: number) 
   );
 }
 
-function Metric({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+function Metric({ label, value, warn }: { label: React.ReactNode; value: string; warn?: boolean }) {
   return (
     <div>
       <div className="text-xs text-neutral-500">{label}</div>
@@ -180,10 +181,18 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
       <QualityBanner summary={summary} />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Metric label="R²" value={fmt(d.r2, 2)} />
-        <Metric label="MAPE" value={pct(d.mape)} />
-        <Metric label="Dekking (94%)" value={pct(d.interval_coverage_94)} warn={coverageOff} />
-        <Metric label="Max R-hat" value={fmt(d.max_r_hat, 2)} warn={d.max_r_hat > 1.05} />
+        <Metric label={<Term definition={MMM_GLOSSARY.r2}>R²</Term>} value={fmt(d.r2, 2)} />
+        <Metric label={<Term definition={MMM_GLOSSARY.mape}>MAPE</Term>} value={pct(d.mape)} />
+        <Metric
+          label={<Term definition={MMM_GLOSSARY.coverage}>Dekking (94%)</Term>}
+          value={pct(d.interval_coverage_94)}
+          warn={coverageOff}
+        />
+        <Metric
+          label={<Term definition={MMM_GLOSSARY.rhat}>Max R-hat</Term>}
+          value={fmt(d.max_r_hat, 2)}
+          warn={d.max_r_hat > 1.05}
+        />
       </div>
 
       <p className="text-sm text-neutral-600">
@@ -206,9 +215,15 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
             <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-400">
               <th className="py-2 pr-4 font-medium">Kanaal</th>
               <th className="py-2 pr-4 font-medium">Aandeel</th>
-              <th className="py-2 pr-4 font-medium">ROAS</th>
-              <th className="py-2 pr-4 font-medium">Adstock half-life</th>
-              <th className="py-2 pr-4 font-medium">Verzadigingspunt</th>
+              <th className="py-2 pr-4 font-medium">
+                <Term definition={MMM_GLOSSARY.roas}>ROAS</Term>
+              </th>
+              <th className="py-2 pr-4 font-medium">
+                <Term definition={MMM_GLOSSARY.adstock}>Adstock half-life</Term>
+              </th>
+              <th className="py-2 pr-4 font-medium">
+                <Term definition={MMM_GLOSSARY.saturation}>Verzadigingspunt</Term>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
