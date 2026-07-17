@@ -37,7 +37,7 @@ export default async function ClientDashboard({ params }: { params: { projectId:
   return (
     <>
       <TopBar email={viewer.email} />
-      <main className="mx-auto max-w-4xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <PageHeader
           title={p.name}
           subtitle={p.client_company ?? "Media mix model — resultaten"}

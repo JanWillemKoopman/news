@@ -60,7 +60,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       <WizardChatProvider>
         <ChatDockProvider>
           <ChatMain>
-            <main className="mx-auto max-w-[1800px] px-6 py-8 lg:px-10">
+            <main className="mx-auto max-w-[1800px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
               <div className="mb-6">
                 <Link href="/projects" className="text-sm text-fg-muted transition hover:text-fg">
                   ← Projecten
