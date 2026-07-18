@@ -3,6 +3,8 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_CONCURRENT_JOBS, hasJobCapacity, nudgeModalEnqueue } from "@/lib/jobs";
 
+const ALLOWED_FIT_JOB_TYPES = ["fit", "fit_hierarchical"] as const;
+
 // Create a fit job (status 'queued') and best-effort nudge the Modal worker. If the
 // enqueue call fails or isn't configured, the worker's poll_queue fallback picks it up.
 export async function POST(request: Request) {
@@ -14,6 +16,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body?.project_id || !body?.config) {
     return NextResponse.json({ error: "project_id en config zijn verplicht" }, { status: 400 });
+  }
+  const type = body.type ?? "fit";
+  if (!(ALLOWED_FIT_JOB_TYPES as readonly string[]).includes(type)) {
+    return NextResponse.json({ error: `onbekend jobtype: ${type}` }, { status: 400 });
   }
 
   const supabase = createClient();
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .schema("mmm")
     .from("jobs")
-    .insert({ project_id: body.project_id, type: "fit", dataset_id: body.dataset_id ?? null, config: body.config, created_by: viewer.id })
+    .insert({ project_id: body.project_id, type, dataset_id: body.dataset_id ?? null, config: body.config, created_by: viewer.id })
     .select("id")
     .single();
 

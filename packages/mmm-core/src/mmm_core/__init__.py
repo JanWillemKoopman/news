@@ -20,6 +20,7 @@ from mmm_core.ingestion import (
     build_event_dummy,
     build_feature,
     build_master_dataset,
+    build_master_datasets_by_region,
 )
 from mmm_core.transforms import (
     adstock_weights,
@@ -48,6 +49,7 @@ __all__ = [
     "build_event_dummy",
     "build_feature",
     "build_master_dataset",
+    "build_master_datasets_by_region",
     "adstock_weights",
     "alpha_from_half_life",
     "delayed_adstock",

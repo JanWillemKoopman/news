@@ -9,6 +9,8 @@ import type { SourceFile } from "@/lib/types";
 
 const BUCKET = "mmm-raw-data";
 const DATE_NAME_HINT = /date|datum|week|dag|day|periode/i;
+// Mirrors PREVIEW_LINES in app/api/chat/route.ts — the architect's per-file context size.
+const PREVIEW_LINES = 15;
 
 interface FileStats {
   nRows: number;
@@ -84,10 +86,16 @@ export function SourceUpload({
         setError(upErr.message);
         continue;
       }
+      // Cache a small text preview now, while the file is already in hand — the chat
+      // architect route reads this column instead of re-downloading the file from
+      // Storage on every chat turn. Binary formats (xlsx) get no preview, same as before.
+      const preview = /\.csv$/i.test(file.name)
+        ? (await file.text()).split("\n").slice(0, PREVIEW_LINES).join("\n")
+        : null;
       const { error: rowErr } = await supabase
         .schema("mmm")
         .from("source_files")
-        .insert({ project_id: projectId, name: file.name, storage_path: path });
+        .insert({ project_id: projectId, name: file.name, storage_path: path, preview });
       if (rowErr) setError(rowErr.message);
     }
     setBusy(false);

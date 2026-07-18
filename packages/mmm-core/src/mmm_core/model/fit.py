@@ -11,7 +11,7 @@ Uncertainty is never optional: every channel figure is reported as (p3, p50, p97
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 
 import numpy as np
 import pandas as pd
@@ -143,6 +143,25 @@ def _quality_gate(
 
     verdict = "fail" if fails else ("warn" if warns else "pass")
     return QualityGate(verdict=verdict, reasons=fails + warns, checks=checks)
+
+
+def recompute_quality_gate(
+    summary: "FitSummary",
+    *,
+    placebo_ok: bool | None = None,
+    cv_mape: float | None = None,
+) -> "FitSummary":
+    """Re-derive the quality gate with extra evaluation results folded in.
+
+    Pure post-processing on an already-produced :class:`FitSummary` (same pattern as
+    :func:`_planning_outputs`): for a caller that ran ``mmm_core.evaluation.time_series_cv``
+    and/or ``judge_placebo`` separately after the main fit — those are opt-in, extra fits,
+    not part of :func:`fit_model` itself — and wants the result reflected in the gate this
+    summary already carries. Diagnostics are untouched; only ``quality_gate`` is replaced.
+    """
+    n_samples = summary.draws * summary.chains
+    gate = _quality_gate(summary.diagnostics, n_samples, placebo_ok=placebo_ok, cv_mape=cv_mape)
+    return replace(summary, quality_gate=gate)
 
 
 @dataclass
@@ -406,9 +425,11 @@ def _planning_outputs(
     from mmm_core.optimize import (
         Interval as _OI,
         efficiency_frontier as _frontier,
+        efficiency_frontier_count as _frontier_count,
         extract_channel_responses,
         marginal_roas,
         optimize_budget,
+        optimize_budget_count,
         response_curve,
     )
 
@@ -418,30 +439,49 @@ def _planning_outputs(
     curves: list[ResponseCurve] = []
     allocation: OptimalAllocation | None = None
     frontier: list[FrontierPoint] = []
-    # Response curves/optimization assume the additive steady-state form; the count (log)
-    # link is multiplicative, so its planning outputs need a different derivation — skipped
-    # here (a documented next increment) rather than reported subtly wrong.
-    if built.config.likelihood.is_count:
-        return curves, allocation, frontier
+    is_count = built.config.likelihood.is_count
     try:
         responses = extract_channel_responses(built, idata)
+
+        # Count (log) link: the model is multiplicative, so a channel's steady-state
+        # contribution needs a reference level for "everything else" in log space —
+        # computed here the same way _weekly_attribution derives per-week attribution,
+        # just averaged over weeks into one steady-state number per posterior sample.
+        # Two different references, deliberately: `other_log_effect[c]` holds every OTHER
+        # channel at its current spend (for that channel's own response curve, where only
+        # its own spend varies); `other_baseline_log` excludes every channel (for the
+        # joint optimizer, where all channels' spend vary at once) — see
+        # optimize.optimize_budget_count's docstring for why these must differ.
+        other_log_effect: dict[str, np.ndarray] | None = None
+        other_baseline_log: np.ndarray | None = None
+        if is_count:
+            mu = _flat(idata, "mu")  # (T, S)
+            contribs = {ch.name: _flat(idata, f"contrib_{ch.name}") for ch in built.config.channels}
+            sum_contrib = sum(contribs.values())
+            other_baseline_log = (mu - sum_contrib).mean(axis=0)  # (S,)
+            other_log_effect = {name: (mu - c).mean(axis=0) for name, c in contribs.items()}
+
         for i, r in enumerate(responses):
             current = float(built.spend[:, i].mean())
+            other = other_log_effect[r.name] if is_count else None
             pts = [
                 CurvePoint(p.weekly_spend, _iv(p.contribution), p.extrapolated)
-                for p in response_curve(r, n_points=25)
+                for p in response_curve(r, n_points=25, other_log_effect=other)
             ]
             curves.append(
                 ResponseCurve(
                     name=r.name,
                     current_weekly_spend=current,
-                    marginal_roas_at_current=_iv(marginal_roas(r, current)),
+                    marginal_roas_at_current=_iv(marginal_roas(r, current, other_log_effect=other)),
                     points=pts,
                 )
             )
         total_current = float(sum(built.spend[:, i].mean() for i in range(built.spend.shape[1])))
         if total_current > 0:
-            alloc = optimize_budget(responses, total_current)
+            if is_count:
+                alloc = optimize_budget_count(responses, other_baseline_log, total_current)
+            else:
+                alloc = optimize_budget(responses, total_current)
             allocation = OptimalAllocation(
                 total_weekly_budget=alloc.total_budget,
                 per_channel=alloc.per_channel,
@@ -451,9 +491,14 @@ def _planning_outputs(
             # Sweep total budget around today's level so the client can see whether
             # spending more (or less) in total is worth it — diminishing returns made visible.
             budgets = [total_current * f for f in (0.5, 0.75, 1.0, 1.25, 1.5, 2.0)]
+            frontier_points = (
+                _frontier_count(responses, other_baseline_log, budgets)
+                if is_count
+                else _frontier(responses, budgets)
+            )
             frontier = [
                 FrontierPoint(total_weekly_budget=p.total_budget, predicted_contribution=_iv(p.predicted_contribution))
-                for p in _frontier(responses, budgets)
+                for p in frontier_points
             ]
     except Exception:
         # planning outputs are a bonus on top of the fit; never let them break it

@@ -94,3 +94,15 @@ def make_stub_fit(summary=None):
 
     fit_fn.calls = calls
     return fit_fn
+
+
+def make_stub_hier_fit(summary=None):
+    """Return a fit_fn(region_frames, model, **kw) for run_hier_job, records its call."""
+    calls = []
+
+    def fit_fn(region_frames, model, **kwargs):
+        calls.append({"regions": sorted(region_frames), "model": model, "kwargs": kwargs})
+        return (summary or StubSummary()), object()
+
+    fit_fn.calls = calls
+    return fit_fn

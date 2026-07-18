@@ -835,6 +835,8 @@ source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 
 [package.optional-dependencies]
@@ -860,6 +862,7 @@ requires-dist = [
     { name = "pymc", marker = "extra == 'model'", specifier = ">=5.16" },
     { name = "pymc-marketing", marker = "extra == 'model'", specifier = ">=0.7" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "scipy", specifier = ">=1.11" },
 ]
 provides-extras = ["model", "dev"]
 

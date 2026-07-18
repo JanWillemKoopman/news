@@ -36,11 +36,14 @@ function phaseLine(job: Job, now: number): string {
 
 // Live job list: subscribes to Realtime so status/progress flips (queued -> running ->
 // succeeded, plus phase updates while running) appear without a refresh, and refreshes
-// the page data when a job finishes. Only shows 'fit' jobs — 'prepare' jobs have their
-// own status view in the data-prep section, keyed off the dataset row.
+// the page data when a job finishes. Shows both 'fit' and 'fit_hierarchical' jobs —
+// 'prepare' jobs have their own status view in the data-prep section, keyed off the
+// dataset row.
+const FIT_JOB_TYPES: Job["type"][] = ["fit", "fit_hierarchical"];
+
 export function JobList({ projectId, initialJobs }: { projectId: string; initialJobs: Job[] }) {
   const router = useRouter();
-  const [jobs, setJobs] = useState<Job[]>(initialJobs.filter((j) => j.type === "fit"));
+  const [jobs, setJobs] = useState<Job[]>(initialJobs.filter((j) => FIT_JOB_TYPES.includes(j.type)));
   const [now, setNow] = useState(() => Date.now());
   const [cancelling, setCancelling] = useState<string | null>(null);
 
@@ -60,7 +63,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         { event: "*", schema: "mmm", table: "jobs", filter: `project_id=eq.${projectId}` },
         (payload) => {
           const row = payload.new as Job;
-          if (row.type !== "fit") return;
+          if (!FIT_JOB_TYPES.includes(row.type)) return;
           setJobs((prev) => {
             const next = prev.filter((j) => j.id !== row.id);
             return [row, ...next].sort((a, b) => b.created_at.localeCompare(a.created_at));

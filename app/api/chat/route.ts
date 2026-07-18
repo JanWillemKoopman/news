@@ -11,18 +11,6 @@ import type { Dataset, FitSummary, JobConfig, JobStatus, SourceFile } from "@/li
 // what a "proposal" in the persisted/returned payload means.
 const PROPOSAL_TOOLS = ["propose_prepare_recipe", "propose_model_config"] as const;
 
-const RAW_BUCKET = "mmm-raw-data";
-const PREVIEW_LINES = 15;
-
-// Small, best-effort text preview of an uploaded source file for the architect's
-// context. CSV previews cleanly as text; binary formats (xlsx) are skipped rather than
-// dumped as garbled bytes into the prompt — the architect asks the builder instead.
-async function previewFile(name: string, bytes: Blob): Promise<string | null> {
-  if (!/\.csv$/i.test(name)) return null;
-  const text = await bytes.text();
-  return text.split("\n").slice(0, PREVIEW_LINES).join("\n");
-}
-
 // Load prior chat history for a project so the panel survives a page refresh.
 export async function GET(request: Request) {
   const viewer = await getViewer();
@@ -70,7 +58,12 @@ export async function POST(request: Request) {
 
   const [{ data: sources }, { data: priorRows }, { data: latestRun }, { data: latestFitJob }, { data: latestDataset }] =
     await Promise.all([
-      supabase.schema("mmm").from("source_files").select("*").eq("project_id", projectId).order("created_at"),
+      supabase
+        .schema("mmm")
+        .from("source_files")
+        .select("id, project_id, name, storage_path, role_hint, preview, created_at")
+        .eq("project_id", projectId)
+        .order("created_at"),
       supabase
         .schema("mmm")
         .from("chat_messages")
@@ -127,13 +120,9 @@ export async function POST(request: Request) {
   };
 
   const sourceFiles = (sources ?? []) as SourceFile[];
-  const previews = await Promise.all(
-    sourceFiles.map(async (f) => {
-      const { data } = await supabase.storage.from(RAW_BUCKET).download(f.storage_path);
-      const preview = data ? await previewFile(f.name, data).catch(() => null) : null;
-      return { file: f, preview };
-    }),
-  );
+  // The preview is cached on the row at upload time (see SourceUpload.tsx) instead of
+  // downloaded from Storage on every chat turn.
+  const previews = sourceFiles.map((f) => ({ file: f, preview: f.preview ?? null }));
 
   const history: Anthropic.MessageParam[] = (priorRows ?? []).map((row) => ({
     role: row.role as "user" | "assistant",

@@ -226,11 +226,24 @@ export function ModelConfigForm({
       }
       payload = config;
     }
+    // A hierarchical/multi-region job config replaces top-level `sources` with `regions`
+    // (see worker/mmm_worker/jobspec.py::parse_hier_job_config) — reachable today only via
+    // the JSON editor above, not the form. Detected here rather than added as a form
+    // toggle, since region-aware data upload has no dedicated UI yet.
+    const jobType =
+      payload && typeof payload === "object" && "regions" in (payload as Record<string, unknown>)
+        ? "fit_hierarchical"
+        : "fit";
     setBusy(true);
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, config: payload, dataset_id: approvedDataset?.id ?? null }),
+      body: JSON.stringify({
+        project_id: projectId,
+        type: jobType,
+        config: payload,
+        dataset_id: approvedDataset?.id ?? null,
+      }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -455,6 +468,40 @@ export function ModelConfigForm({
                 {config.sample?.chains} chains) — via een architect-voorstel of het JSON-formulier.
               </p>
             )}
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-faint">
+              Extra betrouwbaarheidschecks
+            </p>
+            <div className="space-y-1.5">
+              <label className="flex items-start gap-2 text-sm text-fg">
+                <input
+                  type="checkbox"
+                  checked={config.evaluation?.cross_validation ?? false}
+                  onChange={(e) =>
+                    updateConfig({ evaluation: { ...config.evaluation, cross_validation: e.target.checked } })
+                  }
+                  className="mt-0.5"
+                />
+                <span>
+                  Kruisvalidatie — test het model op niet-geziene weken.
+                  <span className="block text-xs text-fg-muted">Extra fits per fold, dus een langere wachttijd.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm text-fg">
+                <input
+                  type="checkbox"
+                  checked={config.evaluation?.placebo ?? false}
+                  onChange={(e) => updateConfig({ evaluation: { ...config.evaluation, placebo: e.target.checked } })}
+                  className="mt-0.5"
+                />
+                <span>
+                  Placebo-test — controleert dat een nepkanaal geen bijdrage krijgt.
+                  <span className="block text-xs text-fg-muted">Eén extra fit, dus ongeveer dubbele wachttijd.</span>
+                </span>
+              </label>
+            </div>
           </div>
 
           {validationError && <p className="text-sm text-danger">{validationError}</p>}
