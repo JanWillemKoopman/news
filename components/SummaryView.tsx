@@ -67,7 +67,7 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
           }
           className="mt-3 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger-dim"
         >
-          Vraag de architect om dit te verbeteren
+          Vraag de AI om dit te verbeteren
         </button>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 
 // Bridges the chat panel and the editors/views it can fill in or be filled from, which
 // sit in different parts of the page layout: when the architect proposes a recipe or a
@@ -22,6 +22,24 @@ interface WizardChatValue {
   // quick-actions relevant to what's actually on screen instead of one fixed set.
   activeStepId: string | null;
   setActiveStepId: (id: string) => void;
+  // Globale "bezig"-status: elke langlopende actie (AI-voorstel, samenvoegen, fit,
+  // chatbeurt) meldt zich hier aan zodat de ActivityBar prominent kan tonen wáár de
+  // app mee bezig is en hoe lang al. Meerdere acties tegelijk kunnen naast elkaar
+  // bestaan; de balk toont de recentste.
+  activities: Activity[];
+  beginActivity: (label: string) => ActivityHandle;
+}
+
+export interface Activity {
+  id: number;
+  label: string;
+  startedAt: number;
+}
+
+export interface ActivityHandle {
+  // Label bijwerken terwijl de actie loopt (bv. "Ronde 2: …") zonder de teller te resetten.
+  update: (label: string) => void;
+  end: () => void;
 }
 
 const WizardChatContext = createContext<WizardChatValue | null>(null);
@@ -31,6 +49,19 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
   const [pendingRecipe, setPendingRecipe] = useState<unknown | null>(null);
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const nextActivityId = useRef(1);
+
+  const beginActivity = useCallback((label: string): ActivityHandle => {
+    const id = nextActivityId.current++;
+    setActivities((prev) => [...prev, { id, label, startedAt: Date.now() }]);
+    return {
+      update: (next: string) =>
+        setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, label: next } : a))),
+      end: () => setActivities((prev) => prev.filter((a) => a.id !== id)),
+    };
+  }, []);
+
   return (
     <WizardChatContext.Provider
       value={{
@@ -45,6 +76,8 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
         clearPendingChatMessage: () => setPendingChatMessage(null),
         activeStepId,
         setActiveStepId,
+        activities,
+        beginActivity,
       }}
     >
       {children}

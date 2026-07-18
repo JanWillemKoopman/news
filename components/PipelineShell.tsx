@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
+import { ActivityBar } from "@/components/ActivityBar";
 import type { StepMeta, StepStatus } from "@/lib/pipelineStatus";
 
 interface PipelineCtxValue {
@@ -95,6 +96,7 @@ export function PipelineShell({ steps, children }: { steps: StepMeta[]; children
         {children}
       </div>
       <StepNav prev={prev} next={next} onGo={goTo} />
+      <ActivityBar />
     </PipelineCtx.Provider>
   );
 }

@@ -47,3 +47,14 @@ body {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* iOS Safari zoomt automatisch in op invoervelden met een lettergrootte kleiner dan
+   16px — en zoomt daarna niet terug, waardoor het scherm "vast" ingezoomd blijft.
+   Op touch-apparaten krijgen alle velden daarom minimaal 16px. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

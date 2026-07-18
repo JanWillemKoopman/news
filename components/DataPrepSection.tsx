@@ -228,12 +228,14 @@ function summarizeApply(
 // findings the chat architect then reads. Scope is "master" once a merge exists, else "raw".
 function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: "raw" | "master" }) {
   const router = useRouter();
+  const { beginActivity } = useWizardChat();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function run() {
     setBusy(true);
     setMsg(null);
+    const activity = beginActivity("Claude onderzoekt de data met code — dit kan even duren…");
     try {
       const res = await fetch("/api/inspect", {
         method: "POST",
@@ -245,12 +247,13 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
         setMsg(data.error ?? "Inspectie mislukt.");
       } else {
         const n = data.inspection?.findings?.length ?? 0;
-        setMsg(`Inspectie klaar — ${n} bevinding(en). De architect leest ze nu mee in de chat.`);
+        setMsg(`Inspectie klaar — ${n} bevinding(en). De AI leest ze nu mee in de chat.`);
         router.refresh();
       }
     } catch (err) {
       setMsg((err as Error).message);
     } finally {
+      activity.end();
       setBusy(false);
     }
   }
@@ -265,7 +268,7 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
         {busy ? "Claude onderzoekt de data…" : `Diepe data-inspectie (${scope === "master" ? "master" : "ruwe bronnen"})`}
       </button>
       <span className="text-xs text-fg-muted">
-        Claude verkent de volledige data met code (outliers, seizoen, multicollineariteit) en voedt de bevindingen aan de architect.
+        Claude verkent de volledige data met code (outliers, seizoen, multicollineariteit) en voedt de bevindingen aan de AI.
       </span>
       {msg && <span className="w-full text-xs text-fg-muted">{msg}</span>}
     </div>
@@ -279,12 +282,14 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
 // komt via Realtime vanzelf binnen.
 function AutoPrepareButton({ projectId, disabled }: { projectId: string; disabled: boolean }) {
   const router = useRouter();
+  const { beginActivity } = useWizardChat();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function run() {
     setBusy(true);
-    setMsg("De architect stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
+    setMsg("De AI stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
+    const activity = beginActivity("De AI bereidt de data automatisch voor — dit kan enkele minuten duren…");
     try {
       const res = await fetch("/api/prepare-auto", {
         method: "POST",
@@ -301,6 +306,7 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
     } catch {
       setMsg("Verbinding mislukt — probeer het opnieuw of werk via de chat.");
     } finally {
+      activity.end();
       setBusy(false);
     }
   }
@@ -313,10 +319,10 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
           disabled={busy || disabled}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "Architect is bezig…" : "Bereid automatisch voor (architect)"}
+          {busy ? "AI is bezig…" : "Bereid automatisch voor (AI)"}
         </button>
         <span className="text-xs text-fg-muted">
-          De architect kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
+          De AI kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
           (max. 3 rondes). Jij controleert en keurt goed.
         </span>
       </div>
@@ -335,7 +341,7 @@ export function DataPrepSection({
   initialDataset: Dataset | null;
 }) {
   const router = useRouter();
-  const { pendingRecipe, clearPendingRecipe, sendToChat } = useWizardChat();
+  const { pendingRecipe, clearPendingRecipe, sendToChat, beginActivity } = useWizardChat();
   const [drafts, setDrafts] = useState<DraftSource[]>([]);
   const [dummies, setDummies] = useState<DraftDummy[]>([]);
   // Derived features are authored by the architect (they carry op-specific params); the
@@ -513,6 +519,15 @@ export function DataPrepSection({
 
   const datasetBusy = dataset?.status === "preparing";
 
+  // Zolang de dataset server-side wordt samengevoegd/gecontroleerd (status "preparing",
+  // komt via Realtime binnen) toont de globale ActivityBar dat er gewerkt wordt.
+  useEffect(() => {
+    if (!datasetBusy) return;
+    const activity = beginActivity("Dataset wordt samengevoegd en gecontroleerd…");
+    return () => activity.end();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetBusy]);
+
   return (
     <div className="space-y-5">
       {sources.length === 0 ? (
@@ -520,7 +535,7 @@ export function DataPrepSection({
       ) : (
         <>
           <p className="text-sm text-fg-muted">
-            Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de architect om een
+            Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de AI om een
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
 
@@ -638,11 +653,11 @@ export function DataPrepSection({
                   }
                   className="mb-2 rounded-full border border-border px-2.5 py-1 text-[11px] text-fg-muted transition hover:border-accent/40 hover:bg-accent-dim hover:text-accent"
                 >
-                  Architect vragen om een opschoonstap voor dit bestand
+                  AI vragen om een opschoonstap voor dit bestand
                 </button>
                 {src.columns.length === 0 ? (
                   <p className="text-xs text-fg-faint">
-                    Geen kolommen automatisch herkend (bv. een xlsx-bestand) — vraag de architect om een
+                    Geen kolommen automatisch herkend (bv. een xlsx-bestand) — vraag de AI om een
                     voorstel, of noem de kolomnamen in de chat.
                   </p>
                 ) : (
@@ -787,7 +802,7 @@ export function DataPrepSection({
             <div className="mt-3 space-y-2">
               {features.length === 0 ? (
                 <p className="text-xs text-fg-faint">
-                  Nog geen afgeleide variabelen. Vraag de architect in de chat om er een voor te stellen
+                  Nog geen afgeleide variabelen. Vraag de AI in de chat om er een voor te stellen
                   (bv. een lag, een ratio/aandeel, een interactie of een terugkerende kalender-dummy).
                 </p>
               ) : (

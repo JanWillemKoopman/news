@@ -78,7 +78,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   async function runRefineRound() {
     if (refineBusy.current) return;
     refineBusy.current = true;
-    setRefineStatus(`Ronde ${refineRound.current}: de architect beoordeelt de laatste fit…`);
+    setRefineStatus(`Ronde ${refineRound.current}: de AI beoordeelt de laatste fit…`);
     try {
       const res = await fetch("/api/fit-refine", {
         method: "POST",
@@ -120,12 +120,28 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
     void runRefineRound();
   }
 
+  const hasActiveJob = jobs.some((j) => j.status === "queued" || j.status === "running");
+
   useEffect(() => {
-    const hasActive = jobs.some((j) => j.status === "queued" || j.status === "running");
-    if (!hasActive) return;
+    if (!hasActiveJob) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [jobs]);
+  }, [hasActiveJob]);
+
+  // Globale ActivityBar: laat overal in de wizard zien dat er een fit draait of dat de
+  // automatische verbetercyclus bezig is — ook als de gebruiker niet op deze stap staat.
+  useEffect(() => {
+    if (!chat || !hasActiveJob) return;
+    const activity = chat.beginActivity("Model wordt gefit — dit kan enkele minuten duren…");
+    return () => activity.end();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasActiveJob]);
+  useEffect(() => {
+    if (!chat || !autoRefine) return;
+    const activity = chat.beginActivity("Automatische verbetercyclus: de AI beoordeelt en corrigeert de fit…");
+    return () => activity.end();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefine]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -204,7 +220,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         </button>
         <p className="min-w-0 flex-1 text-xs text-fg-muted">
           {refineStatus ??
-            "Laat de architect een mislukte of zwakke fit (kwaliteitspoort warn/fail) zelf corrigeren en opnieuw fitten, max. 3 rondes. Elke ronde is zichtbaar in de chat; goedkeuren en publiceren blijft aan jou."}
+            "Laat de AI een mislukte of zwakke fit (kwaliteitspoort warn/fail) zelf corrigeren en opnieuw fitten, max. 3 rondes. Elke ronde is zichtbaar in de chat; goedkeuren en publiceren blijft aan jou."}
         </p>
       </div>
       <ul className="divide-y divide-border text-sm">

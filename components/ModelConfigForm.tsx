@@ -280,10 +280,10 @@ export function ModelConfigForm({
               }
               className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm"
             >
-              Stel een configuratie voor (architect)
+              Stel een configuratie voor (AI)
             </button>
             <span className="text-xs text-fg-muted">
-              De architect vult het formulier hieronder; jij controleert, stelt bij en start de fit.
+              De AI vult het formulier hieronder; jij controleert, stelt bij en start de fit.
             </span>
           </div>
         </div>
@@ -320,7 +320,7 @@ export function ModelConfigForm({
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-fg-muted">
           {approvedDataset
-            ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan — of laat de architect een voorstel doen."
+            ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan — of laat de AI een voorstel doen."
             : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
         </p>
         {approvedDataset && (
@@ -562,7 +562,7 @@ export function ModelConfigForm({
             {preset === "custom" && (
               <p className="mt-1.5 text-xs text-fg-faint">
                 Aangepaste sampling ({config.sample?.draws} draws · {config.sample?.tune} tune ·{" "}
-                {config.sample?.chains} chains) — via een architect-voorstel of het JSON-formulier.
+                {config.sample?.chains} chains) — via een AI-voorstel of het JSON-formulier.
               </p>
             )}
           </div>

@@ -199,7 +199,7 @@ export async function POST(request: Request) {
     await supabase.schema("mmm").from("chat_messages").insert(rowsToInsert);
     return NextResponse.json({
       status: "stopped",
-      message: replyText || "De architect zag geen verantwoorde automatische verbetering.",
+      message: replyText || "De AI zag geen verantwoorde automatische verbetering.",
     });
   }
 

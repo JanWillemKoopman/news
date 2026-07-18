@@ -141,7 +141,7 @@ function contextChips(ctx: ChatContextSummary): string[] {
 }
 
 export function ChatPanel({ projectId }: { projectId: string }) {
-  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage, activeStepId } = useWizardChat();
+  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage, activeStepId, beginActivity } = useWizardChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [context, setContext] = useState<ChatContextSummary | null>(null);
   const [input, setInput] = useState("");
@@ -208,6 +208,9 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     setError(null);
     setMessages((prev) => [...prev, { role: "user", text }]);
     setBusy(true);
+    // Meld de beurt aan bij de globale ActivityBar: ook met de chat-dock dicht blijft
+    // zichtbaar dat de AI aan een antwoord werkt.
+    const activity = beginActivity("De AI schrijft een antwoord…");
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -290,6 +293,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         setError("Er ging iets mis met de verbinding.");
       }
     } finally {
+      activity.end();
       abortRef.current = null;
       setBusy(false);
       void refreshContext();
@@ -300,7 +304,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     <div className="flex h-full min-h-[28rem] flex-col lg:min-h-0">
       {context && (
         <div className="flex flex-wrap items-center gap-1 border-b border-border px-4 py-1.5">
-          <span className="text-[11px] uppercase tracking-wide text-fg-faint">Architect ziet:</span>
+          <span className="text-[11px] uppercase tracking-wide text-fg-faint">AI ziet:</span>
           {contextChips(context).map((chip) => (
             <span key={chip} className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
               {chip}
@@ -312,7 +316,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         {!loaded && <p className="text-sm text-fg-faint">Laden…</p>}
         {loaded && messages.length === 0 && (
           <p className="text-sm text-fg-muted">
-            Vraag de architect om de geüploade bestanden te controleren en samen te voegen,
+            Vraag de AI om de geüploade bestanden te controleren en samen te voegen,
             om daarna een modelconfiguratie voor te stellen. Na een fit kun je hem ook
             vragen de resultaten uit te leggen, te beoordelen of te verbeteren.
           </p>
@@ -331,7 +335,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             </div>
             {m.pastProposal && m.proposedRecipe == null && m.proposedConfig == null && (
               <p className="mt-0.5 text-[11px] text-fg-faint">
-                ⚙ bevatte een {m.pastProposal}-voorstel — vraag de architect het opnieuw voor te stellen als je het alsnog wilt overnemen
+                ⚙ bevatte een {m.pastProposal}-voorstel — vraag de AI het opnieuw voor te stellen als je het alsnog wilt overnemen
               </p>
             )}
             {m.proposedRecipe != null && (

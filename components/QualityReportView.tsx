@@ -64,7 +64,7 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           }
           className="rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
         >
-          Bespreek dit rapport met de architect
+          Bespreek dit rapport met de AI
         </button>
       )}
     </div>

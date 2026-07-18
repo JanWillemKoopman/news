@@ -5,7 +5,7 @@
 const STEP_INTROS: Record<string, { what: string; why: string }> = {
   data: {
     what: "Upload alle wekelijkse bronnen in één keer: KPI, spend per kanaal en eventuele controls (CSV of XLSX).",
-    why: "Bij elke CSV draaien automatisch een kolom-classificatie en een statistisch profiel — de architect start daardoor met een voorsprong.",
+    why: "Bij elke CSV draaien automatisch een kolom-classificatie en een statistisch profiel — de AI start daardoor met een voorsprong.",
   },
   eda: {
     what: "Verken de data zelf: grafieken, kolomstatistieken en de correlatiematrix — volledig in je browser.",
@@ -13,15 +13,15 @@ const STEP_INTROS: Record<string, { what: string; why: string }> = {
   },
   dataprep: {
     what: "Van losse bestanden naar één schone, wekelijkse master-tabel: rollen toewijzen, samenvoegen, kwaliteitsrapport lezen en goedkeuren.",
-    why: "Laat de architect het zware werk doen (automatisch voorbereiden of een recept-voorstel); jij blijft de eindcontrole — er wordt nooit iets stilzwijgend aangepast.",
+    why: "Laat de AI het zware werk doen (automatisch voorbereiden of een recept-voorstel); jij blijft de eindcontrole — er wordt nooit iets stilzwijgend aangepast.",
   },
   config: {
     what: "Vertaal wat je over de klant weet naar modelinstellingen: kanaaltypes, na-ijl (adstock), saturatie, seizoen en het ruismodel.",
-    why: "Zakelijke context is de grootste hefboom — vertel de architect over seizoensdrukte, campagnes en offline kanalen vóórdat je fit. Eerste fit: instellingen op standaard en preset 'Snel'.",
+    why: "Zakelijke context is de grootste hefboom — vertel de AI over seizoensdrukte, campagnes en offline kanalen vóórdat je fit. Eerste fit: instellingen op standaard en preset 'Snel'.",
   },
   fits: {
     what: "De fit draait asynchroon op de rekenlaag; volg hier de fase en de wachtrij.",
-    why: "Zodra een fit klaar is of faalt, meldt de architect zich vanzelf in de chat. Bij een zwakke fit kan de automatische verbetercyclus de correctierondes voor je draaien.",
+    why: "Zodra een fit klaar is of faalt, meldt de AI zich vanzelf in de chat. Bij een zwakke fit kan de automatische verbetercyclus de correctierondes voor je draaien.",
   },
   results: {
     what: "Beoordeel het resultaat: kwaliteitspoort, bijdragen en ROAS per kanaal (altijd met onzekerheidsmarge), en het budgetadvies.",
