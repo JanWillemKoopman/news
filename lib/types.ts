@@ -30,7 +30,67 @@ export interface SourceFile {
   // architect route doesn't re-download the file from Storage on every turn. Null for
   // binary formats (xlsx) and for files uploaded before this column existed.
   preview: string | null;
+  // A compact full-series statistical profile computed client-side at upload time
+  // (lib/dataProfile.ts). Unlike `preview` (first 15 lines only) this sees the WHOLE
+  // series, so it can surface outliers, gaps and channel collinearity that fall outside
+  // the preview window. Null for xlsx and pre-existing rows.
+  profile: SourceProfile | null;
+  // Column-semantics classification from a separate, cheap Claude call
+  // (lib/anthropic/columnMapping.ts, /api/classify-columns). Lets the architect start
+  // each turn from a reliable role/unit/granularity guess instead of re-deriving it.
+  mapping: ColumnMapping | null;
   created_at: string;
+}
+
+// --- Rich statistical profile (lib/dataProfile.ts), cached on source_files.profile ---
+
+export interface ProfileColumnStats {
+  name: string;
+  kind: "date" | "numeric" | "text";
+  n: number;
+  n_missing: number;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+  std: number | null;
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+  // The single longest run of consecutive missing rows (a gap the fill strategy must cover).
+  longest_missing_run: number;
+  // Weeks whose value is an extreme outlier (|z| > 3.5), with the row's date label + value —
+  // the exact thing the architect needs to propose an event dummy, and which the 15-line
+  // preview cannot show when the spike falls outside the first/last rows.
+  outliers: { label: string; value: number; z: number }[];
+}
+
+export interface SourceProfile {
+  n_rows: number;
+  date_column: string | null;
+  date_range: [string, string] | null;
+  columns: ProfileColumnStats[];
+  // Pairs of numeric columns with |Pearson r| >= 0.85 — near-duplicate channels or a
+  // control that mirrors a channel (multicollinearity the model can't disentangle).
+  high_correlations: { a: string; b: string; r: number }[];
+}
+
+// --- Column-semantics classification (lib/anthropic/columnMapping.ts) ---
+
+export interface ColumnMappingEntry {
+  name: string;
+  role: ColumnRole | "date" | "ignore";
+  // Best guess at what the column measures, in plain Dutch (for the builder to sanity-check).
+  meaning: string;
+  unit: string | null; // e.g. "euro", "cent", "clicks", "sendings"; null if unknown
+  confidence: "hoog" | "middel" | "laag";
+}
+
+export interface ColumnMapping {
+  granularity: "week" | "day" | "onbekend";
+  layout: "breed" | "lang" | "onbekend"; // wide (one col/channel) vs long (channel as a value)
+  currency: string | null;
+  columns: ColumnMappingEntry[];
+  reasoning: string;
 }
 
 export type JobProgress = "downloading" | "building_dataset" | "sampling" | "saving";
@@ -166,6 +226,86 @@ export interface FeatureSpec {
   inputs: string[];
   // Op-specific params (weeks/window/lower_q/upper_q/iso_weeks); omitted → op defaults.
   params?: Record<string, number | number[] | null>;
+}
+
+// --- Deep data inspection (lib/anthropic/dataInspection.ts, /api/inspect) ---
+//
+// Claude explores the actual data with pandas in the hosted, sandboxed code_execution
+// container and reports back structured findings + a narrative. This is the "give Claude
+// real eyes on the data" step — it sees the whole series, not the 15-line preview.
+
+export interface InspectionFinding {
+  kind:
+    | "outlier"
+    | "level_shift"
+    | "seasonality"
+    | "collinearity"
+    | "gap"
+    | "trend"
+    | "distribution"
+    | "other";
+  column: string | null;
+  // Human-readable finding in Dutch, with concrete weeks/values where relevant.
+  detail: string;
+  // A concrete, one-click recipe/config suggestion this finding motivates (optional).
+  suggestion: string | null;
+  severity: "info" | "let_op" | "belangrijk";
+}
+
+export interface DataInspection {
+  id: string;
+  project_id: string;
+  dataset_id: string | null;
+  scope: "raw" | "master";
+  findings: InspectionFinding[] | null;
+  narrative: string | null;
+  model: string | null;
+  error: string | null;
+  created_at: string;
+}
+
+// --- Elicited business context (lib/anthropic/architect.ts record_business_context tool) ---
+//
+// Domain knowledge the architect asks the builder for and stores, so it can turn it into
+// priors / calibration / channel_type on the next config — the highest-leverage input a
+// Bayesian model has and the one that is otherwise left empty.
+
+export interface BusinessContextNote {
+  topic:
+    | "branche"
+    | "seizoen"
+    | "campagne"
+    | "offline_kanaal"
+    | "experiment"
+    | "prijs"
+    | "overig";
+  // The fact itself, in the builder's own words as captured by the architect.
+  fact: string;
+  // Which channel(s)/column(s) it bears on, if any (free text as the builder named them).
+  relates_to: string | null;
+}
+
+export interface ProjectContext {
+  project_id: string;
+  industry: string | null;
+  notes: BusinessContextNote[] | null;
+  updated_at: string;
+}
+
+// --- Prior-predictive review (worker/mmm_worker/prior_predictive.py) ---
+//
+// The KPI range the priors ALONE imply, compared to the observed range — a cheap sanity
+// check the architect reads before spending a full fit. Mirrors mmm_core.evaluation
+// .PriorPredictiveResult; stored on the prior_predictive job row (jobs.prior_predictive).
+
+export interface PriorPredictiveReview {
+  observed_low: number;
+  observed_high: number;
+  prior_low: number;
+  prior_high: number;
+  admits_observed: boolean; // prior range covers the observed KPI range
+  not_absurdly_wide: boolean; // prior range not >20x the observed range
+  ok: boolean;
 }
 
 // --- Data preparation (the recipe + result of merging raw uploads into one master

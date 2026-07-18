@@ -149,7 +149,7 @@ function draftFromRecipe(
 ): { sources: DraftSource[]; dummies: DraftDummy[]; features: FeatureSpec[] } {
   const byPath = new Map(files.map((f) => [f.storage_path, f]));
   const sources: DraftSource[] = recipe.sources.map((s) => ({
-    file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, preview: null, created_at: "" },
+    file: byPath.get(s.storage_path) ?? { id: s.storage_path, project_id: "", name: s.name, storage_path: s.storage_path, role_hint: null, preview: null, profile: null, mapping: null, created_at: "" },
     included: true,
     date_column: s.date_column ?? "",
     transforms: s.transforms ?? [],
@@ -206,6 +206,55 @@ function summarizeApply(
   }
   if (parts.length === 0) return "Recept overgenomen — geen wijzigingen ten opzichte van de huidige tabel.";
   return `Recept overgenomen: ${parts.join(", ")}.`;
+}
+
+// Triggers the heavy, explicitly-requested deep data inspection (/api/inspect): Claude
+// explores the actual CSV(s) with pandas in the sandboxed container and stores structured
+// findings the chat architect then reads. Scope is "master" once a merge exists, else "raw".
+function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: "raw" | "master" }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/inspect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, scope }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Inspectie mislukt.");
+      } else {
+        const n = data.inspection?.findings?.length ?? 0;
+        setMsg(`Inspectie klaar — ${n} bevinding(en). De architect leest ze nu mee in de chat.`);
+        router.refresh();
+      }
+    } catch (err) {
+      setMsg((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2">
+      <button
+        onClick={run}
+        disabled={busy}
+        className="rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
+      >
+        {busy ? "Claude onderzoekt de data…" : `Diepe data-inspectie (${scope === "master" ? "master" : "ruwe bronnen"})`}
+      </button>
+      <span className="text-xs text-fg-muted">
+        Claude verkent de volledige data met code (outliers, seizoen, multicollineariteit) en voedt de bevindingen aan de architect.
+      </span>
+      {msg && <span className="w-full text-xs text-fg-muted">{msg}</span>}
+    </div>
+  );
 }
 
 export function DataPrepSection({
@@ -398,6 +447,11 @@ export function DataPrepSection({
             Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de architect om een
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
+
+          <DeepInspectionButton
+            projectId={projectId}
+            scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
+          />
 
           {applyDiff && (
             <div className="flex items-start justify-between gap-3 rounded-lg border border-danger/30 bg-danger-dim px-3 py-2 text-sm text-danger">

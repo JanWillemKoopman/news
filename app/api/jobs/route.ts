@@ -3,7 +3,9 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_CONCURRENT_JOBS, hasJobCapacity, nudgeModalEnqueue } from "@/lib/jobs";
 
-const ALLOWED_FIT_JOB_TYPES = ["fit", "fit_hierarchical"] as const;
+// 'fit'/'fit_hierarchical' run a full Bayesian fit; 'prior_predictive' is the cheap pre-fit
+// sanity check (KPI range implied by the priors, no MCMC) — all share the same queue + config shape.
+const ALLOWED_FIT_JOB_TYPES = ["fit", "fit_hierarchical", "prior_predictive"] as const;
 
 // Create a fit job (status 'queued') and best-effort nudge the Modal worker. If the
 // enqueue call fails or isn't configured, the worker's poll_queue fallback picks it up.

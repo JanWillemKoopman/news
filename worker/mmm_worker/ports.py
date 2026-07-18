@@ -35,6 +35,10 @@ class JobStore(Protocol):
     ) -> str:
         """Persist an aggregated result row and return its id."""
 
+    def save_prior_predictive(self, job_id: str, review: dict) -> None:
+        """Store the prior-predictive review (KPI range implied by the priors) on the job
+        row, so the chat architect can read it back before a full fit is spent."""
+
 
 class Storage(Protocol):
     def download(self, path: str) -> bytes: ...
