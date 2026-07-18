@@ -24,7 +24,7 @@ de uitkomst — inclusief onzekerheid — vertrouwenwekkend aan een klant presen
 2. [Voorbereiding met de klant (vóór de app)](#2-voorbereiding-met-de-klant-vóór-de-app)
 3. [De app leren kennen: rollen, toegang, opzet](#3-de-app-leren-kennen-rollen-toegang-opzet)
 4. [De wizard, stap voor stap](#4-de-wizard-stap-voor-stap)
-5. [De AI-architect: je co-piloot in de chat](#5-de-ai-architect-je-co-piloot-in-de-chat)
+5. [De AI-lagen: Claude als co-piloot door de hele pijplijn](#5-de-ai-lagen-claude-als-co-piloot-door-de-hele-pijplijn)
 6. [Resultaten beoordelen: de kwaliteitspoort en diagnostiek](#6-resultaten-beoordelen-de-kwaliteitspoort-en-diagnostiek)
 7. [Publiceren en presenteren aan de klant](#7-publiceren-en-presenteren-aan-de-klant)
 8. [Iteratie & veelvoorkomende problemen](#8-iteratie--veelvoorkomende-problemen)
@@ -210,8 +210,22 @@ De pijplijn heeft zes stappen. Je werkt ze van boven naar beneden af; de chat-ar
   datumbereik — zonder serverronde, dus direct.
 - Je kunt bestanden weer verwijderen (met bevestiging).
 
+**Wat er automatisch op de achtergrond gebeurt (nieuw):** zodra je een CSV uploadt, doet de
+app twee dingen ongevraagd, zodat de architect straks met een voorsprong start:
+
+- **Automatische kolom-classificatie** — een goedkope, snelle AI-call (Claude Haiku) bepaalt
+  per kolom de vermoedelijke **rol, eenheid, granulariteit en vorm** (breed/lang). Deze
+  classificatie wordt bij het bestand bewaard en door de chat-architect meegelezen, zodat
+  zijn samenvoegrecept al met een betrouwbare mapping begint.
+- **Rijk statistisch profiel** — de app berekent per bestand een *volledige-reeks-profiel*
+  (min/max/gemiddelde/sd, ontbrekende weken + langste gat, uitschieters **mét exacte week en
+  waarde over de héle periode**, en sterk gecorreleerde kolommen). Waar de preview alleen de
+  eerste rijen ziet, ziet dit profiel álles — de architect kan er dus een uitschieter uit
+  week 45 mee benoemen die je in de preview nooit had gezien.
+
 **Tip:** upload alle relevante bronnen in één keer (KPI-bestand, spend-bestand(en),
-controls). De architect leest ze samen en stelt straks een compleet samenvoegrecept voor.
+controls). De architect leest ze samen — inclusief classificatie en profiel — en stelt
+straks een compleet samenvoegrecept voor.
 
 ### Stap 2 — EDA (data verkennen)
 
@@ -262,6 +276,27 @@ ratio, terugkerende kalenderdummy) beheren.
 5. Ben je tevreden? Klik **"Goedkeuren als definitieve dataset"**. Pas dan mag de dataset
    als input voor een model dienen.
 
+**Diepe data-inspectie (nieuw — Claude krijgt écht ogen op de data).** In deze stap zit een
+knop **"Diepe data-inspectie (ruwe bronnen)"** — en, zodra er een master bestaat, **"Diepe
+data-inspectie (master)"**. Die geeft de data aan Claude in een **afgeschermde, netwerkloze
+code-sandbox**, waar het met echte Python (pandas) de volledige dataset verkent: seizoen,
+niveaubreuken, uitschieters, multicollineariteit. Tijdens het draaien toont de knop *"Claude
+onderzoekt de data…"*; daarna verschijnt bijvoorbeeld *"Inspectie klaar — 4 bevinding(en). De
+architect leest ze nu mee in de chat."* De bevindingen worden opgeslagen en gaan automatisch
+mee in de context van de chat-architect. Dit is de zware, expliciet getriggerde tegenhanger
+van het gratis, automatische profiel uit stap 1 — gebruik hem bij twijfelachtige of complexe
+data.
+
+**Agentic auto-verfijn (nieuw — de triviale rondes zonder mens in de lus).** Normaal is elke
+verbeterronde een handmatige stap: architect stelt recept voor → jij voegt samen → jij leest
+het rapport → architect corrigeert. Voor de *triviale* correcties (verkeerd datumformaat,
+vergeten fill, verkeerde kolomrol) kan de architect deze lus nu **zelf** doorlopen: hij stelt
+een recept voor, het draait, het **kwaliteitsrapport gaat als echte tool-uitkomst terug**, en
+hij corrigeert net zolang tot het rapport schoon is (met een harde limiet op het aantal
+rondes). Belangrijk: dit levert een **voorbereide** (niet goedgekeurde) dataset op — de
+mens-in-de-lus blijft: **jij** beoordeelt en klikt uiteindelijk "Goedkeuren". Het bespaart je
+alleen de saaie tussenrondes.
+
 **Wat er onder de motorkap gebeurt (zodat je het kunt navertellen):** de app lijnt alle
 bronnen uit op ISO-weken (maandag als indexdatum), sommeert KPI en spend per week, middelt
 controls, bepaalt het **overlappende venster** waarin élke essentiële bron data heeft, en
@@ -308,10 +343,32 @@ architect-voorstel overnemen en daarna bijstellen.
 | **Standaard** | 1000 / 1000 / 4 | Goede balans — je standaardkeuze |
 | **Grondig** | 2000 / 2000 / 4 | Definitieve run vóór publicatie |
 
+**Extra betrouwbaarheidschecks (nieuw).** In het uitklapbare paneel *"Extra
+betrouwbaarheidschecks"* kun je twee onafhankelijke controles aanzetten die met de fit
+meelopen:
+- **Cross-validatie** — het model wordt getest op weken die het niet gezien heeft
+  (out-of-sample), zodat je ziet of het generaliseert of overfit.
+- **Placebo-test** — een nepkanaal zonder echt effect wordt toegevoegd; als het model daar
+  toch effect aan toeschrijft, is dat een waarschuwing dat de schattingen te gretig zijn.
+
+Laat ze standaard uit voor snelle iteraties; zet ze aan voor de run die je wilt vertrouwen.
+
 > Zonder goedgekeurde dataset valt het formulier terug op een directe **JSON-editor** tegen
 > de ruwe bestanden. Beide weergaves zijn onderling omzetbaar.
 
 Klik **"Fit starten"** om een `fit`-job aan te maken.
+
+#### 4.5 Prior-predictive check vóór de fit (nieuw — bespaar dure rekentijd)
+
+Een echte Bayesiaanse fit kost minuten aan rekentijd (Modal-compute). Voordat je die uitgeeft,
+kan de architect een **prior-predictive review** laten draaien: een *goedkope* check (géén
+volledige sampling) die berekent welk **KPI-bereik jouw gekozen priors impliceren** — nog
+vóórdat het model de echte data heeft gezien. Zijn de priors zo ingesteld dat het model omzet
+verwacht die tien keer te hoog of negatief is, dan zie je dat hier, en corrigeert de architect
+de configuratie *vóór* er dure compute wordt gespendeerd. De uitkomst van deze check wordt
+automatisch meegelezen door de architect in de chat. Vraag er in de chat om (bijv. "controleer
+eerst of mijn priors realistische omzet impliceren") wanneer je een ongebruikelijke config of
+handmatig aangepaste priors gebruikt.
 
 #### 4.4 Fijnafstemming (optioneel — alleen met reden)
 
@@ -357,37 +414,92 @@ Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
 
 ---
 
-## 5. De AI-architect: je co-piloot in de chat
+## 5. De AI-lagen: Claude als co-piloot door de hele pijplijn
 
-Naast de pijplijn staat het chatpaneel met de **architect**: een MMM-expert (Claude) die
-**meedenkt maar nooit zelf iets uitvoert**. Hij *stelt voor*, jij *klikt*. Dat is bewust:
-mens-in-de-lus op elke onomkeerbare stap.
+> **Belangrijk — recent sterk uitgebreid.** De AI-ondersteuning is niet één chatbot meer,
+> maar een set samenwerkende lagen die Claude **maximaal laten meekijken vóórdat er dure
+> rekentijd wordt gebruikt** ("meer ogen & meer brains"). Onderstaande sectie beschrijft ze
+> allemaal. De rode draad blijft ongewijzigd: **Claude stelt voor en interpreteert, jij
+> klikt** — mens-in-de-lus op elke onomkeerbare stap, en de statistische wiskunde zelf staat
+> vast in de geteste kern (Claude *parametriseert*, rekent nooit zelf).
 
-**Wat de architect voor je doet:**
-- **Stap 1 (data prep):** stelt een compleet **samenvoegrecept** voor (welke kolom welke
-  rol, welke transforms, event-dummy's, features), en leest na het samenvoegen het
-  kwaliteitsrapport terug — benoemt uitschieters met exacte week + waarde en stelt gericht
-  fixes voor.
-- **Stap 2 (modelconfig):** stelt een complete **modelconfiguratie** voor op basis van wat
-  hij in de kolomnamen, het datastatistiekprofiel en jouw zakelijke context ziet.
-- **Stap 3 (resultaten):** interpreteert een fit in gewone taal (welke kanalen werken, is
-  het model betrouwbaar), benoemt eerlijk de onzekerheid, en bij een zwakke of mislukte fit
-  legt hij de vermoedelijke oorzaak uit én biedt een gecorrigeerde config aan.
+### 5.1 Overzicht: waar zit welke AI-hulp?
+
+| Laag | Wanneer | Model | Wat het doet | Handmatig of automatisch? |
+|---|---|---|---|---|
+| **Kolom-classificatie** | Bij elke CSV-upload | Claude Haiku | Raadt per kolom rol/eenheid/granulariteit/vorm | Automatisch (achtergrond) |
+| **Rijk dataprofiel** | Bij elke upload | (geen AI, deterministisch) | Volledige-reeks-statistiek + uitschieters mét week/waarde | Automatisch |
+| **Chat-architect** | Elke stap, in het chatpaneel | Claude Sonnet | Stelt recept/config voor, interpreteert rapport & fit, elicit-eert context | Jij vraagt, jij neemt over |
+| **Diepe data-inspectie** | Knop in stap 3 | Claude Sonnet (code-sandbox) | Verkent de volledige data met pandas | Handmatig (knop) |
+| **Agentic auto-verfijn** | Stap 3 | Claude Sonnet | Loopt de triviale samenvoeg-correctierondes zelf | Handmatig gestart, dan autonoom |
+| **Prior-predictive check** | Vóór de fit (stap 4) | (kern-berekening, architect leest terug) | Checkt welk KPI-bereik je priors impliceren | Op verzoek |
+| **Diepgaande analyse** | Knop in stap 6 | Claude Sonnet (code-sandbox) | Geschreven interpretatie + extra grafieken van het resultaat | Handmatig (knop) |
+
+### 5.2 De chat-architect (de kern)
+
+Naast de pijplijn staat het chatpaneel met de **architect**: een MMM-expert die drie petten
+draagt, afhankelijk van waar je bent:
+
+- **Data prep:** stelt een compleet **samenvoegrecept** voor (welke kolom welke rol, welke
+  transforms, event-dummy's, features), en leest na het samenvoegen het kwaliteitsrapport
+  terug — benoemt uitschieters met exacte week + waarde en stelt gericht fixes voor.
+- **Modelconfig:** stelt een complete **modelconfiguratie** voor op basis van kolomnamen, het
+  automatische profiel, de kolom-classificatie, eventuele diepe-inspectiebevindingen én jouw
+  zakelijke context.
+- **Resultaten:** interpreteert een fit in gewone taal (welke kanalen werken, is het model
+  betrouwbaar), benoemt eerlijk de onzekerheid, en biedt bij een zwakke of mislukte fit een
+  gecorrigeerde config aan met de vermoedelijke oorzaak erbij.
+
+**Rijkere context dan voorheen.** De architect krijgt tegenwoordig niet alleen de eerste 15
+regels van elk bestand, maar ook: het **volledige-reeks-profiel**, de **kolom-classificatie**,
+de bevindingen van de **diepe data-inspectie**, de vastgelegde **zakelijke context**, een
+referentie van **terugkerende NL-kalendergebeurtenissen** (Black Friday, kerst, vakanties) en
+de uitkomst van de **prior-predictive check**. Daardoor zijn zijn voorstellen concreter en
+minder giswerk — hij ziet een uitschieter in week 45 die niet in de preview stond, of twee
+bijna-identieke kanalen, en benoemt die uit zichzelf.
 
 **Zo werk je ermee:**
-- Per actieve stap biedt het paneel 1–2 **snelacties** (bijv. "Stel een samenvoegrecept
-  voor", "Beoordeel de laatste fit").
-- Geef de architect je **zakelijke context** (branche, seizoen, campagnes, offline kanalen,
-  experimenten). Hij legt die vast en vertaalt ze naar priors/kalibratie/kanaaltype. Hoe
-  meer echte context je geeft, hoe beter het voorstel.
+- Per actieve stap biedt het paneel 1–2 **snelacties**, o.a.: *"Stel een samenvoegrecept
+  voor"* (stap 1/3), *"Wat valt op in deze data?"* (stap 2), *"Beoordeel de dataset"* (stap
+  3), *"Stel een configuratie voor"* (stap 4), *"Beoordeel de laatste fit"* (stap 5/6).
+- **Geef de architect proactief je zakelijke context** (branche, seizoensdrukte, campagnes,
+  offline kanalen, experimenten). Hij vraagt er zelf ook actief naar, legt de feiten vast
+  (via een interne "context vastleggen"-actie) en vertaalt ze naar concrete instellingen:
+  offline kanaal → `delayed` adstock + hogere `l_max`; gemeten experiment → kalibratie
+  (`roas` + `sd`); sterk seizoen → seizoen aan. Dit is de hoogste hefboom die een Bayesiaans
+  model heeft — hoe meer echte context, hoe beter het model.
 - Een voorstel verschijnt als chatbericht met een knop **"overnemen in de editor/tabel"**.
   Na overnemen toont de editor een eenregelige samenvatting van wat er veranderde (bijv.
   "3 kolomrollen aangepast, +1 afgeleide variabele"). **Controleer dat altijd** voordat je
   samenvoegt of fit.
 
-> De architect vereist een geconfigureerde `ANTHROPIC_API_KEY` op de server. Ontbreekt die,
-> dan geeft de chat een nette foutmelding in plaats van stil te falen — de rest van de app
-> (handmatig configureren en fitten) blijft gewoon werken.
+### 5.3 De verkennende AI-lagen (nieuw/uitgebreid)
+
+Naast de chat zijn er vier lagen die Claude gerichter op de data zetten. Ze zijn in de
+betreffende stappen al beschreven; hier het geheel op een rij:
+
+1. **Automatische kolom-classificatie (stap 1)** — draait ongevraagd bij elke upload, geeft de
+   architect een betrouwbaar startpunt voor de rol-mapping.
+2. **Diepe data-inspectie (stap 3, knop)** — Claude verkent de volledige data met echte code in
+   een afgeschermde sandbox en levert gestructureerde bevindingen die de architect meeleest.
+3. **Agentic auto-verfijn (stap 3)** — de architect draait de triviale samenvoeg-correctielus
+   zelf, tot het kwaliteitsrapport schoon is; jij keurt het eindresultaat goed.
+4. **Prior-predictive check (stap 4)** — een goedkope controle of je priors realistische KPI's
+   impliceren, vóórdat er dure fit-compute wordt uitgegeven.
+
+### 5.4 Diepgaande analyse van het resultaat (stap 6)
+
+De knop **"Genereer diepgaande analyse"** laat Claude — in dezelfde afgeschermde, netwerkloze
+code-sandbox, **uitsluitend op basis van de resultaat-JSON** (geen ruwe klantdata) — een
+doorlopende Nederlandstalige interpretatie plus een vaste set extra grafieken maken (aandeel
+per kanaal met onzekerheid, response-/verzadigingscurves, efficiency-frontier, en 1–2
+zelfgekozen grafieken). Ideaal als kant-en-klare bijlage bij je klantpresentatie.
+
+> **Voorwaarde voor alle AI-lagen.** Ze vereisen een geconfigureerde `ANTHROPIC_API_KEY` op de
+> server. Ontbreekt die, dan geeft de betreffende actie een nette foutmelding in plaats van
+> stil te falen — de rest van de app (handmatig configureren en fitten) blijft gewoon werken.
+> De AI draait server-side; de sandbox-code-executie heeft geen toegang tot internet of tot je
+> Storage — alleen tot de data die de app er expliciet in stopt.
 
 ---
 
@@ -549,11 +661,13 @@ Deze definities staan ook als hover-tooltips in de resultatenweergave van de app
 
 **In de app**
 - [ ] Project aangemaakt (naam + klantnaam)
-- [ ] Stap 1: alle bronnen geüpload
+- [ ] Stap 1: alle bronnen geüpload (kolom-classificatie + profiel draaien automatisch)
 - [ ] Stap 2: EDA bekeken; gecorreleerde spend-kanalen genoteerd
 - [ ] Stap 3: samengevoegd, kwaliteitsrapport gelezen, dataset **goedgekeurd**
+      (bij twijfelachtige data: **diepe data-inspectie** gedraaid; eventueel **auto-verfijn**)
 - [ ] Stap 4: KPI, kanaaltypes, adstock/saturatie, likelihood, trend/seizoen gezet;
-      zakelijke context via architect verwerkt; preset gekozen
+      zakelijke context via architect verwerkt; preset gekozen; extra
+      betrouwbaarheidschecks overwogen; bij aangepaste priors een **prior-predictive check**
 - [ ] Stap 5: fit gedraaid en gevolgd
 - [ ] Stap 6: kwaliteitspoort = pass (of bewust geaccepteerde warn), diagnostiek gecheckt
 
