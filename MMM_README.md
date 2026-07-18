@@ -52,6 +52,39 @@ vertrouwen.
 6. ⬜ Generaliseren naar uiteenlopende databronnen (kolom-mapping als eigen stap,
    kanaaltype i.p.v. kanaalnaam raden). Testen met ≥2 echt verschillende bedrijven.
 
+## Meer ogen & meer brains voor Claude vóór de fit
+
+Alles wat de dataset opbouwt die aan de Modal-fit wordt gegeven, is aangescherpt zodat de
+Claude API maximaal wordt benut (migratie `0011_claude_brains.sql`):
+
+- **Rijke statistische profielen** (`lib/dataProfile.ts`) — bij upload wordt per bestand een
+  volledige-reeks-profiel berekend (percentielen, gaten, uitschieters mét week+waarde,
+  kanaal-correlaties) en meegegeven aan de architect. De 15-regels-preview zag alleen de
+  eerste rijen; het profiel ziet alles.
+- **Diepe data-inspectie** (`lib/anthropic/dataInspection.ts`, `app/api/inspect`) — Claude
+  verkent de echte CSV('s) met pandas in de hosted, afgeschermde `code_execution`-sandbox
+  (seizoen, niveaubreuken, multicollineariteit) en levert gestructureerde bevindingen +
+  voorstellen die de architect meeleest. Knop in de data-voorbereidingsstap.
+- **Aparte kolom-classificatie** (`lib/anthropic/columnMapping.ts`, `app/api/classify-columns`)
+  — een goedkope Haiku-call bepaalt per kolom rol/eenheid/granulariteit/vorm, zodat de
+  architect start met een betrouwbare mapping.
+- **Prior-elicitatie** — de architect vraagt actief naar branche, seizoen, campagnes,
+  offline-kanalen en experimenten en legt ze vast (`record_business_context` →
+  `mmm.project_context`), en vertaalt ze naar priors/kalibratie/`channel_type`.
+- **NL kalender-features** (`lib/calendar/nlCalendar.ts`) — de architect kent terugkerende
+  NL-gebeurtenissen (Black Friday, kerst, vakanties) en stelt kalender-dummies voor.
+- **Prior-predictive review vóór de fit** (`worker/mmm_worker/prior_predictive.py`, job-type
+  `prior_predictive`) — een goedkope check (geen MCMC) van het KPI-bereik dat de priors
+  impliceren; de architect leest 'm en corrigeert de config vóór er Modal-compute wordt
+  gespendeerd.
+- **Agentic auto-verfijn** (`app/api/prepare-auto`) — de architect stelt een samenvoeg-recept
+  voor, het draait, het kwaliteitsrapport gaat als echte `tool_result` terug, en hij
+  corrigeert tot het rapport schoon is — de triviale rondes zonder mens in de lus. De bouwer
+  keurt de uiteindelijke dataset nog steeds zelf goed.
+
+Deze onderdelen type-checken (`npm run typecheck`) en de worker-tests zijn groen
+(`worker/tests`), maar zijn — net als de rest van de wizard — nog niet end-to-end live getest.
+
 ## Mappen
 
 - `app/`, `components/`, `lib/`, `store/` — de Next.js-wizard (frontend).

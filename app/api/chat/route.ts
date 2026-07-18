@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { buildRequest } from "@/lib/anthropic/architect";
+import { buildRequest, parseBusinessContextInput } from "@/lib/anthropic/architect";
 import type { ArchitectFitContext } from "@/lib/anthropic/fitContext";
 import type { ArchitectDatasetContext } from "@/lib/anthropic/datasetContext";
-import type { Dataset, FitSummary, JobConfig, JobStatus, SourceFile } from "@/lib/types";
+import type { DataInspection, Dataset, FitSummary, JobConfig, JobStatus, PriorPredictiveReview, ProjectContext, SourceFile } from "@/lib/types";
 
 // Tool names the architect can call — kept here so the route and the frontend agree on
-// what a "proposal" in the persisted/returned payload means.
+// what a "proposal" in the persisted/returned payload means. record_business_context is a
+// side-effect tool (it persists elicited context) rather than a builder-facing proposal, so
+// it is handled separately below but still needs a synthetic tool_result to keep history well-formed.
 const PROPOSAL_TOOLS = ["propose_prepare_recipe", "propose_model_config"] as const;
+const ALL_TOOLS = [...PROPOSAL_TOOLS, "record_business_context"] as const;
 
 // Load prior chat history for a project so the panel survives a page refresh.
 export async function GET(request: Request) {
@@ -56,12 +59,19 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  const [{ data: sources }, { data: priorRows }, { data: latestRun }, { data: latestFitJob }, { data: latestDataset }] =
-    await Promise.all([
+  const [
+    { data: sources },
+    { data: priorRows },
+    { data: latestRun },
+    { data: latestFitJob },
+    { data: latestDataset },
+    { data: projectContext },
+    { data: latestInspection },
+  ] = await Promise.all([
       supabase
         .schema("mmm")
         .from("source_files")
-        .select("id, project_id, name, storage_path, role_hint, preview, created_at")
+        .select("id, project_id, name, storage_path, role_hint, preview, profile, mapping, created_at")
         .eq("project_id", projectId)
         .order("created_at"),
       supabase
@@ -100,7 +110,36 @@ export async function POST(request: Request) {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      // Elicited business context (one row per project) and the latest deep data
+      // inspection — the two "more brains" inputs the architect reasons over pre-fit.
+      supabase
+        .schema("mmm")
+        .from("project_context")
+        .select("*")
+        .eq("project_id", projectId)
+        .maybeSingle(),
+      supabase
+        .schema("mmm")
+        .from("data_inspections")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
+
+  // The latest prior-predictive review (its own lightweight job type), if one has run — a
+  // cheap pre-fit sanity check the architect reads before proposing/spending a fit.
+  const { data: latestPp } = await supabase
+    .schema("mmm")
+    .from("jobs")
+    .select("prior_predictive, created_at")
+    .eq("project_id", projectId)
+    .eq("type", "prior_predictive")
+    .eq("status", "succeeded")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const fit: ArchitectFitContext = {
     latestRun: latestRun
@@ -114,10 +153,18 @@ export async function POST(request: Request) {
           created_at: latestFitJob.created_at as string,
         }
       : null,
+    priorPredictive: latestPp?.prior_predictive
+      ? {
+          review: latestPp.prior_predictive as PriorPredictiveReview,
+          created_at: latestPp.created_at as string,
+        }
+      : null,
   };
   const dataset: ArchitectDatasetContext = {
     latestDataset: (latestDataset as Dataset | null) ?? null,
   };
+  const businessContext = (projectContext as ProjectContext | null) ?? null;
+  const inspection = (latestInspection as DataInspection | null) ?? null;
 
   const sourceFiles = (sources ?? []) as SourceFile[];
   // The preview is cached on the row at upload time (see SourceUpload.tsx) instead of
@@ -142,17 +189,50 @@ export async function POST(request: Request) {
   const client = new Anthropic({ apiKey });
   let response: Anthropic.Message;
   try {
-    response = await client.messages.create(buildRequest({ sources: previews, dataset, fit }, history));
+    response = await client.messages.create(
+      buildRequest({ sources: previews, dataset, fit, businessContext, inspection }, history),
+    );
   } catch (err) {
     return NextResponse.json({ error: `Claude API-fout: ${(err as Error).message}` }, { status: 502 });
   }
 
-  // Whichever of the architect's two proposal tools was called (recipe or config) — at
+  // Whichever tool the architect called (recipe / config / record_business_context) — at
   // most one, per the system prompt's design, but detect by name rather than assume.
   const toolUse = response.content.find(
     (b): b is Anthropic.ToolUseBlock =>
-      b.type === "tool_use" && (PROPOSAL_TOOLS as readonly string[]).includes(b.name),
+      b.type === "tool_use" && (ALL_TOOLS as readonly string[]).includes(b.name),
   );
+
+  // record_business_context is a side-effect tool: persist the elicited context (upsert one
+  // row per project) so it feeds every later architect turn and the config's priors.
+  if (toolUse?.name === "record_business_context") {
+    const parsed = parseBusinessContextInput(toolUse.input);
+    if (parsed) {
+      const { data: existing } = await supabase
+        .schema("mmm")
+        .from("project_context")
+        .select("industry, notes")
+        .eq("project_id", projectId)
+        .maybeSingle();
+      const mergedNotes = [
+        ...(((existing?.notes as ProjectContext["notes"]) ?? []) as NonNullable<ProjectContext["notes"]>),
+        ...parsed.notes,
+      ];
+      await supabase
+        .schema("mmm")
+        .from("project_context")
+        .upsert(
+          {
+            project_id: projectId,
+            industry: parsed.industry ?? (existing?.industry as string | null) ?? null,
+            notes: mergedNotes,
+            updated_by: viewer.id,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "project_id" },
+        );
+    }
+  }
   const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text");
   const replyText = textBlocks.map((b) => b.text).join("\n\n");
 
@@ -165,10 +245,14 @@ export async function POST(request: Request) {
     { project_id: projectId, role: "assistant", content: response.content, created_by: viewer.id },
   ];
   if (toolUse) {
+    const resultText =
+      toolUse.name === "record_business_context"
+        ? "Zakelijke context vastgelegd."
+        : "Voorstel ontvangen door de bouwer.";
     rowsToInsert.push({
       project_id: projectId,
       role: "user",
-      content: [{ type: "tool_result", tool_use_id: toolUse.id, content: "Voorstel ontvangen door de bouwer." }],
+      content: [{ type: "tool_result", tool_use_id: toolUse.id, content: resultText }],
       created_by: viewer.id,
     });
   }

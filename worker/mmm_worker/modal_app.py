@@ -95,6 +95,12 @@ def _run(job_id: str) -> dict:
         return run_prepare(jobstore, SupabaseDatasetStore(client), storage, job_id)
     if job.get("type") == "fit_hierarchical":
         return run_hier_job(jobstore, _Split(), job_id)
+    if job.get("type") == "prior_predictive":
+        # Cheap "is this config sane before we spend a fit?" check — builds the master and
+        # asks what KPI range the priors imply (no MCMC). Reads raw like a fit does.
+        from mmm_worker.prior_predictive import run_prior_predictive
+
+        return run_prior_predictive(jobstore, _Split(), job_id)
     return run_job(jobstore, _Split(), job_id)
 
 

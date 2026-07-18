@@ -1,4 +1,4 @@
-import type { FitSummary, JobConfig, JobStatus, Interval } from "@/lib/types";
+import type { FitSummary, JobConfig, JobStatus, Interval, PriorPredictiveReview } from "@/lib/types";
 
 // Turns a project's latest fit result (or failed/running job) into a compact Dutch text
 // block for the architect, and decides which model should reason about it. Kept pure and
@@ -7,6 +7,9 @@ import type { FitSummary, JobConfig, JobStatus, Interval } from "@/lib/types";
 export interface ArchitectFitContext {
   latestRun: { summary: FitSummary; created_at: string } | null;
   latestJob: { status: JobStatus; error: string | null; config: JobConfig; created_at: string } | null;
+  // The latest prior-predictive review (KPI range implied by the priors), if one was run —
+  // a cheap pre-fit sanity check the architect should read and act on before spending a fit.
+  priorPredictive?: { review: PriorPredictiveReview; created_at: string } | null;
 }
 
 // The two roles the architect can reason in, and the single place their model IDs live —
@@ -82,8 +85,26 @@ function formatSummary(summary: FitSummary, createdAt: string): string {
   return lines.join("\n");
 }
 
+function formatPriorPredictive(pp: NonNullable<ArchitectFitContext["priorPredictive"]>): string {
+  const r = pp.review;
+  const lines = [
+    `Prior-predictive check (${pp.created_at.slice(0, 10)}) — het KPI-bereik dat de priors ALLEEN impliceren, vóór er gefit is:`,
+    `  Waargenomen KPI: ${num(r.observed_low, 0)}–${num(r.observed_high, 0)}. Prior-bereik: ${num(r.prior_low, 0)}–${num(r.prior_high, 0)}.`,
+  ];
+  if (r.ok) {
+    lines.push("  Oordeel: de priors zijn plausibel (ze omvatten de data en zijn niet absurd breed). Groen licht om te fitten.");
+  } else {
+    if (!r.admits_observed)
+      lines.push("  Oordeel: LET OP — de priors omvatten de waargenomen KPI niet; ze staan te strak. Verruim de relevante sigma('s) voordat je fit.");
+    if (!r.not_absurdly_wide)
+      lines.push("  Oordeel: LET OP — het prior-bereik is absurd breed (>20× de data); de priors zijn te weinig informatief. Verklein de relevante sigma('s).");
+  }
+  return lines.join("\n");
+}
+
 export function formatFitContextBlock(ctx: ArchitectFitContext): string {
   const { latestRun, latestJob } = ctx;
+  const ppBlock = ctx.priorPredictive ? `\n\n${formatPriorPredictive(ctx.priorPredictive)}` : "";
 
   // A failed job that is newer than the last successful run is the most relevant thing to
   // reason about (the builder just tried something and it broke).
@@ -97,7 +118,7 @@ export function formatFitContextBlock(ctx: ArchitectFitContext): string {
       `Foutmelding: ${latestJob.error ?? "(geen melding opgeslagen)"}`,
       `Configuratie die faalde: ${formatModelShape(latestJob.config)}`,
       "Diagnosticeer de oorzaak en stel een concrete, aangepaste configuratie voor die dit oplost.",
-    ].join("\n");
+    ].join("\n") + ppBlock;
   }
 
   if (latestRun) {
@@ -105,12 +126,15 @@ export function formatFitContextBlock(ctx: ArchitectFitContext): string {
     if (latestJob && (latestJob.status === "queued" || latestJob.status === "running")) {
       block += `\n\nLet op: er draait/wacht nu ook een nieuwe fit (status: ${latestJob.status}).`;
     }
-    return block;
+    return block + ppBlock;
   }
 
   if (latestJob && (latestJob.status === "queued" || latestJob.status === "running")) {
-    return `Er draait nu een fit (status: ${latestJob.status}); er is nog geen afgerond resultaat om te bespreken.`;
+    return `Er draait nu een fit (status: ${latestJob.status}); er is nog geen afgerond resultaat om te bespreken.` + ppBlock;
   }
 
+  if (ctx.priorPredictive) {
+    return "Er is nog geen fit gedraaid, maar er is wel een prior-predictive check gedaan." + ppBlock;
+  }
   return "Er is nog geen fit gedraaid voor dit project — er zijn nog geen resultaten om te bespreken.";
 }

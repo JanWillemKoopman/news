@@ -16,6 +16,7 @@ class FakeJobStore:
         self.progress: str | None = None
         self.error: str | None = None
         self.runs: list[dict] = []
+        self.prior_predictive: dict | None = None
 
     def get_job(self, job_id: str) -> dict:
         return self.job
@@ -44,6 +45,9 @@ class FakeJobStore:
             }
         )
         return "run-1"
+
+    def save_prior_predictive(self, job_id: str, review: dict) -> None:
+        self.prior_predictive = review
 
 
 class FakeStorage:

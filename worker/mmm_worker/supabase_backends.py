@@ -74,6 +74,9 @@ class SupabaseJobStore(JobStore):
         )
         return row.data[0]["id"]
 
+    def save_prior_predictive(self, job_id: str, review: dict) -> None:
+        self._table("jobs").update({"prior_predictive": review}).eq("id", job_id).execute()
+
 
 class SupabaseDatasetStore:
     def __init__(self, client, schema: str = _SCHEMA):
