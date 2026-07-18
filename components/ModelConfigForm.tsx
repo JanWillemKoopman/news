@@ -149,7 +149,11 @@ export function ModelConfigForm({
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { pendingConfig, clearPendingConfig } = useWizardChat();
+  const { pendingConfig, clearPendingConfig, sendToChat } = useWizardChat();
+  // Bevestiging + snapshot na een overgenomen architect-voorstel, zodat "Ongedaan maken"
+  // één klik is (zelfde patroon als de recepttabel in stap 3).
+  const [applyNote, setApplyNote] = useState<string | null>(null);
+  const [undoConfig, setUndoConfig] = useState<JobConfig | null>(null);
 
   const kpiOptions = useMemo(() => {
     const roles = approvedDataset?.column_roles ?? {};
@@ -173,6 +177,12 @@ export function ModelConfigForm({
   useEffect(() => {
     if (pendingConfig === null) return;
     const next = configFromProposal(pendingConfig);
+    setUndoConfig(config);
+    setApplyNote(
+      `Voorstel overgenomen: ${next.model.channels.length} kanaal/kanalen, KPI "${next.model.kpi}"${
+        next.model.control_columns?.length ? `, ${next.model.control_columns.length} control(s)` : ""
+      }. Controleer de instellingen voordat je fit.`,
+    );
     setConfig(next);
     setJsonText(JSON.stringify(next, null, 2));
     setMode(approvedDataset ? "form" : "json");
@@ -259,10 +269,58 @@ export function ModelConfigForm({
 
   return (
     <div className="space-y-4">
+      {approvedDataset && (
+        <div className="rounded-lg border border-accent/30 bg-accent-dim/40 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() =>
+                sendToChat(
+                  "Kijk naar de goedgekeurde dataset en alle context (profiel, inspectie, zakelijke feiten) en stel een complete modelconfiguratie voor.",
+                )
+              }
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm"
+            >
+              Stel een configuratie voor (architect)
+            </button>
+            <span className="text-xs text-fg-muted">
+              De architect vult het formulier hieronder; jij controleert, stelt bij en start de fit.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {applyNote && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2 text-sm text-accent">
+          <span>{applyNote}</span>
+          <span className="flex flex-none items-center gap-2">
+            {undoConfig && (
+              <button
+                onClick={() => {
+                  setConfig(undoConfig);
+                  setJsonText(JSON.stringify(undoConfig, null, 2));
+                  setUndoConfig(null);
+                  setApplyNote("Voorstel ongedaan gemaakt — de configuratie staat weer zoals ervoor.");
+                }}
+                className="rounded border border-accent/40 px-2 py-0.5 text-xs font-medium hover:bg-accent/20"
+              >
+                Ongedaan maken
+              </button>
+            )}
+            <button
+              onClick={() => { setApplyNote(null); setUndoConfig(null); }}
+              className="text-accent/70 hover:text-accent"
+              aria-label="Sluiten"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-fg-muted">
           {approvedDataset
-            ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan."
+            ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan — of laat de architect een voorstel doen."
             : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
         </p>
         {approvedDataset && (

@@ -69,6 +69,21 @@ function suggestRole(columnName: string): ColumnRole | null {
   return SPEND_NAME_HINT.test(columnName) ? "spend" : null;
 }
 
+// The Haiku column classification (cached on source_files.mapping at upload time) is the
+// richer source of suggestions: role + confidence per column. Falls back to the name-regex
+// above when no classification exists (e.g. xlsx). Suggestions stay click-to-accept.
+function mappingSuggestion(
+  file: SourceFile,
+  columnName: string,
+): { role: ColumnRole; confidence: "hoog" | "middel" | "laag" } | null {
+  const entry = file.mapping?.columns.find((c) => c.name === columnName);
+  if (entry && (entry.role === "kpi" || entry.role === "spend" || entry.role === "control")) {
+    return { role: entry.role, confidence: entry.confidence };
+  }
+  const regex = suggestRole(columnName);
+  return regex ? { role: regex, confidence: "middel" } : null;
+}
+
 // Tiny inline sparkline (no axes/tooltip) so a builder can eyeball a column's shape while
 // assigning it a role, without leaving this table for the EDA step.
 function Sparkline({ values }: { values: number[] }) {
@@ -257,6 +272,59 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
   );
 }
 
+// De primaire AI-actie van deze stap: de architect stelt een recept voor, voert het uit,
+// leest het kwaliteitsrapport en corrigeert tot het schoon is (/api/prepare-auto). De
+// bouwer beoordeelt daarna het resultaat en keurt zelf goed — dit bespaart alleen de
+// saaie tussenrondes. Kan minuten duren; de knop blijft de status tonen en de dataset
+// komt via Realtime vanzelf binnen.
+function AutoPrepareButton({ projectId, disabled }: { projectId: string; disabled: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setMsg("De architect stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
+    try {
+      const res = await fetch("/api/prepare-auto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(data.error ?? "Automatisch voorbereiden mislukt.");
+      } else {
+        setMsg(data.message ?? "Klaar.");
+        router.refresh();
+      }
+    } catch {
+      setMsg("Verbinding mislukt — probeer het opnieuw of werk via de chat.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-accent/30 bg-accent-dim/40 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={run}
+          disabled={busy || disabled}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Architect is bezig…" : "Bereid automatisch voor (architect)"}
+        </button>
+        <span className="text-xs text-fg-muted">
+          De architect kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
+          (max. 3 rondes). Jij controleert en keurt goed.
+        </span>
+      </div>
+      {msg && <p className="mt-2 text-xs text-fg-muted">{msg}</p>}
+    </div>
+  );
+}
+
 export function DataPrepSection({
   projectId,
   sources,
@@ -267,7 +335,7 @@ export function DataPrepSection({
   initialDataset: Dataset | null;
 }) {
   const router = useRouter();
-  const { pendingRecipe, clearPendingRecipe } = useWizardChat();
+  const { pendingRecipe, clearPendingRecipe, sendToChat } = useWizardChat();
   const [drafts, setDrafts] = useState<DraftSource[]>([]);
   const [dummies, setDummies] = useState<DraftDummy[]>([]);
   // Derived features are authored by the architect (they carry op-specific params); the
@@ -279,6 +347,13 @@ export function DataPrepSection({
   const [error, setError] = useState<string | null>(null);
   const [sourceValues, setSourceValues] = useState<Record<string, Record<string, number[]>>>({});
   const [applyDiff, setApplyDiff] = useState<string | null>(null);
+  // Snapshot van vóór het laatst overgenomen architect-recept, zodat "Ongedaan maken"
+  // één klik is — dat maakt experimenteren met voorstellen veilig.
+  const [undoSnapshot, setUndoSnapshot] = useState<{
+    drafts: DraftSource[];
+    dummies: DraftDummy[];
+    features: FeatureSpec[];
+  } | null>(null);
   const knownPaths = useMemo(() => new Set(drafts.map((d) => d.file.storage_path)), [drafts]);
 
   // Seed a draft row (with sniffed headers) for any uploaded file not yet represented, and
@@ -333,6 +408,7 @@ export function DataPrepSection({
       sources,
     );
     setApplyDiff(summarizeApply(drafts, draftSources, dummies, draftDummies, features, draftFeatures));
+    setUndoSnapshot({ drafts, dummies, features });
     setDrafts(draftSources);
     setDummies(draftDummies);
     setFeatures(draftFeatures);
@@ -448,6 +524,8 @@ export function DataPrepSection({
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
 
+          <AutoPrepareButton projectId={projectId} disabled={datasetBusy} />
+
           <DeepInspectionButton
             projectId={projectId}
             scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
@@ -456,9 +534,25 @@ export function DataPrepSection({
           {applyDiff && (
             <div className="flex items-start justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2 text-sm text-accent">
               <span>{applyDiff}</span>
-              <button onClick={() => setApplyDiff(null)} className="flex-none text-accent/70 hover:text-accent" aria-label="Sluiten">
-                ×
-              </button>
+              <span className="flex flex-none items-center gap-2">
+                {undoSnapshot && (
+                  <button
+                    onClick={() => {
+                      setDrafts(undoSnapshot.drafts);
+                      setDummies(undoSnapshot.dummies);
+                      setFeatures(undoSnapshot.features);
+                      setUndoSnapshot(null);
+                      setApplyDiff("Voorstel ongedaan gemaakt — de tabel staat weer zoals ervoor.");
+                    }}
+                    className="rounded border border-accent/40 px-2 py-0.5 text-xs font-medium hover:bg-accent/20"
+                  >
+                    Ongedaan maken
+                  </button>
+                )}
+                <button onClick={() => { setApplyDiff(null); setUndoSnapshot(null); }} className="text-accent/70 hover:text-accent" aria-label="Sluiten">
+                  ×
+                </button>
+              </span>
             </div>
           )}
 
@@ -476,6 +570,29 @@ export function DataPrepSection({
                     />
                     {src.file.name}
                   </label>
+                  {src.columns.some((c) => c.role === "" && mappingSuggestion(src.file, c.name)) && (
+                    <button
+                      onClick={() =>
+                        setDrafts((prev) =>
+                          prev.map((sd, i) =>
+                            i !== sIdx
+                              ? sd
+                              : {
+                                  ...sd,
+                                  columns: sd.columns.map((c) => {
+                                    if (c.role !== "") return c;
+                                    const sug = mappingSuggestion(sd.file, c.name);
+                                    return sug ? { ...c, role: sug.role } : c;
+                                  }),
+                                },
+                          ),
+                        )
+                      }
+                      className="rounded-full border border-accent/40 bg-accent-dim px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/20"
+                    >
+                      Alle AI-suggesties overnemen
+                    </button>
+                  )}
                   <label className="ml-auto flex items-center gap-1.5 text-xs text-fg-muted">
                     Datumkolom:
                     <input
@@ -513,6 +630,16 @@ export function DataPrepSection({
                     ))}
                   </div>
                 )}
+                <button
+                  onClick={() =>
+                    sendToChat(
+                      `Ik wil het bestand "${src.file.name}" opschonen of hervormen voordat de rollen worden toegewezen (bijvoorbeeld hernoemen, eenheden omrekenen, filteren, pivoteren of een datumformaat forceren). Kijk naar de voorbeeldrijen en stel de passende opschoonstappen (transforms) voor in een recept.`,
+                    )
+                  }
+                  className="mb-2 rounded-full border border-border px-2.5 py-1 text-[11px] text-fg-muted transition hover:border-accent/40 hover:bg-accent-dim hover:text-accent"
+                >
+                  Architect vragen om een opschoonstap voor dit bestand
+                </button>
                 {src.columns.length === 0 ? (
                   <p className="text-xs text-fg-faint">
                     Geen kolommen automatisch herkend (bv. een xlsx-bestand) — vraag de architect om een
@@ -533,7 +660,7 @@ export function DataPrepSection({
                       <tbody className="divide-y divide-border">
                         {src.columns.map((col, cIdx) => {
                           const values = sourceValues[src.file.storage_path]?.[col.name] ?? [];
-                          const suggestion = col.role === "" ? suggestRole(col.name) : null;
+                          const suggestion = col.role === "" ? mappingSuggestion(src.file, col.name) : null;
                           return (
                           <tr key={col.name}>
                             <td className="py-1.5 pr-3 text-fg">{col.name}</td>
@@ -553,11 +680,12 @@ export function DataPrepSection({
                                 </select>
                                 {suggestion && (
                                   <button
-                                    onClick={() => updateColumn(sIdx, cIdx, { role: suggestion })}
-                                    title="Kolomnaam suggereert deze rol — klik om over te nemen"
+                                    onClick={() => updateColumn(sIdx, cIdx, { role: suggestion.role })}
+                                    title="AI-classificatie van deze kolom — klik om over te nemen"
                                     className="rounded-full border border-accent/40 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/20"
                                   >
-                                    voorstel: {ROLE_OPTIONS.find((o) => o.value === suggestion)?.label}
+                                    AI: {ROLE_OPTIONS.find((o) => o.value === suggestion.role)?.label}
+                                    {suggestion.confidence !== "hoog" ? ` (${suggestion.confidence})` : ""}
                                   </button>
                                 )}
                               </div>

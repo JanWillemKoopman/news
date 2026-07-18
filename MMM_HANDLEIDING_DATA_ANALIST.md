@@ -260,10 +260,15 @@ Verder kun je in uitklapbare secties **event-dummy's** (0/1-markering voor een s
 uitschieterweek) en **afgeleide variabelen** (features zoals lag, voortschrijdend gemiddelde,
 ratio, terugkerende kalenderdummy) beheren.
 
-**Werkwijze:**
+**Werkwijze (AI-eerst):** bovenaan de stap staat de primaire knop **"Bereid automatisch
+voor (architect)"** — de architect kiest rollen, voegt samen en verfijnt tot het
+kwaliteitsrapport schoon is (max. 3 rondes); jij controleert en keurt goed. Wil je meer
+regie, werk dan handmatig:
 1. Vul het recept in — of laat de architect het voorstellen (§5) en neem het met één klik
-   over. Een klein "voorstel"-badge suggereert bijvoorbeeld `spend` voor kolomnamen die
-   daarop lijken (altijd een klikbare suggestie, nooit stilzwijgend toegepast).
+   over (met **"Ongedaan maken"** als het tegenvalt). Elke kolom zonder rol toont een
+   klikbare **"AI:"-badge** met de automatische classificatie (rol + zekerheid), en per
+   bestand kun je **"Alle AI-suggesties overnemen"** — altijd klikbaar, nooit stilzwijgend
+   toegepast. Via een knop per bestand vraag je de architect om opschoonstappen (transforms).
 2. Let op de gratis, direct berekende **datakwaliteitsmeter** (goed / redelijk / zwak). Die
    waarschuwt al vóór het samenvoegen bij te weinig weken of te veel ontbrekende waarden.
 3. Klik **"Controleer & voeg samen"**. Dit start een `prepare`-job; de status
@@ -305,9 +310,12 @@ Gaten in KPI of controls worden nooit stilzwijgend gevuld.
 
 ### Stap 4 — Model configureren
 
-Met een goedgekeurde dataset verschijnt een ingevuld configuratieformulier. Hier vertaal je
-de theorie uit §1 naar concrete instellingen. Je kunt alles handmatig zetten, of een
-architect-voorstel overnemen en daarna bijstellen.
+Met een goedgekeurde dataset verschijnt een ingevuld configuratieformulier, met bovenaan
+de primaire knop **"Stel een configuratie voor (architect)"**: de architect vult het
+formulier op basis van álle context (profiel, inspectie, zakelijke feiten); jij
+controleert, stelt bij en start de fit. Overgenomen voorstellen zijn met één klik
+**ongedaan te maken**. Je kunt uiteraard ook alles handmatig zetten — hier vertaal je de
+theorie uit §1 naar concrete instellingen.
 
 **Per model:**
 - **KPI** — kies de doelkolom.
