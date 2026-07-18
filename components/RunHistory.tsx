@@ -78,7 +78,7 @@ export function RunHistory({
         </p>
         <button
           onClick={() => setCompareMode((v) => !v)}
-          className="text-xs font-medium text-fg-muted hover:text-danger"
+          className="text-xs font-medium text-fg-muted hover:text-fg"
         >
           {compareMode ? "Klaar met vergelijken" : "Twee runs vergelijken"}
         </button>
@@ -131,7 +131,7 @@ export function RunHistory({
                   </>
                 )}
                 {run.is_published && (
-                  <span className="rounded-full border border-accent/30 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent">
+                  <span className="rounded-full border border-success/30 bg-success-dim px-2 py-0.5 text-[11px] font-medium text-success">
                     gepubliceerd
                   </span>
                 )}

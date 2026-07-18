@@ -101,7 +101,7 @@ function Sparkline({ values }: { values: number[] }) {
     .join(" ");
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-none overflow-visible">
-      <polyline points={points} fill="none" stroke="#7FEE64" strokeWidth={1.25} strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke="#0071E3" strokeWidth={1.25} strokeLinejoin="round" />
     </svg>
   );
 }
@@ -117,11 +117,11 @@ function DataHealthMeter({ dataset }: { dataset: Dataset }) {
       <div className="flex items-center gap-3">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
           <div
-            className={`h-full rounded-full ${health.band === "goed" ? "bg-surface-3" : "bg-danger"}`}
+            className={`h-full rounded-full ${health.band === "goed" ? "bg-success" : "bg-danger"}`}
             style={{ width: `${health.score}%` }}
           />
         </div>
-        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-fg" : "text-danger"}`}>
+        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-success" : "text-danger"}`}>
           {health.band === "goed" ? "Gereed om te modelleren" : health.band === "redelijk" ? "Bruikbaar, met kanttekeningen" : "Nog niet klaar om te modelleren"}
         </p>
       </div>

@@ -17,12 +17,12 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { classifyColumns, computeColumnStats, computeCorrelationMatrix, histogram, type ColumnKind } from "@/lib/eda";
-import { DARK_TOOLTIP_STYLE } from "@/lib/chartTheme";
+import { CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { Button } from "@/components/ui";
 import type { SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
-const ACCENT = "#7FEE64";
+const ACCENT = "#0071E3";
 
 interface ParsedTable {
   columns: string[];
@@ -37,11 +37,11 @@ function fmt(n: number, digits = 1): string {
 // A single-hue (rose) magnitude scale for |correlation| — sign is carried by a +/− label,
 // not a second hue, so the app's one-accent-color rule holds even for a polarity metric.
 function correlationCellStyle(r: number): React.CSSProperties {
-  if (Number.isNaN(r)) return { color: "#9A9AA3" };
+  if (Number.isNaN(r)) return { color: "#98989D" };
   const strength = Math.min(Math.abs(r), 1);
   return {
-    backgroundColor: `rgba(127, 238, 100, ${(strength * 0.35).toFixed(2)})`,
-    color: strength > 0.55 ? "#0B0B0E" : "#9A9AA3",
+    backgroundColor: `rgba(0, 113, 227, ${(strength * 0.30).toFixed(2)})`,
+    color: strength > 0.55 ? "#FFFFFF" : "#6E6E73",
   };
 }
 
@@ -233,18 +233,18 @@ export function EdaSection({
                 <ResponsiveContainer width="100%" height={180} className="overflow-hidden">
                   {chartType === "line" ? (
                     <LineChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
-                      <Tooltip {...DARK_TOOLTIP_STYLE} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#6E6E73" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#6E6E73" }} width={48} />
+                      <Tooltip {...CHART_TOOLTIP_STYLE} />
                       <Line type="monotone" dataKey={yCol} stroke={ACCENT} strokeWidth={2} dot={false} />
                     </LineChart>
                   ) : (
                     <BarChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
-                      <Tooltip {...DARK_TOOLTIP_STYLE} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#6E6E73" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#6E6E73" }} width={48} />
+                      <Tooltip {...CHART_TOOLTIP_STYLE} />
                       <Bar dataKey={yCol} fill={ACCENT} radius={[2, 2, 0, 0]} />
                     </BarChart>
                   )}
@@ -293,9 +293,9 @@ export function EdaSection({
                 <p className="mb-1 text-xs text-fg-muted">Verdeling</p>
                 <ResponsiveContainer width="100%" height={120} className="overflow-hidden">
                   <BarChart data={hist} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#9A9AA3" }} interval={2} />
+                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#6E6E73" }} interval={2} />
                     <YAxis hide />
-                    <Tooltip {...DARK_TOOLTIP_STYLE} />
+                    <Tooltip {...CHART_TOOLTIP_STYLE} />
                     <Bar dataKey="count" fill={ACCENT} radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

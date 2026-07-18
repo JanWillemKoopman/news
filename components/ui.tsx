@@ -3,7 +3,7 @@ import { LogOut } from "lucide-react";
 import { GuideModal } from "@/components/GuideModal";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
-// Modal-stijl paneel: donkere surface, 1px border met lage opacity, zachte shadow.
+// Licht paneel: witte kaart, 1px border met lage opacity, zachte schaduw.
 export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-[10px] border border-border bg-surface shadow-panel ${className}`}>{children}</div>
@@ -19,7 +19,7 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  // Felgroen accent met glow-hover — Modal's signature CTA.
+  // Blauwe primaire actieknop met zachte focus-ring — de enige actiekleur.
   primary:
     "bg-accent text-bg font-medium hover:bg-accent-hover hover:shadow-glow-sm disabled:bg-surface-3 disabled:text-fg-faint disabled:shadow-none",
   secondary:
@@ -105,11 +105,11 @@ const STATUS_LABEL: Record<JobStatus | ProjectStatus, string> = {
 // Groen = goed/klaar, rood = mislukt/aandacht, amber = bezig, neutraal = rest.
 const STATUS_TONE: Record<JobStatus | ProjectStatus, string> = {
   draft: "border border-border bg-surface-2 text-fg-muted",
-  published: "border border-accent/30 bg-accent-dim text-accent",
+  published: "border border-success/30 bg-success-dim text-success",
   archived: "border border-border bg-surface-2 text-fg-faint",
   queued: "border border-border bg-surface-2 text-fg-muted",
   running: "border border-warn/30 bg-warn-dim text-warn",
-  succeeded: "border border-accent/30 bg-accent-dim text-accent",
+  succeeded: "border border-success/30 bg-success-dim text-success",
   failed: "border border-danger/30 bg-danger-dim text-danger",
   cancelled: "border border-border bg-surface-2 text-fg-faint",
 };

@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Inter voor UI/tekst, JetBrains Mono voor data/getallen/code — self-hosted via
-// next/font (geen externe CDN-calls). Beide als CSS-var, uitgelezen in tailwind.
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
+// Systeemfonts (SF Pro op Apple-apparaten, Segoe/Roboto elders) via de CSS-variabelen in
+// globals.css — geen webfont-download, en precies de apple.com-achtige look & feel.
 
 export const metadata: Metadata = {
   title: "MMM Wizard",
@@ -14,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="nl">
       <body className="font-sans">{children}</body>
     </html>
   );

@@ -1,19 +1,19 @@
-// Recharts' built-in <Tooltip> renders a plain white box by default — jarring against the
-// app's Modal.com-style dark theme. Charts with a custom `content` component (see
-// ShareTooltip/RoasTooltip in ResultsCharts.tsx) style themselves with Tailwind tokens
-// directly; this constant is for the simpler charts that just need the default tooltip's
-// colors overridden via its contentStyle/labelStyle/itemStyle props. Values mirror
-// tailwind.config.ts's surface/border/fg tokens (Tailwind classes don't reach Recharts'
-// inline-styled tooltip DOM, so the hex/rgba values are duplicated here).
-export const DARK_TOOLTIP_STYLE = {
+// Recharts' built-in <Tooltip> gets its colors via inline styles (Tailwind classes don't
+// reach that DOM), so the app's surface/border/fg tokens are mirrored here for the simpler
+// charts. Charts with a custom `content` component (ShareTooltip/RoasTooltip in
+// ResultsCharts.tsx) style themselves with Tailwind tokens directly.
+export const CHART_TOOLTIP_STYLE = {
   contentStyle: {
-    backgroundColor: "#141417",
-    border: "1px solid rgba(255,255,255,0.08)",
+    backgroundColor: "#FFFFFF",
+    border: "1px solid rgba(0,0,0,0.08)",
     borderRadius: 8,
-    boxShadow: "0 8px 24px -16px rgba(0,0,0,0.8)",
+    boxShadow: "0 8px 24px -12px rgba(0,0,0,0.15)",
     fontSize: 12,
-    color: "#F4F4F5",
+    color: "#1D1D1F",
   },
-  labelStyle: { color: "#9A9AA3", marginBottom: 2 },
-  itemStyle: { color: "#F4F4F5" },
+  labelStyle: { color: "#6E6E73", marginBottom: 2 },
+  itemStyle: { color: "#1D1D1F" },
 } as const;
+
+// Backwards-compat alias (oude naam uit het donkere thema).
+export const DARK_TOOLTIP_STYLE = CHART_TOOLTIP_STYLE;
