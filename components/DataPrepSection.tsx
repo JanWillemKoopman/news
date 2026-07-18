@@ -6,7 +6,8 @@ import { Sparkles } from "lucide-react";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
-import { StatusBadge } from "@/components/ui";
+import { ErrorNotice, StatusBadge } from "@/components/ui";
+import { humanizeError } from "@/lib/humanizeMessage";
 import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { extractNumericValues } from "@/lib/eda";
@@ -245,7 +246,7 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error ?? "Inspectie mislukt.");
+        setMsg(humanizeError(data.error, "De inspectie is niet gelukt — probeer het opnieuw.").text);
       } else {
         const n = data.inspection?.findings?.length ?? 0;
         setMsg(`Inspectie klaar — ${n} bevinding(en). De AI leest ze nu mee in de chat.`);
@@ -299,7 +300,7 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMsg(data.error ?? "Automatisch voorbereiden mislukt.");
+        setMsg(humanizeError(data.error, "Automatisch voorbereiden is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
       } else {
         setMsg(data.message ?? "Klaar.");
         router.refresh();
@@ -505,7 +506,7 @@ export function DataPrepSection({
     });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Kon de voorbereiding niet starten.");
+      setError(humanizeError((await res.json().catch(() => ({}))).error, "Kon de voorbereiding niet starten.").text);
       return;
     }
     router.refresh();
@@ -518,7 +519,7 @@ export function DataPrepSection({
     const res = await fetch(`/api/datasets/${dataset.id}/approve`, { method: "POST" });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Goedkeuren mislukt.");
+      setError(humanizeError((await res.json().catch(() => ({}))).error, "Goedkeuren is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();
@@ -889,7 +890,10 @@ export function DataPrepSection({
           </div>
 
           {dataset.status === "failed" && (
-            <p className="text-sm text-danger">{dataset.error ?? "Samenvoegen is mislukt."}</p>
+            <ErrorNotice
+              raw={dataset.error}
+              fallback="Het samenvoegen is niet gelukt. Controleer de bestanden of vraag de AI in de chat wat er misging."
+            />
           )}
 
           <DataHealthMeter dataset={dataset} />

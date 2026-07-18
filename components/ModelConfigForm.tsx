@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types";
 import { useWizardChat } from "@/components/WizardChatContext";
 import { MMM_GLOSSARY, Term } from "@/components/ui";
+import { humanizeError } from "@/lib/humanizeMessage";
 
 type SamplePreset = "fast" | "standard" | "thorough";
 const SAMPLE_PRESETS: Record<SamplePreset, { draws: number; tune: number; chains: number }> = {
@@ -260,7 +261,7 @@ export function ModelConfigForm({
     });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Kon de berekening niet starten.");
+      setError(humanizeError((await res.json().catch(() => ({}))).error, "Kon de berekening niet starten — probeer het opnieuw.").text);
       return;
     }
     router.refresh();

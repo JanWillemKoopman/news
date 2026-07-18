@@ -117,7 +117,7 @@ export async function POST(request: Request) {
   }
   const jobStatus = latestFitJob.status as JobStatus;
   if (jobStatus === "queued" || jobStatus === "running") {
-    return NextResponse.json({ status: "waiting", message: "Er draait nog een fit; wacht tot die klaar is." });
+    return NextResponse.json({ status: "waiting", message: "Er draait nog een berekening; wacht tot die klaar is." });
   }
 
   const latestRun = runRows?.[0] ?? null;
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   if (jobSucceededAfterRun && latestSummary && gateVerdict(latestSummary) !== "warn" && gateVerdict(latestSummary) !== "fail") {
     return NextResponse.json({
       status: "done",
-      message: "De laatste fit is geslaagd en de kwaliteitspoort staat niet op warn/fail — niets te verbeteren. Beoordeel en publiceer wanneer je tevreden bent.",
+      message: "De laatste berekening is geslaagd en de kwaliteitscontrole staat niet op warn/fail — niets te verbeteren. Beoordeel en publiceer wanneer je tevreden bent.",
     });
   }
 

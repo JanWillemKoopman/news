@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { StatusBadge } from "@/components/ui";
+import { ErrorNotice, StatusBadge } from "@/components/ui";
 import { useOpenChatDock } from "@/components/ChatDock";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { Job, JobProgress } from "@/lib/types";
@@ -246,7 +246,12 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
             <div className="min-w-0">
               <p className="text-fg">{phaseLine(job, now, typical)}</p>
               {job.status === "failed" && (
-                <p className="mt-1 text-xs text-danger">{job.error ?? "Onbekende fout."}</p>
+                <div className="mt-1.5">
+                  <ErrorNotice
+                    raw={job.error}
+                    fallback="De berekening is niet gelukt. Vraag de AI in de chat om de oorzaak te achterhalen."
+                  />
+                </div>
               )}
             </div>
             <div className="flex flex-none items-center gap-2">

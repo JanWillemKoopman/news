@@ -2,6 +2,7 @@
 
 import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { DatasetQuality } from "@/lib/types";
+import { humanizeQualityMessage } from "@/lib/humanizeMessage";
 
 // Renders an ingestion QualityReport as sentences, not a wall of badges: errors/warnings
 // get the rose accent (they need attention), info stays neutral. Mirrors the philosophy
@@ -26,7 +27,7 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           </p>
           <ul className="mt-1 space-y-1 text-sm text-danger">
             {errors.map((issue, i) => (
-              <li key={i}>• {issue.message}</li>
+              <li key={i}>• {humanizeQualityMessage(issue.message)}</li>
             ))}
           </ul>
         </div>
@@ -38,7 +39,7 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           </p>
           <ul className="mt-1 space-y-1 text-sm text-fg-muted">
             {warnings.map((issue, i) => (
-              <li key={i}>• {issue.message}</li>
+              <li key={i}>• {humanizeQualityMessage(issue.message)}</li>
             ))}
           </ul>
         </div>
@@ -50,7 +51,7 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           </summary>
           <ul className="mt-1 space-y-1 pl-3">
             {infos.map((issue, i) => (
-              <li key={i}>• {issue.message}</li>
+              <li key={i}>• {humanizeQualityMessage(issue.message)}</li>
             ))}
           </ul>
         </details>

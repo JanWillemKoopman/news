@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { Trash2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { humanizeError } from "@/lib/humanizeMessage";
 import { buildSourceProfile } from "@/lib/dataProfile";
 import type { SourceFile, SourceProfile } from "@/lib/types";
 
@@ -102,7 +103,7 @@ export function SourceUpload({
       const path = `${projectId}/${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
       if (upErr) {
-        setError(upErr.message);
+        setError(humanizeError(upErr.message, "Het uploaden is niet gelukt — probeer het opnieuw.").text);
         continue;
       }
       // Cache a small text preview AND a full-series statistical profile now, while the
@@ -120,7 +121,7 @@ export function SourceUpload({
         .select("id")
         .single();
       if (rowErr) {
-        setError(rowErr.message);
+        setError(humanizeError(rowErr.message, "Het opslaan van het bestand is niet gelukt — probeer het opnieuw.").text);
         continue;
       }
       // Fire the cheap column-semantics classification in the background (best-effort — a
@@ -159,13 +160,13 @@ export function SourceUpload({
     const { error: storageErr } = await supabase.storage.from(BUCKET).remove([file.storage_path]);
     if (storageErr) {
       setDeletingId(null);
-      setError(storageErr.message);
+      setError(humanizeError(storageErr.message, "Het verwijderen is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     const { error: rowErr } = await supabase.schema("mmm").from("source_files").delete().eq("id", file.id);
     setDeletingId(null);
     if (rowErr) {
-      setError(rowErr.message);
+      setError(humanizeError(rowErr.message, "Het verwijderen is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();

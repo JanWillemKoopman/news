@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useWizardChat } from "@/components/WizardChatContext";
+import { humanizeError } from "@/lib/humanizeMessage";
 import { useOpenChatDock } from "@/components/ChatDock";
 
 interface ChatMessage {
@@ -216,7 +217,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
 
       // Pre-stream errors (geen toegang, geen API-key, …) come back as plain JSON.
       if (!res.ok || !res.body) {
-        setError((await res.json().catch(() => ({}))).error ?? "Er ging iets mis.");
+        setError(humanizeError((await res.json().catch(() => ({}))).error, "Er ging iets mis bij het versturen — probeer het opnieuw.").text);
         return;
       }
 
@@ -263,7 +264,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             if (event.proposedRecipe != null) stageRecipe(event.proposedRecipe);
             if (event.proposedConfig != null) stageConfig(event.proposedConfig);
           } else if (event.type === "error") {
-            setError(event.error ?? "Er ging iets mis.");
+            setError(humanizeError(event.error, "Er ging iets mis tijdens het antwoord — probeer het opnieuw.").text);
             updateLast({ streaming: false });
           }
         }

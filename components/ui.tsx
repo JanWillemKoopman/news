@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
+import { humanizeError } from "@/lib/humanizeMessage";
 import { GuideModal } from "@/components/GuideModal";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
@@ -121,6 +122,27 @@ export function StatusBadge({ status }: { status: JobStatus | ProjectStatus }) {
     >
       {STATUS_LABEL[status]}
     </span>
+  );
+}
+
+// Nette foutweergave: de begrijpelijke Nederlandse melding prominent, de ruwe technische
+// melding (indien afwijkend) klein en inklapbaar eronder — zo blijft debug-informatie
+// beschikbaar zonder de lezer een Engelse stacktrace als hoofdboodschap te geven.
+// Native <details>, dus bruikbaar in server- én clientcomponenten.
+export function ErrorNotice({ raw, fallback }: { raw: string | null | undefined; fallback: string }) {
+  const { text, technical } = humanizeError(raw, fallback);
+  return (
+    <div className="rounded-lg border border-danger/30 bg-danger-dim px-3 py-2.5">
+      <p className="text-sm text-danger">{text}</p>
+      {technical && (
+        <details className="mt-1.5">
+          <summary className="cursor-pointer select-none text-[11px] text-danger/60">
+            Technische details
+          </summary>
+          <p className="mt-1 whitespace-pre-wrap break-words font-mono text-[11px] text-danger/70">{technical}</p>
+        </details>
+      )}
+    </div>
   );
 }
 

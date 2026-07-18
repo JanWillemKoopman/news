@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { humanizeAuthError } from "@/lib/humanizeMessage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      setError(humanizeAuthError(error.message));
       return;
     }
     router.push("/projects");
@@ -42,7 +43,7 @@ export default function LoginPage() {
     });
     setMagicBusy(false);
     if (error) {
-      setError(error.message);
+      setError(humanizeAuthError(error.message));
       return;
     }
     setMagicSent(true);

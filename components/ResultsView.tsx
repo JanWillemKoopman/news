@@ -7,6 +7,7 @@ import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
 import { RunHistory } from "@/components/RunHistory";
 import { SummaryView } from "@/components/SummaryView";
 import { StatusBadge } from "@/components/ui";
+import { humanizeError } from "@/lib/humanizeMessage";
 import { isHierSummary, type ClientSummary, type JobConfig, type ModelRun, type RunAnalysis } from "@/lib/types";
 
 export function ResultsView({
@@ -53,7 +54,7 @@ export function ResultsView({
     });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Publiceren mislukt.");
+      setError(humanizeError((await res.json().catch(() => ({}))).error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();
@@ -69,7 +70,7 @@ export function ResultsView({
     });
     setAnalyzing(false);
     if (!res.ok) {
-      setAnalysisError((await res.json().catch(() => ({}))).error ?? "Genereren van de analyse mislukt.");
+      setAnalysisError(humanizeError((await res.json().catch(() => ({}))).error, "Het genereren van de analyse is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     const { analysis: generated } = (await res.json()) as { analysis: RunAnalysis };
@@ -90,7 +91,7 @@ export function ResultsView({
     });
     setSummarizing(false);
     if (!res.ok) {
-      setSummaryError((await res.json().catch(() => ({}))).error ?? "Genereren van de samenvatting mislukt.");
+      setSummaryError(humanizeError((await res.json().catch(() => ({}))).error, "Het schrijven van de samenvatting is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     const { client_summary } = (await res.json()) as { client_summary: ClientSummary };

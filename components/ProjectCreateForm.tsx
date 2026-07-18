@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { humanizeError } from "@/lib/humanizeMessage";
 
 export function ProjectCreateForm() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function ProjectCreateForm() {
       .insert({ name, client_company: company || null, created_by: userData.user?.id });
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(humanizeError(error.message, "Het project kon niet worden aangemaakt — probeer het opnieuw.").text);
       return;
     }
     setName("");

@@ -6,6 +6,7 @@
 // - "available": reachable and freely reviewable, but not the current focus.
 // - "locked": its prerequisite isn't met yet (still openable, just dimmed).
 import type { Dataset, Job, ModelRun, SourceFile } from "@/lib/types";
+import { humanizeError } from "@/lib/humanizeMessage";
 
 export type StepStatus = "locked" | "available" | "active" | "done" | "attention";
 
@@ -25,7 +26,7 @@ function dataprepSummary(dataset: Dataset | null): string | undefined {
   }
   if (dataset.status === "prepared") return "Samengevoegd — klaar om goed te keuren";
   if (dataset.status === "preparing") return "Wordt samengevoegd…";
-  if (dataset.status === "failed") return dataset.error ?? "Samenvoegen mislukt";
+  if (dataset.status === "failed") return humanizeError(dataset.error, "Samenvoegen is niet gelukt").text;
   return "Nog niet samengevoegd";
 }
 
@@ -38,7 +39,7 @@ const PROGRESS_LABEL: Record<string, string> = {
 
 function fitJobSummary(job: Job): string {
   if (job.status === "succeeded") return "Laatste berekening geslaagd";
-  if (job.status === "failed") return job.error ?? "Laatste berekening mislukt";
+  if (job.status === "failed") return humanizeError(job.error, "Laatste berekening is niet gelukt").text;
   if (job.status === "running") return `Berekening loopt — ${job.progress ? PROGRESS_LABEL[job.progress] : "wordt gestart"}`;
   if (job.status === "queued") return "Berekening staat in de wachtrij";
   return "Laatste berekening geannuleerd";
