@@ -1,14 +1,16 @@
 """Genereer de MediaMarkt NL demo-dataset voor de MMM Wizard.
 
-Synthetische maar realistische wekelijkse data (2023-01-02 t/m 2025-12-29,
-157 ISO-weken) voor het trainen van data-analisten met de app. De KPI
+Synthetische maar realistische wekelijkse data (2023-01-02 t/m 2026-12-28,
+209 ISO-weken) voor het trainen van data-analisten met de app. De KPI
 (flatscreen_verkopen) is opgebouwd uit een bekende ground truth:
 baseline + trend + seizoen + adstocked/gesatureerde kanaal-effecten +
 controls + ruis. Daardoor kan het Bayesiaanse model de effecten ook echt
 terugvinden, en weet de trainer wat "het goede antwoord" is.
 
 Bewust ingebouwde leerpunten (zie demo/DEMO_DATASET_MEDIAMARKT.md):
-- tv/radio met flights en delayed na-ijl; digitale kanalen geometric
+- expliciet tv-campagneplan: always-on-periodes (0/1-kolom) vs. burst-
+  campagnes (0/1-kolom) rond Black Friday/kerst, EK 2024 en WK 2026
+- tv/radio met delayed na-ijl; digitale kanalen geometric
 - meta en youtube sterk gecorreleerd (multicollineariteit-waarschuwing)
 - tiktok start pas in week 70 (kanaal-launch midden in de reeks)
 - email als niet-monetair "spend"-kanaal (verzendingen)
@@ -27,7 +29,7 @@ import pandas as pd
 
 rng = np.random.default_rng(2026)
 
-weeks = pd.date_range("2023-01-02", "2025-12-29", freq="W-MON")
+weeks = pd.date_range("2023-01-02", "2026-12-28", freq="W-MON")
 n = len(weeks)
 t = np.arange(n)
 woy = weeks.isocalendar().week.to_numpy().astype(float)
@@ -59,10 +61,12 @@ def week_flag(*dates: str) -> np.ndarray:
     return np.isin(weeks, ds).astype(float)
 
 
-black_friday = week_flag("2023-11-20", "2024-11-25", "2025-11-24")
+black_friday = week_flag("2023-11-20", "2024-11-25", "2025-11-24", "2026-11-23")
 sinterklaas_kerst = np.isin(woy, [49, 50, 51]).astype(float)
-# EK voetbal: 14 juni - 14 juli 2024, aankooppiek vooral in de 4 weken ervoor
+# EK voetbal 2024 en WK voetbal 2026: aankooppiek vooral in de weken vóór de aftrap
 ek_koopweken = ((weeks >= "2024-05-20") & (weeks <= "2024-06-17")).astype(float)
+wk_koopweken = ((weeks >= "2026-05-18") & (weeks <= "2026-06-15")).astype(float)
+voetbal_koopweken = np.maximum(ek_koopweken, wk_koopweken)
 
 # ---------------------------------------------------------------- spends
 def flights(base: float, prob: float, boost_mask: np.ndarray, boost: float) -> np.ndarray:
@@ -73,12 +77,43 @@ def flights(base: float, prob: float, boost_mask: np.ndarray, boost: float) -> n
 
 
 q4 = np.isin(woy, np.arange(44, 53)).astype(float)
-tv_spend = flights(90_000, 0.28, np.maximum(q4, ek_koopweken), 0.8)
+
+
+def period_mask(*ranges: tuple[str, str]) -> np.ndarray:
+    m = np.zeros(n)
+    for start, end in ranges:
+        m = np.maximum(m, ((weeks >= start) & (weeks <= end)).astype(float))
+    return m
+
+
+# --- TV-campagneplan (expliciet, komt als 0/1-kolommen in de dataset) ---
+# Always-on: doorlopende basisdruk op tv voor flatscreens, bescheiden weekbudget.
+tv_always_on = period_mask(
+    ("2023-01-02", "2023-06-26"),   # H1 2023
+    ("2024-09-02", "2025-03-31"),   # najaar 2024 t/m Q1 2025
+    ("2026-01-05", "2026-05-25"),   # aanloop naar het WK 2026
+)
+# Burst-campagnes: korte, zware flights rond commerciële piekmomenten.
+tv_burst = period_mask(
+    ("2023-11-06", "2023-12-18"),   # Black Friday + kerst 2023
+    ("2024-05-13", "2024-06-17"),   # EK voetbal 2024
+    ("2024-11-11", "2024-12-16"),   # Black Friday + kerst 2024
+    ("2025-03-03", "2025-03-31"),   # voorjaarscampagne 2025
+    ("2025-11-10", "2025-12-15"),   # Black Friday + kerst 2025
+    ("2026-05-11", "2026-06-15"),   # WK voetbal 2026
+    ("2026-11-09", "2026-12-14"),   # Black Friday + kerst 2026
+)
+
+tv_spend = np.round(
+    tv_always_on * 36_000 * (0.85 + 0.3 * rng.random(n))
+    + tv_burst * 150_000 * (0.75 + 0.5 * rng.random(n)),
+    0,
+)
 radio_spend = flights(22_000, 0.35, q4, 0.5)
 
 search_generic = 38_000 + 6_000 * np.sin(2 * np.pi * woy / 52) + 14_000 * q4 \
     + 10_000 * black_friday + rng.normal(0, 3_000, n)
-search_brand = 12_000 + 4_500 * q4 + 5_000 * black_friday + 3_000 * ek_koopweken \
+search_brand = 12_000 + 4_500 * q4 + 5_000 * black_friday + 3_000 * voetbal_koopweken \
     + rng.normal(0, 1_200, n)
 
 meta_base = 20_000 + 7_000 * q4 + 6_000 * black_friday + rng.normal(0, 2_500, n)
@@ -97,7 +132,7 @@ for arr in (tv_spend, radio_spend, search_generic, search_brand, meta_spend,
 # ---------------------------------------------------------------- controls
 prijs = 699 - 0.35 * t - 60 * black_friday - 25 * sinterklaas_kerst + rng.normal(0, 8, n)
 korting_pct = np.round(np.clip(4 + 18 * black_friday + 8 * sinterklaas_kerst
-                               + 6 * ek_koopweken + rng.normal(0, 1.5, n), 0, 30), 1)
+                               + 6 * voetbal_koopweken + rng.normal(0, 1.5, n), 0, 30), 1)
 vertrouwen = np.round(-38 + 12 * t / n + 4 * np.sin(2 * np.pi * (woy - 20) / 52)
                       + rng.normal(0, 1.2, n), 1)
 
@@ -117,7 +152,7 @@ contrib = (
 )
 
 control_effect = -9.0 * (prijs - prijs.mean()) + 95 * korting_pct + 28 * (vertrouwen - vertrouwen.mean())
-events = 5_200 * black_friday + 2_200 * sinterklaas_kerst + 2_800 * ek_koopweken
+events = 5_200 * black_friday + 2_200 * sinterklaas_kerst + 2_800 * voetbal_koopweken
 
 kpi = baseline + seizoen + contrib + control_effect + events + rng.normal(0, 320, n)
 
@@ -129,6 +164,8 @@ df = pd.DataFrame({
     "week": weeks.strftime("%Y-%m-%d"),
     "flatscreen_verkopen": np.round(kpi).astype(int),
     "tv_spend": tv_spend,
+    "tv_always_on_campagne": tv_always_on.astype(int),
+    "tv_burst_campagne": tv_burst.astype(int),
     "radio_spend": radio_spend,
     "search_generic_spend": np.round(search_generic, 0),
     "search_brand_spend": np.round(search_brand, 0),
