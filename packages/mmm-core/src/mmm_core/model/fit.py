@@ -54,6 +54,15 @@ class ChannelResult:
     adstock_half_life_weeks: Interval
     saturation_point: Interval        # weekly spend at half-saturation, original units
     total_spend: float
+    # Direct/carry-over split: the share of this channel's contribution driven by the
+    # SAME week's spend (direct: "saw the ad, bought that week") vs earlier weeks'
+    # spend still working through adstock (carry-over: "saw the ad, bought later").
+    # Each week's contribution is allocated by the composition of the adstocked spend
+    # stock — a proportional allocation, since saturation is applied after adstock.
+    # Optional so summaries from older fits (without the split) keep deserializing.
+    direct_contribution: Interval | None = None
+    carryover_contribution: Interval | None = None
+    direct_share: Interval | None = None
 
 
 @dataclass
@@ -317,6 +326,43 @@ def _weekly_attribution(built: BuiltModel, idata) -> tuple[np.ndarray, dict[str,
     return expected, channel_week, baseline_week
 
 
+def lag_matrix(x: np.ndarray, l_max: int) -> np.ndarray:
+    """``(T, l_max)`` matrix with ``X[t, l] = x[t - l]`` (0 before the series starts)."""
+    T = len(x)
+    out = np.zeros((T, l_max), dtype=float)
+    for lag in range(min(l_max, T)):
+        out[lag:, lag] = x[: T - lag]
+    return out
+
+
+def adstock_direct_fraction(x: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    """Per-week fraction of the adstocked spend stock coming from THAT week's spend.
+
+    ``x`` is a channel's weekly spend ``(T,)``; ``weights`` are normalized lag weights
+    ``(l_max, S)`` (one column per posterior sample). Returns ``(T, S)`` fractions in
+    [0, 1]; weeks with an empty stock get 0. Scale-invariant, so it is the same whether
+    computed on raw or max-scaled spend.
+    """
+    lags = lag_matrix(np.asarray(x, dtype=float), weights.shape[0])   # (T, l_max)
+    stock = lags @ weights                                            # (T, S)
+    direct = np.asarray(x, dtype=float)[:, None] * weights[0][None, :]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(stock > 0, direct / stock, 0.0)
+
+
+def _adstock_weight_samples(idata, ch: ChannelConfig) -> np.ndarray:
+    """Normalized adstock lag-weight samples ``(l_max, S)`` — mirrors build.py's
+    ``_pt_geometric_adstock`` / ``_pt_delayed_adstock`` in numpy."""
+    alpha = np.clip(_flat(idata, f"alpha_{ch.name}"), 1e-9, 1.0 - 1e-9)   # (S,)
+    lags = np.arange(ch.l_max, dtype=float)[:, None]                       # (l_max, 1)
+    if ch.adstock is AdstockType.GEOMETRIC:
+        w = alpha[None, :] ** lags
+    else:
+        theta = _flat(idata, f"theta_{ch.name}")                           # (S,)
+        w = alpha[None, :] ** ((lags - theta[None, :]) ** 2)
+    return w / w.sum(axis=0, keepdims=True)
+
+
 def summarize_fit(built: BuiltModel, idata) -> FitSummary:
     """Turn a fitted model + InferenceData into the dashboard summary."""
     import arviz as az
@@ -338,6 +384,15 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         half_life = np.array([half_life_from_alpha(float(a)) for a in np.clip(alpha, 1e-6, 1 - 1e-9)])
         half_sat_spend = _saturation_point_samples(idata, ch, x_max[i])
 
+        # Direct vs carry-over: allocate each week's contribution by how much of the
+        # adstocked stock came from that week's own spend vs earlier weeks.
+        weights = _adstock_weight_samples(idata, ch)                       # (l_max, S)
+        frac = adstock_direct_fraction(built.spend[:, i], weights)         # (T, S)
+        direct_total = (channel_week[ch.name] * frac).sum(axis=0)          # (S,)
+        carryover_total = contrib_total - direct_total
+        with np.errstate(invalid="ignore", divide="ignore"):
+            share = np.where(np.abs(contrib_total) > 1e-12, direct_total / contrib_total, 1.0)
+
         channels.append(
             ChannelResult(
                 name=ch.name,
@@ -347,6 +402,9 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
                 adstock_half_life_weeks=Interval.from_samples(half_life),
                 saturation_point=Interval.from_samples(half_sat_spend),
                 total_spend=spend_total,
+                direct_contribution=Interval.from_samples(direct_total),
+                carryover_contribution=Interval.from_samples(carryover_total),
+                direct_share=Interval.from_samples(np.clip(share, 0.0, 1.0)),
             )
         )
 

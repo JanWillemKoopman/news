@@ -452,6 +452,12 @@ export interface ChannelResult {
   adstock_half_life_weeks: Interval;
   saturation_point: Interval;
   total_spend: number;
+  // Direct/na-ijl-splitsing (mmm_core.model.fit.ChannelResult): het deel van de bijdrage
+  // uit uitgaven van dezelfde week (direct) vs doorwerking van eerdere weken (na-ijl).
+  // Optioneel: runs van vóór deze uitbreiding hebben deze velden niet.
+  direct_contribution?: Interval | null;
+  carryover_contribution?: Interval | null;
+  direct_share?: Interval | null;
 }
 
 export interface QualityGate {

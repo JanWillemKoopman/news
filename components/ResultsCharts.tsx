@@ -109,7 +109,35 @@ function ReallocTooltip({ active, payload }: { active?: boolean; payload?: { pay
   );
 }
 
+// Lichtere tint van de accentkleur voor het na-ijl-deel van de gestapelde balken.
+const ACCENT_SOFT = "#8FC3F5";
+
+function SplitTooltip({ active, payload }: { active?: boolean; payload?: { payload: Record<string, number | string> }[] }) {
+  if (!active || !payload?.[0]) return null;
+  const d = payload[0].payload;
+  const direct = d.direct as number;
+  const carryover = d.carryover as number;
+  const total = direct + carryover;
+  return (
+    <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-sm">
+      <p className="font-medium text-fg">totaal {fmt(total)}</p>
+      <p className="text-fg-muted">direct (zelfde week): {fmt(direct)}</p>
+      <p className="text-fg-muted">na-ijl (latere weken): {fmt(carryover)}</p>
+      {total > 0 && <p className="mt-0.5 text-fg-faint">{fmt((direct / total) * 100)}% direct</p>}
+    </div>
+  );
+}
+
 export function ResultsCharts({ summary }: { summary: FitSummary }) {
+  // Direct vs na-ijl: alleen voor runs die de splitsing al meekregen uit de rekenkern.
+  const splitData = summary.channels
+    .filter((ch) => ch.direct_contribution && ch.carryover_contribution)
+    .map((ch) => ({
+      name: ch.name,
+      direct: Math.max(0, ch.direct_contribution!.p50),
+      carryover: Math.max(0, ch.carryover_contribution!.p50),
+    }));
+
   const shareData = summary.channels.map((ch) => ({
     name: ch.name,
     p50: ch.contribution_share.p50 * 100,
@@ -151,6 +179,32 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
 
   return (
     <div className="space-y-6">
+      {splitData.length > 0 && (
+        <ChartCard
+          title="Direct effect vs. na-ijl per kanaal"
+          hint="Donkerblauw = opbrengst in dezelfde week als de uitgave (“zag de advertentie, kocht meteen”); lichtblauw = doorwerking in latere weken (“zag de advertentie, kocht later”). Kanalen met veel na-ijl mag je niet afrekenen op de week zelf."
+        >
+          <ResponsiveContainer width="100%" height={Math.max(120, splitData.length * 32)} className="overflow-hidden">
+            <BarChart data={splitData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
+              <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />
+              <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
+              <Tooltip content={<SplitTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+              <Bar dataKey="direct" stackId="split" fill={ACCENT} barSize={14} name="Direct" />
+              <Bar dataKey="carryover" stackId="split" fill={ACCENT_SOFT} radius={[0, 3, 3, 0]} barSize={14} name="Na-ijl" />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="mt-1 flex items-center gap-4 text-[11px] text-fg-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: ACCENT }} /> direct (zelfde week)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: ACCENT_SOFT }} /> na-ijl (latere weken)
+            </span>
+          </div>
+        </ChartCard>
+      )}
+
       <div className="grid gap-6 sm:grid-cols-2">
         <ChartCard title="Aandeel per kanaal" hint="Mediaan met onzekerheidsmarge (p3–p97)">
           <ResponsiveContainer width="100%" height={shareHeight} className="overflow-hidden">

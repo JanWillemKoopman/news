@@ -75,7 +75,9 @@ function formatSummary(summary: FitSummary, createdAt: string): string {
     lines.push(
       `  • ${ch.name}: aandeel ${iv(ch.contribution_share, pct)}, ROAS ${iv(ch.roas, (n) => num(n))}, ` +
         `adstock-halfwaardetijd ${iv(ch.adstock_half_life_weeks, (n) => num(n, 1) + "wk")}, ` +
-        `verzadigingspunt ${iv(ch.saturation_point, (n) => num(n, 0))}, totale spend ${num(ch.total_spend, 0)}.`,
+        `verzadigingspunt ${iv(ch.saturation_point, (n) => num(n, 0))}, totale spend ${num(ch.total_spend, 0)}` +
+        (ch.direct_share ? `, direct-aandeel (zelfde week vs na-ijl) ${pct(ch.direct_share.p50)}` : "") +
+        `.`,
     );
   }
   if (summary.optimal_allocation) {

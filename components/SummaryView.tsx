@@ -224,6 +224,11 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
               <th className="py-2 pr-4 font-medium">
                 <Term definition={MMM_GLOSSARY.saturation}>Verzadigingspunt</Term>
               </th>
+              <th className="py-2 pr-4 font-medium">
+                <Term definition="Welk deel van de opbrengst in dezelfde week viel als de uitgave (direct); de rest is na-ijl — doorwerking in latere weken.">
+                  Direct
+                </Term>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -241,6 +246,9 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
                 </td>
                 <td className="py-3 pr-4">
                   <IntervalCell value={ch.saturation_point} render={(n) => fmt(n)} />
+                </td>
+                <td className="py-3 pr-4">
+                  {ch.direct_share ? <IntervalCell value={ch.direct_share} render={pct} /> : <span className="text-fg-faint">—</span>}
                 </td>
               </tr>
             ))}
