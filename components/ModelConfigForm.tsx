@@ -122,7 +122,7 @@ function validate(config: JobConfig): string | null {
     if (!ch.name || ch.name === "REPLACE_ME") return "Elk kanaal moet een geldige kolomnaam hebben.";
   }
   if (!config.sources?.length || config.sources.some((s) => !s.storage_path)) {
-    return "Geen geldige brondata gevonden — keur eerst een dataset goed bij stap 3.";
+    return "Geen geldige brondata gevonden — keur eerst een dataset goed bij stap 2.";
   }
   return null;
 }
@@ -345,7 +345,7 @@ export function ModelConfigForm({
         <p className="text-sm text-fg-muted">
           {approvedDataset
             ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan — of laat de AI een voorstel doen."
-            : "Configureer de modelberekening. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
+            : "Configureer de modelberekening. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 2 voor een ingevulde start."}
         </p>
         {approvedDataset && (
           <button
@@ -365,7 +365,7 @@ export function ModelConfigForm({
           <div className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-fg-muted">
             <p className="font-medium text-fg">Eerst een dataset goedkeuren</p>
             <p className="mt-1">
-              Het configuratieformulier werkt op de goedgekeurde master-dataset uit stap 3. Voeg
+              Het configuratieformulier werkt op de goedgekeurde definitieve dataset uit stap 2. Voeg
               daar je bronnen samen en keur het resultaat goed — dan staat hier een ingevuld
               formulier klaar.
             </p>
@@ -375,7 +375,7 @@ export function ModelConfigForm({
               scroll={false}
               className="mt-2 inline-block rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-3"
             >
-              Naar stap 3 — Data voorbereiden
+              Naar stap 2 — Data voorbereiden
             </Link>
           </div>
           <details className="rounded-lg border border-border p-3 text-sm">
@@ -470,7 +470,7 @@ export function ModelConfigForm({
               ))}
               {config.model.channels.length === 0 && (
                 <p className="text-sm text-fg-faint">
-                  Geen spend-kolommen gevonden in de goedgekeurde dataset — ga terug naar stap 3.
+                  Geen spend-kolommen gevonden in de goedgekeurde dataset — ga terug naar stap 2.
                 </p>
               )}
             </div>

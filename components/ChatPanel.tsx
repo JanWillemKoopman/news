@@ -50,16 +50,14 @@ const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> =
       message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
     },
   ],
-  eda: [
-    {
-      label: "Wat valt op in deze data?",
-      message: "Wat valt je op in de geüploade bestanden? Let op gaten, uitschieters of vreemde periodes.",
-    },
-  ],
   dataprep: [
     {
       label: "Stel een samenvoeging voor",
       message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
+    },
+    {
+      label: "Wat valt op in deze data?",
+      message: "Wat valt je op in de geüploade bestanden? Let op gaten, uitschieters of vreemde periodes.",
     },
     {
       label: "Beoordeel de dataset",
@@ -78,14 +76,7 @@ const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> =
         "Controleer of mijn huidige configuratie/priors een realistisch KPI-bereik impliceren (prior-predictive) voordat ik een dure berekening start, en adviseer wat ik moet aanpassen.",
     },
   ],
-  fits: [
-    {
-      label: "Beoordeel de laatste berekening",
-      message:
-        "Leg uit waarom de laatste berekening is mislukt of geslaagd, en of de configuratie beter kan.",
-    },
-  ],
-  results: [
+  run: [
     {
       label: "Beoordeel de laatste berekening",
       message: "Beoordeel de laatste berekening: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.",
@@ -104,9 +95,9 @@ const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> =
 };
 const DEFAULT_QUICK_ACTIONS = [
   STEP_QUICK_ACTIONS.data[0],
-  STEP_QUICK_ACTIONS.dataprep[1],
+  STEP_QUICK_ACTIONS.dataprep[2],
   STEP_QUICK_ACTIONS.config[0],
-  STEP_QUICK_ACTIONS.results[0],
+  STEP_QUICK_ACTIONS.run[0],
 ];
 
 // What the architect currently "sees": rendered as a subtle chip row above the chat so
@@ -349,7 +340,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Voorstel overnemen in stap 3 (Data voorbereiden)
+                  Voorstel overnemen in stap 2 (Data voorbereiden)
                 </button>
               </div>
             )}
@@ -360,7 +351,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Voorstel overnemen in stap 4 (Model configureren)
+                  Voorstel overnemen in stap 3 (Model configureren)
                 </button>
               </div>
             )}

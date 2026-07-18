@@ -6,6 +6,7 @@ import { PageHeader, StatusBadge, TopBar } from "@/components/ui";
 import { NoBuilderAccess } from "@/components/NoAccess";
 import { SourceUpload } from "@/components/SourceUpload";
 import { EdaSection } from "@/components/EdaSection";
+import { BusinessContextPanel } from "@/components/BusinessContextPanel";
 import { DataPrepSection } from "@/components/DataPrepSection";
 import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
@@ -36,7 +37,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   if (!project) notFound();
   const p = project as Project;
 
-  const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }] = await Promise.all([
+  const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }, { data: projectContext }] = await Promise.all([
     supabase.schema("mmm").from("source_files").select("*").eq("project_id", p.id).order("created_at"),
     supabase.schema("mmm").from("jobs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
     // Trimmed columns: `analysis` holds base64 PNG data URLs from the deep-analysis step
@@ -56,8 +57,11 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       .eq("project_id", p.id)
       .order("created_at", { ascending: false })
       .limit(1),
+    supabase.schema("mmm").from("project_context").select("industry, notes").eq("project_id", p.id).maybeSingle(),
   ]);
   const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
+  const businessNotes = ((projectContext?.notes as import("@/lib/types").BusinessContextNote[] | null) ?? []) as import("@/lib/types").BusinessContextNote[];
+  const businessIndustry = (projectContext?.industry as string | null) ?? null;
 
   const runsList = (runs ?? []) as ModelRun[];
   let latestAnalysis: ModelRun["analysis"] = null;
@@ -90,7 +94,6 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     dataset: latestDataset,
     jobs: (jobs ?? []) as Job[],
     runs: runsWithAnalysis,
-    edaCompleted: p.eda_completed_at != null,
   });
 
   return (
@@ -118,17 +121,24 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                     <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
                   </PipelineStep>
 
-                  <PipelineStep id="eda" number={2}>
-                    <StepIntro step="eda" />
-                    <EdaSection
-                      sources={(sources ?? []) as SourceFile[]}
-                      projectId={p.id}
-                      completed={p.eda_completed_at != null}
-                    />
-                  </PipelineStep>
-
-                  <PipelineStep id="dataprep" number={3}>
+                  <PipelineStep id="dataprep" number={2}>
                     <StepIntro step="dataprep" />
+                    {/* Verkennen (EDA) is optioneel en hoort bij het beoordelen van je
+                        data — daarom een uitklapbaar paneel binnen deze stap, geen eigen
+                        stap meer in de pijplijn. */}
+                    <details className="mb-4 rounded-[10px] border border-border p-3">
+                      <summary className="cursor-pointer select-none text-sm font-medium text-fg">
+                        Data verkennen (grafieken, kolomstatistieken & correlaties)
+                        <span className="ml-2 font-normal text-fg-muted">— optioneel</span>
+                      </summary>
+                      <div className="mt-3">
+                        <EdaSection
+                          sources={(sources ?? []) as SourceFile[]}
+                          projectId={p.id}
+                          completed={p.eda_completed_at != null}
+                        />
+                      </div>
+                    </details>
                     <DataPrepSection
                       projectId={p.id}
                       sources={(sources ?? []) as SourceFile[]}
@@ -136,8 +146,11 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                     />
                   </PipelineStep>
 
-                  <PipelineStep id="config" number={4}>
+                  <PipelineStep id="config" number={3}>
                     <StepIntro step="config" />
+                    <div className="mb-4">
+                      <BusinessContextPanel projectId={p.id} industry={businessIndustry} notes={businessNotes} />
+                    </div>
                     <ModelConfigForm
                       projectId={p.id}
                       sources={(sources ?? []) as SourceFile[]}
@@ -145,14 +158,14 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                     />
                   </PipelineStep>
 
-                  <PipelineStep id="fits" number={5}>
-                    <StepIntro step="fits" />
-                    <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
-                  </PipelineStep>
-
-                  <PipelineStep id="results" number={6}>
-                    <StepIntro step="results" />
-                    <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} />
+                  <PipelineStep id="run" number={4}>
+                    <StepIntro step="run" />
+                    <div className="space-y-5">
+                      <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
+                      <div className="border-t border-border pt-5">
+                        <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} />
+                      </div>
+                    </div>
                   </PipelineStep>
                 </PipelineShell>
               </div>

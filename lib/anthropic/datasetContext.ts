@@ -50,6 +50,18 @@ function formatPreview(ds: Dataset): string {
   return lines.join("\n");
 }
 
+// Zakelijke notities die de bouwer per kolom heeft vastgelegd — de hoogste-kwaliteit
+// context die er is (rechtstreeks van een mens over déze kolom), dus expliciet
+// gemarkeerd zodat het model ze zwaar meeweegt bij channel_type/adstock/prior-keuzes.
+function formatColumnNotes(ds: Dataset): string {
+  const notes = Object.entries(ds.column_notes ?? {});
+  if (notes.length === 0) return "";
+  return [
+    "Zakelijke notities van de bouwer per kolom (weeg deze zwaar mee in je voorstellen):",
+    ...notes.map(([col, note]) => `  • ${col}: ${note}`),
+  ].join("\n");
+}
+
 export function formatDatasetContextBlock(ctx: ArchitectDatasetContext): string {
   const ds = ctx.latestDataset;
   if (!ds) {
@@ -80,6 +92,7 @@ export function formatDatasetContextBlock(ctx: ArchitectDatasetContext): string 
     statusLine,
     `Periode: ${ds.window_start} t/m ${ds.window_end} (${ds.n_weeks} weken).`,
     formatPreview(ds),
+    formatColumnNotes(ds),
     "Kwaliteitsrapport:",
     formatQuality(ds.quality),
     "Bespreek wat opvalt (bijna-identieke kanalen, gaten, anomalieën) in gewone taal. Stel alleen een nieuw recept voor als er een concrete verbetering nodig is — een reeds goedgekeurde dataset verander je niet zomaar.",

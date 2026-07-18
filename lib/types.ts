@@ -372,6 +372,9 @@ export interface Dataset {
   column_roles: Record<string, ColumnRole> | null;
   quality: DatasetQuality | null;
   preview: DatasetPreview | null;
+  // Zakelijke notities van de bouwer per kolom ("tv_grps = landelijke campagne, alleen
+  // Q4") — gelezen door de AI bij elk voorstel. Alleen kolommen mét notitie staan erin.
+  column_notes: Record<string, string> | null;
   error: string | null;
   created_at: string;
   prepared_at: string | null;

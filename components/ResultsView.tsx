@@ -117,20 +117,6 @@ export function ResultsView({
       ) : (
         <SummaryView summary={viewedRun.summary} />
       )}
-      <div className="flex items-center gap-3 border-t border-border pt-4">
-        {viewedRun.is_published ? (
-          <StatusBadge status="published" />
-        ) : (
-          <button
-            onClick={publish}
-            disabled={busy}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy ? "Publiceren…" : "Publiceer naar klantdashboard"}
-          </button>
-        )}
-        {error && <p className="text-sm text-danger">{error}</p>}
-      </div>
       {/* Deep analysis assumes the single-region FitSummary shape (it feeds the summary
           JSON straight to Claude's code-execution tool) — not offered for a hierarchical
           run, which has no response curves / quality gate for it to interpret. */}
@@ -185,6 +171,34 @@ export function ResultsView({
           )}
         </div>
       )}
+
+      {/* Publiceren is de zichtbare finish van de wizard: onderaan, ná beoordelen,
+          analyse en klantsamenvatting — zo heeft het traject een duidelijk einde. */}
+      <div className="rounded-lg border border-accent/30 bg-accent-dim/40 p-4">
+        {viewedRun.is_published ? (
+          <div className="flex items-center gap-3">
+            <StatusBadge status="published" />
+            <p className="text-sm text-fg-muted">
+              Deze run staat op het klantdashboard — hiermee is het traject afgerond.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={publish}
+              disabled={busy}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? "Publiceren…" : "Publiceer naar klantdashboard"}
+            </button>
+            <p className="min-w-0 flex-1 text-xs text-fg-muted">
+              De afsluitende stap: vertrouw je deze uitkomst (kwaliteitscontrole groen, resultaten
+              beoordeeld), publiceer dan — de klant ziet daarna het dashboard met deze run.
+            </p>
+          </div>
+        )}
+        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      </div>
     </div>
   );
 }

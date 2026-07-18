@@ -7,25 +7,17 @@ const STEP_INTROS: Record<string, { what: string; why: string }> = {
     what: "Upload alle wekelijkse bronnen in één keer: KPI, spend per kanaal en eventuele controls (CSV of XLSX).",
     why: "Bij elke CSV draaien automatisch een kolom-classificatie en een statistisch profiel — de AI start daardoor met een voorsprong.",
   },
-  eda: {
-    what: "Verken de data zelf: grafieken, kolomstatistieken en de correlatiematrix — volledig in je browser.",
-    why: "Let vooral op sterk samenhangende spend-kanalen (multicollineariteit): die kan het model niet los van elkaar schatten.",
-  },
   dataprep: {
     what: "Van losse bestanden naar één schone, wekelijkse tabel (de definitieve dataset): de AI stelt de samenvoeging voor, jij controleert en keurt goed.",
-    why: "Laat de AI het zware werk doen (automatisch voorbereiden of een voorstel); jij blijft de eindcontrole — er wordt nooit iets stilzwijgend aangepast.",
+    why: "Verken desgewenst eerst de data (uitklapbaar paneel bovenaan), en leg per kolom vast wat er zakelijk achter zit — dat maakt elk AI-voorstel beter.",
   },
   config: {
-    what: "Vertaal wat je over de klant weet naar modelinstellingen: kanaaltypes, na-ijl (adstock), saturatie, seizoen en het ruismodel.",
-    why: "Zakelijke context is de grootste hefboom — vertel de AI over seizoensdrukte, campagnes en offline kanalen vóórdat je het model draait. Eerste berekening: instellingen op standaard en preset 'Snel'.",
+    what: "Vertel eerst wat je over de klant weet (zakelijke context), en vertaal dat naar modelinstellingen: kanaaltypes, na-ijl (adstock), saturatie, seizoen en het ruismodel.",
+    why: "Zakelijke context is de grootste hefboom van het model — de AI gebruikt elk vastgelegd feit in zijn voorstellen. Eerste berekening: instellingen op standaard en preset 'Snel'.",
   },
-  fits: {
-    what: "De berekening draait op de achtergrond; volg hier de fase, de verstreken tijd en de verwachte duur.",
-    why: "Zodra een berekening klaar is of faalt, meldt de AI zich vanzelf in de chat. Bij een zwak resultaat kan de automatische verbetercyclus de correctierondes voor je draaien.",
-  },
-  results: {
-    what: "Beoordeel het resultaat: kwaliteitscontrole, bijdragen en ROAS per kanaal (altijd met onzekerheidsmarge), en het budgetadvies.",
-    why: "Vertrouw je de uitkomst (kwaliteitscontrole groen)? Vergelijk met eerdere runs, genereer de analyse of klantsamenvatting, en publiceer pas dan naar het klantdashboard.",
+  run: {
+    what: "Volg hier de lopende berekening (fase, verstreken tijd, verwachte duur); zodra hij klaar is verschijnt op dezelfde plek het resultaat: kwaliteitscontrole, bijdragen en ROAS per kanaal, en het budgetadvies.",
+    why: "Zodra een berekening klaar is of faalt, meldt de AI zich vanzelf in de chat. Vertrouw je de uitkomst? Dan is publiceren naar het klantdashboard de afsluitende stap.",
   },
 };
 

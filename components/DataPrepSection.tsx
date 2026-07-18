@@ -134,7 +134,7 @@ function DataHealthMeter({ dataset }: { dataset: Dataset }) {
         </ul>
       )}
       <p className="mt-2 text-xs text-fg-faint">
-        Sterk samenhangende kanalen zijn hier niet meegenomen — bekijk daarvoor de correlatiematrix bij stap 2 (EDA).
+        Sterk samenhangende kanalen zijn hier niet meegenomen — bekijk daarvoor de correlatiematrix in het verkennen-paneel bovenaan deze stap.
       </p>
     </div>
   );
@@ -894,6 +894,10 @@ export function DataPrepSection({
 
           <DataHealthMeter dataset={dataset} />
 
+          {(dataset.status === "prepared" || dataset.status === "approved") && (
+            <ColumnNotesEditor dataset={dataset} />
+          )}
+
           {dataset.quality && <QualityReportView quality={dataset.quality} />}
           {dataset.preview && <DatasetPreviewTable preview={dataset.preview} />}
 
@@ -914,6 +918,85 @@ export function DataPrepSection({
         </div>
       )}
     </div>
+  );
+}
+
+// Zakelijke context per kolom van de samengevoegde dataset: wat zit er zakelijk achter
+// deze kolom ("tv_grps = landelijke campagne, alleen Q4")? Rechtstreeks door de bouwer
+// ingevuld en door de AI zwaar meegewogen bij elk voorstel (zie datasetContext.ts).
+// Bewust simpel: één tekstveld per kolom, expliciete opslaan-knop.
+function ColumnNotesEditor({ dataset }: { dataset: Dataset }) {
+  const roles = dataset.column_roles ?? {};
+  const [notes, setNotes] = useState<Record<string, string>>(dataset.column_notes ?? {});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Nieuwe dataset (nieuwe samenvoeging) → editor herseeden vanaf de nieuwe rij.
+  useEffect(() => {
+    setNotes(dataset.column_notes ?? {});
+    setMsg(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataset.id]);
+
+  const columns = Object.keys(roles);
+  if (columns.length === 0) return null;
+  const dirty = JSON.stringify(notes) !== JSON.stringify(dataset.column_notes ?? {});
+  const filled = Object.values(dataset.column_notes ?? {}).filter((v) => v.trim()).length;
+
+  async function save() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/datasets/${dataset.id}/column-notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) setMsg((await res.json().catch(() => ({}))).error ?? "Opslaan mislukt.");
+      else setMsg("Notities opgeslagen — de AI leest ze mee bij elk volgend voorstel.");
+    } catch {
+      setMsg("Verbinding mislukt — probeer het opnieuw.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <details className="rounded-lg border border-border p-3 text-sm" open={filled > 0}>
+      <summary className="cursor-pointer select-none font-medium text-fg">
+        Zakelijke context per kolom{filled > 0 ? ` — ${filled} ingevuld` : ""}
+        <span className="ml-2 font-normal text-fg-muted">
+          — vertel de AI wat er zakelijk achter elke kolom zit
+        </span>
+      </summary>
+      <div className="mt-3 space-y-2">
+        {columns.map((col) => (
+          <label key={col} className="flex flex-wrap items-center gap-2 text-xs text-fg-muted sm:flex-nowrap">
+            <span className="w-44 flex-none truncate font-mono text-fg" title={col}>
+              {col}
+            </span>
+            <span className="flex-none rounded-full bg-surface-2 px-2 py-0.5 text-[11px]">{roles[col]}</span>
+            <input
+              type="text"
+              value={notes[col] ?? ""}
+              onChange={(e) => setNotes((prev) => ({ ...prev, [col]: e.target.value }))}
+              placeholder='bv. "landelijke tv-campagne, liep alleen in Q4" of "prijs incl. acties"'
+              className="min-w-[12rem] flex-1 rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
+            />
+          </label>
+        ))}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={save}
+            disabled={busy || !dirty}
+            className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
+          >
+            {busy ? "Opslaan…" : "Notities opslaan"}
+          </button>
+          {msg && <span className="text-xs text-fg-muted">{msg}</span>}
+        </div>
+      </div>
+    </details>
   );
 }
 

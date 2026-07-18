@@ -204,10 +204,10 @@ handmatig bij te houden.
 
 ## 4. De wizard, stap voor stap
 
-De pijplijn heeft zes stappen. Je werkt ze van boven naar beneden af; de AI in de chat
+De pijplijn heeft vier stappen: Data uploaden, Data voorbereiden (met daarin het optionele verken-paneel), Model configureren (met het zakelijke-contextpaneel) en Berekenen & resultaten (met publiceren als afsluiting). Je werkt ze van boven naar beneden af; de AI in de chat
 (§5) helpt bij vrijwel elke stap.
 
-### Stap 1 — Data (uploaden)
+### Stap 1 — Data uploaden
 
 - Sleep of kies je bestanden (**CSV of XLSX**). Elk bestand gaat naar de beveiligde opslag
   en verschijnt in de lijst.
@@ -232,7 +232,7 @@ app twee dingen ongevraagd, zodat de AI straks met een voorsprong start:
 controls). De AI leest ze samen — inclusief classificatie en profiel — en stelt
 straks een compleet samenvoegrecept voor.
 
-### Stap 2 — EDA (data verkennen)
+### Stap 2a — Data verkennen (uitklapbaar paneel in stap 2, optioneel)
 
 Volledig in je browser, **geen AI en geen serverronde** — puur om zelf een gevoel bij de
 data te krijgen. Per gekozen CSV kun je:
@@ -247,7 +247,7 @@ data te krijgen. Per gekozen CSV kun je:
 > (multicollineariteit). Onthoud welke dat zijn — je wilt er straks misschien één weglaten
 > of combineren.
 
-### Stap 3 — Data voorbereiden (samenvoegen tot één master-tabel)
+### Stap 2 — Data voorbereiden (samenvoegen tot de definitieve dataset)
 
 Dit is de belangrijkste datavoorbereidingsstap. Doel: van losse, rommelige bestanden naar
 **één schone, wekelijkse master-tabel** waarop het model kan draaien.
@@ -313,7 +313,7 @@ controls, bepaalt het **overlappende venster** waarin élke essentiële bron dat
 zet pas *binnen* dat venster ontbrekende spend-weken op 0 ("dit kanaal liep toen niet").
 Gaten in KPI of controls worden nooit stilzwijgend gevuld.
 
-### Stap 4 — Model configureren
+### Stap 3 — Model configureren (met zakelijke context)
 
 Met een goedgekeurde dataset verschijnt een ingevuld configuratieformulier, met bovenaan
 de primaire knop **"Stel een configuratie voor (AI)"**: de AI vult het
@@ -397,7 +397,7 @@ geteste standaard". Een eerste fit laat priors en kalibratie vrijwel altijd op s
   Vul dan per kanaal de gemeten `roas` en de onzekerheid `sd` in. Dit trekt de schatting
   zacht naar het experiment zonder de data te overrulen. Zonder experiment: weglaten.
 
-### Stap 5 — Fits (de berekening volgen)
+### Stap 4 — Berekenen & resultaten (de berekening volgen)
 
 Een fit duurt minuten en draait asynchroon op een aparte rekenlaag (Modal), dus je kunt
 gerust wachten of iets anders doen. In deze stap zie je een **live lijst** van fit-jobs met:
@@ -419,7 +419,7 @@ config → nieuwe fit → opnieuw beoordelen, tot de poort op *pass* staat of de
 elk moment stoppen, en goedkeuren/publiceren blijft altijd aan jou. Let op: elke ronde
 kost een volledige fit aan rekentijd — gebruik dit gericht, niet standaard.
 
-### Stap 6 — Resultaten
+### Stap 4 (vervolg) — Resultaten beoordelen en publiceren
 
 Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
 

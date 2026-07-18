@@ -53,13 +53,11 @@ export function computePipelineSteps({
   dataset,
   jobs,
   runs,
-  edaCompleted,
 }: {
   sources: SourceFile[];
   dataset: Dataset | null;
   jobs: Job[];
   runs: ModelRun[];
-  edaCompleted?: boolean;
 }): StepMeta[] {
   const hasSources = sources.length > 0;
   const fitJobs = jobs.filter((j) => j.type === "fit" || j.type === "fit_hierarchical");
@@ -77,18 +75,6 @@ export function computePipelineSteps({
 
   const dataStatus = next(hasSources);
 
-  // EDA is a detour, not a gate: it only grabs focus in the narrow window right after
-  // upload, before a data-prep attempt exists — after that it steps aside. It has no
-  // natural completion signal (no approve/publish action), so a builder marks it "done"
-  // explicitly via a button; without that click it just stays active/available forever.
-  let edaStatus: StepStatus;
-  if (!hasSources) edaStatus = "locked";
-  else if (edaCompleted) edaStatus = "done";
-  else if (dataset === null && !focused) {
-    edaStatus = "active";
-    focused = true;
-  } else edaStatus = "available";
-
   let dataprepStatus: StepStatus;
   if (!hasSources) dataprepStatus = "locked";
   else if (dataset?.status === "failed") dataprepStatus = "attention";
@@ -98,36 +84,35 @@ export function computePipelineSteps({
   if (dataset?.status !== "approved") configStatus = "locked";
   else configStatus = next(fitJobs.length > 0);
 
-  let fitsStatus: StepStatus;
-  if (fitJobs.length === 0) fitsStatus = "locked";
-  else if (latestFitJob!.status === "failed") fitsStatus = "attention";
-  else fitsStatus = next(latestFitJob!.status === "succeeded");
+  // Berekenen & resultaten is één stap met twee toestanden: zolang de laatste berekening
+  // loopt toont hij de voortgang, daarna het resultaat (beoordelen + publiceren). Klaar
+  // is hij nooit automatisch — beoordelen/publiceren blijft mensenwerk.
+  let runStatus: StepStatus;
+  if (fitJobs.length === 0) runStatus = "locked";
+  else if (latestFitJob!.status === "failed") runStatus = "attention";
+  else runStatus = next(false);
 
-  let resultsStatus: StepStatus;
-  if (runs.length === 0) resultsStatus = "locked";
-  else resultsStatus = next(false); // reviewing/publishing is never "finished" automatically
+  const runSummary =
+    runs.length && latestFitJob?.status === "succeeded"
+      ? resultsSummary(runs[0])
+      : latestFitJob
+        ? fitJobSummary(latestFitJob)
+        : undefined;
 
   return [
     {
       id: "data",
-      title: "Data",
+      title: "Data uploaden",
       status: dataStatus,
       summary: hasSources ? `${sources.length} bestand${sources.length === 1 ? "" : "en"} geüpload` : undefined,
     },
-    { id: "eda", title: "EDA", status: edaStatus, summary: edaCompleted ? "Afgerond" : undefined },
     { id: "dataprep", title: "Data voorbereiden", status: dataprepStatus, summary: dataprepSummary(dataset) },
     {
       id: "config",
       title: "Model configureren",
       status: configStatus,
-      summary: fitJobs.length ? `${fitJobs.length} fit${fitJobs.length === 1 ? "" : "s"} gestart` : undefined,
+      summary: fitJobs.length ? `${fitJobs.length} berekening${fitJobs.length === 1 ? "" : "en"} gestart` : undefined,
     },
-    { id: "fits", title: "Berekenen", status: fitsStatus, summary: latestFitJob ? fitJobSummary(latestFitJob) : undefined },
-    {
-      id: "results",
-      title: "Resultaten",
-      status: resultsStatus,
-      summary: runs.length ? resultsSummary(runs[0]) : undefined,
-    },
+    { id: "run", title: "Berekenen & resultaten", status: runStatus, summary: runSummary },
   ];
 }
