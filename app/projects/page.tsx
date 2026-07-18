@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Card, PageHeader, StatusBadge, TopBar } from "@/components/ui";
+import { Card, LinkButton, PageHeader, StatusBadge, TopBar } from "@/components/ui";
 import { NoBuilderAccess } from "@/components/NoAccess";
 import { ProjectCreateForm } from "@/components/ProjectCreateForm";
 import { getHandleidingMarkdown } from "@/lib/handleiding";
 import type { Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function dateLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default async function ProjectsPage() {
   const viewer = await getViewer();
@@ -39,19 +44,35 @@ export default async function ProjectsPage() {
           <ul className="space-y-3">
             {projects.map((p) => (
               <li key={p.id}>
-                <Link href={`/projects/${p.id}`}>
-                  <Card className="transition hover:border-border-strong">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-fg">{p.name}</p>
-                        {p.client_company && (
-                          <p className="text-sm text-fg-muted">{p.client_company}</p>
-                        )}
-                      </div>
+                <Card className="transition hover:border-border-strong">
+                  <div className="flex items-center justify-between gap-4">
+                    <Link href={`/projects/${p.id}`} className="min-w-0 flex-1">
+                      <p className="font-medium text-fg">{p.name}</p>
+                      {p.client_company && (
+                        <p className="text-sm text-fg-muted">{p.client_company}</p>
+                      )}
+                      {p.published_at && (
+                        <p className="mt-1 text-xs text-fg-faint">
+                          Laatst gepubliceerd: {dateLabel(p.published_at)}
+                        </p>
+                      )}
+                    </Link>
+                    <div className="flex flex-none items-center gap-3">
+                      {p.status === "published" && (
+                        <LinkButton
+                          href={`/dashboard/${p.id}`}
+                          target="_blank"
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Dashboard
+                        </LinkButton>
+                      )}
                       <StatusBadge status={p.status} />
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                </Card>
               </li>
             ))}
           </ul>

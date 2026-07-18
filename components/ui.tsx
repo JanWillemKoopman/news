@@ -41,6 +41,21 @@ export function Button({
   );
 }
 
+// Button-styled <Link> — for navigation that should look like a Button but can't be a
+// <button> (e.g. opening another route from inside a card that's itself a Link).
+export function LinkButton({
+  variant = "primary",
+  className = "",
+  ...props
+}: React.ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
+  return (
+    <Link
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow-sm ${BUTTON_VARIANT[variant]} ${className}`}
+      {...props}
+    />
+  );
+}
+
 const FIELD_BASE =
   "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/50 focus:outline-none focus:shadow-glow-sm";
 
