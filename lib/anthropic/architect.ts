@@ -25,6 +25,14 @@ import {
   formatDatasetContextBlock,
   type ArchitectDatasetContext,
 } from "@/lib/anthropic/datasetContext";
+import {
+  formatBusinessContextBlock,
+  formatColumnMappingBlock,
+  formatInspectionBlock,
+  formatSourceProfileBlock,
+} from "@/lib/anthropic/preFitContext";
+import { formatCalendarReference } from "@/lib/calendar/nlCalendar";
+import type { BusinessContextNote, DataInspection, ProjectContext } from "@/lib/types";
 
 // The "architect": an MMM expert with three roles, all human-in-the-loop (it proposes,
 // the builder clicks — it never runs anything itself):
@@ -80,6 +88,18 @@ De config-tool heeft naast bovenstaande basiskeuzes ook fijnafstem-velden. Grond
 - Priors ("priors" op model- én kanaalniveau): schalen die je alleen aanraakt met echte kennis — verklein een sigma om een component dicht bij nul te houden, vergroot 'm om de data meer te laten bewegen. Bij twijfel: het hele veld weglaten.
 - Kalibratie ("calibration" per kanaal): alleen invullen als de bouwer een echt lift-/geo-experiment heeft — vul de gemeten "roas" en de onzekerheid "sd" in. Dit trekt de schatting zacht naar het experiment. Zonder experiment: helemaal weglaten.
 
+Extra ogen op de data (gebruik deze actief):
+- Per bestand krijg je naast de eerste regels ook een VOLLEDIGE-REEKS-PROFIEL (min/max/gemiddelde/sd, ontbrekende weken + langste gat, uitschieters mét week+waarde over de héle periode, en sterk gecorreleerde kolommen). De preview toont alleen de eerste rijen; het profiel ziet alles. Benoem een uitschieter of gat uit het profiel concreet (week + waarde) en stel er meteen iets voor — verwijs niet naar "misschien een piek".
+- Sterk gecorreleerde kolommen (hoge r) in het profiel wijzen op bijna-identieke kanalen of een control die een kanaal spiegelt: het model kan die niet los schatten. Benoem het en stel voor er één weg te laten of te combineren.
+- Per bestand kan er een voorlopige KOLOM-CLASSIFICATIE staan (rol, eenheid, granulariteit, breed/lang). Gebruik die als startpunt, maar controleer 'm tegen de kolomnamen en het profiel; corrigeer als iets niet klopt.
+- Er kan een DIEPE DATA-INSPECTIE-sectie zijn (Claude heeft de data zelf met pandas verkend). Neem die bevindingen serieus mee in je voorstellen; ze zijn op de volledige data gebaseerd.
+- Je krijgt een lijst met terugkerende NL-kalendergebeurtenissen. Zie je in de KPI een patroon rond zo'n week, stel dan een 'recurring_week_dummy'-feature of event-dummy voor.
+
+Zakelijke context ophalen (prior-elicitatie — dit maakt een Bayesiaans model sterker):
+- Priors, kalibratie en channel_type worden veel beter als je weet wat er achter de data zit. Wacht daar niet passief op: vraag de bouwer proactief naar branche, seizoensdrukte, bekende campagnes/acties, offline-kanalen met lange nawerking (tv/radio/OOH) en of er ooit een lift-/geo-experiment is gedaan (gemeten ROAS + onzekerheid).
+- Zodra de bouwer zulke feiten geeft, leg ze vast met de tool "record_business_context" (per feit een topic + de feitelijke inhoud, en waar het op slaat). Vertaal ze daarna naar concrete config: offline-kanaal → adstock "delayed" + hogere l_max; bekende halfwaardetijd → expected_half_life; gemeten experiment → calibration (roas + sd); sterk seizoen → seizoen aan.
+- Verzin geen context; leg alleen vast wat de bouwer daadwerkelijk zegt. Vraag één of twee gerichte dingen tegelijk, niet een hele vragenlijst.
+
 Algemeen:
 - Roep pas een tool aan zodra je zeker genoeg bent. Heb je eerst meer info nodig (bijvoorbeeld: geen enkel bestand is geüpload) — antwoord dan gewoon met tekst en stel een vraag.
 - Antwoord in het Nederlands, kort en zonder onnodig jargon — de bouwer leest dit, geen eindklant.
@@ -96,10 +116,68 @@ Diagnose-vuistregels (oorzaak → voorstel):
 - Slechte generalisatie als er cross-validatie is gedraaid (out-of-sample veel slechter dan in-sample): vereenvoudig het model.
 - Herhaal nooit klakkeloos dezelfde config die net faalde of "warn" gaf — verander gericht wat de diagnose aanwijst, en zeg wat je veranderde en waarom.`;
 
+// Elicited business context, recorded via the record_business_context tool and turned into
+// priors/calibration/channel_type — the highest-leverage input a Bayesian model has.
+const RECORD_CONTEXT_TOOL: Anthropic.Tool = {
+  name: "record_business_context",
+  description:
+    "Leg geëliciteerde zakelijke context vast (branche + losse feiten) die je later naar priors/kalibratie/channel_type vertaalt. Roep dit pas aan als de bouwer je concrete feiten heeft gegeven — verzin niets.",
+  input_schema: {
+    type: "object",
+    properties: {
+      industry: { type: "string", description: "Branche/sector van de klant, indien genoemd." },
+      notes: {
+        type: "array",
+        description: "Losse, feitelijke stukjes context zoals de bouwer ze gaf.",
+        items: {
+          type: "object",
+          properties: {
+            topic: {
+              type: "string",
+              enum: ["branche", "seizoen", "campagne", "offline_kanaal", "experiment", "prijs", "overig"],
+            },
+            fact: { type: "string", description: "Het feit zelf, in gewone taal." },
+            relates_to: { type: "string", description: "Kanaal/kolom waar het op slaat, indien van toepassing." },
+          },
+          required: ["topic", "fact"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["notes"],
+    additionalProperties: false,
+  },
+};
+
 interface ProjectDataContext {
   sources: { file: SourceFile; preview: string | null }[];
   dataset: ArchitectDatasetContext;
   fit: ArchitectFitContext;
+  businessContext: ProjectContext | null;
+  inspection: DataInspection | null;
+}
+
+// Narrow the record_business_context tool input into typed notes for persistence.
+export function parseBusinessContextInput(
+  input: unknown,
+): { industry: string | null; notes: BusinessContextNote[] } | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Record<string, unknown>;
+  const rawNotes = Array.isArray(raw.notes) ? raw.notes : [];
+  const notes: BusinessContextNote[] = [];
+  const topics = ["branche", "seizoen", "campagne", "offline_kanaal", "experiment", "prijs", "overig"];
+  for (const n of rawNotes) {
+    if (!n || typeof n !== "object") continue;
+    const rn = n as Record<string, unknown>;
+    if (typeof rn.fact !== "string") continue;
+    notes.push({
+      topic: (topics.includes(rn.topic as string) ? rn.topic : "overig") as BusinessContextNote["topic"],
+      fact: rn.fact,
+      relates_to: typeof rn.relates_to === "string" ? rn.relates_to : null,
+    });
+  }
+  if (notes.length === 0 && typeof raw.industry !== "string") return null;
+  return { industry: typeof raw.industry === "string" ? raw.industry : null, notes };
 }
 
 function buildDataContextBlock(ctx: ProjectDataContext): string {
@@ -108,10 +186,14 @@ function buildDataContextBlock(ctx: ProjectDataContext): string {
   }
   const parts = ctx.sources.map(({ file, preview }) => {
     const header = `Bestand "${file.name}" — storage_path: "${file.storage_path}"`;
+    const mappingBlock = formatColumnMappingBlock(file.mapping);
+    const profileBlock = formatSourceProfileBlock(file.profile);
+    const extras = [mappingBlock, profileBlock].filter(Boolean).join("\n");
     if (preview === null) {
-      return `${header}\n(binair bestand — geen tekstpreview beschikbaar; vraag de bouwer om de kolomnamen te noemen als je ze nodig hebt)`;
+      const binary = `${header}\n(binair bestand — geen tekstpreview beschikbaar; vraag de bouwer om de kolomnamen te noemen als je ze nodig hebt)`;
+      return extras ? `${binary}\n${extras}` : binary;
     }
-    return `${header}\nEerste regels van het bestand:\n${preview}`;
+    return [`${header}\nEerste regels van het bestand:\n${preview}`, extras].filter(Boolean).join("\n");
   });
   return `Geüploade bronbestanden voor dit project:\n\n${parts.join("\n\n")}`;
 }
@@ -496,16 +578,25 @@ export function buildRequest(
     max_tokens: 4096,
     thinking: { type: "adaptive" },
     output_config: { effort: "medium" },
-    tools: [PROPOSE_PREPARE_RECIPE_TOOL, PROPOSE_CONFIG_TOOL],
+    tools: [PROPOSE_PREPARE_RECIPE_TOOL, PROPOSE_CONFIG_TOOL, RECORD_CONTEXT_TOOL],
     // Cache breakpoints on the two stable blocks: the fixed instructions (byte-identical
     // for everyone, forever) and the per-project uploaded-data context (stable across a
     // session until new data is uploaded). The dataset and fit-results blocks are placed
     // AFTER them, uncached — both change whenever a prepare/fit finishes, and keeping
     // them past the last breakpoint means a fresh result never invalidates the cached
     // prefix.
+    // Cache breakpoints on the three stable, byte-identical-across-requests blocks: the
+    // fixed instructions, the static NL calendar reference, and the per-project uploaded-data
+    // context (stable across a session once profiles/mappings are cached). The volatile
+    // blocks — business context, deep inspection, dataset and fit results — sit AFTER the
+    // last breakpoint so a fresh result never invalidates the cached prefix. (4 breakpoints
+    // total incl. the newest user turn set in the chat route — the per-request maximum.)
     system: [
       { type: "text", text: SYSTEM_INSTRUCTIONS, cache_control: { type: "ephemeral" } },
+      { type: "text", text: formatCalendarReference(), cache_control: { type: "ephemeral" } },
       { type: "text", text: dataContext, cache_control: { type: "ephemeral" } },
+      { type: "text", text: `Zakelijke context voor dit project:\n\n${formatBusinessContextBlock(ctx.businessContext)}` },
+      { type: "text", text: `Diepe data-inspectie voor dit project:\n\n${formatInspectionBlock(ctx.inspection)}` },
       { type: "text", text: `Data-voorbereiding voor dit project:\n\n${datasetContext}` },
       { type: "text", text: `Laatste fit / resultaten voor dit project:\n\n${resultsContext}` },
     ],

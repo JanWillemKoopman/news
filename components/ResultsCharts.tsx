@@ -64,6 +64,51 @@ function RoasTooltip({ active, payload }: { active?: boolean; payload?: { payloa
   );
 }
 
+// Shared tooltip for the curve/frontier area charts: both plot { spend|budget, p50, band:
+// [p3, p97] }. Reads the row straight from `payload[0].payload` (like ShareTooltip/
+// RoasTooltip above) instead of Recharts' generic per-series `value` — the invisible band
+// Area's dataKey is a [p3, p97] tuple, and formatting that as a plain number is what
+// produced the "band: NaN" row in the previous default tooltip.
+function BandTooltip({
+  active,
+  payload,
+  label,
+  unitLabel,
+}: {
+  active?: boolean;
+  payload?: { payload: Record<string, unknown> }[];
+  label?: number | string;
+  unitLabel: string;
+}) {
+  if (!active || !payload?.[0]) return null;
+  const d = payload[0].payload;
+  const band = d.band as [number, number];
+  return (
+    <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-sm">
+      <p className="text-fg-muted">
+        {unitLabel}: {fmt(Number(label))}
+      </p>
+      <p className="font-medium text-fg">{fmt(d.p50 as number)}</p>
+      <p className="text-fg-muted">
+        {fmt(band[0])} – {fmt(band[1])}
+      </p>
+    </div>
+  );
+}
+
+function ReallocTooltip({ active, payload }: { active?: boolean; payload?: { payload: Record<string, number> }[] }) {
+  if (!active || !payload?.[0]) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-sm">
+      <p className="font-medium text-fg">
+        {fmt(d.current)} → {fmt(d.advised)}
+      </p>
+      <p className="text-fg-muted">advies</p>
+    </div>
+  );
+}
+
 export function ResultsCharts({ summary }: { summary: FitSummary }) {
   const shareData = summary.channels.map((ch) => ({
     name: ch.name,
@@ -157,11 +202,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
                       <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                       <XAxis dataKey="spend" tick={AXIS} tickFormatter={(v) => fmt(v)} />
                       <YAxis tick={AXIS} width={44} tickFormatter={(v) => fmt(v)} />
-                      <Tooltip
-                        formatter={(value) => fmt(Number(value))}
-                        labelFormatter={(v) => `Spend: ${fmt(Number(v))}`}
-                        contentStyle={{ fontSize: 12 }}
-                      />
+                      <Tooltip content={<BandTooltip unitLabel="Spend" />} />
                       <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} />
                       <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
                       <ReferenceLine
@@ -193,11 +234,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
               <XAxis dataKey="budget" tick={AXIS} tickFormatter={(v) => fmt(v)} />
               <YAxis tick={AXIS} width={48} tickFormatter={(v) => fmt(v)} />
-              <Tooltip
-                formatter={(value) => fmt(Number(value))}
-                labelFormatter={(v) => `Budget: ${fmt(Number(v))}`}
-                contentStyle={{ fontSize: 12 }}
-              />
+              <Tooltip content={<BandTooltip unitLabel="Budget" />} />
               <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} />
               <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
               {allocation && (
@@ -220,15 +257,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip
-                formatter={(_value, _key, item) => [
-                  `${fmt((item.payload as { current: number }).current)} → ${fmt(
-                    (item.payload as { advised: number }).advised,
-                  )}`,
-                  "advies",
-                ]}
-                contentStyle={{ fontSize: 12 }}
-              />
+              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
               <Bar dataKey="delta" radius={[0, 3, 3, 0]} barSize={14}>
                 {reallocData.map((d) => (
                   <Cell key={d.name} fill={d.delta >= 0 ? ACCENT : NEUTRAL} />

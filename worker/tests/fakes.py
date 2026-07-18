@@ -16,6 +16,7 @@ class FakeJobStore:
         self.progress: str | None = None
         self.error: str | None = None
         self.runs: list[dict] = []
+        self.prior_predictive: dict | None = None
 
     def get_job(self, job_id: str) -> dict:
         return self.job
@@ -44,6 +45,9 @@ class FakeJobStore:
             }
         )
         return "run-1"
+
+    def save_prior_predictive(self, job_id: str, review: dict) -> None:
+        self.prior_predictive = review
 
 
 class FakeStorage:
@@ -91,6 +95,18 @@ def make_stub_fit(summary=None):
             {"n_rows": len(data), "columns": list(data.columns), "model": model, "kwargs": kwargs}
         )
         return (summary or StubSummary()), object()  # (summary, fake idata)
+
+    fit_fn.calls = calls
+    return fit_fn
+
+
+def make_stub_hier_fit(summary=None):
+    """Return a fit_fn(region_frames, model, **kw) for run_hier_job, records its call."""
+    calls = []
+
+    def fit_fn(region_frames, model, **kwargs):
+        calls.append({"regions": sorted(region_frames), "model": model, "kwargs": kwargs})
+        return (summary or StubSummary()), object()
 
     fit_fn.calls = calls
     return fit_fn

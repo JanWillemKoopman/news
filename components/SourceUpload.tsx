@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { Trash2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { SourceFile } from "@/lib/types";
+import { buildSourceProfile } from "@/lib/dataProfile";
+import type { SourceFile, SourceProfile } from "@/lib/types";
 
 const BUCKET = "mmm-raw-data";
 const DATE_NAME_HINT = /date|datum|week|dag|day|periode/i;
+// Mirrors PREVIEW_LINES in app/api/chat/route.ts — the architect's per-file context size.
+const PREVIEW_LINES = 15;
 
 interface FileStats {
   nRows: number;
@@ -32,6 +35,24 @@ async function sniffStats(text: string): Promise<FileStats> {
     }
   }
   return { nRows: rows.length, nCols: columns.length, dateRange };
+}
+
+// Build the full-series statistical profile from a CSV's text (dynamicTyping so numbers
+// come through as numbers). Best-effort — a parse hiccup must never block the upload, so
+// this returns null rather than throwing.
+function buildProfileFromCsv(text: string): SourceProfile | null {
+  try {
+    const parsed = Papa.parse<Record<string, unknown>>(text, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+    });
+    const columns = parsed.meta.fields ?? [];
+    if (columns.length === 0 || parsed.data.length === 0) return null;
+    return buildSourceProfile(columns, parsed.data);
+  } catch {
+    return null;
+  }
 }
 
 export function SourceUpload({
@@ -84,11 +105,34 @@ export function SourceUpload({
         setError(upErr.message);
         continue;
       }
-      const { error: rowErr } = await supabase
+      // Cache a small text preview AND a full-series statistical profile now, while the
+      // file is already in hand — the chat architect route reads these columns instead of
+      // re-downloading and re-analysing the file on every chat turn. Binary formats (xlsx)
+      // get neither, same as before.
+      const isCsv = /\.csv$/i.test(file.name);
+      const csvText = isCsv ? await file.text() : null;
+      const preview = csvText ? csvText.split("\n").slice(0, PREVIEW_LINES).join("\n") : null;
+      const profile = csvText ? buildProfileFromCsv(csvText) : null;
+      const { data: inserted, error: rowErr } = await supabase
         .schema("mmm")
         .from("source_files")
-        .insert({ project_id: projectId, name: file.name, storage_path: path });
-      if (rowErr) setError(rowErr.message);
+        .insert({ project_id: projectId, name: file.name, storage_path: path, preview, profile })
+        .select("id")
+        .single();
+      if (rowErr) {
+        setError(rowErr.message);
+        continue;
+      }
+      // Fire the cheap column-semantics classification in the background (best-effort — a
+      // failure just means the architect falls back to inferring roles itself). Not awaited
+      // per-file: the classify route reads the row we just wrote.
+      if (inserted?.id && preview) {
+        void fetch("/api/classify-columns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source_file_id: inserted.id }),
+        }).catch(() => {});
+      }
     }
     setBusy(false);
     router.refresh();

@@ -60,14 +60,58 @@ export function PipelineShell({ steps, children }: { steps: StepMeta[]; children
   const prev = activeIndex > 0 ? steps[activeIndex - 1] : null;
   const next = activeIndex < steps.length - 1 ? steps[activeIndex + 1] : null;
 
+  const touchStart = useRef<{ x: number; y: number; target: EventTarget | null } | null>(null);
+  const stepsRef = useRef<HTMLDivElement>(null);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY, target: e.target };
+  }
+
+  // Swipe left/right to move a step forward/back — touch-only (a mouse never fires touch
+  // events), so this doesn't interfere with desktop. A swipe must be clearly horizontal and
+  // past a real threshold, and is ignored entirely if it started inside a horizontally
+  // scrollable element (a wide table, the correlation matrix, the stepper nav itself) so
+  // that normal inner-scroll gestures aren't hijacked into a step change.
+  function handleTouchEnd(e: React.TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || !stepsRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const SWIPE_THRESHOLD = 70;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (isWithinHorizontalScroller(start.target, stepsRef.current)) return;
+    if (dx < 0 && next) goTo(next.id);
+    else if (dx > 0 && prev) goTo(prev.id);
+  }
+
   return (
     <PipelineCtx.Provider value={{ steps, activeId, goTo }}>
       <div id="wizard-step-top" className="scroll-mt-24" />
       <WizardStepper />
-      <div className="mt-5 space-y-4">{children}</div>
+      <div ref={stepsRef} className="mt-5 space-y-4" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        {children}
+      </div>
       <StepNav prev={prev} next={next} onGo={goTo} />
     </PipelineCtx.Provider>
   );
+}
+
+// Walks up from a touch's start target to `boundary`, looking for an ancestor that
+// actually scrolls horizontally — used to let inner horizontal scrollers (wide tables,
+// the correlation matrix, charts) keep their native touch behavior instead of triggering
+// a step swipe.
+function isWithinHorizontalScroller(node: EventTarget | null, boundary: HTMLElement): boolean {
+  let el = node instanceof Element ? node : null;
+  while (el && el !== boundary) {
+    const style = window.getComputedStyle(el);
+    const scrollable = (style.overflowX === "auto" || style.overflowX === "scroll") && el.scrollWidth > el.clientWidth;
+    if (scrollable) return true;
+    el = el.parentElement;
+  }
+  return false;
 }
 
 function StepDot({ status, number }: { status: StepStatus; number: number }) {
@@ -122,7 +166,9 @@ function WizardStepper() {
     <nav
       ref={navRef}
       aria-label="Stappen"
-      className="sticky top-[3.25rem] z-20 -mx-1 overflow-x-auto rounded-[10px] border border-border bg-surface/80 px-1 py-1.5 backdrop-blur"
+      // Op mobiel is de header niet sticky (zie TopBar), dus deze nav is daar het eerste
+      // dat blijft plakken — vanaf sm schuift hij onder de wél-sticky header.
+      className="sticky top-0 z-20 -mx-1 overflow-x-auto rounded-[10px] border border-border bg-surface/80 px-1 py-1.5 backdrop-blur sm:top-[3.25rem]"
     >
       <ol className="flex min-w-max items-center gap-1">
         {steps.map((s, i) => {

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Papa from "papaparse";
+import { Check } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -15,6 +17,8 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { classifyColumns, computeColumnStats, computeCorrelationMatrix, histogram, type ColumnKind } from "@/lib/eda";
+import { DARK_TOOLTIP_STYLE } from "@/lib/chartTheme";
+import { Button } from "@/components/ui";
 import type { SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
@@ -41,7 +45,17 @@ function correlationCellStyle(r: number): React.CSSProperties {
   };
 }
 
-export function EdaSection({ sources }: { sources: SourceFile[] }) {
+export function EdaSection({
+  sources,
+  projectId,
+  completed,
+}: {
+  sources: SourceFile[];
+  projectId: string;
+  completed: boolean;
+}) {
+  const router = useRouter();
+  const [savingDone, setSavingDone] = useState(false);
   const csvSources = useMemo(() => sources.filter((s) => /\.csv$/i.test(s.name)), [sources]);
   const [selectedPath, setSelectedPath] = useState<string | null>(csvSources[0]?.storage_path ?? null);
   const [tables, setTables] = useState<Record<string, ParsedTable | "loading" | "error">>({});
@@ -96,9 +110,13 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
 
   if (csvSources.length === 0) {
     return (
-      <p className="text-sm text-fg-muted">
-        Upload eerst een CSV-bestand bij stap 1 om de data hier te kunnen verkennen.
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-fg-muted">
+          Geen CSV-bestand gevonden om te verkennen (bv. alleen xlsx geüpload) — dat is geen probleem, je
+          kunt deze stap ook gewoon afronden.
+        </p>
+        <EdaCompleteAction completed={completed} saving={savingDone} onChange={setEdaCompleted} />
+      </div>
     );
   }
 
@@ -109,6 +127,21 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
 
   function toggleYCol(col: string) {
     setYCols((prev) => (prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col]));
+  }
+
+  // EDA has no natural "finished" signal of its own (no approve/publish action like the
+  // other steps) — the builder marks it done explicitly so the stepper can turn it green.
+  // Kept reversible ("Heropenen") like the rest of the pipeline's soft, undoable actions.
+  async function setEdaCompleted(value: boolean) {
+    setSavingDone(true);
+    const supabase = createClient();
+    await supabase
+      .schema("mmm")
+      .from("projects")
+      .update({ eda_completed_at: value ? new Date().toISOString() : null })
+      .eq("id", projectId);
+    setSavingDone(false);
+    router.refresh();
   }
 
   return (
@@ -203,7 +236,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
                       <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
-                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Tooltip {...DARK_TOOLTIP_STYLE} />
                       <Line type="monotone" dataKey={yCol} stroke={ACCENT} strokeWidth={2} dot={false} />
                     </LineChart>
                   ) : (
@@ -211,7 +244,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#9A9AA3" }} minTickGap={24} />
                       <YAxis tick={{ fontSize: 11, fill: "#9A9AA3" }} width={48} />
-                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Tooltip {...DARK_TOOLTIP_STYLE} />
                       <Bar dataKey={yCol} fill={ACCENT} radius={[2, 2, 0, 0]} />
                     </BarChart>
                   )}
@@ -262,7 +295,7 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
                   <BarChart data={hist} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                     <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#9A9AA3" }} interval={2} />
                     <YAxis hide />
-                    <Tooltip contentStyle={{ fontSize: 12 }} />
+                    <Tooltip {...DARK_TOOLTIP_STYLE} />
                     <Bar dataKey="count" fill={ACCENT} radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -308,6 +341,48 @@ export function EdaSection({ sources }: { sources: SourceFile[] }) {
               </div>
             </div>
           )}
+        </>
+      )}
+
+      <EdaCompleteAction completed={completed} saving={savingDone} onChange={setEdaCompleted} />
+    </div>
+  );
+}
+
+// Shared "mark this step done" control — EDA has no other completion signal (no
+// approve/publish action), so this is the only way its pipeline dot turns green. Reversible
+// via "Heropenen", consistent with the rest of the pipeline's soft, undoable actions.
+function EdaCompleteAction({
+  completed,
+  saving,
+  onChange,
+}: {
+  completed: boolean;
+  saving: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+      {completed ? (
+        <>
+          <p className="flex items-center gap-1.5 text-sm text-accent">
+            <Check className="h-4 w-4" />
+            EDA afgerond
+          </p>
+          <button
+            onClick={() => onChange(false)}
+            disabled={saving}
+            className="text-xs text-fg-muted underline-offset-2 hover:text-fg hover:underline disabled:opacity-50"
+          >
+            Heropenen
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-fg-muted">Klaar met verkennen?</p>
+          <Button onClick={() => onChange(true)} disabled={saving}>
+            {saving ? "Bezig…" : "EDA afronden"}
+          </Button>
         </>
       )}
     </div>

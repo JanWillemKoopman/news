@@ -46,6 +46,14 @@ function useChatOpen(): ChatOpenValue {
   return ctx;
 }
 
+// Voor componenten búíten de dock (bv. de joblijst) die de chat willen openen wanneer de
+// architect proactief iets te melden heeft. Veilig buiten de provider: dan een no-op.
+export function useOpenChatDock(): (() => void) | null {
+  const ctx = useContext(ChatOpenCtx);
+  if (!ctx) return null;
+  return () => ctx.setOpen(true);
+}
+
 // Wrapper om de hoofdcontent: reserveert op xl rechts ruimte voor het open paneel,
 // zodat de fixed chat niets overlapt. Op kleiner scherm schuift de chat als
 // drawer over de content (met backdrop) en wordt hier geen ruimte gereserveerd.
@@ -72,20 +80,14 @@ export function ChatDock({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Ingeklapte handle, tegen de rechterrand geplakt. */}
+      {/* Ingeklapte handle: een ronde chat-knop rechtsonder, icoon-only. */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Chat openen"
-          className="group fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-2 rounded-l-xl border border-r-0 border-border bg-surface px-2.5 py-4 text-fg-muted shadow-panel transition hover:bg-surface-2 hover:text-fg"
+          className="group fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface text-accent shadow-panel transition hover:bg-surface-2 hover:shadow-glow-sm sm:bottom-6 sm:right-6"
         >
-          <MessageSquare className="h-5 w-5 text-accent" />
-          <span
-            className="text-xs font-medium tracking-wide"
-            style={{ writingMode: "vertical-rl" }}
-          >
-            Claude-assistent
-          </span>
+          <MessageSquare className="h-5 w-5" />
         </button>
       )}
 
