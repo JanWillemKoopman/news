@@ -66,6 +66,23 @@ class ChannelResult:
 
 
 @dataclass
+class WeeklyDecomposition:
+    """Compact per-week decomposition for the dashboard's build-up and fit-vs-actual
+    charts: the actual KPI, the model's expectation (median + 94% predictive band) and
+    the median baseline / per-channel contributions. Medians only for the components —
+    the stacked chart needs one number per layer per week, and this keeps the summary
+    JSON small (~(4 + n_channels) × n_weeks floats)."""
+
+    dates: list[str]
+    actual: list[float]
+    expected_p50: list[float]
+    expected_p3: list[float]
+    expected_p97: list[float]
+    baseline_p50: list[float]
+    channels_p50: dict[str, list[float]]
+
+
+@dataclass
 class Diagnostics:
     max_r_hat: float
     min_ess_bulk: float
@@ -218,6 +235,8 @@ class FitSummary:
     response_curves: list[ResponseCurve] = field(default_factory=list)
     optimal_allocation: OptimalAllocation | None = None
     efficiency_frontier: list[FrontierPoint] = field(default_factory=list)
+    # Optional so summaries from fits predating the weekly block keep deserializing.
+    weekly: WeeklyDecomposition | None = None
 
     def to_json_dict(self) -> dict:
         """A plain, JSON-serializable dict (what the worker writes to Postgres)."""
@@ -449,6 +468,16 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         decomposition_ok=decomp.ok,
     )
 
+    weekly = WeeklyDecomposition(
+        dates=[str(d.date()) for d in built.dates],
+        actual=[float(v) for v in kpi],
+        expected_p50=[float(v) for v in np.median(expected, axis=1)],
+        expected_p3=[float(v) for v in lo],
+        expected_p97=[float(v) for v in hi],
+        baseline_p50=[float(v) for v in np.median(baseline_week, axis=1)],
+        channels_p50={n: [float(v) for v in np.median(cw, axis=1)] for n, cw in channel_week.items()},
+    )
+
     response_curves, optimal_allocation, efficiency_frontier = _planning_outputs(built, idata)
     n_draws = int(idata.posterior.sizes["draw"])
     n_chains = int(idata.posterior.sizes["chain"])
@@ -465,6 +494,7 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         chains=n_chains,
         quality_gate=quality_gate,
         response_curves=response_curves,
+        weekly=weekly,
         optimal_allocation=optimal_allocation,
         efficiency_frontier=efficiency_frontier,
     )

@@ -512,6 +512,20 @@ export interface FitSummary {
   response_curves?: ResponseCurve[];
   optimal_allocation?: OptimalAllocation | null;
   efficiency_frontier?: FrontierPoint[];
+  weekly?: WeeklyDecomposition | null;
+}
+
+// Compacte weekdecompositie (mmm_core.model.fit.WeeklyDecomposition): voedt de
+// KPI-opbouwgrafiek en voorspeld-vs-werkelijk in het dashboard. Medianen per component;
+// alleen de totale verwachting draagt een 94%-band. Ontbreekt bij oudere runs.
+export interface WeeklyDecomposition {
+  dates: string[];
+  actual: number[];
+  expected_p50: number[];
+  expected_p3: number[];
+  expected_p97: number[];
+  baseline_p50: number[];
+  channels_p50: Record<string, number[]>;
 }
 
 // --- Hierarchical (multi-region) fit summary ---
