@@ -13,6 +13,9 @@ interface ChatMessage {
   proposedRecipe?: unknown;
   // True while this assistant bubble is still receiving streamed deltas.
   streaming?: boolean;
+  // Historische beurten: welk voorstel-type deze beurt bevatte (de overnemen-knop bestaat
+  // alleen live; in de historie markeren we de beurt zodat hij terug te vinden is).
+  pastProposal?: "recept" | "configuratie";
 }
 
 // Extracts the plain-text bubble content from a stored Anthropic content-block array
@@ -23,6 +26,17 @@ function textFromBlocks(content: unknown): string {
     .filter((b): b is { type: string; text: string } => b?.type === "text")
     .map((b) => b.text)
     .join("\n\n");
+}
+
+// Detecteert of een opgeslagen assistentbeurt een recept-/configuratievoorstel bevatte.
+function proposalFromBlocks(content: unknown): "recept" | "configuratie" | undefined {
+  if (!Array.isArray(content)) return undefined;
+  for (const b of content as { type?: string; name?: string }[]) {
+    if (b?.type !== "tool_use") continue;
+    if (b.name === "propose_prepare_recipe") return "recept";
+    if (b.name === "propose_model_config") return "configuratie";
+  }
+  return undefined;
 }
 
 // Which quick-actions make sense depends on which step the builder is actually looking
@@ -145,8 +159,13 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         const rows = (data.messages ?? []) as { id: string; role: "user" | "assistant"; content: unknown }[];
         setMessages(
           rows
-            .map((r) => ({ id: r.id, role: r.role, text: textFromBlocks(r.content) }))
-            .filter((m) => m.text.trim().length > 0),
+            .map((r) => ({
+              id: r.id,
+              role: r.role,
+              text: textFromBlocks(r.content),
+              pastProposal: r.role === "assistant" ? proposalFromBlocks(r.content) : undefined,
+            }))
+            .filter((m) => m.text.trim().length > 0 || m.pastProposal),
         );
         if (data.context) setContext(data.context as ChatContextSummary);
       })
@@ -310,6 +329,11 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             >
               {m.text}
             </div>
+            {m.pastProposal && m.proposedRecipe == null && m.proposedConfig == null && (
+              <p className="mt-0.5 text-[11px] text-fg-faint">
+                ⚙ bevatte een {m.pastProposal}-voorstel — vraag de architect het opnieuw voor te stellen als je het alsnog wilt overnemen
+              </p>
+            )}
             {m.proposedRecipe != null && (
               <div className="mt-1">
                 <button

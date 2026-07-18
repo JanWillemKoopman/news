@@ -185,8 +185,13 @@ een **iteratief** traject is: een eerste fit is een startpunt, geen eindpunt.
 ### 3.2 Inloggen en een project aanmaken
 
 1. Ga naar de app en log in via **`/login`** (e-mail/wachtwoord of magic link).
-2. Je komt op **`/projects`**: de lijst met projecten. **Eén project = één klantmodel.**
-3. Maak een nieuw project aan met een **naam** en optioneel de **klantnaam**.
+2. Je komt op **`/projects`**: de lijst met projecten (elk met zijn actuele pipelinefase).
+   **Eén project = één klantmodel.**
+3. Maak een nieuw project aan met een **naam** en optioneel de **klantnaam** — of klik
+   **"start een demo-project"**: dan staat er direct een oefenproject klaar met de
+   meegeleverde MediaMarkt-demodata, ideaal om de wizard te leren kennen of een training
+   te beginnen. Elke stap toont bovenaan een korte spiekbrief (wat doe je hier en waarom);
+   deze handleiding blijft het naslagwerk.
 4. Open het project. Je ziet nu de **wizard**: een verticale stappen-pijplijn (op desktop
    met een railnavigatie links, op mobiel een compacte voortgangsregel) met daarnaast een
    **chatpaneel** met de AI-architect.
@@ -419,7 +424,9 @@ kost een volledige fit aan rekentijd — gebruik dit gericht, niet standaard.
 Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
 
 - **Run-historie** — alle runs van dit project, met een twee-op-twee-vergelijkingstabel
-  zodat je configuraties tegen elkaar kunt afwegen.
+  zodat je configuraties tegen elkaar kunt afwegen, en per run een knop **"config
+  hergebruiken"** die stap 4 vult met de exacte configuratie van die run als startpunt
+  (iteratiediscipline: één ding tegelijk veranderen).
 - **Kwaliteitspoort-banner** — spreekt alléén als er iets mis is (zie §6). Groen/stil =
   vertrouwbaar.
 - **Kernstatistieken** met begrijpelijke tooltip-uitleg (een ingebouwd glossarium — zie §9).
