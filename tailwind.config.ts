@@ -1,41 +1,46 @@
 import type { Config } from "tailwindcss";
 
-// Modal.com-geïnspireerde dark developer-tool palette. Semantische tokens (bg /
-// surface / border / fg / accent …) i.p.v. losse kleurnamen, zodat de hele app
-// centraal bij te stellen is en componenten hun bedoeling uitdrukken. Groen =
-// primair/actief/geslaagd, rood = attentie/mislukt, amber = waarschuwing.
+// Licht, Apple-geïnspireerd palet (apple.com-achtig: wit/lichtgrijs canvas, kalm blauw
+// als enige actiekleur). Semantische tokens (bg / surface / border / fg / accent …)
+// i.p.v. losse kleurnamen, zodat de hele app centraal bij te stellen is en componenten
+// hun bedoeling uitdrukken. Betekenis strikt gescheiden: blauw = actie/merk/AI-voorstel,
+// groen = geslaagd/gezond, rood = attentie/mislukt, amber = waarschuwing.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#0B0B0E",
+        bg: "#F5F5F7",
         surface: {
-          DEFAULT: "#141417",
-          2: "#1B1B1F",
-          3: "#232329",
+          DEFAULT: "#FFFFFF",
+          2: "#F5F5F7",
+          3: "#E8E8ED",
         },
         border: {
-          DEFAULT: "rgba(255,255,255,0.08)",
-          strong: "rgba(255,255,255,0.14)",
+          DEFAULT: "rgba(0,0,0,0.08)",
+          strong: "rgba(0,0,0,0.16)",
         },
         fg: {
-          DEFAULT: "#F4F4F5",
-          muted: "#9A9AA3",
-          faint: "#6B6B73",
+          DEFAULT: "#1D1D1F",
+          muted: "#6E6E73",
+          faint: "#98989D",
         },
         accent: {
-          DEFAULT: "#7FEE64",
-          hover: "#93F27C",
-          dim: "rgba(127,238,100,0.14)",
+          DEFAULT: "#0071E3",
+          hover: "#0077ED",
+          dim: "rgba(0,113,227,0.08)",
+        },
+        success: {
+          DEFAULT: "#1F8A3B",
+          dim: "rgba(52,199,89,0.12)",
         },
         danger: {
-          DEFAULT: "#F26D6D",
-          dim: "rgba(242,109,109,0.14)",
+          DEFAULT: "#D70015",
+          dim: "rgba(255,59,48,0.08)",
         },
         warn: {
-          DEFAULT: "#E7B84B",
-          dim: "rgba(231,184,75,0.14)",
+          DEFAULT: "#B25E00",
+          dim: "rgba(255,159,10,0.12)",
         },
       },
       fontFamily: {
@@ -43,9 +48,11 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(127,238,100,0.6), 0 0 20px -6px rgba(127,238,100,0.5)",
-        "glow-sm": "0 0 0 1px rgba(127,238,100,0.45), 0 0 12px -6px rgba(127,238,100,0.4)",
-        panel: "0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px -16px rgba(0,0,0,0.8)",
+        // Voorheen neon-glows; nu zachte focus-ringen en kaart-schaduwen passend bij het
+        // lichte thema. Klassen heten nog glow/glow-sm zodat bestaande componenten werken.
+        glow: "0 0 0 4px rgba(0,113,227,0.20)",
+        "glow-sm": "0 0 0 3px rgba(0,113,227,0.15)",
+        panel: "0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -12px rgba(0,0,0,0.10)",
       },
     },
   },

@@ -19,10 +19,10 @@ import type { FitSummary } from "@/lib/types";
 
 // Deterministic, zero-cost charts drawn straight from the numbers already in FitSummary —
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
-const ACCENT = "#7FEE64";
-const NEUTRAL = "#6B6B73";
-const GRID = "rgba(255,255,255,0.08)";
-const AXIS = { fontSize: 11, fill: "#9A9AA3" };
+const ACCENT = "#0071E3";
+const NEUTRAL = "#98989D";
+const GRID = "rgba(0,0,0,0.08)";
+const AXIS = { fontSize: 11, fill: "#6E6E73" };
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -158,7 +158,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => `${v}%`} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<ShareTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+              <Tooltip content={<ShareTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
               <Bar dataKey="p50" fill={ACCENT} radius={[0, 3, 3, 0]} barSize={14}>
                 <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ACCENT} strokeOpacity={0.5} />
               </Bar>
@@ -172,7 +172,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
               <Bar dataKey="p50" fill={ACCENT} radius={[0, 3, 3, 0]} barSize={14}>
                 <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={ACCENT} strokeOpacity={0.5} />
               </Bar>
@@ -207,9 +207,9 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
                       <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
                       <ReferenceLine
                         x={curve.current_weekly_spend}
-                        stroke="#9A9AA3"
+                        stroke="#6E6E73"
                         strokeDasharray="4 4"
-                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#9A9AA3" }}
+                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#6E6E73" }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -240,9 +240,9 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               {allocation && (
                 <ReferenceLine
                   x={allocation.total_weekly_budget}
-                  stroke="#9A9AA3"
+                  stroke="#6E6E73"
                   strokeDasharray="4 4"
-                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#9A9AA3" }}
+                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#6E6E73" }}
                 />
               )}
             </AreaChart>
@@ -257,7 +257,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
               <Bar dataKey="delta" radius={[0, 3, 3, 0]} barSize={14}>
                 {reallocData.map((d) => (
                   <Cell key={d.name} fill={d.delta >= 0 ? ACCENT : NEUTRAL} />
