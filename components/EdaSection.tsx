@@ -159,7 +159,7 @@ export function EdaSection({
             onClick={() => setSelectedPath(s.storage_path)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
               selectedPath === s.storage_path
-                ? "border-danger/30 bg-danger-dim text-danger"
+                ? "border-accent/40 bg-accent-dim text-accent"
                 : "border-border text-fg-muted hover:bg-surface-2"
             }`}
           >
@@ -213,7 +213,7 @@ export function EdaSection({
                       onClick={() => toggleYCol(c)}
                       className={`rounded-full border px-2.5 py-1 text-xs transition ${
                         yCols.includes(c)
-                          ? "border-danger/30 bg-danger-dim text-danger"
+                          ? "border-accent/40 bg-accent-dim text-accent"
                           : "border-border text-fg-muted hover:bg-surface-2"
                       }`}
                     >
