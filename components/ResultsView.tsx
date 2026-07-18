@@ -7,9 +7,17 @@ import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
 import { RunHistory } from "@/components/RunHistory";
 import { SummaryView } from "@/components/SummaryView";
 import { StatusBadge } from "@/components/ui";
-import { isHierSummary, type ClientSummary, type ModelRun, type RunAnalysis } from "@/lib/types";
+import { isHierSummary, type ClientSummary, type JobConfig, type ModelRun, type RunAnalysis } from "@/lib/types";
 
-export function ResultsView({ projectId, runs }: { projectId: string; runs: ModelRun[] }) {
+export function ResultsView({
+  projectId,
+  runs,
+  jobConfigs,
+}: {
+  projectId: string;
+  runs: ModelRun[];
+  jobConfigs?: Record<string, JobConfig>;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +111,7 @@ export function ResultsView({ projectId, runs }: { projectId: string; runs: Mode
 
   return (
     <div className="space-y-5">
-      <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} />
+      <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} jobConfigs={jobConfigs} />
       {isHierSummary(viewedRun.summary) ? (
         <HierarchicalSummaryView summary={viewedRun.summary} />
       ) : (

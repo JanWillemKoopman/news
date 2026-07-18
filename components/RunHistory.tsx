@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { isHierSummary, type ModelRun } from "@/lib/types";
+import { usePathname, useRouter } from "next/navigation";
+import { useWizardChatOptional } from "@/components/WizardChatContext";
+import { isHierSummary, type JobConfig, type ModelRun } from "@/lib/types";
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -33,13 +35,28 @@ export function RunHistory({
   runs,
   selectedId,
   onSelect,
+  jobConfigs,
 }: {
   runs: ModelRun[];
   selectedId: string;
   onSelect: (id: string) => void;
+  // job_id -> de config waarmee die run is gefit; voedt de "config hergebruiken"-knop.
+  jobConfigs?: Record<string, JobConfig>;
 }) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareMode, setCompareMode] = useState(false);
+  const chat = useWizardChatOptional();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Itereren met discipline: pak de exacte config van een eerdere run als startpunt in
+  // stap 4 (via het bestaande voorstel-overnemen-mechanisme, dus mét banner en undo).
+  function reuseConfig(run: ModelRun) {
+    const config = run.job_id ? jobConfigs?.[run.job_id] : undefined;
+    if (!config || !chat) return;
+    chat.applyConfig(config);
+    router.replace(`${pathname}?step=config`, { scroll: false });
+  }
 
   if (runs.length <= 1) return null;
 
@@ -116,6 +133,27 @@ export function RunHistory({
                 {run.is_published && (
                   <span className="rounded-full border border-accent/30 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent">
                     gepubliceerd
+                  </span>
+                )}
+                {!compareMode && chat && run.job_id && jobConfigs?.[run.job_id] && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      reuseConfig(run);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        reuseConfig(run);
+                      }
+                    }}
+                    title="Vul stap 4 met de exacte configuratie van deze run als startpunt"
+                    className="rounded-full border border-border px-2 py-0.5 text-[11px] text-fg-muted transition hover:border-accent/40 hover:bg-accent-dim hover:text-accent"
+                  >
+                    config hergebruiken
                   </span>
                 )}
               </button>

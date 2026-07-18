@@ -11,6 +11,7 @@ import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
 import { ResultsView } from "@/components/ResultsView";
 import { ChatPanel } from "@/components/ChatPanel";
+import { StepIntro } from "@/components/StepIntro";
 import { ChatDock, ChatDockProvider, ChatMain } from "@/components/ChatDock";
 import { WizardChatProvider } from "@/components/WizardChatContext";
 import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
@@ -77,6 +78,13 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     client_summary: i === 0 ? latestClientSummary : null,
     inference_data_path: null,
   }));
+  // job_id -> fit-config, voor de "config hergebruiken"-knop in de run-historie.
+  const jobConfigById = Object.fromEntries(
+    ((jobs ?? []) as Job[])
+      .filter((j) => j.type === "fit" || j.type === "fit_hierarchical")
+      .map((j) => [j.id, j.config]),
+  ) as Record<string, import("@/lib/types").JobConfig>;
+
   const pipelineSteps = computePipelineSteps({
     sources: (sources ?? []) as SourceFile[],
     dataset: latestDataset,
@@ -106,10 +114,12 @@ export default async function ProjectDetail({ params }: { params: { id: string }
               <div className="mt-6">
                 <PipelineShell steps={pipelineSteps}>
                   <PipelineStep id="data" number={1}>
+                    <StepIntro step="data" />
                     <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
                   </PipelineStep>
 
                   <PipelineStep id="eda" number={2}>
+                    <StepIntro step="eda" />
                     <EdaSection
                       sources={(sources ?? []) as SourceFile[]}
                       projectId={p.id}
@@ -118,6 +128,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   </PipelineStep>
 
                   <PipelineStep id="dataprep" number={3}>
+                    <StepIntro step="dataprep" />
                     <DataPrepSection
                       projectId={p.id}
                       sources={(sources ?? []) as SourceFile[]}
@@ -126,6 +137,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   </PipelineStep>
 
                   <PipelineStep id="config" number={4}>
+                    <StepIntro step="config" />
                     <ModelConfigForm
                       projectId={p.id}
                       sources={(sources ?? []) as SourceFile[]}
@@ -134,11 +146,13 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   </PipelineStep>
 
                   <PipelineStep id="fits" number={5}>
+                    <StepIntro step="fits" />
                     <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
                   </PipelineStep>
 
                   <PipelineStep id="results" number={6}>
-                    <ResultsView projectId={p.id} runs={runsWithAnalysis} />
+                    <StepIntro step="results" />
+                    <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} />
                   </PipelineStep>
                 </PipelineShell>
               </div>

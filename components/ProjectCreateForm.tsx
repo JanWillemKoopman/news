@@ -60,6 +60,48 @@ export function ProjectCreateForm() {
         {busy ? "Bezig…" : "Project aanmaken"}
       </button>
       {error && <p className="w-full text-sm text-danger">{error}</p>}
+      <DemoProjectButton />
     </form>
+  );
+}
+
+// Eén klik naar een gevuld oefenproject: project + demo-CSV (MediaMarkt, 4 jaar weekdata)
+// staan klaar alsof je ze zelf had geüpload — ideaal om de wizard te leren kennen of een
+// training te starten zonder eerst klantdata te regelen.
+function DemoProjectButton() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/projects/demo", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Demo-project starten mislukt.");
+        return;
+      }
+      router.push(`/projects/${data.project_id}`);
+    } catch {
+      setError("Verbinding mislukt.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="w-full border-t border-border pt-3">
+      <button
+        type="button"
+        onClick={start}
+        disabled={busy}
+        className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-fg-muted transition hover:bg-surface-2 disabled:opacity-50"
+      >
+        {busy ? "Demo-project wordt klaargezet…" : "Of: start een demo-project (MediaMarkt-oefendata)"}
+      </button>
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+    </div>
   );
 }
