@@ -46,6 +46,14 @@ function useChatOpen(): ChatOpenValue {
   return ctx;
 }
 
+// Voor componenten búíten de dock (bv. de joblijst) die de chat willen openen wanneer de
+// architect proactief iets te melden heeft. Veilig buiten de provider: dan een no-op.
+export function useOpenChatDock(): (() => void) | null {
+  const ctx = useContext(ChatOpenCtx);
+  if (!ctx) return null;
+  return () => ctx.setOpen(true);
+}
+
 // Wrapper om de hoofdcontent: reserveert op xl rechts ruimte voor het open paneel,
 // zodat de fixed chat niets overlapt. Op kleiner scherm schuift de chat als
 // drawer over de content (met backdrop) en wordt hier geen ruimte gereserveerd.

@@ -81,6 +81,20 @@ Claude API maximaal wordt benut (migratie `0011_claude_brains.sql`):
   voor, het draait, het kwaliteitsrapport gaat als echte `tool_result` terug, en hij
   corrigeert tot het rapport schoon is — de triviale rondes zonder mens in de lus. De bouwer
   keurt de uiteindelijke dataset nog steeds zelf goed.
+- **Auto-verbetercyclus voor de fit** (`app/api/fit-refine` + toggle in `JobList`) — de
+  tegenhanger voor de dure stap: bij een mislukte of warn/fail-fit diagnosticeert de
+  architect, start een gecorrigeerde fit, en herhaalt zodra die klaar is (client-gedreven
+  via Realtime, max. 3 rondes). Elke ronde is zichtbaar in de projectchat.
+- **Proactieve fit-terugkoppeling** (`JobList` → chat) — zodra een live gevolgde fit
+  slaagt of faalt, stuurt de UI automatisch de beoordelingsvraag naar de architect en
+  klapt de chat open.
+- **Streaming chat + context-transparantie** (`app/api/chat` NDJSON-stream, `ChatPanel`) —
+  antwoorden streamen live (met stop-knop), en een chip-regel toont welke context de
+  architect meeleest. De architect ziet nu ook de **run-historie** (laatste 4 runs) om
+  runs te vergelijken.
+- **Klantsamenvatting** (`lib/anthropic/clientSummary.ts`, `app/api/client-summary`,
+  migratie `0013`) — presentatieklare NL-samenvatting in klanttaal per run, opgeslagen op
+  `model_runs.client_summary`.
 
 Deze onderdelen type-checken (`npm run typecheck`) en de worker-tests zijn groen
 (`worker/tests`), maar zijn — net als de rest van de wizard — nog niet end-to-end live getest.

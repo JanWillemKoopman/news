@@ -393,6 +393,18 @@ gerust wachten of iets anders doen. In deze stap zie je een **live lijst** van f
 
 Er draaien maximaal twee jobs tegelijk; extra fits komen in de wachtrij.
 
+**Proactieve terugkoppeling (nieuw).** Zodra een fit die je ziet lopen klaar is of faalt,
+hoef je niet meer zelf naar de chat: de architect meldt zich vanzelf — het chatpaneel
+klapt open en hij beoordeelt het resultaat (of diagnosticeert de fout) direct.
+
+**Automatische verbetercyclus (nieuw).** Boven de fit-lijst staat de knop **"Automatische
+verbetercyclus"**. Zet je die aan bij een mislukte of zwakke fit (kwaliteitspoort
+warn/fail), dan doorloopt de architect de dure iteratielus zelf: diagnose → gecorrigeerde
+config → nieuwe fit → opnieuw beoordelen, tot de poort op *pass* staat of de limiet van
+**3 rondes** is bereikt. Elke ronde is als gewoon gesprek zichtbaar in de chat, je kunt op
+elk moment stoppen, en goedkeuren/publiceren blijft altijd aan jou. Let op: elke ronde
+kost een volledige fit aan rekentijd — gebruik dit gericht, niet standaard.
+
 ### Stap 6 — Resultaten
 
 Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
@@ -410,6 +422,13 @@ Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
   sandbox, alleen op basis van de resultaat-JSON — geen ruwe klantdata) een geschreven
   Nederlandstalige interpretatie **plus** extra grafieken laat maken. Handig als bijlage bij
   je presentatie.
+- **"Schrijf klantsamenvatting" (nieuw)** — laat Claude een presentatieklare samenvatting
+  in klanttaal schrijven volgens de presentatievolgorde uit §7 (kwaliteit → contributie →
+  onzekerheid → advies → vervolgstap), op basis van alleen de resultaat-JSON. Kopieer 'm
+  1-op-1 in je rapport of slides en pas aan waar nodig — jij blijft de afzender.
+- **Vergelijken via de chat (nieuw)** — de architect ziet nu ook de eerdere runs van het
+  project. De snelactie *"Vergelijk met eerdere runs"* laat hem beargumenteren of de
+  laatste fit écht beter is en welke run hij zou publiceren.
 - **Publiceren** — zet deze run live voor de klant (§7).
 
 ---
@@ -433,7 +452,10 @@ Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
 | **Diepe data-inspectie** | Knop in stap 3 | Claude Sonnet (code-sandbox) | Verkent de volledige data met pandas | Handmatig (knop) |
 | **Agentic auto-verfijn** | Stap 3 | Claude Sonnet | Loopt de triviale samenvoeg-correctierondes zelf | Handmatig gestart, dan autonoom |
 | **Prior-predictive check** | Vóór de fit (stap 4) | (kern-berekening, architect leest terug) | Checkt welk KPI-bereik je priors impliceren | Op verzoek |
+| **Proactieve fit-terugkoppeling** | Zodra een fit klaar is of faalt (stap 5) | Claude Sonnet | Beoordeelt het resultaat of diagnosticeert de fout — ongevraagd, de chat klapt open | Automatisch |
+| **Auto-verbetercyclus (fit)** | Knop in stap 5 | Claude Sonnet | Corrigeert een mislukte/zwakke fit zelf en fit opnieuw (max. 3 rondes) | Handmatig gestart, dan autonoom |
 | **Diepgaande analyse** | Knop in stap 6 | Claude Sonnet (code-sandbox) | Geschreven interpretatie + extra grafieken van het resultaat | Handmatig (knop) |
+| **Klantsamenvatting** | Knop in stap 6 | Claude Sonnet | Presentatieklare samenvatting in klanttaal voor je rapport/slides | Handmatig (knop) |
 
 ### 5.2 De chat-architect (de kern)
 
@@ -457,6 +479,12 @@ referentie van **terugkerende NL-kalendergebeurtenissen** (Black Friday, kerst, 
 de uitkomst van de **prior-predictive check**. Daardoor zijn zijn voorstellen concreter en
 minder giswerk — hij ziet een uitschieter in week 45 die niet in de preview stond, of twee
 bijna-identieke kanalen, en benoemt die uit zichzelf.
+
+**Fijner samenwerken (nieuw):** antwoorden **streamen** live het paneel in (met een
+stop-knop), boven de chat staat een regel **"Architect ziet: …"** die precies toont welke
+context hij meeleest (bestanden, datasetstatus, laatste fit, vastgelegde contextfeiten,
+inspectie) — zo weet je waar je naar kunt verwijzen — en vanuit het kwaliteitsrapport en
+de kwaliteitspoort kun je met één klik een voorgevulde vraag naar de architect sturen.
 
 **Zo werk je ermee:**
 - Per actieve stap biedt het paneel 1–2 **snelacties**, o.a.: *"Stel een samenvoegrecept

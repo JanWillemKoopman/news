@@ -10,6 +10,10 @@ export interface ArchitectFitContext {
   // The latest prior-predictive review (KPI range implied by the priors), if one was run —
   // a cheap pre-fit sanity check the architect should read and act on before spending a fit.
   priorPredictive?: { review: PriorPredictiveReview; created_at: string } | null;
+  // Up to a few runs BEFORE latestRun (newest first), each as a one-line digest — enough
+  // for the architect to answer "is deze run beter dan de vorige, en waarom?" without
+  // blowing up the context. Sits after the last cache breakpoint like the rest of this block.
+  previousRuns?: { summary: FitSummary; created_at: string }[];
 }
 
 // The two roles the architect can reason in, and the single place their model IDs live —
@@ -102,9 +106,28 @@ function formatPriorPredictive(pp: NonNullable<ArchitectFitContext["priorPredict
   return lines.join("\n");
 }
 
+// One line per earlier run: enough to compare against the latest fit (quality trend,
+// what changed in the config's effect) without repeating full per-channel tables.
+function formatRunHistoryBlock(runs: NonNullable<ArchitectFitContext["previousRuns"]>): string {
+  if (runs.length === 0) return "";
+  const lines = runs.map((r) => {
+    const s = r.summary;
+    const d = s.diagnostics;
+    const gate = s.quality_gate ? s.quality_gate.verdict.toUpperCase() : "?";
+    const chans = s.channels.map((c) => `${c.name} ROAS ${num(c.roas.p50)}`).join(", ");
+    return `  • ${r.created_at.slice(0, 10)}: poort=${gate}, R²=${num(d.r2)}, MAPE=${pct(d.mape)}, max R-hat=${num(d.max_r_hat, 3)}, div=${d.n_divergences}; ${chans}`;
+  });
+  return [
+    "Eerdere runs van dit project (nieuwste eerst) — gebruik dit om de laatste fit te VERGELIJKEN met wat eraan voorafging (is het echt beter geworden, en waardoor?):",
+    ...lines,
+  ].join("\n");
+}
+
 export function formatFitContextBlock(ctx: ArchitectFitContext): string {
   const { latestRun, latestJob } = ctx;
-  const ppBlock = ctx.priorPredictive ? `\n\n${formatPriorPredictive(ctx.priorPredictive)}` : "";
+  const historyBlock = ctx.previousRuns?.length ? `\n\n${formatRunHistoryBlock(ctx.previousRuns)}` : "";
+  const ppBlock =
+    (ctx.priorPredictive ? `\n\n${formatPriorPredictive(ctx.priorPredictive)}` : "") + historyBlock;
 
   // A failed job that is newer than the last successful run is the most relevant thing to
   // reason about (the builder just tried something and it broke).

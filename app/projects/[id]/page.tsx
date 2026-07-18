@@ -60,18 +60,21 @@ export default async function ProjectDetail({ params }: { params: { id: string }
 
   const runsList = (runs ?? []) as ModelRun[];
   let latestAnalysis: ModelRun["analysis"] = null;
+  let latestClientSummary: ModelRun["client_summary"] = null;
   if (runsList[0]) {
     const { data: analysisRow } = await supabase
       .schema("mmm")
       .from("model_runs")
-      .select("analysis")
+      .select("analysis, client_summary")
       .eq("id", runsList[0].id)
       .maybeSingle();
     latestAnalysis = (analysisRow?.analysis as ModelRun["analysis"]) ?? null;
+    latestClientSummary = (analysisRow?.client_summary as ModelRun["client_summary"]) ?? null;
   }
   const runsWithAnalysis: ModelRun[] = runsList.map((r, i) => ({
     ...r,
     analysis: i === 0 ? latestAnalysis : null,
+    client_summary: i === 0 ? latestClientSummary : null,
     inference_data_path: null,
   }));
   const pipelineSteps = computePipelineSteps({

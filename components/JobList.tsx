@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { StatusBadge } from "@/components/ui";
+import { useOpenChatDock } from "@/components/ChatDock";
+import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { Job, JobProgress } from "@/lib/types";
 
 const PROGRESS_LABEL: Record<JobProgress, string> = {
@@ -46,6 +48,65 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   const [jobs, setJobs] = useState<Job[]>(initialJobs.filter((j) => FIT_JOB_TYPES.includes(j.type)));
   const [now, setNow] = useState(() => Date.now());
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const chat = useWizardChatOptional();
+  const openChat = useOpenChatDock();
+  // Proactieve terugkoppeling: alleen op een ín deze sessie waargenomen transitie naar
+  // succeeded/failed (nooit bij een refresh die een oude eindstatus binnenhaalt), en
+  // hooguit één keer per job.
+  const reviewedJobs = useRef<Set<string>>(new Set());
+  // Automatische verbetercyclus: zolang aan, roept elke afgeronde-maar-niet-goede fit
+  // /api/fit-refine aan (architect corrigeert → nieuwe fit), tot "pass" of de rondelimiet.
+  const [autoRefine, setAutoRefine] = useState(false);
+  const [refineStatus, setRefineStatus] = useState<string | null>(null);
+  const refineRound = useRef(1);
+  const refineBusy = useRef(false);
+  const autoRefineRef = useRef(autoRefine);
+  autoRefineRef.current = autoRefine;
+
+  async function runRefineRound() {
+    if (refineBusy.current) return;
+    refineBusy.current = true;
+    setRefineStatus(`Ronde ${refineRound.current}: de architect beoordeelt de laatste fit…`);
+    try {
+      const res = await fetch("/api/fit-refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, round: refineRound.current }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRefineStatus(data.error ?? "De verbetercyclus is gestopt door een fout.");
+        setAutoRefine(false);
+      } else if (data.status === "refitted") {
+        setRefineStatus(`Ronde ${refineRound.current}: gecorrigeerde fit gestart — de cyclus gaat door zodra die klaar is.`);
+        refineRound.current += 1;
+      } else if (data.status === "waiting") {
+        setRefineStatus("Er draait nog een fit; de cyclus wacht tot die klaar is.");
+      } else {
+        // done / stopped / exhausted: cyclus klaar, boodschap tonen en uitzetten.
+        setRefineStatus(data.message ?? "De verbetercyclus is klaar.");
+        setAutoRefine(false);
+      }
+    } catch {
+      setRefineStatus("De verbetercyclus is gestopt: verbinding mislukt.");
+      setAutoRefine(false);
+    } finally {
+      refineBusy.current = false;
+    }
+  }
+
+  function toggleAutoRefine() {
+    if (autoRefine) {
+      setAutoRefine(false);
+      setRefineStatus("Cyclus gestopt.");
+      return;
+    }
+    refineRound.current = 1;
+    setAutoRefine(true);
+    // Directe eerste ronde: als de laatste fit al mislukt/warn is, hoeft de bouwer niet
+    // op een volgende transitie te wachten.
+    void runRefineRound();
+  }
 
   useEffect(() => {
     const hasActive = jobs.some((j) => j.status === "queued" || j.status === "running");
@@ -65,6 +126,28 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
           const row = payload.new as Job;
           if (!FIT_JOB_TYPES.includes(row.type)) return;
           setJobs((prev) => {
+            const previous = prev.find((j) => j.id === row.id);
+            // De architect meldt zich vanzelf zodra een fit die we live zagen lopen klaar
+            // is of faalt: de beoordelingsvraag gaat automatisch de chat in en de dock
+            // klapt open. De bouwer hoeft er niet meer zelf om te vragen.
+            const observedTransition =
+              previous != null &&
+              (previous.status === "queued" || previous.status === "running") &&
+              (row.status === "succeeded" || row.status === "failed");
+            if (observedTransition && autoRefineRef.current) {
+              // In de verbetercyclus neemt /api/fit-refine de beoordeling over (die
+              // schrijft zijn eigen chatberichten); de losse proactieve vraag zou dubbelen.
+              reviewedJobs.current.add(row.id);
+              void runRefineRound();
+            } else if (observedTransition && chat && !reviewedJobs.current.has(row.id)) {
+              reviewedJobs.current.add(row.id);
+              chat.sendToChat(
+                row.status === "succeeded"
+                  ? "Er is zojuist een fit afgerond. Beoordeel het resultaat: is het model betrouwbaar (kwaliteitspoort, diagnostiek), wat zeggen de kanalen, en kan het beter? Vergelijk waar mogelijk met eerdere runs."
+                  : "De fit die net draaide is MISLUKT. Diagnosticeer de oorzaak aan de hand van de foutmelding en stel een concrete, gecorrigeerde configuratie voor.",
+              );
+              openChat?.();
+            }
             const next = prev.filter((j) => j.id !== row.id);
             return [row, ...next].sort((a, b) => b.created_at.localeCompare(a.created_at));
           });
@@ -94,7 +177,25 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   }
 
   return (
-    <ul className="divide-y divide-border text-sm">
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2">
+        <button
+          onClick={toggleAutoRefine}
+          className={
+            "rounded-lg px-3 py-1.5 text-xs font-medium transition " +
+            (autoRefine
+              ? "bg-accent text-bg hover:bg-accent-hover"
+              : "border border-border-strong text-fg hover:bg-surface-3")
+          }
+        >
+          {autoRefine ? "Verbetercyclus stoppen" : "Automatische verbetercyclus"}
+        </button>
+        <p className="min-w-0 flex-1 text-xs text-fg-muted">
+          {refineStatus ??
+            "Laat de architect een mislukte of zwakke fit (kwaliteitspoort warn/fail) zelf corrigeren en opnieuw fitten, max. 3 rondes. Elke ronde is zichtbaar in de chat; goedkeuren en publiceren blijft aan jou."}
+        </p>
+      </div>
+      <ul className="divide-y divide-border text-sm">
       {jobs.map((job) => (
         <li key={job.id} className="py-3">
           <div className="flex items-center justify-between gap-3">
@@ -124,6 +225,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

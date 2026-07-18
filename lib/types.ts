@@ -129,6 +129,14 @@ export interface RunAnalysis {
   generated_at: string;
 }
 
+// Presentatieklare, door Claude geschreven samenvatting van een run in klanttaal —
+// gegenereerd op verzoek van de bouwer als basis voor de klantpresentatie/het rapport.
+export interface ClientSummary {
+  text: string;
+  model: string;
+  generated_at: string;
+}
+
 export interface ModelRun {
   id: string;
   project_id: string;
@@ -136,6 +144,7 @@ export interface ModelRun {
   summary: FitSummary;
   quality: unknown;
   analysis: RunAnalysis | null;
+  client_summary?: ClientSummary | null;
   inference_data_path: string | null;
   is_published: boolean;
   created_at: string;

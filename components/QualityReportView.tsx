@@ -1,9 +1,13 @@
+"use client";
+
+import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type { DatasetQuality } from "@/lib/types";
 
 // Renders an ingestion QualityReport as sentences, not a wall of badges: errors/warnings
 // get the rose accent (they need attention), info stays neutral. Mirrors the philosophy
 // already used for the fit's quality gate banner in SummaryView.
 export function QualityReportView({ quality }: { quality: DatasetQuality | null }) {
+  const chat = useWizardChatOptional();
   const issues = quality?.issues ?? [];
   if (issues.length === 0) {
     return <p className="text-sm text-fg-muted">Geen bijzonderheden gevonden.</p>;
@@ -50,6 +54,18 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
             ))}
           </ul>
         </details>
+      )}
+      {chat && (errors.length > 0 || warnings.length > 0) && (
+        <button
+          onClick={() =>
+            chat.sendToChat(
+              "Loop het laatste kwaliteitsrapport met me door: wat betekenen de fouten/waarschuwingen concreet, welke moet ik echt oplossen, en stel waar nodig een gecorrigeerd recept voor.",
+            )
+          }
+          className="rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
+        >
+          Bespreek dit rapport met de architect
+        </button>
       )}
     </div>
   );
