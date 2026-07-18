@@ -7,7 +7,7 @@ baseline + trend + seizoen + adstocked/gesatureerde kanaal-effecten +
 controls + ruis. Daardoor kan het Bayesiaanse model de effecten ook echt
 terugvinden, en weet de trainer wat "het goede antwoord" is.
 
-Bewust ingebouwde leerpunten (zie demo/DEMO_DATASET_MEDIAMARKT.md):
+Bewust ingebouwde leerpunten (zie demo_data/DEMO_DATASET_MEDIAMARKT.md):
 - expliciet tv-campagneplan: always-on-periodes (0/1-kolom) vs. burst-
   campagnes (0/1-kolom) rond Black Friday/kerst, EK 2024 en WK 2026
 - tv/radio met delayed na-ijl; digitale kanalen geometric
@@ -19,7 +19,7 @@ Bewust ingebouwde leerpunten (zie demo/DEMO_DATASET_MEDIAMARKT.md):
 - 1 dubbele datumrij (kwaliteitsrapport)
 - 1 negatieve uitschieter door een webshopstoring (event-dummy / student_t)
 
-Draai met: python3 demo/generate_demo_dataset.py
+Draai met: python3 demo_data/generate_demo_dataset.py
 """
 
 from pathlib import Path

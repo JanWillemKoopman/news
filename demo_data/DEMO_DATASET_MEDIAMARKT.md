@@ -1,6 +1,6 @@
 # Demo-dataset: MediaMarkt Nederland — verkoop van flatscreens
 
-**Bestand:** `demo/mediamarkt_demo_dataset.csv` · **Generator:** `demo/generate_demo_dataset.py`
+**Bestand:** `demo_data/mediamarkt_demo_dataset.csv` · **Generator:** `demo_data/generate_demo_dataset.py`
 (deterministisch, seed 2026 — opnieuw draaien geeft exact dezelfde data)
 
 Synthetische maar realistische wekelijkse dataset voor trainingen met de MMM Wizard.
