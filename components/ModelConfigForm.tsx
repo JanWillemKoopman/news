@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   AdstockType,
@@ -15,6 +16,7 @@ import type {
   TrendType,
 } from "@/lib/types";
 import { useWizardChat } from "@/components/WizardChatContext";
+import { MMM_GLOSSARY, Term } from "@/components/ui";
 
 type SamplePreset = "fast" | "standard" | "thorough";
 const SAMPLE_PRESETS: Record<SamplePreset, { draws: number; tune: number; chains: number }> = {
@@ -23,9 +25,9 @@ const SAMPLE_PRESETS: Record<SamplePreset, { draws: number; tune: number; chains
   thorough: { draws: 2000, tune: 2000, chains: 4 },
 };
 const PRESET_LABEL: Record<SamplePreset, { title: string; hint: string }> = {
-  fast: { title: "Snel (verkennen)", hint: "Minder scherpe onzekerheidsmarges, geschikt om snel te itereren" },
-  standard: { title: "Standaard", hint: "Goede balans tussen snelheid en betrouwbaarheid" },
-  thorough: { title: "Grondig (publiceren)", hint: "Langzamer, scherpere marges — voor het definitieve model" },
+  fast: { title: "Snel (verkennen)", hint: "Minder scherpe onzekerheidsmarges, geschikt om snel te itereren — doorgaans 1\u20133 min" },
+  standard: { title: "Standaard", hint: "Goede balans tussen snelheid en betrouwbaarheid — doorgaans 3\u20138 min" },
+  thorough: { title: "Grondig (publiceren)", hint: "Langzamer, scherpere marges — voor het definitieve model — doorgaans 8\u201320 min" },
 };
 
 function matchPreset(sample: { draws?: number; tune?: number; chains?: number } | undefined): SamplePreset | "custom" {
@@ -273,7 +275,44 @@ export function ModelConfigForm({
         )}
       </div>
 
-      {mode === "form" ? (
+      {!approvedDataset ? (
+        // Zonder goedgekeurde dataset is de kale JSON-editor met REPLACE_ME-placeholders
+        // een valkuil, geen hulpmiddel: stuur de bouwer expliciet terug naar stap 3 en
+        // hou de directe-JSON-route als bewuste, geavanceerde uitzondering.
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-fg-muted">
+            <p className="font-medium text-fg">Eerst een dataset goedkeuren</p>
+            <p className="mt-1">
+              Het configuratieformulier werkt op de goedgekeurde master-dataset uit stap 3. Voeg
+              daar je bronnen samen en keur het resultaat goed — dan staat hier een ingevuld
+              formulier klaar.
+            </p>
+            <Link
+              href="?step=dataprep"
+              replace
+              scroll={false}
+              className="mt-2 inline-block rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-fg transition hover:bg-surface-3"
+            >
+              Naar stap 3 — Data voorbereiden
+            </Link>
+          </div>
+          <details className="rounded-lg border border-border p-3 text-sm">
+            <summary className="cursor-pointer select-none text-xs font-medium text-fg-muted">
+              Geavanceerd: JSON-configuratie direct tegen de ruwe bestanden (zonder dataset)
+            </summary>
+            <div className="mt-2 space-y-2">
+              <textarea
+                value={jsonText}
+                onChange={(e) => setJsonText(e.target.value)}
+                spellCheck={false}
+                rows={16}
+                className="w-full rounded-lg border border-border-strong p-3 font-mono text-xs outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
+              />
+              {jsonError && <p className="text-sm text-danger">{jsonError}</p>}
+            </div>
+          </details>
+        </div>
+      ) : mode === "form" ? (
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs text-fg-muted">
@@ -303,7 +342,7 @@ export function ModelConfigForm({
                   <p className="mb-2 text-sm font-medium text-fg">{ch.name}</p>
                   <div className="grid gap-2 sm:grid-cols-3">
                     <label className="text-xs text-fg-muted">
-                      Type
+                      <Term definition={MMM_GLOSSARY.channel_type}>Type</Term>
                       <select
                         value={ch.channel_type ?? "generic"}
                         onChange={(e) => updateChannel(i, { channel_type: e.target.value as ChannelType })}
@@ -317,7 +356,7 @@ export function ModelConfigForm({
                       </select>
                     </label>
                     <label className="text-xs text-fg-muted">
-                      Adstock (carry-over)
+                      <Term definition={MMM_GLOSSARY.adstock}>Adstock (carry-over)</Term>
                       <select
                         value={ch.adstock ?? "geometric"}
                         onChange={(e) => updateChannel(i, { adstock: e.target.value as AdstockType })}
@@ -331,7 +370,7 @@ export function ModelConfigForm({
                       </select>
                     </label>
                     <label className="text-xs text-fg-muted">
-                      Saturatie
+                      <Term definition={MMM_GLOSSARY.saturation_form}>Saturatie</Term>
                       <select
                         value={ch.saturation ?? "hill"}
                         onChange={(e) => updateChannel(i, { saturation: e.target.value as SaturationType })}
@@ -375,7 +414,7 @@ export function ModelConfigForm({
                       }
                       className={`rounded-full border px-2.5 py-1 text-xs transition ${
                         active
-                          ? "border-danger/30 bg-danger-dim text-danger"
+                          ? "border-accent/40 bg-accent-dim text-accent"
                           : "border-border text-fg-muted hover:bg-surface-2"
                       }`}
                     >
@@ -402,7 +441,7 @@ export function ModelConfigForm({
               </label>
               {config.model.add_trend && (
                 <label className="text-xs text-fg-muted">
-                  Trendvorm
+                  <Term definition={MMM_GLOSSARY.trend}>Trendvorm</Term>
                   <select
                     value={config.model.trend_type ?? "linear"}
                     onChange={(e) => updateModel({ trend_type: e.target.value as TrendType })}
@@ -417,7 +456,7 @@ export function ModelConfigForm({
                 </label>
               )}
               <label className="text-xs text-fg-muted">
-                Seizoensperiode (weken, leeg = geen)
+                <Term definition={MMM_GLOSSARY.seasonality}>Seizoensperiode (weken, leeg = geen)</Term>
                 <input
                   type="number"
                   value={config.model.seasonality_periods ?? ""}
@@ -428,7 +467,7 @@ export function ModelConfigForm({
                 />
               </label>
               <label className="text-xs text-fg-muted">
-                Ruismodel
+                <Term definition={MMM_GLOSSARY.likelihood}>Ruismodel</Term>
                 <select
                   value={config.model.likelihood ?? "normal"}
                   onChange={(e) => updateModel({ likelihood: e.target.value as LikelihoodType })}
@@ -455,7 +494,7 @@ export function ModelConfigForm({
                     preset === key ? "border-accent/40 bg-accent-dim" : "border-border hover:bg-surface-2"
                   }`}
                 >
-                  <p className={`text-sm font-medium ${preset === key ? "text-danger" : "text-fg"}`}>
+                  <p className={`text-sm font-medium ${preset === key ? "text-accent" : "text-fg"}`}>
                     {PRESET_LABEL[key].title}
                   </p>
                   <p className="mt-0.5 text-xs text-fg-muted">{PRESET_LABEL[key].hint}</p>

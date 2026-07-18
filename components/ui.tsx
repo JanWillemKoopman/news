@@ -136,6 +136,15 @@ export const MMM_GLOSSARY: Record<string, string> = {
   coverage: "Dekking: hoe vaak de werkelijke KPI binnen de opgegeven onzekerheidsmarge viel. Zou dicht bij het opgegeven percentage moeten liggen.",
   rhat: "R-hat: een controlegetal of de statistische schatting stabiel is. Boven de 1,05 is een teken dat de uitkomst nog niet betrouwbaar is.",
   divergences: "Divergenties: het aantal keer dat de schattingsmethode vastliep. Een hoog aantal is een teken dat de uitkomst voorzichtig gelezen moet worden.",
+  channel_type:
+    "Kanaaltype: 'intent' vangt bestaande koopintentie (merkzoekwoorden, marktplaatsen), 'brand' bouwt nieuwe aandacht op (social, display). Bepaalt de verwachting die het model meekrijgt.",
+  likelihood:
+    "Ruismodel: hoe de wekelijkse schommelingen rond het model worden behandeld. 'Normaal' voor gewone omzet; 'Student-t' als er duidelijke uitschieters zijn; Poisson/negative binomial alleen voor lage tellingen (bv. 5–50 leads per week).",
+  trend: "Trend: langzame structurele op- of afbouw van de basislijn, los van marketing. 'Piecewise' mag op enkele punten buigen — alleen bij een duidelijke knik in de historie.",
+  seasonality:
+    "Seizoen: een terugkerend jaarpatroon in de KPI (bv. kerstdrukte). 52 = jaarlijks patroon op weekdata. Leeg laten = geen seizoenscomponent.",
+  saturation_form:
+    "Verzadigingsvorm: hoe afnemend rendement wordt gemodelleerd. 'Hill' is flexibel (standaard); 'logistic' is robuuster bij weinig of ruisige data.",
 };
 
 // A term with a hover tooltip explaining it — used instead of a link to an external

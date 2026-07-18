@@ -23,11 +23,23 @@ function elapsedLabel(fromIso: string, now: number): string {
   return m > 0 ? `${m} min ${s.toString().padStart(2, "0")} s` : `${s} s`;
 }
 
+// Rough wall-clock expectation per sampling preset, so "3 min bezig" has a frame of
+// reference ("is dit normaal?") without promising anything exact.
+function expectedDuration(job: Job): string | null {
+  const draws = (job.config as { sample?: { draws?: number } } | null)?.sample?.draws;
+  if (!draws) return null;
+  if (draws <= 300) return "meestal 1–3 min";
+  if (draws <= 1000) return "meestal 3–8 min";
+  return "meestal 8–20 min";
+}
+
 function phaseLine(job: Job, now: number): string {
   if (job.status === "queued") return `In wachtrij — ${elapsedLabel(job.created_at, now)}`;
   if (job.status === "running") {
     const phase = job.progress ? PROGRESS_LABEL[job.progress] : "Wordt gestart";
-    return job.started_at ? `${phase} — ${elapsedLabel(job.started_at, now)} bezig` : phase;
+    const expect = expectedDuration(job);
+    const base = job.started_at ? `${phase} — ${elapsedLabel(job.started_at, now)} bezig` : phase;
+    return expect ? `${base} (${expect})` : base;
   }
   if (job.status === "succeeded" && job.started_at && job.finished_at) {
     return `Geslaagd in ${elapsedLabel(job.started_at, new Date(job.finished_at).getTime())}`;

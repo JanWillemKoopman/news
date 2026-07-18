@@ -353,8 +353,9 @@ meelopen:
 
 Laat ze standaard uit voor snelle iteraties; zet ze aan voor de run die je wilt vertrouwen.
 
-> Zonder goedgekeurde dataset valt het formulier terug op een directe **JSON-editor** tegen
-> de ruwe bestanden. Beide weergaves zijn onderling omzetbaar.
+> Zonder goedgekeurde dataset verwijst deze stap je eerst terug naar stap 3; de directe
+> **JSON-editor** tegen de ruwe bestanden bestaat nog, maar bewust alleen achter een
+> "geavanceerd"-uitklap. Met goedgekeurde dataset zijn formulier en JSON onderling omzetbaar.
 
 Klik **"Fit starten"** om een `fit`-job aan te maken.
 

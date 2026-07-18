@@ -454,9 +454,9 @@ export function DataPrepSection({
           />
 
           {applyDiff && (
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-danger/30 bg-danger-dim px-3 py-2 text-sm text-danger">
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2 text-sm text-accent">
               <span>{applyDiff}</span>
-              <button onClick={() => setApplyDiff(null)} className="flex-none text-danger/70 hover:text-danger" aria-label="Sluiten">
+              <button onClick={() => setApplyDiff(null)} className="flex-none text-accent/70 hover:text-accent" aria-label="Sluiten">
                 ×
               </button>
             </div>
@@ -555,7 +555,7 @@ export function DataPrepSection({
                                   <button
                                     onClick={() => updateColumn(sIdx, cIdx, { role: suggestion })}
                                     title="Kolomnaam suggereert deze rol — klik om over te nemen"
-                                    className="rounded-full border border-danger/30 bg-danger-dim px-2 py-0.5 text-[11px] font-medium text-danger hover:bg-danger-dim"
+                                    className="rounded-full border border-accent/40 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/20"
                                   >
                                     voorstel: {ROLE_OPTIONS.find((o) => o.value === suggestion)?.label}
                                   </button>

@@ -150,7 +150,7 @@ function BudgetAdvice({
                     <td className="py-3 pr-4 text-fg-muted">{fmt(current)}</td>
                     <td className="py-3 pr-4">
                       <span className="font-medium text-fg">{fmt(advised)}</span>{" "}
-                      {up && <span className="text-xs text-danger">↑</span>}
+                      {up && <span className="text-xs text-accent">↑</span>}
                       {down && <span className="text-xs text-fg-faint">↓</span>}
                     </td>
                     <td className="py-3 pr-4">
