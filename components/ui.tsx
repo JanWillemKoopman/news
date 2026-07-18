@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
+import { GuideModal } from "@/components/GuideModal";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
 // Modal-stijl paneel: donkere surface, 1px border met lage opacity, zachte shadow.
@@ -135,21 +136,29 @@ export function Term({ children, definition }: { children: React.ReactNode; defi
   );
 }
 
-export function TopBar({ email }: { email: string | null }) {
+export function TopBar({ email, guideMarkdown }: { email: string | null; guideMarkdown?: string }) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:px-6">
+    // Niet-sticky op mobiel (scrolt gewoon mee — de stappen-nav hieronder blijft daar
+    // wél sticky, zie PipelineShell.tsx); vanaf sm weer sticky zoals voorheen.
+    <header className="top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:sticky sm:px-6">
       <Link href="/projects" className="group flex flex-none items-center gap-2 text-sm font-semibold tracking-tight text-fg">
         <span className="h-4 w-4 rounded-[4px] bg-accent shadow-glow-sm transition group-hover:bg-accent-hover" />
         MMM Wizard
       </Link>
-      <div className="flex min-w-0 items-center gap-3 text-sm text-fg-muted">
-        {/* E-mail alleen op ruimere schermen — op mobiel zou het merk + Uitloggen
+      <div className="flex min-w-0 items-center gap-2 text-sm text-fg-muted sm:gap-3">
+        {/* E-mail alleen op ruimere schermen — op mobiel zou het merk + knoppen
             verdringen; truncate vangt lange adressen op tablet af. */}
         <span className="hidden max-w-[16rem] truncate font-mono text-xs text-fg-faint sm:inline">{email}</span>
+        {guideMarkdown && <GuideModal markdown={guideMarkdown} />}
         <form action="/auth/signout" method="post">
-          <button className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1 text-fg-muted transition hover:border-border-strong hover:text-fg">
+          {/* Op mobiel alleen het icoon (kleinere knop, geen verdringing); tekst
+              vanaf sm weer zichtbaar. */}
+          <button
+            aria-label="Uitloggen"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2 py-1 text-fg-muted transition hover:border-border-strong hover:text-fg sm:px-3"
+          >
             <LogOut className="h-3.5 w-3.5" />
-            Uitloggen
+            <span className="hidden sm:inline">Uitloggen</span>
           </button>
         </form>
       </div>

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, PageHeader, StatusBadge, TopBar } from "@/components/ui";
 import { NoBuilderAccess } from "@/components/NoAccess";
 import { ProjectCreateForm } from "@/components/ProjectCreateForm";
+import { getHandleidingMarkdown } from "@/lib/handleiding";
 import type { Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <TopBar email={viewer.email} />
+      <TopBar email={viewer.email} guideMarkdown={getHandleidingMarkdown()} />
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <PageHeader title="Projecten" subtitle="Elk project is één modelbouw voor één klant." />
 

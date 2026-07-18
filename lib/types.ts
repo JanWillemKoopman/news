@@ -18,6 +18,7 @@ export interface Project {
   created_by: string | null;
   created_at: string;
   published_at: string | null;
+  eda_completed_at: string | null;
 }
 
 export interface SourceFile {

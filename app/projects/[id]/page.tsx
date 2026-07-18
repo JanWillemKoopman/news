@@ -15,6 +15,7 @@ import { ChatDock, ChatDockProvider, ChatMain } from "@/components/ChatDock";
 import { WizardChatProvider } from "@/components/WizardChatContext";
 import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
 import { computePipelineSteps } from "@/lib/pipelineStatus";
+import { getHandleidingMarkdown } from "@/lib/handleiding";
 import type { Dataset, Job, ModelRun, Project, SourceFile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -78,11 +79,12 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     dataset: latestDataset,
     jobs: (jobs ?? []) as Job[],
     runs: runsWithAnalysis,
+    edaCompleted: p.eda_completed_at != null,
   });
 
   return (
     <>
-      <TopBar email={viewer.email} />
+      <TopBar email={viewer.email} guideMarkdown={getHandleidingMarkdown()} />
       <WizardChatProvider>
         <ChatDockProvider>
           <ChatMain>
@@ -105,7 +107,11 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   </PipelineStep>
 
                   <PipelineStep id="eda" number={2}>
-                    <EdaSection sources={(sources ?? []) as SourceFile[]} />
+                    <EdaSection
+                      sources={(sources ?? []) as SourceFile[]}
+                      projectId={p.id}
+                      completed={p.eda_completed_at != null}
+                    />
                   </PipelineStep>
 
                   <PipelineStep id="dataprep" number={3}>

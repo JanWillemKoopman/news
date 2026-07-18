@@ -53,11 +53,13 @@ export function computePipelineSteps({
   dataset,
   jobs,
   runs,
+  edaCompleted,
 }: {
   sources: SourceFile[];
   dataset: Dataset | null;
   jobs: Job[];
   runs: ModelRun[];
+  edaCompleted?: boolean;
 }): StepMeta[] {
   const hasSources = sources.length > 0;
   const fitJobs = jobs.filter((j) => j.type === "fit" || j.type === "fit_hierarchical");
@@ -76,9 +78,12 @@ export function computePipelineSteps({
   const dataStatus = next(hasSources);
 
   // EDA is a detour, not a gate: it only grabs focus in the narrow window right after
-  // upload, before a data-prep attempt exists — after that it steps aside.
+  // upload, before a data-prep attempt exists — after that it steps aside. It has no
+  // natural completion signal (no approve/publish action), so a builder marks it "done"
+  // explicitly via a button; without that click it just stays active/available forever.
   let edaStatus: StepStatus;
   if (!hasSources) edaStatus = "locked";
+  else if (edaCompleted) edaStatus = "done";
   else if (dataset === null && !focused) {
     edaStatus = "active";
     focused = true;
@@ -109,7 +114,7 @@ export function computePipelineSteps({
       status: dataStatus,
       summary: hasSources ? `${sources.length} bestand${sources.length === 1 ? "" : "en"} geüpload` : undefined,
     },
-    { id: "eda", title: "EDA", status: edaStatus },
+    { id: "eda", title: "EDA", status: edaStatus, summary: edaCompleted ? "Afgerond" : undefined },
     { id: "dataprep", title: "Data voorbereiden", status: dataprepStatus, summary: dataprepSummary(dataset) },
     {
       id: "config",
