@@ -25,7 +25,7 @@ de uitkomst — inclusief onzekerheid — vertrouwenwekkend aan een klant presen
 3. [De app leren kennen: rollen, toegang, opzet](#3-de-app-leren-kennen-rollen-toegang-opzet)
 4. [De wizard, stap voor stap](#4-de-wizard-stap-voor-stap)
 5. [De AI-lagen: Claude als co-piloot door de hele pijplijn](#5-de-ai-lagen-claude-als-co-piloot-door-de-hele-pijplijn)
-6. [Resultaten beoordelen: de kwaliteitspoort en diagnostiek](#6-resultaten-beoordelen-de-kwaliteitspoort-en-diagnostiek)
+6. [Resultaten beoordelen: de kwaliteitscontrole en diagnostiek](#6-resultaten-beoordelen-de-kwaliteitscontrole-en-diagnostiek)
 7. [Publiceren en presenteren aan de klant](#7-publiceren-en-presenteren-aan-de-klant)
 8. [Iteratie & veelvoorkomende problemen](#8-iteratie--veelvoorkomende-problemen)
 9. [Naslag: begrippenlijst](#9-naslag-begrippenlijst)
@@ -370,7 +370,7 @@ Laat ze standaard uit voor snelle iteraties; zet ze aan voor de run die je wilt 
 > **JSON-editor** tegen de ruwe bestanden bestaat nog, maar bewust alleen achter een
 > "geavanceerd"-uitklap. Met goedgekeurde dataset zijn formulier en JSON onderling omzetbaar.
 
-Klik **"Fit starten"** om een `fit`-job aan te maken.
+Klik **"Start modelberekening"** om een `fit`-job aan te maken.
 
 #### 4.5 Prior-predictive check vóór de fit (nieuw — bespaar dure rekentijd)
 
@@ -412,7 +412,7 @@ hoef je niet meer zelf naar de chat: de AI meldt zich vanzelf — het chatpaneel
 klapt open en hij beoordeelt het resultaat (of diagnosticeert de fout) direct.
 
 **Automatische verbetercyclus (nieuw).** Boven de fit-lijst staat de knop **"Automatische
-verbetercyclus"**. Zet je die aan bij een mislukte of zwakke fit (kwaliteitspoort
+verbetercyclus"**. Zet je die aan bij een mislukte of zwakke fit (kwaliteitscontrole
 warn/fail), dan doorloopt de AI de dure iteratielus zelf: diagnose → gecorrigeerde
 config → nieuwe fit → opnieuw beoordelen, tot de poort op *pass* staat of de limiet van
 **3 rondes** is bereikt. Elke ronde is als gewoon gesprek zichtbaar in de chat, je kunt op
@@ -427,7 +427,7 @@ Zodra een fit klaar is, verschijnt hier het resultaat. Onderdelen:
   zodat je configuraties tegen elkaar kunt afwegen, en per run een knop **"config
   hergebruiken"** die stap 4 vult met de exacte configuratie van die run als startpunt
   (iteratiediscipline: één ding tegelijk veranderen).
-- **Kwaliteitspoort-banner** — spreekt alléén als er iets mis is (zie §6). Groen/stil =
+- **Kwaliteitscontrole-banner** — spreekt alléén als er iets mis is (zie §6). Groen/stil =
   vertrouwbaar.
 - **Kernstatistieken** met begrijpelijke tooltip-uitleg (een ingebouwd glossarium — zie §9).
 - **Grafieken** (`ResultsCharts`): aandeel en ROAS per kanaal **met onzekerheidsmarge**,
@@ -500,7 +500,7 @@ bijna-identieke kanalen, en benoemt die uit zichzelf.
 stop-knop), boven de chat staat een regel **"AI ziet: …"** die precies toont welke
 context hij meeleest (bestanden, datasetstatus, laatste fit, vastgelegde contextfeiten,
 inspectie) — zo weet je waar je naar kunt verwijzen — en vanuit het kwaliteitsrapport en
-de kwaliteitspoort kun je met één klik een voorgevulde vraag naar de AI sturen.
+de kwaliteitscontrole kun je met één klik een voorgevulde vraag naar de AI sturen.
 
 **Zo werk je ermee:**
 - Per actieve stap biedt het paneel 1–2 **snelacties**, o.a.: *"Stel een samenvoegrecept
@@ -547,10 +547,10 @@ zelfgekozen grafieken). Ideaal als kant-en-klare bijlage bij je klantpresentatie
 
 ---
 
-## 6. Resultaten beoordelen: de kwaliteitspoort en diagnostiek
+## 6. Resultaten beoordelen: de kwaliteitscontrole en diagnostiek
 
 Voordat je een resultaat aan een klant laat zien, moet je het **vertrouwen**. De app helpt
-je daarbij met een automatische, auditeerbare **kwaliteitspoort** (verdict *pass* / *warn*
+je daarbij met een automatische, auditeerbare **kwaliteitscontrole** (verdict *pass* / *warn*
 / *fail*) en een set diagnostiekcijfers.
 
 ### 6.1 De diagnostiek-getallen (en wat "goed" is)
@@ -565,7 +565,7 @@ je daarbij met een automatische, auditeerbare **kwaliteitspoort** (verdict *pass
 | **Dekking (coverage)** | Viel de echte KPI zo vaak in de marge als beloofd? | Zou dicht bij 94% moeten liggen |
 | **Decompositie-check** | Tellen alle bijdragen exact op tot het totaal? | Moet kloppen |
 
-De kwaliteitspoort-banner vat dit in **gewone taal** samen en verschijnt alleen als er iets
+De kwaliteitscontrole-banner vat dit in **gewone taal** samen en verschijnt alleen als er iets
 aan de hand is. Groen/stil betekent: je mag dit resultaat vertrouwen.
 
 ### 6.2 Wat te doen bij warn/fail (diagnose → actie)
@@ -713,7 +713,7 @@ Deze definities staan ook als hover-tooltips in de resultatenweergave van de app
       zakelijke context via de AI verwerkt; preset gekozen; extra
       betrouwbaarheidschecks overwogen; bij aangepaste priors een **prior-predictive check**
 - [ ] Stap 5: fit gedraaid en gevolgd
-- [ ] Stap 6: kwaliteitspoort = pass (of bewust geaccepteerde warn), diagnostiek gecheckt
+- [ ] Stap 6: kwaliteitscontrole = pass (of bewust geaccepteerde warn), diagnostiek gecheckt
 
 **Afronden**
 - [ ] Definitieve run op "Grondig"-preset

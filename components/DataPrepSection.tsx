@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkles } from "lucide-react";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
@@ -219,8 +220,8 @@ function summarizeApply(
   if (dummyDelta !== 0) {
     parts.push(`${dummyDelta > 0 ? "+" : ""}${dummyDelta} event-dummy${Math.abs(dummyDelta) === 1 ? "" : "'s"}`);
   }
-  if (parts.length === 0) return "Recept overgenomen — geen wijzigingen ten opzichte van de huidige tabel.";
-  return `Recept overgenomen: ${parts.join(", ")}.`;
+  if (parts.length === 0) return "Voorstel overgenomen — geen wijzigingen ten opzichte van de huidige tabel.";
+  return `Voorstel overgenomen: ${parts.join(", ")}.`;
 }
 
 // Triggers the heavy, explicitly-requested deep data inspection (/api/inspect): Claude
@@ -265,10 +266,10 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
         disabled={busy}
         className="rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
       >
-        {busy ? "Claude onderzoekt de data…" : `Diepe data-inspectie (${scope === "master" ? "master" : "ruwe bronnen"})`}
+        {busy ? "Claude onderzoekt de data…" : `Diepe data-inspectie (${scope === "master" ? "definitieve dataset" : "ruwe bronnen"})`}
       </button>
       <span className="text-xs text-fg-muted">
-        Claude verkent de volledige data met code (outliers, seizoen, multicollineariteit) en voedt de bevindingen aan de AI.
+        Claude verkent de volledige data met code (outliers, seizoen, multicollineariteit) en voedt de bevindingen aan de AI. Duurt meestal 1–2 minuten.
       </span>
       {msg && <span className="w-full text-xs text-fg-muted">{msg}</span>}
     </div>
@@ -323,7 +324,7 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
         </button>
         <span className="text-xs text-fg-muted">
           De AI kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
-          (max. 3 rondes). Jij controleert en keurt goed.
+          (max. 3 rondes, duurt meestal 2–5 minuten). Jij controleert en keurt goed.
         </span>
       </div>
       {msg && <p className="mt-2 text-xs text-fg-muted">{msg}</p>}
@@ -341,7 +342,11 @@ export function DataPrepSection({
   initialDataset: Dataset | null;
 }) {
   const router = useRouter();
-  const { pendingRecipe, clearPendingRecipe, sendToChat, beginActivity } = useWizardChat();
+  const { pendingRecipe, clearPendingRecipe, sendToChat, beginActivity, applyRecipe, stagedRecipe, clearStagedRecipe } = useWizardChat();
+  // De handmatige rollentabel is de geavanceerde route en start ingeklapt: de AI-route
+  // bovenaan is de hoofdactie. Zodra een AI-voorstel wordt overgenomen klapt hij open,
+  // zodat de gebruiker direct ziet wat er is ingevuld en kan controleren.
+  const [manualOpen, setManualOpen] = useState(false);
   const [drafts, setDrafts] = useState<DraftSource[]>([]);
   const [dummies, setDummies] = useState<DraftDummy[]>([]);
   // Derived features are authored by the architect (they carry op-specific params); the
@@ -418,7 +423,9 @@ export function DataPrepSection({
     setDrafts(draftSources);
     setDummies(draftDummies);
     setFeatures(draftFeatures);
+    setManualOpen(true);
     clearPendingRecipe();
+    clearStagedRecipe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRecipe, sources, clearPendingRecipe]);
 
@@ -534,17 +541,31 @@ export function DataPrepSection({
         <p className="text-sm text-fg-muted">Upload eerst bestanden hierboven om ze te kunnen samenvoegen.</p>
       ) : (
         <>
-          <p className="text-sm text-fg-muted">
-            Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de AI om een
-            voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
-          </p>
-
           <AutoPrepareButton projectId={projectId} disabled={datasetBusy} />
 
-          <DeepInspectionButton
-            projectId={projectId}
-            scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
-          />
+          {stagedRecipe != null && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2.5">
+              <p className="text-sm text-accent">
+                <Sparkles className="mr-1.5 inline h-3.5 w-3.5" />
+                De AI heeft in de chat een samenvoeg-voorstel gedaan. Neem het hier over om het
+                te controleren en uit te voeren.
+              </p>
+              <span className="flex flex-none items-center gap-2">
+                <button
+                  onClick={() => applyRecipe(stagedRecipe)}
+                  className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-bg transition hover:bg-accent-hover"
+                >
+                  Voorstel overnemen
+                </button>
+                <button
+                  onClick={clearStagedRecipe}
+                  className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20"
+                >
+                  Negeren
+                </button>
+              </span>
+            </div>
+          )}
 
           {applyDiff && (
             <div className="flex items-start justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2 text-sm text-accent">
@@ -570,6 +591,23 @@ export function DataPrepSection({
               </span>
             </div>
           )}
+
+          <details
+            className="rounded-lg border border-border p-3"
+            open={manualOpen}
+            onToggle={(e) => setManualOpen((e.currentTarget as HTMLDetailsElement).open)}
+          >
+            <summary className="cursor-pointer select-none text-sm font-medium text-fg">
+              Handmatig voorbereiden (geavanceerd)
+              <span className="ml-2 font-normal text-fg-muted">
+                — rollen per kolom zelf toewijzen, opschonen en samenvoegen
+              </span>
+            </summary>
+            <div className="mt-3 space-y-4">
+          <p className="text-sm text-fg-muted">
+            Wijs per bestand de datumkolom en per kolom een rol toe (of vraag de AI om een
+            voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
+          </p>
 
           <div className="space-y-4">
             {drafts.map((src, sIdx) => (
@@ -648,7 +686,7 @@ export function DataPrepSection({
                 <button
                   onClick={() =>
                     sendToChat(
-                      `Ik wil het bestand "${src.file.name}" opschonen of hervormen voordat de rollen worden toegewezen (bijvoorbeeld hernoemen, eenheden omrekenen, filteren, pivoteren of een datumformaat forceren). Kijk naar de voorbeeldrijen en stel de passende opschoonstappen (transforms) voor in een recept.`,
+                      `Ik wil het bestand "${src.file.name}" opschonen of hervormen voordat de rollen worden toegewezen (bijvoorbeeld hernoemen, eenheden omrekenen, filteren, pivoteren of een datumformaat forceren). Kijk naar de voorbeeldrijen en stel de passende opschoonstappen voor in een samenvoeg-voorstel.`,
                     )
                   }
                   className="mb-2 rounded-full border border-border px-2.5 py-1 text-[11px] text-fg-muted transition hover:border-accent/40 hover:bg-accent-dim hover:text-accent"
@@ -821,6 +859,11 @@ export function DataPrepSection({
             </div>
           </details>
 
+          <DeepInspectionButton
+            projectId={projectId}
+            scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
+          />
+
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             onClick={submit}
@@ -829,6 +872,8 @@ export function DataPrepSection({
           >
             {busy || datasetBusy ? "Bezig…" : "Controleer & voeg samen"}
           </button>
+            </div>
+          </details>
         </>
       )}
 

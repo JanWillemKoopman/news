@@ -12,20 +12,20 @@ const STEP_INTROS: Record<string, { what: string; why: string }> = {
     why: "Let vooral op sterk samenhangende spend-kanalen (multicollineariteit): die kan het model niet los van elkaar schatten.",
   },
   dataprep: {
-    what: "Van losse bestanden naar één schone, wekelijkse master-tabel: rollen toewijzen, samenvoegen, kwaliteitsrapport lezen en goedkeuren.",
-    why: "Laat de AI het zware werk doen (automatisch voorbereiden of een recept-voorstel); jij blijft de eindcontrole — er wordt nooit iets stilzwijgend aangepast.",
+    what: "Van losse bestanden naar één schone, wekelijkse tabel (de definitieve dataset): de AI stelt de samenvoeging voor, jij controleert en keurt goed.",
+    why: "Laat de AI het zware werk doen (automatisch voorbereiden of een voorstel); jij blijft de eindcontrole — er wordt nooit iets stilzwijgend aangepast.",
   },
   config: {
     what: "Vertaal wat je over de klant weet naar modelinstellingen: kanaaltypes, na-ijl (adstock), saturatie, seizoen en het ruismodel.",
-    why: "Zakelijke context is de grootste hefboom — vertel de AI over seizoensdrukte, campagnes en offline kanalen vóórdat je fit. Eerste fit: instellingen op standaard en preset 'Snel'.",
+    why: "Zakelijke context is de grootste hefboom — vertel de AI over seizoensdrukte, campagnes en offline kanalen vóórdat je het model draait. Eerste berekening: instellingen op standaard en preset 'Snel'.",
   },
   fits: {
-    what: "De fit draait asynchroon op de rekenlaag; volg hier de fase en de wachtrij.",
-    why: "Zodra een fit klaar is of faalt, meldt de AI zich vanzelf in de chat. Bij een zwakke fit kan de automatische verbetercyclus de correctierondes voor je draaien.",
+    what: "De berekening draait op de achtergrond; volg hier de fase, de verstreken tijd en de verwachte duur.",
+    why: "Zodra een berekening klaar is of faalt, meldt de AI zich vanzelf in de chat. Bij een zwak resultaat kan de automatische verbetercyclus de correctierondes voor je draaien.",
   },
   results: {
-    what: "Beoordeel het resultaat: kwaliteitspoort, bijdragen en ROAS per kanaal (altijd met onzekerheidsmarge), en het budgetadvies.",
-    why: "Vertrouw je de uitkomst (poort groen/stil)? Vergelijk met eerdere runs, genereer de analyse of klantsamenvatting, en publiceer pas dan naar het klantdashboard.",
+    what: "Beoordeel het resultaat: kwaliteitscontrole, bijdragen en ROAS per kanaal (altijd met onzekerheidsmarge), en het budgetadvies.",
+    why: "Vertrouw je de uitkomst (kwaliteitscontrole groen)? Vergelijk met eerdere runs, genereer de analyse of klantsamenvatting, en publiceer pas dan naar het klantdashboard.",
   },
 };
 

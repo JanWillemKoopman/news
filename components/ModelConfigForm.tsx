@@ -149,7 +149,7 @@ export function ModelConfigForm({
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { pendingConfig, clearPendingConfig, sendToChat } = useWizardChat();
+  const { pendingConfig, clearPendingConfig, sendToChat, applyConfig, stagedConfig, clearStagedConfig } = useWizardChat();
   // Bevestiging + snapshot na een overgenomen architect-voorstel, zodat "Ongedaan maken"
   // één klik is (zelfde patroon als de recepttabel in stap 3).
   const [applyNote, setApplyNote] = useState<string | null>(null);
@@ -181,12 +181,13 @@ export function ModelConfigForm({
     setApplyNote(
       `Voorstel overgenomen: ${next.model.channels.length} kanaal/kanalen, KPI "${next.model.kpi}"${
         next.model.control_columns?.length ? `, ${next.model.control_columns.length} control(s)` : ""
-      }. Controleer de instellingen voordat je fit.`,
+      }. Controleer de instellingen voordat je de berekening start.`,
     );
     setConfig(next);
     setJsonText(JSON.stringify(next, null, 2));
     setMode(approvedDataset ? "form" : "json");
     clearPendingConfig();
+    clearStagedConfig();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingConfig, clearPendingConfig]);
 
@@ -259,7 +260,7 @@ export function ModelConfigForm({
     });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Kon de fit niet starten.");
+      setError((await res.json().catch(() => ({}))).error ?? "Kon de berekening niet starten.");
       return;
     }
     router.refresh();
@@ -283,9 +284,32 @@ export function ModelConfigForm({
               Stel een configuratie voor (AI)
             </button>
             <span className="text-xs text-fg-muted">
-              De AI vult het formulier hieronder; jij controleert, stelt bij en start de fit.
+              De AI vult het formulier hieronder; jij controleert, stelt bij en start de berekening.
             </span>
           </div>
+        </div>
+      )}
+
+      {stagedConfig != null && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2.5">
+          <p className="text-sm text-accent">
+            De AI heeft in de chat een configuratievoorstel gedaan. Neem het hier over om het
+            formulier te vullen — jij controleert en start daarna de berekening.
+          </p>
+          <span className="flex flex-none items-center gap-2">
+            <button
+              onClick={() => applyConfig(stagedConfig)}
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-bg transition hover:bg-accent-hover"
+            >
+              Voorstel overnemen
+            </button>
+            <button
+              onClick={clearStagedConfig}
+              className="rounded-lg border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20"
+            >
+              Negeren
+            </button>
+          </span>
         </div>
       )}
 
@@ -321,7 +345,7 @@ export function ModelConfigForm({
         <p className="text-sm text-fg-muted">
           {approvedDataset
             ? "De goedgekeurde dataset is als bron ingevuld. Vul de kanalen en modelinstellingen aan — of laat de AI een voorstel doen."
-            : "Configureer de fit. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
+            : "Configureer de modelberekening. Vul de kolomnamen, rollen (kpi/spend/control) en kanalen in — of keur eerst een dataset goed bij stap 3 voor een ingevulde start."}
         </p>
         {approvedDataset && (
           <button
@@ -595,7 +619,7 @@ export function ModelConfigForm({
                 />
                 <span>
                   Placebo-test — controleert dat een nepkanaal geen bijdrage krijgt.
-                  <span className="block text-xs text-fg-muted">Eén extra fit, dus ongeveer dubbele wachttijd.</span>
+                  <span className="block text-xs text-fg-muted">Eén extra berekening, dus ongeveer dubbele wachttijd.</span>
                 </span>
               </label>
             </div>
@@ -622,7 +646,7 @@ export function ModelConfigForm({
         disabled={busy || !canSubmit || (mode === "form" && !!validationError)}
         className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? "Starten…" : "Fit starten"}
+        {busy ? "Starten…" : "Start modelberekening"}
       </button>
     </div>
   );

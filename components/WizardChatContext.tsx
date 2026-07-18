@@ -15,6 +15,15 @@ interface WizardChatValue {
   pendingRecipe: unknown | null;
   applyRecipe: (recipe: unknown) => void;
   clearPendingRecipe: () => void;
+  // Een voorstel dat de AI in de chat heeft gedaan maar dat nog niet is overgenomen:
+  // "klaargezet", zodat de betreffende stap het als kaart kan tonen ("De AI stelt voor: …
+  // [Overnemen]") — de gebruiker hoeft dan niet terug naar de chat om het te vinden.
+  stagedRecipe: unknown | null;
+  stageRecipe: (recipe: unknown) => void;
+  clearStagedRecipe: () => void;
+  stagedConfig: unknown | null;
+  stageConfig: (config: unknown) => void;
+  clearStagedConfig: () => void;
   pendingChatMessage: string | null;
   sendToChat: (message: string) => void;
   clearPendingChatMessage: () => void;
@@ -48,6 +57,8 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
   const [pendingConfig, setPendingConfig] = useState<unknown | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<unknown | null>(null);
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null);
+  const [stagedRecipe, setStagedRecipe] = useState<unknown | null>(null);
+  const [stagedConfig, setStagedConfig] = useState<unknown | null>(null);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const nextActivityId = useRef(1);
@@ -71,6 +82,12 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
         pendingRecipe,
         applyRecipe: setPendingRecipe,
         clearPendingRecipe: () => setPendingRecipe(null),
+        stagedRecipe,
+        stageRecipe: setStagedRecipe,
+        clearStagedRecipe: () => setStagedRecipe(null),
+        stagedConfig,
+        stageConfig: setStagedConfig,
+        clearStagedConfig: () => setStagedConfig(null),
         pendingChatMessage,
         sendToChat: setPendingChatMessage,
         clearPendingChatMessage: () => setPendingChatMessage(null),

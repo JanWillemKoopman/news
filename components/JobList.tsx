@@ -11,7 +11,7 @@ import type { Job, JobProgress } from "@/lib/types";
 const PROGRESS_LABEL: Record<JobProgress, string> = {
   downloading: "Brondata laden",
   building_dataset: "Dataset opbouwen",
-  sampling: "Model fitten (sampling)",
+  sampling: "Model berekenen (sampling)",
   saving: "Resultaten opslaan",
 };
 
@@ -33,11 +33,22 @@ function expectedDuration(job: Job): string | null {
   return "meestal 8–20 min";
 }
 
-function phaseLine(job: Job, now: number): string {
+// Median duration of this project's own finished berekeningen — a sharper expectation
+// than the per-preset vuistregel, once er echt historie is.
+function typicalMinutes(jobs: Job[]): number | null {
+  const durations = jobs
+    .filter((j) => j.status === "succeeded" && j.started_at && j.finished_at)
+    .map((j) => (new Date(j.finished_at as string).getTime() - new Date(j.started_at as string).getTime()) / 60000)
+    .sort((a, b) => a - b);
+  if (durations.length < 2) return null;
+  return durations[Math.floor(durations.length / 2)];
+}
+
+function phaseLine(job: Job, now: number, typical: number | null): string {
   if (job.status === "queued") return `In wachtrij — ${elapsedLabel(job.created_at, now)}`;
   if (job.status === "running") {
     const phase = job.progress ? PROGRESS_LABEL[job.progress] : "Wordt gestart";
-    const expect = expectedDuration(job);
+    const expect = typical != null ? `in dit project meestal ~${Math.max(1, Math.round(typical))} min` : expectedDuration(job);
     const base = job.started_at ? `${phase} — ${elapsedLabel(job.started_at, now)} bezig` : phase;
     return expect ? `${base} (${expect})` : base;
   }
@@ -78,7 +89,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   async function runRefineRound() {
     if (refineBusy.current) return;
     refineBusy.current = true;
-    setRefineStatus(`Ronde ${refineRound.current}: de AI beoordeelt de laatste fit…`);
+    setRefineStatus(`Ronde ${refineRound.current}: de AI beoordeelt de laatste berekening…`);
     try {
       const res = await fetch("/api/fit-refine", {
         method: "POST",
@@ -90,10 +101,10 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         setRefineStatus(data.error ?? "De verbetercyclus is gestopt door een fout.");
         setAutoRefine(false);
       } else if (data.status === "refitted") {
-        setRefineStatus(`Ronde ${refineRound.current}: gecorrigeerde fit gestart — de cyclus gaat door zodra die klaar is.`);
+        setRefineStatus(`Ronde ${refineRound.current}: gecorrigeerde berekening gestart — de cyclus gaat door zodra die klaar is.`);
         refineRound.current += 1;
       } else if (data.status === "waiting") {
-        setRefineStatus("Er draait nog een fit; de cyclus wacht tot die klaar is.");
+        setRefineStatus("Er draait nog een berekening; de cyclus wacht tot die klaar is.");
       } else {
         // done / stopped / exhausted: cyclus klaar, boodschap tonen en uitzetten.
         setRefineStatus(data.message ?? "De verbetercyclus is klaar.");
@@ -121,6 +132,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   }
 
   const hasActiveJob = jobs.some((j) => j.status === "queued" || j.status === "running");
+  const typical = typicalMinutes(jobs);
 
   useEffect(() => {
     if (!hasActiveJob) return;
@@ -132,13 +144,17 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   // automatische verbetercyclus bezig is — ook als de gebruiker niet op deze stap staat.
   useEffect(() => {
     if (!chat || !hasActiveJob) return;
-    const activity = chat.beginActivity("Model wordt gefit — dit kan enkele minuten duren…");
+    const activity = chat.beginActivity(
+      typical != null
+        ? `Model wordt berekend — in dit project meestal ~${Math.max(1, Math.round(typical))} min…`
+        : "Model wordt berekend — dit kan enkele minuten duren…",
+    );
     return () => activity.end();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasActiveJob]);
   useEffect(() => {
     if (!chat || !autoRefine) return;
-    const activity = chat.beginActivity("Automatische verbetercyclus: de AI beoordeelt en corrigeert de fit…");
+    const activity = chat.beginActivity("Automatische verbetercyclus: de AI beoordeelt en corrigeert de berekening…");
     return () => activity.end();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefine]);
@@ -171,8 +187,8 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
               reviewedJobs.current.add(row.id);
               chat.sendToChat(
                 row.status === "succeeded"
-                  ? "Er is zojuist een fit afgerond. Beoordeel het resultaat: is het model betrouwbaar (kwaliteitspoort, diagnostiek), wat zeggen de kanalen, en kan het beter? Vergelijk waar mogelijk met eerdere runs."
-                  : "De fit die net draaide is MISLUKT. Diagnosticeer de oorzaak aan de hand van de foutmelding en stel een concrete, gecorrigeerde configuratie voor.",
+                  ? "Er is zojuist een modelberekening afgerond. Beoordeel het resultaat: is het model betrouwbaar (kwaliteitscontrole, diagnostiek), wat zeggen de kanalen, en kan het beter? Vergelijk waar mogelijk met eerdere runs."
+                  : "De berekening die net draaide is MISLUKT. Diagnosticeer de oorzaak aan de hand van de foutmelding en stel een concrete, gecorrigeerde configuratie voor.",
               );
               openChat?.();
             }
@@ -201,7 +217,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
   }
 
   if (jobs.length === 0) {
-    return <p className="text-sm text-fg-muted">Nog geen fits gestart.</p>;
+    return <p className="text-sm text-fg-muted">Nog geen modelberekeningen gestart.</p>;
   }
 
   return (
@@ -220,7 +236,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         </button>
         <p className="min-w-0 flex-1 text-xs text-fg-muted">
           {refineStatus ??
-            "Laat de AI een mislukte of zwakke fit (kwaliteitspoort warn/fail) zelf corrigeren en opnieuw fitten, max. 3 rondes. Elke ronde is zichtbaar in de chat; goedkeuren en publiceren blijft aan jou."}
+            "Laat de AI een mislukte of zwakke berekening (kwaliteitscontrole warn/fail) zelf corrigeren en opnieuw draaien, max. 3 rondes. Elke ronde is zichtbaar in de chat; goedkeuren en publiceren blijft aan jou."}
         </p>
       </div>
       <ul className="divide-y divide-border text-sm">
@@ -228,7 +244,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
         <li key={job.id} className="py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-fg">{phaseLine(job, now)}</p>
+              <p className="text-fg">{phaseLine(job, now, typical)}</p>
               {job.status === "failed" && (
                 <p className="mt-1 text-xs text-danger">{job.error ?? "Onbekende fout."}</p>
               )}
@@ -248,7 +264,7 @@ export function JobList({ projectId, initialJobs }: { projectId: string; initial
           </div>
           {job.status === "running" && (
             <p className="mt-1 text-xs text-fg-faint">
-              Een lopende fit kan nu niet worden geannuleerd — wacht tot deze klaar is.
+              Een lopende berekening kan nu niet worden geannuleerd — wacht tot deze klaar is.
             </p>
           )}
         </li>

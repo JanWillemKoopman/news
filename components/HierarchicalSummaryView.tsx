@@ -95,7 +95,7 @@ export function HierarchicalSummaryView({ summary }: { summary: HierSummary }) {
       </div>
 
       <p className="text-xs text-fg-faint">
-        Geen respons-curves, budgetoptimalisatie of kwaliteitspoort voor hiërarchische
+        Geen respons-curves, budgetoptimalisatie of kwaliteitscontrole voor hiërarchische
         modellen — deze weergave toont alleen de attributie per kanaal en regio.
       </p>
     </div>

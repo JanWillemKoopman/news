@@ -46,7 +46,7 @@ function proposalFromBlocks(content: unknown): "recept" | "configuratie" | undef
 const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> = {
   data: [
     {
-      label: "Stel een samenvoegrecept voor",
+      label: "Stel een samenvoeging voor",
       message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
     },
   ],
@@ -58,7 +58,7 @@ const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> =
   ],
   dataprep: [
     {
-      label: "Stel een samenvoegrecept voor",
+      label: "Stel een samenvoeging voor",
       message: "Kijk naar de geüploade bestanden en stel een samenvoeg-recept voor.",
     },
     {
@@ -75,25 +75,25 @@ const STEP_QUICK_ACTIONS: Record<string, { label: string; message: string }[]> =
     {
       label: "Zijn mijn priors realistisch?",
       message:
-        "Controleer of mijn huidige configuratie/priors een realistisch KPI-bereik impliceren (prior-predictive) voordat ik een dure fit start, en adviseer wat ik moet aanpassen.",
+        "Controleer of mijn huidige configuratie/priors een realistisch KPI-bereik impliceren (prior-predictive) voordat ik een dure berekening start, en adviseer wat ik moet aanpassen.",
     },
   ],
   fits: [
     {
-      label: "Beoordeel de laatste fit",
+      label: "Beoordeel de laatste berekening",
       message:
-        "Leg uit waarom de laatste fit is mislukt of geslaagd, en of de configuratie beter kan.",
+        "Leg uit waarom de laatste berekening is mislukt of geslaagd, en of de configuratie beter kan.",
     },
   ],
   results: [
     {
-      label: "Beoordeel de laatste fit",
-      message: "Beoordeel de laatste fit: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.",
+      label: "Beoordeel de laatste berekening",
+      message: "Beoordeel de laatste berekening: leg de resultaten uit, zeg of het model betrouwbaar is en of het beter kan.",
     },
     {
       label: "Vergelijk met eerdere runs",
       message:
-        "Vergelijk de laatste fit met de eerdere runs van dit project: is hij echt beter geworden (kwaliteitspoort, R², MAPE, convergentie), wat veroorzaakte het verschil, en welke run zou jij publiceren?",
+        "Vergelijk de laatste berekening met de eerdere runs van dit project: is hij echt beter geworden (kwaliteitscontrole, R², MAPE, convergentie), wat veroorzaakte het verschil, en welke run zou jij publiceren?",
     },
     {
       label: "Wat is de beste vervolgstap?",
@@ -133,7 +133,7 @@ function contextChips(ctx: ChatContextSummary): string[] {
     chips.push(label[ctx.dataset_status] ?? `dataset: ${ctx.dataset_status}`);
   }
   if (ctx.last_fit) {
-    chips.push(`laatste fit ${ctx.last_fit.date}${ctx.last_fit.verdict ? ` (${ctx.last_fit.verdict})` : ""}`);
+    chips.push(`laatste berekening ${ctx.last_fit.date}${ctx.last_fit.verdict ? ` (${ctx.last_fit.verdict})` : ""}`);
   }
   if (ctx.n_business_notes > 0) chips.push(`${ctx.n_business_notes} contextfeit(en)`);
   if (ctx.has_inspection) chips.push("diepe inspectie gedaan");
@@ -141,7 +141,7 @@ function contextChips(ctx: ChatContextSummary): string[] {
 }
 
 export function ChatPanel({ projectId }: { projectId: string }) {
-  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage, activeStepId, beginActivity } = useWizardChat();
+  const { applyConfig, applyRecipe, pendingChatMessage, clearPendingChatMessage, activeStepId, beginActivity, stageRecipe, stageConfig } = useWizardChat();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [context, setContext] = useState<ChatContextSummary | null>(null);
   const [input, setInput] = useState("");
@@ -267,6 +267,10 @@ export function ChatPanel({ projectId }: { projectId: string }) {
               proposedConfig: event.proposedConfig ?? undefined,
               proposedRecipe: event.proposedRecipe ?? undefined,
             });
+            // Zet het voorstel ook klaar bij de betreffende stap zelf, zodat het daar
+            // als kaart verschijnt en de gebruiker niet in de chat hoeft te zoeken.
+            if (event.proposedRecipe != null) stageRecipe(event.proposedRecipe);
+            if (event.proposedConfig != null) stageConfig(event.proposedConfig);
           } else if (event.type === "error") {
             setError(event.error ?? "Er ging iets mis.");
             updateLast({ streaming: false });
@@ -317,7 +321,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         {loaded && messages.length === 0 && (
           <p className="text-sm text-fg-muted">
             Vraag de AI om de geüploade bestanden te controleren en samen te voegen,
-            om daarna een modelconfiguratie voor te stellen. Na een fit kun je hem ook
+            om daarna een modelconfiguratie voor te stellen. Na een berekening kun je hem ook
             vragen de resultaten uit te leggen, te beoordelen of te verbeteren.
           </p>
         )}
@@ -345,7 +349,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Recept overnemen in de tabel
+                  Voorstel overnemen in stap 3 (Data voorbereiden)
                 </button>
               </div>
             )}
@@ -356,7 +360,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Voorstel overnemen in de editor
+                  Voorstel overnemen in stap 4 (Model configureren)
                 </button>
               </div>
             )}
@@ -394,7 +398,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
             }
           }}
           rows={2}
-          placeholder="Bijv. 'Stel een samenvoegrecept voor.' of, na een fit, 'Leg de resultaten uit / kan dit beter?'"
+          placeholder="Bijv. 'Stel een samenvoeging voor.' of, na een berekening, 'Leg de resultaten uit / kan dit beter?'"
           className="flex-1 resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
         />
         {busy ? (

@@ -62,7 +62,7 @@ function QualityBanner({ summary }: { summary: FitSummary }) {
         <button
           onClick={() =>
             chat.sendToChat(
-              `De kwaliteitspoort van de laatste fit geeft "${gate.verdict === "fail" ? "mislukt" : "let op"}" met deze reden(en): ${gate.reasons.join("; ")}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
+              `De kwaliteitscontrole van de laatste berekening geeft "${gate.verdict === "fail" ? "mislukt" : "let op"}" met deze reden(en): ${gate.reasons.join("; ")}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
             )
           }
           className="mt-3 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger-dim"

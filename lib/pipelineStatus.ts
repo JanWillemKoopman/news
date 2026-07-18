@@ -32,16 +32,16 @@ function dataprepSummary(dataset: Dataset | null): string | undefined {
 const PROGRESS_LABEL: Record<string, string> = {
   downloading: "brondata laden",
   building_dataset: "dataset opbouwen",
-  sampling: "model fitten",
+  sampling: "model berekenen",
   saving: "resultaten opslaan",
 };
 
 function fitJobSummary(job: Job): string {
-  if (job.status === "succeeded") return "Laatste fit geslaagd";
-  if (job.status === "failed") return job.error ?? "Laatste fit mislukt";
-  if (job.status === "running") return `Fit loopt — ${job.progress ? PROGRESS_LABEL[job.progress] : "wordt gestart"}`;
-  if (job.status === "queued") return "Fit staat in de wachtrij";
-  return "Laatste fit geannuleerd";
+  if (job.status === "succeeded") return "Laatste berekening geslaagd";
+  if (job.status === "failed") return job.error ?? "Laatste berekening mislukt";
+  if (job.status === "running") return `Berekening loopt — ${job.progress ? PROGRESS_LABEL[job.progress] : "wordt gestart"}`;
+  if (job.status === "queued") return "Berekening staat in de wachtrij";
+  return "Laatste berekening geannuleerd";
 }
 
 function resultsSummary(run: ModelRun): string {
@@ -122,7 +122,7 @@ export function computePipelineSteps({
       status: configStatus,
       summary: fitJobs.length ? `${fitJobs.length} fit${fitJobs.length === 1 ? "" : "s"} gestart` : undefined,
     },
-    { id: "fits", title: "Fits", status: fitsStatus, summary: latestFitJob ? fitJobSummary(latestFitJob) : undefined },
+    { id: "fits", title: "Berekenen", status: fitsStatus, summary: latestFitJob ? fitJobSummary(latestFitJob) : undefined },
     {
       id: "results",
       title: "Resultaten",
