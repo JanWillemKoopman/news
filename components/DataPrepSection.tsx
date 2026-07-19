@@ -26,12 +26,16 @@ import type {
 
 const RAW_BUCKET = "mmm-raw-data";
 const DATE_ROLE = "__date__";
-const ROLE_OPTIONS: { value: ColumnRole | "" | typeof DATE_ROLE; label: string }[] = [
+// "Marge" is geen mmm-core-rol maar een UI-actie: het gemiddelde van de kolom wordt
+// overgenomen als projectmarge (mmm.projects.kpi_margin) — zie de onChange in de tabel.
+const MARGIN_ROLE = "__margin__";
+const ROLE_OPTIONS: { value: ColumnRole | "" | typeof DATE_ROLE | typeof MARGIN_ROLE; label: string }[] = [
   { value: "", label: "(niet gebruiken)" },
   { value: DATE_ROLE, label: "Datum" },
   { value: "kpi", label: "KPI" },
   { value: "spend", label: "Spend" },
   { value: "control", label: "Control" },
+  { value: MARGIN_ROLE, label: "Marge (gemiddelde overnemen)" },
 ];
 const FILL_OPTIONS: { value: FillStrategy | ""; label: string }[] = [
   { value: "", label: "niet vullen (gat blijft zichtbaar)" },
@@ -361,6 +365,7 @@ export function DataPrepSection({
   const [error, setError] = useState<string | null>(null);
   const [sourceValues, setSourceValues] = useState<Record<string, Record<string, number[]>>>({});
   const [applyDiff, setApplyDiff] = useState<string | null>(null);
+  const [marginMsg, setMarginMsg] = useState<string | null>(null);
   // Snapshot van vóór het laatst overgenomen architect-recept, zodat "Ongedaan maken"
   // één klik is — dat maakt experimenteren met voorstellen veilig.
   const [undoSnapshot, setUndoSnapshot] = useState<{
@@ -612,6 +617,10 @@ export function DataPrepSection({
             voorstel in de chat). Alleen kolommen met een rol gaan mee in de samenvoeging.
           </p>
 
+          {marginMsg && (
+            <p className="rounded-lg border border-accent/40 bg-accent-dim px-3 py-2 text-xs text-accent">{marginMsg}</p>
+          )}
+
           <div className="space-y-4">
             {drafts.map((src, sIdx) => (
               <div key={src.file.storage_path} className="rounded-lg border border-border p-3">
@@ -725,6 +734,32 @@ export function DataPrepSection({
                                   value={src.date_column === col.name ? DATE_ROLE : col.role}
                                   onChange={(e) => {
                                     const v = e.target.value;
+                                    if (v === MARGIN_ROLE) {
+                                      // Gemiddelde van de kolom overnemen als marge per
+                                      // verkocht product; de kolom zelf gaat niet mee in
+                                      // de samenvoeging (rol blijft leeg).
+                                      const vals = sourceValues[src.file.storage_path]?.[col.name] ?? [];
+                                      if (vals.length === 0) {
+                                        setMarginMsg(`Kolom “${col.name}” bevat geen numerieke waarden — er valt geen gemiddelde marge uit te halen.`);
+                                        return;
+                                      }
+                                      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                                      void fetch("/api/business-context", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ project_id: projectId, kpi_margin: Math.round(avg * 100) / 100 }),
+                                      }).then(async (res) => {
+                                        if (res.ok) {
+                                          setMarginMsg(
+                                            `Gemiddelde van “${col.name}” overgenomen als marge per verkocht product: €${(Math.round(avg * 100) / 100).toLocaleString("nl-NL")}. Zichtbaar in het dashboard (ROI) en aanpasbaar bij stap 3.`,
+                                          );
+                                          router.refresh();
+                                        } else {
+                                          setMarginMsg((await res.json().catch(() => ({}))).error ?? "Marge overnemen is niet gelukt.");
+                                        }
+                                      });
+                                      return;
+                                    }
                                     if (v === DATE_ROLE) {
                                       // Deze kolom wordt de datumkolom van het bestand
                                       // (één per bestand); een rol heeft hij dan niet.

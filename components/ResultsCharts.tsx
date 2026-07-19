@@ -175,7 +175,7 @@ function ScoreCards({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: n
           {
             label: "Netto rendement (ROI)",
             value: `${fmt(((marketingP50 * kpiMargin - spend) / spend) * 100)}%`,
-            sub: `winst per euro bij ${fmt(kpiMargin * 100)}% brutomarge`,
+            sub: `winst per euro, bij €${fmt(kpiMargin, 2)} marge per verkochte ${summary.kpi}-eenheid`,
           },
         ]
       : []),
@@ -644,8 +644,8 @@ export function ResultsCharts({ summary, kpiMargin }: { summary: FitSummary; kpi
           title="Rendement per kanaal (ROAS)"
           hint={
             kpiMargin != null
-              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij ${fmt(kpiMargin * 100)}% brutomarge ligt break-even bij ROAS ${fmt(1 / kpiMargin, 1)}, niet bij 1,0. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
-              : "Rechts van de stippellijn (1,0) levert een kanaal meer omzet op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul de brutomarge in bij stap 3 voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
+              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per verkochte eenheid ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
+              : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
           }
         >
           <ResponsiveContainer width="100%" height={roasHeight} className="overflow-hidden">

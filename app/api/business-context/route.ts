@@ -28,10 +28,10 @@ export async function POST(request: Request) {
     add?: { topic?: string; fact?: string; relates_to?: string | null };
     remove_index?: number;
     industry?: string;
-    // Brutomarge op de KPI in procenten (1–100); null/0 = wissen. Gaat naar
-    // mmm.projects.kpi_margin als fractie, want hij hoort bij het project, niet bij
-    // de losse contextfeiten.
-    kpi_margin_pct?: number | null;
+    // Gemiddelde brutomarge in EURO'S per verkochte KPI-eenheid (bv. 12.50 per
+    // order); null = wissen. Gaat naar mmm.projects.kpi_margin — hoort bij het
+    // project, niet bij de losse contextfeiten.
+    kpi_margin?: number | null;
   } | null;
   if (!body?.project_id) {
     return NextResponse.json({ error: "project_id is verplicht" }, { status: 400 });
@@ -39,15 +39,15 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  if (body.kpi_margin_pct !== undefined) {
-    const pct = body.kpi_margin_pct;
-    if (pct !== null && (typeof pct !== "number" || !(pct > 0 && pct <= 100))) {
-      return NextResponse.json({ error: "de marge moet tussen 1 en 100 procent liggen" }, { status: 400 });
+  if (body.kpi_margin !== undefined) {
+    const marge = body.kpi_margin;
+    if (marge !== null && (typeof marge !== "number" || !(marge > 0) || !Number.isFinite(marge))) {
+      return NextResponse.json({ error: "de marge moet een bedrag boven 0 zijn (bv. 12,50)" }, { status: 400 });
     }
     const { error: marginErr } = await supabase
       .schema("mmm")
       .from("projects")
-      .update({ kpi_margin: pct === null ? null : pct / 100 })
+      .update({ kpi_margin: marge })
       .eq("id", body.project_id);
     if (marginErr) {
       return NextResponse.json({ error: marginErr.message }, { status: 400 });

@@ -19,7 +19,8 @@ export interface Project {
   created_at: string;
   published_at: string | null;
   eda_completed_at: string | null;
-  // Brutomarge op de KPI als fractie (0–1); null = niet ingevuld. Maakt ROI en de
+  // Gemiddelde brutomarge in euro's per verkochte KPI-eenheid (bv. 12.50 per order;
+  // bij een omzet-KPI: winst per euro omzet). null = niet ingevuld. Maakt ROI en de
   // marge-gecorrigeerde break-evenlijn in het dashboard mogelijk.
   kpi_margin: number | null;
 }

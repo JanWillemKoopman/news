@@ -29,7 +29,7 @@ export function BusinessContextPanel({
   projectId: string;
   industry: string | null;
   notes: BusinessContextNote[];
-  // Brutomarge als fractie (0–1) uit mmm.projects.kpi_margin; null = nog niet ingevuld.
+  // Gemiddelde brutomarge in euro's per verkochte KPI-eenheid (mmm.projects.kpi_margin).
   kpiMargin: number | null;
 }) {
   const router = useRouter();
@@ -39,7 +39,7 @@ export function BusinessContextPanel({
   const [fact, setFact] = useState("");
   const [relatesTo, setRelatesTo] = useState("");
   const [industryDraft, setIndustryDraft] = useState(industry ?? "");
-  const [marginDraft, setMarginDraft] = useState(kpiMargin != null ? String(Math.round(kpiMargin * 100)) : "");
+  const [marginDraft, setMarginDraft] = useState(kpiMargin != null ? String(kpiMargin).replace(".", ",") : "");
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -100,25 +100,26 @@ export function BusinessContextPanel({
           />
         </label>
         <label className="text-xs text-fg-muted">
-          Brutomarge op de KPI:
+          Gemiddelde marge per verkocht product:
+          <span className="ml-1.5">€</span>
           <input
-            type="number"
-            min={1}
-            max={100}
+            type="text"
+            inputMode="decimal"
             value={marginDraft}
             onChange={(e) => setMarginDraft(e.target.value)}
             onBlur={() => {
-              const stored = kpiMargin != null ? String(Math.round(kpiMargin * 100)) : "";
+              const stored = kpiMargin != null ? String(kpiMargin).replace(".", ",") : "";
               if (marginDraft.trim() === stored) return;
-              const pct = marginDraft.trim() === "" ? null : Number(marginDraft);
-              void post({ kpi_margin_pct: pct });
+              const parsed = marginDraft.trim() === "" ? null : Number(marginDraft.replace(",", "."));
+              if (parsed !== null && !Number.isFinite(parsed)) return;
+              void post({ kpi_margin: parsed });
             }}
-            placeholder="bv. 35"
-            className="ml-1.5 w-16 rounded border border-border-strong bg-surface px-2 py-1 text-xs outline-none focus:border-accent/50"
+            placeholder="bv. 12,50"
+            className="ml-1 w-20 rounded border border-border-strong bg-surface px-2 py-1 text-xs outline-none focus:border-accent/50"
           />
-          <span className="ml-1">%</span>
           <span className="ml-2 text-fg-faint">
-            — maakt ROI (winst per euro) mogelijk in het dashboard; zonder marge tonen we alleen ROAS
+            — wat houd je gemiddeld over aan één verkoop? Maakt ROI (winst) zichtbaar in het dashboard.
+            Staat de marge al als kolom in je data, kies dan de rol “Marge” bij stap 2 — dan nemen we het gemiddelde automatisch over.
           </span>
         </label>
       </div>
