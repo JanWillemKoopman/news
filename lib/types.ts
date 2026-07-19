@@ -19,6 +19,9 @@ export interface Project {
   created_at: string;
   published_at: string | null;
   eda_completed_at: string | null;
+  // Brutomarge op de KPI als fractie (0–1); null = niet ingevuld. Maakt ROI en de
+  // marge-gecorrigeerde break-evenlijn in het dashboard mogelijk.
+  kpi_margin: number | null;
 }
 
 export interface SourceFile {

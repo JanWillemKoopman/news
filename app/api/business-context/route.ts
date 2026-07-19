@@ -28,12 +28,31 @@ export async function POST(request: Request) {
     add?: { topic?: string; fact?: string; relates_to?: string | null };
     remove_index?: number;
     industry?: string;
+    // Brutomarge op de KPI in procenten (1–100); null/0 = wissen. Gaat naar
+    // mmm.projects.kpi_margin als fractie, want hij hoort bij het project, niet bij
+    // de losse contextfeiten.
+    kpi_margin_pct?: number | null;
   } | null;
   if (!body?.project_id) {
     return NextResponse.json({ error: "project_id is verplicht" }, { status: 400 });
   }
 
   const supabase = createClient();
+
+  if (body.kpi_margin_pct !== undefined) {
+    const pct = body.kpi_margin_pct;
+    if (pct !== null && (typeof pct !== "number" || !(pct > 0 && pct <= 100))) {
+      return NextResponse.json({ error: "de marge moet tussen 1 en 100 procent liggen" }, { status: 400 });
+    }
+    const { error: marginErr } = await supabase
+      .schema("mmm")
+      .from("projects")
+      .update({ kpi_margin: pct === null ? null : pct / 100 })
+      .eq("id", body.project_id);
+    if (marginErr) {
+      return NextResponse.json({ error: marginErr.message }, { status: 400 });
+    }
+  }
   const { data: existing } = await supabase
     .schema("mmm")
     .from("project_context")

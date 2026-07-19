@@ -24,10 +24,13 @@ export function BusinessContextPanel({
   projectId,
   industry,
   notes,
+  kpiMargin,
 }: {
   projectId: string;
   industry: string | null;
   notes: BusinessContextNote[];
+  // Brutomarge als fractie (0–1) uit mmm.projects.kpi_margin; null = nog niet ingevuld.
+  kpiMargin: number | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -36,6 +39,7 @@ export function BusinessContextPanel({
   const [fact, setFact] = useState("");
   const [relatesTo, setRelatesTo] = useState("");
   const [industryDraft, setIndustryDraft] = useState(industry ?? "");
+  const [marginDraft, setMarginDraft] = useState(kpiMargin != null ? String(Math.round(kpiMargin * 100)) : "");
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -94,6 +98,28 @@ export function BusinessContextPanel({
             placeholder="bv. retail elektronica"
             className="ml-1.5 w-56 rounded border border-border-strong bg-surface px-2 py-1 text-xs outline-none focus:border-accent/50"
           />
+        </label>
+        <label className="text-xs text-fg-muted">
+          Brutomarge op de KPI:
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={marginDraft}
+            onChange={(e) => setMarginDraft(e.target.value)}
+            onBlur={() => {
+              const stored = kpiMargin != null ? String(Math.round(kpiMargin * 100)) : "";
+              if (marginDraft.trim() === stored) return;
+              const pct = marginDraft.trim() === "" ? null : Number(marginDraft);
+              void post({ kpi_margin_pct: pct });
+            }}
+            placeholder="bv. 35"
+            className="ml-1.5 w-16 rounded border border-border-strong bg-surface px-2 py-1 text-xs outline-none focus:border-accent/50"
+          />
+          <span className="ml-1">%</span>
+          <span className="ml-2 text-fg-faint">
+            — maakt ROI (winst per euro) mogelijk in het dashboard; zonder marge tonen we alleen ROAS
+          </span>
         </label>
       </div>
 

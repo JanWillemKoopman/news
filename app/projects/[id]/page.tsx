@@ -149,7 +149,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   <PipelineStep id="config" number={3}>
                     <StepIntro step="config" />
                     <div className="mb-4">
-                      <BusinessContextPanel projectId={p.id} industry={businessIndustry} notes={businessNotes} />
+                      <BusinessContextPanel projectId={p.id} industry={businessIndustry} notes={businessNotes} kpiMargin={p.kpi_margin ?? null} />
                     </div>
                     <ModelConfigForm
                       projectId={p.id}
@@ -163,7 +163,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                     <div className="space-y-5">
                       <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
                       <div className="border-t border-border pt-5">
-                        <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} />
+                        <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} kpiMargin={p.kpi_margin ?? null} />
                       </div>
                     </div>
                   </PipelineStep>

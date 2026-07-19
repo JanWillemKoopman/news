@@ -148,7 +148,7 @@ function SplitTooltip({ active, payload }: { active?: boolean; payload?: { paylo
 // De euro-balans: de vier getallen die je aan de directietafel voorleest. De band op de
 // marketingbijdrage is de som van de kanaal-banden — iets ruimer dan de exacte gezamenlijke
 // band, dus een voorzichtige (eerlijke) weergave.
-function ScoreCards({ summary }: { summary: FitSummary }) {
+function ScoreCards({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
   const spend = summary.channels.reduce((s, ch) => s + ch.total_spend, 0);
   const marketingP50 = summary.channels.reduce((s, ch) => s + ch.absolute_contribution.p50, 0);
   const marketingP3 = summary.channels.reduce((s, ch) => s + ch.absolute_contribution.p3, 0);
@@ -170,6 +170,15 @@ function ScoreCards({ summary }: { summary: FitSummary }) {
       value: spend > 0 ? fmt(marketingP50 / spend, 2) : "—",
       sub: "marketingbijdrage ÷ totale spend",
     },
+    ...(kpiMargin != null && spend > 0
+      ? [
+          {
+            label: "Netto rendement (ROI)",
+            value: `${fmt(((marketingP50 * kpiMargin - spend) / spend) * 100)}%`,
+            sub: `winst per euro bij ${fmt(kpiMargin * 100)}% brutomarge`,
+          },
+        ]
+      : []),
     {
       label: "Basislijn (zonder marketing)",
       value: totalKpi > 0 ? `${fmt((summary.baseline_contribution.p50 / totalKpi) * 100)}%` : "—",
@@ -177,7 +186,7 @@ function ScoreCards({ summary }: { summary: FitSummary }) {
     },
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-5">
       {cards.map((c) => (
         <div key={c.label} className="rounded-lg border border-border bg-surface-2/60 px-3 py-2.5">
           <p className="text-[11px] uppercase tracking-wide text-fg-faint">{c.label}</p>
@@ -574,7 +583,7 @@ function AdstockDecayGrid({ summary }: { summary: FitSummary }) {
 
 // --- Samenstelling ------------------------------------------------------------------
 
-export function ResultsCharts({ summary }: { summary: FitSummary }) {
+export function ResultsCharts({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
   // Direct vs na-ijl: alleen voor runs die de splitsing al meekregen uit de rekenkern.
   const splitData = summary.channels
     .filter((ch) => ch.direct_contribution && ch.carryover_contribution)
@@ -594,6 +603,9 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
 
   const rowHeight = 32;
   const roasHeight = Math.max(120, roasData.length * rowHeight);
+  // Met marge is break-even geen ROAS 1,0 maar 1/marge (elke euro omzet is maar
+  // deels winst); zonder marge houden we de klassieke omzet-break-even van 1,0 aan.
+  const breakEven = kpiMargin != null && kpiMargin > 0 ? 1 / kpiMargin : 1;
 
   const curves = summary.response_curves ?? [];
   const frontier = summary.efficiency_frontier;
@@ -615,7 +627,7 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
     <div className="space-y-6">
       {/* ---- Blok 1: Wat gebeurde er? ---- */}
       <SectionHeader title="Wat gebeurde er?" subtitle="Het totaalbeeld: waar je omzet vandaan kwam en of het model de werkelijkheid volgt." />
-      <ScoreCards summary={summary} />
+      <ScoreCards summary={summary} kpiMargin={kpiMargin} />
       {summary.weekly && <BuildUpChart weekly={summary.weekly} kpi={summary.kpi} />}
       <div className="grid gap-6 lg:grid-cols-2">
         <WaterfallChart summary={summary} />
@@ -630,7 +642,11 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
         <SpendVsReturnChart summary={summary} />
         <ChartCard
           title="Rendement per kanaal (ROAS)"
-          hint="Rechts van de stippellijn (1,0) verdient een kanaal zichzelf terug. Groen = vrijwel zeker winstgevend; grijs = de marge kruist de lijn, dus nog niet te zeggen; rood = vrijwel zeker verliesgevend."
+          hint={
+            kpiMargin != null
+              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij ${fmt(kpiMargin * 100)}% brutomarge ligt break-even bij ROAS ${fmt(1 / kpiMargin, 1)}, niet bij 1,0. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
+              : "Rechts van de stippellijn (1,0) levert een kanaal meer omzet op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul de brutomarge in bij stap 3 voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
+          }
         >
           <ResponsiveContainer width="100%" height={roasHeight} className="overflow-hidden">
             <BarChart data={roasData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
@@ -638,10 +654,10 @@ export function ResultsCharts({ summary }: { summary: FitSummary }) {
               <XAxis type="number" tick={AXIS} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
               <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <ReferenceLine x={1} stroke="#6E6E73" strokeDasharray="4 4" label={{ value: "break-even", position: "top", fontSize: 10, fill: "#6E6E73" }} />
+              <ReferenceLine x={breakEven} stroke="#6E6E73" strokeDasharray="4 4" label={{ value: "break-even", position: "top", fontSize: 10, fill: "#6E6E73" }} />
               <Bar dataKey="p50" radius={[0, 3, 3, 0]} barSize={14}>
                 {roasData.map((d) => (
-                  <Cell key={d.name} fill={d.p3 >= 1 ? SUCCESS : d.p97 <= 1 ? DANGER : NEUTRAL} />
+                  <Cell key={d.name} fill={d.p3 >= breakEven ? SUCCESS : d.p97 <= breakEven ? DANGER : NEUTRAL} />
                 ))}
                 <ErrorBar dataKey="errorRange" direction="x" width={3} stroke={INK} strokeOpacity={0.35} />
               </Bar>

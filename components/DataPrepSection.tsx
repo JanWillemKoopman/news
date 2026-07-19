@@ -25,8 +25,10 @@ import type {
 } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
-const ROLE_OPTIONS: { value: ColumnRole | ""; label: string }[] = [
+const DATE_ROLE = "__date__";
+const ROLE_OPTIONS: { value: ColumnRole | "" | typeof DATE_ROLE; label: string }[] = [
   { value: "", label: "(niet gebruiken)" },
+  { value: DATE_ROLE, label: "Datum" },
   { value: "kpi", label: "KPI" },
   { value: "spend", label: "Spend" },
   { value: "control", label: "Control" },
@@ -647,18 +649,14 @@ export function DataPrepSection({
                       Alle AI-suggesties overnemen
                     </button>
                   )}
-                  <label className="ml-auto flex items-center gap-1.5 text-xs text-fg-muted">
-                    Datumkolom:
-                    <input
-                      type="text"
-                      value={src.date_column}
-                      onChange={(e) =>
-                        setDrafts((prev) => prev.map((s, i) => (i !== sIdx ? s : { ...s, date_column: e.target.value })))
-                      }
-                      placeholder="automatisch detecteren"
-                      className="rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
-                    />
-                  </label>
+                  <span className="ml-auto text-xs text-fg-muted">
+                    Datumkolom:{" "}
+                    {src.date_column ? (
+                      <span className="font-medium text-fg">{src.date_column}</span>
+                    ) : (
+                      <span className="text-fg-faint">automatisch detecteren — of kies “Datum” als rol</span>
+                    )}
+                  </span>
                 </div>
                 {src.transforms.length > 0 && (
                   <div className="mb-2 space-y-1 rounded border border-border bg-surface-2 p-2">
@@ -724,8 +722,41 @@ export function DataPrepSection({
                             <td className="py-1.5 pr-3">
                               <div className="flex items-center gap-1.5">
                                 <select
-                                  value={col.role}
-                                  onChange={(e) => updateColumn(sIdx, cIdx, { role: e.target.value as ColumnRole | "" })}
+                                  value={src.date_column === col.name ? DATE_ROLE : col.role}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (v === DATE_ROLE) {
+                                      // Deze kolom wordt de datumkolom van het bestand
+                                      // (één per bestand); een rol heeft hij dan niet.
+                                      setDrafts((prev) =>
+                                        prev.map((sd, i) =>
+                                          i !== sIdx
+                                            ? sd
+                                            : {
+                                                ...sd,
+                                                date_column: col.name,
+                                                columns: sd.columns.map((c, j) => (j === cIdx ? { ...c, role: "" } : c)),
+                                              },
+                                        ),
+                                      );
+                                    } else {
+                                      setDrafts((prev) =>
+                                        prev.map((sd, i) =>
+                                          i !== sIdx
+                                            ? sd
+                                            : {
+                                                ...sd,
+                                                // Was dit de datumkolom, dan valt het bestand
+                                                // terug op automatische detectie.
+                                                date_column: sd.date_column === col.name ? "" : sd.date_column,
+                                                columns: sd.columns.map((c, j) =>
+                                                  j === cIdx ? { ...c, role: v as ColumnRole | "" } : c,
+                                                ),
+                                              },
+                                        ),
+                                      );
+                                    }
+                                  }}
                                   className="rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50"
                                 >
                                   {ROLE_OPTIONS.map((o) => (

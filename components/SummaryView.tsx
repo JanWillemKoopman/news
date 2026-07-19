@@ -172,7 +172,7 @@ function BudgetAdvice({
   );
 }
 
-export function SummaryView({ summary }: { summary: FitSummary }) {
+export function SummaryView({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
   const d = summary.diagnostics;
   const coverageOff = Math.abs(d.interval_coverage_94 - 0.94) > 0.1;
 
@@ -203,7 +203,7 @@ export function SummaryView({ summary }: { summary: FitSummary }) {
         {summary.kpi}.
       </p>
 
-      <ResultsCharts summary={summary} />
+      <ResultsCharts summary={summary} kpiMargin={kpiMargin} />
 
       <details className="border-t border-border pt-4">
         <summary className="cursor-pointer select-none text-sm font-medium text-fg">

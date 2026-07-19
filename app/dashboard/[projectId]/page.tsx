@@ -49,7 +49,7 @@ export default async function ClientDashboard({ params }: { params: { projectId:
               <HierarchicalSummaryView summary={latest.summary} />
             ) : (
               <>
-                <SummaryView summary={latest.summary} />
+                <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} />
                 {latest.analysis && <AnalysisView analysis={latest.analysis} />}
               </>
             )}

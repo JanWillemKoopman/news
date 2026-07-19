@@ -14,10 +14,12 @@ export function ResultsView({
   projectId,
   runs,
   jobConfigs,
+  kpiMargin,
 }: {
   projectId: string;
   runs: ModelRun[];
   jobConfigs?: Record<string, JobConfig>;
+  kpiMargin?: number | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -116,7 +118,7 @@ export function ResultsView({
       {isHierSummary(viewedRun.summary) ? (
         <HierarchicalSummaryView summary={viewedRun.summary} />
       ) : (
-        <SummaryView summary={viewedRun.summary} />
+        <SummaryView summary={viewedRun.summary} kpiMargin={kpiMargin} />
       )}
       {/* Deep analysis assumes the single-region FitSummary shape (it feeds the summary
           JSON straight to Claude's code-execution tool) — not offered for a hierarchical
