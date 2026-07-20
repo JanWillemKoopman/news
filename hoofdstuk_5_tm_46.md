@@ -1286,7 +1286,9 @@ Validatie is wat een schatting tot een verdedigbaar advies maakt. Dit hoofdstuk 
 - het volledige validatieprotocol zelfstandig uitvoeren;
 - posterior predictive checks specifiek op MMM-relevante aspecten inrichten;
 - backtesting en holdout-evaluatie correct implementeren en interpreteren;
-- businessvalidatie organiseren als terugkoppeling met de klant.
+- businessvalidatie organiseren als terugkoppeling met de klant;
+- het praktische draaiboek van negen validatietesten toepassen op elk gebouwd model;
+- van een gefaalde test naar de juiste modelbijsturing werken.
 
 ## 25.1 Het validatieprotocol: de vaste checklist
 
@@ -1312,7 +1314,55 @@ Bundel de stabiliteitschecks die je al kent — een jaar data weglaten, een peri
 
 Toets je uitkomsten aan wat de organisatie zelf al weet: eerdere experimenten, praktijkervaring ("toen we stopten met radio, merkten we eigenlijk niets"), of externe benchmarks. Presenteer je uitkomsten in deze fase als hypothesen, niet als vaststaande conclusies, en organiseer een workshop waarin je de kamer actief laat reageren — vóór je de definitieve eindrapportage opstelt. Deze stap bouwt niet alleen vertrouwen op, ze vangt ook regelmatig fouten op die je zelf, na weken in de data, niet meer zou zien.
 
-Met een gebouwd, gediagnosticeerd en gevalideerd referentiemodel is deel VI compleet. Het volgende deel leert je die technische uitkomst te vertalen naar de taal van de business: ROI, budgetadvies, forecasts, en overtuigende presentaties.
+## 25.7 Het validatie- en bijstuurdraaiboek: negen testen voor de praktijk
+
+De voorgaande paragrafen gaven je de methodologische bouwstenen. Deze paragraaf giet ze in een concreet, uitvoerbaar draaiboek: negen testen die je, in deze volgorde, op elk gebouwd model loslaat voordat je het naar buiten brengt. Zie het als de APK van je model. Loop de lijst elke keer af — niet omdat elke test even zwaar weegt, maar omdat de test die je overslaat precies de fout bevat die je later voor een zaal moet toegeven.
+
+Elke test hieronder krijgt hetzelfde stramien: *wat je doet*, *wat je verwacht bij een gezond model*, en *wat het betekent als de test faalt*. Die laatste kolom is de belangrijkste — een gefaalde test is geen tegenslag maar informatie, en paragraaf 25.8 vertelt je wat je er vervolgens mee doet.
+
+**Test 1 — Face validity: de plausibiliteitscheck.** Leg de decompositie en de ROI-tabel naast de intuïtie van de marketeers. Kloppen de grote lijnen met wat de organisatie uit ervaring weet? Bij een gezond model herkennen de marketeers het patroon in grote lijnen, ook als een enkel cijfer verrast. Faalt de test — de baseline is bijvoorbeeld absurd hoog, of een kanaal waarvan iedereen het effect voelt komt op nul uit — dan is er vrijwel zeker een specificatie- of dataprobleem, en ga je niet verder tot je het hebt gevonden.
+
+**Test 2 — Posterior predictive check: kan het model zijn eigen data nadoen?** Laat het model neppe datasets genereren en leg die naast de echte omzet (de techniek uit 25.2). Bij een gezond model vallen de werkelijke pieken, dalen en seizoenspatronen binnen de simulatiebandbreedte. Faalt de test — het model mist structureel de decemberpiek of de event-uplift — dan ontbreekt er een variabele of deugt een transformatie niet.
+
+**Test 3 — Residu-inspectie: wat begrijpt het model niet?** Bekijk de residuen (het verschil tussen model en werkelijkheid) door de tijd. Bij een gezond model ogen ze als structuurloze ruis rond nul. Faalt de test — je ziet een terugkerend patroon, een systematische afwijking in bepaalde perioden, of pieken rond specifieke weken — dan wijst elk patroon je rechtstreeks naar een ontbrekende verklarende factor.
+
+**Test 4 — Holdout- en backtest: voorspelt het model ongeziene tijd?** Herfit het model op alle data behalve de laatste maanden, en laat het die achtergehouden periode voorspellen (de techniek uit 25.3). Bij een gezond model valt de werkelijke omzet netjes binnen de voorspelband, met een acceptabele foutmaat. Faalt de test — de voorspelling zit er structureel naast, of de werkelijke waarden vallen veel te vaak buiten het interval — dan is het model overfit of mist het een recente verschuiving.
+
+**Test 5 — De face-validity van de responscurves.** Bekijk per kanaal de geschatte saturatiecurve. Bij een gezond model heeft elke curve een plausibele vorm: stijgend, afbuigend, zonder rare knikken, en met een verzadigingspunt dat marketinglogica volgt. Faalt de test — een curve die eindeloos lineair doorstijgt, of juist meteen vlak ligt — dan zijn de transformatieparameters slecht geïdentificeerd, vaak door te weinig variatie in de inzet van dat kanaal.
+
+**Test 6 — De extrapolatie- of spend-verdubbelingstest.** Vraag het model door te rekenen wat er gebeurt als je de inzet van een kanaal fors verhoogt, ver boven wat het historisch heeft gezien. Bij een gezond model reageert de voorspelling gedempt (de saturatie remt af) en groeit de onzekerheidsband zichtbaar naarmate je verder van de waargenomen data komt. Faalt de test — het model belooft ongeremd doorgroeiende omzet bij tienvoudige inzet — dan weet je dat je optimalisatie-advies buiten de veilige zone onbetrouwbaar is, en begrens je je advies (zie hoofdstuk 27.4).
+
+**Test 7 — Stabiliteit: wiebelt de uitkomst niet te veel?** Herfit het model terwijl je een jaar data weglaat, een bijzondere periode (zoals de coronajaren) uitsluit, of een controlevariabele wisselt (de techniek uit 25.5). Bij een gezond model bewegen de kern-ROI's binnen een redelijke bandbreedte. Faalt de test — de TV-ROI springt van 1,2 naar 3,8 zodra je één jaar weglaat — dan is het effect zwak geïdentificeerd en moet je dat als brede bandbreedte rapporteren, niet als een enkel getal.
+
+**Test 8 — Priorgevoeligheid: stuurt de data of sturen mijn aannames?** Herfit met bewust versoepelde en aangescherpte priors op de sleutelparameters (de techniek uit hoofdstuk 23). Bij een gezond, data-rijk model verschuiven de conclusies nauwelijks. Faalt de test — de uitkomst volgt vrijwel volledig je prior — dan zegt de data weinig over dat kanaal, en moet je eerlijk communiceren dat het resultaat op aanname berust, niet op bewijs.
+
+**Test 9 — De externe ijking: klopt het model met een echt experiment?** Dit is de zwaarste en waardevolste test. Vergelijk de model-ROI van een kanaal met de uitkomst van een echte lift- of geo-studie voor datzelfde kanaal (de kalibratie uit hoofdstuk 33). Bij een gezond model liggen de twee schattingen in dezelfde orde van grootte. Faalt de test — het model zegt ROI 3, het experiment zegt ROI 0,8 — dan wint in de regel het experiment, en gebruik je het verschil om je model bij te sturen. Geen enkele interne test evenaart de bewijskracht van deze externe toets.
+
+> **[Figuur 25.1 — Het validatiedraaiboek als trechter]** *De negen testen als een trechter van goedkoop-en-snel (face validity, PPC, residuen) naar duur-en-sterk (stabiliteit, priorgevoeligheid, experimentele ijking). Een model zakt pas door naar de volgende laag als de vorige geen alarm geeft.*
+
+### Het draaiboek in één overzicht
+
+| # | Test | Kernvraag | Sterkte |
+|---|---|---|---|
+| 1 | Face validity | Herkent de marketeer het beeld? | Snel, onmisbaar |
+| 2 | Posterior predictive check | Doet het model de data na? | Fundamenteel |
+| 3 | Residu-inspectie | Wat blijft onverklaard? | Wijst naar ontbrekende variabelen |
+| 4 | Holdout / backtest | Voorspelt het ongeziene tijd? | Toetst overfitting |
+| 5 | Responscurve-check | Zijn de saturatievormen plausibel? | Toetst identificatie |
+| 6 | Spend-verdubbelingstest | Reageert het gedempt op extrapolatie? | Beschermt het budgetadvies |
+| 7 | Stabiliteitstest | Wiebelt de ROI bij dataveranderingen? | Onthult zwakke identificatie |
+| 8 | Priorgevoeligheid | Stuurt de data of de aanname? | Onthult data-armoede |
+| 9 | Experimentele ijking | Klopt het met een echt experiment? | Sterkste bewijs |
+
+## 25.8 Van gefaalde test naar bijgestuurd model
+
+Een test die alarm slaat, vertelt je niet alleen *dat* er iets mis is, maar meestal ook *waar* je moet zoeken. Dit is het bijstuurgedeelte van het draaiboek: de terugkoppellus van diagnose naar verbetering. De reflex bij een teleurstellend resultaat is vaak "meer samples" of "andere priors", maar dat lost zelden een structureel probleem op. Werk in plaats daarvan van oorzaak naar remedie.
+
+Wijzen de residuen (test 3) of de posterior predictive check (test 2) op een gemist patroon, dan ontbreekt er vrijwel altijd een **verklarende variabele** — een vergeten promotie, een event, een prijswijziging. De remedie is niet modeltechnisch maar inhoudelijk: terug naar de data en de klant. Faalt de stabiliteits- of priorgevoeligheidstest (7 en 8), dan is de diepere oorzaak meestal **zwakke identificatie** door te weinig of te sterk samenlopende variatie — de remedie ligt in betere data, het groeperen van kanalen, sterkere priors met een eerlijk verhaal erbij, of een hiërarchische structuur (hoofdstuk 39). Gedraagt de extrapolatietest (6) zich wild, dan hoeft het model niet fout te zijn, maar moet je je **advies begrenzen** tot de waargenomen zone. En botst het model met een experiment (test 9), dan is dat het krachtigste bijstuursignaal dat er bestaat: verwerk de experimentuitkomst als informatieve prior en herfit — de kalibratielus uit hoofdstuk 33.
+
+Één principe overkoepelt dit alles, en het is het eerlijke tegengif tegen de verleiding om te blijven sleutelen tot de uitkomst bevalt: je stuurt bij om het model *juister* te maken, niet om het *mooier* te maken. Elke aanpassing die je doet omdat een test faalde, documenteer je in je modelleerlogboek, met de reden erbij. Zo blijft de grens zichtbaar tussen legitiem bijsturen op grond van bewijs, en het onbewust naar een gewenste uitkomst toe modelleren — een grens die het verschil maakt tussen een betrouwbare specialist en iemand die zijn eigen conclusie bevestigt.
+
+Met een gebouwd, gediagnosticeerd en volgens dit draaiboek gevalideerd referentiemodel is deel VI compleet. Het volgende deel leert je die technische uitkomst te vertalen naar de taal van de business: ROI, budgetadvies, forecasts, en overtuigende presentaties.
 
 # DEEL VII — INTERPRETATIE, OPTIMALISATIE EN COMMUNICATIE
 
