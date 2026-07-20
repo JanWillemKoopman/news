@@ -262,6 +262,21 @@ const QUALITY_PATTERNS: ErrorPattern[] = [
       `De ${m[1] === "first" ? "eerste" : "laatste"} week (${m[2]}) van bestand “${m[3]}” bevat maar ${m[4]} van de gebruikelijke ~${m[5]} rijen — een deelweek. De opgetelde waarde valt daardoor te laag uit; overweeg deze week weg te laten.`,
   },
   {
+    match: /^source\(s\) (\[[^\]]*\]) start on ([\d-]+), which sets the start of the analysis window/i,
+    text: (m) =>
+      `Bron(nen) ${m[1]} beginnen op ${m[2]} en bepalen daarmee de startdatum van de analyseperiode — eerdere weken van andere bronnen vallen weg omdat er dan nog geen overlap is.`,
+  },
+  {
+    match: /^source\(s\) (\[[^\]]*\]) end on ([\d-]+), which sets the end of the analysis window/i,
+    text: (m) =>
+      `Bron(nen) ${m[1]} eindigen op ${m[2]} en bepalen daarmee de einddatum van de analyseperiode — latere weken van andere bronnen vallen weg.`,
+  },
+  {
+    match: /^source '([^']+)' loses (\d+) week\(s\) outside the shared window \((\d+) before ([\d-]+), (\d+) after ([\d-]+)\)/i,
+    text: (m) =>
+      `Bestand “${m[1]}” verliest ${m[2]} week/weken buiten de gezamenlijke periode (${m[3]} vóór ${m[4]}, ${m[5]} ná ${m[6]}); die data bestaat wel, maar geen andere bron dekt die weken.`,
+  },
+  {
     match: /^essential sources do not overlap in time/i,
     text: () => "De bestanden hebben geen overlappende periode — er is geen gezamenlijk analysevenster.",
   },

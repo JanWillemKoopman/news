@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { classifyColumns, computeColumnStats, computeCorrelationMatrix, histogram, type ColumnKind } from "@/lib/eda";
 import { CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { Button } from "@/components/ui";
+import { SourceHealthCards } from "@/components/SourceHealthCard";
 import type { SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
@@ -146,6 +147,14 @@ export function EdaSection({
 
   return (
     <div className="space-y-6">
+      <SourceHealthCards sources={sources} />
+
+      <details className="rounded-lg border border-border p-3">
+        <summary className="cursor-pointer select-none text-sm font-medium text-fg">
+          Verder verkennen — zelf een grafiek samenstellen, kolomstatistieken & correlaties
+          <span className="ml-2 font-normal text-fg-muted">— optioneel, draait in de browser</span>
+        </summary>
+        <div className="mt-4 space-y-6">
       <p className="text-sm text-fg-muted">
         Verken een geüpload bestand: stel zelf een grafiek samen en bekijk kerncijfers per kolom. Geen
         AI nodig — dit draait volledig in de browser. Vraag de assistent hiernaast gerust om iets uit te
@@ -343,6 +352,8 @@ export function EdaSection({
           )}
         </>
       )}
+        </div>
+      </details>
 
       <EdaCompleteAction completed={completed} saving={savingDone} onChange={setEdaCompleted} />
     </div>

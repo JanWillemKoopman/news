@@ -52,11 +52,18 @@ const FILL_OPTIONS: { value: FillStrategy | ""; label: string }[] = [
   { value: "median", label: "mediaan" },
 ];
 
+// Herkomst van een ingevulde waarde: kwam de rol/instelling uit een AI-voorstel, of
+// heeft de gebruiker hem zelf gezet/aangepast? Review-metadata, alleen voor de UI — gaat
+// niet mee in het recept naar de worker.
+type Origin = "ai" | "user";
+
 interface DraftColumn {
   name: string;
   role: ColumnRole | "";
   output_name: string;
   fill: FillStrategy | "";
+  // Herkomst van de tóégekende rol. Leeg zolang er geen rol is.
+  roleOrigin?: Origin;
 }
 interface DraftSource {
   file: SourceFile;
@@ -71,6 +78,7 @@ interface DraftDummy {
   name: string;
   iso_year: number;
   iso_week: number;
+  origin?: Origin;
 }
 
 // Conservative on purpose: a chat transcript for this very app shows the architect
@@ -124,6 +132,64 @@ function MappingExplainer({ file }: { file: SourceFile }) {
         <p>{m.reasoning}</p>
       </div>
     </details>
+  );
+}
+
+// Laatste rem vóór een dure fit: een compacte samenvatting van wát er wordt goedgekeurd,
+// met de openstaande waarschuwingen en — het belangrijkste — een expliciete rode
+// blokkade als het klaar-voor-model-verdict (te veel parameters) rood staat.
+function ApprovalSummary({ dataset }: { dataset: Dataset }) {
+  const roles = dataset.column_roles ?? {};
+  const nChannels = Object.values(roles).filter((r) => r === "spend").length;
+  const nColumns = Object.keys(roles).length;
+  const issues = dataset.quality?.issues ?? [];
+  const nErrors = issues.filter((i) => i.severity === "error").length;
+  const nWarnings = issues.filter((i) => i.severity === "warning").length;
+  const health = computeDataHealth(dataset);
+
+  const facts = [
+    dataset.n_weeks != null ? `${dataset.n_weeks} weken` : null,
+    dataset.window_start && dataset.window_end ? `${dataset.window_start} – ${dataset.window_end}` : null,
+    `${nChannels} kanaal${nChannels === 1 ? "" : "en"}`,
+    `${nColumns} kolom${nColumns === 1 ? "" : "men"}`,
+  ].filter(Boolean);
+
+  return (
+    <div className="rounded-lg border border-border bg-surface-2/60 p-3 text-sm">
+      <p className="font-medium text-fg">Je staat op het punt goed te keuren:</p>
+      <p className="mt-1 text-fg-muted">{facts.join(" · ")}</p>
+      {(nWarnings > 0 || nErrors > 0) && (
+        <p className="mt-1.5 text-xs text-fg-muted">
+          {nErrors > 0 && <span className="font-medium text-danger">{nErrors} openstaande fout(en). </span>}
+          {nWarnings > 0 && `${nWarnings} openstaande waarschuwing${nWarnings === 1 ? "" : "en"} — controleer ze bij 2c hierboven.`}
+        </p>
+      )}
+      {health && health.band !== "goed" && (
+        <p className={`mt-1.5 text-xs font-medium ${health.band === "zwak" ? "text-danger" : "text-warn"}`}>
+          {health.band === "zwak"
+            ? "Let op: de data is volgens de gezondheidscheck nog niet klaar om te modelleren — een fit zal onbetrouwbaar zijn."
+            : "De data is bruikbaar, maar met kanttekeningen (zie de gezondheidsmeter bij 2c)."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Herkomst-badge: laat in één oogopslag zien of een rol/instelling door de AI is
+// voorgesteld of door de gebruiker zelf gezet. Kern van de transparantie: bij het
+// controleren en goedkeuren weet je precies wat je van de AI overneemt.
+function OriginBadge({ origin }: { origin?: Origin }) {
+  if (!origin) return null;
+  const isAi = origin === "ai";
+  return (
+    <span
+      title={isAi ? "Door de AI voorgesteld" : "Door jou ingesteld"}
+      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+        isAi ? "bg-accent-dim text-accent" : "bg-surface-2 text-fg-muted"
+      }`}
+    >
+      {isAi ? "AI" : "jij"}
+    </span>
   );
 }
 
@@ -222,10 +288,12 @@ function draftFromRecipe(
       role: c.role,
       output_name: c.output_name ?? "",
       fill: c.fill ?? "",
+      // Alles uit een architect-recept is per definitie door de AI voorgesteld.
+      roleOrigin: c.role ? ("ai" as Origin) : undefined,
     })),
   }));
   const dummies: DraftDummy[] = (recipe.event_dummies ?? []).flatMap((d, i) =>
-    d.weeks.map(([y, w], j) => ({ key: `${i}-${j}`, name: d.weeks.length > 1 ? `${d.name}_${y}w${w}` : d.name, iso_year: y, iso_week: w })),
+    d.weeks.map(([y, w], j) => ({ key: `${i}-${j}`, name: d.weeks.length > 1 ? `${d.name}_${y}w${w}` : d.name, iso_year: y, iso_week: w, origin: "ai" as Origin })),
   );
   return { sources, dummies, features: recipe.features ?? [] };
 }
@@ -538,7 +606,7 @@ export function DataPrepSection({
 
   function addDummy() {
     if (!newDummy.name.trim()) return;
-    setDummies((prev) => [...prev, { key: crypto.randomUUID(), ...newDummy }]);
+    setDummies((prev) => [...prev, { key: crypto.randomUUID(), ...newDummy, origin: "user" as Origin }]);
     setNewDummy({ name: "", iso_year: newDummy.iso_year, iso_week: newDummy.iso_week });
   }
 
@@ -744,7 +812,7 @@ export function DataPrepSection({
                                   columns: sd.columns.map((c) => {
                                     if (c.role !== "") return c;
                                     const sug = mappingSuggestion(sd.file, c.name);
-                                    return sug ? { ...c, role: sug.role } : c;
+                                    return sug ? { ...c, role: sug.role, roleOrigin: "ai" as Origin } : c;
                                   }),
                                 },
                           ),
@@ -767,8 +835,8 @@ export function DataPrepSection({
                 <MappingExplainer file={src.file} />
                 {src.transforms.length > 0 && (
                   <div className="mb-2 space-y-1 rounded border border-border bg-surface-2 p-2">
-                    <p className="text-xs font-medium text-fg-muted">
-                      Opschoonstappen (vóór roltoewijzing, in volgorde):
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+                      Opschoonstappen (vóór roltoewijzing, in volgorde): <OriginBadge origin="ai" />
                     </p>
                     {src.transforms.map((t, tIdx) => (
                       <div key={`${t.op}-${tIdx}`} className="flex items-center gap-2 text-xs text-fg-muted">
@@ -895,7 +963,9 @@ export function DataPrepSection({
                                                 // terug op automatische detectie.
                                                 date_column: sd.date_column === col.name ? "" : sd.date_column,
                                                 columns: sd.columns.map((c, j) =>
-                                                  j === cIdx ? { ...c, role: v as ColumnRole | "" } : c,
+                                                  j === cIdx
+                                                    ? { ...c, role: v as ColumnRole | "", roleOrigin: v ? ("user" as Origin) : undefined }
+                                                    : c,
                                                 ),
                                               },
                                         ),
@@ -908,9 +978,10 @@ export function DataPrepSection({
                                     <option key={o.value} value={o.value}>{o.label}</option>
                                   ))}
                                 </select>
+                                {col.role !== "" && <OriginBadge origin={col.roleOrigin} />}
                                 {suggestion && (
                                   <button
-                                    onClick={() => updateColumn(sIdx, cIdx, { role: suggestion.role })}
+                                    onClick={() => updateColumn(sIdx, cIdx, { role: suggestion.role, roleOrigin: "ai" })}
                                     title="AI-classificatie van deze kolom — klik om over te nemen"
                                     className="rounded-full border border-accent/40 bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/20"
                                   >
@@ -961,6 +1032,7 @@ export function DataPrepSection({
               {dummies.map((d) => (
                 <div key={d.key} className="flex items-center gap-2 text-xs text-fg-muted">
                   <span className="flex-1">{d.name} — {d.iso_year} week {d.iso_week}</span>
+                  <OriginBadge origin={d.origin} />
                   <button
                     onClick={() => setDummies((prev) => prev.filter((x) => x.key !== d.key))}
                     className="text-danger hover:underline"
@@ -1024,6 +1096,7 @@ export function DataPrepSection({
                 features.map((f) => (
                   <div key={f.name} className="flex items-center gap-2 text-xs text-fg-muted">
                     <span className="flex-1 font-mono">{featureLabel(f)}</span>
+                    <OriginBadge origin="ai" />
                     <button
                       onClick={() => setFeatures((prev) => prev.filter((x) => x.name !== f.name))}
                       className="text-danger hover:underline"
@@ -1115,7 +1188,8 @@ export function DataPrepSection({
             }
           >
             {dataset?.status === "prepared" ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <ApprovalSummary dataset={dataset} />
                 <p className="text-sm text-fg-muted">
                   Met goedkeuren maak je deze tabel het definitieve bestand waarop het model gaat
                   rekenen. Je kunt daarna altijd nog opnieuw samenvoegen.

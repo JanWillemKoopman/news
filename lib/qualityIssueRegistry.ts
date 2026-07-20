@@ -103,6 +103,16 @@ export const QUALITY_ISSUE_REGISTRY: Record<string, QualityIssueInfo> = {
     explain: "Het recept verwijst naar een kolom die niet in het bestand staat — vaak een typefout of een gewijzigde export.",
     action: "Corrigeer de kolomnaam in het handmatig-paneel.",
   },
+  window_boundary: {
+    explain:
+      "De analyseperiode loopt precies zolang álle essentiële bronnen tegelijk data hebben. Deze bron bepaalt een van de randen — daarbuiten is er (nog) geen overlap.",
+    action: "Klopt de periode niet? Controleer of een bron een afwijkend datumbereik heeft, of upload een langere export.",
+  },
+  source_window_trimmed: {
+    explain:
+      "Deze bron heeft weken buiten de gezamenlijke periode; die data bestaat wél, maar geen andere bron dekt die weken, dus ze vallen weg bij het uitlijnen.",
+    action: "Wil je die weken behouden, zorg dan dat de andere bronnen dezelfde periode dekken.",
+  },
   spend_imputed_zero: {
     explain:
       "Ontbrekende spend-weken binnen het venster zijn op € 0 gezet: geen registratie betekent geen uitgave. Klopt dat niet (data ontbreekt echt), corrigeer dan de bron.",

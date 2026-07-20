@@ -207,3 +207,46 @@ def test_weekly_source_is_not_flagged_partial():
     df = pd.DataFrame({"date": dates, "spend": np.linspace(50, 200, 12)})
     result = build_master_dataset([(_spec("g", "spend", Role.SPEND, "date"), df)])
     assert "partial_edge_week" not in result.report.codes()
+
+
+# --- window explanation ---------------------------------------------------------
+
+def _window_scenario():
+    # revenue 2022-01-03..2022-03-28 (13 wk); spend starts 4 weeks later and ends 2
+    # weeks earlier -> shared window is set by spend on both ends, revenue loses weeks.
+    rev = pd.DataFrame({"date": _weekly_dates("2022-01-03", 13), "revenue": np.linspace(900, 1200, 13)})
+    spend = pd.DataFrame({"date": _weekly_dates("2022-01-31", 7), "spend": np.linspace(50, 200, 7)})
+    return build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), rev),
+        (_spec("google", "spend", Role.SPEND, "date"), spend),
+    ])
+
+
+def test_window_boundary_names_the_pinning_source():
+    result = _window_scenario()
+    boundaries = [i for i in result.report.issues if i.code == "window_boundary"]
+    assert {i.details["boundary"] for i in boundaries} == {"start", "end"}
+    start_issue = next(i for i in boundaries if i.details["boundary"] == "start")
+    assert "google" in start_issue.details["sources"]
+    assert start_issue.details["date"] == "2022-01-31"
+
+
+def test_source_window_trimmed_counts_dropped_weeks():
+    result = _window_scenario()
+    trimmed = next(i for i in result.report.issues if i.code == "source_window_trimmed")
+    # revenue loses the 4 leading weeks + 2 trailing weeks it has beyond spend's span.
+    assert trimmed.source == "rev"
+    assert trimmed.details["dropped"] == 6
+    assert trimmed.details["before"] == 4
+    assert trimmed.details["after"] == 2
+
+
+def test_fully_overlapping_sources_report_no_trimming():
+    dates = _weekly_dates("2022-01-03", 12)
+    rev = pd.DataFrame({"date": dates, "revenue": np.linspace(900, 1200, 12)})
+    spend = pd.DataFrame({"date": dates, "spend": np.linspace(50, 200, 12)})
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), rev),
+        (_spec("g", "spend", Role.SPEND, "date"), spend),
+    ])
+    assert "source_window_trimmed" not in result.report.codes()

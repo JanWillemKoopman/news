@@ -468,6 +468,61 @@ def _flag_over_parameterization(
         )
 
 
+def _flag_window_trimming(
+    weekly_by_source: dict[str, pd.DataFrame],
+    essential_spans: dict[str, tuple[pd.Timestamp, pd.Timestamp]],
+    window_start: pd.Timestamp,
+    window_end: pd.Timestamp,
+    report: QualityReport,
+) -> None:
+    """Explain *why* the analysis window is what it is, so "why was my period clipped?"
+    is answerable from the quality report alone.
+
+    Emits INFO issues (never blocking): ``window_boundary`` names the essential source(s)
+    whose own span sets the start and/or the end of the window, and
+    ``source_window_trimmed`` reports, per source, how many of its own weeks fall outside
+    the shared window and are dropped. Uses the pre-trim per-source weekly frames, so the
+    counts reflect real data that existed before alignment.
+    """
+    # Which essential source(s) pin each boundary (its own edge equals the window edge).
+    starts_here = sorted(n for n, (lo, _) in essential_spans.items() if lo == window_start)
+    ends_here = sorted(n for n, (_, hi) in essential_spans.items() if hi == window_end)
+    if starts_here:
+        report.add(
+            "window_boundary", Severity.INFO,
+            f"source(s) {starts_here} start on {window_start.date().isoformat()}, which "
+            f"sets the start of the analysis window (earlier weeks of other sources are "
+            f"dropped because there is no overlap yet)",
+            sources=starts_here, boundary="start", date=window_start.date().isoformat(),
+        )
+    if ends_here:
+        report.add(
+            "window_boundary", Severity.INFO,
+            f"source(s) {ends_here} end on {window_end.date().isoformat()}, which sets the "
+            f"end of the analysis window (later weeks of other sources are dropped)",
+            sources=ends_here, boundary="end", date=window_end.date().isoformat(),
+        )
+
+    # Per source: how many of its own weeks sit outside the shared window.
+    for name, weekly in weekly_by_source.items():
+        if weekly.empty:
+            continue
+        idx = weekly.index
+        n_before = int((idx < window_start).sum())
+        n_after = int((idx > window_end).sum())
+        dropped = n_before + n_after
+        if dropped == 0:
+            continue
+        report.add(
+            "source_window_trimmed", Severity.INFO,
+            f"source {name!r} loses {dropped} week(s) outside the shared window "
+            f"({n_before} before {window_start.date().isoformat()}, {n_after} after "
+            f"{window_end.date().isoformat()}); its data exists but no other source "
+            f"covers those weeks",
+            source=name, dropped=dropped, before=n_before, after=n_after,
+        )
+
+
 def _apply_event_dummies(
     data: pd.DataFrame,
     event_dummies: list[EventDummySpec],
@@ -627,6 +682,10 @@ def build_master_dataset(
             window_start=str(window_start.date()), window_end=str(window_end.date()),
         )
         return BuildResult(master, None, report, column_roles, source_names)
+
+    # Explain the window (which source pins each edge, which sources lose weeks) before
+    # trimming — uses the pre-trim per-source frames.
+    _flag_window_trimming(weekly_by_source, essential_spans, window_start, window_end, report)
 
     # Trim to the window and reindex onto a gap-free weekly (Monday) grid.
     full_index = pd.date_range(window_start, window_end, freq="7D", name="week_start")
