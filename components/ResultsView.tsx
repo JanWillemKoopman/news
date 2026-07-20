@@ -45,6 +45,12 @@ export function ResultsView({
   const latestRun = runs[0];
   const shownAnalysis = analysis ?? latestRun.analysis;
   const viewedRun = runs.find((r) => r.id === selectedRunId) ?? latestRun;
+  // Telling (orders/leads, poisson/negative_binomial) vs. continue KPI (omzet, normal/
+  // student_t) — bepaalt of de marge-tekst "per verkochte eenheid" of "per euro omzet"
+  // moet zeggen. Uit de config waarmee déze run is gefit; onbekend als die er niet is
+  // (oudere runs) — dan valt het dashboard terug op neutrale taal.
+  const viewedLikelihood = viewedRun.job_id ? jobConfigs?.[viewedRun.job_id]?.model.likelihood : undefined;
+  const isCountKpi = viewedLikelihood === "poisson" || viewedLikelihood === "negative_binomial";
 
   async function publish() {
     setBusy(true);
@@ -118,7 +124,7 @@ export function ResultsView({
       {isHierSummary(viewedRun.summary) ? (
         <HierarchicalSummaryView summary={viewedRun.summary} />
       ) : (
-        <SummaryView summary={viewedRun.summary} kpiMargin={kpiMargin} />
+        <SummaryView summary={viewedRun.summary} kpiMargin={kpiMargin} isCountKpi={isCountKpi} />
       )}
       {/* Deep analysis assumes the single-region FitSummary shape (it feeds the summary
           JSON straight to Claude's code-execution tool) — not offered for a hierarchical

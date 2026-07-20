@@ -5,7 +5,7 @@ import { AnalysisView } from "@/components/AnalysisView";
 import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
 import { Card, PageHeader, TopBar } from "@/components/ui";
 import { SummaryView } from "@/components/SummaryView";
-import { isHierSummary, type ModelRun, type Project } from "@/lib/types";
+import { isHierSummary, type JobConfig, type ModelRun, type Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +35,21 @@ export default async function ClientDashboard({ params }: { params: { projectId:
     .limit(1);
   const latest = (runs ?? [])[0] as ModelRun | undefined;
 
+  // Telling-KPI (orders/leads) vs. continue KPI (omzet) voor de marge-woordkeuze in het
+  // dashboard ("per verkochte eenheid" vs. "per euro omzet") — uit de config waarmee
+  // deze run is gefit; onbekend (geen job_id, of oudere run) = neutrale tekst.
+  let isCountKpi: boolean | undefined;
+  if (latest?.job_id) {
+    const { data: job } = await supabase
+      .schema("mmm")
+      .from("jobs")
+      .select("config")
+      .eq("id", latest.job_id)
+      .maybeSingle();
+    const likelihood = (job?.config as JobConfig | undefined)?.model?.likelihood;
+    if (likelihood) isCountKpi = likelihood === "poisson" || likelihood === "negative_binomial";
+  }
+
   return (
     <>
       <TopBar email={viewer.email} />
@@ -49,7 +64,7 @@ export default async function ClientDashboard({ params }: { params: { projectId:
               <HierarchicalSummaryView summary={latest.summary} />
             ) : (
               <>
-                <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} />
+                <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} isCountKpi={isCountKpi} />
                 {latest.analysis && <AnalysisView analysis={latest.analysis} />}
               </>
             )}

@@ -148,7 +148,7 @@ function SplitTooltip({ active, payload }: { active?: boolean; payload?: { paylo
 // De euro-balans: de vier getallen die je aan de directietafel voorleest. De band op de
 // marketingbijdrage is de som van de kanaal-banden — iets ruimer dan de exacte gezamenlijke
 // band, dus een voorzichtige (eerlijke) weergave.
-function ScoreCards({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
+function ScoreCards({ summary, kpiMargin, marginUnit }: { summary: FitSummary; kpiMargin?: number | null; marginUnit: string }) {
   const spend = summary.channels.reduce((s, ch) => s + ch.total_spend, 0);
   const marketingP50 = summary.channels.reduce((s, ch) => s + ch.absolute_contribution.p50, 0);
   const marketingP3 = summary.channels.reduce((s, ch) => s + ch.absolute_contribution.p3, 0);
@@ -175,7 +175,7 @@ function ScoreCards({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: n
           {
             label: "Netto rendement (ROI)",
             value: `${fmt(((marketingP50 * kpiMargin - spend) / spend) * 100)}%`,
-            sub: `winst per euro, bij €${fmt(kpiMargin, 2)} marge per verkochte ${summary.kpi}-eenheid`,
+            sub: `winst per euro, bij €${fmt(kpiMargin, 2)} marge per ${marginUnit}`,
           },
         ]
       : []),
@@ -583,7 +583,18 @@ function AdstockDecayGrid({ summary }: { summary: FitSummary }) {
 
 // --- Samenstelling ------------------------------------------------------------------
 
-export function ResultsCharts({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
+export function ResultsCharts({
+  summary,
+  kpiMargin,
+  isCountKpi,
+}: {
+  summary: FitSummary;
+  kpiMargin?: number | null;
+  // Telling-KPI (orders/leads) vs. continue KPI (omzet) — bepaalt of de marge "per
+  // verkochte eenheid" of "per euro omzet" heet. Onbekend (oudere runs) = neutrale tekst.
+  isCountKpi?: boolean;
+}) {
+  const marginUnit = isCountKpi === true ? `verkochte ${summary.kpi}` : isCountKpi === false ? `euro ${summary.kpi}` : `verkochte ${summary.kpi}-eenheid`;
   // Direct vs na-ijl: alleen voor runs die de splitsing al meekregen uit de rekenkern.
   const splitData = summary.channels
     .filter((ch) => ch.direct_contribution && ch.carryover_contribution)
@@ -627,7 +638,7 @@ export function ResultsCharts({ summary, kpiMargin }: { summary: FitSummary; kpi
     <div className="space-y-6">
       {/* ---- Blok 1: Wat gebeurde er? ---- */}
       <SectionHeader title="Wat gebeurde er?" subtitle="Het totaalbeeld: waar je omzet vandaan kwam en of het model de werkelijkheid volgt." />
-      <ScoreCards summary={summary} kpiMargin={kpiMargin} />
+      <ScoreCards summary={summary} kpiMargin={kpiMargin} marginUnit={marginUnit} />
       {summary.weekly && <BuildUpChart weekly={summary.weekly} kpi={summary.kpi} />}
       <div className="grid gap-6 lg:grid-cols-2">
         <WaterfallChart summary={summary} />
@@ -644,7 +655,7 @@ export function ResultsCharts({ summary, kpiMargin }: { summary: FitSummary; kpi
           title="Rendement per kanaal (ROAS)"
           hint={
             kpiMargin != null
-              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per verkochte eenheid ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
+              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per ${marginUnit} ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
               : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
           }
         >

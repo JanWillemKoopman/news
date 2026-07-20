@@ -172,7 +172,17 @@ function BudgetAdvice({
   );
 }
 
-export function SummaryView({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
+export function SummaryView({
+  summary,
+  kpiMargin,
+  isCountKpi,
+}: {
+  summary: FitSummary;
+  kpiMargin?: number | null;
+  // Telling-KPI (orders/leads) vs. continue KPI (omzet) — bepaalt de marge-woordkeuze
+  // in de grafieken ("per verkochte eenheid" vs. "per euro omzet"). Onbekend = neutraal.
+  isCountKpi?: boolean;
+}) {
   const d = summary.diagnostics;
   const coverageOff = Math.abs(d.interval_coverage_94 - 0.94) > 0.1;
 
@@ -203,7 +213,7 @@ export function SummaryView({ summary, kpiMargin }: { summary: FitSummary; kpiMa
         {summary.kpi}.
       </p>
 
-      <ResultsCharts summary={summary} kpiMargin={kpiMargin} />
+      <ResultsCharts summary={summary} kpiMargin={kpiMargin} isCountKpi={isCountKpi} />
 
       <details className="border-t border-border pt-4">
         <summary className="cursor-pointer select-none text-sm font-medium text-fg">
