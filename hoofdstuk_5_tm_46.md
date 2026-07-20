@@ -111,7 +111,7 @@ Drie lessen reizen mee door de rest van dit boek. Elk meetparadigma overschat zi
 
 ## 3.2 Het fundamentele probleem: adverteren aan wie tóch al koopt
 
-Een paraplu-verkoper die alleen verkoopt wanneer het regent, lijkt een briljante conversieratio te hebben — maar hij creëert de vraag niet, hij duikt alleen op wanneer die vraag er al is. Advertentieplatforms doen precies dit: ze tonen advertenties aan mensen die waarschijnlijk toch al gaan kopen. Dit heet **selectiebias**. Iemand die "Nike Pegasus kopen" zoekt, heeft de beslissing al genomen; **branded search** en **retargeting** vangen grotendeels vraag die al bestond, en scoren daardoor torenhoog in attributie terwijl hun incrementele bijdrage vaak laag is.
+Een paraplu-verkoper die alleen verkoopt wanneer het regent, lijkt een briljante conversieratio te hebben — maar die creëert de vraag niet, die duikt alleen op wanneer de vraag er al is. Advertentieplatforms doen precies dit: ze tonen advertenties aan mensen die waarschijnlijk toch al gaan kopen. Dit heet **selectiebias**. Iemand die "Nike Pegasus kopen" zoekt, heeft de beslissing al genomen; **branded search** en **retargeting** vangen grotendeels vraag die al bestond, en scoren daardoor torenhoog in attributie terwijl hun incrementele bijdrage vaak laag is.
 
 ## 3.3 Incrementaliteit: de enige vraag die telt
 
@@ -206,7 +206,7 @@ Modernere denkbeelden verfijnen dit klassieke plaatje. Het **see-think-do-care**
 
 Elke marketingafdeling worstelt met een fundamentele spanning: geef je geld uit om op de lange termijn een sterk merk te bouwen, of om op de korte termijn omzet te activeren? Dit is het onderscheid tussen **brand building** en **performance marketing**, en het is een van de meest invloedrijke tweedelingen in het vak.
 
-Brand building werkt breed, emotioneel en traag. Het bouwt aan wat onderzoekers **mentale beschikbaarheid** noemen — de kans dat een consument aan jouw merk denkt op het moment dat hij iets wil kopen — en **fysieke beschikbaarheid** — hoe makkelijk hij je product dan ook daadwerkelijk kan vinden en aanschaffen. Deze begrippen komen uit het werk van marketingwetenschapper Byron Sharp, die liet zien dat merken vooral groeien door nieuwe, lichte kopers aan te trekken, niet door bestaande trouwe klanten nóg loyaler te maken.
+Brand building werkt breed, emotioneel en traag. Het bouwt aan wat onderzoekers **mentale beschikbaarheid** noemen — de kans dat een consument aan jouw merk denkt op het moment dat die iets wil kopen — en **fysieke beschikbaarheid** — hoe makkelijk die je product dan ook daadwerkelijk kan vinden en aanschaffen. Deze begrippen komen uit het werk van marketingwetenschapper Byron Sharp, die liet zien dat merken vooral groeien door nieuwe, lichte kopers aan te trekken, niet door bestaande trouwe klanten nóg loyaler te maken.
 
 Performance marketing werkt smal, rationeel en snel. Het richt zich op mensen die al bijna klaar zijn om te kopen, en het effect is meteen zichtbaar in de cijfers.
 
@@ -1855,7 +1855,7 @@ Hiërarchische modellen zijn misschien wel de grootste kwaliteitssprong die de m
 
 ## 39.1 Partial pooling: lenen van je buren
 
-Stel je een klas voor waarin je het gemiddelde cijfer per leerling wilt schatten, maar van sommige leerlingen heb je maar één toets gezien. Schat je elke leerling volledig op zijn eigen, schaarse data (**geen pooling**), dan krijg je wilde, onbetrouwbare uitschieters bij leerlingen met weinig data. Neem je aan dat alle leerlingen identiek zijn en schat je slechts één klassengemiddelde (**volledige pooling**), dan verlies je alle waardevolle individuele verschillen. **Partial pooling** kiest het midden: elke leerling — of, in jouw geval, elke regio — wordt deels op zijn eigen data geschat, en deels "leent" hij informatie van het collectieve gemiddelde, in een verhouding die automatisch afhangt van hoeveel eigen data er beschikbaar is.
+Stel je een klas voor waarin je het gemiddelde cijfer per leerling wilt schatten, maar van sommige leerlingen heb je maar één toets gezien. Schat je elke leerling volledig op de eigen, schaarse data (**geen pooling**), dan krijg je wilde, onbetrouwbare uitschieters bij leerlingen met weinig data. Neem je aan dat alle leerlingen identiek zijn en schat je slechts één klassengemiddelde (**volledige pooling**), dan verlies je alle waardevolle individuele verschillen. **Partial pooling** kiest het midden: elke leerling — of, in jouw geval, elke regio — wordt deels op de eigen data geschat, en deelt daarnaast in informatie van het collectieve gemiddelde, in een verhouding die automatisch afhangt van hoeveel eigen data er beschikbaar is.
 
 ## 39.2 Het hiërarchische MMM specificeren
 
