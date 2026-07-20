@@ -189,6 +189,32 @@ def _flag_partial_edge_weeks(
         )
 
 
+def _flag_coarse_cadence(spec: SourceSpec, dates: pd.Series, report: QualityReport) -> None:
+    """Warn when a source's native cadence is coarser than weekly (e.g. monthly data).
+
+    A monthly file forced onto a weekly grid contributes ~1 real row per 4 weeks; the other
+    3 weeks become gaps (KPI) or zero-imputed (spend), which silently distorts every weekly
+    model. The median gap between consecutive unique dates reveals the true cadence: ~7 days
+    is weekly, ~28-31 days is monthly. Only flags clearly-coarse cadences (median gap > 10
+    days) so ordinary weekly/daily data never trips it.
+    """
+    unique_days = pd.Series(pd.to_datetime(dates)).dt.normalize().drop_duplicates().sort_values()
+    if len(unique_days) < 3:
+        return
+    median_gap = float(unique_days.diff().dropna().dt.days.median())
+    if median_gap <= 10:
+        return
+    cadence = "maandelijks" if median_gap >= 24 else f"~{median_gap:.0f}-daags"
+    report.add(
+        "coarse_cadence", Severity.WARNING,
+        f"source {spec.name!r} has a {cadence} cadence (median {median_gap:.0f} days between "
+        f"rows); forced onto a weekly grid most weeks will be empty or zero-imputed, which "
+        f"distorts the weekly model — aggregate the KPI/spend to the same cadence or model "
+        f"at that resolution",
+        source=spec.name, median_gap_days=median_gap,
+    )
+
+
 def _prepare_source(
     spec: SourceSpec, df: pd.DataFrame, report: QualityReport
 ) -> tuple[pd.DataFrame, dict[str, Role], dict[str, str]]:
@@ -224,6 +250,7 @@ def _prepare_source(
 
     _flag_duplicate_dates(spec, parsed.loc[keep], df.drop(columns=["_week"]), report)
     _flag_partial_edge_weeks(spec, df["_week"], report)
+    _flag_coarse_cadence(spec, parsed.loc[keep], report)
 
     agg: dict[str, str] = {}
     roles: dict[str, Role] = {}
@@ -373,6 +400,89 @@ def _flag_kpi_outliers(data: pd.DataFrame, kpi_cols: list[str], report: QualityR
                 f"(values {values}); consider an event dummy for the specific week(s)",
                 column=col, weeks=weeks, values=values,
             )
+
+
+def _flag_predictor_outliers(
+    data: pd.DataFrame, spend_cols: list[str], control_cols: list[str], report: QualityReport
+) -> None:
+    """Flag locally anomalous weeks in spend/control columns (INFO, not WARNING).
+
+    Same local robust-z test as :func:`_flag_kpi_outliers`, extended to the predictors so a
+    data-entry spike in a spend or control column (a double-booked invoice, a units-vs-euros
+    mix-up) is surfaced by name. Deliberately INFO, not WARNING: a spend burst is often
+    genuine (a campaign launch), so this informs rather than alarms — the builder decides
+    whether it is an error or a real event worth an event dummy.
+    """
+    from mmm_core.features import flag_local_outliers
+
+    for col in spend_cols + control_cols:
+        series = data[col]
+        if series.notna().sum() < 8:
+            continue
+        flagged = flag_local_outliers(series).fillna(False).to_numpy()
+        if flagged.any():
+            weeks = [ts.date().isoformat() for ts in data.index[flagged]]
+            values = [float(v) for v in series[flagged]]
+            kind = "spend" if col in spend_cols else "control"
+            report.add(
+                "predictor_outlier_weeks", Severity.INFO,
+                f"{kind} column {col!r} has locally unusual value(s) in week(s) {weeks} "
+                f"(values {values}); check whether this is a real event or a data error",
+                column=col, weeks=weeks, values=values, role=kind,
+            )
+
+
+# VIF above which a predictor is flagged as (near-)collinear with the others. 10 is the
+# textbook "serious multicollinearity" line; it catches group collinearity that pairwise
+# correlation (near_identical_channels) misses — e.g. three channels that each look fine
+# pairwise but where one is nearly the sum of the other two.
+_VIF_THRESHOLD = 10.0
+
+
+def _flag_multicollinearity(
+    data: pd.DataFrame, spend_cols: list[str], control_cols: list[str], report: QualityReport
+) -> None:
+    """Flag predictors with a high Variance Inflation Factor (group multicollinearity).
+
+    VIF_i = 1 / (1 - R²_i), where R²_i is from regressing predictor i on all the others.
+    A high VIF means predictor i is well-explained by the rest, so the model cannot pin
+    down its individual coefficient — the exact failure MMM budget advice is most sensitive
+    to. Uses numpy least squares (no new dependency). Needs enough weeks to be meaningful.
+    """
+    cols = spend_cols + control_cols
+    if len(cols) < 3:
+        return  # VIF needs ≥2 "other" predictors to regress against
+    sub = data[cols].dropna()
+    # Keep only non-constant columns (a constant has no variance to inflate and is already
+    # flagged as zero_variance_column).
+    usable = [c for c in cols if sub[c].std(ddof=0) > 0]
+    if len(usable) < 3 or len(sub) <= len(usable) + 1:
+        return
+    x = sub[usable].to_numpy(dtype=float)
+    x = (x - x.mean(axis=0)) / x.std(axis=0, ddof=0)  # standardize for numerical stability
+    flagged: list[tuple[str, float]] = []
+    for i, col in enumerate(usable):
+        others = np.delete(x, i, axis=1)
+        design = np.column_stack([np.ones(len(others)), others])
+        coef, *_ = np.linalg.lstsq(design, x[:, i], rcond=None)
+        resid = x[:, i] - design @ coef
+        ss_res = float(np.sum(resid ** 2))
+        ss_tot = float(np.sum((x[:, i] - x[:, i].mean()) ** 2)) or 1.0
+        r2 = 1.0 - ss_res / ss_tot
+        vif = 1.0 / (1.0 - r2) if r2 < 1.0 else float("inf")
+        if vif >= _VIF_THRESHOLD:
+            flagged.append((col, vif))
+    if flagged:
+        names = [c for c, _ in flagged]
+        worst = max(v for _, v in flagged)
+        report.add(
+            "multicollinearity", Severity.WARNING,
+            f"predictor(s) {sorted(names)} are strongly collinear with the other predictors "
+            f"(VIF up to {worst:.0f}); the model cannot separate their individual effects, so "
+            f"per-channel ROI/contributions will be unstable — consider merging or dropping "
+            f"one, or combining them into a total",
+            columns=sorted(names), max_vif=round(worst, 1),
+        )
 
 
 def _flag_degenerate_columns(
@@ -750,6 +860,7 @@ def build_master_dataset(
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)
     _flag_kpi_outliers(data, kpi_cols, report)
+    _flag_predictor_outliers(data, spend_cols, control_cols, report)
     # Recompute control columns to include the just-added event dummies and features —
     # they cost parameters too, so the over-parameterization guard must count them.
     all_control_cols = [c for c, r in column_roles.items() if r is Role.CONTROL and c in data.columns]
@@ -759,6 +870,9 @@ def build_master_dataset(
     variance_check_cols = [c for c in all_control_cols if c not in dummy_names]
     _flag_degenerate_columns(data, spend_cols, kpi_cols, variance_check_cols, report)
     _flag_over_parameterization(len(data), spend_cols, kpi_cols, all_control_cols, report)
+    # VIF over all predictors (channels + controls + event dummies + features), so group
+    # collinearity that pairwise correlation misses is caught before a fit is spent.
+    _flag_multicollinearity(data, spend_cols, all_control_cols, report)
 
     # Sanity checks on the output contract itself.
     assert data.index.is_unique, "master index has duplicate weeks"

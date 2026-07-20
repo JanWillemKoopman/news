@@ -277,6 +277,21 @@ const QUALITY_PATTERNS: ErrorPattern[] = [
       `Bestand “${m[1]}” verliest ${m[2]} week/weken buiten de gezamenlijke periode (${m[3]} vóór ${m[4]}, ${m[5]} ná ${m[6]}); die data bestaat wel, maar geen andere bron dekt die weken.`,
   },
   {
+    match: /^predictor\(s\) (\[[^\]]*\]) are strongly collinear with the other predictors \(VIF up to ([\d.]+)\)/i,
+    text: (m) =>
+      `Voorspeller(s) ${m[1]} hangen sterk samen met de overige kolommen (VIF tot ${m[2]}); het model kan hun afzonderlijke effect niet vaststellen, dus ROI/bijdrage per kanaal wordt onbetrouwbaar. Overweeg er één samen te voegen, te laten vallen, of te bundelen tot een totaal.`,
+  },
+  {
+    match: /^source '([^']+)' has a (\S+) cadence \(median (\d+) days between rows\)/i,
+    text: (m) =>
+      `Bestand “${m[1]}” heeft een ${m[2] === "maandelijks" ? "maandelijkse" : m[2]} cadans (mediaan ${m[3]} dagen tussen rijen); op een weekrooster worden de meeste weken leeg of op 0 gezet, wat het wekelijkse model vertekent. Lever de data op weekniveau aan of modelleer op die resolutie.`,
+  },
+  {
+    match: /^(spend|control) column '([^']+)' has locally unusual value\(s\) in week\(s\) (.+?) \(values (.+?)\); check whether/i,
+    text: (m) =>
+      `${m[1] === "spend" ? "Spend" : "Control"}-kolom “${m[2]}” heeft opvallende waarde(n) in week ${m[3]} (waarde(n) ${m[4]}). Controleer of dit een echte gebeurtenis is of een invoerfout.`,
+  },
+  {
     match: /^essential sources do not overlap in time/i,
     text: () => "De bestanden hebben geen overlappende periode — er is geen gezamenlijk analysevenster.",
   },

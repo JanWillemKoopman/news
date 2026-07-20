@@ -55,6 +55,23 @@ export const QUALITY_ISSUE_REGISTRY: Record<string, QualityIssueInfo> = {
       "De eerste of laatste week van een bestand dekt maar een deel van de dagen; opgeteld lijkt die week onterecht een dip — precies op het recentste datapunt.",
     action: "Overweeg deze randweek weg te laten (filter-opschoonstap) of exporteer het bestand opnieuw over hele weken.",
   },
+  multicollinearity: {
+    explain:
+      "Deze kanalen bewegen als groep te veel samen (ook al lijkt geen enkel paar los verdacht). Het model kan hun afzonderlijke bijdrage dan niet vaststellen — juist de ROI per kanaal wordt onbetrouwbaar.",
+    action: "Laat de AI de kanalen samenvoegen of adviseren welke je kunt laten vallen",
+    chatPrompt:
+      "Het kwaliteitsrapport meldt sterke multicollineariteit (hoge VIF) tussen enkele kanalen. Adviseer welke ik het best kan samenvoegen of laten vallen, of stel een combine-opschoonstap voor die ze bundelt tot een totaal.",
+  },
+  coarse_cadence: {
+    explain:
+      "Dit bestand heeft een grovere cadans dan wekelijks (bijvoorbeeld maandelijks). Op een weekrooster worden de meeste weken dan leeg of op 0 gezet, wat het wekelijkse model vertekent.",
+    action: "Lever KPI en spend op dezelfde cadans aan, of laat de AI adviseren of maandmodellering hier beter past.",
+  },
+  predictor_outlier_weeks: {
+    explain:
+      "Een spend- of control-kolom heeft een week die sterk afwijkt van zijn buren. Vaak is dat een echte gebeurtenis (campagnepiek), soms een invoerfout (dubbele factuur, eenheden verwisseld).",
+    action: "Controleer de week; is het een echte gebeurtenis, overweeg dan een event-dummy, anders corrigeer de bron.",
+  },
   near_identical_channels: {
     explain:
       "Twee vrijwel identieke kanalen kan het model niet los van elkaar schatten: de bijdrage wordt willekeurig over beide verdeeld en beide krijgen brede marges.",

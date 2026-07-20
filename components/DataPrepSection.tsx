@@ -22,6 +22,7 @@ import type {
   Dataset,
   DatasetStatus,
   EventDummyConfig,
+  FeatureOp,
   FeatureSpec,
   FillStrategy,
   PrepareRecipe,
@@ -132,6 +133,164 @@ function MappingExplainer({ file }: { file: SourceFile }) {
         <p>{m.reasoning}</p>
       </div>
     </details>
+  );
+}
+
+// Handmatig een afgeleide variabele toevoegen — sluit de gap "de gebruiker kan features
+// alleen verwijderen, niet zelf maken". Bewust een veilige, veelgebruikte deelverzameling
+// van de ops (de complexe reshapes laat de architect beter voorstellen). Elke op weet zijn
+// eigen arity en of hij een numerieke parameter nodig heeft; de vorm past zich daarop aan.
+const MANUAL_FEATURE_OPS: {
+  op: FeatureOp;
+  label: string;
+  arity: "one" | "two" | "many";
+  param?: { key: string; label: string; default: number };
+  hint: string;
+}[] = [
+  { op: "lag", label: "Lag (vertraagd effect)", arity: "one", param: { key: "weeks", label: "weken", default: 1 }, hint: "Waarde van N weken geleden — bv. prijs die na-ijlt." },
+  { op: "rolling_mean", label: "Voortschrijdend gemiddelde", arity: "one", param: { key: "window", label: "venster (weken)", default: 4 }, hint: "Gladstrijken over een venster." },
+  { op: "diff", label: "Weekverschil", arity: "one", param: { key: "weeks", label: "weken", default: 1 }, hint: "Verschil t.o.v. N weken eerder." },
+  { op: "winsorize", label: "Uitschieters knippen (winsorize)", arity: "one", hint: "Kapt extreme waarden af — het kwaliteitsrapport stelt dit vaak voor." },
+  { op: "log1p", label: "Log-transform (log1p)", arity: "one", hint: "Tempert een lange staart." },
+  { op: "zscore", label: "Standaardiseren (z-score)", arity: "one", hint: "Centreren en schalen." },
+  { op: "sum", label: "Som van kolommen", arity: "many", hint: "Bv. totale spend over kanalen." },
+  { op: "ratio", label: "Verhouding (aandeel)", arity: "two", hint: "Eerste ÷ tweede — bv. eigen spend / totale spend." },
+  { op: "product", label: "Interactie (product)", arity: "two", hint: "Eerste × tweede." },
+];
+
+function ManualFeatureForm({
+  existingColumns,
+  existingNames,
+  onAdd,
+}: {
+  existingColumns: string[];
+  existingNames: string[];
+  onAdd: (spec: FeatureSpec) => void;
+}) {
+  const [opKey, setOpKey] = useState<FeatureOp>("lag");
+  const [inputs, setInputs] = useState<string[]>([]);
+  const [paramValue, setParamValue] = useState<number | "">("");
+  const [name, setName] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const opDef = MANUAL_FEATURE_OPS.find((o) => o.op === opKey)!;
+  const maxInputs = opDef.arity === "one" ? 1 : opDef.arity === "two" ? 2 : existingColumns.length;
+  const needInputs = opDef.arity === "two" ? 2 : opDef.arity === "many" ? 2 : 1;
+
+  function toggleInput(col: string) {
+    setInputs((prev) => {
+      if (prev.includes(col)) return prev.filter((c) => c !== col);
+      if (opDef.arity === "one") return [col];
+      if (opDef.arity === "two" && prev.length >= 2) return [prev[1], col];
+      return [...prev, col];
+    });
+  }
+
+  function suggestedName(): string {
+    const base = inputs[0]?.replace(/[^a-z0-9]+/gi, "_").toLowerCase() ?? "feature";
+    if (opKey === "lag") return `${base}_lag${paramValue || opDef.param?.default}`;
+    if (opKey === "rolling_mean") return `${base}_ma${paramValue || opDef.param?.default}`;
+    if (opKey === "ratio") return `${base}_share`;
+    if (opKey === "sum") return "totaal";
+    return `${base}_${opKey}`;
+  }
+
+  function add() {
+    setErr(null);
+    if (inputs.length < needInputs) {
+      setErr(`Kies ${needInputs === 1 ? "een kolom" : `${needInputs} kolommen`} als invoer.`);
+      return;
+    }
+    const finalName = (name.trim() || suggestedName()).replace(/[^a-z0-9_]+/gi, "_");
+    if (!finalName) {
+      setErr("Geef de nieuwe variabele een naam.");
+      return;
+    }
+    if (existingNames.includes(finalName) || existingColumns.includes(finalName)) {
+      setErr(`De naam “${finalName}” bestaat al — kies een andere.`);
+      return;
+    }
+    const params: Record<string, number> = {};
+    if (opDef.param) params[opDef.param.key] = paramValue === "" ? opDef.param.default : Number(paramValue);
+    onAdd({ name: finalName, op: opKey, inputs: [...inputs], params: Object.keys(params).length ? params : undefined });
+    setInputs([]);
+    setParamValue("");
+    setName("");
+  }
+
+  if (existingColumns.length === 0) {
+    return (
+      <p className="border-t border-border pt-2 text-xs text-fg-faint">
+        Wijs eerst kolommen een rol toe hierboven; daarna kun je hier zelf een afgeleide variabele maken.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-2 border-t border-border pt-3">
+      <p className="text-xs font-medium text-fg">Zelf een afgeleide variabele toevoegen</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={opKey}
+          onChange={(e) => {
+            setOpKey(e.target.value as FeatureOp);
+            setInputs([]);
+          }}
+          className="rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50"
+        >
+          {MANUAL_FEATURE_OPS.map((o) => (
+            <option key={o.op} value={o.op}>{o.label}</option>
+          ))}
+        </select>
+        {opDef.param && (
+          <label className="flex items-center gap-1 text-xs text-fg-muted">
+            {opDef.param.label}:
+            <input
+              type="number"
+              value={paramValue}
+              placeholder={String(opDef.param.default)}
+              onChange={(e) => setParamValue(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-16 rounded border border-border-strong px-1.5 py-1 text-xs outline-none focus:border-accent/50"
+            />
+          </label>
+        )}
+      </div>
+      <p className="text-[11px] text-fg-faint">{opDef.hint}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {existingColumns.map((col) => {
+          const idx = inputs.indexOf(col);
+          const selected = idx >= 0;
+          return (
+            <button
+              key={col}
+              onClick={() => toggleInput(col)}
+              disabled={!selected && opDef.arity !== "many" && inputs.length >= maxInputs && opDef.arity !== "two"}
+              className={`rounded-full border px-2 py-0.5 font-mono text-[11px] transition ${
+                selected ? "border-accent/40 bg-accent-dim text-accent" : "border-border text-fg-muted hover:bg-surface-2"
+              }`}
+            >
+              {opDef.arity === "two" && selected ? `${idx + 1}. ${col}` : col}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`naam (bv. ${suggestedName()})`}
+          className="w-48 rounded border border-border-strong px-2 py-1 text-xs outline-none focus:border-accent/50"
+        />
+        <button
+          onClick={add}
+          className="rounded-lg border border-border-strong px-3 py-1 text-xs font-medium text-fg transition hover:bg-surface-2"
+        >
+          Toevoegen
+        </button>
+      </div>
+      {err && <p className="text-xs text-danger">{err}</p>}
+    </div>
   );
 }
 
@@ -496,6 +655,10 @@ export function DataPrepSection({
   // Derived features are authored by the architect (they carry op-specific params); the
   // builder reviews and can remove them here before merging.
   const [features, setFeatures] = useState<FeatureSpec[]>([]);
+  // Herkomst per feature-naam: features uit een AI-recept zijn "ai", zelf toegevoegde
+  // "user". Een losse map i.p.v. een veld op FeatureSpec, zodat het recept dat naar de
+  // worker gaat ongewijzigd blijft.
+  const [featureOrigins, setFeatureOrigins] = useState<Record<string, Origin>>({});
   const [newDummy, setNewDummy] = useState({ name: "", iso_year: new Date().getFullYear(), iso_week: 1 });
   const [dataset, setDataset] = useState<Dataset | null>(initialDataset);
   const [busy, setBusy] = useState(false);
@@ -511,6 +674,21 @@ export function DataPrepSection({
     features: FeatureSpec[];
   } | null>(null);
   const knownPaths = useMemo(() => new Set(drafts.map((d) => d.file.storage_path)), [drafts]);
+
+  // De kolomnamen die ná de samenvoeging in de master-tabel bestaan — de geldige inputs
+  // voor een handmatige feature: elke kolom met een rol (onder zijn output-naam) plus de
+  // al gedefinieerde features.
+  const availableColumns = useMemo(() => {
+    const names = new Set<string>();
+    for (const s of drafts) {
+      if (!s.included) continue;
+      for (const c of s.columns) {
+        if (c.role !== "") names.add(c.output_name || c.name);
+      }
+    }
+    for (const f of features) names.add(f.name);
+    return [...names];
+  }, [drafts, features]);
 
   // Seed a draft row (with sniffed headers) for any uploaded file not yet represented, and
   // cache each numeric column's values for the sparklines below.
@@ -568,6 +746,7 @@ export function DataPrepSection({
     setDrafts(draftSources);
     setDummies(draftDummies);
     setFeatures(draftFeatures);
+    setFeatureOrigins(Object.fromEntries(draftFeatures.map((f) => [f.name, "ai" as Origin])));
     setManualOpen(true);
     clearPendingRecipe();
     clearStagedRecipe();
@@ -1096,7 +1275,7 @@ export function DataPrepSection({
                 features.map((f) => (
                   <div key={f.name} className="flex items-center gap-2 text-xs text-fg-muted">
                     <span className="flex-1 font-mono">{featureLabel(f)}</span>
-                    <OriginBadge origin="ai" />
+                    <OriginBadge origin={featureOrigins[f.name] ?? "ai"} />
                     <button
                       onClick={() => setFeatures((prev) => prev.filter((x) => x.name !== f.name))}
                       className="text-danger hover:underline"
@@ -1106,6 +1285,14 @@ export function DataPrepSection({
                   </div>
                 ))
               )}
+              <ManualFeatureForm
+                existingColumns={availableColumns}
+                existingNames={features.map((f) => f.name)}
+                onAdd={(spec) => {
+                  setFeatures((prev) => [...prev, spec]);
+                  setFeatureOrigins((prev) => ({ ...prev, [spec.name]: "user" }));
+                }}
+              />
             </div>
           </details>
 

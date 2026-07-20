@@ -250,3 +250,86 @@ def test_fully_overlapping_sources_report_no_trimming():
         (_spec("g", "spend", Role.SPEND, "date"), spend),
     ])
     assert "source_window_trimmed" not in result.report.codes()
+
+
+# --- coarse cadence (monthly data) ----------------------------------------------
+
+def test_monthly_source_is_flagged_coarse_cadence():
+    months = pd.Series(pd.date_range("2022-01-01", periods=12, freq="MS"))
+    df = pd.DataFrame({"date": months, "spend": np.linspace(100, 300, 12)})
+    result = build_master_dataset([(_spec("g", "spend", Role.SPEND, "date"), df)])
+    assert "coarse_cadence" in result.report.codes()
+    issue = next(i for i in result.report.issues if i.code == "coarse_cadence")
+    assert issue.details["median_gap_days"] >= 24
+
+
+def test_weekly_source_is_not_flagged_coarse_cadence():
+    df = pd.DataFrame({"date": _weekly_dates("2022-01-03", 12), "spend": np.linspace(50, 200, 12)})
+    result = build_master_dataset([(_spec("g", "spend", Role.SPEND, "date"), df)])
+    assert "coarse_cadence" not in result.report.codes()
+
+
+def test_daily_source_is_not_flagged_coarse_cadence():
+    df = daily_frame("2022-01-03", 40, 1.0, date_col="date", value_col="spend")
+    result = build_master_dataset([(_spec("g", "spend", Role.SPEND, "date"), df)])
+    assert "coarse_cadence" not in result.report.codes()
+
+
+# --- predictor (spend/control) outliers -----------------------------------------
+
+def test_spend_outlier_week_is_flagged_as_info():
+    dates = _weekly_dates("2022-01-03", 20)
+    rng = np.random.default_rng(3)
+    spend = 100.0 + rng.normal(0, 8, 20)  # mild week-to-week variation, so local MAD > 0
+    spend[10] = 5000.0
+    kpi = pd.DataFrame({"date": dates, "revenue": np.linspace(900, 1100, 20)})
+    df = pd.DataFrame({"date": dates, "spend": spend})
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), df),
+    ])
+    issue = next(i for i in result.report.issues if i.code == "predictor_outlier_weeks")
+    assert issue.severity.value == "info"
+    assert issue.details["role"] == "spend"
+
+
+def test_smooth_spend_has_no_predictor_outliers():
+    dates = _weekly_dates("2022-01-03", 20)
+    kpi = pd.DataFrame({"date": dates, "revenue": np.linspace(900, 1100, 20)})
+    df = pd.DataFrame({"date": dates, "spend": np.linspace(50, 200, 20)})
+    result = build_master_dataset([
+        (_spec("rev", "revenue", Role.KPI, "date"), kpi),
+        (_spec("g", "spend", Role.SPEND, "date"), df),
+    ])
+    assert "predictor_outlier_weeks" not in result.report.codes()
+
+
+# --- multicollinearity (VIF) ----------------------------------------------------
+
+def test_linearly_dependent_channels_are_flagged_by_vif():
+    dates = _weekly_dates("2022-01-03", 40)
+    rng = np.random.default_rng(1)
+    a = rng.uniform(10, 100, 40)
+    b = rng.uniform(10, 100, 40)
+    c = a + b + rng.normal(0, 0.01, 40)  # c ≈ a + b : high VIF, but pairwise r modest
+    kpi = pd.DataFrame({"date": dates, "revenue": 1000 + rng.normal(0, 20, 40)})
+    frames = [(_spec("rev", "revenue", Role.KPI, "date"), kpi)]
+    for name, vals in (("a", a), (("b", b)), ("c", c)):
+        frames.append((_spec(name, f"spend_{name}", Role.SPEND, "date"),
+                       pd.DataFrame({"date": dates, f"spend_{name}": vals})))
+    result = build_master_dataset(frames)
+    assert "multicollinearity" in result.report.codes()
+    issue = next(i for i in result.report.issues if i.code == "multicollinearity")
+    assert issue.details["max_vif"] >= 10
+
+
+def test_independent_channels_have_no_vif_flag():
+    dates = _weekly_dates("2022-01-03", 40)
+    rng = np.random.default_rng(2)
+    kpi = pd.DataFrame({"date": dates, "revenue": 1000 + rng.normal(0, 20, 40)})
+    frames = [(_spec("rev", "revenue", Role.KPI, "date"), kpi)]
+    for name in ("a", "b", "c"):
+        frames.append((_spec(name, f"spend_{name}", Role.SPEND, "date"),
+                       pd.DataFrame({"date": dates, f"spend_{name}": rng.uniform(10, 100, 40)})))
+    result = build_master_dataset(frames)
+    assert "multicollinearity" not in result.report.codes()
