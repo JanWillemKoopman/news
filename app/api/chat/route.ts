@@ -7,6 +7,7 @@ import type { ArchitectFitContext } from "@/lib/anthropic/fitContext";
 import type { ArchitectDatasetContext } from "@/lib/anthropic/datasetContext";
 import { isHierSummary } from "@/lib/types";
 import type { DataInspection, Dataset, FitSummary, JobConfig, JobStatus, PriorPredictiveReview, ProjectContext, SourceFile } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Tool names the architect can call — kept here so the route and the frontend agree on
 // what a "proposal" in the persisted/returned payload means. record_business_context is a
@@ -20,7 +21,7 @@ const PROPOSAL_TOOLS = ["propose_prepare_recipe", "propose_model_config"] as con
 const ALL_TOOLS = [...PROPOSAL_TOOLS, "record_business_context"] as const;
 
 // Load prior chat history for a project so the panel survives a page refresh.
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ messages: data ?? [], context });
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -357,3 +358,6 @@ export async function POST(request: Request) {
     headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
   });
 }
+
+export const GET = withJsonErrors(handleGet);
+export const POST = withJsonErrors(handlePost);

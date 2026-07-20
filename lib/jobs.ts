@@ -5,15 +5,23 @@ import { createClient } from "@/lib/supabase/server";
 // share one container pool — this check must count both, not just fits.
 export const MAX_CONCURRENT_JOBS = 2;
 
+// A job whose container died without reaching mark_failed (Modal timeout kill, OOM)
+// stays 'running' in the database. The worker's poll_queue reaps those after this many
+// minutes; the capacity check below ignores anything older so a dead job can never
+// freeze the queue for good. Keep >= STALE_RUNNING_SECONDS in worker/mmm_worker/modal_app.py.
+const STALE_JOB_MINUTES = 40;
+
 // 'queued' counts too, not just 'running': a queued job is about to consume a slot
 // (enqueue/poll_queue promotes it within seconds to a minute), so treating only
 // 'running' as occupied would let a burst of requests slip through the gap.
 export async function hasJobCapacity(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  const cutoff = new Date(Date.now() - STALE_JOB_MINUTES * 60_000).toISOString();
   const { count } = await supabase
     .schema("mmm")
     .from("jobs")
     .select("id", { count: "exact", head: true })
-    .in("status", ["queued", "running"]);
+    .in("status", ["queued", "running"])
+    .gte("created_at", cutoff);
   return (count ?? 0) < MAX_CONCURRENT_JOBS;
 }
 

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Sla de zakelijke kolomnotities van de bouwer op bij de dataset. Notities zijn
 // metadata (geen onderdeel van het samenvoegresultaat), dus ze mogen op elke bestaande
 // dataset worden bijgewerkt — ook een al goedgekeurde.
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+async function handlePost(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -32,3 +33,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withJsonErrors(handlePost);

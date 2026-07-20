@@ -66,6 +66,6 @@ def test_fixture_round_trips_every_optional_field():
     assert spec.model.student_t_nu == 5
     assert spec.model.priors.changepoint_scale == 0.08
 
-    assert spec.sample == {"draws": 500, "tune": 500, "chains": 2, "target_accept": 0.92, "seed": 7}
+    assert spec.sample == {"draws": 500, "tune": 500, "chains": 4, "target_accept": 0.92, "seed": 7}
     assert spec.evaluation.cross_validation is True
     assert spec.evaluation.placebo is True

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withJsonErrors } from "@/lib/apiRoute";
 import Anthropic from "@anthropic-ai/sdk";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +36,7 @@ function gateVerdict(summary: FitSummary): "pass" | "warn" | "fail" | null {
   return summary.quality_gate?.verdict ?? null;
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -242,3 +243,5 @@ export async function POST(request: Request) {
     reasoning: proposal.reasoning ?? replyText,
   });
 }
+
+export const POST = withJsonErrors(handlePost);

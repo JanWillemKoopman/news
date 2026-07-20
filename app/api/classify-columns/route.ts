@@ -4,12 +4,13 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildClassifyRequest, parseColumnMapping } from "@/lib/anthropic/columnMapping";
 import type { SourceProfile } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Cheap, one-shot column-semantics classification for a single uploaded source file. Called
 // fire-and-forget from SourceUpload.tsx right after a CSV is inserted; the result is cached
 // on source_files.mapping and read back by the chat architect. Kept a small Haiku call so it
 // costs almost nothing and can run on every upload.
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -68,3 +69,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ mapping });
 }
+
+export const POST = withJsonErrors(handlePost);

@@ -5,13 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { buildClientSummaryRequest } from "@/lib/anthropic/clientSummary";
 import { isHierSummary } from "@/lib/types";
 import type { ClientSummary, FitSummary } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 export const maxDuration = 60;
 
 // Genereer (en bewaar) een presentatieklare klantsamenvatting voor één run. Alleen voor
 // bouwers — de klant ziet hooguit het resultaat ervan als de bouwer het in zijn rapport
 // plakt; er gaat niets automatisch naar het klantdashboard.
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -75,3 +76,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ client_summary: clientSummary });
 }
+
+export const POST = withJsonErrors(handlePost);

@@ -41,8 +41,8 @@ def test_happy_path_persists_summary_and_uploads_trace():
     assert store.progress == "saving"  # last phase written before completion
     assert len(store.runs) == 1
     assert store.runs[0]["summary"]["kpi"] == "revenue"
-    # bogus sample key filtered out before reaching the fit
-    assert fit.calls[0]["kwargs"] == {"draws": 100, "tune": 100, "chains": 2}
+    # bogus sample key filtered out, unsafe values clamped before reaching the fit
+    assert fit.calls[0]["kwargs"] == {"draws": 250, "tune": 250, "chains": 4}
     # heavy trace uploaded under runs/<project>/<job>.nc
     assert store.runs[0]["inference_data_path"] == "runs/proj-1/job-1.nc"
     assert storage.uploads["runs/proj-1/job-1.nc"] == b"NETCDF"

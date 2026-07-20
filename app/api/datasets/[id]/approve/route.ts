@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Approve a prepared dataset: it becomes the definitive input for the model step. Only a
 // 'prepared' dataset can be approved — approving mid-flight or failed data would let a
 // half-checked or broken merge silently become the modelling input.
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+async function handlePost(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -38,3 +39,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withJsonErrors(handlePost);

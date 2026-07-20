@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Publish a model run to the client dashboard: mark the run published and flip the
 // project to 'published'. Builder-only (enforced by RLS and this guard).
@@ -9,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 // project update, and un-publishing any previous "champion" run of this project happen
 // atomically in one transaction — a partial failure can no longer leave the run and
 // project status out of sync, and republishing a newer run always clears the older one.
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+async function handlePost(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -30,3 +31,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withJsonErrors(handlePost);

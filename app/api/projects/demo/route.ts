@@ -6,6 +6,7 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildSourceProfile } from "@/lib/dataProfile";
 import type { SourceProfile } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Start een kant-en-klaar demo-project: maakt het project aan, uploadt de meegeleverde
 // MediaMarkt-demo-CSV (demo_data/) naar Storage en registreert 'm precies zoals een
@@ -35,7 +36,7 @@ function buildProfileFromCsv(text: string): SourceProfile | null {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -100,3 +101,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ project_id: project.id });
 }
+
+export const POST = withJsonErrors(handlePost);

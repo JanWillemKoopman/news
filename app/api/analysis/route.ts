@@ -4,6 +4,7 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildDeepAnalysisRequest } from "@/lib/anthropic/deepAnalysis";
 import type { AnalysisChart, FitSummary, RunAnalysis } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Deep-analysis generation may run several server-tool (code_execution) iterations
 // inside one turn — comfortably longer than a normal chat round trip. Give the route
@@ -38,7 +39,7 @@ function extractChartFileIds(blocks: Anthropic.Beta.Messages.BetaContentBlock[])
   return ids;
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -131,3 +132,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ analysis });
 }
+
+export const POST = withJsonErrors(handlePost);

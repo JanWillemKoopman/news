@@ -275,7 +275,7 @@ def fit_hierarchical(
     draws: int = 1000,
     tune: int = 1000,
     chains: int = 4,
-    target_accept: float = 0.9,
+    target_accept: float = 0.95,
     seed: int = 0,
     progressbar: bool = False,
 ):

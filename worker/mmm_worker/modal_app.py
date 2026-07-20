@@ -44,9 +44,27 @@ _MMM_CORE_DIR = (_HERE.parent.parent / "packages" / "mmm-core").resolve()
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
+    # OpenBLAS + toolchain: without these PyTensor falls back to un-linked numpy dot
+    # ("PyTensor could not link to a BLAS installation") and every graph evaluation —
+    # prior predictive, model build, any C-backend op — runs an order of magnitude slower.
+    .apt_install("libopenblas-dev", "g++", "gfortran")
     .add_local_dir(str(_MMM_CORE_DIR), remote_path="/root/mmm-core", copy=True)
     .run_commands("pip install '/root/mmm-core[model]'")
     .pip_install("supabase>=2.6", "pandas>=2.1", "openpyxl>=3.1", "fastapi[standard]")
+    .env(
+        {
+            # Link PyTensor's C backend against OpenBLAS explicitly.
+            "PYTENSOR_FLAGS": "blas__ldflags=-lopenblas,cxx=/usr/bin/g++",
+            # JAX sees one CPU "device" by default, which makes numpyro run the 4 NUTS
+            # chains sequentially. Expose 4 host devices so chains sample in parallel —
+            # this alone cuts wall-clock time roughly 4x on a 4-CPU container.
+            "XLA_FLAGS": "--xla_force_host_platform_device_count=4",
+            # One BLAS/OpenMP thread per chain: 4 parallel chains x N threads would
+            # oversubscribe the container and slow everything down.
+            "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+        }
+    )
     .add_local_python_source("mmm_worker")
 )
 
@@ -55,7 +73,10 @@ app = modal.App("mmm-worker")
 _SECRET = modal.Secret.from_name("mmm-supabase")
 
 MAX_CONCURRENT_RUNS = 2
-RUN_TIMEOUT_SECONDS = 15 * 60
+RUN_TIMEOUT_SECONDS = 30 * 60
+# A 'running' job whose container died (timeout/OOM/preemption) never reaches
+# mark_failed — poll_queue reaps those so they stop blocking the capacity check forever.
+STALE_RUNNING_SECONDS = RUN_TIMEOUT_SECONDS + 5 * 60
 
 
 def _run(job_id: str) -> dict:
@@ -109,6 +130,11 @@ def _run(job_id: str) -> dict:
     secrets=[_SECRET],
     timeout=RUN_TIMEOUT_SECONDS,
     max_containers=MAX_CONCURRENT_RUNS,
+    # A Bayesian fit is CPU-bound: without an explicit reservation Modal gives the
+    # container a fraction of a core and a 3-minute fit stretches past 20. 4 cores map
+    # one-to-one onto the 4 parallel NUTS chains (see XLA_FLAGS on the image).
+    cpu=4.0,
+    memory=8192,
 )
 def run_fit(job_id: str) -> dict:
     return _run(job_id)
@@ -123,14 +149,38 @@ def enqueue(job_id: str):
 
 @app.function(image=image, secrets=[_SECRET], schedule=modal.Period(minutes=1))
 def poll_queue() -> int:
-    """Pick up any stray 'queued' jobs and spawn a fit for each."""
+    """Pick up stray 'queued' jobs and reap orphaned 'running' jobs.
+
+    The reaper is the safety net for containers that die without running mark_failed
+    (Modal timeout kill, OOM, preemption): such a job would otherwise stay 'running'
+    forever, permanently occupying a slot in both Modal's max_containers cap and the
+    wizard's /api/jobs capacity check — freezing the whole queue.
+    """
+    import datetime
+
     from mmm_worker.supabase_backends import _SCHEMA, make_client
 
     client = make_client()
+    jobs = client.schema(_SCHEMA).table("jobs")
+
+    cutoff = (
+        datetime.datetime.now(datetime.timezone.utc)
+        - datetime.timedelta(seconds=STALE_RUNNING_SECONDS)
+    ).isoformat()
+    jobs.update(
+        {
+            "status": "failed",
+            "finished_at": "now()",
+            "error": (
+                "De taak is afgebroken omdat hij de maximale rekentijd overschreed of de "
+                "rekenomgeving onverwacht stopte. Probeer het opnieuw; blijft dit gebeuren, "
+                "verklein dan het aantal draws of kanalen."
+            ),
+        }
+    ).eq("status", "running").lt("started_at", cutoff).execute()
+
     rows = (
-        client.schema(_SCHEMA)
-        .table("jobs")
-        .select("id")
+        jobs.select("id")
         .eq("status", "queued")
         .order("created_at")
         .limit(10)

@@ -3,11 +3,12 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_CONCURRENT_JOBS, hasJobCapacity, nudgeModalEnqueue } from "@/lib/jobs";
 import type { PrepareRecipe } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Create a dataset (status 'preparing') from a recipe, and enqueue the 'prepare' job that
 // merges + quality-checks it. Mirrors /api/jobs (same capacity check — prepare and fit
 // jobs share one Modal container pool, see lib/jobs.ts).
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -66,3 +67,5 @@ export async function POST(request: Request) {
   await nudgeModalEnqueue(job.id);
   return NextResponse.json({ dataset_id: dataset.id, job_id: job.id });
 }
+
+export const POST = withJsonErrors(handlePost);

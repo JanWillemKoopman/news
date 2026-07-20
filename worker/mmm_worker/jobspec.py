@@ -64,6 +64,34 @@ from mmm_core.model import (
 )
 
 _ALLOWED_SAMPLE_KEYS = {"draws", "tune", "chains", "target_accept", "seed"}
+
+# Hard bounds on user-supplied sampling parameters. Below the minimums the diagnostics
+# (R-hat needs >= 2 chains; ESS needs real draws) become meaningless; above the maximums
+# a job risks blowing the worker's time/memory budget. Chains is pinned to 4: fewer makes
+# R-hat unreliable, more buys nothing on a 4-CPU container.
+_SAMPLE_BOUNDS = {
+    "draws": (250, 4000),
+    "tune": (250, 4000),
+    "chains": (4, 4),
+    "target_accept": (0.9, 0.995),
+}
+
+
+def _sanitize_sample(sample: dict) -> dict:
+    """Clamp sampling params into safe bounds; drop unknown keys and non-numeric junk."""
+    out: dict = {}
+    for key, value in sample.items():
+        if key not in _ALLOWED_SAMPLE_KEYS or value is None:
+            continue
+        try:
+            num = float(value)
+        except (TypeError, ValueError):
+            continue
+        if key in _SAMPLE_BOUNDS:
+            lo, hi = _SAMPLE_BOUNDS[key]
+            num = min(max(num, lo), hi)
+        out[key] = num if key == "target_accept" else int(num)
+    return out
 _CHANNEL_PRIOR_FIELDS = {f.name for f in fields(ChannelPriors)}
 _BASELINE_PRIOR_FIELDS = {f.name for f in fields(BaselinePriors)}
 
@@ -310,7 +338,7 @@ def parse_job_config(config: dict) -> JobSpec:
     sources = _parse_sources(config)
     event_dummies = _parse_event_dummies(config)
     model = _parse_model(config, event_dummies)
-    sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
+    sample = _sanitize_sample(config.get("sample", {}))
     return JobSpec(
         sources=sources,
         model=model,
@@ -344,7 +372,7 @@ def parse_hier_job_config(config: dict) -> HierJobSpec:
 
     event_dummies = _parse_event_dummies(config)
     model = _parse_model(config, event_dummies)
-    sample = {k: v for k, v in config.get("sample", {}).items() if k in _ALLOWED_SAMPLE_KEYS}
+    sample = _sanitize_sample(config.get("sample", {}))
     return HierJobSpec(
         regions=regions,
         model=model,

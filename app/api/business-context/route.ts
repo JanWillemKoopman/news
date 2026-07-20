@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { BusinessContextNote, ProjectContext } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 const TOPICS: BusinessContextNote["topic"][] = [
   "branche",
@@ -17,7 +18,7 @@ const TOPICS: BusinessContextNote["topic"][] = [
 // toevoegen of verwijderen en de branche zetten. Zelfde rij (mmm.project_context) als
 // waar de chat-tool record_business_context in schrijft, zodat AI en paneel één
 // gedeelde waarheid hebben.
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -97,3 +98,5 @@ export async function POST(request: Request) {
   }
   return NextResponse.json({ ok: true, notes, industry });
 }
+
+export const POST = withJsonErrors(handlePost);

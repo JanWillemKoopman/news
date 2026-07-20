@@ -38,9 +38,10 @@ def test_parse_valid_config():
     assert spec.model.channels[0].l_max == 8
 
 
-def test_sample_kwargs_are_whitelisted():
+def test_sample_kwargs_are_whitelisted_and_clamped():
+    # Unknown keys dropped; draws/tune clamped to the safe minimum; chains pinned to 4.
     spec = parse_job_config(_valid_config())
-    assert spec.sample == {"draws": 200, "tune": 200, "chains": 2}
+    assert spec.sample == {"draws": 250, "tune": 250, "chains": 4}
 
 
 def test_missing_model_raises():
@@ -327,7 +328,7 @@ def test_parse_hier_valid_config():
     assert spec.regions["NL"][0].storage_path == "rev.csv"
     assert spec.model.kpi == "revenue"
     assert spec.model.channels[0].l_max == 8
-    assert spec.sample == {"draws": 200, "tune": 200, "chains": 2}
+    assert spec.sample == {"draws": 250, "tune": 250, "chains": 4}
 
 
 def test_hier_missing_regions_raises():

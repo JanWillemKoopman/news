@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
 import { ErrorNotice, StatusBadge } from "@/components/ui";
 import { humanizeError } from "@/lib/humanizeMessage";
+import { postJson } from "@/lib/fetchJson";
 import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { extractNumericValues } from "@/lib/eda";
@@ -245,21 +246,17 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
     setMsg(null);
     const activity = beginActivity("Claude onderzoekt de data met code — dit kan even duren…");
     try {
-      const res = await fetch("/api/inspect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId, scope }),
+      const res = await postJson<{ inspection?: { findings?: unknown[] } }>("/api/inspect", {
+        project_id: projectId,
+        scope,
       });
-      const data = await res.json();
       if (!res.ok) {
-        setMsg(humanizeError(data.error, "De inspectie is niet gelukt — probeer het opnieuw.").text);
+        setMsg(humanizeError(res.error, "De inspectie is niet gelukt — probeer het opnieuw.").text);
       } else {
-        const n = data.inspection?.findings?.length ?? 0;
+        const n = res.data.inspection?.findings?.length ?? 0;
         setMsg(`Inspectie klaar — ${n} bevinding(en). De AI leest ze nu mee in de chat.`);
         router.refresh();
       }
-    } catch (err) {
-      setMsg((err as Error).message);
     } finally {
       activity.end();
       setBusy(false);

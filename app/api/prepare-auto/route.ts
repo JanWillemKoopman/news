@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withJsonErrors } from "@/lib/apiRoute";
 import Anthropic from "@anthropic-ai/sdk";
 import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -55,7 +56,7 @@ async function waitForDataset(
   return null;
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -218,3 +219,5 @@ export async function POST(request: Request) {
     log,
   });
 }
+
+export const POST = withJsonErrors(handlePost);

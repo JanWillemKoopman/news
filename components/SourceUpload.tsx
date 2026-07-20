@@ -95,11 +95,33 @@ export function SourceUpload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sources]);
 
+  // Validation at the gate: reject files that can never work BEFORE they cost an upload,
+  // a storage object, and a confusing failure three steps later in the pipeline.
+  const MAX_FILE_MB = 50;
+
+  function validateFile(file: File): string | null {
+    if (!/\.(csv|xlsx|xls)$/i.test(file.name)) {
+      return `"${file.name}" is geen CSV- of Excel-bestand.`;
+    }
+    if (file.size === 0) {
+      return `"${file.name}" is leeg.`;
+    }
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      return `"${file.name}" is groter dan ${MAX_FILE_MB} MB. Exporteer een kleinere periode of aggregeer naar weekniveau.`;
+    }
+    return null;
+  }
+
   async function uploadFiles(files: FileList | File[]) {
     setBusy(true);
     setError(null);
     const supabase = createClient();
     for (const file of Array.from(files)) {
+      const invalid = validateFile(file);
+      if (invalid) {
+        setError(invalid);
+        continue;
+      }
       const path = `${projectId}/${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
       if (upErr) {

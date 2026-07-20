@@ -4,6 +4,7 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buildInspectionRequest, parseInspectionResult, INSPECTION_MODEL } from "@/lib/anthropic/dataInspection";
 import type { Dataset, SourceFile } from "@/lib/types";
+import { withJsonErrors } from "@/lib/apiRoute";
 
 // Deep data inspection: hand the raw uploads (or the approved master) to Claude in the
 // sandboxed code_execution container and store the structured findings + narrative on
@@ -23,7 +24,7 @@ const RAW_BUCKET = "mmm-raw-data";
 const MASTER_BUCKET = "mmm-raw-data";
 const MAX_RAW_FILES = 4; // bound cost/latency — the architect can re-run if it needs more
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const viewer = await getViewer();
   if (!viewer?.isBuilder) {
     return NextResponse.json({ error: "geen toegang" }, { status: 403 });
@@ -151,3 +152,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ inspection: inserted });
 }
+
+export const POST = withJsonErrors(handlePost);
