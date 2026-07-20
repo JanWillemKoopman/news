@@ -1,3 +1,178 @@
+# DEEL I — HET FUNDAMENT: WAAROM MEDIA MIX MODELING?
+
+---
+
+# Hoofdstuk 1 — Wat is Media Mix Modeling?
+
+> **Deel I — Het fundament: waarom Media Mix Modeling?**
+> Moeilijkheidsgraad: Beginner · Voorkennis: geen
+
+## Waar dit hoofdstuk over gaat
+
+Elke marketingdirecteur stelt op enig moment dezelfde vraag: wat heeft ons mediabudget eigenlijk opgeleverd, en hoe moeten we het volgend jaar verdelen? Het eerlijke antwoord van de meeste organisaties is: we weten het niet precies — niet door een tekort aan data, maar omdat omzet nooit één oorzaak heeft. Media Mix Modeling (MMM) is de methode die dit toewijzingsprobleem aanpakt. Dit hoofdstuk legt uit wat MMM is, wat het oplevert, wat het uitdrukkelijk niet is, en hoe het zich verhoudt tot de andere grote meetmethoden: attributie en experimenten.
+
+**Na dit hoofdstuk kun je:**
+- MMM op drie niveaus uitleggen, passend bij drie verschillende gesprekspartners;
+- het verschil benoemen tussen MMM, attributie en experimenten;
+- de vijf standaard-outputs van een MMM-project herkennen;
+- de grenzen van MMM aangeven: welke vragen het wél en niet kan beantwoorden.
+
+## 1.1 De kernvraag van marketing: wat levert mijn geld op?
+
+Verkoop ontstaat uit tientallen factoren die gelijktijdig werken: media-inzet, prijs, promoties, seizoen, feestdagen, weer, economie, concurrentie, merkkracht en gewoontegedrag. Al deze factoren bewegen vaak sámen — mediabudget stijgt in het hoogseizoen, promoties worden gepland rond feestdagen — waardoor je onmogelijk met het blote oog kunt zien wat welk kanaal bijdroeg. Dit noem je het **toewijzingsprobleem**: hoe verdeel je waargenomen omzet over de vele oorzaken die er tegelijk aan bijdroegen?
+
+De uitweg is **variatie in de tijd**. Een adverteerder "bakt" elke week een nieuwe week omzet, telkens met een net iets andere mix van media-inzet, prijzen en omstandigheden. In honderden weken variatie zit informatie verborgen over wat elk kanaal bijdraagt — en MMM is de methode die die informatie eruit haalt. De discipline die deze vraag beantwoordt heet **marketing effectiveness**: niet hoeveel mensen een advertentie zagen of erop klikten, maar hoeveel extra omzet die advertentie daadwerkelijk *veroorzaakte*, vergeleken met de situatie waarin je haar niet had ingezet. Dat woord "veroorzaakt" maakt marketing effectiveness in de kern een vraag over causaliteit — het onderwerp van hoofdstuk 4.
+
+## 1.2 Media Mix Modeling in één alinea, één pagina en één hoofdstuk
+
+Een MMM-specialist moet hetzelfde concept op drie niveaus kunnen uitleggen. De **elevator pitch**: MMM is een statistische methode die uit historische verkoop- en mediadata berekent wat elk marketingkanaal daadwerkelijk heeft bijgedragen aan je omzet, en die dat vertaalt naar een onderbouwd budgetadvies.
+
+De **managementsamenvatting**: het model gebruikt geaggregeerde weekdata (geen persoonsgegevens, geen cookies) en zoekt naar systematische patronen tussen media-inzet en omzet, na correctie voor seizoen, prijs en promoties. Het bevat ingebouwde marketingkennis: **carry-over** (reclame werkt na) en **verzadiging** (de eerste euro levert meer op dan de tiende). De output is een decompositie van omzet, rendement per kanaal met onzekerheidsmarge, en scenario-advies.
+
+De **technische samenvatting**: een MMM is een tijdreeks-regressiemodel waarbij media-inzet eerst wordt getransformeerd — een **adstock-transformatie** smeert het effect uit over de tijd, een **saturatietransformatie** (vaak een Hill-functie) maakt het verband niet-lineair — bovenop een expliciet geschatte **baseline**. Moderne MMM's, en alle modellen in dit boek, worden **Bayesiaans** geschat: met **priors** die domeinkennis expliciet maken, en met volledige onzekerheidskwantificering in elke uitkomst. MMM doet causale uitspraken op observationele data, en dat kan alleen onder aannames die je expliciet maakt, toetst, en waar mogelijk verankert in experimenteel bewijs (hoofdstuk 33).
+
+## 1.3 De outputs van een MMM
+
+Vijf outputs vormen samen het vaste "productassortiment" van elk MMM-traject. De **decompositie** splitst historische omzet in een baseline (vaak 60 tot 90 procent — geen slecht nieuws, maar opgebouwde merkkracht) en de bijdrage per kanaal. **ROI en ROAS** per kanaal laten zien wat de historische, gemiddelde inzet heeft opgeleverd. **Saturatiecurves** onderscheiden gemiddeld rendement (het verleden) van marginaal rendement (wat de vólgende euro oplevert) — en het kanaal met de hoogste gemiddelde ROI is vaak al verzadigd. **Effectprofielen in de tijd** laten zien hoe snel een effect optreedt en uitdooft. En **scenario's en budgetoptimalisatie** rekenen door wat er gebeurt bij een andere verdeling — met de constante waarschuwing dat het model alleen iets weet over inzetniveaus die het heeft waargenomen; alles daarbuiten is extrapolatie.
+
+## 1.4 Wat MMM níet is
+
+MMM is geen betere attributietool — het is een andere categorie instrument, dat op geaggregeerd niveau werkt en geen tracking nodig heeft. MMM is geen realtime, campagne-niveau dashboard: het meet op kanaalniveau en wordt periodiek herijkt, niet dagelijks. MMM geeft geen exact antwoord, maar een schatting mét onzekerheid — en die onzekerheid is bruikbare informatie, geen zwakte. MMM wordt niet beter door er willekeurig meer data in te gooien: variabelenselectie is een causale ontwerpkeuze (hoofdstuk 4), niet een datakwestie. En MMM vervangt het oordeel van de marketeer niet — het voedt dat oordeel met kwantitatieve ruggengraat.
+
+## 1.5 MMM, attributie en experimenten: drie lenzen op hetzelfde probleem
+
+Drie meetfamilies vullen elkaar aan in wat je **triangulatie** noemt. **Attributie** is bottom-up en gedetailleerd, maar ziet alleen wat trackbaar is en beschrijft routes in plaats van oorzaken. **Experimenten** zijn de gouden standaard voor causale meting via randomisatie, maar beantwoorden telkens maar één smalle vraag, tegen aanzienlijke kosten. **MMM** kijkt van bovenaf naar het geheel — alle kanalen, on- en offline — maar leunt op aannames die het moet verdienen via zorgvuldig ontwerp en validatie, in plaats van af te dwingen zoals een experiment dat doet. Een volwassen meetpraktijk gebruikt MMM voor strategie, experimenten voor kalibratie, en platformdata voor tactiek — nooit één instrument alleen.
+
+## 1.6 Voor wie is dit boek en hoe lees je het
+
+Dit boek is geschreven voor data-analisten, marketing-analisten, BI-specialisten en analytics consultants met ervaring in SQL en Python, maar zonder een graad in statistiek of marketing — die kennis bouwt dit boek vanaf de grond op. De opbouw weerspiegelt één overtuiging: PyMC-code schrijven is het makkelijkste deel van MMM. Het moeilijke deel is de marketing begrijpen, de causale valkuilen zien, de data wantrouwen, en het advies verdedigen. Daarom komt de code pas in deel VI, ná marketing, data en statistische intuïtie. Wie deze volgorde omdraait, bouwt een instrument dat hij niet kan beoordelen of verdedigen.
+
+---
+
+# Hoofdstuk 2 — De geschiedenis en renaissance van MMM
+
+> **Deel I — Het fundament: waarom Media Mix Modeling?**
+> Moeilijkheidsgraad: Beginner · Voorkennis: hoofdstuk 1
+
+## Waar dit hoofdstuk over gaat
+
+MMM is geen nieuwe methode — de kernideeën zijn decennia oud. Toch beleeft het vak nu zijn grootste bloei ooit. Dit hoofdstuk vertelt waarom, in vier bewegingen: de klassieke periode, de digitale gouden eeuw van tracking, de privacy-omwenteling die die belofte brak, en de renaissance die daaruit volgde.
+
+**Na dit hoofdstuk kun je:**
+- de historische ontwikkeling van MMM schetsen, van de econometrie tot nu;
+- uitleggen waarom de digitale attributiebelofte structureel is vastgelopen;
+- de impact van GDPR, ATT en het einde van de cookie op marketingmeting benoemen;
+- de rol van Robyn, Meridian en PyMC-Marketing in het huidige landschap plaatsen.
+
+## 2.1 Van econometrie tot marketing science (1960–2000)
+
+MMM ontstond in de econometrie: dezelfde regressiegereedschappen die vraag naar consumptiegoederen modelleerden, werden toegepast op reclame-effecten. In de jaren zeventig en tachtig introduceerde Simon Broadbent het begrip **adstock**: het idee dat reclame-effect na blootstelling niet meteen verdwijnt, maar geleidelijk uitdooft — een "voorraadje" reclame-effect dat opbouwt met nieuwe blootstelling. Tegelijk werd **saturatie** — de wet van afnemende meeropbrengst — als tweede kernbouwsteen herkend. Consumer packaged goods-bedrijven zoals Procter & Gamble en Unilever maakten MMM groot: grote budgetten, scannerkassa's met nauwkeurige verkoopdata, en gespecialiseerde bureaus die maandenlang aan een model werkten.
+
+## 2.2 De digitale gouden eeuw van tracking (2000–2018)
+
+Het internet maakte individuele tracking mogelijk via de **third-party cookie**, en daarmee ontstond **attributie**: het toewijzen van conversies aan de contactmomenten die eraan voorafgingen. Attributie was snel, goedkoop en gedetailleerd, en MMM raakte grotendeels uit beeld — waarom schatten als je kon meten? Maar de belofte bevatte scheuren die pas later voluit zichtbaar werden: het **view-through-probleem** (klikloze effecten blijven onzichtbaar), het **offline-probleem** (winkelverkoop en TV-effect vallen buiten het bereik van de cookie), en fundamenteler — attributie beschrijft routes, geen oorzaken.
+
+## 2.3 De privacy-omwenteling: GDPR, ATT en het einde van de third-party cookie
+
+Drie krachten braken het tracking-fundament structureel af. **GDPR/AVG** (2018) maakte toestemming de norm, waardoor een substantieel — en systematisch scheef — deel van de bezoekers uit de data verdwijnt. **Apple's App Tracking Transparency** (2021) liet de meerderheid van iPhone-gebruikers cross-app tracking weigeren, met directe impact op mobiele meetbaarheid. En de geleidelijke afschaffing van de **third-party cookie** in browsers markeert het einde van cross-site tracking als betrouwbaar fundament. De precieze tijdlijn is minder belangrijk dan de richting: onomkeerbaar, weg van individuele tracking.
+
+## 2.4 De beperkingen van GA4 en platform-attributie
+
+Ook de gereedschappen waarmee marketeers dagelijks werken kennen structurele beperkingen. **GA4** verliest data door consent-weigering, vult gaten met **gemodelleerde conversies** (schattingen, geen tellingen), en blijft blind voor alles buiten de website. Platforms zoals Meta en Google **beoordelen daarbij hun eigen huiswerk**: elk platform meet zijn eigen effectiviteit, met eigen definities en eigen belang bij een gunstige uitkomst. Het zichtbare symptoom is **dubbeltelling**: de som van alle platform-geclaimde conversies overstijgt vaak ruim de werkelijke omzet. Precies dit gebrek aan een onafhankelijke, overkoepelende meetlaag verklaart waarom MMM terugkeerde.
+
+## 2.5 De MMM-renaissance (2018–nu)
+
+Drie motoren dreven de renaissance. Ten eerste werd de grootste beperking van MMM — werken op geaggregeerde data — plotseling zijn grootste kracht: geen cookies, geen consent-verlies, volledige full-funnel-dekking. Ten tweede maakte de **Bayesiaanse wending** het mogelijk om domeinkennis expliciet te verwerken via priors, precies passend bij een probleem dat data-arm en kennis-rijk is. Ten derde ging MMM **open source**: Robyn (Meta), Meridian (Google, opvolger van LightweightMMM) en PyMC-Marketing haalden de methode weg bij een handvol specialisten en legden haar in handen van een brede analistengemeenschap. Dit boek kiest bewust voor PyMC: begrijpen-door-zelfbouwen levert kennis op die overdraagbaar is naar elk ander framework.
+
+## 2.6 Wat we van de geschiedenis leren voor de praktijk
+
+Drie lessen reizen mee door de rest van dit boek. Elk meetparadigma overschat zichzelf — MMM is daarvan niet automatisch uitgezonderd, en de verdediging is eerlijke onzekerheidsrapportage en toetsing. Triangulatie wint van elke enkele methode — geen van de drie lenzen uit hoofdstuk 1 bezit de volledige waarheid. En de klassieke valkuilen (overfitting, verkeerde controlevariabelen) zijn niet verdwenen, alleen minder zichtbaar geworden door toegankelijkere software — precies waarom dit boek eerst marketing, data en causaliteit behandelt, en pas daarna de code.
+
+---
+
+# Hoofdstuk 3 — Het attributieprobleem en incrementaliteit
+
+> **Deel I — Het fundament: waarom Media Mix Modeling?**
+> Moeilijkheidsgraad: Beginner–Gemiddeld · Voorkennis: hoofdstuk 1 en 2
+
+## Waar dit hoofdstuk over gaat
+
+"Meta rapporteert een ROAS van 8, dus die euro levert acht euro op" — dit is het meest kostbare misverstand in marketingmeting. Dit hoofdstuk legt **incrementaliteit** uit: het verschil tussen wat een platform claimt en wat je marketing werkelijk oplevert. Vrijwel elke lastige klantdiscussie komt hierop neer, en vrijwel elk goed argument voor MMM begint hier.
+
+**Na dit hoofdstuk kun je:**
+- het verschil uitleggen tussen gerapporteerde, geattribueerde en incrementele conversies;
+- herkennen waarom platforms hun eigen effect stelselmatig overschatten;
+- beargumenteren waarom branded search en retargeting vaak te veel eer krijgen;
+- de begrippen baseline, contrafeit en incrementele omzet correct hanteren.
+
+## 3.1 Attributie: hoe platforms conversies claimen
+
+**Attributie** is een verdeelregel die een conversie opknipt over de contactmomenten die eraan voorafgingen — last-click, first-click, lineair, time-decay, position-based, of een "data-driven" algoritme. Elk model komt tot een ander antwoord met dezelfde data, en geen van deze modellen stelt de vraag die er werkelijk toe doet: zou deze klant ook gekocht hebben zonder dit contactmoment? Attributie beschrijft routes, niet oorzaken.
+
+## 3.2 Het fundamentele probleem: adverteren aan wie tóch al koopt
+
+Een paraplu-verkoper die alleen verkoopt wanneer het regent, lijkt een briljante conversieratio te hebben — maar hij creëert de vraag niet, hij duikt alleen op wanneer die vraag er al is. Advertentieplatforms doen precies dit: ze tonen advertenties aan mensen die waarschijnlijk toch al gaan kopen. Dit heet **selectiebias**. Iemand die "Nike Pegasus kopen" zoekt, heeft de beslissing al genomen; **branded search** en **retargeting** vangen grotendeels vraag die al bestond, en scoren daardoor torenhoog in attributie terwijl hun incrementele bijdrage vaak laag is.
+
+## 3.3 Incrementaliteit: de enige vraag die telt
+
+De juiste vraag is: hoeveel extra omzet heeft deze inzet veroorzaakt, vergeleken met de situatie waarin je haar niet had gedaan? Dat "vergeleken met" is het **contrafeit** — de niet-gebeurde wereld. Splits omzet in **baseline** (wat er ook zonder media was geweest) en **incrementele omzet** (wat media daadwerkelijk toevoegde). "Conversies" zonder contrafeit zijn betekenisloos: zet je branded search uit, dan verlies je waarschijnlijk weinig (klanten vinden je organisch); zet je een merkcampagne uit, dan zakt je baseline langzaam weg, ook al was de geattribueerde ROAS laag of onmeetbaar.
+
+## 3.4 Bewijs uit de praktijk: wat lift-studies ons leerden
+
+Een bekend grootschalig experiment zette branded search volledig uit in een deel van de markt: de omzet bleef vrijwel gelijk, omdat klanten simpelweg op het organische resultaat klikten. De incrementele waarde bleek dicht bij nul te liggen, terwijl attributie er jarenlang een prachtig rendement aan had toegeschreven. De les is niet "zet branded search altijd uit" — resultaten zijn contextafhankelijk — maar: geloof geen geattribueerd getal zonder je af te vragen wat het contrafeit is.
+
+## 3.5 Waarom walled gardens het probleem verergeren
+
+Elk platform is een **walled garden** die zijn eigen prestaties meet, met eigen definities en eigen belang bij een gunstige uitkomst. Ziet één klant zowel een Meta-advertentie als een Google-zoekresultaat, dan claimen beide platforms dezelfde conversie — **dubbeltelling**. De som van alle platformclaims overstijgt daardoor vaak ruim de werkelijke omzet. Zolang elk platform binnen zijn eigen muren meet, ontbreekt een onafhankelijke scheidsrechter die van bovenaf naar het geheel kijkt, en die de bijdragen dwingt om op te tellen tot precies de werkelijke omzet.
+
+## 3.6 Van attributieprobleem naar MMM: de brug
+
+MMM pakt incrementaliteit aan via drie principes: het benut **variatie in de tijd** in plaats van individuele tracking, het modelleert de **baseline expliciet**, en het neemt **controlevariabelen** mee om te voorkomen dat media de eer krijgt voor wat eigenlijk seizoen of prijs was. Wees hierbij eerlijk over de grens: MMM benadert het contrafeit, het meet het niet rechtstreeks zoals een experiment. Het is de best beschikbare, onafhankelijke schatting — sterker wanneer verankerd in echte experimenten (hoofdstuk 33). De vaardigheid die dit alles onderbouwt — oorzaak en gevolg scheiden in observationele data — is het onderwerp van het volgende hoofdstuk.
+
+---
+
+# Hoofdstuk 4 — Causaal denken voor analisten
+
+> **Deel I — Het fundament: waarom Media Mix Modeling?**
+> Moeilijkheidsgraad: Gemiddeld · Voorkennis: hoofdstuk 1, 2 en 3
+
+## Waar dit hoofdstuk over gaat
+
+Je kunt alle statistiek van dit boek foutloos beheersen en toch een waardeloos model bouwen — een regressie geeft altijd een uitkomst, ongeacht of die ergens op slaat. Dit hoofdstuk behandelt de belangrijkste gereedschapskist van het boek: causaal denken. MMM is in de kern toegepaste causale inferentie op observationele data.
+
+**Na dit hoofdstuk kun je:**
+- met concrete voorbeelden uitleggen waarom correlatie geen causaliteit is;
+- een confounder, mediator en collider herkennen in een marketingsituatie;
+- een eenvoudig causaal diagram tekenen en gebruiken om modelkeuzes te onderbouwen;
+- beoordelen welke variabelen in een MMM thuishoren en welke je moet weglaten.
+
+## 4.1 Correlatie is geen causaliteit — maar wat dan wel?
+
+IJsverkoop en verdrinkingen stijgen samen in de zomer, zonder dat het ene het andere veroorzaakt — warm weer drijft beide aan. Ditzelfde mechanisme duikt in marketingdata voortdurend op: televisie-inzet en omzet pieken beide rond Sinterklaas, maar het seizoen stuurt beide aan, niet noodzakelijk televisie de omzet. Het **contrafeitelijke raamwerk** dwingt tot precisie: het causale effect is het verschil tussen wat gebeurde en wat gebeurd zou zijn zonder de handeling, met "al het overige gelijk" — en dat laatste is in de praktijk nooit vanzelfsprekend.
+
+## 4.2 Confounders: de verborgen derde factor
+
+Een **confounder** beïnvloedt zowel je marketinginzet als je omzet — seizoen, promoties, productlanceringen, economische omstandigheden en concurrentiedruk zijn de klassieke verdachten. Je herkent een confounder aan het patroon: twee pijlen vanuit dezelfde bron, één naar inzet, één naar omzet. Marketeers plannen budget slim — meer inzet wanneer de vraag toch al hoog is — en precies die slimheid bakt een vertekening in de ruwe data. De oplossing: neem confounders op als controlevariabele, zodat het model media niet de eer geeft die eigenlijk het seizoen toekomt.
+
+## 4.3 Causale diagrammen tekenen en lezen
+
+Een **causaal diagram** (DAG) is een tekening met bolletjes (variabelen) en pijlen (invloed) die je dwingt je aannames expliciet te maken. Voor een simpele situatie met seizoen, TV-inzet en omzet: seizoen stuurt beide pijlen naar TV-inzet en omzet, TV-inzet stuurt een pijl naar omzet. De vuistregel: corrigeer voor elke variabele die een pijl uitstuurt naar zowel je marketinginzet als je omzet — dat blokkeert het vervuilende pad en laat het pad dat je wilt meten ongemoeid.
+
+## 4.4 Mediators en colliders: wanneer corrigeren juist fout is
+
+Niet elke variabele hoort in je model, en "gooi alles erin" is gevaarlijk voor causale vragen. Een **mediator** ligt op het pad tússen inzet en omzet — websiteverkeer tussen display-inzet en omzet, bijvoorbeeld. Corrigeer je daarvoor, dan sluit je precies het pad af waarlangs het effect loopt, en concludeer je ten onrechte dat het kanaal niets doet. Een **collider** ontvangt pijlen van twee andere variabelen; conditioneren erop creëert een schijnverband tussen die twee, ook als ze in werkelijkheid niets met elkaar te maken hebben. De beslisregel: confounder (stuurt naar inzet én omzet) → wél opnemen; mediator (tussenschakel) en collider (ontvangt van twee kanten) → niet opnemen, niet op filteren.
+
+## 4.5 De hiërarchie van bewijs: van anekdote tot experiment
+
+Bewijskracht kent een rangorde: anekdote, correlatie, observationeel model (MMM), natuurlijk experiment, en gerandomiseerd experiment als gouden standaard — randomisatie neemt in één klap alle confounders weg, bekend en onbekend. MMM staat op trede drie: sterker dan losse correlatie, zwakker dan een experiment, maar praktisch schaalbaar op de data die een bedrijf al heeft. MMM en experimenten sluiten elkaar niet uit — via **kalibratie** (hoofdstuk 33) versterken ze elkaar.
+
+## 4.6 Identificatie: wanneer kún je een effect eigenlijk schatten?
+
+Bewegen twee kanalen altijd synchroon — altijd samen aan, samen uit — dan is hun effect **niet identificeerbaar**: geen hoeveelheid data kan ze uit elkaar trekken, simpelweg omdat de informatie om dat te doen nooit heeft bestaan. Zonder variatie in inzet valt niets te leren over het effect van die inzet. Dit geeft je een concreet, waardevol advies richting klanten: wil je een kanaal echt kunnen meten, zorg dan voor bewuste variatie in de inzet.
+
+## 4.7 De causale checklist voor ieder MMM-project
+
+Vijf vragen doorloop je bij elk nieuw project, het liefst vóór je één regel code schrijft: welke confounders zijn er? Wat is de causale structuur (de DAG)? Waar zit de variatie? Welke effecten zijn identificeerbaar? En welke aannames maak ik, en durf ik ze hardop uit te spreken? Een model is nooit beter dan het causale denken dat eraan voorafging — de rekenkracht van Bayesiaanse statistiek en PyMC, die je vanaf deel IV leert, maakt je beter in het uitrekenen van een model, niet automatisch in het bouwen van het júiste model.
 # DEEL II — MARKETING: HET DOMEIN BEGRIJPEN
 
 ---
