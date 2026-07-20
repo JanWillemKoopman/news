@@ -8,8 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
 import { ErrorNotice, StatusBadge } from "@/components/ui";
 import { humanizeError } from "@/lib/humanizeMessage";
-import { postJson } from "@/lib/fetchJson";
+import { fetchJson, postJson } from "@/lib/fetchJson";
 import { QualityReportView } from "@/components/QualityReportView";
+import { SubStep, type SubStepState } from "@/components/SubStep";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { extractNumericValues } from "@/lib/eda";
 import { computeDataHealth } from "@/lib/dataHealth";
@@ -296,20 +297,13 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
     setMsg("De AI stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
     const activity = beginActivity("De AI bereidt de data automatisch voor — dit kan enkele minuten duren…");
     try {
-      const res = await fetch("/api/prepare-auto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: projectId }),
-      });
-      const data = await res.json().catch(() => ({}));
+      const res = await postJson<{ message?: string }>("/api/prepare-auto", { project_id: projectId });
       if (!res.ok) {
-        setMsg(humanizeError(data.error, "Automatisch voorbereiden is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
+        setMsg(humanizeError(res.error, "Automatisch voorbereiden is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
       } else {
-        setMsg(data.message ?? "Klaar.");
+        setMsg(res.data.message ?? "Klaar.");
         router.refresh();
       }
-    } catch {
-      setMsg("Verbinding mislukt — probeer het opnieuw of werk via de chat.");
     } finally {
       activity.end();
       setBusy(false);
@@ -503,14 +497,10 @@ export function DataPrepSection({
 
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/datasets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, recipe }),
-    });
+    const res = await postJson("/api/datasets", { project_id: projectId, recipe });
     setBusy(false);
     if (!res.ok) {
-      setError(humanizeError((await res.json().catch(() => ({}))).error, "Kon de voorbereiding niet starten.").text);
+      setError(humanizeError(res.error, "Kon de voorbereiding niet starten.").text);
       return;
     }
     router.refresh();
@@ -520,10 +510,10 @@ export function DataPrepSection({
     if (!dataset) return;
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/datasets/${dataset.id}/approve`, { method: "POST" });
+    const res = await fetchJson(`/api/datasets/${dataset.id}/approve`, { method: "POST" });
     setBusy(false);
     if (!res.ok) {
-      setError(humanizeError((await res.json().catch(() => ({}))).error, "Goedkeuren is niet gelukt — probeer het opnieuw.").text);
+      setError(humanizeError(res.error, "Goedkeuren is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();
@@ -540,12 +530,44 @@ export function DataPrepSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetBusy]);
 
+  // Substap-statussen: één duidelijke lijn — samenvoegen (2b) -> controleren (2c) ->
+  // goedkeuren (2d). De actieve substap klapt vanzelf open; klaar/te-doen klapt in.
+  const mergeState: SubStepState =
+    dataset?.status === "failed"
+      ? "attention"
+      : dataset?.status === "prepared" || dataset?.status === "approved"
+        ? "done"
+        : "active";
+  const reviewState: SubStepState =
+    dataset?.status === "failed"
+      ? "attention"
+      : dataset?.status === "approved"
+        ? "done"
+        : dataset?.status === "prepared"
+          ? "active"
+          : "todo";
+  const approveState: SubStepState =
+    dataset?.status === "approved" ? "done" : dataset?.status === "prepared" ? "active" : "todo";
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {sources.length === 0 ? (
-        <p className="text-sm text-fg-muted">Upload eerst bestanden hierboven om ze te kunnen samenvoegen.</p>
+        <p className="text-sm text-fg-muted">Upload eerst bestanden bij stap 1 om ze te kunnen samenvoegen.</p>
       ) : (
         <>
+          <SubStep
+            label="2b"
+            title="Voeg samen tot één modeltabel"
+            state={mergeState}
+            summary={
+              datasetBusy
+                ? "Wordt samengevoegd en gecontroleerd…"
+                : mergeState === "done"
+                  ? "Samengevoegd — controleer het resultaat bij 2c"
+                  : "Laat de AI het doen, of wijs zelf rollen toe"
+            }
+          >
+            <div className="space-y-4">
           <AutoPrepareButton projectId={projectId} disabled={datasetBusy} />
 
           {stagedRecipe != null && (
@@ -741,18 +763,17 @@ export function DataPrepSection({
                                         return;
                                       }
                                       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-                                      void fetch("/api/business-context", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ project_id: projectId, kpi_margin: Math.round(avg * 100) / 100 }),
-                                      }).then(async (res) => {
+                                      void postJson("/api/business-context", {
+                                        project_id: projectId,
+                                        kpi_margin: Math.round(avg * 100) / 100,
+                                      }).then((res) => {
                                         if (res.ok) {
                                           setMarginMsg(
                                             `Gemiddelde van “${col.name}” overgenomen als marge per verkocht product: €${(Math.round(avg * 100) / 100).toLocaleString("nl-NL")}. Zichtbaar in het dashboard (ROI) en aanpasbaar bij stap 3.`,
                                           );
                                           router.refresh();
                                         } else {
-                                          setMarginMsg((await res.json().catch(() => ({}))).error ?? "Marge overnemen is niet gelukt.");
+                                          setMarginMsg(res.error ?? "Marge overnemen is niet gelukt.");
                                         }
                                       });
                                       return;
@@ -923,11 +944,6 @@ export function DataPrepSection({
             </div>
           </details>
 
-          <DeepInspectionButton
-            projectId={projectId}
-            scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
-          />
-
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             onClick={submit}
@@ -938,51 +954,98 @@ export function DataPrepSection({
           </button>
             </div>
           </details>
-        </>
-      )}
 
-      {dataset && (
-        <div className="space-y-4 border-t border-border pt-4">
-          <div className="flex items-center gap-3">
-            <StatusBadge status={mapDatasetStatus(dataset.status)} />
-            {dataset.n_weeks != null && dataset.window_start && dataset.window_end && (
+              <DeepInspectionButton
+                projectId={projectId}
+                scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
+              />
+            </div>
+          </SubStep>
+
+          <SubStep
+            label="2c"
+            title="Controleer het resultaat"
+            state={reviewState}
+            summary={
+              dataset
+                ? dataset.n_weeks != null && dataset.window_start && dataset.window_end
+                  ? `${dataset.window_start} t/m ${dataset.window_end} (${dataset.n_weeks} weken)`
+                  : undefined
+                : "Beschikbaar zodra de samenvoeging (2b) klaar is"
+            }
+          >
+            {!dataset ? (
               <p className="text-sm text-fg-muted">
-                {dataset.window_start} t/m {dataset.window_end} ({dataset.n_weeks} weken)
+                Nog geen samengevoegde dataset. Rond eerst substap 2b af — daarna zie je hier het
+                kwaliteitsrapport, de gezondheidsmeter en een voorbeeld van de tabel.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={mapDatasetStatus(dataset.status)} />
+                  {dataset.n_weeks != null && dataset.window_start && dataset.window_end && (
+                    <p className="text-sm text-fg-muted">
+                      {dataset.window_start} t/m {dataset.window_end} ({dataset.n_weeks} weken)
+                    </p>
+                  )}
+                </div>
+
+                {dataset.status === "failed" && (
+                  <ErrorNotice
+                    raw={dataset.error}
+                    fallback="Het samenvoegen is niet gelukt. Controleer de bestanden of vraag de AI in de chat wat er misging."
+                  />
+                )}
+
+                <DataHealthMeter dataset={dataset} />
+
+                {(dataset.status === "prepared" || dataset.status === "approved") && (
+                  <ColumnNotesEditor dataset={dataset} />
+                )}
+
+                {dataset.quality && <QualityReportView quality={dataset.quality} />}
+                {dataset.preview && <DatasetPreviewTable preview={dataset.preview} />}
+              </div>
+            )}
+          </SubStep>
+
+          <SubStep
+            label="2d"
+            title="Keur goed als definitieve dataset"
+            state={approveState}
+            summary={
+              approveState === "done"
+                ? "Goedgekeurd — door naar stap 3 (model configureren)"
+                : approveState === "active"
+                  ? "Alles gecontroleerd? Dan is dit de laatste klik van deze stap"
+                  : "Beschikbaar zodra er een gecontroleerd resultaat is"
+            }
+          >
+            {dataset?.status === "prepared" ? (
+              <div className="space-y-2">
+                <p className="text-sm text-fg-muted">
+                  Met goedkeuren maak je deze tabel het definitieve bestand waarop het model gaat
+                  rekenen. Je kunt daarna altijd nog opnieuw samenvoegen.
+                </p>
+                <button
+                  onClick={approve}
+                  disabled={busy}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busy ? "Bezig…" : "Goedkeuren als definitieve dataset"}
+                </button>
+              </div>
+            ) : dataset?.status === "approved" ? (
+              <p className="text-sm text-fg-muted">
+                Deze dataset is goedgekeurd en is het definitieve bestand voor de modelstap (stap 3).
+              </p>
+            ) : (
+              <p className="text-sm text-fg-muted">
+                Eerst samenvoegen (2b) en controleren (2c) — daarna keur je hier het resultaat goed.
               </p>
             )}
-          </div>
-
-          {dataset.status === "failed" && (
-            <ErrorNotice
-              raw={dataset.error}
-              fallback="Het samenvoegen is niet gelukt. Controleer de bestanden of vraag de AI in de chat wat er misging."
-            />
-          )}
-
-          <DataHealthMeter dataset={dataset} />
-
-          {(dataset.status === "prepared" || dataset.status === "approved") && (
-            <ColumnNotesEditor dataset={dataset} />
-          )}
-
-          {dataset.quality && <QualityReportView quality={dataset.quality} />}
-          {dataset.preview && <DatasetPreviewTable preview={dataset.preview} />}
-
-          {dataset.status === "prepared" && (
-            <button
-              onClick={approve}
-              disabled={busy}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {busy ? "Bezig…" : "Goedkeuren als definitieve dataset"}
-            </button>
-          )}
-          {dataset.status === "approved" && (
-            <p className="text-sm text-fg-muted">
-              Deze dataset is goedgekeurd en is het definitieve bestand voor de modelstap hieronder.
-            </p>
-          )}
-        </div>
+          </SubStep>
+        </>
       )}
     </div>
   );
@@ -1013,19 +1076,9 @@ function ColumnNotesEditor({ dataset }: { dataset: Dataset }) {
   async function save() {
     setBusy(true);
     setMsg(null);
-    try {
-      const res = await fetch(`/api/datasets/${dataset.id}/column-notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
-      if (!res.ok) setMsg((await res.json().catch(() => ({}))).error ?? "Opslaan mislukt.");
-      else setMsg("Notities opgeslagen — de AI leest ze mee bij elk volgend voorstel.");
-    } catch {
-      setMsg("Verbinding mislukt — probeer het opnieuw.");
-    } finally {
-      setBusy(false);
-    }
+    const res = await postJson(`/api/datasets/${dataset.id}/column-notes`, { notes });
+    setMsg(res.ok ? "Notities opgeslagen — de AI leest ze mee bij elk volgend voorstel." : (res.error ?? "Opslaan mislukt."));
+    setBusy(false);
   }
 
   return (

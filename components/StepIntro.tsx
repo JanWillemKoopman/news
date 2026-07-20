@@ -8,16 +8,16 @@ const STEP_INTROS: Record<string, { what: string; why: string }> = {
     why: "Bij elke CSV draaien automatisch een kolom-classificatie en een statistisch profiel — de AI start daardoor met een voorsprong.",
   },
   dataprep: {
-    what: "Van losse bestanden naar één schone, wekelijkse tabel (de definitieve dataset): de AI stelt de samenvoeging voor, jij controleert en keurt goed.",
-    why: "Verken desgewenst eerst de data (uitklapbaar paneel bovenaan), en leg per kolom vast wat er zakelijk achter zit — dat maakt elk AI-voorstel beter.",
+    what: "Van losse bestanden naar één schone, wekelijkse tabel (de definitieve dataset) in vier substappen: verken (2a, optioneel), voeg samen (2b), controleer (2c) en keur goed (2d).",
+    why: "Werk de substappen van boven naar beneden af — de actieve substap klapt vanzelf open. De AI stelt de samenvoeging voor; jij controleert en keurt goed.",
   },
   config: {
-    what: "Vertel eerst wat je over de klant weet (zakelijke context), en vertaal dat naar modelinstellingen: kanaaltypes, na-ijl (adstock), saturatie, seizoen en het ruismodel.",
+    what: "Twee substappen: leg vast wat je over de klant weet (3a, zakelijke context) en vertaal dat naar modelinstellingen en de startknop van de berekening (3b).",
     why: "Zakelijke context is de grootste hefboom van het model — de AI gebruikt elk vastgelegd feit in zijn voorstellen. Eerste berekening: instellingen op standaard en preset 'Snel'.",
   },
   run: {
-    what: "Volg hier de lopende berekening (fase, verstreken tijd, verwachte duur); zodra hij klaar is verschijnt op dezelfde plek het resultaat: kwaliteitscontrole, bijdragen en ROAS per kanaal, en het budgetadvies.",
-    why: "Zodra een berekening klaar is of faalt, meldt de AI zich vanzelf in de chat. Vertrouw je de uitkomst? Dan is publiceren naar het klantdashboard de afsluitende stap.",
+    what: "Twee substappen: volg de lopende berekening (4a — fase, verstreken tijd, verwachte duur) en beoordeel daarna het resultaat en publiceer naar het klantdashboard (4b).",
+    why: "Zodra een berekening klaar is of faalt, meldt de AI zich vanzelf in de chat. Vertrouw je de uitkomst? Dan is publiceren de afsluitende klik van het hele proces.",
   },
 };
 

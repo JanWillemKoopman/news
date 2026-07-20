@@ -16,6 +16,7 @@ import { StepIntro } from "@/components/StepIntro";
 import { ChatDock, ChatDockProvider, ChatMain } from "@/components/ChatDock";
 import { WizardChatProvider } from "@/components/WizardChatContext";
 import { PipelineShell, PipelineStep } from "@/components/PipelineShell";
+import { SubStep, type SubStepState } from "@/components/SubStep";
 import { computePipelineSteps } from "@/lib/pipelineStatus";
 import { getHandleidingMarkdown } from "@/lib/handleiding";
 import type { Dataset, Job, ModelRun, Project, SourceFile } from "@/lib/types";
@@ -96,6 +97,38 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     runs: runsWithAnalysis,
   });
 
+  // Substap-statussen: elke stap leest als een genummerd recept (1a, 2a, 3a, …) zodat
+  // de volgorde van handelingen nooit een raadsel is. Live bijgewerkte substappen
+  // (2b-2d in DataPrepSection) berekenen hun eigen status client-side; deze hier komen
+  // rechtstreeks uit de server-data en verversen mee met router.refresh().
+  const sourceList = (sources ?? []) as SourceFile[];
+  const jobList = (jobs ?? []) as Job[];
+  const fitJobs = jobList.filter((j) => j.type === "fit" || j.type === "fit_hierarchical");
+  const latestFitJob = fitJobs[0] ?? null;
+  const datasetApproved = latestDataset?.status === "approved";
+
+  const uploadState: SubStepState = sourceList.length > 0 ? "done" : "active";
+  const edaState: SubStepState = p.eda_completed_at != null ? "done" : "todo";
+  const contextState: SubStepState =
+    businessIndustry || businessNotes.length > 0 || p.kpi_margin != null
+      ? "done"
+      : datasetApproved
+        ? "active"
+        : "todo";
+  const configState: SubStepState = fitJobs.length > 0 ? "done" : datasetApproved ? "active" : "todo";
+  const jobState: SubStepState = !latestFitJob
+    ? "todo"
+    : latestFitJob.status === "failed"
+      ? "attention"
+      : latestFitJob.status === "succeeded"
+        ? "done"
+        : "active";
+  const publishState: SubStepState = runsWithAnalysis[0]?.is_published
+    ? "done"
+    : runsWithAnalysis.length > 0
+      ? "active"
+      : "todo";
+
   return (
     <>
       <TopBar email={viewer.email} guideMarkdown={getHandleidingMarkdown()} />
@@ -118,53 +151,110 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                 <PipelineShell steps={pipelineSteps}>
                   <PipelineStep id="data" number={1}>
                     <StepIntro step="data" />
-                    <SourceUpload projectId={p.id} sources={(sources ?? []) as SourceFile[]} />
+                    <SubStep
+                      label="1a"
+                      title="Upload je bestanden (CSV of Excel)"
+                      state={uploadState}
+                      summary={
+                        sourceList.length > 0
+                          ? `${sourceList.length} bestand${sourceList.length === 1 ? "" : "en"} geüpload — klopt de lijst? Door naar stap 2`
+                          : "KPI- en spend-bestanden van de klant, één bestand per bron"
+                      }
+                    >
+                      <SourceUpload projectId={p.id} sources={sourceList} />
+                    </SubStep>
                   </PipelineStep>
 
                   <PipelineStep id="dataprep" number={2}>
                     <StepIntro step="dataprep" />
-                    {/* Verkennen (EDA) is optioneel en hoort bij het beoordelen van je
-                        data — daarom een uitklapbaar paneel binnen deze stap, geen eigen
-                        stap meer in de pijplijn. */}
-                    <details className="mb-4 rounded-[10px] border border-border p-3">
-                      <summary className="cursor-pointer select-none text-sm font-medium text-fg">
-                        Data verkennen (grafieken, kolomstatistieken & correlaties)
-                        <span className="ml-2 font-normal text-fg-muted">— optioneel</span>
-                      </summary>
-                      <div className="mt-3">
+                    <div className="space-y-3">
+                      <SubStep
+                        label="2a"
+                        title="Verken de data (grafieken, statistieken & correlaties)"
+                        state={edaState}
+                        optional
+                        summary="Handig vóór het samenvoegen: zie verloop, gaten en samenhang per kolom"
+                      >
                         <EdaSection
-                          sources={(sources ?? []) as SourceFile[]}
+                          sources={sourceList}
                           projectId={p.id}
                           completed={p.eda_completed_at != null}
                         />
-                      </div>
-                    </details>
-                    <DataPrepSection
-                      projectId={p.id}
-                      sources={(sources ?? []) as SourceFile[]}
-                      initialDataset={latestDataset}
-                    />
+                      </SubStep>
+                      <DataPrepSection
+                        projectId={p.id}
+                        sources={sourceList}
+                        initialDataset={latestDataset}
+                      />
+                    </div>
                   </PipelineStep>
 
                   <PipelineStep id="config" number={3}>
                     <StepIntro step="config" />
-                    <div className="mb-4">
-                      <BusinessContextPanel projectId={p.id} industry={businessIndustry} notes={businessNotes} kpiMargin={p.kpi_margin ?? null} />
+                    <div className="space-y-3">
+                      <SubStep
+                        label="3a"
+                        title="Vertel de zakelijke context"
+                        state={contextState}
+                        optional
+                        summary="Branche, marge en bijzonderheden — de AI weegt dit mee in elk voorstel"
+                      >
+                        <BusinessContextPanel projectId={p.id} industry={businessIndustry} notes={businessNotes} kpiMargin={p.kpi_margin ?? null} />
+                      </SubStep>
+                      <SubStep
+                        label="3b"
+                        title="Stel het model in en start de berekening"
+                        state={configState}
+                        summary={
+                          fitJobs.length > 0
+                            ? `${fitJobs.length} berekening${fitJobs.length === 1 ? "" : "en"} gestart — volg de voortgang bij stap 4`
+                            : datasetApproved
+                              ? "Kies KPI en kanalen (of laat de AI een configuratie voorstellen)"
+                              : "Beschikbaar zodra de dataset is goedgekeurd (stap 2d)"
+                        }
+                      >
+                        <ModelConfigForm
+                          projectId={p.id}
+                          sources={sourceList}
+                          approvedDataset={datasetApproved ? latestDataset : null}
+                        />
+                      </SubStep>
                     </div>
-                    <ModelConfigForm
-                      projectId={p.id}
-                      sources={(sources ?? []) as SourceFile[]}
-                      approvedDataset={latestDataset?.status === "approved" ? latestDataset : null}
-                    />
                   </PipelineStep>
 
                   <PipelineStep id="run" number={4}>
                     <StepIntro step="run" />
-                    <div className="space-y-5">
-                      <JobList projectId={p.id} initialJobs={(jobs ?? []) as Job[]} />
-                      <div className="border-t border-border pt-5">
+                    <div className="space-y-3">
+                      <SubStep
+                        label="4a"
+                        title="Volg de berekening"
+                        state={jobState}
+                        summary={
+                          !latestFitJob
+                            ? "Beschikbaar zodra je bij stap 3 een berekening start"
+                            : latestFitJob.status === "running" || latestFitJob.status === "queued"
+                              ? "De berekening loopt — dit duurt doorgaans 3 à 5 minuten"
+                              : latestFitJob.status === "failed"
+                                ? "De laatste berekening is niet gelukt — bekijk de melding hieronder"
+                                : "Laatste berekening geslaagd"
+                        }
+                      >
+                        <JobList projectId={p.id} initialJobs={jobList} />
+                      </SubStep>
+                      <SubStep
+                        label="4b"
+                        title="Beoordeel het resultaat en publiceer"
+                        state={publishState}
+                        summary={
+                          runsWithAnalysis[0]?.is_published
+                            ? "Gepubliceerd naar het klantdashboard"
+                            : runsWithAnalysis.length > 0
+                              ? "Controleer de kwaliteitspoort en publiceer naar het klantdashboard"
+                              : "Beschikbaar zodra een berekening is geslaagd"
+                        }
+                      >
                         <ResultsView projectId={p.id} runs={runsWithAnalysis} jobConfigs={jobConfigById} kpiMargin={p.kpi_margin ?? null} />
-                      </div>
+                      </SubStep>
                     </div>
                   </PipelineStep>
                 </PipelineShell>

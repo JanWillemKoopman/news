@@ -8,6 +8,7 @@ import { RunHistory } from "@/components/RunHistory";
 import { SummaryView } from "@/components/SummaryView";
 import { StatusBadge } from "@/components/ui";
 import { humanizeError } from "@/lib/humanizeMessage";
+import { postJson } from "@/lib/fetchJson";
 import { isHierSummary, type ClientSummary, type JobConfig, type ModelRun, type RunAnalysis } from "@/lib/types";
 
 export function ResultsView({
@@ -55,14 +56,10 @@ export function ResultsView({
   async function publish() {
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/projects/${projectId}/publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model_run_id: viewedRun.id }),
-    });
+    const res = await postJson(`/api/projects/${projectId}/publish`, { model_run_id: viewedRun.id });
     setBusy(false);
     if (!res.ok) {
-      setError(humanizeError((await res.json().catch(() => ({}))).error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
+      setError(humanizeError(res.error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();
@@ -71,18 +68,16 @@ export function ResultsView({
   async function generateAnalysis() {
     setAnalyzing(true);
     setAnalysisError(null);
-    const res = await fetch("/api/analysis", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, model_run_id: latestRun.id }),
+    const res = await postJson<{ analysis: RunAnalysis }>("/api/analysis", {
+      project_id: projectId,
+      model_run_id: latestRun.id,
     });
     setAnalyzing(false);
-    if (!res.ok) {
-      setAnalysisError(humanizeError((await res.json().catch(() => ({}))).error, "Het genereren van de analyse is niet gelukt — probeer het opnieuw.").text);
+    if (!res.ok || !res.data.analysis) {
+      setAnalysisError(humanizeError(res.error, "Het genereren van de analyse is niet gelukt — probeer het opnieuw.").text);
       return;
     }
-    const { analysis: generated } = (await res.json()) as { analysis: RunAnalysis };
-    setAnalysis(generated);
+    setAnalysis(res.data.analysis);
     router.refresh();
   }
 
@@ -92,18 +87,16 @@ export function ResultsView({
   async function generateClientSummary() {
     setSummarizing(true);
     setSummaryError(null);
-    const res = await fetch("/api/client-summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, model_run_id: latestRun.id }),
+    const res = await postJson<{ client_summary: ClientSummary }>("/api/client-summary", {
+      project_id: projectId,
+      model_run_id: latestRun.id,
     });
     setSummarizing(false);
-    if (!res.ok) {
-      setSummaryError(humanizeError((await res.json().catch(() => ({}))).error, "Het schrijven van de samenvatting is niet gelukt — probeer het opnieuw.").text);
+    if (!res.ok || !res.data.client_summary) {
+      setSummaryError(humanizeError(res.error, "Het schrijven van de samenvatting is niet gelukt — probeer het opnieuw.").text);
       return;
     }
-    const { client_summary } = (await res.json()) as { client_summary: ClientSummary };
-    setClientSummary(client_summary);
+    setClientSummary(res.data.client_summary);
     router.refresh();
   }
 
