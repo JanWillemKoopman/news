@@ -43,29 +43,38 @@ export function DatasetPreviewTable({ preview }: { preview: DatasetPreview }) {
         </table>
       </div>
 
-      {preview.head.length > 0 && (
-        <div className="overflow-x-auto">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-faint">Eerste weken</p>
-          <table className="w-full min-w-[520px] text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-fg-faint">
-                {Object.keys(preview.head[0]).map((k) => (
-                  <th key={k} className="py-1.5 pr-3 font-medium">{k}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {preview.head.map((row, i) => (
-                <tr key={i}>
-                  {Object.values(row).map((v, j) => (
-                    <td key={j} className="py-1.5 pr-3 text-fg-muted">{v ?? "—"}</td>
-                  ))}
-                </tr>
+      <SampleTable title="Eerste weken" rows={preview.head} />
+      {/* De laatste weken zijn minstens zo belangrijk als de eerste: recente exports zijn
+          vaak onvolledig (deelweken, nog niet bijgewerkte kanalen) en juist dáár kijkt
+          niemand naar in een head-sample. */}
+      <SampleTable title="Laatste weken" rows={preview.tail ?? []} />
+    </div>
+  );
+}
+
+function SampleTable({ title, rows }: { title: string; rows: Record<string, string | number | null>[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="overflow-x-auto">
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-faint">{title}</p>
+      <table className="w-full min-w-[520px] text-xs">
+        <thead>
+          <tr className="border-b border-border text-left text-fg-faint">
+            {Object.keys(rows[0]).map((k) => (
+              <th key={k} className="py-1.5 pr-3 font-medium">{k}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((row, i) => (
+            <tr key={i}>
+              {Object.values(row).map((v, j) => (
+                <td key={j} className="py-1.5 pr-3 text-fg-muted">{v ?? "—"}</td>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

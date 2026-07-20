@@ -21,6 +21,7 @@ only ever aggregated or zero-imputed within the window, never fabricated.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -52,6 +53,140 @@ class BuildResult:
 
     def columns_with_role(self, role: Role) -> list[str]:
         return [name for name, r in self.column_roles.items() if r is role]
+
+
+# Currency symbols and (non-breaking) spaces stripped before locale-aware numeric parsing.
+_CURRENCY_CHARS = re.compile(r"[€$£\s ]")
+# "1.234,56" / "1234,56" — dot as thousands separator, comma as decimal (NL/EU exports).
+_NL_NUMBER = re.compile(r"^-?\d{1,3}(\.\d{3})+(,\d+)?$|^-?\d+(,\d+)?$")
+# "1,234.56" — comma as thousands separator (EN exports).
+_EN_NUMBER = re.compile(r"^-?\d{1,3}(,\d{3})+(\.\d+)?$")
+
+
+def _coerce_numeric(series: pd.Series, spec_name: str, col_name: str, report: QualityReport) -> pd.Series:
+    """Parse a value column to numbers, understanding EU/NL currency formatting.
+
+    Dutch spend exports arrive as "€ 1.234,56"; plain ``pd.to_numeric`` turns those into
+    NaN, which the window imputation later silently converts to 0 spend — the single most
+    dangerous silent failure this pipeline had. Strategy: try plain parsing first; only
+    for columns where that leaves failures, strip currency symbols and detect the locale
+    from the failing values themselves. A locale reparse is accepted only when it makes
+    ≥80% of the non-empty values parseable, and it is reported (``currency_parsed``) so
+    the conversion is never invisible.
+    """
+    numeric = pd.to_numeric(series, errors="coerce")
+    if series.dtype.kind in "biufc":  # already numeric — nothing to detect
+        return numeric
+
+    raw = series.astype("string").str.strip()
+    nonempty = raw.notna() & (raw != "")
+    n_nonempty = int(nonempty.sum())
+    failed = nonempty & numeric.isna()
+    if n_nonempty == 0 or not failed.any():
+        return numeric
+
+    cleaned = raw.where(~nonempty, raw).str.replace(_CURRENCY_CHARS, "", regex=True)
+    failing_values = cleaned[failed]
+    nl_share = float(failing_values.str.match(_NL_NUMBER).fillna(False).mean())
+    en_share = float(failing_values.str.match(_EN_NUMBER).fillna(False).mean())
+
+    reparsed: pd.Series | None = None
+    style: str | None = None
+    if nl_share >= 0.8 and nl_share >= en_share:
+        # NL style must be applied to the WHOLE column: "1.234" is 1234 in an NL column,
+        # and plain to_numeric would have (mis)read it as 1.234 — per-column consistency
+        # beats keeping the accidental parse.
+        nl = cleaned.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
+        reparsed, style = pd.to_numeric(nl, errors="coerce"), "NL (1.234,56)"
+    elif en_share >= 0.8:
+        en = cleaned.str.replace(",", "", regex=False)
+        reparsed, style = pd.to_numeric(en, errors="coerce"), "EN (1,234.56)"
+    elif float(pd.to_numeric(cleaned, errors="coerce").notna().mean()) >= 0.8:
+        # Only currency symbols/spaces were in the way (e.g. "€ 1234.56").
+        reparsed, style = pd.to_numeric(cleaned, errors="coerce"), "valuta-notatie"
+
+    if reparsed is None:
+        return numeric
+    success = float(reparsed[nonempty].notna().mean())
+    plain_success = float(numeric[nonempty].notna().mean())
+    if success < 0.8 or success <= plain_success:
+        return numeric
+
+    example = str(raw[failed].iloc[0])
+    n_converted = int(failed.sum())
+    report.add(
+        "currency_parsed", Severity.INFO,
+        f"column {col_name!r} contains formatted numbers (e.g. {example!r}); parsed as "
+        f"{style} — check a few values in the preview to confirm the conversion",
+        source=spec_name, column=col_name, count=n_converted, example=example, style=style,
+    )
+    return reparsed
+
+
+def _flag_duplicate_dates(
+    spec: SourceSpec, dates: pd.Series, df: pd.DataFrame, report: QualityReport
+) -> None:
+    """Warn when a source has multiple *different* rows for the same date.
+
+    Fully-identical duplicate rows are already flagged separately; different rows on the
+    same date are the classic double-count trap (a total row next to detail rows, or an
+    export that repeats the last day). Aggregation will silently sum them, so the builder
+    must at least be told it happened.
+    """
+    if dates.empty:
+        return
+    dup_date_mask = dates.duplicated(keep=False)
+    if not dup_date_mask.any():
+        return
+    # Different-content rows only: drop rows that are complete duplicates of another row.
+    distinct = df.loc[dup_date_mask].drop_duplicates()
+    counts = dates.loc[distinct.index].value_counts()
+    conflicting = counts[counts > 1]
+    if conflicting.empty:
+        return
+    example = conflicting.index[0]
+    example_label = example.date().isoformat() if hasattr(example, "date") else str(example)
+    report.add(
+        "duplicate_dates_aggregated", Severity.WARNING,
+        f"{len(conflicting)} date(s) have multiple different rows (e.g. {example_label} "
+        f"with {int(conflicting.iloc[0])} rows); their values are summed — check for "
+        f"double counting (e.g. a total row next to detail rows)",
+        source=spec.name, count=int(conflicting.sum()), n_dates=len(conflicting),
+        example_date=example_label,
+    )
+
+
+def _flag_partial_edge_weeks(
+    spec: SourceSpec, week_of_row: pd.Series, report: QualityReport
+) -> None:
+    """Warn when the first/last ISO week of a sub-weekly source is only partially covered.
+
+    A daily export that starts on a Thursday or ends mid-week yields a first/last week
+    holding a fraction of the usual rows; summing it silently understates exactly the
+    most recent datapoint. Only meaningful for sources with multiple rows per week
+    (median rows/week ≥ 2) — a weekly file trivially has 1 row per week.
+    """
+    if week_of_row.empty:
+        return
+    per_week = week_of_row.value_counts().sort_index()
+    if len(per_week) < 3:
+        return
+    median_rows = float(per_week.iloc[1:-1].median())  # interior weeks set the norm
+    if median_rows < 2:
+        return
+    partial = []
+    for label, position in ((per_week.index[0], "first"), (per_week.index[-1], "last")):
+        if per_week.loc[label] < 0.6 * median_rows:
+            partial.append((position, label, int(per_week.loc[label])))
+    for position, label, n_rows in partial:
+        report.add(
+            "partial_edge_week", Severity.WARNING,
+            f"the {position} week ({label.date().isoformat()}) of source {spec.name!r} "
+            f"covers only {n_rows} row(s) where interior weeks have ~{median_rows:.0f}; "
+            f"its aggregated value will be understated — consider trimming this week",
+            source=spec.name, week=label.date().isoformat(), rows=n_rows,
+            median_rows=median_rows,
+        )
 
 
 def _prepare_source(
@@ -87,6 +222,9 @@ def _prepare_source(
     df = df.loc[keep].copy()
     df["_week"] = to_week_start(parsed.loc[keep])
 
+    _flag_duplicate_dates(spec, parsed.loc[keep], df.drop(columns=["_week"]), report)
+    _flag_partial_edge_weeks(spec, df["_week"], report)
+
     agg: dict[str, str] = {}
     roles: dict[str, Role] = {}
     fills: dict[str, str] = {}
@@ -98,7 +236,7 @@ def _prepare_source(
                 source=spec.name, column=col.name,
             )
             continue
-        numeric = pd.to_numeric(df[col.name], errors="coerce")
+        numeric = _coerce_numeric(df[col.name], spec.name, col.name, report)
         n_nan = int(numeric.isna().sum())
         if n_nan:
             report.add(
@@ -235,6 +373,99 @@ def _flag_kpi_outliers(data: pd.DataFrame, kpi_cols: list[str], report: QualityR
                 f"(values {values}); consider an event dummy for the specific week(s)",
                 column=col, weeks=weeks, values=values,
             )
+
+
+def _flag_degenerate_columns(
+    data: pd.DataFrame,
+    spend_cols: list[str],
+    kpi_cols: list[str],
+    control_cols: list[str],
+    report: QualityReport,
+) -> None:
+    """Warn on columns that break MMM assumptions: negative spend, all-zero channels and
+    constant columns.
+
+    Negative spend (refunds/credit corrections) makes adstock/saturation uninterpretable;
+    an all-zero channel inside the window burns parameters on a channel that never ran;
+    a constant KPI/control carries no information for the fit at all.
+    """
+    for col in spend_cols:
+        series = data[col]
+        negative = series < 0
+        if negative.any():
+            weeks = [ts.date().isoformat() for ts in data.index[negative.fillna(False)][:5]]
+            report.add(
+                "negative_spend", Severity.WARNING,
+                f"spend column {col!r} has {int(negative.sum())} negative week(s) "
+                f"(min {float(series.min()):.2f}, e.g. {weeks}); refunds/corrections break "
+                f"adstock — clip to 0 or net them out before modelling",
+                column=col, count=int(negative.sum()), weeks=weeks, min=float(series.min()),
+            )
+
+    for col in spend_cols:
+        series = data[col].fillna(0.0)
+        if len(series) > 0 and (series == 0).all():
+            report.add(
+                "all_zero_channel", Severity.WARNING,
+                f"spend column {col!r} is zero for the entire analysis window; the model "
+                f"cannot learn anything about this channel — remove it or check the merge",
+                column=col,
+            )
+
+    for col in kpi_cols + control_cols:
+        series = data[col].dropna()
+        if len(series) >= 2 and series.nunique() <= 1:
+            report.add(
+                "zero_variance_column", Severity.WARNING,
+                f"column {col!r} is constant over the whole window (value "
+                f"{float(series.iloc[0]):.4g}); it carries no information for the model",
+                column=col,
+            )
+
+
+# Weeks-per-channel thresholds for the over-parameterization guard: below _WPC_ERROR the
+# channels cannot be separated at all (an error that blocks the merge), below _WPC_WARN
+# the per-channel uncertainty will be very wide (a warning).
+_WPC_ERROR = 4.0
+_WPC_WARN = 8.0
+
+
+def _flag_over_parameterization(
+    n_weeks: int,
+    spend_cols: list[str],
+    kpi_cols: list[str],
+    control_cols: list[str],
+    report: QualityReport,
+) -> None:
+    """Guard against fitting more parameters than the data can support.
+
+    Every spend channel costs multiple parameters (effect + adstock + saturation); as a
+    rule of thumb an MMM needs ≥8 weeks per channel for usable per-channel estimates.
+    Only judged when the dataset actually carries a KPI — a build without a KPI can never
+    reach a fit, so the guard would only add noise there. This is the server-side twin of
+    the client-side readiness verdict in lib/dataHealth.ts.
+    """
+    n_channels = len(spend_cols)
+    if n_channels == 0 or n_weeks == 0 or not kpi_cols:
+        return
+    wpc = n_weeks / n_channels
+    if wpc < _WPC_ERROR:
+        report.add(
+            "too_many_parameters", Severity.ERROR,
+            f"{n_channels} channel(s) on {n_weeks} week(s) of data ({wpc:.1f} weeks per "
+            f"channel, plus {len(control_cols)} control(s)) — far too little data to "
+            f"separate the channels; add weeks or merge channels",
+            n_weeks=n_weeks, n_channels=n_channels, n_controls=len(control_cols),
+            weeks_per_channel=round(wpc, 2),
+        )
+    elif wpc < _WPC_WARN:
+        report.add(
+            "too_many_parameters", Severity.WARNING,
+            f"{n_channels} channel(s) on {n_weeks} week(s) of data ({wpc:.1f} weeks per "
+            f"channel) — expect wide per-channel uncertainty intervals",
+            n_weeks=n_weeks, n_channels=n_channels, n_controls=len(control_cols),
+            weeks_per_channel=round(wpc, 2),
+        )
 
 
 def _apply_event_dummies(
@@ -460,6 +691,15 @@ def build_master_dataset(
     _flag_near_identical(data, spend_cols, correlation_threshold, report)
     _flag_year_end_anomalies(data, kpi_cols, report)
     _flag_kpi_outliers(data, kpi_cols, report)
+    # Recompute control columns to include the just-added event dummies and features —
+    # they cost parameters too, so the over-parameterization guard must count them.
+    all_control_cols = [c for c, r in column_roles.items() if r is Role.CONTROL and c in data.columns]
+    # An all-zero event dummy is already flagged as event_dummy_outside_window; keep it
+    # out of the constant-column check so one mistake doesn't produce two warnings.
+    dummy_names = {d.name for d in (event_dummies or [])}
+    variance_check_cols = [c for c in all_control_cols if c not in dummy_names]
+    _flag_degenerate_columns(data, spend_cols, kpi_cols, variance_check_cols, report)
+    _flag_over_parameterization(len(data), spend_cols, kpi_cols, all_control_cols, report)
 
     # Sanity checks on the output contract itself.
     assert data.index.is_unique, "master index has duplicate weeks"

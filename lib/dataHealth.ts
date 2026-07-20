@@ -24,7 +24,28 @@ export function computeDataHealth(dataset: Dataset): DataHealth | null {
       reasons.push(`Maar ${nWeeks} weken data — de onzekerheidsmarges worden breed.`);
     } else if (nWeeks < 52) {
       score -= 10;
-      reasons.push(`${nWeeks} weken data — nog geen vol jaar, seizoenspatronen zijn lastiger te schatten.`);
+      reasons.push(`${nWeeks} weken data — nog geen vol jaar: het jaarseizoen is niet betrouwbaar te schatten.`);
+    }
+  }
+
+  // Klaar-voor-model: parameters vs weken. Elk spend-kanaal kost meerdere parameters
+  // (effect + adstock + saturatie); als vuistregel wil je >= 8 weken per kanaal, en
+  // onder de 4 is een fit statistisch zinloos — dat verdict hoort hier, vóór de
+  // gebruiker een berekening van minuten start.
+  const roles = dataset.column_roles ?? {};
+  const nChannels = Object.values(roles).filter((r) => r === "spend").length;
+  if (nWeeks != null && nChannels > 0) {
+    const weeksPerChannel = nWeeks / nChannels;
+    if (weeksPerChannel < 4) {
+      score -= 40;
+      reasons.push(
+        `${nChannels} kanalen op ${nWeeks} weken (${weeksPerChannel.toFixed(1)} wk/kanaal) — te weinig data om de kanalen uit elkaar te houden. Voeg weken toe of laat kanalen samenvoegen.`,
+      );
+    } else if (weeksPerChannel < 8) {
+      score -= 15;
+      reasons.push(
+        `${nChannels} kanalen op ${nWeeks} weken (${weeksPerChannel.toFixed(1)} wk/kanaal) — krap; verwacht brede onzekerheidsmarges per kanaal.`,
+      );
     }
   }
 

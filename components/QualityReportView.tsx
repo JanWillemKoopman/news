@@ -1,12 +1,14 @@
 "use client";
 
 import { useWizardChatOptional } from "@/components/WizardChatContext";
-import type { DatasetQuality } from "@/lib/types";
+import type { DatasetQuality, QualityIssue } from "@/lib/types";
 import { humanizeQualityMessage } from "@/lib/humanizeMessage";
+import { issueInfo } from "@/lib/qualityIssueRegistry";
 
-// Renders an ingestion QualityReport as sentences, not a wall of badges: errors/warnings
-// get the rose accent (they need attention), info stays neutral. Mirrors the philosophy
-// already used for the fit's quality gate banner in SummaryView.
+// Renders an ingestion QualityReport as actionable items, not a wall of sentences:
+// errors/warnings get the rose accent plus — via the issue registry — a "waarom boeit
+// dit"-uitleg and where possible a targeted chat action, so the user never has to guess
+// what to do with a finding. Unknown codes fall back to the bare (humanized) message.
 export function QualityReportView({ quality }: { quality: DatasetQuality | null }) {
   const chat = useWizardChatOptional();
   const issues = quality?.issues ?? [];
@@ -18,6 +20,33 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
   const warnings = issues.filter((i) => i.severity === "warning");
   const infos = issues.filter((i) => i.severity === "info");
 
+  function IssueItem({ issue, tone }: { issue: QualityIssue; tone: "error" | "warning" }) {
+    const info = issueInfo(issue.code);
+    return (
+      <li className="space-y-0.5">
+        <p className={tone === "error" ? "text-sm text-danger" : "text-sm text-fg-muted"}>
+          • {humanizeQualityMessage(issue.message)}
+        </p>
+        {info && (
+          <div className="pl-3 text-xs text-fg-faint">
+            <span>{info.explain}</span>{" "}
+            {info.action &&
+              (info.chatPrompt && chat ? (
+                <button
+                  onClick={() => chat.sendToChat(info.chatPrompt as string)}
+                  className="font-medium text-accent hover:underline"
+                >
+                  {info.action} →
+                </button>
+              ) : (
+                <span className="text-fg-muted">{info.action}</span>
+              ))}
+          </div>
+        )}
+      </li>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {errors.length > 0 && (
@@ -25,9 +54,9 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           <p className="text-sm font-medium text-danger">
             {errors.length} {errors.length === 1 ? "fout" : "fouten"} — dit blokkeert samenvoegen:
           </p>
-          <ul className="mt-1 space-y-1 text-sm text-danger">
+          <ul className="mt-1 space-y-1.5">
             {errors.map((issue, i) => (
-              <li key={i}>• {humanizeQualityMessage(issue.message)}</li>
+              <IssueItem key={i} issue={issue} tone="error" />
             ))}
           </ul>
         </div>
@@ -37,9 +66,9 @@ export function QualityReportView({ quality }: { quality: DatasetQuality | null 
           <p className="text-sm font-medium text-fg">
             {warnings.length} {warnings.length === 1 ? "waarschuwing" : "waarschuwingen"} — de moeite van het bekijken waard:
           </p>
-          <ul className="mt-1 space-y-1 text-sm text-fg-muted">
+          <ul className="mt-1 space-y-1.5">
             {warnings.map((issue, i) => (
-              <li key={i}>• {humanizeQualityMessage(issue.message)}</li>
+              <IssueItem key={i} issue={issue} tone="warning" />
             ))}
           </ul>
         </div>

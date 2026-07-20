@@ -12,10 +12,13 @@ import { fetchJson, postJson } from "@/lib/fetchJson";
 import { QualityReportView } from "@/components/QualityReportView";
 import { SubStep, type SubStepState } from "@/components/SubStep";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
+import { InspectionFindings } from "@/components/InspectionFindings";
 import { extractNumericValues } from "@/lib/eda";
 import { computeDataHealth } from "@/lib/dataHealth";
 import type {
+  AutoPrepareRound,
   ColumnRole,
+  DataInspection,
   Dataset,
   DatasetStatus,
   EventDummyConfig,
@@ -94,6 +97,36 @@ function mappingSuggestion(
   return regex ? { role: regex, confidence: "middel" } : null;
 }
 
+// De volledige AI-duiding van een kolom (betekenis + eenheid), voor transparantie in de
+// rollentabel: de gebruiker ziet niet alleen wélke rol de AI voorstelt, maar ook wat de
+// AI denkt dat de kolom betekent — en kan dat dus controleren.
+function mappingEntry(file: SourceFile, columnName: string) {
+  return file.mapping?.columns.find((c) => c.name === columnName) ?? null;
+}
+
+// Uitklapbare verantwoording van de AI-classificatie van één bestand: de redenering van
+// het model plus wat het over het bestand als geheel denkt (cadans, indeling, valuta).
+// Puur weergave van data die al bij de upload is verzameld — geen extra AI-call.
+function MappingExplainer({ file }: { file: SourceFile }) {
+  const m = file.mapping;
+  if (!m?.reasoning) return null;
+  return (
+    <details className="mb-2 rounded border border-border bg-surface-2 p-2 text-xs">
+      <summary className="cursor-pointer select-none font-medium text-fg-muted">
+        Hoe heeft de AI dit bestand gelezen?
+      </summary>
+      <div className="mt-2 space-y-1.5 text-fg-muted">
+        <p className="flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-surface px-2 py-0.5">cadans: {m.granularity}</span>
+          <span className="rounded-full bg-surface px-2 py-0.5">indeling: {m.layout}</span>
+          {m.currency && <span className="rounded-full bg-surface px-2 py-0.5">valuta: {m.currency}</span>}
+        </p>
+        <p>{m.reasoning}</p>
+      </div>
+    </details>
+  );
+}
+
 // Tiny inline sparkline (no axes/tooltip) so a builder can eyeball a column's shape while
 // assigning it a role, without leaving this table for the EDA step.
 function Sparkline({ values }: { values: number[] }) {
@@ -127,11 +160,17 @@ function DataHealthMeter({ dataset }: { dataset: Dataset }) {
       <div className="flex items-center gap-3">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
           <div
-            className={`h-full rounded-full ${health.band === "goed" ? "bg-success" : "bg-danger"}`}
+            className={`h-full rounded-full ${
+              health.band === "goed" ? "bg-success" : health.band === "redelijk" ? "bg-warn" : "bg-danger"
+            }`}
             style={{ width: `${health.score}%` }}
           />
         </div>
-        <p className={`flex-none text-sm font-medium ${health.band === "goed" ? "text-success" : "text-danger"}`}>
+        <p
+          className={`flex-none text-sm font-medium ${
+            health.band === "goed" ? "text-success" : health.band === "redelijk" ? "text-warn" : "text-danger"
+          }`}
+        >
           {health.band === "goed" ? "Gereed om te modelleren" : health.band === "redelijk" ? "Bruikbaar, met kanttekeningen" : "Nog niet klaar om te modelleren"}
         </p>
       </div>
@@ -291,13 +330,18 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
   const { beginActivity } = useWizardChat();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [rounds, setRounds] = useState<AutoPrepareRound[]>([]);
 
   async function run() {
     setBusy(true);
+    setRounds([]);
     setMsg("De AI stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
     const activity = beginActivity("De AI bereidt de data automatisch voor — dit kan enkele minuten duren…");
     try {
-      const res = await postJson<{ message?: string }>("/api/prepare-auto", { project_id: projectId });
+      const res = await postJson<{ message?: string; rounds?: AutoPrepareRound[] }>("/api/prepare-auto", {
+        project_id: projectId,
+      });
+      setRounds(res.data.rounds ?? []);
       if (!res.ok) {
         setMsg(humanizeError(res.error, "Automatisch voorbereiden is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
       } else {
@@ -322,11 +366,43 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
         </button>
         <span className="text-xs text-fg-muted">
           De AI kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
-          (max. 3 rondes, duurt meestal 2–5 minuten). Jij controleert en keurt goed.
+          (max. 3 rondes, duurt meestal 2–5 minuten). Jij controleert en keurt goed — en
+          ziet hieronder per ronde wat de AI heeft gedaan.
         </span>
       </div>
       {msg && <p className="mt-2 text-xs text-fg-muted">{msg}</p>}
+      {rounds.length > 0 && <AutoPrepareTimeline rounds={rounds} />}
     </div>
+  );
+}
+
+// Transparantie-tijdlijn van de agentische loop: per ronde de eigen toelichting van de
+// AI, het voorgestelde recept en de uitkomst. Zo is "de AI heeft het gedaan" nooit een
+// zwarte doos — de gebruiker kan elke ronde nalezen voordat hij goedkeurt.
+function AutoPrepareTimeline({ rounds }: { rounds: AutoPrepareRound[] }) {
+  return (
+    <ol className="mt-3 space-y-2 border-t border-accent/20 pt-3">
+      {rounds.map((r) => (
+        <li key={r.round} className="flex gap-2.5 text-xs">
+          <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-accent/15 font-mono font-semibold text-accent">
+            {r.round}
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-fg">
+              Voorstel: {r.recipe_summary} → <span className="font-medium">{r.result}</span>
+            </p>
+            {r.note && <p className="whitespace-pre-wrap text-fg-muted">{r.note}</p>}
+            {r.open_issues.length > 0 && (
+              <ul className="space-y-0.5 text-fg-faint">
+                {r.open_issues.map((issue, i) => (
+                  <li key={i}>• {issue}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -334,10 +410,12 @@ export function DataPrepSection({
   projectId,
   sources,
   initialDataset,
+  latestInspection = null,
 }: {
   projectId: string;
   sources: SourceFile[];
   initialDataset: Dataset | null;
+  latestInspection?: DataInspection | null;
 }) {
   const router = useRouter();
   const { pendingRecipe, clearPendingRecipe, sendToChat, beginActivity, applyRecipe, stagedRecipe, clearStagedRecipe } = useWizardChat();
@@ -686,6 +764,7 @@ export function DataPrepSection({
                     )}
                   </span>
                 </div>
+                <MappingExplainer file={src.file} />
                 {src.transforms.length > 0 && (
                   <div className="mb-2 space-y-1 rounded border border-border bg-surface-2 p-2">
                     <p className="text-xs font-medium text-fg-muted">
@@ -741,9 +820,22 @@ export function DataPrepSection({
                         {src.columns.map((col, cIdx) => {
                           const values = sourceValues[src.file.storage_path]?.[col.name] ?? [];
                           const suggestion = col.role === "" ? mappingSuggestion(src.file, col.name) : null;
+                          const aiEntry = mappingEntry(src.file, col.name);
                           return (
                           <tr key={col.name}>
-                            <td className="py-1.5 pr-3 text-fg">{col.name}</td>
+                            <td className="py-1.5 pr-3">
+                              <span className="text-fg">{col.name}</span>
+                              {aiEntry?.unit && (
+                                <span className="ml-1.5 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                                  {aiEntry.unit}
+                                </span>
+                              )}
+                              {aiEntry?.meaning && (
+                                <span className="mt-0.5 block max-w-[16rem] text-[11px] leading-snug text-fg-faint">
+                                  AI: {aiEntry.meaning}
+                                </span>
+                              )}
+                            </td>
                             <td className="py-1.5 pr-3">
                               <Sparkline values={values} />
                             </td>
@@ -959,6 +1051,7 @@ export function DataPrepSection({
                 projectId={projectId}
                 scope={dataset?.status === "prepared" || dataset?.status === "approved" ? "master" : "raw"}
               />
+              <InspectionFindings inspection={latestInspection} />
             </div>
           </SubStep>
 

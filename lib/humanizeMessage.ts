@@ -222,6 +222,46 @@ const QUALITY_PATTERNS: ErrorPattern[] = [
     text: (m) => `${m[1]} ontbrekende spend-week/weken op 0 gezet (geen uitgave geregistreerd = € 0).`,
   },
   {
+    match: /^column '([^']+)' contains formatted numbers \(e\.g\. '([^']+)'\); parsed as (.+?) — check/i,
+    text: (m) =>
+      `Kolom “${m[1]}” bevat opgemaakte getallen (bv. ${m[2]}); geïnterpreteerd als ${m[3]}-notatie. Controleer een paar waarden in het voorbeeld om de omrekening te bevestigen.`,
+  },
+  {
+    match: /^spend column '([^']+)' has (\d+) negative week\(s\) \(min (-?[\d.]+)/i,
+    text: (m) =>
+      `Spend-kolom “${m[1]}” heeft ${m[2]} week/weken met negatieve uitgaven (minimum ${m[3]}) — waarschijnlijk refunds of correcties. Zet ze op 0 of verreken ze vóór het modelleren.`,
+  },
+  {
+    match: /^spend column '([^']+)' is zero for the entire analysis window/i,
+    text: (m) =>
+      `Spend-kolom “${m[1]}” is de hele periode 0 — het model kan niets over dit kanaal leren. Verwijder het kanaal of controleer de samenvoeging.`,
+  },
+  {
+    match: /^column '([^']+)' is constant over the whole window \(value ([^)]+)\)/i,
+    text: (m) =>
+      `Kolom “${m[1]}” heeft de hele periode dezelfde waarde (${m[2]}) en voegt daardoor geen informatie toe aan het model.`,
+  },
+  {
+    match: /^(\d+) date\(s\) have multiple different rows \(e\.g\. ([\d-]+) with (\d+) rows\)/i,
+    text: (m) =>
+      `${m[1]} datum(s) hebben meerdere verschillende rijen (bv. ${m[2]} met ${m[3]} rijen); de waarden worden opgeteld. Controleer op dubbeltelling — bijvoorbeeld een totaalrij naast detailrijen.`,
+  },
+  {
+    match: /^(\d+) channel\(s\) on (\d+) week\(s\) of data \(([\d.]+) weeks per channel.*far too little data/i,
+    text: (m) =>
+      `${m[1]} kanalen op maar ${m[2]} weken data (${m[3]} weken per kanaal) — veel te weinig om de kanalen uit elkaar te houden. Voeg weken toe of voeg kanalen samen.`,
+  },
+  {
+    match: /^(\d+) channel\(s\) on (\d+) week\(s\) of data \(([\d.]+) weeks per channel\) — expect wide/i,
+    text: (m) =>
+      `${m[1]} kanalen op ${m[2]} weken data (${m[3]} weken per kanaal) — krap; verwacht brede onzekerheidsmarges per kanaal.`,
+  },
+  {
+    match: /^the (first|last) week \(([\d-]+)\) of source '([^']+)' covers only (\d+) row\(s\) where interior weeks have ~(\d+)/i,
+    text: (m) =>
+      `De ${m[1] === "first" ? "eerste" : "laatste"} week (${m[2]}) van bestand “${m[3]}” bevat maar ${m[4]} van de gebruikelijke ~${m[5]} rijen — een deelweek. De opgetelde waarde valt daardoor te laag uit; overweeg deze week weg te laten.`,
+  },
+  {
     match: /^essential sources do not overlap in time/i,
     text: () => "De bestanden hebben geen overlappende periode — er is geen gezamenlijk analysevenster.",
   },

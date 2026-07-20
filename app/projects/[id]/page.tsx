@@ -38,7 +38,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   if (!project) notFound();
   const p = project as Project;
 
-  const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }, { data: projectContext }] = await Promise.all([
+  const [{ data: sources }, { data: jobs }, { data: runs }, { data: datasets }, { data: projectContext }, { data: latestInspection }] = await Promise.all([
     supabase.schema("mmm").from("source_files").select("*").eq("project_id", p.id).order("created_at"),
     supabase.schema("mmm").from("jobs").select("*").eq("project_id", p.id).order("created_at", { ascending: false }),
     // Trimmed columns: `analysis` holds base64 PNG data URLs from the deep-analysis step
@@ -59,6 +59,16 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       .order("created_at", { ascending: false })
       .limit(1),
     supabase.schema("mmm").from("project_context").select("industry, notes").eq("project_id", p.id).maybeSingle(),
+    // De laatste diepe inspectie: de bevindingen worden in substap 2b als kaarten
+    // getoond (InspectionFindings) i.p.v. alleen als teller.
+    supabase
+      .schema("mmm")
+      .from("data_inspections")
+      .select("*")
+      .eq("project_id", p.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
   const businessNotes = ((projectContext?.notes as import("@/lib/types").BusinessContextNote[] | null) ?? []) as import("@/lib/types").BusinessContextNote[];
@@ -185,6 +195,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                         projectId={p.id}
                         sources={sourceList}
                         initialDataset={latestDataset}
+                        latestInspection={(latestInspection as import("@/lib/types").DataInspection | null) ?? null}
                       />
                     </div>
                   </PipelineStep>
