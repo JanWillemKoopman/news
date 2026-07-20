@@ -82,7 +82,7 @@ Ook de gereedschappen waarmee marketeers dagelijks werken kennen structurele bep
 
 ## 2.5 De MMM-renaissance (2018–nu)
 
-Drie motoren dreven de renaissance. Ten eerste werd de grootste beperking van MMM — werken op geaggregeerde data — plotseling zijn grootste kracht: geen cookies, geen consent-verlies, volledige full-funnel-dekking. Ten tweede maakte de **Bayesiaanse wending** het mogelijk om domeinkennis expliciet te verwerken via priors, precies passend bij een probleem dat data-arm en kennis-rijk is. Ten derde ging MMM **open source**: Robyn (Meta), Meridian (Google, opvolger van LightweightMMM) en PyMC-Marketing haalden de methode weg bij een handvol specialisten en legden haar in handen van een brede analistengemeenschap. Dit boek kiest bewust voor PyMC: begrijpen-door-zelfbouwen levert kennis op die overdraagbaar is naar elk ander framework.
+Drie motoren dreven de renaissance. Ten eerste werd de grootste beperking van MMM — werken op geaggregeerde data — plotseling zijn grootste kracht: geen cookies, geen consent-verlies, volledige full-funnel-dekking. Ten tweede maakte de **Bayesiaanse wending** het mogelijk om domeinkennis expliciet te verwerken via priors, precies passend bij een probleem dat data-arm en kennis-rijk is. Ten derde ging MMM **open source**: Robyn (Meta), Meridian (Google, opvolger van LightweightMMM) en PyMC-Marketing haalden de methode weg bij een handvol specialisten en legden haar in handen van een brede analistengemeenschap. Dit boek kiest bewust voor PyMC: begrijpen-door-zelfbouwen levert kennis op die overdraagbaar is naar elk ander framework — hoofdstuk 16.6 vergelijkt deze frameworks uitgebreid, zodat je ook een model dat in een ander framework is gebouwd kunt lezen en beoordelen.
 
 ## 2.6 Wat we van de geschiedenis leren voor de praktijk
 
@@ -861,7 +861,8 @@ Je hebt in deel IV geleerd wat Bayesiaanse statistiek is. Dit hoofdstuk maakt de
 **Na dit hoofdstuk kun je:**
 - de vier kernvoordelen van Bayesiaanse MMM uitleggen met concrete voorbeelden;
 - de nadelen en kosten van deze aanpak eerlijk benoemen;
-- de belangrijkste bestaande frameworks (Robyn, Meridian, PyMC-Marketing) plaatsen;
+- de belangrijkste bestaande frameworks (Robyn, Meridian, LightweightMMM, PyMC-Marketing en enkele kleinere alternatieven) uitgebreid vergelijken op methodologie, sterktes en beperkingen;
+- een bestaand model van een klant of bureau herkennen en kritisch beoordelen, ongeacht in welk framework het is gebouwd;
 - een onderbouwd methodologie-advies schrijven voor een klant of reviewer.
 
 ## 16.1 Voordeel 1: domeinkennis via priors
@@ -886,11 +887,48 @@ Wees hier eerlijk over, want elke goede reviewer zal deze nadelen benoemen als j
 
 Er zijn situaties waarin een eenvoudigere aanpak — bijvoorbeeld ridge-regressie met vaste, van tevoren gekozen transformaties — verdedigbaar pragmatisch is: bij een zeer beperkt budget, een tijdsdruk die geen ruimte laat voor een volwaardig traject, of een eerste, verkennende analyse. Ken deze afweging, en durf haar hardop te maken wanneer de situatie erom vraagt.
 
-## 16.6 Het landschap: Robyn, Meridian, PyMC-Marketing en zelfbouw
+## 16.6 Het landschap: Robyn, Meridian, LightweightMMM, PyMC-Marketing en de rest
 
-Je hebt deze drie namen al kort gezien in hoofdstuk 2. Robyn, van Meta, combineert traditionele regressie met een evolutionair zoekalgoritme om transformatieparameters te vinden — snel op te starten, maar minder flexibel in structuur. Meridian, van Google (de opvolger van het eerdere LightweightMMM), is volledig Bayesiaans en sterk gericht op geo-niveau modellering. PyMC-Marketing, gebouwd op de PyMC-bibliotheek die dit boek gebruikt, biedt de grootste flexibiliteit en transparantie, tegen de prijs van een iets grotere bouwinspanning.
+Je hebt de belangrijkste namen al kort gezien in hoofdstuk 2. Dit hoofdstuk gaat dieper: niet om je met vijf frameworks te leren werken, maar om je in staat te stellen een model dat een klant, een bureau of een collega al heeft gebouwd te *herkennen*, te *lezen*, en de keuze voor dat framework kritisch te *beoordelen*. Dit is een vaardigheid die je in de praktijk minstens zo vaak nodig hebt als het zelf bouwen van een model — veel organisaties hebben al íets draaien, en jouw eerste taak is vaak dat bestaande werk te begrijpen voordat je iets nieuws voorstelt.
 
-Dit boek kiest bewust voor begrijpen-door-zelfbouwen in PyMC, ook al zou een van de kant-en-klare frameworks je sneller naar een eerste resultaat brengen. De reden is simpel: wie begrijpt wat er in een zelfgebouwd PyMC-model gebeurt, kan een Robyn- of Meridian-model moeiteloos lezen, beoordelen en waar nodig bijstellen. Andersom werkt dat veel minder goed. De kennis die je hier opbouwt, is overdraagbaar naar elk gereedschap dat je later in je carrière tegenkomt.
+### Meta Robyn
+
+**Robyn** is het open-sourceframework van Meta, geschreven in R (met een nieuwere Python-variant, RobynPy). Methodologisch combineert Robyn klassieke, gepenaliseerde regressie (ridge-regressie, die je in hoofdstuk 12.6 als een primitieve prior hebt leren zien) met een **evolutionair optimalisatie-algoritme** (Nevergrad) dat automatisch zoekt naar de beste combinatie van adstock- en saturatieparameters over een groot aantal kandidaat-modellen.
+
+De sterke kant van Robyn is toegankelijkheid: het framework automatiseert een groot deel van het traditionele handwerk (de zoektocht naar goede transformatieparameters) en produceert relatief snel een eerste werkend model met kant-en-klare visualisaties. De keerzijde is precies waar dit boek zwaar op inzet: Robyn is niet Bayesiaans. Er zijn geen priors om domeinkennis expliciet in te brengen, en de output geeft geen volledige posterior-onzekerheid — je krijgt puntschattingen en een selectie van "goede" modellen uit de zoekprocedure, niet een kansverdeling zoals je die in hoofdstuk 13 hebt leren interpreteren. Voor een team dat snel een eerste, verkennend model nodig heeft en genoegen neemt met minder verfijnde onzekerheidsuitspraken, is Robyn een verdedigbare keuze. Voor een traject waarin de klant expliciet om onderbouwde onzekerheidsmarges en verdedigbare priors vraagt, is dat lastiger.
+
+### Google Meridian (en zijn voorganger LightweightMMM)
+
+**Meridian** is Googles huidige open-sourceframework, gebouwd in Python op TensorFlow Probability, en de opvolger van het eerdere **LightweightMMM** (gebouwd op JAX/NumPyro). Meridian is, net als het model dat je in dit boek bouwt, volledig **Bayesiaans**: het gebruikt priors, levert volledige posterior-verdelingen, en rapporteert credible intervals op precies de manier die je in hoofdstuk 13 hebt leren waarderen.
+
+Het onderscheidende kenmerk van Meridian is de sterke, ingebouwde focus op **geo-niveau modellering** — de hiërarchische, regionale aanpak die je in hoofdstuk 39 leert. Waar je in PyMC een hiërarchisch model zelf moet opbouwen, biedt Meridian dat als een kernfunctionaliteit, mét ingebouwde ondersteuning voor het kalibreren van het model op resultaten van Google's eigen geo-experimenten (conceptueel dezelfde kalibratie die je in hoofdstuk 33.5 leert, maar dan met directe technische koppeling aan Google's eigen experimentinfrastructuur). Meridian is minder flexibel dan een zelfgebouwd PyMC-model wanneer je structuur nodig hebt die buiten de vooraf ingebouwde opties valt, en de onderliggende TensorFlow Probability-code is voor de gemiddelde analist minder makkelijk te lezen en aan te passen dan PyMC.
+
+### PyMC-Marketing
+
+**PyMC-Marketing** is de package die specifiek bovenop de PyMC-bibliotheek is gebouwd om MMM-werk te versnellen: kant-en-klare adstock- en saturatietransformaties, standaard modelklasses, en ingebouwde diagnostiek- en visualisatiehulpmiddelen — allemaal gebouwd met exact de bouwstenen die je in hoofdstuk 21 en 22 leert kennen. Dit is niet zozeer een concurrent van "PyMC zelf" als wel een versnelde, geconventionaliseerde laag erboven.
+
+Voor jou is dit een belangrijk onderscheid om scherp te houden: dit boek leert je eerst een MMM *vanaf de fundamentele PyMC-bouwstenen* op te bouwen, juist omdat je dan elke aanname en elke transformatie zelf doorgrondt. Eenmaal vertrouwd met die fundamenten, kun je PyMC-Marketing gebruiken om in de praktijk sneller te werken — je begrijpt dan precies wat er onder de motorkap van die versnelde package gebeurt, in plaats van een black box te bedienen. Dat is ook precies waarom PyMC-Marketing zelf niet het startpunt van dit boek is: je zou de intuïtie missen die je nu, hoofdstuk voor hoofdstuk, hebt opgebouwd.
+
+### Kleinere en meer gespecialiseerde alternatieven
+
+Het veld is breder dan de drie grote namen. **Orbit** (Uber) is oorspronkelijk een algemeen Bayesiaans tijdreeks-forecastingframework, met MMM-achtige toepassingen als uitbreiding, minder specifiek toegesneden op marketing dan de andere genoemde tools. Commerciële platforms zoals **Recast** en vergelijkbare aanbieders bouwen een volledige, beheerde MMM-dienst rond vergelijkbare Bayesiaanse methodologie, met een gebruiksvriendelijke interface in ruil voor minder inzicht in en controle over de onderliggende code — een relevante afweging wanneer een klant je vraagt "waarom zouden we dit zelf bouwen in plaats van een dienst in te huren?" Ook zie je in de praktijk nog altijd zelfgebouwde, puur frequentistische regressiemodellen (Excel of R, zonder enig Bayesiaans element) — methodologisch het meest verwant aan de "gewone regressie" uit hoofdstuk 12, met alle beperkingen die daar zijn behandeld.
+
+### De frameworks naast elkaar
+
+| Framework | Ontwikkelaar | Methodologie | Onzekerheid | Sterkste kant | Belangrijkste beperking |
+|---|---|---|---|---|---|
+| **Robyn** | Meta | Regressie + evolutionaire zoekprocedure | Geen volledige posterior | Snel een eerste model, geautomatiseerde parameterzoektocht | Niet Bayesiaans, geen priors, beperkte onzekerheidsuitspraken |
+| **Meridian** | Google | Volledig Bayesiaans (TensorFlow Probability) | Volledige posterior | Ingebouwde geo-modellering en experimentkalibratie | Minder flexibel buiten ingebouwde structuren, code lastiger aan te passen |
+| **LightweightMMM** | Google (voorganger van Meridian) | Volledig Bayesiaans (JAX/NumPyro) | Volledige posterior | Lichtgewicht, voorloper van Meridian | Inmiddels grotendeels vervangen door Meridian |
+| **PyMC-Marketing** | PyMC-gemeenschap | Volledig Bayesiaans (PyMC) | Volledige posterior | Snelheid mét transparantie, bouwt op wat je in dit boek leert | Vraagt (net als PyMC zelf) een leercurve om volledig te doorgronden |
+| **Zelfbouw in PyMC** | Jij, met dit boek | Volledig Bayesiaans (PyMC) | Volledige posterior | Maximale flexibiliteit, transparantie, en diepgaand begrip | Kost de meeste bouwtijd |
+| **Orbit / eigen regressie** | Uber / vrij | Uiteenlopend, vaak niet MMM-specifiek of niet Bayesiaans | Uiteenlopend | Breed inzetbaar (Orbit), of eenvoud (eigen regressie) | Minder toegesneden op MMM, of alle beperkingen van hoofdstuk 12 |
+
+### Hoe je deze kennis in de praktijk gebruikt
+
+Kom je in een project een bestaand Robyn-model tegen, dan weet je nu direct waar je op moet letten: zijn de gerapporteerde intervallen eigenlijk volledige onzekerheidsmarges, of afgeleid uit een beperkte set kandidaat-modellen? Kom je een Meridian-model tegen, dan weet je dat de geo-structuur en experimentkalibratie waarschijnlijk zwaarder zijn benut dan in een doorsnee PyMC-model, en dat is een vraag die je gericht kunt stellen. En wanneer een klant vraagt "waarom bouwen jullie dit zelf in PyMC, in plaats van een van deze kant-en-klare oplossingen te gebruiken?", heb je nu een onderbouwd antwoord: transparantie, flexibiliteit, en vooral — de diepgaande, overdraagbare kennis die je zelf opbouwt en die je in staat stelt om *elk* van deze frameworks kritisch te doorzien, in plaats van er blind op te vertrouwen.
+
+Dit boek kiest daarom bewust voor begrijpen-door-zelfbouwen in PyMC, ook al zou een van de kant-en-klare frameworks je sneller naar een eerste resultaat brengen. De reden is simpel: wie begrijpt wat er in een zelfgebouwd PyMC-model gebeurt, kan een Robyn-, Meridian- of PyMC-Marketing-model moeiteloos lezen, beoordelen en waar nodig bijstellen. Andersom werkt dat veel minder goed. De kennis die je hier opbouwt, is overdraagbaar naar elk gereedschap dat je later in je carrière tegenkomt.
 
 ---
 
