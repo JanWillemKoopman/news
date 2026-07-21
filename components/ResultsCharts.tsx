@@ -23,15 +23,17 @@ import type { FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
 // Georganiseerd langs de vier vragen van een budgetgesprek: wat gebeurde er → wat leverde
 // elk kanaal op → waar kan de volgende euro heen → hoe werkt het (verdieping).
-const ACCENT = "#0071E3";
-const ACCENT_SOFT = "#8FC3F5";
-const NEUTRAL = "#98989D";
-const BASELINE_FILL = "#D9D9DE";
-const INK = "#1D1D1F";
-const SUCCESS = "#1F8A3B";
-const DANGER = "#D70015";
-const GRID = "rgba(0,0,0,0.08)";
-const AXIS = { fontSize: 11, fill: "#6E6E73" };
+// Starbucks-palet voor de grafieken: House Green als accent, warme taupe/crème als
+// neutralen, diep boskoffie-groen als inkt.
+const ACCENT = "#00754A";
+const ACCENT_SOFT = "#8FBCA9";
+const NEUTRAL = "#B7AC98";
+const BASELINE_FILL = "#E3DBCB";
+const INK = "#1E3932";
+const SUCCESS = "#1E7A4B";
+const DANGER = "#B23A2E";
+const GRID = "rgba(30,57,50,0.08)";
+const AXIS = { fontSize: 11, fill: "#4C5F57" };
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -44,11 +46,23 @@ function fmtShort(n: number): string {
   return fmt(n);
 }
 
-// Kanaal-lagen in de opbouwgrafiek: één tintenreeks rond de accentkleur, zodat het
-// palet rustig blijft maar de lagen te onderscheiden zijn.
+// Kanaal-lagen in de opbouwgrafiek: een warme, curated Starbucks-tintenreeks (groen,
+// goud, bos, salie, koffie…) zodat de lagen te onderscheiden blijven maar het palet
+// warm en samenhangend blijft. Buiten de reeks: een rustige groen-hue verloop.
+const CHANNEL_PALETTE = [
+  "#00754A", // house green
+  "#CBA258", // goud
+  "#1E3932", // diep bos
+  "#6BAF92", // salie
+  "#A6743C", // koffie/karamel
+  "#3D8168", // mos
+  "#C7B37F", // zand
+  "#4C5F57", // steen-groen
+];
 function channelColor(i: number, n: number): string {
-  const light = 38 + (i * 34) / Math.max(1, n - 1); // 38%..72%
-  return `hsl(211, 82%, ${light}%)`;
+  if (i < CHANNEL_PALETTE.length) return CHANNEL_PALETTE[i];
+  const light = 30 + ((i - CHANNEL_PALETTE.length) * 34) / Math.max(1, n - 1); // 30%..
+  return `hsl(158, 45%, ${Math.min(70, light)}%)`;
 }
 
 function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -222,7 +236,7 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
           <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
           <YAxis tick={AXIS} width={48} tickFormatter={fmtShort} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Area dataKey="Basislijn" stackId="kpi" stroke="none" fill={BASELINE_FILL} fillOpacity={0.9} />
@@ -282,7 +296,7 @@ function WaterfallChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={110} />
           <Tooltip
-            cursor={{ fill: "rgba(0,0,0,0.04)" }}
+            cursor={{ fill: "rgba(30,57,50,0.05)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.[1]) return null;
               const d = payload[1].payload as { name: string; value: number };
@@ -325,7 +339,7 @@ function FitVsActualChart({ weekly, coverage }: { weekly: WeeklyDecomposition; c
           <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
           <YAxis tick={AXIS} width={48} tickFormatter={fmtShort} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (Array.isArray(v) ? `${fmt(Number(v[0]))} – ${fmt(Number(v[1]))}` : typeof v === "number" ? fmt(v) : String(v))}
           />
           <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} name="94%-band" />
@@ -363,8 +377,8 @@ function SpendVsReturnChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(0,0,0,0.04)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+            cursor={{ fill: "rgba(30,57,50,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Bar dataKey="kosten" fill={NEUTRAL} radius={[0, 3, 3, 0]} barSize={11} name="kosten" />
@@ -398,8 +412,8 @@ function BudgetVsEffectChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={(v) => `${fmt(v)}%`} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(0,0,0,0.04)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+            cursor={{ fill: "rgba(30,57,50,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (typeof v === "number" ? `${fmt(v, 1)}%` : String(v))}
           />
           <Bar dataKey="budget" fill={NEUTRAL} radius={[0, 3, 3, 0]} barSize={11} name="aandeel budget" />
@@ -457,8 +471,8 @@ function MarginalEuroChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(0,0,0,0.04)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+            cursor={{ fill: "rgba(30,57,50,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Bar dataKey="marginaal" radius={[0, 3, 3, 0]} barSize={14}>
@@ -512,7 +526,7 @@ function WhatIfSlider({ summary }: { summary: FitSummary }) {
           step={(max - min) / 100 || 1}
           value={chosen}
           onChange={(e) => setBudget(Number(e.target.value))}
-          className="w-full accent-[#0071E3]"
+          className="w-full accent-[#00754A]"
           aria-label="Totaal weekbudget"
         />
         <div className="mt-2 flex flex-wrap items-baseline gap-x-6 gap-y-1">
@@ -567,7 +581,7 @@ function AdstockDecayGrid({ summary }: { summary: FitSummary }) {
                 <XAxis dataKey="week" tick={AXIS} tickFormatter={(v) => `${v}`} />
                 <YAxis hide />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
                   formatter={(v) => (typeof v === "number" ? `${fmt(v, 1)}% van het effect` : String(v))}
                   labelFormatter={(l) => `week +${l}`}
                 />
@@ -664,8 +678,8 @@ export function ResultsCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-              <ReferenceLine x={breakEven} stroke="#6E6E73" strokeDasharray="4 4" label={{ value: "break-even", position: "top", fontSize: 10, fill: "#6E6E73" }} />
+              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
+              <ReferenceLine x={breakEven} stroke="#4C5F57" strokeDasharray="4 4" label={{ value: "break-even", position: "top", fontSize: 10, fill: "#4C5F57" }} />
               <Bar dataKey="p50" radius={[0, 3, 3, 0]} barSize={14}>
                 {roasData.map((d) => (
                   <Cell key={d.name} fill={d.p3 >= breakEven ? SUCCESS : d.p97 <= breakEven ? DANGER : NEUTRAL} />
@@ -688,7 +702,7 @@ export function ResultsCharts({
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
                 <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
                 <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-                <Tooltip content={<SplitTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                <Tooltip content={<SplitTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
                 <Bar dataKey="direct" stackId="split" fill={ACCENT} barSize={14} name="Direct" />
                 <Bar dataKey="carryover" stackId="split" fill={ACCENT_SOFT} radius={[0, 3, 3, 0]} barSize={14} name="Na-ijl" />
               </BarChart>
@@ -737,9 +751,9 @@ export function ResultsCharts({
                       <Line type="monotone" dataKey="p50" stroke={ACCENT} strokeWidth={2} dot={false} />
                       <ReferenceLine
                         x={curve.current_weekly_spend}
-                        stroke="#6E6E73"
+                        stroke="#4C5F57"
                         strokeDasharray="4 4"
-                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#6E6E73" }}
+                        label={{ value: "nu", position: "top", fontSize: 10, fill: "#4C5F57" }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -770,9 +784,9 @@ export function ResultsCharts({
               {allocation && (
                 <ReferenceLine
                   x={allocation.total_weekly_budget}
-                  stroke="#6E6E73"
+                  stroke="#4C5F57"
                   strokeDasharray="4 4"
-                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#6E6E73" }}
+                  label={{ value: "nu", position: "top", fontSize: 10, fill: "#4C5F57" }}
                 />
               )}
             </AreaChart>
@@ -789,7 +803,7 @@ export function ResultsCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
               <Bar dataKey="delta" radius={[0, 3, 3, 0]} barSize={14}>
                 {reallocData.map((d) => (
                   <Cell key={d.name} fill={d.delta >= 0 ? ACCENT : NEUTRAL} />

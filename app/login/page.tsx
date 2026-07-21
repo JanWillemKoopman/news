@@ -80,7 +80,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
+            className="mt-1 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-fg outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
           />
         </div>
         <div>
@@ -89,14 +89,14 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
+            className="mt-1 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-fg outline-none transition focus:border-accent/50 focus:shadow-glow-sm"
           />
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Bezig…" : "Inloggen"}
         </button>
@@ -111,7 +111,7 @@ export default function LoginPage() {
       <button
         onClick={onMagicLink}
         disabled={magicBusy}
-        className="w-full rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
+        className="w-full rounded-full border border-border-strong px-4 py-2.5 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50"
       >
         {magicBusy ? "Versturen…" : "Stuur mij een magische inloglink"}
       </button>

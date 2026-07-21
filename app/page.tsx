@@ -110,7 +110,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-600">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">
       {children}
     </span>
   );
@@ -129,7 +129,7 @@ export default async function Home() {
       <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
           <Link href="/" className="group flex flex-none items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-sm shadow-rose-600/30 transition group-hover:scale-105">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm shadow-brand-600/30 transition group-hover:scale-105">
               <Sparkles className="h-4 w-4" />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">MMM Wizard</span>
@@ -156,7 +156,7 @@ export default async function Home() {
             </a>
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-600/20 transition hover:bg-rose-500"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-500"
             >
               Inloggen
               <ArrowRight className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-40 h-[420px] bg-gradient-to-b from-rose-500/[0.10] via-rose-500/[0.03] to-transparent blur-2xl"
+          className="pointer-events-none absolute inset-x-0 -top-40 h-[420px] bg-gradient-to-b from-brand-500/[0.10] via-brand-500/[0.03] to-transparent blur-2xl"
         />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 sm:px-8 sm:pt-24">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
@@ -180,7 +180,7 @@ export default async function Home() {
               </SectionEyebrow>
               <h1 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
                 Van complexe Bayesiaanse Data Science naar{" "}
-                <span className="bg-gradient-to-r from-rose-600 to-rose-500 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent">
                   directe marketing­impact.
                 </span>
               </h1>
@@ -193,7 +193,7 @@ export default async function Home() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-600/25 transition hover:bg-rose-500"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-500"
                 >
                   Bekijk de App (Inloggen)
                   <ArrowRight className="h-4 w-4" />
@@ -228,7 +228,7 @@ export default async function Home() {
               <div className="rounded-2xl border border-border bg-surface p-6 shadow-panel sm:p-7">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-brand-400/70" />
                     <span className="h-2.5 w-2.5 rounded-full bg-warn/50" />
                     <span className="h-2.5 w-2.5 rounded-full bg-success/50" />
                   </div>
@@ -240,7 +240,7 @@ export default async function Home() {
                   {PIPELINE.map((step, i) => (
                     <div key={step.n}>
                       <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
-                        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-rose-500/10 text-rose-600">
+                        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-brand-500/10 text-brand-600">
                           <step.icon className="h-4 w-4" />
                         </span>
                         <span className="flex-none font-mono text-xs text-fg-faint">
@@ -260,9 +260,9 @@ export default async function Home() {
                   ))}
                 </div>
 
-                <div className="mt-5 flex items-center justify-between rounded-xl bg-gradient-to-r from-rose-500/[0.08] to-transparent px-3.5 py-3">
+                <div className="mt-5 flex items-center justify-between rounded-xl bg-gradient-to-r from-brand-500/[0.08] to-transparent px-3.5 py-3">
                   <div className="flex items-center gap-2 text-xs text-fg-muted">
-                    <Bot className="h-4 w-4 text-rose-600" />
+                    <Bot className="h-4 w-4 text-brand-600" />
                     AI-architect stelt de config voor
                   </div>
                   <span className="text-xs font-medium text-fg-faint">jij klikt</span>
@@ -313,7 +313,7 @@ export default async function Home() {
               toegankelijk zonder de wiskunde uit handen te geven — praktijkervaring omgezet
               in een schaalbare tool voor datagedreven marketeers en analisten.
             </p>
-            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.05] p-5">
+            <div className="rounded-2xl border border-brand-500/20 bg-brand-500/[0.05] p-5">
               <p className="text-sm font-medium text-fg">
                 Het verschil met standaard AI-sandboxes
               </p>
@@ -367,9 +367,9 @@ export default async function Home() {
           {PILLARS.map((p) => (
             <div
               key={p.title}
-              className="group relative flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-panel transition hover:border-rose-500/30"
+              className="group relative flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-panel transition hover:border-brand-500/30"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600">
                 <p.icon className="h-5 w-5" />
               </span>
               <p className="mt-4 font-mono text-[11px] uppercase tracking-wide text-fg-faint">
@@ -406,7 +406,7 @@ export default async function Home() {
                 className="flex gap-4 rounded-2xl border border-border bg-surface p-6 shadow-panel"
               >
                 <div className="flex flex-none flex-col items-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm shadow-rose-600/25">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/25">
                     <s.icon className="h-5 w-5" />
                   </span>
                   <span className="mt-2 font-mono text-xs text-fg-faint">Stap {s.n}</span>
@@ -426,7 +426,7 @@ export default async function Home() {
         <div className="relative overflow-hidden rounded-3xl border border-border bg-surface px-6 py-12 shadow-panel sm:px-12 sm:py-16">
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-rose-500/[0.10] blur-3xl"
+            className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-brand-500/[0.10] blur-3xl"
           />
           <div className="relative mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -439,7 +439,7 @@ export default async function Home() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-600/25 transition hover:bg-rose-500 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-500 sm:w-auto"
               >
                 Bekijk de App (Inloggen)
                 <ArrowRight className="h-4 w-4" />
@@ -460,7 +460,7 @@ export default async function Home() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-rose-500 to-rose-600 text-white">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-brand-500 to-brand-600 text-white">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             <span className="text-sm font-semibold tracking-tight">MMM Wizard</span>

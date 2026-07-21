@@ -76,7 +76,7 @@ export function ChatDock({ children }: { children: React.ReactNode }) {
         <button
           aria-label="Chat sluiten"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/25 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-40 bg-fg/30 backdrop-blur-sm xl:hidden"
         />
       )}
 

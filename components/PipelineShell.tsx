@@ -170,7 +170,7 @@ function WizardStepper() {
       aria-label="Stappen"
       // Op mobiel is de header niet sticky (zie TopBar), dus deze nav is daar het eerste
       // dat blijft plakken — vanaf sm schuift hij onder de wél-sticky header.
-      className="sticky top-0 z-20 -mx-1 overflow-x-auto rounded-[10px] border border-border bg-surface/80 px-1 py-1.5 backdrop-blur sm:top-[3.25rem]"
+      className="sticky top-0 z-20 -mx-1 overflow-x-auto rounded-2xl border border-border bg-surface/80 px-1 py-1.5 backdrop-blur sm:top-[3.25rem]"
     >
       <ol className="flex min-w-max items-center gap-1">
         {steps.map((s, i) => {
@@ -267,7 +267,7 @@ export function PipelineStep({
     // drafts — een geconfigureerde JSON, een bewerkte rollen-tabel — een
     // stapwissel overleven. Alleen de actieve stap is zichtbaar.
     <section id={`step-${id}`} className={active ? "" : "hidden"} aria-hidden={!active}>
-      <div className="rounded-[10px] border border-border bg-surface shadow-panel">
+      <div className="rounded-2xl border border-border bg-surface shadow-panel">
         <div className="flex items-center gap-3 border-b border-border px-5 py-4">
           <StepDot status={meta.status} number={number} />
           <div className="min-w-0 flex-1">

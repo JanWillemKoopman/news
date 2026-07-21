@@ -4,10 +4,11 @@ import { humanizeError } from "@/lib/humanizeMessage";
 import { GuideModal } from "@/components/GuideModal";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
-// Licht paneel: witte kaart, 1px border met lage opacity, zachte schaduw.
+// Crème kaart: zachte warm-witte achtergrond, warme bos-getinte border, royale
+// afronding en een zacht vallende schaduw — tastbaar en hoogwaardig.
 export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[10px] border border-border bg-surface shadow-panel ${className}`}>{children}</div>
+    <div className={`rounded-2xl border border-border bg-surface shadow-panel ${className}`}>{children}</div>
   );
 }
 
@@ -20,13 +21,13 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  // Blauwe primaire actieknop met zachte focus-ring — de enige actiekleur.
+  // Groene primaire pil-knop (crème tekst op House Green) — de enige actiekleur.
   primary:
-    "bg-accent text-bg font-medium hover:bg-accent-hover hover:shadow-glow-sm disabled:bg-surface-3 disabled:text-fg-faint disabled:shadow-none",
+    "bg-accent text-bg font-semibold shadow-soft hover:bg-accent-hover hover:shadow-glow-sm disabled:bg-surface-3 disabled:text-fg-faint disabled:shadow-none",
   secondary:
-    "border border-border bg-surface-2 text-fg hover:border-border-strong hover:bg-surface-3 disabled:text-fg-faint",
-  ghost: "text-fg-muted hover:bg-surface-2 hover:text-fg",
-  danger: "border border-danger/40 bg-danger-dim text-danger hover:bg-danger/20",
+    "border border-border-strong bg-surface text-fg font-medium hover:bg-surface-2 disabled:text-fg-faint",
+  ghost: "text-fg-muted font-medium hover:bg-surface-2 hover:text-fg",
+  danger: "border border-danger/40 bg-danger-dim text-danger font-medium hover:bg-danger/15",
 };
 
 export function Button({
@@ -36,7 +37,7 @@ export function Button({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow-sm disabled:cursor-not-allowed ${BUTTON_VARIANT[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow disabled:cursor-not-allowed ${BUTTON_VARIANT[variant]} ${className}`}
       {...props}
     />
   );
@@ -51,14 +52,14 @@ export function LinkButton({
 }: React.ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
   return (
     <Link
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow-sm ${BUTTON_VARIANT[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm transition-all focus:outline-none focus-visible:shadow-glow ${BUTTON_VARIANT[variant]} ${className}`}
       {...props}
     />
   );
 }
 
 const FIELD_BASE =
-  "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/50 focus:outline-none focus:shadow-glow-sm";
+  "w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/60 focus:outline-none focus:shadow-glow-sm";
 
 export function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${FIELD_BASE} ${className}`} {...props} />;
@@ -84,8 +85,8 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-fg">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-fg-muted">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-sm text-fg-muted">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -187,8 +188,8 @@ export function TopBar({ email, guideMarkdown }: { email: string | null; guideMa
     // Niet-sticky op mobiel (scrolt gewoon mee — de stappen-nav hieronder blijft daar
     // wél sticky, zie PipelineShell.tsx); vanaf sm weer sticky zoals voorheen.
     <header className="top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:sticky sm:px-6">
-      <Link href="/projects" className="group flex flex-none items-center gap-2 text-sm font-semibold tracking-tight text-fg">
-        <span className="h-4 w-4 rounded-[4px] bg-accent shadow-glow-sm transition group-hover:bg-accent-hover" />
+      <Link href="/projects" className="group flex flex-none items-center gap-2.5 font-serif text-base font-semibold tracking-tight text-fg">
+        <span className="h-6 w-6 rounded-full bg-accent shadow-soft ring-2 ring-inset ring-surface transition group-hover:bg-accent-hover" />
         MMM Wizard
       </Link>
       <div className="flex min-w-0 items-center gap-2 text-sm text-fg-muted sm:gap-3">
