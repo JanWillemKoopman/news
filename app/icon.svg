@@ -1,24 +1,8 @@
-<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MMM Wizard merkteken">
-  <defs>
-    <radialGradient id="mdisc" cx="50%" cy="40%" r="68%">
-      <stop offset="0%" stop-color="#00794D"/>
-      <stop offset="100%" stop-color="#00593B"/>
-    </radialGradient>
-  </defs>
-
-  <!-- Groene medaille met crème ring en gouden rand -->
-  <circle cx="200" cy="200" r="192" fill="url(#mdisc)"/>
-  <circle cx="200" cy="200" r="190.5" fill="none" stroke="#CBA258" stroke-width="2" stroke-opacity="0.6"/>
-  <circle cx="200" cy="200" r="176" fill="none" stroke="#FDFBF6" stroke-width="6"/>
-
-  <!-- Gouden sprankel-kroon -->
-  <path transform="translate(200 112) scale(1.15)" d="M0,-11 L2.3,-2.3 L11,0 L2.3,2.3 L0,11 L-2.3,2.3 L-11,0 L-2.3,-2.3 Z" fill="#CBA258"/>
-
-  <!-- MMM monogram, groter en gecentreerd voor klein gebruik -->
-  <g fill="none" stroke="#FDFBF6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"
-     transform="translate(200 205) scale(1.28) translate(-200 -200)">
-    <path d="M99,245 L99,165 L124,207 L149,165 L149,245"/>
-    <path d="M175,245 L175,153 L200,199 L225,153 L225,245"/>
-    <path d="M251,245 L251,165 L276,207 L301,165 L301,245"/>
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MMM Wizard">
+  <rect x="4" y="4" width="112" height="112" rx="30" fill="#00693E"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19,77 L19,45 L30,64 L41,45 L41,77"/>
+    <path d="M49,77 L49,45 L60,64 L71,45 L71,77"/>
+    <path d="M79,77 L79,45 L90,64 L101,45 L101,77"/>
   </g>
 </svg>
