@@ -302,7 +302,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
         <div className="flex flex-wrap items-center gap-1 border-b border-border px-4 py-1.5">
           <span className="text-[11px] uppercase tracking-wide text-fg-faint">AI ziet:</span>
           {contextChips(context).map((chip) => (
-            <span key={chip} className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
+            <span key={chip} className="rounded-sm bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
               {chip}
             </span>
           ))}

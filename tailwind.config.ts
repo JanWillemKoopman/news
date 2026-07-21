@@ -17,9 +17,11 @@ const config: Config = {
           3: "#E6E8E7", // iets dieper grijs voor actieve/ingedrukte vlakken
         },
         border: {
-          // Neutrale, koele hairline-randen (geen warme tint).
-          DEFAULT: "rgba(0,0,0,0.10)",
-          strong: "rgba(0,0,0,0.20)",
+          // Flat design: de algemene rand is onzichtbaar (transparant) — vlakken worden
+          // onderscheiden door hun tint, niet door lijnen. `strong` blijft een echte,
+          // subtiele lijn voor de enkele plek die er bewust om vraagt (bv. outline-knop).
+          DEFAULT: "transparent",
+          strong: "rgba(0,0,0,0.16)",
         },
         fg: {
           DEFAULT: "#182420", // koel bijna-zwart met een vleugje bosgroen — neutraal, niet bruin
@@ -70,15 +72,15 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {
-        // Modern-matige afrondingen: pillen voor knoppen, nette ronding voor kaarten —
-        // niet overdreven organisch.
-        sm: "0.375rem",
-        DEFAULT: "0.5rem",
-        md: "0.625rem",
-        lg: "0.75rem",
-        xl: "1rem",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        // Strak & flat: knoppen zijn volledig rond (rounded-full, hieronder ongemoeid);
+        // al het andere is nog maar nét afgerond — nauwelijks zichtbaar.
+        sm: "2px",
+        DEFAULT: "3px",
+        md: "3px",
+        lg: "4px",
+        xl: "4px",
+        "2xl": "5px",
+        "3xl": "6px",
       },
       boxShadow: {
         // Starbucks.nl is volledig plat: geen decoratieve schaduwen. De standaard-

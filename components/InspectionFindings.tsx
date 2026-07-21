@@ -46,7 +46,7 @@ function FindingCard({ finding }: { finding: InspectionFinding }) {
         <SeverityIcon severity={finding.severity} />
         <span className="font-medium text-fg">{KIND_LABEL[finding.kind]}</span>
         {finding.column && (
-          <span className="rounded-full bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-fg-muted">
+          <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-fg-muted">
             {finding.column}
           </span>
         )}

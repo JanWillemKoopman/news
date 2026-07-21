@@ -41,7 +41,7 @@ export function ActivityBar() {
         <span className="truncate text-sm text-fg">{current.label}</span>
         <span className="flex-none font-mono text-xs tabular-nums text-fg-muted">{time}</span>
         {activities.length > 1 && (
-          <span className="flex-none rounded-full bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
+          <span className="flex-none rounded-sm bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
             +{activities.length - 1}
           </span>
         )}

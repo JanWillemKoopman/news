@@ -126,9 +126,9 @@ function MappingExplainer({ file }: { file: SourceFile }) {
       </summary>
       <div className="mt-2 space-y-1.5 text-fg-muted">
         <p className="flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-surface px-2 py-0.5">cadans: {m.granularity}</span>
-          <span className="rounded-full bg-surface px-2 py-0.5">indeling: {m.layout}</span>
-          {m.currency && <span className="rounded-full bg-surface px-2 py-0.5">valuta: {m.currency}</span>}
+          <span className="rounded-sm bg-surface px-2 py-0.5">cadans: {m.granularity}</span>
+          <span className="rounded-sm bg-surface px-2 py-0.5">indeling: {m.layout}</span>
+          {m.currency && <span className="rounded-sm bg-surface px-2 py-0.5">valuta: {m.currency}</span>}
         </p>
         <p>{m.reasoning}</p>
       </div>
@@ -383,7 +383,7 @@ function DataHealthMeter({ dataset }: { dataset: Dataset }) {
   return (
     <div className="rounded-lg border border-border p-3">
       <div className="flex items-center gap-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-surface-2">
           <div
             className={`h-full rounded-full ${
               health.band === "goed" ? "bg-success" : health.band === "redelijk" ? "bg-warn" : "bg-danger"
@@ -1073,7 +1073,7 @@ export function DataPrepSection({
                             <td className="py-1.5 pr-3">
                               <span className="text-fg">{col.name}</span>
                               {aiEntry?.unit && (
-                                <span className="ml-1.5 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                                <span className="ml-1.5 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-fg-muted">
                                   {aiEntry.unit}
                                 </span>
                               )}
@@ -1449,7 +1449,7 @@ function ColumnNotesEditor({ dataset }: { dataset: Dataset }) {
             <span className="w-44 flex-none truncate font-mono text-fg" title={col}>
               {col}
             </span>
-            <span className="flex-none rounded-full bg-surface-2 px-2 py-0.5 text-[11px]">{roles[col]}</span>
+            <span className="flex-none rounded-sm bg-surface-2 px-2 py-0.5 text-[11px]">{roles[col]}</span>
             <input
               type="text"
               value={notes[col] ?? ""}

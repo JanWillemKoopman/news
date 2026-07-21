@@ -131,7 +131,7 @@ export function RunHistory({
                   </>
                 )}
                 {run.is_published && (
-                  <span className="rounded-full border border-success/30 bg-success-dim px-2 py-0.5 text-[11px] font-medium text-success">
+                  <span className="rounded-sm bg-success-dim px-2 py-0.5 text-[11px] font-medium text-success">
                     gepubliceerd
                   </span>
                 )}

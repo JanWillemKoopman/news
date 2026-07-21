@@ -30,13 +30,13 @@ function ColumnRow({ stat }: { stat: ProfileColumnStats }) {
       {(stat.n_missing > 0 || hasOutliers) && (
         <div className="mt-1 flex flex-wrap gap-1.5">
           {stat.n_missing > 0 && (
-            <span className="rounded-full bg-warn-dim px-2 py-0.5 text-[10px] text-warn">
+            <span className="rounded-sm bg-warn-dim px-2 py-0.5 text-[10px] text-warn">
               {stat.n_missing} ontbrekend{hasGap ? ` · langste gat ${stat.longest_missing_run} wk` : ""}
             </span>
           )}
           {hasOutliers && (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-danger-dim px-2 py-0.5 text-[10px] text-danger"
+              className="inline-flex items-center gap-1 rounded-sm bg-danger-dim px-2 py-0.5 text-[10px] text-danger"
               title={stat.outliers.map((o) => `${o.label}: ${fmt(o.value)} (z=${o.z.toFixed(1)})`).join("\n")}
             >
               <AlertTriangle className="h-2.5 w-2.5" />

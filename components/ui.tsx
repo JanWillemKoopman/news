@@ -4,12 +4,10 @@ import { humanizeError } from "@/lib/humanizeMessage";
 import { GuideModal } from "@/components/GuideModal";
 import type { JobStatus, ProjectStatus } from "@/lib/types";
 
-// Crème kaart: zachte warm-witte achtergrond, warme bos-getinte border, royale
-// afronding en een zacht vallende schaduw — tastbaar en hoogwaardig.
+// Flat kaart: wit vlak zonder rand of schaduw, nauwelijks afgerond — onderscheiden
+// van het canvas door zijn tint.
 export function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-2xl border border-border bg-surface shadow-panel ${className}`}>{children}</div>
-  );
+  return <div className={`rounded-2xl bg-surface ${className}`}>{children}</div>;
 }
 
 // Behouden als alias: bestaande imports van `Card` blijven werken, met dezelfde
@@ -60,7 +58,7 @@ export function LinkButton({
 }
 
 const FIELD_BASE =
-  "w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-faint transition focus:border-accent/60 focus:outline-none focus:shadow-glow-sm";
+  "w-full rounded-xl bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-faint transition focus:outline-none focus:shadow-glow-sm";
 
 export function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${FIELD_BASE} ${className}`} {...props} />;
@@ -120,7 +118,7 @@ const STATUS_TONE: Record<JobStatus | ProjectStatus, string> = {
 export function StatusBadge({ status }: { status: JobStatus | ProjectStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[status]}`}
+      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium ${STATUS_TONE[status]}`}
     >
       {STATUS_LABEL[status]}
     </span>
@@ -189,10 +187,11 @@ export function TopBar({ email, guideMarkdown }: { email: string | null; guideMa
     // Niet-sticky op mobiel (scrolt gewoon mee — de stappen-nav hieronder blijft daar
     // wél sticky, zie PipelineShell.tsx); vanaf sm weer sticky zoals voorheen.
     <header className="top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:sticky sm:px-6">
-      <Link href="/projects" className="group flex flex-none items-center gap-2.5 text-base font-bold tracking-tight text-fg">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={28} height={28} className="h-7 w-7 transition group-hover:scale-105" />
-        MMM Wizard
+      <Link
+        href="/projects"
+        className="flex-none text-[15px] font-bold lowercase tracking-tight text-brand-700 transition hover:text-accent"
+      >
+        media mix modeling
       </Link>
       <div className="flex min-w-0 items-center gap-2 text-sm text-fg-muted sm:gap-3">
         {/* E-mail alleen op ruimere schermen — op mobiel zou het merk + knoppen

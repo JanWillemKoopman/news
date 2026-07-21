@@ -128,7 +128,7 @@ export function BusinessContextPanel({
         <ul className="mt-3 space-y-1.5">
           {notes.map((n, i) => (
             <li key={i} className="flex items-start gap-2 text-xs text-fg-muted">
-              <span className="mt-px flex-none rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-fg">
+              <span className="mt-px flex-none rounded-sm bg-surface-3 px-2 py-0.5 text-[11px] text-fg">
                 {TOPIC_LABEL[n.topic] ?? n.topic}
               </span>
               <span className="min-w-0 flex-1">

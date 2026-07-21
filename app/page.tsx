@@ -102,7 +102,7 @@ const WORKFLOW = [
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-surface-2 px-2.5 py-1 font-mono text-[11px] font-medium text-fg-muted">
+    <span className="inline-flex items-center rounded-sm bg-surface-2 px-2.5 py-1 font-mono text-[11px] font-medium text-fg-muted">
       {children}
     </span>
   );
@@ -110,7 +110,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/20 bg-brand-500/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">
+    <span className="inline-flex items-center gap-1.5 rounded-sm bg-brand-500/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">
       {children}
     </span>
   );
@@ -128,10 +128,11 @@ export default async function Home() {
       {/* ─── Navigatie ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
-          <Link href="/" className="group flex flex-none items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={32} height={32} className="h-8 w-8 transition group-hover:scale-105" />
-            <span className="text-[17px] font-semibold tracking-tight">MMM Wizard</span>
+          <Link
+            href="/"
+            className="flex-none text-[17px] font-bold lowercase tracking-tight text-brand-700 transition hover:text-accent"
+          >
+            media mix modeling
           </Link>
 
           <div className="hidden items-center gap-2 lg:flex">
@@ -247,7 +248,7 @@ export default async function Home() {
                         </span>
                         <span className="text-sm font-medium text-fg">{step.label}</span>
                         {i === PIPELINE.length - 1 && (
-                          <span className="ml-auto inline-flex items-center rounded-full border border-success/30 bg-success-dim px-2 py-0.5 text-[10px] font-medium text-success">
+                          <span className="ml-auto inline-flex items-center rounded-sm bg-success-dim px-2 py-0.5 text-[10px] font-medium text-success">
                             ROAS
                           </span>
                         )}
@@ -458,11 +459,7 @@ export default async function Home() {
       {/* ─── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
-          <div className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={26} height={26} className="h-[26px] w-[26px]" />
-            <span className="text-sm font-semibold tracking-tight">MMM Wizard</span>
-          </div>
+          <div className="text-sm font-bold lowercase tracking-tight text-brand-700">media mix modeling</div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-fg-muted">
             <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-fg">
               {CONTACT_EMAIL}
