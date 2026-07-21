@@ -26,8 +26,8 @@ import type { FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types
 // Starbucks-palet voor de grafieken: House Green als accent, warme taupe/crème als
 // neutralen, diep boskoffie-groen als inkt.
 const ACCENT = "#00754A";
-const ACCENT_SOFT = "#8FBCA9";
-const NEUTRAL = "#B7AC98";
+const ACCENT_SOFT = "#5FA588";
+const NEUTRAL = "#A2957A";
 const BASELINE_FILL = "#E3DBCB";
 const INK = "#1E3932";
 const SUCCESS = "#1E7A4B";
@@ -46,23 +46,24 @@ function fmtShort(n: number): string {
   return fmt(n);
 }
 
-// Kanaal-lagen in de opbouwgrafiek: een warme, curated Starbucks-tintenreeks (groen,
-// goud, bos, salie, koffie…) zodat de lagen te onderscheiden blijven maar het palet
-// warm en samenhangend blijft. Buiten de reeks: een rustige groen-hue verloop.
+// Kanaal-lagen in de opbouwgrafiek: een warme, curated Starbucks-café-tintenreeks. Bewust
+// afwisselend groen ↔ warm en met flinke lichtheidsstappen tussen naburige lagen, zodat
+// gestapelde vlakken duidelijk te onderscheiden blijven (i.p.v. één groene massa) terwijl
+// het palet warm en on-brand blijft. Buiten de reeks: een rustig groen-hue verloop.
 const CHANNEL_PALETTE = [
-  "#00754A", // house green
+  "#00754A", // house green (donker groen)
   "#CBA258", // goud
-  "#1E3932", // diep bos
-  "#6BAF92", // salie
-  "#A6743C", // koffie/karamel
-  "#3D8168", // mos
-  "#C7B37F", // zand
+  "#C1734A", // klei/terracotta (warm oranje)
+  "#6BAF92", // salie (licht groen)
+  "#8C5A2B", // koffie (bruin)
+  "#2E8B77", // teal-groen
+  "#D8B98A", // zand (licht warm)
   "#4C5F57", // steen-groen
 ];
 function channelColor(i: number, n: number): string {
   if (i < CHANNEL_PALETTE.length) return CHANNEL_PALETTE[i];
-  const light = 30 + ((i - CHANNEL_PALETTE.length) * 34) / Math.max(1, n - 1); // 30%..
-  return `hsl(158, 45%, ${Math.min(70, light)}%)`;
+  const light = 34 + ((i - CHANNEL_PALETTE.length) * 30) / Math.max(1, n - 1);
+  return `hsl(158, 42%, ${Math.min(70, light)}%)`;
 }
 
 function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -228,7 +229,7 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
   return (
     <ChartCard
       title={`Opbouw van je ${kpi}, week voor week`}
-      hint="Grijs = de basislijn (wat je ook zonder marketing had gehad); de blauwe lagen = de bijdrage per kanaal; de donkere lijn = wat er werkelijk gebeurde."
+      hint="Crème = de basislijn (wat je ook zonder marketing had gehad); de gekleurde lagen = de bijdrage per kanaal; de donkere lijn = wat er werkelijk gebeurde."
     >
       <ResponsiveContainer width="100%" height={280} className="overflow-hidden">
         <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -239,9 +240,19 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
             contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
-          <Area dataKey="Basislijn" stackId="kpi" stroke="none" fill={BASELINE_FILL} fillOpacity={0.9} />
+          <Area dataKey="Basislijn" stackId="kpi" stroke="none" fill={BASELINE_FILL} fillOpacity={0.95} />
           {channelNames.map((n, i) => (
-            <Area key={n} dataKey={n} stackId="kpi" stroke="none" fill={channelColor(i, channelNames.length)} fillOpacity={0.9} />
+            // Dunne crème scheidingslijn tussen de lagen houdt de gestapelde vlakken —
+            // ook meerdere groentinten — scherp van elkaar gescheiden en leesbaar.
+            <Area
+              key={n}
+              dataKey={n}
+              stackId="kpi"
+              stroke="#FDFBF6"
+              strokeWidth={0.75}
+              fill={channelColor(i, channelNames.length)}
+              fillOpacity={0.95}
+            />
           ))}
           <Line dataKey="werkelijk" stroke={INK} strokeWidth={1.5} dot={false} />
         </ComposedChart>
@@ -331,7 +342,7 @@ function FitVsActualChart({ weekly, coverage }: { weekly: WeeklyDecomposition; c
   return (
     <ChartCard
       title="Hoe goed volgt het model de werkelijkheid?"
-      hint={`De donkere lijn is wat er echt gebeurde; blauw is de modelverwachting met onzekerheidsband. ${fmt(coverage * 100)}% van de weken viel binnen de band — weken erbuiten zijn gespreksstof ("wat gebeurde daar?").`}
+      hint={`De donkere lijn is wat er echt gebeurde; groen is de modelverwachting met onzekerheidsband. ${fmt(coverage * 100)}% van de weken viel binnen de band — weken erbuiten zijn gespreksstof ("wat gebeurde daar?").`}
     >
       <ResponsiveContainer width="100%" height={220} className="overflow-hidden">
         <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -369,7 +380,7 @@ function SpendVsReturnChart({ summary }: { summary: FitSummary }) {
   return (
     <ChartCard
       title="Wat kostte het, wat leverde het op?"
-      hint={`Per kanaal: grijs = uitgegeven, blauw = geschatte opbrengst in ${summary.kpi} (met onzekerheidsstreep). Is de blauwe balk langer dan de grijze, dan verdiende het kanaal zichzelf terug.`}
+      hint={`Per kanaal: beige = uitgegeven, groen = geschatte opbrengst in ${summary.kpi} (met onzekerheidsstreep). Is de groene balk langer dan de beige, dan verdiende het kanaal zichzelf terug.`}
     >
       <ResponsiveContainer width="100%" height={Math.max(140, data.length * 44)} className="overflow-hidden">
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }} barGap={2}>
@@ -404,7 +415,7 @@ function BudgetVsEffectChart({ summary }: { summary: FitSummary }) {
   return (
     <ChartCard
       title="Aandeel in het budget vs. aandeel in het effect"
-      hint="Krijgt een kanaal veel budget maar levert het weinig effect (grijs langer dan blauw)? Dan is dat de eerste plek om te herverdelen."
+      hint="Krijgt een kanaal veel budget maar levert het weinig effect (beige langer dan groen)? Dan is dat de eerste plek om te herverdelen."
     >
       <ResponsiveContainer width="100%" height={Math.max(140, data.length * 44)} className="overflow-hidden">
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }} barGap={2}>
@@ -669,8 +680,8 @@ export function ResultsCharts({
           title="Rendement per kanaal (ROAS)"
           hint={
             kpiMargin != null
-              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per ${marginUnit} ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
-              : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
+              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per ${marginUnit} ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; beige = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
+              : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; beige = nog niet te zeggen; rood = vrijwel zeker eronder."
           }
         >
           <ResponsiveContainer width="100%" height={roasHeight} className="overflow-hidden">
@@ -695,7 +706,7 @@ export function ResultsCharts({
         {splitData.length > 0 && (
           <ChartCard
             title="Direct effect vs. na-ijl per kanaal"
-            hint="Donkerblauw = opbrengst in dezelfde week als de uitgave (“zag de advertentie, kocht meteen”); lichtblauw = doorwerking in latere weken (“zag de advertentie, kocht later”)."
+            hint="Donkergroen = opbrengst in dezelfde week als de uitgave (“zag de advertentie, kocht meteen”); lichtgroen = doorwerking in latere weken (“zag de advertentie, kocht later”)."
           >
             <ResponsiveContainer width="100%" height={Math.max(120, splitData.length * 32)} className="overflow-hidden">
               <BarChart data={splitData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
@@ -797,7 +808,7 @@ export function ResultsCharts({
       <WhatIfSlider summary={summary} />
 
       {reallocData.length > 0 && (
-        <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — blauw = meer, grijs = minder">
+        <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — groen = meer, beige = minder">
           <ResponsiveContainer width="100%" height={reallocHeight} className="overflow-hidden">
             <BarChart data={reallocData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
