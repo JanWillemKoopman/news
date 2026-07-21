@@ -189,7 +189,8 @@ export function TopBar({ email, guideMarkdown }: { email: string | null; guideMa
     // wél sticky, zie PipelineShell.tsx); vanaf sm weer sticky zoals voorheen.
     <header className="top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:sticky sm:px-6">
       <Link href="/projects" className="group flex flex-none items-center gap-2.5 font-serif text-base font-semibold tracking-tight text-fg">
-        <span className="h-6 w-6 rounded-full bg-accent shadow-soft ring-2 ring-inset ring-surface transition group-hover:bg-accent-hover" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={28} height={28} className="h-7 w-7 transition group-hover:scale-105" />
         MMM Wizard
       </Link>
       <div className="flex min-w-0 items-center gap-2 text-sm text-fg-muted sm:gap-3">

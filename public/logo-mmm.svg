@@ -1,0 +1,51 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MMM Wizard embleem">
+  <defs>
+    <!-- Zachte diepte in de medaille -->
+    <radialGradient id="disc" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#00794D"/>
+      <stop offset="100%" stop-color="#00623E"/>
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#00623E"/>
+      <stop offset="100%" stop-color="#014A31"/>
+    </radialGradient>
+    <path id="topArc" d="M66.5 106.5 A163 163 0 0 1 333.5 106.5"/>
+    <path id="botArc" d="M66.5 293.5 A163 163 0 0 0 333.5 293.5"/>
+  </defs>
+
+  <!-- Groene medaille -->
+  <circle cx="200" cy="200" r="192" fill="url(#disc)"/>
+  <!-- Fijne gouden premium-rand -->
+  <circle cx="200" cy="200" r="190.5" fill="none" stroke="#CBA258" stroke-width="1.5" stroke-opacity="0.55"/>
+  <!-- Crème ringen die de tekstband afbakenen -->
+  <circle cx="200" cy="200" r="183" fill="none" stroke="#FDFBF6" stroke-width="2.5"/>
+  <circle cx="200" cy="200" r="146" fill="none" stroke="#FDFBF6" stroke-width="2.5"/>
+  <!-- Iets donkerder kerndisc voor diepte -->
+  <circle cx="200" cy="200" r="143" fill="url(#core)"/>
+
+  <!-- Curved ring-tekst -->
+  <g fill="#FDFBF6" font-family="Georgia, 'Times New Roman', serif" font-weight="600" letter-spacing="4">
+    <text font-size="27">
+      <textPath href="#topArc" startOffset="50%" text-anchor="middle">MMM · WIZARD</textPath>
+    </text>
+    <text font-size="17.5" letter-spacing="3.4">
+      <textPath href="#botArc" startOffset="50%" text-anchor="middle">MEDIA MIX MODELING</textPath>
+    </text>
+  </g>
+
+  <!-- Ster-scheidingstekens op 3 en 9 uur -->
+  <g fill="#FDFBF6">
+    <path transform="translate(363 200)" d="M0,-8 L1.88,-2.59 L7.61,-2.47 L3.04,0.99 L4.70,6.47 L0,3.2 L-4.70,6.47 L-3.04,0.99 L-7.61,-2.47 L-1.88,-2.59 Z"/>
+    <path transform="translate(37 200)" d="M0,-8 L1.88,-2.59 L7.61,-2.47 L3.04,0.99 L4.70,6.47 L0,3.2 L-4.70,6.47 L-3.04,0.99 L-7.61,-2.47 L-1.88,-2.59 Z"/>
+  </g>
+
+  <!-- Gouden sprankel-kroon boven het monogram -->
+  <path transform="translate(200 132)" d="M0,-11 L2.3,-2.3 L11,0 L2.3,2.3 L0,11 L-2.3,2.3 L-11,0 L-2.3,-2.3 Z" fill="#CBA258"/>
+
+  <!-- MMM monogram: drie M'en, de middelste als kroon-crest. Ronde, ambachtelijke lijnen. -->
+  <g fill="none" stroke="#FDFBF6" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M99,245 L99,165 L124,207 L149,165 L149,245"/>
+    <path d="M175,245 L175,153 L200,199 L225,153 L225,245"/>
+    <path d="M251,245 L251,165 L276,207 L301,165 L301,245"/>
+  </g>
+</svg>

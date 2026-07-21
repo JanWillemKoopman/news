@@ -129,10 +129,9 @@ export default async function Home() {
       <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
           <Link href="/" className="group flex flex-none items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm shadow-brand-600/30 transition group-hover:scale-105">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">MMM Wizard</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={32} height={32} className="h-8 w-8 transition group-hover:scale-105" />
+            <span className="font-serif text-[17px] font-semibold tracking-tight">MMM Wizard</span>
           </Link>
 
           <div className="hidden items-center gap-2 lg:flex">
@@ -460,10 +459,9 @@ export default async function Home() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-brand-500 to-brand-600 text-white">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">MMM Wizard</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={26} height={26} className="h-[26px] w-[26px]" />
+            <span className="font-serif text-sm font-semibold tracking-tight">MMM Wizard</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-fg-muted">
             <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-fg">
