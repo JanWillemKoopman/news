@@ -131,7 +131,7 @@ export default async function Home() {
           <Link href="/" className="group flex flex-none items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={32} height={32} className="h-8 w-8 transition group-hover:scale-105" />
-            <span className="font-serif text-[17px] font-semibold tracking-tight">MMM Wizard</span>
+            <span className="text-[17px] font-semibold tracking-tight">MMM Wizard</span>
           </Link>
 
           <div className="hidden items-center gap-2 lg:flex">
@@ -461,7 +461,7 @@ export default async function Home() {
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={26} height={26} className="h-[26px] w-[26px]" />
-            <span className="font-serif text-sm font-semibold tracking-tight">MMM Wizard</span>
+            <span className="text-sm font-semibold tracking-tight">MMM Wizard</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-fg-muted">
             <a href={`mailto:${CONTACT_EMAIL}`} className="transition hover:text-fg">

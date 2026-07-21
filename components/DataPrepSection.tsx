@@ -369,7 +369,7 @@ function Sparkline({ values }: { values: number[] }) {
     .join(" ");
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-none overflow-visible">
-      <polyline points={points} fill="none" stroke="#00754A" strokeWidth={1.25} strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke="#00693E" strokeWidth={1.25} strokeLinejoin="round" />
     </svg>
   );
 }

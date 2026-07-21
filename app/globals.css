@@ -4,51 +4,47 @@
 
 :root {
   color-scheme: light;
-  /* --font-sans en --font-serif worden via next/font op <html> gezet (zie layout.tsx).
-     Alleen de mono-stack blijft een systeem-stack: gebruikt voor kleine technische labels. */
+  /* --font-sans wordt via next/font op <html> gezet (zie layout.tsx). Alleen de
+     mono-stack blijft een systeem-stack: gebruikt voor kleine technische labels. */
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
     monospace;
 }
 
 body {
   @apply bg-bg text-fg antialiased;
-  /* Warme leesbaarheid: Mulish leest prettig met neutrale tracking en wat extra regelrust. */
-  font-feature-settings: "ss01";
 }
 
-/* Sterke, redactionele koppen in de ambachtelijke display-serif (Fraunces). Losse
-   utility (font-sans/font-mono) op een element blijft altijd winnen. */
+/* Strakke, moderne koppen: iets krappere tracking, in dezelfde heldere sans. */
 @layer base {
   h1,
   h2,
   h3 {
-    font-family: var(--font-serif), ui-serif, Georgia, serif;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 }
 
 ::selection {
-  background: rgba(0, 117, 74, 0.18);
-  color: #1e3932;
+  background: rgba(0, 105, 62, 0.16);
+  color: #182420;
 }
 
-/* Dunne, warme scrollbars — onopvallend op het crème-canvas. */
+/* Dunne, neutrale scrollbars — onopvallend op het lichtgrijze canvas. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(30, 57, 50, 0.22) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(30, 57, 50, 0.2);
+  background: rgba(0, 0, 0, 0.18);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(30, 57, 50, 0.32);
+  background: rgba(0, 0, 0, 0.3);
   background-clip: content-box;
 }
 

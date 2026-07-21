@@ -21,11 +21,12 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  // Groene primaire pil-knop (crème tekst op House Green) — de enige actiekleur.
+  // Groene primaire pil-knop (witte tekst op House Green) — plat, geen schaduw.
   primary:
-    "bg-accent text-bg font-semibold shadow-soft hover:bg-accent-hover hover:shadow-glow-sm disabled:bg-surface-3 disabled:text-fg-faint disabled:shadow-none",
+    "bg-accent text-white font-semibold hover:bg-accent-hover disabled:bg-surface-3 disabled:text-fg-faint",
+  // Secundaire pil: dunne groene rand + groene tekst, transparant — zoals starbucks.nl.
   secondary:
-    "border border-border-strong bg-surface text-fg font-medium hover:bg-surface-2 disabled:text-fg-faint",
+    "border border-accent/70 bg-transparent text-accent font-semibold hover:bg-accent-dim disabled:border-border disabled:text-fg-faint",
   ghost: "text-fg-muted font-medium hover:bg-surface-2 hover:text-fg",
   danger: "border border-danger/40 bg-danger-dim text-danger font-medium hover:bg-danger/15",
 };
@@ -188,7 +189,7 @@ export function TopBar({ email, guideMarkdown }: { email: string | null; guideMa
     // Niet-sticky op mobiel (scrolt gewoon mee — de stappen-nav hieronder blijft daar
     // wél sticky, zie PipelineShell.tsx); vanaf sm weer sticky zoals voorheen.
     <header className="top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-bg/80 px-4 py-3 backdrop-blur sm:sticky sm:px-6">
-      <Link href="/projects" className="group flex flex-none items-center gap-2.5 font-serif text-base font-semibold tracking-tight text-fg">
+      <Link href="/projects" className="group flex flex-none items-center gap-2.5 text-base font-bold tracking-tight text-fg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-mmm-mark.svg" alt="MMM Wizard" width={28} height={28} className="h-7 w-7 transition group-hover:scale-105" />
         MMM Wizard

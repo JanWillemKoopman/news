@@ -23,7 +23,7 @@ import { SourceHealthCards } from "@/components/SourceHealthCard";
 import type { SourceFile } from "@/lib/types";
 
 const RAW_BUCKET = "mmm-raw-data";
-const ACCENT = "#00754A";
+const ACCENT = "#00693E";
 
 interface ParsedTable {
   columns: string[];
@@ -38,11 +38,11 @@ function fmt(n: number, digits = 1): string {
 // A single-hue (rose) magnitude scale for |correlation| — sign is carried by a +/− label,
 // not a second hue, so the app's one-accent-color rule holds even for a polarity metric.
 function correlationCellStyle(r: number): React.CSSProperties {
-  if (Number.isNaN(r)) return { color: "#8A9891" };
+  if (Number.isNaN(r)) return { color: "#8C938F" };
   const strength = Math.min(Math.abs(r), 1);
   return {
-    backgroundColor: `rgba(0, 117, 74, ${(strength * 0.32).toFixed(2)})`,
-    color: strength > 0.55 ? "#FDFBF6" : "#4C5F57",
+    backgroundColor: `rgba(0, 105, 62, ${(strength * 0.32).toFixed(2)})`,
+    color: strength > 0.55 ? "#FFFFFF" : "#5C6660",
   };
 }
 
@@ -242,17 +242,17 @@ export function EdaSection({
                 <ResponsiveContainer width="100%" height={180} className="overflow-hidden">
                   {chartType === "line" ? (
                     <LineChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,57,50,0.08)" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#4C5F57" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#4C5F57" }} width={48} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.07)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#5C6660" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#5C6660" }} width={48} />
                       <Tooltip {...CHART_TOOLTIP_STYLE} />
                       <Line type="monotone" dataKey={yCol} stroke={ACCENT} strokeWidth={2} dot={false} />
                     </LineChart>
                   ) : (
                     <BarChart data={ready.rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,57,50,0.08)" vertical={false} />
-                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#4C5F57" }} minTickGap={24} />
-                      <YAxis tick={{ fontSize: 11, fill: "#4C5F57" }} width={48} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.07)" vertical={false} />
+                      <XAxis dataKey={xCol} tick={{ fontSize: 11, fill: "#5C6660" }} minTickGap={24} />
+                      <YAxis tick={{ fontSize: 11, fill: "#5C6660" }} width={48} />
                       <Tooltip {...CHART_TOOLTIP_STYLE} />
                       <Bar dataKey={yCol} fill={ACCENT} radius={[2, 2, 0, 0]} />
                     </BarChart>
@@ -302,7 +302,7 @@ export function EdaSection({
                 <p className="mb-1 text-xs text-fg-muted">Verdeling</p>
                 <ResponsiveContainer width="100%" height={120} className="overflow-hidden">
                   <BarChart data={hist} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#4C5F57" }} interval={2} />
+                    <XAxis dataKey="bin" tick={{ fontSize: 9, fill: "#5C6660" }} interval={2} />
                     <YAxis hide />
                     <Tooltip {...CHART_TOOLTIP_STYLE} />
                     <Bar dataKey="count" fill={ACCENT} radius={[2, 2, 0, 0]} />

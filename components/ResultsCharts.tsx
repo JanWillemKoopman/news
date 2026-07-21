@@ -23,17 +23,17 @@ import type { FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
 // Georganiseerd langs de vier vragen van een budgetgesprek: wat gebeurde er → wat leverde
 // elk kanaal op → waar kan de volgende euro heen → hoe werkt het (verdieping).
-// Starbucks-palet voor de grafieken: House Green als accent, warme taupe/crème als
-// neutralen, diep boskoffie-groen als inkt.
-const ACCENT = "#00754A";
+// Starbucks.nl-palet voor de grafieken: House Green als accent, koele grijzen als
+// neutralen, diep bosgroen als inkt.
+const ACCENT = "#00693E";
 const ACCENT_SOFT = "#5FA588";
-const NEUTRAL = "#A2957A";
-const BASELINE_FILL = "#E3DBCB";
+const NEUTRAL = "#97A09B";
+const BASELINE_FILL = "#E4E7E5";
 const INK = "#1E3932";
 const SUCCESS = "#1E7A4B";
-const DANGER = "#B23A2E";
-const GRID = "rgba(30,57,50,0.08)";
-const AXIS = { fontSize: 11, fill: "#4C5F57" };
+const DANGER = "#C0362C";
+const GRID = "rgba(0,0,0,0.07)";
+const AXIS = { fontSize: 11, fill: "#5C6660" };
 
 function fmt(n: number, digits = 0): string {
   return n.toLocaleString("nl-NL", { maximumFractionDigits: digits });
@@ -46,18 +46,18 @@ function fmtShort(n: number): string {
   return fmt(n);
 }
 
-// Kanaal-lagen in de opbouwgrafiek: een warme, curated Starbucks-café-tintenreeks. Bewust
-// afwisselend groen ↔ warm en met flinke lichtheidsstappen tussen naburige lagen, zodat
+// Kanaal-lagen in de opbouwgrafiek: een curated, koel-getint Starbucks-palet. Bewust
+// afwisselend groen ↔ accent en met flinke lichtheidsstappen tussen naburige lagen, zodat
 // gestapelde vlakken duidelijk te onderscheiden blijven (i.p.v. één groene massa) terwijl
-// het palet warm en on-brand blijft. Buiten de reeks: een rustig groen-hue verloop.
+// het palet on-brand blijft. Buiten de reeks: een rustig groen-hue verloop.
 const CHANNEL_PALETTE = [
-  "#00754A", // house green (donker groen)
-  "#CBA258", // goud
-  "#C1734A", // klei/terracotta (warm oranje)
-  "#6BAF92", // salie (licht groen)
-  "#8C5A2B", // koffie (bruin)
-  "#2E8B77", // teal-groen
-  "#D8B98A", // zand (licht warm)
+  "#00693E", // house green
+  "#C88A2C", // goud
+  "#2E8B8B", // teal
+  "#6BAF92", // salie
+  "#B4633A", // klei
+  "#1E3932", // diep bosgroen
+  "#8A938F", // koel grijs
   "#4C5F57", // steen-groen
 ];
 function channelColor(i: number, n: number): string {
@@ -229,7 +229,7 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
   return (
     <ChartCard
       title={`Opbouw van je ${kpi}, week voor week`}
-      hint="Crème = de basislijn (wat je ook zonder marketing had gehad); de gekleurde lagen = de bijdrage per kanaal; de donkere lijn = wat er werkelijk gebeurde."
+      hint="Lichtgrijs = de basislijn (wat je ook zonder marketing had gehad); de gekleurde lagen = de bijdrage per kanaal; de donkere lijn = wat er werkelijk gebeurde."
     >
       <ResponsiveContainer width="100%" height={280} className="overflow-hidden">
         <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -237,7 +237,7 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
           <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
           <YAxis tick={AXIS} width={48} tickFormatter={fmtShort} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Area dataKey="Basislijn" stackId="kpi" stroke="none" fill={BASELINE_FILL} fillOpacity={0.95} />
@@ -248,7 +248,7 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
               key={n}
               dataKey={n}
               stackId="kpi"
-              stroke="#FDFBF6"
+              stroke="#FFFFFF"
               strokeWidth={0.75}
               fill={channelColor(i, channelNames.length)}
               fillOpacity={0.95}
@@ -307,7 +307,7 @@ function WaterfallChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={110} />
           <Tooltip
-            cursor={{ fill: "rgba(30,57,50,0.05)" }}
+            cursor={{ fill: "rgba(0,0,0,0.05)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.[1]) return null;
               const d = payload[1].payload as { name: string; value: number };
@@ -350,7 +350,7 @@ function FitVsActualChart({ weekly, coverage }: { weekly: WeeklyDecomposition; c
           <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
           <YAxis tick={AXIS} width={48} tickFormatter={fmtShort} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
             formatter={(v) => (Array.isArray(v) ? `${fmt(Number(v[0]))} – ${fmt(Number(v[1]))}` : typeof v === "number" ? fmt(v) : String(v))}
           />
           <Area dataKey="band" stroke="none" fill={ACCENT} fillOpacity={0.12} name="94%-band" />
@@ -380,7 +380,7 @@ function SpendVsReturnChart({ summary }: { summary: FitSummary }) {
   return (
     <ChartCard
       title="Wat kostte het, wat leverde het op?"
-      hint={`Per kanaal: beige = uitgegeven, groen = geschatte opbrengst in ${summary.kpi} (met onzekerheidsstreep). Is de groene balk langer dan de beige, dan verdiende het kanaal zichzelf terug.`}
+      hint={`Per kanaal: grijs = uitgegeven, groen = geschatte opbrengst in ${summary.kpi} (met onzekerheidsstreep). Is de groene balk langer dan de grijze, dan verdiende het kanaal zichzelf terug.`}
     >
       <ResponsiveContainer width="100%" height={Math.max(140, data.length * 44)} className="overflow-hidden">
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }} barGap={2}>
@@ -388,8 +388,8 @@ function SpendVsReturnChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(30,57,50,0.05)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+            cursor={{ fill: "rgba(0,0,0,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Bar dataKey="kosten" fill={NEUTRAL} radius={[0, 3, 3, 0]} barSize={11} name="kosten" />
@@ -415,7 +415,7 @@ function BudgetVsEffectChart({ summary }: { summary: FitSummary }) {
   return (
     <ChartCard
       title="Aandeel in het budget vs. aandeel in het effect"
-      hint="Krijgt een kanaal veel budget maar levert het weinig effect (beige langer dan groen)? Dan is dat de eerste plek om te herverdelen."
+      hint="Krijgt een kanaal veel budget maar levert het weinig effect (grijs langer dan groen)? Dan is dat de eerste plek om te herverdelen."
     >
       <ResponsiveContainer width="100%" height={Math.max(140, data.length * 44)} className="overflow-hidden">
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }} barGap={2}>
@@ -423,8 +423,8 @@ function BudgetVsEffectChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={(v) => `${fmt(v)}%`} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(30,57,50,0.05)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+            cursor={{ fill: "rgba(0,0,0,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
             formatter={(v) => (typeof v === "number" ? `${fmt(v, 1)}%` : String(v))}
           />
           <Bar dataKey="budget" fill={NEUTRAL} radius={[0, 3, 3, 0]} barSize={11} name="aandeel budget" />
@@ -482,8 +482,8 @@ function MarginalEuroChart({ summary }: { summary: FitSummary }) {
           <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
           <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
           <Tooltip
-            cursor={{ fill: "rgba(30,57,50,0.05)" }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+            cursor={{ fill: "rgba(0,0,0,0.05)" }}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
             formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
           />
           <Bar dataKey="marginaal" radius={[0, 3, 3, 0]} barSize={14}>
@@ -537,7 +537,7 @@ function WhatIfSlider({ summary }: { summary: FitSummary }) {
           step={(max - min) / 100 || 1}
           value={chosen}
           onChange={(e) => setBudget(Number(e.target.value))}
-          className="w-full accent-[#00754A]"
+          className="w-full accent-[#00693E]"
           aria-label="Totaal weekbudget"
         />
         <div className="mt-2 flex flex-wrap items-baseline gap-x-6 gap-y-1">
@@ -592,7 +592,7 @@ function AdstockDecayGrid({ summary }: { summary: FitSummary }) {
                 <XAxis dataKey="week" tick={AXIS} tickFormatter={(v) => `${v}`} />
                 <YAxis hide />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(30,57,50,0.12)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
                   formatter={(v) => (typeof v === "number" ? `${fmt(v, 1)}% van het effect` : String(v))}
                   labelFormatter={(l) => `week +${l}`}
                 />
@@ -680,8 +680,8 @@ export function ResultsCharts({
           title="Rendement per kanaal (ROAS)"
           hint={
             kpiMargin != null
-              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per ${marginUnit} ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; beige = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
-              : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; beige = nog niet te zeggen; rood = vrijwel zeker eronder."
+              ? `Rechts van de stippellijn verdient een kanaal zichzelf écht terug: bij €${fmt(kpiMargin, 2)} marge per ${marginUnit} ligt break-even bij ROAS ${fmt(1 / kpiMargin, 2)}. Groen = vrijwel zeker winstgevend; grijs = nog niet te zeggen; rood = vrijwel zeker verliesgevend.`
+              : "Rechts van de stippellijn (1,0) levert een kanaal meer op dan het kost. Let op: échte winstgevendheid hangt van je marge af — vul bij stap 3 de gemiddelde marge per verkocht product in voor de eerlijke break-evenlijn. Groen = vrijwel zeker boven break-even; grijs = nog niet te zeggen; rood = vrijwel zeker eronder."
           }
         >
           <ResponsiveContainer width="100%" height={roasHeight} className="overflow-hidden">
@@ -689,7 +689,7 @@ export function ResultsCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
+              <Tooltip content={<RoasTooltip />} cursor={{ fill: "rgba(0,0,0,0.05)" }} />
               <ReferenceLine x={breakEven} stroke="#4C5F57" strokeDasharray="4 4" label={{ value: "break-even", position: "top", fontSize: 10, fill: "#4C5F57" }} />
               <Bar dataKey="p50" radius={[0, 3, 3, 0]} barSize={14}>
                 {roasData.map((d) => (
@@ -713,7 +713,7 @@ export function ResultsCharts({
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
                 <XAxis type="number" tick={AXIS} tickFormatter={fmtShort} />
                 <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-                <Tooltip content={<SplitTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
+                <Tooltip content={<SplitTooltip />} cursor={{ fill: "rgba(0,0,0,0.05)" }} />
                 <Bar dataKey="direct" stackId="split" fill={ACCENT} barSize={14} name="Direct" />
                 <Bar dataKey="carryover" stackId="split" fill={ACCENT_SOFT} radius={[0, 3, 3, 0]} barSize={14} name="Na-ijl" />
               </BarChart>
@@ -808,13 +808,13 @@ export function ResultsCharts({
       <WhatIfSlider summary={summary} />
 
       {reallocData.length > 0 && (
-        <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — groen = meer, beige = minder">
+        <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — groen = meer, grijs = minder">
           <ResponsiveContainer width="100%" height={reallocHeight} className="overflow-hidden">
             <BarChart data={reallocData} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID} horizontal={false} />
               <XAxis type="number" tick={AXIS} tickFormatter={(v) => fmt(v)} />
               <YAxis type="category" dataKey="name" tick={AXIS} width={100} />
-              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(30,57,50,0.05)" }} />
+              <Tooltip content={<ReallocTooltip />} cursor={{ fill: "rgba(0,0,0,0.05)" }} />
               <Bar dataKey="delta" radius={[0, 3, 3, 0]} barSize={14}>
                 {reallocData.map((d) => (
                   <Cell key={d.name} fill={d.delta >= 0 ? ACCENT : NEUTRAL} />

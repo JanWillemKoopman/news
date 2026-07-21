@@ -1,52 +1,50 @@
 import type { Config } from "tailwindcss";
 
-// Starbucks-geïnspireerd palet: warme crème/havermelk-canvassen, het iconische diepe
-// "House Green" als merk-/actiekleur, en diepe boskoffie-groen i.p.v. hard zwart voor
-// tekst. Semantische tokens (bg / surface / border / fg / accent …) i.p.v. losse
-// kleurnamen, zodat de hele app centraal bij te stellen is en componenten hun bedoeling
-// uitdrukken. Betekenis strikt gescheiden: groen = actie/merk, brand = redactionele
-// merkaccenten, goud = warme highlight, roodbruin = attentie/mislukt, amber = waarschuwing.
+// Starbucks.nl-palet (modern & koel): bijna-witte / lichtgrijze canvassen, platte vlakken
+// zónder schaduw, koel bijna-zwart voor tekst (meer grijs dan bruin), en het House Green
+// als merk-/actiekleur met diep bosgroen voor donkere vlakken. Semantische tokens
+// (bg / surface / border / fg / accent …) zodat de hele app centraal bij te stellen is.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Warme, romige havermelk-canvas — geen harde witte of grijze achtergrond.
-        bg: "#F7F3EA",
+        // Koel, bijna-wit lichtgrijs canvas (niet crème).
+        bg: "#F4F5F4",
         surface: {
-          DEFAULT: "#FDFBF6", // zachte crème-witte kaart die rustig oplicht op het canvas
-          2: "#F2ECDE", // dieper oat/crème voor subtiele vlakken
-          3: "#E7DECB", // warm taupe voor actieve/ingedrukte vlakken
+          DEFAULT: "#FFFFFF", // witte kaart die plat op het lichtgrijze canvas ligt
+          2: "#F0F1F0", // subtiel koel grijs voor genestelde vlakken / invoervelden
+          3: "#E6E8E7", // iets dieper grijs voor actieve/ingedrukte vlakken
         },
         border: {
-          // Bos-getinte, warme randen i.p.v. neutraal grijs.
-          DEFAULT: "rgba(30,57,50,0.12)",
-          strong: "rgba(30,57,50,0.22)",
+          // Neutrale, koele hairline-randen (geen warme tint).
+          DEFAULT: "rgba(0,0,0,0.10)",
+          strong: "rgba(0,0,0,0.20)",
         },
         fg: {
-          DEFAULT: "#1E3932", // diep boskoffie-groen als "inkt" — warmer dan zwart
-          muted: "#4C5F57",
-          faint: "#8A9891",
+          DEFAULT: "#182420", // koel bijna-zwart met een vleugje bosgroen — neutraal, niet bruin
+          muted: "#5C6660",
+          faint: "#8C938F",
         },
-        // Het iconische Starbucks House Green als enige primaire actie-/merkkleur.
+        // Het Starbucks House Green als enige primaire actie-/merkkleur.
         accent: {
-          DEFAULT: "#00754A",
-          hover: "#00623E",
-          dim: "rgba(0,117,74,0.10)",
+          DEFAULT: "#00693E",
+          hover: "#00522F",
+          dim: "rgba(0,105,62,0.08)",
         },
-        // Redactionele merkgroen-schaal voor de marketing/landingsvlakken (verving het
-        // oude roze). Ondersteunt opacity-modifiers (brand-500/10) net als losse kleuren.
+        // Merkgroen-schaal voor de marketing/landingsvlakken. Ondersteunt opacity-modifiers
+        // (brand-500/10) net als losse kleuren. 700 = het diepe bosgroen van donkere vlakken.
         brand: {
-          50: "#EAF3EE",
-          100: "#CDE5D9",
-          200: "#A7D2BF",
-          300: "#6FB394",
-          400: "#2E9068",
-          500: "#00754A",
-          600: "#00623E",
+          50: "#E8F1EC",
+          100: "#C9E3D5",
+          200: "#9BCDB4",
+          300: "#5FAE8B",
+          400: "#1F8B5C",
+          500: "#00693E",
+          600: "#00522F",
           700: "#1E3932",
         },
-        // Warme goud/koffie-highlight — spaarzaam voor accenten en waarschuwingen.
+        // Warme goud-accent — uitsluitend voor het logo, niet voor de UI.
         gold: {
           DEFAULT: "#B8863B",
           soft: "#CBA258",
@@ -54,44 +52,49 @@ const config: Config = {
         },
         success: {
           DEFAULT: "#1E7A4B",
-          dim: "rgba(30,122,75,0.14)",
+          dim: "rgba(30,122,75,0.12)",
         },
         danger: {
-          DEFAULT: "#B23A2E", // warm baksteenrood i.p.v. schel rood
-          dim: "rgba(178,58,46,0.10)",
+          DEFAULT: "#C0362C",
+          dim: "rgba(192,54,44,0.09)",
         },
         warn: {
-          DEFAULT: "#9C6B1E",
-          dim: "rgba(203,162,88,0.18)",
+          DEFAULT: "#9A6B12",
+          dim: "rgba(154,107,18,0.12)",
         },
       },
       fontFamily: {
-        // Warme, redactionele typografie via next/font (zie app/layout.tsx): Mulish als
-        // uiterst leesbare humanistische broodtekst, Fraunces als ambachtelijke
-        // display-serif voor sterke koppen.
+        // Strakke, moderne humanistische sans (Figtree via next/font, zie layout.tsx) —
+        // in de geest van Starbucks' SoDo Sans, voor zowel koppen als broodtekst.
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["var(--font-serif)", "ui-serif", "Georgia", "serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {
-        // Zachtere, organische afrondingen over de hele lijn — de standaardschaal is
-        // ruimer gezet zodat bestaande rounded-lg/xl/2xl klassen vanzelf vriendelijker
-        // worden, zonder elke component aan te raken.
+        // Modern-matige afrondingen: pillen voor knoppen, nette ronding voor kaarten —
+        // niet overdreven organisch.
         sm: "0.375rem",
-        DEFAULT: "0.625rem",
-        md: "0.75rem",
-        lg: "0.875rem",
-        xl: "1.125rem",
-        "2xl": "1.5rem",
-        "3xl": "2rem",
+        DEFAULT: "0.5rem",
+        md: "0.625rem",
+        lg: "0.75rem",
+        xl: "1rem",
+        "2xl": "1.25rem",
+        "3xl": "1.5rem",
       },
       boxShadow: {
-        // Zacht vallende, warme (bosgroen-getinte) schaduwen i.p.v. harde zwarte —
-        // tastbaar en hoogwaardig. Focus-ringen in het House Green.
-        glow: "0 0 0 4px rgba(0,117,74,0.18)",
-        "glow-sm": "0 0 0 3px rgba(0,117,74,0.16)",
-        panel: "0 1px 2px rgba(30,57,50,0.04), 0 14px 34px -16px rgba(30,57,50,0.18)",
-        soft: "0 2px 10px rgba(30,57,50,0.06)",
+        // Starbucks.nl is volledig plat: geen decoratieve schaduwen. De standaard-
+        // schaduwklassen zijn daarom uitgezet; vlakken worden onderscheiden door hun
+        // tint en een hairline-rand. glow/glow-sm blijven — uitsluitend als focus-ring
+        // voor toetsenbordnavigatie (toegankelijkheid).
+        sm: "none",
+        DEFAULT: "none",
+        md: "none",
+        lg: "none",
+        xl: "none",
+        "2xl": "none",
+        panel: "none",
+        soft: "none",
+        glow: "0 0 0 3px rgba(0,105,62,0.35)",
+        "glow-sm": "0 0 0 3px rgba(0,105,62,0.30)",
       },
     },
   },

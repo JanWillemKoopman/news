@@ -4,15 +4,15 @@
 // ResultsCharts.tsx) style themselves with Tailwind tokens directly.
 export const CHART_TOOLTIP_STYLE = {
   contentStyle: {
-    backgroundColor: "#FDFBF6",
-    border: "1px solid rgba(30,57,50,0.12)",
-    borderRadius: 14,
-    boxShadow: "0 14px 34px -16px rgba(30,57,50,0.28)",
+    backgroundColor: "#FFFFFF",
+    border: "1px solid rgba(0,0,0,0.12)",
+    borderRadius: 10,
+    boxShadow: "none",
     fontSize: 12,
-    color: "#1E3932",
+    color: "#182420",
   },
-  labelStyle: { color: "#4C5F57", marginBottom: 2 },
-  itemStyle: { color: "#1E3932" },
+  labelStyle: { color: "#5C6660", marginBottom: 2 },
+  itemStyle: { color: "#182420" },
 } as const;
 
 // Backwards-compat alias (oude naam uit het donkere thema).
