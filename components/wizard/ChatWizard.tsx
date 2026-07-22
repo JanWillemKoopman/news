@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Send, Bot } from "lucide-react";
 import { humanizeError } from "@/lib/humanizeMessage";
 import { createClient } from "@/lib/supabase/client";
+import { useWizardChat } from "@/components/WizardChatContext";
 import { derivePhase, isWaitingPhase, type WizardPhase } from "@/lib/wizard/phase";
 import { PHASE_SCRIPT } from "@/lib/wizard/script";
 import {
@@ -26,7 +27,7 @@ import {
   ConfigureCard,
   ReviewCard,
 } from "@/components/wizard/cards";
-import type { Dataset, Job, ModelRun, SourceFile } from "@/lib/types";
+import type { Dataset, Job, JobConfig, ModelRun, SourceFile } from "@/lib/types";
 
 interface Turn {
   role: "user" | "assistant";
@@ -57,6 +58,7 @@ export function ChatWizard({
   dataset,
   jobs,
   runs,
+  jobConfigs,
   kpiMargin,
   industry,
   companyDescription,
@@ -67,16 +69,17 @@ export function ChatWizard({
   dataset: Dataset | null;
   jobs: Job[];
   runs: ModelRun[];
+  jobConfigs: Record<string, JobConfig>;
   kpiMargin: number | null;
   industry: string | null;
   companyDescription: string | null;
   contextProvided: boolean;
 }) {
   const router = useRouter();
+  const { pendingChatMessage, clearPendingChatMessage } = useWizardChat();
   const [skipContext, setSkipContext] = useState(false);
   const phase: WizardPhase = derivePhase({ sources, dataset, jobs, runs, contextProvided, skipContext });
   const source = sources[0] ?? null;
-  const latestRun = runs[0] ?? null;
   const latestFailedFit = jobs.find((j) => (j.type === "fit" || j.type === "fit_hierarchical") && j.status === "failed");
 
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -118,6 +121,17 @@ export function ChatWizard({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, busy, phase]);
+
+  // Een kaart elders (bv. een kwaliteitspoort-waarschuwing of "waarom is dit niet goed
+  // genoeg?" in SummaryView) kan een kant-en-klare vraag rechtstreeks naar de architect
+  // sturen via WizardChatContext — wacht op een eventuele lopende beurt in plaats van hem
+  // te laten vallen.
+  useEffect(() => {
+    if (pendingChatMessage == null || busy) return;
+    clearPendingChatMessage();
+    void send(pendingChatMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingChatMessage, busy]);
 
   // Vrij typen → de architect (streaming). Dit is de enige plek in de happy path waar
   // tokens verbruikt worden buiten de twee expliciete AI-momenten.
@@ -274,7 +288,7 @@ export function ChatWizard({
         );
       case "review":
       case "published":
-        return latestRun ? <ReviewCard projectId={projectId} run={latestRun} kpiMargin={kpiMargin} /> : null;
+        return runs.length > 0 ? <ReviewCard projectId={projectId} runs={runs} jobConfigs={jobConfigs} kpiMargin={kpiMargin} /> : null;
       default:
         return null; // prepare_running / fitting: alleen de wacht-bubbel + spinner
     }

@@ -14,10 +14,17 @@ import { humanizeError } from "@/lib/humanizeMessage";
 import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { SummaryView } from "@/components/SummaryView";
+import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
+import { RunHistory } from "@/components/RunHistory";
+import { AnalysisView } from "@/components/AnalysisView";
+import { StatusBadge } from "@/components/ui";
+import { postJson } from "@/lib/fetchJson";
+import { isHierSummary } from "@/lib/types";
 import type {
   AdstockType,
   ChannelConfig,
   ChannelType,
+  ClientSummary,
   ColumnRole,
   Dataset,
   EventDummyConfig,
@@ -27,6 +34,7 @@ import type {
   LikelihoodType,
   ModelRun,
   PrepareRecipe,
+  RunAnalysis,
   SaturationType,
   SourceConfig,
   SourceFile,
@@ -930,48 +938,165 @@ export function ConfigureCard({
 // Fase "review" — resultaten + publiceren.
 // ---------------------------------------------------------------------------
 
+// De volledige beoordeel-/publiceerkaart: run-historie (met vergelijken), de resultaten
+// zelf, en twee opt-in AI-verrijkingen (diepgaande analyse, klantsamenvatting) — precies
+// dezelfde mogelijkheden als de oude ResultsView, nu als kaart in de chatstroom. Beide
+// AI-acties zijn expliciete knoppen: er lopen geen tokens totdat de bouwer erop klikt.
 export function ReviewCard({
   projectId,
-  run,
+  runs,
+  jobConfigs,
   kpiMargin,
 }: {
   projectId: string;
-  run: ModelRun;
+  runs: ModelRun[];
+  jobConfigs?: Record<string, JobConfig>;
   kpiMargin: number | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<RunAnalysis | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [clientSummary, setClientSummary] = useState<ClientSummary | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  if (runs.length === 0) return null;
+
+  const latestRun = runs[0];
+  const shownAnalysis = analysis ?? latestRun.analysis;
+  const viewedRun = runs.find((r) => r.id === selectedRunId) ?? latestRun;
+  const viewedLikelihood = viewedRun.job_id ? jobConfigs?.[viewedRun.job_id]?.model.likelihood : undefined;
+  const isCountKpi = viewedLikelihood === "poisson" || viewedLikelihood === "negative_binomial";
+  const viewedIsHierarchical = isHierSummary(viewedRun.summary);
+  const shownClientSummary = clientSummary ?? latestRun.client_summary ?? null;
 
   async function publish() {
     if (!confirm("Dit resultaat publiceren naar het klantdashboard?")) return;
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/projects/${projectId}/publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model_run_id: run.id }),
-    });
+    const res = await postJson(`/api/projects/${projectId}/publish`, { model_run_id: viewedRun.id });
+    setBusy(false);
     if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
-      setBusy(false);
-      setError(humanizeError(j.error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
+      setError(humanizeError(res.error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
       return;
     }
     router.refresh();
   }
 
+  async function generateAnalysis() {
+    setAnalyzing(true);
+    setAnalysisError(null);
+    const res = await postJson<{ analysis: RunAnalysis }>("/api/analysis", {
+      project_id: projectId,
+      model_run_id: latestRun.id,
+    });
+    setAnalyzing(false);
+    if (!res.ok || !res.data.analysis) {
+      setAnalysisError(humanizeError(res.error, "Het genereren van de analyse is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    setAnalysis(res.data.analysis);
+    router.refresh();
+  }
+
+  async function generateClientSummary() {
+    setSummarizing(true);
+    setSummaryError(null);
+    const res = await postJson<{ client_summary: ClientSummary }>("/api/client-summary", {
+      project_id: projectId,
+      model_run_id: latestRun.id,
+    });
+    setSummarizing(false);
+    if (!res.ok || !res.data.client_summary) {
+      setSummaryError(humanizeError(res.error, "Het schrijven van de samenvatting is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    setClientSummary(res.data.client_summary);
+    router.refresh();
+  }
+
+  async function copySummary() {
+    if (!shownClientSummary) return;
+    try {
+      await navigator.clipboard.writeText(shownClientSummary.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Klembord niet beschikbaar — de tekst staat er toch al.
+    }
+  }
+
   return (
     <Card>
-      <SummaryView summary={run.summary} kpiMargin={kpiMargin} />
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
-      {!run.is_published && (
-        <div className="mt-4 border-t border-border pt-4">
-          <button onClick={publish} disabled={busy} className={BTN_PRIMARY}>
-            {busy ? "Publiceren…" : "Publiceer naar het klantdashboard"}
-          </button>
+      <div className="space-y-5">
+        <RunHistory runs={runs} selectedId={viewedRun.id} onSelect={setSelectedRunId} jobConfigs={jobConfigs} />
+        {viewedIsHierarchical ? (
+          <HierarchicalSummaryView summary={viewedRun.summary as unknown as Parameters<typeof HierarchicalSummaryView>[0]["summary"]} />
+        ) : (
+          <SummaryView summary={viewedRun.summary} kpiMargin={kpiMargin} isCountKpi={isCountKpi} />
+        )}
+
+        {viewedRun.id === latestRun.id && !viewedIsHierarchical && (
+          <div className="border-t border-border pt-4">
+            <p className="mb-2 text-sm text-fg-muted">
+              Laat Claude deze uitkomst verder analyseren en op maat gemaakte grafieken maken (kan even duren).
+            </p>
+            <button onClick={generateAnalysis} disabled={analyzing} className={BTN_SECONDARY}>
+              {analyzing ? "Analyse wordt gegenereerd…" : shownAnalysis ? "Analyse opnieuw genereren" : "Genereer diepgaande analyse"}
+            </button>
+            {analysisError && <p className="mt-2 text-sm text-danger">{analysisError}</p>}
+            {shownAnalysis && <AnalysisView analysis={shownAnalysis} />}
+          </div>
+        )}
+
+        {viewedRun.id === latestRun.id && !viewedIsHierarchical && (
+          <div className="border-t border-border pt-4">
+            <p className="mb-2 text-sm text-fg-muted">
+              Laat Claude een presentatieklare samenvatting in klanttaal schrijven, 1-op-1 te plakken in je rapport of slides.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={generateClientSummary} disabled={summarizing} className={BTN_SECONDARY}>
+                {summarizing ? "Samenvatting wordt geschreven…" : shownClientSummary ? "Klantsamenvatting opnieuw genereren" : "Schrijf klantsamenvatting"}
+              </button>
+              {shownClientSummary && (
+                <button onClick={copySummary} className="rounded-lg border border-border px-3 py-2 text-xs text-fg-muted transition hover:bg-surface-2">
+                  {copied ? "Gekopieerd!" : "Kopieer tekst"}
+                </button>
+              )}
+            </div>
+            {summaryError && <p className="mt-2 text-sm text-danger">{summaryError}</p>}
+            {shownClientSummary && (
+              <div className="mt-3 whitespace-pre-wrap rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-fg">
+                {shownClientSummary.text}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="rounded-lg border border-accent/30 bg-accent-dim/40 p-4">
+          {viewedRun.is_published ? (
+            <div className="flex items-center gap-3">
+              <StatusBadge status="published" />
+              <p className="text-sm text-fg-muted">Deze run staat op het klantdashboard.</p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={publish} disabled={busy} className={BTN_PRIMARY}>
+                {busy ? "Publiceren…" : "Publiceer naar klantdashboard"}
+              </button>
+              <p className="min-w-0 flex-1 text-xs text-fg-muted">
+                Vertrouw je deze uitkomst? Publiceer dan — de klant ziet daarna het dashboard met deze run.
+              </p>
+            </div>
+          )}
+          {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         </div>
-      )}
+      </div>
     </Card>
   );
 }
