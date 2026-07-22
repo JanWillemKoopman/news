@@ -7,6 +7,7 @@ import { NoBuilderAccess } from "@/components/NoAccess";
 import { SourceUpload } from "@/components/SourceUpload";
 import { EdaSection } from "@/components/EdaSection";
 import { BusinessContextPanel } from "@/components/BusinessContextPanel";
+import { CompanyContextBlock } from "@/components/CompanyContextBlock";
 import { DataPrepSection } from "@/components/DataPrepSection";
 import { ModelConfigForm } from "@/components/ModelConfigForm";
 import { JobList } from "@/components/JobList";
@@ -58,7 +59,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
       .eq("project_id", p.id)
       .order("created_at", { ascending: false })
       .limit(1),
-    supabase.schema("mmm").from("project_context").select("industry, notes").eq("project_id", p.id).maybeSingle(),
+    supabase.schema("mmm").from("project_context").select("industry, notes, description").eq("project_id", p.id).maybeSingle(),
     // De laatste diepe inspectie: de bevindingen worden in substap 2b als kaarten
     // getoond (InspectionFindings) i.p.v. alleen als teller.
     supabase
@@ -73,6 +74,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   const latestDataset = ((datasets ?? []) as Dataset[])[0] ?? null;
   const businessNotes = ((projectContext?.notes as import("@/lib/types").BusinessContextNote[] | null) ?? []) as import("@/lib/types").BusinessContextNote[];
   const businessIndustry = (projectContext?.industry as string | null) ?? null;
+  const companyDescription = (projectContext?.description as string | null) ?? null;
 
   const runsList = (runs ?? []) as ModelRun[];
   let latestAnalysis: ModelRun["analysis"] = null;
@@ -178,6 +180,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
                   <PipelineStep id="dataprep" number={2}>
                     <StepIntro step="dataprep" />
                     <div className="space-y-3">
+                      <CompanyContextBlock projectId={p.id} description={companyDescription} />
                       <SubStep
                         label="2a"
                         title="Verken de data (grafieken, statistieken & correlaties)"
