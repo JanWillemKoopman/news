@@ -270,6 +270,19 @@ async function handlePost(request: Request) {
         const runner = client.messages.stream(
           buildRequest({ sources: previews, dataset, fit, businessContext, inspection }, history),
         );
+        // Fase-signalen zodat de UI kan tonen WAT de architect aan het doen is (denken /
+        // schrijven / een voorstel samenstellen) in plaats van alleen een stille stilte.
+        // content_block_start markeert elke overgang; we sturen 'm door zodra hij bekend is.
+        runner.on("streamEvent", (event) => {
+          if (event.type !== "content_block_start") return;
+          const block = event.content_block;
+          if (block.type === "thinking") send({ type: "phase", phase: "thinking" });
+          else if (block.type === "text") send({ type: "phase", phase: "text" });
+          else if (block.type === "tool_use") send({ type: "phase", phase: "tool", tool: block.name });
+        });
+        // Denkstappen (extended thinking) worden apart gestreamd van de uiteindelijke
+        // tekst, zodat de UI ze los kan tonen ("redenering") in plaats van te vermengen.
+        runner.on("thinking", (delta) => send({ type: "thinking_delta", text: delta }));
         runner.on("text", (delta) => send({ type: "delta", text: delta }));
         const response = await runner.finalMessage();
 
@@ -311,7 +324,21 @@ async function handlePost(request: Request) {
           }
         }
         const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text");
-        const replyText = textBlocks.map((b) => b.text).join("\n\n");
+        // De architect schrijft soms GEEN los tekstblok als het antwoord uitsluitend een
+        // tool-call is (bv. meteen een gecorrigeerd recept voorstellen zonder inleidende
+        // zin) — dan zou de bubbel anders leeg/cryptisch blijven. Val in die volgorde
+        // terug: het voorstel z'n eigen "reasoning"-veld (verplicht bij beide
+        // propose_*-tools), dan de vaste bevestiging bij record_business_context, dan pas
+        // een generieke, begrijpelijke melding.
+        const toolReasoning =
+          toolUse?.name !== "record_business_context"
+            ? ((toolUse?.input as { reasoning?: string } | undefined)?.reasoning ?? null)
+            : null;
+        const replyText =
+          textBlocks.map((b) => b.text).join("\n\n").trim() ||
+          toolReasoning ||
+          (toolUse?.name === "record_business_context" ? "Zakelijke context vastgelegd." : null) ||
+          "Geen aanvullende toelichting dit keer — kijk hierboven of er al een voorstel klaarstaat, of vraag het opnieuw.";
 
         // Persist: the user's plain turn (uncached copy — cache_control is a request-time
         // hint, not meaningful to store), the assistant's full response, and — if a tool was
