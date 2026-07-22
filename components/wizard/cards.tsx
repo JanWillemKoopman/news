@@ -1,0 +1,533 @@
+"use client";
+
+// De inline-kaarten die ALS bubbels in de chatstroom verschijnen. Elke kaart hoort bij één
+// fase van de deterministische wizard-FSM. Ze roepen de bestaande API-routes aan (upload,
+// /api/datasets, approve, /api/jobs, publish) — de zware backend blijft ongewijzigd.
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Papa from "papaparse";
+import { Upload, Trash2, Check, Sparkles } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { buildSourceProfile } from "@/lib/dataProfile";
+import { humanizeError } from "@/lib/humanizeMessage";
+import { QualityReportView } from "@/components/QualityReportView";
+import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
+import { SummaryView } from "@/components/SummaryView";
+import type {
+  ChannelConfig,
+  ColumnRole,
+  Dataset,
+  JobConfig,
+  ModelRun,
+  PrepareRecipe,
+  SourceConfig,
+  SourceFile,
+  SourceProfile,
+} from "@/lib/types";
+
+const BUCKET = "mmm-raw-data";
+const PREVIEW_LINES = 15;
+
+// Zachte primaire/secundaire knop-stijlen, consistent met de rest van de app.
+const BTN_PRIMARY =
+  "inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-faint";
+const BTN_SECONDARY =
+  "inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-2 disabled:opacity-50";
+
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-xl border border-border bg-surface-1 p-4">{children}</div>;
+}
+
+// ---------------------------------------------------------------------------
+// Fase "upload" — precies ÉÉN databestand. Een tweede upload wordt geweigerd; het bestaande
+// bestand kan wel vervangen worden (eerst verwijderen). Dit dwingt "1 CSV, geen samenvoegen" af.
+// ---------------------------------------------------------------------------
+
+function buildProfileFromCsv(text: string): SourceProfile | null {
+  try {
+    const parsed = Papa.parse<Record<string, unknown>>(text, { header: true, skipEmptyLines: true, dynamicTyping: true });
+    const columns = parsed.meta.fields ?? [];
+    if (columns.length === 0 || parsed.data.length === 0) return null;
+    return buildSourceProfile(columns, parsed.data);
+  } catch {
+    return null;
+  }
+}
+
+export function UploadCard({ projectId, source }: { projectId: string; source: SourceFile | null }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const MAX_FILE_MB = 50;
+  function validate(file: File): string | null {
+    if (!/\.(csv|xlsx|xls)$/i.test(file.name)) return `"${file.name}" is geen CSV- of Excel-bestand.`;
+    if (file.size === 0) return `"${file.name}" is leeg.`;
+    if (file.size > MAX_FILE_MB * 1024 * 1024)
+      return `"${file.name}" is groter dan ${MAX_FILE_MB} MB. Aggregeer naar weekniveau of kies een kortere periode.`;
+    return null;
+  }
+
+  async function upload(files: FileList | File[]) {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (list.length > 1) {
+      setError("Je werkt met precies één bestand. Kies één CSV of Excel-bestand.");
+      return;
+    }
+    const file = list[0];
+    const invalid = validate(file);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const supabase = createClient();
+    const path = `${projectId}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
+    if (upErr) {
+      setBusy(false);
+      setError(humanizeError(upErr.message, "Het uploaden is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    const isCsv = /\.csv$/i.test(file.name);
+    const csvText = isCsv ? await file.text() : null;
+    const preview = csvText ? csvText.split("\n").slice(0, PREVIEW_LINES).join("\n") : null;
+    const profile = csvText ? buildProfileFromCsv(csvText) : null;
+    const { data: inserted, error: rowErr } = await supabase
+      .schema("mmm")
+      .from("source_files")
+      .insert({ project_id: projectId, name: file.name, storage_path: path, preview, profile })
+      .select("id")
+      .single();
+    if (rowErr) {
+      setBusy(false);
+      setError(humanizeError(rowErr.message, "Het opslaan is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    // Goedkope kolom-classificatie op de achtergrond: die vult straks de rol-indeling voor
+    // — zonder extra klik of extra dure call op het moment zelf.
+    if (inserted?.id && preview) {
+      void fetch("/api/classify-columns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_file_id: inserted.id }),
+      }).catch(() => {});
+    }
+    setBusy(false);
+    router.refresh();
+  }
+
+  async function remove() {
+    if (!source) return;
+    if (!confirm(`"${source.name}" verwijderen en een ander bestand kiezen?`)) return;
+    setBusy(true);
+    const supabase = createClient();
+    await supabase.storage.from(BUCKET).remove([source.storage_path]);
+    await supabase.schema("mmm").from("source_files").delete().eq("id", source.id);
+    setBusy(false);
+    router.refresh();
+  }
+
+  if (source) {
+    return (
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-fg">{source.name}</p>
+            <p className="text-xs text-fg-muted">Je databestand staat klaar.</p>
+          </div>
+          <button onClick={remove} disabled={busy} className="flex-none rounded-lg p-2 text-fg-faint transition hover:bg-danger-dim hover:text-danger disabled:opacity-50" aria-label="Bestand vervangen">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+        {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files.length > 0) void upload(e.dataTransfer.files);
+        }}
+        className={`flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center transition ${
+          dragOver ? "border-accent/50 bg-accent-dim" : "border-border"
+        }`}
+      >
+        <Upload className="h-5 w-5 text-fg-faint" />
+        <p className="text-sm text-fg-muted">Sleep je CSV hierheen, of</p>
+        <label className={BTN_SECONDARY + " cursor-pointer"}>
+          {busy ? "Uploaden…" : "Kies je databestand"}
+          <input
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={(e) => {
+              if (e.target.files) void upload(e.target.files);
+              e.target.value = "";
+            }}
+            disabled={busy}
+            className="hidden"
+          />
+        </label>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fase "prepare_recipe" — kolomrollen bevestigen. Voorgevuld uit de goedkope
+// kolom-classificatie die al bij upload draaide (source.mapping). De gebruiker vinkt
+// alleen aan/corrigeert; geen extra AI-call nodig.
+// ---------------------------------------------------------------------------
+
+type RoleChoice = ColumnRole | "date" | "ignore";
+
+const ROLE_OPTIONS: { value: RoleChoice; label: string }[] = [
+  { value: "date", label: "Datum" },
+  { value: "kpi", label: "KPI (doel)" },
+  { value: "spend", label: "Kanaal (uitgaven)" },
+  { value: "control", label: "Control" },
+  { value: "ignore", label: "Niet gebruiken" },
+];
+
+export function RoleMappingCard({ projectId, source }: { projectId: string; source: SourceFile }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Kolomnamen uit het (client-side) profiel; anders uit de preview-header.
+  const columns = useMemo<string[]>(() => {
+    if (source.profile?.columns?.length) return source.profile.columns.map((c) => c.name);
+    if (source.preview) {
+      const header = source.preview.split("\n")[0] ?? "";
+      return header.split(/[,;\t]/).map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+  }, [source]);
+
+  // Beginwaarde per kolom uit de AI-classificatie (mapping) die bij upload draaide.
+  const initial = useMemo<Record<string, RoleChoice>>(() => {
+    const out: Record<string, RoleChoice> = {};
+    const mapping = source.mapping;
+    for (const col of columns) {
+      const guess = mapping?.columns.find((m) => m.name === col)?.role;
+      out[col] =
+        guess === "kpi" || guess === "spend" || guess === "control" || guess === "date"
+          ? guess
+          : guess === "ignore"
+            ? "ignore"
+            : /date|datum|week|dag|periode/i.test(col)
+              ? "date"
+              : "ignore";
+    }
+    // Zorg dat er precies één datumkolom staat.
+    if (!Object.values(out).includes("date")) {
+      const firstText = source.profile?.columns.find((c) => c.kind === "date")?.name ?? columns[0];
+      if (firstText) out[firstText] = "date";
+    }
+    return out;
+  }, [columns, source]);
+
+  const [roles, setRoles] = useState<Record<string, RoleChoice>>(initial);
+
+  const dateCol = Object.entries(roles).find(([, r]) => r === "date")?.[0] ?? null;
+  const kpiCount = Object.values(roles).filter((r) => r === "kpi").length;
+  const spendCount = Object.values(roles).filter((r) => r === "spend").length;
+
+  function setRole(col: string, role: RoleChoice) {
+    setRoles((prev) => {
+      const next = { ...prev, [col]: role };
+      // Datum is uniek: kies je een nieuwe datumkolom, dan valt de oude terug op "ignore".
+      if (role === "date") {
+        for (const k of Object.keys(next)) if (k !== col && next[k] === "date") next[k] = "ignore";
+      }
+      return next;
+    });
+  }
+
+  async function submit() {
+    if (!dateCol) {
+      setError("Kies precies één datumkolom.");
+      return;
+    }
+    if (kpiCount !== 1) {
+      setError("Kies precies één KPI-kolom (je doel: omzet of leads).");
+      return;
+    }
+    if (spendCount === 0) {
+      setError("Kies minstens één kanaal (uitgaven-kolom).");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const cols: SourceConfig["columns"] = Object.entries(roles)
+      .filter(([, r]) => r === "kpi" || r === "spend" || r === "control")
+      .map(([name, r]) => ({ name, role: r as ColumnRole }));
+    const recipe: PrepareRecipe = {
+      sources: [
+        {
+          name: source.name.replace(/\.[^.]+$/, ""),
+          storage_path: source.storage_path,
+          date_column: dateCol,
+          columns: cols,
+        },
+      ],
+    };
+    const res = await fetch("/api/datasets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId, recipe }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setBusy(false);
+      setError(humanizeError(j.error, "Het samenvoegen kon niet gestart worden — probeer het opnieuw.").text);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      <div className="max-h-80 space-y-1.5 overflow-y-auto">
+        {columns.map((col) => (
+          <div key={col} className="flex items-center justify-between gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm text-fg" title={col}>
+              {col}
+            </span>
+            <select
+              value={roles[col]}
+              onChange={(e) => setRole(col, e.target.value as RoleChoice)}
+              className="flex-none rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-fg outline-none focus:border-accent/50"
+            >
+              {ROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      {source.mapping && (
+        <p className="mt-2 flex items-center gap-1 text-[11px] text-fg-faint">
+          <Sparkles className="h-3 w-3" /> Voorgevuld door de AI-kolomherkenning — controleer even.
+        </p>
+      )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3">
+        <button onClick={submit} disabled={busy} className={BTN_PRIMARY}>
+          {busy ? "Bezig…" : "Klopt — voeg samen & controleer"}
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fase "prepare_review" — kwaliteitsrapport + preview, en goedkeuren.
+// ---------------------------------------------------------------------------
+
+export function PrepareReviewCard({ dataset }: { dataset: Dataset }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function approve() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/datasets/${dataset.id}/approve`, { method: "POST" });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setBusy(false);
+      setError(humanizeError(j.error, "Goedkeuren is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      {dataset.window_start && (
+        <p className="mb-3 text-xs text-fg-muted">
+          {dataset.n_weeks ?? "?"} weken · {dataset.window_start} t/m {dataset.window_end}
+        </p>
+      )}
+      <QualityReportView quality={dataset.quality} />
+      {dataset.preview && (
+        <div className="mt-3">
+          <DatasetPreviewTable preview={dataset.preview} />
+        </div>
+      )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3">
+        <button onClick={approve} disabled={busy} className={BTN_PRIMARY}>
+          <Check className="h-4 w-4" />
+          {busy ? "Bezig…" : "Goedkeuren als definitieve dataset"}
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fase "configure" — standaard-modelinstelling (deterministisch, 0 tokens). De gebruiker
+// start meteen, of vraagt de AI om te optimaliseren (dat loopt via de vrij-tekst-escape).
+// ---------------------------------------------------------------------------
+
+const STANDARD_SAMPLE = { draws: 1000, tune: 1000, chains: 4 };
+
+function templateConfigFromDataset(dataset: Dataset): JobConfig {
+  const roles = dataset.column_roles ?? {};
+  const byRole = (role: ColumnRole) => Object.entries(roles).filter(([, r]) => r === role).map(([name]) => name);
+  const kpi = byRole("kpi")[0] ?? "";
+  return {
+    sources: [
+      {
+        name: "master",
+        storage_path: dataset.master_path ?? "",
+        date_column: "week_start",
+        columns: Object.entries(roles).map(([name, role]) => ({ name, role: role as ColumnRole })),
+      },
+    ],
+    model: {
+      kpi,
+      channels: byRole("spend").map((name) => ({ name, channel_type: "generic" }) as ChannelConfig),
+      control_columns: byRole("control"),
+      add_trend: true,
+      seasonality_periods: 52,
+      n_fourier_modes: 2,
+    },
+    sample: STANDARD_SAMPLE,
+  };
+}
+
+export function ConfigureCard({
+  projectId,
+  dataset,
+  onAskAi,
+}: {
+  projectId: string;
+  dataset: Dataset;
+  onAskAi: () => void;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const config = useMemo(() => templateConfigFromDataset(dataset), [dataset]);
+
+  async function start() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId, type: "fit", dataset_id: dataset.id, config }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setBusy(false);
+      setError(humanizeError(j.error, "De berekening kon niet gestart worden — probeer het opnieuw.").text);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      <dl className="space-y-1.5 text-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-fg-muted">KPI (doel)</dt>
+          <dd className="font-medium text-fg">{config.model.kpi}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-fg-muted">Kanalen</dt>
+          <dd className="text-right text-fg">{config.model.channels.map((c) => c.name).join(", ")}</dd>
+        </div>
+        {config.model.control_columns && config.model.control_columns.length > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-fg-muted">Controls</dt>
+            <dd className="text-right text-fg">{config.model.control_columns.join(", ")}</dd>
+          </div>
+        )}
+        <div className="flex justify-between gap-3">
+          <dt className="text-fg-muted">Instelling</dt>
+          <dd className="text-fg">Standaard (adstock geometrisch, saturatie Hill, trend + seizoen)</dd>
+        </div>
+      </dl>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button onClick={start} disabled={busy} className={BTN_PRIMARY}>
+          {busy ? "Starten…" : "Gebruik de standaard & start berekening"}
+        </button>
+        <button onClick={onAskAi} disabled={busy} className={BTN_SECONDARY}>
+          <Sparkles className="h-4 w-4" />
+          Laat de AI optimaliseren
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fase "review" — resultaten + publiceren.
+// ---------------------------------------------------------------------------
+
+export function ReviewCard({
+  projectId,
+  run,
+  kpiMargin,
+}: {
+  projectId: string;
+  run: ModelRun;
+  kpiMargin: number | null;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function publish() {
+    if (!confirm("Dit resultaat publiceren naar het klantdashboard?")) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/projects/${projectId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_run_id: run.id }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setBusy(false);
+      setError(humanizeError(j.error, "Publiceren is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      <SummaryView summary={run.summary} kpiMargin={kpiMargin} />
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {!run.is_published && (
+        <div className="mt-4 border-t border-border pt-4">
+          <button onClick={publish} disabled={busy} className={BTN_PRIMARY}>
+            {busy ? "Publiceren…" : "Publiceer naar het klantdashboard"}
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+}
