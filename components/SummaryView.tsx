@@ -3,6 +3,16 @@
 import { ResultsCharts } from "@/components/ResultsCharts";
 import { MMM_GLOSSARY, Term } from "@/components/ui";
 import { useWizardChatOptional } from "@/components/WizardChatContext";
+import {
+  CONFIDENCE_LABEL,
+  confidenceFromInterval,
+  moneyKpis,
+  recommendedActions,
+  trustVerdict,
+  type Confidence,
+  type RecommendedAction,
+  type TrustLevel,
+} from "@/lib/dashboardInsights";
 import type {
   FitSummary,
   FrontierPoint,
@@ -31,46 +41,181 @@ function IntervalCell({ value, render }: { value: Interval; render: (n: number) 
   );
 }
 
-function Metric({ label, value, warn }: { label: React.ReactNode; value: string; warn?: boolean }) {
+// De kop-conclusie: de bottom-line in één of twee zinnen, in geldtaal — het eerste dat een
+// media manager leest. Geen jargon, geen statistiek: wat dreef marketing, hoe efficiënt,
+// en (met marge) wat het netto opleverde.
+function Headline({
+  summary,
+  kpiMargin,
+  isCountKpi,
+}: {
+  summary: FitSummary;
+  kpiMargin?: number | null;
+  isCountKpi?: boolean;
+}) {
+  const m = moneyKpis(summary, kpiMargin);
+  const roasWord = isCountKpi === false ? "omzet per bestede euro" : `${summary.kpi} per bestede euro`;
   return (
-    <div>
-      <div className="text-xs text-fg-muted">{label}</div>
-      <div className={`text-sm font-medium ${warn ? "text-danger" : "text-fg"}`}>{value}</div>
+    <div className="rounded-xl bg-accent-dim p-4">
+      <p className="text-[15px] leading-relaxed text-fg">
+        In de periode <span className="font-semibold">{summary.window[0]}</span> t/m{" "}
+        <span className="font-semibold">{summary.window[1]}</span> dreef marketing naar schatting{" "}
+        <span className="font-semibold">{fmt(m.marketing.p50)}</span> {summary.kpi}
+        {m.baselineSharePct != null && (
+          <>
+            {" "}
+            — de overige{" "}
+            <span className="font-semibold">{fmt(m.baselineSharePct)}%</span> was er ook zonder campagnes geweest
+            (de basislijn)
+          </>
+        )}
+        .{" "}
+        {m.blendedRoas != null && (
+          <>
+            Elke bestede euro leverde gemiddeld <span className="font-semibold">{fmt(m.blendedRoas, 2)}</span>{" "}
+            {roasWord} op
+            {m.roiPct != null && (
+              <>
+                , een netto rendement van{" "}
+                <span className={`font-semibold ${m.roiPct >= 0 ? "text-success" : "text-danger"}`}>
+                  {fmt(m.roiPct)}%
+                </span>
+              </>
+            )}
+            .
+          </>
+        )}
+      </p>
+      {m.roiPct == null && (
+        <p className="mt-1.5 text-xs text-fg-muted">
+          Vul de gemiddelde marge per {summary.kpi} in (stap 3) om hier het netto rendement (ROI) in euro&apos;s te
+          zien.
+        </p>
+      )}
     </div>
   );
 }
 
-// Automatic verdict on whether the fit is trustworthy. Silence means "pass" — we only
-// speak up (in the single rose accent) when something needs attention.
-function QualityBanner({ summary }: { summary: FitSummary }) {
-  const chat = useWizardChatOptional(); // null on the client dashboard — no chat there
-  const gate = summary.quality_gate;
-  if (!gate || gate.verdict === "pass") return null;
-  const heading =
-    gate.verdict === "fail"
-      ? "Deze uitkomst is nog niet betrouwbaar genoeg om te publiceren."
-      : "Let op bij het interpreteren van deze uitkomst.";
+const TRUST_TONE: Record<TrustLevel, string> = {
+  goed: "border-success/30 bg-success-dim text-success",
+  let_op: "border-warn/30 bg-warn-dim text-warn",
+  zwak: "border-danger/30 bg-danger-dim text-danger",
+};
+
+// Eén begrijpelijk vertrouwensoordeel i.p.v. vier losse statistiek-getallen bovenaan. De
+// ruwe diagnostiek (R²/MAPE/dekking/R-hat) blijft beschikbaar, maar gedemoveerd tot een
+// uitklap — zo staat techniek niet meer vóór de business.
+function TrustBadge({ summary }: { summary: FitSummary }) {
+  const chat = useWizardChatOptional(); // null op het klant-dashboard — geen chat daar
+  const v = trustVerdict(summary);
+  const d = summary.diagnostics;
+  const dot = v.level === "goed" ? "bg-success" : v.level === "let_op" ? "bg-warn" : "bg-danger";
   return (
-    <div className="rounded-lg border border-danger/30 bg-danger-dim p-4">
-      <p className="text-sm font-medium text-danger">{heading}</p>
-      <ul className="mt-2 space-y-1 text-sm text-danger">
-        {gate.reasons.map((r, i) => (
-          <li key={i}>• {r}</li>
-        ))}
-      </ul>
-      {chat && (
-        <button
-          onClick={() =>
-            chat.sendToChat(
-              `De kwaliteitscontrole van de laatste berekening geeft "${gate.verdict === "fail" ? "mislukt" : "let op"}" met deze reden(en): ${gate.reasons.join("; ")}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
-            )
-          }
-          className="mt-3 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger-dim"
-        >
-          Vraag de AI om dit te verbeteren
-        </button>
-      )}
+    <details className={`rounded-lg border p-3 ${TRUST_TONE[v.level]}`}>
+      <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium">
+        <span className={`h-2.5 w-2.5 flex-none rounded-full ${dot}`} />
+        <span>Modelvertrouwen: {v.headline}</span>
+        <span className="ml-auto text-xs font-normal opacity-70">details</span>
+      </summary>
+      <div className="mt-3 space-y-3">
+        {v.reasons.length > 0 && (
+          <ul className="space-y-1 text-sm">
+            {v.reasons.map((r, i) => (
+              <li key={i}>• {r}</li>
+            ))}
+          </ul>
+        )}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <DiagMetric label={<Term definition={MMM_GLOSSARY.r2}>R²</Term>} value={fmt(d.r2, 2)} />
+          <DiagMetric label={<Term definition={MMM_GLOSSARY.mape}>MAPE</Term>} value={pct(d.mape)} />
+          <DiagMetric
+            label={<Term definition={MMM_GLOSSARY.coverage}>Dekking (94%)</Term>}
+            value={pct(d.interval_coverage_94)}
+          />
+          <DiagMetric label={<Term definition={MMM_GLOSSARY.rhat}>Max R-hat</Term>} value={fmt(d.max_r_hat, 2)} />
+        </div>
+        <p className="text-xs opacity-80">
+          Wat betekent dit? R² en MAPE zeggen hoe goed het model de historie volgt; dekking en R-hat of de
+          onzekerheidsmarges en de schatting betrouwbaar zijn. Groen betekent: je kunt de rest van dit dashboard met
+          vertrouwen lezen.
+        </p>
+        {chat && v.level !== "goed" && (
+          <button
+            onClick={() =>
+              chat.sendToChat(
+                `Het modelvertrouwen is "${v.headline}". Reden(en): ${v.reasons.join("; ") || "zie diagnostiek"}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
+              )
+            }
+            className="rounded-lg border border-current/40 bg-surface px-3 py-1.5 text-xs font-medium transition hover:opacity-80"
+          >
+            Vraag de AI om dit te verbeteren
+          </button>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function DiagMetric({ label, value }: { label: React.ReactNode; value: string }) {
+  return (
+    <div>
+      <div className="text-xs opacity-80">{label}</div>
+      <div className="text-sm font-semibold">{value}</div>
     </div>
+  );
+}
+
+const ACTION_ICON: Record<RecommendedAction["kind"], string> = {
+  shift: "⇄",
+  scale: "↑",
+  cut: "↓",
+  hold: "✓",
+};
+
+// Het "doe dit"-blok: concrete, geprioriteerde budgetadviezen afgeleid uit de optimizer,
+// de frontier en de ROAS-verdeling — met per advies een vertrouwenslabel. Dit is wat het
+// dashboard van "mooie grafieken" naar "besluitvormingsinstrument" tilt.
+function ActionsBlock({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
+  const actions = recommendedActions(summary, kpiMargin);
+  if (actions.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-fg">Aanbevolen acties</h3>
+      <div className="space-y-2">
+        {actions.map((a, i) => (
+          <div key={i} className="flex gap-3 rounded-lg border border-border bg-surface-2/60 p-3">
+            <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-accent text-sm text-white">
+              {ACTION_ICON[a.kind]}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">{a.text}</p>
+              <p className="mt-0.5 text-xs text-fg-muted">{a.detail}</p>
+              <span className="mt-1.5 inline-block">
+                <ConfidencePill confidence={a.confidence} />
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-fg-faint">
+        Adviezen zijn richtinggevend en gebaseerd op de modelverwachting bij de huidige data. Toets grote
+        verschuivingen met een test voordat je ze volledig doorvoert.
+      </p>
+    </div>
+  );
+}
+
+const CONFIDENCE_TONE: Record<Confidence, string> = {
+  hoog: "bg-success-dim text-success",
+  midden: "bg-warn-dim text-warn",
+  laag: "bg-surface-2 text-fg-muted",
+};
+
+export function ConfidencePill({ confidence }: { confidence: Confidence }) {
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${CONFIDENCE_TONE[confidence]}`}>
+      {CONFIDENCE_LABEL[confidence]}
+    </span>
   );
 }
 
@@ -183,35 +328,12 @@ export function SummaryView({
   // in de grafieken ("per verkochte eenheid" vs. "per euro omzet"). Onbekend = neutraal.
   isCountKpi?: boolean;
 }) {
-  const d = summary.diagnostics;
-  const coverageOff = Math.abs(d.interval_coverage_94 - 0.94) > 0.1;
-
   return (
     <div className="space-y-6">
-      <QualityBanner summary={summary} />
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Metric label={<Term definition={MMM_GLOSSARY.r2}>R²</Term>} value={fmt(d.r2, 2)} />
-        <Metric label={<Term definition={MMM_GLOSSARY.mape}>MAPE</Term>} value={pct(d.mape)} />
-        <Metric
-          label={<Term definition={MMM_GLOSSARY.coverage}>Dekking (94%)</Term>}
-          value={pct(d.interval_coverage_94)}
-          warn={coverageOff}
-        />
-        <Metric
-          label={<Term definition={MMM_GLOSSARY.rhat}>Max R-hat</Term>}
-          value={fmt(d.max_r_hat, 2)}
-          warn={d.max_r_hat > 1.05}
-        />
-      </div>
-
-      <p className="text-sm text-fg-muted">
-        De periode <span className="font-medium">{summary.window[0]}</span> t/m{" "}
-        <span className="font-medium">{summary.window[1]}</span> ({summary.n_weeks} weken). De
-        baseline — verkoop zonder marketing — is ongeveer{" "}
-        <span className="font-medium">{fmt(summary.baseline_contribution.p50)}</span>{" "}
-        {summary.kpi}.
-      </p>
+      {/* Hero: conclusie → vertrouwen → actie (business vóór statistiek). */}
+      <Headline summary={summary} kpiMargin={kpiMargin} isCountKpi={isCountKpi} />
+      <TrustBadge summary={summary} />
+      <ActionsBlock summary={summary} kpiMargin={kpiMargin} />
 
       <ResultsCharts summary={summary} kpiMargin={kpiMargin} isCountKpi={isCountKpi} />
 
@@ -229,14 +351,19 @@ export function SummaryView({
                 <Term definition={MMM_GLOSSARY.roas}>ROAS</Term>
               </th>
               <th className="py-2 pr-4 font-medium">
-                <Term definition={MMM_GLOSSARY.adstock}>Adstock half-life</Term>
+                <Term definition={MMM_GLOSSARY.adstock}>Doorwerking</Term>
               </th>
               <th className="py-2 pr-4 font-medium">
-                <Term definition={MMM_GLOSSARY.saturation}>Verzadigingspunt</Term>
+                <Term definition={MMM_GLOSSARY.saturation}>Verzadiging vanaf</Term>
               </th>
               <th className="py-2 pr-4 font-medium">
                 <Term definition="Welk deel van de opbrengst in dezelfde week viel als de uitgave (direct); de rest is na-ijl — doorwerking in latere weken.">
                   Direct
+                </Term>
+              </th>
+              <th className="py-2 pr-4 font-medium">
+                <Term definition="Hoe zeker het model is over dit kanaal — afgeleid van de breedte van de onzekerheidsband. Laag vertrouwen betekent meestal: te weinig of te weinig variërende data om dit kanaal scherp te schatten.">
+                  Vertrouwen
                 </Term>
               </th>
             </tr>
@@ -260,6 +387,9 @@ export function SummaryView({
                 <td className="py-3 pr-4">
                   {ch.direct_share ? <IntervalCell value={ch.direct_share} render={pct} /> : <span className="text-fg-faint">—</span>}
                 </td>
+                <td className="py-3 pr-4">
+                  <ConfidencePill confidence={confidenceFromInterval(ch.roas)} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -274,13 +404,6 @@ export function SummaryView({
           frontier={summary.efficiency_frontier}
           kpi={summary.kpi}
         />
-      )}
-
-      {!d.decomposition_ok && (
-        <p className="text-sm text-danger">
-          Let op: de decompositie telt niet netjes op tot het totaal — behandel deze uitkomst met
-          voorzichtigheid.
-        </p>
       )}
     </div>
   );

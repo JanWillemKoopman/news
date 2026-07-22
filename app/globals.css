@@ -63,3 +63,28 @@ body {
     font-size: 16px;
   }
 }
+
+/* Afdrukken / opslaan-als-PDF voor een board-deck: verberg de app-navigatie en
+   interactieve bediening, en klap alle ingeklapte secties (details) open zodat de
+   volledige analyse op papier komt in plaats van alleen de zichtbare samenvattingen.
+   Elementen met data-print="hide" (bv. knoppen, schuiven) vallen weg. */
+@media print {
+  header,
+  [data-print="hide"] {
+    display: none !important;
+  }
+  details > *:not(summary) {
+    display: revert !important;
+  }
+  details > summary {
+    list-style: none;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  /* Vermijd dat kaarten/grafieken over een paginarand worden afgekapt. */
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+}

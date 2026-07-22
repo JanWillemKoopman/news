@@ -7,7 +7,18 @@ import { PageHeader, TopBar } from "@/components/ui";
 import { SummaryView } from "@/components/SummaryView";
 import { ScenarioPlanner } from "@/components/ScenarioPlanner";
 import { DashboardTabs } from "@/components/DashboardTabs";
+import { ClientSummaryCard } from "@/components/ClientSummaryCard";
+import { DashboardHelp } from "@/components/DashboardHelp";
+import { PrintButton } from "@/components/PrintButton";
 import { isHierSummary, type JobConfig, type ModelRun, type Project } from "@/lib/types";
+
+// "Laatst bijgewerkt" in leesbare NL-datum voor het versheidsstempel.
+function fmtDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -59,15 +70,37 @@ export default async function ClientDashboard({ params }: { params: { projectId:
         <PageHeader
           title={p.name}
           subtitle={p.client_company ?? "Media mix model — resultaten"}
+          action={latest ? <PrintButton /> : undefined}
         />
+        {latest && (
+          // Versheidsstempel: waar de cijfers op gebaseerd zijn en wanneer ze zijn bijgewerkt —
+          // een basaal vertrouwenssignaal bij besluiten met grote budgetten.
+          <p className="-mt-3 text-xs text-fg-faint">
+            {isHierSummary(latest.summary)
+              ? `Datavenster ${latest.summary.n_weeks} weken`
+              : `Datavenster ${latest.summary.window[0]} t/m ${latest.summary.window[1]} (${latest.summary.n_weeks} weken)`}
+            {fmtDate(latest.published_at) && ` · Laatst bijgewerkt ${fmtDate(latest.published_at)}`}
+          </p>
+        )}
         {latest ? (
           isHierSummary(latest.summary) ? (
             // Hiërarchische run: geen responscurves, dus geen scenario-tabblad.
-            <DashboardTabs results={<HierarchicalSummaryView summary={latest.summary} />} scenario={null} />
+            <DashboardTabs
+              results={
+                <>
+                  {latest.client_summary && <ClientSummaryCard summary={latest.client_summary} />}
+                  <DashboardHelp />
+                  <HierarchicalSummaryView summary={latest.summary} />
+                </>
+              }
+              scenario={null}
+            />
           ) : (
             <DashboardTabs
               results={
                 <>
+                  {latest.client_summary && <ClientSummaryCard summary={latest.client_summary} />}
+                  <DashboardHelp />
                   <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} isCountKpi={isCountKpi} />
                   {latest.analysis && <AnalysisView analysis={latest.analysis} />}
                 </>

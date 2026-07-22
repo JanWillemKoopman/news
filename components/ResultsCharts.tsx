@@ -274,6 +274,58 @@ function BuildUpChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: strin
   );
 }
 
+// Mix-verschuiving in de tijd: het aandeel van elk kanaal in de totale marketingbijdrage,
+// week voor week, als 100%-gestapeld vlak. Laat zien of de mix verschoof (bv. een kanaal
+// dat gaandeweg dominanter of juist minder belangrijk werd) — iets wat de periode-totalen
+// verbergen. Basislijn telt niet mee: dit gaat puur over de verdeling ván het marketingdeel.
+function MixShiftChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: string }) {
+  const channelNames = Object.keys(weekly.channels_p50);
+  if (channelNames.length < 2) return null;
+  const data = weekly.dates.map((date, i) => {
+    const raw = channelNames.map((n) => Math.max(0, weekly.channels_p50[n][i]));
+    const total = raw.reduce((s, v) => s + v, 0) || 1;
+    const row: Record<string, number | string> = { date };
+    channelNames.forEach((n, j) => (row[n] = (raw[j] / total) * 100));
+    return row;
+  });
+  return (
+    <ChartCard
+      title="Verschoof je mix in de loop van de tijd?"
+      hint={`Het aandeel van elk kanaal in de door marketing gedreven ${kpi}, week voor week (opgeteld 100%). Een kanaal dat breder wordt, werd belangrijker; smaller = minder belangrijk.`}
+    >
+      <ResponsiveContainer width="100%" height={240} className="overflow-hidden">
+        <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }} stackOffset="expand">
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+          <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
+          <YAxis tick={AXIS} width={40} tickFormatter={(v) => `${fmt(v * 100)}%`} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
+            formatter={(v) => (typeof v === "number" ? `${fmt(v, 1)}%` : String(v))}
+          />
+          {channelNames.map((n, i) => (
+            <Area
+              key={n}
+              dataKey={n}
+              stackId="mix"
+              stroke="#FFFFFF"
+              strokeWidth={0.75}
+              fill={channelColor(i, channelNames.length)}
+              fillOpacity={0.95}
+            />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fg-muted">
+        {channelNames.map((n, i) => (
+          <span key={n} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: channelColor(i, channelNames.length) }} /> {n}
+          </span>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}
+
 // De waterval: van "niets doen" (basislijn) trede voor trede omhoog naar het
 // modeltotaal — de statische, presentatieklare tweeling van de opbouwgrafiek.
 function WaterfallChart({ summary }: { summary: FitSummary }) {
@@ -665,6 +717,7 @@ export function ResultsCharts({
       <SectionHeader title="Wat gebeurde er?" subtitle="Het totaalbeeld: waar je omzet vandaan kwam en of het model de werkelijkheid volgt." />
       <ScoreCards summary={summary} kpiMargin={kpiMargin} marginUnit={marginUnit} />
       {summary.weekly && <BuildUpChart weekly={summary.weekly} kpi={summary.kpi} />}
+      {summary.weekly && <MixShiftChart weekly={summary.weekly} kpi={summary.kpi} />}
       <div className="grid gap-6 lg:grid-cols-2">
         <WaterfallChart summary={summary} />
         {summary.weekly && (

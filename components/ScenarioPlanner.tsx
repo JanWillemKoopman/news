@@ -81,6 +81,33 @@ function sliderMax(curve: ResponseCurve): number {
   return Math.max(curveMax, base * 3, base + 1000, 1000);
 }
 
+// De optimale (best mogelijke) marketingbijdrage bij een gegeven totaalbudget, afgelezen
+// van de al berekende efficiency frontier — dat is: ditzelfde budget optimaal over de
+// kanalen verdeeld. Zo kunnen we het handmatige scenario eerlijk afzetten tegen "wat had
+// het model met deze euro's gehaald bij de beste verdeling?". Buiten het frontier-bereik
+// afgekapt (geen extrapolatie). Retourneert null als er geen bruikbare frontier is.
+function optimalAtBudget(summary: FitSummary, budget: number): number | null {
+  const fr = [...(summary.efficiency_frontier ?? [])].sort((a, b) => a.total_weekly_budget - b.total_weekly_budget);
+  if (fr.length < 2) return null;
+  const min = fr[0].total_weekly_budget;
+  const max = fr[fr.length - 1].total_weekly_budget;
+  const x = Math.min(max, Math.max(min, budget));
+  let i = fr.findIndex((f) => f.total_weekly_budget >= x);
+  if (i <= 0) i = 1;
+  const a = fr[i - 1];
+  const b = fr[i];
+  const t = (x - a.total_weekly_budget) / (b.total_weekly_budget - a.total_weekly_budget || 1);
+  return a.predicted_contribution.p50 + t * (b.predicted_contribution.p50 - a.predicted_contribution.p50);
+}
+
+// Een bewaard scenario voor de vergelijkingstabel.
+interface SavedScenario {
+  id: number;
+  label: string;
+  weekSpend: number;
+  weekKpi: number;
+}
+
 export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; kpiMargin?: number | null }) {
   const curves = summary.response_curves ?? [];
   // Basis (weekbedragen): huidige spend per kanaal + de niet-marketing basislijn per week.
@@ -92,6 +119,7 @@ export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; k
     Object.fromEntries(curves.map((c) => [c.name, c.current_weekly_spend])),
   );
   const [horizonWeeks, setHorizonWeeks] = useState<number>(13);
+  const [saved, setSaved] = useState<SavedScenario[]>([]);
 
   const rows = useMemo(() => {
     return curves.map((curve) => {
@@ -142,11 +170,28 @@ export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; k
   // Netto effect als de marge bekend is: extra KPI × marge − extra kosten (over de horizon).
   const netHorizon = kpiMargin != null ? kpiDeltaHorizon * kpiMargin - spendDeltaHorizon : null;
 
+  // Reconciliatie met de optimizer: wat had ditzelfde scenariobudget opgeleverd bij de
+  // optimale verdeling? Zo weet de gebruiker of zijn handmatige mix nog ruimte laat liggen.
+  const optimalMarketing = optimalAtBudget(summary, totals.scenarioSpend);
+  const optimalGap = optimalMarketing != null ? optimalMarketing - totals.scenarioMarketing : null;
+  const leavingOnTable = optimalGap != null && optimalGap > Math.max(1, totals.scenarioMarketing * 0.02);
+
   const compareData = rows.map((r) => ({
     name: r.name,
     nu: Math.max(0, r.baseContribution),
     scenario: Math.max(0, r.scenarioContribution),
   }));
+
+  const saveScenario = () =>
+    setSaved((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        label: `Scenario ${prev.length + 1}`,
+        weekSpend: totals.scenarioSpend,
+        weekKpi: totals.scenarioKpi,
+      },
+    ]);
 
   return (
     <div className="space-y-4">
@@ -156,7 +201,8 @@ export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; k
           Plus of min de weekspend per kanaal — met de schuif (%) of door een exact bedrag in te typen — en
           lees direct af wat het model verwacht dat er met je {summary.kpi} en je kosten gebeurt, vergeleken met
           niets aanpassen. De uitkomsten volgen de verzadigingscurve per kanaal: meer geld levert niet overal
-          evenveel extra op.
+          evenveel extra op. &ldquo;Nu&rdquo; is hier de modelverwachting bij je huidige weekspend; die kan licht
+          afwijken van de historische toerekening op het tabblad Resultaten.
         </p>
       </div>
 
@@ -322,7 +368,95 @@ export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; k
               scenario.
             </p>
           )}
+          {h > 1 && (
+            <p className="mt-1.5 text-[11px] text-fg-faint">
+              Projectie = wekelijkse uitkomst × {h}. Seizoenspieken en -dalen worden hierin niet meegerekend; lees
+              het als een gemiddelde per week over de periode.
+            </p>
+          )}
         </div>
+
+        {/* Reconciliatie met de optimizer: laat ditzelfde budget nog rendement liggen? */}
+        {changed && leavingOnTable && optimalGap != null && (
+          <div className="mt-3 rounded-lg border border-warn/30 bg-warn-dim px-3 py-2 text-xs text-warn">
+            De optimale verdeling van ditzelfde weekbudget ({fmt(totals.scenarioSpend)}) zou naar schatting{" "}
+            <span className="font-semibold tabular-nums">{fmt(optimalGap)}</span> {summary.kpi} per week méér opleveren
+            dan jouw verdeling. Zie het tabblad Resultaten → &ldquo;Budgetadvies&rdquo; voor de optimale mix.
+          </div>
+        )}
+        {changed && optimalGap != null && !leavingOnTable && (
+          <div className="mt-3 rounded-lg border border-success/30 bg-success-dim px-3 py-2 text-xs text-success">
+            Sterke mix: je zit bij dit budget vrijwel op de optimale verdeling die het model kent.
+          </div>
+        )}
+      </div>
+
+      {/* Bewaar & vergelijk: zet meerdere scenario's naast elkaar voor het gesprek. */}
+      <div className="rounded-lg border border-border bg-surface p-3" data-print="hide">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium text-fg">Scenario&apos;s vergelijken</p>
+          <button
+            onClick={saveScenario}
+            className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white transition hover:bg-accent-hover"
+          >
+            + Bewaar huidig scenario
+          </button>
+        </div>
+        {saved.length === 0 ? (
+          <p className="mt-2 text-[11px] text-fg-faint">
+            Bewaar een paar scenario&apos;s om ze hier — met kosten en verwachte {summary.kpi} per week — naast
+            elkaar en naast de huidige mix te zien.
+          </p>
+        ) : (
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-fg-faint">
+                  <th className="py-1.5 pr-3 font-medium">Scenario</th>
+                  <th className="py-1.5 pr-3 font-medium">Kosten/wk</th>
+                  <th className="py-1.5 pr-3 font-medium">{summary.kpi}/wk</th>
+                  <th className="py-1.5 pr-3 font-medium">Δ KPI vs. nu</th>
+                  <th className="py-1.5 font-medium" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                <tr>
+                  <td className="py-2 pr-3 font-medium text-fg">Huidige mix</td>
+                  <td className="py-2 pr-3 tabular-nums text-fg-muted">{fmt(totals.baseSpend)}</td>
+                  <td className="py-2 pr-3 tabular-nums text-fg-muted">{fmt(totals.baseKpi)}</td>
+                  <td className="py-2 pr-3 tabular-nums text-fg-faint">—</td>
+                  <td className="py-2" />
+                </tr>
+                {saved.map((s) => {
+                  const d = s.weekKpi - totals.baseKpi;
+                  return (
+                    <tr key={s.id}>
+                      <td className="py-2 pr-3 font-medium text-fg">{s.label}</td>
+                      <td className="py-2 pr-3 tabular-nums text-fg">{fmt(s.weekSpend)}</td>
+                      <td className="py-2 pr-3 tabular-nums text-fg">{fmt(s.weekKpi)}</td>
+                      <td
+                        className={`py-2 pr-3 tabular-nums font-medium ${
+                          d > 0.5 ? "text-success" : d < -0.5 ? "text-danger" : "text-fg-muted"
+                        }`}
+                      >
+                        {fmtSigned(d)}
+                      </td>
+                      <td className="py-2 text-right">
+                        <button
+                          onClick={() => setSaved((prev) => prev.filter((x) => x.id !== s.id))}
+                          className="text-xs text-fg-faint transition hover:text-danger"
+                          aria-label={`Verwijder ${s.label}`}
+                        >
+                          verwijder
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Vergelijkingsgrafiek: bijdrage per kanaal — nu vs. scenario */}
