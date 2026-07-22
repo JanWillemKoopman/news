@@ -15,12 +15,19 @@ import { QualityReportView } from "@/components/QualityReportView";
 import { DatasetPreviewTable } from "@/components/DatasetPreviewTable";
 import { SummaryView } from "@/components/SummaryView";
 import type {
+  AdstockType,
   ChannelConfig,
+  ChannelType,
   ColumnRole,
   Dataset,
+  EventDummyConfig,
+  FeatureOp,
+  FeatureSpec,
   JobConfig,
+  LikelihoodType,
   ModelRun,
   PrepareRecipe,
+  SaturationType,
   SourceConfig,
   SourceFile,
   SourceProfile,
@@ -187,6 +194,221 @@ export function UploadCard({ projectId, source }: { projectId: string; source: S
   );
 }
 
+// --- Geavanceerd (optioneel): event-dummy's + afgeleide features ----------------------
+// Uitklapbare secties in de rol-indeling. Beide zijn declaratief en gaan mee in het
+// PrepareRecipe; ze blijven verborgen achter "Geavanceerd" zodat de standaardflow simpel blijft.
+
+const BTN_ADD = "text-xs font-medium text-accent transition hover:underline";
+const INPUT_SM = "rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-fg placeholder:text-fg-faint outline-none focus:border-accent/50";
+
+// Parseert tokens als "2023-W48", "2023-48" of "2023 48" naar [iso_jaar, iso_week]-paren.
+function parseWeeks(text: string): [number, number][] {
+  const out: [number, number][] = [];
+  for (const tok of text.split(/[,;]+/)) {
+    const m = tok.trim().match(/^(\d{4})\s*[-\sWw]+\s*(\d{1,2})$/);
+    if (m) {
+      const y = Number(m[1]);
+      const w = Number(m[2]);
+      if (w >= 1 && w <= 53) out.push([y, w]);
+    }
+  }
+  return out;
+}
+
+function EventDummiesEditor({ value, onChange }: { value: EventDummyConfig[]; onChange: (v: EventDummyConfig[]) => void }) {
+  // Interne rijen bewaren de rauwe tekst; naar buiten geven we alleen geldige, geparste events.
+  const [rows, setRows] = useState<{ name: string; weeksText: string }[]>(
+    value.length
+      ? value.map((e) => ({ name: e.name, weeksText: e.weeks.map(([y, w]) => `${y}-W${w}`).join(", ") }))
+      : [{ name: "", weeksText: "" }],
+  );
+
+  function push(next: { name: string; weeksText: string }[]) {
+    setRows(next);
+    onChange(
+      next
+        .map((r) => ({ name: r.name.trim(), weeks: parseWeeks(r.weeksText) }))
+        .filter((e) => e.name && e.weeks.length > 0),
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-fg-faint">
+        Markeer bijzondere weken (bijv. Black Friday, een storing) als 0/1-kolom. Weken als
+        “2023-W48, 2024-W47”.
+      </p>
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            value={r.name}
+            onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+            placeholder="naam (bv. black_friday)"
+            className={INPUT_SM + " w-40"}
+          />
+          <input
+            value={r.weeksText}
+            onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, weeksText: e.target.value } : x)))}
+            placeholder="2023-W48, 2024-W47"
+            className={INPUT_SM + " flex-1"}
+          />
+          <button onClick={() => push(rows.filter((_, j) => j !== i))} className="text-fg-faint hover:text-danger" aria-label="Verwijderen">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ))}
+      <button onClick={() => setRows([...rows, { name: "", weeksText: "" }])} className={BTN_ADD}>
+        + Event toevoegen
+      </button>
+    </div>
+  );
+}
+
+// Ondersteunde feature-ops met hun param-sleutel (spiegelt mmm_core.ingestion.feature_engineering).
+const FEATURE_OPS: { op: FeatureOp; label: string; inputs: "one" | "two"; paramKey?: "weeks" | "window"; paramLabel?: string }[] = [
+  { op: "lag", label: "Vertraging (lag)", inputs: "one", paramKey: "weeks", paramLabel: "weken" },
+  { op: "rolling_mean", label: "Voortschrijdend gemiddelde", inputs: "one", paramKey: "window", paramLabel: "venster" },
+  { op: "rolling_sum", label: "Voortschrijdende som", inputs: "one", paramKey: "window", paramLabel: "venster" },
+  { op: "diff", label: "Verschil t.o.v. eerdere week", inputs: "one", paramKey: "weeks", paramLabel: "weken" },
+  { op: "log1p", label: "Log(1+x)", inputs: "one" },
+  { op: "zscore", label: "Z-score (standaardiseren)", inputs: "one" },
+  { op: "ratio", label: "Verhouding (a ÷ b)", inputs: "two" },
+];
+
+interface FeatureRow {
+  name: string;
+  op: FeatureOp;
+  input1: string;
+  input2: string;
+  param: string;
+}
+
+function FeaturesEditor({
+  columns,
+  value,
+  onChange,
+}: {
+  columns: string[];
+  value: FeatureSpec[];
+  onChange: (v: FeatureSpec[]) => void;
+}) {
+  const [rows, setRows] = useState<FeatureRow[]>(
+    value.length
+      ? value.map((f) => ({
+          name: f.name,
+          op: f.op as FeatureOp,
+          input1: f.inputs[0] ?? "",
+          input2: f.inputs[1] ?? "",
+          param: String((f.params?.weeks ?? f.params?.window ?? "") as number | string),
+        }))
+      : [],
+  );
+
+  function toSpecs(next: FeatureRow[]): FeatureSpec[] {
+    const specs: FeatureSpec[] = [];
+    for (const r of next) {
+      const meta = FEATURE_OPS.find((o) => o.op === r.op);
+      if (!meta || !r.name.trim() || !r.input1) continue;
+      const inputs = meta.inputs === "two" ? [r.input1, r.input2].filter(Boolean) : [r.input1];
+      if (meta.inputs === "two" && inputs.length !== 2) continue;
+      const spec: FeatureSpec = { name: r.name.trim(), op: r.op, inputs };
+      if (meta.paramKey) {
+        const n = Number(r.param);
+        if (Number.isFinite(n) && n >= 1) spec.params = { [meta.paramKey]: n };
+        else continue; // param verplicht voor deze op
+      }
+      specs.push(spec);
+    }
+    return specs;
+  }
+
+  function push(next: FeatureRow[]) {
+    setRows(next);
+    onChange(toSpecs(next));
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-fg-faint">
+        Bereken extra variabelen uit bestaande kolommen (bijv. een vertraagde spend of een
+        voortschrijdend gemiddelde) die als control meegaan.
+      </p>
+      <datalist id="feature-cols">
+        {columns.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      {rows.map((r, i) => {
+        const meta = FEATURE_OPS.find((o) => o.op === r.op)!;
+        return (
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <input
+              value={r.name}
+              onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+              placeholder="naam"
+              className={INPUT_SM + " w-28"}
+            />
+            <select
+              value={r.op}
+              onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, op: e.target.value as FeatureOp } : x)))}
+              className={INPUT_SM}
+            >
+              {FEATURE_OPS.map((o) => (
+                <option key={o.op} value={o.op}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <input
+              list="feature-cols"
+              value={r.input1}
+              onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, input1: e.target.value } : x)))}
+              placeholder="kolom"
+              className={INPUT_SM + " w-28"}
+            />
+            {meta.inputs === "two" && (
+              <input
+                list="feature-cols"
+                value={r.input2}
+                onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, input2: e.target.value } : x)))}
+                placeholder="kolom 2"
+                className={INPUT_SM + " w-28"}
+              />
+            )}
+            {meta.paramKey && (
+              <input
+                value={r.param}
+                onChange={(e) => push(rows.map((x, j) => (j === i ? { ...x, param: e.target.value } : x)))}
+                placeholder={meta.paramLabel}
+                inputMode="numeric"
+                className={INPUT_SM + " w-16"}
+              />
+            )}
+            <button onClick={() => push(rows.filter((_, j) => j !== i))} className="text-fg-faint hover:text-danger" aria-label="Verwijderen">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      })}
+      <button
+        onClick={() => setRows([...rows, { name: "", op: "lag", input1: "", input2: "", param: "1" }])}
+        className={BTN_ADD}
+      >
+        + Feature toevoegen
+      </button>
+    </div>
+  );
+}
+
+function AdvancedSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="mt-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2">
+      <summary className="cursor-pointer select-none text-xs font-medium text-fg-muted">{title}</summary>
+      <div className="mt-2">{children}</div>
+    </details>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Fase "prepare_recipe" — kolomrollen bevestigen. Voorgevuld uit de goedkope
 // kolom-classificatie die al bij upload draaide (source.mapping). De gebruiker vinkt
@@ -242,6 +464,8 @@ export function RoleMappingCard({ projectId, source }: { projectId: string; sour
   }, [columns, source]);
 
   const [roles, setRoles] = useState<Record<string, RoleChoice>>(initial);
+  const [events, setEvents] = useState<EventDummyConfig[]>([]);
+  const [features, setFeatures] = useState<FeatureSpec[]>([]);
 
   const dateCol = Object.entries(roles).find(([, r]) => r === "date")?.[0] ?? null;
   const kpiCount = Object.values(roles).filter((r) => r === "kpi").length;
@@ -285,6 +509,8 @@ export function RoleMappingCard({ projectId, source }: { projectId: string; sour
           columns: cols,
         },
       ],
+      ...(events.length > 0 ? { event_dummies: events } : {}),
+      ...(features.length > 0 ? { features } : {}),
     };
     const res = await fetch("/api/datasets", {
       method: "POST",
@@ -327,6 +553,24 @@ export function RoleMappingCard({ projectId, source }: { projectId: string; sour
           <Sparkles className="h-3 w-3" /> Voorgevuld door de AI-kolomherkenning — controleer even.
         </p>
       )}
+
+      <AdvancedSection title="Geavanceerd: bijzondere weken & afgeleide variabelen (optioneel)">
+        <div className="space-y-4">
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">Bijzondere weken (events)</p>
+            <EventDummiesEditor value={events} onChange={setEvents} />
+          </div>
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">Afgeleide variabelen (features)</p>
+            <FeaturesEditor
+              columns={Object.entries(roles).filter(([, r]) => r === "kpi" || r === "spend" || r === "control").map(([n]) => n)}
+              value={features}
+              onChange={setFeatures}
+            />
+          </div>
+        </div>
+      </AdvancedSection>
+
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
       <div className="mt-3">
         <button onClick={submit} disabled={busy} className={BTN_PRIMARY}>
@@ -384,6 +628,108 @@ export function PrepareReviewCard({ dataset }: { dataset: Dataset }) {
 }
 
 // ---------------------------------------------------------------------------
+// Fase "context" — zakelijke context vastleggen vóór het model instellen. Overslaanbaar.
+// Schrijft naar dezelfde mmm.project_context-rij als de AI-tool record_business_context,
+// zodat paneel en AI één gedeelde waarheid delen.
+// ---------------------------------------------------------------------------
+
+export function ContextCard({
+  projectId,
+  industry,
+  description,
+  kpiMargin,
+  onSkip,
+}: {
+  projectId: string;
+  industry: string | null;
+  description: string | null;
+  kpiMargin: number | null;
+  onSkip: () => void;
+}) {
+  const router = useRouter();
+  const [desc, setDesc] = useState(description ?? "");
+  const [branche, setBranche] = useState(industry ?? "");
+  const [marge, setMarge] = useState(kpiMargin != null ? String(kpiMargin) : "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    const margeNum = marge.trim() === "" ? null : Number(marge.replace(",", "."));
+    if (margeNum !== null && (!Number.isFinite(margeNum) || margeNum <= 0)) {
+      setBusy(false);
+      setError("De marge moet een bedrag boven 0 zijn (bijv. 12,50) of leeg.");
+      return;
+    }
+    const res = await fetch("/api/business-context", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_id: projectId,
+        description: desc.trim(),
+        industry: branche.trim(),
+        kpi_margin: margeNum,
+      }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setBusy(false);
+      setError(humanizeError(j.error, "Opslaan is niet gelukt — probeer het opnieuw.").text);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-fg-muted">Wat doet het bedrijf? (markt, doelen, bijzonderheden)</label>
+          <textarea
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            rows={3}
+            placeholder="Bijv. webshop in duurzame kleding, sterke Q4-piek, prijsverhoging in maart…"
+            className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none focus:border-accent/50"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-fg-muted">Branche</label>
+            <input
+              value={branche}
+              onChange={(e) => setBranche(e.target.value)}
+              placeholder="bijv. e-commerce"
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none focus:border-accent/50"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-fg-muted">Marge per KPI-eenheid (€)</label>
+            <input
+              value={marge}
+              onChange={(e) => setMarge(e.target.value)}
+              inputMode="decimal"
+              placeholder="bijv. 12,50"
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none focus:border-accent/50"
+            />
+          </div>
+        </div>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button onClick={save} disabled={busy} className={BTN_PRIMARY}>
+          {busy ? "Opslaan…" : "Opslaan & door naar het model"}
+        </button>
+        <button onClick={onSkip} disabled={busy} className={BTN_SECONDARY}>
+          Overslaan
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Fase "configure" — standaard-modelinstelling (deterministisch, 0 tokens). De gebruiker
 // start meteen, of vraagt de AI om te optimaliseren (dat loopt via de vrij-tekst-escape).
 // ---------------------------------------------------------------------------
@@ -415,6 +761,28 @@ function templateConfigFromDataset(dataset: Dataset): JobConfig {
   };
 }
 
+const CHANNEL_TYPE_OPTS: { value: ChannelType; label: string }[] = [
+  { value: "generic", label: "Generiek" },
+  { value: "intent", label: "Intent (kort effect)" },
+  { value: "brand", label: "Merk (lang effect)" },
+];
+const ADSTOCK_OPTS: { value: AdstockType; label: string }[] = [
+  { value: "geometric", label: "Geometrisch (piekt meteen)" },
+  { value: "delayed", label: "Vertraagd (piekt later)" },
+];
+const SATURATION_OPTS: { value: SaturationType; label: string }[] = [
+  { value: "hill", label: "Hill" },
+  { value: "logistic", label: "Logistic" },
+];
+const LIKELIHOOD_OPTS: { value: LikelihoodType; label: string }[] = [
+  { value: "normal", label: "Normaal (omzet)" },
+  { value: "student_t", label: "Student-t (robuust)" },
+  { value: "poisson", label: "Poisson (leads/orders)" },
+  { value: "negative_binomial", label: "Negative binomial (telgegevens)" },
+];
+
+type ChannelTuning = Partial<Pick<ChannelConfig, "channel_type" | "adstock" | "saturation" | "expected_half_life">>;
+
 export function ConfigureCard({
   projectId,
   dataset,
@@ -427,7 +795,22 @@ export function ConfigureCard({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const config = useMemo(() => templateConfigFromDataset(dataset), [dataset]);
+  const base = useMemo(() => templateConfigFromDataset(dataset), [dataset]);
+  const [tuning, setTuning] = useState<Record<string, ChannelTuning>>({});
+  const [likelihood, setLikelihood] = useState<LikelihoodType>("normal");
+
+  // De uiteindelijke config: standaard + per-kanaal-overrides + likelihood.
+  const config: JobConfig = useMemo(() => {
+    const channels = base.model.channels.map((ch) => {
+      const t = tuning[ch.name];
+      return t ? ({ ...ch, ...t } as ChannelConfig) : ch;
+    });
+    return { ...base, model: { ...base.model, channels, likelihood } };
+  }, [base, tuning, likelihood]);
+
+  function setChannel(name: string, patch: ChannelTuning) {
+    setTuning((prev) => ({ ...prev, [name]: { ...prev[name], ...patch } }));
+  }
 
   async function start() {
     setBusy(true);
@@ -468,6 +851,67 @@ export function ConfigureCard({
           <dd className="text-fg">Standaard (adstock geometrisch, saturatie Hill, trend + seizoen)</dd>
         </div>
       </dl>
+
+      <AdvancedSection title="Geavanceerd: fijnafstelling per kanaal & ruismodel (optioneel)">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-fg-muted">Ruismodel (likelihood)</span>
+            <select value={likelihood} onChange={(e) => setLikelihood(e.target.value as LikelihoodType)} className={INPUT_SM}>
+              {LIKELIHOOD_OPTS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2 border-t border-border pt-2">
+            {base.model.channels.map((ch) => {
+              const t = tuning[ch.name] ?? {};
+              return (
+                <div key={ch.name} className="space-y-1">
+                  <p className="text-xs font-medium text-fg">{ch.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select value={t.channel_type ?? "generic"} onChange={(e) => setChannel(ch.name, { channel_type: e.target.value as ChannelType })} className={INPUT_SM}>
+                      {CHANNEL_TYPE_OPTS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select value={t.adstock ?? "geometric"} onChange={(e) => setChannel(ch.name, { adstock: e.target.value as AdstockType })} className={INPUT_SM}>
+                      {ADSTOCK_OPTS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select value={t.saturation ?? "hill"} onChange={(e) => setChannel(ch.name, { saturation: e.target.value as SaturationType })} className={INPUT_SM}>
+                      {SATURATION_OPTS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={t.expected_half_life != null ? String(t.expected_half_life) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value.trim();
+                        const n = v === "" ? null : Number(v);
+                        setChannel(ch.name, { expected_half_life: n != null && Number.isFinite(n) && n > 0 ? n : null });
+                      }}
+                      inputMode="decimal"
+                      placeholder="halfwaarde (wkn)"
+                      className={INPUT_SM + " w-28"}
+                      title="Verwachte na-ijl: na hoeveel weken is het effect gehalveerd?"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </AdvancedSection>
+
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
       <div className="mt-3 flex flex-wrap gap-2">
         <button onClick={start} disabled={busy} className={BTN_PRIMARY}>

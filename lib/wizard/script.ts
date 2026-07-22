@@ -45,6 +45,14 @@ export const PHASE_SCRIPT: Record<WizardPhase, PhaseScript> = {
       "van de weektabel. Ziet het er goed uit? Keur de dataset dan goed — daarna stellen we het model in.",
     dossierLabel: "Kwaliteit beoordelen",
   },
+  context: {
+    message:
+      "Voordat we het model instellen: vertel me kort iets over het bedrijf en de markt. " +
+      "Branche, gemiddelde marge per verkochte eenheid en bijzonderheden (grote campagnes, " +
+      "seizoenspieken, prijswijzigingen) helpen de AI om betere instellingen te kiezen — en " +
+      "de marge maakt het klantdashboard rijker. Dit is optioneel; je kunt het overslaan.",
+    dossierLabel: "Zakelijke context",
+  },
   configure: {
     message:
       "De dataset is goedgekeurd. Ik heb een standaard-modelinstelling klaargezet die voor de meeste " +
@@ -82,9 +90,10 @@ export const PHASE_SCRIPT: Record<WizardPhase, PhaseScript> = {
 export const PHASE_STEPS: { phases: WizardPhase[]; label: string }[] = [
   { phases: ["upload"], label: "1. Data uploaden" },
   { phases: ["prepare_recipe", "prepare_running", "prepare_failed", "prepare_review"], label: "2. Data voorbereiden" },
-  { phases: ["configure"], label: "3. Model instellen" },
-  { phases: ["fitting", "fit_failed"], label: "4. Berekenen" },
-  { phases: ["review", "published"], label: "5. Beoordelen & publiceren" },
+  { phases: ["context"], label: "3. Zakelijke context" },
+  { phases: ["configure"], label: "4. Model instellen" },
+  { phases: ["fitting", "fit_failed"], label: "5. Berekenen" },
+  { phases: ["review", "published"], label: "6. Beoordelen & publiceren" },
 ];
 
 export function stepIndexForPhase(phase: WizardPhase): number {

@@ -15,12 +15,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Send, Bot } from "lucide-react";
 import { humanizeError } from "@/lib/humanizeMessage";
+import { createClient } from "@/lib/supabase/client";
 import { derivePhase, isWaitingPhase, type WizardPhase } from "@/lib/wizard/phase";
 import { PHASE_SCRIPT } from "@/lib/wizard/script";
 import {
   UploadCard,
   RoleMappingCard,
   PrepareReviewCard,
+  ContextCard,
   ConfigureCard,
   ReviewCard,
 } from "@/components/wizard/cards";
@@ -56,6 +58,9 @@ export function ChatWizard({
   jobs,
   runs,
   kpiMargin,
+  industry,
+  companyDescription,
+  contextProvided,
 }: {
   projectId: string;
   sources: SourceFile[];
@@ -63,9 +68,13 @@ export function ChatWizard({
   jobs: Job[];
   runs: ModelRun[];
   kpiMargin: number | null;
+  industry: string | null;
+  companyDescription: string | null;
+  contextProvided: boolean;
 }) {
   const router = useRouter();
-  const phase: WizardPhase = derivePhase({ sources, dataset, jobs, runs });
+  const [skipContext, setSkipContext] = useState(false);
+  const phase: WizardPhase = derivePhase({ sources, dataset, jobs, runs, contextProvided, skipContext });
   const source = sources[0] ?? null;
   const latestRun = runs[0] ?? null;
   const latestFailedFit = jobs.find((j) => (j.type === "fit" || j.type === "fit_hierarchical") && j.status === "failed");
@@ -77,12 +86,32 @@ export function ChatWizard({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Zachtjes doorpollen zolang we op de worker wachten (samenvoegen/berekenen), zodat de
-  // fase vanzelf doorschuift zodra de DB de nieuwe status toont. Geen tokens, alleen een
-  // server-refresh.
+  // Realtime: zodra de worker een dataset/job/run bijwerkt, ververst de server-render en
+  // schuift de fase vanzelf door — zonder pollen. Eén subscriptie op de drie tabellen die
+  // de async voortgang dragen (datasets: samenvoegen; jobs: fase-overgangen; model_runs:
+  // resultaat verschijnt). Geen tokens, alleen een server-refresh.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase.channel(`wizard-${projectId}`);
+    for (const table of ["datasets", "jobs", "model_runs"] as const) {
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "mmm", table, filter: `project_id=eq.${projectId}` },
+        () => router.refresh(),
+      );
+    }
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, router]);
+
+  // Vangnet: mocht een Realtime-event gemist worden (verbinding weggevallen), pollt de
+  // client zachtjes door zolang we nog op de worker wachten — traag, want Realtime is de
+  // hoofdroute.
   useEffect(() => {
     if (!isWaitingPhase(phase)) return;
-    const id = setInterval(() => router.refresh(), 4000);
+    const id = setInterval(() => router.refresh(), 10000);
     return () => clearInterval(id);
   }, [phase, router]);
 
@@ -220,6 +249,16 @@ export function ChatWizard({
         );
       case "prepare_review":
         return dataset ? <PrepareReviewCard dataset={dataset} /> : null;
+      case "context":
+        return (
+          <ContextCard
+            projectId={projectId}
+            industry={industry}
+            description={companyDescription}
+            kpiMargin={kpiMargin}
+            onSkip={() => setSkipContext(true)}
+          />
+        );
       case "configure":
         return dataset ? <ConfigureCard projectId={projectId} dataset={dataset} onAskAi={askAiToOptimize} /> : null;
       case "fit_failed":

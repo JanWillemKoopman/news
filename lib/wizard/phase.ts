@@ -16,6 +16,7 @@ export type WizardPhase =
   | "prepare_running" // prepare-job loopt (samenvoegen + kwaliteitscheck)
   | "prepare_failed" // prepare mislukt — opnieuw
   | "prepare_review" // dataset klaar (prepared) — kwaliteitsrapport beoordelen + goedkeuren
+  | "context" // dataset goedgekeurd — zakelijke context vastleggen (overslaanbaar)
   | "configure" // dataset goedgekeurd, nog geen fit-job — model instellen
   | "fitting" // fit-job loopt
   | "fit_failed" // laatste fit mislukt — opnieuw
@@ -27,11 +28,16 @@ export interface WizardData {
   dataset: Dataset | null;
   jobs: Job[];
   runs: ModelRun[];
+  // Is er al zakelijke context vastgelegd (branche/omschrijving/marge/feiten)? Bepaalt of
+  // de expliciete context-fase nog getoond wordt vóór het model instellen.
+  contextProvided?: boolean;
+  // Heeft de gebruiker de context-fase deze sessie bewust overgeslagen (client-state)?
+  skipContext?: boolean;
 }
 
 const FIT_TYPES = ["fit", "fit_hierarchical"] as const;
 
-export function derivePhase({ sources, dataset, jobs, runs }: WizardData): WizardPhase {
+export function derivePhase({ sources, dataset, jobs, runs, contextProvided, skipContext }: WizardData): WizardPhase {
   if (sources.length === 0) return "upload";
 
   const fitJobs = jobs.filter((j) => (FIT_TYPES as readonly string[]).includes(j.type));
@@ -58,7 +64,12 @@ export function derivePhase({ sources, dataset, jobs, runs }: WizardData): Wizar
 
   // Nog geen fit gestart. Waar staat de dataset?
   if (dataset) {
-    if (dataset.status === "approved") return "configure";
+    if (dataset.status === "approved") {
+      // Vóór het model instellen: één keer om de zakelijke context vragen (branche,
+      // omschrijving, marge). Overslaanbaar — en verdwijnt zodra die is ingevuld.
+      if (!contextProvided && !skipContext) return "context";
+      return "configure";
+    }
     if (dataset.status === "prepared") return "prepare_review";
     if (dataset.status === "preparing") return "prepare_running";
     if (dataset.status === "failed") return "prepare_failed";

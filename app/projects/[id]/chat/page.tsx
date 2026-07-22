@@ -59,7 +59,9 @@ export default async function ProjectChat({ params }: { params: { id: string } }
   const industry = (projectContext?.industry as string | null) ?? null;
   const companyDescription = (projectContext?.description as string | null) ?? null;
 
-  const phase = derivePhase({ sources: sourceList, dataset, jobs: jobList, runs: runList });
+  const contextProvided =
+    Boolean(industry) || Boolean(companyDescription) || businessNotes.length > 0 || p.kpi_margin != null;
+  const phase = derivePhase({ sources: sourceList, dataset, jobs: jobList, runs: runList, contextProvided });
 
   return (
     <>
@@ -79,6 +81,9 @@ export default async function ProjectChat({ params }: { params: { id: string } }
             jobs={jobList}
             runs={runList}
             kpiMargin={p.kpi_margin ?? null}
+            industry={industry}
+            companyDescription={companyDescription}
+            contextProvided={contextProvided}
           />
         </div>
 
