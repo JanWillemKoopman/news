@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types";
+import type { BaselineDecomposition, FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types";
 
 // Deterministic, zero-cost charts drawn straight from the numbers already in FitSummary —
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
@@ -319,6 +319,140 @@ function MixShiftChart({ weekly, kpi }: { weekly: WeeklyDecomposition; kpi: stri
         {channelNames.map((n, i) => (
           <span key={n} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: channelColor(i, channelNames.length) }} /> {n}
+          </span>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}
+
+// Basislijn-decompositie: waar komt de "verkoop zonder marketing" vandaan? De basislijn
+// wordt uitgesplitst in structureel niveau, trend, seizoen en externe factoren (controls) —
+// zodat het geen black box meer is die "70% van je omzet" opslokt zonder uitleg. Componenten
+// kunnen negatief zijn (bv. een seizoensdal of een negatieve controle); recharts stapelt
+// negatieve waarden onder nul, wat precies de juiste lezing geeft.
+const BASELINE_LABELS: Record<string, string> = {
+  niveau: "Structureel niveau",
+  trend: "Trend",
+  seizoen: "Seizoen",
+  externe_factoren: "Externe factoren",
+};
+const BASELINE_COLORS: Record<string, string> = {
+  niveau: BASELINE_FILL,
+  trend: ACCENT,
+  seizoen: ACCENT_SOFT,
+  externe_factoren: "#C88A2C",
+};
+function BaselineDecompositionChart({ decomp, kpi }: { decomp: BaselineDecomposition; kpi: string }) {
+  const keys = Object.keys(decomp.components).filter((k) => decomp.components[k]?.length);
+  // Alleen tonen als er méér is dan het kale niveau — anders is er niets te "ontrafelen".
+  if (keys.length < 2) return null;
+  const data = decomp.dates.map((date, i) => {
+    const row: Record<string, number | string> = { date };
+    for (const k of keys) row[BASELINE_LABELS[k] ?? k] = decomp.components[k][i];
+    return row;
+  });
+  const controlsHint =
+    decomp.control_names.length > 0
+      ? ` Externe factoren = ${decomp.control_names.join(", ")}.`
+      : "";
+  return (
+    <ChartCard
+      title="Waar komt je basislijn vandaan?"
+      hint={`De basislijn (verkoop zonder marketing) uitgesplitst in ${kpi} per week: structureel niveau, trend, seizoen en externe factoren. Zo zie je dat bv. een Q4-piek seizoen is, niet media.${controlsHint} Onder nul = dat deel drukte de basislijn dat moment juist omlaag.`}
+    >
+      <ResponsiveContainer width="100%" height={260} className="overflow-hidden">
+        <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }} stackOffset="sign">
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+          <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
+          <YAxis tick={AXIS} width={48} tickFormatter={fmtShort} />
+          <ReferenceLine y={0} stroke="#4C5F57" strokeWidth={1} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
+            formatter={(v) => (typeof v === "number" ? fmt(v) : String(v))}
+          />
+          {keys.map((k) => (
+            <Bar key={k} dataKey={BASELINE_LABELS[k] ?? k} stackId="base" fill={BASELINE_COLORS[k] ?? NEUTRAL} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fg-muted">
+        {keys.map((k) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: BASELINE_COLORS[k] ?? NEUTRAL }} />{" "}
+            {BASELINE_LABELS[k] ?? k}
+          </span>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}
+
+// ROAS in de tijd: werd een kanaal efficiënter of juist minder efficiënt? Per week de
+// bijdrage ÷ de spend, met een voortschrijdend gemiddelde (venster) om de ruis te dempen.
+// Weken met verwaarloosbare spend geven een gat (geen deling door ~0). Dit is wat de
+// periode-gemiddelde ROAS-balk verbergt: een dalende lijn = advertentievermoeidheid.
+function rollingRatio(contrib: number[], spend: number[], window: number): (number | null)[] {
+  const out: (number | null)[] = [];
+  for (let i = 0; i < contrib.length; i++) {
+    const lo = Math.max(0, i - window + 1);
+    let c = 0;
+    let s = 0;
+    for (let j = lo; j <= i; j++) {
+      c += contrib[j] ?? 0;
+      s += spend[j] ?? 0;
+    }
+    out.push(s > 1e-6 && i >= window - 1 ? c / s : null);
+  }
+  return out;
+}
+function RoasOverTimeChart({ weekly }: { weekly: WeeklyDecomposition }) {
+  const spendByChannel = weekly.channel_spend;
+  if (!spendByChannel) return null;
+  const names = Object.keys(weekly.channels_p50).filter((n) => spendByChannel[n]);
+  if (names.length === 0) return null;
+  const window = Math.min(4, Math.max(1, Math.floor(weekly.dates.length / 8)));
+  const series = Object.fromEntries(
+    names.map((n) => [n, rollingRatio(weekly.channels_p50[n], spendByChannel[n], window)]),
+  );
+  // Alleen kanalen met minstens één geldig punt tonen.
+  const shown = names.filter((n) => series[n].some((v) => v != null));
+  if (shown.length === 0) return null;
+  const data = weekly.dates.map((date, i) => {
+    const row: Record<string, number | string | null> = { date };
+    for (const n of shown) row[n] = series[n][i];
+    return row;
+  });
+  return (
+    <ChartCard
+      title="Werd elk kanaal efficiënter of minder efficiënt?"
+      hint={`ROAS week voor week (bijdrage ÷ spend, ${window}-weeks voortschrijdend gemiddelde). Een dalende lijn wijst op verzadiging of advertentievermoeidheid; een stijgende op een kanaal dat beter ging renderen. Gaten = te weinig spend om te meten.`}
+    >
+      <ResponsiveContainer width="100%" height={240} className="overflow-hidden">
+        <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+          <XAxis dataKey="date" tick={AXIS} minTickGap={48} />
+          <YAxis tick={AXIS} width={44} tickFormatter={(v) => fmt(v, 1)} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)" }}
+            formatter={(v, n) => [typeof v === "number" ? fmt(v, 2) : "—", String(n)]}
+          />
+          {shown.map((n, i) => (
+            <Line
+              key={n}
+              dataKey={n}
+              stroke={channelColor(i, shown.length)}
+              strokeWidth={1.5}
+              dot={false}
+              connectNulls={false}
+            />
+          ))}
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fg-muted">
+        {shown.map((n, i) => (
+          <span key={n} className="flex items-center gap-1.5">
+            <span className="h-0.5 w-3.5" style={{ background: channelColor(i, shown.length) }} /> {n}
           </span>
         ))}
       </div>
@@ -717,6 +851,9 @@ export function ResultsCharts({
       <SectionHeader title="Wat gebeurde er?" subtitle="Het totaalbeeld: waar je omzet vandaan kwam en of het model de werkelijkheid volgt." />
       <ScoreCards summary={summary} kpiMargin={kpiMargin} marginUnit={marginUnit} />
       {summary.weekly && <BuildUpChart weekly={summary.weekly} kpi={summary.kpi} />}
+      {summary.baseline_decomposition && (
+        <BaselineDecompositionChart decomp={summary.baseline_decomposition} kpi={summary.kpi} />
+      )}
       {summary.weekly && <MixShiftChart weekly={summary.weekly} kpi={summary.kpi} />}
       <div className="grid gap-6 lg:grid-cols-2">
         <WaterfallChart summary={summary} />
@@ -782,6 +919,7 @@ export function ResultsCharts({
           </ChartCard>
         )}
       </div>
+      {summary.weekly && <RoasOverTimeChart weekly={summary.weekly} />}
 
       {/* ---- Blok 3: Waar kan de volgende euro heen? ---- */}
       {(curves.length > 0 || (frontier && frontier.length > 1) || reallocData.length > 0) && (

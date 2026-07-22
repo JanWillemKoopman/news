@@ -80,6 +80,25 @@ class WeeklyDecomposition:
     expected_p97: list[float]
     baseline_p50: list[float]
     channels_p50: dict[str, list[float]]
+    # Per-week spend per channel (original units, fixed data — not a posterior quantity).
+    # Feeds the dashboard's ROAS-over-time chart (weekly contribution ÷ weekly spend).
+    # Optional so summaries predating it keep deserializing.
+    channel_spend: dict[str, list[float]] = field(default_factory=dict)
+
+
+@dataclass
+class BaselineDecomposition:
+    """Splits the otherwise black-box baseline into its parts over time, in KPI units
+    (median per week): the structural level (intercept), the slow trend, the seasonal
+    swing and the external factors (control columns). Only the components that the model
+    actually has are present. For the additive link these add up to ``baseline_p50``
+    exactly; for the count (log) link they are allocated the same Shapley-style way as the
+    channel contributions, so they still sum to the baseline. Optional on the summary so
+    older fits keep deserializing."""
+
+    dates: list[str]
+    components: dict[str, list[float]]   # keyed: niveau / trend / seizoen / externe_factoren
+    control_names: list[str]             # which columns make up "externe_factoren"
 
 
 @dataclass
@@ -237,6 +256,8 @@ class FitSummary:
     efficiency_frontier: list[FrontierPoint] = field(default_factory=list)
     # Optional so summaries from fits predating the weekly block keep deserializing.
     weekly: WeeklyDecomposition | None = None
+    # Optional per-week breakdown of the baseline into level/trend/season/controls.
+    baseline_decomposition: BaselineDecomposition | None = None
 
     def to_json_dict(self) -> dict:
         """A plain, JSON-serializable dict (what the worker writes to Postgres)."""
@@ -343,6 +364,47 @@ def _weekly_attribution(built: BuiltModel, idata) -> tuple[np.ndarray, dict[str,
     channel_week = {n: c * y_max for n, c in contribs.items()}
     baseline_week = expected - sum(channel_week.values())
     return expected, channel_week, baseline_week
+
+
+def _baseline_decomposition(built: BuiltModel, idata, baseline_week: np.ndarray) -> "BaselineDecomposition":
+    """Split the per-week baseline into level/trend/season/controls (median KPI units).
+
+    Reads the per-week baseline sub-component Deterministics registered in build.py. For the
+    additive link the parts are simply the scaled components × y_max and sum to the baseline
+    exactly. For the count (log) link the components combine multiplicatively, so — exactly as
+    :func:`_weekly_attribution` does for channels — each part is the drop when that component
+    is removed, renormalized to sum back to the (positive) baseline.
+    """
+    config = built.config
+    y_max = float(built.scalers["y_max"])
+
+    comps: dict[str, np.ndarray] = {
+        "niveau": np.broadcast_to(_flat(idata, "intercept")[None, :], baseline_week.shape),
+    }
+    if config.add_trend:
+        comps["trend"] = _flat(idata, "trend_effect")
+    if config.seasonality_periods and config.n_fourier_modes > 0:
+        comps["seizoen"] = _flat(idata, "season_effect")
+    if config.control_columns:
+        comps["externe_factoren"] = _flat(idata, "controls_effect")
+
+    if config.likelihood.is_count:
+        log_total = sum(comps.values())                       # == mu - sum(contrib), (T, S)
+        raw = {k: baseline_week - np.exp(log_total - v) for k, v in comps.items()}
+        sum_raw = sum(raw.values())
+        with np.errstate(invalid="ignore", divide="ignore"):
+            parts = {
+                k: np.where(np.abs(sum_raw) > 1e-12, r / sum_raw, 0.0) * baseline_week
+                for k, r in raw.items()
+            }
+    else:
+        parts = {k: v * y_max for k, v in comps.items()}
+
+    return BaselineDecomposition(
+        dates=[str(d.date()) for d in built.dates],
+        components={k: [float(x) for x in np.median(v, axis=1)] for k, v in parts.items()},
+        control_names=list(config.control_columns),
+    )
 
 
 def lag_matrix(x: np.ndarray, l_max: int) -> np.ndarray:
@@ -476,7 +538,9 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         expected_p97=[float(v) for v in hi],
         baseline_p50=[float(v) for v in np.median(baseline_week, axis=1)],
         channels_p50={n: [float(v) for v in np.median(cw, axis=1)] for n, cw in channel_week.items()},
+        channel_spend={ch.name: [float(v) for v in built.spend[:, i]] for i, ch in enumerate(config.channels)},
     )
+    baseline_decomposition = _baseline_decomposition(built, idata, baseline_week)
 
     response_curves, optimal_allocation, efficiency_frontier = _planning_outputs(built, idata)
     n_draws = int(idata.posterior.sizes["draw"])
@@ -495,6 +559,7 @@ def summarize_fit(built: BuiltModel, idata) -> FitSummary:
         quality_gate=quality_gate,
         response_curves=response_curves,
         weekly=weekly,
+        baseline_decomposition=baseline_decomposition,
         optimal_allocation=optimal_allocation,
         efficiency_frontier=efficiency_frontier,
     )

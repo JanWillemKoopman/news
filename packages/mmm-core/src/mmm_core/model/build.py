@@ -230,25 +230,35 @@ def build_model(data: pd.DataFrame, config: ModelConfig) -> BuiltModel:
             intercept = pm.Normal("intercept", mu=float(np.median(y_scaled)), sigma=bp.intercept_sigma)
         mu = intercept + pt.zeros(n)
 
+        # Baseline sub-components are each registered as a per-week Deterministic so the
+        # dashboard can decompose the otherwise black-box baseline into "structural level"
+        # (intercept), trend, seasonality and external factors (controls). They live in the
+        # same space as `mu` (scaled-KPI for the additive link, log for the count link);
+        # fit.py converts them to KPI units and, for the count link, allocates them the same
+        # Shapley-style way as the channel contributions so they still add up to the baseline.
         if config.add_trend:
             trend = pm.Normal("trend", mu=0.0, sigma=bp.trend_sigma)
-            mu = mu + trend * t_scaled
+            trend_term = trend * t_scaled
             if config.trend_type is TrendType.PIECEWISE:
                 cps = changepoint_locations(config.n_changepoints)
                 A = changepoint_matrix(t_scaled, cps)
                 delta = pm.Laplace(
                     "trend_delta", mu=0.0, b=bp.changepoint_scale, shape=len(cps)
                 )
-                mu = mu + pt.dot(A, delta)
+                trend_term = trend_term + pt.dot(A, delta)
+            mu = mu + pm.Deterministic("trend_effect", trend_term, dims="date")
 
         if config.seasonality_periods and config.n_fourier_modes > 0:
             fourier = _fourier_features(t, config.seasonality_periods, config.n_fourier_modes)
             season = pm.Normal("season", mu=0.0, sigma=bp.season_sigma, shape=fourier.shape[1])
-            mu = mu + pt.dot(fourier, season)
+            mu = mu + pm.Deterministic("season_effect", pt.dot(fourier, season), dims="date")
 
-        for ctrl in config.control_columns:
-            coef = pm.Normal(f"control_{ctrl}", mu=0.0, sigma=bp.control_sigma)
-            mu = mu + coef * control_scaled[ctrl]
+        if config.control_columns:
+            controls_term = pt.zeros(n)
+            for ctrl in config.control_columns:
+                coef = pm.Normal(f"control_{ctrl}", mu=0.0, sigma=bp.control_sigma)
+                controls_term = controls_term + coef * control_scaled[ctrl]
+            mu = mu + pm.Deterministic("controls_effect", controls_term, dims="date")
 
         for i, channel in enumerate(config.channels):
             beta = pm.HalfNormal(f"beta_{channel.name}", sigma=channel.priors.beta_sigma)  # media cannot hurt sales

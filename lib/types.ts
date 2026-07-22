@@ -528,6 +528,7 @@ export interface FitSummary {
   optimal_allocation?: OptimalAllocation | null;
   efficiency_frontier?: FrontierPoint[];
   weekly?: WeeklyDecomposition | null;
+  baseline_decomposition?: BaselineDecomposition | null;
 }
 
 // Compacte weekdecompositie (mmm_core.model.fit.WeeklyDecomposition): voedt de
@@ -541,6 +542,19 @@ export interface WeeklyDecomposition {
   expected_p97: number[];
   baseline_p50: number[];
   channels_p50: Record<string, number[]>;
+  // Per-week spend per kanaal (originele eenheden). Voedt de ROAS-in-de-tijd-grafiek
+  // (wekelijkse bijdrage ÷ wekelijkse spend). Ontbreekt bij oudere runs.
+  channel_spend?: Record<string, number[]>;
+}
+
+// Uitsplitsing van de basislijn per week (mediaan, in KPI-eenheden) in structureel niveau,
+// trend, seizoen en externe factoren (controls) — zodat de basislijn geen black box meer is.
+// Alleen de componenten die het model daadwerkelijk heeft, staan erin. Ontbreekt bij oudere
+// runs. Sleutels: "niveau" | "trend" | "seizoen" | "externe_factoren".
+export interface BaselineDecomposition {
+  dates: string[];
+  components: Record<string, number[]>;
+  control_names: string[];
 }
 
 // --- Hierarchical (multi-region) fit summary ---
