@@ -64,6 +64,9 @@ const config: Config = {
           DEFAULT: "#9A6B12",
           dim: "rgba(154,107,18,0.12)",
         },
+        user: {
+          DEFAULT: "#1F5A8C", // Zachte marine-blauw voor user bubbles
+        },
       },
       fontFamily: {
         // Strakke, moderne humanistische sans (Figtree via next/font, zie layout.tsx) —

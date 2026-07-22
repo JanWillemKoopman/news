@@ -118,7 +118,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
           </div>
 
           {/* Rechterkant — read-only model-dossier. */}
-          <aside className="hidden h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-border bg-surface-1 lg:block">
+          <aside className="hidden h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-border bg-surface-2 lg:block">
             <ModelDossier
               phase={phase}
               projectName={p.name}
