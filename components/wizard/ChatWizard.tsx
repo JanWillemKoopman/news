@@ -29,12 +29,28 @@ import {
 } from "@/components/wizard/cards";
 import type { Dataset, Job, JobConfig, ModelRun, SourceFile } from "@/lib/types";
 
+// Wat de architect op dit moment aan het doen is — puur voor de statusindicator, geen
+// invloed op de inhoud. "thinking": redeneert (extended thinking); "tool": stelt een
+// voorstel samen; "text": schrijft het zichtbare antwoord.
+type AiPhase = "thinking" | "tool" | "text" | null;
+
+const TOOL_LABEL: Record<string, string> = {
+  propose_prepare_recipe: "een samenvoegrecept",
+  propose_model_config: "een modelconfiguratie",
+  record_business_context: "de zakelijke context",
+};
+
 interface Turn {
   role: "user" | "assistant";
   text: string;
   streaming?: boolean;
   proposedRecipe?: unknown;
   proposedConfig?: unknown;
+  // De gestreamde redenering (extended thinking) — apart van het zichtbare antwoord,
+  // zodat de bouwer kan zien DAT en WAARMEE de architect bezig is.
+  thinking?: string;
+  phase?: AiPhase;
+  toolName?: string;
 }
 
 function Bubble({ role, children }: { role: "user" | "assistant"; children: React.ReactNode }) {
@@ -173,24 +189,40 @@ export function ChatWizard({
         buffer = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.trim()) continue;
-          let ev: { type: string; text?: string; reply?: string; error?: string; proposedConfig?: unknown; proposedRecipe?: unknown };
+          let ev: {
+            type: string;
+            text?: string;
+            reply?: string;
+            error?: string;
+            proposedConfig?: unknown;
+            proposedRecipe?: unknown;
+            phase?: string;
+            tool?: string;
+          };
           try {
             ev = JSON.parse(line);
           } catch {
             continue;
           }
-          if (ev.type === "delta" && ev.text) {
-            updateLast((t) => ({ ...t, text: t.text + ev.text }));
+          if (ev.type === "phase") {
+            // Statusovergang (denken → schrijven/voorstel) — puur informatief, geen tokens.
+            updateLast((t) => ({ ...t, phase: (ev.phase as AiPhase) ?? null, toolName: ev.tool ?? t.toolName }));
+          } else if (ev.type === "thinking_delta" && ev.text) {
+            updateLast((t) => ({ ...t, thinking: (t.thinking ?? "") + ev.text, phase: "thinking" }));
+          } else if (ev.type === "delta" && ev.text) {
+            updateLast((t) => ({ ...t, text: t.text + ev.text, phase: "text" }));
           } else if (ev.type === "done") {
-            updateLast({
-              text: ev.reply || "(geen tekstuele reactie)",
+            updateLast((t) => ({
+              ...t,
+              text: ev.reply || t.text || "Geen aanvullende toelichting.",
               streaming: false,
+              phase: null,
               proposedRecipe: ev.proposedRecipe ?? undefined,
               proposedConfig: ev.proposedConfig ?? undefined,
-            });
+            }));
           } else if (ev.type === "error") {
             setError(humanizeError(ev.error, "Er ging iets mis in het antwoord.").text);
-            updateLast({ streaming: false });
+            updateLast({ streaming: false, phase: null });
           }
         }
       }
@@ -316,6 +348,27 @@ export function ChatWizard({
         {/* Vrij-tekst-gesprek met de architect (escape hatch). */}
         {turns.map((t, i) => (
           <div key={i}>
+            {t.role === "assistant" && t.streaming && (
+              <p className="mb-1 flex items-center gap-1.5 pl-1 text-xs text-fg-faint">
+                <span className="h-1.5 w-1.5 flex-none animate-pulse rounded-full bg-accent" />
+                {t.phase === "thinking"
+                  ? "Denkt na…"
+                  : t.phase === "tool"
+                    ? `Stelt ${TOOL_LABEL[t.toolName ?? ""] ?? "een voorstel"} samen…`
+                    : t.text
+                      ? "Schrijft antwoord…"
+                      : "Denkt na…"}
+              </p>
+            )}
+            {t.thinking && (
+              <details
+                className="mb-1 max-w-[90%] rounded-lg border border-border/60 bg-surface-2/40 px-3 py-1.5 text-xs text-fg-faint"
+                open={Boolean(t.streaming && t.phase === "thinking")}
+              >
+                <summary className="cursor-pointer select-none">Redenering</summary>
+                <p className="mt-1 whitespace-pre-wrap">{t.thinking}</p>
+              </details>
+            )}
             <Bubble role={t.role}>{t.text || (t.streaming ? "…" : "")}</Bubble>
             {t.proposedRecipe != null && (
               <button onClick={() => applyProposal("recipe", t.proposedRecipe)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50">
