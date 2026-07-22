@@ -20,12 +20,22 @@ export const PHASE_SCRIPT: Record<WizardPhase, PhaseScript> = {
       "Je werkt met precies dit ene bestand — samenvoegen van meerdere bestanden hoeft niet.",
     dossierLabel: "Wachten op je databestand",
   },
+  inspect: {
+    message:
+      "Voordat ik iets bewerk, wil ik eerst zeker weten dat ik je data goed begrijp. Ik heb de kolommen " +
+      "alvast automatisch herkend: welke kolom de datum is (en op welk niveau — dag/week/maand), welke " +
+      "kolom je KPI is, welke kolommen kanalen zijn (en of dat euro's, impressies of GRP's zijn), en welke " +
+      "overige verklarende variabelen er zijn. Loop dit rustig na en corrigeer waar nodig — hier wordt nog " +
+      "niets samengevoegd of opgeschoond.",
+    dossierLabel: "Kolommen herkennen & bevestigen",
+  },
   prepare_recipe: {
     message:
-      "Mooi, je bestand staat klaar. Ik heb de kolommen alvast automatisch ingedeeld. " +
-      "Controleer hieronder of dat klopt: welke kolom is je KPI, welke zijn uitgaven (kanalen) " +
-      "en welke zijn externe factoren (controls). Klopt het? Dan voeg ik de data samen en controleer ik de kwaliteit.",
-    dossierLabel: "Kolommen indelen",
+      "Kolommen zijn bevestigd. Nu gaan we de data zelf opschonen en verrijken: ontbrekende waarden en " +
+      "uitschieters, een consistente tijdgranulariteit, en eventuele bijzondere weken (feestdagen, " +
+      "campagnes) of afgeleide variabelen. Los hieronder per onderwerp — daarna voeg ik alles samen en " +
+      "controleer ik de kwaliteit.",
+    dossierLabel: "Data opschonen & verrijken",
   },
   prepare_running: {
     message:
@@ -36,35 +46,45 @@ export const PHASE_SCRIPT: Record<WizardPhase, PhaseScript> = {
   prepare_failed: {
     message:
       "Het samenvoegen is helaas niet gelukt. Bekijk de melding hieronder. Meestal helpt het om de " +
-      "kolomindeling aan te passen (bijvoorbeeld de datumkolom) en het opnieuw te proberen.",
+      "kolomindeling of opschoonstap aan te passen en het opnieuw te proberen.",
     dossierLabel: "Samenvoegen mislukt",
   },
   prepare_review: {
     message:
       "De data is samengevoegd en gecontroleerd. Hieronder zie je het kwaliteitsrapport en een voorbeeld " +
-      "van de weektabel. Ziet het er goed uit? Keur de dataset dan goed — daarna stellen we het model in.",
+      "van de weektabel. Ziet het er goed uit? Keur de dataset dan goed — daarna gaan we tunen.",
     dossierLabel: "Kwaliteit beoordelen",
   },
   context: {
     message:
-      "Voordat we het model instellen: vertel me kort iets over het bedrijf en de markt. " +
-      "Branche, gemiddelde marge per verkochte eenheid en bijzonderheden (grote campagnes, " +
-      "seizoenspieken, prijswijzigingen) helpen de AI om betere instellingen te kiezen — en " +
-      "de marge maakt het klantdashboard rijker. Dit is optioneel; je kunt het overslaan.",
+      "Voordat we gaan tunen: vertel me kort iets over het bedrijf en de markt. Branche, gemiddelde marge " +
+      "per verkochte eenheid en bijzonderheden (grote campagnes, seizoenspieken, prijswijzigingen, offline-" +
+      "kanalen, een eerder lift-/geo-experiment) helpen om betere priors te kiezen — dit is de belangrijkste " +
+      "input die een Bayesiaans model kan krijgen. Optioneel; je kunt het overslaan.",
     dossierLabel: "Zakelijke context",
   },
-  configure: {
+  tuning: {
     message:
-      "De dataset is goedgekeurd. Ik heb een standaard-modelinstelling klaargezet die voor de meeste " +
-      "gevallen prima werkt (geen AI nodig). Wil je hem gebruiken, of eerst door de AI laten optimaliseren " +
-      "voor jouw situatie? Daarna start de berekening.",
-    dossierLabel: "Model instellen",
+      "Nu de belangrijkste stap: parameter-tuning. Voor elk kanaal bepalen we samen wat je vooraf verwacht " +
+      "— niet \"wat is het minimum en maximum\", maar \"wat verwacht je en hoe zeker ben je daarvan\". Dat " +
+      "geldt voor de na-ijl (adstock), de verzadiging, en hoeveel effect je een kanaal toedicht. Onderaan " +
+      "kun je een prior predictive check draaien: een goedkope voorproef die laat zien wat je gekozen priors " +
+      "betekenen voor de omzet, nog vóórdat we echt gaan rekenen.",
+    dossierLabel: "Parameter-tuning (priors)",
+  },
+  modelspec: {
+    message:
+      "De tuning staat vast. Laatste stap vóór het rekenen: de sampler-instellingen (hoeveel chains, " +
+      "samples en tuning-stappen) en een overzicht van alle keuzes tot nu toe. Klopt alles? Dan starten we " +
+      "de berekening.",
+    dossierLabel: "Modelspecificatie",
   },
   fitting: {
     message:
-      "De berekening loopt. Het model schat nu per kanaal het effect, de na-ijl en het afnemend rendement, " +
-      "met onzekerheidsmarges. Dit duurt doorgaans 3 à 5 minuten — je kunt gerust wachten.",
-    dossierLabel: "Model berekenen",
+      "De berekening loopt: dit is MCMC-sampling, geen simpele regressie, dus het duurt langer — doorgaans " +
+      "3 à 5 minuten. Het model schat per kanaal het effect, de na-ijl en het afnemend rendement, met " +
+      "onzekerheidsmarges. Zodra er een waarschuwing is (bijv. divergenties) zie je die hier zo snel mogelijk.",
+    dossierLabel: "Model berekenen (MCMC)",
   },
   fit_failed: {
     message:
@@ -74,26 +94,37 @@ export const PHASE_SCRIPT: Record<WizardPhase, PhaseScript> = {
   },
   review: {
     message:
-      "Klaar! Hieronder zie je de resultaten: het effect en de ROAS per kanaal, met onzekerheidsmarges, " +
-      "plus een kwaliteitsoordeel. Ziet het er goed uit? Dan kun je het publiceren naar het klantdashboard.",
-    dossierLabel: "Resultaten beoordelen",
+      "Klaar! Eerst het belangrijkste: is dit model betrouwbaar genoeg om op te sturen? Hieronder zie je dat " +
+      "in twee lagen — is de sampler goed gesampled, en is de uitkomst inhoudelijk plausibel — met daarna " +
+      "de resultaten zelf (effect en ROAS per kanaal, met onzekerheidsmarges). Niet goed genoeg? Dan kun je " +
+      "gericht terug naar tuning of data. Wel goed genoeg? Dan kun je publiceren naar het klantdashboard.",
+    dossierLabel: "Valideren & publiceren",
   },
   published: {
     message:
       "Gepubliceerd! De klant ziet nu het afgeschermde dashboard met dit resultaat. Je kunt op elk moment " +
-      "een nieuwe, betere berekening draaien en die opnieuw publiceren.",
+      "teruggaan naar een eerdere stap, een nieuwe, betere berekening draaien en die opnieuw publiceren.",
     dossierLabel: "Gepubliceerd",
   },
 };
 
-// Menselijke, genummerde faselabels voor de voortgangsbalk in het model-dossier.
-export const PHASE_STEPS: { phases: WizardPhase[]; label: string }[] = [
+// Menselijke, genummerde faselabels voor de voortgangsbalk in het model-dossier. `backTarget`
+// is de fase die geopend wordt als de bouwer op een AFGERONDE stap in deze lijst klikt (zie
+// ModelDossier + WizardChatContext.goToPhase) — het startpunt van dat onderwerp, niet een
+// tussentijdse "loopt nu"/"mislukt"-toestand.
+export const PHASE_STEPS: { phases: WizardPhase[]; label: string; backTarget?: WizardPhase }[] = [
   { phases: ["upload"], label: "1. Data uploaden" },
-  { phases: ["prepare_recipe", "prepare_running", "prepare_failed", "prepare_review"], label: "2. Data voorbereiden" },
-  { phases: ["context"], label: "3. Zakelijke context" },
-  { phases: ["configure"], label: "4. Model instellen" },
-  { phases: ["fitting", "fit_failed"], label: "5. Berekenen" },
-  { phases: ["review", "published"], label: "6. Beoordelen & publiceren" },
+  { phases: ["inspect"], label: "2. Data-inspectie & kolomherkenning", backTarget: "inspect" },
+  {
+    phases: ["prepare_recipe", "prepare_running", "prepare_failed", "prepare_review"],
+    label: "3. Data voorbereiden",
+    backTarget: "prepare_recipe",
+  },
+  { phases: ["context"], label: "4. Zakelijke context", backTarget: "context" },
+  { phases: ["tuning"], label: "5. Parameter-tuning", backTarget: "tuning" },
+  { phases: ["modelspec"], label: "6. Modelspecificatie", backTarget: "modelspec" },
+  { phases: ["fitting", "fit_failed"], label: "7. Berekenen" },
+  { phases: ["review", "published"], label: "8. Valideren & publiceren" },
 ];
 
 export function stepIndexForPhase(phase: WizardPhase): number {

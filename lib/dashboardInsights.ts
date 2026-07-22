@@ -43,7 +43,18 @@ export function moneyKpis(summary: FitSummary, kpiMargin?: number | null): Money
   };
 }
 
-// --- Modelvertrouwen: één oordeel i.p.v. losse R²/MAPE/R-hat -------------------------
+// --- Modelvertrouwen: TWEE lagen i.p.v. één samengeraapt oordeel ---------------------
+//
+// Een PyMC/MCMC-fit kan op twee onafhankelijke manieren "niet goed genoeg" zijn, en die
+// twee vragen hebben een andere remedie:
+//   1. Sampler-betrouwbaarheid — is er wel goed gesampled? (R-hat, ESS, divergenties).
+//      Slecht hier ⇒ terug naar tuning/modelspecificatie (priors, sampler-instellingen).
+//   2. Modelfit & plausibiliteit — is de uitkomst inhoudelijk goed? (R², MAPE, dekking,
+//      decompositie). Slecht hier ⇒ terug naar data-inspectie/-voorbereiding (variabelen,
+//      dummy's, uitschieters).
+// De oude, samengevoegde trustVerdict() maakte dit onderscheid niet zichtbaar — een hoge
+// R-hat en een lage R² kregen dezelfde ene "zwak"-badge, zonder aanwijzing WAAR de bouwer
+// iets aan moet doen. layeredTrustVerdict() splitst dat expliciet.
 
 export type TrustLevel = "goed" | "let_op" | "zwak";
 
@@ -53,39 +64,72 @@ export interface TrustVerdict {
   reasons: string[];
 }
 
-// Vertaalt de statistische diagnostiek naar één begrijpelijk oordeel. Als de rekenkern al
-// een expliciete kwaliteitspoort meegaf, is die leidend; anders leiden we het af uit de
-// diagnostische drempels die elders in het dashboard ook al waarschuwingen aansturen.
-export function trustVerdict(summary: FitSummary): TrustVerdict {
-  const d = summary.diagnostics;
-  const reasons: string[] = [];
-  const gate = summary.quality_gate;
-
-  if (d.max_r_hat > 1.05) reasons.push("De statistische schatting is nog niet volledig gestabiliseerd (hoge R-hat).");
-  if (Math.abs(d.interval_coverage_94 - 0.94) > 0.1) reasons.push("De onzekerheidsmarges dekken de werkelijkheid niet goed af.");
-  if (!d.decomposition_ok) reasons.push("De opbouw telt niet netjes op tot het totaal.");
-  if (d.n_divergences > 0) reasons.push(`De schatting liep ${d.n_divergences}× vast (divergenties).`);
-  if (d.r2 < 0.5) reasons.push("Het model verklaart minder dan de helft van de schommelingen in de KPI.");
-  if (d.mape > 0.2) reasons.push("De voorspelling zit gemiddeld meer dan 20% naast de werkelijke KPI.");
-
-  let level: TrustLevel;
-  if (gate) {
-    level = gate.verdict === "fail" ? "zwak" : gate.verdict === "warn" ? "let_op" : "goed";
-    // Neem de redenen van de poort over als die er zijn — die zijn het meest gezaghebbend.
-    if (gate.reasons.length > 0) return { level, headline: trustHeadline(level), reasons: gate.reasons };
-  } else {
-    const severe = !d.decomposition_ok || d.max_r_hat > 1.1 || d.r2 < 0.4;
-    level = severe ? "zwak" : reasons.length > 0 ? "let_op" : "goed";
-  }
-  return { level, headline: trustHeadline(level), reasons };
+export interface LayeredTrustVerdict {
+  sampler: TrustVerdict;
+  fit: TrustVerdict;
+  overall: TrustLevel;
 }
 
-function trustHeadline(level: TrustLevel): string {
+const SAMPLER_KEYWORDS = ["r-hat", "converge", "divergent", "divergenti", "steekproef", "ess"];
+
+function isSamplerReason(reason: string): boolean {
+  const lower = reason.toLowerCase();
+  return SAMPLER_KEYWORDS.some((k) => lower.includes(k));
+}
+
+function trustHeadline(level: TrustLevel, layer: "sampler" | "fit"): string {
+  if (layer === "sampler") {
+    return level === "goed"
+      ? "Sampler is goed geconvergeerd"
+      : level === "let_op"
+        ? "Sampler-convergentie is krap — lees met aandacht"
+        : "Sampler is niet betrouwbaar gesampled";
+  }
   return level === "goed"
-    ? "Betrouwbaar model — je kunt hierop sturen"
+    ? "Uitkomst is plausibel"
     : level === "let_op"
-      ? "Bruikbaar, maar lees met aandacht"
-      : "Nog niet betrouwbaar genoeg om op te sturen";
+      ? "Uitkomst is bruikbaar, maar met kanttekeningen"
+      : "Uitkomst is inhoudelijk niet plausibel genoeg";
+}
+
+const worst = (a: TrustLevel, b: TrustLevel): TrustLevel => {
+  const rank: Record<TrustLevel, number> = { goed: 0, let_op: 1, zwak: 2 };
+  return rank[a] >= rank[b] ? a : b;
+};
+
+// Twee-laags oordeel (blueprint stap 7): sampler-betrouwbaarheid apart van modelfit &
+// plausibiliteit, elk met eigen niveau + redenen, zodat de UI gericht kan doorverwijzen
+// ("terug naar tuning" vs. "terug naar data") in plaats van één ondifferentieerde badge.
+export function layeredTrustVerdict(summary: FitSummary): LayeredTrustVerdict {
+  const d = summary.diagnostics;
+  const gate = summary.quality_gate;
+
+  // Als de rekenkern al een kwaliteitspoort meegaf, is die tekstueel leidend (ze kent de
+  // exacte drempels/steekproefgrootte) — we partitioneren de reasons per laag op trefwoord;
+  // zonder poort vallen we terug op de ruwe metrics met dezelfde drempels als in fit.py.
+  const samplerReasons: string[] = [];
+  const fitReasons: string[] = [];
+  if (gate && gate.reasons.length > 0) {
+    for (const r of gate.reasons) (isSamplerReason(r) ? samplerReasons : fitReasons).push(r);
+  } else {
+    if (d.max_r_hat > 1.05) samplerReasons.push("De statistische schatting is nog niet volledig gestabiliseerd (hoge R-hat).");
+    if (d.n_divergences > 0) samplerReasons.push(`De schatting liep ${d.n_divergences}× vast (divergenties).`);
+    if (d.min_ess_bulk < 400) samplerReasons.push("Lage effectieve steekproefgrootte (ESS) — de posterior is ruizig geschat.");
+    if (Math.abs(d.interval_coverage_94 - 0.94) > 0.1) fitReasons.push("De onzekerheidsmarges dekken de werkelijkheid niet goed af.");
+    if (!d.decomposition_ok) fitReasons.push("De opbouw telt niet netjes op tot het totaal.");
+    if (d.r2 < 0.5) fitReasons.push("Het model verklaart minder dan de helft van de schommelingen in de KPI.");
+    if (d.mape > 0.2) fitReasons.push("De voorspelling zit gemiddeld meer dan 20% naast de werkelijke KPI.");
+  }
+
+  // De metrics zelf (niet het aggregaat-verdict van de poort) bepalen het niveau per laag
+  // — zo telt een fail puur op R²/MAPE niet mee als "sampler zwak", en andersom. De
+  // drempels spiegelen fit.py (_RHAT_FAIL=1.1, R²-fail-drempel 0.3).
+  const samplerLevel: TrustLevel = d.max_r_hat > 1.1 ? "zwak" : samplerReasons.length > 0 ? "let_op" : "goed";
+  const fitLevel: TrustLevel = !d.decomposition_ok || d.r2 < 0.3 ? "zwak" : fitReasons.length > 0 ? "let_op" : "goed";
+
+  const sampler: TrustVerdict = { level: samplerLevel, headline: trustHeadline(samplerLevel, "sampler"), reasons: samplerReasons };
+  const fit: TrustVerdict = { level: fitLevel, headline: trustHeadline(fitLevel, "fit"), reasons: fitReasons };
+  return { sampler, fit, overall: worst(samplerLevel, fitLevel) };
 }
 
 // --- Vertrouwen per losse schatting (bandbreedte → label) ----------------------------

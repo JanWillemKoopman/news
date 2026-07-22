@@ -44,6 +44,11 @@ export interface SourceFile {
   // (lib/anthropic/columnMapping.ts, /api/classify-columns). Lets the architect start
   // each turn from a reliable role/unit/granularity guess instead of re-deriving it.
   mapping: ColumnMapping | null;
+  // Set once the builder has explicitly confirmed the column-recognition step (date
+  // column + granularity, KPI, channel roles/units, controls, coverage period) — the gate
+  // between the "inspect" and "prepare" wizard phases. Corrections the builder makes
+  // during that confirmation are written back into `mapping.columns[].role`.
+  inspection_confirmed_at: string | null;
   created_at: string;
 }
 
@@ -103,12 +108,15 @@ export type JobProgress = "downloading" | "building_dataset" | "sampling" | "sav
 export interface Job {
   id: string;
   project_id: string;
-  type: "fit" | "prepare" | "fit_hierarchical";
+  type: "fit" | "prepare" | "fit_hierarchical" | "prior_predictive";
   status: JobStatus;
   progress: JobProgress | null;
   config: JobConfig | PrepareRecipe;
   error: string | null;
   attempts: number;
+  // Only set on type="prior_predictive" jobs once succeeded — see PriorPredictiveReview
+  // below and worker/mmm_worker/prior_predictive.py.
+  prior_predictive?: PriorPredictiveReview | null;
   dataset_id?: string | null;
   created_at: string;
   started_at: string | null;
@@ -386,7 +394,19 @@ export interface Dataset {
   created_at: string;
   prepared_at: string | null;
   approved_at: string | null;
+  // Set once the builder has explicitly confirmed the parameter-tuning step (adstock/
+  // saturation/priors per channel, baseline priors, prior-predictive check) — the gate
+  // between the "tuning" and "modelspec" wizard phases.
+  tuning_confirmed_at: string | null;
+  // The confirmed tuning step's model settings, everything the "modelspec" step needs
+  // EXCEPT kpi/sources/sample (see migration 0017) — read back to assemble the final
+  // JobConfig without losing tuning choices between the two phases.
+  tuning_draft: TuningDraft | null;
 }
+
+// Everything propose_model_config's `model` object configures except `kpi` (derived from
+// the dataset's confirmed KPI column) — persisted as Dataset.tuning_draft.
+export type TuningDraft = Omit<ModelConfig, "kpi">;
 
 // Prior overrides for one channel (any subset; omitted keys keep mmm-core defaults).
 export interface ChannelPriors {

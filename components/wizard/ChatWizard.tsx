@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Send, Bot } from "lucide-react";
+import { Sparkles, Send, Bot, Undo2 } from "lucide-react";
 import { humanizeError } from "@/lib/humanizeMessage";
 import { createClient } from "@/lib/supabase/client";
 import { useWizardChat } from "@/components/WizardChatContext";
@@ -21,10 +21,12 @@ import { derivePhase, isWaitingPhase, type WizardPhase } from "@/lib/wizard/phas
 import { PHASE_SCRIPT } from "@/lib/wizard/script";
 import {
   UploadCard,
-  RoleMappingCard,
+  InspectCard,
+  PrepareCard,
   PrepareReviewCard,
   ContextCard,
-  ConfigureCard,
+  TuningCard,
+  ModelSpecCard,
   ReviewCard,
 } from "@/components/wizard/cards";
 import type { Dataset, Job, JobConfig, ModelRun, SourceFile } from "@/lib/types";
@@ -76,11 +78,21 @@ export function ChatWizard({
   contextProvided: boolean;
 }) {
   const router = useRouter();
-  const { pendingChatMessage, clearPendingChatMessage } = useWizardChat();
+  const { pendingChatMessage, clearPendingChatMessage, overridePhase, overrideReason, clearOverridePhase } =
+    useWizardChat();
   const [skipContext, setSkipContext] = useState(false);
-  const phase: WizardPhase = derivePhase({ sources, dataset, jobs, runs, contextProvided, skipContext });
+  const naturalPhase: WizardPhase = derivePhase({ sources, dataset, jobs, runs, contextProvided, skipContext });
+  // Terugkoppeling/iteratie (blueprint stap 7): een override toont een eerdere fase zonder
+  // de deterministische afleiding zelf aan te passen — zie WizardChatContext.goToPhase.
+  // Elke kaart die hierdoor opnieuw wordt getoond ruimt de override zelf op zodra de
+  // bouwer 'm daadwerkelijk opnieuw indient (onDone), zodat de flow dan vanzelf weer de
+  // actuele/nieuwe toestand toont (bijv. een nieuwe fit i.p.v. terug naar "review").
+  const phase: WizardPhase = overridePhase ?? naturalPhase;
   const source = sources[0] ?? null;
   const latestFailedFit = jobs.find((j) => (j.type === "fit" || j.type === "fit_hierarchical") && j.status === "failed");
+  const latestPriorPredictive =
+    jobs.filter((j) => j.type === "prior_predictive").sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0] ??
+    null;
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -111,12 +123,14 @@ export function ChatWizard({
 
   // Vangnet: mocht een Realtime-event gemist worden (verbinding weggevallen), pollt de
   // client zachtjes door zolang we nog op de worker wachten — traag, want Realtime is de
-  // hoofdroute.
+  // hoofdroute. Gebaseerd op de ECHTE fase, niet op een eventuele terug-navigatie-override:
+  // een lopende fit blijft op de achtergrond doorlopen, ook als de bouwer intussen een
+  // eerdere stap bekijkt.
   useEffect(() => {
-    if (!isWaitingPhase(phase)) return;
+    if (!isWaitingPhase(naturalPhase)) return;
     const id = setInterval(() => router.refresh(), 10000);
     return () => clearInterval(id);
-  }, [phase, router]);
+  }, [naturalPhase, router]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -243,20 +257,25 @@ export function ChatWizard({
 
   const script = PHASE_SCRIPT[phase];
 
-  // De kaart die bij de huidige fase hoort.
+  // De kaart die bij de huidige fase hoort. Fasen die als "terug"-doel kunnen worden
+  // geopend (zie PHASE_STEPS.backTarget) krijgen onDone={clearOverridePhase} mee, zodat
+  // een daadwerkelijke nieuwe indiening de override opruimt en de flow weer de
+  // actuele/nieuwe toestand toont.
   function renderCard() {
     switch (phase) {
       case "upload":
         return <UploadCard projectId={projectId} source={source} />;
+      case "inspect":
+        return source ? <InspectCard projectId={projectId} source={source} onDone={clearOverridePhase} /> : null;
       case "prepare_recipe":
-        return source ? <RoleMappingCard projectId={projectId} source={source} /> : null;
+        return source ? <PrepareCard projectId={projectId} source={source} onDone={clearOverridePhase} /> : null;
       case "prepare_failed":
         return (
           <div className="rounded-xl border border-danger/40 bg-danger-dim p-4">
             <p className="text-sm text-fg">{dataset?.error ?? "Onbekende fout bij het samenvoegen."}</p>
             {source && (
               <div className="mt-3">
-                <RoleMappingCard projectId={projectId} source={source} />
+                <PrepareCard projectId={projectId} source={source} onDone={clearOverridePhase} />
               </div>
             )}
           </div>
@@ -270,18 +289,32 @@ export function ChatWizard({
             industry={industry}
             description={companyDescription}
             kpiMargin={kpiMargin}
-            onSkip={() => setSkipContext(true)}
+            onSkip={() => {
+              setSkipContext(true);
+              clearOverridePhase();
+            }}
+            onDone={clearOverridePhase}
           />
         );
-      case "configure":
-        return dataset ? <ConfigureCard projectId={projectId} dataset={dataset} onAskAi={askAiToOptimize} /> : null;
+      case "tuning":
+        return dataset ? (
+          <TuningCard
+            projectId={projectId}
+            dataset={dataset}
+            latestPriorPredictive={latestPriorPredictive}
+            onAskAi={askAiToOptimize}
+            onDone={clearOverridePhase}
+          />
+        ) : null;
+      case "modelspec":
+        return dataset ? <ModelSpecCard projectId={projectId} dataset={dataset} onDone={clearOverridePhase} /> : null;
       case "fit_failed":
         return (
           <div className="rounded-xl border border-danger/40 bg-danger-dim p-4">
             <p className="text-sm text-fg">{latestFailedFit?.error ?? "Onbekende fout bij de berekening."}</p>
             {dataset && (
               <div className="mt-3">
-                <ConfigureCard projectId={projectId} dataset={dataset} onAskAi={askAiToOptimize} />
+                <ModelSpecCard projectId={projectId} dataset={dataset} onDone={clearOverridePhase} />
               </div>
             )}
           </div>
@@ -297,6 +330,24 @@ export function ChatWizard({
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6">
+        {/* Terugkoppeling/iteratie: de bouwer bekijkt/wijzigt hier een eerdere stap dan waar
+            het project daadwerkelijk staat. Niets is gewist — pas als hieronder iets
+            opnieuw wordt ingediend, verandert er echt iets. */}
+        {overridePhase && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent-dim/40 px-3 py-2 text-xs text-fg">
+            <span>
+              Je bekijkt een eerdere stap ({PHASE_SCRIPT[overridePhase].dossierLabel})
+              {overrideReason ? ` — ${overrideReason}` : ""}. Je voortgang blijft bewaard.
+            </span>
+            <button
+              onClick={clearOverridePhase}
+              className="flex flex-none items-center gap-1 rounded-md border border-current/30 px-2 py-1 font-medium transition hover:bg-surface"
+            >
+              <Undo2 className="h-3 w-3" /> Terug naar nu
+            </button>
+          </div>
+        )}
+
         {/* De vaste fase-bubbel + kaart. */}
         <div className="flex items-start gap-2">
           <div className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent-dim text-accent">

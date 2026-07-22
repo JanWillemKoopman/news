@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
+import type { WizardPhase } from "@/lib/wizard/phase";
 
 // Bridges the chat panel and the editors/views it can fill in or be filled from, which
 // sit in different parts of the page layout: when the architect proposes a recipe or a
@@ -37,6 +38,18 @@ interface WizardChatValue {
   // bestaan; de balk toont de recentste.
   activities: Activity[];
   beginActivity: (label: string) => ActivityHandle;
+  // Terugkoppeling/iteratie (blueprint stap 7): laat de bouwer op elk moment gericht
+  // teruggaan naar een eerdere fase — bijv. vanuit de validatiestap naar tuning bij een
+  // sampler-probleem, of naar data-voorbereiding bij een inhoudelijk plausibiliteitsprobleem
+  // — zonder de hele flow opnieuw te doorlopen. Dit is een puur client-side "welke kaart
+  // toon ik nu"-keuze bovenop de deterministische fase-afleiding (lib/wizard/phase.ts):
+  // er wordt niets in de database gewist of overschreven. Een nieuw recept/config vanuit
+  // een teruggesprongen fase maakt gewoon een nieuwe dataset-/fit-versie aan; de bestaande
+  // historie (eerdere datasets/runs) blijft intact en vergelijkbaar.
+  overridePhase: WizardPhase | null;
+  overrideReason: string | null;
+  goToPhase: (phase: WizardPhase, reason?: string) => void;
+  clearOverridePhase: () => void;
 }
 
 export interface Activity {
@@ -62,6 +75,8 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const nextActivityId = useRef(1);
+  const [overridePhase, setOverridePhase] = useState<WizardPhase | null>(null);
+  const [overrideReason, setOverrideReason] = useState<string | null>(null);
 
   const beginActivity = useCallback((label: string): ActivityHandle => {
     const id = nextActivityId.current++;
@@ -71,6 +86,16 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
         setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, label: next } : a))),
       end: () => setActivities((prev) => prev.filter((a) => a.id !== id)),
     };
+  }, []);
+
+  const goToPhase = useCallback((phase: WizardPhase, reason?: string) => {
+    setOverridePhase(phase);
+    setOverrideReason(reason ?? null);
+  }, []);
+
+  const clearOverridePhase = useCallback(() => {
+    setOverridePhase(null);
+    setOverrideReason(null);
   }, []);
 
   return (
@@ -95,6 +120,10 @@ export function WizardChatProvider({ children }: { children: React.ReactNode }) 
         setActiveStepId,
         activities,
         beginActivity,
+        overridePhase,
+        overrideReason,
+        goToPhase,
+        clearOverridePhase,
       }}
     >
       {children}

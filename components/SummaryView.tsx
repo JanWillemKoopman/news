@@ -6,12 +6,13 @@ import { useWizardChatOptional } from "@/components/WizardChatContext";
 import {
   CONFIDENCE_LABEL,
   confidenceFromInterval,
+  layeredTrustVerdict,
   moneyKpis,
   recommendedActions,
-  trustVerdict,
   type Confidence,
   type RecommendedAction,
   type TrustLevel,
+  type TrustVerdict,
 } from "@/lib/dashboardInsights";
 import type {
   FitSummary,
@@ -102,57 +103,102 @@ const TRUST_TONE: Record<TrustLevel, string> = {
   zwak: "border-danger/30 bg-danger-dim text-danger",
 };
 
-// Eén begrijpelijk vertrouwensoordeel i.p.v. vier losse statistiek-getallen bovenaan. De
-// ruwe diagnostiek (R²/MAPE/dekking/R-hat) blijft beschikbaar, maar gedemoveerd tot een
-// uitklap — zo staat techniek niet meer vóór de business.
-function TrustBadge({ summary }: { summary: FitSummary }) {
-  const chat = useWizardChatOptional(); // null op het klant-dashboard — geen chat daar
-  const v = trustVerdict(summary);
-  const d = summary.diagnostics;
-  const dot = v.level === "goed" ? "bg-success" : v.level === "let_op" ? "bg-warn" : "bg-danger";
+// Eén laag van het twee-laags validatieoordeel (blueprint stap 7): sampler-betrouwbaarheid
+// (is het wel goed gesampled?) apart van modelfit & plausibiliteit (is de uitkomst
+// inhoudelijk goed?) — elk met een eigen "terug naar stap X"-knop, want de remedie
+// verschilt: een slechte sampler-diagnostiek los je op in tuning/modelspecificatie, een
+// slechte inhoudelijke fit los je op in data-inspectie/-voorbereiding.
+function TrustLayer({
+  title,
+  verdict,
+  metrics,
+  explanation,
+  backLabel,
+  onGoBack,
+}: {
+  title: string;
+  verdict: TrustVerdict;
+  metrics: React.ReactNode;
+  explanation: string;
+  backLabel: string;
+  onGoBack?: () => void;
+}) {
+  const dot = verdict.level === "goed" ? "bg-success" : verdict.level === "let_op" ? "bg-warn" : "bg-danger";
   return (
-    <details className={`rounded-lg border p-3 ${TRUST_TONE[v.level]}`}>
-      <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium">
+    <div className={`rounded-lg border p-3 ${TRUST_TONE[verdict.level]}`}>
+      <div className="flex items-center gap-2 text-sm font-medium">
         <span className={`h-2.5 w-2.5 flex-none rounded-full ${dot}`} />
-        <span>Modelvertrouwen: {v.headline}</span>
-        <span className="ml-auto text-xs font-normal opacity-70">details</span>
-      </summary>
-      <div className="mt-3 space-y-3">
-        {v.reasons.length > 0 && (
+        <span>
+          {title}: {verdict.headline}
+        </span>
+      </div>
+      <div className="mt-2 space-y-2">
+        {verdict.reasons.length > 0 && (
           <ul className="space-y-1 text-sm">
-            {v.reasons.map((r, i) => (
+            {verdict.reasons.map((r, i) => (
               <li key={i}>• {r}</li>
             ))}
           </ul>
         )}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <DiagMetric label={<Term definition={MMM_GLOSSARY.r2}>R²</Term>} value={fmt(d.r2, 2)} />
-          <DiagMetric label={<Term definition={MMM_GLOSSARY.mape}>MAPE</Term>} value={pct(d.mape)} />
-          <DiagMetric
-            label={<Term definition={MMM_GLOSSARY.coverage}>Dekking (94%)</Term>}
-            value={pct(d.interval_coverage_94)}
-          />
-          <DiagMetric label={<Term definition={MMM_GLOSSARY.rhat}>Max R-hat</Term>} value={fmt(d.max_r_hat, 2)} />
-        </div>
-        <p className="text-xs opacity-80">
-          Wat betekent dit? R² en MAPE zeggen hoe goed het model de historie volgt; dekking en R-hat of de
-          onzekerheidsmarges en de schatting betrouwbaar zijn. Groen betekent: je kunt de rest van dit dashboard met
-          vertrouwen lezen.
-        </p>
-        {chat && v.level !== "goed" && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{metrics}</div>
+        <p className="text-xs opacity-80">{explanation}</p>
+        {onGoBack && verdict.level !== "goed" && (
           <button
-            onClick={() =>
-              chat.sendToChat(
-                `Het modelvertrouwen is "${v.headline}". Reden(en): ${v.reasons.join("; ") || "zie diagnostiek"}. Wat is hier waarschijnlijk de oorzaak, en welke aanpassing in de modelconfiguratie zou dit verbeteren?`,
-              )
-            }
+            onClick={onGoBack}
             className="rounded-lg border border-current/40 bg-surface px-3 py-1.5 text-xs font-medium transition hover:opacity-80"
           >
-            Vraag de AI om dit te verbeteren
+            {backLabel}
           </button>
         )}
       </div>
-    </details>
+    </div>
+  );
+}
+
+// Twee-laags modelvalidatie i.p.v. één samengeraapte badge. Elke laag krijgt zijn eigen
+// gerichte "terug"-knop (naar tuning/modelspec bij een sampler-probleem, naar
+// inspectie/data-voorbereiding bij een inhoudelijk plausibiliteitsprobleem) via de
+// WizardChatContext-navigatie — alleen zichtbaar in de bouwerswizard (chat != null), nooit
+// op het read-only klantdashboard.
+function TrustBadge({ summary }: { summary: FitSummary }) {
+  const chat = useWizardChatOptional(); // null op het klant-dashboard — geen terugnavigatie daar
+  const { sampler, fit } = layeredTrustVerdict(summary);
+  const d = summary.diagnostics;
+
+  return (
+    <div className="space-y-3">
+      <TrustLayer
+        title="Laag 1 — Sampler-betrouwbaarheid"
+        verdict={sampler}
+        explanation="Is het model wel goed gesampled? R-hat rond 1.0, een hoge effectieve steekproef (ESS) en weinig/geen divergenties betekenen: de MCMC-sampler heeft de posterior betrouwbaar verkend."
+        backLabel="Terug naar tuning/modelspecificatie"
+        onGoBack={chat ? () => chat.goToPhase("tuning", "sampler-diagnostiek niet goed genoeg") : undefined}
+        metrics={
+          <>
+            <DiagMetric label={<Term definition={MMM_GLOSSARY.rhat}>Max R-hat</Term>} value={fmt(d.max_r_hat, 2)} />
+            <DiagMetric label="Min ESS" value={fmt(d.min_ess_bulk, 0)} />
+            <DiagMetric label="Divergenties" value={fmt(d.n_divergences, 0)} />
+          </>
+        }
+      />
+      <TrustLayer
+        title="Laag 2 — Modelfit & plausibiliteit"
+        verdict={fit}
+        explanation="Is de uitkomst inhoudelijk goed? R² en MAPE zeggen hoe goed het model de historie volgt; dekking en de decompositie of de opbouw en onzekerheidsmarges kloppen."
+        backLabel="Terug naar data-inspectie/-voorbereiding"
+        onGoBack={chat ? () => chat.goToPhase("inspect", "modelfit/plausibiliteit niet goed genoeg") : undefined}
+        metrics={
+          <>
+            <DiagMetric label={<Term definition={MMM_GLOSSARY.r2}>R²</Term>} value={fmt(d.r2, 2)} />
+            <DiagMetric label={<Term definition={MMM_GLOSSARY.mape}>MAPE</Term>} value={pct(d.mape)} />
+            <DiagMetric
+              label={<Term definition={MMM_GLOSSARY.coverage}>Dekking (94%)</Term>}
+              value={pct(d.interval_coverage_94)}
+            />
+          </>
+        }
+      />
+    </div>
   );
 }
 

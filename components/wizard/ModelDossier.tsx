@@ -5,6 +5,7 @@
 // kost geen tokens. Hier gebeurt geen bewerking; dat loopt allemaal via de chat links.
 
 import { Check, Circle, Dot } from "lucide-react";
+import { useWizardChatOptional } from "@/components/WizardChatContext";
 import type {
   BusinessContextNote,
   ColumnRole,
@@ -64,6 +65,7 @@ export function ModelDossier({
   companyDescription: string | null;
 }) {
   const activeStep = stepIndexForPhase(phase);
+  const chat = useWizardChatOptional(); // null op het klant-dashboard, waar dit paneel niet gerenderd wordt
   const source = sources[0] ?? null;
   const roles = dataset?.column_roles ?? null;
   const byRole = (r: ColumnRole) => (roles ? Object.entries(roles).filter(([, v]) => v === r).map(([k]) => k) : []);
@@ -82,14 +84,17 @@ export function ModelDossier({
         {clientCompany && <p className="text-xs text-fg-muted">{clientCompany}</p>}
       </div>
 
-      {/* Voortgang — welke stap ben je? */}
+      {/* Voortgang — welke stap ben je? Een afgeronde stap met een backTarget is klikbaar:
+          dat opent 'm opnieuw in de chat (terugkoppeling/iteratie), zonder de rest van de
+          voortgang hier te wissen — dit paneel blijft altijd de WERKELIJKE stand tonen. */}
       <Section title="Voortgang">
         <ol className="space-y-1">
           {PHASE_STEPS.map((step, i) => {
             const done = i < activeStep;
             const active = i === activeStep;
-            return (
-              <li key={step.label} className="flex items-center gap-2 text-xs">
+            const clickable = done && step.backTarget != null && chat != null;
+            const content = (
+              <>
                 {done ? (
                   <Check className="h-3.5 w-3.5 flex-none text-accent" />
                 ) : active ? (
@@ -100,6 +105,21 @@ export function ModelDossier({
                 <span className={done ? "text-fg-muted" : active ? "font-medium text-fg" : "text-fg-faint"}>
                   {step.label}
                 </span>
+              </>
+            );
+            return (
+              <li key={step.label} className="text-xs">
+                {clickable ? (
+                  <button
+                    onClick={() => chat!.goToPhase(step.backTarget!, `vanuit "${PHASE_STEPS[activeStep]?.label}"`)}
+                    className="flex w-full items-center gap-2 rounded px-0.5 py-0.5 text-left transition hover:bg-surface-2"
+                    title={`Terug naar: ${step.label}`}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">{content}</div>
+                )}
               </li>
             );
           })}
