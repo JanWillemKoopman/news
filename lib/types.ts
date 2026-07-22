@@ -303,6 +303,9 @@ export interface ProjectContext {
   project_id: string;
   industry: string | null;
   notes: BusinessContextNote[] | null;
+  // Vrij-tekst bedrijfscontext, bovenaan stap 2 ingevuld direct na het uploaden: wie is het
+  // bedrijf, welke markt/doelen/bijzonderheden. De AI weegt dit vanaf de eerste stap mee.
+  description: string | null;
   updated_at: string;
 }
 

@@ -29,6 +29,8 @@ async function handlePost(request: Request) {
     add?: { topic?: string; fact?: string; relates_to?: string | null };
     remove_index?: number;
     industry?: string;
+    // Vrij-tekst bedrijfscontext (bovenaan stap 2). Lege string = wissen.
+    description?: string;
     // Gemiddelde brutomarge in EURO'S per verkochte KPI-eenheid (bv. 12.50 per
     // order); null = wissen. Gaat naar mmm.projects.kpi_margin — hoort bij het
     // project, niet bij de losse contextfeiten.
@@ -57,12 +59,13 @@ async function handlePost(request: Request) {
   const { data: existing } = await supabase
     .schema("mmm")
     .from("project_context")
-    .select("industry, notes")
+    .select("industry, notes, description")
     .eq("project_id", body.project_id)
     .maybeSingle();
 
   let notes = [...(((existing?.notes as ProjectContext["notes"]) ?? []) as BusinessContextNote[])];
   let industry = (existing?.industry as string | null) ?? null;
+  let description = (existing?.description as string | null) ?? null;
 
   if (body.add) {
     const fact = typeof body.add.fact === "string" ? body.add.fact.trim().slice(0, 1000) : "";
@@ -79,6 +82,9 @@ async function handlePost(request: Request) {
   if (typeof body.industry === "string") {
     industry = body.industry.trim().slice(0, 200) || null;
   }
+  if (typeof body.description === "string") {
+    description = body.description.trim().slice(0, 8000) || null;
+  }
 
   const { error } = await supabase
     .schema("mmm")
@@ -88,6 +94,7 @@ async function handlePost(request: Request) {
         project_id: body.project_id,
         industry,
         notes,
+        description,
         updated_by: viewer.id,
         updated_at: new Date().toISOString(),
       },
@@ -96,7 +103,7 @@ async function handlePost(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-  return NextResponse.json({ ok: true, notes, industry });
+  return NextResponse.json({ ok: true, notes, industry, description });
 }
 
 export const POST = withJsonErrors(handlePost);

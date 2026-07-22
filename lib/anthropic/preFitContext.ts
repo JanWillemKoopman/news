@@ -81,10 +81,15 @@ export function formatInspectionBlock(inspection: DataInspection | null): string
 }
 
 export function formatBusinessContextBlock(ctx: ProjectContext | null): string {
-  if (!ctx || (!ctx.industry && (!ctx.notes || ctx.notes.length === 0))) {
+  const description = ctx?.description?.trim() ?? "";
+  if (!ctx || (!ctx.industry && !description && (!ctx.notes || ctx.notes.length === 0))) {
     return "Er is nog geen zakelijke context vastgelegd voor dit project. Elicit actief: vraag naar branche, seizoensdrukte, bekende campagnes/acties, offline-kanalen met lange nawerking en eerdere lift-/geo-experimenten, en leg de antwoorden vast met de tool 'record_business_context'. Deze kennis vertaal je later naar channel_type, l_max, expected_half_life, priors en calibration.";
   }
   const lines: string[] = [];
+  if (description) {
+    lines.push("Bedrijfscontext (door de bouwer beschreven):");
+    lines.push(description);
+  }
   if (ctx.industry) lines.push(`Branche: ${ctx.industry}.`);
   if (ctx.notes && ctx.notes.length > 0) {
     lines.push("Vastgelegde zakelijke context:");
