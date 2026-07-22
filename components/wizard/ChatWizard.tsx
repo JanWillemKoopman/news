@@ -66,7 +66,7 @@ function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
       <div
         className={
           "max-w-[90%] rounded-2xl px-4 py-2.5 text-sm " +
-          (role === "user" ? "whitespace-pre-wrap bg-accent text-bg" : "border border-border bg-surface-2 text-fg")
+          (role === "user" ? "whitespace-pre-wrap bg-user text-white" : "border border-strong bg-surface text-fg")
         }
       >
         {role === "assistant" ? <Markdown text={text} /> : text}
@@ -371,14 +371,14 @@ export function ChatWizard({
             het project daadwerkelijk staat. Niets is gewist — pas als hieronder iets
             opnieuw wordt ingediend, verandert er echt iets. */}
         {overridePhase && (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent-dim/40 px-3 py-2 text-xs text-fg">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-strong bg-surface-2 px-3 py-2 text-xs text-fg">
             <span>
               Je bekijkt een eerdere stap ({PHASE_SCRIPT[overridePhase].dossierLabel})
               {overrideReason ? ` — ${overrideReason}` : ""}. Je voortgang blijft bewaard.
             </span>
             <button
               onClick={clearOverridePhase}
-              className="flex flex-none items-center gap-1 rounded-md border border-current/30 px-2 py-1 font-medium transition hover:bg-surface"
+              className="flex flex-none items-center gap-1 rounded-md border border-current/30 px-2 py-1 font-medium transition hover:bg-surface-3"
             >
               <Undo2 className="h-3 w-3" /> Terug naar nu
             </button>
@@ -427,12 +427,12 @@ export function ChatWizard({
             )}
             <Bubble role={t.role} text={t.text || (t.streaming ? "…" : "")} />
             {t.proposedRecipe != null && (
-              <button onClick={() => applyProposal("recipe", t.proposedRecipe)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50">
+              <button onClick={() => applyProposal("recipe", t.proposedRecipe)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-strong bg-surface-2 px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-surface-3 disabled:opacity-50">
                 <Sparkles className="h-3 w-3" /> Voorstel overnemen & samenvoegen
               </button>
             )}
             {t.proposedConfig != null && (
-              <button onClick={() => applyProposal("config", t.proposedConfig)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50">
+              <button onClick={() => applyProposal("config", t.proposedConfig)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-strong bg-surface-2 px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-surface-3 disabled:opacity-50">
                 <Sparkles className="h-3 w-3" /> Voorstel overnemen & berekenen
               </button>
             )}
@@ -457,7 +457,7 @@ export function ChatWizard({
             }}
             rows={1}
             placeholder="Iets vragen aan de AI (optioneel — de knoppen hierboven loodsen je vanzelf verder)"
-            className="flex-1 resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none transition focus:border-accent/50"
+            className="flex-1 resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint outline-none transition focus:border-strong"
           />
           <button onClick={() => send()} disabled={!input.trim() || busy} className="rounded-lg bg-accent p-2 text-bg transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-faint" aria-label="Versturen">
             <Send className="h-4 w-4" />
