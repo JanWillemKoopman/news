@@ -3,8 +3,10 @@ import { getViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AnalysisView } from "@/components/AnalysisView";
 import { HierarchicalSummaryView } from "@/components/HierarchicalSummaryView";
-import { Card, PageHeader, TopBar } from "@/components/ui";
+import { PageHeader, TopBar } from "@/components/ui";
 import { SummaryView } from "@/components/SummaryView";
+import { ScenarioPlanner } from "@/components/ScenarioPlanner";
+import { DashboardTabs } from "@/components/DashboardTabs";
 import { isHierSummary, type JobConfig, type ModelRun, type Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -59,16 +61,24 @@ export default async function ClientDashboard({ params }: { params: { projectId:
           subtitle={p.client_company ?? "Media mix model — resultaten"}
         />
         {latest ? (
-          <Card>
-            {isHierSummary(latest.summary) ? (
-              <HierarchicalSummaryView summary={latest.summary} />
-            ) : (
-              <>
-                <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} isCountKpi={isCountKpi} />
-                {latest.analysis && <AnalysisView analysis={latest.analysis} />}
-              </>
-            )}
-          </Card>
+          isHierSummary(latest.summary) ? (
+            // Hiërarchische run: geen responscurves, dus geen scenario-tabblad.
+            <DashboardTabs results={<HierarchicalSummaryView summary={latest.summary} />} scenario={null} />
+          ) : (
+            <DashboardTabs
+              results={
+                <>
+                  <SummaryView summary={latest.summary} kpiMargin={p.kpi_margin ?? null} isCountKpi={isCountKpi} />
+                  {latest.analysis && <AnalysisView analysis={latest.analysis} />}
+                </>
+              }
+              scenario={
+                latest.summary.response_curves && latest.summary.response_curves.length > 0 ? (
+                  <ScenarioPlanner summary={latest.summary} kpiMargin={p.kpi_margin ?? null} />
+                ) : null
+              }
+            />
+          )
         ) : (
           <p className="text-sm text-fg-muted">
             Er is nog geen gepubliceerd resultaat voor dit project.

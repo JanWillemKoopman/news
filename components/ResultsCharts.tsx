@@ -18,7 +18,6 @@ import {
   YAxis,
 } from "recharts";
 import type { FitSummary, ResponseCurve, WeeklyDecomposition } from "@/lib/types";
-import { ScenarioPlanner } from "@/components/ScenarioPlanner";
 
 // Deterministic, zero-cost charts drawn straight from the numbers already in FitSummary —
 // no AI call, so these always render (unlike the optional deep-analysis step below them).
@@ -807,10 +806,6 @@ export function ResultsCharts({
       )}
 
       <WhatIfSlider summary={summary} />
-
-      {curves.length > 0 && (
-        <ScenarioPlanner summary={summary} kpiMargin={kpiMargin} />
-      )}
 
       {reallocData.length > 0 && (
         <ChartCard title="Budgetherverdeling" hint="Advies t.o.v. huidige spend per week — groen = meer, grijs = minder">

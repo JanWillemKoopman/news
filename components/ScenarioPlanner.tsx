@@ -149,10 +149,10 @@ export function ScenarioPlanner({ summary, kpiMargin }: { summary: FitSummary; k
   }));
 
   return (
-    <div className="space-y-4 rounded-xl border border-accent/25 bg-accent-dim p-4">
+    <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-fg">Stel zelf een scenario samen</p>
-        <p className="mt-0.5 text-xs text-fg-muted">
+        <h2 className="text-lg font-semibold text-fg">Stel zelf een toekomstscenario samen</h2>
+        <p className="mt-1 text-sm text-fg-muted">
           Plus of min de weekspend per kanaal — met de schuif (%) of door een exact bedrag in te typen — en
           lees direct af wat het model verwacht dat er met je {summary.kpi} en je kosten gebeurt, vergeleken met
           niets aanpassen. De uitkomsten volgen de verzadigingscurve per kanaal: meer geld levert niet overal
