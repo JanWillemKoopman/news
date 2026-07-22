@@ -16,7 +16,6 @@ import { InspectionFindings } from "@/components/InspectionFindings";
 import { extractNumericValues } from "@/lib/eda";
 import { computeDataHealth } from "@/lib/dataHealth";
 import type {
-  AutoPrepareRound,
   ColumnRole,
   DataInspection,
   Dataset,
@@ -547,33 +546,42 @@ function DeepInspectionButton({ projectId, scope }: { projectId: string; scope: 
   );
 }
 
-// De primaire AI-actie van deze stap: de architect stelt een recept voor, voert het uit,
-// leest het kwaliteitsrapport en corrigeert tot het schoon is (/api/prepare-auto). De
-// bouwer beoordeelt daarna het resultaat en keurt zelf goed — dit bespaart alleen de
-// saaie tussenrondes. Kan minuten duren; de knop blijft de status tonen en de dataset
-// komt via Realtime vanzelf binnen.
-function AutoPrepareButton({ projectId, disabled }: { projectId: string; disabled: boolean }) {
-  const router = useRouter();
+// De primaire AI-actie van deze stap, preview-first: de architect stelt één volledig
+// samenvoeg-recept voor (/api/prepare-auto) zonder ook maar iets uit te voeren. De bouwer
+// ziet elke voorgestelde aanpassing als een aanvinkbare regel, kiest wat er wél en niet
+// gebeurt, en pas ná die bevestiging draait er één samenvoeging (onAccept → /api/datasets).
+// Zo verandert er niets aan de data tot de bouwer bewust op uitvoeren klikt.
+function AutoPrepareButton({
+  projectId,
+  disabled,
+  sources,
+  onAccept,
+  onEditManually,
+}: {
+  projectId: string;
+  disabled: boolean;
+  sources: SourceFile[];
+  onAccept: (recipe: PrepareRecipe) => Promise<void> | void;
+  onEditManually: (recipe: PrepareRecipe) => void;
+}) {
   const { beginActivity } = useWizardChat();
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [rounds, setRounds] = useState<AutoPrepareRound[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [proposal, setProposal] = useState<{ recipe: PrepareRecipe | null; reasoning: string } | null>(null);
 
-  async function run() {
+  async function propose() {
     setBusy(true);
-    setRounds([]);
-    setMsg("De AI stelt een recept voor en voert het uit — dit kan enkele minuten duren…");
-    const activity = beginActivity("De AI bereidt de data automatisch voor — dit kan enkele minuten duren…");
+    setError(null);
+    setProposal(null);
+    const activity = beginActivity("De AI stelt een voorbereidings-voorstel op…");
     try {
-      const res = await postJson<{ message?: string; rounds?: AutoPrepareRound[] }>("/api/prepare-auto", {
+      const res = await postJson<{ recipe: PrepareRecipe | null; reasoning: string }>("/api/prepare-auto", {
         project_id: projectId,
       });
-      setRounds(res.data.rounds ?? []);
       if (!res.ok) {
-        setMsg(humanizeError(res.error, "Automatisch voorbereiden is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
+        setError(humanizeError(res.error, "Een voorstel opstellen is niet gelukt — probeer het opnieuw of werk via “Handmatig voorbereiden”.").text);
       } else {
-        setMsg(res.data.message ?? "Klaar.");
-        router.refresh();
+        setProposal({ recipe: res.data.recipe, reasoning: res.data.reasoning });
       }
     } finally {
       activity.end();
@@ -585,51 +593,293 @@ function AutoPrepareButton({ projectId, disabled }: { projectId: string; disable
     <div className="rounded-lg border border-accent/30 bg-accent-dim/40 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <button
-          onClick={run}
+          onClick={propose}
           disabled={busy || disabled}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "AI is bezig…" : "Bereid automatisch voor (AI)"}
+          {busy ? "AI stelt een voorstel op…" : proposal ? "Nieuw voorstel opstellen" : "Bereid voor met AI"}
         </button>
         <span className="text-xs text-fg-muted">
-          De AI kiest rollen, voegt samen en verfijnt tot het kwaliteitsrapport schoon is
-          (max. 3 rondes, duurt meestal 2–5 minuten). Jij controleert en keurt goed — en
-          ziet hieronder per ronde wat de AI heeft gedaan.
+          De AI kiest rollen, opschoonstappen en dummy&apos;s en toont ze als voorstel. Jij vinkt
+          aan wat er wél en niet gebeurt — pas dán wordt er samengevoegd. Er verandert niets
+          aan je data tot je op uitvoeren klikt.
         </span>
       </div>
-      {msg && <p className="mt-2 text-xs text-fg-muted">{msg}</p>}
-      {rounds.length > 0 && <AutoPrepareTimeline rounds={rounds} />}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {proposal && (
+        <RecipeReviewPanel
+          recipe={proposal.recipe}
+          reasoning={proposal.reasoning}
+          sources={sources}
+          onAccept={async (recipe) => {
+            await onAccept(recipe);
+            setProposal(null);
+          }}
+          onEditManually={(recipe) => {
+            onEditManually(recipe);
+            setProposal(null);
+          }}
+          onDismiss={() => setProposal(null)}
+        />
+      )}
     </div>
   );
 }
 
-// Transparantie-tijdlijn van de agentische loop: per ronde de eigen toelichting van de
-// AI, het voorgestelde recept en de uitkomst. Zo is "de AI heeft het gedaan" nooit een
-// zwarte doos — de gebruiker kan elke ronde nalezen voordat hij goedkeurt.
-function AutoPrepareTimeline({ rounds }: { rounds: AutoPrepareRound[] }) {
+function roleLabel(role: ColumnRole): string {
+  return role === "kpi" ? "KPI" : role === "spend" ? "Spend" : "Control";
+}
+
+// Mensvriendelijke omschrijving van een opschoonstap; de ruwe technische parameters staan
+// eronder (transformLabel) voor wie het exact wil controleren.
+function transformHumanLabel(t: TransformSpec): string {
+  const cols = Array.isArray(t.params?.columns) ? (t.params!.columns as unknown[]).join(", ") : null;
+  switch (t.op) {
+    case "drop_columns":
+      return cols ? `Kolommen weglaten: ${cols}` : "Kolommen weglaten";
+    case "drop_duplicates":
+      return "Dubbele rijen samenvoegen/verwijderen";
+    case "rename":
+      return "Kolommen hernoemen";
+    case "scale":
+      return "Eenheid omrekenen (schalen)";
+    case "filter_rows":
+      return "Rijen filteren";
+    case "parse_date":
+      return "Datumformaat forceren";
+    case "pivot":
+      return "Van lang naar breed pivoteren";
+    case "combine":
+      return "Kolommen combineren";
+    case "split":
+      return "Kolom splitsen";
+    case "recode":
+      return "Waarden hercoderen";
+    default:
+      return t.op;
+  }
+}
+
+function dummyWeeksLabel(weeks: [number, number][]): string {
+  return weeks.map(([y, w]) => `${y} w${w}`).join(", ");
+}
+
+// Preview-first review: elke voorgestelde aanpassing als aanvinkbare regel, gegroepeerd per
+// soort. Standaard staat alles aan; de bouwer vinkt weg wat hij niet wil. Pas op "Voer
+// geselecteerde aanpassingen uit" wordt het (gefilterde) recept samengevoegd — dít is het
+// moment waarop de bouwer bewust en per aanpassing goedkeurt, vóórdat er iets met de data
+// gebeurt.
+function RecipeReviewPanel({
+  recipe,
+  reasoning,
+  sources,
+  onAccept,
+  onEditManually,
+  onDismiss,
+}: {
+  recipe: PrepareRecipe | null;
+  reasoning: string;
+  sources: SourceFile[];
+  onAccept: (recipe: PrepareRecipe) => Promise<void> | void;
+  onEditManually: (recipe: PrepareRecipe) => void;
+  onDismiss: () => void;
+}) {
+  // Aanvink-status per aanpassing (stabiele sleutel); leeg = aangevinkt (standaard aan).
+  const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const nameByPath = useMemo(
+    () => new Map(sources.map((f) => [f.storage_path, f.name])),
+    [sources],
+  );
+
+  if (!recipe) {
+    // Geen recept — alleen een boodschap van de AI (bv. een vraag om meer info).
+    return (
+      <div className="mt-3 rounded-lg border border-accent/20 bg-surface p-3 text-xs text-fg-muted">
+        <p className="whitespace-pre-wrap">{reasoning}</p>
+        <button onClick={onDismiss} className="mt-2 text-accent hover:underline">Sluiten</button>
+      </div>
+    );
+  }
+
+  const isOn = (key: string) => !unchecked.has(key);
+  const toggle = (key: string) =>
+    setUnchecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // Alle aanpassingen in leesvorm, met hun stabiele sleutel voor het (weer)opbouwen van het
+  // gefilterde recept bij bevestigen.
+  const roleItems = recipe.sources.flatMap((s, sIdx) =>
+    s.columns.map((c, cIdx) => ({
+      key: `col:${sIdx}:${cIdx}`,
+      file: nameByPath.get(s.storage_path) ?? s.name,
+      label: c.name,
+      detail: `${roleLabel(c.role)}${c.output_name && c.output_name !== c.name ? ` · heet in dataset “${c.output_name}”` : ""}${c.role === "control" && c.fill ? ` · gaten: ${c.fill}` : ""}`,
+    })),
+  );
+  const transformItems = recipe.sources.flatMap((s, sIdx) =>
+    (s.transforms ?? []).map((t, tIdx) => ({
+      key: `tf:${sIdx}:${tIdx}`,
+      file: nameByPath.get(s.storage_path) ?? s.name,
+      label: transformHumanLabel(t),
+      detail: transformLabel(t),
+    })),
+  );
+  const featureItems = (recipe.features ?? []).map((f, i) => ({
+    key: `ft:${i}`,
+    label: f.name,
+    detail: featureLabel(f),
+  }));
+  const dummyItems = (recipe.event_dummies ?? []).map((d, i) => ({
+    key: `dm:${i}`,
+    label: d.name,
+    detail: dummyWeeksLabel(d.weeks),
+  }));
+
+  const total = roleItems.length + transformItems.length + featureItems.length + dummyItems.length;
+  const selectedCount = total - unchecked.size;
+
+  function buildFilteredRecipe(): PrepareRecipe {
+    const filteredSources = recipe!.sources
+      .map((s, sIdx) => ({
+        ...s,
+        transforms: (s.transforms ?? []).filter((_, tIdx) => isOn(`tf:${sIdx}:${tIdx}`)),
+        columns: s.columns
+          .filter((_, cIdx) => isOn(`col:${sIdx}:${cIdx}`))
+          // fill hoort alleen bij control-kolommen (mirror van submit()).
+          .map((c) => (c.role === "control" ? c : { ...c, fill: undefined })),
+      }))
+      .filter((s) => s.columns.length > 0 || s.transforms.length > 0)
+      .map((s) => ({
+        ...s,
+        transforms: s.transforms.length ? s.transforms : undefined,
+      }));
+    const features = (recipe!.features ?? []).filter((_, i) => isOn(`ft:${i}`));
+    const event_dummies = (recipe!.event_dummies ?? []).filter((_, i) => isOn(`dm:${i}`));
+    return {
+      sources: filteredSources,
+      features: features.length ? features : undefined,
+      event_dummies: event_dummies.length ? event_dummies : undefined,
+    };
+  }
+
+  async function confirm() {
+    const built = buildFilteredRecipe();
+    const nCols = built.sources.reduce((n, s) => n + s.columns.length, 0);
+    if (nCols === 0) {
+      setErr("Vink minstens één kolomrol aan — anders valt er niets samen te voegen.");
+      return;
+    }
+    setErr(null);
+    setBusy(true);
+    try {
+      await onAccept(built);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const Section = ({
+    title,
+    items,
+    withFile = false,
+  }: {
+    title: string;
+    items: { key: string; file?: string; label: string; detail: string }[];
+    withFile?: boolean;
+  }) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-fg-faint">
+          {title} — {items.length}
+        </p>
+        <ul className="space-y-1">
+          {items.map((it) => (
+            <li key={it.key}>
+              <label className="flex cursor-pointer items-start gap-2 rounded-md px-1.5 py-1 hover:bg-surface-2">
+                <input
+                  type="checkbox"
+                  checked={isOn(it.key)}
+                  onChange={() => toggle(it.key)}
+                  className="mt-0.5 flex-none"
+                />
+                <span className={`min-w-0 text-xs ${isOn(it.key) ? "text-fg" : "text-fg-faint line-through"}`}>
+                  <span className="font-medium">{it.label}</span>{" "}
+                  <span className="text-fg-muted no-underline">— {it.detail}</span>
+                  {withFile && it.file && (
+                    <span className="ml-1.5 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-fg-muted no-underline">
+                      {it.file}
+                    </span>
+                  )}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   return (
-    <ol className="mt-3 space-y-2 border-t border-accent/20 pt-3">
-      {rounds.map((r) => (
-        <li key={r.round} className="flex gap-2.5 text-xs">
-          <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-accent/15 font-mono font-semibold text-accent">
-            {r.round}
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-fg">
-              Voorstel: {r.recipe_summary} → <span className="font-medium">{r.result}</span>
-            </p>
-            {r.note && <p className="whitespace-pre-wrap text-fg-muted">{r.note}</p>}
-            {r.open_issues.length > 0 && (
-              <ul className="space-y-0.5 text-fg-faint">
-                {r.open_issues.map((issue, i) => (
-                  <li key={i}>• {issue}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <div className="mt-3 space-y-4 rounded-lg border border-accent/30 bg-surface p-3">
+      <div>
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+          <Sparkles className="h-4 w-4 text-accent" />
+          Voorstel van de AI — nog niets uitgevoerd
+        </p>
+        <p className="mt-0.5 text-xs text-fg-muted">
+          Vink aan wat je wilt uitvoeren. Er verandert niets aan je data tot je op{" "}
+          <span className="font-medium">Voer geselecteerde aanpassingen uit</span> klikt.
+        </p>
+      </div>
+
+      {reasoning && (
+        <details open className="rounded-md border border-border bg-surface-2/60 p-2.5">
+          <summary className="cursor-pointer select-none text-xs font-medium text-fg-muted">
+            Waarom de AI dit voorstelt
+          </summary>
+          <p className="mt-1.5 whitespace-pre-wrap text-xs leading-relaxed text-fg-muted">{reasoning}</p>
+        </details>
+      )}
+
+      <div className="space-y-3">
+        <Section title="Kolomrollen" items={roleItems} withFile={recipe.sources.length > 1} />
+        <Section title="Opschoonstappen" items={transformItems} withFile={recipe.sources.length > 1} />
+        <Section title="Afgeleide variabelen" items={featureItems} />
+        <Section title="Event-dummy's (eenmalige uitschieters)" items={dummyItems} />
+      </div>
+
+      {err && <p className="text-xs text-danger">{err}</p>}
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <button
+          onClick={confirm}
+          disabled={busy || selectedCount === 0}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-hover hover:shadow-glow-sm disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Samenvoegen…" : `Voer geselecteerde aanpassingen uit (${selectedCount})`}
+        </button>
+        <button
+          onClick={() => onEditManually(recipe)}
+          className="rounded-lg border border-border-strong px-3 py-2 text-xs font-medium text-fg transition hover:bg-surface-2"
+        >
+          Zelf fijn afstellen in de tabel
+        </button>
+        <button
+          onClick={onDismiss}
+          className="rounded-lg px-3 py-2 text-xs font-medium text-fg-muted transition hover:bg-surface-2"
+        >
+          Voorstel verwerpen
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -820,6 +1070,13 @@ export function DataPrepSection({
       features: features.length ? features : undefined,
     };
 
+    await mergeRecipe(recipe);
+  }
+
+  // Voert één samenvoeging uit voor een klaar recept (/api/datasets) en ververst. Gedeeld
+  // tussen de handmatige "Controleer & voeg samen" en de preview-first review: beide leveren
+  // uiteindelijk een PrepareRecipe dat hier wordt uitgevoerd.
+  async function mergeRecipe(recipe: PrepareRecipe) {
     setBusy(true);
     setError(null);
     const res = await postJson("/api/datasets", { project_id: projectId, recipe });
@@ -893,7 +1150,13 @@ export function DataPrepSection({
             }
           >
             <div className="space-y-4">
-          <AutoPrepareButton projectId={projectId} disabled={datasetBusy} />
+          <AutoPrepareButton
+            projectId={projectId}
+            disabled={datasetBusy}
+            sources={sources}
+            onAccept={mergeRecipe}
+            onEditManually={applyRecipe}
+          />
 
           {stagedRecipe != null && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent/40 bg-accent-dim px-3 py-2.5">
