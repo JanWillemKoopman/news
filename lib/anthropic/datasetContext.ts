@@ -95,6 +95,6 @@ export function formatDatasetContextBlock(ctx: ArchitectDatasetContext): string 
     formatColumnNotes(ds),
     "Kwaliteitsrapport:",
     formatQuality(ds.quality),
-    "Bespreek wat opvalt (bijna-identieke kanalen, gaten, anomalieën) in gewone taal. Stel alleen een nieuw recept voor als er een concrete verbetering nodig is — een reeds goedgekeurde dataset verander je niet zomaar.",
+    "Bespreek wat opvalt (bijna-identieke kanalen, gaten, opvallende weken) in gewone taal, zoals je dat tegen een marketeer zonder statistiekachtergrond zou zeggen. Stel alleen een nieuw recept voor als er een concrete verbetering nodig is — een reeds goedgekeurde dataset verander je niet zomaar.",
   ].join("\n");
 }

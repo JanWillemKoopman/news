@@ -30,6 +30,7 @@ import {
   ReviewCard,
 } from "@/components/wizard/cards";
 import type { Dataset, Job, JobConfig, ModelRun, SourceFile } from "@/lib/types";
+import { Markdown } from "@/components/Markdown";
 
 // Wat de architect op dit moment aan het doen is — puur voor de statusindicator, geen
 // invloed op de inhoud. "thinking": redeneert (extended thinking); "tool": stelt een
@@ -55,16 +56,20 @@ interface Turn {
   toolName?: string;
 }
 
-function Bubble({ role, children }: { role: "user" | "assistant"; children: React.ReactNode }) {
+// Assistent-antwoorden komen als markdown terug (kopjes/bullets/**vet**, zie de
+// system-prompts in lib/anthropic/) — die renderen we dus ook als markdown in plaats van
+// als platte, pre-wrapped tekst. De gebruiker typt zelf geen markdown, dus die bubbel
+// blijft platte tekst met behouden regeleinden.
+function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
   return (
     <div className={role === "user" ? "flex justify-end" : "flex justify-start"}>
       <div
         className={
-          "max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm " +
-          (role === "user" ? "bg-accent text-bg" : "border border-border bg-surface-2 text-fg")
+          "max-w-[90%] rounded-2xl px-4 py-2.5 text-sm " +
+          (role === "user" ? "whitespace-pre-wrap bg-accent text-bg" : "border border-border bg-surface-2 text-fg")
         }
       >
-        {children}
+        {role === "assistant" ? <Markdown text={text} /> : text}
       </div>
     </div>
   );
@@ -386,7 +391,7 @@ export function ChatWizard({
             <Bot className="h-4 w-4" />
           </div>
           <div className="flex-1 space-y-3">
-            <Bubble role="assistant">{script.message}</Bubble>
+            <Bubble role="assistant" text={script.message} />
             {renderCard()}
             {isWaitingPhase(phase) && (
               <p className="flex items-center gap-2 text-sm text-fg-faint">
@@ -420,7 +425,7 @@ export function ChatWizard({
                 <p className="mt-1 whitespace-pre-wrap">{t.thinking}</p>
               </details>
             )}
-            <Bubble role={t.role}>{t.text || (t.streaming ? "…" : "")}</Bubble>
+            <Bubble role={t.role} text={t.text || (t.streaming ? "…" : "")} />
             {t.proposedRecipe != null && (
               <button onClick={() => applyProposal("recipe", t.proposedRecipe)} disabled={busy} className="mt-1 inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50">
                 <Sparkles className="h-3 w-3" /> Voorstel overnemen & samenvoegen

@@ -1,4 +1,5 @@
 import type { RunAnalysis } from "@/lib/types";
+import { Markdown } from "@/components/Markdown";
 
 // Renders the deep-analysis output (narrative + charts) produced by the code_execution
 // step. Shared between the builder's ResultsView and the client-facing dashboard — same
@@ -17,11 +18,7 @@ export function AnalysisView({ analysis }: { analysis: RunAnalysis }) {
           ))}
         </div>
       )}
-      <div className="space-y-3 text-sm leading-relaxed text-fg">
-        {analysis.text.split("\n\n").map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
+      <Markdown text={analysis.text} className="text-sm leading-relaxed text-fg" />
     </div>
   );
 }

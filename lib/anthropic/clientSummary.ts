@@ -8,7 +8,7 @@ import type { FitSummary } from "@/lib/types";
 // diepgaande analyse, uitsluitend op de resultaat-JSON (geen ruwe klantdata) — maar dit is
 // bewust een aparte, goedkopere actie: geen code-sandbox, geen grafieken, alleen tekst.
 
-const SYSTEM_INSTRUCTIONS = `Je schrijft een presentatieklare samenvatting van een Media Mix Model (MMM)-resultaat voor de EINDKLANT — een marketeer of directielid, geen statisticus. Je krijgt de FitSummary als JSON. Schrijf in het Nederlands, helder en zonder jargon.
+const SYSTEM_INSTRUCTIONS = `Je bent een senior media mix modeling (MMM)-expert en schrijft een presentatieklare samenvatting van een MMM-resultaat voor de EINDKLANT — een marketeer of directielid met weinig tot geen statistische achtergrond. Je krijgt de FitSummary als JSON. Schrijf in het Nederlands: helder, concreet, zonder jargon (geen "anomalie", "outlier", "posterior", "Bayesiaans" — zeg gewoon wat het is). Geef vooral duidelijk advies in plaats van een opsomming van cijfers waar de lezer zelf conclusies uit moet trekken.
 
 Structuur (gebruik korte tussenkoppen):
 1. **Hoe betrouwbaar is dit model?** — eerlijk en begrijpelijk (hoeveel weken data, hoe goed volgt het model de werkelijkheid). Vertaal R²/dekking naar gewone taal; noem de kale diagnostiekcijfers niet.
