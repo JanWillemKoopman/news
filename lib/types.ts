@@ -336,17 +336,6 @@ export interface PrepareRecipe {
   features?: FeatureSpec[];
 }
 
-// Eén ronde van de agentische auto-voorbereiding (/api/prepare-auto) — de wizard rendert
-// dit als transparantie-tijdlijn: wat de AI per ronde dacht, voorstelde en wat dat
-// opleverde. Mirrors AutoPrepareRound in app/api/prepare-auto/route.ts.
-export interface AutoPrepareRound {
-  round: number;
-  note: string | null;
-  recipe_summary: string;
-  result: string;
-  open_issues: string[];
-}
-
 export interface DatasetColumnSummary {
   role: ColumnRole | null;
   n_missing: number;
