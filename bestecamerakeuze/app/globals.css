@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* Tailwind v4 configureert het thema in CSS. Elke token hier levert automatisch
+   utilities op (--color-brand → bg-brand, text-brand, border-brand, …).
+
+   Palet in de stijl van de grote Nederlandse webwinkels: diepblauwe navigatie,
+   oranje als enige conversiekleur, lichtgrijze pagina met witte kaarten. Oranje
+   wordt bewust nergens anders gebruikt dan voor de affiliate-CTA, zodat de
+   belangrijkste actie op elke pagina de enige oranje vlek is. */
+@theme {
+  --color-brand: #0014a8;
+  --color-brand-dark: #000d6b;
+  --color-brand-light: #e8ebfa;
+
+  --color-cta: #ff6600;
+  --color-cta-hover: #e65c00;
+
+  --color-ink: #0b1437;
+  --color-ink-muted: #4a5578;
+  --color-ink-faint: #7c86a5;
+
+  --color-page: #f2f4f8;
+  --color-card: #ffffff;
+  --color-line: #dfe3ec;
+
+  --color-star: #ffa500;
+  --color-good: #1a8a4a;
+  --color-bad: #c62828;
+  --color-deal: #e3001b;
+
+  --radius-card: 8px;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+body {
+  background-color: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus-ring die op zowel de blauwe header als de lichte pagina zichtbaar blijft. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-cta);
+    outline-offset: 2px;
+  }
+}
