@@ -52,12 +52,11 @@ verschil: "—" grijs voor onbekend, "Nee" rood voor een echt ontbrekende functi
 
 ### Productfoto's
 
-`public/products/*.jpg` — vierkante foto's van 1000×1000, lokaal gehost zodat er geen
-externe CDN in de weg kan zitten. Ze komen van Wikimedia Commons; `lib/photo-credits.ts`
-houdt per camera de maker, de licentie en de bron bij, en `components/PhotoCredits.tsx`
-zet die naamsvermelding op de pagina — verplicht bij CC BY en CC BY-SA. Van de Sony
-ZV-E10 II bestaat geen vrij gelicentieerde foto; die krijgt een expliciete "foto
-volgt"-tegel in plaats van een foto van een ander model.
+`public/products/placeholder.jpg` — één gedeelde demo-afbeelding (1200×1200,
+huisstijlkleuren) die voor alle achttien producten als `image_url` dient. Geen foto's per
+model: dit is een demo-omgeving en een echte foto per camera zou suggereren dat die al
+geverifieerd is. Zodra de Coolblue-feed gekoppeld wordt, vervangen de echte productfoto's
+van hun CDN dit bestand — `next.config.ts` staat `image.coolblue.nl` daarvoor al toe.
 
 ### Import naar Supabase
 
@@ -133,9 +132,9 @@ elke review op de site.
 
 - `npm audit` meldt drie high-severity issues in transitieve dependencies van Next 15
   zelf (postcss, sharp). Oplossen vereist Next 16, wat buiten de gevraagde stack valt.
-- Productfoto's komen van Wikimedia Commons in plaats van uit de winkelfeed;
-  `next.config.ts` staat `image.coolblue.nl` al toe voor zodra die feed gekoppeld wordt.
-  Van de Sony ZV-E10 II bestaat daar geen foto — zie "Productfoto's" hierboven.
+- Eén gedeelde placeholder-afbeelding voor alle producten in plaats van foto's per model;
+  zie "Productfoto's" hierboven. `next.config.ts` staat `image.coolblue.nl` al toe voor
+  zodra de winkelfeed gekoppeld wordt en er wel echte productfoto's per model komen.
 - Niet elke vlog-spec is te vinden op een fabrikantpagina. Wat we niet konden staven
   hebben we leeggelaten; in de vergelijkingstabel op `/vlogcameras` is dat een grijs
   streepje. Grootste gaten: GoPro publiceert gewicht en schermformaten niet op de

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import FaqList from "@/components/FaqList";
-import PhotoCredits from "@/components/PhotoCredits";
 import VlogCompareTable from "@/components/VlogCompareTable";
 import VlogPicker, { type PickCard, type PickerOption } from "@/components/VlogPicker";
 import VlogRankEntry from "@/components/VlogRankEntry";
@@ -383,10 +382,6 @@ export default async function VlogCamerasPage() {
               Zelf twee of drie camera&apos;s naast elkaar leggen &rarr;
             </Link>
           </p>
-        </div>
-
-        <div className="mt-4 max-w-4xl">
-          <PhotoCredits products={ranked.map((item) => item.product)} />
         </div>
       </section>
     </main>

@@ -7,7 +7,6 @@ import PriceTag from "@/components/PriceTag";
 import ProsCons from "@/components/ProsCons";
 import SpecsTable from "@/components/SpecsTable";
 import StarRating from "@/components/StarRating";
-import { PHOTO_MISSING, getPhotoCredit } from "@/lib/photo-credits";
 import { getProduct, getProducts } from "@/lib/products";
 import { REVIEW_DISCLOSURE, getReview } from "@/lib/reviews";
 
@@ -36,7 +35,6 @@ export default async function CameraPage({ params }: Props) {
   if (!product) notFound();
 
   const review = getReview(product.id);
-  const credit = getPhotoCredit(product.id);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
@@ -73,34 +71,11 @@ export default async function CameraPage({ params }: Props) {
                 )}
               </div>
 
-              {/* Naamsvermelding hoort direct bij het beeld: CC BY en CC BY-SA eisen het,
-                  en op de detailpagina staat maar één foto. */}
-              {credit && (
-                <p className="mt-2 text-xs text-ink-faint">
-                  Foto:{" "}
-                  <a
-                    href={credit.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-brand hover:underline"
-                  >
-                    {credit.author}
-                  </a>
-                  ,{" "}
-                  <a
-                    href={credit.licenseUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-brand hover:underline"
-                  >
-                    {credit.license}
-                  </a>
-                  {credit.modified && ", bijgesneden"} · via Wikimedia Commons
-                </p>
-              )}
-              {PHOTO_MISSING[product.id] && (
-                <p className="mt-2 text-xs text-ink-faint">{PHOTO_MISSING[product.id]}</p>
-              )}
+              {/* Alle producten delen dezelfde placeholder-afbeelding: dit is een
+                  demo-omgeving zonder echte productfoto's per model. */}
+              <p className="mt-2 text-xs text-ink-faint">
+                Voorbeeldafbeelding — nog geen productfoto per model in deze demo.
+              </p>
             </div>
 
             <div>
