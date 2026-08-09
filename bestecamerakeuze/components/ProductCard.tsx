@@ -73,7 +73,9 @@ export default function ProductCard({ product, badge }: Props) {
             lange titels toch een uitgelijnde onderrand houden. */}
         <div className="mt-auto pt-3">
           <PriceTag price={product.price} oldPrice={product.old_price} />
-          <p className="mt-1 text-xs text-good">Op voorraad bij Coolblue</p>
+          {/* Voorraad komt uit dezelfde feed als de prijs. Ontbreekt de prijs, dan weten we
+              de voorraad ook niet en beloven we hier niets. */}
+          {product.price !== null && <p className="mt-1 text-xs text-good">Op voorraad bij Coolblue</p>}
           <AffiliateButton href={product.affiliate_url} className="mt-3 w-full">
             Bekijk op Coolblue
           </AffiliateButton>

@@ -28,7 +28,15 @@
   --color-bad: #c62828;
   --color-deal: #e3001b;
 
+  /* Zachte varianten voor pillen en cellen in de vergelijkingstabel. Bewust groen/rood
+     en geen amber: alles wat richting oranje neigt zou de affiliate-CTA verwateren. */
+  --color-good-light: #e4f3ea;
+  --color-bad-light: #fceaea;
+
   --radius-card: 8px;
+  /* Grotere radius voor de panelen op de gidspagina, zodat die zich onderscheiden van
+     de productkaarten zonder een tweede vormtaal te introduceren. */
+  --radius-panel: 16px;
 
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,

@@ -1,12 +1,23 @@
 import { discountPercentage, formatPrice, splitPrice } from "@/lib/format";
 
 type Props = {
-  price: number;
+  /** null = nog geen prijs uit de winkelfeed. */
+  price: number | null;
   oldPrice?: number | null;
   size?: "md" | "lg";
 };
 
 export default function PriceTag({ price, oldPrice, size = "md" }: Props) {
+  // Liever geen bedrag dan een bedrag dat niemand gecontroleerd heeft: een verzonnen
+  // prijs op een affiliate-site is precies waar bezoekers hun vertrouwen op verliezen.
+  if (price === null) {
+    return (
+      <p className={`font-semibold text-ink-muted ${size === "lg" ? "text-lg" : "text-sm"}`}>
+        Actuele prijs bij de winkel
+      </p>
+    );
+  }
+
   const { whole, cents } = splitPrice(price);
   const discount = discountPercentage(price, oldPrice ?? null);
 

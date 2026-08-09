@@ -17,11 +17,14 @@ type Props = {
   initialCategory?: string;
 };
 
-const BUDGETS: { value: Budget; label: string; test: (price: number) => boolean }[] = [
+// Producten zonder prijs uit de feed (price === null) vallen buiten elk budgetfilter
+// behalve "alle prijzen": ze in een prijsklasse stoppen zou een prijs suggereren die we
+// niet hebben, en ze overal tonen maakt het filter betekenisloos.
+const BUDGETS: { value: Budget; label: string; test: (price: number | null) => boolean }[] = [
   { value: "alle", label: "Alle prijzen", test: () => true },
-  { value: "tot-1000", label: "Tot € 1.000", test: (p) => p < 1000 },
-  { value: "1000-2000", label: "€ 1.000 – € 2.000", test: (p) => p >= 1000 && p < 2000 },
-  { value: "vanaf-2000", label: "Vanaf € 2.000", test: (p) => p >= 2000 },
+  { value: "tot-1000", label: "Tot € 1.000", test: (p) => p !== null && p < 1000 },
+  { value: "1000-2000", label: "€ 1.000 – € 2.000", test: (p) => p !== null && p >= 1000 && p < 2000 },
+  { value: "vanaf-2000", label: "Vanaf € 2.000", test: (p) => p !== null && p >= 2000 },
 ];
 
 const SELECT_CLASS =
@@ -72,9 +75,14 @@ export default function ProductBrowser({
     });
 
     // Kopie sorteren: products is een prop en mag niet ter plaatse omgegooid worden.
+    // Producten zonder prijs zakken bij prijssortering naar onderen in plaats van als
+    // € 0 bovenaan te komen.
     return [...filtered].sort((a, b) => {
-      if (sort === "prijs-op") return a.price - b.price;
-      if (sort === "prijs-af") return b.price - a.price;
+      if (sort === "prijs-op" || sort === "prijs-af") {
+        if (a.price === null) return b.price === null ? 0 : 1;
+        if (b.price === null) return -1;
+        return sort === "prijs-op" ? a.price - b.price : b.price - a.price;
+      }
       return (b.rating ?? 0) - (a.rating ?? 0);
     });
   }, [products, query, brand, category, budget, sort]);

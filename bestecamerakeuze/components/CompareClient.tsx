@@ -51,7 +51,10 @@ export default function CompareClient({ products, initialIds = [] }: Props) {
     return labels;
   }, [chosen]);
 
-  const lowestPrice = chosen.length > 1 ? Math.min(...chosen.map((p) => p.price)) : null;
+  // Alleen prijzen die uit de feed komen doen mee aan "laagste prijs"; een product zonder
+  // prijs is niet goedkoop, het is onbekend.
+  const knownPrices = chosen.map((p) => p.price).filter((price): price is number => price !== null);
+  const lowestPrice = knownPrices.length > 1 ? Math.min(...knownPrices) : null;
   const highestRating = chosen.length > 1 ? Math.max(...chosen.map((p) => p.rating ?? 0)) : null;
 
   function setSlot(index: number, id: string) {
@@ -100,7 +103,9 @@ export default function CompareClient({ products, initialIds = [] }: Props) {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-card border border-line bg-card">
+        // `relative` houdt de absoluut gepositioneerde sr-only-teksten (caption, prijs)
+        // binnen deze scroller; zonder positioned ancestor scrollt de hele pagina mee.
+        <div className="relative overflow-x-auto rounded-card border border-line bg-card">
           <table className="w-full min-w-[640px] text-sm">
             <caption className="sr-only">
               Vergelijking van {chosen.map((p) => p.title).join(", ")}

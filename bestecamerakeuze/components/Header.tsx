@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const NAV = [
+  { href: "/vlogcameras", label: "Beste vlogcamera's", highlight: true },
   { href: "/?category=Systeemcamera", label: "Systeemcamera's" },
   { href: "/?category=Compactcamera", label: "Compactcamera's" },
   { href: "/?brand=Sony", label: "Sony" },
@@ -48,7 +49,12 @@ export default function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+              // De gidspagina is de belangrijkste pagina van de site en krijgt daarom
+              // meer nadruk dan de categoriefilters. Wit, niet oranje: oranje blijft
+              // gereserveerd voor de affiliate-CTA.
+              className={`whitespace-nowrap px-3 py-2.5 text-sm transition-colors hover:bg-white/10 hover:text-white ${
+                item.highlight ? "font-bold text-white" : "font-medium text-white/90"
+              }`}
             >
               {item.label}
             </Link>
