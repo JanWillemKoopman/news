@@ -7,6 +7,7 @@ import PriceTag from "@/components/PriceTag";
 import ProsCons from "@/components/ProsCons";
 import SpecsTable from "@/components/SpecsTable";
 import StarRating from "@/components/StarRating";
+import { PHOTO_MISSING, getPhotoCredit } from "@/lib/photo-credits";
 import { getProduct, getProducts } from "@/lib/products";
 import { REVIEW_DISCLOSURE, getReview } from "@/lib/reviews";
 
@@ -35,6 +36,7 @@ export default async function CameraPage({ params }: Props) {
   if (!product) notFound();
 
   const review = getReview(product.id);
+  const credit = getPhotoCredit(product.id);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
@@ -57,16 +59,47 @@ export default async function CameraPage({ params }: Props) {
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="rounded-card border border-line bg-card p-6">
           <div className="grid gap-6 sm:grid-cols-2">
-            <div className="relative aspect-square">
-              {product.image_url && (
-                <Image
-                  src={product.image_url}
-                  alt={product.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 40vw"
-                  className="object-contain"
-                  priority
-                />
+            <div>
+              <div className="relative aspect-square">
+                {product.image_url && (
+                  <Image
+                    src={product.image_url}
+                    alt={product.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 40vw"
+                    className="object-contain"
+                    priority
+                  />
+                )}
+              </div>
+
+              {/* Naamsvermelding hoort direct bij het beeld: CC BY en CC BY-SA eisen het,
+                  en op de detailpagina staat maar één foto. */}
+              {credit && (
+                <p className="mt-2 text-xs text-ink-faint">
+                  Foto:{" "}
+                  <a
+                    href={credit.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand hover:underline"
+                  >
+                    {credit.author}
+                  </a>
+                  ,{" "}
+                  <a
+                    href={credit.licenseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand hover:underline"
+                  >
+                    {credit.license}
+                  </a>
+                  {credit.modified && ", bijgesneden"} · via Wikimedia Commons
+                </p>
+              )}
+              {PHOTO_MISSING[product.id] && (
+                <p className="mt-2 text-xs text-ink-faint">{PHOTO_MISSING[product.id]}</p>
               )}
             </div>
 
@@ -142,10 +175,16 @@ export default async function CameraPage({ params }: Props) {
           <div className="rounded-card border border-line bg-card p-5">
             <PriceTag price={product.price} oldPrice={product.old_price} size="lg" />
 
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-good">
-              <span aria-hidden="true">&#10003;</span> Op voorraad bij Coolblue
-            </p>
-            <p className="mt-1 text-sm text-ink-muted">Voor 23:59 besteld, morgen in huis</p>
+            {/* Voorraad en levertijd komen uit dezelfde feed als de prijs. Ontbreekt die,
+                dan doen we hier geen belofte over beschikbaarheid. */}
+            {product.price !== null && (
+              <>
+                <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-good">
+                  <span aria-hidden="true">&#10003;</span> Op voorraad bij Coolblue
+                </p>
+                <p className="mt-1 text-sm text-ink-muted">Voor 23:59 besteld, morgen in huis</p>
+              </>
+            )}
 
             <AffiliateButton href={product.affiliate_url} size="lg" className="mt-4 w-full">
               Bekijk de beste prijs op Coolblue
