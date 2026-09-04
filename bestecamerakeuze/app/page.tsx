@@ -1,61 +1,24 @@
-import ProductBrowser from "@/components/ProductBrowser";
-import { getFacets, getProducts } from "@/lib/products";
+import CampaignMatrix from "@/components/CampaignMatrix";
+import { getCampagnes } from "@/lib/sheet";
 
-// searchParams is in Next 15 een Promise en moet awaited worden.
-type Props = {
-  searchParams: Promise<{ q?: string; brand?: string; category?: string }>;
-};
+// De sheet kan buiten deze app om wijzigen, dus geen statische generatie: elke
+// requestie haalt de actuele data op.
+export const dynamic = "force-dynamic";
 
-export default async function HomePage({ searchParams }: Props) {
-  const [params, products, facets] = await Promise.all([
-    searchParams,
-    getProducts(),
-    getFacets(),
-  ]);
+export default async function DashboardPage() {
+  const campagnes = await getCampagnes();
 
   return (
-    <main>
-      <section className="bg-brand">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
-          <h1 className="max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-5xl">
-            Vind de beste fotocamera voor jouw fotografie-stijl
-          </h1>
-          <p className="mt-4 max-w-2xl text-base text-white/80 sm:text-lg">
-            We vergelijken {products.length} populaire camera&apos;s op prijs, specificaties en
-            wat gebruikers ervan vinden. Zo weet je binnen een paar minuten welke bij jou past.
-          </p>
+    <main className="mx-auto max-w-[1600px] px-4 py-8 sm:py-12">
+      <h1 className="text-2xl font-bold text-ink sm:text-3xl">Campagnedashboard</h1>
+      <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+        Live overzicht vanuit de Google Sheet — campagnes naast elkaar in kolommen, zodat ze
+        makkelijk te vergelijken zijn.
+      </p>
 
-          <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
-            {[
-              { value: `${products.length}`, label: "Camera's vergeleken" },
-              { value: `${facets.brands.length}`, label: "Merken" },
-              { value: "Dagelijks", label: "Prijzen bijgewerkt" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <dt className="sr-only">{stat.label}</dt>
-                <dd>
-                  <span className="block text-2xl font-bold text-white">{stat.value}</span>
-                  <span className="text-sm text-white/70">{stat.label}</span>
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <ProductBrowser
-          // De key zorgt dat de filterstate opnieuw initialiseert wanneer de bezoeker via
-          // een categorie-link in de header binnenkomt met andere URL-parameters.
-          key={`${params.q ?? ""}|${params.brand ?? ""}|${params.category ?? ""}`}
-          products={products}
-          brands={facets.brands}
-          categories={facets.categories}
-          initialQuery={params.q ?? ""}
-          initialBrand={params.brand ?? ""}
-          initialCategory={params.category ?? ""}
-        />
-      </section>
+      <div className="mt-8">
+        <CampaignMatrix campagnes={campagnes} />
+      </div>
     </main>
   );
 }

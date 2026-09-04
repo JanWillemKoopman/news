@@ -8,11 +8,9 @@
     "build": "next build",
     "start": "next start -p 3002",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "import-csv": "node --experimental-strip-types scripts/import-csv.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.4",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
