@@ -32,13 +32,13 @@ export default function FilterDropdown({ label, options, selected, onChange }: P
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1.5 rounded-pill border px-4 py-2 text-sm font-medium transition-colors ${
           selected.length > 0
-            ? "border-brand bg-brand text-white"
-            : "border-line bg-card text-ink hover:border-brand"
+            ? "border-primary bg-primary text-white"
+            : "border-line bg-card text-ink hover:border-primary"
         }`}
       >
         {label}
         {selected.length > 0 && (
-          <span className="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold text-brand">
+          <span className="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold text-primary">
             {selected.length}
           </span>
         )}
@@ -54,7 +54,7 @@ export default function FilterDropdown({ label, options, selected, onChange }: P
                 <button
                   type="button"
                   onClick={() => onChange([])}
-                  className="mb-1 block w-full rounded px-2 py-1 text-left text-xs font-medium text-brand hover:bg-brand-light"
+                  className="mb-1 block w-full rounded px-2 py-1 text-left text-xs font-medium text-primary hover:bg-primary-light"
                 >
                   Wis selectie
                 </button>

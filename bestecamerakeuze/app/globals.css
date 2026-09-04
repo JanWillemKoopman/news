@@ -3,25 +3,37 @@
 /* Tailwind v4 configureert het thema in CSS. Elke token hier levert automatisch
    utilities op (--color-brand → bg-brand, text-brand, border-brand, …).
 
-   Palet overgenomen van udenhout.nl (uit screenshots, want het domein is in deze
-   sandbox geblokkeerd): bijna-zwarte donkerblauwe navigatie/knoppen, een warme
-   beige/taupe accentkleur voor uitgelichte secties, en verder wit/lichtgrijs. Pil-vormige
-   knoppen en filters (volledig afgeronde hoeken), net als op hun site. */
+   Exact palet van udenhout.nl (uit de officiële site-CSS, niet meer geraden uit
+   screenshots): zwart/wit als basis, donkerblauw (#19243b) voor merk/navigatie,
+   helderblauw (#003da5) als primaire actie-/linkkleur, oranje (#ed6935) als
+   secundair accent, en zand (#e2ddd1) / lichtbeige (#f6f4f0) als neutrale
+   vlakken — o.a. voor tabelkoppen en zebra-rijen. Pil-vormige knoppen en filters
+   (volledig afgeronde hoeken), net als op hun site. */
 @theme {
-  --color-brand: #101a2c;
-  --color-brand-dark: #060b14;
-  --color-brand-light: #e9eaed;
+  --color-brand: #19243b;
+  --color-brand-dark: #0e1421;
+  --color-brand-light: #e6eaf1;
 
-  --color-accent: #ece6d8;
-  --color-accent-dark: #ddd4bf;
+  /* Helderblauw: de primaire actie-/linkkleur (a:hover op udenhout.nl). */
+  --color-primary: #003da5;
+  --color-primary-dark: #002e7d;
+  --color-primary-light: rgba(0, 61, 165, 0.08);
 
-  --color-ink: #101a2c;
-  --color-ink-muted: #55606f;
-  --color-ink-faint: #8892a0;
+  /* Oranje: secundair accent, zoals de state-orange knoppen/bullets in de huisstijl. */
+  --color-orange: #ed6935;
+  --color-orange-dark: #d8571f;
+
+  --color-accent: #e2ddd1;
+  --color-accent-dark: #d5cdbb;
+  --color-surface: #f6f4f0;
+
+  --color-ink: #000000;
+  --color-ink-muted: rgba(25, 36, 59, 0.7);
+  --color-ink-faint: rgba(25, 36, 59, 0.48);
 
   --color-page: #ffffff;
   --color-card: #ffffff;
-  --color-line: #e2e2e0;
+  --color-line: rgba(25, 36, 59, 0.12);
 
   /* Statuskleuren: zachtgroen voor een lopende campagne, neutraal grijs voor gesloten. */
   --color-open: #15803d;
@@ -33,11 +45,18 @@
   --radius-panel: 20px;
   --radius-pill: 999px;
 
-  --shadow-card: 0 2px 10px rgba(16, 26, 44, 0.06);
+  --shadow-card: 0 2px 10px rgba(25, 36, 59, 0.08);
 
+  /* TheSansB (W5 Plain body / W7 koppen) is de huisstijlfont van udenhout.nl, maar niet
+     publiek als webfont beschikbaar — staat daarom vooraan de stack voor wanneer hij
+     lokaal geïnstalleerd is; Inter (self-hosted via next/font) is de daadwerkelijk
+     geladen fallback met een vergelijkbaar humanistisch karakter. */
   --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+    "TheSansB W5 Plain", "TheSansB", var(--font-inter), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans-w7:
+    "TheSansB W7", "TheSansB", var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
