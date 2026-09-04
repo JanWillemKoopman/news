@@ -49,17 +49,20 @@ export default function CampaignMatrix({ campagnes }: { campagnes: Campagne[] })
   }
 
   return (
-    <div className="overflow-x-auto rounded-panel border border-line bg-card shadow-card">
+    <div className="overflow-hidden rounded-panel border border-line bg-card shadow-card">
+      <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 min-w-[160px] border-b border-r border-line bg-page px-4 py-3 text-left font-semibold text-ink">
+            <th className="sticky left-0 z-10 min-w-[160px] rounded-tl-card border-b border-r border-line bg-accent px-4 py-3 text-left font-sans-w7 font-semibold text-ink">
               Campagne
             </th>
-            {campagnes.map((c) => (
+            {campagnes.map((c, i) => (
               <th
                 key={c.naam}
-                className="min-w-[190px] border-b border-line bg-page px-4 py-3 text-left font-semibold text-ink"
+                className={`min-w-[190px] border-b border-line bg-accent px-4 py-3 text-left font-sans-w7 font-semibold text-ink ${
+                  i === campagnes.length - 1 ? "rounded-tr-card" : ""
+                }`}
               >
                 <div className="flex flex-col gap-1.5">
                   <span>{c.naam}</span>
@@ -77,20 +80,31 @@ export default function CampaignMatrix({ campagnes }: { campagnes: Campagne[] })
           </tr>
         </thead>
         <tbody>
-          {ROWS.map((row, i) => (
-            <tr key={row.label} className={i % 2 === 1 ? "bg-page/60" : undefined}>
-              <th className="sticky left-0 z-10 border-r border-b border-line bg-card px-4 py-3 text-left font-medium text-ink-muted">
-                {row.label}
-              </th>
-              {campagnes.map((c) => (
-                <td key={c.naam} className="border-b border-line px-4 py-3 text-ink">
-                  {row.render(c)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {ROWS.map((row, i, arr) => {
+            const last = i === arr.length - 1;
+            return (
+              <tr key={row.label} className={i % 2 === 1 ? "bg-surface" : "bg-card"}>
+                <th
+                  className={`sticky left-0 z-10 border-r border-line px-4 py-3 text-left font-medium text-ink-muted ${
+                    i % 2 === 1 ? "bg-surface" : "bg-card"
+                  } ${last ? "rounded-bl-card" : "border-b"}`}
+                >
+                  {row.label}
+                </th>
+                {campagnes.map((c, j) => (
+                  <td
+                    key={c.naam}
+                    className={`px-4 py-3 text-ink ${last ? (j === campagnes.length - 1 ? "rounded-br-card" : "") : "border-b border-line"}`}
+                  >
+                    {row.render(c)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
