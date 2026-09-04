@@ -33,7 +33,7 @@ export default function FilterDropdown({ label, options, selected, onChange }: P
         className={`flex items-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors ${
           selected.length > 0
             ? "border-brand bg-brand-light text-brand"
-            : "border-line bg-white text-ink hover:border-ink-faint"
+            : "border-line bg-card text-ink hover:border-ink-faint"
         }`}
       >
         {label}
@@ -45,7 +45,7 @@ export default function FilterDropdown({ label, options, selected, onChange }: P
       </button>
 
       {open && (
-        <div className="absolute left-0 z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-card border border-line bg-white p-2 shadow-lg">
+        <div className="absolute left-0 z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-card border border-line bg-card p-2 shadow-lg">
           {options.length === 0 ? (
             <p className="px-2 py-1 text-sm text-ink-faint">Geen opties</p>
           ) : (

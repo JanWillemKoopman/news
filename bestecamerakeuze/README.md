@@ -41,37 +41,55 @@ moeten wijzen.
 
 ## Dashboard
 
-`components/CampaignMatrix.tsx` toont de campagnes getransponeerd: elke campagne is een
-kolom, de metrics staan eronder als rijen, zodat campagnes makkelijk naast elkaar te
-vergelijken zijn. Huidige rijen (in deze volgorde):
+`components/CampaignDashboard.tsx` (client component) is de pagina-orkestrator: KPI-rij,
+zoek-/filterbalk, sortering en de campagnekaarten-grid. Elke campagne is een kaart
+(`components/CampaignCard.tsx`) met:
 
-1. Startdatum
-2. Einddatum
-3. Budget (uitgaven als percentage erachter)
-4. Doel orders
-5. Order totaal (percentage van doel orders erachter)
-6. Doel leads
-7. Leads (percentage van doel leads erachter)
+- Campagnenaam, merk-badge en status-badge (groen "Open", grijs "Gesloten").
+- Looptijd (start–einddatum).
+- Drie voortgangsbalken (`components/ProgressBar.tsx`): Budget (uitgaven/budget),
+  Orders (order totaal/doel orders), Leads (leads/doel leads) — elk met het percentage
+  achter de waarde.
 
-De percentages komen uit `ratio`/`formatPercent`/`withPercent` in `lib/format.ts` en
-vallen stil terug op alleen de hoofdwaarde (geen "(—)") zodra teller of noemer ontbreekt.
+Bovenaan staan vier KPI-kaarten (`components/KpiCard.tsx`) met totalen over de
+*gefilterde* selectie: totaal budget, totale uitgaven, behaalde orders en aantal actieve
+(open) campagnes.
 
-Dit is een eerste opzet — verdere metrics/dimensies uit de sheet (Merk, Model,
-Resultaat, …) komen er later bij. Rijen toevoegen is een kwestie van een item
-toevoegen aan de `ROWS`-array in `CampaignMatrix.tsx`.
+Percentages komen uit `ratio`/`formatPercent` in `lib/format.ts` en vallen terug op enkel
+de hoofdwaarde zodra teller of noemer ontbreekt. Een voortgangsbalk clamped visueel op
+100%, maar het percentage in de tekst toont het werkelijke (eventueel hogere) getal.
 
-## Filters
+## Filters, zoeken en sorteren
 
-`components/CampaignDashboard.tsx` (client component) filtert de zichtbare campagnes op
-Status, Merk, Ordersoort en Klantgroep (kolom "Klantgroep orders (indien van
-toepassing)" in de sheet, afgekort in de UI). De filteropties worden afgeleid uit de
-data zelf (`uniqueSorted`), dus nieuwe waarden in de sheet verschijnen automatisch als
-filteroptie. Filtering gebeurt client-side op de al opgehaalde dataset —
-`components/FilterDropdown.tsx` is de generieke multi-select dropdown die elk filter
-gebruikt.
+`components/CampaignDashboard.tsx` filtert client-side op Status, Merk, Ordersoort en
+Klantgroep (kolom "Klantgroep orders (indien van toepassing)" in de sheet, afgekort in de
+UI) via de generieke multi-select `components/FilterDropdown.tsx`. Filteropties worden
+afgeleid uit de data zelf, dus nieuwe waarden in de sheet verschijnen automatisch. Daarnaast
+een zoekveld op campagnenaam en een sorteerkeuze (naam, budget hoog→laag, einddatum
+vroeg→laat).
+
+## Merkidentiteit
+
+Huisstijl in `app/globals.css`: donkerblauw (`--color-brand`) als merkkleur, zachtgrijze
+pagina (`--color-page: #f8f9fa`) met witte "floating cards" (`--radius-card: 12px`,
+`--shadow-card`). Lettertype is Inter (`next/font/google`, zie `app/layout.tsx`). Ik kon
+de exacte udenhout.nl-huisstijl niet raadplegen (dat domein is in deze sandbox
+geblokkeerd) — de kleuren zijn een redelijke aanname op basis van het bestaande palet in
+dit project; pas `--color-brand`/`--color-open`/`--color-closed` in `app/globals.css` aan
+als dit afwijkt van de echte merkkleuren.
+
+## Laadstatus
+
+`app/loading.tsx` toont skeleton-placeholders (KPI-rij, filterbalk, kaartengrid) terwijl
+`getCampagnes()` in `app/page.tsx` de sheet ophaalt — automatisch via Next.js' `loading`
+conventie, geen extra state nodig.
 
 ## Bekende punten
 
 - Geen Supabase meer nodig: de vorige camerakeuze-site gebruikte het `camerakeuze`-schema
   in het gedeelde Supabase-project van deze repo, maar dit dashboard leest rechtstreeks
   en live uit de sheet. Het schema zelf is niet aangepast/verwijderd.
+- De kolommen "Order totaal" en "Orders campagne" in de sheet lijken voor elke campagne
+  dezelfde waarde te bevatten (een totaal i.p.v. een per-campagne cijfer). Zolang dat zo
+  is, kan het "Orders"-percentage op een kaart en de KPI "Behaalde orders" onrealistisch
+  hoog uitvallen. Dit is een datakwestie in de sheet, geen bug in het dashboard.
