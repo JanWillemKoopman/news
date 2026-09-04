@@ -1,5 +1,5 @@
 import type { Campagne } from "@/lib/sheet";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatPercent, ratio, withPercent } from "@/lib/format";
 
 type Row = {
   label: string;
@@ -13,10 +13,21 @@ type Row = {
 const ROWS: Row[] = [
   { label: "Startdatum", render: (c) => formatDate(c.startdatum) },
   { label: "Einddatum", render: (c) => formatDate(c.einddatum) },
-  { label: "Budget", render: (c) => formatCurrency(c.budget) },
-  { label: "Uitgaven", render: (c) => formatCurrency(c.uitgaven) },
+  {
+    label: "Budget",
+    render: (c) => withPercent(formatCurrency(c.budget), formatPercent(ratio(c.uitgaven, c.budget))),
+  },
   { label: "Doel orders", render: (c) => formatNumber(c.doelOrders) },
-  { label: "Order totaal", render: (c) => formatNumber(c.orderTotaal) },
+  {
+    label: "Order totaal",
+    render: (c) =>
+      withPercent(formatNumber(c.orderTotaal), formatPercent(ratio(c.orderTotaal, c.doelOrders))),
+  },
+  { label: "Doel leads", render: (c) => formatNumber(c.doelLeads) },
+  {
+    label: "Leads",
+    render: (c) => withPercent(formatNumber(c.leads), formatPercent(ratio(c.leads, c.doelLeads))),
+  },
 ];
 
 export default function CampaignMatrix({ campagnes }: { campagnes: Campagne[] }) {

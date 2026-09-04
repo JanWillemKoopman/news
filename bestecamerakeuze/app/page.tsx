@@ -1,4 +1,4 @@
-import CampaignMatrix from "@/components/CampaignMatrix";
+import CampaignDashboard from "@/components/CampaignDashboard";
 import { getCampagnes } from "@/lib/sheet";
 
 // De sheet kan buiten deze app om wijzigen, dus geen statische generatie: elke
@@ -17,7 +17,7 @@ export default async function DashboardPage() {
       </p>
 
       <div className="mt-8">
-        <CampaignMatrix campagnes={campagnes} />
+        <CampaignDashboard campagnes={campagnes} />
       </div>
     </main>
   );

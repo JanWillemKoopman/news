@@ -47,14 +47,28 @@ vergelijken zijn. Huidige rijen (in deze volgorde):
 
 1. Startdatum
 2. Einddatum
-3. Budget
-4. Uitgaven
-5. Doel orders
-6. Order totaal
+3. Budget (uitgaven als percentage erachter)
+4. Doel orders
+5. Order totaal (percentage van doel orders erachter)
+6. Doel leads
+7. Leads (percentage van doel leads erachter)
 
-Dit is een eerste opzet — verdere metrics/dimensies uit de sheet (Doel leads, Merk,
-Model, Resultaat, …) komen er later bij. Rijen toevoegen is een kwestie van een item
+De percentages komen uit `ratio`/`formatPercent`/`withPercent` in `lib/format.ts` en
+vallen stil terug op alleen de hoofdwaarde (geen "(—)") zodra teller of noemer ontbreekt.
+
+Dit is een eerste opzet — verdere metrics/dimensies uit de sheet (Merk, Model,
+Resultaat, …) komen er later bij. Rijen toevoegen is een kwestie van een item
 toevoegen aan de `ROWS`-array in `CampaignMatrix.tsx`.
+
+## Filters
+
+`components/CampaignDashboard.tsx` (client component) filtert de zichtbare campagnes op
+Status, Merk, Ordersoort en Klantgroep (kolom "Klantgroep orders (indien van
+toepassing)" in de sheet, afgekort in de UI). De filteropties worden afgeleid uit de
+data zelf (`uniqueSorted`), dus nieuwe waarden in de sheet verschijnen automatisch als
+filteroptie. Filtering gebeurt client-side op de al opgehaalde dataset —
+`components/FilterDropdown.tsx` is de generieke multi-select dropdown die elk filter
+gebruikt.
 
 ## Bekende punten
 
