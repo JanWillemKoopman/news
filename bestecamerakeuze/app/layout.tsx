@@ -4,12 +4,8 @@ import Header from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "bestecamerakeuze.nl — Vind de beste fotocamera",
-    template: "%s | bestecamerakeuze.nl",
-  },
-  description:
-    "Vergelijk de populairste fotocamera's op prijs, specificaties en beoordelingen. Onafhankelijke reviews van systeem- en compactcamera's.",
+  title: "Campagnedashboard",
+  description: "Live overzicht van alle marketingcampagnes, naast elkaar te vergelijken.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

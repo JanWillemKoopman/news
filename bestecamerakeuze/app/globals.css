@@ -1,12 +1,7 @@
 @import "tailwindcss";
 
 /* Tailwind v4 configureert het thema in CSS. Elke token hier levert automatisch
-   utilities op (--color-brand → bg-brand, text-brand, border-brand, …).
-
-   Palet in de stijl van de grote Nederlandse webwinkels: diepblauwe navigatie,
-   oranje als enige conversiekleur, lichtgrijze pagina met witte kaarten. Oranje
-   wordt bewust nergens anders gebruikt dan voor de affiliate-CTA, zodat de
-   belangrijkste actie op elke pagina de enige oranje vlek is. */
+   utilities op (--color-brand → bg-brand, text-brand, border-brand, …). */
 @theme {
   --color-brand: #0014a8;
   --color-brand-dark: #000d6b;
