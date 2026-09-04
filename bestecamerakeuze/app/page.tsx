@@ -1,4 +1,4 @@
-import CampaignMatrix from "@/components/CampaignMatrix";
+import CampaignDashboard from "@/components/CampaignDashboard";
 import { getCampagnes } from "@/lib/sheet";
 
 // De sheet kan buiten deze app om wijzigen, dus geen statische generatie: elke
@@ -12,12 +12,11 @@ export default async function DashboardPage() {
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold text-ink sm:text-3xl">Campagnedashboard</h1>
       <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-        Live overzicht vanuit de Google Sheet — campagnes naast elkaar in kolommen, zodat ze
-        makkelijk te vergelijken zijn.
+        Live overzicht vanuit de Google Sheet — campagnes naast elkaar, gesorteerd op startdatum.
       </p>
 
-      <div className="mt-8">
-        <CampaignMatrix campagnes={campagnes} />
+      <div className="mt-6">
+        <CampaignDashboard campagnes={campagnes} />
       </div>
     </main>
   );

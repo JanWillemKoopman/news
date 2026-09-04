@@ -1,41 +1,43 @@
 @import "tailwindcss";
 
 /* Tailwind v4 configureert het thema in CSS. Elke token hier levert automatisch
-   utilities op (--color-brand → bg-brand, text-brand, border-brand, …). */
+   utilities op (--color-brand → bg-brand, text-brand, border-brand, …).
+
+   Palet overgenomen van udenhout.nl (uit screenshots, want het domein is in deze
+   sandbox geblokkeerd): bijna-zwarte donkerblauwe navigatie/knoppen, een warme
+   beige/taupe accentkleur voor uitgelichte secties, en verder wit/lichtgrijs. Pil-vormige
+   knoppen en filters (volledig afgeronde hoeken), net als op hun site. */
 @theme {
-  --color-brand: #0014a8;
-  --color-brand-dark: #000d6b;
-  --color-brand-light: #e8ebfa;
+  --color-brand: #101a2c;
+  --color-brand-dark: #060b14;
+  --color-brand-light: #e9eaed;
 
-  --color-cta: #ff6600;
-  --color-cta-hover: #e65c00;
+  --color-accent: #ece6d8;
+  --color-accent-dark: #ddd4bf;
 
-  --color-ink: #0b1437;
-  --color-ink-muted: #4a5578;
-  --color-ink-faint: #7c86a5;
+  --color-ink: #101a2c;
+  --color-ink-muted: #55606f;
+  --color-ink-faint: #8892a0;
 
-  --color-page: #f2f4f8;
+  --color-page: #ffffff;
   --color-card: #ffffff;
-  --color-line: #dfe3ec;
+  --color-line: #e2e2e0;
 
-  --color-star: #ffa500;
-  --color-good: #1a8a4a;
-  --color-bad: #c62828;
-  --color-deal: #e3001b;
+  /* Statuskleuren: zachtgroen voor een lopende campagne, neutraal grijs voor gesloten. */
+  --color-open: #15803d;
+  --color-open-light: #dcfce7;
+  --color-closed: #55606f;
+  --color-closed-light: #eef0f2;
 
-  /* Zachte varianten voor pillen en cellen in de vergelijkingstabel. Bewust groen/rood
-     en geen amber: alles wat richting oranje neigt zou de affiliate-CTA verwateren. */
-  --color-good-light: #e4f3ea;
-  --color-bad-light: #fceaea;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+  --radius-pill: 999px;
 
-  --radius-card: 8px;
-  /* Grotere radius voor de panelen op de gidspagina, zodat die zich onderscheiden van
-     de productkaarten zonder een tweede vormtaal te introduceren. */
-  --radius-panel: 16px;
+  --shadow-card: 0 2px 10px rgba(16, 26, 44, 0.06);
 
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
@@ -45,10 +47,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Focus-ring die op zowel de blauwe header als de lichte pagina zichtbaar blijft. */
 @layer base {
   :focus-visible {
-    outline: 2px solid var(--color-cta);
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
+  }
+
+  /* Opgeruimde scrollbar voor de scrollbare filter-dropdowns, i.p.v. de standaard
+     platform-scrollbar. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-line);
+    border-radius: 999px;
   }
 }

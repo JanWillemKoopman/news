@@ -21,3 +21,19 @@ export function formatDate(value: string | null): string {
     date,
   );
 }
+
+/** Percentage van een teller t.o.v. een noemer; null zodra een van beide ontbreekt of de noemer 0 is. */
+export function ratio(numerator: number | null, denominator: number | null): number | null {
+  if (numerator === null || denominator === null || denominator === 0) return null;
+  return (numerator / denominator) * 100;
+}
+
+export function formatPercent(value: number | null): string | null {
+  if (value === null || !Number.isFinite(value)) return null;
+  return `${Math.round(value)}%`;
+}
+
+/** Zet een percentage tussen haakjes achter de hoofdwaarde, of laat de haakjes weg als het niet te berekenen is. */
+export function withPercent(main: string, percent: string | null): string {
+  return percent ? `${main} (${percent})` : main;
+}

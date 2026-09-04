@@ -41,23 +41,56 @@ moeten wijzen.
 
 ## Dashboard
 
-`components/CampaignMatrix.tsx` toont de campagnes getransponeerd: elke campagne is een
-kolom, de metrics staan eronder als rijen, zodat campagnes makkelijk naast elkaar te
-vergelijken zijn. Huidige rijen (in deze volgorde):
+`components/CampaignMatrix.tsx` toont de campagnes getransponeerd in één tabel: elke
+campagne is een kolom (met merk-badge en status-badge — groen "Open", grijs "Gesloten"),
+de metrics staan eronder als rijen, in deze volgorde:
 
 1. Startdatum
 2. Einddatum
-3. Budget
-4. Uitgaven
-5. Doel orders
-6. Order totaal
+3. Budget (percentage uitgegeven erachter)
+4. Doel orders
+5. Order totaal (percentage van doel orders behaald erachter)
+6. Doel leads
+7. Leads (percentage van doel leads behaald erachter)
 
-Dit is een eerste opzet — verdere metrics/dimensies uit de sheet (Doel leads, Merk,
-Model, Resultaat, …) komen er later bij. Rijen toevoegen is een kwestie van een item
-toevoegen aan de `ROWS`-array in `CampaignMatrix.tsx`.
+Percentages komen uit `ratio`/`formatPercent`/`withPercent` in `lib/format.ts` en vallen
+terug op enkel de hoofdwaarde zodra teller of noemer ontbreekt. Rijen toevoegen is een
+kwestie van een item toevoegen aan de `ROWS`-array in `CampaignMatrix.tsx`.
+
+De campagnes staan altijd gesorteerd op startdatum, hoogste (meest recente) links
+(`sortByStartdatumDesc` in `CampaignDashboard.tsx`) — geen aparte sorteerkeuze in de UI.
+
+## Filters
+
+`components/CampaignDashboard.tsx` (client component) filtert client-side op Status,
+Merk, Ordersoort en Klantgroep (kolom "Klantgroep orders (indien van toepassing)" in de
+sheet, afgekort in de UI) via de generieke multi-select `components/FilterDropdown.tsx`,
+rechtsboven de tabel. Filteropties worden afgeleid uit de data zelf, dus nieuwe waarden
+in de sheet verschijnen automatisch als filteroptie.
+
+## Merkidentiteit
+
+Huisstijl in `app/globals.css`, overgenomen uit screenshots van udenhout.nl (het domein
+zelf is in deze sandbox geblokkeerd, dus niet direct geraadpleegd): bijna-zwarte
+donkerblauw (`--color-brand: #101a2c`) voor tekst/badges/actieve filters, witte
+paginaachtergrond, volledig afgeronde ("pil") filterknoppen (`--radius-pill`) en een
+grotere afronding op kaarten/panelen (`--radius-card: 16px`) met een zachte schaduw
+(`--shadow-card`), net als op hun site. Lettertype is Inter (`next/font/google`, zie
+`app/layout.tsx`) — geen exacte match met het merklettertype, wel visueel vergelijkbaar.
+Pas de tokens in `app/globals.css` aan zodra je de echte merkkleuren/huisstijlgids hebt.
+
+## Laadstatus
+
+`app/loading.tsx` toont skeleton-placeholders (titel, filterbalk, tabel) terwijl
+`getCampagnes()` in `app/page.tsx` de sheet ophaalt — automatisch via Next.js' `loading`
+conventie, geen extra state nodig.
 
 ## Bekende punten
 
 - Geen Supabase meer nodig: de vorige camerakeuze-site gebruikte het `camerakeuze`-schema
   in het gedeelde Supabase-project van deze repo, maar dit dashboard leest rechtstreeks
   en live uit de sheet. Het schema zelf is niet aangepast/verwijderd.
+- De kolommen "Order totaal" en "Orders campagne" in de sheet lijken voor elke campagne
+  dezelfde waarde te bevatten (een totaal i.p.v. een per-campagne cijfer). Zolang dat zo
+  is, kan het "Orders"-percentage op een kaart en de KPI "Behaalde orders" onrealistisch
+  hoog uitvallen. Dit is een datakwestie in de sheet, geen bug in het dashboard.

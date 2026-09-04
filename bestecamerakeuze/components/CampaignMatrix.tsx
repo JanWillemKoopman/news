@@ -1,5 +1,5 @@
 import type { Campagne } from "@/lib/sheet";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatPercent, ratio, withPercent } from "@/lib/format";
 
 type Row = {
   label: string;
@@ -13,19 +13,43 @@ type Row = {
 const ROWS: Row[] = [
   { label: "Startdatum", render: (c) => formatDate(c.startdatum) },
   { label: "Einddatum", render: (c) => formatDate(c.einddatum) },
-  { label: "Budget", render: (c) => formatCurrency(c.budget) },
-  { label: "Uitgaven", render: (c) => formatCurrency(c.uitgaven) },
+  {
+    label: "Budget",
+    render: (c) => withPercent(formatCurrency(c.budget), formatPercent(ratio(c.uitgaven, c.budget))),
+  },
   { label: "Doel orders", render: (c) => formatNumber(c.doelOrders) },
-  { label: "Order totaal", render: (c) => formatNumber(c.orderTotaal) },
+  {
+    label: "Order totaal",
+    render: (c) =>
+      withPercent(formatNumber(c.orderTotaal), formatPercent(ratio(c.orderTotaal, c.doelOrders))),
+  },
+  { label: "Doel leads", render: (c) => formatNumber(c.doelLeads) },
+  {
+    label: "Leads",
+    render: (c) => withPercent(formatNumber(c.leads), formatPercent(ratio(c.leads, c.doelLeads))),
+  },
 ];
+
+function StatusBadge({ status }: { status: string }) {
+  const isOpen = status.trim().toLowerCase() === "open";
+  return (
+    <span
+      className={`inline-block w-fit rounded-pill px-2.5 py-0.5 text-xs font-semibold ${
+        isOpen ? "bg-open-light text-open" : "bg-closed-light text-closed"
+      }`}
+    >
+      {status || "—"}
+    </span>
+  );
+}
 
 export default function CampaignMatrix({ campagnes }: { campagnes: Campagne[] }) {
   if (campagnes.length === 0) {
-    return <p className="text-sm text-ink-muted">Geen campagnes gevonden in de spreadsheet.</p>;
+    return <p className="text-sm text-ink-muted">Geen campagnes gevonden voor deze filters.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-panel border border-line bg-white">
+    <div className="overflow-x-auto rounded-panel border border-line bg-card shadow-card">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr>
@@ -35,20 +59,27 @@ export default function CampaignMatrix({ campagnes }: { campagnes: Campagne[] })
             {campagnes.map((c) => (
               <th
                 key={c.naam}
-                className="min-w-[180px] border-b border-line bg-page px-4 py-3 text-left font-semibold text-ink"
+                className="min-w-[190px] border-b border-line bg-page px-4 py-3 text-left font-semibold text-ink"
               >
-                {c.naam}
-                <span className="mt-1 block w-fit rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand">
-                  {c.status || "—"}
-                </span>
+                <div className="flex flex-col gap-1.5">
+                  <span>{c.naam}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.merk && (
+                      <span className="inline-block w-fit rounded-pill bg-brand-light px-2.5 py-0.5 text-xs font-medium text-brand">
+                        {c.merk}
+                      </span>
+                    )}
+                    <StatusBadge status={c.status} />
+                  </div>
+                </div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {ROWS.map((row, i) => (
-            <tr key={row.label} className={i % 2 === 1 ? "bg-page/40" : undefined}>
-              <th className="sticky left-0 z-10 border-r border-b border-line bg-white px-4 py-3 text-left font-medium text-ink-muted">
+            <tr key={row.label} className={i % 2 === 1 ? "bg-page/60" : undefined}>
+              <th className="sticky left-0 z-10 border-r border-b border-line bg-card px-4 py-3 text-left font-medium text-ink-muted">
                 {row.label}
               </th>
               {campagnes.map((c) => (
