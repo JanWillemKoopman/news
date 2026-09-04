@@ -41,46 +41,47 @@ moeten wijzen.
 
 ## Dashboard
 
-`components/CampaignDashboard.tsx` (client component) is de pagina-orkestrator: KPI-rij,
-zoek-/filterbalk, sortering en de campagnekaarten-grid. Elke campagne is een kaart
-(`components/CampaignCard.tsx`) met:
+`components/CampaignMatrix.tsx` toont de campagnes getransponeerd in één tabel: elke
+campagne is een kolom (met merk-badge en status-badge — groen "Open", grijs "Gesloten"),
+de metrics staan eronder als rijen, in deze volgorde:
 
-- Campagnenaam, merk-badge en status-badge (groen "Open", grijs "Gesloten").
-- Looptijd (start–einddatum).
-- Drie voortgangsbalken (`components/ProgressBar.tsx`): Budget (uitgaven/budget),
-  Orders (order totaal/doel orders), Leads (leads/doel leads) — elk met het percentage
-  achter de waarde.
+1. Startdatum
+2. Einddatum
+3. Budget (percentage uitgegeven erachter)
+4. Doel orders
+5. Order totaal (percentage van doel orders behaald erachter)
+6. Doel leads
+7. Leads (percentage van doel leads behaald erachter)
 
-Bovenaan staan vier KPI-kaarten (`components/KpiCard.tsx`) met totalen over de
-*gefilterde* selectie: totaal budget, totale uitgaven, behaalde orders en aantal actieve
-(open) campagnes.
+Percentages komen uit `ratio`/`formatPercent`/`withPercent` in `lib/format.ts` en vallen
+terug op enkel de hoofdwaarde zodra teller of noemer ontbreekt. Rijen toevoegen is een
+kwestie van een item toevoegen aan de `ROWS`-array in `CampaignMatrix.tsx`.
 
-Percentages komen uit `ratio`/`formatPercent` in `lib/format.ts` en vallen terug op enkel
-de hoofdwaarde zodra teller of noemer ontbreekt. Een voortgangsbalk clamped visueel op
-100%, maar het percentage in de tekst toont het werkelijke (eventueel hogere) getal.
+De campagnes staan altijd gesorteerd op startdatum, hoogste (meest recente) links
+(`sortByStartdatumDesc` in `CampaignDashboard.tsx`) — geen aparte sorteerkeuze in de UI.
 
-## Filters, zoeken en sorteren
+## Filters
 
-`components/CampaignDashboard.tsx` filtert client-side op Status, Merk, Ordersoort en
-Klantgroep (kolom "Klantgroep orders (indien van toepassing)" in de sheet, afgekort in de
-UI) via de generieke multi-select `components/FilterDropdown.tsx`. Filteropties worden
-afgeleid uit de data zelf, dus nieuwe waarden in de sheet verschijnen automatisch. Daarnaast
-een zoekveld op campagnenaam en een sorteerkeuze (naam, budget hoog→laag, einddatum
-vroeg→laat).
+`components/CampaignDashboard.tsx` (client component) filtert client-side op Status,
+Merk, Ordersoort en Klantgroep (kolom "Klantgroep orders (indien van toepassing)" in de
+sheet, afgekort in de UI) via de generieke multi-select `components/FilterDropdown.tsx`,
+rechtsboven de tabel. Filteropties worden afgeleid uit de data zelf, dus nieuwe waarden
+in de sheet verschijnen automatisch als filteroptie.
 
 ## Merkidentiteit
 
-Huisstijl in `app/globals.css`: donkerblauw (`--color-brand`) als merkkleur, zachtgrijze
-pagina (`--color-page: #f8f9fa`) met witte "floating cards" (`--radius-card: 12px`,
-`--shadow-card`). Lettertype is Inter (`next/font/google`, zie `app/layout.tsx`). Ik kon
-de exacte udenhout.nl-huisstijl niet raadplegen (dat domein is in deze sandbox
-geblokkeerd) — de kleuren zijn een redelijke aanname op basis van het bestaande palet in
-dit project; pas `--color-brand`/`--color-open`/`--color-closed` in `app/globals.css` aan
-als dit afwijkt van de echte merkkleuren.
+Huisstijl in `app/globals.css`, overgenomen uit screenshots van udenhout.nl (het domein
+zelf is in deze sandbox geblokkeerd, dus niet direct geraadpleegd): bijna-zwarte
+donkerblauw (`--color-brand: #101a2c`) voor tekst/badges/actieve filters, witte
+paginaachtergrond, volledig afgeronde ("pil") filterknoppen (`--radius-pill`) en een
+grotere afronding op kaarten/panelen (`--radius-card: 16px`) met een zachte schaduw
+(`--shadow-card`), net als op hun site. Lettertype is Inter (`next/font/google`, zie
+`app/layout.tsx`) — geen exacte match met het merklettertype, wel visueel vergelijkbaar.
+Pas de tokens in `app/globals.css` aan zodra je de echte merkkleuren/huisstijlgids hebt.
 
 ## Laadstatus
 
-`app/loading.tsx` toont skeleton-placeholders (KPI-rij, filterbalk, kaartengrid) terwijl
+`app/loading.tsx` toont skeleton-placeholders (titel, filterbalk, tabel) terwijl
 `getCampagnes()` in `app/page.tsx` de sheet ophaalt — automatisch via Next.js' `loading`
 conventie, geen extra state nodig.
 

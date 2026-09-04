@@ -12,11 +12,10 @@ export default async function DashboardPage() {
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold text-ink sm:text-3xl">Campagnedashboard</h1>
       <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-        Live overzicht vanuit de Google Sheet — filter, sorteer en vergelijk campagnes op
-        budget, orders en leads.
+        Live overzicht vanuit de Google Sheet — campagnes naast elkaar, gesorteerd op startdatum.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <CampaignDashboard campagnes={campagnes} />
       </div>
     </main>

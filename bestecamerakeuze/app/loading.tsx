@@ -8,19 +8,13 @@ export default function Loading() {
       <Skeleton className="h-8 w-64" />
       <Skeleton className="mt-3 h-4 w-96" />
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-6 flex justify-end gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 border border-line shadow-card" />
+          <Skeleton key={i} className="h-9 w-28 rounded-pill" />
         ))}
       </div>
 
-      <Skeleton className="mt-6 h-10 w-full sm:w-2/3" />
-
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-56 border border-line shadow-card" />
-        ))}
-      </div>
+      <Skeleton className="mt-4 h-80 w-full border border-line shadow-card" />
     </main>
   );
 }

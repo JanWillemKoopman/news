@@ -30,22 +30,22 @@ export default function FilterDropdown({ label, options, selected, onChange }: P
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors ${
+        className={`flex items-center gap-1.5 rounded-pill border px-4 py-2 text-sm font-medium transition-colors ${
           selected.length > 0
-            ? "border-brand bg-brand-light text-brand"
-            : "border-line bg-card text-ink hover:border-ink-faint"
+            ? "border-brand bg-brand text-white"
+            : "border-line bg-card text-ink hover:border-brand"
         }`}
       >
         {label}
         {selected.length > 0 && (
-          <span className="rounded-full bg-brand px-1.5 py-0.5 text-xs font-semibold text-white">
+          <span className="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold text-brand">
             {selected.length}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-card border border-line bg-card p-2 shadow-lg">
+        <div className="absolute right-0 z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-card border border-line bg-card p-2 shadow-lg">
           {options.length === 0 ? (
             <p className="px-2 py-1 text-sm text-ink-faint">Geen opties</p>
           ) : (
