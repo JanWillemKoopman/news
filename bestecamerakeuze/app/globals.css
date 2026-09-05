@@ -26,6 +26,10 @@
   --color-accent: #e2ddd1;
   --color-accent-dark: #d5cdbb;
   --color-surface: #f6f4f0;
+  /* --color-surface met wit vermengd op 50% — voor de groepskoppen (Planning, Budget, …)
+     in de campagnetabel: net iets lichter dan --color-surface, maar niet zuiver wit
+     zoals de datacellen zelf. */
+  --color-surface-tint: #fbfaf8;
 
   --color-ink: #0f1115;
   --color-ink-muted: rgba(15, 17, 21, 0.62);

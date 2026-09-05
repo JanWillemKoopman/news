@@ -127,7 +127,7 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
             <tr>
               <th
                 scope="col"
-                className="sticky left-0 top-0 z-30 border-b border-r border-line bg-surface px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-faint"
+                className="sticky left-0 top-0 z-30 border-b border-r border-line bg-card px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-faint"
               >
                 Campagne
               </th>
@@ -137,7 +137,7 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                   scope="col"
                   onMouseEnter={() => setHovered(i)}
                   onMouseLeave={() => setHovered(null)}
-                  className={`sticky top-0 z-20 border-b border-line bg-surface px-4 py-3 align-top transition-colors duration-150 ${
+                  className={`sticky top-0 z-20 border-b border-line bg-card px-4 py-3 align-top transition-colors duration-150 ${
                     hovered === i ? "bg-line-soft" : ""
                   }`}
                 >
@@ -152,14 +152,14 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                 <tr>
                   <th
                     scope="colgroup"
-                    className="sticky left-0 z-10 border-b border-line-soft bg-surface px-4 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-faint"
+                    className="sticky left-0 z-10 border-b border-line-soft bg-surface-tint px-4 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-faint"
                   >
                     {group.title}
                   </th>
                   {campagnes.map((_, i) => (
                     <td
                       key={i}
-                      className={`border-b border-line-soft bg-surface transition-colors duration-150 ${
+                      className={`border-b border-line-soft bg-surface-tint transition-colors duration-150 ${
                         hovered === i ? "bg-line-soft" : ""
                       }`}
                     />
