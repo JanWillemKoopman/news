@@ -5,6 +5,7 @@ import type { Campagne } from "@/lib/sheet";
 import CampaignTable from "@/components/CampaignTable";
 import FilterBar from "@/components/FilterBar";
 import FilterSelect from "@/components/FilterSelect";
+import UpdateButton from "@/components/UpdateButton";
 
 function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, "nl"));
@@ -75,6 +76,7 @@ export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[]
           selected={klantgroep}
           onChange={setKlantgroep}
         />
+        <UpdateButton variant="inline" label="Bijwerken" />
       </FilterBar>
 
       <CampaignTable campagnes={filtered} />

@@ -7,6 +7,22 @@ export function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
+/**
+ * Claude-kosten in dollars. Anders dan formatCurrency (afgerond op hele euro's, prima
+ * voor omzetcijfers) kan een enkele chatbeurt een paar dollarcent kosten — met nul
+ * decimalen zou dat overal "$ 0" tonen. maxDecimals bepaalt de precisie: 2 voor grote
+ * totalen, 4 voor kleine dagbedragen waar centen er juist toe doen.
+ */
+export function formatUsd(value: number | null, maxDecimals = 2): string {
+  if (value === null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: value !== 0 && Math.abs(value) < 0.01 ? maxDecimals : 2,
+    maximumFractionDigits: maxDecimals,
+  }).format(value);
+}
+
 export function formatNumber(value: number | null): string {
   if (value === null) return "—";
   return new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 }).format(value);

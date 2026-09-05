@@ -78,6 +78,17 @@ export function IconChevronUpDown({ className }: IconProps) {
   );
 }
 
+export function IconCoin({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 15.5c.5.7 1.4 1 2.5 1 1.8 0 3-.8 3-2s-1.2-1.7-3-2-3-.8-3-2 1.2-2 3-2c1.1 0 2 .3 2.5 1" />
+      <path d="M12 7v1.5" />
+      <path d="M12 15.5V17" />
+    </svg>
+  );
+}
+
 export function IconMenu({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">

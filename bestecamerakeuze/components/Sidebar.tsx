@@ -1,7 +1,14 @@
 import NavigationItem from "@/components/NavigationItem";
-import { IconBook, IconChat, IconChevronUpDown, IconMegaphone, IconSettings } from "@/components/icons";
+import {
+  IconBook,
+  IconChat,
+  IconChevronUpDown,
+  IconCoin,
+  IconMegaphone,
+  IconSettings,
+} from "@/components/icons";
 
-export type DashboardView = "campagnes" | "chat" | "kennis";
+export type DashboardView = "campagnes" | "chat" | "kennis" | "kosten";
 
 type Props = {
   actief: DashboardView;
@@ -57,6 +64,12 @@ export default function Sidebar({ actief, onNavigate, gebruikerEmail }: Props) {
             label="Kennisbank"
             active={actief === "kennis"}
             onClick={() => onNavigate("kennis")}
+          />
+          <NavigationItem
+            icon={<IconCoin />}
+            label="Kosten"
+            active={actief === "kosten"}
+            onClick={() => onNavigate("kosten")}
           />
         </nav>
       </div>

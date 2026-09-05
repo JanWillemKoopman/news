@@ -13,6 +13,7 @@ type Props = {
   campagnes: React.ReactNode;
   chat: React.ReactNode;
   kennis: React.ReactNode;
+  kosten: React.ReactNode;
 };
 
 const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
@@ -28,6 +29,10 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "Kennisbank",
     subtitle: "Alles wat je moet weten om campagnes en data goed te interpreteren.",
   },
+  kosten: {
+    title: "Kosten",
+    subtitle: "Claude API-uitgaven per dag.",
+  },
 };
 
 /**
@@ -39,7 +44,15 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
  * Onder de lg-breakpoint schuift de sidebar weg (de campagne-tabel blijft zelf
  * horizontaal scrollbaar in plaats van kolommen te laten inkrimpen).
  */
-export default function AppShell({ gebruikerEmail, liveCount, updatedAt, campagnes, chat, kennis }: Props) {
+export default function AppShell({
+  gebruikerEmail,
+  liveCount,
+  updatedAt,
+  campagnes,
+  chat,
+  kennis,
+  kosten,
+}: Props) {
   const [actief, setActief] = useState<DashboardView>("campagnes");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { title, subtitle } = TITLES[actief];
@@ -96,6 +109,9 @@ export default function AppShell({ gebruikerEmail, liveCount, updatedAt, campagn
           </div>
           <div className="mt-6" role="tabpanel" hidden={actief !== "kennis"}>
             {kennis}
+          </div>
+          <div className="mt-6" role="tabpanel" hidden={actief !== "kosten"}>
+            {kosten}
           </div>
 
           <FooterNote />
