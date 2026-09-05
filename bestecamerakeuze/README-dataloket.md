@@ -9,11 +9,12 @@ Onderstaande stappen zijn eenmalig.
 ## 1. Migraties draaien
 
 Voer in volgorde uit in de Supabase SQL-editor:
-`supabase/migrations/0001_dataloket.sql`, daarna `0002_gesprekken.sql`.
+`supabase/migrations/0001_dataloket.sql`, dan `0002_gesprekken.sql`, dan
+`0003_kennisbank.sql`.
 
 De eerste zet de datalaag en de read-only rol neer, de tweede de gespreksgeschiedenis
 (gesprekken, berichten, feedback — elk met rijbeveiliging zodat iedereen alleen zijn
-eigen gesprekken ziet).
+eigen gesprekken ziet), de derde de kennisbank.
 
 Dat maakt het `dataloket`-schema aan met:
 
@@ -77,6 +78,26 @@ in `middleware.ts` aan — dat staat als commentaar in het bestand.
    `lib/dictionary/index.ts`.
 
 Stap 4 is het werk dat ertoe doet. Zie hieronder.
+
+## Twee soorten kennis
+
+Belangrijk onderscheid, want ze horen op verschillende plekken thuis:
+
+| | Datawoordenboek | Kennisbank |
+|---|---|---|
+| Beschrijft | de **vorm** van de data: tabellen, kolommen, wat "verkocht" betekent | de **wereld** die de data beschrijft: welke campagnes bij elkaar horen, waarom een week afwijkt |
+| Wijzigt | zelden | wekelijks |
+| Staat in | code (`lib/dictionary/`) | de database, tabblad "Kennisbank" |
+| Onderhouden door | wie bouwt | de marketeers zelf, zonder deploy |
+
+De kennisbank wordt bij elke vraag aan de systeemprompt toegevoegd, **ná** het
+cachebreekpunt. Dat is bewust: stond hij in het gecachete deel, dan zou elke wijziging
+van een marketeer de cache van het hele woordenboek weggooien en elke vraag daarna
+duurder maken.
+
+Er zit een tekenplafond op (`PROMPT_BUDGET` in `lib/kennisbank.ts`). Bij overschrijding
+vallen de oudste items weg en waarschuwt het tabblad daarover — beter een zichtbare
+grens dan een chat die ongemerkt duurder en vager wordt.
 
 ## Het datawoordenboek
 

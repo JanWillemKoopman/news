@@ -13,6 +13,7 @@ import {
   verwijderLaatsteBeurt,
 } from "@/lib/gesprekken";
 import { maakNabewerking } from "@/lib/vervolg";
+import { kennisVoorPrompt, lijstKennis } from "@/lib/kennisbank";
 import type { Vorm, Weergave } from "@/components/chat/Visual";
 import type { Eenheid } from "@/components/chat/chartTheme";
 
@@ -229,6 +230,13 @@ export async function POST(request: Request) {
 
   const vraagBerichtId = await bewaarBericht(supabase, gesprekId, "gebruiker", vraag);
 
+  // De kennisbank die collega's zelf onderhouden. Ophalen moet hier gebeuren: binnen de
+  // stream is `cookies()` niet meer beschikbaar. Mislukt het ophalen, dan gaat de chat
+  // gewoon door zonder deze context.
+  const kennisTekst = await lijstKennis(supabase, true)
+    .then((items) => kennisVoorPrompt(items).tekst)
+    .catch(() => "");
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const encoder = new TextEncoder();
   let afgebroken = false;
@@ -258,6 +266,10 @@ export async function POST(request: Request) {
             // Het woordenboek is een grote, stabiele prefix. Het cachebreekpunt staat er
             // achteraan, zodat elke vervolgvraag in hetzelfde gesprek de instructie plus
             // het woordenboek uit de cache leest in plaats van opnieuw te betalen.
+            // Volgorde is hier functioneel: instructie en woordenboek zijn stabiel en
+            // staan vóór het cachebreekpunt, de kennisbank erna. Marketeers passen die
+            // kennisbank dagelijks aan; stond hij in het gecachete deel, dan zou elke
+            // wijziging de cache van het hele woordenboek weggooien.
             system: [
               { type: "text", text: systeemInstructie() },
               {
@@ -265,6 +277,9 @@ export async function POST(request: Request) {
                 text: woordenboekVoorPrompt(),
                 cache_control: { type: "ephemeral" },
               },
+              ...(kennisTekst
+                ? [{ type: "text" as const, text: kennisTekst }]
+                : []),
             ],
             tools: [QUERY_TOOL],
             messages,

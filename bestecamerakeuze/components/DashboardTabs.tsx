@@ -11,15 +11,18 @@ import { useState } from "react";
 export default function DashboardTabs({
   campagnes,
   chat,
+  kennis,
 }: {
   campagnes: React.ReactNode;
   chat: React.ReactNode;
+  kennis: React.ReactNode;
 }) {
-  const [actief, setActief] = useState<"campagnes" | "chat">("campagnes");
+  const [actief, setActief] = useState<"campagnes" | "chat" | "kennis">("campagnes");
 
   const tabs = [
     { id: "campagnes" as const, label: "Campagnes" },
     { id: "chat" as const, label: "Vraag het je data" },
+    { id: "kennis" as const, label: "Kennisbank" },
   ];
 
   return (
@@ -50,6 +53,9 @@ export default function DashboardTabs({
       </div>
       <div role="tabpanel" hidden={actief !== "chat"}>
         {chat}
+      </div>
+      <div role="tabpanel" hidden={actief !== "kennis"}>
+        {kennis}
       </div>
     </div>
   );
