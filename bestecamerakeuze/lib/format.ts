@@ -37,3 +37,36 @@ export function formatPercent(value: number | null): string | null {
 export function withPercent(main: string, percent: string | null): string {
   return percent ? `${main} (${percent})` : main;
 }
+
+export type Deviation = {
+  text: string;
+  tone: "positive" | "negative" | "neutral";
+};
+
+/**
+ * Doel-versus-realisatie in mensentaal ("+445 boven doel" / "−35 onder doel") in
+ * plaats van een kaal percentage — sneller te scannen dan "465 (2325%)".
+ */
+export function deviationFromTarget(actual: number | null, target: number | null): Deviation | null {
+  if (actual === null || target === null) return null;
+  const diff = Math.round(actual - target);
+  if (diff === 0) return { text: "op doel", tone: "neutral" };
+  const formatted = new Intl.NumberFormat("nl-NL").format(Math.abs(diff));
+  return diff > 0
+    ? { text: `+${formatted} boven doel`, tone: "positive" }
+    : { text: `−${formatted} onder doel`, tone: "negative" };
+}
+
+/** "van doel"-percentage voor metrics waarbij een absolute afwijking minder zegt (bv. leads). */
+export function percentOfTarget(actual: number | null, target: number | null): string | null {
+  const percent = formatPercent(ratio(actual, target));
+  return percent ? `${percent} van doel` : null;
+}
+
+export function formatUpdatedAt(date: Date): string {
+  return new Intl.DateTimeFormat("nl-NL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Amsterdam",
+  }).format(date);
+}

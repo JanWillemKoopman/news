@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { Campagne } from "@/lib/sheet";
-import CampaignMatrix from "@/components/CampaignMatrix";
-import FilterDropdown from "@/components/FilterDropdown";
+import CampaignTable from "@/components/CampaignTable";
+import FilterBar from "@/components/FilterBar";
+import FilterSelect from "@/components/FilterSelect";
 
 function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, "nl"));
@@ -51,11 +52,16 @@ export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[]
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <FilterDropdown label="Status" options={options.status} selected={status} onChange={setStatus} />
-        <FilterDropdown label="Merk" options={options.merk} selected={merk} onChange={setMerk} />
-        <FilterDropdown
+    <div className="flex flex-col gap-4">
+      <FilterBar
+        totalCount={campagnes.length}
+        filteredCount={filtered.length}
+        activeFilterCount={activeFilterCount}
+        onClearAll={clearAll}
+      >
+        <FilterSelect label="Status" options={options.status} selected={status} onChange={setStatus} />
+        <FilterSelect label="Merk" options={options.merk} selected={merk} onChange={setMerk} />
+        <FilterSelect
           label="Ordersoort"
           options={options.ordersoort}
           selected={ordersoort}
@@ -63,27 +69,15 @@ export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[]
         />
         {/* Kolomkop in de sheet is "Klantgroep orders (indien van toepassing)"; in de UI
             afgekort tot "Klantgroep". */}
-        <FilterDropdown
+        <FilterSelect
           label="Klantgroep"
           options={options.klantgroep}
           selected={klantgroep}
           onChange={setKlantgroep}
         />
+      </FilterBar>
 
-        {activeFilterCount > 0 && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-sm font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline"
-          >
-            Wis filters
-          </button>
-        )}
-      </div>
-
-      <div className="mt-4">
-        <CampaignMatrix campagnes={filtered} />
-      </div>
+      <CampaignTable campagnes={filtered} />
     </div>
   );
 }

@@ -4,17 +4,21 @@ function Skeleton({ className }: { className?: string }) {
 
 export default function Loading() {
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-8 sm:py-12">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-3 h-4 w-96" />
+    <div className="flex min-h-screen bg-page">
+      <div className="w-[240px] shrink-0 border-r border-sidebar-line bg-sidebar" />
 
-      <div className="mt-6 flex justify-end gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-9 w-28 rounded-pill" />
-        ))}
-      </div>
+      <main className="min-w-0 flex-1 px-8 py-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-80" />
+          </div>
+          <Skeleton className="h-8 w-40 rounded-control" />
+        </div>
 
-      <Skeleton className="mt-4 h-80 w-full border border-line shadow-card" />
-    </main>
+        <Skeleton className="mt-6 h-14 w-full rounded-panel" />
+        <Skeleton className="mt-4 h-96 w-full rounded-panel" />
+      </main>
+    </div>
   );
 }
