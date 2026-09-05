@@ -6,6 +6,13 @@ import { chatGereedheid } from "@/lib/config";
 import { woordenboekVoorPrompt, beschikbareViews } from "@/lib/dictionary";
 import { resultaatVoorModel, voerQueryUit } from "@/lib/dataQuery";
 import { logQuery } from "@/lib/queryLog";
+import {
+  bewaarBericht,
+  haalBerichten,
+  hernoemGesprek,
+  verwijderLaatsteBeurt,
+} from "@/lib/gesprekken";
+import { maakNabewerking } from "@/lib/vervolg";
 import type { Vorm, Weergave } from "@/components/chat/Visual";
 import type { Eenheid } from "@/components/chat/chartTheme";
 
@@ -131,11 +138,6 @@ function systeemInstructie(): string {
   ].join("\n");
 }
 
-interface InkomendBericht {
-  rol: "gebruiker" | "assistent";
-  tekst: string;
-}
-
 /** Wat er per uitgevoerde query naar de UI gaat: de weergave plus de verantwoording. */
 interface QueryVerslag {
   sql: string;
@@ -184,7 +186,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
   }
 
-  let body: { vraag?: unknown; geschiedenis?: unknown };
+  let body: { vraag?: unknown; gesprekId?: unknown; opnieuw?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -199,27 +201,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Vraag is te lang." }, { status: 400 });
   }
 
-  const eerdere: InkomendBericht[] = Array.isArray(body.geschiedenis)
-    ? (body.geschiedenis as unknown[])
-        .filter(
-          (b): b is InkomendBericht =>
-            typeof b === "object" &&
-            b !== null &&
-            typeof (b as InkomendBericht).tekst === "string" &&
-            ((b as InkomendBericht).rol === "gebruiker" ||
-              (b as InkomendBericht).rol === "assistent"),
-        )
-        .slice(-20)
-    : [];
-
-  const messages: Anthropic.MessageParam[] = eerdere.map((b) => ({
-    role: b.rol === "gebruiker" ? ("user" as const) : ("assistant" as const),
-    content: b.tekst,
-  }));
-  messages.push({ role: "user", content: vraag });
+  const gesprekId = typeof body.gesprekId === "string" ? body.gesprekId : "";
+  if (!gesprekId) {
+    return NextResponse.json({ fout: "Geen gesprek meegestuurd." }, { status: 400 });
+  }
 
   // Vóór de stream aanmaken: hierna is `cookies()` niet meer aan te roepen (zie queryLog.ts).
   const supabase = await createClient();
+
+  // Bij "opnieuw proberen" verdwijnt de vorige beurt, anders staat de vraag straks
+  // dubbel in de geschiedenis.
+  if (body.opnieuw === true) {
+    await verwijderLaatsteBeurt(supabase, gesprekId);
+  }
+
+  // De geschiedenis komt uit de database, niet van de client. Dat is meteen de
+  // afscherming: de rijbeveiliging bepaalt welke berichten hier terugkomen, dus het
+  // meesturen van andermans gesprek levert niets op.
+  const opgeslagen = await haalBerichten(supabase, gesprekId);
+  const eersteBeurt = opgeslagen.length === 0;
+
+  const messages: Anthropic.MessageParam[] = opgeslagen.slice(-20).map((b) => ({
+    role: b.rol === "gebruiker" ? ("user" as const) : ("assistant" as const),
+    content: b.tekst || "(leeg)",
+  }));
+  messages.push({ role: "user", content: vraag });
+
+  const vraagBerichtId = await bewaarBericht(supabase, gesprekId, "gebruiker", vraag);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const encoder = new TextEncoder();
@@ -369,12 +377,33 @@ export async function POST(request: Request) {
           }
         }
 
+        const eindAntwoord =
+          antwoord ||
+          "Ik heb hier geen antwoord op kunnen formuleren. Probeer de vraag anders te stellen.";
+
+        const berichtId = await bewaarBericht(
+          supabase,
+          gesprekId,
+          "assistent",
+          eindAntwoord,
+          verslagen,
+        );
+
+        // Titel en vervolgvragen zijn nuttig, maar nooit een reden om een antwoord te
+        // laten mislukken — vandaar dat dit pas ná het opslaan gebeurt.
+        const nabewerking = await maakNabewerking(client, vraag, eindAntwoord, eersteBeurt);
+        if (nabewerking.titel) {
+          await hernoemGesprek(supabase, gesprekId, nabewerking.titel).catch(() => {});
+        }
+
         send({
           type: "klaar",
-          antwoord:
-            antwoord ||
-            "Ik heb hier geen antwoord op kunnen formuleren. Probeer de vraag anders te stellen.",
+          antwoord: eindAntwoord,
           queries: verslagen,
+          berichtId,
+          vraagBerichtId,
+          titel: nabewerking.titel,
+          vervolgvragen: nabewerking.vervolgvragen,
         });
       } catch (err) {
         const bericht = err instanceof Error ? err.message : String(err);

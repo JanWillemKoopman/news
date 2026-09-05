@@ -1,6 +1,6 @@
 import CampaignDashboard from "@/components/CampaignDashboard";
 import DashboardTabs from "@/components/DashboardTabs";
-import DataChat from "@/components/DataChat";
+import ChatPaneel from "@/components/chat/ChatPaneel";
 import NietGeconfigureerd from "@/components/NietGeconfigureerd";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
           campagnes={<CampaignDashboard campagnes={campagnes} />}
           chat={
             gereed.gereed ? (
-              <DataChat ingelogd={Boolean(gebruiker)} />
+              <ChatPaneel ingelogd={Boolean(gebruiker)} />
             ) : (
               <NietGeconfigureerd ontbreekt={gereed.ontbreekt} />
             )

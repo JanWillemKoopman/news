@@ -6,9 +6,14 @@ het chattabblad welke variabelen nog ontbreken.
 
 Onderstaande stappen zijn eenmalig.
 
-## 1. Migratie draaien
+## 1. Migraties draaien
 
-Voer `supabase/migrations/0001_dataloket.sql` uit in de Supabase SQL-editor.
+Voer in volgorde uit in de Supabase SQL-editor:
+`supabase/migrations/0001_dataloket.sql`, daarna `0002_gesprekken.sql`.
+
+De eerste zet de datalaag en de read-only rol neer, de tweede de gespreksgeschiedenis
+(gesprekken, berichten, feedback — elk met rijbeveiliging zodat iedereen alleen zijn
+eigen gesprekken ziet).
 
 Dat maakt het `dataloket`-schema aan met:
 
@@ -88,6 +93,35 @@ De twee velden waar het echt om gaat:
 
 Ga na een paar weken door `query_log` heen op mislukte queries. Elke mislukking wijst op
 kennis die nog niet in het woordenboek staat.
+
+## Wat de chat kan
+
+| Functie | Waar het zit |
+|---|---|
+| Gesprekken bewaren, hervatten, hernoemen, verwijderen, doorzoeken | `lib/gesprekken.ts`, `app/api/gesprekken/` |
+| Automatische gesprekstitel na het eerste antwoord | `lib/vervolg.ts` (draait op Haiku) |
+| Vervolgvragen voorgesteld na elk antwoord | idem |
+| Grafieken: stat-tegel, staaf, lijn, donut, tabel | `components/chat/Visual.tsx` |
+| Opmaak in antwoorden (koppen, lijsten, vet) | `components/chat/Markdown.tsx` |
+| Kopiëren, opnieuw beantwoorden, stoppen tijdens het antwoord | `components/DataChat.tsx` |
+| Exporteren naar CSV voor Excel | `lib/csv.ts` |
+| "Klopt / klopt niet" per antwoord | `app/api/feedback/route.ts` |
+
+### Feedback is je werklijst
+
+De tabel `dataloket.feedback` is geen tevredenheidsmeting. Een antwoord dat als fout is
+gemarkeerd wijst bijna altijd op iets wat nog niet in het datawoordenboek staat — een
+definitie, een toegestane waarde, een valkuil. Loop die lijst periodiek langs:
+
+```sql
+select b.tekst, f.oordeel, f.aangemaakt_op
+from dataloket.feedback f
+join dataloket.berichten b on b.id = f.bericht_id
+where f.oordeel = 'fout'
+order by f.aangemaakt_op desc;
+```
+
+Hetzelfde geldt voor mislukte queries in `dataloket.query_log`.
 
 ## Testen
 

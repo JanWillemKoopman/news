@@ -1,26 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import type { Weergave } from "@/components/chat/Visual";
+import { useCallback, useEffect, useRef, useState } from "react";
+import GesprekLijst, { type Gesprek } from "@/components/chat/GesprekLijst";
+import Markdown from "@/components/chat/Markdown";
+import Visual, { type Weergave } from "@/components/chat/Visual";
+import { downloadCsv } from "@/lib/csv";
 
 /**
- * De grafiekbibliotheek wordt pas geladen zodra er echt een visual getoond wordt.
- * Zonder deze splitsing draagt iedereen die alleen de campagnetabel bekijkt ~125 kB
- * aan grafiekcode mee voor een tabblad dat hij niet opent.
- */
-const Visual = dynamic(() => import("@/components/chat/Visual"), {
-  ssr: false,
-  loading: () => (
-    <div className="mt-1 mb-4 h-40 rounded-panel border border-line bg-surface" />
-  ),
-});
-
-/**
- * Het chatvenster. Streamt het antwoord binnen als NDJSON en toont onder elk antwoord
- * de verantwoording: welke query is gedraaid, hoeveel rijen die opleverde en hoe lang
- * hij duurde. Dat laatste is geen extraatje — zonder de query erbij kan niemand
- * controleren of een cijfer klopt, en dan wordt de chat niet gebruikt voor besluiten.
+ * Het chatvenster.
+ *
+ * Gesprekken staan in de database, niet in het geheugen van de browser: een collega die
+ * morgen terugkomt vindt zijn analyse terug, en op zijn telefoon dezelfde. De
+ * geschiedenis wordt daarom ook niet door de browser meegestuurd — de server leest hem
+ * uit de database, waar de rijbeveiliging bepaalt wat van wie is.
+ *
+ * Dit hele bestand wordt lui geladen (zie ChatPaneel.tsx), zodat wie alleen de
+ * campagnetabel bekijkt er niets van meedraagt.
  */
 
 interface QueryVerslag {
@@ -35,9 +30,11 @@ interface QueryVerslag {
 }
 
 interface Bericht {
+  id?: number;
   rol: "gebruiker" | "assistent";
   tekst: string;
   queries?: QueryVerslag[];
+  oordeel?: "goed" | "fout" | null;
 }
 
 const VOORBEELDVRAGEN = [
@@ -45,6 +42,8 @@ const VOORBEELDVRAGEN = [
   "Wat was de omzet per merk vorig kwartaal?",
   "Welke orders zijn wel getekend maar nog niet afgeleverd?",
 ];
+
+/* --------------------------------------------------------------- deelcomponenten */
 
 function ResultaatTabel({ verslag }: { verslag: QueryVerslag }) {
   if (verslag.rijen.length === 0 || verslag.kolommen.length === 0) return null;
@@ -89,8 +88,8 @@ function Verantwoording({ queries }: { queries: QueryVerslag[] }) {
   return (
     <details className="mt-3 rounded-card border border-line bg-surface px-4 py-3">
       <summary className="cursor-pointer text-sm font-medium text-ink-muted">
-        Verantwoording — {queries.length}{" "}
-        {queries.length === 1 ? "query" : "queries"} uitgevoerd
+        Verantwoording — {queries.length} {queries.length === 1 ? "query" : "queries"}{" "}
+        uitgevoerd
       </summary>
       <div className="mt-3 flex flex-col gap-4">
         {queries.map((q, i) => (
@@ -116,53 +115,242 @@ function Verantwoording({ queries }: { queries: QueryVerslag[] }) {
   );
 }
 
+function ActieKnop({
+  children,
+  onClick,
+  titel,
+  actief,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  titel: string;
+  actief?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={titel}
+      aria-label={titel}
+      className={`rounded-pill border px-2.5 py-1 text-xs transition-colors ${
+        actief
+          ? "border-primary bg-primary text-white"
+          : "border-line bg-card text-ink-muted hover:border-primary hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AntwoordActies({
+  bericht,
+  onKopieer,
+  onOpnieuw,
+  onOordeel,
+  gekopieerd,
+  kanOpnieuw,
+}: {
+  bericht: Bericht;
+  onKopieer: () => void;
+  onOpnieuw: () => void;
+  onOordeel: (oordeel: "goed" | "fout") => void;
+  gekopieerd: boolean;
+  kanOpnieuw: boolean;
+}) {
+  const metRijen = (bericht.queries ?? []).filter((q) => !q.fout && q.rijen.length > 0);
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <ActieKnop onClick={onKopieer} titel="Antwoord kopiëren">
+        {gekopieerd ? "Gekopieerd" : "Kopieer"}
+      </ActieKnop>
+      {kanOpnieuw && (
+        <ActieKnop onClick={onOpnieuw} titel="Opnieuw beantwoorden">
+          Opnieuw
+        </ActieKnop>
+      )}
+      {metRijen.map((q, i) => (
+        <ActieKnop
+          key={i}
+          onClick={() => downloadCsv(q.kolommen, q.rijen, q.weergave.titel || "resultaat")}
+          titel="Download als CSV voor Excel"
+        >
+          CSV{metRijen.length > 1 ? ` ${i + 1}` : ""}
+        </ActieKnop>
+      ))}
+      <span className="ml-auto flex gap-1.5">
+        {/* Feedback is hier geen tevredenheidsmeting maar een werklijst: een antwoord dat
+            als fout is gemarkeerd wijst bijna altijd op iets wat nog in het
+            datawoordenboek moet. */}
+        <ActieKnop
+          onClick={() => onOordeel("goed")}
+          titel="Dit antwoord klopt"
+          actief={bericht.oordeel === "goed"}
+        >
+          Klopt
+        </ActieKnop>
+        <ActieKnop
+          onClick={() => onOordeel("fout")}
+          titel="Dit antwoord klopt niet"
+          actief={bericht.oordeel === "fout"}
+        >
+          Klopt niet
+        </ActieKnop>
+      </span>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- hoofdcomponent */
+
 export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
+  const [gesprekken, setGesprekken] = useState<Gesprek[]>([]);
+  const [actiefId, setActiefId] = useState<string | null>(null);
+  const [zoek, setZoek] = useState("");
   const [berichten, setBerichten] = useState<Bericht[]>([]);
   const [invoer, setInvoer] = useState("");
   const [bezig, setBezig] = useState(false);
   const [fase, setFase] = useState<string | null>(null);
   const [fout, setFout] = useState<string | null>(null);
-  const onderkant = useRef<HTMLDivElement>(null);
+  const [vervolgvragen, setVervolgvragen] = useState<string[]>([]);
+  const [gekopieerd, setGekopieerd] = useState<number | null>(null);
 
-  async function verstuur(vraag: string) {
+  const onderkant = useRef<HTMLDivElement>(null);
+  const invoerveld = useRef<HTMLTextAreaElement>(null);
+  const afbreker = useRef<AbortController | null>(null);
+
+  const laadGesprekken = useCallback(async (zoekterm: string) => {
+    const res = await fetch(
+      `/api/gesprekken${zoekterm ? `?zoek=${encodeURIComponent(zoekterm)}` : ""}`,
+    );
+    if (!res.ok) return;
+    const data = (await res.json()) as { gesprekken: Gesprek[] };
+    setGesprekken(data.gesprekken);
+  }, []);
+
+  useEffect(() => {
+    if (!ingelogd) return;
+    void laadGesprekken(zoek);
+  }, [ingelogd, zoek, laadGesprekken]);
+
+  async function openGesprek(id: string) {
+    setActiefId(id);
+    setVervolgvragen([]);
+    setFout(null);
+    const res = await fetch(`/api/gesprekken/${id}`);
+    if (!res.ok) return;
+    const data = (await res.json()) as { berichten: Bericht[] };
+    setBerichten(
+      data.berichten.map((b) => ({
+        ...b,
+        queries: (b.queries as unknown as QueryVerslag[]) ?? [],
+      })),
+    );
+  }
+
+  function nieuwGesprek() {
+    setActiefId(null);
+    setBerichten([]);
+    setVervolgvragen([]);
+    setFout(null);
+    invoerveld.current?.focus();
+  }
+
+  async function hernoem(id: string, titel: string) {
+    setGesprekken((g) => g.map((x) => (x.id === id ? { ...x, titel } : x)));
+    await fetch(`/api/gesprekken/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ titel }),
+    });
+  }
+
+  async function verwijder(id: string) {
+    setGesprekken((g) => g.filter((x) => x.id !== id));
+    if (id === actiefId) nieuwGesprek();
+    await fetch(`/api/gesprekken/${id}`, { method: "DELETE" });
+  }
+
+  async function geefOordeel(index: number, oordeel: "goed" | "fout") {
+    const bericht = berichten[index];
+    if (!bericht?.id) return;
+    setBerichten((b) => b.map((x, i) => (i === index ? { ...x, oordeel } : x)));
+    await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ berichtId: bericht.id, oordeel }),
+    });
+  }
+
+  function stop() {
+    afbreker.current?.abort();
+  }
+
+  async function verstuur(vraag: string, opnieuw = false) {
     if (!vraag.trim() || bezig) return;
     setFout(null);
+    setVervolgvragen([]);
     setInvoer("");
     setBezig(true);
     setFase("denken");
 
-    const geschiedenis = berichten.map((b) => ({ rol: b.rol, tekst: b.tekst }));
+    // Zonder actief gesprek eerst een nieuw aanmaken; de titel volgt automatisch na het
+    // eerste antwoord.
+    let gesprekId = actiefId;
+    if (!gesprekId) {
+      const res = await fetch("/api/gesprekken", { method: "POST" });
+      if (!res.ok) {
+        setFout("Kon geen nieuw gesprek starten.");
+        setBezig(false);
+        return;
+      }
+      const data = (await res.json()) as { gesprek: Gesprek };
+      gesprekId = data.gesprek.id;
+      setActiefId(gesprekId);
+      setGesprekken((g) => [data.gesprek, ...g]);
+    }
+
+    if (opnieuw) {
+      // De vorige beurt verdwijnt aan beide kanten: hier uit beeld, op de server uit de
+      // database.
+      setBerichten((b) => b.slice(0, -2));
+    }
     setBerichten((b) => [...b, { rol: "gebruiker", tekst: vraag }]);
 
     let lopendAntwoord = "";
     const lopendeQueries: QueryVerslag[] = [];
-    // Plaatshouder voor het antwoord dat binnenstroomt.
     setBerichten((b) => [...b, { rol: "assistent", tekst: "", queries: [] }]);
 
-    const werkAntwoordBij = () =>
+    const werkBij = (extra: Partial<Bericht> = {}) =>
       setBerichten((b) => {
         const kopie = [...b];
         kopie[kopie.length - 1] = {
+          ...kopie[kopie.length - 1],
           rol: "assistent",
           tekst: lopendAntwoord,
           queries: [...lopendeQueries],
+          ...extra,
         };
         return kopie;
       });
+
+    const controller = new AbortController();
+    afbreker.current = controller;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vraag, geschiedenis }),
+        body: JSON.stringify({ vraag, gesprekId, opnieuw }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
-        const bericht = await res
+        const melding = await res
           .json()
           .then((j: { fout?: string }) => j.fout)
           .catch(() => null);
-        throw new Error(bericht ?? `Er ging iets mis (status ${res.status}).`);
+        throw new Error(melding ?? `Er ging iets mis (status ${res.status}).`);
       }
 
       const lezer = res.body.getReader();
@@ -178,44 +366,69 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
 
         for (const regel of regels) {
           if (!regel.trim()) continue;
-          const gebeurtenis = JSON.parse(regel) as
+          const g = JSON.parse(regel) as
             | { type: "fase"; fase: string }
             | { type: "tekst"; tekst: string }
             | ({ type: "query" } & QueryVerslag)
-            | { type: "klaar"; antwoord: string; queries: QueryVerslag[] }
+            | {
+                type: "klaar";
+                antwoord: string;
+                queries: QueryVerslag[];
+                berichtId: number | null;
+                titel: string | null;
+                vervolgvragen: string[];
+              }
             | { type: "fout"; fout: string };
 
-          if (gebeurtenis.type === "fase") {
-            setFase(gebeurtenis.fase);
-          } else if (gebeurtenis.type === "tekst") {
-            lopendAntwoord += gebeurtenis.tekst;
-            werkAntwoordBij();
-          } else if (gebeurtenis.type === "query") {
-            const { type: _type, ...verslag } = gebeurtenis;
+          if (g.type === "fase") {
+            setFase(g.fase);
+          } else if (g.type === "tekst") {
+            lopendAntwoord += g.tekst;
+            werkBij();
+          } else if (g.type === "query") {
+            const { type: _t, ...verslag } = g;
             lopendeQueries.push(verslag);
-            werkAntwoordBij();
-          } else if (gebeurtenis.type === "klaar") {
-            lopendAntwoord = gebeurtenis.antwoord;
-            lopendeQueries.splice(0, lopendeQueries.length, ...gebeurtenis.queries);
-            werkAntwoordBij();
-          } else if (gebeurtenis.type === "fout") {
-            throw new Error(gebeurtenis.fout);
+            werkBij();
+          } else if (g.type === "klaar") {
+            lopendAntwoord = g.antwoord;
+            lopendeQueries.splice(0, lopendeQueries.length, ...g.queries);
+            werkBij({ id: g.berichtId ?? undefined });
+            setVervolgvragen(g.vervolgvragen ?? []);
+            const nieuweTitel = g.titel;
+            if (nieuweTitel && gesprekId) {
+              const id = gesprekId;
+              setGesprekken((lijst) =>
+                lijst.map((x) => (x.id === id ? { ...x, titel: nieuweTitel } : x)),
+              );
+            }
+          } else if (g.type === "fout") {
+            throw new Error(g.fout);
           }
         }
       }
     } catch (err) {
-      setFout(err instanceof Error ? err.message : "Er ging iets mis.");
-      // Lege plaatshouder weghalen als er niets is binnengekomen.
-      setBerichten((b) =>
-        b[b.length - 1]?.rol === "assistent" && b[b.length - 1]?.tekst === ""
-          ? b.slice(0, -1)
-          : b,
-      );
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // Afgebroken door de gebruiker: houd wat er al binnen was en meld verder niets.
+        werkBij({ tekst: lopendAntwoord || "_Gestopt._" });
+      } else {
+        setFout(err instanceof Error ? err.message : "Er ging iets mis.");
+        setBerichten((b) =>
+          b[b.length - 1]?.rol === "assistent" && b[b.length - 1]?.tekst === ""
+            ? b.slice(0, -1)
+            : b,
+        );
+      }
     } finally {
+      afbreker.current = null;
       setBezig(false);
       setFase(null);
       onderkant.current?.scrollIntoView({ behavior: "smooth" });
     }
+  }
+
+  function opnieuwProberen() {
+    const laatsteVraag = [...berichten].reverse().find((b) => b.rol === "gebruiker");
+    if (laatsteVraag) void verstuur(laatsteVraag.tekst, true);
   }
 
   if (!ingelogd) {
@@ -236,103 +449,173 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {berichten.length === 0 && (
-        <div className="rounded-panel border border-line bg-surface p-6">
-          <p className="font-sans-w7 text-base font-bold text-ink">
-            Stel een vraag over je data
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      <GesprekLijst
+        gesprekken={gesprekken}
+        actiefId={actiefId}
+        zoek={zoek}
+        onZoek={setZoek}
+        onKies={(id) => void openGesprek(id)}
+        onNieuw={nieuwGesprek}
+        onHernoem={(id, titel) => void hernoem(id, titel)}
+        onVerwijder={(id) => void verwijder(id)}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        {berichten.length === 0 && (
+          <div className="rounded-panel border border-line bg-surface p-6">
+            <p className="font-sans-w7 text-base font-bold text-ink">
+              Stel een vraag over je data
+            </p>
+            <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">
+              Je krijgt antwoord op basis van echte queries op de database. Onder elk
+              antwoord zie je welke query is gedraaid, zodat je het kunt narekenen.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {VOORBEELDVRAGEN.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => void verstuur(v)}
+                  className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-primary"
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {berichten.map((bericht, i) => (
+          <div key={i}>
+            {bericht.rol === "gebruiker" ? (
+              <div className="flex justify-end">
+                <p className="max-w-2xl rounded-panel bg-primary px-4 py-2.5 whitespace-pre-wrap text-white">
+                  {bericht.tekst}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-panel border border-line bg-card p-5">
+                {/* De weergave staat boven de tekst: het antwoord is het beeld, de tekst
+                    legt uit wat je erin ziet. */}
+                {bericht.queries
+                  ?.filter((q) => !q.fout && q.weergave.vorm !== "verberg")
+                  .map((q, j) => (
+                    <Visual
+                      key={j}
+                      weergave={q.weergave}
+                      kolommen={q.kolommen}
+                      rijen={q.rijen}
+                    />
+                  ))}
+
+                {bericht.tekst ? (
+                  <Markdown tekst={bericht.tekst} />
+                ) : (
+                  bezig && <p className="text-ink-faint">…</p>
+                )}
+
+                {bericht.queries && bericht.queries.length > 0 && (
+                  <Verantwoording queries={bericht.queries} />
+                )}
+
+                {!bezig && bericht.tekst && (
+                  <AntwoordActies
+                    bericht={bericht}
+                    gekopieerd={gekopieerd === i}
+                    kanOpnieuw={i === berichten.length - 1}
+                    onKopieer={() => {
+                      void navigator.clipboard.writeText(bericht.tekst);
+                      setGekopieerd(i);
+                      setTimeout(() => setGekopieerd(null), 2000);
+                    }}
+                    onOpnieuw={opnieuwProberen}
+                    onOordeel={(o) => void geefOordeel(i, o)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {bezig && (
+          <p className="text-sm text-ink-faint">
+            {fase === "query"
+              ? "Query uitvoeren…"
+              : fase === "schrijven"
+                ? "Antwoord schrijven…"
+                : "Nadenken…"}
           </p>
-          <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">
-            Je krijgt antwoord op basis van echte queries op de database. Onder elk
-            antwoord zie je welke query is gedraaid, zodat je het kunt narekenen.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {VOORBEELDVRAGEN.map((v) => (
+        )}
+
+        {!bezig && vervolgvragen.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs tracking-wide text-ink-faint uppercase">
+              Verder vragen
+            </span>
+            {vervolgvragen.map((v) => (
               <button
                 key={v}
                 type="button"
-                onClick={() => verstuur(v)}
-                className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-primary"
+                onClick={() => void verstuur(v)}
+                className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-primary"
               >
                 {v}
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {berichten.map((bericht, i) => (
-        <div key={i}>
-          {bericht.rol === "gebruiker" ? (
-            <div className="flex justify-end">
-              <p className="max-w-2xl rounded-panel bg-primary px-4 py-2.5 text-white">
-                {bericht.tekst}
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-panel border border-line bg-card p-5">
-              {/* De weergave komt boven de tekst: het antwoord is het beeld, de tekst
-                  legt uit wat je erin ziet. */}
-              {bericht.queries
-                ?.filter((q) => !q.fout && q.weergave.vorm !== "verberg")
-                .map((q, j) => (
-                  <Visual
-                    key={j}
-                    weergave={q.weergave}
-                    kolommen={q.kolommen}
-                    rijen={q.rijen}
-                  />
-                ))}
-              <p className="whitespace-pre-wrap leading-relaxed text-ink">
-                {bericht.tekst || (bezig ? "…" : "")}
-              </p>
-              {bericht.queries && bericht.queries.length > 0 && (
-                <Verantwoording queries={bericht.queries} />
-              )}
-            </div>
-          )}
-        </div>
-      ))}
+        {fout && (
+          <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
+            {fout}
+          </p>
+        )}
 
-      {bezig && (
-        <p className="text-sm text-ink-faint">
-          {fase === "query"
-            ? "Query uitvoeren…"
-            : fase === "schrijven"
-              ? "Antwoord schrijven…"
-              : "Nadenken…"}
-        </p>
-      )}
-
-      {fout && (
-        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
-          {fout}
-        </p>
-      )}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          verstuur(invoer);
-        }}
-        className="sticky bottom-4 flex gap-2"
-      >
-        <input
-          value={invoer}
-          onChange={(e) => setInvoer(e.target.value)}
-          placeholder="Bijvoorbeeld: hoeveel DAF's zijn er vorige maand verkocht?"
-          disabled={bezig}
-          className="flex-1 rounded-pill border border-line bg-card px-5 py-3 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={bezig || !invoer.trim()}
-          className="rounded-pill bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void verstuur(invoer);
+          }}
+          className="sticky bottom-4 flex items-end gap-2"
         >
-          Vraag
-        </button>
-      </form>
-      <div ref={onderkant} />
+          <textarea
+            ref={invoerveld}
+            value={invoer}
+            onChange={(e) => setInvoer(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter verstuurt, shift+enter maakt een nieuwe regel — zoals mensen het uit
+              // elke andere chat gewend zijn.
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void verstuur(invoer);
+              }
+            }}
+            rows={1}
+            placeholder="Bijvoorbeeld: hoeveel DAF's zijn er vorige maand verkocht?"
+            disabled={bezig}
+            className="max-h-40 min-h-[48px] flex-1 resize-none rounded-panel border border-line bg-card px-5 py-3 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+          />
+          {bezig ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="rounded-pill border border-line bg-card px-6 py-3 font-medium text-ink transition-colors hover:border-primary"
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!invoer.trim()}
+              className="rounded-pill bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
+            >
+              Vraag
+            </button>
+          )}
+        </form>
+        <div ref={onderkant} />
+      </div>
     </div>
   );
 }
