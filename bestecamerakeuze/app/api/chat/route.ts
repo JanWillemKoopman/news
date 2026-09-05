@@ -6,13 +6,14 @@ import { chatGereedheid } from "@/lib/config";
 import { woordenboekVoorPrompt, beschikbareViews } from "@/lib/dictionary";
 import { resultaatVoorModel, voerQueryUit } from "@/lib/dataQuery";
 import { logQuery } from "@/lib/queryLog";
+import { logClaudeGebruik } from "@/lib/kosten";
 import {
   bewaarBericht,
   haalBerichten,
   hernoemGesprek,
   verwijderLaatsteBeurt,
 } from "@/lib/gesprekken";
-import { maakNabewerking } from "@/lib/vervolg";
+import { KLEIN_MODEL, maakNabewerking } from "@/lib/vervolg";
 import { kennisVoorPrompt, lijstKennis } from "@/lib/kennisbank";
 import type { Vorm, Weergave } from "@/components/chat/Visual";
 import type { Eenheid } from "@/components/chat/chartTheme";
@@ -296,6 +297,16 @@ export async function POST(request: Request) {
 
           const response = await runner.finalMessage();
 
+          await logClaudeGebruik(supabase, {
+            model: MODEL,
+            doel: "chat",
+            gebruikerId: gebruiker.id,
+            inputTokens: response.usage.input_tokens,
+            outputTokens: response.usage.output_tokens,
+            cacheSchrijfTokens: response.usage.cache_creation_input_tokens ?? 0,
+            cacheLeesTokens: response.usage.cache_read_input_tokens ?? 0,
+          });
+
           // Het volledige content-blok teruggeven, inclusief eventuele thinking-blokken:
           // die horen ongewijzigd terug bij hetzelfde model.
           messages.push({ role: "assistant", content: response.content });
@@ -409,6 +420,17 @@ export async function POST(request: Request) {
         const nabewerking = await maakNabewerking(client, vraag, eindAntwoord, eersteBeurt);
         if (nabewerking.titel) {
           await hernoemGesprek(supabase, gesprekId, nabewerking.titel).catch(() => {});
+        }
+        if (nabewerking.usage) {
+          await logClaudeGebruik(supabase, {
+            model: KLEIN_MODEL,
+            doel: "nabewerking",
+            gebruikerId: gebruiker.id,
+            inputTokens: nabewerking.usage.input_tokens,
+            outputTokens: nabewerking.usage.output_tokens,
+            cacheSchrijfTokens: nabewerking.usage.cache_creation_input_tokens ?? 0,
+            cacheLeesTokens: nabewerking.usage.cache_read_input_tokens ?? 0,
+          });
         }
 
         send({
