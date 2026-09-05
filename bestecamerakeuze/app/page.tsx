@@ -1,5 +1,10 @@
 import CampaignDashboard from "@/components/CampaignDashboard";
+import DashboardTabs from "@/components/DashboardTabs";
+import DataChat from "@/components/DataChat";
+import NietGeconfigureerd from "@/components/NietGeconfigureerd";
 import { getCampagnes } from "@/lib/sheet";
+import { getGebruiker } from "@/lib/auth";
+import { chatGereedheid } from "@/lib/config";
 
 // De sheet kan buiten deze app om wijzigen, dus geen statische generatie: elke
 // requestie haalt de actuele data op.
@@ -7,6 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const campagnes = await getCampagnes();
+  const gereed = chatGereedheid();
+  const gebruiker = gereed.gereed ? await getGebruiker() : null;
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:py-12">
@@ -16,7 +23,16 @@ export default async function DashboardPage() {
       </p>
 
       <div className="mt-6">
-        <CampaignDashboard campagnes={campagnes} />
+        <DashboardTabs
+          campagnes={<CampaignDashboard campagnes={campagnes} />}
+          chat={
+            gereed.gereed ? (
+              <DataChat ingelogd={Boolean(gebruiker)} />
+            ) : (
+              <NietGeconfigureerd ontbreekt={gereed.ontbreekt} />
+            )
+          }
+        />
       </div>
     </main>
   );
