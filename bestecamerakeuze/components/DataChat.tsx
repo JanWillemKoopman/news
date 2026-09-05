@@ -1,6 +1,20 @@
 "use client";
 
 import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { Weergave } from "@/components/chat/Visual";
+
+/**
+ * De grafiekbibliotheek wordt pas geladen zodra er echt een visual getoond wordt.
+ * Zonder deze splitsing draagt iedereen die alleen de campagnetabel bekijkt ~125 kB
+ * aan grafiekcode mee voor een tabblad dat hij niet opent.
+ */
+const Visual = dynamic(() => import("@/components/chat/Visual"), {
+  ssr: false,
+  loading: () => (
+    <div className="mt-1 mb-4 h-40 rounded-panel border border-line bg-surface" />
+  ),
+});
 
 /**
  * Het chatvenster. Streamt het antwoord binnen als NDJSON en toont onder elk antwoord
@@ -17,6 +31,7 @@ interface QueryVerslag {
   fout: string | null;
   kolommen: string[];
   rijen: Record<string, unknown>[];
+  weergave: Weergave;
 }
 
 interface Bericht {
@@ -93,7 +108,7 @@ function Verantwoording({ queries }: { queries: QueryVerslag[] }) {
                 </>
               )}
             </p>
-            {!q.fout && <ResultaatTabel verslag={q} />}
+            {!q.fout && q.weergave.vorm !== "tabel" && <ResultaatTabel verslag={q} />}
           </div>
         ))}
       </div>
@@ -256,6 +271,18 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
             </div>
           ) : (
             <div className="rounded-panel border border-line bg-card p-5">
+              {/* De weergave komt boven de tekst: het antwoord is het beeld, de tekst
+                  legt uit wat je erin ziet. */}
+              {bericht.queries
+                ?.filter((q) => !q.fout && q.weergave.vorm !== "verberg")
+                .map((q, j) => (
+                  <Visual
+                    key={j}
+                    weergave={q.weergave}
+                    kolommen={q.kolommen}
+                    rijen={q.rijen}
+                  />
+                ))}
               <p className="whitespace-pre-wrap leading-relaxed text-ink">
                 {bericht.tekst || (bezig ? "…" : "")}
               </p>

@@ -6,6 +6,8 @@ import { chatGereedheid } from "@/lib/config";
 import { woordenboekVoorPrompt, beschikbareViews } from "@/lib/dictionary";
 import { resultaatVoorModel, voerQueryUit } from "@/lib/dataQuery";
 import { logQuery } from "@/lib/queryLog";
+import type { Vorm, Weergave } from "@/components/chat/Visual";
+import type { Eenheid } from "@/components/chat/chartTheme";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -35,8 +37,46 @@ const QUERY_TOOL: Anthropic.Tool = {
         description:
           "Eén zin: wat wil je met deze query te weten komen? Wordt aan de gebruiker getoond.",
       },
+      vorm: {
+        type: "string",
+        enum: ["verberg", "kpi", "staaf", "lijn", "donut", "tabel"],
+        description:
+          "Hoe dit resultaat aan de gebruiker getoond wordt. Gebruik 'verberg' voor " +
+          "verkennende queries die de gebruiker niet hoeft te zien. Zie de regels in de " +
+          "systeeminstructie voor de keuze.",
+      },
+      titel: {
+        type: "string",
+        description:
+          "Korte titel boven de weergave, bijvoorbeeld 'Verkochte voertuigen per merk, " +
+          "Q3 2025'. Leeg laten bij vorm 'verberg'.",
+      },
+      label_kolom: {
+        type: "string",
+        description:
+          "Kolom met de categorie of de tijdseenheid (de x-as). Leeg laten bij 'verberg' " +
+          "of 'tabel'.",
+      },
+      waarde_kolom: {
+        type: "string",
+        description:
+          "Kolom met het getal dat getekend wordt. Leeg laten bij 'verberg' of 'tabel'.",
+      },
+      eenheid: {
+        type: "string",
+        enum: ["geen", "euro", "aantal", "procent"],
+        description: "Eenheid van waarde_kolom, voor de opmaak van de getallen.",
+      },
     },
-    required: ["sql", "toelichting"],
+    required: [
+      "sql",
+      "toelichting",
+      "vorm",
+      "titel",
+      "label_kolom",
+      "waarde_kolom",
+      "eenheid",
+    ],
     additionalProperties: false,
   },
   strict: true,
@@ -55,13 +95,37 @@ function systeemInstructie(): string {
     "- Volg altijd de bedrijfsregels uit het woordenboek hieronder. Die gaan vóór je eigen aannames.",
     "- Krijg je een foutmelding, herstel de query dan zelf en probeer het opnieuw.",
     "",
-    "Antwoorden:",
-    "- Geef het antwoord in het Nederlands, in gewone taal, met het getal voorop.",
-    "- Noem expliciet welke aannames je hebt toegepast, bijvoorbeeld welke statussen zijn",
-    "  meegeteld en welk datumbereik je hebt gebruikt.",
+    "Kies bij elke query een weergave (het veld `vorm`):",
+    "- verberg — verkennende query; de gebruiker hoeft dit niet te zien.",
+    "- kpi — precies één getal. Een enkel getal is geen grafiek: toon het groot.",
+    "  Nooit een staafdiagram met één staaf.",
+    "- staaf — categorieën met elkaar vergelijken (per merk, per campagne, per verkoper).",
+    "  Werkt tot ongeveer vijftien categorieën.",
+    "- lijn — een verloop over tijd (per week, per maand, per kwartaal). Alleen als de",
+    "  x-as echt tijd is; anders is het een staaf.",
+    "- donut — deel-van-het-geheel, hoogstens zes segmenten, en alleen als de verhoudingen",
+    "  duidelijk verschillen. Liggen ze dicht bij elkaar, kies dan staaf: in een donut zijn",
+    "  vergelijkbare partjes niet uit elkaar te houden.",
+    "- tabel — meerdere kolommen die er allemaal toe doen, of een opsomming van regels.",
+    "",
+    "Antwoorden — je antwoord bestaat uit drie delen, in deze volgorde:",
+    "1. Het directe antwoord in één zin, met het getal erin.",
+    "2. De interpretatie: twee tot vier zinnen over wat er opvalt. Wat is het grootst of",
+    "   kleinst, hoe verhouden de posten zich (aandeel, factor, verschil), gaat het omhoog",
+    "   of omlaag, springt er iets uit? Benoem wat een collega zou moeten opvallen, niet",
+    "   alleen wat er staat. Herhaal niet alle getallen die al in de grafiek staan.",
+    "3. De aannames die je hebt toegepast: welke statussen meegeteld, welk datumbereik,",
+    "   welke kolom je als verkoopdatum hebt gebruikt.",
+    "",
+    "Nog een paar regels voor de tekst:",
+    "- Nederlands, gewone taal, geen jargon en geen SQL in je antwoord.",
+    "- Wees voorzichtig met oorzaak en gevolg. Je ziet samenhang in de cijfers, geen",
+    "  verklaring — schrijf 'valt samen met' en niet 'komt door', tenzij de data het",
+    "  echt aantoont.",
+    "- Vind je iets dat waarschijnlijk een datafout is (een dubbeling, een onmogelijke",
+    "  datum, een uitschieter van orde van grootte), zeg dat er dan bij.",
     "- Kun je een vraag niet beantwoorden met de beschikbare tabellen, zeg dat dan en leg uit",
     "  welke gegevens ervoor nodig zouden zijn. Verzin nooit een antwoord.",
-    "- Bij meerdere rijen: geef een korte conclusie in tekst, de tabel wordt apart getoond.",
     "",
     `Beschikbare views: ${beschikbareViews().join(", ")}. Andere tabellen bestaan niet voor jou.`,
   ].join("\n");
@@ -72,7 +136,7 @@ interface InkomendBericht {
   tekst: string;
 }
 
-/** Wat er per uitgevoerde query naar de UI gaat, voor de verantwoording onder het antwoord. */
+/** Wat er per uitgevoerde query naar de UI gaat: de weergave plus de verantwoording. */
 interface QueryVerslag {
   sql: string;
   toelichting: string;
@@ -81,6 +145,29 @@ interface QueryVerslag {
   fout: string | null;
   kolommen: string[];
   rijen: Record<string, unknown>[];
+  weergave: Weergave;
+}
+
+const GELDIGE_VORMEN: Vorm[] = ["verberg", "kpi", "staaf", "lijn", "donut", "tabel"];
+const GELDIGE_EENHEDEN: Eenheid[] = ["geen", "euro", "aantal", "procent"];
+
+/** Leest de weergavevelden uit de toolaanroep, met veilige waarden als er iets mist. */
+function leesWeergave(invoer: Record<string, unknown>): Weergave {
+  const vorm = invoer.vorm;
+  const eenheid = invoer.eenheid;
+  return {
+    vorm:
+      typeof vorm === "string" && (GELDIGE_VORMEN as string[]).includes(vorm)
+        ? (vorm as Vorm)
+        : "tabel",
+    titel: typeof invoer.titel === "string" ? invoer.titel : "",
+    labelKolom: typeof invoer.label_kolom === "string" ? invoer.label_kolom : "",
+    waardeKolom: typeof invoer.waarde_kolom === "string" ? invoer.waarde_kolom : "",
+    eenheid:
+      typeof eenheid === "string" && (GELDIGE_EENHEDEN as string[]).includes(eenheid)
+        ? (eenheid as Eenheid)
+        : "geen",
+  };
 }
 
 export async function POST(request: Request) {
@@ -211,10 +298,11 @@ export async function POST(request: Request) {
           const resultaten: Anthropic.ToolResultBlockParam[] = [];
 
           for (const aanroep of toolAanroepen) {
-            const invoer = aanroep.input as { sql?: unknown; toelichting?: unknown };
+            const invoer = aanroep.input as Record<string, unknown>;
             const sql = typeof invoer.sql === "string" ? invoer.sql : "";
             const toelichting =
               typeof invoer.toelichting === "string" ? invoer.toelichting : "";
+            const weergave = leesWeergave(invoer);
 
             const uitkomst = await voerQueryUit(sql);
 
@@ -227,6 +315,7 @@ export async function POST(request: Request) {
                 fout: null,
                 kolommen: uitkomst.resultaat.kolommen,
                 rijen: uitkomst.resultaat.rijen.slice(0, 100),
+                weergave,
               };
               verslagen.push(verslag);
               send({ type: "query", ...verslag });
@@ -244,6 +333,7 @@ export async function POST(request: Request) {
                 fout: uitkomst.fout,
                 kolommen: [],
                 rijen: [],
+                weergave: { ...weergave, vorm: "verberg" },
               };
               verslagen.push(verslag);
               send({ type: "query", ...verslag });
