@@ -10,11 +10,13 @@ import { beschikbareViews } from "@/lib/dictionary";
  * een gesprek dat vastloopt op een titelgenerator wel.
  */
 
-const KLEIN_MODEL = "claude-haiku-4-5";
+export const KLEIN_MODEL = "claude-haiku-4-5";
 
 export interface Nabewerking {
   titel: string | null;
   vervolgvragen: string[];
+  /** null als de aanroep mislukte — dan is er niets om te loggen. */
+  usage: Anthropic.Usage | null;
 }
 
 /** Terugvaltitel: de vraag zelf, ingekort op een woordgrens. */
@@ -35,6 +37,7 @@ export async function maakNabewerking(
   const terugval: Nabewerking = {
     titel: titelNodig ? titelUitVraag(vraag) : null,
     vervolgvragen: [],
+    usage: null,
   };
 
   try {
@@ -80,6 +83,7 @@ export async function maakNabewerking(
             terugval.titel)
         : null,
       vervolgvragen: vragen,
+      usage: response.usage,
     };
   } catch {
     return terugval;

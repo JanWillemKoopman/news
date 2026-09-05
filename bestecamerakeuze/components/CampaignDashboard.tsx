@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Campagne } from "@/lib/sheet";
 import CampaignMatrix from "@/components/CampaignMatrix";
 import FilterDropdown from "@/components/FilterDropdown";
+import RefreshButton from "@/components/RefreshButton";
 
 function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, "nl"));
@@ -53,6 +54,7 @@ export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[]
   return (
     <div>
       <div className="flex flex-wrap items-center justify-end gap-2">
+        <RefreshButton />
         <FilterDropdown label="Status" options={options.status} selected={status} onChange={setStatus} />
         <FilterDropdown label="Merk" options={options.merk} selected={merk} onChange={setMerk} />
         <FilterDropdown
