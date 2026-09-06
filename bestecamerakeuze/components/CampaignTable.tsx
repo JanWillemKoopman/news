@@ -1,6 +1,4 @@
-"use client";
-
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { Campagne } from "@/lib/sheet";
 import {
   deviationFromTarget,
@@ -100,8 +98,6 @@ const GROUPS: Group[] = [
 ];
 
 export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) {
-  const [hovered, setHovered] = useState<number | null>(null);
-
   if (campagnes.length === 0) {
     return (
       <div className="rounded-panel border border-line bg-card px-6 py-10 text-center shadow-card">
@@ -131,15 +127,11 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
               >
                 Campagne
               </th>
-              {campagnes.map((c, i) => (
+              {campagnes.map((c) => (
                 <th
                   key={c.naam}
                   scope="col"
-                  onMouseEnter={() => setHovered(i)}
-                  onMouseLeave={() => setHovered(null)}
-                  className={`sticky top-0 z-20 border-b border-line bg-card px-4 py-3 align-top transition-colors duration-150 ${
-                    hovered === i ? "bg-line-soft" : ""
-                  }`}
+                  className="sticky top-0 z-20 border-b border-line bg-card px-4 py-3 align-top"
                 >
                   <CampaignHeader campagne={c} />
                 </th>
@@ -157,12 +149,7 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                     {group.title}
                   </th>
                   {campagnes.map((_, i) => (
-                    <td
-                      key={i}
-                      className={`border-b border-line-soft bg-surface-tint transition-colors duration-150 ${
-                        hovered === i ? "bg-line-soft" : ""
-                      }`}
-                    />
+                    <td key={i} className="border-b border-line-soft bg-surface-tint" />
                   ))}
                 </tr>
                 {group.metrics.map((metric) => (
@@ -173,15 +160,8 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                     >
                       {metric.label}
                     </th>
-                    {campagnes.map((c, i) => (
-                      <td
-                        key={c.naam}
-                        onMouseEnter={() => setHovered(i)}
-                        onMouseLeave={() => setHovered(null)}
-                        className={`border-b border-line-soft px-4 py-3 align-top transition-colors duration-150 ${
-                          hovered === i ? "bg-line-soft" : ""
-                        }`}
-                      >
+                    {campagnes.map((c) => (
+                      <td key={c.naam} className="border-b border-line-soft px-4 py-3 align-top">
                         {metric.render(c)}
                       </td>
                     ))}
