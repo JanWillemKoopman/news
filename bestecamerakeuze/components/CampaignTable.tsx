@@ -69,10 +69,8 @@ const GROUPS: Group[] = [
         },
       },
       {
-        // Nog geen kolom voor online leads in de Google Sheet — de rij staat al klaar
-        // in de juiste groep en volgorde, zodra de databron hem levert.
         label: "Online leads",
-        render: () => <PlainCell value="—" muted />,
+        render: (c) => <PlainCell value={formatNumber(c.leadsMarketing)} />,
       },
     ],
   },

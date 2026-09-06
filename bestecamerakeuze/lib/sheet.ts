@@ -25,6 +25,7 @@ export type Campagne = {
   orderTotaal: number | null;
   ordersCampagne: number | null;
   leads: number | null;
+  leadsMarketing: number | null;
   resultaat: string;
   merk: string;
   model: string;
@@ -76,6 +77,7 @@ export async function getCampagnes(): Promise<Campagne[]> {
       orderTotaal: parseNumberNL(row["Order totaal"]),
       ordersCampagne: parseNumberNL(row["Orders campagne"]),
       leads: parseNumberNL(row["Leads"]),
+      leadsMarketing: parseNumberNL(row["Leads marketing"]),
       resultaat: row["Resultaat"]?.trim() ?? "",
       merk: row["Merk"]?.trim() ?? "",
       model: row["Model"]?.trim() ?? "",
