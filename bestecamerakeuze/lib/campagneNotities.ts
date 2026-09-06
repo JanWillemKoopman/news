@@ -9,18 +9,20 @@ export interface CampagneNotitie {
   id: string;
   campagneNaam: string;
   tekst: string;
+  aangemaaktDoor: string;
   bijgewerktOp: string;
 }
 
 const SCHEMA = "dataloket";
 const TABEL = "campagne_notities";
-const KOLOMMEN = "id, campagne_naam, tekst, bijgewerkt_op";
+const KOLOMMEN = "id, campagne_naam, tekst, aangemaakt_door, bijgewerkt_op";
 
 function naarItem(r: Record<string, unknown>): CampagneNotitie {
   return {
     id: r.id as string,
     campagneNaam: r.campagne_naam as string,
     tekst: r.tekst as string,
+    aangemaaktDoor: r.aangemaakt_door as string,
     bijgewerktOp: r.bijgewerkt_op as string,
   };
 }

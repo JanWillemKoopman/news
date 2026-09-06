@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconClose } from "@/components/icons";
 
 type Props = {
@@ -9,11 +10,22 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** Generieke pop-up: centraal paneel + backdrop, sluit op Escape of een klik ernaast. */
+/**
+ * Generieke pop-up: centraal paneel + backdrop, sluit op Escape of een klik ernaast.
+ *
+ * Wordt via een portal direct in <body> gerenderd in plaats van op zijn plek in de
+ * component-boom. Zonder portal kan een knop die vanuit een sticky tabelkop wordt
+ * geopend (zoals de aantekeningen bij een campagne) zijn eigen z-index niet laten
+ * winnen van andere sticky cellen elders in de tabel — sticky elementen met z-index
+ * vormen elk hun eigen stacking context, en die wordt alleen vergeleken met siblings
+ * daarbinnen, niet globaal. Een portal naar <body> omzeilt dat volledig.
+ */
 export default function Modal({ title, onClose, children }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [gemount, setGemount] = useState(false);
 
   useEffect(() => {
+    setGemount(true);
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
@@ -21,7 +33,9 @@ export default function Modal({ title, onClose, children }: Props) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  return (
+  if (!gemount) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4"
       onMouseDown={(event) => {
@@ -48,6 +62,7 @@ export default function Modal({ title, onClose, children }: Props) {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

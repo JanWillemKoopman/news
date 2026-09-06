@@ -1,3 +1,4 @@
+import Avatar from "@/components/Avatar";
 import NavigationItem from "@/components/NavigationItem";
 import {
   IconBook,
@@ -8,19 +9,15 @@ import {
   IconSettings,
 } from "@/components/icons";
 
-export type DashboardView = "campagnes" | "chat" | "kennis" | "kosten";
+export type DashboardView = "campagnes" | "chat" | "kennis" | "kosten" | "instellingen";
 
 type Props = {
   actief: DashboardView;
   onNavigate: (view: DashboardView) => void;
   gebruikerEmail: string | null;
+  profielNaam: string | null;
+  profielAvatarUrl: string | null;
 };
-
-function initialenVoor(email: string | null): string {
-  if (!email) return "U";
-  const local = email.split("@")[0] ?? "";
-  return (local.slice(0, 2) || "U").toUpperCase();
-}
 
 /** Toon alleen het lokale deel van het werkadres als naam; het domein staat al in "Udenhout" eronder. */
 function naamVoor(email: string | null): string {
@@ -29,7 +26,15 @@ function naamVoor(email: string | null): string {
 }
 
 /** De donkere navigatieschil links: branding, hoofdnavigatie en gebruikersprofiel. */
-export default function Sidebar({ actief, onNavigate, gebruikerEmail }: Props) {
+export default function Sidebar({
+  actief,
+  onNavigate,
+  gebruikerEmail,
+  profielNaam,
+  profielAvatarUrl,
+}: Props) {
+  const weergavenaam = profielNaam || naamVoor(gebruikerEmail);
+
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col justify-between overflow-y-auto border-r border-sidebar-line bg-sidebar px-4 py-5">
       <div>
@@ -75,17 +80,21 @@ export default function Sidebar({ actief, onNavigate, gebruikerEmail }: Props) {
       </div>
 
       <div className="flex flex-col gap-0.5 border-t border-sidebar-line pt-3">
-        <NavigationItem icon={<IconSettings />} label="Instellingen" />
+        <NavigationItem
+          icon={<IconSettings />}
+          label="Instellingen"
+          active={actief === "instellingen"}
+          onClick={() => onNavigate("instellingen")}
+        />
         <button
           type="button"
+          onClick={() => onNavigate("instellingen")}
           className="flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-left transition-colors duration-150 hover:bg-sidebar-hover"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-sidebar-ink">
-            {initialenVoor(gebruikerEmail)}
-          </span>
+          <Avatar naam={weergavenaam} avatarUrl={profielAvatarUrl} size={32} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-sidebar-ink">
-              {naamVoor(gebruikerEmail)}
+              {weergavenaam}
             </span>
             <span className="block truncate text-xs text-sidebar-ink-muted">Udenhout</span>
           </span>

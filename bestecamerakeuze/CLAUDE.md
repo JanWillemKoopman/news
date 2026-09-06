@@ -4,7 +4,7 @@ Dit document is de doorlopende referentie voor wie hierna aan dit dashboard werk
 (mens of Claude). Het legt vast wat er niet expliciet in elke prompt terugkomt: het
 doelplatform en de designvisie waarop het huidige dashboard is gebouwd. Zie
 `README.md` voor de technische opzet (stack, data, draaien) en `README-dataloket.md`
-voor het aansluiten van Supabase/de chat/de kosten/de aantekeningen.
+voor het aansluiten van Supabase/de chat/de kosten/de aantekeningen/profielen.
 
 ## Alleen desktop
 
@@ -69,9 +69,20 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   multicolor.
 - Elke campagnekop heeft een subtiel "aantekeningen"-knopje (zie
   `components/CampaignNotes.tsx`) dat een pop-up opent met learnings voor die campagne
-  als oplopende lijst van punten (toevoegen/bewerken/verwijderen). Dit knopje wordt
-  alleen getoond als Supabase geconfigureerd is — zonder database is er niets om in op
-  te slaan.
+  als oplopende lijst van punten (toevoegen/bewerken/verwijderen). Elk punt toont een
+  rond avatarfotootje + naam van wie het toevoegde (`components/Avatar.tsx`,
+  `lib/profielen.ts`) — herleidbaarheid is het hele punt van deze feature. Dit knopje
+  wordt alleen getoond als Supabase geconfigureerd is — zonder database is er niets om
+  in op te slaan.
+- Pop-ups (`components/Modal.tsx`) renderen via een React-portal naar `<body>`, niet op
+  hun eigen plek in de boom. Reden: een knop die vanuit een sticky tabelkop opent (zoals
+  de aantekeningen-knop) zit zelf in een sticky stacking context, en dan wint een hoge
+  z-index niet meer van een andere sticky cel elders in de tabel — stacking contexts
+  worden alleen met siblings vergeleken, niet globaal. Iets vergelijkbaars gold eerder
+  al voor `FilterSelect`'s dropdown (die moest naar `z-40` boven de tabel's `z-30`) en
+  voor de tabel zelf (`border-separate` i.p.v. `border-collapse`, zie hieronder) — kom
+  je een derde keer zoiets tegen, denk dan eerst aan een portal in plaats van weer een
+  hogere z-index te proberen.
 
 ### Databestand van de tabel
 
@@ -113,8 +124,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,
   `PageHeader`, `LiveStatus`, `UpdateButton`, `FilterBar`, `FilterSelect`,
   `CampaignTable`, `CampaignHeader`, `MetricCell`/`PlainCell`, `ProgressBar`,
-  `StatusIndicator`, `Modal`, `CampaignNotes`, `brandLogos`. Voeg nieuwe UI eerder toe
-  als zo'n klein, getypeerd component dan als opgeblazen JSX in een paginabestand.
+  `StatusIndicator`, `Modal`, `CampaignNotes`, `Avatar`, `brandLogos`. Voeg nieuwe UI
+  eerder toe als zo'n klein, getypeerd component dan als opgeblazen JSX in een
+  paginabestand.
 - Eén icon-set (`components/icons.tsx`): simpele, consistente line-icons met
   `stroke="currentColor"`. Geen emoji, geen mix van iconstijlen, geen los icon-pakket
   voor een handvol glyphs — alleen wanneer een merklogo echt een getrouwe vector nodig
@@ -126,7 +138,15 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   route-handlers die `getGebruiker()` checken vóór elke schrijfactie, en een client-UI
   die netjes degradeert (inlogprompt, of — als de functie sowieso niet beschikbaar is
   omdat Supabase niet geconfigureerd is — helemaal niet renderen) in plaats van te
-  crashen. Zie `lib/kennisbank.ts` / `lib/campagneNotities.ts` als voorbeeld.
+  crashen. Zie `lib/kennisbank.ts` / `lib/campagneNotities.ts` / `lib/profielen.ts` als
+  voorbeeld.
+- Inloggen is e-mailadres + wachtwoord (geen magic link, geen zelfregistratie):
+  accounts worden aangemaakt door iemand met toegang tot Supabase, of via
+  `scripts/maak-gebruiker.ts` (draait los van de app met de service role-sleutel — zie
+  README-dataloket.md). Elke collega stelt zelf zijn naam en avatarfoto in bij
+  **Instellingen** (`components/instellingen/`); de foto gaat rechtstreeks van de
+  browser naar Supabase Storage (bucket `avatars`, rijbeveiligd op de eigen user-id als
+  mapnaam), niet via een API-route.
 - De campagnedata zelf (Google Sheet via `lib/sheet.ts`) blijft de brondata; features
   die daar bovenop komen (aantekeningen, kosten) koppelen op de campagnenaam of draaien
   los ernaast — er komt geen eigen "campagne"-tabel in de database zolang de sheet de

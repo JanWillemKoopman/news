@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { lijstNotities, maakNotitie } from "@/lib/campagneNotities";
+import { haalProfiel, haalProfielen } from "@/lib/profielen";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,13 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const items = await lijstNotities(supabase, campagne);
-    return NextResponse.json({ items });
+    // Eén keer alle betrokken profielen ophalen (naam + avatar) i.p.v. per aantekening —
+    // zodat je in de pop-up meteen ziet wie welke aantekening heeft toegevoegd.
+    const profielen = await haalProfielen(
+      supabase,
+      items.map((i) => i.aangemaaktDoor),
+    );
+    return NextResponse.json({ items, profielen });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : "Kon aantekeningen niet ophalen." },
@@ -44,7 +51,8 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const item = await maakNotitie(supabase, gebruiker.id, campagne, tekst);
-    return NextResponse.json({ item });
+    const profiel = await haalProfiel(supabase, gebruiker.id);
+    return NextResponse.json({ item, profiel });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : "Kon aantekening niet opslaan." },

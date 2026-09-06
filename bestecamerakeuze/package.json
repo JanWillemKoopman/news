@@ -9,7 +9,8 @@
     "start": "next start -p 3002",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test lib/*.test.ts"
+    "test": "node --experimental-strip-types --test lib/*.test.ts",
+    "gebruiker:maak": "node --env-file=.env.local --experimental-strip-types scripts/maak-gebruiker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",

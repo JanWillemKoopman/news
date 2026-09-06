@@ -10,7 +10,8 @@ Onderstaande stappen zijn eenmalig.
 
 Voer in volgorde uit in de Supabase SQL-editor:
 `supabase/migrations/0001_dataloket.sql`, dan `0002_gesprekken.sql`, dan
-`0003_kennisbank.sql`, dan `0004_claude_kosten.sql`, dan `0005_campagne_notities.sql`.
+`0003_kennisbank.sql`, dan `0004_claude_kosten.sql`, dan `0005_campagne_notities.sql`,
+dan `0006_profielen.sql`.
 
 De eerste zet de datalaag en de read-only rol neer, de tweede de gespreksgeschiedenis
 (gesprekken, berichten, feedback — elk met rijbeveiliging zodat iedereen alleen zijn
@@ -18,7 +19,9 @@ eigen gesprekken ziet), de derde de kennisbank, de vierde de registratie van Cla
 API-kosten (voedt het Kosten-tabblad; begint te vullen zodra de migratie draait, geen
 historie van ervoor), de vijfde de aantekeningen/learnings per campagne (voedt de
 aantekeningen-pop-up op het campagnedashboard — die knop verschijnt pas zodra Supabase
-geconfigureerd is, ongeacht de andere twee dataloket-variabelen hieronder).
+geconfigureerd is, ongeacht de andere twee dataloket-variabelen hieronder), de zesde de
+naam + avatarfoto per collega (inclusief de `avatars`-bucket in Supabase Storage) — voedt
+zowel Instellingen als de naam/foto bij elke aantekening.
 
 Dat maakt het `dataloket`-schema aan met:
 
@@ -58,13 +61,34 @@ In Vercel (of `.env.local` voor lokaal):
 | `ANTHROPIC_API_KEY` | de Claude API |
 | `SYNC_DATABASE_URL` | schrijvende verbinding, alleen voor de sync-job |
 | `CRON_SECRET` | beschermt `/api/sync` tegen aanroepen van buiten |
+| `SUPABASE_SERVICE_ROLE_KEY` | alleen voor `scripts/maak-gebruiker.ts`, nooit in de app zelf — zie hieronder |
 
 `DATAQUERY_DATABASE_URL` en `SYNC_DATABASE_URL` horen **verschillende** rollen te zijn.
 
-## 4. Wie mag inloggen
+## 4. Collega-accounts aanmaken
 
-Inloggen gaat via een magic link. Beperk in Supabase (Authentication → Providers → Email)
-wie er binnenkomt, bijvoorbeeld door alleen adressen op het eigen domein toe te laten.
+Inloggen gaat met e-mailadres + wachtwoord (geen magic link) — er is dus geen
+zelfregistratie: iemand met toegang maakt het account aan en geeft de inloggegevens
+direct door.
+
+**Optie A — via Supabase:** Authentication → Users → Add user, vink "Auto Confirm User"
+aan zodat er geen bevestigingsmail nodig is.
+
+**Optie B — via het `gebruiker:maak`-script** (handig als je dit vanuit een
+Claude Code-sessie wilt laten doen): zet `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`
+(Supabase → Project Settings → API → service_role secret — **nooit** in Vercel/de app
+zelf, deze sleutel omzeilt alle rijbeveiliging) en draai:
+
+```bash
+npm run gebruiker:maak -- --email=collega@udenhout.nl --wachtwoord="EenSterkWachtwoord123" --naam="Voornaam Achternaam"
+```
+
+Bestaat het account al, dan wordt alleen het wachtwoord bijgewerkt — hetzelfde
+commando werkt dus ook voor "wachtwoord vergeten". Zie `scripts/maak-gebruiker.ts`.
+
+Elke collega kan daarna zelf bij **Instellingen** zijn naam en profielfoto instellen;
+die worden onder andere getoond bij aantekeningen die diegene toevoegt aan een
+campagne (zie `supabase/migrations/0006_profielen.sql`).
 
 Standaard staat de inlog alleen vóór het chattabblad; het campagnedashboard blijft
 publiek zoals het nu is. Wil je de héle app achter de inlog zetten, pas dan de `matcher`

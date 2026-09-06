@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import { IconNotes, IconPencil, IconPlus, IconTrash } from "@/components/icons";
 
 interface Notitie {
   id: string;
   tekst: string;
+  aangemaaktDoor: string;
+}
+
+interface Profiel {
+  naam: string | null;
+  avatarUrl: string | null;
 }
 
 type Props = {
@@ -17,12 +24,15 @@ type Props = {
 /**
  * Subtiel knopje in de campagnekop dat een pop-up opent met de aantekeningen/learnings
  * voor die campagne: een oplopende lijst van punten die iedereen mag toevoegen,
- * aanpassen of verwijderen. Wordt alleen gerenderd wanneer Supabase geconfigureerd is
- * (zie CampaignHeader.tsx) — zonder database is er niets om op te slaan.
+ * aanpassen of verwijderen. Elke aantekening toont wie hem heeft toegevoegd (avatar +
+ * naam), zodat learnings herleidbaar blijven. Wordt alleen gerenderd wanneer Supabase
+ * geconfigureerd is (zie CampaignHeader.tsx) — zonder database is er niets om op te
+ * slaan.
  */
 export default function CampaignNotes({ campagneNaam, ingelogd }: Props) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notitie[] | null>(null);
+  const [profielen, setProfielen] = useState<Record<string, Profiel>>({});
   const [laden, setLaden] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [nieuw, setNieuw] = useState("");
@@ -41,6 +51,7 @@ export default function CampaignNotes({ campagneNaam, ingelogd }: Props) {
         if (genegeerd) return;
         if (json.fout) throw new Error(json.fout);
         setItems(json.items as Notitie[]);
+        setProfielen(json.profielen as Record<string, Profiel>);
       })
       .catch((err) => {
         if (!genegeerd) setFout(err instanceof Error ? err.message : "Kon aantekeningen niet ophalen.");
@@ -66,7 +77,9 @@ export default function CampaignNotes({ campagneNaam, ingelogd }: Props) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.fout ?? "Kon aantekening niet opslaan.");
-      setItems((prev) => [...(prev ?? []), json.item as Notitie]);
+      const item = json.item as Notitie;
+      setItems((prev) => [...(prev ?? []), item]);
+      setProfielen((prev) => ({ ...prev, [item.aangemaaktDoor]: json.profiel as Profiel }));
       setNieuw("");
     } catch (err) {
       setFout(err instanceof Error ? err.message : "Kon aantekening niet opslaan.");
@@ -144,69 +157,79 @@ export default function CampaignNotes({ campagneNaam, ingelogd }: Props) {
                 <p className="text-sm text-ink-faint">Nog geen aantekeningen voor deze campagne.</p>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {(items ?? []).map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-start gap-2 rounded-card border border-line px-3 py-2"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-faint"
-                      />
-                      {bewerkId === item.id ? (
-                        <div className="flex flex-1 flex-col gap-2">
-                          <textarea
-                            value={bewerkTekst}
-                            onChange={(e) => setBewerkTekst(e.target.value)}
-                            rows={2}
-                            autoFocus
-                            className="w-full resize-none rounded-control border border-line px-2 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => opslaan(item.id)}
-                              className="rounded-control bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-dark"
-                            >
-                              Opslaan
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setBewerkId(null)}
-                              className="rounded-control px-3 py-1 text-xs font-medium text-ink-muted hover:bg-surface"
-                            >
-                              Annuleren
-                            </button>
+                  {(items ?? []).map((item) => {
+                    const profiel = profielen[item.aangemaaktDoor];
+                    return (
+                      <li
+                        key={item.id}
+                        className="flex items-start gap-2.5 rounded-card border border-line px-3 py-2"
+                      >
+                        <Avatar
+                          naam={profiel?.naam ?? null}
+                          avatarUrl={profiel?.avatarUrl ?? null}
+                          size={22}
+                          className="mt-0.5"
+                        />
+                        {bewerkId === item.id ? (
+                          <div className="flex flex-1 flex-col gap-2">
+                            <textarea
+                              value={bewerkTekst}
+                              onChange={(e) => setBewerkTekst(e.target.value)}
+                              rows={2}
+                              autoFocus
+                              className="w-full resize-none rounded-control border border-line px-2 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => opslaan(item.id)}
+                                className="rounded-control bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-dark"
+                              >
+                                Opslaan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBewerkId(null)}
+                                className="rounded-control px-3 py-1 text-xs font-medium text-ink-muted hover:bg-surface"
+                              >
+                                Annuleren
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="flex-1 whitespace-pre-wrap text-sm text-ink">{item.tekst}</p>
-                          <div className="flex shrink-0 gap-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBewerkId(item.id);
-                                setBewerkTekst(item.tekst);
-                              }}
-                              aria-label="Aantekening bewerken"
-                              className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-ink"
-                            >
-                              <IconPencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => verwijderen(item.id)}
-                              aria-label="Aantekening verwijderen"
-                              className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-negative"
-                            >
-                              <IconTrash className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </li>
-                  ))}
+                        ) : (
+                          <>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-medium text-ink-faint">
+                                {profiel?.naam || "Onbekend"}
+                              </p>
+                              <p className="whitespace-pre-wrap text-sm text-ink">{item.tekst}</p>
+                            </div>
+                            <div className="flex shrink-0 gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBewerkId(item.id);
+                                  setBewerkTekst(item.tekst);
+                                }}
+                                aria-label="Aantekening bewerken"
+                                className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-ink"
+                              >
+                                <IconPencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => verwijderen(item.id)}
+                                aria-label="Aantekening verwijderen"
+                                className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-negative"
+                              >
+                                <IconTrash className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
 
