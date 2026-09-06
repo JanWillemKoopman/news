@@ -114,10 +114,12 @@ export default function CampaignTable({ campagnes, notitiesBeschikbaar, ingelogd
 
   return (
     <div className="overflow-hidden rounded-panel border border-line bg-card shadow-card">
-      <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        {/* border-separate (i.p.v. collapse) is nodig zodat de sticky kolom en header
-            niet doorschijnend worden tijdens het scrollen — een bekende Chromium-eigenaardigheid
-            met sticky cellen in een border-collapse tabel. */}
+      <div className="overflow-x-auto">
+        {/* Geen vaste hoogte / verticaal scrollen hier: de tabel groeit gewoon mee met het
+            aantal rijen en de pagina zelf scrollt. Alleen horizontaal scrollen (bij veel
+            campagnes) blijft binnen de tabel, met border-separate (i.p.v. collapse) nodig
+            zodat de sticky kolom en header niet doorschijnend worden tijdens het scrollen —
+            een bekende Chromium-eigenaardigheid met sticky cellen in een border-collapse tabel. */}
         <table className="w-full table-fixed border-separate border-spacing-0 text-left">
           <colgroup>
             <col className="w-[148px]" />

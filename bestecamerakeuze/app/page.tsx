@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     ? await haalProfiel(await createClient(), gebruiker.id).catch(() => null)
     : null;
 
-  const liveCount = campagnes.filter((c) => c.status.trim().toLowerCase() === "open").length;
+  const liveCount = campagnes.filter((c) => c.status.trim().toLowerCase() === "live").length;
   const updatedAt = formatUpdatedAt(new Date());
 
   return (

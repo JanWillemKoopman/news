@@ -24,7 +24,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle: "In één overzicht de prestaties van al je actieve campagnes.",
   },
   chat: {
-    title: "Vraag het je data",
+    title: "Start gesprek",
     subtitle: "Stel een vraag in gewone taal en krijg antwoord uit je eigen data.",
   },
   kennis: {

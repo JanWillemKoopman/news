@@ -58,9 +58,13 @@ export default function Sidebar({
             active={actief === "campagnes"}
             onClick={() => onNavigate("campagnes")}
           />
+
+          <p className="mb-1 mt-4 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-ink-muted">
+            Chatbot
+          </p>
           <NavigationItem
             icon={<IconChat />}
-            label="Vraag het je data"
+            label="Start gesprek"
             active={actief === "chat"}
             onClick={() => onNavigate("chat")}
           />
@@ -70,16 +74,16 @@ export default function Sidebar({
             active={actief === "kennis"}
             onClick={() => onNavigate("kennis")}
           />
-          <NavigationItem
-            icon={<IconCoin />}
-            label="Kosten"
-            active={actief === "kosten"}
-            onClick={() => onNavigate("kosten")}
-          />
         </nav>
       </div>
 
       <div className="flex flex-col gap-0.5 border-t border-sidebar-line pt-3">
+        <NavigationItem
+          icon={<IconCoin />}
+          label="Kosten"
+          active={actief === "kosten"}
+          onClick={() => onNavigate("kosten")}
+        />
         <NavigationItem
           icon={<IconSettings />}
           label="Instellingen"
