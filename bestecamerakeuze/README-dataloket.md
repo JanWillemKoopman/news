@@ -10,13 +10,15 @@ Onderstaande stappen zijn eenmalig.
 
 Voer in volgorde uit in de Supabase SQL-editor:
 `supabase/migrations/0001_dataloket.sql`, dan `0002_gesprekken.sql`, dan
-`0003_kennisbank.sql`, dan `0004_claude_kosten.sql`.
+`0003_kennisbank.sql`, dan `0004_claude_kosten.sql`, dan `0005_campagne_notities.sql`.
 
 De eerste zet de datalaag en de read-only rol neer, de tweede de gespreksgeschiedenis
 (gesprekken, berichten, feedback — elk met rijbeveiliging zodat iedereen alleen zijn
 eigen gesprekken ziet), de derde de kennisbank, de vierde de registratie van Claude
 API-kosten (voedt het Kosten-tabblad; begint te vullen zodra de migratie draait, geen
-historie van ervoor).
+historie van ervoor), de vijfde de aantekeningen/learnings per campagne (voedt de
+aantekeningen-pop-up op het campagnedashboard — die knop verschijnt pas zodra Supabase
+geconfigureerd is, ongeacht de andere twee dataloket-variabelen hieronder).
 
 Dat maakt het `dataloket`-schema aan met:
 

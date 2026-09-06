@@ -16,7 +16,13 @@ function sortByStartdatumDesc(campagnes: Campagne[]): Campagne[] {
   return [...campagnes].sort((a, b) => (b.startdatum ?? "").localeCompare(a.startdatum ?? ""));
 }
 
-export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[] }) {
+type Props = {
+  campagnes: Campagne[];
+  notitiesBeschikbaar: boolean;
+  ingelogd: boolean;
+};
+
+export default function CampaignDashboard({ campagnes, notitiesBeschikbaar, ingelogd }: Props) {
   const [status, setStatus] = useState<string[]>([]);
   const [merk, setMerk] = useState<string[]>([]);
   const [ordersoort, setOrdersoort] = useState<string[]>([]);
@@ -79,7 +85,11 @@ export default function CampaignDashboard({ campagnes }: { campagnes: Campagne[]
         <UpdateButton variant="inline" label="Bijwerken" />
       </FilterBar>
 
-      <CampaignTable campagnes={filtered} />
+      <CampaignTable
+        campagnes={filtered}
+        notitiesBeschikbaar={notitiesBeschikbaar}
+        ingelogd={ingelogd}
+      />
     </div>
   );
 }

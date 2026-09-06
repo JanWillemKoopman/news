@@ -1,14 +1,27 @@
 import type { Campagne } from "@/lib/sheet";
 import StatusIndicator from "@/components/StatusIndicator";
 import { getBrandLogo } from "@/components/brandLogos";
+import CampaignNotes from "@/components/CampaignNotes";
+
+type Props = {
+  campagne: Campagne;
+  /** Alleen tonen als er ook echt iets is om de aantekeningen in op te slaan. */
+  notitiesBeschikbaar: boolean;
+  ingelogd: boolean;
+};
 
 /** Kolomkop van één campagne: naam als primaire informatie, merk + status als metadata. */
-export default function CampaignHeader({ campagne }: { campagne: Campagne }) {
+export default function CampaignHeader({ campagne, notitiesBeschikbaar, ingelogd }: Props) {
   const BrandLogo = campagne.merk ? getBrandLogo(campagne.merk) : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="block min-w-0 truncate text-[15px] font-semibold text-ink">{campagne.naam}</span>
+      <div className="flex min-w-0 items-start justify-between gap-1.5">
+        <span className="block min-w-0 truncate text-[15px] font-semibold text-ink">{campagne.naam}</span>
+        {notitiesBeschikbaar && (
+          <CampaignNotes campagneNaam={campagne.naam} ingelogd={ingelogd} />
+        )}
+      </div>
       <span className="flex min-w-0 items-center gap-1.5">
         {campagne.merk &&
           (BrandLogo ? (

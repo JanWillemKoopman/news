@@ -97,7 +97,13 @@ const GROUPS: Group[] = [
   },
 ];
 
-export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) {
+type Props = {
+  campagnes: Campagne[];
+  notitiesBeschikbaar: boolean;
+  ingelogd: boolean;
+};
+
+export default function CampaignTable({ campagnes, notitiesBeschikbaar, ingelogd }: Props) {
   if (campagnes.length === 0) {
     return (
       <div className="rounded-panel border border-line bg-card px-6 py-10 text-center shadow-card">
@@ -114,9 +120,9 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
             met sticky cellen in een border-collapse tabel. */}
         <table className="w-full table-fixed border-separate border-spacing-0 text-left">
           <colgroup>
-            <col className="w-[168px]" />
+            <col className="w-[148px]" />
             {campagnes.map((c) => (
-              <col key={c.naam} className="w-[190px]" />
+              <col key={c.naam} className="w-[156px]" />
             ))}
           </colgroup>
           <thead>
@@ -131,9 +137,13 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                 <th
                   key={c.naam}
                   scope="col"
-                  className="sticky top-0 z-20 border-b border-line bg-card px-4 py-3 align-top"
+                  className="sticky top-0 z-20 border-b border-line bg-card px-3 py-3 align-top"
                 >
-                  <CampaignHeader campagne={c} />
+                  <CampaignHeader
+                    campagne={c}
+                    notitiesBeschikbaar={notitiesBeschikbaar}
+                    ingelogd={ingelogd}
+                  />
                 </th>
               ))}
             </tr>
@@ -161,7 +171,7 @@ export default function CampaignTable({ campagnes }: { campagnes: Campagne[] }) 
                       {metric.label}
                     </th>
                     {campagnes.map((c) => (
-                      <td key={c.naam} className="border-b border-line-soft px-4 py-3 align-top">
+                      <td key={c.naam} className="border-b border-line-soft px-3 py-3 align-top">
                         {metric.render(c)}
                       </td>
                     ))}

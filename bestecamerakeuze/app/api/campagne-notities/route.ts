@@ -1,0 +1,54 @@
+import { NextResponse } from "next/server";
+import { getGebruiker } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { lijstNotities, maakNotitie } from "@/lib/campagneNotities";
+
+export const dynamic = "force-dynamic";
+
+const MAX_TEKST_LENGTE = 1000;
+
+export async function GET(request: Request) {
+  const gebruiker = await getGebruiker();
+  if (!gebruiker) return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
+
+  const campagne = new URL(request.url).searchParams.get("campagne")?.trim();
+  if (!campagne) return NextResponse.json({ fout: "Campagnenaam ontbreekt." }, { status: 400 });
+
+  try {
+    const supabase = await createClient();
+    const items = await lijstNotities(supabase, campagne);
+    return NextResponse.json({ items });
+  } catch (err) {
+    return NextResponse.json(
+      { fout: err instanceof Error ? err.message : "Kon aantekeningen niet ophalen." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const gebruiker = await getGebruiker();
+  if (!gebruiker) return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const campagne = typeof body.campagne === "string" ? body.campagne.trim() : "";
+  const tekst = typeof body.tekst === "string" ? body.tekst.trim() : "";
+
+  if (!campagne || !tekst) {
+    return NextResponse.json({ fout: "Campagne en tekst zijn verplicht." }, { status: 400 });
+  }
+  if (tekst.length > MAX_TEKST_LENGTE) {
+    return NextResponse.json({ fout: "Aantekening is te lang." }, { status: 400 });
+  }
+
+  try {
+    const supabase = await createClient();
+    const item = await maakNotitie(supabase, gebruiker.id, campagne, tekst);
+    return NextResponse.json({ item });
+  } catch (err) {
+    return NextResponse.json(
+      { fout: err instanceof Error ? err.message : "Kon aantekening niet opslaan." },
+      { status: 500 },
+    );
+  }
+}

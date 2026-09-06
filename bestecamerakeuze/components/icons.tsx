@@ -89,12 +89,53 @@ export function IconCoin({ className }: IconProps) {
   );
 }
 
-export function IconMenu({ className }: IconProps) {
+export function IconNotes({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">
-      <path d="M4 6h16" />
-      <path d="M4 12h16" />
-      <path d="M4 18h16" />
+      <path d="M6 3.5h9.5L19 7v13.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" />
+      <path d="M14.5 3.5V7H19" />
+      <path d="M8 11.5h8" />
+      <path d="M8 15h8" />
+      <path d="M8 18.5h5" />
+    </svg>
+  );
+}
+
+export function IconPencil({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      <path d="m14.5 5.5 3 3" />
+    </svg>
+  );
+}
+
+export function IconTrash({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M4 6.5h16" />
+      <path d="M8.5 6.5V4.75A1.25 1.25 0 0 1 9.75 3.5h4.5a1.25 1.25 0 0 1 1.25 1.25V6.5" />
+      <path d="M6.5 6.5 7.3 19.6a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-13.1" />
+      <path d="M10.3 10.5v6" />
+      <path d="M13.7 10.5v6" />
+    </svg>
+  );
+}
+
+export function IconClose({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
+    </svg>
+  );
+}
+
+export function IconPlus({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
     </svg>
   );
 }

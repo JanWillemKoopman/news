@@ -1,8 +1,9 @@
 /**
- * Merklogo's voor de campagnekolommen: als een campagne één specifiek merk heeft (Audi,
- * Volkswagen, Škoda, SEAT), toont de kolomkop het logo in plaats van de merknaam als
- * tekst — zie CampaignHeader.tsx. Alle logo's zijn monochroom (fill="currentColor") en
- * volgen dus de tekstkleur, in lijn met het rustige, eenkleurige palet van de tabel.
+ * Merklogo's voor de campagnekolommen: als een campagne één specifiek merk heeft — de
+ * Volkswagen Groep-merken die Udenhout verkoopt (Audi, Volkswagen, Volkswagen
+ * Bedrijfswagens, Škoda, SEAT) — toont de kolomkop het logo in plaats van de merknaam
+ * als tekst, zie CampaignHeader.tsx. Alle logo's zijn monochroom (fill="currentColor")
+ * en volgen dus de tekstkleur, in lijn met het rustige, eenkleurige palet van de tabel.
  *
  * Vectoren zijn de vereenvoudigde, single-path versies uit het MIT-gelicenseerde
  * simple-icons project (simpleicons.org) — bedoeld om naar een merk te verwijzen, niet
@@ -46,10 +47,17 @@ function SeatLogo(props: LogoProps) {
   );
 }
 
+/**
+ * Alle Volkswagen Groep-merken waar we een betrouwbaar eenkleurig logo voor konden
+ * vinden. CUPRA staat niet in de gebruikte iconenset en is dus (nog) niet opgenomen —
+ * die campagnes tonen gewoon de merknaam als tekst, net als elk ander onbekend merk.
+ */
 const BRAND_LOGOS: Record<string, LogoComponent> = {
   audi: AudiLogo,
   volkswagen: VolkswagenLogo,
   vw: VolkswagenLogo,
+  "volkswagen bedrijfswagens": VolkswagenLogo,
+  "vw bedrijfswagens": VolkswagenLogo,
   skoda: SkodaLogo,
   seat: SeatLogo,
 };
