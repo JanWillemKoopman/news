@@ -47,6 +47,9 @@
   --color-open-light: #dcfce7;
   --color-closed: #8a93a3;
   --color-closed-light: #eef0f2;
+  /* Lichte tint van --color-open — het andere uiterste van de "ademende" statusdot
+     hieronder, niet los ergens anders gebruikt. */
+  --color-open-bright: #6ee7a5;
 
   /* Afwijking t.o.v. doel: groen boven, rood onder — bewust gedempt, geen neonkleuren. */
   --color-positive: #15803d;
@@ -112,5 +115,28 @@ body {
   *::-webkit-scrollbar-thumb {
     background-color: var(--color-line);
     border-radius: 999px;
+  }
+}
+
+/* Ademende statusdot voor een open campagne: heel langzaam en subtiel van lichtgroen
+   naar donkergroen en weer terug, zodat "live" voelt zonder de aandacht te trekken.
+   Geen los keyframe-pakket nodig voor dit ene effect. */
+@keyframes status-dot-ademen {
+  0%,
+  100% {
+    background-color: var(--color-open-bright);
+  }
+  50% {
+    background-color: var(--color-open);
+  }
+}
+
+.status-dot-ademen {
+  animation: status-dot-ademen 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot-ademen {
+    animation: none;
   }
 }

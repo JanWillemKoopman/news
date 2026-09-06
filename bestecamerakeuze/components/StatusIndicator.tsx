@@ -5,7 +5,7 @@ export default function StatusIndicator({ status }: { status: string }) {
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
       <span
         aria-hidden="true"
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${isOpen ? "bg-open" : "bg-closed"}`}
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${isOpen ? "bg-open status-dot-ademen" : "bg-closed"}`}
       />
       {status || "—"}
     </span>
