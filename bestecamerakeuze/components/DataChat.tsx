@@ -5,6 +5,14 @@ import GesprekLijst, { type Gesprek } from "@/components/chat/GesprekLijst";
 import Markdown from "@/components/chat/Markdown";
 import Visual, { type Weergave } from "@/components/chat/Visual";
 import { downloadCsv } from "@/lib/csv";
+import {
+  IconCheck,
+  IconCopy,
+  IconDownload,
+  IconRefresh,
+  IconThumbDown,
+  IconThumbUp,
+} from "@/components/icons";
 
 /**
  * Het chatvenster.
@@ -115,27 +123,28 @@ function Verantwoording({ queries }: { queries: QueryVerslag[] }) {
   );
 }
 
-function ActieKnop({
+function IconActieKnop({
   children,
   onClick,
   titel,
   actief,
+  actiefKleur,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   titel: string;
   actief?: boolean;
+  actiefKleur?: "primary" | "orange";
 }) {
+  const kleur = actiefKleur === "orange" ? "text-orange" : "text-primary";
   return (
     <button
       type="button"
       onClick={onClick}
       title={titel}
       aria-label={titel}
-      className={`rounded-pill border px-2.5 py-1 text-xs transition-colors ${
-        actief
-          ? "border-primary bg-primary text-white"
-          : "border-line bg-card text-ink-muted hover:border-primary hover:text-ink"
+      className={`rounded-control p-1.5 transition-colors ${
+        actief ? `${kleur} bg-surface` : "text-ink-faint hover:bg-surface hover:text-ink"
       }`}
     >
       {children}
@@ -160,43 +169,50 @@ function AntwoordActies({
 }) {
   const metRijen = (bericht.queries ?? []).filter((q) => !q.fout && q.rijen.length > 0);
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      <ActieKnop onClick={onKopieer} titel="Antwoord kopiëren">
-        {gekopieerd ? "Gekopieerd" : "Kopieer"}
-      </ActieKnop>
+    <div className="mt-2 flex flex-wrap items-center gap-0.5">
+      <IconActieKnop onClick={onKopieer} titel="Antwoord kopiëren">
+        {gekopieerd ? <IconCheck className="h-4 w-4" /> : <IconCopy className="h-4 w-4" />}
+      </IconActieKnop>
+      {/* Feedback is hier geen tevredenheidsmeting maar een werklijst: een antwoord dat
+          als fout is gemarkeerd wijst bijna altijd op iets wat nog in het
+          datawoordenboek moet. */}
+      <IconActieKnop
+        onClick={() => onOordeel("goed")}
+        titel="Dit antwoord klopt"
+        actief={bericht.oordeel === "goed"}
+      >
+        <IconThumbUp className="h-4 w-4" />
+      </IconActieKnop>
+      <IconActieKnop
+        onClick={() => onOordeel("fout")}
+        titel="Dit antwoord klopt niet"
+        actief={bericht.oordeel === "fout"}
+        actiefKleur="orange"
+      >
+        <IconThumbDown className="h-4 w-4" />
+      </IconActieKnop>
       {kanOpnieuw && (
-        <ActieKnop onClick={onOpnieuw} titel="Opnieuw beantwoorden">
-          Opnieuw
-        </ActieKnop>
+        <IconActieKnop onClick={onOpnieuw} titel="Opnieuw beantwoorden">
+          <IconRefresh className="h-4 w-4" />
+        </IconActieKnop>
       )}
-      {metRijen.map((q, i) => (
-        <ActieKnop
-          key={i}
-          onClick={() => downloadCsv(q.kolommen, q.rijen, q.weergave.titel || "resultaat")}
-          titel="Download als CSV voor Excel"
-        >
-          CSV{metRijen.length > 1 ? ` ${i + 1}` : ""}
-        </ActieKnop>
-      ))}
-      <span className="ml-auto flex gap-1.5">
-        {/* Feedback is hier geen tevredenheidsmeting maar een werklijst: een antwoord dat
-            als fout is gemarkeerd wijst bijna altijd op iets wat nog in het
-            datawoordenboek moet. */}
-        <ActieKnop
-          onClick={() => onOordeel("goed")}
-          titel="Dit antwoord klopt"
-          actief={bericht.oordeel === "goed"}
-        >
-          Klopt
-        </ActieKnop>
-        <ActieKnop
-          onClick={() => onOordeel("fout")}
-          titel="Dit antwoord klopt niet"
-          actief={bericht.oordeel === "fout"}
-        >
-          Klopt niet
-        </ActieKnop>
-      </span>
+      {metRijen.length > 0 && (
+        <>
+          <span aria-hidden="true" className="mx-1 h-4 w-px bg-line" />
+          {metRijen.map((q, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => downloadCsv(q.kolommen, q.rijen, q.weergave.titel || "resultaat")}
+              title="Download als CSV voor Excel"
+              className="flex items-center gap-1 rounded-control px-2 py-1.5 text-xs text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+            >
+              <IconDownload className="h-3.5 w-3.5" />
+              CSV{metRijen.length > 1 ? ` ${i + 1}` : ""}
+            </button>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -448,8 +464,10 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
     );
   }
 
+  const leeg = berichten.length === 0;
+
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+    <div className="flex gap-8 lg:items-start">
       <GesprekLijst
         gesprekken={gesprekken}
         actiefId={actiefId}
@@ -461,160 +479,166 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
         onVerwijder={(id) => void verwijder(id)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        {berichten.length === 0 && (
-          <div className="rounded-panel border border-line bg-surface p-6">
-            <p className="font-sans-w7 text-base font-bold text-ink">
-              Stel een vraag over je data
-            </p>
-            <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">
-              Je krijgt antwoord op basis van echte queries op de database. Onder elk
-              antwoord zie je welke query is gedraaid, zodat je het kunt narekenen.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {VOORBEELDVRAGEN.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => void verstuur(v)}
-                  className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-left text-sm text-ink transition-colors hover:border-primary"
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {berichten.map((bericht, i) => (
-          <div key={i}>
-            {bericht.rol === "gebruiker" ? (
-              <div className="flex justify-end">
-                <p className="max-w-2xl rounded-panel bg-primary px-4 py-2.5 whitespace-pre-wrap text-white">
-                  {bericht.tekst}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mx-auto flex w-full max-w-[720px] flex-1 flex-col">
+          {leeg ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
+              <div>
+                <p className="font-sans-w7 text-2xl font-bold text-ink">
+                  Stel een vraag over je data
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
+                  Je krijgt antwoord op basis van echte queries op de database. Onder elk
+                  antwoord zie je welke query is gedraaid, zodat je het kunt narekenen.
                 </p>
               </div>
-            ) : (
-              <div className="rounded-panel border border-line bg-card p-5">
-                {/* De weergave staat boven de tekst: het antwoord is het beeld, de tekst
-                    legt uit wat je erin ziet. */}
-                {bericht.queries
-                  ?.filter((q) => !q.fout && q.weergave.vorm !== "verberg")
-                  .map((q, j) => (
-                    <Visual
-                      key={j}
-                      weergave={q.weergave}
-                      kolommen={q.kolommen}
-                      rijen={q.rijen}
-                    />
-                  ))}
-
-                {bericht.tekst ? (
-                  <Markdown tekst={bericht.tekst} />
-                ) : (
-                  bezig && <p className="text-ink-faint">…</p>
-                )}
-
-                {bericht.queries && bericht.queries.length > 0 && (
-                  <Verantwoording queries={bericht.queries} />
-                )}
-
-                {!bezig && bericht.tekst && (
-                  <AntwoordActies
-                    bericht={bericht}
-                    gekopieerd={gekopieerd === i}
-                    kanOpnieuw={i === berichten.length - 1}
-                    onKopieer={() => {
-                      void navigator.clipboard.writeText(bericht.tekst);
-                      setGekopieerd(i);
-                      setTimeout(() => setGekopieerd(null), 2000);
-                    }}
-                    onOpnieuw={opnieuwProberen}
-                    onOordeel={(o) => void geefOordeel(i, o)}
-                  />
-                )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+                {VOORBEELDVRAGEN.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => void verstuur(v)}
+                    className="rounded-control border border-line bg-card px-4 py-2.5 text-left text-sm text-ink transition-colors hover:border-primary/40 hover:bg-primary-light"
+                  >
+                    {v}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-        ))}
-
-        {bezig && (
-          <p className="text-sm text-ink-faint">
-            {fase === "query"
-              ? "Query uitvoeren…"
-              : fase === "schrijven"
-                ? "Antwoord schrijven…"
-                : "Nadenken…"}
-          </p>
-        )}
-
-        {!bezig && vervolgvragen.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs tracking-wide text-ink-faint uppercase">
-              Verder vragen
-            </span>
-            {vervolgvragen.map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => void verstuur(v)}
-                className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-primary"
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {fout && (
-          <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
-            {fout}
-          </p>
-        )}
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void verstuur(invoer);
-          }}
-          className="sticky bottom-4 flex items-end gap-2"
-        >
-          <textarea
-            ref={invoerveld}
-            value={invoer}
-            onChange={(e) => setInvoer(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter verstuurt, shift+enter maakt een nieuwe regel — zoals mensen het uit
-              // elke andere chat gewend zijn.
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void verstuur(invoer);
-              }
-            }}
-            rows={1}
-            placeholder="Bijvoorbeeld: hoeveel DAF's zijn er vorige maand verkocht?"
-            disabled={bezig}
-            className="max-h-40 min-h-[48px] flex-1 resize-none rounded-panel border border-line bg-card px-5 py-3 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
-          />
-          {bezig ? (
-            <button
-              type="button"
-              onClick={stop}
-              className="rounded-pill border border-line bg-card px-6 py-3 font-medium text-ink transition-colors hover:border-primary"
-            >
-              Stop
-            </button>
+            </div>
           ) : (
-            <button
-              type="submit"
-              disabled={!invoer.trim()}
-              className="rounded-pill bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
-            >
-              Vraag
-            </button>
+            <div className="flex flex-col gap-8 pt-2 pb-6">
+              {berichten.map((bericht, i) => (
+                <div key={i}>
+                  {bericht.rol === "gebruiker" ? (
+                    <div className="flex justify-end">
+                      <p className="max-w-[85%] rounded-panel bg-primary px-4 py-2.5 whitespace-pre-wrap text-white">
+                        {bericht.tekst}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* De weergave staat boven de tekst: het antwoord is het beeld, de
+                          tekst legt uit wat je erin ziet. */}
+                      {bericht.queries
+                        ?.filter((q) => !q.fout && q.weergave.vorm !== "verberg")
+                        .map((q, j) => (
+                          <Visual
+                            key={j}
+                            weergave={q.weergave}
+                            kolommen={q.kolommen}
+                            rijen={q.rijen}
+                          />
+                        ))}
+
+                      {bericht.tekst ? (
+                        <Markdown tekst={bericht.tekst} />
+                      ) : (
+                        bezig && <p className="text-ink-faint">…</p>
+                      )}
+
+                      {bericht.queries && bericht.queries.length > 0 && (
+                        <Verantwoording queries={bericht.queries} />
+                      )}
+
+                      {!bezig && bericht.tekst && (
+                        <AntwoordActies
+                          bericht={bericht}
+                          gekopieerd={gekopieerd === i}
+                          kanOpnieuw={i === berichten.length - 1}
+                          onKopieer={() => {
+                            void navigator.clipboard.writeText(bericht.tekst);
+                            setGekopieerd(i);
+                            setTimeout(() => setGekopieerd(null), 2000);
+                          }}
+                          onOpnieuw={opnieuwProberen}
+                          onOordeel={(o) => void geefOordeel(i, o)}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {bezig && (
+                <p className="text-sm text-ink-faint">
+                  {fase === "query"
+                    ? "Query uitvoeren…"
+                    : fase === "schrijven"
+                      ? "Antwoord schrijven…"
+                      : "Nadenken…"}
+                </p>
+              )}
+
+              {!bezig && vervolgvragen.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs tracking-wide text-ink-faint uppercase">
+                    Verder vragen
+                  </span>
+                  {vervolgvragen.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => void verstuur(v)}
+                      className="rounded-pill border border-line bg-card px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-primary"
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {fout && (
+                <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
+                  {fout}
+                </p>
+              )}
+              <div ref={onderkant} />
+            </div>
           )}
-        </form>
-        <div ref={onderkant} />
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void verstuur(invoer);
+            }}
+            className="sticky bottom-4 z-10 flex items-end gap-2 rounded-panel border border-line bg-card p-2 shadow-dropdown"
+          >
+            <textarea
+              ref={invoerveld}
+              value={invoer}
+              onChange={(e) => setInvoer(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter verstuurt, shift+enter maakt een nieuwe regel — zoals mensen het uit
+                // elke andere chat gewend zijn.
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void verstuur(invoer);
+                }
+              }}
+              rows={1}
+              placeholder="Bijvoorbeeld: hoeveel DAF's zijn er vorige maand verkocht?"
+              disabled={bezig}
+              className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-60"
+            />
+            {bezig ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="rounded-pill border border-line bg-card px-5 py-2.5 font-medium text-ink transition-colors hover:border-primary"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!invoer.trim()}
+                className="rounded-pill bg-primary px-5 py-2.5 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
+              >
+                Vraag
+              </button>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   );

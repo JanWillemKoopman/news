@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { IconPencil, IconPlus, IconSearch, IconTrash } from "@/components/icons";
 
 /**
  * De gesprekkenlijst naast de chat: nieuw gesprek, zoeken, hernoemen, verwijderen.
@@ -62,29 +63,33 @@ export default function GesprekLijst({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
+    <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-64">
       <button
         type="button"
         onClick={onNieuw}
-        className="rounded-pill bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+        className="flex items-center gap-2 rounded-control border border-line bg-card px-3.5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary/40 hover:bg-primary-light"
       >
+        <IconPlus className="h-4 w-4" />
         Nieuw gesprek
       </button>
 
-      <input
-        type="search"
-        value={zoek}
-        onChange={(e) => onZoek(e.target.value)}
-        placeholder="Zoek in gesprekken"
-        className="rounded-pill border border-line bg-card px-4 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
-      />
+      <div className="relative">
+        <IconSearch className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+        <input
+          type="search"
+          value={zoek}
+          onChange={(e) => onZoek(e.target.value)}
+          placeholder="Zoek in gesprekken"
+          className="w-full rounded-control border border-transparent bg-surface py-2 pr-3 pl-9 text-sm text-ink placeholder:text-ink-faint focus:border-primary/40 focus:bg-card focus:outline-none"
+        />
+      </div>
 
       {gesprekken.length === 0 ? (
         <p className="px-1 py-3 text-sm text-ink-faint">
           {zoek ? "Geen gesprekken gevonden." : "Nog geen gesprekken."}
         </p>
       ) : (
-        <ul className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
+        <ul className="flex max-h-[60vh] flex-col gap-0.5 overflow-y-auto">
           {gesprekken.map((g) => {
             const actief = g.id === actiefId;
             return (
@@ -99,21 +104,21 @@ export default function GesprekLijst({
                       if (e.key === "Enter") bevestig();
                       if (e.key === "Escape") setBewerktId(null);
                     }}
-                    className="w-full rounded-card border border-primary bg-card px-3 py-2 text-sm text-ink focus:outline-none"
+                    className="w-full rounded-control border border-primary bg-card px-3 py-2 text-sm text-ink focus:outline-none"
                   />
                 ) : (
                   <div
-                    className={`group flex items-center gap-1 rounded-card px-3 py-2 transition-colors ${
+                    className={`group flex items-center gap-1 rounded-control px-3 py-2 transition-colors ${
                       actief ? "bg-accent" : "hover:bg-surface"
                     }`}
                   >
                     <button
                       type="button"
                       onClick={() => onKies(g.id)}
-                      className="min-w-0 flex-1 text-left"
+                      className="flex min-w-0 flex-1 items-baseline justify-between gap-2 text-left"
                     >
-                      <span className="block truncate text-sm text-ink">{g.titel}</span>
-                      <span className="text-xs text-ink-faint">
+                      <span className="truncate text-sm text-ink">{g.titel}</span>
+                      <span className="shrink-0 text-xs text-ink-faint">
                         {relatieveTijd(g.bijgewerktOp)}
                       </span>
                     </button>
@@ -125,9 +130,9 @@ export default function GesprekLijst({
                         onClick={() => startBewerken(g)}
                         aria-label={`Hernoem ${g.titel}`}
                         title="Hernoemen"
-                        className="rounded px-1.5 py-1 text-xs text-ink-muted hover:text-ink"
+                        className="rounded p-1 text-ink-faint hover:text-ink"
                       >
-                        ✎
+                        <IconPencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         type="button"
@@ -136,9 +141,9 @@ export default function GesprekLijst({
                         }}
                         aria-label={`Verwijder ${g.titel}`}
                         title="Verwijderen"
-                        className="rounded px-1.5 py-1 text-xs text-ink-muted hover:text-orange"
+                        className="rounded p-1 text-ink-faint hover:text-orange"
                       >
-                        ✕
+                        <IconTrash className="h-3.5 w-3.5" />
                       </button>
                     </span>
                   </div>
