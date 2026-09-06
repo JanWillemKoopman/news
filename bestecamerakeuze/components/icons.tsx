@@ -149,3 +149,57 @@ export function IconInfo({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconSearch({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+export function IconCopy({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+    </svg>
+  );
+}
+
+export function IconCheck({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+export function IconThumbUp({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M7 10.5v10H4.5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" />
+      <path d="M7 10.5 11 3a2.2 2.2 0 0 1 2.2 2.2v3.3H18a2 2 0 0 1 1.95 2.44l-1.4 6.5A2 2 0 0 1 16.6 19H9.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+    </svg>
+  );
+}
+
+export function IconThumbDown({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M17 13.5v-10H19.5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1Z" />
+      <path d="M17 13.5 13 21a2.2 2.2 0 0 1-2.2-2.2v-3.3H6a2 2 0 0 1-1.95-2.44l1.4-6.5A2 2 0 0 1 7.4 5H14.5a2.5 2.5 0 0 1 2.5 2.5Z" />
+    </svg>
+  );
+}
+
+export function IconDownload({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 3.5v11" />
+      <path d="m7.5 10 4.5 4.5L16.5 10" />
+      <path d="M4.5 17.5v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2" />
+    </svg>
+  );
+}
