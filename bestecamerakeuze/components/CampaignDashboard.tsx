@@ -22,8 +22,20 @@ type Props = {
   ingelogd: boolean;
 };
 
+/** Zoekt de exacte schrijfwijze van "Online" op zoals die in de sheet staat, zodat de
+ * default-filter altijd matcht met de waardes in `options.status`. */
+function vindOnlineWaarde(campagnes: Campagne[]): string | null {
+  const gevonden = campagnes.find((c) => c.status.trim().toLowerCase() === "online");
+  return gevonden ? gevonden.status.trim() : null;
+}
+
 export default function CampaignDashboard({ campagnes, notitiesBeschikbaar, ingelogd }: Props) {
-  const [status, setStatus] = useState<string[]>([]);
+  // Filter Status staat standaard op "Online", zodat je bij het openen van het dashboard
+  // meteen de lopende campagnes ziet in plaats van alles inclusief offline campagnes.
+  const [status, setStatus] = useState<string[]>(() => {
+    const online = vindOnlineWaarde(campagnes);
+    return online ? [online] : [];
+  });
   const [merk, setMerk] = useState<string[]>([]);
   const [ordersoort, setOrdersoort] = useState<string[]>([]);
   const [klantgroep, setKlantgroep] = useState<string[]>([]);

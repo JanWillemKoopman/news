@@ -1,6 +1,6 @@
 /** Kleine statusdot + label — bewust geen zware pill-badge, zie CampaignTable. */
 export default function StatusIndicator({ status }: { status: string }) {
-  const isOpen = status.trim().toLowerCase() === "live";
+  const isOpen = status.trim().toLowerCase() === "online";
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
       <span
