@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
+import Verschilregel from "@/components/kanalen/Verschilregel";
 import { AS_GROOTTE, formatteer, type Eenheid } from "@/components/chat/chartTheme";
 import {
   bruikbareKorrels,
@@ -28,6 +29,7 @@ import {
   type Korrel,
   type Kubus,
 } from "@/lib/kanalen/kubus";
+import { verschilVan } from "@/lib/kanalen/vergelijk";
 import type { Statistiek } from "@/lib/windsor/velden";
 
 /**
@@ -47,17 +49,25 @@ import type { Statistiek } from "@/lib/windsor/velden";
  *    categorieën gaan de rest op één hoop onder "Overig" — een zevende kleur bestaat
  *    niet in het palet, en een herhaalde kleur liegt over identiteit.
  *
+ * Staat de vergelijking aan, dan komt de vorige periode er als gedempte tweede reeks bij
+ * op **dezelfde as** — het is dezelfde grootheid, alleen eerder. Hij wordt op positie
+ * uitgelijnd en niet op datum: week 1 naast week 1, ongeacht welke weeknummers dat zijn.
+ * Bij een uitsplitsing blijft hij weg; zes lijnen plus zes schaduwen leest niemand.
+ *
  * Een afgeleide statistiek (CTR, kosten per klik) wordt per periode opnieuw berekend uit
  * de sommen van die periode, nooit door de dagwaarden te middelen.
  */
 
 type Props = {
   kubus: Kubus;
+  /** Dezelfde selectie over de vorige, even lange periode; null als de vergelijking uit staat. */
+  vorigeKubus: Kubus | null;
   statistieken: Statistiek[];
   /** Dimensies waarop de reeks uitgesplitst mag worden. */
   uitsplitsbaar: { id: string; label: string }[];
-  /** Statistiek die bij het openen getoond wordt. */
-  standaardStatistiek: string;
+  /** Welke statistiek er staat — gedeeld met de kerncijferstrip erboven. */
+  statistiekId: string;
+  onStatistiek: (id: string) => void;
 };
 
 const MAX_REEKSEN = 6;
@@ -70,9 +80,11 @@ function eenheidVan(statistiek: Statistiek): Eenheid {
 
 export default function TijdGrafiek({
   kubus,
+  vorigeKubus,
   statistieken,
   uitsplitsbaar,
-  standaardStatistiek,
+  statistiekId,
+  onStatistiek,
 }: Props) {
   const kleuren = useGrafiekKleuren();
   const korrels = useMemo(() => bruikbareKorrels(kubus), [kubus]);
@@ -81,7 +93,6 @@ export default function TijdGrafiek({
   // 120 dagen), dan valt de grafiek terug op wat bij die periode hoort in plaats van leeg
   // te blijven.
   const [korrelKeuze, setKorrelKeuze] = useState<Korrel | null>(null);
-  const [statistiekId, setStatistiekId] = useState(standaardStatistiek);
   const [splitsing, setSplitsing] = useState<string>("");
 
   const actieveKorrel =
@@ -100,10 +111,18 @@ export default function TijdGrafiek({
     const perPeriode = groepeerPerPeriode(kubus, kubus.rijen, actieveKorrel);
 
     if (!splitsing) {
+      // Uitlijnen op positie: de vorige periode is even lang, maar zijn weeknummers zijn
+      // andere. Positie 0 naast positie 0 is wat je wilt vergelijken — "de eerste week"
+      // naast "de eerste week".
+      const vorigePerPeriode = vorigeKubus
+        ? groepeerPerPeriode(vorigeKubus, vorigeKubus.rijen, actieveKorrel)
+        : [];
       return {
-        data: perPeriode.map((g) => ({
+        data: perPeriode.map((g, i) => ({
           periode: g.label,
           waarde: waardeVan(statistiek, g.totalen),
+          vorige: vorigePerPeriode[i] ? waardeVan(statistiek, vorigePerPeriode[i].totalen) : null,
+          vorigeLabel: vorigePerPeriode[i]?.label ?? null,
           volledig: g.volledig !== false,
         })),
         reeksen: [],
@@ -169,12 +188,21 @@ export default function TijdGrafiek({
     });
 
     return { data: rijen, reeksen: namen };
-  }, [kubus, actieveKorrel, splitsing, statistiek]);
+  }, [kubus, vorigeKubus, actieveKorrel, splitsing, statistiek]);
 
   const totaal = useMemo(() => {
     if (!statistiek) return null;
     return waardeVan(statistiek, telOp(kubus, kubus.rijen));
   }, [kubus, statistiek]);
+
+  const verschil = useMemo(() => {
+    if (!statistiek) return null;
+    return verschilVan(
+      statistiek,
+      waardeVan(statistiek, telOp(kubus, kubus.rijen)),
+      vorigeKubus ? waardeVan(statistiek, telOp(vorigeKubus, vorigeKubus.rijen)) : null,
+    );
+  }, [kubus, vorigeKubus, statistiek]);
 
   if (!statistiek) return null;
   const eenheid = eenheidVan(statistiek);
@@ -193,6 +221,10 @@ export default function TijdGrafiek({
   // eerste.
   const deelperiodes = data.filter((d) => d.volledig === false).map((d) => String(d.periode));
 
+  // De vorige periode alleen bij één reeks: bij een uitsplitsing zou hij het beeld
+  // verdubbelen zonder dat je nog ziet wat bij wat hoort.
+  const toonVorige = Boolean(vorigeKubus) && reeksen.length === 0;
+
   return (
     <section className="kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -204,9 +236,15 @@ export default function TijdGrafiek({
           <p className="font-sans-w7 text-title font-semibold text-ink">
             {formatteer(totaal, eenheid)}
           </p>
-          <p className="text-meta text-ink-faint">
-            {statistiek.afgeleid ? "over de hele selectie" : "totaal in deze selectie"}
-          </p>
+          {verschil && verschil.toen !== null ? (
+            <span className="mt-0.5 flex justify-end">
+              <Verschilregel verschil={verschil} />
+            </span>
+          ) : (
+            <p className="text-meta text-ink-faint">
+              {statistiek.afgeleid ? "over de hele selectie" : "totaal in deze selectie"}
+            </p>
+          )}
         </div>
       </header>
 
@@ -215,7 +253,7 @@ export default function TijdGrafiek({
           <select
             id="grafiek-statistiek"
             value={statistiek.id}
-            onChange={(e) => setStatistiekId(e.target.value)}
+            onChange={(e) => onStatistiek(e.target.value)}
             className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
           >
             {statistieken.map((s) => (
@@ -310,7 +348,21 @@ export default function TijdGrafiek({
                   fontSize: 13,
                 }}
               />
-              {reeksen.length > 0 && <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />}
+              {(reeksen.length > 0 || toonVorige) && (
+                <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />
+              )}
+              {toonVorige && (
+                <Line
+                  type={kleuren.lijnvorm}
+                  dataKey="vorige"
+                  name="Vorige periode"
+                  stroke={kleuren.context}
+                  strokeWidth={kleuren.lijndikte}
+                  strokeDasharray="4 3"
+                  dot={false}
+                  connectNulls
+                />
+              )}
               {reeksen.length === 0 ? (
                 <Line
                   type={kleuren.lijnvorm}
@@ -367,6 +419,15 @@ export default function TijdGrafiek({
                   fontSize: 13,
                 }}
               />
+              {toonVorige && <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />}
+              {toonVorige && (
+                <Bar
+                  dataKey="vorige"
+                  name="Vorige periode"
+                  fill={kleuren.context}
+                  radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                />
+              )}
               <Bar
                 dataKey="waarde"
                 name={statistiek.label}

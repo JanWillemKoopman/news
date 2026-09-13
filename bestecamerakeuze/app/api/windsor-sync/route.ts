@@ -27,6 +27,17 @@ export const maxDuration = 300;
  * Zonder `deel` draait alles achter elkaar; alleen verstandig met een ruimere timeout
  * dan Vercel geeft.
  *
+ * ## Waarom er zondagnacht een ruimere ronde bij staat
+ *
+ * De dagelijkse ronde ververst dertig dagen. Alles daarvoor is dus bevroren op het
+ * moment dat het is opgehaald — inclusief conversies die binnen het attributievenster
+ * dagen ná de klik nog binnenkomen. Een campagne die in maart draaide, staat in juni nog
+ * steeds met de conversies van eind maart. `vercel.json` roept daarom zondagnacht
+ * `?dagen=120` aan voor advertenties en posts: één keer per week schuift het venster
+ * ruim genoeg terug om die na-ijl mee te nemen, zonder dat elke nacht vier maanden
+ * opnieuw wordt opgehaald. Accountcijfers staan er niet bij — een volgersstand van
+ * gisteren verandert niet meer.
+ *
  * Het echte werk staat in `lib/windsor/uitvoeren.ts`, want de knop "Data ophalen" in het
  * dashboard start precies dezelfde sync — alleen met een ander soort toegangscontrole.
  */

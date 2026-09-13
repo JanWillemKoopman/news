@@ -155,12 +155,27 @@ const ADVERTENTIE_METINGEN = [
 
 const METINGEN_SOM = ADVERTENTIE_METINGEN.map((m) => `coalesce(sum(${m}), 0) as ${m}`).join(", ");
 
-export type AdvertentieBron = "social" | "google";
+export type AdvertentieBron = "social" | "google" | "betaald";
 
-/** Social ads is Meta plus LinkedIn; Google Ads staat op een eigen pagina. */
+/**
+ * Social ads is Meta plus LinkedIn; Google Ads staat op een eigen pagina.
+ *
+ * `betaald` is alle drie tegelijk. Ze delen één tabel, dus dat kost niets extra's — en
+ * het is de enige plek waar de vraag "waar gaat het budget heen" te beantwoorden valt,
+ * want twee losse pagina's laten zich niet optellen.
+ */
 function bronFilter(bron: AdvertentieBron): string[] {
-  return bron === "google" ? ["google"] : ["meta", "linkedin"];
+  if (bron === "google") return ["google"];
+  if (bron === "betaald") return ["meta", "linkedin", "google"];
+  return ["meta", "linkedin"];
 }
+
+/** In de gecombineerde weergave komt het kanaal erbij als dimensie. */
+const KANAAL_SQL = `case bron
+        when 'meta' then 'Meta Ads'
+        when 'google' then 'Google Ads'
+        when 'linkedin' then 'LinkedIn Ads'
+        else bron end as kanaal`;
 
 export interface AdvertentieData {
   reeks: Kubus;
@@ -174,6 +189,13 @@ export async function haalAdvertenties(
 ): Promise<AdvertentieData> {
   const { korrel, sql: datumSql } = korrelVoor(van, tot);
   const bronnen = bronFilter(bron);
+  const samen = bron === "betaald";
+  const kanaalKolom = samen ? `${KANAAL_SQL},\n              ` : "";
+  const kanaalDim = samen ? ["kanaal"] : [];
+  // Eén extra kolom in de group by schuift alle volgnummers op; makkelijker om ze te
+  // tellen dan om twee bijna gelijke queries naast elkaar te onderhouden.
+  const groep = (aantal: number) =>
+    Array.from({ length: aantal + (samen ? 1 : 0) }, (_, i) => i + 1).join(", ");
 
   return metVerbinding(async (client) => {
     // Merk en categorie komen uit de koppeltabel en hangen aan de campagne, dus ze
@@ -181,13 +203,13 @@ export async function haalAdvertenties(
     // koppeltabel al belooft ("werkt daarna als filter op Social ads en Google Ads").
     const reeksRes = await client.query(
       `select ${datumSql}::text as datum,
-              account, platform, campagne, campagne_doel, campagne_status, campagnemanager,
+              ${kanaalKolom}account, platform, campagne, campagne_doel, campagne_status, campagnemanager,
               coalesce(merk, '—') as merk,
               coalesce(categorie, '—') as categorie,
               ${METINGEN_SOM}
          from dataloket.v_advertenties
         where datum between $1 and $2 and bron = any($3)
-        group by 1, 2, 3, 4, 5, 6, 7, 8, 9
+        group by ${groep(9)}
         order by 1`,
       [van, tot, bronnen],
     );
@@ -197,7 +219,7 @@ export async function haalAdvertenties(
     // één regel op — met de creative van willekeurig de eerste erbij. De leesbare naam
     // komt daarom uit de meta.
     const detailRes = await client.query(
-      `select account, platform,
+      `select ${kanaalKolom}account, platform,
               coalesce(nullif(plaatsing, ''), '—') as plaatsing,
               campagne, campagne_doel, campagne_status, campagnemanager,
               coalesce(merk, '—') as merk,
@@ -211,7 +233,7 @@ export async function haalAdvertenties(
               ${METINGEN_SOM}
          from dataloket.v_advertenties
         where datum between $1 and $2 and bron = any($3)
-        group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        group by ${groep(11)}
         order by sum(uitgaven) desc nulls last
         limit ${DETAIL_LIMIET}`,
       [van, tot, bronnen],
@@ -219,7 +241,7 @@ export async function haalAdvertenties(
 
     const detail = bouwKubus(
       detailRes.rows,
-      ["account", "platform", "plaatsing", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie", "adgroep", "advertentie_id"],
+      [...kanaalDim, "account", "platform", "plaatsing", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie", "adgroep", "advertentie_id"],
       ADVERTENTIE_METINGEN,
       korrel,
       { van, tot },
@@ -230,7 +252,7 @@ export async function haalAdvertenties(
     return {
       reeks: bouwKubus(
         reeksRes.rows,
-        ["datum", "account", "platform", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie"],
+        ["datum", ...kanaalDim, "account", "platform", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie"],
         ADVERTENTIE_METINGEN,
         korrel,
         { van, tot },
@@ -448,15 +470,34 @@ export async function haalKoppelingen(): Promise<Koppeling[]> {
   });
 }
 
-/** Wanneer draaide de laatste geslaagde Windsor-sync? Staat in de paginakop. */
-export async function haalLaatsteSync(): Promise<string | null> {
+export interface SyncStand {
+  /** Wanneer de laatste geslaagde Windsor-sync eindigde. Staat in de filterbalk. */
+  laatsteSync: string | null;
+  /**
+   * Loopt er op dit moment een sync?
+   *
+   * Een run zonder eindtijd die net begonnen is. "Data ophalen" duurt minuten en staat
+   * voor iedereen open, dus zonder dit kunnen twee collega's hem tegelijk starten — en
+   * dan wachten ze allebei op dezelfde upserts. Een halfuur is ruim: langer dan dat is
+   * geen lopende run maar een afgebroken run die nooit is afgesloten.
+   */
+  loopt: boolean;
+}
+
+export async function haalSyncStand(): Promise<SyncStand> {
   return metVerbinding(async (client) => {
     const res = await client.query(
-      `select max(geeindigd_op) as moment
+      `select max(geeindigd_op) filter (where gelukt = true) as moment,
+              count(*) filter (
+                where geeindigd_op is null and gestart_op > now() - interval '30 minutes'
+              ) as lopend
          from dataloket.sync_runs
-        where bron like 'windsor%' and gelukt = true`,
+        where bron like 'windsor%'`,
     );
     const moment = res.rows[0]?.moment;
-    return moment ? new Date(moment as string).toISOString() : null;
+    return {
+      laatsteSync: moment ? new Date(moment as string).toISOString() : null,
+      loopt: Number(res.rows[0]?.lopend ?? 0) > 0,
+    };
   });
 }

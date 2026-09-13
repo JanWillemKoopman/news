@@ -3,7 +3,7 @@ import {
   haalAccounts,
   haalAdvertenties,
   haalKoppelingen,
-  haalLaatsteSync,
+  haalSyncStand,
   haalPosts,
   isKanalenGeconfigureerd,
 } from "@/lib/kanalen/bron";
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
  * en de verse op de achtergrond wordt opgehaald, in plaats van te moeten wachten.
  */
 
-const PAGINAS = ["social", "google", "organisch", "account", "koppeltabel"] as const;
+const PAGINAS = ["social", "google", "betaald", "organisch", "account", "koppeltabel"] as const;
 type Pagina = (typeof PAGINAS)[number];
 
 const CACHE = "private, max-age=300, stale-while-revalidate=3600";
@@ -63,28 +63,33 @@ export async function GET(request: Request) {
   const tot = datumOf(url.searchParams.get("tot"), vandaag);
 
   try {
-    const laatsteSync = await haalLaatsteSync().catch(() => null);
+    const stand = await haalSyncStand().catch(() => ({ laatsteSync: null, loopt: false }));
+    const { laatsteSync, loopt: syncLoopt } = stand;
 
     if (pagina === "koppeltabel") {
       const koppelingen = await haalKoppelingen();
       return NextResponse.json(
-        { pagina, koppelingen, laatsteSync },
+        { pagina, koppelingen, laatsteSync, syncLoopt },
         { headers: { "Cache-Control": CACHE } },
       );
     }
 
     if (pagina === "organisch") {
       const data = await haalPosts(van, tot);
-      return NextResponse.json({ pagina, ...data, laatsteSync }, { headers: { "Cache-Control": CACHE } });
+      return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
     }
 
     if (pagina === "account") {
       const data = await haalAccounts(van, tot);
-      return NextResponse.json({ pagina, ...data, laatsteSync }, { headers: { "Cache-Control": CACHE } });
+      return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
     }
 
-    const data = await haalAdvertenties(pagina === "google" ? "google" : "social", van, tot);
-    return NextResponse.json({ pagina, ...data, laatsteSync }, { headers: { "Cache-Control": CACHE } });
+    const data = await haalAdvertenties(
+      pagina === "google" ? "google" : pagina === "betaald" ? "betaald" : "social",
+      van,
+      tot,
+    );
+    return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },

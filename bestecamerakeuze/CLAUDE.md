@@ -290,7 +290,32 @@ niet uit af te lezen zijn:
 - **De filterbalk toont hoe vers de cijfers zijn** (laatste sync + tot welke dag er data
   is) en zet de actieve filters als losse chips onder de balk. De "+" voor een bericht
   staat ook op deze tabbladen (`TEAM_VIEWS` in `AppShell`): je legt een observatie vast
-  op het beeld waarop je hem doet, niet op een ander tabblad.
+  op het beeld waarop je hem doet, niet op een ander tabblad. De balk heeft twee rijen:
+  boven **waar je naar kijkt** (periode, versheid, filters), onder **hoe je kijkt**
+  (vergelijken, alle kanalen), de chips en de acties.
+- **Vergelijken met de vorige periode is een tweede ophaalactie en staat daarom uit.**
+  Aanzetten haalt dezelfde kubussen op over de even lange periode die eindigt op de dag
+  vóór de huidige (`vorigePeriode` in `lib/kanalen/periode.ts`), en zet het verschil bij
+  elk kerncijfer, in de grafiek (gedempte tweede reeks, op **positie** uitgelijnd en niet
+  op datum) en onder elke tabelcel. De kleur zegt "gunstig", niet "hoger": bij kosten per
+  klik is een daling het goede nieuws (`lagerIsBeter`), en uitgaven krijgen bewust
+  helemaal geen oordeel. Zie `lib/kanalen/vergelijk.ts`, dat pure rekenkunde blijft en
+  daarom alleen een type importeert — het optellen en het uitrekenen van een afgeleide
+  gebeurt op één plek, in `kubus.ts`.
+- **De kerncijferstrip boven de grafiek** (`KerncijferStrip.tsx`) toont de zes
+  `standaard`-statistieken met een sparkline en hun verschil; één klik zet de grafiek
+  eronder op dat cijfer. De grafiek toont bewust nog steeds één statistiek tegelijk —
+  twee assen in één beeld suggereren een verband dat er niet is — maar het uitklapmenu is
+  niet meer de enige weg ernaartoe.
+- **Naast de vaste periodes staat een eigen periode**, en twee kalenderperiodes ("deze
+  maand", "vorige maand") omdat een marketingbudget per maand loopt. Periode, filters en
+  het open tabblad staan in de URL (`lib/kanalen/urlstand.ts`), zodat een selectie een
+  refresh overleeft en te delen is. Alleen het zichtbare tabblad schrijft — alle panelen
+  blijven gemount, dus zonder `useIsActief` overschrijven ze elkaars parameters.
+- **De advertentiepagina's kunnen samen.** "Alle betaalde kanalen" schakelt om naar
+  `pagina=betaald`, waar Meta, LinkedIn en Google in één kubus zitten met `kanaal` als
+  extra dimensie. Bewust geen apart tabblad: dat zou een navigatie-item toevoegen aan een
+  sidebar die vanaf élk tabblad zichtbaar is.
 
 ### Component- en codepatronen
 

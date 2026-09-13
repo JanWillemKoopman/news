@@ -18,6 +18,7 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
       pagina="social"
+      weergave="social-ads"
       ingelogd={ingelogd}
       statistieken={ADVERTENTIE_STATISTIEKEN}
       standaardStatistiek="uitgaven"
@@ -75,7 +76,14 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Plaatsing",
         },
       ]}
-      leeswijzer="Bereik is per dag uniek geteld, dus de som over meerdere dagen telt iemand die de advertentie op twee dagen zag twee keer. Voor een echt uniek periodebereik is een aparte opvraging bij het platform nodig; die zit niet in deze koppeling."
+      alleKanalen={{
+        pagina: "betaald",
+        eigenLabel: "Alleen Meta en LinkedIn",
+        allesLabel: "Alle betaalde kanalen",
+        dimensie: { id: "kanaal", label: "Kanaal" },
+        statistieken: ADVERTENTIE_STATISTIEKEN,
+      }}
+      leeswijzer="Bereik is per dag uniek geteld, en ook per platform en plaatsing apart, dus de som telt iemand die de advertentie op twee dagen of op twee plekken zag meer dan één keer — de frequentie valt daardoor lager uit dan hij is. Voor een echt uniek periodebereik is een aparte opvraging bij het platform nodig; die zit niet in deze koppeling. Conversiewaarde en het rendement op advertentiebudget komen van Meta niet mee: die twee kolommen blijven voor Meta leeg en zeggen alleen iets over LinkedIn."
     />
   );
 }

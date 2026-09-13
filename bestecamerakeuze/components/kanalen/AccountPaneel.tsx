@@ -15,6 +15,7 @@ export default function AccountPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
       pagina="account"
+      weergave="account-ontwikkeling"
       ingelogd={ingelogd}
       statistieken={ACCOUNT_STATISTIEKEN}
       standaardStatistiek="volgers"

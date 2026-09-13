@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import Sidebar, { type DashboardView } from "@/components/Sidebar";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -9,6 +9,8 @@ import NieuweCampagneKnop from "@/components/NieuweCampagneKnop";
 import NieuwBerichtZijbalk from "@/components/kennisacties/NieuwBerichtZijbalk";
 import WeekwinnaarPopup from "@/components/scores/WeekwinnaarPopup";
 import { IconPlus } from "@/components/icons";
+import { ActieveWeergaveProvider } from "@/lib/kanalen/actieveWeergave";
+import { wisUrlStand } from "@/lib/kanalen/urlstand";
 import { useTeamData } from "@/lib/teamData";
 
 type Props = {
@@ -166,15 +168,39 @@ export default function AppShell({
     () => new Set<DashboardView>(["campagnes"]),
   );
 
+  /**
+   * Het open tabblad staat in de URL (`?tab=social-ads`), zodat een link naar een
+   * kanaalpagina daadwerkelijk daar opent. Bewust in een effect en niet in de
+   * initiële state: de server rendert altijd het campagnetabblad, en dat moet
+   * overeenkomen met de eerste render in de browser.
+   */
+  useEffect(() => {
+    const gevraagd = new URLSearchParams(window.location.search).get("tab");
+    if (!gevraagd || !(gevraagd in TITLES)) return;
+    const view = gevraagd as DashboardView;
+    setActief(view);
+    setBezocht((eerder) => (eerder.has(view) ? eerder : new Set(eerder).add(view)));
+  }, []);
+
   function navigeer(view: DashboardView) {
     setActief(view);
     setBezocht((eerder) => (eerder.has(view) ? eerder : new Set(eerder).add(view)));
+
+    const params = new URLSearchParams(window.location.search);
+    if (view === "campagnes") params.delete("tab");
+    else params.set("tab", view);
+    const zoek = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
+    // De periode en de filters horen bij het tabblad dat je verlaat; ze meenemen naar het
+    // volgende zou daar een selectie opdringen die je nooit hebt gekozen.
+    wisUrlStand();
   }
   const { title, subtitle } = TITLES[actief];
   const { zijbalkOpen, openZijbalk, melding, wisMelding } = useTeamData();
 
   return (
-    <div className="flex min-h-screen pagina-vlak">
+    <ActieveWeergaveProvider value={actief}>
+      <div className="flex min-h-screen pagina-vlak">
       {/* Het oogje staat helemaal rechtsboven in het scherm en blijft daar op elk
           tabblad staan — het hoort bij het venster, niet bij één pagina. */}
       <ThemeSwitcher />
@@ -282,6 +308,7 @@ export default function AppShell({
           de puntenbevestiging hoort te blijven staan als de zijbalk dichtgaat. */}
       <WeekwinnaarPopup />
       <Toast melding={melding} onWeg={wisMelding} />
-    </div>
+      </div>
+    </ActieveWeergaveProvider>
   );
 }

@@ -26,6 +26,7 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
       pagina="google"
+      weergave="google-ads"
       ingelogd={ingelogd}
       statistieken={ADVERTENTIE_STATISTIEKEN.filter(
         (s) => !GOOGLE_ONBESCHIKBAAR.has(s.id),
@@ -68,6 +69,15 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Campagnetype",
         },
       ]}
+      alleKanalen={{
+        pagina: "betaald",
+        eigenLabel: "Alleen Google Ads",
+        allesLabel: "Alle betaalde kanalen",
+        dimensie: { id: "kanaal", label: "Kanaal" },
+        // In het gecombineerde beeld zitten Meta en LinkedIn erbij, en die leveren bereik
+        // en leads wél — dus daar gelden de Google-beperkingen niet.
+        statistieken: ADVERTENTIE_STATISTIEKEN,
+      }}
       leeswijzer="Google rapporteert geen bereik per advertentie en levert leads niet als apart veld, dus die twee kolommen ontbreken hier bewust in plaats van als nul te verschijnen. Conversies zijn de acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen — de leadformulieren zitten daar dus in."
     />
   );

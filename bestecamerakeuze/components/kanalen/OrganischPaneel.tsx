@@ -15,6 +15,7 @@ export default function OrganischPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
       pagina="organisch"
+      weergave="organisch"
       ingelogd={ingelogd}
       statistieken={POST_STATISTIEKEN}
       standaardStatistiek="vertoningen_organisch"
