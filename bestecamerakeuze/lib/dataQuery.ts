@@ -1,5 +1,6 @@
 import { Client } from "pg";
 import { guardSql, MAX_ROWS } from "@/lib/sqlGuard";
+import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 /**
  * Voert de door het model geschreven SQL uit.
@@ -44,6 +45,9 @@ export async function voerQueryUit(ruweSql: string): Promise<QueryUitkomst> {
         "De dataverbinding is nog niet geconfigureerd (DATAQUERY_DATABASE_URL ontbreekt).",
     };
   }
+
+  const snaarFout = controleerVerbindingssnaar(connectionString, "DATAQUERY_DATABASE_URL");
+  if (snaarFout) return { ok: false, fout: snaarFout };
 
   const gecontroleerd = guardSql(ruweSql);
   if (!gecontroleerd.ok) return { ok: false, fout: gecontroleerd.reden };

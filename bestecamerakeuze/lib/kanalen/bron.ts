@@ -27,6 +27,7 @@ import { Client } from "pg";
 import type { Kubus } from "@/lib/kanalen/kubus";
 import type { CampagneBudget } from "@/lib/kanalen/budget";
 import { labelVoorConversie } from "@/lib/windsor/velden";
+import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 /** Boven deze periodelengte vat de server samen tot weken. */
 export const DAG_KORREL_MAX_DAGEN = 120;
@@ -43,6 +44,7 @@ export function isKanalenGeconfigureerd(): boolean {
 async function metVerbinding<T>(werk: (client: Client) => Promise<T>): Promise<T> {
   const connectionString = process.env.DATAQUERY_DATABASE_URL;
   if (!connectionString) throw new Error("DATAQUERY_DATABASE_URL ontbreekt.");
+  eisVerbindingssnaar(connectionString, "DATAQUERY_DATABASE_URL");
 
   const client = new Client({
     connectionString,
