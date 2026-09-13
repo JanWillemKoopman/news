@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { BRONNEN, haalSheetOp, type Bron, type GeparsteRij } from "@/lib/sync/bronnen";
+import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -130,6 +131,9 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+
+  const snaarFout = controleerVerbindingssnaar(connectionString, "SYNC_DATABASE_URL");
+  if (snaarFout) return NextResponse.json({ fout: snaarFout }, { status: 503 });
 
   if (BRONNEN.length === 0) {
     return NextResponse.json({

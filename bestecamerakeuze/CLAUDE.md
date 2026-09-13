@@ -254,6 +254,99 @@ lak.
   punt, Volkswagen dikke pilvormige staven. Nieuw theme = een blok in globals.css + een regel in
   `lib/themes.ts`; verder hoeft er niets te veranderen.
 
+### De Kanalen-pagina's
+
+De vijf tabbladen onder **Kanalen** (Social ads, Google Ads, Organisch, Account,
+Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`): filterbalk,
+grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
+niet uit af te lezen zijn:
+
+- **De campagnetabel op het tabblad Campagnes staat er visueel buiten.** Die pagina is
+  bevroren op verzoek; verbeteringen aan de Kanalen-pagina's mogen er niets aan
+  veranderen. `FilterSelect` wordt door allebei gebruikt en heeft daarom een opt-in prop
+  `zoekbaar` in plaats van een zoekveld dat overal vanzelf verschijnt — vier korte
+  lijstjes boven de campagnetabel hebben er niets aan, honderden campagnenamen wel.
+- **Wat een cijfer ís, bepaalt zijn vorm.** Een afgeleide (CTR, kosten per klik) en een
+  **stand** (`kubus.standKolommen`, in de praktijk het aantal volgers) tekenen als lijn
+  met een as op `['auto','auto']`; een optelbare hoeveelheid als staaf vanaf nul. Een
+  volgersstand als staaf vanaf nul verstopt precies de groei waar de pagina voor bestaat.
+- **De periode loopt tot en met gisteren** (`periodeGrenzen`) omdat de sync 's nachts
+  draait, en de korrel volgt de lengte van die periode (`bruikbareKorrels` en
+  `standaardKorrel` in `lib/kanalen/kubus.ts`) — nooit het aantal dagen waarop er
+  toevallig data is, want dan bepaalt je postfrequentie welke knoppen aanklikbaar zijn.
+  Een eerste of laatste periode die maar half in de range valt draagt `volledig: false`
+  en wordt in de grafiek lichter getekend met een zin eronder.
+- **Groeperen gaat op een id, niet op een naam.** `advertentie_id` en `post_id` zijn
+  dimensie; de leesbare naam komt via `labelVeld` uit `kubus.meta`. Op naam groeperen
+  liet twee advertenties die toevallig hetzelfde heten tot één regel samenvallen.
+- **Wat het platform niet levert, staat er niet.** Google schrijft `leads` hard op nul
+  (het zit in de conversie-acties) en levert geen bereik per advertentie; die kolommen en
+  hun afgeleiden staan daarom niet in `GOOGLE_ONBESCHIKBAAR`. Een lege cel leest als
+  "nul", niet als "meten we hier niet".
+- **Elke tabel heeft een plakkende totaalregel** die over de rijen telt en niet over de
+  regels erboven — bij een afgeleide is dat een ander getal. Is de detailquery afgekapt
+  (`kubus.afgekapt`), dan staat dat er expliciet bij, want dan telt de tabel lager uit
+  dan de KPI boven de grafiek.
+- **De filterbalk toont hoe vers de cijfers zijn** (laatste sync + tot welke dag er data
+  is) en zet de actieve filters als losse chips onder de balk. De "+" voor een bericht
+  staat ook op deze tabbladen (`TEAM_VIEWS` in `AppShell`): je legt een observatie vast
+  op het beeld waarop je hem doet, niet op een ander tabblad. De balk heeft twee rijen:
+  boven **waar je naar kijkt** (periode, versheid, filters), onder **hoe je kijkt**
+  (vergelijken, alle kanalen), de chips en de acties.
+- **Vergelijken met de vorige periode is een tweede ophaalactie en staat daarom uit.**
+  Aanzetten haalt dezelfde kubussen op over de even lange periode die eindigt op de dag
+  vóór de huidige (`vorigePeriode` in `lib/kanalen/periode.ts`), en zet het verschil bij
+  elk kerncijfer, in de grafiek (gedempte tweede reeks, op **positie** uitgelijnd en niet
+  op datum) en onder elke tabelcel. De kleur zegt "gunstig", niet "hoger": bij kosten per
+  klik is een daling het goede nieuws (`lagerIsBeter`), en uitgaven krijgen bewust
+  helemaal geen oordeel. Zie `lib/kanalen/vergelijk.ts`, dat pure rekenkunde blijft en
+  daarom alleen een type importeert — het optellen en het uitrekenen van een afgeleide
+  gebeurt op één plek, in `kubus.ts`.
+- **De kerncijferstrip boven de grafiek** (`KerncijferStrip.tsx`) toont de zes
+  `standaard`-statistieken met een sparkline en hun verschil; één klik zet de grafiek
+  eronder op dat cijfer. De grafiek toont bewust nog steeds één statistiek tegelijk —
+  twee assen in één beeld suggereren een verband dat er niet is — maar het uitklapmenu is
+  niet meer de enige weg ernaartoe.
+- **Naast de vaste periodes staat een eigen periode**, en twee kalenderperiodes ("deze
+  maand", "vorige maand") omdat een marketingbudget per maand loopt. Periode, filters en
+  het open tabblad staan in de URL (`lib/kanalen/urlstand.ts`), zodat een selectie een
+  refresh overleeft en te delen is. Alleen het zichtbare tabblad schrijft — alle panelen
+  blijven gemount, dus zonder `useIsActief` overschrijven ze elkaars parameters.
+- **De advertentiepagina's kunnen samen.** "Alle betaalde kanalen" schakelt om naar
+  `pagina=betaald`, waar Meta, LinkedIn en Google in één kubus zitten met `kanaal` als
+  extra dimensie. Bewust geen apart tabblad: dat zou een navigatie-item toevoegen aan een
+  sidebar die vanaf élk tabblad zichtbaar is.
+- **"Wat opvalt" rekent binnen de gekozen periode** (`lib/kanalen/signalen.ts`): het
+  laatste derde tegen de twee derde ervoor, allebei per dag. Bewust niet tegen de vorige
+  periode, want die staat standaard uit — en een signaal dat pas verschijnt als je een
+  schakelaar omzet, is geen signaal maar een tweede tabblad. Elke regel eist zowel een
+  relatieve afwijking als een absolute ondergrens, en de lijst staat op **gewicht** en niet
+  op percentage: een campagne van tienduizend euro met 30% duurdere leads is een groter
+  probleem dan eentje van driehonderd die verdubbelde. Een signaal is klikbaar en zet het
+  filter op dat onderwerp — zo is de lijst een ingang tot de pagina en geen apart
+  dashboard. Er staat niets als er niets te melden is: een blok dat elke week "geen
+  bijzonderheden" zegt, valt niet meer op in de week dat het wél iets zegt.
+- **Welke conversie-actie een lead is, legt het team zelf vast.** Google levert geen
+  leadveld; wat een lead is, zit in de conversies die marketing in Google Ads en GA4 heeft
+  ingesteld, en die staan per rij in de jsonb-kolom `conversie_acties`. Op de Koppeltabel
+  staat daarvoor het blok **Conversie-acties**: één kolom `telt_als_lead` op de catalogus
+  die de sync al bijhoudt (`windsor_conversie_acties`, migratie 0016 — geen tweede tabel
+  ernaast, want dat zou een tweede waarheid over dezelfde velden zijn);
+  `bron.ts` telt de aangevinkte acties bij `leads` op — optellen en niet vervangen, want
+  bij Meta zit `actions_lead` al in die kolom en komen de vaste actievelden nooit in de
+  jsonb terecht, dus dubbeltellen kan niet. Zolang er niets is aangevinkt, laat Google Ads
+  de kolommen Leads en Kosten per lead weg (`verbergZonderConversieLeads`).
+- **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
+  koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
+  op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus
+  het blok staat apart en niet als kolom in de campagnetabel. Het rekenwerk (verstreken
+  tijd tegen benut budget) staat in `lib/kanalen/budget.ts`, zonder React en zonder
+  database, en is daarmee getest.
+- **Testen zonder bundler.** `npm test` draait met `scripts/test-resolver.mjs`, een
+  resolve-hook die het `@/`-alias en imports zonder extensie afhandelt. Zonder dat was een
+  `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
+  dat is een rare eis aan juist de code die het rekenwerk doet.
+
 ### Component- en codepatronen
 
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,

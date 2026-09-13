@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
@@ -14,18 +15,22 @@ import {
   YAxis,
 } from "recharts";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
-import { AS_GROOTTE, formatteer, type Eenheid } from "@/components/chat/chartTheme";
+import Verschilregel from "@/components/kanalen/Verschilregel";
+import { AS_GROOTTE, formatteer } from "@/components/chat/chartTheme";
+import { eenheidVan } from "@/lib/kanalen/eenheid";
 import {
   bruikbareKorrels,
   groepeer,
   groepeerPerPeriode,
   periodeLabel,
   periodeSleutel,
+  standaardKorrel,
   telOp,
   waardeVan,
   type Korrel,
   type Kubus,
 } from "@/lib/kanalen/kubus";
+import { verschilVan } from "@/lib/kanalen/vergelijk";
 import type { Statistiek } from "@/lib/windsor/velden";
 
 /**
@@ -37,10 +42,18 @@ import type { Statistiek } from "@/lib/windsor/velden";
  *    één grafiek. Twee maatstaven met een verschillende schaal naast elkaar zetten is de
  *    snelste manier om een verband te suggereren dat er niet is.
  *  - **Korrel**: dag, week, maand of kwartaal. Alleen de korrels die bij de gekozen
- *    periode iets opleveren zijn aanklikbaar (zie `bruikbareKorrels`).
+ *    periode iets opleveren zijn aanklikbaar (zie `bruikbareKorrels`). De korrel waarop
+ *    de grafiek opengaat volgt de lengte van de periode (`standaardKorrel`) en blijft
+ *    daarop staan zolang je zelf niets kiest — een maand opent dus per dag en niet, zoals
+ *    eerder, op vijf weekstaven.
  *  - **Uitsplitsing**: één lijn, of een lijn per platform/account. Bij meer dan zes
  *    categorieën gaan de rest op één hoop onder "Overig" — een zevende kleur bestaat
  *    niet in het palet, en een herhaalde kleur liegt over identiteit.
+ *
+ * Staat de vergelijking aan, dan komt de vorige periode er als gedempte tweede reeks bij
+ * op **dezelfde as** — het is dezelfde grootheid, alleen eerder. Hij wordt op positie
+ * uitgelijnd en niet op datum: week 1 naast week 1, ongeacht welke weeknummers dat zijn.
+ * Bij een uitsplitsing blijft hij weg; zes lijnen plus zes schaduwen leest niemand.
  *
  * Een afgeleide statistiek (CTR, kosten per klik) wordt per periode opnieuw berekend uit
  * de sommen van die periode, nooit door de dagwaarden te middelen.
@@ -48,50 +61,68 @@ import type { Statistiek } from "@/lib/windsor/velden";
 
 type Props = {
   kubus: Kubus;
+  /** Dezelfde selectie over de vorige, even lange periode; null als de vergelijking uit staat. */
+  vorigeKubus: Kubus | null;
   statistieken: Statistiek[];
   /** Dimensies waarop de reeks uitgesplitst mag worden. */
   uitsplitsbaar: { id: string; label: string }[];
-  /** Statistiek die bij het openen getoond wordt. */
-  standaardStatistiek: string;
+  /** Welke statistiek er staat — gedeeld met de kerncijferstrip erboven. */
+  statistiekId: string;
+  onStatistiek: (id: string) => void;
 };
 
 const MAX_REEKSEN = 6;
 
-function eenheidVan(statistiek: Statistiek): Eenheid {
-  if (statistiek.eenheid === "euro") return "euro";
-  if (statistiek.eenheid === "procent") return "procent";
-  return "aantal";
-}
-
 export default function TijdGrafiek({
   kubus,
+  vorigeKubus,
   statistieken,
   uitsplitsbaar,
-  standaardStatistiek,
+  statistiekId,
+  onStatistiek,
 }: Props) {
   const kleuren = useGrafiekKleuren();
   const korrels = useMemo(() => bruikbareKorrels(kubus), [kubus]);
-  const [korrel, setKorrel] = useState<Korrel>(korrels[korrels.length - 1] ?? "dag");
-  const [statistiekId, setStatistiekId] = useState(standaardStatistiek);
+  // `null` betekent "volg de periode". Zodra je zelf een korrel aanklikt blijft die staan
+  // zolang hij kan; wordt hij door een periodewissel onmogelijk (dag verdwijnt boven de
+  // 120 dagen), dan valt de grafiek terug op wat bij die periode hoort in plaats van leeg
+  // te blijven.
+  const [korrelKeuze, setKorrelKeuze] = useState<Korrel | null>(null);
   const [splitsing, setSplitsing] = useState<string>("");
+  // Reeksen die je in de legenda hebt uitgezet. Bij zes lijnen wil je er soms even één
+  // wegklikken om de rest te kunnen lezen; de as blijft dan staan waar hij stond, want
+  // de data verandert niet — alleen wat er getekend wordt.
+  const [verborgen, setVerborgen] = useState<string[]>([]);
 
-  // De gekozen korrel kan door een periodewissel onbruikbaar worden (dag verdwijnt boven
-  // de 120 dagen). Val dan terug op de ruimste die wél kan, in plaats van een lege
-  // grafiek te tonen.
-  const actieveKorrel = korrels.includes(korrel) ? korrel : (korrels[korrels.length - 1] ?? "dag");
+  const actieveKorrel =
+    korrelKeuze && korrels.includes(korrelKeuze) ? korrelKeuze : standaardKorrel(kubus, korrels);
   const statistiek =
     statistieken.find((s) => s.id === statistiekId) ?? statistieken[0];
 
+  // Een stand (het aantal volgers) is geen hoeveelheid die je per periode optelt maar een
+  // niveau dat meebeweegt. Als staaf vanaf nul zijn vijf weken groei niet van elkaar te
+  // onderscheiden — vandaar: altijd een lijn, en een as die zich naar de data voegt.
+  const isStand = Boolean(statistiek && kubus.standKolommen?.includes(statistiek.id));
+
   const { data, reeksen } = useMemo(() => {
-    if (!statistiek) return { data: [] as Record<string, number | string | null>[], reeksen: [] as string[] };
+    if (!statistiek) return { data: [] as Record<string, number | string | boolean | null>[], reeksen: [] as string[] };
 
     const perPeriode = groepeerPerPeriode(kubus, kubus.rijen, actieveKorrel);
 
     if (!splitsing) {
+      // Uitlijnen op positie: de vorige periode is even lang, maar zijn weeknummers zijn
+      // andere. Positie 0 naast positie 0 is wat je wilt vergelijken — "de eerste week"
+      // naast "de eerste week".
+      const vorigePerPeriode = vorigeKubus
+        ? groepeerPerPeriode(vorigeKubus, vorigeKubus.rijen, actieveKorrel)
+        : [];
       return {
-        data: perPeriode.map((g) => ({
+        data: perPeriode.map((g, i) => ({
           periode: g.label,
           waarde: waardeVan(statistiek, g.totalen),
+          vorige: vorigePerPeriode[i] ? waardeVan(statistiek, vorigePerPeriode[i].totalen) : null,
+          vorigeLabel: vorigePerPeriode[i]?.label ?? null,
+          volledig: g.volledig !== false,
         })),
         reeksen: [],
       };
@@ -137,7 +168,10 @@ export default function TijdGrafiek({
     }
 
     const rijen = perPeriode.map((g) => {
-      const punt: Record<string, number | string | null> = { periode: g.label };
+      const punt: Record<string, number | string | boolean | null> = {
+        periode: g.label,
+        volledig: g.volledig !== false,
+      };
       const perNaam = emmers.get(g.sleutel);
       for (const naam of namen) {
         const rauw = perNaam?.get(naam);
@@ -153,20 +187,49 @@ export default function TijdGrafiek({
     });
 
     return { data: rijen, reeksen: namen };
-  }, [kubus, actieveKorrel, splitsing, statistiek]);
+  }, [kubus, vorigeKubus, actieveKorrel, splitsing, statistiek]);
 
   const totaal = useMemo(() => {
     if (!statistiek) return null;
     return waardeVan(statistiek, telOp(kubus, kubus.rijen));
   }, [kubus, statistiek]);
 
+  const verschil = useMemo(() => {
+    if (!statistiek) return null;
+    return verschilVan(
+      statistiek,
+      waardeVan(statistiek, telOp(kubus, kubus.rijen)),
+      vorigeKubus ? waardeVan(statistiek, telOp(vorigeKubus, vorigeKubus.rijen)) : null,
+    );
+  }, [kubus, vorigeKubus, statistiek]);
+
   if (!statistiek) return null;
   const eenheid = eenheidVan(statistiek);
 
-  // Een afgeleide statistiek is een verhouding en hoort als lijn; een optelbare
-  // hoeveelheid per periode hoort als staaf. De vorm volgt dus wat het cijfer is, niet
-  // wat er toevallig mooi uitziet.
-  const alsLijn = Boolean(statistiek.afgeleid) || reeksen.length > 0;
+  // Een afgeleide statistiek is een verhouding en hoort als lijn, een stand net zo; een
+  // optelbare hoeveelheid per periode hoort als staaf. De vorm volgt dus wat het cijfer
+  // is, niet wat er toevallig mooi uitziet.
+  const alsLijn = Boolean(statistiek.afgeleid) || isStand || reeksen.length > 0;
+
+  // Een as vanaf nul hoort bij een hoeveelheid: dan zegt de hoogte van de staaf iets. Bij
+  // een stand van tienduizenden volgers drukt diezelfde nul de hele beweging plat.
+  const asBereik: [number | "auto", number | "auto"] = isStand ? ["auto", "auto"] : [0, "auto"];
+
+  // De eerste en de laatste periode vallen vaak maar deels binnen de gekozen datumrange.
+  // Dat is geen daling maar een halve week, en zonder dit zinnetje leest het als het
+  // eerste.
+  function wisselReeks(sleutel: string) {
+    if (!sleutel) return;
+    setVerborgen((huidig) =>
+      huidig.includes(sleutel) ? huidig.filter((v) => v !== sleutel) : [...huidig, sleutel],
+    );
+  }
+
+  const deelperiodes = data.filter((d) => d.volledig === false).map((d) => String(d.periode));
+
+  // De vorige periode alleen bij één reeks: bij een uitsplitsing zou hij het beeld
+  // verdubbelen zonder dat je nog ziet wat bij wat hoort.
+  const toonVorige = Boolean(vorigeKubus) && reeksen.length === 0;
 
   return (
     <section className="kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card">
@@ -179,9 +242,15 @@ export default function TijdGrafiek({
           <p className="font-sans-w7 text-title font-semibold text-ink">
             {formatteer(totaal, eenheid)}
           </p>
-          <p className="text-meta text-ink-faint">
-            {statistiek.afgeleid ? "over de hele selectie" : "totaal in deze selectie"}
-          </p>
+          {verschil && verschil.toen !== null ? (
+            <span className="mt-0.5 flex justify-end">
+              <Verschilregel verschil={verschil} />
+            </span>
+          ) : (
+            <p className="text-meta text-ink-faint">
+              {statistiek.afgeleid ? "over de hele selectie" : "totaal in deze selectie"}
+            </p>
+          )}
         </div>
       </header>
 
@@ -190,7 +259,7 @@ export default function TijdGrafiek({
           <select
             id="grafiek-statistiek"
             value={statistiek.id}
-            onChange={(e) => setStatistiekId(e.target.value)}
+            onChange={(e) => onStatistiek(e.target.value)}
             className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
           >
             {statistieken.map((s) => (
@@ -210,7 +279,7 @@ export default function TijdGrafiek({
                   key={k}
                   type="button"
                   disabled={!kan}
-                  onClick={() => setKorrel(k)}
+                  onClick={() => setKorrelKeuze(k)}
                   title={kan ? undefined : "Niet beschikbaar bij deze periode"}
                   className={`rounded-control px-2.5 py-1 text-sm capitalize transition-colors duration-[var(--duur-snel)] ease-merk ${
                     k === actieveKorrel
@@ -246,6 +315,15 @@ export default function TijdGrafiek({
         )}
       </div>
 
+      {deelperiodes.length > 0 && (
+        <p className="mt-3 text-meta text-ink-faint">
+          {deelperiodes.length === 1 ? `${deelperiodes[0]} is een` : `${deelperiodes.join(" en ")} zijn`}{" "}
+          deelperiode{deelperiodes.length === 1 ? "" : "s"}: {deelperiodes.length === 1 ? "hij valt" : "ze vallen"}{" "}
+          maar gedeeltelijk binnen de gekozen datumrange en {deelperiodes.length === 1 ? "telt" : "tellen"} dus minder
+          dagen dan de rest.
+        </p>
+      )}
+
       <div className="mt-4 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           {alsLijn ? (
@@ -263,6 +341,7 @@ export default function TijdGrafiek({
                 tickLine={false}
                 axisLine={false}
                 width={64}
+                domain={asBereik}
                 tickFormatter={(v: number) => formatteer(v, eenheid, true)}
               />
               <Tooltip
@@ -275,7 +354,37 @@ export default function TijdGrafiek({
                   fontSize: 13,
                 }}
               />
-              {reeksen.length > 0 && <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />}
+              {(reeksen.length > 0 || toonVorige) && (
+                <Legend
+                  wrapperStyle={{ fontSize: 12, color: kleuren.as, cursor: "pointer" }}
+                  onClick={(item) => wisselReeks(String(item.dataKey ?? ""))}
+                  formatter={(waarde, item) => (
+                    <span
+                      style={{
+                        opacity: verborgen.includes(String(item?.dataKey ?? "")) ? 0.45 : 1,
+                        textDecoration: verborgen.includes(String(item?.dataKey ?? ""))
+                          ? "line-through"
+                          : undefined,
+                      }}
+                    >
+                      {waarde}
+                    </span>
+                  )}
+                />
+              )}
+              {toonVorige && (
+                <Line
+                  type={kleuren.lijnvorm}
+                  dataKey="vorige"
+                  name="Vorige periode"
+                  stroke={kleuren.context}
+                  strokeWidth={kleuren.lijndikte}
+                  strokeDasharray="4 3"
+                  dot={false}
+                  connectNulls
+                  hide={verborgen.includes("vorige")}
+                />
+              )}
               {reeksen.length === 0 ? (
                 <Line
                   type={kleuren.lijnvorm}
@@ -292,6 +401,7 @@ export default function TijdGrafiek({
                     key={naam}
                     type={kleuren.lijnvorm}
                     dataKey={naam}
+                    hide={verborgen.includes(naam)}
                     stroke={
                       naam === "Overig"
                         ? kleuren.context
@@ -332,12 +442,47 @@ export default function TijdGrafiek({
                   fontSize: 13,
                 }}
               />
+              {toonVorige && (
+                <Legend
+                  wrapperStyle={{ fontSize: 12, color: kleuren.as, cursor: "pointer" }}
+                  onClick={(item) => wisselReeks(String(item.dataKey ?? ""))}
+                  formatter={(waarde, item) => (
+                    <span
+                      style={{
+                        opacity: verborgen.includes(String(item?.dataKey ?? "")) ? 0.45 : 1,
+                        textDecoration: verborgen.includes(String(item?.dataKey ?? ""))
+                          ? "line-through"
+                          : undefined,
+                      }}
+                    >
+                      {waarde}
+                    </span>
+                  )}
+                />
+              )}
+              {toonVorige && (
+                <Bar
+                  dataKey="vorige"
+                  name="Vorige periode"
+                  fill={kleuren.context}
+                  radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                  hide={verborgen.includes("vorige")}
+                />
+              )}
               <Bar
                 dataKey="waarde"
                 name={statistiek.label}
                 fill={kleuren.categorieen[0]}
                 radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
-              />
+              >
+                {data.map((punt, i) => (
+                  <Cell
+                    key={i}
+                    fill={kleuren.categorieen[0]}
+                    fillOpacity={punt.volledig === false ? 0.35 : 1}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           )}
         </ResponsiveContainer>

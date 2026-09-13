@@ -17,7 +17,9 @@ import { ADVERTENTIE_STATISTIEKEN } from "@/lib/windsor/velden";
 export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
+      signaalDimensie="campagne"
       pagina="social"
+      weergave="social-ads"
       ingelogd={ingelogd}
       statistieken={ADVERTENTIE_STATISTIEKEN}
       standaardStatistiek="uitgaven"
@@ -28,12 +30,17 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
         { id: "campagne_doel", label: "Doelstelling" },
         { id: "campagne_status", label: "Status" },
         { id: "campagnemanager", label: "Campagnemanager" },
+        // Merk en categorie komen uit de koppeltabel. Die pagina beloofde ze al als
+        // filter; hier worden ze het ook.
+        { id: "merk", label: "Merk" },
+        { id: "categorie", label: "Categorie" },
       ]}
       uitsplitsbaar={[
         { id: "platform", label: "Platform" },
         { id: "account", label: "Account" },
         { id: "campagne", label: "Campagne" },
         { id: "campagne_doel", label: "Doelstelling" },
+        { id: "merk", label: "Merk" },
       ]}
       tabellen={[
         {
@@ -47,19 +54,37 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
           titel: "Advertenties",
           toelichting: "de losse advertenties, met hun creative",
           bron: "detail",
-          groepeerOp: "advertentie",
+          groepeerOp: "advertentie_id",
           groepLabel: "Advertentie",
+          labelVeld: "advertentie",
           toonBeeld: true,
         },
         {
-          titel: "Plaatsing",
-          toelichting: "waar de advertenties werden getoond",
+          // Heette eerder "Plaatsing" maar groepeerde op platform, en dat is hetzelfde
+          // als het platformfilter erboven. Nu allebei: waar het netwerk stond, en waar
+          // in dat netwerk de advertentie te zien was.
+          titel: "Platform",
+          toelichting: "op welk netwerk de advertenties liepen",
           bron: "detail",
           groepeerOp: "platform",
           groepLabel: "Platform",
         },
+        {
+          titel: "Plaatsing",
+          toelichting: "waar binnen het platform: feed, stories, reels",
+          bron: "detail",
+          groepeerOp: "plaatsing",
+          groepLabel: "Plaatsing",
+        },
       ]}
-      leeswijzer="Bereik is per dag uniek geteld, dus de som over meerdere dagen telt iemand die de advertentie op twee dagen zag twee keer. Voor een echt uniek periodebereik is een aparte opvraging bij het platform nodig; die zit niet in deze koppeling."
+      alleKanalen={{
+        pagina: "betaald",
+        eigenLabel: "Alleen Meta en LinkedIn",
+        allesLabel: "Alle betaalde kanalen",
+        dimensie: { id: "kanaal", label: "Kanaal" },
+        statistieken: ADVERTENTIE_STATISTIEKEN,
+      }}
+      leeswijzer="Bereik is per dag uniek geteld, en ook per platform en plaatsing apart, dus de som telt iemand die de advertentie op twee dagen of op twee plekken zag meer dan één keer — de frequentie valt daardoor lager uit dan hij is. Voor een echt uniek periodebereik is een aparte opvraging bij het platform nodig; die zit niet in deze koppeling. Conversiewaarde en het rendement op advertentiebudget komen van Meta niet mee: die twee kolommen blijven voor Meta leeg en zeggen alleen iets over LinkedIn."
     />
   );
 }

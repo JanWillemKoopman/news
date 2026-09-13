@@ -14,7 +14,9 @@ import { ACCOUNT_STATISTIEKEN } from "@/lib/windsor/velden";
 export default function AccountPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
+      signaalDimensie="account"
       pagina="account"
+      weergave="account-ontwikkeling"
       ingelogd={ingelogd}
       statistieken={ACCOUNT_STATISTIEKEN}
       standaardStatistiek="volgers"

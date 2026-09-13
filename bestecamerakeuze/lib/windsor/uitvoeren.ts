@@ -17,6 +17,7 @@ import {
   telPostsPerDag,
   type SyncResultaat,
 } from "@/lib/windsor/sync";
+import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 /**
  * Het uitvoeren van één deel van de Windsor-sync, los van wie hem start.
@@ -150,6 +151,7 @@ export async function voerSyncUit(
   if (!connectionString) {
     throw new Error("SYNC_DATABASE_URL ontbreekt.");
   }
+  eisVerbindingssnaar(connectionString, "SYNC_DATABASE_URL");
 
   const { van, tot } = standaardVenster(dagen);
   const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });

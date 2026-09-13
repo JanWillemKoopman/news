@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ConversiePaneel from "@/components/kanalen/ConversiePaneel";
 import Inlogprompt from "@/components/Inlogprompt";
 import FilterSelect from "@/components/FilterSelect";
-import { IconCheck, IconInfo } from "@/components/icons";
+import { IconCheck, IconInfo, IconSearch } from "@/components/icons";
 import { formatteer } from "@/components/chat/chartTheme";
 
 /**
@@ -18,6 +19,12 @@ import { formatteer } from "@/components/chat/chartTheme";
  * Opslaan gebeurt per veld zodra je het veld verlaat — geen aparte opslaan-knop, want
  * dat is bij een tabel met tientallen regels een uitnodiging om wijzigingen kwijt te
  * raken.
+ *
+ * **Namen komen uit een lijst, maar het blijft een tekstveld.** Campagnemanager en merk
+ * zijn vrije velden met een `datalist`: je krijgt de spellingen te zien die al gebruikt
+ * zijn en kunt er met één klik een kiezen, maar een nieuwe naam intypen kan gewoon. Dat
+ * is hier het verschil tussen een bruikbaar filter en drie varianten van dezelfde collega
+ * op de advertentiepagina's — elke typefout wordt daar namelijk een eigen filterwaarde.
  */
 
 export interface Koppeling {
@@ -41,6 +48,18 @@ const CATEGORIEEN = [
   "Branding",
 ];
 
+/** De merken van de groep; de lijst is een suggestie, geen begrenzing. */
+const MERKEN = [
+  "Audi",
+  "Volkswagen",
+  "Volkswagen Bedrijfswagens",
+  "Škoda",
+  "SEAT",
+  "CUPRA",
+  "Porsche",
+  "Bentley",
+];
+
 const BRON_LABEL: Record<string, string> = {
   meta: "Meta",
   google: "Google",
@@ -52,6 +71,7 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
   const [alleen, setAlleen] = useState<string[]>([]);
+  const [zoek, setZoek] = useState("");
   const [bewaard, setBewaard] = useState<string | null>(null);
 
   const haal = useCallback(() => {
@@ -73,11 +93,37 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   useEffect(haal, [haal]);
 
   const zichtbaar = useMemo(() => {
-    if (alleen.length === 0) return rijen;
-    return rijen.filter((r) =>
-      alleen.includes("Nog niet gekoppeld") ? !r.gekoppeld : r.gekoppeld,
-    );
-  }, [rijen, alleen]);
+    const term = zoek.trim().toLowerCase();
+    return rijen.filter((r) => {
+      if (alleen.length > 0) {
+        const past = alleen.includes("Nog niet gekoppeld") ? !r.gekoppeld : r.gekoppeld;
+        if (!past) return false;
+      }
+      if (!term) return true;
+      // Ook op eigenaar en merk zoeken: "wat heeft Sanne allemaal" is net zo goed een
+      // vraag als "waar staat die ene campagne".
+      return [r.campagne, r.eigenaarNaam, r.merk, r.categorie]
+        .filter(Boolean)
+        .some((veld) => String(veld).toLowerCase().includes(term));
+    });
+  }, [rijen, alleen, zoek]);
+
+  /** De spellingen die al in gebruik zijn — voedt de suggestielijst bij het invullen. */
+  const bekendeNamen = useMemo(() => {
+    const namen = new Set<string>();
+    rijen.forEach((r) => {
+      if (r.eigenaarNaam?.trim()) namen.add(r.eigenaarNaam.trim());
+    });
+    return [...namen].sort((a, b) => a.localeCompare(b, "nl"));
+  }, [rijen]);
+
+  const bekendeMerken = useMemo(() => {
+    const merken = new Set(MERKEN);
+    rijen.forEach((r) => {
+      if (r.merk?.trim()) merken.add(r.merk.trim());
+    });
+    return [...merken].sort((a, b) => a.localeCompare(b, "nl"));
+  }, [rijen]);
 
   const ongekoppeld = rijen.filter((r) => !r.gekoppeld);
   const ongekoppeldBudget = ongekoppeld.reduce((t, r) => t + r.uitgaven, 0);
@@ -85,7 +131,11 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   async function bewaar(campagne: string, patch: Partial<Koppeling>) {
     const huidig = rijen.find((r) => r.campagne === campagne);
     if (!huidig) return;
-    const nieuw = { ...huidig, ...patch, gekoppeld: true };
+    // Stond hier eerst hard op `true`, dus ook het invullen van alleen het merk — of juist
+    // het leegmaken van de naam — haalde het rode bolletje weg en verlaagde de teller
+    // "zonder campagnemanager". Gekoppeld is precies één ding: er staat een naam.
+    const samen = { ...huidig, ...patch };
+    const nieuw = { ...samen, gekoppeld: Boolean(samen.eigenaarNaam?.trim()) };
 
     // Meteen in beeld bijwerken; de serveraanroep bevestigt alleen. Zou de tabel pas na
     // het antwoord bijwerken, dan springt elk veld even terug naar de oude waarde.
@@ -141,12 +191,25 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
             )}
           </div>
 
-          <FilterSelect
-            label="Tonen"
-            options={["Nog niet gekoppeld", "Al gekoppeld"]}
-            selected={alleen}
-            onChange={setAlleen}
-          />
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+              <input
+                id="koppeltabel-zoek"
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder="Zoek op campagne, collega of merk"
+                aria-label="Zoeken in de koppeltabel"
+                className="w-72 rounded-control border border-line bg-card py-1.5 pl-8 pr-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
+              />
+            </div>
+            <FilterSelect
+              label="Tonen"
+              options={["Nog niet gekoppeld", "Al gekoppeld"]}
+              selected={alleen}
+              onChange={setAlleen}
+            />
+          </div>
         </div>
       </div>
 
@@ -162,6 +225,19 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
         hier zelf vast. Alles wat je invult wordt meteen opgeslagen en werkt daarna als
         filter op de pagina&apos;s Social ads en Google Ads.
       </p>
+
+      {/* Eén datalist per kolom in plaats van per rij: honderd regels met elk hun eigen
+          kopie van dezelfde namenlijst is honderd keer dezelfde DOM. */}
+      <datalist id="koppeltabel-namen">
+        {bekendeNamen.map((naam) => (
+          <option key={naam} value={naam} />
+        ))}
+      </datalist>
+      <datalist id="koppeltabel-merken">
+        {bekendeMerken.map((merk) => (
+          <option key={merk} value={merk} />
+        ))}
+      </datalist>
 
       <section className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle">
         <div className="max-h-[36rem] overflow-auto">
@@ -186,8 +262,9 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
               {!bezig && zichtbaar.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-ink-muted">
-                    Geen campagnes gevonden. Zodra de sync advertentiedata heeft opgehaald,
-                    staan ze hier.
+                    {zoek.trim() || alleen.length > 0
+                      ? "Geen campagnes die aan deze selectie voldoen."
+                      : "Geen campagnes gevonden. Zodra de sync advertentiedata heeft opgehaald, staan ze hier."}
                   </td>
                 </tr>
               )}
@@ -217,6 +294,8 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                     <Veld
                       waarde={rij.eigenaarNaam}
                       plaatshouder="Naam invullen"
+                      suggesties={bekendeNamen}
+                      suggestieId="koppeltabel-namen"
                       onBewaar={(v) => bewaar(rij.campagne, { eigenaarNaam: v })}
                     />
                   </td>
@@ -224,6 +303,8 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                     <Veld
                       waarde={rij.merk}
                       plaatshouder="Merk"
+                      suggesties={bekendeMerken}
+                      suggestieId="koppeltabel-merken"
                       onBewaar={(v) => bewaar(rij.campagne, { merk: v })}
                     />
                   </td>
@@ -247,6 +328,10 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
           </table>
         </div>
       </section>
+
+      {/* Dezelfde soort keuze, één blok lager: wat de platforms niet leveren en het team
+          zelf vastlegt over zijn eigen data. */}
+      <ConversiePaneel />
     </div>
   );
 }
@@ -255,10 +340,14 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
 function Veld({
   waarde,
   plaatshouder,
+  suggesties,
+  suggestieId,
   onBewaar,
 }: {
   waarde: string | null;
   plaatshouder: string;
+  suggesties?: string[];
+  suggestieId?: string;
   onBewaar: (waarde: string | null) => void;
 }) {
   const [tekst, setTekst] = useState(waarde ?? "");
@@ -268,6 +357,7 @@ function Veld({
   return (
     <input
       value={tekst}
+      list={suggesties && suggesties.length > 0 ? suggestieId : undefined}
       placeholder={plaatshouder}
       onChange={(e) => setTekst(e.target.value)}
       onBlur={() => {

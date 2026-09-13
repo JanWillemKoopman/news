@@ -12,6 +12,11 @@ import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/ic
  * starten of om bij te trekken na een nacht waarin er iets misging — en dat is precies
  * wat een marketeer niet heeft.
  *
+ * Wie hem opent ziet eerst wanneer hij voor het laatst draaide, en of er op dit moment al
+ * één loopt. Dat laatste is geen formaliteit: de knop staat voor iedereen open, hij duurt
+ * minuten, en twee collega's die hem tegelijk starten zitten allebei te wachten op
+ * dezelfde upserts.
+ *
  * De drie delen gaan ná elkaar, niet tegelijk. Twee redenen: één request per deel blijft
  * binnen de vijf minuten die een functie krijgt, en `organisch` koppelt aan het eind de
  * posts aan de advertenties, dus het moet ná `advertenties` draaien. Per stap zie je wat
@@ -61,7 +66,17 @@ interface Onderdeel {
   fout?: string;
 }
 
-export default function DataOphalen({ onKlaar }: { onKlaar: () => void }) {
+export default function DataOphalen({
+  onKlaar,
+  laatsteSync,
+  loopt,
+}: {
+  onKlaar: () => void;
+  /** Wanneer de laatste geslaagde sync eindigde. */
+  laatsteSync: string | null;
+  /** Loopt er al een sync (door de cron of door een collega)? */
+  loopt: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [dagen, setDagen] = useState(90);
   const [bezig, setBezig] = useState(false);
@@ -152,6 +167,24 @@ export default function DataOphalen({ onKlaar }: { onKlaar: () => void }) {
             als er een nacht is overgeslagen. Twee keer draaien kan geen kwaad — de cijfers
             worden overschreven, niet opgeteld.
           </p>
+
+          <p className="mt-3 text-meta text-ink-faint">
+            {laatsteSync
+              ? `Laatst geslaagd op ${new Date(laatsteSync).toLocaleString("nl-NL", {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                })}.`
+              : "Er is nog geen geslaagde sync geweest."}
+          </p>
+
+          {loopt && !bezig && (
+            <p className="mt-3 flex items-start gap-2 rounded-control border border-line bg-surface-tint px-3 py-2 text-meta text-ink-muted">
+              <IconRefresh className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Er lijkt al een sync te draaien — door de nachtelijke cron of door een collega.
+              Wachten tot die klaar is scheelt jullie allebei een paar minuten; starten kan wel,
+              het overschrijft alleen dezelfde rijen.
+            </p>
+          )}
 
           <div className="mt-5">
             <p className="label-theme mb-2 text-label text-ink-faint">Hoeveel historie</p>

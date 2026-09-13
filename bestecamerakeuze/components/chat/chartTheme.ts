@@ -25,7 +25,24 @@
 /** Astekst; de grootte is voor elk theme gelijk, alleen de kleur volgt het theme. */
 export const AS_GROOTTE = 12;
 
-export type Eenheid = "geen" | "euro" | "aantal" | "procent";
+/**
+ * De eenheden die `formatteer` kent.
+ *
+ * Drie smaken euro, omdat één regel niet voor alle bedragen werkt. `euro` rondt af op
+ * hele euro's behalve als het bedrag zelf klein is — prima voor een los bedrag in een
+ * chatantwoord of op het kostentabblad. In een **kolom** valt die regel juist uit elkaar:
+ * dan staat "€ 9,80" naast "€ 10" en zijn ze niet meer te vergelijken. Vandaar `euro-heel`
+ * (altijd hele euro's, voor bedragen) en `euro-exact` (altijd twee decimalen, voor kosten
+ * per klik of per lead — daar ís vijf cent het verschil).
+ */
+export type Eenheid =
+  | "geen"
+  | "euro"
+  | "euro-heel"
+  | "euro-exact"
+  | "aantal"
+  | "procent"
+  | "seconden";
 
 /**
  * Getalweergave in Nederlandse notatie. `compact` is voor astikken, waar 128400 als
@@ -39,27 +56,56 @@ export function formatteer(
   if (waarde === null || waarde === undefined || Number.isNaN(waarde)) return "—";
 
   if (eenheid === "procent") {
-    return `${waarde.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}%`;
+    // Altijd één decimaal, ook bij een rond getal: zonder dat staat "3%" naast "2,8%" in
+    // dezelfde kolom en lijnen de cijfers niet meer uit.
+    return `${waarde.toLocaleString("nl-NL", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}%`;
   }
+
+  if (eenheid === "seconden") {
+    // De eenheid stond wel in het model maar werd nergens getoond: gemiddelde kijktijd
+    // was een kaal getal waarvan je moest raden of het seconden of minuten waren.
+    if (Math.abs(waarde) < 60) {
+      return `${waarde.toLocaleString("nl-NL", { maximumFractionDigits: 1 })} s`;
+    }
+    const minuten = Math.floor(Math.abs(waarde) / 60);
+    const seconden = Math.round(Math.abs(waarde) % 60);
+    const teken = waarde < 0 ? "−" : "";
+    return `${teken}${minuten} m ${String(seconden).padStart(2, "0")} s`;
+  }
+
+  const euroachtig = eenheid === "euro" || eenheid === "euro-heel" || eenheid === "euro-exact";
 
   if (compact && Math.abs(waarde) >= 1000) {
     const kort =
       Math.abs(waarde) >= 1_000_000
         ? `${(waarde / 1_000_000).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}mln`
         : `${(waarde / 1000).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}k`;
-    return eenheid === "euro" ? `€ ${kort}` : kort;
+    return euroachtig ? `€ ${kort}` : kort;
   }
 
   // Bedragen afronden op hele euro's — behalve als het bedrag zelf klein is. Kosten per
   // klik van vijf cent werd zo "€ 0", en dan lijkt adverteren gratis terwijl het cijfer
   // juist het meest bekeken getal op de advertentiepagina is. Onder de tien euro dus twee
-  // decimalen; daarboven zijn centen alleen maar ruis in een kolom.
-  const decimalen = eenheid === "euro" ? (Math.abs(waarde) < 10 && waarde !== 0 ? 2 : 0) : 2;
+  // decimalen; daarboven zijn centen alleen maar ruis. In een kolom is die wisseling
+  // juist het probleem — daar gebruik je `euro-heel` of `euro-exact`.
+  const decimalen =
+    eenheid === "euro-exact"
+      ? 2
+      : eenheid === "euro-heel"
+        ? 0
+        : eenheid === "euro"
+          ? Math.abs(waarde) < 10 && waarde !== 0
+            ? 2
+            : 0
+          : 2;
   const getal = waarde.toLocaleString("nl-NL", {
-    minimumFractionDigits: eenheid === "euro" && decimalen === 2 ? 2 : 0,
+    minimumFractionDigits: euroachtig && decimalen === 2 ? 2 : 0,
     maximumFractionDigits: decimalen,
   });
-  return eenheid === "euro" ? `€ ${getal}` : getal;
+  return euroachtig ? `€ ${getal}` : getal;
 }
 
 /** Zet een databasewaarde om naar een getal; geeft null als het er geen is. */

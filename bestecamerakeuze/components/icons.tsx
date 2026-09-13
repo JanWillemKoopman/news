@@ -380,3 +380,32 @@ export function IconLink({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Richting van een verschil t.o.v. de vorige periode — zie `Verschilregel`. */
+export function IconArrowUp({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 19V5" />
+      <path d="m6 11 6-6 6 6" />
+    </svg>
+  );
+}
+
+export function IconArrowDown({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="m6 13 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** Kalender met een streep: de eigen periode in de filterbalk. */
+export function IconCalendarRange({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4M7 15h4" />
+    </svg>
+  );
+}

@@ -1,0 +1,259 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { IconCheck, IconInfo, IconSearch } from "@/components/icons";
+
+/**
+ * Welke conversie-actie telt als lead?
+ *
+ * **Waarom dit hier staat en niet bij Instellingen.** Het is dezelfde soort keuze als de
+ * koppeltabel erboven: iets wat de platforms niet leveren en het team zelf vastlegt over
+ * zijn eigen data. Wie de campagnemanagers invult, is ook degene die weet dat
+ * "generate_lead_offerte" een lead is en "page_view_contact" niet.
+ *
+ * **Waarom het uitmaakt.** Google Ads kent geen leadveld. Zolang hier niets is
+ * aangevinkt, is de kolom "Leads" op de Google Ads-pagina per definitie nul, en die
+ * kolom staat daar dan ook niet — hij verschijnt zodra je hier iets aanwijst. Bij Meta
+ * komen de aangevinkte acties bovenop het leadveld dat het platform zelf al levert;
+ * dubbeltellen kan niet, want de vaste actievelden komen nooit in deze lijst terecht.
+ */
+
+export interface ConversieActie {
+  veld: string;
+  label: string;
+  bron: string;
+  account: string | null;
+  aantal: number;
+  laatstGezien: string | null;
+  teltAlsLead: boolean;
+  /** Is het label met de hand bijgesteld? Dan laat de sync het staan. */
+  gewijzigd: boolean;
+}
+
+const BRON_LABEL: Record<string, string> = {
+  meta: "Meta",
+  google: "Google",
+  linkedin: "LinkedIn",
+};
+
+export default function ConversiePaneel() {
+  const [acties, setActies] = useState<ConversieActie[]>([]);
+  const [bezig, setBezig] = useState(true);
+  const [fout, setFout] = useState<string | null>(null);
+  const [zoek, setZoek] = useState("");
+  const [bewaard, setBewaard] = useState<string | null>(null);
+
+  const haal = useCallback(() => {
+    setBezig(true);
+    fetch("/api/kanalen/conversies")
+      .then(async (res) => {
+        const data = (await res.json()) as { acties?: ConversieActie[]; fout?: string };
+        if (!res.ok) {
+          setFout(data.fout ?? `Ophalen mislukt (${res.status}).`);
+          return;
+        }
+        setActies(data.acties ?? []);
+        setFout(null);
+      })
+      .catch((err: unknown) => setFout(err instanceof Error ? err.message : String(err)))
+      .finally(() => setBezig(false));
+  }, []);
+
+  useEffect(haal, [haal]);
+
+  const zichtbaar = useMemo(() => {
+    const term = zoek.trim().toLowerCase();
+    if (!term) return acties;
+    return acties.filter(
+      (a) =>
+        a.label.toLowerCase().includes(term) ||
+        a.veld.toLowerCase().includes(term) ||
+        (a.account ?? "").toLowerCase().includes(term),
+    );
+  }, [acties, zoek]);
+
+  const gekozen = acties.filter((a) => a.teltAlsLead);
+
+  async function bewaar(actie: ConversieActie, patch: Partial<ConversieActie>) {
+    const nieuw = { ...actie, ...patch };
+    // Meteen in beeld; de serveraanroep bevestigt alleen. Zou de lijst pas na het antwoord
+    // bijwerken, dan springt het vinkje even terug.
+    setActies((lijst) => lijst.map((a) => (a.veld === actie.veld ? nieuw : a)));
+
+    try {
+      const res = await fetch("/api/kanalen/conversies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          veld: nieuw.veld,
+          teltAlsLead: nieuw.teltAlsLead,
+          // Alleen meesturen als het een eigen naam is; anders laat de sync het label
+          // weer bijwerken vanuit de veldnaam.
+          label: nieuw.gewijzigd ? nieuw.label : null,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { fout?: string };
+        throw new Error(data.fout ?? `Opslaan mislukt (${res.status}).`);
+      }
+      setBewaard(actie.veld);
+      setTimeout(() => setBewaard((v) => (v === actie.veld ? null : v)), 1500);
+    } catch (err) {
+      setFout(err instanceof Error ? err.message : String(err));
+      haal();
+    }
+  }
+
+  return (
+    <section className="kaart-omlijst mt-8 rounded-panel border border-line bg-card shadow-subtle">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-4">
+        <div>
+          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Conversie-acties</h2>
+          <p className="mt-0.5 text-meta text-ink-muted">
+            {bezig
+              ? "Laden…"
+              : `${acties.length} acties gezien in de laatste 90 dagen · ${gekozen.length} tellen als lead`}
+          </p>
+        </div>
+        {acties.length > 8 && (
+          <div className="relative">
+            <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+            <input
+              id="conversies-zoek"
+              value={zoek}
+              onChange={(e) => setZoek(e.target.value)}
+              placeholder="Zoek een actie"
+              aria-label="Zoeken in de conversie-acties"
+              className="w-64 rounded-control border border-line bg-card py-1.5 pl-8 pr-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
+            />
+          </div>
+        )}
+      </header>
+
+      <p className="flex items-start gap-2 border-b border-line-soft px-5 py-3 text-meta text-ink-muted">
+        <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        Google Ads levert geen apart leadveld — wat een lead is, staat in de conversies die
+        marketing zelf heeft ingesteld. Vink hier aan welke dat zijn; de kolommen Leads en
+        Kosten per lead op de Google Ads-pagina rekenen er daarna mee.
+      </p>
+
+      {fout && <p className="px-5 py-3 text-sm text-negative">{fout}</p>}
+
+      {!bezig && acties.length === 0 && !fout && (
+        <p className="px-5 py-8 text-center text-sm text-ink-muted">
+          Nog geen conversie-acties in de data. Ze verschijnen hier zodra de sync ze bij een
+          platform tegenkomt.
+        </p>
+      )}
+
+      {zichtbaar.length > 0 && (
+        <div className="max-h-[28rem] overflow-auto">
+          <table className="w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr>
+                {["Telt als lead", "Actie", "Kanaal", "Aantal 90 dgn", "Laatst gezien"].map(
+                  (kop, i) => (
+                    <th
+                      key={kop}
+                      className={`sticky top-0 z-20 whitespace-nowrap border-b border-line bg-surface-tint px-4 py-2.5 ${
+                        i === 3 ? "text-right" : "text-left"
+                      }`}
+                    >
+                      <span className="label-theme text-label text-ink-faint">{kop}</span>
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {zichtbaar.map((actie) => (
+                <tr key={actie.veld}>
+                  <td className="border-b border-line-soft px-4 py-2">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={actie.teltAlsLead}
+                        onChange={() => bewaar(actie, { teltAlsLead: !actie.teltAlsLead })}
+                        className="h-4 w-4"
+                      />
+                      {bewaard === actie.veld && (
+                        <IconCheck className="h-3.5 w-3.5 text-positive" />
+                      )}
+                    </label>
+                  </td>
+                  <td className="border-b border-line-soft px-2 py-1.5">
+                    <LabelVeld
+                      waarde={actie.gewijzigd ? actie.label : null}
+                      plaatshouder={actie.label}
+                      onBewaar={(v) =>
+                        bewaar(actie, { gewijzigd: v !== null, label: v ?? actie.label })
+                      }
+                    />
+                    <span className="block px-2 text-meta text-ink-faint" title={actie.veld}>
+                      {actie.veld}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap border-b border-line-soft px-4 py-2 text-ink-muted">
+                    {BRON_LABEL[actie.bron] ?? actie.bron}
+                    {actie.account && (
+                      <span className="block text-meta text-ink-faint">{actie.account}</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap border-b border-line-soft px-4 py-2 text-right text-ink">
+                    {actie.aantal.toLocaleString("nl-NL", { maximumFractionDigits: 0 })}
+                  </td>
+                  <td className="whitespace-nowrap border-b border-line-soft px-4 py-2 text-ink-muted">
+                    {actie.laatstGezien
+                      ? new Date(`${actie.laatstGezien}T00:00:00Z`).toLocaleDateString("nl-NL", {
+                          day: "numeric",
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Een eigen naam voor de actie.
+ *
+ * De plaatshouder is het automatisch afgeleide label, dus leeg laten betekent "die naam
+ * is prima". Zo hoef je alleen te typen waar de afleiding ernaast zit.
+ */
+function LabelVeld({
+  waarde,
+  plaatshouder,
+  onBewaar,
+}: {
+  waarde: string | null;
+  plaatshouder: string;
+  onBewaar: (waarde: string | null) => void;
+}) {
+  const [tekst, setTekst] = useState(waarde ?? "");
+
+  useEffect(() => setTekst(waarde ?? ""), [waarde]);
+
+  return (
+    <input
+      value={tekst}
+      placeholder={plaatshouder}
+      onChange={(e) => setTekst(e.target.value)}
+      onBlur={() => {
+        const kaal = tekst.trim();
+        if (kaal !== (waarde ?? "")) onBewaar(kaal || null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") setTekst(waarde ?? "");
+      }}
+      className="w-full min-w-48 rounded-control border border-transparent bg-transparent px-2 py-1 text-sm text-ink transition-colors duration-[var(--duur-snel)] placeholder:text-ink-muted hover:border-line focus:border-line focus:bg-card focus:outline-none"
+    />
+  );
+}
