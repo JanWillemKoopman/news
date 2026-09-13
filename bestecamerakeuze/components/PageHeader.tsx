@@ -6,9 +6,11 @@ type Props = {
   subtitle: string;
   /** Live-status hoort alleen bij het campagne-overzicht. */
   meta?: { liveCount: number };
+  /** Game info hoort alleen bij Scores en Kennis en acties, niet bij Campagnes. */
+  toonGameInfo?: boolean;
 };
 
-export default function PageHeader({ title, subtitle, meta }: Props) {
+export default function PageHeader({ title, subtitle, meta, toonGameInfo }: Props) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div>
@@ -18,11 +20,11 @@ export default function PageHeader({ title, subtitle, meta }: Props) {
         <p className="mt-1.5 text-meta text-ink-muted">{subtitle}</p>
       </div>
 
-      {meta && (
+      {(meta || toonGameInfo) && (
         <div className="flex flex-wrap items-center gap-4 pt-1.5">
-          <LiveStatus liveCount={meta.liveCount} />
-          <span aria-hidden="true" className="h-3 w-px bg-line" />
-          <GameInfoKnop />
+          {meta && <LiveStatus liveCount={meta.liveCount} />}
+          {meta && toonGameInfo && <span aria-hidden="true" className="h-3 w-px bg-line" />}
+          {toonGameInfo && <GameInfoKnop />}
         </div>
       )}
     </div>

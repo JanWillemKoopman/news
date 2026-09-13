@@ -39,6 +39,11 @@ type Props = {
 /** Tabbladen uit de sidebargroep "Campagnes" — hier blijft het ronde "+"-knopje zichtbaar. */
 const CAMPAGNE_GROEP_VIEWS: DashboardView[] = ["campagnes", "tijdlijn", "campagnebeheer"];
 
+/** De "Game info"-knop legt de puntentelling uit en hoort daarom alleen thuis op de
+ *  tabbladen waar die telling ook zichtbaar is: Scores (de stand zelf) en Kennis en
+ *  acties (de berichten die de punten opleveren) — niet op Campagnes. */
+const GAME_INFO_VIEWS: DashboardView[] = ["scores", "kennisacties"];
+
 /**
  * De tabbladen met de "+" voor een bericht: de twee teamtabbladen én de kanaalpagina's.
  *
@@ -227,6 +232,7 @@ export default function AppShell({
             title={title}
             subtitle={subtitle}
             meta={actief === "campagnes" ? { liveCount } : undefined}
+            toonGameInfo={GAME_INFO_VIEWS.includes(actief)}
           />
         )}
 
