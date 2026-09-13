@@ -104,11 +104,27 @@ export type WindsorRij = Record<string, string | number | boolean | null>;
 
 interface Foutantwoord {
   error?: string;
+  message?: string;
+  detail?: string;
   code?: string;
 }
 
-function isFoutantwoord(waarde: unknown): waarde is Foutantwoord {
-  return typeof waarde === "object" && waarde !== null && "error" in waarde;
+/**
+ * Windsor zet zijn uitleg niet altijd onder `error`; bij sommige fouten heet het veld
+ * `message` of `detail`. Alle drie meenemen, anders valt precies de zin weg waar je iets
+ * aan hebt.
+ */
+function fouttekstVan(waarde: unknown): string | null {
+  if (typeof waarde !== "object" || waarde === null) return null;
+  const f = waarde as Foutantwoord;
+  const tekst = f.error ?? f.message ?? f.detail;
+  return typeof tekst === "string" && tekst.trim() ? tekst.trim() : null;
+}
+
+/** Een stukje van het ruwe antwoord, voor als er geen herkenbaar foutveld in staat. */
+function fragment(tekst: string): string {
+  const kaal = tekst.replace(/\s+/g, " ").trim();
+  return kaal.length > 240 ? `${kaal.slice(0, 240)}…` : kaal;
 }
 
 async function wacht(ms: number): Promise<void> {
@@ -161,14 +177,22 @@ export async function haalOp(
         throw new Error(`${connector}: antwoord was geen JSON (status ${res.status})`);
       }
 
-      if (isFoutantwoord(geparsed)) {
+      const fouttekst = fouttekstVan(geparsed);
+      if (fouttekst) {
         // Een inhoudelijke fout: niet opnieuw proberen, wel duidelijk doorgeven.
-        throw Object.assign(new Error(`${connector}: ${geparsed.error}`), {
+        throw Object.assign(new Error(`${connector}: ${fouttekst}`), {
           definitief: true,
         });
       }
 
-      if (!res.ok) throw new Error(`${connector}: status ${res.status}`);
+      // Geen herkenbaar foutveld, wel een foutstatus. Neem het antwoord zelf mee: zonder
+      // die tekst is "status 500" niet te onderscheiden van een storing bij Windsor, een
+      // account dat niet bij deze sleutel hoort of een veld dat niet mag.
+      if (!res.ok) {
+        throw new Error(
+          `${connector}: status ${res.status} — ${accounts.length} account(s), ${velden.length} velden, ${van} t/m ${tot}. Antwoord: ${fragment(tekst)}`,
+        );
+      }
 
       const data = (geparsed as { data?: WindsorRij[] }).data ?? (geparsed as WindsorRij[]);
       return Array.isArray(data) ? data : [];
@@ -205,7 +229,7 @@ export async function haalVeldcatalogus(): Promise<VeldDefinitie[]> {
     signal: AbortSignal.timeout(TIMEOUT_MS),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`veldcatalogus: status ${res.status}`);
+  if (!res.ok) throw new Error(`veldcatalogus: status ${res.status} — ${fragment(await res.text())}`);
 
   const data: unknown = await res.json();
   if (!Array.isArray(data)) throw new Error("veldcatalogus: onverwacht antwoord");
