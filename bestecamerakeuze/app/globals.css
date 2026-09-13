@@ -77,6 +77,26 @@
   --color-open-light: #dcfce7;
   --color-closed: #8a93a3;
   --color-closed-light: #eef0f2;
+
+  /* Tijdlijn-balkjes (tabblad Tijdlijn). Bewust eigen tokens en niet de generieke
+     --color-open/--color-orange/--color-closed hierboven: die zijn in élk theme
+     ongeveer dezelfde groen/oranje/grijs, waardoor de tijdlijn bij alle merken
+     hetzelfde oogde. De balk is het grootste gekleurde vlak van dat scherm en hoort
+     dus, net als de knoppen en de grafieken, de kleur én de vormtaal van het merk te
+     dragen. --radius-balk volgt daarom --radius-button (pilvorm bij Udenhout/VW/Audi/
+     SEAT, scherp bij CUPRA, bijna recht bij Porsche en Bentley) en --balk-hoogte de
+     zwaarte van het merk: Volkswagen zet een volle pil neer, Bentley een fijne streep.
+     Een "gepland" balkje is een omlijning in plaats van een vlak — het is er nog niet —
+     en gebruikt daarom één kleur voor zowel de rand als het label erin. */
+  --color-balk-actief: #003da5;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #ed6935;
+  --color-on-balk-bijna-af: #ffffff;
+  --color-balk-gepland: #19243b;
+  --color-balk-afgelopen: #c7c2b6;
+  --color-on-balk-afgelopen: #3a3630;
+  --radius-balk: 999px;
+  --balk-hoogte: 16px;
   /* Lichte tint van --color-open — het andere uiterste van de "ademende" statusdot
      hieronder, niet los ergens anders gebruikt. */
   --color-open-bright: #6ee7a5;
@@ -465,6 +485,16 @@ body {
   --color-open-bright: #4fd08c;
   --color-closed: #8794a8;
   --color-closed-light: #e9edf3;
+  /* Tijdlijn-balkjes — Deep Space Blue als lopende campagne, het heldere VW-blauw als waarschuwing; volle pilvorm. */
+  --color-balk-actief: #001e50;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #00b0f0;
+  --color-on-balk-bijna-af: #00243f;
+  --color-balk-gepland: #001e50;
+  --color-balk-afgelopen: #aeb9c7;
+  --color-on-balk-afgelopen: #001e50;
+  --radius-balk: 999px;
+  --balk-hoogte: 18px;
 
   --color-positive: #008c46;
   --color-negative: #c8102e;
@@ -567,6 +597,16 @@ body {
   --color-open-bright: #9df0dd;
   --color-closed: #767d89;
   --color-closed-light: rgba(252, 252, 253, 0.08);
+  /* Tijdlijn-balkjes — Progressive Red op het bijna-zwarte canvas, amber als waarschuwing — lichte tekst op de omlijning. */
+  --color-balk-actief: #f50537;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #ffb020;
+  --color-on-balk-bijna-af: #181d25;
+  --color-balk-gepland: #b9c0cb;
+  --color-balk-afgelopen: #4d545f;
+  --color-on-balk-afgelopen: #d7dbe1;
+  --radius-balk: 999px;
+  --balk-hoogte: 16px;
 
   --color-positive: #31d0aa;
   --color-negative: #ff6b7a;
@@ -676,6 +716,16 @@ body {
   --color-open-bright: #78faae;
   --color-closed: #8a9c93;
   --color-closed-light: #eaf1ec;
+  /* Tijdlijn-balkjes — Emerald Green voor lopend, Electric Green als waarschuwing (donkere tekst erop), zachte hoeken. */
+  --color-balk-actief: #0e6b4f;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #78faae;
+  --color-on-balk-bijna-af: #0e3a2f;
+  --color-balk-gepland: #0e3a2f;
+  --color-balk-afgelopen: #b6c7bd;
+  --color-on-balk-afgelopen: #0e3a2f;
+  --radius-balk: 6px;
+  --balk-hoogte: 16px;
 
   --color-positive: #118a4e;
   --color-negative: #b4321f;
@@ -774,6 +824,16 @@ body {
   --color-open-bright: #5fd8a0;
   --color-closed: #9a938b;
   --color-closed-light: #f0ece7;
+  /* Tijdlijn-balkjes — SEAT-rood voor lopend, het warme oranje als waarschuwing. */
+  --color-balk-actief: #e4002b;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #e2801e;
+  --color-on-balk-bijna-af: #241503;
+  --color-balk-gepland: #111111;
+  --color-balk-afgelopen: #c4bdb4;
+  --color-on-balk-afgelopen: #2a2620;
+  --radius-balk: 999px;
+  --balk-hoogte: 16px;
 
   --color-positive: #0f8f5f;
   --color-negative: #c8102e;
@@ -873,6 +933,16 @@ body {
   --color-open-bright: #a8ecd9;
   --color-closed: #6d7f82;
   --color-closed-light: rgba(242, 240, 237, 0.08);
+  /* Tijdlijn-balkjes — Koper op petrol, scherpe hoeken en een dunnere balk — geen enkele ronding. */
+  --color-balk-actief: #b58150;
+  --color-on-balk-actief: #0a1416;
+  --color-balk-bijna-af: #e0554a;
+  --color-on-balk-bijna-af: #0a1416;
+  --color-balk-gepland: #93a1a3;
+  --color-balk-afgelopen: #35474a;
+  --color-on-balk-afgelopen: #b9c5c7;
+  --radius-balk: 0px;
+  --balk-hoogte: 12px;
 
   --color-positive: #4fb89a;
   --color-negative: #e0554a;
@@ -990,6 +1060,16 @@ body {
   --color-open-bright: #5fd170;
   --color-closed: #96989a;
   --color-closed-light: #eeeff2;
+  /* Tijdlijn-balkjes — Porsche-rood en een technisch okergeel, nauwelijks afgeronde hoeken. */
+  --color-balk-actief: #d5001c;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #b06a00;
+  --color-on-balk-bijna-af: #ffffff;
+  --color-balk-gepland: #010205;
+  --color-balk-afgelopen: #b4b7bb;
+  --color-on-balk-afgelopen: #010205;
+  --radius-balk: 4px;
+  --balk-hoogte: 14px;
 
   --color-positive: #018a16;
   --color-negative: #e00000;
@@ -1106,6 +1186,16 @@ body {
   --color-open-bright: #62d19b;
   --color-closed: #9d8b93;
   --color-closed-light: #f1e4ea;
+  /* Tijdlijn-balkjes — Hetzelfde technische raamwerk als Porsche, maar in het roze. */
+  --color-balk-actief: #d5006e;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #b06a00;
+  --color-on-balk-bijna-af: #ffffff;
+  --color-balk-gepland: #0a0a0c;
+  --color-balk-afgelopen: #c3b3ba;
+  --color-on-balk-afgelopen: #0a0a0c;
+  --radius-balk: 4px;
+  --balk-hoogte: 14px;
 
   --color-positive: #0e8a4a;
   --color-negative: #c8102e;
@@ -1219,6 +1309,16 @@ body {
   --color-open-bright: #6cc49e;
   --color-closed: #96968a;
   --color-closed-light: #ece7dc;
+  /* Tijdlijn-balkjes — Gedempt British Racing Green met goud, een fijne streep in plaats van een balk. */
+  --color-balk-actief: #103b2d;
+  --color-on-balk-actief: #f5f2eb;
+  --color-balk-bijna-af: #b08d45;
+  --color-on-balk-bijna-af: #1a1408;
+  --color-balk-gepland: #103b2d;
+  --color-balk-afgelopen: #b9b6a6;
+  --color-on-balk-afgelopen: #1a2b23;
+  --radius-balk: 2px;
+  --balk-hoogte: 12px;
 
   --color-positive: #1c6b4b;
   --color-negative: #9c3123;

@@ -121,16 +121,41 @@ function bepaalStatusKleur(start: Date, eind: Date, vandaag: Date): StatusKleur 
   return dagenTotEind <= BIJNA_AF_DAGEN ? "bijna-af" : "actief";
 }
 
+/**
+ * De vier balkkleuren, uit eigen `--color-balk-*`-tokens in `app/globals.css` en niet uit
+ * de generieke statuskleuren (`--color-open`, `--color-orange`, `--color-closed`). Die
+ * laatste zijn in élk theme ongeveer dezelfde groen/oranje/grijs — bedoeld voor een
+ * statusbolletje in een tabel — waardoor de tijdlijn bij alle merken hetzelfde oogde. De
+ * balk is hier juist het grootste gekleurde vlak van het scherm en draagt dus, net als de
+ * knoppen en de grafieken, de kleur van het merk. Vorm en zwaarte volgen `--radius-balk`
+ * en `--balk-hoogte`, die per theme meelopen met de vormtaal (pil bij Volkswagen, scherp
+ * bij CUPRA, een fijne streep bij Bentley).
+ */
 const STATUS_STYLE: Record<StatusKleur, { label: string; balk: string; tekst: string; dot: string }> = {
-  actief: { label: "Actief", balk: "bg-open", tekst: "text-on-primary", dot: "bg-open" },
-  "bijna-af": { label: "Loopt bijna af", balk: "bg-orange", tekst: "text-on-primary", dot: "bg-orange" },
+  actief: {
+    label: "Actief",
+    balk: "bg-balk-actief",
+    tekst: "text-on-balk-actief",
+    dot: "bg-balk-actief",
+  },
+  "bijna-af": {
+    label: "Loopt bijna af",
+    balk: "bg-balk-bijna-af",
+    tekst: "text-on-balk-bijna-af",
+    dot: "bg-balk-bijna-af",
+  },
   gepland: {
     label: "Gepland",
-    balk: "border-2 border-primary bg-card",
-    tekst: "text-primary",
-    dot: "border-2 border-primary bg-card",
+    balk: "border-2 border-balk-gepland bg-card",
+    tekst: "text-balk-gepland",
+    dot: "border-2 border-balk-gepland bg-card",
   },
-  afgelopen: { label: "Afgelopen", balk: "bg-closed", tekst: "text-on-primary", dot: "bg-closed" },
+  afgelopen: {
+    label: "Afgelopen",
+    balk: "bg-balk-afgelopen",
+    tekst: "text-on-balk-afgelopen",
+    dot: "bg-balk-afgelopen",
+  },
 };
 
 /** Zet start-/einddatum om naar een kolomrange binnen 1..52; valt de periode buiten het jaar dan geen balk. */
@@ -378,11 +403,11 @@ export default function CampagneTijdlijn() {
 
                         {balk && stijl && (
                           <div
-                            className={`absolute top-1/2 flex -translate-y-1/2 items-center overflow-hidden rounded-pill shadow-card ${stijl.balk}`}
+                            className={`absolute top-1/2 flex -translate-y-1/2 items-center overflow-hidden rounded-balk shadow-card ${stijl.balk}`}
                             style={{
                               left: (balk.vanKolom - 1) * kolombreedte + 2,
                               width: breedte,
-                              height: 16,
+                              height: "var(--balk-hoogte)",
                             }}
                             onMouseEnter={(event) => {
                               const rect = event.currentTarget.getBoundingClientRect();
