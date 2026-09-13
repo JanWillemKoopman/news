@@ -551,7 +551,20 @@ export function isConversieActie(veld: string, connector: string): boolean {
   if (connector === "facebook") {
     // De vaste actions_* velden (actions_lead, actions_link_click, …) halen we al op als
     // gewone statistiek; alleen de maatwerkconversies horen in de jsonb-kolom.
-    return veld.startsWith("actions_") && !VASTE_META_ACTIES.has(veld);
+    //
+    // De omni-velden vallen af, ook al beginnen ze met actions_. Meta weigert ze in
+    // dezelfde opvraging als een uitsplitsing naar plaatsing, en die uitsplitsing
+    // (publisher_platform + platform_position) is voor dit dashboard belangrijker: zonder
+    // dat weten we niet of een advertentie in de feed, in stories of in reels liep.
+    // Windsor geeft dat letterlijk terug als "Breakdown fields [{'platform_position',
+    // 'publisher_platform'}] are incompatible with 'omni' and 'ranking' fields". Het zijn
+    // bovendien standaard e-commerce-acties (add_to_cart, app_install, purchase) waar een
+    // autodealer niets mee doet.
+    return (
+      veld.startsWith("actions_") &&
+      !veld.startsWith("actions_omni_") &&
+      !VASTE_META_ACTIES.has(veld)
+    );
   }
   if (connector === "google_ads") {
     return (

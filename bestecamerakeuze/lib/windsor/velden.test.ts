@@ -109,3 +109,19 @@ test("statistiek-id's zijn uniek binnen een pagina", () => {
     assert.equal(new Set(ids).size, ids.length, `dubbele id's: ${ids.join(", ")}`);
   }
 });
+
+test("omni-acties tellen niet als maatwerkconversie bij Meta", () => {
+  // Meta weigert deze velden zodra je uitsplitst naar plaatsing, en die uitsplitsing
+  // wint. Zonder deze uitzondering mislukte de hele Meta-sync met één foutmelding
+  // waarin alle veertien omni-velden werden opgesomd.
+  assert.equal(isConversieActie("actions_omni_purchase", "facebook"), false);
+  assert.equal(isConversieActie("actions_omni_add_to_cart", "facebook"), false);
+  assert.equal(isConversieActie("actions_omni_app_install", "facebook"), false);
+
+  // Een echte maatwerkconversie blijft er gewoon in.
+  assert.equal(isConversieActie("actions_proefrit_aanvraag", "facebook"), true);
+  assert.equal(isConversieActie("actions_offerte_aanvraag", "facebook"), true);
+
+  // En een vast veld blijft een gewone statistiek.
+  assert.equal(isConversieActie("actions_lead", "facebook"), false);
+});
