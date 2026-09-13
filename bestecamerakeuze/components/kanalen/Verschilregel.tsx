@@ -14,11 +14,14 @@ import { verschilTekst } from "@/lib/kanalen/vergelijk";
 export default function Verschilregel({
   verschil,
   compact = false,
+  waarmee = "vorige periode",
 }: {
   verschil: Verschil;
   compact?: boolean;
+  /** Waarmee er vergeleken wordt — de vorige periode, of bv. "dit account". */
+  waarmee?: string;
 }) {
-  const tekst = verschilTekst(verschil);
+  const tekst = verschilTekst(verschil, waarmee);
   if (!tekst) return null;
 
   const richting = verschil.relatief === null ? 0 : Math.sign(verschil.relatief);
@@ -33,9 +36,7 @@ export default function Verschilregel({
     <span className={`inline-flex items-center gap-0.5 whitespace-nowrap text-meta ${kleur}`}>
       {richting > 0 && <IconArrowUp className="h-3 w-3 shrink-0" />}
       {richting < 0 && <IconArrowDown className="h-3 w-3 shrink-0" />}
-      {compact && verschil.relatief !== null
-        ? tekst.replace(" t.o.v. vorige periode", "")
-        : tekst}
+      {compact && verschil.relatief !== null ? tekst.replace(` t.o.v. ${waarmee}`, "") : tekst}
     </span>
   );
 }

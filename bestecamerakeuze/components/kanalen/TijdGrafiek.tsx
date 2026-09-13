@@ -94,6 +94,10 @@ export default function TijdGrafiek({
   // te blijven.
   const [korrelKeuze, setKorrelKeuze] = useState<Korrel | null>(null);
   const [splitsing, setSplitsing] = useState<string>("");
+  // Reeksen die je in de legenda hebt uitgezet. Bij zes lijnen wil je er soms even één
+  // wegklikken om de rest te kunnen lezen; de as blijft dan staan waar hij stond, want
+  // de data verandert niet — alleen wat er getekend wordt.
+  const [verborgen, setVerborgen] = useState<string[]>([]);
 
   const actieveKorrel =
     korrelKeuze && korrels.includes(korrelKeuze) ? korrelKeuze : standaardKorrel(kubus, korrels);
@@ -219,6 +223,13 @@ export default function TijdGrafiek({
   // De eerste en de laatste periode vallen vaak maar deels binnen de gekozen datumrange.
   // Dat is geen daling maar een halve week, en zonder dit zinnetje leest het als het
   // eerste.
+  function wisselReeks(sleutel: string) {
+    if (!sleutel) return;
+    setVerborgen((huidig) =>
+      huidig.includes(sleutel) ? huidig.filter((v) => v !== sleutel) : [...huidig, sleutel],
+    );
+  }
+
   const deelperiodes = data.filter((d) => d.volledig === false).map((d) => String(d.periode));
 
   // De vorige periode alleen bij één reeks: bij een uitsplitsing zou hij het beeld
@@ -349,7 +360,22 @@ export default function TijdGrafiek({
                 }}
               />
               {(reeksen.length > 0 || toonVorige) && (
-                <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />
+                <Legend
+                  wrapperStyle={{ fontSize: 12, color: kleuren.as, cursor: "pointer" }}
+                  onClick={(item) => wisselReeks(String(item.dataKey ?? ""))}
+                  formatter={(waarde, item) => (
+                    <span
+                      style={{
+                        opacity: verborgen.includes(String(item?.dataKey ?? "")) ? 0.45 : 1,
+                        textDecoration: verborgen.includes(String(item?.dataKey ?? ""))
+                          ? "line-through"
+                          : undefined,
+                      }}
+                    >
+                      {waarde}
+                    </span>
+                  )}
+                />
               )}
               {toonVorige && (
                 <Line
@@ -361,6 +387,7 @@ export default function TijdGrafiek({
                   strokeDasharray="4 3"
                   dot={false}
                   connectNulls
+                  hide={verborgen.includes("vorige")}
                 />
               )}
               {reeksen.length === 0 ? (
@@ -379,6 +406,7 @@ export default function TijdGrafiek({
                     key={naam}
                     type={kleuren.lijnvorm}
                     dataKey={naam}
+                    hide={verborgen.includes(naam)}
                     stroke={
                       naam === "Overig"
                         ? kleuren.context
@@ -419,13 +447,31 @@ export default function TijdGrafiek({
                   fontSize: 13,
                 }}
               />
-              {toonVorige && <Legend wrapperStyle={{ fontSize: 12, color: kleuren.as }} />}
+              {toonVorige && (
+                <Legend
+                  wrapperStyle={{ fontSize: 12, color: kleuren.as, cursor: "pointer" }}
+                  onClick={(item) => wisselReeks(String(item.dataKey ?? ""))}
+                  formatter={(waarde, item) => (
+                    <span
+                      style={{
+                        opacity: verborgen.includes(String(item?.dataKey ?? "")) ? 0.45 : 1,
+                        textDecoration: verborgen.includes(String(item?.dataKey ?? ""))
+                          ? "line-through"
+                          : undefined,
+                      }}
+                    >
+                      {waarde}
+                    </span>
+                  )}
+                />
+              )}
               {toonVorige && (
                 <Bar
                   dataKey="vorige"
                   name="Vorige periode"
                   fill={kleuren.context}
                   radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                  hide={verborgen.includes("vorige")}
                 />
               )}
               <Bar

@@ -59,6 +59,15 @@ type Props = {
   toonBeeld?: boolean;
   /** Zet een sorteerbare datumkolom vóór de cijfers — alleen zinnig bij losse posts. */
   toonDatum?: boolean;
+  /**
+   * Vergelijk één statistiek met het gemiddelde van de groep waar de regel bij hoort.
+   *
+   * "4,1% interactieratio" zegt niets als je niet weet wat dit account normaal doet. Met
+   * `{ dimensie: "account", statistiekId: "interactieratio", waarmee: "dit account" }`
+   * komt er onder die cel te staan hoe de post zich verhoudt tot het gewogen gemiddelde
+   * van zijn eigen account in dezelfde periode.
+   */
+  benchmark?: { dimensie: string; statistiekId: string; waarmee: string };
   uitlegAan: boolean;
 };
 
@@ -74,6 +83,7 @@ export default function StatistiekTabel({
   statistieken,
   toonBeeld = false,
   toonDatum = false,
+  benchmark,
   uitlegAan,
 }: Props) {
   const standaardKolommen = useMemo(
@@ -146,6 +156,47 @@ export default function StatistiekTabel({
     () => (vorige ? telOp(vorige.kubus, vorige.rijen) : null),
     [vorige],
   );
+
+  /**
+   * Per regel: bij welke groep hoort hij, en wat is het gewogen totaal van die groep?
+   *
+   * Het gewogen totaal en niet het gemiddelde van de posts: bij een verhouding als
+   * interactieratio is dat een ander getal, en het eerste is wat "dit account doet
+   * normaal zoveel" betekent.
+   */
+  const benchmarkPerGroep = useMemo(() => {
+    if (!benchmark) return null;
+    const dimKolom = kubus.dimensies.indexOf(benchmark.dimensie);
+    const groepKolom = kubus.dimensies.indexOf(groepeerOp);
+    if (dimKolom === -1 || groepKolom === -1) return null;
+
+    const dimLabels = kubus.labels[benchmark.dimensie] ?? [];
+    const groepLabels = kubus.labels[groepeerOp] ?? [];
+    const rijenPerDimensie = new Map<string, number[][]>();
+    const groepNaarDimensie = new Map<string, string>();
+
+    for (const rij of rijen) {
+      const dimensie = dimLabels[rij[dimKolom]] ?? "—";
+      groepNaarDimensie.set(groepLabels[rij[groepKolom]] ?? "—", dimensie);
+      const bestaand = rijenPerDimensie.get(dimensie);
+      if (bestaand) bestaand.push(rij);
+      else rijenPerDimensie.set(dimensie, [rij]);
+    }
+
+    const totalenPerDimensie = new Map<string, Record<string, number>>();
+    for (const [dimensie, eigen] of rijenPerDimensie) {
+      totalenPerDimensie.set(dimensie, telOp(kubus, eigen));
+    }
+    return { groepNaarDimensie, totalenPerDimensie };
+  }, [benchmark, kubus, rijen, groepeerOp]);
+
+  function benchmarkWaarde(groepSleutel: string, statistiek: Statistiek): number | null {
+    if (!benchmarkPerGroep || !benchmark || statistiek.id !== benchmark.statistiekId) return null;
+    const dimensie = benchmarkPerGroep.groepNaarDimensie.get(groepSleutel);
+    if (!dimensie) return null;
+    const totalen = benchmarkPerGroep.totalenPerDimensie.get(dimensie);
+    return totalen ? waardeVan(statistiek, totalen) : null;
+  }
 
   function klikKolom(id: string) {
     if (id === actieveSortering) {
@@ -341,6 +392,19 @@ export default function StatistiekTabel({
                               waardeVan(s, groep.totalen),
                               toen ? waardeVan(s, toen.totalen) : null,
                             )}
+                            compact
+                          />
+                        </span>
+                      )}
+                      {benchmark && s.id === benchmark.statistiekId && (
+                        <span className="mt-0.5 block">
+                          <Verschilregel
+                            verschil={verschilVan(
+                              s,
+                              waardeVan(s, groep.totalen),
+                              benchmarkWaarde(groep.sleutel, s),
+                            )}
+                            waarmee={benchmark.waarmee}
                             compact
                           />
                         </span>

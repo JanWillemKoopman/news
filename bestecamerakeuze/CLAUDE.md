@@ -316,6 +316,34 @@ niet uit af te lezen zijn:
   `pagina=betaald`, waar Meta, LinkedIn en Google in één kubus zitten met `kanaal` als
   extra dimensie. Bewust geen apart tabblad: dat zou een navigatie-item toevoegen aan een
   sidebar die vanaf élk tabblad zichtbaar is.
+- **"Wat opvalt" rekent binnen de gekozen periode** (`lib/kanalen/signalen.ts`): het
+  laatste derde tegen de twee derde ervoor, allebei per dag. Bewust niet tegen de vorige
+  periode, want die staat standaard uit — en een signaal dat pas verschijnt als je een
+  schakelaar omzet, is geen signaal maar een tweede tabblad. Elke regel eist zowel een
+  relatieve afwijking als een absolute ondergrens, en de lijst staat op **gewicht** en niet
+  op percentage: een campagne van tienduizend euro met 30% duurdere leads is een groter
+  probleem dan eentje van driehonderd die verdubbelde. Een signaal is klikbaar en zet het
+  filter op dat onderwerp — zo is de lijst een ingang tot de pagina en geen apart
+  dashboard. Er staat niets als er niets te melden is: een blok dat elke week "geen
+  bijzonderheden" zegt, valt niet meer op in de week dat het wél iets zegt.
+- **Welke conversie-actie een lead is, legt het team zelf vast.** Google levert geen
+  leadveld; wat een lead is, zit in de conversies die marketing in Google Ads en GA4 heeft
+  ingesteld, en die staan per rij in de jsonb-kolom `conversie_acties`. Op de Koppeltabel
+  staat daarvoor het blok **Conversie-acties** (`windsor_conversie_keuze`, migratie 0016);
+  `bron.ts` telt de aangevinkte acties bij `leads` op — optellen en niet vervangen, want
+  bij Meta zit `actions_lead` al in die kolom en komen de vaste actievelden nooit in de
+  jsonb terecht, dus dubbeltellen kan niet. Zolang er niets is aangevinkt, laat Google Ads
+  de kolommen Leads en Kosten per lead weg (`verbergZonderConversieLeads`).
+- **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
+  koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
+  op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus
+  het blok staat apart en niet als kolom in de campagnetabel. Het rekenwerk (verstreken
+  tijd tegen benut budget) staat in `lib/kanalen/budget.ts`, zonder React en zonder
+  database, en is daarmee getest.
+- **Testen zonder bundler.** `npm test` draait met `scripts/test-resolver.mjs`, een
+  resolve-hook die het `@/`-alias en imports zonder extensie afhandelt. Zonder dat was een
+  `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
+  dat is een rare eis aan juist de code die het rekenwerk doet.
 
 ### Component- en codepatronen
 

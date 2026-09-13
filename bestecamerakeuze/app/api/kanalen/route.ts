@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import {
   haalAccounts,
   haalAdvertenties,
+  haalBudgetten,
   haalKoppelingen,
+  haalSheetKoppelingen,
   haalSyncStand,
   haalPosts,
   isKanalenGeconfigureerd,
+  type BudgetVraag,
 } from "@/lib/kanalen/bron";
 import { getGebruiker } from "@/lib/auth";
+import { getCampagnes } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +36,35 @@ const CACHE = "private, max-age=300, stale-while-revalidate=3600";
 function datumOf(waarde: string | null, terugval: Date): string {
   if (waarde && /^\d{4}-\d{2}-\d{2}$/.test(waarde)) return waarde;
   return terugval.toISOString().slice(0, 10);
+}
+
+/**
+ * De campagnes waarvan we én een budget uit de sheet kennen én de looptijd.
+ *
+ * De koppeling loopt over `sheet_campagne` in de koppeltabel: de campagnenaam in een
+ * advertentieplatform is zelden dezelfde als die in de sheet, en dat handmatig leggen is
+ * precies waar die pagina voor bestaat. Zonder start- en einddatum valt er niets te
+ * peilen — dan weet je niet hoever de campagne is.
+ */
+async function haalBudgetVragen(): Promise<BudgetVraag[]> {
+  const [koppelingen, campagnes] = await Promise.all([haalSheetKoppelingen(), getCampagnes()]);
+  const uitSheet = new Map(campagnes.map((c) => [c.naam, c]));
+
+  return koppelingen.flatMap((koppeling) => {
+    const sheet = uitSheet.get(koppeling.sheetCampagne);
+    if (!sheet?.startdatum || !sheet.einddatum) return [];
+    if (sheet.budget === null && sheet.doelLeads === null) return [];
+    return [
+      {
+        campagne: koppeling.campagne,
+        sheetCampagne: koppeling.sheetCampagne,
+        budget: sheet.budget,
+        doelLeads: sheet.doelLeads,
+        startdatum: sheet.startdatum,
+        einddatum: sheet.einddatum,
+      },
+    ];
+  });
 }
 
 export async function GET(request: Request) {
@@ -84,12 +117,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
     }
 
-    const data = await haalAdvertenties(
-      pagina === "google" ? "google" : pagina === "betaald" ? "betaald" : "social",
-      van,
-      tot,
+    const [data, budgetten] = await Promise.all([
+      haalAdvertenties(
+        pagina === "google" ? "google" : pagina === "betaald" ? "betaald" : "social",
+        van,
+        tot,
+      ),
+      // Best-effort: de sheet is een externe fetch en het budgetblok is een toevoeging.
+      // Valt hij weg, dan staan de cijfers er gewoon zonder pacing eronder.
+      haalBudgetVragen().then(haalBudgetten).catch(() => []),
+    ]);
+    return NextResponse.json(
+      { pagina, ...data, budgetten, laatsteSync, syncLoopt },
+      { headers: { "Cache-Control": CACHE } },
     );
-    return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },

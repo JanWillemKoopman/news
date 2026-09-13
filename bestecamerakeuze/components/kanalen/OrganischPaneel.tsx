@@ -33,13 +33,19 @@ export default function OrganischPaneel({ ingelogd }: { ingelogd: boolean }) {
       tabellen={[
         {
           titel: "Posts",
-          toelichting: "elke post met zijn lifetime-cijfers, nieuwste bovenaan te sorteren",
+          toelichting: "elke post met zijn lifetime-cijfers, en hoe de interactieratio zich verhoudt tot het account",
           bron: "detail",
           groepeerOp: "post_id",
           groepLabel: "Post",
           labelVeld: "tekst",
           toonBeeld: true,
           toonDatum: true,
+          // "4,1%" zegt niets zonder te weten wat dit account normaal haalt.
+          benchmark: {
+            dimensie: "account",
+            statistiekId: "interactieratio",
+            waarmee: "dit account",
+          },
         },
         {
           titel: "Per account",

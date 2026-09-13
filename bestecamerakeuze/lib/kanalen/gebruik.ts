@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CampagneBudget } from "@/lib/kanalen/budget";
 import { LEGE_KUBUS, type Kubus, type Selectie } from "@/lib/kanalen/kubus";
 import { vorigePeriode, type Periode } from "@/lib/kanalen/periode";
 
@@ -42,6 +43,10 @@ export interface KanaalAntwoord {
   laatsteSync?: string | null;
   /** Draait er op dit moment een sync? Voedt de waarschuwing in "Data ophalen". */
   syncLoopt?: boolean;
+  /** Telt de leadkolom conversie-acties mee? Bepaalt of Google Ads leads toont. */
+  leadsUitConversies?: boolean;
+  /** Budget en doelen uit de sheet, voor de campagnes die eraan gekoppeld zijn. */
+  budgetten?: CampagneBudget[];
   fout?: string;
 }
 
@@ -53,6 +58,8 @@ export interface KanaalData {
   fout: string | null;
   laatsteSync: string | null;
   syncLoopt: boolean;
+  leadsUitConversies: boolean;
+  budgetten: CampagneBudget[];
   herlaad: () => void;
   /** De kubussen over de vorige, even lange periode — alleen als de vergelijking aanstaat. */
   vorige: { reeks: Kubus; detail: Kubus } | null;
@@ -156,6 +163,8 @@ export function useKanaalData(
     fout,
     laatsteSync: antwoord?.laatsteSync ?? null,
     syncLoopt: antwoord?.syncLoopt ?? false,
+    leadsUitConversies: antwoord?.leadsUitConversies ?? false,
+    budgetten: antwoord?.budgetten ?? [],
     herlaad,
     vorige,
     vorigeBezig,

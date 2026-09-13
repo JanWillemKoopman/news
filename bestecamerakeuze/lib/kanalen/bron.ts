@@ -25,6 +25,8 @@
 
 import { Client } from "pg";
 import type { Kubus } from "@/lib/kanalen/kubus";
+import type { CampagneBudget } from "@/lib/kanalen/budget";
+import { labelVoorConversie } from "@/lib/windsor/velden";
 
 /** Boven deze periodelengte vat de server samen tot weken. */
 export const DAG_KORREL_MAX_DAGEN = 120;
@@ -155,6 +157,37 @@ const ADVERTENTIE_METINGEN = [
 
 const METINGEN_SOM = ADVERTENTIE_METINGEN.map((m) => `coalesce(sum(${m}), 0) as ${m}`).join(", ");
 
+/**
+ * Dezelfde sommen, maar met de gekozen conversie-acties opgeteld bij de leads.
+ *
+ * Google levert geen leadveld — wat een lead is, staat daar in de conversie-acties die
+ * marketing zelf heeft ingesteld, en die zitten per rij in de jsonb-kolom
+ * `conversie_acties`. Welke daarvan meetelt legt het team vast in
+ * `windsor_conversie_keuze` (zie de pagina Koppeltabel).
+ *
+ * Optellen bij `leads` en niet vervangen: bij Meta zit `actions_lead` al in die kolom en
+ * staan de maatwerkacties los daarvan in de jsonb. Dubbeltellen kan niet, want de vaste
+ * actievelden komen nooit in de jsonb terecht (zie `isConversieActie` in velden.ts).
+ */
+function metingenSom(metConversies: boolean): string {
+  if (!metConversies) return METINGEN_SOM;
+  return ADVERTENTIE_METINGEN.map((m) =>
+    m === "leads"
+      ? "coalesce(sum(a.leads), 0) + coalesce(sum(k.extra_leads), 0) as leads"
+      : `coalesce(sum(a.${m}), 0) as ${m}`,
+  ).join(", ");
+}
+
+/** De join die per rij de gekozen conversie-acties optelt; leeg als er niets gekozen is. */
+function conversieJoin(metConversies: boolean): string {
+  if (!metConversies) return "";
+  return `left join lateral (
+           select coalesce(sum((e.value)::text::numeric), 0) as extra_leads
+             from jsonb_each(coalesce(a.conversie_acties, '{}'::jsonb)) as e(key, value)
+            where e.key = any($4)
+         ) k on true`;
+}
+
 export type AdvertentieBron = "social" | "google" | "betaald";
 
 /**
@@ -180,6 +213,13 @@ const KANAAL_SQL = `case bron
 export interface AdvertentieData {
   reeks: Kubus;
   detail: Kubus;
+  /**
+   * Telt de leadkolom conversie-acties mee?
+   *
+   * Bepaalt of de Google Ads-pagina de kolommen Leads en Kosten per lead laat zien. Zonder
+   * aangewezen acties zijn die daar per definitie leeg, en dan horen ze er niet te staan.
+   */
+  leadsUitConversies: boolean;
 }
 
 export async function haalAdvertenties(
@@ -198,20 +238,27 @@ export async function haalAdvertenties(
     Array.from({ length: aantal + (samen ? 1 : 0) }, (_, i) => i + 1).join(", ");
 
   return metVerbinding(async (client) => {
+    const leadVelden = await gekozenLeadVelden(client);
+    const metConversies = leadVelden.length > 0;
+    const sommen = metingenSom(metConversies);
+    const join = conversieJoin(metConversies);
+    const argumenten = metConversies ? [van, tot, bronnen, leadVelden] : [van, tot, bronnen];
+
     // Merk en categorie komen uit de koppeltabel en hangen aan de campagne, dus ze
     // splitsen de rijen niet verder op — maar ze maken wel het filter mogelijk dat de
     // koppeltabel al belooft ("werkt daarna als filter op Social ads en Google Ads").
     const reeksRes = await client.query(
-      `select ${datumSql}::text as datum,
-              ${kanaalKolom}account, platform, campagne, campagne_doel, campagne_status, campagnemanager,
-              coalesce(merk, '—') as merk,
-              coalesce(categorie, '—') as categorie,
-              ${METINGEN_SOM}
-         from dataloket.v_advertenties
-        where datum between $1 and $2 and bron = any($3)
+      `select ${datumSql.replace("datum", "a.datum")}::text as datum,
+              ${kanaalKolom.replace("bron", "a.bron")}a.account, a.platform, a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
+              coalesce(a.merk, '—') as merk,
+              coalesce(a.categorie, '—') as categorie,
+              ${sommen}
+         from dataloket.v_advertenties a
+         ${join}
+        where a.datum between $1 and $2 and a.bron = any($3)
         group by ${groep(9)}
         order by 1`,
-      [van, tot, bronnen],
+      argumenten,
     );
 
     // Groeperen op `advertentie_id` en niet op de naam: advertentienamen als
@@ -219,24 +266,25 @@ export async function haalAdvertenties(
     // één regel op — met de creative van willekeurig de eerste erbij. De leesbare naam
     // komt daarom uit de meta.
     const detailRes = await client.query(
-      `select ${kanaalKolom}account, platform,
-              coalesce(nullif(plaatsing, ''), '—') as plaatsing,
-              campagne, campagne_doel, campagne_status, campagnemanager,
-              coalesce(merk, '—') as merk,
-              coalesce(categorie, '—') as categorie,
-              coalesce(nullif(adgroep, ''), '—') as adgroep,
-              coalesce(nullif(advertentie_id, ''), coalesce(nullif(advertentie, ''), '(zonder naam)')) as advertentie_id,
-              min(coalesce(nullif(advertentie, ''), '(zonder naam)')) as advertentie,
-              min(advertentie_status) as advertentie_status,
-              min(thumbnail_url) as thumbnail_url,
-              min(preview_url) as preview_url,
-              ${METINGEN_SOM}
-         from dataloket.v_advertenties
-        where datum between $1 and $2 and bron = any($3)
+      `select ${kanaalKolom.replace("bron", "a.bron")}a.account, a.platform,
+              coalesce(nullif(a.plaatsing, ''), '—') as plaatsing,
+              a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
+              coalesce(a.merk, '—') as merk,
+              coalesce(a.categorie, '—') as categorie,
+              coalesce(nullif(a.adgroep, ''), '—') as adgroep,
+              coalesce(nullif(a.advertentie_id, ''), coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie_id,
+              min(coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie,
+              min(a.advertentie_status) as advertentie_status,
+              min(a.thumbnail_url) as thumbnail_url,
+              min(a.preview_url) as preview_url,
+              ${sommen}
+         from dataloket.v_advertenties a
+         ${join}
+        where a.datum between $1 and $2 and a.bron = any($3)
         group by ${groep(11)}
-        order by sum(uitgaven) desc nulls last
+        order by sum(a.uitgaven) desc nulls last
         limit ${DETAIL_LIMIET}`,
-      [van, tot, bronnen],
+      argumenten,
     );
 
     const detail = bouwKubus(
@@ -258,7 +306,60 @@ export async function haalAdvertenties(
         { van, tot },
       ),
       detail,
+      leadsUitConversies: metConversies,
     };
+  });
+}
+
+/** Welke conversie-acties heeft het team aangewezen als lead? */
+async function gekozenLeadVelden(client: Client): Promise<string[]> {
+  const res = await client.query(
+    `select veld from dataloket.windsor_conversie_keuze where telt_als_lead = true`,
+  );
+  return res.rows.map((r) => String(r.veld));
+}
+
+export interface ConversieActie {
+  veld: string;
+  /** Het afgeleide of zelf ingestelde label. */
+  label: string;
+  bron: string;
+  account: string | null;
+  /** Hoe vaak deze actie de laatste 90 dagen voorkwam. */
+  aantal: number;
+  laatstGezien: string | null;
+  teltAlsLead: boolean;
+  /** Staat er een eigen naam ingesteld, of komt het label uit de veldnaam? */
+  eigenLabel: string | null;
+}
+
+/**
+ * De conversie-acties die er zijn, met hun volume en de keuze die erop staat.
+ *
+ * Een left join vanuit de catalogus en niet vanuit de keuzetabel: je wilt juist zien wat
+ * er binnenkomt waar nog geen keuze op staat. Een actie die niemand ziet, wijst niemand
+ * aan — en dan blijft de leadkolom op Google Ads leeg zonder dat iemand weet waarom.
+ */
+export async function haalConversieActies(): Promise<ConversieActie[]> {
+  return metVerbinding(async (client) => {
+    const res = await client.query(
+      `select c.veld, c.bron, c.account, c.aantal, c.laatst_gezien,
+              coalesce(k.telt_als_lead, false) as telt_als_lead,
+              k.label
+         from dataloket.v_conversie_acties c
+         left join dataloket.windsor_conversie_keuze k on k.veld = c.veld
+        order by c.aantal desc nulls last`,
+    );
+    return res.rows.map((r) => ({
+      veld: String(r.veld),
+      label: r.label ? String(r.label) : labelVoorConversie(String(r.veld)),
+      bron: String(r.bron ?? ""),
+      account: r.account ? String(r.account) : null,
+      aantal: Number(r.aantal ?? 0),
+      laatstGezien: r.laatst_gezien ? new Date(r.laatst_gezien as string).toISOString().slice(0, 10) : null,
+      teltAlsLead: Boolean(r.telt_als_lead),
+      eigenLabel: r.label ? String(r.label) : null,
+    }));
   });
 }
 
@@ -466,6 +567,80 @@ export async function haalKoppelingen(): Promise<Koppeling[]> {
       notitie: r.notitie ? String(r.notitie) : null,
       uitgaven: Number(r.uitgaven ?? 0),
       gekoppeld: Boolean(r.gekoppeld),
+    }));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Budget en pacing
+// ---------------------------------------------------------------------------
+
+export interface BudgetVraag {
+  /** De campagnenaam zoals hij in de advertentiedata staat. */
+  campagne: string;
+  /** De gekoppelde campagne uit de sheet, met zijn budget en doelen. */
+  sheetCampagne: string;
+  budget: number | null;
+  doelLeads: number | null;
+  startdatum: string;
+  einddatum: string;
+}
+
+// `CampagneBudget` staat in `lib/kanalen/budget.ts`, samen met het pacing-rekenwerk dat
+// de browser ermee doet — één definitie voor beide kanten van de lijn.
+export type { CampagneBudget } from "@/lib/kanalen/budget";
+
+/**
+ * Wat is er van het budget op, over de looptijd van de campagne zelf?
+ *
+ * Bewust niet over de gekozen periode: een budget hoort bij een campagne van 1 september
+ * tot 31 oktober, en "wat is er de afgelopen dertig dagen uitgegeven" is daar geen
+ * antwoord op. Dat betekent dat elke campagne zijn eigen datumrange heeft — vandaar de
+ * `unnest`, die de paren als tabel meestuurt in plaats van er één query per campagne van
+ * te maken.
+ */
+export async function haalBudgetten(vragen: BudgetVraag[]): Promise<CampagneBudget[]> {
+  if (vragen.length === 0) return [];
+
+  return metVerbinding(async (client) => {
+    const res = await client.query(
+      `select p.campagne,
+              coalesce(sum(a.uitgaven), 0) as uitgaven,
+              coalesce(sum(a.leads), 0) as leads
+         from unnest($1::text[], $2::date[], $3::date[]) as p(campagne, van, tot)
+         left join dataloket.v_advertenties a
+           on a.campagne = p.campagne and a.datum between p.van and p.tot
+        group by p.campagne`,
+      [
+        vragen.map((v) => v.campagne),
+        vragen.map((v) => v.startdatum),
+        vragen.map((v) => v.einddatum),
+      ],
+    );
+
+    const perCampagne = new Map(res.rows.map((r) => [String(r.campagne), r]));
+    return vragen.map((vraag) => {
+      const rij = perCampagne.get(vraag.campagne);
+      return {
+        ...vraag,
+        uitgaven: Number(rij?.uitgaven ?? 0),
+        leads: Number(rij?.leads ?? 0),
+      };
+    });
+  });
+}
+
+/** De koppelingen die een sheet-campagne hebben; zonder die link valt er niets te peilen. */
+export async function haalSheetKoppelingen(): Promise<{ campagne: string; sheetCampagne: string }[]> {
+  return metVerbinding(async (client) => {
+    const res = await client.query(
+      `select campagne, sheet_campagne
+         from dataloket.windsor_campagne_eigenaar
+        where nullif(btrim(sheet_campagne), '') is not null`,
+    );
+    return res.rows.map((r) => ({
+      campagne: String(r.campagne),
+      sheetCampagne: String(r.sheet_campagne),
     }));
   });
 }

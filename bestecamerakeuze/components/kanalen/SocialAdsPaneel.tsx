@@ -17,6 +17,7 @@ import { ADVERTENTIE_STATISTIEKEN } from "@/lib/windsor/velden";
 export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
+      signaalDimensie="campagne"
       pagina="social"
       weergave="social-ads"
       ingelogd={ingelogd}

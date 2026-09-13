@@ -66,17 +66,20 @@ export function verschilVan(
  * Boven de duizend procent zegt een percentage niets meer ("+4.200%"), dus dan liever
  * "meer dan 10× zoveel" — dat is wat iemand er zelf van maakt.
  */
-export function verschilTekst(verschil: Verschil): string | null {
+export function verschilTekst(
+  verschil: Verschil,
+  waarmee = "vorige periode",
+): string | null {
   if (verschil.nu === null) return null;
   if (verschil.toen === null) return null;
   if (verschil.relatief === null) {
-    return verschil.nu === 0 ? "ook toen niets" : "nieuw t.o.v. vorige periode";
+    return verschil.nu === 0 ? "ook toen niets" : `nieuw t.o.v. ${waarmee}`;
   }
-  if (verschil.relatief === 0) return "gelijk aan vorige periode";
+  if (verschil.relatief === 0) return `gelijk aan ${waarmee}`;
 
   const teken = verschil.relatief > 0 ? "+" : "−";
   const absoluut = Math.abs(verschil.relatief);
-  if (absoluut >= 10) return `${teken}${Math.round(absoluut)}× t.o.v. vorige periode`;
+  if (absoluut >= 10) return `${teken}${Math.round(absoluut)}× t.o.v. ${waarmee}`;
   const cijfers = absoluut < 0.1 ? 1 : 0;
   return `${teken}${(absoluut * 100).toLocaleString("nl-NL", {
     maximumFractionDigits: cijfers,

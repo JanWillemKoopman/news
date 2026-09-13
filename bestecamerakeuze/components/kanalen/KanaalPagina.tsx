@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import KanalenFilterBalk, { type FilterDimensie } from "@/components/kanalen/KanalenFilterBalk";
 import KerncijferStrip from "@/components/kanalen/KerncijferStrip";
+import BudgetPacing from "@/components/kanalen/BudgetPacing";
+import SignaalPaneel from "@/components/kanalen/SignaalPaneel";
 import StatistiekTabel from "@/components/kanalen/StatistiekTabel";
 import TijdGrafiek from "@/components/kanalen/TijdGrafiek";
 import Inlogprompt from "@/components/Inlogprompt";
@@ -16,7 +18,7 @@ import {
 } from "@/lib/kanalen/gebruik";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { leesUrlStand, schrijfUrlStand } from "@/lib/kanalen/urlstand";
-import { filter, type Kubus } from "@/lib/kanalen/kubus";
+import { beschikbareWaarden, filter, type Kubus } from "@/lib/kanalen/kubus";
 import type { Statistiek } from "@/lib/windsor/velden";
 
 /**
@@ -48,6 +50,8 @@ export interface TabelConfig {
   toonBeeld?: boolean;
   /** Zet een sorteerbare datumkolom vóór de cijfers — alleen zinnig bij losse posts. */
   toonDatum?: boolean;
+  /** Vergelijk één statistiek met het gemiddelde van de groep waar de regel bij hoort. */
+  benchmark?: { dimensie: string; statistiekId: string; waarmee: string };
 }
 
 /** Dezelfde pagina, maar dan over alle betaalde kanalen tegelijk. */
@@ -75,6 +79,22 @@ type Props = {
   /** Eén regel context onder de grafiek, als er iets is dat je moet weten om het goed te lezen. */
   leeswijzer?: string;
   alleKanalen?: KanaalWissel;
+  /**
+   * Op welke dimensie de signalen bovenaan gaan (campagne bij advertenties, account bij
+   * de accountpagina). Weglaten zet het blok uit — bij losse posts zegt "deze post viel
+   * stil" niets, want een post loopt niet.
+   */
+  signaalDimensie?: string;
+  /** Onder welk bedrag een campagne niet meetelt voor de signalen. */
+  signaalDrempel?: number;
+  /**
+   * Statistieken die alleen bestaan zodra er conversie-acties als lead zijn aangewezen.
+   *
+   * Op Google Ads zijn Leads en Kosten per lead zonder die keuze per definitie leeg — het
+   * platform levert er geen veld voor. Ze verschijnen zodra iemand op de Koppeltabel
+   * aanwijst welke conversie een lead is.
+   */
+  verbergZonderConversieLeads?: string[];
 };
 
 export default function KanaalPagina({
@@ -88,6 +108,9 @@ export default function KanaalPagina({
   tabellen,
   leeswijzer,
   alleKanalen,
+  signaalDimensie,
+  signaalDrempel,
+  verbergZonderConversieLeads,
 }: Props) {
   const periodes = useMemo(() => standaardPeriodes(), []);
   // De URL wint bij het openen: een gedeelde link hoort te tonen wat de afzender zag.
@@ -107,7 +130,6 @@ export default function KanaalPagina({
   const actief = useIsActief(weergave);
 
   const actievePagina = samen && alleKanalen ? alleKanalen.pagina : pagina;
-  const actieveStatistieken = samen && alleKanalen ? alleKanalen.statistieken : statistieken;
   const dimensies = useMemo(
     () => (samen && alleKanalen ? [alleKanalen.dimensie, ...filterDimensies] : filterDimensies),
     [samen, alleKanalen, filterDimensies],
@@ -118,6 +140,12 @@ export default function KanaalPagina({
   );
 
   const data = useKanaalData(actievePagina, periode, vergelijk);
+
+  const actieveStatistieken = useMemo(() => {
+    const basis = samen && alleKanalen ? alleKanalen.statistieken : statistieken;
+    if (!verbergZonderConversieLeads?.length || data.leadsUitConversies) return basis;
+    return basis.filter((s) => !verbergZonderConversieLeads.includes(s.id));
+  }, [samen, alleKanalen, statistieken, verbergZonderConversieLeads, data.leadsUitConversies]);
   const dimensieIds = useMemo(() => dimensies.map((d) => d.id), [dimensies]);
   const { selectie, zet, wis, aantalActief } = useSelectie(dimensieIds, beginStand.filters);
 
@@ -160,6 +188,22 @@ export default function KanaalPagina({
   const gefilterdeVorigeReeks: Kubus | null = useMemo(
     () => (vorigeReeks ? { ...vorigeReeks.kubus, rijen: vorigeReeks.rijen } : null),
     [vorigeReeks],
+  );
+
+  const signaalInstellingen = useMemo(
+    () =>
+      signaalDimensie
+        ? { dimensie: signaalDimensie, drempelUitgaven: signaalDrempel }
+        : null,
+    [signaalDimensie, signaalDrempel],
+  );
+
+  // Welke campagnes staan er in de huidige selectie? Bepaalt welke budgetten er
+  // meedoen — een pacingblok met campagnes die je net hebt weggefilterd, klopt niet met
+  // de rest van de pagina.
+  const zichtbareCampagnes = useMemo(
+    () => new Set(beschikbareWaarden(data.reeks, reeksRijen, "campagne")),
+    [data.reeks, reeksRijen],
   );
 
   const [statistiekId, setStatistiekId] = useState(standaardStatistiek);
@@ -215,6 +259,21 @@ export default function KanaalPagina({
 
       {data.reeks.rijen.length > 0 && (
         <div className="flex flex-col gap-5">
+          {signaalInstellingen && (
+            <SignaalPaneel
+              kubus={data.reeks}
+              rijen={reeksRijen}
+              statistieken={actieveStatistieken}
+              instellingen={signaalInstellingen}
+              onKies={zet}
+              gekozen={selectie[signaalInstellingen.dimensie] ?? []}
+            />
+          )}
+
+          {data.budgetten.length > 0 && (
+            <BudgetPacing budgetten={data.budgetten} zichtbareCampagnes={zichtbareCampagnes} />
+          )}
+
           <KerncijferStrip
             kubus={data.reeks}
             rijen={reeksRijen}
@@ -254,6 +313,7 @@ export default function KanaalPagina({
               statistieken={actieveStatistieken}
               toonBeeld={tabel.toonBeeld}
               toonDatum={tabel.toonDatum}
+              benchmark={tabel.benchmark}
               uitlegAan={uitlegAan}
             />
           ))}

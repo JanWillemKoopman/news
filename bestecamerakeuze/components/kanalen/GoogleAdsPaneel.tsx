@@ -15,22 +15,28 @@ import { ADVERTENTIE_STATISTIEKEN } from "@/lib/windsor/velden";
  * niet". Conversies is voor Google het cijfer dat de leads bevat.
  */
 /**
- * Statistieken die de Google-koppeling niet vult. Ze weglaten is eerlijker dan ze op nul
- * tonen: `bereik` levert Google niet op advertentieniveau, `leads` schrijft de sync hard
- * op nul (het zit in de conversie-acties), en `frequentie` en `kosten per lead` zijn
- * afgeleiden van die twee.
+ * Wat de Google-koppeling nooit vult: bereik op advertentieniveau bestaat er niet, en
+ * frequentie is daarvan de afgeleide.
  */
-const GOOGLE_ONBESCHIKBAAR = new Set(["bereik", "frequentie", "leads", "cpl"]);
+const GOOGLE_ONBESCHIKBAAR = new Set(["bereik", "frequentie"]);
+
+/**
+ * Leads en kosten per lead bestaan bij Google alleen als er conversie-acties zijn
+ * aangewezen (Koppeltabel → Conversie-acties). Zonder die keuze schrijft de sync er nul,
+ * en dan hoort de kolom er niet te staan — een lege cel leest als "nul leads" en niet
+ * als "dat meten we hier niet".
+ */
+const ALLEEN_MET_CONVERSIEKEUZE = ["leads", "cpl"];
 
 export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <KanaalPagina
+      signaalDimensie="campagne"
       pagina="google"
       weergave="google-ads"
       ingelogd={ingelogd}
-      statistieken={ADVERTENTIE_STATISTIEKEN.filter(
-        (s) => !GOOGLE_ONBESCHIKBAAR.has(s.id),
-      )}
+      statistieken={ADVERTENTIE_STATISTIEKEN.filter((s) => !GOOGLE_ONBESCHIKBAAR.has(s.id))}
+      verbergZonderConversieLeads={ALLEEN_MET_CONVERSIEKEUZE}
       standaardStatistiek="uitgaven"
       filterDimensies={[
         { id: "account", label: "Account" },
@@ -78,7 +84,7 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
         // en leads wél — dus daar gelden de Google-beperkingen niet.
         statistieken: ADVERTENTIE_STATISTIEKEN,
       }}
-      leeswijzer="Google rapporteert geen bereik per advertentie en levert leads niet als apart veld, dus die twee kolommen ontbreken hier bewust in plaats van als nul te verschijnen. Conversies zijn de acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen — de leadformulieren zitten daar dus in."
+      leeswijzer="Google rapporteert geen bereik per advertentie, dus die kolom ontbreekt hier bewust in plaats van als nul te verschijnen. Conversies zijn alle acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen. Welke daarvan een lead is, wijs je aan op de pagina Koppeltabel onder Conversie-acties; pas dan verschijnen hier de kolommen Leads en Kosten per lead."
     />
   );
 }

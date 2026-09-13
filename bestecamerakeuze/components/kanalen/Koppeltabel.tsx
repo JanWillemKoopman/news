@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ConversiePaneel from "@/components/kanalen/ConversiePaneel";
 import Inlogprompt from "@/components/Inlogprompt";
 import FilterSelect from "@/components/FilterSelect";
 import { IconCheck, IconInfo, IconSearch } from "@/components/icons";
@@ -327,6 +328,10 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
           </table>
         </div>
       </section>
+
+      {/* Dezelfde soort keuze, één blok lager: wat de platforms niet leveren en het team
+          zelf vastlegt over zijn eigen data. */}
+      <ConversiePaneel />
     </div>
   );
 }

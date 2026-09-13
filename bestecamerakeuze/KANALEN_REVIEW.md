@@ -150,25 +150,26 @@ Impact is gewogen op "helpt dit iemand een besluit te nemen in het weekoverleg".
 
 ## 2b. Stand van zaken
 
+**Alle drie de rondes zijn doorgevoerd.** Van de 43 punten staan er 40 in de code; de drie
+die openstaan zijn hieronder benoemd met de reden.
+
+
+
 **Ronde 1 en ronde 2 zijn doorgevoerd** (branch `claude/dashboard-channels-interface-review-k872tu`),
 met één randvoorwaarde: het tabblad **Campagnes** blijft visueel exact zoals het was. Dat is
 bewaakt met een pixelvergelijking van vóór en ná; het enige verschil zijn de ademende
 statusdots en de dev-overlay. `FilterSelect` wordt door beide gebruikt en kreeg daarom een
 opt-in prop `zoekbaar` in plaats van een zoekveld dat overal verschijnt.
 
-Afgerond: A1 t/m A13 en A17, B1 t/m B8, B11, B12, C1 t/m C8 en C11.
+Afgerond: A1 t/m A14 en A17, B1 t/m B14, C1 t/m C12.
 
 Nog open, en waarom:
 
-- **A14, A15, A16** (bereik-leeswijzer deels, eenheid "seconden", getalnotatie) — A14 is
-  in de leeswijzer verwerkt; A15 en A16 raken `formatteer` in
-  `components/chat/chartTheme.ts`, en dat wordt óók door het Kosten-tabblad en de
-  chatgrafieken gebruikt. Die vallen buiten deze opdracht, dus deze twee wachten op
-  akkoord om die pagina's mee te laten veranderen.
-- **B9** (budget en pacing uit de sheet), **B10** (signalering), **B13** (conversie-acties
-  ontsluiten), **B14** (benchmark bij organisch) — ronde 3, elk een project op zich.
-- **C9, C10, C12** — C9 (laadskelet) en C10 (de twee ververs-acties uit elkaar) zijn
-  meegenomen; C12 (reeksen aan/uit in de legenda) staat nog open.
+- **A15** (de eenheid "seconden" wordt nergens gerenderd) en **A16** (euro's onder €10 met
+  twee decimalen, daarboven nul) raken `formatteer` in `components/chat/chartTheme.ts`,
+  en dat wordt óók door het Kosten-tabblad en de chatgrafieken gebruikt. Die pagina's
+  vielen buiten de opdracht "alleen wat met Kanalen te maken heeft", dus deze twee wachten
+  op akkoord om die twee schermen mee te laten veranderen.
 
 ## 3. Voorgestelde volgorde
 
