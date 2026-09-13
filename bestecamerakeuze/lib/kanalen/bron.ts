@@ -666,6 +666,46 @@ export interface SyncStand {
   loopt: boolean;
 }
 
+/** De laatste sync-run van één onderdeel, of null als er nog nooit een is geweest. */
+export interface RunStand {
+  gestartOp: string;
+  geeindigdOp: string | null;
+  geschreven: number | null;
+  gelukt: boolean;
+  fout: string | null;
+}
+
+/**
+ * De stand van de nieuwste run van één onderdeel.
+ *
+ * Bestaat omdat een sync langer duurt dan een browser een verbinding openhoudt. De
+ * ophaalactie draait op de server gewoon door nadat de browser het opgeeft — gemeten:
+ * een organische ronde die als "Load failed" in beeld kwam en ondertussen 196 posts
+ * wegschreef. Zonder deze query zou de gebruiker dan denken dat er niets gebeurd is en
+ * nog eens klikken, waarmee hij een tweede ronde bovenop de eerste zet.
+ */
+export async function haalRunStand(bron: string): Promise<RunStand | null> {
+  return metVerbinding(async (client) => {
+    const res = await client.query(
+      `select gestart_op, geeindigd_op, rijen_geplaatst, gelukt, fout
+         from dataloket.sync_runs
+        where bron = $1
+        order by gestart_op desc
+        limit 1`,
+      [bron],
+    );
+    const rij = res.rows[0];
+    if (!rij) return null;
+    return {
+      gestartOp: new Date(rij.gestart_op as string).toISOString(),
+      geeindigdOp: rij.geeindigd_op ? new Date(rij.geeindigd_op as string).toISOString() : null,
+      geschreven: rij.rijen_geplaatst === null ? null : Number(rij.rijen_geplaatst),
+      gelukt: Boolean(rij.gelukt),
+      fout: (rij.fout as string) || null,
+    };
+  });
+}
+
 export async function haalSyncStand(): Promise<SyncStand> {
   return metVerbinding(async (client) => {
     const res = await client.query(

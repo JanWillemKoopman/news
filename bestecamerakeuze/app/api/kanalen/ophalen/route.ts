@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isWindsorGeconfigureerd } from "@/lib/windsor/api";
 import { isDeel, voerSyncUit } from "@/lib/windsor/uitvoeren";
+import { haalRunStand, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -20,10 +21,48 @@ export const maxDuration = 300;
  * onomkeerbare ingreep. Twee keer draaien is onschadelijk: alles gaat via een upsert op
  * dezelfde sleutel, dus een dubbele run overschrijft in plaats van te verdubbelen.
  *
- * Eén deel per aanroep. De browser houdt de verbinding open zolang de sync loopt, en
- * drie delen achter elkaar in één request zou langer duren dan de vijf minuten die een
- * functie krijgt. De UI roept ze daarom na elkaar aan en laat per deel zien hoe het ging.
+ * Eén deel per aanroep. Drie delen achter elkaar in één request zou langer duren dan de
+ * vijf minuten die een functie krijgt, dus de UI roept ze na elkaar aan en laat per deel
+ * zien hoe het ging.
+ *
+ * De GET ernaast bestaat omdat de browser een verbinding korter openhoudt dan een sync
+ * duurt. Valt de POST weg met "Load failed", dan is dat de browser die opgeeft en niet de
+ * sync die stopt: die draait op de server door en schrijft gewoon zijn rijen weg. De UI
+ * schakelt daarom over op deze GET en volgt de run in `sync_runs` tot hij een eindtijd
+ * heeft. Zonder dat zou een geslaagde ronde als mislukt in beeld komen en zou iemand nog
+ * eens klikken, waarmee er een tweede ronde bovenop de eerste komt.
  */
+
+const BRON_VAN_DEEL: Record<string, string> = {
+  advertenties: "windsor-advertenties",
+  organisch: "windsor-organisch",
+  account: "windsor-account",
+};
+
+export async function GET(request: Request) {
+  const gebruiker = await getGebruiker();
+  if (!gebruiker) {
+    return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
+  }
+  if (!isKanalenGeconfigureerd()) {
+    return NextResponse.json({ fout: "Geen databaseverbinding." }, { status: 503 });
+  }
+
+  const deel = new URL(request.url).searchParams.get("deel") ?? "";
+  const bron = BRON_VAN_DEEL[deel];
+  if (!bron) {
+    return NextResponse.json({ fout: `Onbekend onderdeel: ${deel}` }, { status: 400 });
+  }
+
+  try {
+    return NextResponse.json({ deel, run: await haalRunStand(bron) });
+  } catch (err) {
+    return NextResponse.json(
+      { fout: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const gebruiker = await getGebruiker();

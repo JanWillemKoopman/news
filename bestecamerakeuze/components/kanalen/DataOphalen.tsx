@@ -59,11 +59,54 @@ type Stand =
   | { soort: "klaar"; gelezen: number; geschreven: number; seconden: number; waarschuwing?: string }
   | { soort: "fout"; bericht: string };
 
+interface RunStand {
+  gestartOp: string;
+  geeindigdOp: string | null;
+  geschreven: number | null;
+  gelukt: boolean;
+  fout: string | null;
+}
+
+/** Hoe vaak en hoe lang we een doorlopende run blijven volgen. */
+const VOLG_INTERVAL_MS = 5000;
+const VOLG_MAX_MS = 10 * 60 * 1000;
+
 interface Onderdeel {
   onderdeel: string;
   gelezen: number;
   geschreven: number;
   fout?: string;
+}
+
+/**
+ * Wacht tot de run van dit onderdeel een eindtijd heeft.
+ *
+ * Nodig omdat een browser een verbinding korter openhoudt dan een sync duurt: de POST
+ * valt weg met "Load failed" terwijl de sync op de server gewoon doordraait. Gemeten: een
+ * organische ronde die als mislukt in beeld kwam en ondertussen 196 posts wegschreef. In
+ * plaats van dat als fout te tonen, kijken we hier elke vijf seconden in `sync_runs` hoe
+ * het écht met die run staat.
+ *
+ * `sinds` houdt oude runs buiten beeld — anders leest hij de vorige ronde van gisteren
+ * als uitkomst van deze klik.
+ */
+async function volgRun(deel: string, sinds: number): Promise<RunStand> {
+  const einde = Date.now() + VOLG_MAX_MS;
+  while (Date.now() < einde) {
+    await new Promise((klaar) => setTimeout(klaar, VOLG_INTERVAL_MS));
+    try {
+      const res = await fetch(`/api/kanalen/ophalen?deel=${deel}`, { cache: "no-store" });
+      if (!res.ok) continue;
+      const { run } = (await res.json()) as { run: RunStand | null };
+      if (!run || new Date(run.gestartOp).getTime() < sinds - 5000) continue;
+      if (run.geeindigdOp) return run;
+    } catch {
+      // Netwerkhik tijdens het volgen is geen uitkomst; gewoon nog eens kijken.
+    }
+  }
+  throw new Error(
+    "De ophaalactie draait nog steeds op de server. Sluit dit venster gerust — kijk over een paar minuten bij Verversen of de cijfers er staan.",
+  );
 }
 
 export default function DataOphalen({
@@ -94,6 +137,7 @@ export default function DataOphalen({
 
     for (const stap of STAPPEN) {
       zet(stap.deel, { soort: "bezig" });
+      const gestart = Date.now();
       try {
         const res = await fetch("/api/kanalen/ophalen", {
           method: "POST",
@@ -128,12 +172,37 @@ export default function DataOphalen({
               : undefined,
         });
       } catch (err) {
-        zet(stap.deel, {
-          soort: "fout",
-          bericht: err instanceof Error ? err.message : String(err),
-        });
-        setBezig(false);
-        return; // de volgende stap leunt op deze; doorgaan levert halve cijfers op
+        // De verbinding is weggevallen, niet de sync. Kijk in sync_runs hoe deze ronde
+        // werkelijk afloopt in plaats van hem als mislukt te tonen.
+        try {
+          const run = await volgRun(stap.deel, gestart);
+          zet(stap.deel, {
+            soort: "klaar",
+            gelezen: 0,
+            geschreven: run.geschreven ?? 0,
+            seconden: Math.round(
+              (new Date(run.geeindigdOp ?? run.gestartOp).getTime() -
+                new Date(run.gestartOp).getTime()) /
+                1000,
+            ),
+            waarschuwing: run.fout
+              ? run.fout
+              : "De verbinding met de browser viel weg; deze stap is op de server afgemaakt.",
+          });
+          continue;
+        } catch (volgFout) {
+          zet(stap.deel, {
+            soort: "fout",
+            bericht:
+              volgFout instanceof Error
+                ? volgFout.message
+                : err instanceof Error
+                  ? err.message
+                  : String(err),
+          });
+          setBezig(false);
+          return; // de volgende stap leunt op deze; doorgaan levert halve cijfers op
+        }
       }
     }
 
