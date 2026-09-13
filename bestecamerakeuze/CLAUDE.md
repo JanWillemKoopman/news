@@ -329,7 +329,9 @@ niet uit af te lezen zijn:
 - **Welke conversie-actie een lead is, legt het team zelf vast.** Google levert geen
   leadveld; wat een lead is, zit in de conversies die marketing in Google Ads en GA4 heeft
   ingesteld, en die staan per rij in de jsonb-kolom `conversie_acties`. Op de Koppeltabel
-  staat daarvoor het blok **Conversie-acties** (`windsor_conversie_keuze`, migratie 0016);
+  staat daarvoor het blok **Conversie-acties**: één kolom `telt_als_lead` op de catalogus
+  die de sync al bijhoudt (`windsor_conversie_acties`, migratie 0016 — geen tweede tabel
+  ernaast, want dat zou een tweede waarheid over dezelfde velden zijn);
   `bron.ts` telt de aangevinkte acties bij `leads` op — optellen en niet vervangen, want
   bij Meta zit `actions_lead` al in die kolom en komen de vaste actievelden nooit in de
   jsonb terecht, dus dubbeltellen kan niet. Zolang er niets is aangevinkt, laat Google Ads

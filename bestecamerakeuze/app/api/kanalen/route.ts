@@ -47,7 +47,13 @@ function datumOf(waarde: string | null, terugval: Date): string {
  * peilen — dan weet je niet hoever de campagne is.
  */
 async function haalBudgetVragen(): Promise<BudgetVraag[]> {
-  const [koppelingen, campagnes] = await Promise.all([haalSheetKoppelingen(), getCampagnes()]);
+  // Eerst de koppeltabel, dán pas de sheet. Die tweede is een externe fetch zonder cache,
+  // en die hoort niet bij elke ophaalactie te lopen als er nog geen enkele campagne aan
+  // een sheet-campagne hangt — wat op dit moment de stand is.
+  const koppelingen = await haalSheetKoppelingen();
+  if (koppelingen.length === 0) return [];
+
+  const campagnes = await getCampagnes();
   const uitSheet = new Map(campagnes.map((c) => [c.naam, c]));
 
   return koppelingen.flatMap((koppeling) => {

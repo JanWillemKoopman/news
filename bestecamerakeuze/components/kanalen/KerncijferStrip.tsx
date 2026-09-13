@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
 import Verschilregel from "@/components/kanalen/Verschilregel";
-import { formatteer, type Eenheid } from "@/components/chat/chartTheme";
+import { formatteer } from "@/components/chat/chartTheme";
+import { eenheidVan } from "@/lib/kanalen/eenheid";
 import {
   bruikbareKorrels,
   groepeerPerPeriode,
@@ -43,12 +44,6 @@ type Props = {
   onKies: (id: string) => void;
   vergelijk: boolean;
 };
-
-function eenheidVan(statistiek: Statistiek): Eenheid {
-  if (statistiek.eenheid === "euro") return "euro";
-  if (statistiek.eenheid === "procent") return "procent";
-  return "aantal";
-}
 
 export default function KerncijferStrip({
   kubus,

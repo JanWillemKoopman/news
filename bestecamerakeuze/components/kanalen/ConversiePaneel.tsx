@@ -26,7 +26,8 @@ export interface ConversieActie {
   aantal: number;
   laatstGezien: string | null;
   teltAlsLead: boolean;
-  eigenLabel: string | null;
+  /** Is het label met de hand bijgesteld? Dan laat de sync het staan. */
+  gewijzigd: boolean;
 }
 
 const BRON_LABEL: Record<string, string> = {
@@ -86,7 +87,9 @@ export default function ConversiePaneel() {
         body: JSON.stringify({
           veld: nieuw.veld,
           teltAlsLead: nieuw.teltAlsLead,
-          label: nieuw.eigenLabel,
+          // Alleen meesturen als het een eigen naam is; anders laat de sync het label
+          // weer bijwerken vanuit de veldnaam.
+          label: nieuw.gewijzigd ? nieuw.label : null,
         }),
       });
       if (!res.ok) {
@@ -180,9 +183,11 @@ export default function ConversiePaneel() {
                   </td>
                   <td className="border-b border-line-soft px-2 py-1.5">
                     <LabelVeld
-                      waarde={actie.eigenLabel}
+                      waarde={actie.gewijzigd ? actie.label : null}
                       plaatshouder={actie.label}
-                      onBewaar={(v) => bewaar(actie, { eigenLabel: v, label: v ?? actie.label })}
+                      onBewaar={(v) =>
+                        bewaar(actie, { gewijzigd: v !== null, label: v ?? actie.label })
+                      }
                     />
                     <span className="block px-2 text-meta text-ink-faint" title={actie.veld}>
                       {actie.veld}

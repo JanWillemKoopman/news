@@ -8,7 +8,8 @@ import {
   IconInfo,
 } from "@/components/icons";
 import Verschilregel from "@/components/kanalen/Verschilregel";
-import { formatteer, type Eenheid } from "@/components/chat/chartTheme";
+import { formatteer } from "@/components/chat/chartTheme";
+import { eenheidVan } from "@/lib/kanalen/eenheid";
 import { groepeer, telOp, waardeVan, type Groep, type Kubus } from "@/lib/kanalen/kubus";
 import { verschilVan } from "@/lib/kanalen/vergelijk";
 import type { Statistiek } from "@/lib/windsor/velden";
@@ -454,12 +455,6 @@ export default function StatistiekTabel({
       </div>
     </section>
   );
-}
-
-function eenheidVan(statistiek: Statistiek): Eenheid {
-  if (statistiek.eenheid === "euro") return "euro";
-  if (statistiek.eenheid === "procent") return "procent";
-  return "aantal";
 }
 
 /**

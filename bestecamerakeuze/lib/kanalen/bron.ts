@@ -314,7 +314,7 @@ export async function haalAdvertenties(
 /** Welke conversie-acties heeft het team aangewezen als lead? */
 async function gekozenLeadVelden(client: Client): Promise<string[]> {
   const res = await client.query(
-    `select veld from dataloket.windsor_conversie_keuze where telt_als_lead = true`,
+    `select veld from dataloket.windsor_conversie_acties where telt_als_lead = true`,
   );
   return res.rows.map((r) => String(r.veld));
 }
@@ -329,26 +329,29 @@ export interface ConversieActie {
   aantal: number;
   laatstGezien: string | null;
   teltAlsLead: boolean;
-  /** Staat er een eigen naam ingesteld, of komt het label uit de veldnaam? */
-  eigenLabel: string | null;
+  /**
+   * Is het label met de hand bijgesteld?
+   *
+   * De sync overschrijft een label alleen als dit `false` is — zo blijft "Offerte" staan
+   * als iemand die naam beter vindt dan het automatisch afgeleide "Generate lead offerte".
+   */
+  gewijzigd: boolean;
 }
 
 /**
  * De conversie-acties die er zijn, met hun volume en de keuze die erop staat.
  *
- * Een left join vanuit de catalogus en niet vanuit de keuzetabel: je wilt juist zien wat
- * er binnenkomt waar nog geen keuze op staat. Een actie die niemand ziet, wijst niemand
- * aan — en dan blijft de leadkolom op Google Ads leeg zonder dat iemand weet waarom.
+ * De lijst komt uit `v_conversie_acties`: de catalogus die de sync bijhoudt, met het
+ * volume van de laatste negentig dagen erbij en zonder de tientallen velden die hier
+ * nooit vuren. Een actie die niemand ziet, wijst niemand aan — en dan blijft de leadkolom
+ * op Google Ads leeg zonder dat iemand weet waarom.
  */
 export async function haalConversieActies(): Promise<ConversieActie[]> {
   return metVerbinding(async (client) => {
     const res = await client.query(
-      `select c.veld, c.bron, c.account, c.aantal, c.laatst_gezien,
-              coalesce(k.telt_als_lead, false) as telt_als_lead,
-              k.label
-         from dataloket.v_conversie_acties c
-         left join dataloket.windsor_conversie_keuze k on k.veld = c.veld
-        order by c.aantal desc nulls last`,
+      `select veld, bron, label, telt_als_lead, gewijzigd, aantal, account, laatst_gezien
+         from dataloket.v_conversie_acties
+        order by aantal desc nulls last, label`,
     );
     return res.rows.map((r) => ({
       veld: String(r.veld),
@@ -356,9 +359,11 @@ export async function haalConversieActies(): Promise<ConversieActie[]> {
       bron: String(r.bron ?? ""),
       account: r.account ? String(r.account) : null,
       aantal: Number(r.aantal ?? 0),
-      laatstGezien: r.laatst_gezien ? new Date(r.laatst_gezien as string).toISOString().slice(0, 10) : null,
+      laatstGezien: r.laatst_gezien
+        ? new Date(r.laatst_gezien as string).toISOString().slice(0, 10)
+        : null,
       teltAlsLead: Boolean(r.telt_als_lead),
-      eigenLabel: r.label ? String(r.label) : null,
+      gewijzigd: Boolean(r.gewijzigd),
     }));
   });
 }

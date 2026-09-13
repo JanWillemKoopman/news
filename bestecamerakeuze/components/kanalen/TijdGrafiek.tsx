@@ -16,7 +16,8 @@ import {
 } from "recharts";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
 import Verschilregel from "@/components/kanalen/Verschilregel";
-import { AS_GROOTTE, formatteer, type Eenheid } from "@/components/chat/chartTheme";
+import { AS_GROOTTE, formatteer } from "@/components/chat/chartTheme";
+import { eenheidVan } from "@/lib/kanalen/eenheid";
 import {
   bruikbareKorrels,
   groepeer,
@@ -71,12 +72,6 @@ type Props = {
 };
 
 const MAX_REEKSEN = 6;
-
-function eenheidVan(statistiek: Statistiek): Eenheid {
-  if (statistiek.eenheid === "euro") return "euro";
-  if (statistiek.eenheid === "procent") return "procent";
-  return "aantal";
-}
 
 export default function TijdGrafiek({
   kubus,

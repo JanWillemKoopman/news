@@ -92,16 +92,16 @@ export default function BudgetPacing({ budgetten, zichtbareCampagnes }: Props) {
                 </td>
 
                 <td className="whitespace-nowrap border-b border-line-soft px-4 py-3 text-right align-top text-ink">
-                  {budget.budget === null ? "—" : formatteer(budget.budget, "euro")}
+                  {budget.budget === null ? "—" : formatteer(budget.budget, "euro-heel")}
                 </td>
 
                 <td className="w-56 border-b border-line-soft px-4 py-3 align-top">
                   {budget.budget === null ? (
-                    <p className="text-right text-ink">{formatteer(budget.uitgaven, "euro")}</p>
+                    <p className="text-right text-ink">{formatteer(budget.uitgaven, "euro-heel")}</p>
                   ) : (
                     <>
                       <p className="text-right text-ink">
-                        {formatteer(budget.uitgaven, "euro")}
+                        {formatteer(budget.uitgaven, "euro-heel")}
                         <span className="ml-1.5 text-ink-faint">
                           {Math.round(pacing.benut * 100)}%
                         </span>

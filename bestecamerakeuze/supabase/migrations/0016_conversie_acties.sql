@@ -3,79 +3,79 @@
 -- WAAROM DIT BESTAAT
 -- Google Ads levert geen apart leadveld. Wat een lead is, zit daar in de conversie-acties
 -- die marketing zelf in Google Ads en GA4 heeft ingesteld: "Offerte aanvragen",
--- "Proefrit", "Bel-klik". De sync haalt die allemaal op en zet ze per rij in de
--- jsonb-kolom `conversie_acties` (zie lib/windsor/velden.ts en sync.ts), maar tot nu toe
--- deed het dashboard er niets mee — met als gevolg dat de kolom "Leads" op de Google
--- Ads-pagina per definitie nul was.
+-- "Proefrit", "Bel-klik". De sync haalt die allemaal op, zet ze per rij in de
+-- jsonb-kolom `conversie_acties` en houdt de catalogus bij in
+-- `windsor_conversie_acties` (migratie 0014) — maar het dashboard deed er niets mee, met
+-- als gevolg dat de kolom "Leads" op de Google Ads-pagina per definitie nul was.
 --
--- Welke van die acties een lead is, is geen technische maar een marketingkeuze, en hij
--- verschilt per account en verandert als er een formulier bij komt. Dus: een tabel die
--- het team zelf beheert, net als de koppeltabel ernaast.
---
--- WAAROM ALLEEN HET VELD EN GEEN ACCOUNT
--- De veldnamen zijn al accountspecifiek — een conversie heet
--- `conversions_ga4_https_udenhout_nl_web_generate_lead_offerte` en die bestaat maar bij
--- één account. Een tweede sleutelkolom zou dus alleen maar extra regels opleveren die
--- allemaal hetzelfde zeggen.
-create table if not exists dataloket.windsor_conversie_keuze (
-  veld            text primary key,          -- de ruwe veldnaam uit de Windsor-catalogus
-  telt_als_lead   boolean not null default false,
-  -- Een eigen naam, als het automatisch afgeleide label ("Generate lead offerte") niet
-  -- leest zoals het team het noemt. Leeg = het afgeleide label gebruiken.
-  label           text,
-  bijgewerkt_door uuid,
-  bijgewerkt_op   timestamptz not null default now()
-);
+-- WAAROM GEEN NIEUWE TABEL
+-- De catalogus is er al, inclusief de `gewijzigd`-vlag die handmatige labels beschermt
+-- tegen de volgende sync. Een tweede tabel ernaast zou een tweede waarheid zijn over
+-- dezelfde velden. Er komt dus één kolom bij, plus het spoor van wie hem omzette.
+alter table dataloket.windsor_conversie_acties
+  add column if not exists telt_als_lead   boolean not null default false,
+  add column if not exists bijgewerkt_door uuid,
+  add column if not exists bijgewerkt_op   timestamptz;
 
-comment on table dataloket.windsor_conversie_keuze is
-  'Per conversie-actie uit de advertentieplatforms: telt hij mee als lead, en onder welke naam. Handmatig beheerd via de pagina Koppeltabel.';
+comment on column dataloket.windsor_conversie_acties.telt_als_lead is
+  'Telt deze conversie-actie mee in de leadkolom van de kanaalpagina''s? Handmatig gezet via Koppeltabel → Conversie-acties.';
 
-alter table dataloket.windsor_conversie_keuze enable row level security;
+-- De tabel had nog geen rijbeveiliging en geen rechten: hij werd tot nu toe alleen door
+-- de sync geschreven, met een eigen verbinding. Nu leest het dashboard hem ook.
+alter table dataloket.windsor_conversie_acties enable row level security;
 
 -- Zelfde afweging als bij windsor_campagne_eigenaar: gedeelde kennis over de data, geen
--- persoonlijke instelling. Iedereen die is ingelogd mag lezen en bijwerken.
-drop policy if exists windsor_conversie_lezen on dataloket.windsor_conversie_keuze;
-create policy windsor_conversie_lezen on dataloket.windsor_conversie_keuze
+-- persoonlijke instelling. Iedereen die is ingelogd mag lezen en bijstellen; toevoegen
+-- doet alleen de sync, want de lijst komt uit de veldcatalogus van Windsor.
+drop policy if exists windsor_conversie_lezen on dataloket.windsor_conversie_acties;
+create policy windsor_conversie_lezen on dataloket.windsor_conversie_acties
   for select to authenticated using (true);
 
-drop policy if exists windsor_conversie_toevoegen on dataloket.windsor_conversie_keuze;
-create policy windsor_conversie_toevoegen on dataloket.windsor_conversie_keuze
-  for insert to authenticated with check (true);
-
-drop policy if exists windsor_conversie_wijzigen on dataloket.windsor_conversie_keuze;
-create policy windsor_conversie_wijzigen on dataloket.windsor_conversie_keuze
+drop policy if exists windsor_conversie_wijzigen on dataloket.windsor_conversie_acties;
+create policy windsor_conversie_wijzigen on dataloket.windsor_conversie_acties
   for update to authenticated using (true) with check (true);
 
-grant select, insert, update on dataloket.windsor_conversie_keuze to authenticated;
+grant select, update on dataloket.windsor_conversie_acties to authenticated;
 
--- De kanaalpagina's lezen deze keuze met de read-only rol, om de leadtelling ermee op te
+-- De kanaalpagina's lezen de keuze met de read-only rol, om de leadtelling ermee op te
 -- bouwen. Schrijven gaat via de Supabase-client met de sessie van de collega, net als bij
 -- de koppeltabel.
-grant select on dataloket.windsor_conversie_keuze to dataloket_lezer;
+grant select on dataloket.windsor_conversie_acties to dataloket_lezer;
 
 -- ---------------------------------------------------------------------------
--- De catalogus: welke conversie-acties komen er eigenlijk voor?
+-- De catalogus mét het volume dat er daadwerkelijk doorheen kwam
 -- ---------------------------------------------------------------------------
 --
--- Afgeleid uit de data en niet apart bijgehouden: de sync ontdekt de velden elke nacht
--- opnieuw uit de veldcatalogus van Windsor, en wat er in de laatste maanden daadwerkelijk
--- binnenkwam staat in `conversie_acties`. Een aparte tabel zou een tweede waarheid zijn
--- die achterloopt.
+-- De catalogus zegt welke velden Windsor aanbiedt — dat zijn er tientallen, waarvan de
+-- meeste bij dit account nooit vuren. Zonder het volume erbij is de keuzelijst een muur
+-- van veldnamen waarin niemand de twee vindt die ertoe doen. Daarom deze view: één scan
+-- over de laatste negentig dagen advertentiedata, en alleen de acties die iets deden of
+-- die al zijn aangewezen (die laatste mogen nooit uit beeld verdwijnen, ook niet in een
+-- rustige periode).
 create or replace view dataloket.v_conversie_acties as
-select
-  e.key                              as veld,
-  a.bron,
-  min(a.account_naam)                as account,
-  count(*)                           as rijen,
-  sum((e.value)::text::numeric)      as aantal,
-  max(a.datum)                       as laatst_gezien
-from dataloket.windsor_advertenties a
-cross join lateral jsonb_each(coalesce(a.conversie_acties, '{}'::jsonb)) as e(key, value)
-where a.datum >= current_date - interval '90 days'
-group by e.key, a.bron
-having sum((e.value)::text::numeric) > 0;
+with gebruik as (
+  select e.key                            as veld,
+         sum((e.value)::text::numeric)    as aantal,
+         min(w.account_naam)              as account,
+         max(w.datum)                     as laatst_actief
+    from dataloket.windsor_advertenties w
+    cross join lateral jsonb_each(coalesce(w.conversie_acties, '{}'::jsonb)) as e(key, value)
+   where w.datum >= current_date - interval '90 days'
+   group by e.key
+)
+select a.veld,
+       a.bron,
+       a.label,
+       a.telt_als_lead,
+       a.gewijzigd,
+       coalesce(g.aantal, 0)                     as aantal,
+       g.account,
+       coalesce(g.laatst_actief, a.laatst_gezien) as laatst_gezien
+  from dataloket.windsor_conversie_acties a
+  left join gebruik g on g.veld = a.veld
+ where coalesce(g.aantal, 0) > 0 or a.telt_als_lead;
 
 comment on view dataloket.v_conversie_acties is
-  'De conversie-acties die de laatste 90 dagen daadwerkelijk voorkwamen, met hun volume. Voedt de keuzelijst op de pagina Koppeltabel.';
+  'De conversie-acties die de laatste 90 dagen daadwerkelijk voorkwamen (plus de al aangewezen acties), met hun volume. Voedt de keuzelijst op de pagina Koppeltabel. account is een aanwijzing: bij een actie die bij meerdere accounts voorkomt staat er één naam.';
 
 grant select on dataloket.v_conversie_acties to dataloket_lezer;

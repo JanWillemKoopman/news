@@ -150,26 +150,28 @@ Impact is gewogen op "helpt dit iemand een besluit te nemen in het weekoverleg".
 
 ## 2b. Stand van zaken
 
-**Alle drie de rondes zijn doorgevoerd.** Van de 43 punten staan er 40 in de code; de drie
-die openstaan zijn hieronder benoemd met de reden.
+**Alle 43 punten staan in de code.** De drie rondes zijn doorgevoerd op branch
+`claude/dashboard-channels-interface-review-k872tu`, met één randvoorwaarde: het tabblad
+**Campagnes** blijft visueel exact zoals het was. Dat is na elke ronde bewaakt met een
+pixelvergelijking van vóór en ná; het enige verschil zijn telkens dezelfde 5.767 pixels —
+de ademende statusdots en de dev-overlay. `FilterSelect` wordt door beide pagina's gebruikt
+en kreeg daarom een opt-in prop `zoekbaar` in plaats van een zoekveld dat overal verschijnt.
 
+Afgerond: A1 t/m A17, B1 t/m B14, C1 t/m C12.
 
+**A15 en A16 zijn alsnog meegenomen** zonder de andere schermen te raken. De eenheid in
+`components/chat/chartTheme.ts` is uitgebreid met `euro-heel`, `euro-exact` en `seconden`;
+de bestaande waarde `"euro"` gedraagt zich exact als voorheen, dus het Kosten-tabblad en de
+chatgrafieken veranderen niet. Welke variant een cijfer krijgt, bepaalt één functie
+(`lib/kanalen/eenheid.ts`): een afgeleide in euro's (kosten per klik, kosten per lead) krijgt
+twee decimalen, een optelbaar bedrag hele euro's. Percentages staan overal op één decimaal,
+en seconden lezen als `12,4 s` of `2 m 05 s`.
 
-**Ronde 1 en ronde 2 zijn doorgevoerd** (branch `claude/dashboard-channels-interface-review-k872tu`),
-met één randvoorwaarde: het tabblad **Campagnes** blijft visueel exact zoals het was. Dat is
-bewaakt met een pixelvergelijking van vóór en ná; het enige verschil zijn de ademende
-statusdots en de dev-overlay. `FilterSelect` wordt door beide gebruikt en kreeg daarom een
-opt-in prop `zoekbaar` in plaats van een zoekveld dat overal verschijnt.
-
-Afgerond: A1 t/m A14 en A17, B1 t/m B14, C1 t/m C12.
-
-Nog open, en waarom:
-
-- **A15** (de eenheid "seconden" wordt nergens gerenderd) en **A16** (euro's onder €10 met
-  twee decimalen, daarboven nul) raken `formatteer` in `components/chat/chartTheme.ts`,
-  en dat wordt óók door het Kosten-tabblad en de chatgrafieken gebruikt. Die pagina's
-  vielen buiten de opdracht "alleen wat met Kanalen te maken heeft", dus deze twee wachten
-  op akkoord om die twee schermen mee te laten veranderen.
+**Wat er nog moet gebeuren voordat de pagina's cijfers tonen.** Migratie 0016 is toegepast op
+de database; RLS staat aan en de rechten zijn gecontroleerd. De Windsor-tabellen zijn op dit
+moment nog leeg — de sync heeft nog niet gedraaid — dus de tabbladen tonen de lege staat tot
+iemand één keer op **Data ophalen** klikt. Daarna vullen ook het blok Conversie-acties en de
+kolommen Leads en Kosten per lead op Google Ads zich.
 
 ## 3. Voorgestelde volgorde
 
