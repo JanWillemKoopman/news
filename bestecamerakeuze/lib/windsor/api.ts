@@ -96,7 +96,7 @@ export function accountsVoor(connector: Connector): string[] {
 }
 
 export function isWindsorGeconfigureerd(): boolean {
-  return Boolean(process.env.WINDSOR_API_KEY);
+  return Boolean(process.env.WINDSOR_API_KEY?.trim());
 }
 
 /** Eén rij zoals Windsor hem teruggeeft: veldnaam → waarde, met veel nulls. */
@@ -139,14 +139,30 @@ async function wacht(ms: number): Promise<void> {
  * datum buiten het venster). Nog eens proberen levert dan precies dezelfde fout op en
  * kost alleen tijd.
  */
+/**
+ * De API-sleutel, ontdaan van witruimte.
+ *
+ * Een sleutel is één woord; een spatie of regeleinde eromheen is altijd een plakfout en
+ * nooit betekenisvol. Trimmen is hier dus veilig, en het voorkomt een fout die bijna niet
+ * te vinden is: `haalVeldcatalogus` plakt de sleutel rauw in de URL en de URL-parser
+ * strípt een regeleinde aan het eind, maar `haalOp` bouwt zijn query met
+ * URLSearchParams en die codeert hem als `%0A` — dan komt er een kapotte sleutel aan.
+ * Het gevolg was dat de veldcatalogus wél werkte en alle zes de connectoren een
+ * nietszeggende "Internal Server Error" gaven.
+ */
+function apiSleutel(): string {
+  const sleutel = process.env.WINDSOR_API_KEY?.trim();
+  if (!sleutel) throw new Error("WINDSOR_API_KEY ontbreekt.");
+  return sleutel;
+}
+
 export async function haalOp(
   connector: Connector,
   velden: string[],
   van: string,
   tot: string,
 ): Promise<WindsorRij[]> {
-  const sleutel = process.env.WINDSOR_API_KEY;
-  if (!sleutel) throw new Error("WINDSOR_API_KEY ontbreekt.");
+  const sleutel = apiSleutel();
 
   const accounts = accountsVoor(connector);
   if (accounts.length === 0) return [];
@@ -222,8 +238,7 @@ export interface VeldDefinitie {
 }
 
 export async function haalVeldcatalogus(): Promise<VeldDefinitie[]> {
-  const sleutel = process.env.WINDSOR_API_KEY;
-  if (!sleutel) throw new Error("WINDSOR_API_KEY ontbreekt.");
+  const sleutel = apiSleutel();
 
   const res = await fetch(`${BASIS}/all/fields?api_key=${sleutel}`, {
     signal: AbortSignal.timeout(TIMEOUT_MS),
