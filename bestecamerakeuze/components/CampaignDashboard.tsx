@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Campagne } from "@/lib/sheet";
 import CampagneFilterBalk from "@/components/CampagneFilterBalk";
 import CampaignTable from "@/components/CampaignTable";
@@ -53,8 +53,35 @@ function Leeswijzer() {
 
 export default function CampaignDashboard({ notitiesBeschikbaar, ingelogd }: Props) {
   const { filtered, uitlegAan } = useCampagneFilters();
+  const [cijfers, setCijfers] = useState<Record<string, number>>({});
 
   const sorted = useMemo(() => sortByStartdatumDesc(filtered), [filtered]);
+
+  // Campagnecijfers hebben, net als de aantekeningen, Supabase nodig en zijn alleen te
+  // lezen als je ingelogd bent — zonder sessie geeft het endpoint 401 terug.
+  useEffect(() => {
+    if (!notitiesBeschikbaar || !ingelogd) return;
+    let actief = true;
+    fetch("/api/campagne-cijfers")
+      .then((res) => res.json())
+      .then((data: { items?: { campagneNaam: string; cijfer: number }[] }) => {
+        if (!actief || !data.items) return;
+        setCijfers(Object.fromEntries(data.items.map((i) => [i.campagneNaam, i.cijfer])));
+      })
+      .catch(() => {});
+    return () => {
+      actief = false;
+    };
+  }, [notitiesBeschikbaar, ingelogd]);
+
+  function werkCijferBij(campagneNaam: string, cijfer: number | null) {
+    setCijfers((huidig) => {
+      const kopie = { ...huidig };
+      if (cijfer === null) delete kopie[campagneNaam];
+      else kopie[campagneNaam] = cijfer;
+      return kopie;
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,6 +94,8 @@ export default function CampaignDashboard({ notitiesBeschikbaar, ingelogd }: Pro
         notitiesBeschikbaar={notitiesBeschikbaar}
         ingelogd={ingelogd}
         uitlegAan={uitlegAan}
+        cijfers={cijfers}
+        onCijferChange={werkCijferBij}
       />
     </div>
   );
