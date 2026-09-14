@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import DataOphalen from "@/components/kanalen/DataOphalen";
-import type { KanaalWissel } from "@/components/kanalen/KanaalPagina";
 import { IconCalendarRange, IconClose, IconInfo, IconRefresh } from "@/components/icons";
 import {
   eigenPeriode,
@@ -23,7 +22,7 @@ import { beschikbareWaarden, filter, type Kubus, type Selectie } from "@/lib/kan
  *
  * Twee rijen, met een reden. Boven staat **waar je naar kijkt** (periode, versheid,
  * filters) en de acties; onder staat **hoe je ernaar kijkt** (vergelijken met de vorige
- * periode, alle betaalde kanalen samen) plus de actieve filters als losse chips. Zonder
+ * periode) plus de actieve filters als losse chips. Zonder
  * die chips zie je alleen "1 geselecteerd" in een dichtgeklapte dropdown, en dan kijk je
  * zonder het te merken naar een deel van de cijfers.
  *
@@ -64,9 +63,6 @@ type Props = {
   onVergelijk: () => void;
   vergelijkBezig: boolean;
   vorigeGrenzen: Periode;
-  alleKanalen?: KanaalWissel;
-  samen: boolean;
-  onSamen: () => void;
 };
 
 export default function KanalenFilterBalk({
@@ -91,9 +87,6 @@ export default function KanalenFilterBalk({
   onVergelijk,
   vergelijkBezig,
   vorigeGrenzen,
-  alleKanalen,
-  samen,
-  onSamen,
 }: Props) {
   const chips = dimensies.flatMap((dim) =>
     (selectie[dim.id] ?? []).map((waarde) => ({ dim, waarde })),
@@ -177,16 +170,6 @@ export default function KanalenFilterBalk({
           >
             Vergelijk met vorige periode
           </Schakelaar>
-
-          {alleKanalen && (
-            <Schakelaar
-              aan={samen}
-              onKlik={onSamen}
-              titel="Zet Meta, LinkedIn en Google in één beeld, met het kanaal als filter en uitsplitsing"
-            >
-              {samen ? alleKanalen.allesLabel : alleKanalen.eigenLabel}
-            </Schakelaar>
-          )}
 
           {chips.length > 0 && (
             <>

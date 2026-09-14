@@ -241,27 +241,22 @@ export function bouwActieSql(
   return { joins: joins.join("\n         "), sommen: metingenSom(keuze) };
 }
 
-export type AdvertentieBron = "social" | "google" | "betaald";
+export type AdvertentieBron = "social" | "google";
 
 /**
  * Social ads is Meta plus LinkedIn; Google Ads staat op een eigen pagina.
  *
- * `betaald` is alle drie tegelijk. Ze delen één tabel, dus dat kost niets extra's — en
- * het is de enige plek waar de vraag "waar gaat het budget heen" te beantwoorden valt,
- * want twee losse pagina's laten zich niet optellen.
+ * Elke pagina toont precies zijn eigen kanalen, en niets anders. Er was een derde
+ * variant (`betaald`) die alle drie tegelijk ophaalde met het kanaal erbij als dimensie;
+ * die zette op de pagina Google Ads regels van Meta en LinkedIn onder een filter
+ * "Kanaal", terwijl de kop Google Ads bleef. Weggehaald op 14 september 2026: een pagina
+ * hoort te tonen wat hij belooft. Wil iemand budget over kanalen heen vergelijken, dan is
+ * de chat daar de plek voor — die leest dezelfde tabel.
  */
 function bronFilter(bron: AdvertentieBron): string[] {
   if (bron === "google") return ["google"];
-  if (bron === "betaald") return ["meta", "linkedin", "google"];
   return ["meta", "linkedin"];
 }
-
-/** In de gecombineerde weergave komt het kanaal erbij als dimensie. */
-const KANAAL_SQL = `case bron
-        when 'meta' then 'Meta Ads'
-        when 'google' then 'Google Ads'
-        when 'linkedin' then 'LinkedIn Ads'
-        else bron end as kanaal`;
 
 export interface AdvertentieData {
   reeks: Kubus;
@@ -290,13 +285,7 @@ export async function haalAdvertenties(
 ): Promise<AdvertentieData> {
   const { korrel, sql: datumSql } = korrelVoor(van, tot);
   const bronnen = bronFilter(bron);
-  const samen = bron === "betaald";
-  const kanaalKolom = samen ? `${KANAAL_SQL},\n              ` : "";
-  const kanaalDim = samen ? ["kanaal"] : [];
-  // Eén extra kolom in de group by schuift alle volgnummers op; makkelijker om ze te
-  // tellen dan om twee bijna gelijke queries naast elkaar te onderhouden.
-  const groep = (aantal: number) =>
-    Array.from({ length: aantal + (samen ? 1 : 0) }, (_, i) => i + 1).join(", ");
+  const groep = (aantal: number) => Array.from({ length: aantal }, (_, i) => i + 1).join(", ");
 
   return metVerbinding(async (client) => {
     const keuze = await gekozenActieVelden(client);
@@ -308,7 +297,7 @@ export async function haalAdvertenties(
     // koppeltabel al belooft ("werkt daarna als filter op Social ads en Google Ads").
     const reeksRes = await client.query(
       `select ${datumSql.replace("datum", "a.datum")}::text as datum,
-              ${kanaalKolom.replace("bron", "a.bron")}a.account, a.platform, a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
+              a.account, a.platform, a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
               coalesce(a.merk, '—') as merk,
               coalesce(a.categorie, '—') as categorie,
               ${sommen}
@@ -325,7 +314,7 @@ export async function haalAdvertenties(
     // één regel op — met de creative van willekeurig de eerste erbij. De leesbare naam
     // komt daarom uit de meta.
     const detailRes = await client.query(
-      `select ${kanaalKolom.replace("bron", "a.bron")}a.account, a.platform,
+      `select a.account, a.platform,
               coalesce(nullif(a.plaatsing, ''), '—') as plaatsing,
               a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
               coalesce(a.merk, '—') as merk,
@@ -348,7 +337,7 @@ export async function haalAdvertenties(
 
     const detail = bouwKubus(
       detailRes.rows,
-      [...kanaalDim, "account", "platform", "plaatsing", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie", "adgroep", "advertentie_id"],
+      ["account", "platform", "plaatsing", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie", "adgroep", "advertentie_id"],
       ADVERTENTIE_METINGEN,
       korrel,
       { van, tot },
@@ -359,7 +348,7 @@ export async function haalAdvertenties(
     return {
       reeks: bouwKubus(
         reeksRes.rows,
-        ["datum", ...kanaalDim, "account", "platform", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie"],
+        ["datum", "account", "platform", "campagne", "campagne_doel", "campagne_status", "campagnemanager", "merk", "categorie"],
         ADVERTENTIE_METINGEN,
         korrel,
         { van, tot },

@@ -327,10 +327,16 @@ niet uit af te lezen zijn:
   het open tabblad staan in de URL (`lib/kanalen/urlstand.ts`), zodat een selectie een
   refresh overleeft en te delen is. Alleen het zichtbare tabblad schrijft — alle panelen
   blijven gemount, dus zonder `useIsActief` overschrijven ze elkaars parameters.
-- **De advertentiepagina's kunnen samen.** "Alle betaalde kanalen" schakelt om naar
-  `pagina=betaald`, waar Meta, LinkedIn en Google in één kubus zitten met `kanaal` als
-  extra dimensie. Bewust geen apart tabblad: dat zou een navigatie-item toevoegen aan een
-  sidebar die vanaf élk tabblad zichtbaar is.
+- **Elke advertentiepagina toont precies zijn eigen kanalen.** Social ads is Meta plus
+  LinkedIn, Google Ads is Google, en er is geen weg om daar iets anders in te krijgen. Er
+  zat een schakelaar "Alle betaalde kanalen" die de drie in één kubus zette met `kanaal`
+  als extra dimensie (`pagina=betaald`); die is er in september 2026 uit gehaald. Reden:
+  de schakelaar stond grijs in de balk met de tekst "Alleen Google Ads" — wat leest als
+  een knop die je nog moet indrukken — en één klik zette Meta- en LinkedIn-regels onder
+  een filter "Kanaal" op een pagina die "Google Ads" heet en in de kop Search, Pmax,
+  Demand Gen en Display belooft. Een pagina hoort te tonen wat hij belooft. Zet hem dus
+  niet terug zonder dat daarom gevraagd wordt; wie budget over kanalen heen wil
+  vergelijken, stelt die vraag in de chat, die leest dezelfde tabel.
 - **"Wat opvalt" rekent binnen de gekozen periode** (`lib/kanalen/signalen.ts`): het
   laatste derde tegen de twee derde ervoor, allebei per dag. Bewust niet tegen de vorige
   periode, want die staat standaard uit — en een signaal dat pas verschijnt als je een

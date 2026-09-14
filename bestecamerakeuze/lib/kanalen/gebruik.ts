@@ -31,7 +31,6 @@ export {
 export type PaginaSleutel =
   | "social"
   | "google"
-  | "betaald"
   | "organisch"
   | "account"
   | "koppeltabel";

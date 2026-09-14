@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
  * en de verse op de achtergrond wordt opgehaald, in plaats van te moeten wachten.
  */
 
-const PAGINAS = ["social", "google", "betaald", "organisch", "account", "koppeltabel"] as const;
+const PAGINAS = ["social", "google", "organisch", "account", "koppeltabel"] as const;
 type Pagina = (typeof PAGINAS)[number];
 
 const CACHE = "private, max-age=300, stale-while-revalidate=3600";
@@ -129,11 +129,7 @@ export async function GET(request: Request) {
     }
 
     const [data, budgetten] = await Promise.all([
-      haalAdvertenties(
-        pagina === "google" ? "google" : pagina === "betaald" ? "betaald" : "social",
-        van,
-        tot,
-      ),
+      haalAdvertenties(pagina === "google" ? "google" : "social", van, tot),
       // Best-effort: de sheet is een externe fetch en het budgetblok is een toevoeging.
       // Valt hij weg, dan staan de cijfers er gewoon zonder pacing eronder.
       haalBudgetVragen().then(haalBudgetten).catch(() => []),
