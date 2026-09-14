@@ -57,18 +57,6 @@ export interface TabelConfig {
   benchmark?: { dimensie: string; statistiekId: string; waarmee: string };
 }
 
-/** Dezelfde pagina, maar dan over alle betaalde kanalen tegelijk. */
-export interface KanaalWissel {
-  pagina: PaginaSleutel;
-  /** Wat de knop zegt als hij uit staat, en wat hij aanzet. */
-  eigenLabel: string;
-  allesLabel: string;
-  /** De dimensie die er in de gecombineerde weergave bij komt. */
-  dimensie: FilterDimensie;
-  /** Statistieken die in de gecombineerde weergave gelden (Google mist er een paar). */
-  statistieken: Statistiek[];
-}
-
 type Props = {
   pagina: PaginaSleutel;
   /** De sleutel van dit tabblad in de sidebar; bepaalt wie de URL mag bijwerken. */
@@ -81,7 +69,6 @@ type Props = {
   tabellen: TabelConfig[];
   /** Eén regel context onder de grafiek, als er iets is dat je moet weten om het goed te lezen. */
   leeswijzer?: string;
-  alleKanalen?: KanaalWissel;
   /**
    * Op welke dimensie de signalen bovenaan gaan (campagne bij advertenties, account bij
    * de accountpagina). Weglaten zet het blok uit — bij losse posts zegt "deze post viel
@@ -120,7 +107,6 @@ export default function KanaalPagina({
   uitsplitsbaar,
   tabellen,
   leeswijzer,
-  alleKanalen,
   signaalDimensie,
   signaalDrempel,
   verbergZonderConversieLeads,
@@ -140,24 +126,16 @@ export default function KanaalPagina({
   });
   const [uitlegAan, setUitlegAan] = useState(false);
   const [vergelijk, setVergelijk] = useState(false);
-  const [samen, setSamen] = useState(false);
   const [signalenOpen, setSignalenOpen] = useState(false);
   const actief = useIsActief(weergave);
 
-  const actievePagina = samen && alleKanalen ? alleKanalen.pagina : pagina;
-  const dimensies = useMemo(
-    () => (samen && alleKanalen ? [alleKanalen.dimensie, ...filterDimensies] : filterDimensies),
-    [samen, alleKanalen, filterDimensies],
-  );
-  const splitsbaar = useMemo(
-    () => (samen && alleKanalen ? [alleKanalen.dimensie, ...uitsplitsbaar] : uitsplitsbaar),
-    [samen, alleKanalen, uitsplitsbaar],
-  );
-
-  const data = useKanaalData(actievePagina, periode, vergelijk);
+  // Eén pagina, één set kanalen: `pagina` bepaalt welke bronnen erin zitten en er is
+  // geen schakelaar die daar iets anders van maakt. Die was er wel ("Alle betaalde
+  // kanalen") en zette op de pagina Google Ads Meta- en LinkedIn-regels onder een filter
+  // "Kanaal", terwijl de kop Google Ads bleef — zie CLAUDE.md voordat je hem terugzet.
+  const data = useKanaalData(pagina, periode, vergelijk);
 
   const actieveStatistieken = useMemo(() => {
-    const basis = samen && alleKanalen ? alleKanalen.statistieken : statistieken;
     const verborgen = new Set<string>();
     if (verbergZonderConversieLeads?.length && !data.leadsUitConversies) {
       for (const id of verbergZonderConversieLeads) verborgen.add(id);
@@ -165,18 +143,16 @@ export default function KanaalPagina({
     if (verbergZonderConversieActies?.length && !data.conversiesUitActies) {
       for (const id of verbergZonderConversieActies) verborgen.add(id);
     }
-    if (verborgen.size === 0) return basis;
-    return basis.filter((s) => !verborgen.has(s.id));
+    if (verborgen.size === 0) return statistieken;
+    return statistieken.filter((s) => !verborgen.has(s.id));
   }, [
-    samen,
-    alleKanalen,
     statistieken,
     verbergZonderConversieLeads,
     verbergZonderConversieActies,
     data.leadsUitConversies,
     data.conversiesUitActies,
   ]);
-  const dimensieIds = useMemo(() => dimensies.map((d) => d.id), [dimensies]);
+  const dimensieIds = useMemo(() => filterDimensies.map((d) => d.id), [filterDimensies]);
   const { selectie, zet, wis, aantalActief } = useSelectie(dimensieIds, beginStand.filters);
 
   // Alleen het zichtbare tabblad schrijft; de andere panelen blijven gemount en zouden
@@ -262,7 +238,7 @@ export default function KanaalPagina({
       <KanalenFilterBalk
         kubus={data.reeks}
         selectie={selectie}
-        dimensies={dimensies}
+        dimensies={filterDimensies}
         periodes={periodes}
         periode={periode}
         onPeriode={setPeriode}
@@ -281,9 +257,6 @@ export default function KanaalPagina({
         onVergelijk={() => setVergelijk((v) => !v)}
         vergelijkBezig={data.vorigeBezig}
         vorigeGrenzen={data.vorigeGrenzen}
-        alleKanalen={alleKanalen}
-        samen={samen}
-        onSamen={() => setSamen((v) => !v)}
       />
 
       {data.fout && (
@@ -318,7 +291,7 @@ export default function KanaalPagina({
             kubus={gefilterdeReeks}
             vorigeKubus={gefilterdeVorigeReeks}
             statistieken={actieveStatistieken}
-            uitsplitsbaar={splitsbaar}
+            uitsplitsbaar={uitsplitsbaar}
             statistiekId={gekozenStatistiek?.id ?? ""}
             onStatistiek={setStatistiekId}
           />

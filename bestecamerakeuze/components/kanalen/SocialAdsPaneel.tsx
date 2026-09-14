@@ -81,13 +81,6 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Plaatsing",
         },
       ]}
-      alleKanalen={{
-        pagina: "betaald",
-        eigenLabel: "Alleen Meta en LinkedIn",
-        allesLabel: "Alle betaalde kanalen",
-        dimensie: { id: "kanaal", label: "Kanaal" },
-        statistieken: ADVERTENTIE_STATISTIEKEN,
-      }}
       leeswijzer="Bereik staat niet op deze pagina. Het platform telt daar verschillende mensen en doet dat per dag opnieuw; wij bewaren dagcijfers, dus elke optelling over een periode komt hoger uit dan wat Ads Manager laat zien. Een cijfer dat per definitie nooit klopt, tonen we liever niet. Conversies zijn bij Meta de acties die het team zelf heeft aangewezen op de pagina Koppeltabel — Meta levert geen conversietotaal, en alle acties bij elkaar optellen telde hetzelfde formulier meerdere keren. Staat die keuze nog niet, dan ontbreken de kolommen Conversies en Kosten per conversie hier. Conversiewaarde en het rendement op advertentiebudget komen van Meta helemaal niet mee: die twee blijven leeg en zeggen alleen iets over LinkedIn. Klikken, CTR en kosten per klik rekenen met álle klikken, dus met wat Ads Manager \'Klikken (alle)\' noemt."
     />
   );

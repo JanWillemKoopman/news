@@ -70,15 +70,6 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Campagnetype",
         },
       ]}
-      alleKanalen={{
-        pagina: "betaald",
-        eigenLabel: "Alleen Google Ads",
-        allesLabel: "Alle betaalde kanalen",
-        dimensie: { id: "kanaal", label: "Kanaal" },
-        // In het gecombineerde beeld zitten Meta en LinkedIn erbij, en die leveren leads
-        // wél — dus daar geldt de Google-beperking niet.
-        statistieken: ADVERTENTIE_STATISTIEKEN,
-      }}
       leeswijzer="Conversies zijn alle acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen — precies het getal dat Google Ads zelf ook toont. Welke daarvan een lead is, wijs je aan op de pagina Koppeltabel onder Conversie-acties; pas dan verschijnen hier de kolommen Leads en Kosten per lead. Bereik staat niet op deze pagina: dat cijfer ontdubbelt het platform per dag, dus een optelling over een periode komt nooit overeen met wat je in de advertentiebeheerder ziet."
     />
   );
