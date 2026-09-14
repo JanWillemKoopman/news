@@ -8,7 +8,6 @@ import {
   IconBrain,
   IconCalendar,
   IconChat,
-  IconLink,
   IconMegaphone,
   IconPin,
   IconPosts,
@@ -126,8 +125,10 @@ export default function Sidebar({
           {/* Kanalen staat ná Campagnes: de campagnetabel is waar het weekoverleg begint,
               de kanaalcijfers zijn waar je doorklikt als je wilt weten waaróm een campagne
               loopt zoals hij loopt. Social en Google staan apart omdat het twee andere
-              gesprekken zijn — bereik en beeld tegenover zoekintentie — en de koppeltabel
-              staat onderaan omdat je er alleen komt als er iets te koppelen valt. */}
+              gesprekken zijn — bereik en beeld tegenover zoekintentie. De koppeltabel
+              staat niet in deze lijst maar bovenaan in het profielmenu (GebruikersMenu),
+              boven Kosten — je komt er alleen als je iets te koppelen hebt, niet als
+              onderdeel van de dagelijkse navigatie. */}
           {toontBeperkteSecties && (
             <>
               <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
@@ -156,12 +157,6 @@ export default function Sidebar({
                 label="Social accounts"
                 active={actief === "account-ontwikkeling"}
                 onClick={() => onNavigate("account-ontwikkeling")}
-              />
-              <NavigationItem
-                icon={<IconLink />}
-                label="Koppeltabel"
-                active={actief === "koppeltabel"}
-                onClick={() => onNavigate("koppeltabel")}
               />
             </>
           )}
@@ -202,6 +197,8 @@ export default function Sidebar({
           naam={weergavenaam}
           email={gebruikerEmail}
           avatarUrl={profielAvatarUrl}
+          toontKoppeltabel={toontBeperkteSecties}
+          onKoppeltabel={() => onNavigate("koppeltabel")}
           onKosten={() => onNavigate("kosten")}
           onInstellingen={() => onNavigate("instellingen")}
         />

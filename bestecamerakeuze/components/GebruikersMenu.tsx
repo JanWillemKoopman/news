@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Avatar from "@/components/Avatar";
-import { IconChevronUpDown, IconCoin, IconLogout, IconSettings } from "@/components/icons";
+import { IconChevronUpDown, IconCoin, IconLink, IconLogout, IconSettings } from "@/components/icons";
 
 type Props = {
   naam: string;
   email: string | null;
   avatarUrl: string | null;
+  /** Alleen tonen voor wie ook de rest van de Kanalen-sectie ziet — zie Sidebar.tsx. */
+  toontKoppeltabel: boolean;
+  onKoppeltabel: () => void;
   onKosten: () => void;
   onInstellingen: () => void;
 };
@@ -21,7 +24,15 @@ type Props = {
  * `overflow-x-hidden` (nodig voor de hover-uitklapanimatie) zodra het breder is dan de
  * ingeklapte 72px-rail. Zie ook Modal.tsx voor hetzelfde patroon.
  */
-export default function GebruikersMenu({ naam, email, avatarUrl, onKosten, onInstellingen }: Props) {
+export default function GebruikersMenu({
+  naam,
+  email,
+  avatarUrl,
+  toontKoppeltabel,
+  onKoppeltabel,
+  onKosten,
+  onInstellingen,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [positie, setPositie] = useState<{ left: number; bottom: number } | null>(null);
   const knopRef = useRef<HTMLButtonElement>(null);
@@ -85,6 +96,20 @@ export default function GebruikersMenu({ naam, email, avatarUrl, onKosten, onIns
               <p className="truncate text-sm font-medium text-ink">{naam}</p>
               {email && <p className="truncate text-xs text-ink-faint">{email}</p>}
             </div>
+            {toontKoppeltabel && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onKoppeltabel();
+                }}
+                className="mt-1 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+              >
+                <IconLink className="h-4 w-4 text-ink-faint" />
+                Koppeltabel
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"
