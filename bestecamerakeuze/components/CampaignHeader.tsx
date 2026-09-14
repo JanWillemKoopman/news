@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Campagne } from "@/lib/sheet";
 import StatusIndicator from "@/components/StatusIndicator";
 import { getBrandLogo } from "@/components/brandLogos";
+import CampaignCijfer from "@/components/CampaignCijfer";
 import CampaignNotes from "@/components/CampaignNotes";
 import Drawer from "@/components/Drawer";
 import NotitieLijst from "@/components/notities/NotitieLijst";
@@ -14,6 +15,10 @@ type Props = {
   /** Alleen tonen als er ook echt iets is om het logboek in op te slaan. */
   notitiesBeschikbaar: boolean;
   ingelogd: boolean;
+  /** Alleen tonen als Supabase geconfigureerd is — zonder database is er niets om in op te slaan. */
+  cijfersBeschikbaar: boolean;
+  cijfer: number | null;
+  onCijferChange: (cijfer: number | null) => void;
 };
 
 /**
@@ -24,7 +29,14 @@ type Props = {
  * subtiel icoontje (`CampaignNotes.tsx`) naast de naam, voor wie dat sneller vindt —
  * beide openen exact dezelfde zijbalk, vandaar dat de open-state hier op één plek leeft.
  */
-export default function CampaignHeader({ campagne, notitiesBeschikbaar, ingelogd }: Props) {
+export default function CampaignHeader({
+  campagne,
+  notitiesBeschikbaar,
+  ingelogd,
+  cijfersBeschikbaar,
+  cijfer,
+  onCijferChange,
+}: Props) {
   const [open, setOpen] = useState(false);
   const BrandLogo = campagne.merk ? getBrandLogo(campagne.merk) : null;
 
@@ -43,7 +55,17 @@ export default function CampaignHeader({ campagne, notitiesBeschikbaar, ingelogd
         ) : (
           <span className="block min-w-0 truncate text-cell font-semibold text-ink">{campagne.naam}</span>
         )}
-        {notitiesBeschikbaar && <CampaignNotes campagne={campagne} onOpen={() => setOpen(true)} />}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {cijfersBeschikbaar && (
+            <CampaignCijfer
+              campagneNaam={campagne.naam}
+              cijfer={cijfer}
+              ingelogd={ingelogd}
+              onChange={onCijferChange}
+            />
+          )}
+          {notitiesBeschikbaar && <CampaignNotes campagne={campagne} onOpen={() => setOpen(true)} />}
+        </span>
       </div>
       <span className="flex min-w-0 items-center gap-1.5">
         {campagne.merk &&

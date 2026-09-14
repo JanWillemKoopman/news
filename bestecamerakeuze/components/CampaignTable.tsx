@@ -180,9 +180,19 @@ type Props = {
   ingelogd: boolean;
   /** "Zo lees je dit": zet onder elk metriclabel een zin in gewone taal. */
   uitlegAan: boolean;
+  /** Handmatig campagnecijfer (0-10) per campagnenaam, alleen aanwezig als het cijfer is gezet. */
+  cijfers: Record<string, number>;
+  onCijferChange: (campagneNaam: string, cijfer: number | null) => void;
 };
 
-export default function CampaignTable({ campagnes, notitiesBeschikbaar, ingelogd, uitlegAan }: Props) {
+export default function CampaignTable({
+  campagnes,
+  notitiesBeschikbaar,
+  ingelogd,
+  uitlegAan,
+  cijfers,
+  onCijferChange,
+}: Props) {
   if (campagnes.length === 0) {
     return (
       <div className="rounded-panel border border-line bg-card px-6 py-10 text-center shadow-card">
@@ -220,7 +230,14 @@ export default function CampaignTable({ campagnes, notitiesBeschikbaar, ingelogd
                   scope="col"
                   className="sticky top-0 z-20 border-b border-line bg-card px-3 py-3 align-top [border-left:1px_dashed_var(--color-line-soft)]"
                 >
-                  <CampaignHeader campagne={c} notitiesBeschikbaar={notitiesBeschikbaar} ingelogd={ingelogd} />
+                  <CampaignHeader
+                    campagne={c}
+                    notitiesBeschikbaar={notitiesBeschikbaar}
+                    ingelogd={ingelogd}
+                    cijfersBeschikbaar={notitiesBeschikbaar}
+                    cijfer={cijfers[c.naam] ?? null}
+                    onCijferChange={(cijfer) => onCijferChange(c.naam, cijfer)}
+                  />
                 </th>
               ))}
             </tr>
