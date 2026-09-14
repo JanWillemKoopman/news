@@ -4,18 +4,18 @@ import GebruikersMenu from "@/components/GebruikersMenu";
 import LogoMark from "@/components/LogoMark";
 import NavigationItem from "@/components/NavigationItem";
 import {
+  IconAdHeart,
   IconBook,
   IconBrain,
   IconCalendar,
   IconChat,
   IconMegaphone,
+  IconPhoto,
   IconPin,
-  IconPosts,
   IconSearch,
   IconSettings,
-  IconTarget,
   IconTrophy,
-  IconUsers,
+  IconUserCircle,
 } from "@/components/icons";
 
 export type DashboardView =
@@ -135,7 +135,7 @@ export default function Sidebar({
                 Kanalen
               </p>
               <NavigationItem
-                icon={<IconTarget />}
+                icon={<IconAdHeart />}
                 label="Social ads"
                 active={actief === "social-ads"}
                 onClick={() => onNavigate("social-ads")}
@@ -147,13 +147,13 @@ export default function Sidebar({
                 onClick={() => onNavigate("google-ads")}
               />
               <NavigationItem
-                icon={<IconPosts />}
+                icon={<IconPhoto />}
                 label="Social organisch"
                 active={actief === "organisch"}
                 onClick={() => onNavigate("organisch")}
               />
               <NavigationItem
-                icon={<IconUsers />}
+                icon={<IconUserCircle />}
                 label="Social accounts"
                 active={actief === "account-ontwikkeling"}
                 onClick={() => onNavigate("account-ontwikkeling")}
