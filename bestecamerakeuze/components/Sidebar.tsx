@@ -60,9 +60,10 @@ export default function Sidebar({
 }: Props) {
   const weergavenaam = profielNaam || naamVoor(gebruikerEmail);
 
-  const CHATBOT_TOEGESTANE_EMAILS = ["koopman.janwillem@gmail.com", "jkoopman@udenhout.nl"];
-  const toontChatbot =
-    !!gebruikerEmail && CHATBOT_TOEGESTANE_EMAILS.includes(gebruikerEmail.toLowerCase());
+  const BEPERKTE_SECTIES_TOEGESTANE_EMAILS = ["koopman.janwillem@gmail.com", "jkoopman@udenhout.nl"];
+  const toontBeperkteSecties =
+    !!gebruikerEmail &&
+    BEPERKTE_SECTIES_TOEGESTANE_EMAILS.includes(gebruikerEmail.toLowerCase());
 
   return (
     // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover klapt hij uit
@@ -127,41 +128,45 @@ export default function Sidebar({
               loopt zoals hij loopt. Social en Google staan apart omdat het twee andere
               gesprekken zijn — bereik en beeld tegenover zoekintentie — en de koppeltabel
               staat onderaan omdat je er alleen komt als er iets te koppelen valt. */}
-          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-            Kanalen
-          </p>
-          <NavigationItem
-            icon={<IconTarget />}
-            label="Social ads"
-            active={actief === "social-ads"}
-            onClick={() => onNavigate("social-ads")}
-          />
-          <NavigationItem
-            icon={<IconSearch />}
-            label="Google Ads"
-            active={actief === "google-ads"}
-            onClick={() => onNavigate("google-ads")}
-          />
-          <NavigationItem
-            icon={<IconPosts />}
-            label="Organisch"
-            active={actief === "organisch"}
-            onClick={() => onNavigate("organisch")}
-          />
-          <NavigationItem
-            icon={<IconUsers />}
-            label="Account"
-            active={actief === "account-ontwikkeling"}
-            onClick={() => onNavigate("account-ontwikkeling")}
-          />
-          <NavigationItem
-            icon={<IconLink />}
-            label="Koppeltabel"
-            active={actief === "koppeltabel"}
-            onClick={() => onNavigate("koppeltabel")}
-          />
+          {toontBeperkteSecties && (
+            <>
+              <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+                Kanalen
+              </p>
+              <NavigationItem
+                icon={<IconTarget />}
+                label="Social ads"
+                active={actief === "social-ads"}
+                onClick={() => onNavigate("social-ads")}
+              />
+              <NavigationItem
+                icon={<IconSearch />}
+                label="Google Ads"
+                active={actief === "google-ads"}
+                onClick={() => onNavigate("google-ads")}
+              />
+              <NavigationItem
+                icon={<IconPosts />}
+                label="Organisch"
+                active={actief === "organisch"}
+                onClick={() => onNavigate("organisch")}
+              />
+              <NavigationItem
+                icon={<IconUsers />}
+                label="Account"
+                active={actief === "account-ontwikkeling"}
+                onClick={() => onNavigate("account-ontwikkeling")}
+              />
+              <NavigationItem
+                icon={<IconLink />}
+                label="Koppeltabel"
+                active={actief === "koppeltabel"}
+                onClick={() => onNavigate("koppeltabel")}
+              />
+            </>
+          )}
 
-          {toontChatbot && (
+          {toontBeperkteSecties && (
             <>
               <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
                 Chatbot
