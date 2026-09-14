@@ -518,13 +518,19 @@ export interface Herkomst {
  */
 export async function haalHerkomst(): Promise<Herkomst> {
   return metVerbinding(async (client) => {
+    // Lezen gaat over `v_advertenties` en niet over de tabel eronder: de rol achter
+    // DATAQUERY_DATABASE_URL (dataloket_lezer) heeft alleen rechten op de views. Een
+    // query op `windsor_advertenties` geeft hier dus "permission denied" — en omdat dit
+    // endpoint ook de keuzelijst levert, valt dan de hele Koppeltabel om. Alle andere
+    // queries in dit bestand lezen om dezelfde reden de view.
+
     const vanaf = `current_date - interval '${HERKOMST_DAGEN} days'`;
 
     const platformRes = await client.query(
       `select bron,
               coalesce(sum(leads), 0)      as leads,
               coalesce(sum(conversies), 0) as conversies
-         from dataloket.windsor_advertenties
+         from dataloket.v_advertenties
         where datum >= ${vanaf}
         group by bron`,
     );
@@ -539,7 +545,7 @@ export async function haalHerkomst(): Promise<Herkomst> {
               coalesce(a.telt_als_lead, false)     as telt_als_lead,
               coalesce(a.telt_als_conversie, false) as telt_als_conversie,
               sum((e.value)::text::numeric)        as aantal
-         from dataloket.windsor_advertenties w
+         from dataloket.v_advertenties w
          cross join lateral jsonb_each(coalesce(w.conversie_acties, '{}'::jsonb)) as e(key, value)
          left join dataloket.windsor_conversie_acties a on a.veld = e.key
         where w.datum >= ${vanaf}
