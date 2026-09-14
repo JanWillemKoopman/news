@@ -106,9 +106,14 @@ export async function GET(request: Request) {
     const { laatsteSync, loopt: syncLoopt } = stand;
 
     if (pagina === "koppeltabel") {
-      const koppelingen = await haalKoppelingen();
+      const [koppelingen, campagnesUitSheet] = await Promise.all([
+        haalKoppelingen(),
+        getCampagnes()
+          .then((c) => c.map((r) => r.naam))
+          .catch(() => []),
+      ]);
       return NextResponse.json(
-        { pagina, koppelingen, laatsteSync, syncLoopt },
+        { pagina, koppelingen, campagnesUitSheet, laatsteSync, syncLoopt },
         { headers: { "Cache-Control": CACHE } },
       );
     }

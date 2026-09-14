@@ -1,30 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ConversiePaneel from "@/components/kanalen/ConversiePaneel";
 import Inlogprompt from "@/components/Inlogprompt";
 import FilterSelect from "@/components/FilterSelect";
-import { IconCheck, IconInfo, IconSearch } from "@/components/icons";
+import { IconCheck, IconChevronDown, IconInfo, IconSearch } from "@/components/icons";
 import { formatteer } from "@/components/chat/chartTheme";
 
 /**
- * De koppeltabel: campagne → campagnemanager, merk, categorie en de campagne uit de sheet.
+ * De koppeltabel: campagne → de campagne uit de sheet.
  *
- * **Waarom deze pagina bestaat.** "Campagnemanager" komt in de Windsor-data niet voor —
- * alle 4.393 velden zijn doorzocht en er is geen eigenaarsveld. Het moet dus met de hand,
- * en dan is de vraag niet óf het wordt ingevuld maar of iemand ziet dát het ontbreekt.
- * Vandaar dat deze tabel begint bij de campagnes die geld kosten en pas daarna bij wat er
- * al gekoppeld is: de duurste campagne zonder eigenaar staat bovenaan.
+ * **Waarom deze pagina bestaat.** De campagnenaam in een advertentieplatform is zelden
+ * dezelfde als die in de sheet, en dat handmatig leggen is precies waar deze tabel voor
+ * bestaat: zonder die koppeling weet de budget- en pacingweergave op de campagnepagina's
+ * niet welke sheetregel bij welke campagne hoort.
  *
- * Opslaan gebeurt per veld zodra je het veld verlaat — geen aparte opslaan-knop, want
- * dat is bij een tabel met tientallen regels een uitnodiging om wijzigingen kwijt te
- * raken.
- *
- * **Namen komen uit een lijst, maar het blijft een tekstveld.** Campagnemanager en merk
- * zijn vrije velden met een `datalist`: je krijgt de spellingen te zien die al gebruikt
- * zijn en kunt er met één klik een kiezen, maar een nieuwe naam intypen kan gewoon. Dat
- * is hier het verschil tussen een bruikbaar filter en drie varianten van dezelfde collega
- * op de advertentiepagina's — elke typefout wordt daar namelijk een eigen filterwaarde.
+ * Opslaan gebeurt per veld zodra je een keuze maakt — geen aparte opslaan-knop, want dat
+ * is bij een tabel met tientallen regels een uitnodiging om wijzigingen kwijt te raken.
  */
 
 export interface Koppeling {
@@ -39,27 +32,6 @@ export interface Koppeling {
   gekoppeld: boolean;
 }
 
-const CATEGORIEEN = [
-  "Acties",
-  "After Sales",
-  "Sales",
-  "Vacatures",
-  "Verhuur",
-  "Branding",
-];
-
-/** De merken van de groep; de lijst is een suggestie, geen begrenzing. */
-const MERKEN = [
-  "Audi",
-  "Volkswagen",
-  "Volkswagen Bedrijfswagens",
-  "Škoda",
-  "SEAT",
-  "CUPRA",
-  "Porsche",
-  "Bentley",
-];
-
 const BRON_LABEL: Record<string, string> = {
   meta: "Meta",
   google: "Google",
@@ -68,6 +40,7 @@ const BRON_LABEL: Record<string, string> = {
 
 export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   const [rijen, setRijen] = useState<Koppeling[]>([]);
+  const [campagnesUitSheet, setCampagnesUitSheet] = useState<string[]>([]);
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
   const [alleen, setAlleen] = useState<string[]>([]);
@@ -78,12 +51,17 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
     setBezig(true);
     fetch("/api/kanalen?pagina=koppeltabel")
       .then(async (res) => {
-        const data = (await res.json()) as { koppelingen?: Koppeling[]; fout?: string };
+        const data = (await res.json()) as {
+          koppelingen?: Koppeling[];
+          campagnesUitSheet?: string[];
+          fout?: string;
+        };
         if (!res.ok) {
           setFout(data.fout ?? `Ophalen mislukt (${res.status}).`);
           return;
         }
         setRijen(data.koppelingen ?? []);
+        setCampagnesUitSheet(data.campagnesUitSheet ?? []);
         setFout(null);
       })
       .catch((err: unknown) => setFout(err instanceof Error ? err.message : String(err)))
@@ -100,30 +78,9 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
         if (!past) return false;
       }
       if (!term) return true;
-      // Ook op eigenaar en merk zoeken: "wat heeft Sanne allemaal" is net zo goed een
-      // vraag als "waar staat die ene campagne".
-      return [r.campagne, r.eigenaarNaam, r.merk, r.categorie]
-        .filter(Boolean)
-        .some((veld) => String(veld).toLowerCase().includes(term));
+      return [r.campagne, r.sheetCampagne].filter(Boolean).some((veld) => String(veld).toLowerCase().includes(term));
     });
   }, [rijen, alleen, zoek]);
-
-  /** De spellingen die al in gebruik zijn — voedt de suggestielijst bij het invullen. */
-  const bekendeNamen = useMemo(() => {
-    const namen = new Set<string>();
-    rijen.forEach((r) => {
-      if (r.eigenaarNaam?.trim()) namen.add(r.eigenaarNaam.trim());
-    });
-    return [...namen].sort((a, b) => a.localeCompare(b, "nl"));
-  }, [rijen]);
-
-  const bekendeMerken = useMemo(() => {
-    const merken = new Set(MERKEN);
-    rijen.forEach((r) => {
-      if (r.merk?.trim()) merken.add(r.merk.trim());
-    });
-    return [...merken].sort((a, b) => a.localeCompare(b, "nl"));
-  }, [rijen]);
 
   const ongekoppeld = rijen.filter((r) => !r.gekoppeld);
   const ongekoppeldBudget = ongekoppeld.reduce((t, r) => t + r.uitgaven, 0);
@@ -131,11 +88,10 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   async function bewaar(campagne: string, patch: Partial<Koppeling>) {
     const huidig = rijen.find((r) => r.campagne === campagne);
     if (!huidig) return;
-    // Stond hier eerst hard op `true`, dus ook het invullen van alleen het merk — of juist
-    // het leegmaken van de naam — haalde het rode bolletje weg en verlaagde de teller
-    // "zonder campagnemanager". Gekoppeld is precies één ding: er staat een naam.
+    // "Gekoppeld" is precies één ding: er staat een campagne uit de sheet gekozen. Dat is
+    // ook het enige veld dat deze tabel nu nog vastlegt.
     const samen = { ...huidig, ...patch };
-    const nieuw = { ...samen, gekoppeld: Boolean(samen.eigenaarNaam?.trim()) };
+    const nieuw = { ...samen, gekoppeld: Boolean(samen.sheetCampagne?.trim()) };
 
     // Meteen in beeld bijwerken; de serveraanroep bevestigt alleen. Zou de tabel pas na
     // het antwoord bijwerken, dan springt elk veld even terug naar de oude waarde.
@@ -172,9 +128,7 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
               <p className="font-sans-w7 text-sm font-semibold text-ink">
                 {bezig ? "Laden…" : `${zichtbaar.length} campagnes`}
               </p>
-              <p className="text-meta text-ink-faint">
-                {ongekoppeld.length} zonder campagnemanager
-              </p>
+              <p className="text-meta text-ink-faint">{ongekoppeld.length} zonder sheet-campagne</p>
             </div>
             {ongekoppeld.length > 0 && (
               <>
@@ -183,9 +137,7 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                   <p className="font-sans-w7 text-sm font-semibold text-ink">
                     {formatteer(ongekoppeldBudget, "euro")}
                   </p>
-                  <p className="text-meta text-ink-faint">
-                    uitgegeven in 90 dagen zonder eigenaar
-                  </p>
+                  <p className="text-meta text-ink-faint">uitgegeven in 90 dagen zonder koppeling</p>
                 </div>
               </>
             )}
@@ -198,7 +150,7 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                 id="koppeltabel-zoek"
                 value={zoek}
                 onChange={(e) => setZoek(e.target.value)}
-                placeholder="Zoek op campagne, collega of merk"
+                placeholder="Zoek op campagne"
                 aria-label="Zoeken in de koppeltabel"
                 className="w-72 rounded-control border border-line bg-card py-1.5 pl-8 pr-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
               />
@@ -214,54 +166,36 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
       </div>
 
       {fout && (
-        <p className="mb-5 rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">
-          {fout}
-        </p>
+        <p className="mb-5 rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>
       )}
 
       <p className="mb-4 flex items-start gap-2 text-meta text-ink-muted">
         <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        De campagnemanager staat niet in de data van de advertentieplatforms; die leggen we
-        hier zelf vast. Alles wat je invult wordt meteen opgeslagen en werkt daarna als
-        filter op de pagina&apos;s Social ads en Google Ads.
+        Koppel elke campagne aan zijn naam in de sheet. Die koppeling voedt de
+        budget- en pacingweergave op de campagnepagina&apos;s.
       </p>
-
-      {/* Eén datalist per kolom in plaats van per rij: honderd regels met elk hun eigen
-          kopie van dezelfde namenlijst is honderd keer dezelfde DOM. */}
-      <datalist id="koppeltabel-namen">
-        {bekendeNamen.map((naam) => (
-          <option key={naam} value={naam} />
-        ))}
-      </datalist>
-      <datalist id="koppeltabel-merken">
-        {bekendeMerken.map((merk) => (
-          <option key={merk} value={merk} />
-        ))}
-      </datalist>
 
       <section className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle">
         <div className="max-h-[36rem] overflow-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
-                {["Campagne", "Kanaal", "Uitgaven 90 dgn", "Campagnemanager", "Merk", "Categorie", "Campagne in sheet"].map(
-                  (kop, i) => (
-                    <th
-                      key={kop}
-                      className={`sticky top-0 z-20 whitespace-nowrap border-b border-line bg-surface-tint px-4 py-2.5 ${
-                        i === 0 ? "left-0 z-30 min-w-72 text-left" : i === 2 ? "text-right" : "text-left"
-                      }`}
-                    >
-                      <span className="label-theme text-label text-ink-faint">{kop}</span>
-                    </th>
-                  ),
-                )}
+                {["Campagne", "Kanaal", "Uitgaven 90 dgn", "Campagne in sheet"].map((kop, i) => (
+                  <th
+                    key={kop}
+                    className={`sticky top-0 z-20 whitespace-nowrap border-b border-line bg-surface-tint px-4 py-2.5 ${
+                      i === 0 ? "left-0 z-30 min-w-72 text-left" : i === 2 ? "text-right" : "text-left"
+                    }`}
+                  >
+                    <span className="label-theme text-label text-ink-faint">{kop}</span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {!bezig && zichtbaar.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-ink-muted">
+                  <td colSpan={4} className="px-4 py-10 text-center text-ink-muted">
                     {zoek.trim() || alleen.length > 0
                       ? "Geen campagnes die aan deze selectie voldoen."
                       : "Geen campagnes gevonden. Zodra de sync advertentiedata heeft opgehaald, staan ze hier."}
@@ -274,14 +208,12 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                     <div className="flex items-center gap-2">
                       {!rij.gekoppeld && (
                         <span
-                          title="Nog geen campagnemanager"
+                          title="Nog geen campagne in de sheet gekoppeld"
                           className="h-1.5 w-1.5 shrink-0 rounded-pill bg-negative"
                         />
                       )}
                       <span className="line-clamp-1 text-ink">{rij.campagne}</span>
-                      {bewaard === rij.campagne && (
-                        <IconCheck className="h-3.5 w-3.5 shrink-0 text-positive" />
-                      )}
+                      {bewaard === rij.campagne && <IconCheck className="h-3.5 w-3.5 shrink-0 text-positive" />}
                     </div>
                   </td>
                   <td className="whitespace-nowrap border-b border-line-soft px-4 py-2 text-ink-muted">
@@ -291,34 +223,9 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
                     {formatteer(rij.uitgaven, "euro")}
                   </td>
                   <td className="border-b border-line-soft px-2 py-1.5">
-                    <Veld
-                      waarde={rij.eigenaarNaam}
-                      plaatshouder="Naam invullen"
-                      suggesties={bekendeNamen}
-                      suggestieId="koppeltabel-namen"
-                      onBewaar={(v) => bewaar(rij.campagne, { eigenaarNaam: v })}
-                    />
-                  </td>
-                  <td className="border-b border-line-soft px-2 py-1.5">
-                    <Veld
-                      waarde={rij.merk}
-                      plaatshouder="Merk"
-                      suggesties={bekendeMerken}
-                      suggestieId="koppeltabel-merken"
-                      onBewaar={(v) => bewaar(rij.campagne, { merk: v })}
-                    />
-                  </td>
-                  <td className="border-b border-line-soft px-2 py-1.5">
-                    <Keuzeveld
-                      waarde={rij.categorie}
-                      opties={CATEGORIEEN}
-                      onBewaar={(v) => bewaar(rij.campagne, { categorie: v })}
-                    />
-                  </td>
-                  <td className="border-b border-line-soft px-2 py-1.5">
-                    <Veld
+                    <SheetCampagneVeld
                       waarde={rij.sheetCampagne}
-                      plaatshouder="Naam in de sheet"
+                      opties={campagnesUitSheet}
                       onBewaar={(v) => bewaar(rij.campagne, { sheetCampagne: v })}
                     />
                   </td>
@@ -336,44 +243,15 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   );
 }
 
-/** Eén bewerkbaar tekstveld; slaat op zodra het de focus verliest en er iets veranderd is. */
-function Veld({
-  waarde,
-  plaatshouder,
-  suggesties,
-  suggestieId,
-  onBewaar,
-}: {
-  waarde: string | null;
-  plaatshouder: string;
-  suggesties?: string[];
-  suggestieId?: string;
-  onBewaar: (waarde: string | null) => void;
-}) {
-  const [tekst, setTekst] = useState(waarde ?? "");
-
-  useEffect(() => setTekst(waarde ?? ""), [waarde]);
-
-  return (
-    <input
-      value={tekst}
-      list={suggesties && suggesties.length > 0 ? suggestieId : undefined}
-      placeholder={plaatshouder}
-      onChange={(e) => setTekst(e.target.value)}
-      onBlur={() => {
-        const kaal = tekst.trim();
-        if (kaal !== (waarde ?? "")) onBewaar(kaal || null);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-        if (e.key === "Escape") setTekst(waarde ?? "");
-      }}
-      className="w-full min-w-36 rounded-control border border-transparent bg-transparent px-2 py-1 text-sm text-ink transition-colors duration-[var(--duur-snel)] placeholder:text-ink-faint hover:border-line focus:border-line focus:bg-card focus:outline-none"
-    />
-  );
-}
-
-function Keuzeveld({
+/**
+ * Uitklapmenu met zoekbalk voor de koppeling naar een sheet-campagne.
+ *
+ * De lijst rendert via een portal naar `<body>` met een `fixed`-positie die op basis van
+ * de knop wordt berekend: de rij zit in een scrollende tabel (`overflow-auto`), en een
+ * gewoon `absolute`-paneel zou daar op de rand worden afgekapt in plaats van erover heen
+ * te vallen.
+ */
+function SheetCampagneVeld({
   waarde,
   opties,
   onBewaar,
@@ -382,18 +260,136 @@ function Keuzeveld({
   opties: string[];
   onBewaar: (waarde: string | null) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [zoek, setZoek] = useState("");
+  const [positie, setPositie] = useState<{ top: number; left: number; width: number } | null>(null);
+  const knopRef = useRef<HTMLButtonElement>(null);
+  const paneelRef = useRef<HTMLDivElement>(null);
+
+  const zichtbareOpties = useMemo(() => {
+    const term = zoek.trim().toLowerCase();
+    if (!term) return opties;
+    return opties.filter((o) => o.toLowerCase().includes(term));
+  }, [opties, zoek]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function plaats() {
+      const rect = knopRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPositie({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 256) });
+    }
+    plaats();
+
+    function handleClickOutside(event: MouseEvent) {
+      const doel = event.target as Node;
+      if (knopRef.current?.contains(doel) || paneelRef.current?.contains(doel)) return;
+      setOpen(false);
+    }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    // Sluiten i.p.v. meebewegen bij scroll/resize: eenvoudiger dan continu herpositioneren,
+    // en de tabel eronder scrolt toch al binnen zijn eigen kader.
+    function handleScrollOfResize() {
+      setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("scroll", handleScrollOfResize, true);
+    window.addEventListener("resize", handleScrollOfResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("scroll", handleScrollOfResize, true);
+      window.removeEventListener("resize", handleScrollOfResize);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setZoek("");
+  }, [open]);
+
+  function kies(v: string | null) {
+    onBewaar(v);
+    setOpen(false);
+  }
+
   return (
-    <select
-      value={waarde ?? ""}
-      onChange={(e) => onBewaar(e.target.value || null)}
-      className="w-full min-w-32 rounded-control border border-transparent bg-transparent px-2 py-1 text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:border-line focus:border-line focus:bg-card focus:outline-none"
-    >
-      <option value="">—</option>
-      {opties.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
+    <>
+      <button
+        ref={knopRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex w-full min-w-36 items-center justify-between gap-2 rounded-control border border-transparent bg-transparent px-2 py-1 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:border-line focus:border-line focus:bg-card focus:outline-none"
+      >
+        <span className={`truncate ${waarde ? "text-ink" : "text-ink-faint"}`}>
+          {waarde ?? "Naam in de sheet"}
+        </span>
+        <IconChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open &&
+        positie &&
+        createPortal(
+          <div
+            ref={paneelRef}
+            role="listbox"
+            aria-label="Campagne in de sheet"
+            style={{ top: positie.top, left: positie.left, width: positie.width }}
+            className="fixed z-50 flex max-h-72 flex-col overflow-hidden rounded-card border border-line bg-card p-1.5 shadow-dropdown"
+          >
+            <div className="relative mb-1 shrink-0">
+              <IconSearch className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+              <input
+                autoFocus
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder={`Zoek in ${opties.length} campagnes`}
+                aria-label="Zoek een campagne uit de sheet"
+                className="w-full rounded-control border border-line bg-card py-1.5 pl-7 pr-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {waarde && (
+                <button
+                  type="button"
+                  onClick={() => kies(null)}
+                  className="mb-1 block w-full rounded-control px-2 py-1 text-left text-xs font-medium text-primary hover:bg-primary-light"
+                >
+                  Koppeling wissen
+                </button>
+              )}
+              {opties.length === 0 ? (
+                <p className="px-2 py-1.5 text-sm text-ink-faint">Geen campagnes uit de sheet.</p>
+              ) : zichtbareOpties.length === 0 ? (
+                <p className="px-2 py-1.5 text-sm text-ink-faint">Niets gevonden.</p>
+              ) : (
+                zichtbareOpties.map((optie) => (
+                  <button
+                    key={optie}
+                    type="button"
+                    title={optie}
+                    onClick={() => kies(optie)}
+                    className={`block w-full truncate rounded-control px-2 py-1.5 text-left text-sm hover:bg-surface ${
+                      optie === waarde ? "font-sans-w7 text-ink" : "text-ink"
+                    }`}
+                  >
+                    {optie}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

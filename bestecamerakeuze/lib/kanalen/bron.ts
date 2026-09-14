@@ -549,11 +549,11 @@ export async function haalKoppelingen(): Promise<Koppeling[]> {
               k.sheet_campagne,
               k.notitie,
               c.uitgaven,
-              -- "Gekoppeld" is: er staat een campagnemanager. Dit stond eerst op
-              -- "er bestaat een rij", en dan gold een campagne waarvan alleen het merk
-              -- was ingevuld al als geregeld — terwijl de teller erboven "zonder
-              -- campagnemanager" telt.
-              (coalesce(nullif(btrim(k.eigenaar_naam), ''), null) is not null) as gekoppeld
+              -- "Gekoppeld" is: er staat een campagne uit de sheet gekozen. Dit stond eerst
+              -- op "er is een campagnemanager ingevuld", maar die kolom is uit de
+              -- koppeltabel verwijderd — de sheet-koppeling is het enige wat deze pagina
+              -- nu nog vastlegt.
+              (coalesce(nullif(btrim(k.sheet_campagne), ''), null) is not null) as gekoppeld
          from (
            select campagne, min(bron) as bron, coalesce(sum(uitgaven), 0) as uitgaven
              from dataloket.v_advertenties
