@@ -324,8 +324,15 @@ niet uit af te lezen zijn:
   op percentage: een campagne van tienduizend euro met 30% duurdere leads is een groter
   probleem dan eentje van driehonderd die verdubbelde. Een signaal is klikbaar en zet het
   filter op dat onderwerp — zo is de lijst een ingang tot de pagina en geen apart
-  dashboard. Er staat niets als er niets te melden is: een blok dat elke week "geen
-  bijzonderheden" zegt, valt niet meer op in de week dat het wél iets zegt.
+  dashboard.
+  Zit niet als balk boven de cijfers, maar achter een lampje rechtsboven in het scherm
+  (`components/icons.tsx` → `IconLightbulb`), links naast het oogje van de themewissel —
+  vaste plek, net als dat oogje. Een klik opent de lijst in een zijbalk (`Drawer.tsx`,
+  zie `KanaalPagina.tsx`). Het lampje verschijnt alleen op de pagina's met een
+  `signaalDimensie` (Social ads, Google Ads, Social accounts) én alleen als er ook echt
+  iets te melden is (`heeftSignalen` in `KanaalPagina.tsx`) — een knop naar een lege
+  zijbalk is een doodlopend pad. Social organisch heeft bewust geen signalen: een losse
+  post "loopt" niet zoals een campagne, dus "deze campagne viel stil" zegt daar niets.
 - **Welke conversie-actie een lead is, legt het team zelf vast.** Google levert geen
   leadveld; wat een lead is, zit in de conversies die marketing in Google Ads en GA4 heeft
   ingesteld, en die staan per rij in de jsonb-kolom `conversie_acties`. Op de Koppeltabel

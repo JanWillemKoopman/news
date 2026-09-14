@@ -7,7 +7,8 @@ import type { Kubus } from "@/lib/kanalen/kubus";
 import type { Statistiek } from "@/lib/windsor/velden";
 
 /**
- * "Hier moet je naar kijken" — bovenaan de pagina, vóór de cijfers.
+ * "Hier moet je naar kijken" — de inhoud van de inzichten-zijbalk, geopend vanuit het
+ * lampje rechtsboven op de Kanalen-pagina's (`KanaalPagina.tsx`).
  *
  * Dit is wat monitoren van kijken onderscheidt. Een tabel met periodetotalen laat een
  * campagne die halverwege stilviel er keurig uitzien: het totaal staat er nog. Deze lijst
@@ -19,9 +20,8 @@ import type { Statistiek } from "@/lib/windsor/velden";
  * ene onderwerp. Zonder die stap is een signalenlijst een tweede dashboard in plaats van
  * een ingang tot het eerste.
  *
- * Verschijnt niet als er niets te melden is. Een blok dat elke week "geen bijzonderheden"
- * zegt, wordt na drie weken niet meer gelezen — en dan valt de week dat er wél iets staat
- * ook niet meer op.
+ * Het lampje zelf verschijnt alleen als er iets te melden is (zie `heeftSignalen` in
+ * `KanaalPagina.tsx`) — een knop die naar een lege zijbalk leidt is een doodlopend pad.
  */
 
 const ZICHTBAAR = 4;
@@ -52,23 +52,19 @@ export default function SignaalPaneel({
     [kubus, rijen, statistieken, instellingen],
   );
 
-  if (signalen.length === 0) return null;
+  if (signalen.length === 0) {
+    return <p className="text-sm text-ink-faint">Geen bijzonderheden op dit moment.</p>;
+  }
 
   const lijst = allesTonen ? signalen : signalen.slice(0, ZICHTBAAR);
 
   return (
-    <section
-      aria-label="Signalen"
-      className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle"
-    >
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-3">
-        <h2 className="font-sans-w7 text-cell font-semibold text-ink">Wat opvalt</h2>
-        <p className="text-meta text-ink-faint">
-          De laatste dagen van deze periode vergeleken met de dagen ervoor
-        </p>
-      </header>
+    <div>
+      <p className="mb-3 text-meta text-ink-faint">
+        De laatste dagen van deze periode vergeleken met de dagen ervoor
+      </p>
 
-      <ul className="divide-y divide-line-soft">
+      <ul className="divide-y divide-line-soft rounded-panel border border-line">
         {lijst.map((signaal) => (
           <li key={signaal.id}>
             <SignaalRegel
@@ -84,7 +80,7 @@ export default function SignaalPaneel({
       </ul>
 
       {signalen.length > ZICHTBAAR && (
-        <div className="border-t border-line-soft px-5 py-2">
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => setAllesTonen((v) => !v)}
@@ -96,7 +92,7 @@ export default function SignaalPaneel({
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
