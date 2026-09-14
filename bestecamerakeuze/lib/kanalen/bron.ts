@@ -35,6 +35,18 @@ export const DAG_KORREL_MAX_DAGEN = 120;
 
 const STATEMENT_TIMEOUT_MS = 15_000;
 
+/**
+ * Hoeveel werkgeheugen één query mag gebruiken voor sorteren en groeperen.
+ *
+ * De standaard van de database is een paar megabyte, en daar past een jaar advertenties
+ * niet in: de groepering viel dan terug op een sortering op schijf (gemeten 58 MB temp
+ * voor twaalf maanden social) en dat kostte meer tijd dan het lezen van de data zelf —
+ * 7,0 s tegen 1,9 s met dit getal. Het geldt per transactie, en dit bestand opent er één
+ * per verzoek en sluit hem daarna; dit dashboard heeft geen honderden gelijktijdige
+ * lezers, dus de optelsom blijft ruim binnen het geheugen van de instance.
+ */
+const WORK_MEM = "64MB";
+
 /** Hoeveel detailregels een pagina maximaal meekrijgt; zie `Kubus.afgekapt`. */
 export const DETAIL_LIMIET = 2000;
 
@@ -54,7 +66,21 @@ async function metVerbinding<T>(werk: (client: Client) => Promise<T>): Promise<T
   });
   await client.connect();
   try {
-    return await werk(client);
+    // Alles in één expliciete transactie, en `work_mem` met `set local` daarbinnen.
+    // DATAQUERY_DATABASE_URL wijst naar de transaction pooler (poort 6543, zie
+    // README-dataloket.md): een kale `set` zou daar terechtkomen op een serververbinding
+    // die zo weer aan een volgend verzoek wordt uitgeleend — en dan geldt hij hier niet
+    // en daar wel. `set local` is gebonden aan de transactie en valt weg bij de commit.
+    // `read only` omdat dit bestand uitsluitend leest; het maakt van een schrijffout een
+    // duidelijke melding in plaats van een wijziging.
+    await client.query("begin read only");
+    await client.query(`set local work_mem = '${WORK_MEM}'`);
+    const uitkomst = await werk(client);
+    await client.query("commit");
+    return uitkomst;
+  } catch (fout) {
+    await client.query("rollback").catch(() => {});
+    throw fout;
   } finally {
     await client.end().catch(() => {});
   }
@@ -314,25 +340,56 @@ export async function haalAdvertenties(
     // "Carrousel 1" komen in meerdere campagnes voor, en op naam groeperen telde die tot
     // één regel op — met de creative van willekeurig de eerste erbij. De leesbare naam
     // komt daarom uit de meta.
+    //
+    // De thumbnail hangt er los onder en zit bewust níet in de groepering hierboven.
+    // Dat is geen stijlkwestie maar het verschil tussen een pagina die laadt en een
+    // pagina die afkapt op "canceling statement due to statement timeout": de kolom is
+    // gemeten gemiddeld 537 bytes en daarmee tweederde van de hele rij, en zolang hij in
+    // de optelling meedoet moet de database voor élke dagregel de volle rij van schijf
+    // halen. Zonder die kolom wordt het een index only scan over
+    // `windsor_advertenties_dashboard_idx` (zie migratie 0022): voor twaalf maanden
+    // Google ging dat van 17,8 s — ruim over de limiet van 15 s — naar 1,4 s.
+    //
+    // De `left join lateral` haalt hem daarna alleen nog op voor de regels die
+    // overblijven (hooguit DETAIL_LIMIET), één indexopzoeking per advertentie. De
+    // partiële index eronder slaat de dagen zonder thumbnail over, zodat Google — waar
+    // geen enkele advertentie er een heeft — niet alsnog per advertentie een jaar aan
+    // rijen doorloopt.
+    //
+    // Hij pakt de nieuwste thumbnail die van die advertentie bekend is, ook als die van
+    // na de gekozen periode komt. Dat is met opzet: een creative-URL van Meta verloopt,
+    // dus de meest recente is de enige die in de browser nog een plaatje oplevert.
     const detailRes = await client.query(
-      `select a.account, a.platform,
-              coalesce(nullif(a.plaatsing, ''), '—') as plaatsing,
-              a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
-              coalesce(a.merk, '—') as merk,
-              coalesce(a.categorie, '—') as categorie,
-              coalesce(nullif(a.adgroep, ''), '—') as adgroep,
-              coalesce(nullif(a.advertentie_id, ''), coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie_id,
-              min(coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie,
-              min(a.advertentie_status) as advertentie_status,
-              min(a.thumbnail_url) as thumbnail_url,
-              min(a.preview_url) as preview_url,
-              ${sommen}
-         from dataloket.v_advertenties a
-         ${join}
-        where a.datum between $1 and $2 and a.bron = any($3)
-        group by ${groep(11)}
-        order by sum(a.uitgaven) desc nulls last
-        limit ${DETAIL_LIMIET}`,
+      `with regels as (
+         select a.account, a.platform,
+                coalesce(nullif(a.plaatsing, ''), '—') as plaatsing,
+                a.campagne, a.campagne_doel, a.campagne_status, a.campagnemanager,
+                coalesce(a.merk, '—') as merk,
+                coalesce(a.categorie, '—') as categorie,
+                coalesce(nullif(a.adgroep, ''), '—') as adgroep,
+                coalesce(nullif(a.advertentie_id, ''), coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie_id,
+                min(coalesce(nullif(a.advertentie, ''), '(zonder naam)')) as advertentie,
+                min(a.advertentie_status) as advertentie_status,
+                min(a.preview_url) as preview_url,
+                ${sommen}
+           from dataloket.v_advertenties a
+           ${join}
+          where a.datum between $1 and $2 and a.bron = any($3)
+          group by ${groep(11)}
+          order by sum(a.uitgaven) desc nulls last
+          limit ${DETAIL_LIMIET}
+       )
+       select r.*, t.thumbnail_url
+         from regels r
+         left join lateral (
+           select m.thumbnail_url
+             from dataloket.v_advertenties m
+            where m.advertentie_id = r.advertentie_id
+              and m.thumbnail_url is not null
+            order by m.datum desc
+            limit 1
+         ) t on true
+        order by r.uitgaven desc nulls last`,
       argumenten,
     );
 
