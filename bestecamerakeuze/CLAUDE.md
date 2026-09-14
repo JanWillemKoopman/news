@@ -270,15 +270,20 @@ niet uit af te lezen zijn:
   **stand** (`kubus.standKolommen`, in de praktijk het aantal volgers) tekenen als lijn
   met een as op `['auto','auto']`; een optelbare hoeveelheid als staaf vanaf nul. Een
   volgersstand als staaf vanaf nul verstopt precies de groei waar de pagina voor bestaat.
-- **Bereik is een derde soort: gededupliceerd.** Het platform telt daar verschillende
-  mensen, en doet dat per opgevraagde dag opnieuw — wie op drie dagen keek zit in drie
-  dagrijen. Wij bewaren dagcijfers, dus onze som is per definitie hóger dan het bereik dat
-  Ads Manager over diezelfde periode toont, en de frequentie die erop deelt navenant
-  lager. Dat is een grens van de data en niet met beter optellen op te lossen: het echte
-  periodebereik bestaat alleen als je het zónder dagkorrel opvraagt. Zulke statistieken
-  dragen `nietOptelbaar` (`lib/windsor/velden.ts`) en de UI zegt er "opgeteld per dag" bij
-  in plaats van "totaal in deze selectie" — nooit een gededupliceerd cijfer als totaal
-  presenteren.
+- **Bereik staat op géén enkele kanaalpagina, en dat is een besluit.** Het platform telt
+  daar verschillende mensen en doet dat per opgevraagde dag opnieuw — wie op drie dagen
+  keek zit in drie dagrijen. Wij bewaren dagcijfers (dat is de hele opzet: alleen zo is
+  elke periode achteraf nog te bevragen), dus elke optelling die wij maken komt hoger uit
+  dan het bereik dat de advertentiebeheerder over diezelfde periode toont. Beter optellen
+  helpt niet; het echte periodebereik bestaat alleen in een opvraging zónder dagkorrel.
+  Een cijfer dat per definitie nooit met het platform overeenkomt hoort niet op een pagina
+  die juist bedoeld is om ernaast te leggen, dus bereik en de frequentie die erop deelde
+  staan niet in `lib/windsor/velden.ts` en de kanaalqueries in `bron.ts` halen de kolom
+  niet meer op. De sync blijft hem wél wegschrijven: de data gaat niet verloren, hij wordt
+  alleen niet getoond. De interactieratio op Organisch deelt daarom op vertoningen in
+  plaats van op bereik — dezelfde teller op een grotere noemer, dus lagere percentages dan
+  vroeger. Terugzetten kan alleen samen met een aparte opvraging van het periodebereik bij
+  het platform zelf.
 - **De periode loopt tot en met gisteren** (`periodeGrenzen`) omdat de sync 's nachts
   draait, en de korrel volgt de lengte van die periode (`bruikbareKorrels` en
   `standaardKorrel` in `lib/kanalen/kubus.ts`) — nooit het aantal dagen waarop er
@@ -288,10 +293,11 @@ niet uit af te lezen zijn:
 - **Groeperen gaat op een id, niet op een naam.** `advertentie_id` en `post_id` zijn
   dimensie; de leesbare naam komt via `labelVeld` uit `kubus.meta`. Op naam groeperen
   liet twee advertenties die toevallig hetzelfde heten tot één regel samenvallen.
-- **Wat het platform niet levert, staat er niet.** Google schrijft `leads` hard op nul
-  (het zit in de conversie-acties) en levert geen bereik per advertentie; die kolommen en
-  hun afgeleiden staan daarom niet in `GOOGLE_ONBESCHIKBAAR`. Een lege cel leest als
-  "nul", niet als "meten we hier niet".
+- **Wat het platform niet levert, staat er niet.** Google schrijft `leads` hard op nul en
+  Meta `conversies`; in beide gevallen zit het cijfer in de conversie-acties die het team
+  aanwijst. Zolang die keuze er niet is, verdwijnen die kolommen met hun afgeleiden van de
+  pagina (`verbergZonderConversieLeads` op Google Ads, `verbergZonderConversieActies` op
+  Social ads). Een lege cel leest als "nul", niet als "meten we hier niet".
 - **Elke tabel heeft een plakkende totaalregel** die over de rijen telt en niet over de
   regels erboven — bij een afgeleide is dat een ander getal. Is de detailquery afgekapt
   (`kubus.afgekapt`), dan staat dat er expliciet bij, want dan telt de tabel lager uit
@@ -335,21 +341,31 @@ niet uit af te lezen zijn:
   filter op dat onderwerp — zo is de lijst een ingang tot de pagina en geen apart
   dashboard. Er staat niets als er niets te melden is: een blok dat elke week "geen
   bijzonderheden" zegt, valt niet meer op in de week dat het wél iets zegt.
-- **Welke conversie-actie een lead is, legt het team zelf vast.** Google levert geen
-  leadveld; wat een lead is, zit in de conversies die marketing in Google Ads en GA4 heeft
+- **Wat een lead is en wat een conversie, legt het team zelf vast.** Twee gaten in de
+  data, twee vinkjes. Google levert geen leadveld; Meta levert geen conversieveld. Wat het
+  wél zijn, staat in de conversie-acties die marketing in Google Ads, GA4 en Meta heeft
   ingesteld, en die staan per rij in de jsonb-kolom `conversie_acties`. Op de Koppeltabel
-  staat daarvoor het blok **Conversie-acties**: één kolom `telt_als_lead` op de catalogus
-  die de sync al bijhoudt (`windsor_conversie_acties`, migratie 0016 — geen tweede tabel
-  ernaast, want dat zou een tweede waarheid over dezelfde velden zijn);
-  `bron.ts` telt de aangevinkte acties bij `leads` op — optellen en niet vervangen, want
-  bij Meta zit `actions_lead` al in die kolom en komen de vaste actievelden nooit in de
-  jsonb terecht. Hetzelfde véld kan dus niet twee keer meetellen; dezelfde **gebeurtenis**
-  wél. Meta's `lead` is namelijk zelf al een optelsom (leadformulieren, Messenger én de
-  pixel op de site), dus een Meta-actie aanvinken die daar een onderdeel van is, telt één
-  formulier twee keer. Vuistregel: bij Meta alleen aanvinken wat Meta zelf niet al onder
-  `lead` schaart; bij Google is de aangevinkte actie juist het hele leadcijfer. Zolang er
-  niets is aangevinkt, laat Google Ads de kolommen Leads en Kosten per lead weg
-  (`verbergZonderConversieLeads`).
+  staat daarvoor het blok **Conversie-acties**: twee kolommen (`telt_als_lead`,
+  migratie 0016, en `telt_als_conversie`, migratie 0019) op de catalogus die de sync al
+  bijhoudt — geen tweede tabel ernaast, want dat zou een tweede waarheid over dezelfde
+  velden zijn. `bron.ts` (`ActieKeuze`, `bouwActieSql`) telt ze per rij op uit de jsonb.
+  - **Leads: optellen, niet vervangen.** Bij Meta zit `actions_lead` al in de leadkolom en
+    komen de vaste actievelden nooit in de jsonb terecht. Hetzelfde véld kan dus niet twee
+    keer meetellen; dezelfde **gebeurtenis** wél — Meta's `lead` is zelf al een optelsom
+    (leadformulieren, Messenger én de pixel op de site), dus een Meta-actie aanvinken die
+    daar onderdeel van is telt één formulier twee keer. Vuistregel: bij Meta alleen
+    aanvinken wat Meta zelf niet al onder `lead` schaart; bij Google is de aangevinkte
+    actie juist het hele leadcijfer.
+  - **Conversies: alleen Meta.** De sync schrijft voor Meta nul in de conversiekolom. Dat
+    was eerder de som van álle maatwerkacties, en dat getal stond in Ads Manager nergens
+    en telde bovendien dubbel (één formulier dat zowel een pixelconversie als een
+    leadactie afvuurt). Google en LinkedIn leveren wél een eigen conversietotaal, en bij
+    Google zitten deze acties daar al in — een Google-actie erbij optellen zou hem dubbel
+    tellen. `gekozenActieVelden` filtert de conversielijst daarom op `bron = 'meta'`, en
+    de UI zet het vinkje alleen aan bij Meta-rijen. Die grens staat bewust op allebei de
+    plekken: een vinkje dat er per ongeluk toch staat mag geen verkeerd cijfer opleveren.
+  - Zolang er niets is aangevinkt verdwijnen de betreffende kolommen van de pagina, in
+    plaats van als nul te verschijnen.
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus

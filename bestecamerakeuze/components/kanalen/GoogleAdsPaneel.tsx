@@ -6,19 +6,17 @@ import { ADVERTENTIE_STATISTIEKEN } from "@/lib/windsor/velden";
 /**
  * Google Ads: Search, Performance Max, Demand Gen en Display.
  *
- * Twee verschillen met de socialpagina die in de data zitten en niet weggepoetst worden:
- * Google levert geen bereik op advertentieniveau, en leads zitten hier niet in een apart
- * veld maar in de conversie-acties. Beide kolommen staan daarom **niet** in de lijst
- * hieronder. Ze stonden er eerder wel, en dan keek je op de pagina waar leads het
- * belangrijkste getal zijn naar een kolom met louter nullen en een kosten-per-lead met
- * louter streepjes — een leeg vakje leest als "nul leads" en niet als "dit meten we hier
- * niet". Conversies is voor Google het cijfer dat de leads bevat.
+ * Het verschil met de socialpagina dat in de data zit en niet weggepoetst wordt: leads
+ * zitten hier niet in een apart veld maar in de conversie-acties. Die kolom staat daarom
+ * **niet** in de lijst hieronder zolang er niets is aangewezen. Hij stond er eerder wel,
+ * en dan keek je op de pagina waar leads het belangrijkste getal zijn naar een kolom met
+ * louter nullen en een kosten-per-lead met louter streepjes — een leeg vakje leest als
+ * "nul leads" en niet als "dit meten we hier niet". Conversies is voor Google het cijfer
+ * dat de leads bevat.
+ *
+ * Bereik hoefde hier nooit uitgezonderd te worden en staat inmiddels op géén enkele
+ * kanaalpagina meer: het is per periode niet te reproduceren. Zie `lib/windsor/velden.ts`.
  */
-/**
- * Wat de Google-koppeling nooit vult: bereik op advertentieniveau bestaat er niet, en
- * frequentie is daarvan de afgeleide.
- */
-const GOOGLE_ONBESCHIKBAAR = new Set(["bereik", "frequentie"]);
 
 /**
  * Leads en kosten per lead bestaan bij Google alleen als er conversie-acties zijn
@@ -35,7 +33,7 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
       pagina="google"
       weergave="google-ads"
       ingelogd={ingelogd}
-      statistieken={ADVERTENTIE_STATISTIEKEN.filter((s) => !GOOGLE_ONBESCHIKBAAR.has(s.id))}
+      statistieken={ADVERTENTIE_STATISTIEKEN}
       verbergZonderConversieLeads={ALLEEN_MET_CONVERSIEKEUZE}
       standaardStatistiek="uitgaven"
       filterDimensies={[
@@ -77,11 +75,11 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
         eigenLabel: "Alleen Google Ads",
         allesLabel: "Alle betaalde kanalen",
         dimensie: { id: "kanaal", label: "Kanaal" },
-        // In het gecombineerde beeld zitten Meta en LinkedIn erbij, en die leveren bereik
-        // en leads wél — dus daar gelden de Google-beperkingen niet.
+        // In het gecombineerde beeld zitten Meta en LinkedIn erbij, en die leveren leads
+        // wél — dus daar geldt de Google-beperking niet.
         statistieken: ADVERTENTIE_STATISTIEKEN,
       }}
-      leeswijzer="Google rapporteert geen bereik per advertentie, dus die kolom ontbreekt hier bewust in plaats van als nul te verschijnen. Conversies zijn alle acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen. Welke daarvan een lead is, wijs je aan op de pagina Koppeltabel onder Conversie-acties; pas dan verschijnen hier de kolommen Leads en Kosten per lead."
+      leeswijzer="Conversies zijn alle acties die in Google Ads als conversie zijn ingesteld, inclusief de GA4-doelen — precies het getal dat Google Ads zelf ook toont. Welke daarvan een lead is, wijs je aan op de pagina Koppeltabel onder Conversie-acties; pas dan verschijnen hier de kolommen Leads en Kosten per lead. Bereik staat niet op deze pagina: dat cijfer ontdubbelt het platform per dag, dus een optelling over een periode komt nooit overeen met wat je in de advertentiebeheerder ziet."
     />
   );
 }

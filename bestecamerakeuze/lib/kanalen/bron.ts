@@ -144,10 +144,17 @@ function korrelVoor(van: string, tot: string): { korrel: "dag" | "week"; sql: st
 // Advertenties
 // ---------------------------------------------------------------------------
 
+/**
+ * Bereik staat hier bewust niet bij, en hoort er ook niet bij te komen.
+ *
+ * De kolom bestaat nog in `windsor_advertenties` en de sync blijft hem vullen, maar het
+ * platform ontdubbelt bereik per opgevraagde dag: `sum(bereik)` over een periode telt
+ * iedereen die op meer dan één dag keek meer dan één keer, en komt dus per definitie
+ * hoger uit dan Ads Manager. Zie de toelichting in `lib/windsor/velden.ts`.
+ */
 const ADVERTENTIE_METINGEN = [
   "uitgaven",
   "vertoningen",
-  "bereik",
   "klikken",
   "link_klikken",
   "interacties",
@@ -157,46 +164,81 @@ const ADVERTENTIE_METINGEN = [
   "conversiewaarde",
 ];
 
-const METINGEN_SOM = ADVERTENTIE_METINGEN.map((m) => `coalesce(sum(${m}), 0) as ${m}`).join(", ");
-
 /**
- * Dezelfde sommen, maar met de gekozen conversie-acties opgeteld bij de leads.
+ * Welke conversie-acties het team heeft aangewezen, per doel.
  *
- * Google levert geen leadveld — wat een lead is, staat daar in de conversie-acties die
- * marketing zelf heeft ingesteld, en die zitten per rij in de jsonb-kolom
- * `conversie_acties`. Welke daarvan meetelt legt het team vast in
- * `windsor_conversie_keuze` (zie de pagina Koppeltabel).
- *
- * Optellen bij `leads` en niet vervangen: bij Meta zit `actions_lead` al in die kolom en
- * staan de maatwerkacties los daarvan in de jsonb. Hetzelfde véld kan daardoor niet twee
- * keer meetellen — de vaste actievelden komen nooit in de jsonb terecht (zie
- * `isConversieActie` in velden.ts).
- *
- * Dezelfde *gebeurtenis* kan dat wél, en dat is de valkuil hier. Meta's `lead` is al een
- * optelsom: leadformulieren, Messenger én de leads die de pixel op de site meet. Wijst
- * iemand op de Koppeltabel een Meta-actie aan die daar een onderdeel van is (de pixel-
- * variant van hetzelfde formulier bijvoorbeeld), dan telt één ingevuld formulier hier
- * twee keer. Voor Google speelt dat niet — daar staat `leads` hard op nul en ís de
- * aangewezen actie het hele leadcijfer. Bij Meta hoort de vuistregel dus te zijn: alleen
- * aanvinken wat Meta zélf niet al onder `lead` schaart.
+ * Twee onafhankelijke keuzes op dezelfde catalogus (`windsor_conversie_acties`, zie de
+ * pagina Koppeltabel). De reden dat ze er zijn is per platform anders, en dat verklaart
+ * ook waarom `conversies` alleen Meta-acties bevat.
  */
-function metingenSom(metConversies: boolean): string {
-  if (!metConversies) return METINGEN_SOM;
-  return ADVERTENTIE_METINGEN.map((m) =>
-    m === "leads"
-      ? "coalesce(sum(a.leads), 0) + coalesce(sum(k.extra_leads), 0) as leads"
-      : `coalesce(sum(a.${m}), 0) as ${m}`,
-  ).join(", ");
+export interface ActieKeuze {
+  /** Acties die meetellen als lead. Google heeft geen leadveld, dus daar zijn ze het hele cijfer. */
+  leads: string[];
+  /**
+   * Acties die samen "conversies" zijn — uitsluitend Meta.
+   *
+   * Google en LinkedIn leveren zélf een conversietotaal, en bij Google zitten deze acties
+   * daar al in. Een Google-actie hier bovenop optellen zou hem dus dubbel tellen. Meta
+   * heeft dat totaal niet, en daar is deze lijst het conversiecijfer.
+   */
+  conversies: string[];
 }
 
-/** De join die per rij de gekozen conversie-acties optelt; leeg als er niets gekozen is. */
-function conversieJoin(metConversies: boolean): string {
-  if (!metConversies) return "";
+/** De namen van de lateral joins die de aangewezen acties per rij optellen. */
+const LEAD_JOIN = "l";
+const CONVERSIE_JOIN = "c";
+
+/**
+ * De sommen per meting, met de aangewezen acties erbij opgeteld waar dat hoort.
+ *
+ * Optellen bij `leads` en niet vervangen: bij Meta zit `actions_lead` al in die kolom en
+ * staan de maatwerkacties los daarvan in de jsonb. Bij `conversies` werkt het andersom —
+ * daar is de kolom voor Meta nul en zijn de aangewezen acties het hele cijfer, terwijl
+ * Google en LinkedIn juist wél een eigen totaal in de kolom hebben staan. Eén optelling
+ * dekt allebei die gevallen.
+ */
+export function metingenSom(keuze: ActieKeuze): string {
+  return ADVERTENTIE_METINGEN.map((m) => {
+    if (m === "leads" && keuze.leads.length > 0) {
+      return `coalesce(sum(a.leads), 0) + coalesce(sum(${LEAD_JOIN}.extra), 0) as leads`;
+    }
+    if (m === "conversies" && keuze.conversies.length > 0) {
+      return `coalesce(sum(a.conversies), 0) + coalesce(sum(${CONVERSIE_JOIN}.extra), 0) as conversies`;
+    }
+    return `coalesce(sum(a.${m}), 0) as ${m}`;
+  }).join(", ");
+}
+
+/** Eén lateral join die per rij de aangewezen acties uit de jsonb-kolom optelt. */
+function actieJoin(alias: string, plaatshouder: string): string {
   return `left join lateral (
-           select coalesce(sum((e.value)::text::numeric), 0) as extra_leads
+           select coalesce(sum((e.value)::text::numeric), 0) as extra
              from jsonb_each(coalesce(a.conversie_acties, '{}'::jsonb)) as e(key, value)
-            where e.key = any($4)
-         ) k on true`;
+            where e.key = any(${plaatshouder})
+         ) ${alias} on true`;
+}
+
+/**
+ * De query-argumenten plus de joins die erbij horen.
+ *
+ * De plaatshouders worden geteld en niet hardgecodeerd: een lege keuze levert géén
+ * parameter op, want Postgres weigert een query met een `$n` die nergens wordt gebruikt
+ * ("could not determine data type of parameter").
+ */
+export function bouwActieSql(
+  keuze: ActieKeuze,
+  argumenten: unknown[],
+): { joins: string; sommen: string } {
+  const joins: string[] = [];
+  if (keuze.leads.length > 0) {
+    argumenten.push(keuze.leads);
+    joins.push(actieJoin(LEAD_JOIN, `$${argumenten.length}`));
+  }
+  if (keuze.conversies.length > 0) {
+    argumenten.push(keuze.conversies);
+    joins.push(actieJoin(CONVERSIE_JOIN, `$${argumenten.length}`));
+  }
+  return { joins: joins.join("\n         "), sommen: metingenSom(keuze) };
 }
 
 export type AdvertentieBron = "social" | "google" | "betaald";
@@ -231,6 +273,14 @@ export interface AdvertentieData {
    * aangewezen acties zijn die daar per definitie leeg, en dan horen ze er niet te staan.
    */
   leadsUitConversies: boolean;
+  /**
+   * Zijn er acties aangewezen die samen de Meta-conversies vormen?
+   *
+   * Meta levert geen conversietotaal. Staat dit op `false`, dan tellen de Meta-rijen voor
+   * nul mee in de conversiekolom — niet omdat er niets gebeurde, maar omdat nog niemand
+   * heeft vastgelegd wát hier een conversie is. De pagina zegt dat er dan bij.
+   */
+  conversiesUitActies: boolean;
 }
 
 export async function haalAdvertenties(
@@ -249,11 +299,9 @@ export async function haalAdvertenties(
     Array.from({ length: aantal + (samen ? 1 : 0) }, (_, i) => i + 1).join(", ");
 
   return metVerbinding(async (client) => {
-    const leadVelden = await gekozenLeadVelden(client);
-    const metConversies = leadVelden.length > 0;
-    const sommen = metingenSom(metConversies);
-    const join = conversieJoin(metConversies);
-    const argumenten = metConversies ? [van, tot, bronnen, leadVelden] : [van, tot, bronnen];
+    const keuze = await gekozenActieVelden(client);
+    const argumenten: unknown[] = [van, tot, bronnen];
+    const { joins: join, sommen } = bouwActieSql(keuze, argumenten);
 
     // Merk en categorie komen uit de koppeltabel en hangen aan de campagne, dus ze
     // splitsen de rijen niet verder op — maar ze maken wel het filter mogelijk dat de
@@ -317,17 +365,33 @@ export async function haalAdvertenties(
         { van, tot },
       ),
       detail,
-      leadsUitConversies: metConversies,
+      leadsUitConversies: keuze.leads.length > 0,
+      conversiesUitActies: keuze.conversies.length > 0,
     };
   });
 }
 
-/** Welke conversie-acties heeft het team aangewezen als lead? */
-async function gekozenLeadVelden(client: Client): Promise<string[]> {
+/**
+ * Welke conversie-acties heeft het team aangewezen, en waarvoor?
+ *
+ * De conversielijst wordt hier op Meta gefilterd en niet in de UI alleen: Google levert
+ * zelf al een conversietotaal waar deze acties in zitten, dus een Google-actie erbij
+ * optellen zou hem dubbel tellen. Die grens hoort in de query te staan, want dit is de
+ * plek waar het optellen gebeurt — een vinkje dat per ongeluk toch gezet wordt, mag geen
+ * verkeerd cijfer opleveren.
+ */
+async function gekozenActieVelden(client: Client): Promise<ActieKeuze> {
   const res = await client.query(
-    `select veld from dataloket.windsor_conversie_acties where telt_als_lead = true`,
+    `select veld, bron, telt_als_lead, telt_als_conversie
+       from dataloket.windsor_conversie_acties
+      where telt_als_lead = true or telt_als_conversie = true`,
   );
-  return res.rows.map((r) => String(r.veld));
+  return {
+    leads: res.rows.filter((r) => r.telt_als_lead).map((r) => String(r.veld)),
+    conversies: res.rows
+      .filter((r) => r.telt_als_conversie && String(r.bron) === "meta")
+      .map((r) => String(r.veld)),
+  };
 }
 
 export interface ConversieActie {
@@ -340,6 +404,8 @@ export interface ConversieActie {
   aantal: number;
   laatstGezien: string | null;
   teltAlsLead: boolean;
+  /** Telt deze actie mee in de conversiekolom? Alleen van belang bij Meta — zie `ActieKeuze`. */
+  teltAlsConversie: boolean;
   /**
    * Is het label met de hand bijgesteld?
    *
@@ -360,7 +426,7 @@ export interface ConversieActie {
 export async function haalConversieActies(): Promise<ConversieActie[]> {
   return metVerbinding(async (client) => {
     const res = await client.query(
-      `select veld, bron, label, telt_als_lead, gewijzigd, aantal, account, laatst_gezien
+      `select veld, bron, label, telt_als_lead, telt_als_conversie, gewijzigd, aantal, account, laatst_gezien
          from dataloket.v_conversie_acties
         order by aantal desc nulls last, label`,
     );
@@ -374,6 +440,7 @@ export async function haalConversieActies(): Promise<ConversieActie[]> {
         ? new Date(r.laatst_gezien as string).toISOString().slice(0, 10)
         : null,
       teltAlsLead: Boolean(r.telt_als_lead),
+      teltAlsConversie: Boolean(r.telt_als_conversie),
       gewijzigd: Boolean(r.gewijzigd),
     }));
   });
@@ -383,11 +450,12 @@ export async function haalConversieActies(): Promise<ConversieActie[]> {
 // Organische posts
 // ---------------------------------------------------------------------------
 
+// Ook hier geen bereik: een post levert weliswaar één lifetime-cijfer op, maar zodra je
+// posts bij elkaar optelt tel je dezelfde volger opnieuw. Zie ADVERTENTIE_METINGEN.
 const POST_METINGEN = [
   "vertoningen",
   "vertoningen_organisch",
   "vertoningen_betaald",
-  "bereik",
   "interacties",
   "likes",
   "reacties",
@@ -474,7 +542,7 @@ const ACCOUNT_SOMMEN = [
   "volgers_netto",
   "vertoningen",
   "vertoningen_organisch",
-  "bereik",
+  // Geen bereik — zie ADVERTENTIE_METINGEN.
   "interacties",
   "paginaweergaven",
   "aantal_posts",

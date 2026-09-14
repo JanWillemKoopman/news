@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 /**
- * De conversie-acties uit de advertentieplatforms, en de keuze welke daarvan een lead is.
+ * De conversie-acties uit de advertentieplatforms, en de keuze wat ze betekenen.
+ *
+ * Twee onafhankelijke vinkjes per actie: telt hij als lead, en telt hij als conversie.
+ * De tweede bestaat omdat Meta geen conversietotaal levert — zie `ActieKeuze` in
+ * `lib/kanalen/bron.ts` voor waarom die lijst bij het optellen op Meta wordt gefilterd.
  *
  * Lezen gaat via de read-only Postgres-verbinding (daar staat de data), schrijven via de
  * Supabase-client met de sessie van de collega — dezelfde tweedeling als bij de
@@ -56,6 +60,7 @@ export async function POST(request: Request) {
   // overnemen; het huidige label blijft staan tot dat gebeurt.
   const wijziging: Record<string, unknown> = {
     telt_als_lead: Boolean(body.teltAlsLead),
+    telt_als_conversie: Boolean(body.teltAlsConversie),
     gewijzigd: label !== null,
     bijgewerkt_door: gebruiker.id,
     bijgewerkt_op: new Date().toISOString(),

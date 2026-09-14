@@ -4,18 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { IconCheck, IconInfo, IconSearch } from "@/components/icons";
 
 /**
- * Welke conversie-actie telt als lead?
+ * Wat betekent elke conversie-actie: een lead, een conversie, allebei of geen van beide?
  *
  * **Waarom dit hier staat en niet bij Instellingen.** Het is dezelfde soort keuze als de
  * koppeltabel erboven: iets wat de platforms niet leveren en het team zelf vastlegt over
  * zijn eigen data. Wie de campagnemanagers invult, is ook degene die weet dat
  * "generate_lead_offerte" een lead is en "page_view_contact" niet.
  *
- * **Waarom het uitmaakt.** Google Ads kent geen leadveld. Zolang hier niets is
- * aangevinkt, is de kolom "Leads" op de Google Ads-pagina per definitie nul, en die
- * kolom staat daar dan ook niet — hij verschijnt zodra je hier iets aanwijst. Bij Meta
- * komen de aangevinkte acties bovenop het leadveld dat het platform zelf al levert;
- * dubbeltellen kan niet, want de vaste actievelden komen nooit in deze lijst terecht.
+ * **Twee vinkjes, twee gaten in de data.** Google Ads kent geen leadveld; Meta kent geen
+ * conversieveld. Beide kolommen waren daardoor onbruikbaar — Google's leads stonden op
+ * nul, en Meta's conversies waren de som van álle acties, inclusief acties die elkaar
+ * overlappen. Hier vult het team die twee gaten zelf.
+ *
+ * **Waarom "telt als conversie" alleen voor Meta kan.** Google en LinkedIn leveren wél
+ * een eigen conversietotaal, en bij Google zitten deze acties daar al in. Een Google-actie
+ * erbij optellen zou hem dubbel tellen, dus dat vinkje staat daar uit — en `bron.ts`
+ * filtert er bij het optellen nog een keer op, zodat een vinkje dat er toch staat geen
+ * verkeerd cijfer kan opleveren.
  */
 
 export interface ConversieActie {
@@ -26,6 +31,7 @@ export interface ConversieActie {
   aantal: number;
   laatstGezien: string | null;
   teltAlsLead: boolean;
+  teltAlsConversie: boolean;
   /** Is het label met de hand bijgesteld? Dan laat de sync het staan. */
   gewijzigd: boolean;
 }
@@ -72,7 +78,8 @@ export default function ConversiePaneel() {
     );
   }, [acties, zoek]);
 
-  const gekozen = acties.filter((a) => a.teltAlsLead);
+  const alsLead = acties.filter((a) => a.teltAlsLead);
+  const alsConversie = acties.filter((a) => a.teltAlsConversie && a.bron === "meta");
 
   async function bewaar(actie: ConversieActie, patch: Partial<ConversieActie>) {
     const nieuw = { ...actie, ...patch };
@@ -87,6 +94,7 @@ export default function ConversiePaneel() {
         body: JSON.stringify({
           veld: nieuw.veld,
           teltAlsLead: nieuw.teltAlsLead,
+          teltAlsConversie: nieuw.teltAlsConversie,
           // Alleen meesturen als het een eigen naam is; anders laat de sync het label
           // weer bijwerken vanuit de veldnaam.
           label: nieuw.gewijzigd ? nieuw.label : null,
@@ -112,7 +120,7 @@ export default function ConversiePaneel() {
           <p className="mt-0.5 text-meta text-ink-muted">
             {bezig
               ? "Laden…"
-              : `${acties.length} acties gezien in de laatste 90 dagen · ${gekozen.length} tellen als lead`}
+              : `${acties.length} acties gezien in de laatste 90 dagen · ${alsLead.length} tellen als lead · ${alsConversie.length} als conversie`}
           </p>
         </div>
         {acties.length > 8 && (
@@ -132,9 +140,18 @@ export default function ConversiePaneel() {
 
       <p className="flex items-start gap-2 border-b border-line-soft px-5 py-3 text-meta text-ink-muted">
         <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Google Ads levert geen apart leadveld — wat een lead is, staat in de conversies die
-        marketing zelf heeft ingesteld. Vink hier aan welke dat zijn; de kolommen Leads en
-        Kosten per lead op de Google Ads-pagina rekenen er daarna mee.
+        <span>
+          Google Ads levert geen apart leadveld en Meta geen conversieveld — wat daar een
+          lead of een conversie is, staat in de acties die marketing zelf heeft ingesteld.
+          Vink hier aan welke dat zijn; de kolommen Leads, Kosten per lead, Conversies en
+          Kosten per conversie rekenen er daarna mee. Zolang er niets is aangevinkt, tellen
+          de Meta-campagnes voor nul conversies — dat is geen meetfout maar een keuze die
+          nog gemaakt moet worden.
+          <br />
+          <strong className="font-sans-w7 font-semibold">Telt als conversie</strong> kan
+          alleen bij Meta: Google en LinkedIn leveren zelf een conversietotaal waar deze
+          acties al in zitten, dus daar zou aanvinken dubbel tellen.
+        </span>
       </p>
 
       {fout && <p className="px-5 py-3 text-sm text-negative">{fout}</p>}
@@ -151,18 +168,23 @@ export default function ConversiePaneel() {
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
-                {["Telt als lead", "Actie", "Kanaal", "Aantal 90 dgn", "Laatst gezien"].map(
-                  (kop, i) => (
+                {[
+                  "Telt als lead",
+                  "Telt als conversie",
+                  "Actie",
+                  "Kanaal",
+                  "Aantal 90 dgn",
+                  "Laatst gezien",
+                ].map((kop, i) => (
                     <th
                       key={kop}
                       className={`sticky top-0 z-20 whitespace-nowrap border-b border-line bg-surface-tint px-4 py-2.5 ${
-                        i === 3 ? "text-right" : "text-left"
+                        i === 4 ? "text-right" : "text-left"
                       }`}
                     >
                       <span className="label-theme text-label text-ink-faint">{kop}</span>
                     </th>
-                  ),
-                )}
+                  ))}
               </tr>
             </thead>
             <tbody>
@@ -180,6 +202,27 @@ export default function ConversiePaneel() {
                         <IconCheck className="h-3.5 w-3.5 text-positive" />
                       )}
                     </label>
+                  </td>
+                  <td className="border-b border-line-soft px-4 py-2">
+                    {actie.bron === "meta" ? (
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={actie.teltAlsConversie}
+                          onChange={() =>
+                            bewaar(actie, { teltAlsConversie: !actie.teltAlsConversie })
+                          }
+                          className="h-4 w-4"
+                        />
+                      </label>
+                    ) : (
+                      <span
+                        className="text-meta text-ink-faint"
+                        title="Dit platform levert zelf een conversietotaal waar deze actie al in zit; hem hier aanvinken zou hem dubbel tellen."
+                      >
+                        —
+                      </span>
+                    )}
                   </td>
                   <td className="border-b border-line-soft px-2 py-1.5">
                     <LabelVeld

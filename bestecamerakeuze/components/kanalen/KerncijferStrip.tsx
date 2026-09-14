@@ -113,9 +113,7 @@ export default function KerncijferStrip({
               {vergelijk ? (
                 <Verschilregel verschil={verschil} compact />
               ) : (
-                <span className="text-meta text-ink-faint">
-                  {statistiek.nietOptelbaar ? "opgeteld per dag" : "in deze selectie"}
-                </span>
+                <span className="text-meta text-ink-faint">in deze selectie</span>
               )}
               <Sparkline
                 waarden={reeks}

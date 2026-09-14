@@ -282,9 +282,13 @@ export async function syncMetaAds(
     getal(r.actions_post_engagement),
     getal(r.actions_video_view),
     getal(r.actions_lead),
-    // Meta kent geen kale "conversions": de som van de maatwerkconversies ís het
-    // conversietotaal voor dit account.
-    Object.values(conversiesUit(r, conversieVelden)).reduce((a, b) => a + b, 0),
+    // Meta kent geen kaal "conversions"-veld, en de som van álle maatwerkacties is geen
+    // bruikbaar substituut: die acties overlappen elkaar (één formulier dat zowel een
+    // pixelconversie als een leadactie afvuurt telt twee keer), en het getal dat eruit
+    // rolt staat in Ads Manager nergens. Dus schrijven we hier niets, net als bij leads
+    // voor Google: welke acties samen "conversies" zijn, wijst het team aan op de
+    // Koppeltabel en telt `bron.ts` bij het lezen op uit de jsonb hieronder.
+    0,
     0,
     JSON.stringify(conversiesUit(r, conversieVelden)),
   ]);

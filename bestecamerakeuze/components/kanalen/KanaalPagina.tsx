@@ -95,6 +95,16 @@ type Props = {
    * aanwijst welke conversie een lead is.
    */
   verbergZonderConversieLeads?: string[];
+  /**
+   * Statistieken die alleen bestaan zodra er conversie-acties als conversie zijn aangewezen.
+   *
+   * Het spiegelbeeld van de regel hierboven: Meta levert geen conversietotaal, dus op
+   * Social ads zijn Conversies en Kosten per conversie leeg zolang niemand heeft
+   * vastgelegd wát daar een conversie is. Een kolom die om die reden bijna nul is, leest
+   * als "er gebeurde niets" en niet als "dit moet nog ingesteld worden" — dus staat hij er
+   * dan niet.
+   */
+  verbergZonderConversieActies?: string[];
 };
 
 export default function KanaalPagina({
@@ -111,6 +121,7 @@ export default function KanaalPagina({
   signaalDimensie,
   signaalDrempel,
   verbergZonderConversieLeads,
+  verbergZonderConversieActies,
 }: Props) {
   const periodes = useMemo(() => standaardPeriodes(), []);
   // De URL wint bij het openen: een gedeelde link hoort te tonen wat de afzender zag.
@@ -143,9 +154,24 @@ export default function KanaalPagina({
 
   const actieveStatistieken = useMemo(() => {
     const basis = samen && alleKanalen ? alleKanalen.statistieken : statistieken;
-    if (!verbergZonderConversieLeads?.length || data.leadsUitConversies) return basis;
-    return basis.filter((s) => !verbergZonderConversieLeads.includes(s.id));
-  }, [samen, alleKanalen, statistieken, verbergZonderConversieLeads, data.leadsUitConversies]);
+    const verborgen = new Set<string>();
+    if (verbergZonderConversieLeads?.length && !data.leadsUitConversies) {
+      for (const id of verbergZonderConversieLeads) verborgen.add(id);
+    }
+    if (verbergZonderConversieActies?.length && !data.conversiesUitActies) {
+      for (const id of verbergZonderConversieActies) verborgen.add(id);
+    }
+    if (verborgen.size === 0) return basis;
+    return basis.filter((s) => !verborgen.has(s.id));
+  }, [
+    samen,
+    alleKanalen,
+    statistieken,
+    verbergZonderConversieLeads,
+    verbergZonderConversieActies,
+    data.leadsUitConversies,
+    data.conversiesUitActies,
+  ]);
   const dimensieIds = useMemo(() => dimensies.map((d) => d.id), [dimensies]);
   const { selectie, zet, wis, aantalActief } = useSelectie(dimensieIds, beginStand.filters);
 

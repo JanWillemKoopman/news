@@ -4,7 +4,7 @@ import KanaalPagina from "@/components/kanalen/KanaalPagina";
 import { ACCOUNT_STATISTIEKEN } from "@/lib/windsor/velden";
 
 /**
- * De ontwikkeling van de accounts zelf: volgers, bereik en interactie per dag.
+ * De ontwikkeling van de accounts zelf: volgers, vertoningen en interactie per dag.
  *
  * Het filter "Herkomst" is er niet voor de sier. Facebook en LinkedIn leveren een echte
  * dagreeks; Instagram levert die niet, dus daar bouwt de nachtelijke sync de historie op
@@ -45,7 +45,7 @@ export default function AccountPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Platform",
         },
       ]}
-      leeswijzer="Volgers is een stand en geen optelsom: vier accounts met tienduizend volgers hebben er samen veertigduizend, ook als je naar vier weken kijkt. Groei, bereik en interacties zijn wél dagwaarden die over de periode worden opgeteld. Instagram-reeksen komen uit onze eigen nachtelijke meting — het platform levert geen historie."
+      leeswijzer="Volgers is een stand en geen optelsom: vier accounts met tienduizend volgers hebben er samen veertigduizend, ook als je naar vier weken kijkt. Groei, vertoningen en interacties zijn wél dagwaarden die over de periode worden opgeteld. Bereik staat er niet bij: dat ontdubbelt het platform per dag, dus optellen over een periode levert een getal op dat nergens te controleren is. Instagram-reeksen komen uit onze eigen nachtelijke meting — het platform levert geen historie."
     />
   );
 }

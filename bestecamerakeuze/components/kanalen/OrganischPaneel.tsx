@@ -62,7 +62,7 @@ export default function OrganischPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepLabel: "Type post",
         },
       ]}
-      leeswijzer="Een post draagt zijn lifetime-cijfers op zijn publicatiedatum: een post van vorige maand die nu nog bereik oppikt, telt mee op de dag dat hij geplaatst is. Zo blijft 'wat leverde die post op' bij elkaar staan in plaats van uitgesmeerd over de weken erna."
+      leeswijzer="Een post draagt zijn lifetime-cijfers op zijn publicatiedatum: een post van vorige maand die nu nog vertoningen oppikt, telt mee op de dag dat hij geplaatst is. Zo blijft 'wat leverde die post op' bij elkaar staan in plaats van uitgesmeerd over de weken erna. Bereik staat niet in de tabel: per post is dat een uniek aantal mensen, maar zodra je posts optelt tel je dezelfde volger opnieuw — de interactieratio deelt daarom op vertoningen."
     />
   );
 }

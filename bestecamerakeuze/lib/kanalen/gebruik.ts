@@ -45,6 +45,8 @@ export interface KanaalAntwoord {
   syncLoopt?: boolean;
   /** Telt de leadkolom conversie-acties mee? Bepaalt of Google Ads leads toont. */
   leadsUitConversies?: boolean;
+  /** Zijn er acties aangewezen die de Meta-conversies vormen? Bepaalt of Social ads conversies toont. */
+  conversiesUitActies?: boolean;
   /** Budget en doelen uit de sheet, voor de campagnes die eraan gekoppeld zijn. */
   budgetten?: CampagneBudget[];
   fout?: string;
@@ -59,6 +61,7 @@ export interface KanaalData {
   laatsteSync: string | null;
   syncLoopt: boolean;
   leadsUitConversies: boolean;
+  conversiesUitActies: boolean;
   budgetten: CampagneBudget[];
   herlaad: () => void;
   /** De kubussen over de vorige, even lange periode — alleen als de vergelijking aanstaat. */
@@ -164,6 +167,7 @@ export function useKanaalData(
     laatsteSync: antwoord?.laatsteSync ?? null,
     syncLoopt: antwoord?.syncLoopt ?? false,
     leadsUitConversies: antwoord?.leadsUitConversies ?? false,
+    conversiesUitActies: antwoord?.conversiesUitActies ?? false,
     budgetten: antwoord?.budgetten ?? [],
     herlaad,
     vorige,

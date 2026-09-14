@@ -248,17 +248,7 @@ export default function TijdGrafiek({
             </span>
           ) : (
             <p className="text-meta text-ink-faint">
-              {/*
-                Een gededupliceerd cijfer (bereik, en de frequentie die erop deelt) is
-                géén "totaal": het platform telt verschillende mensen en doet dat per dag
-                opnieuw. "Totaal in deze selectie" beloven zou hier een getal legitimeren
-                dat in Ads Manager nooit zo terugkomt — zie lib/windsor/velden.ts.
-              */}
-              {statistiek.nietOptelbaar
-                ? "opgeteld per dag — niet gelijk aan Ads Manager"
-                : statistiek.afgeleid
-                  ? "over de hele selectie"
-                  : "totaal in deze selectie"}
+              {statistiek.afgeleid ? "over de hele selectie" : "totaal in deze selectie"}
             </p>
           )}
         </div>

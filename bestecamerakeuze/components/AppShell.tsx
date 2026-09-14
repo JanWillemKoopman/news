@@ -98,7 +98,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   },
   "account-ontwikkeling": {
     title: "Account",
-    subtitle: "Hoe de social media-accounts zich ontwikkelen: volgers, bereik en interactie.",
+    subtitle: "Hoe de social media-accounts zich ontwikkelen: volgers, vertoningen en interactie.",
   },
   koppeltabel: {
     title: "Koppeltabel",

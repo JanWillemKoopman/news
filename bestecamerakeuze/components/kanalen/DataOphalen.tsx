@@ -43,7 +43,7 @@ const STAPPEN: Stap[] = [
   {
     deel: "account",
     label: "Accountcijfers",
-    toelichting: "volgers, bereik en interactie per account",
+    toelichting: "volgers, vertoningen en interactie per account",
   },
 ];
 

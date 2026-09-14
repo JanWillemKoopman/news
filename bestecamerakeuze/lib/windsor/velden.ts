@@ -15,15 +15,22 @@
  * wordt daarom altijd ná het optellen berekend, uit de sommen van zijn twee bronnen.
  * Dat is precies waar dashboards het vaakst stilletjes de mist in gaan.
  *
- * ## De derde soort: gededupliceerd
+ * ## Waarom bereik hier niet staat
  *
- * Bereik is geen van beide. Het platform telt daar **verschillende mensen**, en dat doet
- * het per opgevraagde korrel opnieuw: wie op drie dagen naar dezelfde advertentie keek
- * telt in de dagcijfers drie keer en in het periodecijfer één keer. Wij bewaren
- * dagcijfers, dus wat het dashboard optelt is per definitie hoger dan wat Meta Ads
- * Manager over dezelfde periode toont. Dat is geen fout in de optelling maar een grens
- * van de data; die statistieken staan hieronder met `nietOptelbaar` gemarkeerd zodat de
- * pagina het erbij kan zeggen in plaats van een getal te tonen dat nergens op slaat.
+ * Bereik is optelbaar noch afgeleid: het platform telt daar **verschillende mensen**, en
+ * doet dat per opgevraagde korrel opnieuw. Wie op drie dagen naar dezelfde advertentie
+ * keek telt in de dagcijfers drie keer en in het periodecijfer één keer. Wij bewaren
+ * dagcijfers — dat is de hele opzet, want alleen zo is elke periode achteraf nog te
+ * bevragen — en dus is elke optelling die wij maken hoger dan het bereik dat Ads Manager
+ * over diezelfde periode toont. Dat valt niet met beter rekenen op te lossen: het echte
+ * periodebereik bestaat alleen in een opvraging zónder dagkorrel, en die hebben we niet.
+ *
+ * Een getal dat per definitie nooit met het platform overeenkomt, hoort niet op een
+ * pagina die juist bedoeld is om naast Ads Manager te leggen. Bereik en de frequentie die
+ * erop deelt staan daarom niet in de lijsten hieronder, en de kanaalqueries halen de
+ * kolom niet meer op. De sync blijft hem wél wegschrijven: de data gaat niet verloren,
+ * hij wordt alleen niet getoond. Wie hem terugzet, zet ook de misleiding terug — doe dat
+ * alleen samen met een aparte opvraging van het periodebereik bij het platform zelf.
  *
  * ## De definities komen van het platform, niet van ons
  *
@@ -54,14 +61,6 @@ export interface Statistiek {
   afgeleid?: { teller: string; noemer: string; maal?: number };
   /** Lager is beter (kosten per klik, kosten per lead) — bepaalt de kleur van een verschil. */
   lagerIsBeter?: boolean;
-  /**
-   * Het platform ontdubbelt dit cijfer, dus optellen over dagen overschat het.
-   *
-   * Geldt voor bereik, en voor een afgeleide die bereik als noemer heeft. De UI zet er
-   * een waarschuwing bij in plaats van "totaal in deze selectie" te beloven; zie de
-   * toelichting bovenaan dit bestand.
-   */
-  nietOptelbaar?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,18 +81,6 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
     uitleg: "Hoe vaak de advertentie op iemands scherm is verschenen, herhalingen meegeteld.",
     eenheid: "aantal",
     standaard: true,
-  },
-  {
-    id: "bereik",
-    label: "Bereik",
-    uitleg:
-      "Per dag het aantal verschillende mensen dat de advertentie zag, over de dagen heen opgeteld. " +
-      "Wie op drie dagen keek telt hier dus drie keer; Ads Manager ontdubbelt over de hele periode en " +
-      "laat daardoor een lager getal zien. Bruikbaar om campagnes met elkaar te vergelijken, niet om " +
-      "te zeggen hoeveel mensen je bereikte.",
-    eenheid: "aantal",
-    standaard: true,
-    nietOptelbaar: true,
   },
   {
     id: "klikken",
@@ -144,10 +131,10 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
     id: "conversies",
     label: "Conversies",
     uitleg:
-      "Alle conversie-acties bij elkaar opgeteld. Dit getal staat zo niet in Ads Manager: bij Meta is " +
-      "het de som van álle maatwerkacties, en die kunnen elkaar overlappen (één formulier dat zowel " +
-      "een pixelconversie als een leadactie afvuurt telt twee keer). Bij LinkedIn zijn het alleen de " +
-      "conversies die de pixel op de site meet.",
+      "Bij Meta: de conversie-acties die het team zelf heeft aangewezen op de pagina Koppeltabel — het " +
+      "platform levert daar geen totaal, en álle acties optellen telde hetzelfde formulier meerdere " +
+      "keren. Bij LinkedIn zijn het de conversies die de pixel op de site meet, bij Google alles wat " +
+      "daar als conversie is ingesteld.",
     eenheid: "aantal",
     standaard: true,
   },
@@ -205,24 +192,12 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
     id: "cpa",
     label: "Kosten per conversie",
     uitleg:
-      "Wat één conversie gemiddeld kostte in deze selectie. Erft de kanttekening bij Conversies: " +
-      "overlappen de acties elkaar, dan valt dit bedrag te laag uit.",
+      "Wat één conversie gemiddeld kostte in deze selectie — gerekend over de conversies zoals die " +
+      "hiernaast zijn gedefinieerd, dus bij Meta over de aangewezen acties.",
     eenheid: "euro",
     standaard: false,
     afgeleid: { teller: "uitgaven", noemer: "conversies" },
     lagerIsBeter: true,
-  },
-  {
-    id: "frequentie",
-    label: "Frequentie",
-    uitleg:
-      "Vertoningen gedeeld door bereik. Omdat het bereik per dag is opgeteld, valt dit over een " +
-      "langere periode structureel te laag uit — Ads Manager komt hoger uit. Alleen op één dag is " +
-      "dit hetzelfde getal.",
-    eenheid: "aantal",
-    standaard: false,
-    afgeleid: { teller: "vertoningen", noemer: "bereik" },
-    nietOptelbaar: true,
   },
   {
     id: "roas",
@@ -249,11 +224,14 @@ export const POST_STATISTIEKEN: Statistiek[] = [
     standaard: true,
   },
   {
-    id: "bereik",
-    label: "Bereik",
-    uitleg: "Hoeveel verschillende mensen de post minstens één keer zagen.",
+    id: "vertoningen",
+    label: "Vertoningen",
+    uitleg:
+      "Hoe vaak de post op iemands scherm verscheen, organisch en betaald bij elkaar. Staat hier " +
+      "sinds bereik van de pagina af is: de interactieratio moet ergens op delen, en dit is het " +
+      "cijfer dat het platform wél per periode kan reproduceren.",
     eenheid: "aantal",
-    standaard: true,
+    standaard: false,
   },
   {
     id: "interacties",
@@ -329,10 +307,14 @@ export const POST_STATISTIEKEN: Statistiek[] = [
   {
     id: "interactieratio",
     label: "Interactieratio",
-    uitleg: "Van iedereen die de post zag, dit percentage deed er iets mee.",
+    uitleg:
+      "Van elke honderd vertoningen deed dit percentage er iets mee. Deelde eerder op bereik; dat " +
+      "cijfer staat niet meer op deze pagina omdat het over een periode niet te reproduceren is. " +
+      "De verhouding is daardoor lager dan je gewend was — het is dezelfde teller op een grotere " +
+      "noemer, geen gedaalde betrokkenheid.",
     eenheid: "procent",
     standaard: true,
-    afgeleid: { teller: "interacties", noemer: "bereik", maal: 100 },
+    afgeleid: { teller: "interacties", noemer: "vertoningen", maal: 100 },
   },
   {
     id: "gemiddelde_kijktijd",
@@ -389,13 +371,6 @@ export const ACCOUNT_STATISTIEKEN: Statistiek[] = [
     id: "vertoningen_organisch",
     label: "Organische vertoningen",
     uitleg: "Het deel daarvan dat niet uit advertenties kwam.",
-    eenheid: "aantal",
-    standaard: false,
-  },
-  {
-    id: "bereik",
-    label: "Bereik",
-    uitleg: "Hoeveel verschillende mensen iets van dit account zagen.",
     eenheid: "aantal",
     standaard: false,
   },
