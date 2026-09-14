@@ -106,20 +106,55 @@ export function TeamDataProvider({
     return () => clearInterval(timer);
   }, []);
 
+  /**
+   * Ophalen, met één herkansing als de server zegt dat we niet zijn ingelogd.
+   *
+   * Deze fetch vertrekt op het moment dat de pagina laadt — eerder dan elk ander
+   * gegevensverzoek in de app. Loopt hij vlak achter een sessieverversing aan, dan kan hij
+   * nog met het net vervangen token op pad zijn en krijgt hij een 401, terwijl de pagina
+   * eromheen wél is ingelogd. De middleware ververst inmiddels op elke route, wat dat gat
+   * dicht; deze herkansing is de riem op de bretel, want één mislukte race hoort geen leeg
+   * scoretabblad op te leveren.
+   *
+   * En blijft het mislukken, dan is "Log eerst in." — de tekst die de server teruggeeft —
+   * precies de verkeerde zin voor iemand die zichtbaar ís ingelogd. Dan zeggen we wat er
+   * aan de hand is en wat eraan helpt.
+   */
   useEffect(() => {
     if (!ingelogd) return;
     let genegeerd = false;
     setLaden(true);
     setFout(null);
-    fetch("/api/kennis-en-acties")
-      .then((res) => res.json())
-      .then((json) => {
+
+    async function haalOp(): Promise<void> {
+      let antwoord = await fetch("/api/kennis-en-acties");
+      if (antwoord.status === 401) {
+        await new Promise((klaar) => setTimeout(klaar, 800));
         if (genegeerd) return;
-        if (json.fout) throw new Error(json.fout);
-        setBerichten(json.items as Bericht[]);
-        setProfielen(json.profielen as Profiel[]);
-      })
-      .catch((err) => {
+        antwoord = await fetch("/api/kennis-en-acties");
+      }
+      if (genegeerd) return;
+
+      if (antwoord.status === 401) {
+        throw new Error(
+          "Je sessie is verlopen terwijl deze pagina openstond. Laad de pagina opnieuw; " +
+            "blijft dit staan, log dan opnieuw in.",
+        );
+      }
+
+      const json = (await antwoord.json()) as {
+        items?: Bericht[];
+        profielen?: Profiel[];
+        fout?: string;
+      };
+      if (genegeerd) return;
+      if (json.fout) throw new Error(json.fout);
+      setBerichten(json.items ?? []);
+      setProfielen(json.profielen ?? []);
+    }
+
+    haalOp()
+      .catch((err: unknown) => {
         if (!genegeerd) {
           setFout(err instanceof Error ? err.message : "Kon de berichten niet ophalen.");
         }
@@ -127,6 +162,7 @@ export function TeamDataProvider({
       .finally(() => {
         if (!genegeerd) setLaden(false);
       });
+
     return () => {
       genegeerd = true;
     };
