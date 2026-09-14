@@ -40,6 +40,19 @@ test("maatwerkconversies van Google worden herkend, waardevelden niet", () => {
   assert.equal(isConversieActie("conversions_by_conversion_date", "google_ads"), false);
 });
 
+// Windsor biedt naast elke conversie-actie ook zijn percentage aan. Die stonden tussen
+// de acties in de catalogus en waren dus aan te vinken als lead — waarna er percentages
+// bij aantallen werden opgeteld. Een aantal en een verhouding horen nooit in één kolom.
+test("percentages tellen niet als conversie-actie", () => {
+  assert.equal(isConversieActie("conversions_from_interactions_rate", "google_ads"), false);
+  assert.equal(isConversieActie("conversions_all_from_interactions_rate", "google_ads"), false);
+  assert.equal(isConversieActie("actions_omni_rate", "facebook"), false);
+  assert.equal(isConversieActie("actions_klik_ratio", "facebook"), false);
+
+  // Een echte actie met "rate" middenin de naam blijft gewoon een actie.
+  assert.equal(isConversieActie("conversions_ud_macro_rate_my_visit", "google_ads"), true);
+});
+
 test("connectoren zonder maatwerkconversies leveren niets op", () => {
   assert.equal(isConversieActie("share_impression_count", "linkedin_organic"), false);
   assert.equal(isConversieActie("media_reach", "instagram"), false);

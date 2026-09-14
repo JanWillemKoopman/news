@@ -580,8 +580,22 @@ export const PAGINAVELDEN: Partial<Record<Connector, string[]>> = {
   // de historie op die de API zelf niet heeft.
 };
 
+/**
+ * Verhoudingen die geen conversies zijn maar er wel zo heten.
+ *
+ * Windsor biedt naast de conversie-acties ook hun percentages aan
+ * (`conversions_from_interactions_rate` is het conversiepercentage, niet een aantal).
+ * Die kwamen als gewone actie in de catalogus terecht en waren dus aan te vinken als
+ * lead — en dan worden er percentages bij aantallen opgeteld. Een aantal en een
+ * verhouding horen nooit in dezelfde kolom.
+ */
+function isVerhouding(veld: string): boolean {
+  return veld.endsWith("_rate") || veld.endsWith("_ratio");
+}
+
 /** Herkent de maatwerkconversies in de veldcatalogus van Windsor. */
 export function isConversieActie(veld: string, connector: string): boolean {
+  if (isVerhouding(veld)) return false;
   if (connector === "facebook") {
     // De vaste actions_* velden (actions_lead, actions_link_click, …) halen we al op als
     // gewone statistiek; alleen de maatwerkconversies horen in de jsonb-kolom.

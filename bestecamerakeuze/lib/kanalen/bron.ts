@@ -447,6 +447,202 @@ export async function haalConversieActies(): Promise<ConversieActie[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Waar komen leads en conversies vandaan?
+// ---------------------------------------------------------------------------
+
+/** Over hoeveel dagen het herkomstoverzicht rekent — gelijk aan de volumes in de catalogus. */
+const HERKOMST_DAGEN = 90;
+
+/**
+ * Waaruit Meta's leadveld is opgebouwd.
+ *
+ * Meta's `lead` is zelf al een optelsom: leadformulieren op het platform plus de leads die
+ * de pixel op de site meet. Die twee onderdelen levert Windsor apart mee, dus we kunnen
+ * het getal uit elkaar trekken — gemeten klopt dat tot op de eenheid (1.128 + 228 = 1.356).
+ *
+ * Het staat hier als lijst en niet als regel, want het is een aanname over wat Meta doet.
+ * Daarom controleert `haalHerkomst` of de onderdelen ook echt optellen tot het getal van
+ * het platform: klopt dat niet, dan zegt de pagina dat eerlijk in plaats van een
+ * uitsplitsing te tonen die niet klopt.
+ */
+const META_LEAD_ONDERDELEN = [
+  "actions_onsite_conversion_lead_grouped",
+  "actions_offsite_conversion_fb_pixel_lead",
+];
+
+export interface HerkomstOnderdeel {
+  label: string;
+  veld: string;
+  aantal: number;
+  /** Komt dit onderdeel uit het platform zelf, of uit een keuze op de Koppeltabel? */
+  herkomst: "platform" | "koppeltabel";
+}
+
+export interface HerkomstRegel {
+  bron: string;
+  /** Het getal dat het platform zelf levert. */
+  vanPlatform: number;
+  /** Wat de aangewezen acties daar bovenop leggen. */
+  viaKoppeltabel: number;
+  /** Wat het dashboard toont — geen nieuw cijfer, maar de som van de twee hierboven. */
+  totaal: number;
+  onderdelen: HerkomstOnderdeel[];
+  /**
+   * Tellen de getoonde onderdelen op tot `vanPlatform`?
+   *
+   * `null` als we het niet kunnen weten (dan staat er ook geen uitsplitsing). Staat hier
+   * een getal, dan is dat het verschil — en dat verschil is vaak het interessantste deel
+   * van het beeld: bij Google is het precies wat daar buiten "Opnemen in conversies" valt.
+   */
+  onverklaard: number | null;
+}
+
+export interface Herkomst {
+  dagen: number;
+  leads: HerkomstRegel[];
+  conversies: HerkomstRegel[];
+}
+
+/**
+ * Het herkomstoverzicht achter de Koppeltabel.
+ *
+ * **Waarom dit er is.** Twee van de belangrijkste cijfers op het dashboard komen uit twee
+ * verschillende werelden: een deel levert het platform zelf, een deel stelt het team hier
+ * samen. Zolang je dat niet naast elkaar ziet, is "leads" een getal dat je maar moet
+ * geloven. Dit blok laat zien waar het vandaan komt en of de onderdelen kloppen met het
+ * totaal — daarmee is de Koppeltabel niet alleen een instelpagina maar ook een
+ * controlepagina.
+ *
+ * **Wat het bewust niet doet.** Er komt hier geen nieuw totaal bij. `totaal` is exact wat
+ * de kanaalpagina's al tonen; dit is een uitsplitsing, geen tweede waarheid.
+ */
+export async function haalHerkomst(): Promise<Herkomst> {
+  return metVerbinding(async (client) => {
+    const vanaf = `current_date - interval '${HERKOMST_DAGEN} days'`;
+
+    const platformRes = await client.query(
+      `select bron,
+              coalesce(sum(leads), 0)      as leads,
+              coalesce(sum(conversies), 0) as conversies
+         from dataloket.windsor_advertenties
+        where datum >= ${vanaf}
+        group by bron`,
+    );
+
+    // Het volume per actie in hetzelfde venster, met de keuze die erop staat. Eén scan
+    // over de jsonb voor alle regels samen; per bron apart vragen zou dezelfde rijen drie
+    // keer lezen.
+    const actieRes = await client.query(
+      `select w.bron,
+              e.key                                as veld,
+              coalesce(a.label, e.key)             as label,
+              coalesce(a.telt_als_lead, false)     as telt_als_lead,
+              coalesce(a.telt_als_conversie, false) as telt_als_conversie,
+              sum((e.value)::text::numeric)        as aantal
+         from dataloket.windsor_advertenties w
+         cross join lateral jsonb_each(coalesce(w.conversie_acties, '{}'::jsonb)) as e(key, value)
+         left join dataloket.windsor_conversie_acties a on a.veld = e.key
+        where w.datum >= ${vanaf}
+        group by 1, 2, 3, 4, 5`,
+    );
+
+    const acties: HerkomstActie[] = actieRes.rows.map((r) => ({
+      bron: String(r.bron),
+      veld: String(r.veld),
+      label: String(r.label),
+      teltAlsLead: Boolean(r.telt_als_lead),
+      teltAlsConversie: Boolean(r.telt_als_conversie),
+      aantal: Number(r.aantal ?? 0),
+    }));
+
+    const bronnen = [...new Set([...platformRes.rows.map((r) => String(r.bron)), ...acties.map((a) => a.bron)])].sort();
+
+    const vanPlatformVoor = (bron: string, kolom: "leads" | "conversies") =>
+      Number(platformRes.rows.find((r) => String(r.bron) === bron)?.[kolom] ?? 0);
+
+    return {
+      dagen: HERKOMST_DAGEN,
+      leads: bronnen.map((bron) => bouwRegel(bron, vanPlatformVoor(bron, "leads"), acties, "leads")),
+      conversies: bronnen.map((bron) =>
+        bouwRegel(bron, vanPlatformVoor(bron, "conversies"), acties, "conversies"),
+      ),
+    };
+  });
+}
+
+/** Eén regel in het herkomstoverzicht: platform, koppeltabel en de onderdelen erbij. */
+export interface HerkomstActie {
+  bron: string;
+  veld: string;
+  label: string;
+  teltAlsLead: boolean;
+  teltAlsConversie: boolean;
+  aantal: number;
+}
+
+export function bouwRegel(
+  bron: string,
+  vanPlatform: number,
+  acties: HerkomstActie[],
+  soort: "leads" | "conversies",
+): HerkomstRegel {
+  const eigen = acties.filter((a) => a.bron === bron);
+  const gekozen = eigen.filter((a) =>
+    soort === "leads" ? a.teltAlsLead : a.teltAlsConversie && bron === "meta",
+  );
+
+  const onderdelen: HerkomstOnderdeel[] = gekozen.map((a) => ({
+    label: a.label,
+    veld: a.veld,
+    aantal: a.aantal,
+    herkomst: "koppeltabel" as const,
+  }));
+
+  // De uitsplitsing van het platformgetal zelf. Alleen waar we weten hoe het is
+  // opgebouwd: Meta's leadveld (zie META_LEAD_ONDERDELEN) en Google's conversietotaal,
+  // dat uit de conversie-acties komt die daar zijn ingesteld.
+  let vanPlatformOnderdelen: HerkomstOnderdeel[] = [];
+  if (bron === "meta" && soort === "leads") {
+    vanPlatformOnderdelen = META_LEAD_ONDERDELEN.map((veld) => {
+      const actie = eigen.find((a) => a.veld === veld);
+      return {
+        label: actie?.label ?? veld,
+        veld,
+        aantal: actie?.aantal ?? 0,
+        herkomst: "platform" as const,
+      };
+    });
+  } else if (bron === "google" && soort === "conversies") {
+    vanPlatformOnderdelen = eigen
+      .filter((a) => a.aantal > 0)
+      .sort((a, b) => b.aantal - a.aantal)
+      .map((a) => ({
+        label: a.label,
+        veld: a.veld,
+        aantal: a.aantal,
+        herkomst: "platform" as const,
+      }));
+  }
+
+  const somOnderdelen = vanPlatformOnderdelen.reduce((t, o) => t + o.aantal, 0);
+  const viaKoppeltabel = gekozen.reduce((t, a) => t + a.aantal, 0);
+
+  return {
+    bron,
+    vanPlatform,
+    viaKoppeltabel,
+    totaal: vanPlatform + viaKoppeltabel,
+    onderdelen: [...vanPlatformOnderdelen, ...onderdelen],
+    // Afronden op één decimaal: Google levert conversies als kommagetal en dan blijft er
+    // anders altijd een verschil van 0,0000001 over dat als "onverklaard" in beeld komt.
+    onverklaard:
+      vanPlatformOnderdelen.length === 0
+        ? null
+        : Math.round((vanPlatform - somOnderdelen) * 10) / 10,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Organische posts
 // ---------------------------------------------------------------------------
 

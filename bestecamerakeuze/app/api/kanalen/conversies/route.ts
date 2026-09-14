@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
-import { haalConversieActies, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
+import { haalConversieActies, haalHerkomst, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,11 @@ export async function GET() {
   }
 
   try {
-    return NextResponse.json({ acties: await haalConversieActies() });
+    // Samen in één antwoord: de keuzelijst en het herkomstoverzicht staan op dezelfde
+    // pagina en lezen dezelfde rijen. Twee fetches zouden twee standen kunnen opleveren
+    // zodra iemand een vinkje omzet terwijl de tweede nog onderweg is.
+    const [acties, herkomst] = await Promise.all([haalConversieActies(), haalHerkomst()]);
+    return NextResponse.json({ acties, herkomst });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },

@@ -374,6 +374,27 @@ niet uit af te lezen zijn:
     plekken: een vinkje dat er per ongeluk toch staat mag geen verkeerd cijfer opleveren.
   - Zolang er niets is aangevinkt verdwijnen de betreffende kolommen van de pagina, in
     plaats van als nul te verschijnen.
+  - **Verhoudingen horen er niet tussen.** Windsor biedt naast elke actie ook zijn
+    percentage aan (`conversions_from_interactions_rate` is het conversiepercentage, geen
+    aantal). Die stonden gewoon in de keuzelijst en waren aan te vinken als lead, waarna
+    er percentages bij aantallen werden opgeteld. `isVerhouding` in `velden.ts` houdt
+    alles tegen dat op `_rate` of `_ratio` eindigt; migratie 0020 haalde ze uit de rijen
+    die er al stonden.
+- **Boven de vinkjes staat waar de cijfers vandaan komen** (`HerkomstPaneel.tsx`,
+  `haalHerkomst` in `bron.ts`): per platform wat het platform zelf levert, wat de
+  aangewezen acties erbij leggen, en het totaal dat de kanaalpagina's tonen. Waar we weten
+  hoe een platformgetal is opgebouwd staan de onderdelen eronder — Meta's leadveld is de
+  som van zijn leadformulieren en zijn pixel-leads (`META_LEAD_ONDERDELEN`), Google's
+  conversietotaal komt uit de conversie-acties die daar zijn ingesteld.
+  - **Het rekent na, en dat is het punt.** De regel "niet verklaard" is het verschil
+    tussen de getoonde onderdelen en het platformgetal. Bij Meta hoort daar nul te staan;
+    bij Google is het verschil precies wat buiten "Opnemen in conversies" is gehouden.
+    Gaat Meta ineens afwijken, dan is er iets veranderd aan de andere kant van de
+    koppeling en zie je dat hier als eerste. `META_LEAD_ONDERDELEN` is een aanname over
+    wat Meta doet, dus die aanname wordt nagerekend in plaats van geloofd.
+  - **Er komt geen cijfer bij.** `totaal` is exact wat de kanaalpagina's al tonen. Dit
+    blok splitst dat uit; het is nadrukkelijk geen derde waarheid over dezelfde getallen.
+    Zet er dus ook nooit een KPI-tegel van.
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus
