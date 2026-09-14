@@ -224,9 +224,10 @@ export default function AppShell({
         />
       </div>
 
-      {/* pr-16: ruimte voor het vaste oogje rechtsboven, zodat de status-/updateknop
-          in de PageHeader er niet onder verdwijnt. */}
-      <main className="min-w-0 flex-1 py-6 pl-8 pr-16">
+      {/* pr-28: ruimte voor het vaste oogje rechtsboven én, op de Kanalen-pagina's, het
+          lampje ernaast (`KanaalPagina.tsx`), zodat de status-/updateknop in de
+          PageHeader er niet onder verdwijnt. */}
+      <main className="min-w-0 flex-1 py-6 pl-8 pr-28">
         {actief !== "chat" && (
           <PageHeader
             title={title}

@@ -150,6 +150,16 @@ export function IconInfo({ className }: IconProps) {
   );
 }
 
+export function IconLightbulb({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M9 18h6" />
+      <path d="M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.45 1 1.15 1 1.95V16h5.2v-.25c0-.8.4-1.5 1-1.95A6 6 0 0 0 12 3Z" />
+    </svg>
+  );
+}
+
 export function IconSearch({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">
@@ -406,6 +416,38 @@ export function IconCalendarRange({ className }: IconProps) {
     <svg {...base} className={className} aria-hidden="true">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4M7 15h4" />
+    </svg>
+  );
+}
+
+/** Social ads: een geboost bericht — chatbubbel met een like erin, niet een generiek doel. */
+export function IconAdHeart({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-4 4v-4H6.5A2.5 2.5 0 0 1 4 13.5Z" />
+      <path d="M12 10.6c-1.7-1.4-3.1-2.2-3.1-3.7a1.8 1.8 0 0 1 3.1-1.2A1.8 1.8 0 0 1 15.1 6.9c0 1.5-1.4 2.3-3.1 3.7Z" />
+    </svg>
+  );
+}
+
+/** Social organisch: een foto-post, niet een generiek documentje. */
+export function IconPhoto({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.75" />
+      <path d="m4 16.5 4.5-4.5 3 3 4-4.5L20.5 17" />
+    </svg>
+  );
+}
+
+/** Social accounts: één profiel dat ontwikkeld wordt, niet een team. */
+export function IconUserCircle({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="10" r="2.5" />
+      <path d="M7 18a5 5 0 0 1 10 0" />
     </svg>
   );
 }

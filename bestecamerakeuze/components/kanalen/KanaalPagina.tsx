@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Drawer from "@/components/Drawer";
 import KanalenFilterBalk, { type FilterDimensie } from "@/components/kanalen/KanalenFilterBalk";
 import KerncijferStrip from "@/components/kanalen/KerncijferStrip";
 import BudgetPacing from "@/components/kanalen/BudgetPacing";
@@ -8,6 +9,7 @@ import SignaalPaneel from "@/components/kanalen/SignaalPaneel";
 import StatistiekTabel from "@/components/kanalen/StatistiekTabel";
 import TijdGrafiek from "@/components/kanalen/TijdGrafiek";
 import Inlogprompt from "@/components/Inlogprompt";
+import { IconLightbulb } from "@/components/icons";
 import {
   eigenPeriode,
   standaardPeriodes,
@@ -19,6 +21,7 @@ import {
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { leesUrlStand, schrijfUrlStand } from "@/lib/kanalen/urlstand";
 import { beschikbareWaarden, filter, type Kubus } from "@/lib/kanalen/kubus";
+import { bepaalSignalen } from "@/lib/kanalen/signalen";
 import type { Statistiek } from "@/lib/windsor/velden";
 
 /**
@@ -138,6 +141,7 @@ export default function KanaalPagina({
   const [uitlegAan, setUitlegAan] = useState(false);
   const [vergelijk, setVergelijk] = useState(false);
   const [samen, setSamen] = useState(false);
+  const [signalenOpen, setSignalenOpen] = useState(false);
   const actief = useIsActief(weergave);
 
   const actievePagina = samen && alleKanalen ? alleKanalen.pagina : pagina;
@@ -224,6 +228,17 @@ export default function KanaalPagina({
     [signaalDimensie, signaalDrempel],
   );
 
+  // Bepaalt alleen of het lampje verschijnt: een knop die naar een lege zijbalk leidt is
+  // een doodlopend pad. De zijbalk zelf rekent dit nog een keer uit via SignaalPaneel —
+  // die extra berekening is goedkoop en zo blijft de logica op één plek (signalen.ts).
+  const heeftSignalen = useMemo(
+    () =>
+      signaalInstellingen
+        ? bepaalSignalen(data.reeks, reeksRijen, actieveStatistieken, signaalInstellingen).length > 0
+        : false,
+    [signaalInstellingen, data.reeks, reeksRijen, actieveStatistieken],
+  );
+
   // Welke campagnes staan er in de huidige selectie? Bepaalt welke budgetten er
   // meedoen — een pacingblok met campagnes die je net hebt weggefilterd, klopt niet met
   // de rest van de pagina.
@@ -285,17 +300,6 @@ export default function KanaalPagina({
 
       {data.reeks.rijen.length > 0 && (
         <div className="flex flex-col gap-5">
-          {signaalInstellingen && (
-            <SignaalPaneel
-              kubus={data.reeks}
-              rijen={reeksRijen}
-              statistieken={actieveStatistieken}
-              instellingen={signaalInstellingen}
-              onKies={zet}
-              gekozen={selectie[signaalInstellingen.dimensie] ?? []}
-            />
-          )}
-
           {data.budgetten.length > 0 && (
             <BudgetPacing budgetten={data.budgetten} zichtbareCampagnes={zichtbareCampagnes} />
           )}
@@ -344,6 +348,38 @@ export default function KanaalPagina({
             />
           ))}
         </div>
+      )}
+
+      {/* Het lampje staat rechtsboven in het scherm, links naast het oogje
+          (`ThemeSwitcher.tsx`) — vaste plek, net als dat oogje, en verschijnt alleen als
+          er ook echt iets te melden is (zie `heeftSignalen` hierboven). Klikken opent de
+          inzichten ("Wat opvalt") in een zijbalk in plaats van een balk bovenaan de
+          pagina: zo blijft de ruimte boven de grafiek voor de cijfers zelf. */}
+      {heeftSignalen && signaalInstellingen && (
+        <button
+          type="button"
+          onClick={() => setSignalenOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={signalenOpen}
+          aria-label="Wat opvalt"
+          title="Wat opvalt"
+          className="fixed right-16 top-4 z-50 flex h-9 w-9 items-center justify-center text-ink-muted transition-colors duration-[var(--duur-snel)] hover:text-ink"
+        >
+          <IconLightbulb className="h-[18px] w-[18px]" />
+        </button>
+      )}
+
+      {signalenOpen && signaalInstellingen && (
+        <Drawer title="Wat opvalt" onClose={() => setSignalenOpen(false)}>
+          <SignaalPaneel
+            kubus={data.reeks}
+            rijen={reeksRijen}
+            statistieken={actieveStatistieken}
+            instellingen={signaalInstellingen}
+            onKies={zet}
+            gekozen={selectie[signaalInstellingen.dimensie] ?? []}
+          />
+        </Drawer>
       )}
     </div>
   );

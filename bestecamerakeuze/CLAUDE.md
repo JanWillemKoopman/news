@@ -341,6 +341,14 @@ niet uit af te lezen zijn:
   filter op dat onderwerp — zo is de lijst een ingang tot de pagina en geen apart
   dashboard. Er staat niets als er niets te melden is: een blok dat elke week "geen
   bijzonderheden" zegt, valt niet meer op in de week dat het wél iets zegt.
+  Zit niet als balk boven de cijfers, maar achter een lampje rechtsboven in het scherm
+  (`components/icons.tsx` → `IconLightbulb`), links naast het oogje van de themewissel —
+  vaste plek, net als dat oogje. Een klik opent de lijst in een zijbalk (`Drawer.tsx`,
+  zie `KanaalPagina.tsx`). Het lampje verschijnt alleen op de pagina's met een
+  `signaalDimensie` (Social ads, Google Ads, Social accounts) én alleen als er ook echt
+  iets te melden is (`heeftSignalen` in `KanaalPagina.tsx`) — een knop naar een lege
+  zijbalk is een doodlopend pad. Social organisch heeft bewust geen signalen: een losse
+  post "loopt" niet zoals een campagne, dus "deze campagne viel stil" zegt daar niets.
 - **Wat een lead is en wat een conversie, legt het team zelf vast.** Twee gaten in de
   data, twee vinkjes. Google levert geen leadveld; Meta levert geen conversieveld. Wat het
   wél zijn, staat in de conversie-acties die marketing in Google Ads, GA4 en Meta heeft
