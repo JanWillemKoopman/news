@@ -185,7 +185,27 @@ export async function haalOp(
         cache: "no-store",
       });
 
-      const tekst = await res.text();
+      // Het antwoord in één string lezen heeft een harde bovengrens: een JavaScript-
+      // string mag niet langer zijn dan 0x1fffffe8 tekens (±512 MB). Een jaar
+      // Meta-advertenties op advertentieniveau zit daar ruim boven, en de RangeError die
+      // je dan krijgt zegt niets over Windsor — hij leest als een bug in de sync. Vandaar
+      // deze vertaling naar wat er werkelijk aan de hand is, mét de oplossing erin.
+      let tekst: string;
+      try {
+        tekst = await res.text();
+      } catch (leesFout) {
+        const bericht = leesFout instanceof Error ? leesFout.message : String(leesFout);
+        if (bericht.includes("string longer than")) {
+          throw Object.assign(
+            new Error(
+              `${connector}: het antwoord over ${van} t/m ${tot} is te groot om in één keer te lezen ` +
+                `(${velden.length} velden, ${accounts.length} account(s)). Haal deze periode in kortere stukken op.`,
+            ),
+            { definitief: true },
+          );
+        }
+        throw leesFout;
+      }
       let geparsed: unknown;
       try {
         geparsed = JSON.parse(tekst);

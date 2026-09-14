@@ -25,6 +25,13 @@ export const maxDuration = 300;
  * vijf minuten die een functie krijgt, dus de UI roept ze na elkaar aan en laat per deel
  * zien hoe het ging.
  *
+ * Datzelfde geldt binnen een deel zodra iemand meer dan een maand historie vraagt. De
+ * sync haalt zo'n periode in stukken van dertig dagen op en stopt uit zichzelf als het
+ * tijdbudget op is; in het antwoord staat dan `restant` — de periode die nog te doen is.
+ * De UI roept deze route daarmee opnieuw aan tot `restant` leeg is. Vandaar dat de body
+ * naast `dagen` ook een expliciete `van` en `tot` accepteert: zo kan de volgende aanroep
+ * exact verdergaan waar de vorige stopte, in plaats van vanaf vandaag terug te tellen.
+ *
  * De GET ernaast bestaat omdat de browser een verbinding korter openhoudt dan een sync
  * duurt. Valt de POST weg met "Load failed", dan is dat de browser die opgeeft en niet de
  * sync die stopt: die draait op de server door en schrijft gewoon zijn rijen weg. De UI
@@ -32,6 +39,11 @@ export const maxDuration = 300;
  * heeft. Zonder dat zou een geslaagde ronde als mislukt in beeld komen en zou iemand nog
  * eens klikken, waarmee er een tweede ronde bovenop de eerste komt.
  */
+
+/** Een datum uit de body: alleen YYYY-MM-DD telt, zodat er nooit tekst in de query belandt. */
+function isDatum(waarde: unknown): waarde is string {
+  return typeof waarde === "string" && /^\d{4}-\d{2}-\d{2}$/.test(waarde);
+}
 
 const BRON_VAN_DEEL: Record<string, string> = {
   advertenties: "windsor-advertenties",
@@ -93,9 +105,10 @@ export async function POST(request: Request) {
   // Begrensd tot ruim binnen Meta's venster van 37 maanden; daarbuiten weigert het
   // platform de hele opvraging in plaats van alleen het oudste stuk.
   const dagen = Math.min(Math.max(Number(body.dagen) || 30, 1), 1000);
+  const periode = isDatum(body.van) && isDatum(body.tot) ? { van: body.van, tot: body.tot } : dagen;
 
   try {
-    const uitkomst = await voerSyncUit(body.deel, dagen);
+    const uitkomst = await voerSyncUit(body.deel, periode);
     return NextResponse.json(uitkomst);
   } catch (err) {
     return NextResponse.json(

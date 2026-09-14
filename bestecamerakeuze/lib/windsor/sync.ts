@@ -44,6 +44,29 @@ import {
 /** Hoeveel dagen terug de sync standaard opnieuw ophaalt. */
 export const VENSTER_DAGEN = 30;
 
+/**
+ * Hoeveel dagen één opvraging bij Windsor maximaal mag beslaan.
+ *
+ * Dit getal is geen voorzichtigheid maar de uitkomst van drie gemeten grenzen die alle
+ * drie hard zijn, en die alle drie pas zichtbaar worden als je een jaar ineens opvraagt:
+ *
+ *  1. **Meta breekt op de omvang van het antwoord.** Bij een jaar advertentiedata
+ *     (±300.000 rijen × ruim honderd velden, waaronder lange URL's) is het JSON-antwoord
+ *     groter dan een JavaScript-string mag zijn. De fout die je krijgt is
+ *     "Cannot create a string longer than 0x1fffffe8 characters" — en die valt bij het
+ *     lezen van het antwoord, dus er komt géén enkele rij binnen.
+ *  2. **Google geeft bij zo'n vraag een 500.** Windsor rekent de hele periode in één
+ *     keer uit; bij een jaar op advertentieniveau loopt dat aan hún kant vast.
+ *  3. **LinkedIn weigert boven de 92 dagen.** `approximate_unique_impressions` (bereik)
+ *     is niet verder terug beschikbaar, en die ene kolom laat de hele opvraging falen
+ *     met "'Approximate Unique Impressions(reach)' are only available for up to 92 days".
+ *
+ * Dertig dagen is precies het venster dat elke nacht probleemloos draait. Een langere
+ * periode wordt daarom in stukken van dertig dagen geknipt en stuk voor stuk opgehaald
+ * én weggeschreven — zo staat wat binnen is meteen vast, ook als het stuk daarna misgaat.
+ */
+export const STUK_DAGEN = 30;
+
 export interface SyncResultaat {
   onderdeel: string;
   gelezen: number;
@@ -56,11 +79,53 @@ function datumTekst(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function standaardVenster(dagen = VENSTER_DAGEN): { van: string; tot: string } {
+export interface Periode {
+  van: string;
+  tot: string;
+}
+
+/** Een datum een aantal dagen verschuiven, in dezelfde YYYY-MM-DD-notatie. */
+function verschuif(datum: string, dagen: number): string {
+  const d = new Date(`${datum}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dagen);
+  return datumTekst(d);
+}
+
+/**
+ * Het venster dat de sync ophaalt.
+ *
+ * `terug` schuift het hele venster naar het verleden: `dagen = 60, terug = 60` levert de
+ * periode van 120 tot 60 dagen geleden. Zo is de wekelijkse inhaalronde in `vercel.json`
+ * op te knippen in stukken die elk binnen de looptijd van een functie passen, zonder dat
+ * de nachtelijke ronde iets anders gaat doen.
+ */
+export function standaardVenster(dagen = VENSTER_DAGEN, terug = 0): Periode {
   const tot = new Date();
+  tot.setUTCDate(tot.getUTCDate() - terug);
   const van = new Date(tot);
   van.setUTCDate(van.getUTCDate() - dagen);
   return { van: datumTekst(van), tot: datumTekst(tot) };
+}
+
+/**
+ * Knipt een periode in stukken van hoogstens `stukDagen`, **nieuwste stuk eerst**.
+ *
+ * De volgorde is een bewuste keuze. Een lange inhaalronde haalt het niet altijd binnen
+ * één functie-aanroep; wat er dan al staat, hoort het stuk te zijn waar iedereen morgen
+ * naar kijkt. Oudste-eerst leverde precies het omgekeerde op: een afgekapte jaarronde die
+ * dertien dagen uit september vorig jaar had weggeschreven en verder niets.
+ */
+export function splitsPeriode(van: string, tot: string, stukDagen = STUK_DAGEN): Periode[] {
+  if (tot < van) return [];
+  const stap = Math.max(1, Math.floor(stukDagen));
+  const stukken: Periode[] = [];
+  let eind = tot;
+  while (eind >= van) {
+    const begin = verschuif(eind, -(stap - 1));
+    stukken.push({ van: begin < van ? van : begin, tot: eind });
+    eind = verschuif(begin, -1);
+  }
+  return stukken;
 }
 
 // ---------------------------------------------------------------------------
@@ -357,13 +422,37 @@ export async function syncGoogleAds(
   return { onderdeel: "google-ads", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
 
+/** Boven zoveel dagen weigert LinkedIn het bereikveld — zie `LINKEDIN_BEREIK`. */
+const LINKEDIN_BEREIK_MAX_DAGEN = 92;
+
+/** Het veld dat die grens oplegt; zonder dit veld mag de opvraging wél verder terug. */
+const LINKEDIN_BEREIK = "approximate_unique_impressions";
+
+/**
+ * LinkedIn Ads.
+ *
+ * Let op het bereikveld: LinkedIn levert `approximate_unique_impressions` alleen over de
+ * laatste 92 dagen, en weigert bij een langer venster de **hele** opvraging in plaats van
+ * alleen die kolom ("'Approximate Unique Impressions(reach)' are only available for up to
+ * 92 days"). Eén kolom die niet mag, kostte zo alle LinkedIn-cijfers van de ronde. Bij een
+ * langer venster laten we het veld daarom vallen: liever de uitgaven, vertoningen en
+ * kliks van vorig jaar zonder bereik dan helemaal niets.
+ */
 export async function syncLinkedInAds(
   client: Client,
   van: string,
   tot: string,
 ): Promise<SyncResultaat> {
   const start = Date.now();
-  const rijen = await haalOp("linkedin", OPHAALVELDEN.linkedin, van, tot);
+  const teLang =
+    (new Date(`${tot}T00:00:00Z`).getTime() - new Date(`${van}T00:00:00Z`).getTime()) /
+      86400000 +
+      1 >
+    LINKEDIN_BEREIK_MAX_DAGEN;
+  const velden = teLang
+    ? OPHAALVELDEN.linkedin.filter((v) => v !== LINKEDIN_BEREIK)
+    : OPHAALVELDEN.linkedin;
+  const rijen = await haalOp("linkedin", velden, van, tot);
 
   const uit = rijen.map((r) => [
     r.date,

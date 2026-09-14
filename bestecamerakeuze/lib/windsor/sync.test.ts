@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ontdubbel } from "./sync.ts";
+import { ontdubbel, splitsPeriode, standaardVenster } from "./sync.ts";
 
 /**
  * `ontdubbel` is de laatste stap vóór het wegschrijven, en daarmee de plek waar cijfers
@@ -103,4 +103,68 @@ test("een enkele rij gaat ongewijzigd doorheen", () => {
   assert.equal(uit.length, 1);
   assert.equal(uit[0][20], 12.5);
   assert.equal(uit[0][22], 900);
+});
+
+/**
+ * `splitsPeriode` is de reden dat een jaarimport überhaupt kan slagen. Elk stuk is een
+ * aparte opvraging bij Windsor én een apart moment waarop er wordt weggeschreven; een gat
+ * of een overlap tussen twee stukken is dus een gat of een dubbeltelling in de database.
+ */
+test("een korte periode blijft één stuk", () => {
+  assert.deepEqual(splitsPeriode("2026-09-01", "2026-09-14", 30), [
+    { van: "2026-09-01", tot: "2026-09-14" },
+  ]);
+});
+
+test("een lange periode wordt geknipt, nieuwste stuk eerst en zonder gaten", () => {
+  const stukken = splitsPeriode("2026-06-01", "2026-09-14", 30);
+
+  assert.equal(stukken[0].tot, "2026-09-14", "de nieuwste dag hoort in het eerste stuk");
+  assert.equal(stukken[stukken.length - 1].van, "2026-06-01");
+
+  for (const stuk of stukken) {
+    assert.ok(stuk.van <= stuk.tot);
+    const dagen =
+      (Date.parse(`${stuk.tot}T00:00:00Z`) - Date.parse(`${stuk.van}T00:00:00Z`)) / 86400000 + 1;
+    assert.ok(dagen <= 30, `stuk van ${dagen} dagen is te lang`);
+  }
+
+  // Elk volgend stuk sluit precies aan op het vorige: geen dag dubbel, geen dag gemist.
+  for (let i = 1; i < stukken.length; i++) {
+    const vorige = new Date(`${stukken[i - 1].van}T00:00:00Z`);
+    vorige.setUTCDate(vorige.getUTCDate() - 1);
+    assert.equal(stukken[i].tot, vorige.toISOString().slice(0, 10));
+  }
+});
+
+test("elke dag van de periode zit in precies één stuk", () => {
+  const stukken = splitsPeriode("2025-09-15", "2026-09-14", 30);
+  const dagen = stukken.reduce(
+    (som, s) =>
+      som + (Date.parse(`${s.tot}T00:00:00Z`) - Date.parse(`${s.van}T00:00:00Z`)) / 86400000 + 1,
+    0,
+  );
+  assert.equal(dagen, 365);
+});
+
+test("een omgekeerde periode levert geen stukken op", () => {
+  assert.deepEqual(splitsPeriode("2026-09-14", "2026-09-01"), []);
+});
+
+/**
+ * `terug` is wat de wekelijkse inhaalronde in `vercel.json` opknipt: zonder dat verschoven
+ * venster viel er elke zondag één opvraging van honderdtwintig dagen uit de functie-tijd.
+ */
+test("terug schuift het venster naar het verleden zonder de lengte te veranderen", () => {
+  const recent = standaardVenster(60);
+  const ouder = standaardVenster(60, 60);
+
+  assert.equal(ouder.tot < recent.tot, true);
+  const lengte = (p: { van: string; tot: string }) =>
+    (Date.parse(`${p.tot}T00:00:00Z`) - Date.parse(`${p.van}T00:00:00Z`)) / 86400000;
+  assert.equal(lengte(ouder), lengte(recent));
+
+  // De twee vensters sluiten op elkaar aan: samen zijn ze de honderdtwintig dagen die er
+  // vroeger in één keer werden opgevraagd.
+  assert.equal(ouder.tot, recent.van);
 });

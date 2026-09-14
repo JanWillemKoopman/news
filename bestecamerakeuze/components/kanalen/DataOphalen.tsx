@@ -21,6 +21,19 @@ import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/ic
  * binnen de vijf minuten die een functie krijgt, en `organisch` koppelt aan het eind de
  * posts aan de advertenties, dus het moet ná `advertenties` draaien. Per stap zie je wat
  * er gebeurde; gaat er één mis, dan stopt de rij daar en blijft staan wat al gelukt is.
+ *
+ * ## Waarom een lange periode in ronden gaat
+ *
+ * Twaalf maanden past niet in één aanroep — niet in de vijf minuten van een functie, en
+ * bij Meta zelfs niet in één antwoord. De server haalt zo'n periode daarom in stukken van
+ * dertig dagen op, nieuwste eerst, en stopt uit zichzelf voordat hij wordt afgekapt. Wat
+ * er dan nog te doen is staat als `restant` in het antwoord; deze component roept de
+ * route daarmee net zo vaak opnieuw aan tot dat leeg is, en laat ondertussen zien tot
+ * welke datum de historie binnen is.
+ *
+ * Dat is precies het gat waar het eerder op stukliep: een jaarronde werd na vijf minuten
+ * afgekapt, er stonden drieduizend rijen in de database, en niets in beeld zei dat de
+ * andere elf maanden er nooit waren gekomen.
  */
 
 type Stap = {
@@ -50,14 +63,29 @@ const STAPPEN: Stap[] = [
 const PERIODES = [
   { dagen: 30, label: "30 dagen", hint: "de gewone nachtelijke ronde" },
   { dagen: 90, label: "90 dagen", hint: "aan te raden bij de eerste keer" },
-  { dagen: 365, label: "12 maanden", hint: "kan per stap een paar minuten duren" },
+  { dagen: 365, label: "12 maanden", hint: "gaat in ronden; reken op een kwartier" },
 ];
+
+/**
+ * Hoe vaak we per stap doorgaan met wat er van de periode overblijft.
+ *
+ * Twaalf maanden zijn dertien stukken van dertig dagen, en in het slechtste geval haalt
+ * één aanroep er maar één. Ruim erboven, zodat de grens nooit de reden is dat een import
+ * stopt — maar niet oneindig, want een server die telkens hetzelfde restant teruggeeft
+ * hoort niet eindeloos opnieuw aangeroepen te worden.
+ */
+const MAX_RONDEN = 20;
 
 type Stand =
   | { soort: "wacht" }
-  | { soort: "bezig" }
+  | { soort: "bezig"; voortgang?: string }
   | { soort: "klaar"; gelezen: number; geschreven: number; seconden: number; waarschuwing?: string }
   | { soort: "fout"; bericht: string };
+
+interface Periode {
+  van: string;
+  tot: string;
+}
 
 interface RunStand {
   gestartOp: string;
@@ -76,6 +104,22 @@ interface Onderdeel {
   gelezen: number;
   geschreven: number;
   fout?: string;
+}
+
+interface Antwoord {
+  fout?: string;
+  duurMs?: number;
+  resultaten?: Onderdeel[];
+  gedaan?: Periode | null;
+  restant?: Periode | null;
+}
+
+function kortDatum(datum: string): string {
+  return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /**
@@ -137,73 +181,100 @@ export default function DataOphalen({
 
     for (const stap of STAPPEN) {
       zet(stap.deel, { soort: "bezig" });
-      const gestart = Date.now();
-      try {
-        const res = await fetch("/api/kanalen/ophalen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deel: stap.deel, dagen }),
-        });
-        const data = (await res.json()) as {
-          fout?: string;
-          duurMs?: number;
-          resultaten?: Onderdeel[];
-        };
 
-        if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
+      // Wat er van de gevraagde periode nog te doen is. Leeg bij de eerste aanroep — dan
+      // rekent de server zelf terug vanaf vandaag — en daarna precies wat hij teruggaf.
+      let restant: Periode | null = null;
+      let gelezen = 0;
+      let geschreven = 0;
+      let seconden = 0;
+      const waarschuwingen = new Set<string>();
+      let vroegste = "";
 
-        const resultaten = data.resultaten ?? [];
-        const gelezen = resultaten.reduce((t, r) => t + r.gelezen, 0);
-        const geschreven = resultaten.reduce((t, r) => t + r.geschreven, 0);
-        const fouten = resultaten.filter((r) => r.fout);
-
-        zet(stap.deel, {
-          soort: "klaar",
-          gelezen,
-          geschreven,
-          seconden: Math.round((data.duurMs ?? 0) / 1000),
-          // Eén platform dat eruit ligt is geen reden om de stap als mislukt te tonen,
-          // maar het hoort ook niet als een schone ronde te voelen.
-          waarschuwing:
-            fouten.length > 0
-              ? `${fouten.length === 1 ? "Eén onderdeel ging" : `${fouten.length} onderdelen gingen`} mis: ${fouten
-                  .map((f) => `${f.onderdeel} — ${f.fout}`)
-                  .join(" · ")}`
-              : undefined,
-        });
-      } catch (err) {
-        // De verbinding is weggevallen, niet de sync. Kijk in sync_runs hoe deze ronde
-        // werkelijk afloopt in plaats van hem als mislukt te tonen.
+      for (let ronde = 1; ronde <= MAX_RONDEN; ronde++) {
+        const gestart = Date.now();
         try {
-          const run = await volgRun(stap.deel, gestart);
+          const res = await fetch("/api/kanalen/ophalen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deel: stap.deel, dagen, ...(restant ?? {}) }),
+          });
+          const data = (await res.json()) as Antwoord;
+
+          if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
+
+          const resultaten = data.resultaten ?? [];
+          gelezen += resultaten.reduce((t, r) => t + r.gelezen, 0);
+          geschreven += resultaten.reduce((t, r) => t + r.geschreven, 0);
+          seconden += Math.round((data.duurMs ?? 0) / 1000);
+          for (const r of resultaten) {
+            if (r.fout) waarschuwingen.add(`${r.onderdeel} — ${r.fout}`);
+          }
+          if (data.gedaan) vroegste = data.gedaan.van;
+
+          restant = data.restant ?? null;
+          if (!restant) break;
+
+          // Nog een ronde te gaan: laat zien hoe ver de historie inmiddels terugloopt, zodat
+          // een import van een kwartier niet als een bevroren venster aanvoelt.
           zet(stap.deel, {
-            soort: "klaar",
-            gelezen: 0,
-            geschreven: run.geschreven ?? 0,
-            seconden: Math.round(
+            soort: "bezig",
+            voortgang: vroegste ? `historie teruggehaald tot ${kortDatum(vroegste)}…` : undefined,
+          });
+          if (ronde === MAX_RONDEN) {
+            waarschuwingen.add(
+              `De periode vóór ${kortDatum(restant.tot)} is niet meer opgehaald; start de import nog eens om die erbij te halen.`,
+            );
+          }
+        } catch (err) {
+          // De verbinding is weggevallen, niet de sync. Kijk in sync_runs hoe deze ronde
+          // werkelijk afloopt in plaats van hem als mislukt te tonen.
+          try {
+            const run = await volgRun(stap.deel, gestart);
+            geschreven += run.geschreven ?? 0;
+            seconden += Math.round(
               (new Date(run.geeindigdOp ?? run.gestartOp).getTime() -
                 new Date(run.gestartOp).getTime()) /
                 1000,
-            ),
-            waarschuwing: run.fout
-              ? run.fout
-              : "De verbinding met de browser viel weg; deze stap is op de server afgemaakt.",
-          });
-          continue;
-        } catch (volgFout) {
-          zet(stap.deel, {
-            soort: "fout",
-            bericht:
-              volgFout instanceof Error
-                ? volgFout.message
-                : err instanceof Error
-                  ? err.message
-                  : String(err),
-          });
-          setBezig(false);
-          return; // de volgende stap leunt op deze; doorgaan levert halve cijfers op
+            );
+            waarschuwingen.add(
+              run.fout ??
+                "De verbinding met de browser viel weg; deze ronde is op de server afgemaakt. Of de hele periode binnen is, is van hier niet te zien — start de import nog eens als er historie mist.",
+            );
+            // Zonder antwoord weten we niet wat er nog te doen was, dus verdergaan met een
+            // gokperiode zou stukken kunnen overslaan. Deze stap stopt hier.
+            break;
+          } catch (volgFout) {
+            zet(stap.deel, {
+              soort: "fout",
+              bericht:
+                volgFout instanceof Error
+                  ? volgFout.message
+                  : err instanceof Error
+                    ? err.message
+                    : String(err),
+            });
+            setBezig(false);
+            return; // de volgende stap leunt op deze; doorgaan levert halve cijfers op
+          }
         }
       }
+
+      // Eén platform dat eruit ligt is geen reden om de stap als mislukt te tonen, maar het
+      // hoort ook niet als een schone ronde te voelen.
+      const waarschuwing =
+        waarschuwingen.size > 0 ? [...waarschuwingen].join(" · ") : undefined;
+
+      zet(stap.deel, {
+        soort: "klaar",
+        gelezen,
+        geschreven,
+        seconden,
+        waarschuwing:
+          vroegste && !waarschuwing
+            ? `historie opgehaald vanaf ${kortDatum(vroegste)}`
+            : waarschuwing,
+      });
     }
 
     setBezig(false);
@@ -289,6 +360,9 @@ export default function DataOphalen({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink">{stap.label}</p>
                     <p className="text-meta text-ink-faint">{stap.toelichting}</p>
+                    {stand.soort === "bezig" && stand.voortgang && (
+                      <p className="mt-1 text-meta text-ink-muted">{stand.voortgang}</p>
+                    )}
                     {stand.soort === "klaar" && (
                       <p className="mt-1 text-meta text-positive">
                         {stand.geschreven.toLocaleString("nl-NL")} rijen weggeschreven in{" "}
@@ -336,8 +410,8 @@ export default function DataOphalen({
 
           {bezig && (
             <p className="mt-3 text-meta text-ink-faint">
-              Laat dit venster open staan tot het klaar is. Bij twaalf maanden kan een stap
-              een paar minuten duren.
+              Laat dit venster open staan tot het klaar is. Twaalf maanden wordt in stukken
+              van een maand opgehaald; reken op een kwartier voor alle drie de stappen.
             </p>
           )}
         </Modal>

@@ -300,6 +300,35 @@ Meta en Google herzien hun conversiecijfers nog dagen na dato. Eenmalig historie
 ophalen kan met `&dagen=365`; Meta weigert verder terug dan 37 maanden en geeft dan een
 expliciete foutmelding terug in plaats van lege rijen.
 
+#### Waarom een lange periode in stukken gaat
+
+Een periode van meer dan een maand ineens opvragen wérkt niet — en het faalde tot
+september 2026 op drie manieren tegelijk, geen ervan zichtbaar in het dashboard:
+
+| Connector | Wat er gebeurde bij een jaar ineens |
+| --- | --- |
+| Meta Ads | `Cannot create a string longer than 0x1fffffe8 characters` — het JSON-antwoord (±300.000 rijen × ruim honderd velden) is groter dan een JavaScript-string mag zijn. Nul rijen binnen. |
+| Google Ads | `Internal Server Error` van Windsor; de opvraging liep aan hún kant vast. |
+| LinkedIn Ads | `'Approximate Unique Impressions(reach)' are only available for up to 92 days` — één kolom die niet mag, laat de héle opvraging falen. |
+
+En kwam er wél data binnen, dan werd de functie na vijf minuten hard afgekapt: er stonden
+3.000 Google-rijen (zes batches van vijfhonderd) in de database en verder niets, zonder
+melding. Vandaar de huidige opzet:
+
+- de sync knipt elke periode in stukken van dertig dagen (`STUK_DAGEN`), **nieuwste stuk
+  eerst**, en schrijft elk stuk weg vóór het volgende begint;
+- boven de 92 dagen laat de LinkedIn-opvraging het bereikveld vallen in plaats van te
+  falen;
+- loopt het tijdbudget van 200 seconden af, dan stopt de run zelf en zet hij in het
+  antwoord onder `restant` welke periode nog te doen is. De knop "Data ophalen" roept de
+  route daarmee opnieuw aan tot dat leeg is, en toont ondertussen tot welke datum de
+  historie binnen is.
+
+De wekelijkse inhaalronde in `vercel.json` gebruikt om dezelfde reden `&terug=`: dat
+schuift het venster naar het verleden (`dagen=60&terug=60` is de periode van 120 tot 60
+dagen geleden), zodat vier maanden na-ijl in twee cron-ronden passen in plaats van één
+die eruit loopt.
+
 Eén ding is tijdkritisch: Instagram levert **geen** volgershistorie — `followers_count`
 geeft altijd precies één rij met de stand van vandaag, welke periode je ook opvraagt. De
 Instagram-reeks in het dashboard bestaat daarom alleen uit de momentopnames die deze

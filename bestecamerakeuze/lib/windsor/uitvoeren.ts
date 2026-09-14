@@ -1,8 +1,10 @@
 import { Client } from "pg";
 import { isWindsorGeconfigureerd } from "@/lib/windsor/api";
 import {
+  STUK_DAGEN,
   VENSTER_DAGEN,
   koppelPostsAanAdvertenties,
+  splitsPeriode,
   standaardVenster,
   syncConversieActies,
   syncFacebookPagina,
@@ -15,6 +17,7 @@ import {
   syncLinkedInPosts,
   syncMetaAds,
   telPostsPerDag,
+  type Periode,
   type SyncResultaat,
 } from "@/lib/windsor/sync";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
@@ -39,11 +42,33 @@ export function isDeel(waarde: unknown): waarde is Deel {
 export interface SyncUitkomst {
   ok: boolean;
   deel: Deel | "alles";
-  periode: { van: string; tot: string };
+  /** De gevraagde periode. */
+  periode: Periode;
+  /** Het stuk daarvan dat deze aanroep werkelijk heeft opgehaald. */
+  gedaan: Periode | null;
+  /**
+   * Wat er van de gevraagde periode nog te doen is.
+   *
+   * Staat er iets, dan is het tijdbudget op en hoort de aanroeper opnieuw te starten met
+   * precies deze periode. `null` betekent klaar. Dit is het verschil tussen "de import is
+   * gestopt" en "de import is afgebroken en niemand die het zag".
+   */
+  restant: Periode | null;
   duurMs: number;
   resultaten: SyncResultaat[];
   fout?: string;
 }
+
+/**
+ * Hoe lang deze aanroep stukken mag blijven ophalen.
+ *
+ * Een serverless functie op Vercel wordt na 300 seconden hard afgekapt: geen antwoord,
+ * geen foutmelding, een regel in `sync_runs` zonder eindtijd. Dat is precies hoe een
+ * jaarimport eerder stukliep — er stonden 3.000 Google-rijen in de database (zes batches
+ * van vijfhonderd) en daarna hield het op, zonder dat iets dat meldde. Onder deze grens
+ * stoppen we dus zelf, netjes, met `restant` gevuld.
+ */
+const TIJDBUDGET_MS = 200_000;
 
 /**
  * Laat één onderdeel falen zonder de rest mee te slepen.
@@ -69,25 +94,61 @@ async function probeer(
   }
 }
 
+/**
+ * Telt de uitkomsten van hetzelfde onderdeel over meerdere stukken bij elkaar op.
+ *
+ * Eén regel per onderdeel in het antwoord, ook als de periode in twaalf stukken is
+ * opgehaald. Foutmeldingen worden ontdubbeld: een connector die in elk stuk dezelfde
+ * klacht geeft, hoort dat één keer te zeggen en niet twaalf keer.
+ */
+function tel(verzameld: Map<string, SyncResultaat>, r: SyncResultaat): void {
+  const huidig = verzameld.get(r.onderdeel);
+  if (!huidig) {
+    verzameld.set(r.onderdeel, { ...r });
+    return;
+  }
+  huidig.gelezen += r.gelezen;
+  huidig.geschreven += r.geschreven;
+  huidig.duurMs += r.duurMs;
+  if (r.fout) {
+    const fouten = new Set((huidig.fout ?? "").split(" · ").filter(Boolean));
+    fouten.add(r.fout);
+    huidig.fout = [...fouten].join(" · ");
+  }
+}
+
+/**
+ * Draait één deel over een periode, stuk voor stuk.
+ *
+ * De buitenste lus gaat over de stukken van dertig dagen (nieuwste eerst), de binnenste
+ * over de connectoren. Die volgorde is het hele punt van deze functie: elk stuk is
+ * weggeschreven vóór het volgende begint, dus een ronde die halverwege stopt laat een
+ * compleet, aaneengesloten stuk historie achter in plaats van een willekeurige afkapping
+ * middenin een batch.
+ */
 async function draai(
   client: Client,
   deel: Deel | null,
   van: string,
   tot: string,
-): Promise<SyncResultaat[]> {
-  const resultaten: SyncResultaat[] = [];
+  gestartOp: number,
+): Promise<{ resultaten: SyncResultaat[]; gedaan: Periode | null; restant: Periode | null }> {
+  const verzameld = new Map<string, SyncResultaat>();
   const alles = deel === null;
+  const advertenties = alles || deel === "advertenties";
+  const organisch = alles || deel === "organisch";
+  const account = alles || deel === "account";
 
-  if (alles || deel === "advertenties") {
-    // De maatwerkconversies eerst: welke velden er te halen zijn, bepaalt wat de
-    // advertentie-opvragingen meenemen.
-    let metaVelden: string[] = [];
-    let googleVelden: string[] = [];
+  // De maatwerkconversies eerst, en maar één keer: welke velden er te halen zijn, bepaalt
+  // wat de advertentie-opvragingen meenemen, en die catalogus verandert niet per stuk.
+  let metaVelden: string[] = [];
+  let googleVelden: string[] = [];
+  if (advertenties) {
     try {
       const { velden, nieuw } = await syncConversieActies(client);
       metaVelden = velden.facebook;
       googleVelden = velden.google_ads;
-      resultaten.push({
+      tel(verzameld, {
         onderdeel: "conversie-acties",
         gelezen: metaVelden.length + googleVelden.length,
         geschreven: nieuw,
@@ -96,7 +157,7 @@ async function draai(
     } catch (err) {
       // Zonder catalogus halen we de vaste statistieken op en laten we de
       // maatwerkconversies deze ronde leeg — beter dan helemaal geen advertentiedata.
-      resultaten.push({
+      tel(verzameld, {
         onderdeel: "conversie-acties",
         gelezen: 0,
         geschreven: 0,
@@ -104,33 +165,90 @@ async function draai(
         fout: err instanceof Error ? err.message : String(err),
       });
     }
-
-    resultaten.push(await probeer(() => syncMetaAds(client, van, tot, metaVelden), "meta-ads"));
-    resultaten.push(
-      await probeer(() => syncGoogleAds(client, van, tot, googleVelden), "google-ads"),
-    );
-    resultaten.push(await probeer(() => syncLinkedInAds(client, van, tot), "linkedin-ads"));
   }
 
-  if (alles || deel === "organisch") {
-    resultaten.push(await probeer(() => syncFacebookPosts(client, van, tot), "facebook-posts"));
-    resultaten.push(await probeer(() => syncInstagramPosts(client, van, tot), "instagram-posts"));
-    resultaten.push(await probeer(() => syncLinkedInPosts(client, van, tot), "linkedin-posts"));
-    resultaten.push(
-      await probeer(() => koppelPostsAanAdvertenties(client), "post-advertentie-koppeling"),
-    );
+  const stukken = splitsPeriode(van, tot, STUK_DAGEN);
+  // De stukken komen nieuwste eerst binnen, dus het eerste stuk levert de einddatum van
+  // wat er gedaan is en elk volgend stuk schuift alleen de begindatum naar achteren.
+  let gedaanVan = "";
+  let gedaanTot = "";
+  let restant: Periode | null = null;
+
+  for (const [i, stuk] of stukken.entries()) {
+    // Altijd minstens één stuk doen, anders schiet een aanroep die te laat begint nooit
+    // op en blijft de aanroeper hetzelfde restant terugkrijgen.
+    if (i > 0 && Date.now() - gestartOp > TIJDBUDGET_MS) {
+      restant = { van, tot: stuk.tot };
+      break;
+    }
+
+    if (advertenties) {
+      tel(
+        verzameld,
+        await probeer(() => syncMetaAds(client, stuk.van, stuk.tot, metaVelden), "meta-ads"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncGoogleAds(client, stuk.van, stuk.tot, googleVelden), "google-ads"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncLinkedInAds(client, stuk.van, stuk.tot), "linkedin-ads"),
+      );
+    }
+
+    if (organisch) {
+      tel(
+        verzameld,
+        await probeer(() => syncFacebookPosts(client, stuk.van, stuk.tot), "facebook-posts"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncInstagramPosts(client, stuk.van, stuk.tot), "instagram-posts"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncLinkedInPosts(client, stuk.van, stuk.tot), "linkedin-posts"),
+      );
+    }
+
+    if (account) {
+      tel(
+        verzameld,
+        await probeer(() => syncFacebookPagina(client, stuk.van, stuk.tot), "facebook-pagina"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncLinkedInPagina(client, stuk.van, stuk.tot), "linkedin-pagina"),
+      );
+      // Instagram kent geen historie: de connector geeft altijd de stand van vandaag en
+      // hooguit dertig dagen aan dagcijfers. Die opvraging hoort dus bij het nieuwste
+      // stuk en nergens anders — elk volgend stuk zou precies dezelfde rijen ophalen.
+      if (i === 0) {
+        tel(
+          verzameld,
+          await probeer(() => syncInstagramAccount(client, stuk.van, stuk.tot), "instagram-account"),
+        );
+      }
+    }
+
+    gedaanVan = stuk.van;
+    if (!gedaanTot) gedaanTot = stuk.tot;
   }
 
-  if (alles || deel === "account") {
-    resultaten.push(await probeer(() => syncFacebookPagina(client, van, tot), "facebook-pagina"));
-    resultaten.push(await probeer(() => syncLinkedInPagina(client, van, tot), "linkedin-pagina"));
-    resultaten.push(
-      await probeer(() => syncInstagramAccount(client, van, tot), "instagram-account"),
-    );
-    resultaten.push(await probeer(() => telPostsPerDag(client, van), "posts-per-dag"));
+  // Deze twee kijken over de hele tabel en horen dus ná de stukken, één keer.
+  if (organisch) {
+    tel(verzameld, await probeer(() => koppelPostsAanAdvertenties(client), "post-advertentie-koppeling"));
+  }
+  if (account && gedaanVan) {
+    tel(verzameld, await probeer(() => telPostsPerDag(client, gedaanVan), "posts-per-dag"));
   }
 
-  return resultaten;
+  return {
+    resultaten: [...verzameld.values()],
+    gedaan: gedaanVan ? { van: gedaanVan, tot: gedaanTot } : null,
+    restant,
+  };
 }
 
 /**
@@ -142,7 +260,7 @@ async function draai(
  */
 export async function voerSyncUit(
   deel: Deel | null,
-  dagen: number = VENSTER_DAGEN,
+  periodeOfDagen: Periode | number = VENSTER_DAGEN,
 ): Promise<SyncUitkomst> {
   if (!isWindsorGeconfigureerd()) {
     throw new Error("WINDSOR_API_KEY ontbreekt.");
@@ -153,7 +271,8 @@ export async function voerSyncUit(
   }
   eisVerbindingssnaar(connectionString, "SYNC_DATABASE_URL");
 
-  const { van, tot } = standaardVenster(dagen);
+  const { van, tot } =
+    typeof periodeOfDagen === "number" ? standaardVenster(periodeOfDagen) : periodeOfDagen;
   const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
   const start = Date.now();
 
@@ -165,7 +284,7 @@ export async function voerSyncUit(
     );
     const runId = runRes.rows[0].id;
 
-    const resultaten = await draai(client, deel, van, tot);
+    const { resultaten, gedaan, restant } = await draai(client, deel, van, tot, start);
 
     const gelezen = resultaten.reduce((t, r) => t + r.gelezen, 0);
     const geschreven = resultaten.reduce((t, r) => t + r.geschreven, 0);
@@ -189,6 +308,8 @@ export async function voerSyncUit(
       ok: fouten.length === 0,
       deel: deel ?? "alles",
       periode: { van, tot },
+      gedaan,
+      restant,
       duurMs: Date.now() - start,
       resultaten,
     };
