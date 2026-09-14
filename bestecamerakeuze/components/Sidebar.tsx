@@ -147,13 +147,13 @@ export default function Sidebar({
               />
               <NavigationItem
                 icon={<IconPosts />}
-                label="Organisch"
+                label="Social organisch"
                 active={actief === "organisch"}
                 onClick={() => onNavigate("organisch")}
               />
               <NavigationItem
                 icon={<IconUsers />}
-                label="Account"
+                label="Social accounts"
                 active={actief === "account-ontwikkeling"}
                 onClick={() => onNavigate("account-ontwikkeling")}
               />

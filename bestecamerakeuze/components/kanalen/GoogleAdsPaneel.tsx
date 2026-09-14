@@ -43,9 +43,6 @@ export default function GoogleAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
         { id: "campagne", label: "Campagne" },
         { id: "campagne_doel", label: "Campagnetype" },
         { id: "campagne_status", label: "Status" },
-        { id: "campagnemanager", label: "Campagnemanager" },
-        { id: "merk", label: "Merk" },
-        { id: "categorie", label: "Categorie" },
       ]}
       uitsplitsbaar={[
         { id: "campagne_doel", label: "Campagnetype" },

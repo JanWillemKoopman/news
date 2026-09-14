@@ -29,11 +29,6 @@ export default function SocialAdsPaneel({ ingelogd }: { ingelogd: boolean }) {
         { id: "campagne", label: "Campagne" },
         { id: "campagne_doel", label: "Doelstelling" },
         { id: "campagne_status", label: "Status" },
-        { id: "campagnemanager", label: "Campagnemanager" },
-        // Merk en categorie komen uit de koppeltabel. Die pagina beloofde ze al als
-        // filter; hier worden ze het ook.
-        { id: "merk", label: "Merk" },
-        { id: "categorie", label: "Categorie" },
       ]}
       uitsplitsbaar={[
         { id: "platform", label: "Platform" },
