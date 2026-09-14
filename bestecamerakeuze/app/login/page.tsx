@@ -21,7 +21,7 @@ export default function LoginPage() {
 
       <main className="w-full max-w-[26rem]">
         <div className="kaart-accent kaart-omlijst rounded-panel border border-line bg-card px-10 py-11 shadow-card">
-          <p className="label-theme text-label text-ink-faint">Campagnedashboard</p>
+          <p className="label-theme text-label text-ink-faint">Marketing dashboard</p>
           <h1 className="titel-theme mt-3 text-ink">Welkom terug</h1>
           <p className="mt-3 text-sm leading-relaxed text-ink-muted">
             Log in met het e-mailadres en wachtwoord die je van Udenhout hebt gekregen.
