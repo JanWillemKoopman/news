@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Modal from "@/components/Modal";
 import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/icons";
 
@@ -12,28 +12,21 @@ import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/ic
  * starten of om bij te trekken na een nacht waarin er iets misging — en dat is precies
  * wat een marketeer niet heeft.
  *
- * Wie hem opent ziet eerst wanneer hij voor het laatst draaide, en of er op dit moment al
- * één loopt. Dat laatste is geen formaliteit: de knop staat voor iedereen open, hij duurt
- * minuten, en twee collega's die hem tegelijk starten zitten allebei te wachten op
- * dezelfde upserts.
+ * ## Waarom deze component het ophalen niet meer aanstuurt
  *
- * De drie delen gaan ná elkaar, niet tegelijk. Twee redenen: één request per deel blijft
- * binnen de vijf minuten die een functie krijgt, en `organisch` koppelt aan het eind de
- * posts aan de advertenties, dus het moet ná `advertenties` draaien. Per stap zie je wat
- * er gebeurde; gaat er één mis, dan stopt de rij daar en blijft staan wat al gelukt is.
+ * Dat deed hij wel. Een lange periode gaat in stukken van dertig dagen, en deze component
+ * riep de route net zo vaak opnieuw aan tot het restant leeg was — met dat restant in een
+ * gewone variabele in de lus hieronder. Daarmee was dit tabblad het enige geheugen van de
+ * opdracht: wegklikken brak de import af, en een wegvallende verbinding ook.
  *
- * ## Waarom een lange periode in ronden gaat
+ * Op 14 september 2026 leverde dat een Google Ads-jaargrafiek op met uitgaven in september
+ * 2025 en vanaf juni 2026, en acht maanden niets daartussen. De lopende ronde had zichzelf
+ * netjes afgemaakt tot 18 januari en daarna hield het op, zonder dat iets in beeld zei dat
+ * de rest nooit was opgehaald.
  *
- * Twaalf maanden past niet in één aanroep — niet in de vijf minuten van een functie, en
- * bij Meta zelfs niet in één antwoord. De server haalt zo'n periode daarom in stukken van
- * dertig dagen op, nieuwste eerst, en stopt uit zichzelf voordat hij wordt afgekapt. Wat
- * er dan nog te doen is staat als `restant` in het antwoord; deze component roept de
- * route daarmee net zo vaak opnieuw aan tot dat leeg is, en laat ondertussen zien tot
- * welke datum de historie binnen is.
- *
- * Dat is precies het gat waar het eerder op stukliep: een jaarronde werd na vijf minuten
- * afgekapt, er stonden drieduizend rijen in de database, en niets in beeld zei dat de
- * andere elf maanden er nooit waren gekomen.
+ * De opdracht staat nu op de server (`dataloket.sync_opdrachten`) en de server schakelt
+ * zichzelf door naar het volgende stuk (`lib/windsor/keten.ts`). Deze component doet nog
+ * twee dingen: de opdracht klaarzetten, en laten zien hoe ver hij staat. Sluiten mag.
  */
 
 type Stap = {
@@ -66,52 +59,34 @@ const PERIODES = [
   { dagen: 365, label: "12 maanden", hint: "gaat in ronden; reken op een kwartier" },
 ];
 
+/** Hoe vaak we bij de server vragen hoe ver de opdracht staat. */
+const VOLG_INTERVAL_MS = 5000;
+
 /**
- * Hoe vaak we per stap doorgaan met wat er van de periode overblijft.
+ * Hoe lang een openstaande opdracht stil mag staan voordat we hem als vastgelopen tonen.
  *
- * Twaalf maanden zijn dertien stukken van dertig dagen, en in het slechtste geval haalt
- * één aanroep er maar één. Ruim erboven, zodat de grens nooit de reden is dat een import
- * stopt — maar niet oneindig, want een server die telkens hetzelfde restant teruggeeft
- * hoort niet eindeloos opnieuw aangeroepen te worden.
+ * Een schakel duurt hooguit vijf minuten. Staat de teller daarna nóg niets verder, dan is
+ * de ketting gebroken — meestal een schakel die door Vercel is afgekapt vóórdat hij de
+ * volgende had aangeroepen. De cron pakt hem vannacht op, maar dat hoort te lezen te zijn
+ * in plaats van als een spinner die nergens meer heen gaat.
  */
-const MAX_RONDEN = 20;
+const STIL_NA_MS = 10 * 60 * 1000;
 
-type Stand =
-  | { soort: "wacht" }
-  | { soort: "bezig"; voortgang?: string }
-  | { soort: "klaar"; gelezen: number; geschreven: number; seconden: number; waarschuwing?: string }
-  | { soort: "fout"; bericht: string };
-
-interface Periode {
+/** Eén opdracht zoals `/api/kanalen/ophalen` hem teruggeeft. */
+interface Opdracht {
+  deel: string;
+  /** Het stuk dat nog te doen is. */
   van: string;
   tot: string;
-}
-
-interface RunStand {
-  gestartOp: string;
-  geeindigdOp: string | null;
-  geschreven: number | null;
-  gelukt: boolean;
+  gevraagdVan: string;
+  gevraagdTot: string;
+  schakels: number;
+  rijen: number;
+  bijgewerktOp: string;
+  afgerondOp: string | null;
   fout: string | null;
-}
-
-/** Hoe vaak en hoe lang we een doorlopende run blijven volgen. */
-const VOLG_INTERVAL_MS = 5000;
-const VOLG_MAX_MS = 10 * 60 * 1000;
-
-interface Onderdeel {
-  onderdeel: string;
-  gelezen: number;
-  geschreven: number;
-  fout?: string;
-}
-
-interface Antwoord {
-  fout?: string;
-  duurMs?: number;
-  resultaten?: Onderdeel[];
-  gedaan?: Periode | null;
-  restant?: Periode | null;
+  /** Open, maar de schakels zijn op — dit loopt niet vanzelf verder. */
+  vastgelopen: boolean;
 }
 
 function kortDatum(datum: string): string {
@@ -123,34 +98,64 @@ function kortDatum(datum: string): string {
 }
 
 /**
- * Wacht tot de run van dit onderdeel een eindtijd heeft.
+ * Vanaf welke dag de historie binnen is.
  *
- * Nodig omdat een browser een verbinding korter openhoudt dan een sync duurt: de POST
- * valt weg met "Load failed" terwijl de sync op de server gewoon doordraait. Gemeten: een
- * organische ronde die als mislukt in beeld kwam en ondertussen 196 posts wegschreef. In
- * plaats van dat als fout te tonen, kijken we hier elke vijf seconden in `sync_runs` hoe
- * het écht met die run staat.
- *
- * `sinds` houdt oude runs buiten beeld — anders leest hij de vorige ronde van gisteren
- * als uitkomst van deze klik.
+ * De stukken gaan nieuwste eerst, dus `tot` van het restant is de laatste dag die nog
+ * míst. Alles vanaf de dag daarna staat er.
  */
-async function volgRun(deel: string, sinds: number): Promise<RunStand> {
-  const einde = Date.now() + VOLG_MAX_MS;
-  while (Date.now() < einde) {
-    await new Promise((klaar) => setTimeout(klaar, VOLG_INTERVAL_MS));
-    try {
-      const res = await fetch(`/api/kanalen/ophalen?deel=${deel}`, { cache: "no-store" });
-      if (!res.ok) continue;
-      const { run } = (await res.json()) as { run: RunStand | null };
-      if (!run || new Date(run.gestartOp).getTime() < sinds - 5000) continue;
-      if (run.geeindigdOp) return run;
-    } catch {
-      // Netwerkhik tijdens het volgen is geen uitkomst; gewoon nog eens kijken.
-    }
+function historieVanaf(opdracht: Opdracht): string {
+  const d = new Date(`${opdracht.tot}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Staat een openstaande opdracht al te lang stil om nog te geloven dat hij loopt? */
+function staatStil(opdracht: Opdracht): boolean {
+  if (opdracht.afgerondOp || opdracht.vastgelopen) return false;
+  return Date.now() - Date.parse(opdracht.bijgewerktOp) > STIL_NA_MS;
+}
+
+type Stand =
+  | { soort: "wacht" }
+  | { soort: "bezig"; voortgang?: string }
+  | { soort: "klaar"; rijen: number; vanaf: string; waarschuwing?: string }
+  | { soort: "fout"; bericht: string };
+
+function standVan(opdracht: Opdracht | undefined): Stand {
+  if (!opdracht) return { soort: "wacht" };
+  if (opdracht.afgerondOp) {
+    // Een afgeronde opdracht mét een foutregel is niet hetzelfde als een schone ronde:
+    // één platform dat eruit lag is geen reden om de stap te laten mislukken, maar het
+    // hoort wel te blijven staan. Stil "klaar" melden is precies hoe een halve import
+    // eerder onopgemerkt bleef.
+    return {
+      soort: "klaar",
+      rijen: opdracht.rijen,
+      vanaf: opdracht.gevraagdVan,
+      waarschuwing: opdracht.fout ?? undefined,
+    };
   }
-  throw new Error(
-    "De ophaalactie draait nog steeds op de server. Sluit dit venster gerust — kijk over een paar minuten bij Verversen of de cijfers er staan.",
-  );
+  if (opdracht.vastgelopen) {
+    return {
+      soort: "fout",
+      bericht:
+        opdracht.fout ??
+        `De import is gestopt bij ${kortDatum(opdracht.tot)}; de periode daarvóór is niet opgehaald. Start hem nog eens om die erbij te halen.`,
+    };
+  }
+  if (staatStil(opdracht)) {
+    return {
+      soort: "fout",
+      bericht: `De import staat stil bij ${kortDatum(opdracht.tot)} — de periode daarvóór is nog niet opgehaald. Vannacht pakt de sync hem vanzelf op; opnieuw starten mag ook.${opdracht.fout ? ` (${opdracht.fout})` : ""}`,
+    };
+  }
+  return {
+    soort: "bezig",
+    voortgang:
+      opdracht.schakels > 0
+        ? `historie binnen vanaf ${kortDatum(historieVanaf(opdracht))} — ${opdracht.rijen.toLocaleString("nl-NL")} rijen`
+        : undefined,
+  };
 }
 
 export default function DataOphalen({
@@ -166,120 +171,74 @@ export default function DataOphalen({
 }) {
   const [open, setOpen] = useState(false);
   const [dagen, setDagen] = useState(90);
-  const [bezig, setBezig] = useState(false);
-  const [standen, setStanden] = useState<Record<string, Stand>>({});
-  const [afgerond, setAfgerond] = useState(false);
+  const [starten, setStarten] = useState(false);
+  const [opdrachten, setOpdrachten] = useState<Opdracht[] | null>(null);
+  const [startfout, setStartfout] = useState<string | null>(null);
+  const [alleenCron, setAlleenCron] = useState(false);
 
-  function zet(deel: string, stand: Stand) {
-    setStanden((huidig) => ({ ...huidig, [deel]: stand }));
-  }
+  // Om `onKlaar` precies één keer aan te roepen op het moment dat de laatste opdracht
+  // afrondt, en niet bij elke peiling daarna opnieuw.
+  const liepNog = useRef(false);
+
+  // Een opdracht die stilstaat telt niet als bezig: anders blijft de knop voorgoed op
+  // "Bezig…" staan en is opnieuw starten precies wat je niet kunt.
+  const bezig = (opdrachten ?? []).some(
+    (o) => !o.afgerondOp && !o.vastgelopen && !staatStil(o),
+  );
+  const afgerond =
+    opdrachten !== null && opdrachten.length > 0 && opdrachten.every((o) => o.afgerondOp);
+
+  const peil = useCallback(async () => {
+    try {
+      const res = await fetch("/api/kanalen/ophalen", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { opdrachten?: Opdracht[] };
+      setOpdrachten(data.opdrachten ?? []);
+    } catch {
+      // Een netwerkhik tijdens het volgen is geen uitkomst; de volgende peiling komt zo.
+    }
+  }, []);
+
+  // Zolang het venster openstaat: kijken hoe het ervoor staat. Ook zonder zelf geklikt te
+  // hebben — een import die een collega of de cron gestart heeft, hoort hier gewoon in
+  // beeld te staan.
+  useEffect(() => {
+    if (!open) return;
+    void peil();
+    const tijd = setInterval(() => void peil(), VOLG_INTERVAL_MS);
+    return () => clearInterval(tijd);
+  }, [open, peil]);
+
+  // De cijfers op de pagina eronder verversen zodra de laatste opdracht klaar is.
+  useEffect(() => {
+    if (bezig) {
+      liepNog.current = true;
+      return;
+    }
+    if (liepNog.current) {
+      liepNog.current = false;
+      onKlaar();
+    }
+  }, [bezig, onKlaar]);
 
   async function start() {
-    setBezig(true);
-    setAfgerond(false);
-    setStanden(Object.fromEntries(STAPPEN.map((s) => [s.deel, { soort: "wacht" } as Stand])));
-
-    for (const stap of STAPPEN) {
-      zet(stap.deel, { soort: "bezig" });
-
-      // Wat er van de gevraagde periode nog te doen is. Leeg bij de eerste aanroep — dan
-      // rekent de server zelf terug vanaf vandaag — en daarna precies wat hij teruggaf.
-      let restant: Periode | null = null;
-      let gelezen = 0;
-      let geschreven = 0;
-      let seconden = 0;
-      const waarschuwingen = new Set<string>();
-      let vroegste = "";
-
-      for (let ronde = 1; ronde <= MAX_RONDEN; ronde++) {
-        const gestart = Date.now();
-        try {
-          const res = await fetch("/api/kanalen/ophalen", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deel: stap.deel, dagen, ...(restant ?? {}) }),
-          });
-          const data = (await res.json()) as Antwoord;
-
-          if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
-
-          const resultaten = data.resultaten ?? [];
-          gelezen += resultaten.reduce((t, r) => t + r.gelezen, 0);
-          geschreven += resultaten.reduce((t, r) => t + r.geschreven, 0);
-          seconden += Math.round((data.duurMs ?? 0) / 1000);
-          for (const r of resultaten) {
-            if (r.fout) waarschuwingen.add(`${r.onderdeel} — ${r.fout}`);
-          }
-          if (data.gedaan) vroegste = data.gedaan.van;
-
-          restant = data.restant ?? null;
-          if (!restant) break;
-
-          // Nog een ronde te gaan: laat zien hoe ver de historie inmiddels terugloopt, zodat
-          // een import van een kwartier niet als een bevroren venster aanvoelt.
-          zet(stap.deel, {
-            soort: "bezig",
-            voortgang: vroegste ? `historie teruggehaald tot ${kortDatum(vroegste)}…` : undefined,
-          });
-          if (ronde === MAX_RONDEN) {
-            waarschuwingen.add(
-              `De periode vóór ${kortDatum(restant.tot)} is niet meer opgehaald; start de import nog eens om die erbij te halen.`,
-            );
-          }
-        } catch (err) {
-          // De verbinding is weggevallen, niet de sync. Kijk in sync_runs hoe deze ronde
-          // werkelijk afloopt in plaats van hem als mislukt te tonen.
-          try {
-            const run = await volgRun(stap.deel, gestart);
-            geschreven += run.geschreven ?? 0;
-            seconden += Math.round(
-              (new Date(run.geeindigdOp ?? run.gestartOp).getTime() -
-                new Date(run.gestartOp).getTime()) /
-                1000,
-            );
-            waarschuwingen.add(
-              run.fout ??
-                "De verbinding met de browser viel weg; deze ronde is op de server afgemaakt. Of de hele periode binnen is, is van hier niet te zien — start de import nog eens als er historie mist.",
-            );
-            // Zonder antwoord weten we niet wat er nog te doen was, dus verdergaan met een
-            // gokperiode zou stukken kunnen overslaan. Deze stap stopt hier.
-            break;
-          } catch (volgFout) {
-            zet(stap.deel, {
-              soort: "fout",
-              bericht:
-                volgFout instanceof Error
-                  ? volgFout.message
-                  : err instanceof Error
-                    ? err.message
-                    : String(err),
-            });
-            setBezig(false);
-            return; // de volgende stap leunt op deze; doorgaan levert halve cijfers op
-          }
-        }
-      }
-
-      // Eén platform dat eruit ligt is geen reden om de stap als mislukt te tonen, maar het
-      // hoort ook niet als een schone ronde te voelen.
-      const waarschuwing =
-        waarschuwingen.size > 0 ? [...waarschuwingen].join(" · ") : undefined;
-
-      zet(stap.deel, {
-        soort: "klaar",
-        gelezen,
-        geschreven,
-        seconden,
-        waarschuwing:
-          vroegste && !waarschuwing
-            ? `historie opgehaald vanaf ${kortDatum(vroegste)}`
-            : waarschuwing,
+    setStarten(true);
+    setStartfout(null);
+    try {
+      const res = await fetch("/api/kanalen/ophalen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dagen }),
       });
+      const data = (await res.json()) as { fout?: string; achtergrond?: boolean };
+      if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
+      setAlleenCron(data.achtergrond === false);
+      await peil();
+    } catch (err) {
+      setStartfout(err instanceof Error ? err.message : String(err));
+    } finally {
+      setStarten(false);
     }
-
-    setBezig(false);
-    setAfgerond(true);
-    onKlaar();
   }
 
   return (
@@ -294,14 +253,7 @@ export default function DataOphalen({
       </button>
 
       {open && (
-        <Modal
-          title="Data ophalen bij Windsor.ai"
-          onClose={() => {
-            // Tijdens het ophalen niet sluiten: de verzoeken lopen via deze pagina, en
-            // wegklikken breekt de lopende stap af halverwege het wegschrijven.
-            if (!bezig) setOpen(false);
-          }}
-        >
+        <Modal title="Data ophalen bij Windsor.ai" onClose={() => setOpen(false)}>
           <p className="text-sm text-ink-muted">
             Normaal gebeurt dit elke nacht vanzelf. Gebruik dit voor de eerste vulling, of
             als er een nacht is overgeslagen. Twee keer draaien kan geen kwaad — de cijfers
@@ -333,7 +285,7 @@ export default function DataOphalen({
                 <button
                   key={p.dagen}
                   type="button"
-                  disabled={bezig}
+                  disabled={starten}
                   onClick={() => setDagen(p.dagen)}
                   className={`rounded-control border px-3 py-2 text-left transition-colors duration-[var(--duur-snel)] disabled:opacity-50 ${
                     p.dagen === dagen
@@ -350,7 +302,7 @@ export default function DataOphalen({
 
           <ol className="mt-5 flex flex-col gap-0 border-t border-line">
             {STAPPEN.map((stap, i) => {
-              const stand = standen[stap.deel] ?? { soort: "wacht" as const };
+              const stand = standVan((opdrachten ?? []).find((o) => o.deel === stap.deel));
               return (
                 <li
                   key={stap.deel}
@@ -365,8 +317,8 @@ export default function DataOphalen({
                     )}
                     {stand.soort === "klaar" && (
                       <p className="mt-1 text-meta text-positive">
-                        {stand.geschreven.toLocaleString("nl-NL")} rijen weggeschreven in{" "}
-                        {stand.seconden} seconden
+                        historie opgehaald vanaf {kortDatum(stand.vanaf)} —{" "}
+                        {stand.rijen.toLocaleString("nl-NL")} rijen
                       </p>
                     )}
                     {stand.soort === "klaar" && stand.waarschuwing && (
@@ -381,39 +333,46 @@ export default function DataOphalen({
             })}
           </ol>
 
-          {afgerond && (
+          {startfout && <p className="mt-4 text-sm text-negative">{startfout}</p>}
+
+          {alleenCron && (
+            <p className="mt-4 text-meta text-ink-muted">
+              De opdracht staat klaar, maar deze omgeving kan zichzelf niet doorschakelen
+              (<code>CRON_SECRET</code> ontbreekt). Hij wordt vannacht door de cron
+              afgemaakt.
+            </p>
+          )}
+
+          {afgerond && !bezig && (
             <p className="mt-4 text-sm text-positive">
               Klaar. De pagina&apos;s tonen nu de nieuwe cijfers.
             </p>
           )}
 
           <div className="mt-5 flex items-center justify-end gap-2">
-            {!bezig && (
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-button px-4 py-2 text-sm font-medium text-ink-muted hover:bg-surface"
-              >
-                Sluiten
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-button px-4 py-2 text-sm font-medium text-ink-muted hover:bg-surface"
+            >
+              Sluiten
+            </button>
             <button
               type="button"
               onClick={start}
-              disabled={bezig}
+              disabled={starten || bezig}
               className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-opacity disabled:cursor-wait disabled:opacity-70"
             >
-              {bezig && <IconRefresh className="h-4 w-4 animate-spin" />}
-              {bezig ? "Bezig…" : afgerond ? "Opnieuw ophalen" : "Starten"}
+              {(starten || bezig) && <IconRefresh className="h-4 w-4 animate-spin" />}
+              {starten ? "Starten…" : bezig ? "Bezig…" : afgerond ? "Opnieuw ophalen" : "Starten"}
             </button>
           </div>
 
-          {bezig && (
-            <p className="mt-3 text-meta text-ink-faint">
-              Laat dit venster open staan tot het klaar is. Twaalf maanden wordt in stukken
-              van een maand opgehaald; reken op een kwartier voor alle drie de stappen.
-            </p>
-          )}
+          <p className="mt-3 text-meta text-ink-faint">
+            {bezig
+              ? "Je kunt dit venster sluiten — het ophalen loopt op de server door. Twaalf maanden wordt in stukken van een maand opgehaald; reken op een kwartier."
+              : "Het ophalen gebeurt op de server, dus je kunt dit venster sluiten zodra het gestart is."}
+          </p>
         </Modal>
       )}
     </>

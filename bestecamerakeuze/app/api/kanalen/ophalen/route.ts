@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isWindsorGeconfigureerd } from "@/lib/windsor/api";
-import { isDeel, voerSyncUit } from "@/lib/windsor/uitvoeren";
-import { haalRunStand, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
+import { DELEN } from "@/lib/windsor/uitvoeren";
+import { kanDoorschakelen, schakelDoor, zetOpdrachtKlaar } from "@/lib/windsor/keten";
+import { haalOpdrachtStanden, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
+import { isVastgelopen } from "@/lib/windsor/opdrachten";
+import { standaardVenster } from "@/lib/windsor/sync";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 /**
  * "Data ophalen" vanuit het dashboard zelf.
@@ -21,23 +24,20 @@ export const maxDuration = 300;
  * onomkeerbare ingreep. Twee keer draaien is onschadelijk: alles gaat via een upsert op
  * dezelfde sleutel, dus een dubbele run overschrijft in plaats van te verdubbelen.
  *
- * Eén deel per aanroep. Drie delen achter elkaar in één request zou langer duren dan de
- * vijf minuten die een functie krijgt, dus de UI roept ze na elkaar aan en laat per deel
- * zien hoe het ging.
+ * ## Deze route doet het werk niet zelf
  *
- * Datzelfde geldt binnen een deel zodra iemand meer dan een maand historie vraagt. De
- * sync haalt zo'n periode in stukken van dertig dagen op en stopt uit zichzelf als het
- * tijdbudget op is; in het antwoord staat dan `restant` — de periode die nog te doen is.
- * De UI roept deze route daarmee opnieuw aan tot `restant` leeg is. Vandaar dat de body
- * naast `dagen` ook een expliciete `van` en `tot` accepteert: zo kan de volgende aanroep
- * exact verdergaan waar de vorige stopte, in plaats van vanaf vandaag terug te tellen.
+ * Dat deed hij wel, en daar ging het mis. Eén aanroep haalde één stuk van dertig dagen op
+ * en gaf terug wat er nog te doen was; de browser riep hem daarmee opnieuw aan tot het
+ * restant leeg was. Die lus leefde dus in het tabblad, en dat betekende twee dingen die
+ * niemand wist: wegklikken brak de import af, en een wegvallende verbinding ook — de
+ * component stopte dan met een waarschuwing, want zonder antwoord wist hij niet meer wat
+ * er nog te doen was.
  *
- * De GET ernaast bestaat omdat de browser een verbinding korter openhoudt dan een sync
- * duurt. Valt de POST weg met "Load failed", dan is dat de browser die opgeeft en niet de
- * sync die stopt: die draait op de server door en schrijft gewoon zijn rijen weg. De UI
- * schakelt daarom over op deze GET en volgt de run in `sync_runs` tot hij een eindtijd
- * heeft. Zonder dat zou een geslaagde ronde als mislukt in beeld komen en zou iemand nog
- * eens klikken, waarmee er een tweede ronde bovenop de eerste komt.
+ * Op 14 september 2026 leverde dat een jaargrafiek op met een gat van acht maanden erin.
+ * De opdracht staat sindsdien in `dataloket.sync_opdrachten` en de server schakelt
+ * zichzelf door (`lib/windsor/keten.ts`). Deze POST zet de opdracht klaar, zet de eerste
+ * schakel in gang en is meteen klaar; de GET ernaast vertelt hoe ver het staat. Het
+ * venster mag daarna dicht.
  */
 
 /** Een datum uit de body: alleen YYYY-MM-DD telt, zodat er nooit tekst in de query belandt. */
@@ -45,13 +45,7 @@ function isDatum(waarde: unknown): waarde is string {
   return typeof waarde === "string" && /^\d{4}-\d{2}-\d{2}$/.test(waarde);
 }
 
-const BRON_VAN_DEEL: Record<string, string> = {
-  advertenties: "windsor-advertenties",
-  organisch: "windsor-organisch",
-  account: "windsor-account",
-};
-
-export async function GET(request: Request) {
+export async function GET() {
   const gebruiker = await getGebruiker();
   if (!gebruiker) {
     return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
@@ -60,14 +54,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ fout: "Geen databaseverbinding." }, { status: 503 });
   }
 
-  const deel = new URL(request.url).searchParams.get("deel") ?? "";
-  const bron = BRON_VAN_DEEL[deel];
-  if (!bron) {
-    return NextResponse.json({ fout: `Onbekend onderdeel: ${deel}` }, { status: 400 });
-  }
-
   try {
-    return NextResponse.json({ deel, run: await haalRunStand(bron) });
+    // `vastgelopen` hoort hier berekend te worden en niet in de browser: de grens waar
+    // het om gaat (MAX_SCHAKELS) is een serverkeuze, en een pagina die hem zelf naschat
+    // loopt er vroeg of laat naast.
+    const opdrachten = await haalOpdrachtStanden(DELEN);
+    return NextResponse.json({
+      opdrachten: opdrachten.map((o) => ({ ...o, vastgelopen: isVastgelopen(o) })),
+    });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },
@@ -95,21 +89,29 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!isDeel(body.deel)) {
-    return NextResponse.json(
-      { fout: "Onbekend onderdeel. Kies advertenties, organisch of account." },
-      { status: 400 },
-    );
-  }
 
   // Begrensd tot ruim binnen Meta's venster van 37 maanden; daarbuiten weigert het
   // platform de hele opvraging in plaats van alleen het oudste stuk.
   const dagen = Math.min(Math.max(Number(body.dagen) || 30, 1), 1000);
-  const periode = isDatum(body.van) && isDatum(body.tot) ? { van: body.van, tot: body.tot } : dagen;
+  const periode =
+    isDatum(body.van) && isDatum(body.tot) ? { van: body.van, tot: body.tot } : standaardVenster(dagen);
 
   try {
-    const uitkomst = await voerSyncUit(body.deel, periode);
-    return NextResponse.json(uitkomst);
+    await zetOpdrachtKlaar(DELEN, periode);
+    after(() => schakelDoor(new URL(request.url).origin));
+
+    return NextResponse.json({
+      gestart: true,
+      periode,
+      delen: DELEN,
+      /**
+       * Zonder `CRON_SECRET` kan de server zichzelf niet aanroepen. De opdracht staat er
+       * dan wel, maar hij komt pas vannacht aan de beurt via de cron. Dat hoort in beeld
+       * te staan en niet stilletjes te gebeuren — precies de fout die deze hele
+       * verbouwing moest wegnemen.
+       */
+      achtergrond: kanDoorschakelen(),
+    });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },
