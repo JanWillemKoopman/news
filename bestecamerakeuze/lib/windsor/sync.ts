@@ -253,7 +253,12 @@ export async function syncMetaAds(
     "meta",
     tekst(r.account_id) ?? "",
     tekst(r.account_name),
-    tekst(r.publisher_platform) ?? "facebook",
+    // Géén terugval op 'facebook': een rij zónder publisher_platform is een rij waarvan
+    // we niet weten waar hij draaide, en die onder Facebook schuiven maakt het
+    // platformtotaal stilletjes te hoog. 'unknown' is bovendien wat Meta zelf teruggeeft
+    // als het netwerk niet te bepalen is, dus die rijen vallen samen in één herkenbare
+    // emmer in plaats van in twee.
+    tekst(r.publisher_platform) ?? "unknown",
     tekst(r.platform_position) ?? "",
     tekst(r.campaign_id) ?? "",
     tekst(r.campaign) ?? "(zonder naam)",
@@ -408,23 +413,79 @@ export async function syncLinkedInAds(
   };
 }
 
+/** De meetkolommen van windsor_advertenties, op positie in ADVERTENTIE_KOLOMMEN. */
+const METING_INDEXEN = [
+  "uitgaven",
+  "vertoningen",
+  "bereik",
+  "klikken",
+  "link_klikken",
+  "interacties",
+  "videoweergaven",
+  "leads",
+  "conversies",
+  "conversiewaarde",
+].map((kolom) => ADVERTENTIE_KOLOMMEN.indexOf(kolom));
+
+const ACTIES_INDEX = ADVERTENTIE_KOLOMMEN.indexOf("conversie_acties");
+
+/** De sleutelkolommen van windsor_advertenties, op positie in ADVERTENTIE_KOLOMMEN. */
+const SLEUTEL_INDEXEN = [0, 1, 2, 4, 5, 6, 12];
+
 /**
- * Houdt binnen één batch de laatste rij per sleutel over.
+ * Voegt rijen met dezelfde sleutel binnen één batch samen, door ze **op te tellen**.
  *
  * `insert … on conflict do update` mag binnen één statement dezelfde rij niet twee keer
  * raken ("ON CONFLICT DO UPDATE command cannot affect row a second time"). Windsor kan
  * twee rijen met dezelfde sleutel leveren zodra een breakdown-veld leeg terugkomt, en
- * dan sneuvelt de hele batch. Ontdubbelen vóór het schrijven is goedkoper dan per rij
+ * dan sneuvelt de hele batch. Samenvoegen vóór het schrijven is goedkoper dan per rij
  * insert'en.
+ *
+ * LET OP — dit hield eerder simpelweg de láátste rij per sleutel over, en dat is precies
+ * het soort fout dat je nooit terugziet: de uitgaven van de rij die sneuvelde verdwenen
+ * zonder melding, waardoor het dashboard láger uitkwam dan Ads Manager. Twee rijen met
+ * dezelfde sleutel zijn twee stukjes van hetzelfde cijfer, geen correctie op elkaar —
+ * de database telt met `sum()` de rijen die hier los blijven staan ook gewoon op, en
+ * deze functie hoort daarmee overeen te komen.
  */
-function ontdubbel(rijen: unknown[][]): unknown[][] {
-  // De sleutelkolommen van windsor_advertenties, op positie in ADVERTENTIE_KOLOMMEN.
-  const sleutelIndexen = [0, 1, 2, 4, 5, 6, 12];
+export function ontdubbel(rijen: unknown[][]): unknown[][] {
   const gezien = new Map<string, unknown[]>();
   for (const rij of rijen) {
-    gezien.set(sleutelIndexen.map((i) => String(rij[i])).join(" "), rij);
+    // Een NUL-byte als scheidingsteken: een spatie zou twee verschillende sleutels
+    // kunnen laten samenvallen zodra een campagne- of advertentie-id er zelf een bevat.
+    const sleutel = SLEUTEL_INDEXEN.map((i) => String(rij[i])).join("\u0000");
+    const eerdere = gezien.get(sleutel);
+    if (!eerdere) {
+      gezien.set(sleutel, rij);
+      continue;
+    }
+    for (const i of METING_INDEXEN) {
+      eerdere[i] = getal(eerdere[i]) + getal(rij[i]);
+    }
+    eerdere[ACTIES_INDEX] = JSON.stringify(
+      telActiesOp(eerdere[ACTIES_INDEX], rij[ACTIES_INDEX]),
+    );
   }
   return [...gezien.values()];
+}
+
+/** Telt twee jsonb-blokjes met maatwerkconversies bij elkaar op, op veldnaam. */
+function telActiesOp(a: unknown, b: unknown): Record<string, number> {
+  const uit: Record<string, number> = {};
+  for (const blok of [a, b]) {
+    if (typeof blok !== "string") continue;
+    let geparsed: unknown;
+    try {
+      geparsed = JSON.parse(blok);
+    } catch {
+      continue;
+    }
+    if (typeof geparsed !== "object" || geparsed === null) continue;
+    for (const [veld, waarde] of Object.entries(geparsed as Record<string, unknown>)) {
+      uit[veld] = (uit[veld] ?? 0) + getal(waarde);
+    }
+  }
+  return uit;
 }
 
 // ---------------------------------------------------------------------------

@@ -270,6 +270,15 @@ niet uit af te lezen zijn:
   **stand** (`kubus.standKolommen`, in de praktijk het aantal volgers) tekenen als lijn
   met een as op `['auto','auto']`; een optelbare hoeveelheid als staaf vanaf nul. Een
   volgersstand als staaf vanaf nul verstopt precies de groei waar de pagina voor bestaat.
+- **Bereik is een derde soort: gededupliceerd.** Het platform telt daar verschillende
+  mensen, en doet dat per opgevraagde dag opnieuw — wie op drie dagen keek zit in drie
+  dagrijen. Wij bewaren dagcijfers, dus onze som is per definitie hóger dan het bereik dat
+  Ads Manager over diezelfde periode toont, en de frequentie die erop deelt navenant
+  lager. Dat is een grens van de data en niet met beter optellen op te lossen: het echte
+  periodebereik bestaat alleen als je het zónder dagkorrel opvraagt. Zulke statistieken
+  dragen `nietOptelbaar` (`lib/windsor/velden.ts`) en de UI zegt er "opgeteld per dag" bij
+  in plaats van "totaal in deze selectie" — nooit een gededupliceerd cijfer als totaal
+  presenteren.
 - **De periode loopt tot en met gisteren** (`periodeGrenzen`) omdat de sync 's nachts
   draait, en de korrel volgt de lengte van die periode (`bruikbareKorrels` en
   `standaardKorrel` in `lib/kanalen/kubus.ts`) — nooit het aantal dagen waarop er
@@ -334,8 +343,13 @@ niet uit af te lezen zijn:
   ernaast, want dat zou een tweede waarheid over dezelfde velden zijn);
   `bron.ts` telt de aangevinkte acties bij `leads` op — optellen en niet vervangen, want
   bij Meta zit `actions_lead` al in die kolom en komen de vaste actievelden nooit in de
-  jsonb terecht, dus dubbeltellen kan niet. Zolang er niets is aangevinkt, laat Google Ads
-  de kolommen Leads en Kosten per lead weg (`verbergZonderConversieLeads`).
+  jsonb terecht. Hetzelfde véld kan dus niet twee keer meetellen; dezelfde **gebeurtenis**
+  wél. Meta's `lead` is namelijk zelf al een optelsom (leadformulieren, Messenger én de
+  pixel op de site), dus een Meta-actie aanvinken die daar een onderdeel van is, telt één
+  formulier twee keer. Vuistregel: bij Meta alleen aanvinken wat Meta zelf niet al onder
+  `lead` schaart; bij Google is de aangevinkte actie juist het hele leadcijfer. Zolang er
+  niets is aangevinkt, laat Google Ads de kolommen Leads en Kosten per lead weg
+  (`verbergZonderConversieLeads`).
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus

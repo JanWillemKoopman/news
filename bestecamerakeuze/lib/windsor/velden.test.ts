@@ -110,6 +110,57 @@ test("statistiek-id's zijn uniek binnen een pagina", () => {
   }
 });
 
+// Bereik is gededupliceerd: het platform telt verschillende mensen en doet dat per
+// opgevraagde dag opnieuw, dus onze som is per definitie hoger dan wat Ads Manager over
+// dezelfde periode toont. De vlag `nietOptelbaar` is wat de pagina dat laat zeggen —
+// valt hij weg, dan staat er weer een getal dat niemand kan terugvinden.
+test("bereik staat als gededupliceerd gemarkeerd", () => {
+  const bereik = ADVERTENTIE_STATISTIEKEN.find((s) => s.id === "bereik");
+  assert.ok(bereik, "bereik hoort in de advertentiestatistieken te staan");
+  assert.equal(bereik.nietOptelbaar, true);
+});
+
+test("een afgeleide die op een gededupliceerd veld deelt, erft die markering", () => {
+  for (const lijst of [ADVERTENTIE_STATISTIEKEN, POST_STATISTIEKEN, ACCOUNT_STATISTIEKEN]) {
+    const gededupliceerd = new Set(
+      lijst.filter((s) => s.nietOptelbaar && !s.afgeleid).map((s) => s.id),
+    );
+    for (const s of lijst) {
+      if (!s.afgeleid) continue;
+      const raakt =
+        gededupliceerd.has(s.afgeleid.teller) || gededupliceerd.has(s.afgeleid.noemer);
+      if (!raakt) continue;
+      assert.equal(
+        s.nietOptelbaar,
+        true,
+        `${s.id} rekent met een gededupliceerd veld en hoort dus ook nietOptelbaar te zijn`,
+      );
+    }
+  }
+});
+
+// De uitleg is wat een marketeer leest voordat hij een cijfer met Ads Manager
+// vergelijkt. Waar onze definitie afwijkt van wat het platform meet, moet dat er staan —
+// anders is het dashboard precies zo betrouwbaar als het niet is.
+test("de uitleg noemt de afwijking waar die er is", () => {
+  const bij = (id: string) => {
+    const s = ADVERTENTIE_STATISTIEKEN.find((s) => s.id === id);
+    assert.ok(s, `${id} ontbreekt`);
+    return s.uitleg.toLowerCase();
+  };
+
+  // Meta's post_engagement telt klikken en videoweergaven mee; wie hier alleen
+  // "reacties, likes en delen" leest, vergelijkt appels met peren.
+  assert.match(bij("interacties"), /klik/);
+  // Meta telt een videoweergave vanaf 3 seconden, LinkedIn al vanaf 2.
+  assert.match(bij("videoweergaven"), /twee|2 seconden/);
+  // Meta's conversietotaal is bij ons de som van de maatwerkacties, en die overlappen.
+  assert.match(bij("conversies"), /overlap|dubbel|twee keer/);
+  // Voor Meta halen we geen conversiewaarde op, dus roas is daar per definitie leeg.
+  assert.match(bij("conversiewaarde"), /meta/);
+  assert.match(bij("bereik"), /ads manager|ontdubbel/);
+});
+
 test("omni-acties tellen niet als maatwerkconversie bij Meta", () => {
   // Meta weigert deze velden zodra je uitsplitst naar plaatsing, en die uitsplitsing
   // wint. Zonder deze uitzondering mislukte de hele Meta-sync met één foutmelding

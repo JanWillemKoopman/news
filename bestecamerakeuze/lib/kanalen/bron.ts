@@ -168,8 +168,17 @@ const METINGEN_SOM = ADVERTENTIE_METINGEN.map((m) => `coalesce(sum(${m}), 0) as 
  * `windsor_conversie_keuze` (zie de pagina Koppeltabel).
  *
  * Optellen bij `leads` en niet vervangen: bij Meta zit `actions_lead` al in die kolom en
- * staan de maatwerkacties los daarvan in de jsonb. Dubbeltellen kan niet, want de vaste
- * actievelden komen nooit in de jsonb terecht (zie `isConversieActie` in velden.ts).
+ * staan de maatwerkacties los daarvan in de jsonb. Hetzelfde véld kan daardoor niet twee
+ * keer meetellen — de vaste actievelden komen nooit in de jsonb terecht (zie
+ * `isConversieActie` in velden.ts).
+ *
+ * Dezelfde *gebeurtenis* kan dat wél, en dat is de valkuil hier. Meta's `lead` is al een
+ * optelsom: leadformulieren, Messenger én de leads die de pixel op de site meet. Wijst
+ * iemand op de Koppeltabel een Meta-actie aan die daar een onderdeel van is (de pixel-
+ * variant van hetzelfde formulier bijvoorbeeld), dan telt één ingevuld formulier hier
+ * twee keer. Voor Google speelt dat niet — daar staat `leads` hard op nul en ís de
+ * aangewezen actie het hele leadcijfer. Bij Meta hoort de vuistregel dus te zijn: alleen
+ * aanvinken wat Meta zélf niet al onder `lead` schaart.
  */
 function metingenSom(metConversies: boolean): string {
   if (!metConversies) return METINGEN_SOM;

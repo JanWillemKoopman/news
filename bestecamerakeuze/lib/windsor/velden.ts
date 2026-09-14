@@ -14,6 +14,24 @@
  * vertoningen telt dan even zwaar als een met tienduizend. Een afgeleide statistiek
  * wordt daarom altijd ná het optellen berekend, uit de sommen van zijn twee bronnen.
  * Dat is precies waar dashboards het vaakst stilletjes de mist in gaan.
+ *
+ * ## De derde soort: gededupliceerd
+ *
+ * Bereik is geen van beide. Het platform telt daar **verschillende mensen**, en dat doet
+ * het per opgevraagde korrel opnieuw: wie op drie dagen naar dezelfde advertentie keek
+ * telt in de dagcijfers drie keer en in het periodecijfer één keer. Wij bewaren
+ * dagcijfers, dus wat het dashboard optelt is per definitie hoger dan wat Meta Ads
+ * Manager over dezelfde periode toont. Dat is geen fout in de optelling maar een grens
+ * van de data; die statistieken staan hieronder met `nietOptelbaar` gemarkeerd zodat de
+ * pagina het erbij kan zeggen in plaats van een getal te tonen dat nergens op slaat.
+ *
+ * ## De definities komen van het platform, niet van ons
+ *
+ * Elke `uitleg` hieronder beschrijft wat het platform daadwerkelijk meet, ook waar dat
+ * ongemakkelijk is: Meta's post_engagement telt kliks mee, Meta's videoweergave begint
+ * bij drie seconden en die van LinkedIn bij twee. Wie hier een mooiere zin van maakt,
+ * maakt het dashboard onbetrouwbaar — dan staat er iets anders op de pagina dan in Ads
+ * Manager, en dat is precies wat dit bestand hoort te voorkomen.
  */
 
 import type { Connector } from "@/lib/windsor/api";
@@ -36,6 +54,14 @@ export interface Statistiek {
   afgeleid?: { teller: string; noemer: string; maal?: number };
   /** Lager is beter (kosten per klik, kosten per lead) — bepaalt de kleur van een verschil. */
   lagerIsBeter?: boolean;
+  /**
+   * Het platform ontdubbelt dit cijfer, dus optellen over dagen overschat het.
+   *
+   * Geldt voor bereik, en voor een afgeleide die bereik als noemer heeft. De UI zet er
+   * een waarschuwing bij in plaats van "totaal in deze selectie" te beloven; zie de
+   * toelichting bovenaan dit bestand.
+   */
+  nietOptelbaar?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,14 +86,21 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "bereik",
     label: "Bereik",
-    uitleg: "Hoeveel verschillende mensen de advertentie minstens één keer zagen.",
+    uitleg:
+      "Per dag het aantal verschillende mensen dat de advertentie zag, over de dagen heen opgeteld. " +
+      "Wie op drie dagen keek telt hier dus drie keer; Ads Manager ontdubbelt over de hele periode en " +
+      "laat daardoor een lager getal zien. Bruikbaar om campagnes met elkaar te vergelijken, niet om " +
+      "te zeggen hoeveel mensen je bereikte.",
     eenheid: "aantal",
     standaard: true,
+    nietOptelbaar: true,
   },
   {
     id: "klikken",
     label: "Klikken",
-    uitleg: "Alle klikken op de advertentie, ook die niet naar de website leiden.",
+    uitleg:
+      "Alle klikken op de advertentie, ook die niet naar de website leiden — in Ads Manager heet dit " +
+      "'Klikken (alle)' en niet 'Linkklikken'.",
     eenheid: "aantal",
     standaard: true,
   },
@@ -81,35 +114,49 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "interacties",
     label: "Interacties",
-    uitleg: "Reacties, likes, opslagen en delen op de advertentie bij elkaar.",
+    uitleg:
+      "Alles wat mensen met de advertentie deden bij elkaar opgeteld — klikken, reacties, likes, " +
+      "delen én videoweergaven tellen hier mee. Dit is Meta's 'post engagement', dus een stuk breder " +
+      "dan alleen reacties.",
     eenheid: "aantal",
     standaard: false,
   },
   {
     id: "videoweergaven",
     label: "Videoweergaven",
-    uitleg: "Hoe vaak de video minstens drie seconden is bekeken.",
+    uitleg:
+      "Hoe vaak de video is aangekeken. Let op: één getal over twee definities — Meta telt vanaf drie " +
+      "seconden, LinkedIn al vanaf twee seconden met de video half in beeld.",
     eenheid: "aantal",
     standaard: false,
   },
   {
     id: "leads",
     label: "Leads",
-    uitleg: "Ingevulde leadformulieren die het platform aan deze advertentie toeschrijft.",
+    uitleg:
+      "Leads die het platform aan deze advertentie toeschrijft. Meta telt daarin leadformulieren, " +
+      "Messenger én leads die de pixel op de site meet; LinkedIn telt alleen zijn eigen Lead " +
+      "Gen-formulieren. Aangewezen conversie-acties uit de koppeltabel komen hier bovenop.",
     eenheid: "aantal",
     standaard: true,
   },
   {
     id: "conversies",
     label: "Conversies",
-    uitleg: "Alle conversie-acties samen die het platform aan deze advertentie toeschrijft.",
+    uitleg:
+      "Alle conversie-acties bij elkaar opgeteld. Dit getal staat zo niet in Ads Manager: bij Meta is " +
+      "het de som van álle maatwerkacties, en die kunnen elkaar overlappen (één formulier dat zowel " +
+      "een pixelconversie als een leadactie afvuurt telt twee keer). Bij LinkedIn zijn het alleen de " +
+      "conversies die de pixel op de site meet.",
     eenheid: "aantal",
     standaard: true,
   },
   {
     id: "conversiewaarde",
     label: "Conversiewaarde",
-    uitleg: "De waarde die aan die conversies is toegekend, voor zover die is ingesteld.",
+    uitleg:
+      "De waarde die aan die conversies is toegekend. Alleen gevuld voor LinkedIn en Google — voor " +
+      "Meta halen we nog geen waarde op, daar staat dus altijd nul.",
     eenheid: "euro",
     standaard: false,
   },
@@ -118,7 +165,9 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "ctr",
     label: "CTR",
-    uitleg: "Van elke honderd vertoningen dit percentage geklikt.",
+    uitleg:
+      "Van elke honderd vertoningen dit percentage geklikt. Gerekend met álle klikken, dus dit is " +
+      "Ads Manager's 'CTR (alle)' en niet de CTR op linkklikken.",
     eenheid: "procent",
     standaard: true,
     afgeleid: { teller: "klikken", noemer: "vertoningen", maal: 100 },
@@ -126,7 +175,9 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "cpc",
     label: "Kosten per klik",
-    uitleg: "Wat één klik gemiddeld kostte in deze selectie.",
+    uitleg:
+      "Wat één klik gemiddeld kostte in deze selectie. Gerekend met álle klikken, dus Ads Manager's " +
+      "'CPC (alle)'.",
     eenheid: "euro",
     standaard: true,
     afgeleid: { teller: "uitgaven", noemer: "klikken" },
@@ -153,7 +204,9 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "cpa",
     label: "Kosten per conversie",
-    uitleg: "Wat één conversie gemiddeld kostte in deze selectie.",
+    uitleg:
+      "Wat één conversie gemiddeld kostte in deze selectie. Erft de kanttekening bij Conversies: " +
+      "overlappen de acties elkaar, dan valt dit bedrag te laag uit.",
     eenheid: "euro",
     standaard: false,
     afgeleid: { teller: "uitgaven", noemer: "conversies" },
@@ -162,15 +215,21 @@ export const ADVERTENTIE_STATISTIEKEN: Statistiek[] = [
   {
     id: "frequentie",
     label: "Frequentie",
-    uitleg: "Hoe vaak dezelfde persoon de advertentie gemiddeld zag.",
+    uitleg:
+      "Vertoningen gedeeld door bereik. Omdat het bereik per dag is opgeteld, valt dit over een " +
+      "langere periode structureel te laag uit — Ads Manager komt hoger uit. Alleen op één dag is " +
+      "dit hetzelfde getal.",
     eenheid: "aantal",
     standaard: false,
     afgeleid: { teller: "vertoningen", noemer: "bereik" },
+    nietOptelbaar: true,
   },
   {
     id: "roas",
     label: "Rendement op advertentiebudget",
-    uitleg: "Hoeveel euro conversiewaarde elke uitgegeven euro opleverde.",
+    uitleg:
+      "Hoeveel euro conversiewaarde elke uitgegeven euro opleverde. Voor Meta dus altijd leeg, want " +
+      "daar halen we geen conversiewaarde op.",
     eenheid: "aantal",
     standaard: false,
     afgeleid: { teller: "conversiewaarde", noemer: "uitgaven" },
