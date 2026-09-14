@@ -101,7 +101,7 @@ const fontVariabelen = [
 ].join(" ");
 
 export const metadata: Metadata = {
-  title: "Campagnedashboard",
+  title: "Marketing dashboard",
   description: "Live overzicht van alle marketingcampagnes, naast elkaar te vergelijken.",
 };
 
