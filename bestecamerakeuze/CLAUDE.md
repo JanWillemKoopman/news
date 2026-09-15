@@ -401,6 +401,24 @@ niet uit af te lezen zijn:
   - **Er komt geen cijfer bij.** `totaal` is exact wat de kanaalpagina's al tonen. Dit
     blok splitst dat uit; het is nadrukkelijk geen derde waarheid over dezelfde getallen.
     Zet er dus ook nooit een KPI-tegel van.
+- **De thumbnail hoort niet in een periode-optelling.** `windsor_advertenties` is 279 MB
+  bij 248.000 rijen, en 537 van de gemiddeld 785 bytes per rij zijn `thumbnail_url` — de
+  creative-URL van Meta, elke dag opnieuw meegeschreven bij elke advertentie. Zolang die
+  kolom meedoet in de `group by` van de detailquery, moet de database voor élke dagregel
+  de volle rij van schijf halen; en omdat de rijen van Meta en Google door elkaar heen
+  staan, raakt een query die alleen Google wil vrijwel die hele 279 MB aan. Twaalf maanden
+  Google liep daardoor met 17,8 s tegen de `statement_timeout` van 15 s aan ("canceling
+  statement due to statement timeout") terwijl 7, 30 en 90 dagen gewoon laadden — de
+  eerste keer dat dit dashboard tegen zijn eigen datagrootte opliep. Sinds migratie 0022
+  draagt `windsor_advertenties_dashboard_idx` alles wat de pagina's optellen (index only
+  scan, 1,4 s) en hangt de thumbnail eronder met een `left join lateral`, alleen voor de
+  regels die echt op het scherm komen. Zet hem dus niet terug in de groepering, en voeg
+  hem ook niet toe aan die index: die ene kolom maakt de index ruim drie keer zo groot en
+  brengt precies terug wat hij oplost. Een laag hoger geldt hetzelfde principe:
+  `metVerbinding` zet `work_mem` op 64 MB met `set local` in een expliciete transactie —
+  een jaar past niet in de standaard, en dan valt de groepering terug op sorteren op
+  schijf (`set local`, want `DATAQUERY_DATABASE_URL` wijst naar de transaction pooler en
+  een kale `set` belandt daar op een verbinding die zo weer wordt uitgeleend).
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus
