@@ -10,7 +10,12 @@
  * naar de browser te sturen. Daarom vat de server elk apart samen:
  *
  *   reeks   dag × account × platform × campagne      ≈ 5.500 rijen per kwartaal
- *   detail  advertentie, opgeteld over de periode    ≈ 200 – 450 rijen
+ *   detail  advertentie, opgeteld over de periode    ≈ 7.900 rijen over een jaar
+ *
+ * Die 7.900 stond hier eerst als "≈ 200 – 450 rijen", en dat was er ruim naast: de
+ * detailkubus splitst ook op plaatsing en advertentiegroep, en dat vermenigvuldigt. Het
+ * is de moeite waard te weten wat er werkelijk staat, want op die aanname was ooit de
+ * limiet hieronder gebaseerd.
  *
  * Ze delen hun filterdimensies, dus één filterselectie werkt meteen op allebei zonder
  * dat er iets opnieuw opgehaald hoeft te worden. Dat is de hele truc achter "filteren
@@ -47,8 +52,30 @@ const STATEMENT_TIMEOUT_MS = 15_000;
  */
 const WORK_MEM = "64MB";
 
-/** Hoeveel detailregels een pagina maximaal meekrijgt; zie `Kubus.afgekapt`. */
-export const DETAIL_LIMIET = 2000;
+/**
+ * Er staat géén limiet meer op het aantal detailregels. Dat is een bewuste keuze en het
+ * is de moeite waard te weten waarom, want de limiet stond er ook niet voor niets.
+ *
+ * Wat hij aanrichtte. De detailkubus splitst op advertentie × plaatsing ×
+ * advertentiegroep, en over twaalf maanden Social ads zijn dat 7.885 regels. Afkappen op
+ * de 2.000 duurste liet er dus 5.885 vallen — samen € 9.729 van € 159.386 (6%) en 589
+ * van 6.867 leads (9%). Erger dan het totaal is de verspreiding: het verlies zit in
+ * kleine advertenties over álle campagnes, dus élke regel in de tabel klopt een beetje
+ * niet. Eén campagne van € 299 en 95 leads stond er als € 277 en 86 leads, met 21 van
+ * zijn 32 advertentieregels buiten beeld. De pagina meldde dat eerlijk, maar een
+ * waarschuwing is geen vervanging voor het juiste getal.
+ *
+ * Waarom hij weg kan. Hij bestond omdat de query traag was en de payload groot leek. Het
+ * eerste is opgelost (migratie 0023: 17,8 s → ~1,5 s), het tweede viel mee: 7.885 regels
+ * zijn ongeveer 0,9 MB aan kubusrijen plus 945 unieke advertenties aan meta, en de
+ * tabellen groeperen die regels alsnog tot hooguit een paar honderd zichtbare rijen.
+ *
+ * Waar je op moet letten als dit ooit gaat knellen: de grens ligt niet bij het aantal
+ * regels maar bij het geheugen van de browser, en die grens loopt op met de periode én
+ * met het aantal advertenties. Terugzetten is één `limit` in elk van de twee
+ * detailquery's plus `detail.afgekapt` weer op de vergelijking zetten; de melding in
+ * `StatistiekTabel.tsx` staat er nog en gaat dan vanzelf weer aan.
+ */
 
 export function isKanalenGeconfigureerd(): boolean {
   return Boolean(process.env.DATAQUERY_DATABASE_URL);
@@ -365,7 +392,6 @@ export async function haalAdvertenties(
           where a.datum between $1 and $2 and a.bron = any($3)
           group by ${groep(11)}
           order by sum(a.uitgaven) desc nulls last
-          limit ${DETAIL_LIMIET}
        )
        select r.*, c.thumbnail_url
          from regels r
@@ -391,7 +417,8 @@ export async function haalAdvertenties(
       { van, tot },
       { sleutel: "advertentie_id", velden: ["advertentie", "thumbnail_url", "preview_url", "advertentie_status"] },
     );
-    detail.afgekapt = detailRes.rows.length >= DETAIL_LIMIET;
+    // Niets afgekapt: er staat geen limiet meer op deze query. Zie de toelichting boven.
+    detail.afgekapt = false;
 
     return {
       reeks: bouwKubus(
@@ -740,8 +767,7 @@ export async function haalPosts(van: string, tot: string): Promise<PostData> {
               ${POST_METINGEN.map((m) => `coalesce(${m}, 0) as ${m}`).join(", ")}
          from dataloket.v_posts
         where datum between $1 and $2
-        order by vertoningen_organisch desc nulls last
-        limit ${DETAIL_LIMIET}`,
+        order by vertoningen_organisch desc nulls last`,
       [van, tot],
     );
 
@@ -756,7 +782,8 @@ export async function haalPosts(van: string, tot: string): Promise<PostData> {
       { van, tot },
       { sleutel: "post_id", velden: ["tekst", "permalink", "afbeelding_url"] },
     );
-    detail.afgekapt = detailRes.rows.length >= DETAIL_LIMIET;
+    // Niets afgekapt: er staat geen limiet meer op deze query. Zie de toelichting boven.
+    detail.afgekapt = false;
 
     return {
       reeks: bouwKubus(

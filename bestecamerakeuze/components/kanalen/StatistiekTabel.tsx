@@ -34,8 +34,14 @@ import type { Statistiek } from "@/lib/windsor/velden";
  */
 
 /**
- * Moet gelijk blijven aan `DETAIL_LIMIET` in `lib/kanalen/bron.ts`; die module importeert
- * `pg` en hoort daarom niet in een client component thuis.
+ * Het getal dat in de afkapmelding hieronder staat.
+ *
+ * Op dit moment zet geen enkele query `kubus.afgekapt` nog op waar: de limiet is uit
+ * `lib/kanalen/bron.ts` gehaald omdat hij regels liet vallen die de tabellen wél nodig
+ * hadden (zie de toelichting daar). De melding blijft staan omdat de limiet terug kan
+ * komen zodra een periode ooit te groot wordt voor de browser — zet hem dan in bron.ts
+ * terug en werk dit getal bij, want die module importeert `pg` en hoort niet in een
+ * client component thuis.
  */
 const DETAIL_LIMIET = 2000;
 
