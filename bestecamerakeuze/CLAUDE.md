@@ -583,7 +583,7 @@ verandering — en niet alleen een cijfer extra te tonen. Wat daar nu voor staat
     staat daarom in de berichtentabel alleen bij een beheerder (twee klikken: de knop
     wordt eerst "Weg?"), en in het logboek per campagne alleen bij je eigen regels. De
     regel staat op drie plekken en hoort dat ook te blijven: de RLS-policy
-    (`0025_berichten_verwijderen.sql`), de DELETE-route en pas daarna de knop.
+    (`0026_berichten_verwijderen.sql`), de DELETE-route en pas daarna de knop.
   - Er komt **geen tweede tabel** voor in de database: het leest en schrijft
     `dataloket.campagne_notities` via dezelfde POST-route als het logboek zelf. Dat geldt
     ook voor alles op het scoretabblad hieronder — punten, weken, streaks en prijzen zijn

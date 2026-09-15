@@ -43,7 +43,7 @@ export function isBeheerder(email: string | null | undefined): boolean {
 // puntentelling — het weghalen van andermans bericht verandert diens weekstand.
 //
 // Afgedwongen op drie plekken, in deze volgorde van belang: de RLS-policy op
-// dataloket.campagne_notities (0025_berichten_verwijderen.sql), de DELETE-route in
+// dataloket.campagne_notities (0026_berichten_verwijderen.sql), de DELETE-route in
 // app/api/campagne-notities/[id], en pas daarna de knop in de UI.
 export function magBerichtVerwijderen(
   gebruiker: { id: string; email: string | null },
