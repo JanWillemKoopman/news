@@ -97,7 +97,7 @@ In Vercel (of `.env.local` voor lokaal):
 | `SYNC_DATABASE_URL` | schrijvende verbinding, alleen voor de sync-job |
 | `CRON_SECRET` | beschermt `/api/sync` en `/api/windsor-sync` tegen aanroepen van buiten |
 | `WINDSOR_API_KEY` | de sleutel van Windsor.ai, voor de nachtelijke sync van de kanaaldata |
-| `WINDSOR_ACCOUNTS_*` | optioneel: per connector de accountlijst overschrijven (zie `lib/windsor/api.ts`) |
+| `WINDSOR_ACCOUNTS_*` | optioneel: per connector de accountlijst overschrijven (zie `lib/windsor/api.ts`), bijvoorbeeld `WINDSOR_ACCOUNTS_GA4` voor de GA4-properties |
 | `SUPABASE_SERVICE_ROLE_KEY` | alleen voor `scripts/maak-gebruiker.ts`, nooit in de app zelf — zie hieronder |
 
 `DATAQUERY_DATABASE_URL` en `SYNC_DATABASE_URL` horen **verschillende** rollen te zijn.
@@ -275,10 +275,10 @@ curl -X POST https://<jouw-app>/api/sync -H "Authorization: Bearer $CRON_SECRET"
 
 ### De Windsor-sync (kanaaldata)
 
-Draait als drie aparte crons, elk in een eigen uur: advertenties om 02:10 UTC,
-organisch om 03:10, account om 04:10. Waarom gesplitst: één run over alles heen past
-niet binnen de vijf minuten die een serverless functie krijgt — Facebook organic alleen
-al deed er in de meting 131 seconden over.
+Draait als vier aparte crons, elk in een eigen uur: advertenties om 02:10 UTC,
+organisch om 03:10, account om 04:10 en website (Google Analytics 4) om 05:10. Waarom
+gesplitst: één run over alles heen past niet binnen de vijf minuten die een serverless
+functie krijgt — Facebook organic alleen al deed er in de meting 131 seconden over.
 
 Waarom een heel uur ertussen en niet een kwartier: op het Hobby-plan van Vercel is de
 cron-timing **per uur nauwkeurig, met een marge van 59 minuten**. Een cron op 02:10
@@ -286,11 +286,13 @@ vuurt ergens tussen 02:00 en 02:59. Staan de drie delen binnen hetzelfde uur, da
 onderlinge volgorde dus niet gegarandeerd — en die volgorde doet ertoe: `organisch`
 koppelt aan het eind de posts aan de advertenties die erop stonden, en leest daarvoor de
 advertentietabel. Met een uur ertussen overlappen de vensters niet en ligt de volgorde
-vast. Op een Pro-plan is de timing per minuut en zou een kwartier volstaan.
+vast. Op een Pro-plan is de timing per minuut en zou een kwartier volstaan. `website`
+heeft die afhankelijkheid niet — GA4 schrijft in zijn eigen vier tabellen en leest
+nergens uit de andere — dus dat deel mag desnoods naast een ander vallen.
 
 ```bash
 BASIS=https://<jouw-app>/api/windsor-sync
-for deel in advertenties organisch account; do
+for deel in advertenties organisch account website; do
   curl -X POST "$BASIS?deel=$deel" -H "Authorization: Bearer $CRON_SECRET"
 done
 ```
@@ -323,6 +325,39 @@ melding. Vandaar de huidige opzet:
   antwoord onder `restant` welke periode nog te doen is. De knop "Data ophalen" roept de
   route daarmee opnieuw aan tot dat leeg is, en toont ondertussen tot welke datum de
   historie binnen is.
+
+#### Wat `deel=website` ophaalt
+
+Vier opvragingen bij dezelfde GA4-connector, want GA4 kent geen rij waarin een sessie, een
+pagina en een event tegelijk passen — één sessie raakt tien pagina's en elke pagina vuurt
+vijf events. Ze schrijven in vier tabellen (migratie `0025_windsor_ga4.sql`):
+
+| Tabel | Korrel | Beantwoordt |
+| --- | --- | --- |
+| `windsor_ga4_verkeer` | dag × property × kanaalgroep × bron/medium × campagne × apparaat | hoeveel verkeer, en waar vandaan |
+| `windsor_ga4_landingspaginas` | dag × property × landingspagina × kanaalgroep × campagne | waar mensen instapten, en via welke weg |
+| `windsor_ga4_paginas` | dag × property × pagina × kanaalgroep | wat er daarna bekeken is |
+| `windsor_ga4_events` | dag × property × event × kanaalgroep | welke events en key events vuurden |
+
+Gemeten op de zestien properties samen: ongeveer 400 verkeerrijen, 1.900 landingspagina's,
+2.200 pagina's en 550 eventrijen per dag; dertig dagen ophalen duurde 26 seconden voor de
+zwaarste van de vier. Zeven van de zestien properties leveren op dit moment geen enkele
+rij — die staan stil of zijn nog niet in gebruik, en de sync schrijft er dan niets weg.
+
+Twee dingen die er bewust **niet** in zitten:
+
+- **Bron/medium bij een landingspagina.** Verdubbelt die tabel (gemeten 946 → 2.100 rijen
+  per dag op de grootste property) terwijl de kanaalgroep dezelfde vraag beantwoordt.
+- **De pagina bij een event.** Dat is de kruising die op één property van ±4.000 naar ruim
+  100.000 rijen per dag springt: vrijwel elk pad vuurt `page_view`, `scroll`,
+  `session_start` en `user_engagement`. Per pagina staat er daarom wél hoeveel events en
+  hoeveel key events er vuurden, maar niet welke.
+
+En één cijfer dat anders optelt dan de rest: **gebruikers**. GA4 ontdubbelt dat binnen de
+opgevraagde periode en wij bewaren dagcijfers, dus wie op drie dagen langskwam telt in een
+maandtotaal drie keer. Over één dag komt het overeen met GA4, daarboven ligt het hoger.
+Sessies, nieuwe gebruikers, weergaven, events en conversies tellen wél exact op. Het
+dashboard zegt dat bij het cijfer zelf en in de leeswijzer van het tabblad.
 
 De wekelijkse inhaalronde in `vercel.json` gebruikt om dezelfde reden `&terug=`: dat
 schuift het venster naar het verleden (`dagen=60&terug=60` is de periode van 120 tot 60

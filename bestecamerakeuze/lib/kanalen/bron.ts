@@ -858,6 +858,205 @@ export async function haalAccounts(van: string, tot: string): Promise<{ reeks: K
 }
 
 // ---------------------------------------------------------------------------
+// Website — Google Analytics 4
+// ---------------------------------------------------------------------------
+
+/**
+ * Vier kubussen in één antwoord, en waarom dat hier anders ligt dan bij de advertenties.
+ *
+ * Op de advertentiepagina's zijn `reeks` en `detail` twee samenvattingen van dezelfde
+ * rijen: dezelfde cijfers, een andere korrel. Hier zijn het vier verschillende tabellen
+ * met vier verschillende korrels, en dat is geen keuze van ons maar van GA4 — een sessie
+ * raakt tien pagina's, en een pagina vuurt vijf events. Optellen over pagina's levert dus
+ * een ander soort getal op dan optellen over sessies, en dat mag nooit per ongeluk in
+ * dezelfde kolom belanden.
+ *
+ * Wat ze delen: `website` en `kanaalgroep` zitten in alle vier. Daardoor werkt een filter
+ * op "Paid Search" of op één site meteen op het hele scherm, en niet op de helft ervan.
+ * `campagne` zit in verkeer en landingspagina's, `bron_medium` en `apparaat` alleen in
+ * verkeer; de pagina zegt er per tabel bij wanneer een actief filter er niet op kan
+ * werken (`zonderDimensies` in `WebsitePaneel.tsx`).
+ */
+const GA4_VERKEER_METINGEN = [
+  "sessies",
+  "gebruikers",
+  "nieuwe_gebruikers",
+  "betrokken_sessies",
+  "weergaven",
+  "conversies",
+  "betrokkenheidstijd",
+];
+
+const GA4_LANDINGS_METINGEN = [
+  "sessies",
+  "gebruikers",
+  "nieuwe_gebruikers",
+  "betrokken_sessies",
+  "conversies",
+];
+
+const GA4_PAGINA_METINGEN = [
+  "weergaven",
+  "gebruikers",
+  "sessies",
+  "events",
+  "conversies",
+  "betrokkenheidstijd",
+];
+
+const GA4_EVENT_METINGEN = ["events", "gebruikers", "conversies"];
+
+export interface WebsiteData {
+  /** Dag × website × kanaalgroep × bron/medium × campagne × apparaat — draagt de tijdas. */
+  reeks: Kubus;
+  /** De drie andere korrels, opgeteld over de periode. */
+  extra: Record<string, Kubus>;
+}
+
+/**
+ * Hoeveel regels een detailtabel hoogstens meekrijgt.
+ *
+ * Anders dan bij de advertenties staat hier wél een limiet, en de reden is het verschil
+ * in schaal: een dealergroep heeft een paar duizend advertenties per jaar maar een
+ * webshop heeft tienduizenden verschillende paden per maand (elke voorraadauto is er
+ * één). Zonder grens gaat een kwartaal aan pagina's met honderdduizenden regels naar de
+ * browser, en dat is precies waar het in-geheugen filteren op stukloopt.
+ *
+ * De grens valt op de **minst bekeken** pagina's, want er wordt op volume gesorteerd.
+ * Dat is een echt verlies en het wordt daarom gemeld: `kubus.afgekapt` zet de melding in
+ * `StatistiekTabel.tsx` aan, zodat de tabel niet stilletjes lager uitkomt dan de
+ * kerncijfers erboven. Wie een specifieke pagina zoekt die eronder valt, filtert op
+ * kanaal of kiest een kortere periode.
+ */
+const GA4_DETAIL_LIMIET = 3000;
+
+export async function haalWebsite(van: string, tot: string): Promise<WebsiteData> {
+  const { korrel, sql: datumSql } = korrelVoor(van, tot);
+
+  return metVerbinding(async (client) => {
+    const som = (metingen: string[]) =>
+      metingen.map((m) => `coalesce(sum(${m}), 0) as ${m}`).join(", ");
+
+    // Het verkeer houdt zijn tijdas: dit is de enige kubus waar de grafiek en de
+    // kerncijferstrip op rekenen. De vier herkomstdimensies blijven erin staan (en gaan
+    // dus niet naar een aparte detailkubus) omdat de filterbalk ze alle vier moet kunnen
+    // aanbieden — een filter dat de grafiek niet kent, filtert de grafiek niet.
+    const verkeerRes = await client.query(
+      `select ${datumSql}::text as datum,
+              coalesce(nullif(website, ''), account_id) as website,
+              coalesce(nullif(kanaalgroep, ''), 'Onbekend') as kanaalgroep,
+              coalesce(nullif(bron_medium, ''), 'Onbekend') as bron_medium,
+              coalesce(nullif(campagne, ''), 'Geen campagne') as campagne,
+              coalesce(nullif(apparaat, ''), 'Onbekend') as apparaat,
+              ${som(GA4_VERKEER_METINGEN)}
+         from dataloket.v_ga4_verkeer
+        where datum between $1 and $2
+        group by 1, 2, 3, 4, 5, 6
+        order by 1`,
+      [van, tot],
+    );
+
+    // De landingspagina's, opgeteld over de periode. Geen datum in de groepering: deze
+    // kubus voedt alleen tabellen, en per dag zou hij bij een kwartaal tien keer zo groot
+    // worden zonder dat er één vraag mee te beantwoorden valt die de verkeergrafiek niet
+    // al beantwoordt.
+    const landingRes = await client.query(
+      `select coalesce(nullif(website, ''), account_id) as website,
+              coalesce(nullif(landingspagina, ''), '(onbekend)') as landingspagina,
+              coalesce(nullif(kanaalgroep, ''), 'Onbekend') as kanaalgroep,
+              coalesce(nullif(campagne, ''), 'Geen campagne') as campagne,
+              ${som(GA4_LANDINGS_METINGEN)}
+         from dataloket.v_ga4_landingspaginas
+        where datum between $1 and $2
+        group by 1, 2, 3, 4
+        order by sum(sessies) desc nulls last
+        limit ${GA4_DETAIL_LIMIET}`,
+      [van, tot],
+    );
+
+    const paginaRes = await client.query(
+      `select coalesce(nullif(website, ''), account_id) as website,
+              coalesce(nullif(pagina, ''), '(onbekend)') as pagina,
+              coalesce(nullif(kanaalgroep, ''), 'Onbekend') as kanaalgroep,
+              ${som(GA4_PAGINA_METINGEN)}
+         from dataloket.v_ga4_paginas
+        where datum between $1 and $2
+        group by 1, 2, 3
+        order by sum(weergaven) desc nulls last
+        limit ${GA4_DETAIL_LIMIET}`,
+      [van, tot],
+    );
+
+    // Events zijn er een paar tientallen per site, dus hier hoeft niets afgekapt te
+    // worden — en dat is maar goed ook, want juist de zeldzame conversie is degene die je
+    // wilt zien.
+    const eventRes = await client.query(
+      `select coalesce(nullif(website, ''), account_id) as website,
+              coalesce(nullif(event_naam, ''), '(onbekend)') as event_naam,
+              coalesce(nullif(kanaalgroep, ''), 'Onbekend') as kanaalgroep,
+              ${som(GA4_EVENT_METINGEN)}
+         from dataloket.v_ga4_events
+        where datum between $1 and $2
+        group by 1, 2, 3
+        order by sum(events) desc nulls last`,
+      [van, tot],
+    );
+
+    const landingspaginas = bouwKubus(
+      landingRes.rows,
+      ["website", "landingspagina", "kanaalgroep", "campagne"],
+      GA4_LANDINGS_METINGEN,
+      korrel,
+      { van, tot },
+    );
+    landingspaginas.afgekapt = landingRes.rows.length >= GA4_DETAIL_LIMIET;
+
+    const paginas = bouwKubus(
+      paginaRes.rows,
+      ["website", "pagina", "kanaalgroep"],
+      GA4_PAGINA_METINGEN,
+      korrel,
+      { van, tot },
+    );
+    paginas.afgekapt = paginaRes.rows.length >= GA4_DETAIL_LIMIET;
+
+    const events = bouwKubus(
+      eventRes.rows,
+      ["website", "event_naam", "kanaalgroep"],
+      GA4_EVENT_METINGEN,
+      korrel,
+      { van, tot },
+    );
+    events.afgekapt = false;
+
+    // Dezelfde rijen, maar alleen de events die GA4 als key event telt. Twee kubussen uit
+    // één query in plaats van twee queries: het scheelt een scan, en het houdt de
+    // definitie van "conversie" op één plek — boven nul in de conversiekolom, en nergens
+    // een eigen lijstje met welke events dat zouden moeten zijn.
+    const conversieRijen = eventRes.rows.filter((r) => Number(r.conversies ?? 0) > 0);
+    const conversies = bouwKubus(
+      conversieRijen,
+      ["website", "event_naam", "kanaalgroep"],
+      GA4_EVENT_METINGEN,
+      korrel,
+      { van, tot },
+    );
+    conversies.afgekapt = false;
+
+    return {
+      reeks: bouwKubus(
+        verkeerRes.rows,
+        ["datum", "website", "kanaalgroep", "bron_medium", "campagne", "apparaat"],
+        GA4_VERKEER_METINGEN,
+        korrel,
+        { van, tot },
+      ),
+      extra: { landingspaginas, paginas, events, conversies },
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Koppeltabel
 // ---------------------------------------------------------------------------
 

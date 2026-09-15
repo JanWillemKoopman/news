@@ -11,20 +11,23 @@ export const maxDuration = 300;
 /**
  * De nachtelijke Windsor-sync, aangeroepen door Vercel Cron.
  *
- * ## Waarom in drie stukken
+ * ## Waarom in vier stukken
  *
  * Eén run over alles heen past niet binnen de vijf minuten die een serverless functie
- * krijgt: Facebook organic deed er in de meting alleen al 131 seconden over. Daarom drie
+ * krijgt: Facebook organic deed er in de meting alleen al 131 seconden over. Daarom vier
  * onderdelen die los draaien, elk met een eigen cron-regel in `vercel.json`:
  *
  *   ?deel=advertenties  — Meta, Google en LinkedIn Ads (±60 s)
  *   ?deel=organisch     — posts van Facebook, Instagram en LinkedIn (±120 s)
  *   ?deel=account       — pagina- en volgercijfers (±65 s)
+ *   ?deel=website       — de vier GA4-opvragingen (±60 s voor dertig dagen)
  *
- * Ze staan elk in een eigen uur (02:10, 03:10, 04:10 UTC). Op het Hobby-plan van Vercel
- * is de cron-timing per uur nauwkeurig met een marge van 59 minuten, dus drie delen
+ * Ze staan elk in een eigen uur (02:10, 03:10, 04:10, 05:10 UTC). Op het Hobby-plan van
+ * Vercel is de cron-timing per uur nauwkeurig met een marge van 59 minuten, dus delen
  * binnen hetzelfde uur zouden in willekeurige volgorde vallen — en `organisch` moet ná
- * `advertenties` draaien omdat het de posts aan de advertenties koppelt.
+ * `advertenties` draaien omdat het de posts aan de advertenties koppelt. `website` heeft
+ * die afhankelijkheid niet (GA4 staat los van de advertentietabellen) en mag dus gerust
+ * naast een ander deel vallen; hij schrijft in zijn eigen vier tabellen.
  *
  * Zonder `deel` draait alles achter elkaar; alleen verstandig met een ruimere timeout
  * dan Vercel geeft.
@@ -38,7 +41,8 @@ export const maxDuration = 300;
  * ronden de maanden dáárvoor opnieuw op: één keer per week schuift het venster ruim
  * genoeg terug om die na-ijl mee te nemen, zonder dat elke nacht vier maanden opnieuw
  * wordt opgehaald. Accountcijfers staan er niet bij — een volgersstand van gisteren
- * verandert niet meer.
+ * verandert niet meer. De website staat er wél bij: GA4 vult conversies en sessies nog
+ * dagen na dato aan zodra late toeschrijving binnenkomt.
  *
  * Twee ronden en niet één, omdat honderdtwintig dagen niet binnen de vijf minuten van een
  * functie passen. `terug` schuift het venster naar het verleden: `dagen=60&terug=60` is

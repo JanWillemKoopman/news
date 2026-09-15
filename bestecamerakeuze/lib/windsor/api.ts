@@ -1,8 +1,9 @@
 /**
  * De verbinding met Windsor.ai.
  *
- * Windsor bundelt zes advertentie- en socialconnectoren achter één REST-endpoint. Dit
- * bestand is de enige plek die dat endpoint kent; de rest van de app praat met Postgres.
+ * Windsor bundelt zeven advertentie-, social- en analyticsconnectoren achter één
+ * REST-endpoint. Dit bestand is de enige plek die dat endpoint kent; de rest van de app
+ * praat met Postgres.
  *
  * Drie dingen die uit het onderzoek kwamen en die hier zijn vastgelegd:
  *
@@ -32,7 +33,8 @@ export type Connector =
   | "instagram"
   | "linkedin"
   | "linkedin_organic"
-  | "google_ads";
+  | "google_ads"
+  | "googleanalytics4";
 
 /**
  * De accounts per connector.
@@ -73,6 +75,30 @@ const STANDAARD_ACCOUNTS: Record<Connector, string[]> = {
     "91687065", // VELOO
   ],
   google_ads: ["210-769-6929"], // Udenhout
+
+  // De GA4-properties: één per website. Zeven van de zestien leveren op dit moment geen
+  // enkele rij — dat zijn properties die nog geen verkeer hebben of niet meer gebruikt
+  // worden. Ze blijven bewust in de lijst staan: een property die stil is hoort niet uit
+  // de koppeling te verdwijnen, want dan mist hij zodra hij weer gaat lopen. De sync
+  // schrijft voor een lege property gewoon niets weg.
+  googleanalytics4: [
+    "251676153",
+    "255949462", // udenhout.nl
+    "306394313", // porschecentrummaastricht.nl
+    "306403800",
+    "344604643",
+    "348203200",
+    "371078499", // udenhout.shop
+    "381559171",
+    "404775128", // Kalkhoff fietsen
+    "404784989",
+    "405407306",
+    "414100849",
+    "414107852",
+    "435349999",
+    "442472211",
+    "469094476",
+  ],
 };
 
 const ENV_SLEUTEL: Record<Connector, string> = {
@@ -82,6 +108,7 @@ const ENV_SLEUTEL: Record<Connector, string> = {
   linkedin: "WINDSOR_ACCOUNTS_LINKEDIN",
   linkedin_organic: "WINDSOR_ACCOUNTS_LINKEDIN_ORGANIC",
   google_ads: "WINDSOR_ACCOUNTS_GOOGLE_ADS",
+  googleanalytics4: "WINDSOR_ACCOUNTS_GA4",
 };
 
 export function accountsVoor(connector: Connector): string[] {

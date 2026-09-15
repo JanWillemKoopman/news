@@ -9,6 +9,10 @@ import {
   syncConversieActies,
   syncFacebookPagina,
   syncFacebookPosts,
+  syncGa4Events,
+  syncGa4Landingspaginas,
+  syncGa4Paginas,
+  syncGa4Verkeer,
   syncGoogleAds,
   syncInstagramAccount,
   syncInstagramPosts,
@@ -32,7 +36,7 @@ import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
  * andere cijfers op dan de nacht.
  */
 
-export const DELEN = ["advertenties", "organisch", "account"] as const;
+export const DELEN = ["advertenties", "organisch", "account", "website"] as const;
 export type Deel = (typeof DELEN)[number];
 
 export function isDeel(waarde: unknown): waarde is Deel {
@@ -138,6 +142,7 @@ async function draai(
   const advertenties = alles || deel === "advertenties";
   const organisch = alles || deel === "organisch";
   const account = alles || deel === "account";
+  const website = alles || deel === "website";
 
   // De maatwerkconversies eerst, en maar één keer: welke velden er te halen zijn, bepaalt
   // wat de advertentie-opvragingen meenemen, en die catalogus verandert niet per stuk.
@@ -209,6 +214,31 @@ async function draai(
       tel(
         verzameld,
         await probeer(() => syncLinkedInPosts(client, stuk.van, stuk.tot), "linkedin-posts"),
+      );
+    }
+
+    if (website) {
+      // Vier opvragingen op vier korrels — GA4 heeft geen rij waarin een sessie, een
+      // pagina en een event tegelijk passen. Ze staan los van elkaar, dus een property
+      // die op één ervan een fout geeft laat de andere drie staan.
+      tel(
+        verzameld,
+        await probeer(() => syncGa4Verkeer(client, stuk.van, stuk.tot), "ga4-verkeer"),
+      );
+      tel(
+        verzameld,
+        await probeer(
+          () => syncGa4Landingspaginas(client, stuk.van, stuk.tot),
+          "ga4-landingspaginas",
+        ),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncGa4Paginas(client, stuk.van, stuk.tot), "ga4-paginas"),
+      );
+      tel(
+        verzameld,
+        await probeer(() => syncGa4Events(client, stuk.van, stuk.tot), "ga4-events"),
       );
     }
 

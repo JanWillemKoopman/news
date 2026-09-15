@@ -6,6 +6,7 @@ import {
   IconChevronUpDown,
   IconDownload,
   IconInfo,
+  IconSearch,
 } from "@/components/icons";
 import Verschilregel from "@/components/kanalen/Verschilregel";
 import { formatteer } from "@/components/chat/chartTheme";
@@ -34,19 +35,45 @@ import type { Statistiek } from "@/lib/windsor/velden";
  */
 
 /**
- * Het getal dat in de afkapmelding hieronder staat.
+ * De afkapmelding leest zijn getal uit de kubus zelf.
  *
- * Op dit moment zet geen enkele query `kubus.afgekapt` nog op waar: de limiet is uit
- * `lib/kanalen/bron.ts` gehaald omdat hij regels liet vallen die de tabellen wél nodig
- * hadden (zie de toelichting daar). De melding blijft staan omdat de limiet terug kan
- * komen zodra een periode ooit te groot wordt voor de browser — zet hem dan in bron.ts
- * terug en werk dit getal bij, want die module importeert `pg` en hoort niet in een
- * client component thuis.
+ * Hier stond een constante die de limiet uit `lib/kanalen/bron.ts` naschreef, en dat was
+ * één plek te veel: de advertentiequery's hebben hun limiet inmiddels helemaal niet meer
+ * (zie de toelichting daar) en de website-query's kappen op een ánder getal af. Een
+ * melding die het verkeerde aantal noemt is erger dan geen melding. `kubus.rijen.length`
+ * is per definitie het aantal regels dat binnenkwam, dus dat klopt bij elke bron.
  */
-const DETAIL_LIMIET = 2000;
 
 /** Sorteersleutel voor de datumkolom; geen statistiek, dus geen id uit `velden.ts`. */
 const DATUM_SORTEERSLEUTEL = "__datum";
+
+/**
+ * De rijen waarvan de naam van hun groep de zoekterm bevat.
+ *
+ * Vertaalt de zoekterm één keer naar een set van toegestane dimensie-indexen en filtert
+ * daarna alleen nog op integers — dezelfde truc als `filter()` in `kubus.ts`, en de reden
+ * dat zoeken in drieduizend pagina's niet merkbaar is. Zoekt op de gétoonde naam, dus op
+ * wat er in de tabel staat en niet op een id dat de gebruiker nooit ziet.
+ */
+function zoekRijen(
+  kubus: Kubus,
+  rijen: number[][],
+  groepeerOp: string,
+  labelVeld: string | undefined,
+  zoekterm: string,
+): number[][] {
+  if (!zoekterm) return rijen;
+  const kolom = kubus.dimensies.indexOf(groepeerOp);
+  if (kolom === -1) return rijen;
+
+  const labels = kubus.labels[groepeerOp] ?? [];
+  const toegestaan = new Set<number>();
+  labels.forEach((label, i) => {
+    const uitMeta = labelVeld ? kubus.meta?.[label]?.[labelVeld] : null;
+    if ((uitMeta ?? label).toLowerCase().includes(zoekterm)) toegestaan.add(i);
+  });
+  return rijen.filter((rij) => toegestaan.has(rij[kolom]));
+}
 
 type Props = {
   titel: string;
@@ -76,6 +103,27 @@ type Props = {
    */
   benchmark?: { dimensie: string; statistiekId: string; waarmee: string };
   uitlegAan: boolean;
+  /**
+   * Een zoekveld boven de tabel dat op de naam van de regel filtert.
+   *
+   * Opt-in, net als `zoekbaar` op `FilterSelect`: vijf kanalen hebben er niets aan,
+   * drieduizend pagina-paden wel. Het filtert de **rijen** en niet de zichtbare groepen —
+   * anders bleef de totaalregel over alles tellen en stond er "3 regels" boven een totaal
+   * van drieduizend.
+   */
+  zoekbaar?: boolean;
+  /** Mag de tabel dichtgeklapt worden? De kop blijft dan staan met zijn regelaantal. */
+  inklapbaar?: boolean;
+  /** Staat hij open bij het openen van de pagina? Alleen van belang met `inklapbaar`. */
+  standaardOpen?: boolean;
+  /**
+   * Maakt de naam van elke regel klikbaar, voor een uitsplitsing in de zijbalk.
+   *
+   * Bestaat voor de pagina Website: "welke kanalen brachten mensen op deze
+   * landingspagina" is een vraag die de kubus kan beantwoorden zonder nieuwe ophaalactie,
+   * maar niet in een platte tabel past.
+   */
+  onUitsplitsen?: (sleutel: string) => void;
 };
 
 export default function StatistiekTabel({
@@ -92,7 +140,13 @@ export default function StatistiekTabel({
   toonDatum = false,
   benchmark,
   uitlegAan,
+  zoekbaar = false,
+  inklapbaar = false,
+  standaardOpen = true,
+  onUitsplitsen,
 }: Props) {
+  const [zoek, setZoek] = useState("");
+  const [open, setOpen] = useState(standaardOpen);
   const standaardKolommen = useMemo(
     () => statistieken.filter((s) => s.standaard).map((s) => s.id),
     [statistieken],
@@ -107,6 +161,22 @@ export default function StatistiekTabel({
     [statistieken, zichtbaar],
   );
 
+  // Het zoekveld snijdt in de rijen, niet in de groepen. Zo blijven de groepen, de
+  // totaalregel en de vergelijking met de vorige periode alle drie over dezelfde
+  // verzameling rekenen — en telt wat je ziet op tot wat eronder staat.
+  const zoekterm = zoek.trim().toLowerCase();
+  const zichtbareRijen = useMemo(
+    () => zoekRijen(kubus, rijen, groepeerOp, labelVeld, zoekterm),
+    [kubus, rijen, groepeerOp, labelVeld, zoekterm],
+  );
+  const zichtbareVorige = useMemo(() => {
+    if (!vorige || !zoekterm) return vorige;
+    return {
+      kubus: vorige.kubus,
+      rijen: zoekRijen(vorige.kubus, vorige.rijen, groepeerOp, labelVeld, zoekterm),
+    };
+  }, [vorige, groepeerOp, labelVeld, zoekterm]);
+
   // Sorteren op een kolom die je via "Kolommen" hebt uitgezet, betekent kijken naar een
   // volgorde waarvan je de reden niet ziet. Valt daarom terug op de eerste kolom die er
   // nog wél staat.
@@ -116,7 +186,7 @@ export default function StatistiekTabel({
       : (kolommen.find((s) => s.id === sorteerOp)?.id ?? kolommen[0]?.id ?? "");
 
   const groepen = useMemo(() => {
-    const basis = groepeer(kubus, rijen, groepeerOp);
+    const basis = groepeer(kubus, zichtbareRijen, groepeerOp);
 
     if (actieveSortering === DATUM_SORTEERSLEUTEL) {
       return [...basis].sort((a, b) => {
@@ -141,27 +211,27 @@ export default function StatistiekTabel({
       if (wb === null) return -1;
       return oplopend ? wa - wb : wb - wa;
     });
-  }, [kubus, rijen, groepeerOp, statistieken, actieveSortering, oplopend]);
+  }, [kubus, zichtbareRijen, groepeerOp, statistieken, actieveSortering, oplopend]);
 
   // De vorige periode op dezelfde dimensie gegroepeerd, opzoekbaar op sleutel. Een groep
   // die toen niet bestond levert `null` en dus geen verschil — "nieuw" is dan het eerlijke
   // antwoord, niet "+100%".
   const vorigePerSleutel = useMemo(() => {
-    if (!vorige) return null;
+    if (!zichtbareVorige) return null;
     const kaart = new Map<string, Groep>();
-    for (const groep of groepeer(vorige.kubus, vorige.rijen, groepeerOp)) {
+    for (const groep of groepeer(zichtbareVorige.kubus, zichtbareVorige.rijen, groepeerOp)) {
       kaart.set(groep.sleutel, groep);
     }
     return kaart;
-  }, [vorige, groepeerOp]);
+  }, [zichtbareVorige, groepeerOp]);
 
   // De onderste regel telt over dezelfde rijen als de tabel, niet over de zichtbare
   // groepen: bij een afgeleide (CTR, kosten per lead) is het gewogen totaal iets anders
   // dan het gemiddelde van de regels erboven, en dat laatste zou hier gewoon fout zijn.
-  const totalen = useMemo(() => telOp(kubus, rijen), [kubus, rijen]);
+  const totalen = useMemo(() => telOp(kubus, zichtbareRijen), [kubus, zichtbareRijen]);
   const vorigeTotalen = useMemo(
-    () => (vorige ? telOp(vorige.kubus, vorige.rijen) : null),
-    [vorige],
+    () => (zichtbareVorige ? telOp(zichtbareVorige.kubus, zichtbareVorige.rijen) : null),
+    [zichtbareVorige],
   );
 
   /**
@@ -182,7 +252,7 @@ export default function StatistiekTabel({
     const rijenPerDimensie = new Map<string, number[][]>();
     const groepNaarDimensie = new Map<string, string>();
 
-    for (const rij of rijen) {
+    for (const rij of zichtbareRijen) {
       const dimensie = dimLabels[rij[dimKolom]] ?? "—";
       groepNaarDimensie.set(groepLabels[rij[groepKolom]] ?? "—", dimensie);
       const bestaand = rijenPerDimensie.get(dimensie);
@@ -195,7 +265,7 @@ export default function StatistiekTabel({
       totalenPerDimensie.set(dimensie, telOp(kubus, eigen));
     }
     return { groepNaarDimensie, totalenPerDimensie };
-  }, [benchmark, kubus, rijen, groepeerOp]);
+  }, [benchmark, kubus, zichtbareRijen, groepeerOp]);
 
   function benchmarkWaarde(groepSleutel: string, statistiek: Statistiek): number | null {
     if (!benchmarkPerGroep || !benchmark || statistiek.id !== benchmark.statistiekId) return null;
@@ -248,22 +318,61 @@ export default function StatistiekTabel({
 
   return (
     <section className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+      <header
+        className={`flex flex-wrap items-center justify-between gap-3 px-5 py-4 ${
+          open ? "border-b border-line" : ""
+        }`}
+      >
         <div>
-          <h2 className="font-sans-w7 text-cell font-semibold text-ink">{titel}</h2>
-          <p className="mt-0.5 text-meta text-ink-muted">
+          {/* Dichtgeklapt blijft de kop staan mét zijn regelaantal en toelichting: zo leest
+              een rij ingeklapte tabellen als een inhoudsopgave van wat er te halen valt,
+              in plaats van als verstopte inhoud. */}
+          {inklapbaar ? (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              className="flex items-center gap-1.5 text-left"
+            >
+              <IconChevronDown
+                className={`h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-[var(--duur-snel)] ease-merk ${
+                  open ? "" : "-rotate-90"
+                }`}
+              />
+              <h2 className="font-sans-w7 text-cell font-semibold text-ink">{titel}</h2>
+            </button>
+          ) : (
+            <h2 className="font-sans-w7 text-cell font-semibold text-ink">{titel}</h2>
+          )}
+          <p className={`mt-0.5 text-meta text-ink-muted ${inklapbaar ? "pl-5" : ""}`}>
             {groepen.length} {groepen.length === 1 ? "regel" : "regels"} · {toelichting}
           </p>
           {kubus.afgekapt && (
             <p className="mt-1 flex items-start gap-1.5 text-meta text-negative">
               <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Deze tabel is afgekapt op de {DETAIL_LIMIET.toLocaleString("nl-NL")} regels met de
-              hoogste uitgaven. Het totaal hieronder telt daarom lager uit dan het cijfer boven de
-              grafiek — verklein de periode of filter verder om alles mee te tellen.
+              Deze tabel is afgekapt op de {kubus.rijen.length.toLocaleString("nl-NL")} grootste
+              regels. Het totaal hieronder telt daarom lager uit dan het cijfer boven de grafiek —
+              verklein de periode of filter verder om alles mee te tellen.
             </p>
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Ook zichtbaar als de tabel dichtgeklapt is én er een zoekterm staat: het
+              regelaantal in de kop rekent die zoekterm mee, en een getal dat afwijkt zonder
+              dat je ziet waarom is precies wat dit dashboard niet hoort te doen. */}
+          {zoekbaar && (open || zoekterm) && (
+            <label className="relative">
+              <span className="sr-only">Zoeken in {groepLabel.toLowerCase()}</span>
+              <IconSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+              <input
+                type="search"
+                value={zoek}
+                onChange={(event) => setZoek(event.target.value)}
+                placeholder={`Zoek in ${groepLabel.toLowerCase()}`}
+                className="w-56 rounded-control border border-line bg-card py-1.5 pl-8 pr-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-line focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+              />
+            </label>
+          )}
           <button
             type="button"
             onClick={exporteer}
@@ -278,6 +387,7 @@ export default function StatistiekTabel({
         </div>
       </header>
 
+      {open && (
       <div className="max-h-[32rem] overflow-auto">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
@@ -347,7 +457,18 @@ export default function StatistiekTabel({
                         <Beeld url={extra?.thumbnail_url ?? extra?.afbeelding_url ?? null} />
                       )}
                       <div className="min-w-0">
-                        <p className="line-clamp-2 text-ink">{naamVan(groep)}</p>
+                        {onUitsplitsen ? (
+                          <button
+                            type="button"
+                            onClick={() => onUitsplitsen(groep.sleutel)}
+                            title="Uitsplitsen in de zijbalk"
+                            className="line-clamp-2 break-all text-left text-ink underline-offset-2 transition-colors duration-[var(--duur-snel)] hover:text-primary hover:underline"
+                          >
+                            {naamVan(groep)}
+                          </button>
+                        ) : (
+                          <p className="line-clamp-2 break-all text-ink">{naamVan(groep)}</p>
+                        )}
                         <span className="flex flex-wrap items-center gap-x-2">
                           {status && <Statusmerk status={status} />}
                           {extra?.preview_url && (
@@ -459,6 +580,7 @@ export default function StatistiekTabel({
           )}
         </table>
       </div>
+      )}
     </section>
   );
 }

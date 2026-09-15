@@ -9,6 +9,7 @@ import {
   IconBrain,
   IconCalendar,
   IconChat,
+  IconGlobe,
   IconMegaphone,
   IconPhoto,
   IconPin,
@@ -28,6 +29,7 @@ export type DashboardView =
   | "google-ads"
   | "organisch"
   | "account-ontwikkeling"
+  | "website"
   | "koppeltabel"
   | "prikbord"
   | "chat"
@@ -129,37 +131,42 @@ export default function Sidebar({
               staat niet in deze lijst maar bovenaan in het profielmenu (GebruikersMenu),
               boven Kosten — je komt er alleen als je iets te koppelen hebt, niet als
               onderdeel van de dagelijkse navigatie. */}
-          {toontBeperkteSecties && (
-            <>
-              <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-                Kanalen
-              </p>
-              <NavigationItem
-                icon={<IconAdHeart />}
-                label="Social ads"
-                active={actief === "social-ads"}
-                onClick={() => onNavigate("social-ads")}
-              />
-              <NavigationItem
-                icon={<IconSearch />}
-                label="Google Ads"
-                active={actief === "google-ads"}
-                onClick={() => onNavigate("google-ads")}
-              />
-              <NavigationItem
-                icon={<IconPhoto />}
-                label="Social organisch"
-                active={actief === "organisch"}
-                onClick={() => onNavigate("organisch")}
-              />
-              <NavigationItem
-                icon={<IconUserCircle />}
-                label="Social accounts"
-                active={actief === "account-ontwikkeling"}
-                onClick={() => onNavigate("account-ontwikkeling")}
-              />
-            </>
-          )}
+          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+            Kanalen
+          </p>
+          <NavigationItem
+            icon={<IconAdHeart />}
+            label="Social ads"
+            active={actief === "social-ads"}
+            onClick={() => onNavigate("social-ads")}
+          />
+          <NavigationItem
+            icon={<IconSearch />}
+            label="Google Ads"
+            active={actief === "google-ads"}
+            onClick={() => onNavigate("google-ads")}
+          />
+          <NavigationItem
+            icon={<IconPhoto />}
+            label="Social organisch"
+            active={actief === "organisch"}
+            onClick={() => onNavigate("organisch")}
+          />
+          <NavigationItem
+            icon={<IconUserCircle />}
+            label="Social accounts"
+            active={actief === "account-ontwikkeling"}
+            onClick={() => onNavigate("account-ontwikkeling")}
+          />
+          {/* Website staat onderaan de groep en niet bovenaan: de vier tabbladen
+              erboven gaan over wat je zelf de deur uit doet, dit tabblad over waar dat
+              landt. Je klikt hier dus naartoe vanuit een kanaal, niet andersom. */}
+          <NavigationItem
+            icon={<IconGlobe />}
+            label="Website"
+            active={actief === "website"}
+            onClick={() => onNavigate("website")}
+          />
 
           {toontBeperkteSecties && (
             <>
@@ -197,7 +204,7 @@ export default function Sidebar({
           naam={weergavenaam}
           email={gebruikerEmail}
           avatarUrl={profielAvatarUrl}
-          toontKoppeltabel={toontBeperkteSecties}
+          toontKoppeltabel
           onKoppeltabel={() => onNavigate("koppeltabel")}
           onKosten={() => onNavigate("kosten")}
           onInstellingen={() => onNavigate("instellingen")}

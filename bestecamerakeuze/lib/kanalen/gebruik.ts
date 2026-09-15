@@ -33,11 +33,21 @@ export type PaginaSleutel =
   | "google"
   | "organisch"
   | "account"
+  | "website"
   | "koppeltabel";
 
 export interface KanaalAntwoord {
   reeks?: Kubus;
   detail?: Kubus;
+  /**
+   * Kubussen op een andere korrel dan `reeks` en `detail`, op naam.
+   *
+   * Bestaat voor de pagina Website: GA4 levert pagina's, landingspagina's en events op
+   * drie korrels die je niet in één tabel mag optellen (één sessie raakt tien pagina's).
+   * Ze komen in hetzelfde antwoord mee zodat filteren zonder netwerk blijft werken, en
+   * een tabel wijst met `bron` aan welke hij leest.
+   */
+  extra?: Record<string, Kubus>;
   koppelingen?: unknown[];
   laatsteSync?: string | null;
   /** Draait er op dit moment een sync? Voedt de waarschuwing in "Data ophalen". */
@@ -54,6 +64,8 @@ export interface KanaalAntwoord {
 export interface KanaalData {
   reeks: Kubus;
   detail: Kubus;
+  /** De kubussen op een afwijkende korrel; leeg op alle pagina's behalve Website. */
+  extra: Record<string, Kubus>;
   ruw: KanaalAntwoord | null;
   bezig: boolean;
   fout: string | null;
@@ -64,10 +76,19 @@ export interface KanaalData {
   budgetten: CampagneBudget[];
   herlaad: () => void;
   /** De kubussen over de vorige, even lange periode — alleen als de vergelijking aanstaat. */
-  vorige: { reeks: Kubus; detail: Kubus } | null;
+  vorige: { reeks: Kubus; detail: Kubus; extra: Record<string, Kubus> } | null;
   vorigeBezig: boolean;
   vorigeGrenzen: Periode;
 }
+
+/**
+ * Eén gedeeld leeg object voor pagina's zonder extra kubussen.
+ *
+ * Bewust een constante en geen `{}` in de returnregel: dat zou bij elke render een nieuw
+ * object zijn, en dan draait elke `useMemo` die eraan hangt opnieuw zonder dat er iets
+ * veranderd is.
+ */
+const LEGE_EXTRA: Record<string, Kubus> = {};
 
 async function haalKubus(pagina: PaginaSleutel, periode: Periode, vers: boolean) {
   const res = await fetch(
@@ -154,12 +175,14 @@ export function useKanaalData(
     return {
       reeks: vorigeAntwoord.reeks ?? LEGE_KUBUS,
       detail: vorigeAntwoord.detail ?? LEGE_KUBUS,
+      extra: vorigeAntwoord.extra ?? {},
     };
   }, [vergelijk, vorigeAntwoord]);
 
   return {
     reeks: antwoord?.reeks ?? LEGE_KUBUS,
     detail: antwoord?.detail ?? LEGE_KUBUS,
+    extra: antwoord?.extra ?? LEGE_EXTRA,
     ruw: antwoord,
     bezig,
     fout,

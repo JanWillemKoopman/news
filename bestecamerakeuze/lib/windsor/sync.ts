@@ -35,6 +35,10 @@ import {
   type WindsorRij,
 } from "@/lib/windsor/api";
 import {
+  GA4_EVENTVELDEN,
+  GA4_LANDINGSVELDEN,
+  GA4_PAGINAVELDEN,
+  GA4_VERKEERVELDEN,
   OPHAALVELDEN,
   PAGINAVELDEN,
   isConversieActie,
@@ -1203,4 +1207,262 @@ export async function telPostsPerDag(client: Client, van: string): Promise<SyncR
     geschreven: res.rowCount ?? 0,
     duurMs: Date.now() - start,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Website — Google Analytics 4
+// ---------------------------------------------------------------------------
+
+/**
+ * Vier opvragingen, vier tabellen — en één gedeelde manier van ontdubbelen.
+ *
+ * GA4 levert per dag per property een rij per combinatie van dimensies. Net als bij de
+ * advertenties kan dezelfde sleutel twee keer binnenkomen zodra een dimensie leeg
+ * terugkomt ("(not set)" naast een lege string), en `insert … on conflict do update` mag
+ * dezelfde rij binnen één statement niet twee keer raken. Samenvoegen gebeurt daarom
+ * vóór het schrijven, en door **op te tellen**: twee rijen met dezelfde sleutel zijn twee
+ * stukjes van hetzelfde cijfer, geen correctie op elkaar. Dat is dezelfde afweging — en
+ * dezelfde eerder gemaakte fout — als bij `ontdubbel` hierboven.
+ */
+export function telSamen(
+  rijen: unknown[][],
+  sleutelIndexen: number[],
+  metingIndexen: number[],
+): unknown[][] {
+  const gezien = new Map<string, unknown[]>();
+  for (const rij of rijen) {
+    // NUL-byte als scheidingsteken, want een pagina-pad of campagnenaam mag zelf een
+    // spatie of streepje bevatten zonder dat twee sleutels samenvallen.
+    const sleutel = sleutelIndexen.map((i) => String(rij[i])).join("\u0000");
+    const eerdere = gezien.get(sleutel);
+    if (!eerdere) {
+      gezien.set(sleutel, rij);
+      continue;
+    }
+    for (const i of metingIndexen) eerdere[i] = getal(eerdere[i]) + getal(rij[i]);
+  }
+  return [...gezien.values()];
+}
+
+/**
+ * Een dimensiewaarde uit GA4.
+ *
+ * Leeg en "(not set)" worden allebei een lege string: het is dezelfde toestand, en twee
+ * schrijfwijzen voor "onbekend" leveren twee regels in de tabel op die niemand uit elkaar
+ * kan houden. De kolommen zijn `not null default ''`, dus een lege string is hier de
+ * enige veilige waarde — een NULL in de primary key telt in Postgres als uniek en zou de
+ * upsert laten verdubbelen.
+ */
+function dimensie(waarde: unknown): string {
+  const t = tekst(waarde);
+  if (!t) return "";
+  if (t === "(not set)") return "";
+  // Afkappen op duizend tekens. Niet uit zuinigheid maar omdat deze waarden in een
+  // primary key belanden, en een btree-indexregel in Postgres maximaal ~2.700 bytes mag
+  // zijn: één absurd lang pad zou anders niet die ene rij maar de hele batch van
+  // vijfhonderd laten omvallen, met een foutmelding waar niemand iets aan heeft. Duizend
+  // is ruim boven elk werkelijk voorkomend pad of event, dus in de praktijk gebeurt dit
+  // nooit — en gebeurt het tóch, dan verliezen we het staartje van één pad in plaats van
+  // een nacht aan data.
+  return t.length > 1000 ? t.slice(0, 1000) : t;
+}
+
+const GA4_VERKEER_KOLOMMEN = [
+  "datum",
+  "account_id",
+  "website",
+  "kanaalgroep",
+  "bron_medium",
+  "campagne",
+  "apparaat",
+  "sessies",
+  "gebruikers",
+  "nieuwe_gebruikers",
+  "betrokken_sessies",
+  "weergaven",
+  "conversies",
+  "betrokkenheidstijd",
+];
+
+export async function syncGa4Verkeer(
+  client: Client,
+  van: string,
+  tot: string,
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const rijen = await haalOp("googleanalytics4", GA4_VERKEERVELDEN, van, tot);
+
+  const uit = rijen
+    .filter((r) => tekst(r.date) && tekst(r.account_id))
+    .map((r) => [
+      tekst(r.date),
+      tekst(r.account_id) as string,
+      tekst(r.account_name),
+      dimensie(r.session_default_channel_group),
+      dimensie(r.session_source_medium),
+      dimensie(r.campaign),
+      dimensie(r.devicecategory),
+      getal(r.sessions),
+      getal(r.totalusers),
+      getal(r.newusers),
+      getal(r.engaged_sessions),
+      getal(r.screen_page_views),
+      getal(r.conversions),
+      // GA4 levert de betrokkenheidstijd in seconden; wij bewaren hem zo en delen pas in
+      // de browser. Een gemiddelde opslaan zou betekenen dat het over een periode niet
+      // meer opnieuw te berekenen is.
+      Math.round(getal(r.user_engagement_duration)),
+    ]);
+
+  const geschreven = await schrijfBatch(
+    client,
+    "windsor_ga4_verkeer",
+    GA4_VERKEER_KOLOMMEN,
+    telSamen(uit, [0, 1, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13]),
+    "datum, account_id, kanaalgroep, bron_medium, campagne, apparaat",
+  );
+  return { onderdeel: "ga4-verkeer", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
+}
+
+const GA4_LANDINGS_KOLOMMEN = [
+  "datum",
+  "account_id",
+  "website",
+  "landingspagina",
+  "kanaalgroep",
+  "campagne",
+  "sessies",
+  "gebruikers",
+  "nieuwe_gebruikers",
+  "betrokken_sessies",
+  "conversies",
+];
+
+export async function syncGa4Landingspaginas(
+  client: Client,
+  van: string,
+  tot: string,
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const rijen = await haalOp("googleanalytics4", GA4_LANDINGSVELDEN, van, tot);
+
+  const uit = rijen
+    .filter((r) => tekst(r.date) && tekst(r.account_id))
+    .map((r) => [
+      tekst(r.date),
+      tekst(r.account_id) as string,
+      tekst(r.account_name),
+      dimensie(r.landing_page),
+      dimensie(r.session_default_channel_group),
+      dimensie(r.campaign),
+      getal(r.sessions),
+      getal(r.totalusers),
+      getal(r.newusers),
+      getal(r.engaged_sessions),
+      getal(r.conversions),
+    ]);
+
+  const geschreven = await schrijfBatch(
+    client,
+    "windsor_ga4_landingspaginas",
+    GA4_LANDINGS_KOLOMMEN,
+    telSamen(uit, [0, 1, 3, 4, 5], [6, 7, 8, 9, 10]),
+    "datum, account_id, landingspagina, kanaalgroep, campagne",
+  );
+  return {
+    onderdeel: "ga4-landingspaginas",
+    gelezen: rijen.length,
+    geschreven,
+    duurMs: Date.now() - start,
+  };
+}
+
+const GA4_PAGINA_KOLOMMEN = [
+  "datum",
+  "account_id",
+  "website",
+  "pagina",
+  "kanaalgroep",
+  "weergaven",
+  "gebruikers",
+  "sessies",
+  "events",
+  "conversies",
+  "betrokkenheidstijd",
+];
+
+export async function syncGa4Paginas(
+  client: Client,
+  van: string,
+  tot: string,
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const rijen = await haalOp("googleanalytics4", GA4_PAGINAVELDEN, van, tot);
+
+  const uit = rijen
+    .filter((r) => tekst(r.date) && tekst(r.account_id))
+    .map((r) => [
+      tekst(r.date),
+      tekst(r.account_id) as string,
+      tekst(r.account_name),
+      dimensie(r.page_path),
+      dimensie(r.session_default_channel_group),
+      getal(r.screen_page_views),
+      getal(r.totalusers),
+      getal(r.sessions),
+      getal(r.event_count),
+      getal(r.conversions),
+      Math.round(getal(r.user_engagement_duration)),
+    ]);
+
+  const geschreven = await schrijfBatch(
+    client,
+    "windsor_ga4_paginas",
+    GA4_PAGINA_KOLOMMEN,
+    telSamen(uit, [0, 1, 3, 4], [5, 6, 7, 8, 9, 10]),
+    "datum, account_id, pagina, kanaalgroep",
+  );
+  return { onderdeel: "ga4-paginas", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
+}
+
+const GA4_EVENT_KOLOMMEN = [
+  "datum",
+  "account_id",
+  "website",
+  "event_naam",
+  "kanaalgroep",
+  "events",
+  "gebruikers",
+  "conversies",
+];
+
+export async function syncGa4Events(
+  client: Client,
+  van: string,
+  tot: string,
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const rijen = await haalOp("googleanalytics4", GA4_EVENTVELDEN, van, tot);
+
+  const uit = rijen
+    .filter((r) => tekst(r.date) && tekst(r.account_id) && tekst(r.event_name))
+    .map((r) => [
+      tekst(r.date),
+      tekst(r.account_id) as string,
+      tekst(r.account_name),
+      dimensie(r.event_name),
+      dimensie(r.session_default_channel_group),
+      getal(r.event_count),
+      getal(r.totalusers),
+      getal(r.conversions),
+    ]);
+
+  const geschreven = await schrijfBatch(
+    client,
+    "windsor_ga4_events",
+    GA4_EVENT_KOLOMMEN,
+    telSamen(uit, [0, 1, 3, 4], [5, 6, 7]),
+    "datum, account_id, event_naam, kanaalgroep",
+  );
+  return { onderdeel: "ga4-events", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }

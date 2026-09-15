@@ -7,6 +7,7 @@ import {
   haalSheetKoppelingen,
   haalSyncStand,
   haalPosts,
+  haalWebsite,
   isKanalenGeconfigureerd,
   type BudgetVraag,
 } from "@/lib/kanalen/bron";
@@ -16,9 +17,9 @@ import { getCampagnes } from "@/lib/sheet";
 export const dynamic = "force-dynamic";
 
 /**
- * De data achter de vijf Kanalen-pagina's.
+ * De data achter de zes Kanalen-pagina's.
  *
- * Eén route voor alle vijf, omdat ze hetzelfde patroon volgen: kies een pagina en een
+ * Eén route voor alle zes, omdat ze hetzelfde patroon volgen: kies een pagina en een
  * periode, krijg de kubus terug. De pagina filtert daarna zelf in het geheugen — dat is
  * waarom hier geen filterparameters staan. Zou het filteren hier gebeuren, dan kostte
  * elke klik op een filter een netwerkronde, en precies dat moest het niet worden.
@@ -28,7 +29,7 @@ export const dynamic = "force-dynamic";
  * en de verse op de achtergrond wordt opgehaald, in plaats van te moeten wachten.
  */
 
-const PAGINAS = ["social", "google", "organisch", "account", "koppeltabel"] as const;
+const PAGINAS = ["social", "google", "organisch", "account", "website", "koppeltabel"] as const;
 type Pagina = (typeof PAGINAS)[number];
 
 const CACHE = "private, max-age=300, stale-while-revalidate=3600";
@@ -126,6 +127,18 @@ export async function GET(request: Request) {
     if (pagina === "account") {
       const data = await haalAccounts(van, tot);
       return NextResponse.json({ pagina, ...data, laatsteSync, syncLoopt }, { headers: { "Cache-Control": CACHE } });
+    }
+
+    // De website levert vier kubussen in plaats van twee: GA4 kent geen rij waarin een
+    // sessie, een pagina en een event tegelijk passen. Ze gaan mee onder `extra`, zodat
+    // de pagina er tabellen op kan zetten zonder dat elke tabel een eigen ophaalactie
+    // wordt — filteren blijft zo ook hier iets wat zonder netwerk gebeurt.
+    if (pagina === "website") {
+      const data = await haalWebsite(van, tot);
+      return NextResponse.json(
+        { pagina, ...data, laatsteSync, syncLoopt },
+        { headers: { "Cache-Control": CACHE } },
+      );
     }
 
     const [data, budgetten] = await Promise.all([

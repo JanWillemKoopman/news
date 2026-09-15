@@ -451,3 +451,14 @@ export function IconUserCircle({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Website: de wereldbol, want dit tabblad gaat over de sites zelf en niet over een kanaal. */
+export function IconGlobe({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17" />
+      <path d="M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5s-1.1 6.2-3.3 8.5c-2.2-2.3-3.3-5.1-3.3-8.5S9.8 5.8 12 3.5Z" />
+    </svg>
+  );
+}
