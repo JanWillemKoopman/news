@@ -510,6 +510,15 @@ verandering — en niet alleen een cijfer extra te tonen. Wat daar nu voor staat
   één tabel, met daarboven dezelfde velden als filter. De logboekzijbalk is voor tijdens
   het kijken naar één campagne; dit tabblad is voor de vraag "wat hebben we de afgelopen
   weken eigenlijk geleerd?".
+  - **Verwijderen is een beheerdersrecht.** Je eigen berichten mag je altijd opruimen;
+    berichten van iedereen weghalen mogen alleen de twee beheeraccounts
+    (`isBeheerder` in `lib/gebruikersbeheer.ts` — dezelfde twee als bij Instellingen →
+    Gebruikers). Dat was eerder open voor iedereen, maar een bericht telt sinds de
+    puntentelling mee in andermans weekstand, streak en prijzenkast. De prullenbak
+    staat daarom in de berichtentabel alleen bij een beheerder (twee klikken: de knop
+    wordt eerst "Weg?"), en in het logboek per campagne alleen bij je eigen regels. De
+    regel staat op drie plekken en hoort dat ook te blijven: de RLS-policy
+    (`0025_berichten_verwijderen.sql`), de DELETE-route en pas daarna de knop.
   - Er komt **geen tweede tabel** voor in de database: het leest en schrijft
     `dataloket.campagne_notities` via dezelfde POST-route als het logboek zelf. Dat geldt
     ook voor alles op het scoretabblad hieronder — punten, weken, streaks en prijzen zijn

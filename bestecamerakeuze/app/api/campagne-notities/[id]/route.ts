@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { verwijderNotitie, wijzigNotitie } from "@/lib/campagneNotities";
+import { haalNotitie, verwijderNotitie, wijzigNotitie } from "@/lib/campagneNotities";
+import { magBerichtVerwijderen } from "@/lib/gebruikersbeheer";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,14 @@ export async function PATCH(request: Request, { params }: Ctx) {
   }
 }
 
+/**
+ * Verwijderen mag door de schrijver zelf en door de twee beheeraccounts — die laatsten
+ * mogen berichten van iedereen weghalen (zie lib/gebruikersbeheer.ts).
+ *
+ * De eigenaar wordt hier opgehaald in plaats van uit de client aangenomen: wie het
+ * bericht schreef staat in de rij, niet in het verzoek. De RLS-policy op de tabel houdt
+ * dezelfde regel aan, zodat een verzoek dat deze route omzeilt ook niets kan.
+ */
 export async function DELETE(_request: Request, { params }: Ctx) {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Log eerst in." }, { status: 401 });
@@ -48,6 +57,15 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   const { id } = await params;
   try {
     const supabase = await createClient();
+    const notitie = await haalNotitie(supabase, id);
+    if (!notitie) return NextResponse.json({ fout: "Niet gevonden." }, { status: 404 });
+    if (!magBerichtVerwijderen(gebruiker, notitie.aangemaaktDoor)) {
+      return NextResponse.json(
+        { fout: "Alleen je eigen berichten, of die van iedereen als beheerder." },
+        { status: 403 },
+      );
+    }
+
     await verwijderNotitie(supabase, id);
     return NextResponse.json({ ok: true });
   } catch (err) {

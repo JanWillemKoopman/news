@@ -63,6 +63,15 @@ type TeamDataValue = {
   wisMelding: () => void;
   /** Vinkt een actie af (of heropent hem) — direct zichtbaar, daarna pas opgeslagen. */
   zetActie: (bericht: Bericht, afgerond: boolean) => Promise<void>;
+  /**
+   * Mag deze collega berichten van iedereen verwijderen? Waar (alleen de twee
+   * beheeraccounts) staat de prullenbak in de berichtentabel; zie
+   * lib/gebruikersbeheer.ts. Server-side afgedwongen in de DELETE-route en in de
+   * RLS-policy op de tabel — dit is alleen wat de knop laat zien.
+   */
+  magAllesVerwijderen: boolean;
+  /** Gooit een bericht weg. De rij verdwijnt pas als de server het heeft bevestigd. */
+  verwijderBericht: (bericht: Bericht) => Promise<void>;
 };
 
 const TeamDataContext = createContext<TeamDataValue | null>(null);
@@ -85,12 +94,15 @@ export function TeamDataProvider({
   eigenId,
   eigenNaam,
   eigenAvatarUrl,
+  magAllesVerwijderen,
   children,
 }: {
   ingelogd: boolean;
   eigenId: string | null;
   eigenNaam: string | null;
   eigenAvatarUrl: string | null;
+  /** Komt uit `isBeheerder(email)` op de server — het e-mailadres zelf blijft daar. */
+  magAllesVerwijderen: boolean;
   children: ReactNode;
 }) {
   const [berichten, setBerichten] = useState<Bericht[] | null>(null);
@@ -246,6 +258,25 @@ export function TeamDataProvider({
     }
   }, []);
 
+  /**
+   * Verwijderen gaat andersom dan afvinken: eerst de server, dan pas het scherm.
+   *
+   * Een afvinkje dat mislukt zet je zonder schade terug; een weggehaalde regel die
+   * terugkomt omdat de server "mag niet" zei, is een bericht dat je dacht te hebben
+   * opgeruimd. Dus verdwijnt hij pas als hij écht weg is.
+   */
+  const verwijderBericht = useCallback(async (bericht: Bericht) => {
+    setFout(null);
+    const res = await fetch(`/api/campagne-notities/${bericht.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => ({}))) as { fout?: string };
+      const melding = json.fout ?? "Kon het bericht niet verwijderen.";
+      setFout(melding);
+      throw new Error(melding);
+    }
+    setBerichten((huidig) => (huidig ?? []).filter((b) => b.id !== bericht.id));
+  }, []);
+
   const value: TeamDataValue = {
     ingelogd,
     eigenId,
@@ -265,6 +296,8 @@ export function TeamDataProvider({
     melding,
     wisMelding,
     zetActie,
+    magAllesVerwijderen,
+    verwijderBericht,
   };
 
   return <TeamDataContext.Provider value={value}>{children}</TeamDataContext.Provider>;

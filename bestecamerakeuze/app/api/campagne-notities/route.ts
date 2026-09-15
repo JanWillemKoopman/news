@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { lijstNotities, maakNotitie } from "@/lib/campagneNotities";
+import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { isNotitieSoort, vindMetriek, vraagtOmMetriek } from "@/lib/notities";
 import { haalProfiel, haalProfielen } from "@/lib/profielen";
 
@@ -25,7 +26,16 @@ export async function GET(request: Request) {
       supabase,
       items.map((i) => i.aangemaaktDoor),
     );
-    return NextResponse.json({ items, profielen });
+    // Wie kijkt er mee: het logboek toont de prullenbak alleen bij berichten die deze
+    // collega ook echt mag weghalen — zijn eigen, of alle als hij beheerder is (zie
+    // lib/gebruikersbeheer.ts). De DELETE-route en de RLS-policy houden dezelfde regel
+    // aan; dit veld is er alleen om geen knop te tonen die toch een 403 oplevert.
+    return NextResponse.json({
+      items,
+      profielen,
+      eigenId: gebruiker.id,
+      magAllesVerwijderen: isBeheerder(gebruiker.email),
+    });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : "Kon aantekeningen niet ophalen." },
