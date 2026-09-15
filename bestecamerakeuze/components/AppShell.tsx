@@ -28,6 +28,7 @@ type Props = {
   googleAds: React.ReactNode;
   organisch: React.ReactNode;
   accountOntwikkeling: React.ReactNode;
+  website: React.ReactNode;
   koppeltabel: React.ReactNode;
   prikbord: React.ReactNode;
   chat: React.ReactNode;
@@ -60,6 +61,7 @@ const TEAM_VIEWS: DashboardView[] = [
   "google-ads",
   "organisch",
   "account-ontwikkeling",
+  "website",
 ];
 
 const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
@@ -99,6 +101,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   "account-ontwikkeling": {
     title: "Account",
     subtitle: "Hoe de social media-accounts zich ontwikkelen: volgers, vertoningen en interactie.",
+  },
+  website: {
+    title: "Website",
+    subtitle:
+      "Wat er op de websites gebeurt: bezoek, instappunten, pagina's, events en conversies.",
   },
   koppeltabel: {
     title: "Koppeltabel",
@@ -150,6 +157,7 @@ export default function AppShell({
   googleAds,
   organisch,
   accountOntwikkeling,
+  website,
   koppeltabel,
   prikbord,
   chat,
@@ -164,8 +172,8 @@ export default function AppShell({
    *
    * Alle panelen blijven gemount zodra ze één keer getoond zijn — dat is wat een half
    * getypte vraag en een gescrollde tabel bewaart bij het wisselen van tab. Maar een
-   * paneel dat nog nooit open is geweest, hoort ook nog geen data op te halen: de vijf
-   * Kanalen-panelen doen elk een eigen serveraanroep, en die vijf tegelijk afvuren bij
+   * paneel dat nog nooit open is geweest, hoort ook nog geen data op te halen: de zes
+   * Kanalen-panelen doen elk een eigen serveraanroep, en die zes tegelijk afvuren bij
    * het laden van het dashboard zou iedereen laten betalen voor tabbladen die hij die
    * dag niet opent. Vandaar: pas monteren bij het eerste bezoek, daarna blijven staan.
    */
@@ -252,7 +260,7 @@ export default function AppShell({
         <div className="mt-6" role="tabpanel" hidden={actief !== "campagnebeheer"}>
           {campagnebeheer}
         </div>
-        {/* De vijf Kanalen-panelen blijven net als de rest gemount, maar ze halen hun
+        {/* De zes Kanalen-panelen blijven net als de rest gemount, maar ze halen hun
             data pas op zodra ze voor het eerst getoond worden — zie useKanaalData. Een
             tabblad dat je nooit opent kost dus ook geen ophaalactie. */}
         <div className="mt-6" role="tabpanel" hidden={actief !== "social-ads"}>
@@ -266,6 +274,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "account-ontwikkeling"}>
           {bezocht.has("account-ontwikkeling") ? accountOntwikkeling : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "website"}>
+          {bezocht.has("website") ? website : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "koppeltabel"}>
           {bezocht.has("koppeltabel") ? koppeltabel : null}

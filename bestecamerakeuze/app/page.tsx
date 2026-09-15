@@ -6,6 +6,7 @@ import GoogleAdsPaneel from "@/components/kanalen/GoogleAdsPaneel";
 import Koppeltabel from "@/components/kanalen/Koppeltabel";
 import OrganischPaneel from "@/components/kanalen/OrganischPaneel";
 import SocialAdsPaneel from "@/components/kanalen/SocialAdsPaneel";
+import WebsitePaneel from "@/components/kanalen/WebsitePaneel";
 import ChatPaneel from "@/components/chat/ChatPaneel";
 import InstellingenPaneel from "@/components/instellingen/InstellingenPaneel";
 import KennisEnActies from "@/components/kennisacties/KennisEnActies";
@@ -71,6 +72,7 @@ export default async function DashboardPage() {
         googleAds={<GoogleAdsPaneel ingelogd={ingelogd} />}
         organisch={<OrganischPaneel ingelogd={ingelogd} />}
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
+        website={<WebsitePaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         prikbord={
           gereed.gereed ? (

@@ -50,10 +50,18 @@ export interface SignaalInstellingen {
   drempelUitgaven?: number;
   /** Minimaal aantal leads in het eerdere deel voordat een CPL-vergelijking iets zegt. */
   drempelLeads?: number;
+  /**
+   * Minimaal aantal sessies in het eerdere deel voordat websiteverkeer meetelt.
+   *
+   * De website kent geen uitgaven, dus het gewicht van een signaal is daar het volume.
+   * Een kanaal dat van vier naar één sessie per dag zakt is −75% en betekent niets.
+   */
+  drempelSessies?: number;
 }
 
 const STANDAARD_DREMPEL_UITGAVEN = 250;
 const STANDAARD_DREMPEL_LEADS = 5;
+const STANDAARD_DREMPEL_SESSIES = 100;
 /** Vanaf hoeveel procent afwijking is iets het vermelden waard? */
 const AFWIJKING = 0.25;
 
@@ -115,6 +123,7 @@ export function bepaalSignalen(
 
   const drempelUitgaven = instellingen.drempelUitgaven ?? STANDAARD_DREMPEL_UITGAVEN;
   const drempelLeads = instellingen.drempelLeads ?? STANDAARD_DREMPEL_LEADS;
+  const drempelSessies = instellingen.drempelSessies ?? STANDAARD_DREMPEL_SESSIES;
   const cpl = statistieken.find((s) => s.id === "cpl");
   const heeftUitgaven = kubus.kolommen.includes("uitgaven");
 
@@ -219,7 +228,53 @@ export function bepaalSignalen(
       }
     }
 
-    // 5. Accounts: volgers eraf. Geen uitgaven in deze kubus, dus eigen drempel.
+    // 5. Website: het verkeer zelf loopt terug of juist op. Geen uitgaven in deze kubus,
+    //    dus het volume is hier zowel de drempel als het gewicht — een kanaal dat honderd
+    //    sessies per week kwijtraakt is een groter verhaal dan een dat er drie verliest.
+    if (!heeftUitgaven && kubus.kolommen.includes("sessies")) {
+      const sessiesEerder = eerderDeel.totalen.sessies ?? 0;
+      if (sessiesEerder >= drempelSessies) {
+        const groei = verhouding(perDag(recentDeel, "sessies"), perDag(eerderDeel, "sessies"));
+        if (groei !== null && Math.abs(groei) >= AFWIJKING) {
+          const omhoog = groei > 0;
+          signalen.push({
+            id: `sessies:${groep.sleutel}`,
+            ernst: omhoog ? "goed" : "let-op",
+            richting: omhoog ? "omhoog" : "omlaag",
+            onderwerp: groep.label,
+            tekst: `Sessies per dag ${procent(groei)} ${omhoog ? "omhoog" : "omlaag"} in de laatste ${knippen.recenteDagen} dagen.`,
+            gewicht: groep.totalen.sessies ?? 0,
+          });
+          continue;
+        }
+
+        // Evenveel bezoek, minder resultaat: het verkeer valt niet op maar de opbrengst
+        // wel. Bewust ná de vorige regel, want een gedaald conversiepercentage bij
+        // gehalveerd verkeer is hetzelfde verhaal twee keer.
+        const conversiesEerder = eerderDeel.totalen.conversies ?? 0;
+        if (conversiesEerder >= 10) {
+          const ratioEerder = sessiesEerder > 0 ? conversiesEerder / sessiesEerder : 0;
+          const sessiesRecent = recentDeel.totalen.sessies ?? 0;
+          const ratioRecent =
+            sessiesRecent > 0 ? (recentDeel.totalen.conversies ?? 0) / sessiesRecent : 0;
+          const verschil = verhouding(ratioRecent, ratioEerder);
+          if (verschil !== null && Math.abs(verschil) >= AFWIJKING) {
+            const omhoog = verschil > 0;
+            signalen.push({
+              id: `conversieratio:${groep.sleutel}`,
+              ernst: omhoog ? "goed" : "let-op",
+              richting: omhoog ? "omhoog" : "omlaag",
+              onderwerp: groep.label,
+              tekst: `Conversieratio ${omhoog ? "gestegen" : "gedaald"} van ${procent(ratioEerder)} naar ${procent(ratioRecent)}, bij vergelijkbaar verkeer.`,
+              gewicht: groep.totalen.sessies ?? 0,
+            });
+            continue;
+          }
+        }
+      }
+    }
+
+    // 6. Accounts: volgers eraf. Geen uitgaven in deze kubus, dus eigen drempel.
     if (!heeftUitgaven && kubus.kolommen.includes("volgers_netto")) {
       const netto = recentDeel.totalen.volgers_netto ?? 0;
       if (netto < 0) {

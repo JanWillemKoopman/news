@@ -34,16 +34,14 @@ import type { Statistiek } from "@/lib/windsor/velden";
  */
 
 /**
- * Het getal dat in de afkapmelding hieronder staat.
+ * De afkapmelding leest zijn getal uit de kubus zelf.
  *
- * Op dit moment zet geen enkele query `kubus.afgekapt` nog op waar: de limiet is uit
- * `lib/kanalen/bron.ts` gehaald omdat hij regels liet vallen die de tabellen wél nodig
- * hadden (zie de toelichting daar). De melding blijft staan omdat de limiet terug kan
- * komen zodra een periode ooit te groot wordt voor de browser — zet hem dan in bron.ts
- * terug en werk dit getal bij, want die module importeert `pg` en hoort niet in een
- * client component thuis.
+ * Hier stond een constante die de limiet uit `lib/kanalen/bron.ts` naschreef, en dat was
+ * één plek te veel: de advertentiequery's hebben hun limiet inmiddels helemaal niet meer
+ * (zie de toelichting daar) en de website-query's kappen op een ánder getal af. Een
+ * melding die het verkeerde aantal noemt is erger dan geen melding. `kubus.rijen.length`
+ * is per definitie het aantal regels dat binnenkwam, dus dat klopt bij elke bron.
  */
-const DETAIL_LIMIET = 2000;
 
 /** Sorteersleutel voor de datumkolom; geen statistiek, dus geen id uit `velden.ts`. */
 const DATUM_SORTEERSLEUTEL = "__datum";
@@ -257,9 +255,9 @@ export default function StatistiekTabel({
           {kubus.afgekapt && (
             <p className="mt-1 flex items-start gap-1.5 text-meta text-negative">
               <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Deze tabel is afgekapt op de {DETAIL_LIMIET.toLocaleString("nl-NL")} regels met de
-              hoogste uitgaven. Het totaal hieronder telt daarom lager uit dan het cijfer boven de
-              grafiek — verklein de periode of filter verder om alles mee te tellen.
+              Deze tabel is afgekapt op de {kubus.rijen.length.toLocaleString("nl-NL")} grootste
+              regels. Het totaal hieronder telt daarom lager uit dan het cijfer boven de grafiek —
+              verklein de periode of filter verder om alles mee te tellen.
             </p>
           )}
         </div>

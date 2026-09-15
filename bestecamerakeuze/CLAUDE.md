@@ -256,9 +256,9 @@ lak.
 
 ### De Kanalen-pagina's
 
-De vijf tabbladen onder **Kanalen** (Social ads, Google Ads, Organisch, Account,
-Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`): filterbalk,
-grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
+De zes tabbladen onder **Kanalen** (Social ads, Google Ads, Social organisch, Social
+accounts, Website, Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`):
+filterbalk, grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
 niet uit af te lezen zijn:
 
 - **De campagnetabel op het tabblad Campagnes staat er visueel buiten.** Die pagina is
@@ -401,6 +401,46 @@ niet uit af te lezen zijn:
   - **Er komt geen cijfer bij.** `totaal` is exact wat de kanaalpagina's al tonen. Dit
     blok splitst dat uit; het is nadrukkelijk geen derde waarheid over dezelfde getallen.
     Zet er dus ook nooit een KPI-tegel van.
+- **Het tabblad Website (GA4) is de enige pagina met vier kubussen.** Alle andere
+  kanaalpagina's hebben er twee (`reeks` en `detail`) die dezelfde rijen anders samenvatten.
+  GA4 kent geen rij waarin een sessie, een pagina en een event tegelijk passen: één sessie
+  raakt tien pagina's en elke pagina vuurt vijf events. `haalWebsite` in `bron.ts` levert
+  daarom vier écht verschillende kubussen, en `KanaalAntwoord.extra` draagt de laatste drie.
+  Een `TabelConfig` wijst met `bron` aan welke hij leest en brengt zijn eigen
+  `statistieken` mee — "Sessies" in de tabel Pagina's betekent iets anders dan "Sessies" in
+  de tabel Kanalen, en dat staat in allebei de `uitleg`-teksten.
+  - **Een filter dat ergens niet kan werken, zegt dat.** `website` en `kanaalgroep` zitten
+    in alle vier de kubussen, `campagne` in twee, `bron_medium` en `apparaat` alleen in het
+    verkeer. `filter()` slaat een dimensie die een kubus niet kent stilzwijgend over, en dan
+    verspringt de bovenste helft van het scherm wel en de onderste niet. `zonderDimensies`
+    op een tabel zet er daarom een zin achter de toelichting zodra zo'n filter actief is.
+    Voeg je een dimensie toe aan één kubus, vul dan ook die lijst bij.
+  - **Gebruikers telt niet exact op, en dat is hier anders opgelost dan bij bereik.** GA4
+    ontdubbelt gebruikers binnen de opgevraagde periode; wij bewaren dagcijfers, dus wie op
+    drie dagen kwam telt drie keer. Precies de reden waarom bereik van de
+    advertentiepagina's is gehaald. Hier staat het cijfer er tóch, omdat "hoeveel
+    gebruikers" de eerste vraag is die iemand aan GA4 stelt en een tabblad dat hem niet
+    beantwoordt marketing terugstuurt naar GA4 — wat dit tabblad juist moest voorkomen. De
+    waarheid staat in de `uitleg` van het cijfer én in de leeswijzer. Wie het exacte
+    periodecijfer nodig heeft, kiest één dag of leest **nieuwe gebruikers**, dat wél
+    optelt. Draai deze afweging niet om zonder het ook in beide teksten te wijzigen.
+  - **Twee kruisingen halen we niet op, om de rijen.** Bron/medium bij een landingspagina
+    verdubbelt die tabel; de pagina bij een event springt van ±4.000 naar ruim 100.000
+    rijen per dag op één property, want vrijwel elk pad vuurt page_view, scroll,
+    session_start en user_engagement. Per pagina staat er dus wél hoeveel key events er
+    vuurden, maar niet welke — de tabel Conversies geeft de namen over de hele site. Zie
+    de kop van `supabase/migrations/0025_windsor_ga4.sql`.
+  - **Hier staat wél een limiet op de detailquery** (`GA4_DETAIL_LIMIET`, 3.000 regels),
+    terwijl die bij de advertenties juist is weggehaald. Andere schaal: een dealergroep
+    heeft een paar duizend advertenties per jaar en tienduizenden verschillende paden per
+    maand, want elke voorraadauto is er één. De grens valt op de minst bekeken pagina's en
+    de tabel meldt het via `kubus.afgekapt`.
+  - **De signalen rekenen hier op volume in plaats van op geld.** `signalen.ts` heeft geen
+    `uitgaven` op deze kubus, dus de drempel en het gewicht zijn het aantal sessies
+    (`drempelSessies`). Twee regels: wegzakkend verkeer per kanaal, en een gedaalde
+    conversieratio bij gelijk verkeer — die tweede alleen als de eerste niet vuurde, want
+    minder bezoek én minder conversies is één gebeurtenis en geen twee.
+
 - **De rij smal houden gaat vóór een slimme index.** Twaalf maanden op Social ads en
   Google Ads liep tegen "canceling statement due to statement timeout" aan, en de weg
   naar de oorzaak is leerzamer dan de oorzaak zelf.

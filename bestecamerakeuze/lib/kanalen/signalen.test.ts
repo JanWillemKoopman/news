@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bepaalSignalen } from "./signalen.ts";
 import type { Kubus } from "./kubus.ts";
-import { ADVERTENTIE_STATISTIEKEN } from "../windsor/velden.ts";
+import { ADVERTENTIE_STATISTIEKEN, WEBSITE_STATISTIEKEN } from "../windsor/velden.ts";
 
 /**
  * Twaalf dagen, twee campagnes. Twaalf dagen betekent: de laatste vier dagen zijn het
@@ -80,4 +80,77 @@ test("te weinig dagen levert geen signalen op", () => {
     labels: { datum: ["2026-09-01", "2026-09-02"], campagne: ["Stabiel", "Verdacht"] },
   };
   assert.deepEqual(bepaalSignalen(kort, kort.rijen, statistieken, instellingen), []);
+});
+
+// ---------------------------------------------------------------------------
+// De website: geen uitgaven, dus het volume is de drempel én het gewicht
+// ---------------------------------------------------------------------------
+
+/** Twaalf dagen, twee kanalen — dezelfde indeling als hierboven, andere kolommen. */
+function bouwWebsite(rijen: [number, number, number, number][]): Kubus {
+  const datums = Array.from({ length: 12 }, (_, i) => `2026-09-${String(i + 1).padStart(2, "0")}`);
+  return {
+    dimensies: ["datum", "kanaalgroep"],
+    labels: { datum: datums, kanaalgroep: ["Organic Search", "Paid Search"] },
+    kolommen: ["sessies", "conversies"],
+    rijen: rijen.map(([d, k, s, c]) => [d, k, s, c]),
+    korrel: "dag",
+    periode: { van: datums[0], tot: datums[11] },
+  };
+}
+
+const websiteInstellingen = { dimensie: "kanaalgroep", drempelSessies: 100 };
+
+test("wegzakkend verkeer op een kanaal is een signaal", () => {
+  const rijen: [number, number, number, number][] = [];
+  for (let d = 0; d < 8; d++) rijen.push([d, 0, 100, 5]); // 100 sessies per dag
+  for (let d = 8; d < 12; d++) rijen.push([d, 0, 40, 2]); // nog 40 per dag
+
+  const kubus = bouwWebsite(rijen);
+  const signalen = bepaalSignalen(kubus, kubus.rijen, WEBSITE_STATISTIEKEN, websiteInstellingen);
+  const verkeer = signalen.find((s) => s.id.startsWith("sessies:"));
+  assert.ok(verkeer, "een gehalveerd kanaal hoort op te vallen");
+  assert.equal(verkeer.ernst, "let-op");
+  assert.equal(verkeer.richting, "omlaag");
+  // Het gewicht is het volume over de hele periode, want er is geen bedrag om op te
+  // sorteren: 8 × 100 + 4 × 40.
+  assert.equal(verkeer.gewicht, 960);
+});
+
+test("een klein kanaal haalt de sessiedrempel niet", () => {
+  const rijen: [number, number, number, number][] = [];
+  for (let d = 0; d < 8; d++) rijen.push([d, 1, 2, 0]);
+  for (let d = 8; d < 12; d++) rijen.push([d, 1, 8, 0]);
+
+  const kubus = bouwWebsite(rijen);
+  assert.deepEqual(
+    bepaalSignalen(kubus, kubus.rijen, WEBSITE_STATISTIEKEN, websiteInstellingen),
+    [],
+  );
+});
+
+test("evenveel verkeer maar minder conversie is een eigen signaal", () => {
+  const rijen: [number, number, number, number][] = [];
+  for (let d = 0; d < 8; d++) rijen.push([d, 0, 100, 10]); // 10% conversieratio
+  for (let d = 8; d < 12; d++) rijen.push([d, 0, 100, 4]); // 4%, bij gelijk verkeer
+
+  const kubus = bouwWebsite(rijen);
+  const signalen = bepaalSignalen(kubus, kubus.rijen, WEBSITE_STATISTIEKEN, websiteInstellingen);
+  const ratio = signalen.find((s) => s.id.startsWith("conversieratio:"));
+  assert.ok(ratio, "een gehalveerde conversieratio bij gelijk verkeer hoort op te vallen");
+  assert.equal(ratio.ernst, "let-op");
+  assert.match(ratio.tekst, /Conversieratio gedaald/);
+});
+
+test("gedaald verkeer meldt niet óók nog eens de conversieratio", () => {
+  // Anders staat hetzelfde verhaal er twee keer: minder bezoek én minder conversies is
+  // één gebeurtenis, geen twee.
+  const rijen: [number, number, number, number][] = [];
+  for (let d = 0; d < 8; d++) rijen.push([d, 0, 100, 10]);
+  for (let d = 8; d < 12; d++) rijen.push([d, 0, 30, 1]);
+
+  const kubus = bouwWebsite(rijen);
+  const signalen = bepaalSignalen(kubus, kubus.rijen, WEBSITE_STATISTIEKEN, websiteInstellingen);
+  assert.equal(signalen.filter((s) => s.onderwerp === "Organic Search").length, 1);
+  assert.ok(signalen[0].id.startsWith("sessies:"));
 });

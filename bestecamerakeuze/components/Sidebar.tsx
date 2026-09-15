@@ -9,6 +9,7 @@ import {
   IconBrain,
   IconCalendar,
   IconChat,
+  IconGlobe,
   IconMegaphone,
   IconPhoto,
   IconPin,
@@ -28,6 +29,7 @@ export type DashboardView =
   | "google-ads"
   | "organisch"
   | "account-ontwikkeling"
+  | "website"
   | "koppeltabel"
   | "prikbord"
   | "chat"
@@ -157,6 +159,15 @@ export default function Sidebar({
                 label="Social accounts"
                 active={actief === "account-ontwikkeling"}
                 onClick={() => onNavigate("account-ontwikkeling")}
+              />
+              {/* Website staat onderaan de groep en niet bovenaan: de vier tabbladen
+                  erboven gaan over wat je zelf de deur uit doet, dit tabblad over waar dat
+                  landt. Je klikt hier dus naartoe vanuit een kanaal, niet andersom. */}
+              <NavigationItem
+                icon={<IconGlobe />}
+                label="Website"
+                active={actief === "website"}
+                onClick={() => onNavigate("website")}
               />
             </>
           )}

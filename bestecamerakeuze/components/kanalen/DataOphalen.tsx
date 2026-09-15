@@ -30,7 +30,7 @@ import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/ic
  */
 
 type Stap = {
-  deel: "advertenties" | "organisch" | "account";
+  deel: "advertenties" | "organisch" | "account" | "website";
   label: string;
   toelichting: string;
 };
@@ -50,6 +50,11 @@ const STAPPEN: Stap[] = [
     deel: "account",
     label: "Accountcijfers",
     toelichting: "volgers, vertoningen en interactie per account",
+  },
+  {
+    deel: "website",
+    label: "Website",
+    toelichting: "Google Analytics 4: verkeer, landingspagina's, pagina's en events",
   },
 ];
 

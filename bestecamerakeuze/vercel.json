@@ -17,12 +17,20 @@
       "schedule": "10 4 * * *"
     },
     {
+      "path": "/api/windsor-sync?deel=website",
+      "schedule": "10 5 * * *"
+    },
+    {
       "path": "/api/windsor-sync?deel=advertenties&dagen=60",
       "schedule": "30 1 * * 0"
     },
     {
       "path": "/api/windsor-sync?deel=organisch&dagen=60",
       "schedule": "30 5 * * 0"
+    },
+    {
+      "path": "/api/windsor-sync?deel=website&dagen=60",
+      "schedule": "30 8 * * 0"
     },
     {
       "path": "/api/windsor-sync?deel=advertenties&dagen=60&terug=60",

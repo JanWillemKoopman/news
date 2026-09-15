@@ -20,9 +20,10 @@ import {
 } from "@/lib/kanalen/gebruik";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { leesUrlStand, schrijfUrlStand } from "@/lib/kanalen/urlstand";
-import { beschikbareWaarden, filter, type Kubus } from "@/lib/kanalen/kubus";
+import { LEGE_KUBUS, beschikbareWaarden, filter, type Kubus } from "@/lib/kanalen/kubus";
 import { bepaalSignalen } from "@/lib/kanalen/signalen";
 import type { Statistiek } from "@/lib/windsor/velden";
+import type { Selectie } from "@/lib/kanalen/kubus";
 
 /**
  * De gedeelde opbouw van een Kanalen-pagina: filterbalk bovenaan, kerncijfers, grafiek,
@@ -38,10 +39,35 @@ import type { Statistiek } from "@/lib/windsor/velden";
 export interface TabelConfig {
   titel: string;
   toelichting: string;
-  /** Uit welke kubus: `reeks` heeft de tijdas, `detail` de fijnste korrel. */
-  bron: "reeks" | "detail";
+  /**
+   * Uit welke kubus: `reeks` heeft de tijdas, `detail` de fijnste korrel, en elke andere
+   * naam wijst een kubus uit `extra` aan.
+   *
+   * Dat derde geval bestaat voor de pagina Website. GA4 levert pagina's, landingspagina's
+   * en events op korrels die je niet in dezelfde kolom mag optellen — één sessie raakt
+   * tien pagina's — dus daar zijn het echt verschillende kubussen en niet twee
+   * samenvattingen van dezelfde rijen.
+   */
+  bron: string;
   groepeerOp: string;
   groepLabel: string;
+  /**
+   * Een eigen statistieklijst, als deze tabel andere cijfers meet dan de pagina eromheen.
+   *
+   * Weglaten betekent: dezelfde lijst als de grafiek. Een pagina-tabel meet weergaven waar
+   * de grafiek sessies meet, en die twee horen niet onder dezelfde kolomkop.
+   */
+  statistieken?: Statistiek[];
+  /**
+   * Filterdimensies die deze kubus niet kent.
+   *
+   * Staat er een filter actief op zo'n dimensie, dan zegt de tabel dat met zoveel woorden
+   * in plaats van hem stilzwijgend te negeren. `filter()` slaat een onbekende dimensie
+   * namelijk gewoon over, en dan zie je een tabel die niet meebeweegt zonder dat iets
+   * uitlegt waarom — precies het soort stilte waar een dashboard zijn geloofwaardigheid
+   * mee verliest.
+   */
+  zonderDimensies?: { id: string; label: string; reden: string }[];
   /**
    * Het metaveld met de leesbare naam, als `groepeerOp` een id is.
    *
@@ -187,6 +213,25 @@ export default function KanaalPagina({
     [data.vorige, selectie],
   );
 
+  // Dezelfde selectie over de kubussen die op een andere korrel staan (de pagina
+  // Website). Ze delen hun dimensienamen met de reeks waar dat kan, dus een filter op
+  // kanaalgroep werkt vanzelf ook hier; wat een kubus níet kent, slaat `filter()` over —
+  // en dát vertelt de tabel er dan bij, zie `zonderDimensies`.
+  const extraRijen = useMemo(() => {
+    const uit: Record<string, number[][]> = {};
+    for (const [naam, kubus] of Object.entries(data.extra)) uit[naam] = filter(kubus, selectie);
+    return uit;
+  }, [data.extra, selectie]);
+
+  const vorigeExtra = useMemo(() => {
+    if (!data.vorige) return null;
+    const uit: Record<string, { kubus: Kubus; rijen: number[][] }> = {};
+    for (const [naam, kubus] of Object.entries(data.vorige.extra)) {
+      uit[naam] = { kubus, rijen: filter(kubus, selectie) };
+    }
+    return uit;
+  }, [data.vorige, selectie]);
+
   const gefilterdeReeks: Kubus = useMemo(
     () => ({ ...data.reeks, rijen: reeksRijen }),
     [data.reeks, reeksRijen],
@@ -302,24 +347,45 @@ export default function KanaalPagina({
             </p>
           )}
 
-          {tabellen.map((tabel) => (
-            <StatistiekTabel
-              key={tabel.titel}
-              titel={tabel.titel}
-              toelichting={tabel.toelichting}
-              kubus={tabel.bron === "reeks" ? data.reeks : data.detail}
-              rijen={tabel.bron === "reeks" ? reeksRijen : detailRijen}
-              vorige={tabel.bron === "reeks" ? vorigeReeks : vorigeDetail}
-              groepeerOp={tabel.groepeerOp}
-              groepLabel={tabel.groepLabel}
-              labelVeld={tabel.labelVeld}
-              statistieken={actieveStatistieken}
-              toonBeeld={tabel.toonBeeld}
-              toonDatum={tabel.toonDatum}
-              benchmark={tabel.benchmark}
-              uitlegAan={uitlegAan}
-            />
-          ))}
+          {tabellen.map((tabel) => {
+            const kubus =
+              tabel.bron === "reeks"
+                ? data.reeks
+                : tabel.bron === "detail"
+                  ? data.detail
+                  : (data.extra[tabel.bron] ?? LEGE_KUBUS);
+            const rijen =
+              tabel.bron === "reeks"
+                ? reeksRijen
+                : tabel.bron === "detail"
+                  ? detailRijen
+                  : (extraRijen[tabel.bron] ?? []);
+            const vorige =
+              tabel.bron === "reeks"
+                ? vorigeReeks
+                : tabel.bron === "detail"
+                  ? vorigeDetail
+                  : (vorigeExtra?.[tabel.bron] ?? null);
+
+            return (
+              <StatistiekTabel
+                key={tabel.titel}
+                titel={tabel.titel}
+                toelichting={metFilterVoorbehoud(tabel, selectie)}
+                kubus={kubus}
+                rijen={rijen}
+                vorige={vorige}
+                groepeerOp={tabel.groepeerOp}
+                groepLabel={tabel.groepLabel}
+                labelVeld={tabel.labelVeld}
+                statistieken={tabel.statistieken ?? actieveStatistieken}
+                toonBeeld={tabel.toonBeeld}
+                toonDatum={tabel.toonDatum}
+                benchmark={tabel.benchmark}
+                uitlegAan={uitlegAan}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -356,6 +422,25 @@ export default function KanaalPagina({
       )}
     </div>
   );
+}
+
+/**
+ * Zet achter de toelichting van een tabel welke actieve filters er niet op werken.
+ *
+ * Een kubus die een dimensie niet kent, wordt er door `filter()` gewoon niet op gefilterd.
+ * Dat is technisch het enige zinnige gedrag en tegelijk de gevaarlijkste stilte die een
+ * dashboard kan hebben: je zet een filter, de bovenste helft van het scherm verspringt en
+ * de onderste niet. Deze zin maakt er een mededeling van in plaats van een raadsel.
+ */
+function metFilterVoorbehoud(tabel: TabelConfig, selectie: Selectie): string {
+  const geldtNiet = (tabel.zonderDimensies ?? []).filter(
+    (d) => (selectie[d.id] ?? []).length > 0,
+  );
+  if (geldtNiet.length === 0) return tabel.toelichting;
+  const zin = geldtNiet
+    .map((d) => `${d.label.toLowerCase()} (${d.reden})`)
+    .join(" en het filter ");
+  return `${tabel.toelichting} — let op: het filter ${zin} werkt niet op deze tabel`;
 }
 
 /**
