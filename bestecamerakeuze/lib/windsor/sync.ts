@@ -296,6 +296,59 @@ const ADVERTENTIE_SLEUTEL =
   "datum, bron, account_id, platform, plaatsing, campagne_id, advertentie_id";
 
 /**
+ * De creative gaat naar een eigen tabel, de rest naar de feitentabel.
+ *
+ * `thumbnail_url` staat hierboven nog gewoon in de rij, want zo leveren de platforms hem
+ * aan en zo blijft de opbouw per platform één lijst. Hij wordt er hier uit gelicht,
+ * vlak voor het schrijven.
+ *
+ * Waarom: die kolom hoort bij de advertentie en niet bij de dag. Hij bevatte 935
+ * verschillende waarden, weggeschreven in zo'n 180.000 rijen, en was daarmee tweederde
+ * van het gewicht van `windsor_advertenties` (537 van de 785 bytes per rij). Zo zwaar
+ * dat de tabel niet meer in het werkgeheugen van de database paste en elke jaaroptelling
+ * hem van schijf moest halen — dat was de "canceling statement due to statement
+ * timeout" op Social ads. Zie migratie 0023.
+ */
+const THUMBNAIL_INDEX = ADVERTENTIE_KOLOMMEN.indexOf("thumbnail_url");
+const BRON_INDEX = ADVERTENTIE_KOLOMMEN.indexOf("bron");
+const ADVERTENTIE_ID_INDEX = ADVERTENTIE_KOLOMMEN.indexOf("advertentie_id");
+
+/** De kolommen zoals ze werkelijk in `windsor_advertenties` staan. */
+const FEIT_KOLOMMEN = ADVERTENTIE_KOLOMMEN.filter((k) => k !== "thumbnail_url");
+
+/**
+ * Ontdubbelt, schrijft de creatives weg en dan de feiten.
+ *
+ * Eén plek voor alle drie de advertentiebronnen: het uitlichten van de thumbnail is
+ * positiewerk op een array, en dat hoort niet drie keer overgeschreven te staan.
+ */
+async function schrijfAdvertenties(client: Client, rijen: unknown[][]): Promise<number> {
+  const ontdubbeld = ontdubbel(rijen);
+
+  // Eén rij per advertentie, de laatste die we in deze batch tegenkwamen. Rijen zonder
+  // thumbnail slaan we over in plaats van er null te schrijven: Google levert er nooit
+  // een, en die zouden anders elke nacht 700 lege rijen aanmaken.
+  const creatives = new Map<string, unknown[]>();
+  for (const rij of ontdubbeld) {
+    const thumbnail = rij[THUMBNAIL_INDEX];
+    const advertentieId = String(rij[ADVERTENTIE_ID_INDEX] ?? "");
+    if (!thumbnail || !advertentieId) continue;
+    const bron = String(rij[BRON_INDEX]);
+    creatives.set(`${bron}\u0000${advertentieId}`, [bron, advertentieId, thumbnail]);
+  }
+  await schrijfBatch(
+    client,
+    "windsor_advertentie_creatives",
+    ["bron", "advertentie_id", "thumbnail_url"],
+    [...creatives.values()],
+    "bron, advertentie_id",
+  );
+
+  const feiten = ontdubbeld.map((rij) => rij.filter((_, i) => i !== THUMBNAIL_INDEX));
+  return schrijfBatch(client, "windsor_advertenties", FEIT_KOLOMMEN, feiten, ADVERTENTIE_SLEUTEL);
+}
+
+/**
  * Meta Ads.
  *
  * Let op het verschil tussen `bron` en `platform`: alles hieronder heeft bron 'meta',
@@ -358,13 +411,7 @@ export async function syncMetaAds(
     JSON.stringify(conversiesUit(r, conversieVelden)),
   ]);
 
-  const geschreven = await schrijfBatch(
-    client,
-    "windsor_advertenties",
-    ADVERTENTIE_KOLOMMEN,
-    ontdubbel(uit),
-    ADVERTENTIE_SLEUTEL,
-  );
+  const geschreven = await schrijfAdvertenties(client, uit);
   return { onderdeel: "meta-ads", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
 
@@ -412,13 +459,7 @@ export async function syncGoogleAds(
     JSON.stringify(conversiesUit(r, conversieVelden)),
   ]);
 
-  const geschreven = await schrijfBatch(
-    client,
-    "windsor_advertenties",
-    ADVERTENTIE_KOLOMMEN,
-    ontdubbel(uit),
-    ADVERTENTIE_SLEUTEL,
-  );
+  const geschreven = await schrijfAdvertenties(client, uit);
   return { onderdeel: "google-ads", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
 
@@ -491,13 +532,7 @@ export async function syncLinkedInAds(
     "{}",
   ]);
 
-  const geschreven = await schrijfBatch(
-    client,
-    "windsor_advertenties",
-    ADVERTENTIE_KOLOMMEN,
-    ontdubbel(uit),
-    ADVERTENTIE_SLEUTEL,
-  );
+  const geschreven = await schrijfAdvertenties(client, uit);
   return {
     onderdeel: "linkedin-ads",
     gelezen: rijen.length,

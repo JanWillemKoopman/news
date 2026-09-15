@@ -341,24 +341,12 @@ export async function haalAdvertenties(
     // één regel op — met de creative van willekeurig de eerste erbij. De leesbare naam
     // komt daarom uit de meta.
     //
-    // De thumbnail hangt er los onder en zit bewust níet in de groepering hierboven.
-    // Dat is geen stijlkwestie maar het verschil tussen een pagina die laadt en een
-    // pagina die afkapt op "canceling statement due to statement timeout": de kolom is
-    // gemeten gemiddeld 537 bytes en daarmee tweederde van de hele rij, en zolang hij in
-    // de optelling meedoet moet de database voor élke dagregel de volle rij van schijf
-    // halen. Zonder die kolom wordt het een index only scan over
-    // `windsor_advertenties_dashboard_idx` (zie migratie 0022): voor twaalf maanden
-    // Google ging dat van 17,8 s — ruim over de limiet van 15 s — naar 1,4 s.
-    //
-    // De `left join lateral` haalt hem daarna alleen nog op voor de regels die
-    // overblijven (hooguit DETAIL_LIMIET), één indexopzoeking per advertentie. De
-    // partiële index eronder slaat de dagen zonder thumbnail over, zodat Google — waar
-    // geen enkele advertentie er een heeft — niet alsnog per advertentie een jaar aan
-    // rijen doorloopt.
-    //
-    // Hij pakt de nieuwste thumbnail die van die advertentie bekend is, ook als die van
-    // na de gekozen periode komt. Dat is met opzet: een creative-URL van Meta verloopt,
-    // dus de meest recente is de enige die in de browser nog een plaatje oplevert.
+    // De thumbnail hangt er los onder en hoort niet in de groepering hierboven. Sinds
+    // migratie 0023 staat hij in een eigen tabel met één rij per advertentie (935 rijen
+    // tegenover de 248.000 van de feitentabel), en die join kost dus niets — maar hem
+    // door de optelling slepen zou nog steeds betekenen dat elke dagregel een URL van
+    // gemiddeld 537 bytes meedraagt. Daar liep "canceling statement due to statement
+    // timeout" op vast.
     const detailRes = await client.query(
       `with regels as (
          select a.account, a.platform,
@@ -379,16 +367,18 @@ export async function haalAdvertenties(
           order by sum(a.uitgaven) desc nulls last
           limit ${DETAIL_LIMIET}
        )
-       select r.*, t.thumbnail_url
+       select r.*, c.thumbnail_url
          from regels r
-         left join lateral (
-           select m.thumbnail_url
-             from dataloket.v_advertenties m
-            where m.advertentie_id = r.advertentie_id
-              and m.thumbnail_url is not null
-            order by m.datum desc
-            limit 1
-         ) t on true
+         left join (
+           -- distinct on, en niet de tabel rechtstreeks: de creatives staan per
+           -- (bron, advertentie_id) en de regels hierboven dragen de bron niet mee. Twee
+           -- platforms die dezelfde advertentie-id hanteren zouden een regel anders
+           -- verdubbelen — en een verdubbelde regel telt in de totaalregel dubbel mee.
+           select distinct on (advertentie_id) advertentie_id, thumbnail_url
+             from dataloket.v_advertentie_creatives
+            where bron = any($3)
+            order by advertentie_id
+         ) c on c.advertentie_id = r.advertentie_id
         order by r.uitgaven desc nulls last`,
       argumenten,
     );
