@@ -122,6 +122,21 @@ export async function maakNotitie(
   return naarItem(data);
 }
 
+/** Eén aantekening, of null — nodig om vóór het verwijderen te weten van wie hij is. */
+export async function haalNotitie(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<CampagneNotitie | null> {
+  const { data, error } = await supabase
+    .schema(SCHEMA)
+    .from(TABEL)
+    .select(KOLOMMEN)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? naarItem(data) : null;
+}
+
 export async function wijzigNotitie(
   supabase: SupabaseClient,
   gebruikerId: string,

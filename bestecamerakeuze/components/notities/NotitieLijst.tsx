@@ -124,6 +124,11 @@ export default function NotitieLijst({ campagne, ingelogd }: Props) {
   const [bezigMetToevoegen, setBezigMetToevoegen] = useState(false);
   const [bewerkId, setBewerkId] = useState<string | null>(null);
   const [bewerkTekst, setBewerkTekst] = useState("");
+  // Wie kijkt er mee, en mag hij ook andermans regels weghalen? Komt uit dezelfde
+  // ophaalactie als de aantekeningen zelf (zie app/api/campagne-notities/route.ts), zodat
+  // de zijbalk er geen tweede verzoek voor nodig heeft.
+  const [eigenId, setEigenId] = useState<string | null>(null);
+  const [magAllesVerwijderen, setMagAllesVerwijderen] = useState(false);
 
   const campagneNaam = campagne.naam;
 
@@ -139,6 +144,8 @@ export default function NotitieLijst({ campagne, ingelogd }: Props) {
         if (json.fout) throw new Error(json.fout);
         setItems(json.items as Notitie[]);
         setProfielen(json.profielen as Record<string, Profiel>);
+        setEigenId((json.eigenId as string | null) ?? null);
+        setMagAllesVerwijderen(Boolean(json.magAllesVerwijderen));
       })
       .catch((err) => {
         if (!genegeerd) setFout(err instanceof Error ? err.message : "Kon aantekeningen niet ophalen.");
@@ -440,14 +447,20 @@ export default function NotitieLijst({ campagne, ingelogd }: Props) {
                         >
                           <IconPencil className="h-3.5 w-3.5" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => verwijderen(item.id)}
-                          aria-label="Aantekening verwijderen"
-                          className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-negative"
-                        >
-                          <IconTrash className="h-3.5 w-3.5" />
-                        </button>
+                        {/* Opruimen doe je bij je eigen regels; de twee beheeraccounts
+                            mogen die van iedereen weg (lib/gebruikersbeheer.ts). Dezelfde
+                            regel staat in de DELETE-route en in de RLS-policy — dit is
+                            alleen de knop. */}
+                        {(magAllesVerwijderen || item.aangemaaktDoor === eigenId) && (
+                          <button
+                            type="button"
+                            onClick={() => verwijderen(item.id)}
+                            aria-label="Aantekening verwijderen"
+                            className="flex h-6 w-6 items-center justify-center rounded text-ink-faint hover:bg-surface hover:text-negative"
+                          >
+                            <IconTrash className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </>
                   )}

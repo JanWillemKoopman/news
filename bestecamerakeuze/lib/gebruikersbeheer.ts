@@ -33,3 +33,21 @@ export function isWachtwoordEigenaar(email: string | null | undefined): boolean 
 export function isBeheerder(email: string | null | undefined): boolean {
   return isVergrendeldeEmail(email);
 }
+
+// Wie mag een bericht (campagne-aantekening) weggooien: de collega die het schreef, en
+// daarnaast de twee beheeraccounts — die mogen berichten van iedereen verwijderen, waar
+// ze ook staan (het logboek per campagne én het tabblad Kennis en acties).
+//
+// Waarom niet iedereen, zoals eerst: opruimen hoort bij wie het schreef of bij wie het
+// overzicht bewaakt. Een bericht is bovendien geen losse regel meer sinds de
+// puntentelling — het weghalen van andermans bericht verandert diens weekstand.
+//
+// Afgedwongen op drie plekken, in deze volgorde van belang: de RLS-policy op
+// dataloket.campagne_notities (0026_berichten_verwijderen.sql), de DELETE-route in
+// app/api/campagne-notities/[id], en pas daarna de knop in de UI.
+export function magBerichtVerwijderen(
+  gebruiker: { id: string; email: string | null },
+  aangemaaktDoor: string,
+): boolean {
+  return gebruiker.id === aangemaaktDoor || isBeheerder(gebruiker.email);
+}

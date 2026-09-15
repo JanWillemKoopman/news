@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Avatar from "@/components/Avatar";
 import { MedaillePil } from "@/components/Medaille";
+import { IconTrash } from "@/components/icons";
 import { initialenVoor } from "@/lib/initialen";
 import { SOORT_LABEL, type NotitieSoort } from "@/lib/notities";
 import type { Medaille } from "@/lib/punten";
-import type { Bericht, Profiel } from "@/lib/teamData";
+import { useTeamData, type Bericht, type Profiel } from "@/lib/teamData";
 
 type Props = {
   berichten: Bericht[];
@@ -43,8 +45,18 @@ function formatDatum(iso: string): string {
  * herken je van een afstand, de twee letters maken het eenduidig als twee collega's op
  * elkaar lijken. Staat iemand deze week in de top 3, dan hangt zijn medaille er ook bij —
  * zo zie je de stand terwijl je leest wat er is vastgelegd, zonder naar het scoretabblad
- * te hoeven. Hier wordt bewust niet bewerkt of verwijderd — dat blijft bij de campagne
- * zelf, waar de aantekening ook in zijn context staat.
+ * te hoeven. Bewerken gebeurt hier bewust niet — dat blijft bij de campagne zelf, waar
+ * de aantekening ook in zijn context staat.
+ *
+ * Verwijderen wél, maar alleen door de twee beheeraccounts (`magAllesVerwijderen`, zie
+ * lib/gebruikersbeheer.ts): dit is het enige scherm waar álle berichten van iedereen bij
+ * elkaar staan, en dus de plek om er een op te ruimen die er niet hoort. Voor iedereen
+ * anders staat de kolom er niet — en dat is niet de enige grendel: de DELETE-route en de
+ * RLS-policy op de tabel houden dezelfde regel aan.
+ *
+ * Twee klikken, geen pop-up: de eerste klik zet de knop om in "Weg?", de tweede doet het.
+ * Een dialoog over een regel die je al aanwijst leest niemand; een knop die eerst iets
+ * anders wordt, remt precies genoeg.
  */
 export default function BerichtenTabel({
   berichten,
@@ -53,6 +65,23 @@ export default function BerichtenTabel({
   medailles,
   laden,
 }: Props) {
+  const { magAllesVerwijderen, verwijderBericht } = useTeamData();
+  const [bevestigId, setBevestigId] = useState<string | null>(null);
+  const [bezigId, setBezigId] = useState<string | null>(null);
+
+  async function verwijder(bericht: Bericht) {
+    setBezigId(bericht.id);
+    try {
+      await verwijderBericht(bericht);
+    } catch {
+      // De melding staat al boven de tabel (`fout` uit TeamDataProvider); de rij blijft
+      // staan, want hij is niet weg.
+    } finally {
+      setBezigId(null);
+      setBevestigId(null);
+    }
+  }
+
   if (laden) {
     return (
       <div className="rounded-panel border border-line bg-card px-5 py-8 text-sm text-ink-faint shadow-subtle">
@@ -83,6 +112,13 @@ export default function BerichtenTabel({
                 {kop}
               </th>
             ))}
+            {magAllesVerwijderen && (
+              // Geen koptekst: de prullenbak spreekt voor zich en een kolomkop
+              // "Verwijderen" trekt de aandacht naar precies het verkeerde.
+              <th scope="col" className="border-b border-line px-2 py-2.5">
+                <span className="sr-only">Verwijderen</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -127,6 +163,39 @@ export default function BerichtenTabel({
                 <td className="border-b border-line-soft px-2 py-3 text-sm whitespace-pre-wrap text-ink">
                   {bericht.tekst}
                 </td>
+                {magAllesVerwijderen && (
+                  <td className="border-b border-line-soft px-2 py-3 text-right whitespace-nowrap">
+                    {bevestigId === bericht.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => void verwijder(bericht)}
+                          disabled={bezigId === bericht.id}
+                          className="rounded-control border border-line bg-card px-2 py-1 text-xs font-medium text-negative transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {bezigId === bericht.id ? "Bezig…" : "Weg?"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBevestigId(null)}
+                          className="rounded-control px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface"
+                        >
+                          Nee
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setBevestigId(bericht.id)}
+                        aria-label={`Bericht van ${profiel?.naam ?? "onbekend"} verwijderen`}
+                        title="Bericht verwijderen"
+                        className="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-surface hover:text-negative"
+                      >
+                        <IconTrash className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}

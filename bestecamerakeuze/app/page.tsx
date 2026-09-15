@@ -20,6 +20,7 @@ import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
+import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { TeamDataProvider } from "@/lib/teamData";
 import { isCampagneLive } from "@/lib/format";
 import { haalProfiel } from "@/lib/profielen";
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
         eigenId={gebruiker?.id ?? null}
         eigenNaam={profiel?.naam ?? null}
         eigenAvatarUrl={profiel?.avatarUrl ?? null}
+        magAllesVerwijderen={isBeheerder(gebruiker?.email)}
       >
         <AppShell
         gebruikerEmail={gebruiker?.email ?? null}
