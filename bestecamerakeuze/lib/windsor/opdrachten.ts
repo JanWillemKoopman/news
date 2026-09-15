@@ -35,6 +35,14 @@ const CLAIM_MINUTEN = 6;
 
 export interface Opdracht {
   deel: string;
+  /**
+   * Doet dit onderdeel mee in de lopende ronde?
+   *
+   * Wie in het dashboard alleen de website aanvinkt, bedoelt ook echt alleen de website.
+   * De ketting claimt daarom uitsluitend actieve opdrachten; een overgeslagen onderdeel
+   * houdt zijn stand en wacht op een volgende keer dat het wél wordt aangevinkt.
+   */
+  actief: boolean;
   /** Het stuk van de periode dat nog te doen is. */
   van: string;
   tot: string;
@@ -53,6 +61,7 @@ export interface Opdracht {
 function alsOpdracht(rij: Record<string, unknown>): Opdracht {
   return {
     deel: String(rij.deel),
+    actief: rij.actief !== false,
     van: String(rij.van),
     tot: String(rij.tot),
     gevraagdVan: String(rij.gevraagd_van),
@@ -67,7 +76,7 @@ function alsOpdracht(rij: Record<string, unknown>): Opdracht {
 }
 
 /** De kolommen die `alsOpdracht` verwacht; datums als tekst, want `pg` maakt er anders Date van. */
-const KOLOMMEN = `deel, van::text as van, tot::text as tot,
+const KOLOMMEN = `deel, actief, van::text as van, tot::text as tot,
                   gevraagd_van::text as gevraagd_van, gevraagd_tot::text as gevraagd_tot,
                   schakels, rijen, gestart_op, bijgewerkt_op, afgerond_op, fout`;
 
@@ -77,6 +86,18 @@ const KOLOMMEN = `deel, van::text as van, tot::text as tot,
  * Overschrijven en niet naast elkaar zetten: twee kettingen door dezelfde maanden leveren
  * dezelfde upserts op en kosten alleen tijd. Wie opnieuw op "Data ophalen" klikt, bedoelt
  * "doe het nog eens", niet "doe het er nog eens bij".
+ *
+ * ## Waarom de níet-gevraagde delen hier ook langs moeten
+ *
+ * De ketting kijkt niet naar wie hem gestart heeft: hij claimt de eerstvolgende opdracht
+ * die openstaat. Zolang het dashboard altijd alle vier de delen klaarzette, klopte dat.
+ * Sinds je zelf kunt aanvinken wát je ophaalt, niet meer — wie alleen de website
+ * aanvinkt terwijl er van een vorige ronde nog een halve organische opdracht openstaat,
+ * zou alsnog een kwartier lang maanden ophalen die er al zijn.
+ *
+ * Wat er niet bij zit, wordt daarom op inactief gezet: de regel blijft staan met alles
+ * wat erin zit — tot waar de historie loopt, hoeveel rijen, wat er misging — maar de
+ * ketting laat hem liggen. Aanvinken bij een volgende ronde maakt hem weer actief.
  */
 export async function zetOpdrachten(
   client: Client,
@@ -84,14 +105,25 @@ export async function zetOpdrachten(
   periode: Periode,
 ): Promise<void> {
   if (delen.length === 0) return;
+
+  // Eerst de rest stilzetten, dan pas de gevraagde delen aanzetten: andersom zou deze
+  // update de zojuist klaargezette opdrachten weer uitvinken.
+  await client.query(
+    `update dataloket.sync_opdrachten
+        set actief = false, bezig_tot = null, bijgewerkt_op = now()
+      where actief and deel <> all($1::text[])`,
+    [[...delen]],
+  );
+
   await client.query(
     `insert into dataloket.sync_opdrachten
-       (deel, van, tot, gevraagd_van, gevraagd_tot, schakels, rijen, bezig_tot,
+       (deel, actief, van, tot, gevraagd_van, gevraagd_tot, schakels, rijen, bezig_tot,
         gestart_op, bijgewerkt_op, afgerond_op, fout)
-     select d, $2::date, $3::date, $2::date, $3::date, 0, 0, null, now(), now(), null, null
+     select d, true, $2::date, $3::date, $2::date, $3::date, 0, 0, null, now(), now(), null, null
        from unnest($1::text[]) as d
      on conflict (deel) do update
-        set van = excluded.van,
+        set actief = true,
+            van = excluded.van,
             tot = excluded.tot,
             gevraagd_van = excluded.gevraagd_van,
             gevraagd_tot = excluded.gevraagd_tot,
@@ -126,7 +158,8 @@ export async function claimOpdracht(
       where deel = (
               select deel
                 from dataloket.sync_opdrachten
-               where afgerond_op is null
+               where actief
+                 and afgerond_op is null
                  and schakels < $2
                  and (bezig_tot is null or bezig_tot < now())
                  and array_position($1::text[], deel) is not null
@@ -206,9 +239,15 @@ export async function haalOpdrachten(
   return res.rows.map(alsOpdracht);
 }
 
-/** Staat er nog werk open dat een volgende schakel verdient? */
+/**
+ * Staat er nog werk open dat een volgende schakel verdient?
+ *
+ * Alleen actieve opdrachten tellen. Een onderdeel dat deze ronde is overgeslagen staat
+ * wel open, maar niemand heeft erom gevraagd — het cron-vangnet hoort er dus ook niet
+ * vannacht alsnog een kwartier aan te besteden.
+ */
 export function heeftOpenWerk(opdrachten: readonly Opdracht[]): boolean {
-  return opdrachten.some((o) => !o.afgerondOp && o.schakels < MAX_SCHAKELS);
+  return opdrachten.some((o) => o.actief && !o.afgerondOp && o.schakels < MAX_SCHAKELS);
 }
 
 /**
@@ -218,7 +257,10 @@ export function heeftOpenWerk(opdrachten: readonly Opdracht[]): boolean {
  * dat de rest er nooit is gekomen. De pagina hoort dit te tonen.
  */
 export function isVastgelopen(opdracht: Opdracht): boolean {
-  return !opdracht.afgerondOp && opdracht.schakels >= MAX_SCHAKELS;
+  // Een overgeslagen opdracht is niet vastgelopen maar afgezegd: rood melden dat de
+  // import is gestopt, terwijl je hem zelf hebt uitgevinkt, is precies het soort
+  // alarm dat mensen leren negeren.
+  return opdracht.actief && !opdracht.afgerondOp && opdracht.schakels >= MAX_SCHAKELS;
 }
 
 /**

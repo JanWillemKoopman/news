@@ -12,6 +12,7 @@ import { MAX_SCHAKELS, heeftOpenWerk, isVastgelopen, isVooruitgang, type Opdrach
 function opdracht(opties: Partial<Opdracht> = {}): Opdracht {
   return {
     deel: "advertenties",
+    actief: true,
     van: "2025-09-14",
     tot: "2026-09-13",
     gevraagdVan: "2025-09-14",
@@ -108,6 +109,22 @@ test("open werk is werk dat nog een schakel mag kosten", () => {
     ]),
     true,
   );
+});
+
+/**
+ * Waarom een uitgevinkt onderdeel niet meetelt als open werk: wie in het dashboard alleen
+ * de website aanvinkt, bedoelt ook echt alleen de website. Zonder deze regel pakt de
+ * ketting alsnog de halve organische opdracht van een vorige ronde op — precies het
+ * kwartier aan al opgehaalde maanden dat de vinkjes moesten voorkomen.
+ */
+test("een overgeslagen onderdeel is geen open werk en geen storing", () => {
+  const overgeslagen = opdracht({ deel: "organisch", actief: false });
+
+  assert.equal(heeftOpenWerk([overgeslagen]), false);
+  assert.equal(isVastgelopen(opdracht({ actief: false, schakels: MAX_SCHAKELS })), false);
+
+  // Naast een uitgevinkt onderdeel blijft het aangevinkte gewoon aan de beurt.
+  assert.equal(heeftOpenWerk([overgeslagen, opdracht({ deel: "website" })]), true);
 });
 
 /**

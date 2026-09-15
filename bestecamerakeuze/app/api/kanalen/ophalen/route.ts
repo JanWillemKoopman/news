@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isWindsorGeconfigureerd } from "@/lib/windsor/api";
-import { DELEN } from "@/lib/windsor/uitvoeren";
+import { DELEN, isDeel, type Deel } from "@/lib/windsor/uitvoeren";
 import { kanDoorschakelen, schakelDoor, zetOpdrachtKlaar } from "@/lib/windsor/keten";
 import { haalOpdrachtStanden, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { isVastgelopen } from "@/lib/windsor/opdrachten";
@@ -43,6 +43,22 @@ export const maxDuration = 60;
 /** Een datum uit de body: alleen YYYY-MM-DD telt, zodat er nooit tekst in de query belandt. */
 function isDatum(waarde: unknown): waarde is string {
   return typeof waarde === "string" && /^\d{4}-\d{2}-\d{2}$/.test(waarde);
+}
+
+/**
+ * Welke onderdelen deze ronde meedoen.
+ *
+ * Komt er niets mee, dan zijn het ze alle vier — zo blijft een oude aanroep (en de
+ * nachtelijke ketting) doen wat hij altijd deed. Wat er wél meekomt wordt gefilterd op
+ * `isDeel` en daarna op de vaste volgorde van `DELEN` gezet: `organisch` koppelt aan het
+ * eind zijn posts aan de advertenties en hoort dus ná `advertenties` te draaien, ook als
+ * de browser ze in een andere volgorde aanvinkt.
+ */
+function gevraagdeDelen(waarde: unknown): readonly Deel[] {
+  if (!Array.isArray(waarde)) return DELEN;
+  const gekozen = new Set(waarde.filter(isDeel));
+  if (gekozen.size === 0) return DELEN;
+  return DELEN.filter((d) => gekozen.has(d));
 }
 
 export async function GET() {
@@ -96,14 +112,19 @@ export async function POST(request: Request) {
   const periode =
     isDatum(body.van) && isDatum(body.tot) ? { van: body.van, tot: body.tot } : standaardVenster(dagen);
 
+  // Wat er níet is aangevinkt gaat op inactief en blijft liggen; zie `zetOpdrachten`.
+  // Anders zou de ketting alsnog een openstaande opdracht van een vorige ronde oppakken
+  // en een kwartier besteden aan maanden die er al staan.
+  const delen = gevraagdeDelen(body.delen);
+
   try {
-    await zetOpdrachtKlaar(DELEN, periode);
+    await zetOpdrachtKlaar(delen, periode);
     after(() => schakelDoor(new URL(request.url).origin));
 
     return NextResponse.json({
       gestart: true,
       periode,
-      delen: DELEN,
+      delen,
       /**
        * Zonder `CRON_SECRET` kan de server zichzelf niet aanroepen. De opdracht staat er
        * dan wel, maar hij komt pas vannacht aan de beurt via de cron. Dat hoort in beeld

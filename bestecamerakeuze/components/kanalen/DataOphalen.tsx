@@ -27,10 +27,24 @@ import { IconCheck, IconClose, IconDownload, IconRefresh } from "@/components/ic
  * De opdracht staat nu op de server (`dataloket.sync_opdrachten`) en de server schakelt
  * zichzelf door naar het volgende stuk (`lib/windsor/keten.ts`). Deze component doet nog
  * twee dingen: de opdracht klaarzetten, en laten zien hoe ver hij staat. Sluiten mag.
+ *
+ * ## Waarom je hier aanvinkt wat je ophaalt
+ *
+ * De vier onderdelen lopen achter elkaar en delen één ketting. Op 15 september 2026 waren
+ * de advertenties na twee schakels compleet (261.593 rijen), bleef `organisch` halverwege
+ * hangen en kwamen `account` en `website` daardoor niet eens aan de beurt — de website
+ * stond op dertig dagen historie terwijl er twaalf maanden waren gevraagd.
+ *
+ * Opnieuw op "Starten" drukken haalde dan álles opnieuw op: een kwartier wachten op
+ * maanden advertentiedata die er al stonden, om bij de website te komen. Daarom staan de
+ * vinkjes hier. Wat je uitvinkt gaat op inactief en blijft liggen zoals het stond; de
+ * ketting laat het met rust (`zetOpdrachten` in `lib/windsor/opdrachten.ts`).
  */
 
+type Deel = "advertenties" | "organisch" | "account" | "website";
+
 type Stap = {
-  deel: "advertenties" | "organisch" | "account" | "website";
+  deel: Deel;
   label: string;
   toelichting: string;
 };
@@ -64,6 +78,19 @@ const PERIODES = [
   { dagen: 365, label: "12 maanden", hint: "gaat in ronden; reken op een kwartier" },
 ];
 
+/** `0` staat voor "zelf een periode kiezen"; de route kent van/tot al. */
+const EIGEN_PERIODE = 0;
+
+function vandaag(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dagenGeleden(dagen: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - dagen);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Hoe vaak we bij de server vragen hoe ver de opdracht staat. */
 const VOLG_INTERVAL_MS = 5000;
 
@@ -80,6 +107,8 @@ const STIL_NA_MS = 10 * 60 * 1000;
 /** Eén opdracht zoals `/api/kanalen/ophalen` hem teruggeeft. */
 interface Opdracht {
   deel: string;
+  /** Deed dit onderdeel mee in de laatst gestarte ronde? */
+  actief: boolean;
   /** Het stuk dat nog te doen is. */
   van: string;
   tot: string;
@@ -124,10 +153,17 @@ type Stand =
   | { soort: "wacht" }
   | { soort: "bezig"; voortgang?: string }
   | { soort: "klaar"; rijen: number; vanaf: string; waarschuwing?: string }
+  | { soort: "overgeslagen"; vanaf: string | null }
   | { soort: "fout"; bericht: string };
 
 function standVan(opdracht: Opdracht | undefined): Stand {
   if (!opdracht) return { soort: "wacht" };
+  // Een onafgemaakte opdracht die je zelf hebt uitgevinkt is geen storing. Rood melden
+  // dat de import is gestopt terwijl je hem hebt overgeslagen, is het soort alarm dat
+  // mensen leren negeren — dus staat het er grijs bij, mét hoever hij kwam.
+  if (!opdracht.actief && !opdracht.afgerondOp) {
+    return { soort: "overgeslagen", vanaf: opdracht.schakels > 0 ? historieVanaf(opdracht) : null };
+  }
   if (opdracht.afgerondOp) {
     // Een afgeronde opdracht mét een foutregel is niet hetzelfde als een schone ronde:
     // één platform dat eruit lag is geen reden om de stap te laten mislukken, maar het
@@ -176,6 +212,9 @@ export default function DataOphalen({
 }) {
   const [open, setOpen] = useState(false);
   const [dagen, setDagen] = useState(90);
+  const [eigenVan, setEigenVan] = useState(() => dagenGeleden(365));
+  const [eigenTot, setEigenTot] = useState(() => vandaag());
+  const [gekozen, setGekozen] = useState<Deel[]>(() => STAPPEN.map((s) => s.deel));
   const [starten, setStarten] = useState(false);
   const [opdrachten, setOpdrachten] = useState<Opdracht[] | null>(null);
   const [startfout, setStartfout] = useState<string | null>(null);
@@ -185,13 +224,21 @@ export default function DataOphalen({
   // afrondt, en niet bij elke peiling daarna opnieuw.
   const liepNog = useRef(false);
 
-  // Een opdracht die stilstaat telt niet als bezig: anders blijft de knop voorgoed op
+  // Alleen de onderdelen die in de lopende ronde meedoen bepalen of er iets draait. Een
+  // opdracht die stilstaat telt daarbij niet als bezig: anders blijft de knop voorgoed op
   // "Bezig…" staan en is opnieuw starten precies wat je niet kunt.
-  const bezig = (opdrachten ?? []).some(
-    (o) => !o.afgerondOp && !o.vastgelopen && !staatStil(o),
-  );
-  const afgerond =
-    opdrachten !== null && opdrachten.length > 0 && opdrachten.every((o) => o.afgerondOp);
+  const lopend = (opdrachten ?? []).filter((o) => o.actief);
+  const bezig = lopend.some((o) => !o.afgerondOp && !o.vastgelopen && !staatStil(o));
+  const afgerond = lopend.length > 0 && lopend.every((o) => o.afgerondOp);
+
+  const eigenPeriode = dagen === EIGEN_PERIODE;
+  const periodeOngeldig = eigenPeriode && (!eigenVan || !eigenTot || eigenVan > eigenTot);
+
+  function wissel(deel: Deel) {
+    setGekozen((vorig) =>
+      vorig.includes(deel) ? vorig.filter((d) => d !== deel) : [...vorig, deel],
+    );
+  }
 
   const peil = useCallback(async () => {
     try {
@@ -233,7 +280,11 @@ export default function DataOphalen({
       const res = await fetch("/api/kanalen/ophalen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dagen }),
+        body: JSON.stringify(
+          eigenPeriode
+            ? { delen: gekozen, van: eigenVan, tot: eigenTot }
+            : { delen: gekozen, dagen },
+        ),
       });
       const data = (await res.json()) as { fout?: string; achtergrond?: boolean };
       if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
@@ -302,20 +353,91 @@ export default function DataOphalen({
                   <span className="block text-meta text-ink-faint">{p.hint}</span>
                 </button>
               ))}
+              <button
+                type="button"
+                disabled={starten}
+                onClick={() => setDagen(EIGEN_PERIODE)}
+                className={`rounded-control border px-3 py-2 text-left transition-colors duration-[var(--duur-snel)] disabled:opacity-50 ${
+                  eigenPeriode ? "border-primary bg-primary-light" : "border-line hover:bg-surface"
+                }`}
+              >
+                <span className="block text-sm font-medium text-ink">Zelf kiezen</span>
+                <span className="block text-meta text-ink-faint">een gat gericht dichten</span>
+              </button>
             </div>
+
+            {/* Van/tot in plaats van "zoveel dagen terug", want een gat zit tussen twee
+                datums en niet op een afstand tot vandaag. De route kende deze twee velden
+                al; ze waren alleen nergens in te vullen. */}
+            {eigenPeriode && (
+              <div className="mt-2 flex flex-wrap items-end gap-3 rounded-control border border-line bg-surface-tint px-3 py-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-meta text-ink-faint">Van</span>
+                  <input
+                    type="date"
+                    value={eigenVan}
+                    max={eigenTot || undefined}
+                    disabled={starten}
+                    onChange={(e) => setEigenVan(e.target.value)}
+                    className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-meta text-ink-faint">Tot en met</span>
+                  <input
+                    type="date"
+                    value={eigenTot}
+                    min={eigenVan || undefined}
+                    max={vandaag()}
+                    disabled={starten}
+                    onChange={(e) => setEigenTot(e.target.value)}
+                    className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
+                  />
+                </label>
+                {periodeOngeldig && (
+                  <p className="text-meta text-negative">
+                    De begindatum hoort vóór de einddatum te liggen.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
-          <ol className="mt-5 flex flex-col gap-0 border-t border-line">
+          <p className="label-theme mt-5 text-label text-ink-faint">
+            Wat ophalen{" "}
+            <span className="font-normal normal-case tracking-normal text-ink-faint">
+              — wat je uitvinkt blijft staan zoals het staat
+            </span>
+          </p>
+
+          <ol className="mt-2 flex flex-col gap-0 border-t border-line">
             {STAPPEN.map((stap, i) => {
               const stand = standVan((opdrachten ?? []).find((o) => o.deel === stap.deel));
+              const aan = gekozen.includes(stap.deel);
               return (
                 <li
                   key={stap.deel}
                   className="flex items-start gap-3 border-b border-line py-3"
                 >
+                  {/* Het vinkje en de stand staan naast elkaar en niet op dezelfde plek:
+                      het eerste is wat je wíl ophalen, het tweede wat ervan geworden is.
+                      Eén teken voor allebei laat "klaar" lezen als "aangevinkt". */}
+                  <input
+                    type="checkbox"
+                    id={`ophalen-${stap.deel}`}
+                    checked={aan}
+                    disabled={starten || bezig}
+                    onChange={() => wissel(stap.deel)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-primary)] disabled:opacity-50"
+                  />
                   <Merkteken stand={stand} nummer={i + 1} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-ink">{stap.label}</p>
+                    <label
+                      htmlFor={`ophalen-${stap.deel}`}
+                      className="block cursor-pointer text-sm font-medium text-ink"
+                    >
+                      {stap.label}
+                    </label>
                     <p className="text-meta text-ink-faint">{stap.toelichting}</p>
                     {stand.soort === "bezig" && stand.voortgang && (
                       <p className="mt-1 text-meta text-ink-muted">{stand.voortgang}</p>
@@ -328,6 +450,13 @@ export default function DataOphalen({
                     )}
                     {stand.soort === "klaar" && stand.waarschuwing && (
                       <p className="mt-1 text-meta text-ink-muted">{stand.waarschuwing}</p>
+                    )}
+                    {stand.soort === "overgeslagen" && (
+                      <p className="mt-1 text-meta text-ink-muted">
+                        {stand.vanaf
+                          ? `Vorige ronde overgeslagen — historie binnen vanaf ${kortDatum(stand.vanaf)}. Aanvinken maakt hem af.`
+                          : "Vorige ronde overgeslagen; deze historie is nog niet opgehaald."}
+                      </p>
                     )}
                     {stand.soort === "fout" && (
                       <p className="mt-1 text-meta text-negative">{stand.bericht}</p>
@@ -365,13 +494,19 @@ export default function DataOphalen({
             <button
               type="button"
               onClick={start}
-              disabled={starten || bezig}
+              disabled={starten || bezig || gekozen.length === 0 || periodeOngeldig}
               className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-opacity disabled:cursor-wait disabled:opacity-70"
             >
               {(starten || bezig) && <IconRefresh className="h-4 w-4 animate-spin" />}
               {starten ? "Starten…" : bezig ? "Bezig…" : afgerond ? "Opnieuw ophalen" : "Starten"}
             </button>
           </div>
+
+          {gekozen.length === 0 && (
+            <p className="mt-3 text-meta text-ink-muted">
+              Vink minstens één onderdeel aan om te kunnen starten.
+            </p>
+          )}
 
           <p className="mt-3 text-meta text-ink-faint">
             {bezig
@@ -405,6 +540,14 @@ function Merkteken({ stand, nummer }: { stand: Stand; nummer: number }) {
     return (
       <span className={`${basis} bg-surface text-negative`}>
         <IconClose className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // Overgeslagen: een streepje, want een volgnummer belooft dat hij nog aan de beurt komt.
+  if (stand.soort === "overgeslagen") {
+    return (
+      <span className={`${basis} bg-surface text-ink-faint`} aria-label="Overgeslagen">
+        –
       </span>
     );
   }
