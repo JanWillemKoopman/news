@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Drawer from "@/components/Drawer";
 import KanalenFilterBalk, { type FilterDimensie } from "@/components/kanalen/KanalenFilterBalk";
 import KerncijferStrip from "@/components/kanalen/KerncijferStrip";
 import BudgetPacing from "@/components/kanalen/BudgetPacing";
 import SignaalPaneel from "@/components/kanalen/SignaalPaneel";
+import UitsplitsingPaneel from "@/components/kanalen/UitsplitsingPaneel";
 import StatistiekTabel from "@/components/kanalen/StatistiekTabel";
 import TijdGrafiek from "@/components/kanalen/TijdGrafiek";
 import Inlogprompt from "@/components/Inlogprompt";
@@ -81,6 +82,27 @@ export interface TabelConfig {
   toonDatum?: boolean;
   /** Vergelijk één statistiek met het gemiddelde van de groep waar de regel bij hoort. */
   benchmark?: { dimensie: string; statistiekId: string; waarmee: string };
+  /**
+   * Zet een sectiekop bóven deze tabel.
+   *
+   * Voor een pagina met veel tabellen die over verschillende dingen gaan (Website): zonder
+   * zo'n kop leest negen tabellen onder elkaar als één lange rij, terwijl het er drie
+   * groepjes zijn. De kop zegt ook welke filters in dat blok gelden, want dat verschilt.
+   */
+  sectie?: { titel: string; toelichting: string };
+  /** Een zoekveld boven de tabel — alleen zinnig bij honderden of duizenden regels. */
+  zoekbaar?: boolean;
+  /** Mag de tabel dichtgeklapt worden, en staat hij open bij het openen van de pagina? */
+  inklapbaar?: boolean;
+  standaardOpen?: boolean;
+  /**
+   * Maakt elke regel klikbaar en opent hem uitgesplitst in de zijbalk.
+   *
+   * De dimensies moeten in dezelfde kubus zitten; wat er niet in zit wordt overgeslagen.
+   * Zie `UitsplitsingPaneel.tsx` voor waarom dit een zijbalk is en geen extra kolom of
+   * een globaal filter.
+   */
+  uitsplitsing?: { dimensies: { id: string; label: string }[] };
 }
 
 type Props = {
@@ -153,6 +175,10 @@ export default function KanaalPagina({
   const [uitlegAan, setUitlegAan] = useState(false);
   const [vergelijk, setVergelijk] = useState(false);
   const [signalenOpen, setSignalenOpen] = useState(false);
+  /** Welke regel er uitgesplitst in de zijbalk staat, en uit welke tabel hij kwam. */
+  const [uitsplitsing, setUitsplitsing] = useState<{ tabel: TabelConfig; sleutel: string } | null>(
+    null,
+  );
   const actief = useIsActief(weergave);
 
   // Eén pagina, één set kanalen: `pagina` bepaalt welke bronnen erin zitten en er is
@@ -268,6 +294,16 @@ export default function KanaalPagina({
     [data.reeks, reeksRijen],
   );
 
+  // Welke kubus en welke rijen horen bij een `bron`? Op drie plekken nodig (de tabellen,
+  // de vergelijking, de zijbalk), dus één keer opgeschreven — anders lopen ze uiteen zodra
+  // er een vierde bron bij komt.
+  const kubusVan = (bron: string): Kubus =>
+    bron === "reeks" ? data.reeks : bron === "detail" ? data.detail : (data.extra[bron] ?? LEGE_KUBUS);
+  const rijenVan = (bron: string): number[][] =>
+    bron === "reeks" ? reeksRijen : bron === "detail" ? detailRijen : (extraRijen[bron] ?? GEEN_RIJEN);
+  const vorigeVan = (bron: string) =>
+    bron === "reeks" ? vorigeReeks : bron === "detail" ? vorigeDetail : (vorigeExtra?.[bron] ?? null);
+
   const [statistiekId, setStatistiekId] = useState(standaardStatistiek);
   const gekozenStatistiek =
     actieveStatistieken.find((s) => s.id === statistiekId) ??
@@ -347,34 +383,15 @@ export default function KanaalPagina({
             </p>
           )}
 
-          {tabellen.map((tabel) => {
-            const kubus =
-              tabel.bron === "reeks"
-                ? data.reeks
-                : tabel.bron === "detail"
-                  ? data.detail
-                  : (data.extra[tabel.bron] ?? LEGE_KUBUS);
-            const rijen =
-              tabel.bron === "reeks"
-                ? reeksRijen
-                : tabel.bron === "detail"
-                  ? detailRijen
-                  : (extraRijen[tabel.bron] ?? []);
-            const vorige =
-              tabel.bron === "reeks"
-                ? vorigeReeks
-                : tabel.bron === "detail"
-                  ? vorigeDetail
-                  : (vorigeExtra?.[tabel.bron] ?? null);
-
-            return (
+          {tabellen.map((tabel) => (
+            <Fragment key={tabel.titel}>
+              {tabel.sectie && <SectieKop {...tabel.sectie} />}
               <StatistiekTabel
-                key={tabel.titel}
                 titel={tabel.titel}
                 toelichting={metFilterVoorbehoud(tabel, selectie)}
-                kubus={kubus}
-                rijen={rijen}
-                vorige={vorige}
+                kubus={kubusVan(tabel.bron)}
+                rijen={rijenVan(tabel.bron)}
+                vorige={vorigeVan(tabel.bron)}
                 groepeerOp={tabel.groepeerOp}
                 groepLabel={tabel.groepLabel}
                 labelVeld={tabel.labelVeld}
@@ -383,9 +400,17 @@ export default function KanaalPagina({
                 toonDatum={tabel.toonDatum}
                 benchmark={tabel.benchmark}
                 uitlegAan={uitlegAan}
+                zoekbaar={tabel.zoekbaar}
+                inklapbaar={tabel.inklapbaar}
+                standaardOpen={tabel.standaardOpen}
+                onUitsplitsen={
+                  tabel.uitsplitsing
+                    ? (sleutel) => setUitsplitsing({ tabel, sleutel })
+                    : undefined
+                }
               />
-            );
-          })}
+            </Fragment>
+          ))}
         </div>
       )}
 
@@ -408,6 +433,22 @@ export default function KanaalPagina({
         </button>
       )}
 
+      {uitsplitsing && uitsplitsing.tabel.uitsplitsing && (
+        <Drawer
+          title={`${uitsplitsing.tabel.groepLabel}: ${uitsplitsing.sleutel}`}
+          onClose={() => setUitsplitsing(null)}
+        >
+          <UitsplitsingPaneel
+            kubus={kubusVan(uitsplitsing.tabel.bron)}
+            rijen={rijenVan(uitsplitsing.tabel.bron)}
+            groepeerOp={uitsplitsing.tabel.groepeerOp}
+            sleutel={uitsplitsing.sleutel}
+            dimensies={uitsplitsing.tabel.uitsplitsing.dimensies}
+            statistieken={uitsplitsing.tabel.statistieken ?? actieveStatistieken}
+          />
+        </Drawer>
+      )}
+
       {signalenOpen && signaalInstellingen && (
         <Drawer title="Wat opvalt" onClose={() => setSignalenOpen(false)}>
           <SignaalPaneel
@@ -420,6 +461,29 @@ export default function KanaalPagina({
           />
         </Drawer>
       )}
+    </div>
+  );
+}
+
+/**
+ * Eén gedeelde lege rijenlijst, zodat `rijenVan` geen nieuw array per render maakt — dat
+ * zou elke `useMemo` die eraan hangt opnieuw laten draaien zonder dat er iets veranderde.
+ */
+const GEEN_RIJEN: number[][] = [];
+
+/**
+ * Een kopje boven een groepje tabellen.
+ *
+ * Klein, uppercase en gedempt — dezelfde vorm als de groepskoppen in de campagnetabel en
+ * in de sidebar. De tweede regel zegt waar het blok over gaat en, waar dat afwijkt, welke
+ * filters er gelden: op een pagina waar niet elk filter overal werkt, is dat de
+ * belangrijkste zin op het scherm.
+ */
+function SectieKop({ titel, toelichting }: { titel: string; toelichting: string }) {
+  return (
+    <div className="mt-2 first:mt-0">
+      <h2 className="label-theme text-label text-ink-faint">{titel}</h2>
+      <p className="mt-1 max-w-3xl text-meta text-ink-muted">{toelichting}</p>
     </div>
   );
 }

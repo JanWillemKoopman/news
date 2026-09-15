@@ -61,7 +61,12 @@ export default function Drawer({ title, onClose, children }: Props) {
         }`}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-6 py-4">
-          <p className="font-sans-w7 text-sm font-bold text-ink">{title}</p>
+          {/* `min-w-0 truncate` omdat een titel ook een pagina-pad kan zijn: zonder dit
+              duwt één lange URL zonder spaties de sluitknop van het scherm af. De volledige
+              waarde staat in de tooltip én bovenaan in de inhoud eronder. */}
+          <p className="min-w-0 truncate font-sans-w7 text-sm font-bold text-ink" title={title}>
+            {title}
+          </p>
           <button
             type="button"
             onClick={onClose}

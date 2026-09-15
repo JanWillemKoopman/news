@@ -440,6 +440,31 @@ niet uit af te lezen zijn:
     (`drempelSessies`). Twee regels: wegzakkend verkeer per kanaal, en een gedaalde
     conversieratio bij gelijk verkeer — die tweede alleen als de eerste niet vuurde, want
     minder bezoek én minder conversies is één gebeurtenis en geen twee.
+  - **Drie ingangen, en dat is bewust geen één.** Er is gevraagd of Website in tabbladen
+    moest en of er een filter "pagina" bij kon; allebei is er niet gekomen, en dat is een
+    besluit dat uitleg verdient voordat iemand het terugdraait.
+    - **Geen sub-tabbladen.** Het dashboard kent één regel tegen dubbele navigatie (zie
+      "Structuur van het scherm"), en belangrijker: de waarde van deze pagina zit in de
+      ketting *dit kanaal → landde op deze pagina → deed dit*. In vier tabbladen moet de
+      marketeer die ketting in zijn hoofd bijhouden, en voor het losse overzicht per
+      onderdeel is GA4 zelf al prima. Wat er wél mis was — negen tabellen zonder
+      zichtbare structuur — is opgelost met **sectiekoppen** (`TabelConfig.sectie`) en
+      **inklapbare tabellen** (`inklapbaar` / `standaardOpen`), waarvan de helft dicht
+      staat. Dichtgeklapt blijft de kop staan mét regelaantal en toelichting, dus die rij
+      leest als een inhoudsopgave in plaats van als verstopte inhoud.
+    - **Geen globaal paginafilter, wel een zoekveld per tabel** (`zoekbaar`). Een
+      pagina-pad zit alleen in de paginakubus, dus een globaal filter zou acht van de
+      negen blokken onaangeroerd laten en tóch de indruk wekken dat het hele scherm
+      meebewoog. Het zoekveld filtert de **rijen** en niet de zichtbare groepen, zodat de
+      totaalregel, de groepen en de vergelijking met de vorige periode over dezelfde
+      verzameling blijven rekenen — anders stond er "3 regels" boven een totaal van
+      drieduizend. Het blijft zichtbaar zolang er een zoekterm staat, ook dichtgeklapt.
+    - **Een klik op een regel splitst hem uit in de zijbalk** (`uitsplitsing`,
+      `UitsplitsingPaneel.tsx`). Dat is het antwoord op "hoeveel mensen stapten in op deze
+      campagnelandingspagina en via welke kanalen": die kolommen zitten al in de
+      landingskubus, alleen niet in dezelfde tabel. Het paneel hergroepeert de rijen die
+      de tabel al toonde — geen tweede ophaalactie, geen nieuw cijfer, en het volgt de
+      actieve filters. Haal daar dus nooit iets apart op.
 
 - **De rij smal houden gaat vóór een slimme index.** Twaalf maanden op Social ads en
   Google Ads liep tegen "canceling statement due to statement timeout" aan, en de weg
