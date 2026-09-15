@@ -1,4 +1,15 @@
 -- ---------------------------------------------------------------------------
+-- LET OP: grotendeels teruggedraaid door 0023 — lees die eerst
+-- ---------------------------------------------------------------------------
+--
+-- De diagnose hieronder klopt (de tabel was te zwaar om per rij te lezen), de oplossing
+-- niet. De dekkende index bleek zelf duur: Postgres leest een indexregel attribuut voor
+-- attribuut, dus bij twintig tekstkolommen wordt het lezen kwadratisch. Op Google viel
+-- dat binnen de limiet, op Social ads niet. Migratie 0023 gooit deze index weer weg en
+-- pakt het echte probleem aan: de creative-URL uit de rij halen. Dit bestand blijft
+-- staan omdat de migratiegeschiedenis niet herschreven hoort te worden.
+
+-- ---------------------------------------------------------------------------
 -- De kanaalpagina's over twaalf maanden: van "statement timeout" naar seconden
 -- ---------------------------------------------------------------------------
 --

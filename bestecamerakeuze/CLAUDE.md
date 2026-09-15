@@ -401,24 +401,38 @@ niet uit af te lezen zijn:
   - **Er komt geen cijfer bij.** `totaal` is exact wat de kanaalpagina's al tonen. Dit
     blok splitst dat uit; het is nadrukkelijk geen derde waarheid over dezelfde getallen.
     Zet er dus ook nooit een KPI-tegel van.
-- **De thumbnail hoort niet in een periode-optelling.** `windsor_advertenties` is 279 MB
-  bij 248.000 rijen, en 537 van de gemiddeld 785 bytes per rij zijn `thumbnail_url` — de
-  creative-URL van Meta, elke dag opnieuw meegeschreven bij elke advertentie. Zolang die
-  kolom meedoet in de `group by` van de detailquery, moet de database voor élke dagregel
-  de volle rij van schijf halen; en omdat de rijen van Meta en Google door elkaar heen
-  staan, raakt een query die alleen Google wil vrijwel die hele 279 MB aan. Twaalf maanden
-  Google liep daardoor met 17,8 s tegen de `statement_timeout` van 15 s aan ("canceling
-  statement due to statement timeout") terwijl 7, 30 en 90 dagen gewoon laadden — de
-  eerste keer dat dit dashboard tegen zijn eigen datagrootte opliep. Sinds migratie 0022
-  draagt `windsor_advertenties_dashboard_idx` alles wat de pagina's optellen (index only
-  scan, 1,4 s) en hangt de thumbnail eronder met een `left join lateral`, alleen voor de
-  regels die echt op het scherm komen. Zet hem dus niet terug in de groepering, en voeg
-  hem ook niet toe aan die index: die ene kolom maakt de index ruim drie keer zo groot en
-  brengt precies terug wat hij oplost. Een laag hoger geldt hetzelfde principe:
-  `metVerbinding` zet `work_mem` op 64 MB met `set local` in een expliciete transactie —
-  een jaar past niet in de standaard, en dan valt de groepering terug op sorteren op
-  schijf (`set local`, want `DATAQUERY_DATABASE_URL` wijst naar de transaction pooler en
-  een kale `set` belandt daar op een verbinding die zo weer wordt uitgeleend).
+- **De rij smal houden gaat vóór een slimme index.** Twaalf maanden op Social ads en
+  Google Ads liep tegen "canceling statement due to statement timeout" aan, en de weg
+  naar de oorzaak is leerzamer dan de oorzaak zelf.
+  - **Wat het was.** `windsor_advertenties` woog 283 MB bij 248.000 rijen, en 537 van de
+    gemiddeld 785 bytes per rij waren `thumbnail_url`: de creative-URL, met 935
+    verschillende waarden verspreid over zo'n 180.000 rijen. Die hoort bij de advertentie
+    en niet bij de dag. Zo zwaar dat de tabel niet meer paste in het werkgeheugen van de
+    database (`shared_buffers` is 224 MB) en elke jaaroptelling hem van schijf moest halen.
+  - **De omweg die niet werkte.** Migratie 0022 zette daar een dekkende index tegenover,
+    met alles wat de pagina's optellen erin. Op Google hielp dat (17,8 s → 1,4 s), op
+    Social ads niet. Reden: een index only scan leest zijn kolommen uit de indexregel, en
+    Postgres loopt zo'n regel attribuut voor attribuut door — elke kolom van variabele
+    lengte moet hij vanaf het begin opzoeken. Bij twintig tekstkolommen wordt dat
+    kwadratisch. Dezelfde 169.000 rijen: tellen via de smalle index 0,75 s, één kolom
+    lezen via de dekkende index 8,42 s. Een dekkende index met veel tekstkolommen is dus
+    geen gratis versnelling maar vaak een duurdere omweg.
+  - **Wat het wel is.** Migratie 0023 haalt de creative uit de feitentabel en zet hem in
+    `windsor_advertentie_creatives` (één rij per advertentie), gooit de dekkende index
+    weg en zet er een smalle `(bron, datum)` voor in de plaats. Migratie 0024 gooit ook
+    `..._campagne_idx` weg, die de planner verleidde tot een scan over álle bronnen omdat
+    de rijen er gesorteerd uit kwamen. De tabel weegt nu 116 MB en past in het geheugen;
+    een rij lezen is één doorloop in plaats van een doorloop per kolom. Twaalf maanden:
+    Social 0,95 s + 1,6 s, Google 0,71 s + 1,1 s.
+  - **Dus.** Zet de thumbnail niet terug in `windsor_advertenties` en niet in de `group by`
+    van de detailquery; `v_advertenties` levert hem gewoon via een join, zodat de chatbot
+    van de verhuizing niets merkt. En loop je hier weer tegen een trage jaaroptelling aan:
+    kijk eerst naar het gewicht van de rij, en pas daarna naar indexen.
+  - **Eén laag hoger** zet `metVerbinding` `work_mem` op 64 MB met `set local` in een
+    expliciete transactie — een jaar past niet in de standaard, en dan valt de groepering
+    terug op sorteren op schijf. `set local` en niet kaal, want `DATAQUERY_DATABASE_URL`
+    wijst naar de transaction pooler en een kale `set` belandt daar op een verbinding die
+    zo weer aan een volgend verzoek wordt uitgeleend.
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus

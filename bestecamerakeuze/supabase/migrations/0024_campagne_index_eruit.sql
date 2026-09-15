@@ -1,0 +1,36 @@
+-- ---------------------------------------------------------------------------
+-- De campagne-index eruit: hij lokte de planner een dure omweg in
+-- ---------------------------------------------------------------------------
+--
+-- Nasleep van 0023. Met de smalle tabel was de tijdreeks van Social ads meteen goed
+-- (0,95 s), maar de advertentietabel bleef op 4,5 s hangen. De reden stond in het plan:
+--
+--     Index Scan using windsor_advertenties_campagne_idx
+--       Index Cond: (datum >= … AND datum <= …)
+--       Filter: (bron = ANY ('{meta,linkedin}'))
+--       Rows Removed by Filter: 91724
+--
+-- Die index is `(campagne, datum desc)`. De planner koos hem niet om te filteren — dat
+-- kan hij er niet mee, kijk naar de 91.724 rijen die er daarna alsnog uit moesten — maar
+-- omdat de rijen er al op campagne gesorteerd uit komen, en dat scheelt werk bij het
+-- groeperen (een "Incremental Sort" op de eerste sleutel). De prijs was dat hij álle
+-- bronnen las, Google incluis, en de tabel in campagnevolgorde doorliep in plaats van in
+-- de volgorde waarin hij op schijf staat.
+--
+-- Zonder die index kiest hij een gewone scan over de tabel — die sinds 0023 nog maar
+-- 116 MB weegt en in het geheugen past — met twee processen tegelijk:
+--
+--     Social ads, twaalf maanden, advertentietabel     4,5 s  →  1,6 s
+--
+-- Wat er niet omvalt. De index bestond voor twee query's die op campagnenaam zoeken:
+-- `haalKoppelingen` (de Koppeltabel, negentig dagen gegroepeerd op campagne) en
+-- `haalBudgetten` (uitgaven over de looptijd van een campagne uit de sheet). Nagemeten:
+-- de eerste gaat nu over `..._periode_idx` en doet er 2,5 s over, wat voor een pagina die
+-- je een paar keer per week opent ruim voldoende is; de tweede raakt de tabel maar één
+-- keer per ophaalactie. Beide horen bij een tabel van deze omvang thuis op een gewone
+-- scan, niet op een eigen index.
+--
+-- Komt er ooit een campagne-gedreven pagina bij die dit wél nodig heeft, zet hem dan
+-- terug mét een bronkolom erin — `(bron, campagne, datum desc)` — zodat hij de filters
+-- van de kanaalpagina's ook echt kan bedienen in plaats van ze te omzeilen.
+drop index if exists dataloket.windsor_advertenties_campagne_idx;
