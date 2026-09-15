@@ -1,5 +1,11 @@
 import { google } from "googleapis";
 import { SHEET_ID, SHEET_TAB } from "@/lib/sheet";
+import {
+  bezetteKolommen,
+  celAdres,
+  nieuweCampagneRij,
+  rijVanCampagne,
+} from "@/lib/campagneRij";
 
 /**
  * Whitelist van velden die vanuit het dashboard terug naar de sheet geschreven mogen
@@ -74,9 +80,11 @@ function getAuth() {
  * Vertaalt een mislukte Google-aanroep naar een begrijpelijke foutmelding. De rauwe
  * OpenSSL-fout ("error:1E08010C:DECODER routines::unsupported") die Node geeft zodra de
  * private key niet als geldige PEM te lezen is, zegt een gebruiker niets — die wijst
- * hem hier expliciet naar de env-variabele die het probleem veroorzaakt.
+ * hem hier expliciet naar de env-variabele die het probleem veroorzaakt. Hetzelfde geldt
+ * voor "exceeds grid limits": dat betekent simpelweg dat het tabblad geen rij meer over
+ * heeft onder de laatste campagne.
  */
-function vertaalAuthFout(err: unknown): Error {
+function vertaalSheetFout(err: unknown): Error {
   const message = err instanceof Error ? err.message : String(err);
   if (message.includes("DECODER routines") || message.includes("unsupported")) {
     return new Error(
@@ -84,18 +92,13 @@ function vertaalAuthFout(err: unknown): Error {
         "Kopieer de `private_key` opnieuw uit het JSON-keybestand van het service account en herstart de deployment.",
     );
   }
-  return err instanceof Error ? err : new Error(message);
-}
-
-/** A1-kolomletter uit een 0-based kolomindex (0 → A, 25 → Z, 26 → AA, ...). */
-function kolomLetter(index: number): string {
-  let letter = "";
-  let n = index;
-  while (n >= 0) {
-    letter = String.fromCharCode((n % 26) + 65) + letter;
-    n = Math.floor(n / 26) - 1;
+  if (message.includes("exceeds grid limits")) {
+    return new Error(
+      "Het tabblad “Campagnes” heeft geen rij meer vrij onder de laatste campagne. " +
+        "Voeg onderaan een paar lege rijen toe in de sheet en probeer het opnieuw.",
+    );
   }
-  return letter;
+  return err instanceof Error ? err : new Error(message);
 }
 
 /**
@@ -132,22 +135,19 @@ export async function schrijfVeld(campagneNaam: string, veld: string, waarde: st
       throw new Error(`Kolom "${kolomNaam}" of "Campagne naam" niet gevonden in de sheet.`);
     }
 
-    const rijIndex = rows.findIndex(
-      (row, i) => i > 0 && row[campagneKolomIndex]?.trim() === campagneNaam,
-    );
-    if (rijIndex === -1) {
+    const rij = rijVanCampagne(rows, campagneKolomIndex, campagneNaam);
+    if (rij === 0) {
       throw new Error(`Campagne "${campagneNaam}" niet gevonden in de sheet.`);
     }
 
-    const cel = `${kolomLetter(kolomIndex)}${rijIndex + 1}`;
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!${cel}`,
+      range: `${SHEET_TAB}!${celAdres(kolomIndex, rij)}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [[waarde]] },
     });
   } catch (err) {
-    throw vertaalAuthFout(err);
+    throw vertaalSheetFout(err);
   }
 }
 
@@ -157,12 +157,25 @@ export type NieuweCampagneVelden = {
 } & Partial<Record<Exclude<keyof typeof SCHRIJFBARE_VELDEN, "naam">, string>>;
 
 /**
- * Voegt een nieuwe campagne toe als rij in de sheet, in de eerste lege rij na de
- * bestaande data — net als handmatig een rij onderaan invullen. Kolommen worden op
- * kolomkop gezocht (dezelfde aanpak als `schrijfVeld`), zodat de volgorde van kolommen
- * in de sheet er niet toe doet. Velden die niet zijn ingevuld blijven leeg; kolommen die
- * niet vanuit het dashboard te schrijven zijn (Leads, Order totaal, Status, …) blijven
- * ook leeg totdat iemand of iets anders ze vult.
+ * Voegt een nieuwe campagne toe als rij in de sheet, in de eerste rij onder de laatste
+ * campagne — net als handmatig een rij onderaan invullen. Kolommen worden op kolomkop
+ * gezocht (dezelfde aanpak als `schrijfVeld`), zodat de volgorde van kolommen in de
+ * sheet er niet toe doet. Velden die niet zijn ingevuld blijven leeg; kolommen die niet
+ * vanuit het dashboard te schrijven zijn (Leads, Order totaal, Status, …) blijven ook
+ * leeg totdat iemand of iets anders ze vult.
+ *
+ * Bewust géén `spreadsheets.values.append`: dat schrijft niet op het meegegeven bereik,
+ * maar zoekt binnen dat bereik zélf naar een "tabel" en schrijft dan onder die tabel,
+ * beginnend bij de eerste kolom dáárvan. In deze sheet zat die gok ernaast — de eerste
+ * paar kolommen staan bij veel campagnes leeg en onder de campagnes lopen de formules in
+ * "Leads"/"Leads marketing" nog honderden rijen door — waardoor de rij vijf kolommen te
+ * ver naar rechts belandde: de campagnenaam kwam in kolom F terecht in plaats van in
+ * kolom A. Daarom rekenen we rij én kolom hier zelf uit en schrijven we elke waarde naar
+ * een expliciet celadres, met `values.batchUpdate` in één keer.
+ *
+ * Omdat we in een bestaande (lege) rij schrijven in plaats van er een in te voegen,
+ * blijven de doorgetrokken formules in die rij staan: de nieuwe campagne telt zijn leads
+ * meteen mee, net als de rijen erboven.
  */
 export async function voegCampagneToe(velden: NieuweCampagneVelden): Promise<void> {
   const naam = velden.naam.trim();
@@ -189,31 +202,46 @@ export async function voegCampagneToe(velden: NieuweCampagneVelden): Promise<voi
       throw new Error('Kolom "Campagne naam" niet gevonden in de sheet.');
     }
 
-    const bestaatAl = rows.some(
-      (row, i) => i > 0 && row[campagneKolomIndex]?.trim().toLowerCase() === naam.toLowerCase(),
-    );
-    if (bestaatAl) {
+    if (rijVanCampagne(rows, campagneKolomIndex, naam) !== 0) {
       throw new Error(`Er bestaat al een campagne met de naam "${naam}".`);
     }
 
-    const rij = new Array(header.length).fill("");
-    rij[campagneKolomIndex] = naam;
+    // Kolomindex per schrijfbaar veld, op kolomkop gezocht. Een kop die niet (meer) in de
+    // sheet staat, slaan we over in plaats van blind op een kolomnummer te gokken.
+    const kolomIndexen = new Map<string, number>();
     for (const [veld, kolomNaam] of Object.entries(SCHRIJFBARE_VELDEN)) {
-      if (veld === "naam") continue;
-      const waarde = velden[veld as keyof NieuweCampagneVelden];
-      if (!waarde) continue;
-      const kolomIndex = header.indexOf(kolomNaam);
-      if (kolomIndex !== -1) rij[kolomIndex] = waarde;
+      const kolomIndex = veld === "naam" ? campagneKolomIndex : header.indexOf(kolomNaam);
+      if (kolomIndex !== -1) kolomIndexen.set(veld, kolomIndex);
     }
 
-    await sheets.spreadsheets.values.append({
+    const rij = nieuweCampagneRij(rows, campagneKolomIndex);
+
+    // De rij onder de laatste campagne hoort leeg te zijn. Staat er toch iets in een van
+    // "onze" kolommen, dan is er iets bijzonders aan de hand in de sheet (een restant van
+    // een eerdere fout, een losse aantekening) — dat overschrijven we niet stilletjes.
+    const bezet = bezetteKolommen(rows, rij, [...kolomIndexen.values()]);
+    if (bezet.length > 0) {
+      throw new Error(
+        `Rij ${rij} van het tabblad “Campagnes” is niet leeg (kolom ${bezet.join(", ")}). ` +
+          "Maak die rij eerst leeg of verwijder hem, en probeer het opnieuw.",
+      );
+    }
+
+    const teSchrijven: { range: string; values: string[][] }[] = [];
+    for (const [veld, kolomIndex] of kolomIndexen) {
+      const waarde = veld === "naam" ? naam : velden[veld as keyof NieuweCampagneVelden];
+      if (!waarde) continue;
+      teSchrijven.push({
+        range: `${SHEET_TAB}!${celAdres(kolomIndex, rij)}`,
+        values: [[waarde]],
+      });
+    }
+
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A:Z`,
-      valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: { values: [rij] },
+      requestBody: { valueInputOption: "USER_ENTERED", data: teSchrijven },
     });
   } catch (err) {
-    throw vertaalAuthFout(err);
+    throw vertaalSheetFout(err);
   }
 }

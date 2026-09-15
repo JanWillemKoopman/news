@@ -39,6 +39,19 @@ moeten wijzen.
 **Bedragen en aantallen** in de sheet staan in NL-notatie (`€ 3.000`, `20,00`); zie
 `parseNumberNL` in `lib/sheet.ts`.
 
+**Terugschrijven** gaat wél via de Sheets-API (`lib/sheetSchrijven.ts`, met een service
+account): het wijzigen van één veld en het toevoegen van een nieuwe campagne. Beide zoeken
+de kolom op kolom*kop* en de rij op campagnenaam, zodat verschuiven in de sheet zelf niets
+breekt. Het rekenwerk daarvoor staat los in `lib/campagneRij.ts` en is getest.
+
+Gebruik daarbij nooit `spreadsheets.values.append`: die schrijft niet op het bereik dat je
+meegeeft, maar zoekt daarbinnen zelf naar een "tabel" en begint bij de eerste kolom
+dáárvan. In deze sheet gokte hij mis — bij veel campagnes staan de eerste kolommen leeg en
+onder de laatste campagne lopen de formules van "Leads"/"Leads marketing" nog honderden
+rijen door — waardoor een nieuwe campagne vijf kolommen te ver naar rechts belandde (naam
+in kolom F in plaats van A). Reken de doelrij zelf uit en schrijf naar expliciete
+celadressen.
+
 ## Dashboard
 
 `components/CampaignMatrix.tsx` toont de campagnes getransponeerd in één tabel: elke
