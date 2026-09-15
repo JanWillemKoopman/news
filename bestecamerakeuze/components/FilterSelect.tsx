@@ -58,6 +58,28 @@ export default function FilterSelect({ label, options, selected, onChange, zoekb
     return options.filter((o) => o.toLowerCase().includes(term) || selected.includes(o));
   }, [options, zoek, zoekbaar, selected]);
 
+  // De opties die de zoekterm zelf matchen (dus zonder de al aangevinkte waarden die
+  // enkel meekomen om zichtbaar te blijven) — dit is de set waar "Selecteer alle" en
+  // "Verwijder alle" op werken, zodat een zoekopdracht als "vacature" in één klik
+  // aan- of uitgevinkt kan worden in plaats van los per optie.
+  const gezochteOpties = useMemo(() => {
+    if (!zoekbaar || !zoek.trim()) return [];
+    const term = zoek.trim().toLowerCase();
+    return options.filter((o) => o.toLowerCase().includes(term));
+  }, [options, zoek, zoekbaar]);
+
+  const alleGezochtGeselecteerd =
+    gezochteOpties.length > 0 && gezochteOpties.every((o) => selected.includes(o));
+  const geenGezochtGeselecteerd = gezochteOpties.every((o) => !selected.includes(o));
+
+  function selecteerGezochte() {
+    onChange([...selected, ...gezochteOpties.filter((o) => !selected.includes(o))]);
+  }
+
+  function verwijderGezochte() {
+    onChange(selected.filter((o) => !gezochteOpties.includes(o)));
+  }
+
   const valueLabel =
     selected.length === 0
       ? "Alle"
@@ -102,6 +124,27 @@ export default function FilterSelect({ label, options, selected, onChange, zoekb
                 aria-label={`Zoek in ${label}`}
                 className="w-full rounded-control border border-line bg-card py-1.5 pl-7 pr-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
               />
+            </div>
+          )}
+
+          {gezochteOpties.length > 0 && (
+            <div className="mb-1 flex shrink-0 items-center gap-1 border-b border-line-soft pb-1.5">
+              <button
+                type="button"
+                onClick={selecteerGezochte}
+                disabled={alleGezochtGeselecteerd}
+                className="rounded-control px-2 py-1 text-left text-xs font-medium text-primary hover:bg-primary-light disabled:cursor-not-allowed disabled:text-ink-faint disabled:hover:bg-transparent"
+              >
+                Selecteer alle {gezochteOpties.length}
+              </button>
+              <button
+                type="button"
+                onClick={verwijderGezochte}
+                disabled={geenGezochtGeselecteerd}
+                className="rounded-control px-2 py-1 text-left text-xs font-medium text-primary hover:bg-primary-light disabled:cursor-not-allowed disabled:text-ink-faint disabled:hover:bg-transparent"
+              >
+                Verwijder deze uit selectie
+              </button>
             </div>
           )}
 
