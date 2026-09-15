@@ -413,6 +413,64 @@ body {
   animation: glans 1.8s var(--ease-merk) infinite;
 }
 
+/* De onbepaalde laadbalk op de bovenrand van de Kanalen-panelen (components/kanalen/
+   Laadbalk.tsx). Bewust onbepaald en geen percentage: de API levert geen voortgang, en
+   een balk die op 90% blijft staan liegt harder dan beweging die alleen "er wordt
+   gewerkt" zegt.
+
+   Twee segmenten in plaats van één, met een kop die feller en korter is dan de staart:
+   één blokje dat overtrekt leest als traag, twee die elkaar inhalen als druk bezig. Ze
+   delen één lus en staan er een halve uit elkaar in (de negatieve delay op de staart),
+   want elke andere verhouding laat de baan af en toe even leeg vallen — en precies op
+   dat moment lijkt het alsof het ophalen vastloopt.
+
+   Dit is de ene plek waar de beweging níet op --ease-merk staat, en dat heeft een reden.
+   De merkcurve landt zacht: een segment dat daarmee overtrekt schiet weg en blijft dan
+   seconden lang bij de rechterrand hangen — precies het beeld van een progressbalk die
+   vastloopt. Een symmetrische in-en-uit-curve is in het midden juist het snelst, en dat
+   is waar de balk in beeld is. */
+.laadbalk {
+  background-color: var(--color-primary-light);
+}
+
+.laadbalk-segment {
+  /* Schalen vanaf de linkerkant, zodat translateX de kop van het segment is en scaleX
+     alleen de lengte verandert. */
+  transform-origin: 0 50%;
+  will-change: transform;
+}
+
+.laadbalk-kop {
+  background-image: linear-gradient(90deg, transparent, var(--color-primary));
+  animation: laadbalk-kop 1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.laadbalk-staart {
+  background-image: linear-gradient(90deg, transparent, var(--color-primary) 85%, transparent);
+  opacity: 0.5;
+  animation: laadbalk-staart 1s cubic-bezier(0.65, 0, 0.35, 1) -0.5s infinite;
+}
+
+/* Twee keyframes per segment, geen drie: bij een derde stop krijgt élk deel de curve
+   apart en ontstaat er halverwege de baan een hapering. */
+@keyframes laadbalk-kop {
+  from {
+    transform: translateX(-50%) scaleX(0.5);
+  }
+  to {
+    transform: translateX(105%) scaleX(0.5);
+  }
+}
+
+@keyframes laadbalk-staart {
+  from {
+    transform: translateX(-70%) scaleX(0.75);
+  }
+  to {
+    transform: translateX(108%) scaleX(0.75);
+  }
+}
+
 /* Ademende statusdot voor een open campagne: heel langzaam en subtiel van lichtgroen
    naar donkergroen en weer terug, zodat "live" voelt zonder de aandacht te trekken.
    Geen los keyframe-pakket nodig voor dit ene effect. */
@@ -432,8 +490,22 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .status-dot-ademen,
-  .laadvlak {
+  .laadvlak,
+  .laadbalk-segment {
     animation: none;
+  }
+
+  /* Zonder beweging blijft er één rustige baan in de merkkleur staan: nog steeds
+     zichtbaar "er wordt gewerkt", alleen zonder dat er iets over het scherm schiet. */
+  .laadbalk-kop {
+    transform: none;
+    opacity: 0.5;
+    background-image: none;
+    background-color: var(--color-primary);
+  }
+
+  .laadbalk-staart {
+    display: none;
   }
 
   .kaart-hover:hover {

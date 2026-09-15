@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import DataOphalen from "@/components/kanalen/DataOphalen";
+import Laadbalk from "@/components/kanalen/Laadbalk";
 import { IconCalendarRange, IconClose, IconInfo, IconRefresh } from "@/components/icons";
 import {
   eigenPeriode,
@@ -94,7 +95,10 @@ export default function KanalenFilterBalk({
 
   return (
     <div className="sticky top-0 z-30 -mx-1 mb-5 px-1 pt-1">
-      <div className="kaart-omlijst rounded-panel border border-line bg-card px-4 py-3 shadow-card">
+      <div className="kaart-omlijst relative rounded-panel border border-line bg-card px-4 py-3 shadow-card">
+        {/* Ook de vergelijking telt mee: die is een tweede ophaalactie, en zolang die
+            loopt staan de verschilcijfers er nog niet. */}
+        <Laadbalk actief={bezig || vergelijkBezig} />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div>

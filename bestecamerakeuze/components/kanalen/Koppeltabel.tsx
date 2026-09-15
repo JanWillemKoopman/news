@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ConversiePaneel from "@/components/kanalen/ConversiePaneel";
+import Laadbalk from "@/components/kanalen/Laadbalk";
 import Inlogprompt from "@/components/Inlogprompt";
 import FilterSelect from "@/components/FilterSelect";
 import { IconCheck, IconChevronDown, IconInfo, IconSearch } from "@/components/icons";
@@ -122,7 +123,8 @@ export default function Koppeltabel({ ingelogd }: { ingelogd: boolean }) {
   return (
     <div>
       <div className="sticky top-0 z-30 -mx-1 mb-5 px-1 pt-1">
-        <div className="kaart-omlijst flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-card px-4 py-3 shadow-card">
+        <div className="kaart-omlijst relative flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-card px-4 py-3 shadow-card">
+          <Laadbalk actief={bezig} />
           <div className="flex items-center gap-4">
             <div>
               <p className="font-sans-w7 text-sm font-semibold text-ink">

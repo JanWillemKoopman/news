@@ -308,6 +308,18 @@ niet uit af te lezen zijn:
   op het beeld waarop je hem doet, niet op een ander tabblad. De balk heeft twee rijen:
   boven **waar je naar kijkt** (periode, versheid, filters), onder **hoe je kijkt**
   (vergelijken, alle kanalen), de chips en de acties.
+- **Wachten is ook vormgeving.** Zolang er een kubus onderweg is loopt er een dunne balk
+  in de merkkleur over de bovenrand van die filterbalk (`components/kanalen/Laadbalk.tsx`,
+  de beweging staat in `globals.css` onder `.laadbalk*`). Onbepaald en geen percentage —
+  de API levert geen voortgang, en een balk die op 90% blijft staan liegt harder dan
+  beweging die alleen "er wordt gewerkt" zegt. Hij verschijnt pas na 140ms en blijft dan
+  minstens 450ms staan: een antwoord uit de browsercache is er binnen enkele tientallen
+  milliseconden, en een balk die in die tijd aan- en uitknippert leest als een storing.
+  Omdat hij in de plakkende balk zit, blijft het antwoord op "gebeurt er nog iets?" in
+  beeld als je ondertussen doorscrollt. Het `Laadvlak` in `KanaalPagina` blijft daarnaast
+  bestaan: dat vult de eerste, nog lege pagina, terwijl de balk élke ophaalactie daarna
+  dekt — periode wisselen, verversen, vergelijken — waarbij de oude cijfers gewoon in
+  beeld blijven en je anders niet ziet dat ze verouderd zijn.
 - **Vergelijken met de vorige periode is een tweede ophaalactie en staat daarom uit.**
   Aanzetten haalt dezelfde kubussen op over de even lange periode die eindigt op de dag
   vóór de huidige (`vorigePeriode` in `lib/kanalen/periode.ts`), en zet het verschil bij
