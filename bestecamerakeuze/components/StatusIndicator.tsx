@@ -8,7 +8,7 @@ export default function StatusIndicator({ live }: { live: boolean }) {
         aria-hidden="true"
         className={`h-1.5 w-1.5 shrink-0 rounded-full ${live ? "bg-open status-dot-ademen" : "bg-closed"}`}
       />
-      {live ? "Online" : "Offline"}
+      {live ? "Live" : "Offline"}
     </span>
   );
 }

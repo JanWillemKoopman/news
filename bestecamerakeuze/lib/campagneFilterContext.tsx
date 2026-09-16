@@ -10,10 +10,10 @@ function uniqueSorted(values: string[]): string[] {
 
 /** Zelfde twee waardes als StatusIndicator toont — afgeleid van start-/einddatum, niet
  *  van de kolom "Status" in de sheet. */
-const STATUS_OPTIES = ["Online", "Offline"] as const;
+const STATUS_OPTIES = ["Live", "Offline"] as const;
 
 function statusLabel(campagne: Campagne): (typeof STATUS_OPTIES)[number] {
-  return isCampagneLive(campagne) ? "Online" : "Offline";
+  return isCampagneLive(campagne) ? "Live" : "Offline";
 }
 
 type Opties = { status: string[]; merk: string[]; ordersoort: string[]; klantgroep: string[] };
@@ -67,8 +67,8 @@ export function CampagneFilterProvider({
     setCampagnes(campagnesProp);
   }, [campagnesProp]);
 
-  // Standaard alleen "Online" tonen, net als voorheen — nu berekend i.p.v. uit de sheet gelezen.
-  const [status, setStatus] = useState<string[]>(["Online"]);
+  // Standaard alleen "Live" tonen, net als voorheen — nu berekend i.p.v. uit de sheet gelezen.
+  const [status, setStatus] = useState<string[]>(["Live"]);
   const [merk, setMerk] = useState<string[]>([]);
   const [ordersoort, setOrdersoort] = useState<string[]>([]);
   const [klantgroep, setKlantgroep] = useState<string[]>([]);
