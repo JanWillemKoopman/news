@@ -133,9 +133,16 @@ Elke collega kan daarna zelf bij **Instellingen** zijn naam en profielfoto inste
 die worden onder andere getoond bij aantekeningen die diegene toevoegt aan een
 campagne (zie `supabase/migrations/0006_profielen.sql`).
 
-Standaard staat de inlog alleen vóór het chattabblad; het campagnedashboard blijft
-publiek zoals het nu is. Wil je de héle app achter de inlog zetten, pas dan de `matcher`
-in `middleware.ts` aan — dat staat als commentaar in het bestand.
+**De hele app staat achter de inlog.** Wie geen sessie heeft, komt op `/login` uit —
+ook op Campagnes en Tijdlijn, die eerder nog meelazen zonder account. De regels staan in
+`lib/toegang.ts` (met een test ernaast) en worden afgedwongen in `middleware.ts` en nog
+eens in `app/page.tsx`. Buiten de inlog vallen alleen `/login` zelf, de auth-routes en de
+twee cron-routes (`/api/sync` en `/api/windsor-sync`), die zich met `CRON_SECRET`
+legitimeren in plaats van met een sessie. Een API-route zonder sessie krijgt een 401 en
+geen omleiding: een fetch heeft niets aan een inlogpagina.
+
+Staat Supabase niet ingesteld, dan kan niemand inloggen en blijft dus alles dicht; het
+inlogscherm vertelt dan welke twee instellingen ontbreken.
 
 ## 5. De echte sheets koppelen
 

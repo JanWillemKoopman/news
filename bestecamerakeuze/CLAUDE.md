@@ -535,6 +535,16 @@ niet uit af te lezen zijn:
   omdat Supabase niet geconfigureerd is — helemaal niet renderen) in plaats van te
   crashen. Zie `lib/kennisbank.ts` / `lib/campagneNotities.ts` / `lib/profielen.ts` als
   voorbeeld.
+- **Alles staat achter de inlog.** Wie geen sessie heeft, ziet alleen `/login`. Die
+  beslissing ligt op één plek (`lib/toegang.ts`, nagerekend in `lib/toegang.test.ts`) en
+  wordt afgedwongen in `middleware.ts`, nog eens in `app/page.tsx` en daarnaast door elke
+  API-route die zelf `getGebruiker()` controleert. Een nieuw paneel of een nieuwe route
+  staat dus dicht zonder dat je eraan hoeft te denken; wil je er iets buiten laten vallen,
+  dan hoort dat als uitzondering in `lib/toegang.ts` te staan en niet elders. Buiten de
+  inlog vallen alleen de auth-routes en de twee cron-routes (`/api/sync`,
+  `/api/windsor-sync`), die zich met `CRON_SECRET` legitimeren. De `ingelogd`-prop en de
+  `Inlogprompt` in de panelen blijven staan als laatste vangnet — ze horen niet meer in
+  beeld te komen, maar een gat in de matcher mag nooit een open dashboard opleveren.
 - Inloggen is e-mailadres + wachtwoord (geen magic link, geen zelfregistratie):
   accounts worden aangemaakt door iemand met toegang tot Supabase, of via
   `scripts/maak-gebruiker.ts` (draait los van de app met de service role-sleutel — zie

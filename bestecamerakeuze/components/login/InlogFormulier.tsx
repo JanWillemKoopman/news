@@ -18,8 +18,12 @@ import { createClient } from "@/lib/supabase/client";
  * Geen magic link en geen zelfregistratie — accounts worden centraal aangemaakt (via
  * Supabase of `scripts/maak-gebruiker.ts`, zie README-dataloket.md) met een wachtwoord
  * dat direct aan de collega wordt gegeven.
+ *
+ * `verder` is de pagina waar de bezoeker heen wilde toen de inlog hem tegenhield; de
+ * loginpagina heeft die waarde al gefilterd met `veiligVerder()`. Standaard is dat het
+ * dashboard zelf.
  */
-export default function InlogFormulier() {
+export default function InlogFormulier({ verder = "/" }: { verder?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [wachtwoord, setWachtwoord] = useState("");
@@ -45,7 +49,7 @@ export default function InlogFormulier() {
       return;
     }
 
-    router.push("/");
+    router.push(verder);
     router.refresh();
   }
 

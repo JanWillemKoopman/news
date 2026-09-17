@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import CampaignDashboard from "@/components/CampaignDashboard";
 import CampagneBeheer from "@/components/beheer/CampagneBeheer";
@@ -31,17 +32,26 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const campagnes = await getCampagnes();
-  const gereed = chatGereedheid();
+  // Het hele dashboard zit achter de inlog. De middleware stuurt een bezoeker zonder
+  // sessie al weg (`middleware.ts`), maar de pagina controleert het hier nog een keer
+  // zelf: een gat in de matcher mag geen open dashboard opleveren. Deze controle staat
+  // bewust vóór het ophalen van de sheet — voor wie niet ingelogd is, valt er niets op
+  // te halen.
+  //
   // getGebruiker() checkt zelf al of Supabase geconfigureerd is en geeft anders null
   // terug — losgekoppeld van chatGereedheid(), want de aantekeningen bij de campagnes
   // hebben alleen Supabase nodig, niet de dataverbinding of de Claude-sleutel.
   const gebruiker = await getGebruiker();
-  const ingelogd = Boolean(gebruiker);
+  if (!gebruiker) redirect("/login");
 
-  const profiel = gebruiker
-    ? await haalProfiel(await createClient(), gebruiker.id).catch(() => null)
-    : null;
+  const campagnes = await getCampagnes();
+  const gereed = chatGereedheid();
+  // Voorbij de redirect hierboven is er altijd een sessie. De panelen houden hun eigen
+  // `ingelogd`-controle als derde slot (naast de middleware en de controle hier), en
+  // elke API-route controleert daarnaast zijn eigen verzoek.
+  const ingelogd = true;
+
+  const profiel = await haalProfiel(await createClient(), gebruiker.id).catch(() => null);
 
   const liveCount = campagnes.filter((c) => isCampagneLive(c)).length;
 
@@ -52,13 +62,13 @@ export default async function DashboardPage() {
           AppShell) — zie lib/teamData.tsx. */}
       <TeamDataProvider
         ingelogd={ingelogd}
-        eigenId={gebruiker?.id ?? null}
+        eigenId={gebruiker.id}
         eigenNaam={profiel?.naam ?? null}
         eigenAvatarUrl={profiel?.avatarUrl ?? null}
-        magAllesVerwijderen={isBeheerder(gebruiker?.email)}
+        magAllesVerwijderen={isBeheerder(gebruiker.email)}
       >
         <AppShell
-        gebruikerEmail={gebruiker?.email ?? null}
+        gebruikerEmail={gebruiker.email}
         profielNaam={profiel?.naam ?? null}
         profielAvatarUrl={profiel?.avatarUrl ?? null}
         liveCount={liveCount}
@@ -104,7 +114,7 @@ export default async function DashboardPage() {
             <NietGeconfigureerd ontbreekt={gereed.ontbreekt} />
           )
         }
-        instellingen={<InstellingenPaneel ingelogd={ingelogd} email={gebruiker?.email ?? null} />}
+        instellingen={<InstellingenPaneel ingelogd={ingelogd} email={gebruiker.email} />}
         />
       </TeamDataProvider>
     </CampagneFilterProvider>

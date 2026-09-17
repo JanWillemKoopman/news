@@ -1,13 +1,15 @@
 /**
  * Welke onderdelen van het dataloket zijn geconfigureerd?
  *
- * Achtergrond: het campagnedashboard draait vandaag publiek en zonder database. Dit
- * nieuwe deel mag dat niet stukmaken zolang Supabase, de dataverbinding en de Claude-
- * sleutel nog niet zijn ingesteld. Daarom wordt overal expliciet gecontroleerd of iets
- * geconfigureerd is, en toont de chat anders een nette uitleg in plaats van te crashen.
+ * Achtergrond: het campagnedashboard is begonnen als een publieke pagina zonder
+ * database. Het dataloket mocht dat niet stukmaken zolang Supabase, de dataverbinding en
+ * de Claude-sleutel nog niet waren ingesteld. Daarom wordt overal expliciet
+ * gecontroleerd of iets geconfigureerd is, en toont de chat anders een nette uitleg in
+ * plaats van te crashen.
  *
- * Zodra alle drie de vinkjes staan, kan de inlog desgewenst over de héle app worden
- * getrokken door de matcher in middleware.ts aan te passen.
+ * Publiek is het dashboard niet meer: de inlog ligt sinds `lib/toegang.ts` over de héle
+ * app. Ontbreekt Supabase, dan kan niemand inloggen en blijft alles dicht — het
+ * inlogscherm vertelt dan wat er mist.
  */
 
 export function isSupabaseGeconfigureerd(): boolean {
