@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
-import DataOphalen from "@/components/kanalen/DataOphalen";
 import { IconCalendarRange, IconClose, IconInfo, IconRefresh } from "@/components/icons";
 import {
   eigenPeriode,
@@ -231,8 +230,6 @@ export default function KanalenFilterBalk({
               <IconRefresh className={`h-4 w-4 ${bezig ? "animate-spin" : ""}`} />
               Verversen
             </button>
-
-            <DataOphalen onKlaar={onHerlaad} laatsteSync={laatsteSync} loopt={syncLoopt} />
           </div>
         </div>
       </div>
