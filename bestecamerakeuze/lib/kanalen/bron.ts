@@ -1185,13 +1185,19 @@ export async function haalBudgetten(vragen: BudgetVraag[]): Promise<CampagneBudg
 // ---------------------------------------------------------------------------
 
 export interface BudgetBeheerData {
-  /** Uitgaven en klikken per dag × account × platform, binnen de gekozen maand. */
+  /**
+   * Uitgaven en klikken per maand × account × platform, binnen de gevraagde periode.
+   *
+   * Opgeteld per maand (`datum` is de eerste van de maand): de pagina rekent alleen met
+   * maandtotalen — de kaartjes voor de lopende maand, de grafiek voor het hele jaar — dus
+   * dagregels over twaalf maanden zouden alleen maar gewicht zijn.
+   */
   dagen: DagRegel[];
   /**
    * Alle account × platform-paren die er de afgelopen maanden liepen.
    *
-   * Voedt de invultabel: je wilt ook een budget kunnen zetten voor een account dat deze
-   * maand nog niets uitgaf, en voor de maand die nog moet beginnen.
+   * Voedt de invultabel en de filters: je wilt ook een budget kunnen zetten voor een
+   * account dat deze maand nog niets uitgaf.
    */
   paren: { account: string; platform: string }[];
   /** De laatste dag waarvan er data is — zegt tot waar de "uitgaven" lopen. */
@@ -1206,12 +1212,13 @@ export interface BudgetBeheerData {
 export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: string): Promise<BudgetBeheerData> {
   const bronnen = bronFilter("social");
   return metVerbinding(async (client) => {
-    const dagRes = await client.query(
-      `select datum::text as datum,
+    const maandRes = await client.query(
+      `select to_char(date_trunc('month', datum), 'YYYY-MM-DD') as datum,
               coalesce(account, '—') as account,
               platform,
               coalesce(sum(uitgaven), 0) as uitgaven,
-              coalesce(sum(klikken), 0) as klikken
+              coalesce(sum(klikken), 0) as klikken,
+              max(datum)::text as laatste
          from dataloket.v_advertenties
         where datum between $1 and $2 and bron = any($3)
         group by 1, 2, 3
@@ -1231,18 +1238,22 @@ export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: str
       [parenVanaf, tot, bronnen],
     );
 
-    const dagen = dagRes.rows.map((r) => ({
+    const dagen = maandRes.rows.map((r) => ({
       datum: String(r.datum),
       account: String(r.account),
       platform: String(r.platform),
       uitgaven: Number(r.uitgaven ?? 0),
       klikken: Number(r.klikken ?? 0),
     }));
+    const laatsteDatum = maandRes.rows.reduce<string | null>(
+      (max, r) => (r.laatste && (!max || String(r.laatste) > max) ? String(r.laatste) : max),
+      null,
+    );
 
     return {
       dagen,
       paren: paarRes.rows.map((r) => ({ account: String(r.account), platform: String(r.platform) })),
-      laatsteDatum: dagen.length > 0 ? dagen[dagen.length - 1].datum : null,
+      laatsteDatum,
     };
   });
 }

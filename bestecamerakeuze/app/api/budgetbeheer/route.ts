@@ -13,8 +13,9 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * De data achter Budget beheer: de uitgaven en klikken van één maand, plus het budget
- * en het klikdoel dat het team per account en platform voor die maand heeft vastgelegd.
+ * De data achter Budget beheer: de uitgaven en klikken van het lopende jaar per maand,
+ * plus het budget en het klikdoel dat het team per account, platform en maand heeft
+ * vastgelegd. De kaartjes gebruiken de lopende maand, de grafiek het hele jaar.
  *
  * Lezen van de advertentiedata gaat via de read-only verbinding van de kanaalpagina's;
  * de doelen via de Supabase-client met de sessie van de collega — dezelfde tweedeling
@@ -29,7 +30,7 @@ function doelenTabel(supabase: Awaited<ReturnType<typeof createClient>>) {
   return supabase.schema("dataloket").from("budget_doelen");
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
 
@@ -40,19 +41,17 @@ export async function GET(request: Request) {
     );
   }
 
-  const gevraagd = new URL(request.url).searchParams.get("maand");
-  const maand = isMaand(gevraagd) ? gevraagd : huidigeMaand();
-  const { van, tot: maandEinde } = maandGrenzen(maand);
+  const maand = huidigeMaand();
+  const jaar = maand.slice(0, 4);
+  const van = `${jaar}-01-01`;
   // Niet verder dan gisteren. De sync schrijft overdag al een deel van vandaag weg, maar
   // de forecast deelt door de dagen t/m gisteren (`maandVoortgang`); telde vandaag hier
   // wél mee, dan kwam elke forecast te hoog uit.
   const gisteren = new Date();
   gisteren.setUTCDate(gisteren.getUTCDate() - 1);
-  const tot = [maandEinde, gisteren.toISOString().slice(0, 10)].sort()[0];
-  // Voor een maand die nog moet beginnen kijken we terug vanaf nu, niet vanaf die maand:
-  // anders is de invultabel voor volgende maand leeg precies wanneer je hem wilt vullen.
-  const peil = maand > huidigeMaand() ? huidigeMaand() : maand;
-  const parenVanaf = maandGrenzen(verschuifMaand(peil, -PAREN_MAANDEN_TERUG)).van;
+  const tot = [`${jaar}-12-31`, gisteren.toISOString().slice(0, 10)].sort()[0];
+  // In januari reikt "drie maanden terug" tot in vorig jaar; daarom de vroegste van de twee.
+  const parenVanaf = [van, maandGrenzen(verschuifMaand(maand, -PAREN_MAANDEN_TERUG)).van].sort()[0];
 
   try {
     const supabase = await createClient();
@@ -60,7 +59,8 @@ export async function GET(request: Request) {
       haalBudgetBeheer(van, tot, parenVanaf),
       doelenTabel(supabase)
         .select("account, platform, maand, budget, doel_klikken")
-        .eq("maand", van),
+        .gte("maand", van)
+        .lte("maand", `${jaar}-12-01`),
     ]);
 
     // Zonder de tabel (migratie 0027 nog niet gedraaid) tonen we de cijfers wél, met een
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     const doelen: BudgetDoel[] = (doelenRes.data ?? []).map((r) => ({
       account: String(r.account),
       platform: String(r.platform),
-      maand,
+      maand: String(r.maand).slice(0, 7),
       budget: r.budget === null ? null : Number(r.budget),
       doelKlikken: r.doel_klikken === null ? null : Number(r.doel_klikken),
     }));
