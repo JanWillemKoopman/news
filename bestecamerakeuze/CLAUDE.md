@@ -519,6 +519,14 @@ platform × maand** vastlegt.
 - **Bron is die van Social ads**: Meta plus LinkedIn uit `v_advertenties`, álle klikken
   (`haalBudgetBeheer` in `bron.ts`). Zo komen de cijfers overeen met Social ads over
   dezelfde maand.
+- **Filterbalk**: een rij platforms en daaronder een rij accounts, als keuzeknoppen
+  waarvan er altijd precies één aan staat — alles boven de tabel gaat over één account ×
+  platform. Standaard Porsche Centrum Brabant en Facebook (of de eerste in de lijst als
+  die er niet is). Er is geen maandfilter: de pagina staat altijd op de lopende maand.
+- **Layout**: links (1/3) de zes kaartjes, rechts (2/3) een staafgrafiek met budget en
+  uitgaven per maand, januari t/m december van het lopende jaar; daaronder de invultabel.
+  De API levert daarvoor het hele jaar, opgeteld per maand. De tabel toont alle regels
+  (je vult er ook budgetten voor andere accounts in) en markeert de gekozen combinatie.
 - **Zes kaartjes**, links geld en rechts klikken: gerealiseerd, forecast en afspraak.
   De forecast is bewust een rechte lijn — (gerealiseerd ÷ verstreken dagen) × dagen in de
   maand — zodat hij in het overleg na te rekenen is. Verstreken loopt tot en met
