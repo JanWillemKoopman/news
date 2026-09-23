@@ -1224,6 +1224,9 @@ export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: str
          from dataloket.v_advertenties
         where datum between $1 and $2 and bron = any($3)
         group by 1, 2
+        -- Meta levert af en toe regels met platform 'unknown' en nul uitgaven; die horen
+        -- niet als lege regel in de invultabel.
+        having sum(uitgaven) > 0
         order by 1, 2`,
       [parenVanaf, tot, bronnen],
     );

@@ -42,7 +42,13 @@ export async function GET(request: Request) {
 
   const gevraagd = new URL(request.url).searchParams.get("maand");
   const maand = isMaand(gevraagd) ? gevraagd : huidigeMaand();
-  const { van, tot } = maandGrenzen(maand);
+  const { van, tot: maandEinde } = maandGrenzen(maand);
+  // Niet verder dan gisteren. De sync schrijft overdag al een deel van vandaag weg, maar
+  // de forecast deelt door de dagen t/m gisteren (`maandVoortgang`); telde vandaag hier
+  // wél mee, dan kwam elke forecast te hoog uit.
+  const gisteren = new Date();
+  gisteren.setUTCDate(gisteren.getUTCDate() - 1);
+  const tot = [maandEinde, gisteren.toISOString().slice(0, 10)].sort()[0];
   // Voor een maand die nog moet beginnen kijken we terug vanaf nu, niet vanaf die maand:
   // anders is de invultabel voor volgende maand leeg precies wanneer je hem wilt vullen.
   const peil = maand > huidigeMaand() ? huidigeMaand() : maand;
