@@ -1187,10 +1187,8 @@ export async function haalBudgetten(vragen: BudgetVraag[]): Promise<CampagneBudg
 export interface BudgetBeheerData {
   /**
    * Uitgaven en klikken per maand × account × platform, binnen de gevraagde periode.
-   *
    * Opgeteld per maand (`datum` is de eerste van de maand): de pagina rekent alleen met
-   * maandtotalen — de kaartjes voor de lopende maand, de grafiek voor het hele jaar — dus
-   * dagregels over twaalf maanden zouden alleen maar gewicht zijn.
+   * maandtotalen.
    */
   dagen: DagRegel[];
   /**
@@ -1204,27 +1202,48 @@ export interface BudgetBeheerData {
   laatsteDatum: string | null;
 }
 
+/** Uitgaven en klikken per maand × account × platform. Gedeeld door beide ophaalacties hieronder. */
+async function maandRegels(client: Client, van: string, tot: string, bronnen: string[]) {
+  const res = await client.query(
+    `select date_trunc('month', datum)::date::text as datum,
+            coalesce(account, '—') as account,
+            platform,
+            coalesce(sum(uitgaven), 0) as uitgaven,
+            coalesce(sum(klikken), 0) as klikken,
+            max(datum)::text as laatste
+       from dataloket.v_advertenties
+      where datum between $1 and $2 and bron = any($3)
+      group by 1, 2, 3
+      order by 1`,
+    [van, tot, bronnen],
+  );
+  const dagen: DagRegel[] = res.rows.map((r) => ({
+    datum: String(r.datum),
+    account: String(r.account),
+    platform: String(r.platform),
+    uitgaven: Number(r.uitgaven ?? 0),
+    klikken: Number(r.klikken ?? 0),
+  }));
+  const laatsteDatum = res.rows.reduce<string | null>(
+    (max, r) => (r.laatste && (!max || String(r.laatste) > max) ? String(r.laatste) : max),
+    null,
+  );
+  return { dagen, laatsteDatum };
+}
+
 /**
  * De bron van Budget beheer is dezelfde als die van Social ads: Meta plus LinkedIn uit
  * `v_advertenties`, met álle klikken (Ads Managers "Klikken (alle)"), zodat de cijfers
  * hier overeenkomen met wat die pagina over dezelfde maand toont.
+ *
+ * Dit is de lopende maand plus de paren; de maanden daarvoor (voor de jaargrafiek) haalt
+ * `haalBudgetMaanden` los op. Samen in één verzoek liepen ze tegen de statement timeout
+ * aan: een jaar aan dagregels scannen kost op deze database 2 à 7 seconden per query.
  */
 export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: string): Promise<BudgetBeheerData> {
   const bronnen = bronFilter("social");
   return metVerbinding(async (client) => {
-    const maandRes = await client.query(
-      `select to_char(date_trunc('month', datum), 'YYYY-MM-DD') as datum,
-              coalesce(account, '—') as account,
-              platform,
-              coalesce(sum(uitgaven), 0) as uitgaven,
-              coalesce(sum(klikken), 0) as klikken,
-              max(datum)::text as laatste
-         from dataloket.v_advertenties
-        where datum between $1 and $2 and bron = any($3)
-        group by 1, 2, 3
-        order by 1`,
-      [van, tot, bronnen],
-    );
+    const { dagen, laatsteDatum } = await maandRegels(client, van, tot, bronnen);
 
     const paarRes = await client.query(
       `select coalesce(account, '—') as account, platform, max(datum)::text as laatste
@@ -1238,24 +1257,17 @@ export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: str
       [parenVanaf, tot, bronnen],
     );
 
-    const dagen = maandRes.rows.map((r) => ({
-      datum: String(r.datum),
-      account: String(r.account),
-      platform: String(r.platform),
-      uitgaven: Number(r.uitgaven ?? 0),
-      klikken: Number(r.klikken ?? 0),
-    }));
-    const laatsteDatum = maandRes.rows.reduce<string | null>(
-      (max, r) => (r.laatste && (!max || String(r.laatste) > max) ? String(r.laatste) : max),
-      null,
-    );
-
     return {
       dagen,
       paren: paarRes.rows.map((r) => ({ account: String(r.account), platform: String(r.platform) })),
       laatsteDatum,
     };
   });
+}
+
+/** De eerdere maanden van het jaar, voor de grafiek van Budget beheer. */
+export async function haalBudgetMaanden(van: string, tot: string): Promise<DagRegel[]> {
+  return metVerbinding(async (client) => (await maandRegels(client, van, tot, bronFilter("social"))).dagen);
 }
 
 /** De koppelingen die een sheet-campagne hebben; zonder die link valt er niets te peilen. */
