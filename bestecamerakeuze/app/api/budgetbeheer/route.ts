@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { haalBudgetBeheer, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
+import { haalBudgetBeheer, haalBudgetMaanden, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import {
   huidigeMaand,
   isMaand,
@@ -17,6 +17,11 @@ export const dynamic = "force-dynamic";
  * plus het budget en het klikdoel dat het team per account, platform en maand heeft
  * vastgelegd. De kaartjes gebruiken de lopende maand, de grafiek het hele jaar.
  *
+ * Twee aparte verzoeken: zonder parameter de lopende maand (kaartjes en tabel), met
+ * `?deel=eerder` de maanden van dit jaar daarvóór (de grafiek). Samen in één verzoek
+ * liepen ze tegen de statement timeout aan; zo heeft elk zijn eigen verbinding en
+ * eigen limiet, en wachten de kaartjes niet op het jaaroverzicht.
+ *
  * Lezen van de advertentiedata gaat via de read-only verbinding van de kanaalpagina's;
  * de doelen via de Supabase-client met de sessie van de collega — dezelfde tweedeling
  * als bij de koppeltabel. Schrijven (POST) gaat ook via die client, zodat de RLS-policies
@@ -30,7 +35,7 @@ function doelenTabel(supabase: Awaited<ReturnType<typeof createClient>>) {
   return supabase.schema("dataloket").from("budget_doelen");
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
 
@@ -43,15 +48,29 @@ export async function GET() {
 
   const maand = huidigeMaand();
   const jaar = maand.slice(0, 4);
-  const van = `${jaar}-01-01`;
+
+  if (new URL(request.url).searchParams.get("deel") === "eerder") {
+    // Van 1 januari tot en met de laatste dag van vorige maand; in januari is er niets.
+    if (maand.endsWith("-01")) return NextResponse.json({ dagen: [] });
+    try {
+      const dagen = await haalBudgetMaanden(`${jaar}-01-01`, maandGrenzen(verschuifMaand(maand, -1)).tot);
+      return NextResponse.json({ dagen });
+    } catch (err) {
+      return NextResponse.json(
+        { fout: err instanceof Error ? err.message : String(err) },
+        { status: 500 },
+      );
+    }
+  }
+
+  const { van, tot: maandEinde } = maandGrenzen(maand);
   // Niet verder dan gisteren. De sync schrijft overdag al een deel van vandaag weg, maar
   // de forecast deelt door de dagen t/m gisteren (`maandVoortgang`); telde vandaag hier
   // wél mee, dan kwam elke forecast te hoog uit.
   const gisteren = new Date();
   gisteren.setUTCDate(gisteren.getUTCDate() - 1);
-  const tot = [`${jaar}-12-31`, gisteren.toISOString().slice(0, 10)].sort()[0];
-  // In januari reikt "drie maanden terug" tot in vorig jaar; daarom de vroegste van de twee.
-  const parenVanaf = [van, maandGrenzen(verschuifMaand(maand, -PAREN_MAANDEN_TERUG)).van].sort()[0];
+  const tot = [maandEinde, gisteren.toISOString().slice(0, 10)].sort()[0];
+  const parenVanaf = maandGrenzen(verschuifMaand(maand, -PAREN_MAANDEN_TERUG)).van;
 
   try {
     const supabase = await createClient();
@@ -59,7 +78,7 @@ export async function GET() {
       haalBudgetBeheer(van, tot, parenVanaf),
       doelenTabel(supabase)
         .select("account, platform, maand, budget, doel_klikken")
-        .gte("maand", van)
+        .gte("maand", `${jaar}-01-01`)
         .lte("maand", `${jaar}-12-01`),
     ]);
 

@@ -110,6 +110,10 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
   const [gekozenAccount, setAccount] = useState<string | null>(null);
   const [gekozenPlatform, setPlatform] = useState<string | null>(null);
   const [bewaard, setBewaard] = useState<string | null>(null);
+  // De maanden vóór de lopende, voor de grafiek. Een eigen verzoek, zodat de kaartjes er
+  // niet op wachten; null zolang het nog laadt.
+  const [eerder, setEerder] = useState<DagRegel[] | null>(null);
+  const [eerderFout, setEerderFout] = useState<string | null>(null);
 
   const haal = useCallback(() => {
     setBezig(true);
@@ -128,6 +132,16 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
   }, []);
 
   useEffect(haal, [haal]);
+
+  useEffect(() => {
+    fetch("/api/budgetbeheer?deel=eerder")
+      .then(async (res) => {
+        const antwoord = (await res.json()) as { dagen?: DagRegel[]; fout?: string };
+        if (!res.ok) throw new Error(antwoord.fout ?? `Ophalen mislukt (${res.status}).`);
+        setEerder(antwoord.dagen ?? []);
+      })
+      .catch((err: unknown) => setEerderFout(err instanceof Error ? err.message : String(err)));
+  }, []);
 
   const voortgang = useMemo(() => maandVoortgang(maand), [maand]);
   const dagen = useMemo(() => data?.dagen ?? [], [data]);
@@ -181,10 +195,11 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
     () =>
       MAANDEN_KORT.map((label, i) => {
         const m = `${jaar}-${String(i + 1).padStart(2, "0")}`;
-        const t = telOpVoorMaand(dagen, doelen, m, binnen);
-        return { label, maand: m, budget: t.budget, uitgaven: m > maand ? null : t.uitgaven };
+        const t = telOpVoorMaand(m < maand ? (eerder ?? []) : dagen, doelen, m, binnen);
+        const bekend = m === maand || (m < maand && eerder !== null);
+        return { label, maand: m, budget: t.budget, uitgaven: bekend ? t.uitgaven : null };
       }),
-    [jaar, maand, dagen, doelen, binnen],
+    [jaar, maand, dagen, eerder, doelen, binnen],
   );
 
   const regels = useMemo(
@@ -343,7 +358,14 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
           <p className="mt-0.5 text-meta text-ink-muted">
             {account && platform ? `${account} · ${platformLabel(platform)} · ${jaar}` : jaar}
           </p>
-          <div className="mt-4 min-h-72 flex-1">
+          {eerderFout ? (
+          <p className="mt-2 text-meta text-negative">
+            De uitgaven van de eerdere maanden konden niet worden geladen ({eerderFout}).
+          </p>
+        ) : (
+          eerder === null && <p className="mt-2 text-meta text-ink-faint">Eerdere maanden laden…</p>
+        )}
+        <div className="mt-4 min-h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={jaarReeks} margin={{ top: 4, right: 8, bottom: 4, left: 4 }} barGap={2}>
                 <CartesianGrid stroke={kleuren.raster} vertical={false} />
