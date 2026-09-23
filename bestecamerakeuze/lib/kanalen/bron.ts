@@ -31,6 +31,7 @@
 import { Client } from "pg";
 import type { Kubus } from "@/lib/kanalen/kubus";
 import type { CampagneBudget } from "@/lib/kanalen/budget";
+import type { DagRegel } from "@/lib/kanalen/budgetBeheer";
 import { labelVoorConversie } from "@/lib/windsor/velden";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { haalOpdrachten, type Opdracht } from "@/lib/windsor/opdrachten";
@@ -1176,6 +1177,70 @@ export async function haalBudgetten(vragen: BudgetVraag[]): Promise<CampagneBudg
         leads: Number(rij?.leads ?? 0),
       };
     });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Budget beheer (sidebargroep "Monitoren")
+// ---------------------------------------------------------------------------
+
+export interface BudgetBeheerData {
+  /** Uitgaven en klikken per dag × account × platform, binnen de gekozen maand. */
+  dagen: DagRegel[];
+  /**
+   * Alle account × platform-paren die er de afgelopen maanden liepen.
+   *
+   * Voedt de invultabel: je wilt ook een budget kunnen zetten voor een account dat deze
+   * maand nog niets uitgaf, en voor de maand die nog moet beginnen.
+   */
+  paren: { account: string; platform: string }[];
+  /** De laatste dag waarvan er data is — zegt tot waar de "uitgaven" lopen. */
+  laatsteDatum: string | null;
+}
+
+/**
+ * De bron van Budget beheer is dezelfde als die van Social ads: Meta plus LinkedIn uit
+ * `v_advertenties`, met álle klikken (Ads Managers "Klikken (alle)"), zodat de cijfers
+ * hier overeenkomen met wat die pagina over dezelfde maand toont.
+ */
+export async function haalBudgetBeheer(van: string, tot: string, parenVanaf: string): Promise<BudgetBeheerData> {
+  const bronnen = bronFilter("social");
+  return metVerbinding(async (client) => {
+    const dagRes = await client.query(
+      `select datum::text as datum,
+              coalesce(account, '—') as account,
+              platform,
+              coalesce(sum(uitgaven), 0) as uitgaven,
+              coalesce(sum(klikken), 0) as klikken
+         from dataloket.v_advertenties
+        where datum between $1 and $2 and bron = any($3)
+        group by 1, 2, 3
+        order by 1`,
+      [van, tot, bronnen],
+    );
+
+    const paarRes = await client.query(
+      `select coalesce(account, '—') as account, platform, max(datum)::text as laatste
+         from dataloket.v_advertenties
+        where datum between $1 and $2 and bron = any($3)
+        group by 1, 2
+        order by 1, 2`,
+      [parenVanaf, tot, bronnen],
+    );
+
+    const dagen = dagRes.rows.map((r) => ({
+      datum: String(r.datum),
+      account: String(r.account),
+      platform: String(r.platform),
+      uitgaven: Number(r.uitgaven ?? 0),
+      klikken: Number(r.klikken ?? 0),
+    }));
+
+    return {
+      dagen,
+      paren: paarRes.rows.map((r) => ({ account: String(r.account), platform: String(r.platform) })),
+      laatsteDatum: dagen.length > 0 ? dagen[dagen.length - 1].datum : null,
+    };
   });
 }
 
