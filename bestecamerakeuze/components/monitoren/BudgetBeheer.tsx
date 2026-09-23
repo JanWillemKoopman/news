@@ -37,8 +37,8 @@ import {
  * Daaronder links (1/3) zes kaartjes in twee kolommen (links geld, rechts klikken):
  * gerealiseerd, forecast en afspraak, altijd voor de lopende maand. Rechts (2/3) een
  * staafgrafiek met budget en uitgaven per maand, januari t/m december van dit jaar.
- * Onderaan de tabel waarin de afspraak per account × platform voor de lopende maand
- * wordt ingevuld; die toont alle regels, met de gekozen combinatie gemarkeerd.
+ * Onderaan de tabel waarin de afspraak voor de gekozen combinatie per maand wordt
+ * ingevuld: januari t/m december van dit jaar, de lopende maand gemarkeerd.
  *
  * De bron is dezelfde als op Social ads (Meta plus LinkedIn). Het rekenwerk staat in
  * `lib/kanalen/budgetBeheer.ts`.
@@ -202,16 +202,34 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
     [jaar, maand, dagen, eerder, doelen, binnen],
   );
 
+  /**
+   * De invultabel: de twaalf maanden van dit jaar voor de gekozen combinatie, oplopend.
+   * Uitgaven en klikken zijn null waar ze (nog) niet bekend zijn — een maand die nog moet
+   * komen, of een eerdere maand zolang het jaaroverzicht laadt.
+   */
   const regels = useMemo(
     () =>
-      paren.map((p) => {
-        const t = telOpVoorMaand(dagen, doelen, maand, (a, pl) => a === p.account && pl === p.platform);
-        return { ...p, ...t };
+      MAANDEN_KORT.map((_, i) => {
+        const m = `${jaar}-${String(i + 1).padStart(2, "0")}`;
+        const t = telOpVoorMaand(m < maand ? (eerder ?? []) : dagen, doelen, m, binnen);
+        const bekend = m === maand || (m < maand && eerder !== null);
+        return {
+          maand: m,
+          budget: t.budget,
+          doelKlikken: t.doelKlikken,
+          uitgaven: bekend ? t.uitgaven : null,
+          klikken: bekend ? t.klikken : null,
+        };
       }),
-    [paren, dagen, doelen, maand],
+    [jaar, maand, dagen, eerder, doelen, binnen],
   );
 
-  async function bewaar(account: string, platform: string, patch: Partial<Pick<BudgetDoel, "budget" | "doelKlikken">>) {
+  async function bewaar(
+    account: string,
+    platform: string,
+    maand: string,
+    patch: Partial<Pick<BudgetDoel, "budget" | "doelKlikken">>,
+  ) {
     const huidig = doelen.find((d) => d.account === account && d.platform === platform && d.maand === maand) ?? {
       account,
       platform,
@@ -247,7 +265,7 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
         const antwoord = (await res.json()) as { fout?: string };
         throw new Error(antwoord.fout ?? `Opslaan mislukt (${res.status}).`);
       }
-      const sleutel = sleutelVan(account, platform);
+      const sleutel = `${sleutelVan(account, platform)}\u0000${maand}`;
       setBewaard(sleutel);
       setTimeout(() => setBewaard((s) => (s === sleutel ? null : s)), 1500);
     } catch (err) {
@@ -423,8 +441,9 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
         <header className="border-b border-line px-5 py-4">
           <h2 className="font-sans-w7 text-cell font-semibold text-ink">Budget en doelen per account en platform</h2>
           <p className="mt-0.5 text-meta text-ink-muted">
-            Vul per regel het budget en het doel aantal klikken voor {maandLabel(maand).toLowerCase()} in.
-            Opslaan gebeurt zodra je het veld verlaat.
+            {account && platform ? `${account} · ${platformLabel(platform)} · ${jaar}. ` : ""}
+            Vul per maand het budget en het doel aantal klikken in. Opslaan gebeurt zodra je het
+            veld verlaat.
           </p>
         </header>
         <div className="overflow-x-auto">
@@ -454,75 +473,74 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {!bezig && regels.length === 0 && (
+              {!account || !platform ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-10 text-center text-ink-muted">
-                    Nog geen accounts of platforms met uitgaven.
+                    {bezig ? "Laden…" : "Nog geen accounts of platforms met uitgaven."}
                   </td>
                 </tr>
+              ) : (
+                regels.map((r) => {
+                  const sleutel = `${sleutelVan(account, platform)}\u0000${r.maand}`;
+                  const v = maandVoortgang(r.maand);
+                  const fUitgaven = r.uitgaven === null ? null : forecast(r.uitgaven, v);
+                  const fKlikken = r.klikken === null ? null : forecast(r.klikken, v);
+                  const oBudget = oordeelVan(fUitgaven, r.budget);
+                  const oKlikken = oordeelVan(fKlikken, r.doelKlikken);
+                  return (
+                    <tr key={sleutel} className={r.maand === maand ? "bg-primary-light" : undefined}>
+                      <td className="border-b border-line-soft px-4 py-2.5 text-ink">
+                        {account}
+                        {bewaard === sleutel && <span className="ml-2 text-meta text-positive">opgeslagen</span>}
+                      </td>
+                      <td className="border-b border-line-soft px-4 py-2.5 text-ink">{platformLabel(platform)}</td>
+                      <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-ink-muted">
+                        {maandLabel(r.maand)}
+                      </td>
+                      <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right text-ink">
+                        {formatteer(r.uitgaven, "euro-heel")}
+                      </td>
+                      <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right">
+                        <span className="text-ink">{formatteer(fUitgaven, "euro-heel")}</span>
+                        {oBudget && (
+                          <span className={`block text-meta ${oordeelKleur(oBudget, "budget")}`}>
+                            {OORDEEL_TEKST[oBudget]}
+                          </span>
+                        )}
+                      </td>
+                      <td className="border-b border-line-soft px-4 py-2 text-right">
+                        <GetalVeld
+                          waarde={r.budget}
+                          voorvoegsel="€"
+                          label={`Budget ${account} ${platformLabel(platform)} ${maandLabel(r.maand)}`}
+                          onBewaar={(budget) => bewaar(account, platform, r.maand, { budget })}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right text-ink">
+                        {formatteer(r.klikken, "aantal")}
+                      </td>
+                      <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right">
+                        <span className="text-ink">
+                          {formatteer(fKlikken === null ? null : Math.round(fKlikken), "aantal")}
+                        </span>
+                        {oKlikken && (
+                          <span className={`block text-meta ${oordeelKleur(oKlikken, "klikken")}`}>
+                            {OORDEEL_TEKST[oKlikken]}
+                          </span>
+                        )}
+                      </td>
+                      <td className="border-b border-line-soft px-4 py-2 text-right">
+                        <GetalVeld
+                          waarde={r.doelKlikken}
+                          label={`Doel klikken ${account} ${platformLabel(platform)} ${maandLabel(r.maand)}`}
+                          heel
+                          onBewaar={(doelKlikken) => bewaar(account, platform, r.maand, { doelKlikken })}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-              {regels.map((r) => {
-                const sleutel = sleutelVan(r.account, r.platform);
-                const fUitgaven = forecast(r.uitgaven, voortgang);
-                const fKlikken = forecast(r.klikken, voortgang);
-                const oBudget = oordeelVan(fUitgaven, r.budget);
-                const oKlikken = oordeelVan(fKlikken, r.doelKlikken);
-                return (
-                  <tr
-                    key={`${maand}-${sleutel}`}
-                    className={r.account === account && r.platform === platform ? "bg-primary-light" : undefined}
-                  >
-                    <td className="border-b border-line-soft px-4 py-2.5 text-ink">
-                      {r.account}
-                      {bewaard === sleutel && <span className="ml-2 text-meta text-positive">opgeslagen</span>}
-                    </td>
-                    <td className="border-b border-line-soft px-4 py-2.5 text-ink">{platformLabel(r.platform)}</td>
-                    <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-ink-muted">
-                      {maandLabel(maand)}
-                    </td>
-                    <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right text-ink">
-                      {formatteer(r.uitgaven, "euro-heel")}
-                    </td>
-                    <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right">
-                      <span className="text-ink">{formatteer(fUitgaven, "euro-heel")}</span>
-                      {oBudget && (
-                        <span className={`block text-meta ${oordeelKleur(oBudget, "budget")}`}>
-                          {OORDEEL_TEKST[oBudget]}
-                        </span>
-                      )}
-                    </td>
-                    <td className="border-b border-line-soft px-4 py-2 text-right">
-                      <GetalVeld
-                        waarde={r.budget}
-                        voorvoegsel="€"
-                        label={`Budget ${r.account} ${platformLabel(r.platform)}`}
-                        onBewaar={(budget) => bewaar(r.account, r.platform, { budget })}
-                      />
-                    </td>
-                    <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right text-ink">
-                      {formatteer(r.klikken, "aantal")}
-                    </td>
-                    <td className="whitespace-nowrap border-b border-line-soft px-4 py-2.5 text-right">
-                      <span className="text-ink">
-                        {formatteer(fKlikken === null ? null : Math.round(fKlikken), "aantal")}
-                      </span>
-                      {oKlikken && (
-                        <span className={`block text-meta ${oordeelKleur(oKlikken, "klikken")}`}>
-                          {OORDEEL_TEKST[oKlikken]}
-                        </span>
-                      )}
-                    </td>
-                    <td className="border-b border-line-soft px-4 py-2 text-right">
-                      <GetalVeld
-                        waarde={r.doelKlikken}
-                        label={`Doel klikken ${r.account} ${platformLabel(r.platform)}`}
-                        heel
-                        onBewaar={(doelKlikken) => bewaar(r.account, r.platform, { doelKlikken })}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
             </tbody>
           </table>
         </div>

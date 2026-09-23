@@ -525,8 +525,10 @@ platform × maand** vastlegt.
   die er niet is). Er is geen maandfilter: de pagina staat altijd op de lopende maand.
 - **Layout**: links (1/3) de zes kaartjes, rechts (2/3) een staafgrafiek met budget en
   uitgaven per maand, januari t/m december van het lopende jaar; daaronder de invultabel.
-  De API levert daarvoor het hele jaar, opgeteld per maand. De tabel toont alle regels
-  (je vult er ook budgetten voor andere accounts in) en markeert de gekozen combinatie.
+  De lopende maand en de eerdere maanden komen uit twee aparte verzoeken (zie de route),
+  omdat een heel jaar in één verzoek tegen de statement timeout aanliep. De tabel volgt
+  de filters: twaalf regels (januari t/m december, oplopend) voor de gekozen combinatie,
+  met de lopende maand gemarkeerd; per maand vul je budget en klikdoel in.
 - **Zes kaartjes**, links geld en rechts klikken: gerealiseerd, forecast en afspraak.
   De forecast is bewust een rechte lijn — (gerealiseerd ÷ verstreken dagen) × dagen in de
   maand — zodat hij in het overleg na te rekenen is. Verstreken loopt tot en met
