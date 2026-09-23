@@ -9,6 +9,7 @@ import {
   IconBrain,
   IconCalendar,
   IconChat,
+  IconCoin,
   IconGlobe,
   IconMegaphone,
   IconPhoto,
@@ -31,6 +32,7 @@ export type DashboardView =
   | "account-ontwikkeling"
   | "website"
   | "koppeltabel"
+  | "budget-beheer"
   | "prikbord"
   | "chat"
   | "kennis"
@@ -166,6 +168,18 @@ export default function Sidebar({
             label="Website"
             active={actief === "website"}
             onClick={() => onNavigate("website")}
+          />
+
+          {/* Monitoren staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
+              kopje of dat binnen de afspraak blijft — budget en klikdoel per maand. */}
+          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+            Monitoren
+          </p>
+          <NavigationItem
+            icon={<IconCoin />}
+            label="Budget beheer"
+            active={actief === "budget-beheer"}
+            onClick={() => onNavigate("budget-beheer")}
           />
 
           {toontBeperkteSecties && (

@@ -509,6 +509,29 @@ niet uit af te lezen zijn:
   `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
   dat is een rare eis aan juist de code die het rekenwerk doet.
 
+### Monitoren → Budget beheer
+
+Onder **Kanalen** staat een eigen groep **Monitoren** met één tabblad, **Budget beheer**
+(`components/monitoren/BudgetBeheer.tsx`, view `budget-beheer`). Het zet de uitgaven en
+klikken van een maand naast het budget en het klikdoel dat het team per **account ×
+platform × maand** vastlegt.
+
+- **Bron is die van Social ads**: Meta plus LinkedIn uit `v_advertenties`, álle klikken
+  (`haalBudgetBeheer` in `bron.ts`). Zo komen de cijfers overeen met Social ads over
+  dezelfde maand.
+- **Zes kaartjes**, links geld en rechts klikken: gerealiseerd, forecast en afspraak.
+  De forecast is bewust een rechte lijn — (gerealiseerd ÷ verstreken dagen) × dagen in de
+  maand — zodat hij in het overleg na te rekenen is. Verstreken loopt tot en met
+  **gisteren**, net als `periodeGrenzen`; op de 1e van de maand is er geen forecast.
+  Rekenwerk en tests: `lib/kanalen/budgetBeheer.ts`.
+- **Oordeel**: binnen 10% van budget/doel is "op koers". Te snel is bij geld het
+  probleem (rood), te langzaam bij klikken; kleur zegt "let op", niet "hoger".
+- **Invullen** gebeurt in de tabel onderaan, per veld opgeslagen bij het verlaten
+  (`POST /api/budgetbeheer`, via de Supabase-client zodat RLS en `bijgewerkt_door`
+  gelden). Leeg is "geen budget", niet nul, en een budget schuift niet door naar de
+  volgende maand. Tabel: `dataloket.budget_doelen` (migratie 0027), `maand` is altijd de
+  eerste dag van de maand.
+
 ### Component- en codepatronen
 
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,
