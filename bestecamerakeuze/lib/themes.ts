@@ -47,6 +47,11 @@ export type GrafiekKleuren = {
   vlak: string;
   /** Tekstkleur van een label bovenop een staaf. */
   label: string;
+  /** Zelfde groen/rood als `--color-positive`/`--color-negative` in globals.css, voor een
+   *  staaf die zelf een plus of min uitdrukt (resultaat boven/onder budget of doel) — SVG
+   *  leest geen CSS-variabelen, dus dit is de TypeScript-kant van diezelfde kleur. */
+  positief: string;
+  negatief: string;
   /** Dikte van de lijn in een lijngrafiek — Bentley trekt een haarlijn, VW een volle. */
   lijndikte: number;
   /** Vloeiend of recht van punt naar punt: Porsche en CUPRA tekenen hoekig. */
@@ -81,6 +86,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(25, 36, 59, 0.10)",
       vlak: "#ffffff",
       label: "#19243b",
+      positief: "#15803d",
+      negatief: "#b91c1c",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -99,6 +106,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(0, 30, 80, 0.12)",
       vlak: "#ffffff",
       label: "#001e50",
+      positief: "#008c46",
+      negatief: "#c8102e",
       lijndikte: 2.5,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -117,6 +126,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(255, 255, 255, 0.12)",
       vlak: "#181d25",
       label: "#fcfcfd",
+      positief: "#31d0aa",
+      negatief: "#ff6b7a",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -135,6 +146,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(14, 58, 47, 0.12)",
       vlak: "#ffffff",
       label: "#0e3a2f",
+      positief: "#118a4e",
+      negatief: "#b4321f",
       lijndikte: 2.5,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -153,6 +166,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(17, 17, 17, 0.12)",
       vlak: "#ffffff",
       label: "#111111",
+      positief: "#0f8f5f",
+      negatief: "#c8102e",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -171,6 +186,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(242, 240, 237, 0.12)",
       vlak: "#0e1a1d",
       label: "#f2f0ed",
+      positief: "#4fb89a",
+      negatief: "#e0554a",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -189,6 +206,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(1, 2, 5, 0.12)",
       vlak: "#ffffff",
       label: "#010205",
+      positief: "#018a16",
+      negatief: "#e00000",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -207,6 +226,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(10, 10, 12, 0.12)",
       vlak: "#ffffff",
       label: "#0a0a0c",
+      positief: "#0e8a4a",
+      negatief: "#c8102e",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -225,6 +246,8 @@ export const THEMES: readonly Theme[] = [
       raster: "rgba(26, 43, 35, 0.14)",
       vlak: "#ffffff",
       label: "#10231c",
+      positief: "#1c6b4b",
+      negatief: "#9c3123",
       lijndikte: 1.25,
       lijnvorm: "monotone",
       punt: "open",
