@@ -1181,7 +1181,7 @@ export async function haalBudgetten(vragen: BudgetVraag[]): Promise<CampagneBudg
 }
 
 // ---------------------------------------------------------------------------
-// Budget beheer (sidebargroep "Monitoren")
+// Budget beheer (sidebargroep "Tools")
 // ---------------------------------------------------------------------------
 
 export interface BudgetBeheerData {
