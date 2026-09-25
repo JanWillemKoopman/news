@@ -6,6 +6,7 @@ import {
   maandGrenzen,
   maandVoortgang,
   oordeelVan,
+  platformGroep,
   telOpVoorMaand,
   verschuifMaand,
   type BudgetDoel,
@@ -78,5 +79,36 @@ test("optellen volgt maand én selectie, en een ontbrekend budget blijft leeg", 
   assert.deepEqual(
     telOpVoorMaand(dagen, doelen, "2026-09", (account) => account === "Škoda"),
     { uitgaven: 70, klikken: 30, budget: null, doelKlikken: null },
+  );
+});
+
+test("platformGroep bundelt alles behalve LinkedIn tot Meta", () => {
+  assert.equal(platformGroep("facebook"), "meta");
+  assert.equal(platformGroep("instagram"), "meta");
+  assert.equal(platformGroep("threads"), "meta");
+  assert.equal(platformGroep("audience_network"), "meta");
+  assert.equal(platformGroep("messenger"), "meta");
+  assert.equal(platformGroep("linkedin"), "linkedin");
+});
+
+test("optellen over de Meta-platforms samen, via platformGroep als selectie", () => {
+  const dagen: DagRegel[] = [
+    { datum: "2026-09-01", account: "Audi", platform: "facebook", uitgaven: 100, klikken: 50 },
+    { datum: "2026-09-02", account: "Audi", platform: "instagram", uitgaven: 40, klikken: 10 },
+    { datum: "2026-09-03", account: "Audi", platform: "threads", uitgaven: 5, klikken: 1 },
+    { datum: "2026-09-04", account: "Audi", platform: "linkedin", uitgaven: 1000, klikken: 1000 },
+  ];
+  const doelen: BudgetDoel[] = [
+    { account: "Audi", platform: "facebook", maand: "2026-09", budget: 500, doelKlikken: 200 },
+    { account: "Audi", platform: "instagram", maand: "2026-09", budget: 300, doelKlikken: null },
+  ];
+
+  assert.deepEqual(
+    telOpVoorMaand(dagen, doelen, "2026-09", (a, p) => a === "Audi" && platformGroep(p) === "meta"),
+    { uitgaven: 145, klikken: 61, budget: 800, doelKlikken: 200 },
+  );
+  assert.deepEqual(
+    telOpVoorMaand(dagen, doelen, "2026-09", (a, p) => a === "Audi" && platformGroep(p) === "linkedin"),
+    { uitgaven: 1000, klikken: 1000, budget: null, doelKlikken: null },
   );
 });

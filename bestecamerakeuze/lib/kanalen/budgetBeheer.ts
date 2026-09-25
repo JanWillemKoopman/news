@@ -110,6 +110,15 @@ export function sleutelVan(account: string, platform: string): string {
   return `${account}\u0000${platform}`;
 }
 
+/**
+ * Bundelt de Meta-platforms (Facebook, Instagram, Threads, Audience Network, Messenger)
+ * tot één groep "meta", voor Budget beheer. De bron van dit tabblad is dezelfde als
+ * Social ads: Meta plus LinkedIn — dus alles wat geen LinkedIn is, is Meta.
+ */
+export function platformGroep(platform: string): string {
+  return platform === "linkedin" ? "linkedin" : "meta";
+}
+
 export interface Totalen {
   uitgaven: number;
   klikken: number;

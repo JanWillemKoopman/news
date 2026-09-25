@@ -519,9 +519,19 @@ platform × maand** vastlegt.
 - **Bron is die van Social ads**: Meta plus LinkedIn uit `v_advertenties`, álle klikken
   (`haalBudgetBeheer` in `bron.ts`). Zo komen de cijfers overeen met Social ads over
   dezelfde maand.
+- **Platform is hier altijd Meta of LinkedIn, nooit een los sub-platform.** Facebook,
+  Instagram, Threads en Audience Network (en Messenger) zijn los te herkennen in de
+  brondata, maar het team stelt er nooit apart budget of een klikdoel voor vast — dus
+  worden ze op dít tabblad, en alléén hier, samengevoegd tot één platform "Meta"
+  (`platformGroep` in `lib/kanalen/budgetBeheer.ts`). Uitgaven en klikken van de
+  onderliggende platforms tellen op; een ingevuld budget/doel telt óók op als het team
+  ooit per sub-platform iets vastlegde. Wat als "Meta" wordt opgeslagen komt terecht
+  onder het letterlijke platform `meta` in `budget_doelen` — die tabel bestaat alleen
+  voor dit tabblad, dus dat raakt niets elders. De Kanalen-pagina's (Social ads incluis)
+  blijven de losse platforms tonen; deze bundeling geldt uitsluitend voor Budget beheer.
 - **Filterbalk**: een rij platforms en daaronder een rij accounts, als keuzeknoppen
   waarvan er altijd precies één aan staat — alles boven de tabel gaat over één account ×
-  platform. Standaard Porsche Centrum Brabant en Facebook (of de eerste in de lijst als
+  platform. Standaard Porsche Centrum Brabant en Meta (of de eerste in de lijst als
   die er niet is). Er is geen maandfilter: de pagina staat altijd op de lopende maand.
 - **Layout**: links (1/3) de zes kaartjes, rechts (2/3) een staafgrafiek met budget en
   uitgaven per maand, januari t/m december van het lopende jaar; daaronder de invultabel.
