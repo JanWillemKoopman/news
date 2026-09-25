@@ -498,6 +498,25 @@ niet uit af te lezen zijn:
     terug op sorteren op schijf. `set local` en niet kaal, want `DATAQUERY_DATABASE_URL`
     wijst naar de transaction pooler en een kale `set` belandt daar op een verbinding die
     zo weer aan een volgend verzoek wordt uitgeleend.
+  - **Terug in september 2026, en dit keer op scanmethode, niet op rijgewicht.**
+    `windsor_advertenties` was intussen doorgegroeid naar 270.000 rijen (154 MB), en
+    Budget beheer liep weer tegen "canceling statement due to statement timeout" —
+    ditmaal op `maandRegels` in `bron.ts` (de query achter zowel `haalBudgetBeheer` als
+    `haalBudgetMaanden`). De rij was nog steeds smal; het probleem was nu de planner zelf.
+    Voor een periode van een paar maanden matcht 40-65% van de tabel (Meta + LinkedIn, geen
+    Google), en dan kiest de planner de index op `(bron, datum)` terwijl die rijen niet
+    fysiek geclusterd liggen op die kolommen — een indexscan leest dan bijna elke heaprij
+    los van schijf/cache in plaats van in één keer door te lopen. Gemeten op de
+    "eerdere maanden"-query (acht maanden, 117.000 van de 270.000 rijen): 11,4 s met de
+    indexscan die de planner zelf koos, 5,6 s met een bitmap-scan, 1,3 s met een pure seq
+    scan geforceerd via `enable_indexscan`/`enable_bitmapscan`. Die laatste twee staan nu
+    met `set local` in `maandRegels` zelf, vlak voor de query — dezelfde plek en dezelfde
+    reden als de `work_mem`-instelling erboven. Een seq scan kost hier steeds ongeveer
+    hetzelfde (de tabel past ruim in `shared_buffers`) in plaats van duurder te worden
+    naarmate de tabel groeit, dus dit is geen tijdelijke pleister maar de stabielere keuze.
+    **Kijk hier dus als eerste** als deze pagina ooit wéér traag wordt vóórdat je een
+    nieuwe index overweegt: `explain (analyze, buffers)` op de query, en vergelijk met
+    `enable_indexscan/enable_bitmapscan` uit.
 - **Budget en pacing komen uit de sheet.** De koppeling loopt over `sheet_campagne` in de
   koppeltabel; de route haalt daar budget, doelen en looptijd bij op en vraagt de uitgaven
   op over de **eigen looptijd** van de campagne — een budget is geen periodecijfer, dus
