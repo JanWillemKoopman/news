@@ -21,6 +21,7 @@ import {
   huidigeMaand,
   maandVoortgang,
   oordeelVan,
+  platformGroep,
   sleutelVan,
   telOpVoorMaand,
   type BudgetDoel,
@@ -54,13 +55,13 @@ interface Antwoord {
   fout?: string;
 }
 
+/**
+ * Op dit tabblad staat het platform altijd al gegroepeerd (`platformGroep`): Meta
+ * (Facebook, Instagram, Threads, Audience Network, Messenger) en LinkedIn.
+ */
 const PLATFORM_LABEL: Record<string, string> = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  threads: "Threads",
+  meta: "Meta",
   linkedin: "LinkedIn",
-  audience_network: "Audience Network",
-  messenger: "Messenger",
 };
 
 function platformLabel(platform: string): string {
@@ -79,7 +80,7 @@ function maandLabel(maand: string): string {
 
 /** Wat de filters kiezen zolang er nog niets gekozen is (en als het bestaat). */
 const STANDAARD_ACCOUNT = "porsche centrum brabant";
-const STANDAARD_PLATFORM = "facebook";
+const STANDAARD_PLATFORM = "meta";
 
 const MAANDEN_KORT = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
@@ -147,13 +148,18 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
   const dagen = useMemo(() => data?.dagen ?? [], [data]);
   const doelen = useMemo(() => data?.doelen ?? [], [data]);
 
-  /** Elke account × platform die in de data, in de recente maanden of in de doelen voorkomt. */
+  /**
+   * Elke account × platformgroep die in de data, in de recente maanden of in de doelen
+   * voorkomt — hier al gebundeld tot Meta/LinkedIn, zodat de filterbalk en de tabel
+   * nooit een los Facebook- of Instagram-platform te zien krijgen.
+   */
   const paren = useMemo(() => {
     const gezien = new Map<string, { account: string; platform: string }>();
     // Maandregels zonder uitgaven (Meta's 'unknown'-platform) horen er niet bij, net als
     // in de paren die de server teruggeeft.
     for (const p of [...(data?.paren ?? []), ...dagen.filter((d) => d.uitgaven > 0), ...doelen]) {
-      gezien.set(sleutelVan(p.account, p.platform), { account: p.account, platform: p.platform });
+      const platform = platformGroep(p.platform);
+      gezien.set(sleutelVan(p.account, platform), { account: p.account, platform });
     }
     return [...gezien.values()].sort(
       (a, b) => a.account.localeCompare(b.account, "nl") || a.platform.localeCompare(b.platform, "nl"),
@@ -183,8 +189,10 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
       ? gekozenPlatform
       : (platformOpties.find((p) => p === STANDAARD_PLATFORM) ?? platformOpties[0] ?? null);
 
+  // Vergelijkt op de gebundelde groep, niet op het losse platform: zo tellen Facebook,
+  // Instagram, Threads en Audience Network samen op tot "Meta".
   const binnen = useCallback(
-    (a: string, p: string) => a === account && p === platform,
+    (a: string, p: string) => a === account && platformGroep(p) === platform,
     [account, platform],
   );
 
