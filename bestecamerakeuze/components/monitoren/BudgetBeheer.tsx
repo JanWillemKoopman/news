@@ -5,7 +5,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
+  LabelList,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,8 +17,9 @@ import {
 import Inlogprompt from "@/components/Inlogprompt";
 import ProgressBar from "@/components/ProgressBar";
 import { IconInfo } from "@/components/icons";
-import { AS_GROOTTE, formatteer } from "@/components/chat/chartTheme";
+import { AS_GROOTTE, formatteer, type Eenheid } from "@/components/chat/chartTheme";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
+import type { GrafiekKleuren } from "@/lib/themes";
 import {
   forecast,
   huidigeMaand,
@@ -90,6 +94,43 @@ const OORDEEL_TEKST: Record<Oordeel, string> = {
   "te-snel": "te snel",
 };
 
+/** Welk cijfer de grafiek toont, en in welke vorm — de keuzebalk boven de grafiek. */
+type Cijfer = "budget" | "klikken";
+type Weergave = "waarden" | "resultaat";
+
+const CIJFER_LABEL: Record<Cijfer, string> = { budget: "Budget", klikken: "Klikken" };
+const WEERGAVE_LABEL: Record<Weergave, string> = { waarden: "Waarden", resultaat: "Resultaat" };
+
+/** Eén maand in de jaargrafiek: doel en werkelijk, voor zowel budget als klikken. */
+interface MaandPunt {
+  label: string;
+  maand: string;
+  /** False voor de lopende maand: die staaf is een forecast, geen afgeronde stand. */
+  volledig: boolean;
+  budget: number | null;
+  uitgaven: number | null;
+  doelKlikken: number | null;
+  klikken: number | null;
+  /** Uitgaven min budget, resp. klikken min doel klikken — de "resultaat"-weergave. */
+  resultaatBudget: number | null;
+  resultaatKlikken: number | null;
+  oordeelBudget: Oordeel | null;
+  oordeelKlikken: Oordeel | null;
+}
+
+/**
+ * Kleur van een resultaatstaaf: dezelfde betekenis als `oordeelKleur` hierboven, maar dan
+ * als hex voor Recharts (SVG-attributen lezen geen CSS-variabelen/Tailwind-classes).
+ * Groen op koers, rood bij het probleem-oordeel (te snel voor budget, te langzaam voor
+ * klikken), grijs/neutraal in de rest — kleur zegt "let op", niet "hoger of lager".
+ */
+function resultaatKleur(oordeel: Oordeel | null, soort: "budget" | "klikken", kleuren: GrafiekKleuren): string {
+  if (!oordeel) return kleuren.context;
+  if (oordeel === "op-koers") return kleuren.positief;
+  if (soort === "budget") return oordeel === "te-snel" ? kleuren.negatief : kleuren.context;
+  return oordeel === "te-langzaam" ? kleuren.negatief : kleuren.positief;
+}
+
 /**
  * Te snel is bij geld het probleem (het budget raakt op), te langzaam bij klikken (het
  * doel wordt niet gehaald). Kleur zegt "let op", niet "hoger" — net als elders.
@@ -111,6 +152,8 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
   const [gekozenAccount, setAccount] = useState<string | null>(null);
   const [gekozenPlatform, setPlatform] = useState<string | null>(null);
   const [bewaard, setBewaard] = useState<string | null>(null);
+  const [cijfer, setCijfer] = useState<Cijfer>("budget");
+  const [weergave, setWeergave] = useState<Weergave>("waarden");
   // De maanden vóór de lopende, voor de grafiek. Een eigen verzoek, zodat de kaartjes er
   // niet op wachten; null zolang het nog laadt.
   const [eerder, setEerder] = useState<DagRegel[] | null>(null);
@@ -198,14 +241,81 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
 
   const totalen = useMemo(() => telOpVoorMaand(dagen, doelen, maand, binnen), [dagen, doelen, maand, binnen]);
 
-  /** Budget en uitgaven per maand van dit jaar, voor de gekozen combinatie. */
-  const jaarReeks = useMemo(
+  /** Welke velden, namen en eenheid de grafiek tekent — bepaald door de keuzebalk erboven. */
+  const grafiekConfig = useMemo(() => {
+    if (weergave === "resultaat") {
+      return cijfer === "budget"
+        ? {
+            soort: "resultaat" as const,
+            resultaatKey: "resultaatBudget" as const,
+            oordeelKey: "oordeelBudget" as const,
+            eenheid: "euro-heel" as Eenheid,
+          }
+        : {
+            soort: "resultaat" as const,
+            resultaatKey: "resultaatKlikken" as const,
+            oordeelKey: "oordeelKlikken" as const,
+            eenheid: "aantal" as Eenheid,
+          };
+    }
+    return cijfer === "budget"
+      ? {
+          soort: "waarden" as const,
+          doelKey: "budget" as const,
+          waardeKey: "uitgaven" as const,
+          naamDoel: "Budget",
+          naamWaarde: "Uitgaven",
+          eenheid: "euro-heel" as Eenheid,
+        }
+      : {
+          soort: "waarden" as const,
+          doelKey: "doelKlikken" as const,
+          waardeKey: "klikken" as const,
+          naamDoel: "Doel klikken",
+          naamWaarde: "Klikken behaald",
+          eenheid: "aantal" as Eenheid,
+        };
+  }, [cijfer, weergave]);
+
+  const grafiekTitel =
+    weergave === "resultaat"
+      ? `Resultaat ${cijfer === "budget" ? "budget" : "klikken"} per maand`
+      : cijfer === "budget"
+        ? "Budget en uitgaven per maand"
+        : "Doel klikken en klikken behaald per maand";
+
+  /**
+   * Budget/doel en werkelijk per maand van dit jaar, voor de gekozen combinatie.
+   *
+   * `forecast` op een volledig verstreken maand levert het werkelijke totaal terug
+   * (verstreken dagen = dagen in de maand, dus geen wiskundig verschil); alleen de
+   * lopende maand — de laatste met data — verandert daardoor van een gedeeltelijke stand
+   * in de projectie tot einde maand. Zo is de laatste staaf in de grafiek altijd de
+   * forecast, net als de kaartjes hierboven.
+   */
+  const jaarReeks = useMemo<MaandPunt[]>(
     () =>
       MAANDEN_KORT.map((label, i) => {
         const m = `${jaar}-${String(i + 1).padStart(2, "0")}`;
-        const t = telOpVoorMaand(m < maand ? (eerder ?? []) : dagen, doelen, m, binnen);
         const bekend = m === maand || (m < maand && eerder !== null);
-        return { label, maand: m, budget: t.budget, uitgaven: bekend ? t.uitgaven : null };
+        const t = telOpVoorMaand(m < maand ? (eerder ?? []) : dagen, doelen, m, binnen);
+        const v = maandVoortgang(m);
+        const uitgaven = bekend ? forecast(t.uitgaven, v) : null;
+        const klikkenRuw = bekend ? forecast(t.klikken, v) : null;
+        const klikken = klikkenRuw === null ? null : Math.round(klikkenRuw);
+        return {
+          label,
+          maand: m,
+          volledig: m !== maand,
+          budget: t.budget,
+          uitgaven,
+          doelKlikken: t.doelKlikken,
+          klikken,
+          resultaatBudget: uitgaven === null || t.budget === null ? null : uitgaven - t.budget,
+          resultaatKlikken: klikken === null || t.doelKlikken === null ? null : klikken - t.doelKlikken,
+          oordeelBudget: oordeelVan(uitgaven, t.budget),
+          oordeelKlikken: oordeelVan(klikken, t.doelKlikken),
+        };
       }),
     [jaar, maand, dagen, eerder, doelen, binnen],
   );
@@ -380,10 +490,30 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
         </div>
 
         <section className="kaart-omlijst col-span-2 flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
-          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Budget en uitgaven per maand</h2>
-          <p className="mt-0.5 text-meta text-ink-muted">
-            {account && platform ? `${account} · ${platformLabel(platform)} · ${jaar}` : jaar}
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-sans-w7 text-cell font-semibold text-ink">{grafiekTitel}</h2>
+              <p className="mt-0.5 text-meta text-ink-muted">
+                {account && platform ? `${account} · ${platformLabel(platform)} · ${jaar}` : jaar}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <KeuzeRij
+                label="Cijfer"
+                opties={["budget", "klikken"]}
+                gekozen={cijfer}
+                weergave={(o) => CIJFER_LABEL[o as Cijfer]}
+                onKies={(o) => setCijfer(o as Cijfer)}
+              />
+              <KeuzeRij
+                label="Weergave"
+                opties={["waarden", "resultaat"]}
+                gekozen={weergave}
+                weergave={(o) => WEERGAVE_LABEL[o as Weergave]}
+                onKies={(o) => setWeergave(o as Weergave)}
+              />
+            </div>
+          </div>
           {eerderFout ? (
           <p className="mt-2 text-meta text-negative">
             De uitgaven van de eerdere maanden konden niet worden geladen ({eerderFout}).
@@ -393,7 +523,11 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
         )}
         <div className="mt-4 min-h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={jaarReeks} margin={{ top: 4, right: 8, bottom: 4, left: 4 }} barGap={2}>
+              <BarChart
+                data={jaarReeks}
+                margin={{ top: 20, right: 8, bottom: 16, left: 4 }}
+                barGap={2}
+              >
                 <CartesianGrid stroke={kleuren.raster} vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -407,33 +541,98 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
                   tickLine={false}
                   axisLine={false}
                   width={64}
-                  tickFormatter={(v: number) => formatteer(v, "euro-heel", true)}
+                  tickFormatter={(v: number) => formatteer(v, grafiekConfig.eenheid, true)}
                 />
-                <Tooltip content={<MaandTooltip />} cursor={{ fill: "rgba(25,36,59,0.04)" }} />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  iconType="square"
-                  iconSize={10}
-                  wrapperStyle={{ fontSize: AS_GROOTTE, paddingBottom: 8 }}
+                <Tooltip
+                  content={<MaandTooltip eenheid={grafiekConfig.eenheid} />}
+                  cursor={{ fill: "rgba(25,36,59,0.04)" }}
                 />
-                <Bar
-                  dataKey="budget"
-                  name="Budget"
-                  fill={kleuren.categorieen[0]}
-                  radius={[3, 3, 0, 0]}
-                  isAnimationActive={false}
-                />
-                <Bar
-                  dataKey="uitgaven"
-                  name="Uitgaven"
-                  fill={kleuren.categorieen[1]}
-                  radius={[3, 3, 0, 0]}
-                  isAnimationActive={false}
-                />
+                {grafiekConfig.soort === "waarden" ? (
+                  <>
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="square"
+                      iconSize={10}
+                      wrapperStyle={{ fontSize: AS_GROOTTE, paddingBottom: 8 }}
+                    />
+                    <Bar
+                      dataKey={grafiekConfig.doelKey}
+                      name={grafiekConfig.naamDoel}
+                      fill={kleuren.categorieen[0]}
+                      radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                      isAnimationActive={false}
+                    >
+                      {jaarReeks.map((p) => (
+                        <Cell key={p.maand} fillOpacity={p.volledig ? 1 : 0.35} />
+                      ))}
+                      <LabelList
+                        dataKey={grafiekConfig.doelKey}
+                        position="top"
+                        fill={kleuren.label}
+                        fontSize={10}
+                        fontWeight={600}
+                        formatter={(v: unknown) =>
+                          v === null || v === undefined ? "" : formatteer(Number(v), grafiekConfig.eenheid)
+                        }
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey={grafiekConfig.waardeKey}
+                      name={grafiekConfig.naamWaarde}
+                      fill={kleuren.categorieen[1]}
+                      radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                      isAnimationActive={false}
+                    >
+                      {jaarReeks.map((p) => (
+                        <Cell key={p.maand} fillOpacity={p.volledig ? 1 : 0.35} />
+                      ))}
+                      <LabelList
+                        dataKey={grafiekConfig.waardeKey}
+                        position="top"
+                        fill={kleuren.label}
+                        fontSize={10}
+                        fontWeight={600}
+                        formatter={(v: unknown) =>
+                          v === null || v === undefined ? "" : formatteer(Number(v), grafiekConfig.eenheid)
+                        }
+                      />
+                    </Bar>
+                  </>
+                ) : (
+                  <>
+                    <ReferenceLine y={0} stroke={kleuren.as} />
+                    <Bar
+                      dataKey={grafiekConfig.resultaatKey}
+                      name="Resultaat"
+                      radius={[kleuren.staafradius, kleuren.staafradius, kleuren.staafradius, kleuren.staafradius]}
+                      isAnimationActive={false}
+                    >
+                      {jaarReeks.map((p) => (
+                        <Cell
+                          key={p.maand}
+                          fill={resultaatKleur(p[grafiekConfig.oordeelKey], cijfer, kleuren)}
+                          fillOpacity={p.volledig ? 1 : 0.35}
+                        />
+                      ))}
+                      <LabelList
+                        dataKey={grafiekConfig.resultaatKey}
+                        content={(props) => (
+                          <ResultaatLabel {...props} kleuren={kleuren} eenheid={grafiekConfig.eenheid} />
+                        )}
+                      />
+                    </Bar>
+                  </>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {weergave === "resultaat" && (
+            <p className="mt-2 text-meta text-ink-faint">
+              Positief is meer dan {cijfer === "budget" ? "budget" : "doel"} uitgegeven resp. behaald; kleur
+              volgt het oordeel hierboven, niet alleen het teken.
+            </p>
+          )}
         </section>
       </div>
 
@@ -627,25 +826,69 @@ function KeuzeRij({
   );
 }
 
+/**
+ * Volgt welke staven de grafiek op dat moment tekent (budget/uitgaven, doel/klikken of
+ * het ene resultaat) in plaats van vaste velden aan te nemen — dezelfde tooltip bedient
+ * dus alle vier de weergaven uit de keuzebalk.
+ */
 function MaandTooltip({
   active,
   payload,
+  eenheid,
 }: {
   active?: boolean;
-  payload?: { payload: { maand: string; budget: number | null; uitgaven: number | null } }[];
+  payload?: { name: string; value: number | null; payload: MaandPunt }[];
+  eenheid: Eenheid;
 }) {
   if (!active || !payload?.[0]) return null;
-  const d = payload[0].payload;
   return (
     <div className="rounded-card border border-line bg-card px-3 py-2 text-xs shadow-card">
-      <p className="text-ink-muted">{maandLabel(d.maand)}</p>
-      <p className="text-ink">
-        Budget <span className="font-sans-w7 font-bold">{formatteer(d.budget, "euro-heel")}</span>
-      </p>
-      <p className="text-ink">
-        Uitgaven <span className="font-sans-w7 font-bold">{formatteer(d.uitgaven, "euro-heel")}</span>
-      </p>
+      <p className="text-ink-muted">{maandLabel(payload[0].payload.maand)}</p>
+      {payload.map((p) => (
+        <p key={p.name} className="text-ink">
+          {p.name} <span className="font-sans-w7 font-bold">{formatteer(p.value, eenheid)}</span>
+        </p>
+      ))}
     </div>
+  );
+}
+
+/**
+ * Label boven een resultaatstaaf: boven de staaf bij een plus, eronder bij een min. De
+ * ingebouwde `position="top"` van Recharts zet het label altijd bij de bovenkant van de
+ * rechthoek — bij een negatieve staaf (die vanaf nul omlaag tekent) is dat de nullijn, niet
+ * de punt van de staaf, dus hier bepaalt het teken van de waarde de kant.
+ */
+function ResultaatLabel(props: {
+  x?: number | string;
+  y?: number | string;
+  width?: number | string;
+  height?: number | string;
+  value?: unknown;
+  kleuren: GrafiekKleuren;
+  eenheid: Eenheid;
+}) {
+  const { value, kleuren, eenheid } = props;
+  const x = Number(props.x ?? 0);
+  const y = Number(props.y ?? 0);
+  const width = Number(props.width ?? 0);
+  const height = Number(props.height ?? 0);
+  if (value === null || value === undefined || value === "") return null;
+  const getal = Number(value as string | number);
+  if (!Number.isFinite(getal)) return null;
+  const negatief = getal < 0;
+  const labelY = negatief ? y + height + 14 : y - 6;
+  return (
+    <text
+      x={x + width / 2}
+      y={labelY}
+      textAnchor="middle"
+      fontSize={10}
+      fontWeight={600}
+      fill={kleuren.label}
+    >
+      {formatteer(getal, eenheid)}
+    </text>
   );
 }
 
