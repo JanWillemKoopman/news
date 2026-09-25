@@ -1204,6 +1204,21 @@ export interface BudgetBeheerData {
 
 /** Uitgaven en klikken per maand × account × platform. Gedeeld door beide ophaalacties hieronder. */
 async function maandRegels(client: Client, van: string, tot: string, bronnen: string[]) {
+  // De planner grijpt hier voor een periode van een paar maanden naar de index op
+  // (bron, datum) — logisch met die kolommen in de where-clause, maar bij zo'n brede
+  // periode matcht 40-65% van de tabel, en dan is een indexscan (rij voor rij van de
+  // heap lezen, weinig fysieke clustering op (bron, datum)) juist duurder dan een
+  // sequentiële scan. Gemeten op de "eerdere maanden"-query van Budget beheer (acht
+  // maanden, Meta + LinkedIn, 117.000 van de 270.000 rijen): 11,4 s met de indexscan die
+  // de planner zelf koos, 5,6 s met een bitmap-scan, 1,3 s met een pure seq scan — de
+  // reden dat deze pagina tegen "canceling statement due to statement timeout" aanliep
+  // nadat de tabel sinds de vorige meting (zie "De rij smal houden" in CLAUDE.md) flink
+  // was gegroeid. Dezelfde afweging als bij migratie 0022/0023, nu op scanmethode in
+  // plaats van op rijgewicht: forceer de seq scan, want die kost hier steeds ongeveer
+  // hetzelfde (de hele tabel past ruim binnen `shared_buffers`) in plaats van steeds
+  // duurder te worden naarmate de tabel groeit.
+  await client.query("set local enable_indexscan = off");
+  await client.query("set local enable_bitmapscan = off");
   const res = await client.query(
     `select date_trunc('month', datum)::date::text as datum,
             coalesce(account, '—') as account,
