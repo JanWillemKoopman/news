@@ -321,6 +321,41 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
   );
 
   /**
+   * Budget, uitgaven en het resultaat daarvan, opgeteld van januari t/m de actieve maand.
+   *
+   * Leunt op `jaarReeks`: die heeft voor de actieve maand al de forecast staan in plaats
+   * van de gedeeltelijke stand (zie de toelichting daar), dus deze optelsom hoeft daar zelf
+   * niets voor te doen. Null zolang niet elke maand in de reeks een bekende uitgave heeft
+   * (het jaaroverzicht laadt nog, of de 1e van de maand zonder verstreken dag) — een
+   * gedeeltelijke som zou lezen als het echte totaal.
+   */
+  const ytd = useMemo(() => {
+    const tomEnMaand = jaarReeks.slice(0, Number(maand.slice(5, 7)));
+    const budget = tomEnMaand.some((p) => p.budget !== null)
+      ? tomEnMaand.reduce((som, p) => som + (p.budget ?? 0), 0)
+      : null;
+    const uitgaven = tomEnMaand.every((p) => p.uitgaven !== null)
+      ? tomEnMaand.reduce((som, p) => som + (p.uitgaven ?? 0), 0)
+      : null;
+    const oordeel = oordeelVan(uitgaven, budget);
+    return {
+      budget,
+      uitgaven,
+      resultaat: budget === null || uitgaven === null ? null : budget - uitgaven,
+      oordeel,
+    };
+  }, [jaarReeks, maand]);
+
+  /** "Januari t/m september 2026" — de periode die de drie jaartotaal-kaartjes bestrijken. */
+  const ytdPeriode = useMemo(() => {
+    const vanTekst = new Date(Date.UTC(Number(jaar), 0, 1)).toLocaleDateString("nl-NL", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    return `${vanTekst.charAt(0).toUpperCase()}${vanTekst.slice(1)} t/m ${maandLabel(maand)}`;
+  }, [jaar, maand]);
+
+  /**
    * De invultabel: de twaalf maanden van dit jaar voor de gekozen combinatie, oplopend.
    * Uitgaven en klikken zijn null waar ze (nog) niet bekend zijn — een maand die nog moet
    * komen, of een eerdere maand zolang het jaaroverzicht laadt.
@@ -434,11 +469,9 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1 grid grid-cols-2 content-start gap-x-3 gap-y-3">
+      <div className="grid grid-cols-8 gap-6">
+        <div className="col-span-1 flex flex-col gap-3">
           <p className="label-theme text-label text-ink-faint">Budget</p>
-          <p className="label-theme text-label text-ink-faint">Klikken</p>
-
           <Kaart
             label="Uitgaven"
             waarde={formatteer(totalen.uitgaven, "euro-heel")}
@@ -447,6 +480,24 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
             }
             balk={totalen.budget ? (totalen.uitgaven / totalen.budget) * 100 : null}
           />
+          <Kaart
+            label="Forecast uitgaven"
+            waarde={formatteer(forecastUitgaven, "euro-heel")}
+            {...verschilRegel(forecastUitgaven, totalen.budget, "budget")}
+          />
+          <Kaart
+            label="Budget"
+            waarde={formatteer(totalen.budget, "euro-heel")}
+            toelichting={
+              totalen.budget === null
+                ? "nog niet ingevuld — zie de tabel hieronder"
+                : `${formatteer(Math.max(0, totalen.budget - totalen.uitgaven), "euro-heel")} nog te besteden`
+            }
+          />
+        </div>
+
+        <div className="col-span-1 flex flex-col gap-3">
+          <p className="label-theme text-label text-ink-faint">Klikken</p>
           <Kaart
             label="Klikken behaald"
             waarde={formatteer(totalen.klikken, "aantal")}
@@ -457,26 +508,10 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
             }
             balk={totalen.doelKlikken ? (totalen.klikken / totalen.doelKlikken) * 100 : null}
           />
-
-          <Kaart
-            label="Forecast uitgaven"
-            waarde={formatteer(forecastUitgaven, "euro-heel")}
-            {...verschilRegel(forecastUitgaven, totalen.budget, "budget")}
-          />
           <Kaart
             label="Forecast klikken"
             waarde={formatteer(forecastKlikken === null ? null : Math.round(forecastKlikken), "aantal")}
             {...verschilRegel(forecastKlikken, totalen.doelKlikken, "klikken")}
-          />
-
-          <Kaart
-            label="Budget"
-            waarde={formatteer(totalen.budget, "euro-heel")}
-            toelichting={
-              totalen.budget === null
-                ? "nog niet ingevuld — zie de tabel hieronder"
-                : `${formatteer(Math.max(0, totalen.budget - totalen.uitgaven), "euro-heel")} nog te besteden`
-            }
           />
           <Kaart
             label="Doel klikken"
@@ -489,7 +524,7 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
           />
         </div>
 
-        <section className="kaart-omlijst col-span-2 flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
+        <section className="kaart-omlijst col-span-5 flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-sans-w7 text-cell font-semibold text-ink">{grafiekTitel}</h2>
@@ -634,6 +669,37 @@ export default function BudgetBeheer({ ingelogd }: { ingelogd: boolean }) {
             </p>
           )}
         </section>
+
+        <div className="col-span-1 flex flex-col gap-3">
+          <p className="label-theme text-label text-ink-faint">{ytdPeriode}</p>
+          <Kaart
+            label="Budget totaal"
+            waarde={formatteer(ytd.budget, "euro-heel")}
+            toelichting={ytd.budget === null ? "nog niet ingevuld" : ytdPeriode}
+          />
+          <Kaart
+            label="Uitgaven totaal"
+            waarde={formatteer(ytd.uitgaven, "euro-heel")}
+            toelichting={
+              ytd.uitgaven === null
+                ? "jaaroverzicht laadt…"
+                : ytd.budget
+                  ? `${Math.round((ytd.uitgaven / ytd.budget) * 100)}% van het budget`
+                  : ytdPeriode
+            }
+            balk={ytd.uitgaven !== null && ytd.budget ? (ytd.uitgaven / ytd.budget) * 100 : null}
+          />
+          <Kaart
+            label="Resultaat"
+            waarde={formatteer(ytd.resultaat, "euro-heel")}
+            toelichting={
+              ytd.resultaat === null
+                ? "budget of uitgaven nog niet compleet"
+                : `${ytd.resultaat >= 0 ? "binnen" : "boven"} budget${ytd.oordeel ? ` · ${OORDEEL_TEKST[ytd.oordeel]}` : ""}`
+            }
+            toelichtingKleur={oordeelKleur(ytd.oordeel, "budget")}
+          />
+        </div>
       </div>
 
       <p className="flex items-start gap-2 text-meta text-ink-muted">
