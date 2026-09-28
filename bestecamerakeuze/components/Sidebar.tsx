@@ -182,12 +182,14 @@ export default function Sidebar({
             active={actief === "budget-beheer"}
             onClick={() => onNavigate("budget-beheer")}
           />
-          <NavigationItem
-            icon={<IconGlobe />}
-            label="Landingspagina"
-            active={actief === "landingspagina"}
-            onClick={() => onNavigate("landingspagina")}
-          />
+          {toontBeperkteSecties && (
+            <NavigationItem
+              icon={<IconGlobe />}
+              label="Landingspagina"
+              active={actief === "landingspagina"}
+              onClick={() => onNavigate("landingspagina")}
+            />
+          )}
 
           {toontBeperkteSecties && (
             <>

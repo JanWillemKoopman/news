@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isClaudeGeconfigureerd } from "@/lib/config";
+import { isBeheerder } from "@/lib/gebruikersbeheer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -57,6 +58,9 @@ function naarTekst(html: string): string {
 export async function POST(request: Request) {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
+  if (!isBeheerder(gebruiker.email)) {
+    return NextResponse.json({ fout: "Geen toegang tot dit tabblad." }, { status: 403 });
+  }
 
   if (!isClaudeGeconfigureerd()) {
     return NextResponse.json({ fout: "ANTHROPIC_API_KEY ontbreekt." }, { status: 503 });

@@ -89,7 +89,10 @@ export default async function DashboardPage() {
         website={<WebsitePaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}
-        landingspagina={<Landingspagina ingelogd={ingelogd} />}
+        landingspagina={
+          // Alleen voor de twee beheeraccounts; de API-route controleert dit ook zelf.
+          isBeheerder(gebruiker.email) ? <Landingspagina ingelogd={ingelogd} /> : null
+        }
         prikbord={
           gereed.gereed ? (
             <PrikbordPaneel ingelogd={ingelogd} />
