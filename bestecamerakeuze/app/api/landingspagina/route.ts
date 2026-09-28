@@ -11,7 +11,9 @@ export const maxDuration = 120;
  * Landingspagina-analyse: haalt de opgegeven pagina op, maakt er platte tekst van en
  * laat Claude hem als campagne-landingspagina beoordelen met een cijfer per onderdeel.
  *
- * Bewust simpel: geen opslag, geen kostenregistratie — één verzoek, één antwoord.
+ * Ophalen gaat in twee stappen: eerst zelf (met browserheaders), en weigert de site dat
+ * (bv. een 403 van de botbescherming), dan laat Claude de pagina zelf ophalen via de
+ * web_fetch-tool. Bewust simpel: geen opslag, geen kostenregistratie.
  */
 const MODEL = process.env.LANDINGSPAGINA_MODEL || "claude-sonnet-5";
 
@@ -75,45 +77,122 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Vul een geldige URL in (https://…)." }, { status: 400 });
   }
 
-  let tekst: string;
-  try {
-    const res = await fetch(adres, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Landingspagina-analyse)" },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) throw new Error(`De pagina gaf status ${res.status}.`);
-    tekst = naarTekst(await res.text());
-  } catch (err) {
-    return NextResponse.json(
-      { fout: `Pagina ophalen mislukt: ${err instanceof Error ? err.message : String(err)}` },
-      { status: 502 },
-    );
-  }
-  if (!tekst) {
-    return NextResponse.json({ fout: "Op deze pagina is geen tekst gevonden." }, { status: 422 });
-  }
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+  // Eerst zelf ophalen; weigert de site ons (botbescherming), dan haalt Claude hem op.
+  const eigen = await haalZelfOp(adres);
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 4000,
-      messages: [
-        {
-          role: "user",
-          content: `${PROMPT}\n\nURL: ${adres.href}\n\n<pagina>\n${tekst}\n</pagina>`,
-        },
-      ],
-    });
-    const analyse = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
+    const analyse =
+      "tekst" in eigen
+        ? await analyseerTekst(client, adres, eigen.tekst)
+        : await analyseerViaWebFetch(client, adres, eigen.fout);
     return NextResponse.json({ analyse });
   } catch (err) {
     return NextResponse.json(
-      { fout: `Analyse mislukt: ${err instanceof Error ? err.message : String(err)}` },
-      { status: 500 },
+      { fout: err instanceof Error ? err.message : String(err) },
+      { status: 502 },
     );
   }
+}
+
+/**
+ * Haalt de pagina op met de headers van een gewone browser. Veel sites (ook achter
+ * Cloudflare/Akamai) weigeren een verzoek met een bot-achtige User-Agent of zonder
+ * Accept-headers direct met een 403.
+ */
+async function haalZelfOp(adres: URL): Promise<{ tekst: string } | { fout: string }> {
+  try {
+    const res = await fetch(adres, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
+        "Cache-Control": "no-cache",
+        "Upgrade-Insecure-Requests": "1",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return { fout: `de pagina gaf status ${res.status}` };
+    const tekst = naarTekst(await res.text());
+    // Een paar honderd tekens is meestal een challenge-pagina of een lege JS-app.
+    if (tekst.length < 300) return { fout: "de pagina bevatte (bijna) geen tekst" };
+    return { tekst };
+  } catch (err) {
+    return { fout: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+function tekstVan(content: Anthropic.ContentBlock[]): string {
+  return content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n");
+}
+
+async function analyseerTekst(client: Anthropic, adres: URL, tekst: string): Promise<string> {
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4000,
+    messages: [
+      {
+        role: "user",
+        content: `${PROMPT}\n\nURL: ${adres.href}\n\n<pagina>\n${tekst}\n</pagina>`,
+      },
+    ],
+  });
+  return tekstVan(response.content);
+}
+
+/**
+ * Terugval: Claude haalt de pagina zelf op via de web_fetch-tool (vanaf de servers van
+ * Anthropic, niet vanaf Vercel). Beperkt tot het domein van de opgegeven URL.
+ */
+async function analyseerViaWebFetch(
+  client: Anthropic,
+  adres: URL,
+  eigenFout: string,
+): Promise<string> {
+  const messages: Anthropic.MessageParam[] = [
+    {
+      role: "user",
+      content:
+        `Haal eerst deze pagina op met de web_fetch-tool: ${adres.href}\n\n${PROMPT}\n\n` +
+        "Lukt het ophalen niet, antwoord dan alleen met: OPHALEN_MISLUKT",
+    },
+  ];
+  const tools: Anthropic.ToolUnion[] = [
+    {
+      type: "web_fetch_20260209",
+      name: "web_fetch",
+      max_uses: 2,
+      allowed_domains: [adres.hostname],
+    },
+  ];
+
+  // Server-tools kunnen de beurt pauzeren (pause_turn); dan gewoon doorzetten.
+  let response = await client.messages.create({ model: MODEL, max_tokens: 6000, messages, tools });
+  for (let i = 0; i < 3 && response.stop_reason === "pause_turn"; i++) {
+    messages.push({ role: "assistant", content: response.content });
+    response = await client.messages.create({ model: MODEL, max_tokens: 6000, messages, tools });
+  }
+
+  const fetchFout = response.content.find(
+    (b): b is Anthropic.WebFetchToolResultBlock =>
+      b.type === "web_fetch_tool_result" && b.content.type === "web_fetch_tool_result_error",
+  );
+  const analyse = tekstVan(response.content).trim();
+  if (fetchFout || !analyse || analyse.includes("OPHALEN_MISLUKT")) {
+    const code =
+      fetchFout && fetchFout.content.type === "web_fetch_tool_result_error"
+        ? ` (${fetchFout.content.error_code})`
+        : "";
+    throw new Error(
+      `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude lukte het niet${code}. ` +
+        "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
+    );
+  }
+  return analyse;
 }
