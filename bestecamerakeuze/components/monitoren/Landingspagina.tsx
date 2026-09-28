@@ -12,7 +12,7 @@ import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
 import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 
 /**
- * Landingspagina: vul een URL in en klik op Analyseer — Claude beoordeelt de pagina als
+ * Landingspagina: vul een URL in en klik op Analyseer — ChatGPT (GPT-6 Sol) beoordeelt de pagina als
  * campagne-landingspagina (zie app/api/landingspagina). Onder de zoekbalk staat elke
  * pagina die ooit is geanalyseerd, met datum en eindcijfer; een klik opent het rapport.
  * Dezelfde pagina opnieuw analyseren vervangt het rapport, dus elke pagina staat er één
@@ -152,7 +152,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
             {bezig ? "Bezig…" : "Analyseer"}
           </button>
         </div>
-        {/* Zonder deze context kan Claude de message match alleen op de pagina zelf
+        {/* Zonder deze context kan het model de message match alleen op de pagina zelf
             beoordelen; met de advertentietekst toetst het of de belofte wordt waargemaakt. */}
         <textarea
           value={campagne}

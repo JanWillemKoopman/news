@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * Landingspagina-audits — zie supabase/migrations/0028_landingspagina_analyses.sql en
  * app/api/landingspagina/route.ts. Het rapport is het gestructureerde antwoord van
- * Claude (RAPPORT_SCHEMA hieronder) en wordt ongewijzigd als jsonb bewaard.
+ * het model (RAPPORT_SCHEMA hieronder) en wordt ongewijzigd als jsonb bewaard.
  */
 
 export interface Criterium {
@@ -33,7 +33,7 @@ export interface Rapport {
   eindcijfer_toelichting: string;
   top_verbeterpunten: Verbeterpunt[];
   conclusie: string;
-  /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door Claude). */
+  /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door het model). */
   campagnecontext?: string | null;
   /** Of er bij deze analyse een screenshot is meegestuurd (door de route gezet). */
   met_screenshot?: boolean;

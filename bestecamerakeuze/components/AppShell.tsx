@@ -115,7 +115,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   },
   landingspagina: {
     title: "Landingspagina",
-    subtitle: "Laat Claude een campagne-landingspagina beoordelen, met een cijfer per onderdeel.",
+    subtitle: "Laat ChatGPT een campagne-landingspagina beoordelen, met een cijfer per onderdeel.",
   },
   koppeltabel: {
     title: "Koppeltabel",

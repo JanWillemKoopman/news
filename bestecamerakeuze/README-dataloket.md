@@ -92,6 +92,7 @@ In Vercel (of `.env.local` voor lokaal):
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | idem |
 | `DATAQUERY_DATABASE_URL` | de read-only verbinding uit stap 2 |
 | `ANTHROPIC_API_KEY` | de Claude API |
+| `CHATGPT_KEY` | de OpenAI API (ChatGPT, model GPT-6 Sol) — alleen voor de landingspagina-audit op Monitoren → Landingspagina |
 | `CHAT_MODEL` | optioneel: het model van de chat (standaard `claude-haiku-4-5`) |
 | `CHAT_MODEL_ESCALATIE` | optioneel: het model waarop wordt overgestapt als dat niet lukt (standaard `claude-sonnet-5`) |
 | `SYNC_DATABASE_URL` | schrijvende verbinding, alleen voor de sync-job |

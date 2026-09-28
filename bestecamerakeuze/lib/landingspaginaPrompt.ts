@@ -2,7 +2,7 @@
  * De auditprompt voor Monitoren → Landingspagina, op basis van de prompt van marketing
  * en de feedback daarop (scherpere criteria, observatie vs. interpretatie, geen visuele
  * claims zonder beeld, optionele campagnecontext, impact/inspanning per verbeterpunt).
- * Claude levert JSON volgens RAPPORT_SCHEMA (lib/landingspagina.ts); het dashboard maakt
+ * Het model (GPT-6 Sol via OpenAI) levert JSON volgens RAPPORT_SCHEMA (lib/landingspagina.ts); het dashboard maakt
  * het rapport zelf op. URL, optionele campagnecontext, optionele screenshot (als reeks
  * afbeeldingen, zie lib/screenshotDelen.ts) en pagina-inhoud staan in het
  * gebruikersbericht (app/api/landingspagina/route.ts). Met screenshot is die leidend

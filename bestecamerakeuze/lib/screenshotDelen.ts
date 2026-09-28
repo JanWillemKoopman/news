@@ -1,5 +1,5 @@
 /**
- * Knipt een volledige-pagina-screenshot in de browser in stukken die Claude goed kan
+ * Knipt een volledige-pagina-screenshot in de browser in stukken die het model goed kan
  * lezen. Eén lange afbeelding (een campagnepagina is al snel 10.000 pixels hoog) zou
  * de API verkleinen tot tekst en knoppen onleesbaar zijn; stukken van 1000 × 1400
  * blijven scherp. De stukken gaan in volgorde van boven naar beneden mee, zodat het

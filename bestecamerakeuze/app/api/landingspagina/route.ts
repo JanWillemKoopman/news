@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
-import { isClaudeGeconfigureerd } from "@/lib/config";
+import { isChatGPTGeconfigureerd } from "@/lib/config";
 import { isBeheerder } from "@/lib/gebruikersbeheer";
 import {
   RAPPORT_SCHEMA,
@@ -29,15 +29,18 @@ export const maxDuration = 300;
  * POST { url }     → pagina ophalen, laten beoordelen, bewaren (upsert op url)
  * DELETE ?id=…     → analyse verwijderen (alleen beheerders)
  *
- * Ophalen gaat in twee stappen: eerst zelf (met browserheaders), en weigert de site dat
- * (bv. een 403 van de botbescherming), dan haalt Claude de pagina op via de web_fetch-tool
- * en gebruiken we de tekst die dat oplevert. De beoordeling zelf is in beide gevallen
- * dezelfde aanroep, met structured output volgens RAPPORT_SCHEMA.
+ * De beoordeling draait op OpenAI (ChatGPT, model GPT-6 Sol) via de Responses API, met
+ * structured output volgens RAPPORT_SCHEMA en de screenshot als afbeeldingen. De sleutel
+ * staat in CHATGPT_KEY. De rest van het dashboard (chat, kennisbank) draait nog op Claude.
+ *
+ * De pagina halen we zelf op met browserheaders. Weigert de site dat (bv. een 403 van de
+ * botbescherming) en is er een screenshot, dan gaat de analyse door op de screenshot
+ * alleen; zonder screenshot is er dan niets om te beoordelen.
  *
  * Lezen mag iedereen die ingelogd is (het team moet oude analyses kunnen inzien); een
  * nieuwe analyse starten voorlopig alleen de beheerders, net als het tabblad zelf.
  */
-const MODEL = process.env.LANDINGSPAGINA_MODEL || "claude-sonnet-5";
+const MODEL = process.env.LANDINGSPAGINA_MODEL || "gpt-6-sol";
 
 /** Genoeg voor een lange landingspagina, zonder de prompt onnodig op te blazen. */
 const MAX_TEKST = 60_000;
@@ -47,7 +50,7 @@ type Namen = Record<string, { naam: string | null }>;
 /**
  * Alleen het deel van de pagina dat de content marketeer in het CMS beheert: de
  * paginainhoud, zonder header, (mega)menu en footer van de website. Die vallen buiten
- * de beoordeling (zie de prompt); weghalen voorkomt dat Claude er toch iets over zegt.
+ * de beoordeling (zie de prompt); weghalen voorkomt dat het model er toch iets over zegt.
  * Titel en meta-description komen uit de <head> en blijven erbij, die beheert de
  * marketeer wél.
  */
@@ -154,8 +157,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Geen toegang tot dit tabblad." }, { status: 403 });
   }
 
-  if (!isClaudeGeconfigureerd()) {
-    return NextResponse.json({ fout: "ANTHROPIC_API_KEY ontbreekt." }, { status: 503 });
+  if (!isChatGPTGeconfigureerd()) {
+    return NextResponse.json({ fout: "CHATGPT_KEY ontbreekt — de OpenAI-sleutel voor deze analyse." }, { status: 503 });
   }
 
   const {
@@ -186,12 +189,18 @@ export async function POST(request: Request) {
   }
   const genormaliseerd = normaliseerUrl(adres);
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  // Ruim boven maxDuration hoeft niet: Vercel kapt de functie daar toch af.
+  const client = new OpenAI({ apiKey: process.env.CHATGPT_KEY!, timeout: 290_000, maxRetries: 1 });
 
   try {
-    // Eerst zelf ophalen; weigert de site ons (botbescherming), dan haalt Claude hem op.
     const eigen = await haalZelfOp(adres);
-    const tekst = "tekst" in eigen ? eigen.tekst : await haalViaWebFetch(client, adres, eigen.fout);
+    if (!("tekst" in eigen) && screenshot.length === 0) {
+      throw new Error(
+        `Pagina ophalen mislukt: ${eigen.fout}. De site blokkeert waarschijnlijk geautomatiseerde ` +
+          "verzoeken. Upload een screenshot van de pagina, dan wordt die beoordeeld.",
+      );
+    }
+    const tekst = "tekst" in eigen ? eigen.tekst : null;
 
     const rapport = await beoordeel(client, genormaliseerd, tekst, campagnecontext, screenshot);
 
@@ -240,99 +249,62 @@ async function haalZelfOp(adres: URL): Promise<{ tekst: string } | { fout: strin
   }
 }
 
-/**
- * Terugval: Claude haalt de pagina op via de web_fetch-tool (vanaf de servers van
- * Anthropic, niet vanaf Vercel), beperkt tot het domein van de opgegeven URL. We
- * gebruiken alleen de opgehaalde tekst uit het toolresultaat; de beoordeling is daarna
- * dezelfde aanroep als wanneer we de pagina zelf hadden kunnen ophalen.
- */
-async function haalViaWebFetch(client: Anthropic, adres: URL, eigenFout: string): Promise<string> {
-  const messages: Anthropic.MessageParam[] = [
-    {
-      role: "user",
-      content: `Haal deze pagina op met de web_fetch-tool en antwoord daarna alleen met "OK": ${adres.href}`,
-    },
-  ];
-  const tools: Anthropic.ToolUnion[] = [
-    { type: "web_fetch_20260209", name: "web_fetch", max_uses: 1, allowed_domains: [adres.hostname] },
-  ];
-
-  let response = await client.messages.create({ model: MODEL, max_tokens: 1000, messages, tools });
-  for (let i = 0; i < 3 && response.stop_reason === "pause_turn"; i++) {
-    messages.push({ role: "assistant", content: response.content });
-    response = await client.messages.create({ model: MODEL, max_tokens: 1000, messages, tools });
-  }
-
-  for (const blok of response.content) {
-    if (blok.type !== "web_fetch_tool_result") continue;
-    if (blok.content.type === "web_fetch_tool_result_error") {
-      throw new Error(
-        `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude lukte het niet (${blok.content.error_code}). ` +
-          "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
-      );
-    }
-    const bron = blok.content.content.source;
-    if (bron.type === "text" && bron.data.trim()) return bron.data.slice(0, MAX_TEKST);
-  }
-  throw new Error(
-    `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude kwam er geen tekst terug. ` +
-      "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
-  );
-}
-
 /** De eigenlijke audit: prompt van marketing, uitvoer als JSON volgens RAPPORT_SCHEMA. */
 async function beoordeel(
-  client: Anthropic,
+  client: OpenAI,
   url: string,
-  tekst: string,
+  tekst: string | null,
   campagnecontext: string | null,
   screenshot: string[],
 ): Promise<Rapport> {
   const context = campagnecontext
     ? `Campagnecontext (aangeleverd door de marketeer):\n<campagne>\n${campagnecontext}\n</campagne>`
     : "Campagnecontext: niet aangeleverd. De advertentie en campagnebelofte zijn dus onbekend.";
-  const stream = client.messages.stream({
+  const screenshotUitleg = screenshot.length
+    ? `Screenshot: de ${screenshot.length} afbeelding(en) hierboven zijn samen één volledige screenshot van de pagina, van boven naar beneden in volgorde. De bovenkant van de eerste afbeelding is het begin van de pagina.`
+    : "Screenshot: niet aangeleverd. Je hebt alleen de uitgelezen tekst.";
+  const inhoud = tekst
+    ? `Inhoud van de pagina (uitgelezen HTML):\n<pagina>\n${tekst}\n</pagina>`
+    : "Inhoud van de pagina: niet beschikbaar — de website weigerde het ophalen. Beoordeel de pagina volledig op de screenshot en zeg dat details als alt-teksten en de meta-description daardoor niet te controleren waren.";
+
+  const response = await client.responses.create({
     model: MODEL,
-    max_tokens: 32000,
-    system: AUDIT_PROMPT,
-    output_config: { effort: "medium", format: { type: "json_schema", schema: RAPPORT_SCHEMA } },
-    messages: [
+    instructions: AUDIT_PROMPT,
+    reasoning: { effort: "medium" },
+    max_output_tokens: 32_000,
+    text: { format: { type: "json_schema", name: "landingspagina_rapport", schema: RAPPORT_SCHEMA, strict: true } },
+    input: [
       {
         role: "user",
         content: [
           ...screenshot.map(
-            (data): Anthropic.ImageBlockParam => ({
-              type: "image",
-              source: { type: "base64", media_type: "image/jpeg", data },
+            (data): OpenAI.Responses.ResponseInputImage => ({
+              type: "input_image",
+              image_url: `data:image/jpeg;base64,${data}`,
+              detail: "high",
             }),
           ),
-          {
-            type: "text",
-            text:
-              `Te beoordelen URL: ${url}\n\n${context}\n\n` +
-              (screenshot.length
-                ? `Screenshot: de ${screenshot.length} afbeelding(en) hierboven zijn samen één volledige screenshot van de pagina, van boven naar beneden in volgorde. De bovenkant van de eerste afbeelding is het begin van de pagina.`
-                : "Screenshot: niet aangeleverd. Je hebt alleen de uitgelezen tekst.") +
-              `\n\nInhoud van de pagina (uitgelezen HTML):\n<pagina>\n${tekst}\n</pagina>`,
-          },
+          { type: "input_text", text: `Te beoordelen URL: ${url}\n\n${context}\n\n${screenshotUitleg}\n\n${inhoud}` },
         ],
       },
     ],
   });
-  const response = await stream.finalMessage();
 
-  if (response.stop_reason === "refusal") throw new Error("Claude weigerde deze pagina te beoordelen.");
-  if (response.stop_reason === "max_tokens") {
-    throw new Error("Het rapport werd te lang en is afgebroken. Probeer het opnieuw.");
+  if (response.status === "incomplete") {
+    throw new Error(
+      response.incomplete_details?.reason === "content_filter"
+        ? "ChatGPT weigerde deze pagina te beoordelen."
+        : "Het rapport werd te lang en is afgebroken. Probeer het opnieuw.",
+    );
   }
+  const weigering = response.output
+    .flatMap((item) => (item.type === "message" ? item.content : []))
+    .find((c) => c.type === "refusal");
+  if (weigering) throw new Error("ChatGPT weigerde deze pagina te beoordelen.");
 
-  const json = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
   let rapport: Rapport;
   try {
-    rapport = JSON.parse(json) as Rapport;
+    rapport = JSON.parse(response.output_text) as Rapport;
   } catch {
     throw new Error("Het rapport kwam niet in het verwachte formaat terug. Probeer het opnieuw.");
   }

@@ -19,6 +19,11 @@ export function isSupabaseGeconfigureerd(): boolean {
   );
 }
 
+/** OpenAI (ChatGPT) — gebruikt door de landingspagina-audit op Monitoren → Landingspagina. */
+export function isChatGPTGeconfigureerd(): boolean {
+  return Boolean(process.env.CHATGPT_KEY);
+}
+
 export function isClaudeGeconfigureerd(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }

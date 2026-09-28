@@ -575,8 +575,15 @@ platform × maand** vastlegt.
 
 Tweede tabblad onder **Monitoren** (`components/monitoren/Landingspagina.tsx`, view
 `landingspagina`), voorlopig alleen zichtbaar voor de twee beheeraccounts. Een URL invullen
-en op **Analyseer** klikken laat Claude de pagina beoordelen als campagne-landingspagina
-van Van den Udenhout.
+en op **Analyseer** klikken laat ChatGPT (OpenAI, model **GPT-6 Sol**, `gpt-6-sol`) de
+pagina beoordelen als campagne-landingspagina van Van den Udenhout.
+
+- **Dit tabblad draait op OpenAI, de rest van het dashboard op Claude.** De sleutel staat
+  in `CHATGPT_KEY` (`isChatGPTGeconfigureerd` in `lib/config.ts`); het model is te
+  overschrijven met `LANDINGSPAGINA_MODEL`. De route gebruikt de Responses API van de
+  officiële `openai`-SDK met structured output (`strict: true`) en de screenshot als
+  `input_image`. Deze aanroepen tellen niet mee in het tabblad Kosten; dat registreert
+  alleen Claude-gebruik.
 
 - **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), aangescherpt na
   feedback: tien criteria met elk één centrale vraag (een probleem telt maar bij één
@@ -595,8 +602,8 @@ van Van den Udenhout.
   (`lib/screenshotDelen.ts`, max. 10 stukken): één lange afbeelding zou de API verkleinen
   tot tekst en knoppen onleesbaar zijn. De stukken gaan in volgorde als afbeeldingen vóór
   de tekst mee, en de prompt maakt de screenshot dan leidend voor alles wat visueel is
-  (eerste scherm, knoppen, hiërarchie, fotokeuze). Zonder screenshot blijft Claude binnen
-  wat de tekst laat zien. De screenshot zelf wordt niet bewaard, alleen
+  (eerste scherm, knoppen, hiërarchie, fotokeuze). Zonder screenshot blijft het model
+  binnen wat de tekst laat zien. De screenshot zelf wordt niet bewaard, alleen
   `rapport.met_screenshot`; wie opnieuw analyseert, uploadt hem opnieuw.
 - **Eén regel per pagina.** `landingspagina_analyses.url` is uniek (migratie 0028); opnieuw
   analyseren overschrijft het rapport. `normaliseerUrl` haalt trackingparameters, `#` en
@@ -613,11 +620,11 @@ van Van den Udenhout.
   contentpresentatie") gaat over hun eigen keuzes, niet over het template. De route knipt
   menu, site-header en footer bovendien al uit de HTML (`alleenPaginaInhoud`) voordat
   Claude hem ziet; een `<header>` binnen `<main>` blijft staan, want dat is vaak de hero.
-- **Ophalen in twee stappen.** Eerst zelf met browserheaders; weigert de site dat (de
-  botbescherming van udenhout.nl gaf direct een 403), dan haalt Claude de pagina op via
-  de web_fetch-tool en gebruiken we alleen de opgehaalde tekst. Claude ziet dus altijd
-  tekst en structuur, nooit de schermweergave — de prompt zegt dat ook, zodat criterium 3
-  en 9 benoemen wat daardoor niet vast te stellen is.
+- **Ophalen.** De route haalt de pagina zelf op met browserheaders. Weigert de site dat
+  (de botbescherming van udenhout.nl gaf eerder direct een 403), dan gaat de analyse door
+  op alleen de screenshot, als die er is; zonder screenshot krijgt de gebruiker de vraag
+  er een te uploaden. (Toen dit tabblad nog op Claude draaide, was er een terugval via
+  Claude's web_fetch-tool; OpenAI heeft geen vergelijkbare tool om één URL op te halen.)
 
 ### Component- en codepatronen
 
