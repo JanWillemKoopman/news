@@ -1,6 +1,6 @@
 "use client";
 
-import type { Criterium, Rapport } from "@/lib/landingspagina";
+import type { Criterium, Niveau, Rapport } from "@/lib/landingspagina";
 
 /**
  * Het auditrapport van één landingspagina: kop met eindcijfer, samenvatting, scorecard,
@@ -76,6 +76,22 @@ function zinnen(tekst: string): string[] {
     .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9"'“‘])/)
     .map((z) => z.trim())
     .filter(Boolean);
+}
+
+/** Klein label voor impact/inspanning; groen = gunstig (hoge impact, lage inspanning). */
+function NiveauLabel({ label, niveau, hoogIsGoed }: { label: string; niveau: Niveau; hoogIsGoed: boolean }) {
+  const gunstig = hoogIsGoed ? niveau === "hoog" : niveau === "laag";
+  const ongunstig = hoogIsGoed ? niveau === "laag" : niveau === "hoog";
+  const kleur = gunstig
+    ? "bg-positive/10 text-positive"
+    : ongunstig
+      ? "bg-surface text-ink-muted"
+      : "bg-orange/10 text-orange";
+  return (
+    <span className={`rounded-control px-2 py-0.5 text-meta ${kleur}`}>
+      {label} {niveau}
+    </span>
+  );
 }
 
 function Alinea({ tekst }: { tekst: string }) {
@@ -164,6 +180,10 @@ export default function LandingspaginaRapport({
               <dd className="text-ink">{rapport.type_pagina}</dd>
               <dt className="text-ink-muted">Primaire conversie</dt>
               <dd className="text-ink">{rapport.primaire_conversie}</dd>
+              <dt className="text-ink-muted">Campagnecontext</dt>
+              <dd className={rapport.campagnecontext ? "whitespace-pre-line text-ink" : "text-ink-faint"}>
+                {rapport.campagnecontext || "Niet meegegeven — message match alleen op de pagina zelf beoordeeld"}
+              </dd>
               <dt className="text-ink-muted">Geanalyseerd</dt>
               <dd className="text-ink">
                 {formatDatum(geanalyseerdOp)}
@@ -259,7 +279,11 @@ export default function LandingspaginaRapport({
                 {i + 1}
               </span>
               <div>
-                <p className="font-sans-w7 text-sm font-semibold text-ink">{p.titel}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-sans-w7 text-sm font-semibold text-ink">{p.titel}</p>
+                  {p.impact && <NiveauLabel label="Impact" niveau={p.impact} hoogIsGoed />}
+                  {p.inspanning && <NiveauLabel label="Inspanning" niveau={p.inspanning} hoogIsGoed={false} />}
+                </div>
                 <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{p.toelichting}</p>
               </div>
             </li>

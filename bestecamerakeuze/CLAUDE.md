@@ -578,11 +578,18 @@ Tweede tabblad onder **Monitoren** (`components/monitoren/Landingspagina.tsx`, v
 en op **Analyseer** klikken laat Claude de pagina beoordelen als campagne-landingspagina
 van Van den Udenhout.
 
-- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`): tien criteria, een
-  eindcijfer, samenvatting, top 5 en conclusie. Alleen het slot is aangepast: Claude levert
-  JSON volgens `RAPPORT_SCHEMA` (structured outputs, `lib/landingspagina.ts`) en het
-  dashboard maakt het rapport zelf op (`LandingspaginaRapport.tsx`). Zo blijft de opmaak
-  strak en is het eindcijfer een los getal voor het overzicht.
+- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), aangescherpt na
+  feedback: tien criteria met elk één centrale vraag (een probleem telt maar bij één
+  criterium), een expliciet onderscheid tussen observatie, interpretatie en aanname, en
+  geen uitspraken over wat Claude niet kan zien (fotokwaliteit, schermpositie, een
+  onbekende advertentie). Claude levert JSON volgens `RAPPORT_SCHEMA` (structured outputs,
+  `lib/landingspagina.ts`) en het dashboard maakt het rapport zelf op
+  (`LandingspaginaRapport.tsx`). De top 5 verbeterpunten hebben impact en inspanning.
+- **Optionele campagnecontext.** Onder de URL staat een veld voor de campagnebelofte of
+  advertentietekst. Zonder dat veld beoordeelt Claude de message match alleen op de
+  pagina zelf en zegt dat erbij; met het veld toetst het of de belofte wordt waargemaakt.
+  De context wordt in het rapport bewaard (`rapport.campagnecontext`) en hergebruikt bij
+  "Opnieuw analyseren".
 - **Eén regel per pagina.** `landingspagina_analyses.url` is uniek (migratie 0028); opnieuw
   analyseren overschrijft het rapport. `normaliseerUrl` haalt trackingparameters, `#` en
   een slash aan het eind weg, zodat een advertentielink met utm-parameters niet als aparte
@@ -594,8 +601,8 @@ van Van den Udenhout.
   die binnen het CMS campagnepagina's bouwen: tekst, koppen, knoppen, formulieren, FAQ,
   beeldkeuze en de volgorde van blokken. Header, (mega)menu, footer, het designtemplate
   en techniek (snelheid, tracking, SEO-techniek) kunnen zij niet aanpassen, dus de prompt
-  sluit die expliciet uit van beoordeling en advies. Criterium 9 heet daarom "Beeld,
-  opmaak & mobiel" en gaat over hun eigen keuzes, niet over het template. De route knipt
+  sluit die expliciet uit van beoordeling en advies. Criterium 9 ("Beeld &
+  contentpresentatie") gaat over hun eigen keuzes, niet over het template. De route knipt
   menu, site-header en footer bovendien al uit de HTML (`alleenPaginaInhoud`) voordat
   Claude hem ziet; een `<header>` binnen `<main>` blijft staan, want dat is vaak de hero.
 - **Ophalen in twee stappen.** Eerst zelf met browserheaders; weigert de site dat (de

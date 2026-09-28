@@ -18,6 +18,7 @@ import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
  */
 export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [url, setUrl] = useState("");
+  const [campagne, setCampagne] = useState("");
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [lijst, setLijst] = useState<AnalyseItem[] | null>(null);
@@ -47,7 +48,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function analyseer(teAnalyseren: string) {
+  async function analyseer(teAnalyseren: string, campagnecontext: string) {
     if (!teAnalyseren.trim() || bezig) return;
     setBezig(true);
     setFout(null);
@@ -55,13 +56,14 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       const res = await fetch("/api/landingspagina", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: teAnalyseren.trim() }),
+        body: JSON.stringify({ url: teAnalyseren.trim(), campagnecontext: campagnecontext.trim() }),
       });
       const antwoord = (await res.json().catch(() => ({}))) as { analyse?: Analyse; fout?: string };
       if (!res.ok || !antwoord.analyse) {
         throw new Error(antwoord.fout ?? `Analyse mislukt (${res.status}).`);
       }
       setUrl("");
+      setCampagne("");
       toon(antwoord.analyse);
       haalLijst();
     } catch (err) {
@@ -91,26 +93,38 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void analyseer(url);
+          void analyseer(url, campagne);
         }}
-        className="flex gap-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
+        className="space-y-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
       >
-        <input
-          type="url"
-          required
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.udenhout.nl/acties/…"
+        <div className="flex gap-3">
+          <input
+            type="url"
+            required
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://www.udenhout.nl/acties/…"
+            disabled={bezig}
+            className="w-full rounded-card border border-line bg-card px-4 py-2.5 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+          />
+          <button
+            type="submit"
+            disabled={bezig}
+            className="shrink-0 rounded-button bg-primary px-5 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-60"
+          >
+            {bezig ? "Bezig…" : "Analyseer"}
+          </button>
+        </div>
+        {/* Zonder deze context kan Claude de message match alleen op de pagina zelf
+            beoordelen; met de advertentietekst toetst het of de belofte wordt waargemaakt. */}
+        <textarea
+          value={campagne}
+          onChange={(e) => setCampagne(e.target.value)}
           disabled={bezig}
-          className="w-full rounded-card border border-line bg-card px-4 py-2.5 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+          rows={2}
+          placeholder="Optioneel: campagnebelofte of advertentietekst, bijv. “Volkswagen ID.3 private lease vanaf €299 p/m – alleen deze maand”"
+          className="w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
         />
-        <button
-          type="submit"
-          disabled={bezig}
-          className="shrink-0 rounded-button bg-primary px-5 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-60"
-        >
-          {bezig ? "Bezig…" : "Analyseer"}
-        </button>
       </form>
 
       {bezig && (
@@ -139,7 +153,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
             <button
               type="button"
               disabled={bezig}
-              onClick={() => void analyseer(open.url)}
+              onClick={() => void analyseer(open.url, open.rapport.campagnecontext ?? "")}
               className="rounded-button border border-line bg-card px-4 py-1.5 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
             >
               Opnieuw analyseren

@@ -134,7 +134,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "ANTHROPIC_API_KEY ontbreekt." }, { status: 503 });
   }
 
-  const { url } = (await request.json().catch(() => ({}))) as { url?: string };
+  const { url, campagnecontext: ruweContext } = (await request.json().catch(() => ({}))) as {
+    url?: string;
+    campagnecontext?: string;
+  };
+  // Optioneel: campagnebelofte, advertentietekst of briefing voor de message match.
+  const campagnecontext = String(ruweContext ?? "").trim().slice(0, 4000) || null;
   let adres: URL;
   try {
     adres = new URL(String(url ?? "").trim());
@@ -151,7 +156,7 @@ export async function POST(request: Request) {
     const eigen = await haalZelfOp(adres);
     const tekst = "tekst" in eigen ? eigen.tekst : await haalViaWebFetch(client, adres, eigen.fout);
 
-    const rapport = await beoordeel(client, genormaliseerd, tekst);
+    const rapport = await beoordeel(client, genormaliseerd, tekst, campagnecontext);
 
     const supabase = await createClient();
     const item = await bewaarAnalyse(supabase, {
@@ -239,7 +244,15 @@ async function haalViaWebFetch(client: Anthropic, adres: URL, eigenFout: string)
 }
 
 /** De eigenlijke audit: prompt van marketing, uitvoer als JSON volgens RAPPORT_SCHEMA. */
-async function beoordeel(client: Anthropic, url: string, tekst: string): Promise<Rapport> {
+async function beoordeel(
+  client: Anthropic,
+  url: string,
+  tekst: string,
+  campagnecontext: string | null,
+): Promise<Rapport> {
+  const context = campagnecontext
+    ? `Campagnecontext (aangeleverd door de marketeer):\n<campagne>\n${campagnecontext}\n</campagne>`
+    : "Campagnecontext: niet aangeleverd. De advertentie en campagnebelofte zijn dus onbekend.";
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 32000,
@@ -248,7 +261,7 @@ async function beoordeel(client: Anthropic, url: string, tekst: string): Promise
     messages: [
       {
         role: "user",
-        content: `Te beoordelen URL: ${url}\n\nInhoud van de pagina:\n<pagina>\n${tekst}\n</pagina>`,
+        content: `Te beoordelen URL: ${url}\n\n${context}\n\nInhoud van de pagina:\n<pagina>\n${tekst}\n</pagina>`,
       },
     ],
   });
@@ -273,6 +286,7 @@ async function beoordeel(client: Anthropic, url: string, tekst: string): Promise
   // Het schema kan geen bereik afdwingen; hier de cijfers binnen 0-10 houden.
   const binnen = (n: number) => Math.min(10, Math.max(0, Number.isFinite(n) ? n : 0));
   rapport.url = url;
+  rapport.campagnecontext = campagnecontext;
   rapport.eindcijfer = Math.round(binnen(rapport.eindcijfer) * 10) / 10;
   rapport.criteria = rapport.criteria.map((c) => ({ ...c, score: Math.round(binnen(c.score)) }));
   return rapport;

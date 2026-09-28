@@ -31,8 +31,20 @@ export interface Rapport {
   criteria: Criterium[];
   eindcijfer: number;
   eindcijfer_toelichting: string;
-  top_verbeterpunten: { titel: string; toelichting: string }[];
+  top_verbeterpunten: Verbeterpunt[];
   conclusie: string;
+  /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door Claude). */
+  campagnecontext?: string | null;
+}
+
+export type Niveau = "hoog" | "middel" | "laag";
+
+export interface Verbeterpunt {
+  titel: string;
+  toelichting: string;
+  /** Ontbreken bij rapporten van vóór de invoering ervan. */
+  impact?: Niveau;
+  inspanning?: Niveau;
 }
 
 export interface AnalyseItem {
@@ -87,7 +99,15 @@ export const RAPPORT_SCHEMA = object({
   },
   eindcijfer: { type: "number" },
   eindcijfer_toelichting: tekst,
-  top_verbeterpunten: { type: "array", items: object({ titel: tekst, toelichting: tekst }) },
+  top_verbeterpunten: {
+    type: "array",
+    items: object({
+      titel: tekst,
+      toelichting: tekst,
+      impact: { type: "string", enum: ["hoog", "middel", "laag"] },
+      inspanning: { type: "string", enum: ["laag", "middel", "hoog"] },
+    }),
+  },
   conclusie: tekst,
 });
 
