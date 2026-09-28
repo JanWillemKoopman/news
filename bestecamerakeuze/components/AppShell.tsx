@@ -31,6 +31,7 @@ type Props = {
   website: React.ReactNode;
   koppeltabel: React.ReactNode;
   budgetBeheer: React.ReactNode;
+  landingspagina: React.ReactNode;
   prikbord: React.ReactNode;
   chat: React.ReactNode;
   kennis: React.ReactNode;
@@ -112,6 +113,10 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "Budget beheer",
     subtitle: "Uitgaven en klikken van de maand tegen budget en doel, per account en platform.",
   },
+  landingspagina: {
+    title: "Landingspagina",
+    subtitle: "Laat Claude een campagne-landingspagina beoordelen, met een cijfer per onderdeel.",
+  },
   koppeltabel: {
     title: "Koppeltabel",
     subtitle: "Welke collega beheert welke campagne — de koppeling die de platforms niet leveren.",
@@ -165,6 +170,7 @@ export default function AppShell({
   website,
   koppeltabel,
   budgetBeheer,
+  landingspagina,
   prikbord,
   chat,
   kennis,
@@ -289,6 +295,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "budget-beheer"}>
           {bezocht.has("budget-beheer") ? budgetBeheer : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "landingspagina"}>
+          {landingspagina}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "prikbord"}>
           {prikbord}

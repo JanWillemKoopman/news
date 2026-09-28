@@ -14,6 +14,7 @@ import KennisEnActies from "@/components/kennisacties/KennisEnActies";
 import ScorePaneel from "@/components/scores/ScorePaneel";
 import KennisPaneel from "@/components/kennis/KennisPaneel";
 import BudgetBeheer from "@/components/monitoren/BudgetBeheer";
+import Landingspagina from "@/components/monitoren/Landingspagina";
 import KostenPaneel from "@/components/kosten/KostenPaneel";
 import NietGeconfigureerd from "@/components/NietGeconfigureerd";
 import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
@@ -88,6 +89,7 @@ export default async function DashboardPage() {
         website={<WebsitePaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}
+        landingspagina={<Landingspagina ingelogd={ingelogd} />}
         prikbord={
           gereed.gereed ? (
             <PrikbordPaneel ingelogd={ingelogd} />

@@ -33,6 +33,7 @@ export type DashboardView =
   | "website"
   | "koppeltabel"
   | "budget-beheer"
+  | "landingspagina"
   | "prikbord"
   | "chat"
   | "kennis"
@@ -180,6 +181,12 @@ export default function Sidebar({
             label="Budget beheer"
             active={actief === "budget-beheer"}
             onClick={() => onNavigate("budget-beheer")}
+          />
+          <NavigationItem
+            icon={<IconGlobe />}
+            label="Landingspagina"
+            active={actief === "landingspagina"}
+            onClick={() => onNavigate("landingspagina")}
           />
 
           {toontBeperkteSecties && (
