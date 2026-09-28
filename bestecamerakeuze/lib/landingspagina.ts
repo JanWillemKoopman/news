@@ -194,3 +194,10 @@ export async function bewaarAnalyse(
   if (error) throw new Error(error.message);
   return naarItem(data);
 }
+
+export async function verwijderAnalyse(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await supabase.schema(SCHEMA).from(TABEL).delete().eq("id", id).select("id");
+  if (error) throw new Error(error.message);
+  // RLS laat een niet-toegestane delete stil niets doen; dan is er ook geen rij terug.
+  return (data ?? []).length > 0;
+}

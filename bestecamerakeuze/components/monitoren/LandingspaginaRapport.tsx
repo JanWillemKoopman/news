@@ -144,11 +144,9 @@ function CriteriumKaart({ c }: { c: Criterium }) {
 export default function LandingspaginaRapport({
   rapport,
   geanalyseerdOp,
-  geanalyseerdDoorNaam,
 }: {
   rapport: Rapport;
   geanalyseerdOp: string;
-  geanalyseerdDoorNaam: string | null;
 }) {
   const eind = scoreKleur(rapport.eindcijfer);
   const samenvatting: [string, string, string][] = [
@@ -187,7 +185,6 @@ export default function LandingspaginaRapport({
               <dt className="text-ink-muted">Geanalyseerd</dt>
               <dd className="text-ink">
                 {formatDatum(geanalyseerdOp)}
-                {geanalyseerdDoorNaam ? ` · ${geanalyseerdDoorNaam}` : ""}
               </dd>
             </dl>
           </div>

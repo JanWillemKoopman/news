@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { IconClose } from "@/components/icons";
 import Inlogprompt from "@/components/Inlogprompt";
 import LandingspaginaRapport, {
   formatCijfer,
@@ -70,6 +71,18 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
       setBezig(false);
+    }
+  }
+
+  async function verwijder(id: string) {
+    setFout(null);
+    try {
+      const res = await fetch(`/api/landingspagina?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const antwoord = (await res.json().catch(() => ({}))) as { fout?: string };
+      if (!res.ok) throw new Error(antwoord.fout ?? `Verwijderen mislukt (${res.status}).`);
+      setLijst((huidig) => huidig?.filter((a) => a.id !== id) ?? null);
+    } catch (err) {
+      setFout(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -162,11 +175,16 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
           <LandingspaginaRapport
             rapport={open.rapport}
             geanalyseerdOp={open.geanalyseerdOp}
-            geanalyseerdDoorNaam={open.geanalyseerdDoorNaam}
           />
         </div>
       ) : (
-        <AnalyseLijst lijst={lijst} fout={lijstFout} laadt={laadtRapport} onOpen={openRapport} />
+        <AnalyseLijst
+          lijst={lijst}
+          fout={lijstFout}
+          laadt={laadtRapport}
+          onOpen={openRapport}
+          onVerwijder={verwijder}
+        />
       )}
     </div>
   );
@@ -177,12 +195,18 @@ function AnalyseLijst({
   fout,
   laadt,
   onOpen,
+  onVerwijder,
 }: {
   lijst: AnalyseItem[] | null;
   fout: string | null;
   laadt: string | null;
   onOpen: (id: string) => void;
+  onVerwijder: (id: string) => void;
 }) {
+  // Twee klikken om te verwijderen: het kruisje wordt eerst "Weg?", net als bij de
+  // berichten op Kennis en acties. Een analyse terughalen kan niet.
+  const [bevestig, setBevestig] = useState<string | null>(null);
+
   return (
     <section className="rounded-panel border border-line bg-card shadow-subtle">
       <header className="flex items-baseline justify-between border-b border-line-soft px-6 py-4">
@@ -203,9 +227,11 @@ function AnalyseLijst({
           <thead>
             <tr className="text-left text-label text-ink-faint">
               <th className="label-theme px-6 py-2.5 font-normal">Pagina</th>
-              <th className="label-theme w-56 px-4 py-2.5 font-normal">Laatst geanalyseerd</th>
-              <th className="label-theme w-44 px-4 py-2.5 font-normal">Door</th>
-              <th className="label-theme w-32 px-6 py-2.5 text-right font-normal">Eindcijfer</th>
+              <th className="label-theme w-72 whitespace-nowrap px-4 py-2.5 font-normal">Laatst geanalyseerd</th>
+              <th className="label-theme w-28 px-4 py-2.5 text-right font-normal">Eindcijfer</th>
+              <th className="w-20 px-4 py-2.5">
+                <span className="sr-only">Verwijderen</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line-soft border-t border-line-soft">
@@ -223,9 +249,8 @@ function AnalyseLijst({
                     </p>
                     <p className="truncate text-meta text-ink-faint">{adres.hostname}</p>
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{formatDatum(a.geanalyseerdOp)}</td>
-                  <td className="truncate px-4 py-3 text-ink-muted">{a.geanalyseerdDoorNaam ?? "—"}</td>
-                  <td className="px-6 py-3 text-right">
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{formatDatum(a.geanalyseerdOp)}</td>
+                  <td className="px-4 py-3 text-right">
                     {a.eindcijfer === null ? (
                       <span className="text-ink-faint">—</span>
                     ) : (
@@ -235,6 +260,30 @@ function AnalyseLijst({
                         {formatCijfer(a.eindcijfer)}
                       </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (bevestig === a.id) {
+                          setBevestig(null);
+                          onVerwijder(a.id);
+                        } else {
+                          setBevestig(a.id);
+                        }
+                      }}
+                      onBlur={() => setBevestig((b) => (b === a.id ? null : b))}
+                      title="Analyse verwijderen"
+                      aria-label={bevestig === a.id ? "Bevestig verwijderen" : "Analyse verwijderen"}
+                      className={
+                        bevestig === a.id
+                          ? "rounded-control bg-negative/10 px-2 py-1 text-meta font-medium text-negative"
+                          : "rounded-control p-1.5 text-ink-faint transition-colors hover:bg-negative/10 hover:text-negative"
+                      }
+                    >
+                      {bevestig === a.id ? "Weg?" : <IconClose className="h-4 w-4" />}
+                    </button>
                   </td>
                 </tr>
               );

@@ -9,6 +9,7 @@ import {
   haalAnalyse,
   lijstAnalyses,
   normaliseerUrl,
+  verwijderAnalyse,
   type Rapport,
 } from "@/lib/landingspagina";
 import { AUDIT_PROMPT } from "@/lib/landingspaginaPrompt";
@@ -25,6 +26,7 @@ export const maxDuration = 300;
  * GET              → alle bewaarde analyses (url, datum, eindcijfer, door wie)
  * GET ?id=…        → één analyse met het volledige rapport
  * POST { url }     → pagina ophalen, laten beoordelen, bewaren (upsert op url)
+ * DELETE ?id=…     → analyse verwijderen (alleen beheerders)
  *
  * Ophalen gaat in twee stappen: eerst zelf (met browserheaders), en weigert de site dat
  * (bv. een 403 van de botbescherming), dan haalt Claude de pagina op via de web_fetch-tool
@@ -115,6 +117,27 @@ export async function GET(request: Request) {
     return NextResponse.json({
       analyses: rijen.map((r) => ({ ...r, geanalyseerdDoorNaam: namen[r.geanalyseerdDoor]?.naam ?? null })),
     });
+  } catch (err) {
+    return NextResponse.json(
+      { fout: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const gebruiker = await getGebruiker();
+  if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
+  if (!isBeheerder(gebruiker.email)) {
+    return NextResponse.json({ fout: "Alleen beheerders mogen analyses verwijderen." }, { status: 403 });
+  }
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ fout: "Geen analyse opgegeven." }, { status: 400 });
+
+  try {
+    const weg = await verwijderAnalyse(await createClient(), id);
+    if (!weg) return NextResponse.json({ fout: "Analyse niet gevonden of niet toegestaan." }, { status: 404 });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },
