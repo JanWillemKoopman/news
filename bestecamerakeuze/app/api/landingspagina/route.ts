@@ -41,10 +41,32 @@ const MAX_TEKST = 60_000;
 
 type Namen = Record<string, { naam: string | null }>;
 
+/**
+ * Alleen het deel van de pagina dat de content marketeer in het CMS beheert: de
+ * paginainhoud, zonder header, (mega)menu en footer van de website. Die vallen buiten
+ * de beoordeling (zie de prompt); weghalen voorkomt dat Claude er toch iets over zegt.
+ * Titel en meta-description komen uit de <head> en blijven erbij, die beheert de
+ * marketeer wél.
+ */
+function alleenPaginaInhoud(html: string): string {
+  const head = html.match(/<head[\s\S]*?<\/head>/i)?.[0] ?? "";
+  const main = html.match(/<main\b[\s\S]*<\/main>/i)?.[0];
+  // Binnen <main> kan een <header> de hero van de pagina zelf zijn, dus daar alleen
+  // menu's weghalen; zonder <main> ook de site-header en -footer.
+  const inhoud = main
+    ? main.replace(/<nav\b[\s\S]*?<\/nav>/gi, " ")
+    : html
+        .replace(/<head[\s\S]*?<\/head>/i, " ")
+        .replace(/<(header|nav|footer)\b[\s\S]*?<\/\1>/gi, " ");
+  // Levert het wegknippen (bijna) niets op, dan klopt de opbouw niet met wat we
+  // verwachten; dan liever de hele pagina dan een lege.
+  const zichtbaar = inhoud.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return head + (zichtbaar.length < 300 ? html : inhoud);
+}
+
 /** Titel, meta-description, koppen, knoppen, links, afbeeldingen en lopende tekst uit de HTML. */
 function naarTekst(html: string): string {
-  return html
-    .replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ")
+  return alleenPaginaInhoud(html.replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " "))
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/gi, "\n[META DESCRIPTION] $1\n")
     .replace(/<title[^>]*>([\s\S]*?)<\/title>/gi, "\n[TITEL] $1\n")

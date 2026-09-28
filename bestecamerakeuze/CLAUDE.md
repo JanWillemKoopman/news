@@ -590,6 +590,14 @@ van Van den Udenhout.
 - **Iedereen mag lezen, alleen beheerders analyseren.** De GET-route en de RLS staan open
   voor elke ingelogde collega (het team moet oude rapporten kunnen inzien); de POST-route
   en het tabblad zelf nog niet.
+- **Alleen wat de content marketeer beheert.** De rapporten zijn voor content marketeers
+  die binnen het CMS campagnepagina's bouwen: tekst, koppen, knoppen, formulieren, FAQ,
+  beeldkeuze en de volgorde van blokken. Header, (mega)menu, footer, het designtemplate
+  en techniek (snelheid, tracking, SEO-techniek) kunnen zij niet aanpassen, dus de prompt
+  sluit die expliciet uit van beoordeling en advies. Criterium 9 heet daarom "Beeld,
+  opmaak & mobiel" en gaat over hun eigen keuzes, niet over het template. De route knipt
+  menu, site-header en footer bovendien al uit de HTML (`alleenPaginaInhoud`) voordat
+  Claude hem ziet; een `<header>` binnen `<main>` blijft staan, want dat is vaak de hero.
 - **Ophalen in twee stappen.** Eerst zelf met browserheaders; weigert de site dat (de
   botbescherming van udenhout.nl gaf direct een 403), dan haalt Claude de pagina op via
   de web_fetch-tool en gebruiken we alleen de opgehaalde tekst. Claude ziet dus altijd
