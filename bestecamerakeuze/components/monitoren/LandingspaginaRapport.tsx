@@ -182,6 +182,12 @@ export default function LandingspaginaRapport({
               <dd className={rapport.campagnecontext ? "whitespace-pre-line text-ink" : "text-ink-faint"}>
                 {rapport.campagnecontext || "Niet meegegeven — message match alleen op de pagina zelf beoordeeld"}
               </dd>
+              <dt className="text-ink-muted">Screenshot</dt>
+              <dd className={rapport.met_screenshot ? "text-ink" : "text-ink-faint"}>
+                {rapport.met_screenshot
+                  ? "Meegestuurd — ook visueel beoordeeld"
+                  : "Niet meegestuurd — alleen op tekst en structuur beoordeeld"}
+              </dd>
               <dt className="text-ink-muted">Geanalyseerd</dt>
               <dd className="text-ink">
                 {formatDatum(geanalyseerdOp)}

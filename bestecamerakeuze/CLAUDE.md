@@ -590,6 +590,14 @@ van Van den Udenhout.
   pagina zelf en zegt dat erbij; met het veld toetst het of de belofte wordt waargemaakt.
   De context wordt in het rapport bewaard (`rapport.campagnecontext`) en hergebruikt bij
   "Opnieuw analyseren".
+- **Screenshot uploaden.** Onder de URL staat een knop voor een JPEG (of PNG) van de
+  volledige pagina. De browser knipt hem in stukken van 1000 × 1400 px
+  (`lib/screenshotDelen.ts`, max. 10 stukken): één lange afbeelding zou de API verkleinen
+  tot tekst en knoppen onleesbaar zijn. De stukken gaan in volgorde als afbeeldingen vóór
+  de tekst mee, en de prompt maakt de screenshot dan leidend voor alles wat visueel is
+  (eerste scherm, knoppen, hiërarchie, fotokeuze). Zonder screenshot blijft Claude binnen
+  wat de tekst laat zien. De screenshot zelf wordt niet bewaard, alleen
+  `rapport.met_screenshot`; wie opnieuw analyseert, uploadt hem opnieuw.
 - **Eén regel per pagina.** `landingspagina_analyses.url` is uniek (migratie 0028); opnieuw
   analyseren overschrijft het rapport. `normaliseerUrl` haalt trackingparameters, `#` en
   een slash aan het eind weg, zodat een advertentielink met utm-parameters niet als aparte

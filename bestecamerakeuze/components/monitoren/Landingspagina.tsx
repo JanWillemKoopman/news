@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { IconClose } from "@/components/icons";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { IconClose, IconPhoto } from "@/components/icons";
 import Inlogprompt from "@/components/Inlogprompt";
 import LandingspaginaRapport, {
   formatCijfer,
@@ -9,6 +9,7 @@ import LandingspaginaRapport, {
   scoreKleur,
 } from "@/components/monitoren/LandingspaginaRapport";
 import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
+import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 
 /**
  * Landingspagina: vul een URL in en klik op Analyseer — Claude beoordeelt de pagina als
@@ -20,6 +21,9 @@ import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
 export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [url, setUrl] = useState("");
   const [campagne, setCampagne] = useState("");
+  const [screenshot, setScreenshot] = useState<(GedeeldeScreenshot & { naam: string }) | null>(null);
+  const [leestScreenshot, setLeestScreenshot] = useState(false);
+  const bestandInvoer = useRef<HTMLInputElement>(null);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [lijst, setLijst] = useState<AnalyseItem[] | null>(null);
@@ -57,7 +61,11 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       const res = await fetch("/api/landingspagina", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: teAnalyseren.trim(), campagnecontext: campagnecontext.trim() }),
+        body: JSON.stringify({
+          url: teAnalyseren.trim(),
+          campagnecontext: campagnecontext.trim(),
+          screenshot: screenshot?.stukken ?? [],
+        }),
       });
       const antwoord = (await res.json().catch(() => ({}))) as { analyse?: Analyse; fout?: string };
       if (!res.ok || !antwoord.analyse) {
@@ -65,12 +73,28 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       }
       setUrl("");
       setCampagne("");
+      setScreenshot(null);
       toon(antwoord.analyse);
       haalLijst();
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
       setBezig(false);
+    }
+  }
+
+  async function kiesScreenshot(bestand: File | undefined) {
+    if (!bestand) return;
+    setFout(null);
+    setLeestScreenshot(true);
+    try {
+      setScreenshot({ ...(await deelScreenshot(bestand)), naam: bestand.name });
+    } catch (err) {
+      setFout(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLeestScreenshot(false);
+      // Zelfde bestand opnieuw kiezen moet weer een change-event geven.
+      if (bestandInvoer.current) bestandInvoer.current.value = "";
     }
   }
 
@@ -138,6 +162,65 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
           placeholder="Optioneel: campagnebelofte of advertentietekst, bijv. “Volkswagen ID.3 private lease vanaf €299 p/m – alleen deze maand”"
           className="w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
         />
+
+        {/* Screenshot van de volledige pagina: wordt in de browser in leesbare stukken
+            geknipt (lib/screenshotDelen.ts) en speelt in de prompt een hoofdrol. */}
+        <input
+          ref={bestandInvoer}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="hidden"
+          onChange={(e) => void kiesScreenshot(e.target.files?.[0])}
+        />
+        {screenshot ? (
+          <div className="flex items-start gap-4 rounded-card border border-positive/40 bg-positive/5 px-4 py-3">
+            <div className="h-24 w-16 shrink-0 overflow-hidden rounded-control border border-line bg-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={screenshot.voorbeeld} alt="Voorvertoning van de screenshot" className="w-full" />
+            </div>
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="font-medium text-positive">Screenshot geüpload</p>
+              <p className="truncate text-ink" title={screenshot.naam}>
+                {screenshot.naam}
+              </p>
+              <p className="text-meta text-ink-muted">
+                {screenshot.breedte} × {screenshot.hoogte} px · gaat mee als {screenshot.stukken.length}{" "}
+                {screenshot.stukken.length === 1 ? "deel" : "delen"}
+              </p>
+              {screenshot.afgekapt && (
+                <p className="text-meta text-orange">
+                  De pagina is erg lang; alleen het bovenste deel wordt meegestuurd.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setScreenshot(null)}
+              disabled={bezig}
+              title="Screenshot verwijderen"
+              aria-label="Screenshot verwijderen"
+              className="rounded-control p-1.5 text-ink-faint transition-colors hover:bg-negative/10 hover:text-negative disabled:opacity-60"
+            >
+              <IconClose className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => bestandInvoer.current?.click()}
+              disabled={bezig || leestScreenshot}
+              className="inline-flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
+            >
+              <IconPhoto className="h-4 w-4 text-ink-muted" />
+              {leestScreenshot ? "Screenshot verwerken…" : "Screenshot uploaden"}
+            </button>
+            <span className="text-meta text-ink-faint">
+              Optioneel, maar sterk aangeraden: een JPEG van de volledige pagina, zodat ook het
+              beeld wordt beoordeeld.
+            </span>
+          </div>
+        )}
       </form>
 
       {bezig && (

@@ -13,6 +13,7 @@ import {
   type Rapport,
 } from "@/lib/landingspagina";
 import { AUDIT_PROMPT } from "@/lib/landingspaginaPrompt";
+import { MAX_STUKKEN } from "@/lib/screenshotDelen";
 import { haalProfielen } from "@/lib/profielen";
 import { createClient } from "@/lib/supabase/server";
 
@@ -157,12 +158,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "ANTHROPIC_API_KEY ontbreekt." }, { status: 503 });
   }
 
-  const { url, campagnecontext: ruweContext } = (await request.json().catch(() => ({}))) as {
+  const {
+    url,
+    campagnecontext: ruweContext,
+    screenshot: ruweScreenshot,
+  } = (await request.json().catch(() => ({}))) as {
     url?: string;
     campagnecontext?: string;
+    screenshot?: unknown;
   };
   // Optioneel: campagnebelofte, advertentietekst of briefing voor de message match.
   const campagnecontext = String(ruweContext ?? "").trim().slice(0, 4000) || null;
+  // Optioneel: de screenshot van de volledige pagina, in de browser al in stukken
+  // geknipt (lib/screenshotDelen.ts): base64-JPEG's van boven naar beneden.
+  const screenshot = Array.isArray(ruweScreenshot)
+    ? ruweScreenshot.filter((d): d is string => typeof d === "string" && /^[A-Za-z0-9+/=]+$/.test(d))
+    : [];
+  if (screenshot.length > MAX_STUKKEN) {
+    return NextResponse.json({ fout: "De screenshot is te lang." }, { status: 400 });
+  }
   let adres: URL;
   try {
     adres = new URL(String(url ?? "").trim());
@@ -179,7 +193,7 @@ export async function POST(request: Request) {
     const eigen = await haalZelfOp(adres);
     const tekst = "tekst" in eigen ? eigen.tekst : await haalViaWebFetch(client, adres, eigen.fout);
 
-    const rapport = await beoordeel(client, genormaliseerd, tekst, campagnecontext);
+    const rapport = await beoordeel(client, genormaliseerd, tekst, campagnecontext, screenshot);
 
     const supabase = await createClient();
     const item = await bewaarAnalyse(supabase, {
@@ -272,6 +286,7 @@ async function beoordeel(
   url: string,
   tekst: string,
   campagnecontext: string | null,
+  screenshot: string[],
 ): Promise<Rapport> {
   const context = campagnecontext
     ? `Campagnecontext (aangeleverd door de marketeer):\n<campagne>\n${campagnecontext}\n</campagne>`
@@ -284,7 +299,23 @@ async function beoordeel(
     messages: [
       {
         role: "user",
-        content: `Te beoordelen URL: ${url}\n\n${context}\n\nInhoud van de pagina:\n<pagina>\n${tekst}\n</pagina>`,
+        content: [
+          ...screenshot.map(
+            (data): Anthropic.ImageBlockParam => ({
+              type: "image",
+              source: { type: "base64", media_type: "image/jpeg", data },
+            }),
+          ),
+          {
+            type: "text",
+            text:
+              `Te beoordelen URL: ${url}\n\n${context}\n\n` +
+              (screenshot.length
+                ? `Screenshot: de ${screenshot.length} afbeelding(en) hierboven zijn samen één volledige screenshot van de pagina, van boven naar beneden in volgorde. De bovenkant van de eerste afbeelding is het begin van de pagina.`
+                : "Screenshot: niet aangeleverd. Je hebt alleen de uitgelezen tekst.") +
+              `\n\nInhoud van de pagina (uitgelezen HTML):\n<pagina>\n${tekst}\n</pagina>`,
+          },
+        ],
       },
     ],
   });
@@ -310,6 +341,7 @@ async function beoordeel(
   const binnen = (n: number) => Math.min(10, Math.max(0, Number.isFinite(n) ? n : 0));
   rapport.url = url;
   rapport.campagnecontext = campagnecontext;
+  rapport.met_screenshot = screenshot.length > 0;
   rapport.eindcijfer = Math.round(binnen(rapport.eindcijfer) * 10) / 10;
   rapport.criteria = rapport.criteria.map((c) => ({ ...c, score: Math.round(binnen(c.score)) }));
   return rapport;

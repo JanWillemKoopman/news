@@ -35,6 +35,8 @@ export interface Rapport {
   conclusie: string;
   /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door Claude). */
   campagnecontext?: string | null;
+  /** Of er bij deze analyse een screenshot is meegestuurd (door de route gezet). */
+  met_screenshot?: boolean;
 }
 
 export type Niveau = "hoog" | "middel" | "laag";
