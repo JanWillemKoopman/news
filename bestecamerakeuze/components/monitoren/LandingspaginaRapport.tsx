@@ -67,6 +67,17 @@ function ScoreBalk({ score }: { score: number }) {
   );
 }
 
+/**
+ * Splitst lopende tekst in zinnen voor een opsomming. Alleen splitsen na . ! of ? gevolgd
+ * door een spatie en een hoofdletter/cijfer, zodat "bijv. een" of "t/m" heel blijft.
+ */
+function zinnen(tekst: string): string[] {
+  return tekst
+    .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9"'“‘])/)
+    .map((z) => z.trim())
+    .filter(Boolean);
+}
+
 function Alinea({ tekst }: { tekst: string }) {
   return (
     <div className="space-y-2 text-sm leading-relaxed text-ink">
@@ -170,7 +181,17 @@ export default function LandingspaginaRapport({
         </div>
       </section>
 
-      <Sectie titel="Samenvatting">
+      <Sectie titel="Conclusie en samenvatting">
+        {/* De conclusie eerst, als losse punten: het antwoord op "is deze pagina klaar
+            voor betaald verkeer?" hoort bovenaan, niet als blok tekst onderaan. */}
+        <ul className="mb-5 space-y-2 border-b border-line-soft pb-5">
+          {zinnen(rapport.conclusie).map((zin, i) => (
+            <li key={i} className="flex gap-3 text-sm leading-relaxed text-ink">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ink-muted" />
+              <span>{zin}</span>
+            </li>
+          ))}
+        </ul>
         <ul className="divide-y divide-line-soft">
           {samenvatting.map(([label, tekst, stip]) => (
             <li key={label} className="grid grid-cols-[14rem_1fr] gap-6 py-3 first:pt-0 last:pb-0">
@@ -246,9 +267,6 @@ export default function LandingspaginaRapport({
         </ol>
       </Sectie>
 
-      <Sectie titel="Conclusie">
-        <Alinea tekst={rapport.conclusie} />
-      </Sectie>
     </div>
   );
 }

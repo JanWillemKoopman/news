@@ -146,6 +146,6 @@ Lever het rapport als JSON volgens het opgegeven schema, in het Nederlands:
 - eindcijfer: 0-10, maximaal één decimaal.
 - eindcijfer_toelichting: waarom dit eindcijfer.
 - top_verbeterpunten: precies 5 concrete verbeteracties (titel + wat moet er veranderen en waarom).
-- conclusie: maximaal 5 zinnen over de vraag "Is deze pagina op dit moment sterk genoeg als bestemming voor betaald campagneverkeer, en waar zit de grootste optimalisatiekans?"
+- conclusie: 3 tot 5 korte, op zichzelf staande zinnen (ze worden als losse opsommingspunten getoond, dus geen doorlopend verhaal) over de vraag "Is deze pagina op dit moment sterk genoeg als bestemming voor betaald campagneverkeer, en waar zit de grootste optimalisatiekans?"
 
 Gebruik platte tekst in de velden, geen Markdown.`;
