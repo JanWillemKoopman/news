@@ -571,6 +571,31 @@ platform × maand** vastlegt.
   volgende maand. Tabel: `dataloket.budget_doelen` (migratie 0027), `maand` is altijd de
   eerste dag van de maand.
 
+### Monitoren → Landingspagina
+
+Tweede tabblad onder **Monitoren** (`components/monitoren/Landingspagina.tsx`, view
+`landingspagina`), voorlopig alleen zichtbaar voor de twee beheeraccounts. Een URL invullen
+en op **Analyseer** klikken laat Claude de pagina beoordelen als campagne-landingspagina
+van Van den Udenhout.
+
+- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`): tien criteria, een
+  eindcijfer, samenvatting, top 5 en conclusie. Alleen het slot is aangepast: Claude levert
+  JSON volgens `RAPPORT_SCHEMA` (structured outputs, `lib/landingspagina.ts`) en het
+  dashboard maakt het rapport zelf op (`LandingspaginaRapport.tsx`). Zo blijft de opmaak
+  strak en is het eindcijfer een los getal voor het overzicht.
+- **Eén regel per pagina.** `landingspagina_analyses.url` is uniek (migratie 0028); opnieuw
+  analyseren overschrijft het rapport. `normaliseerUrl` haalt trackingparameters, `#` en
+  een slash aan het eind weg, zodat een advertentielink met utm-parameters niet als aparte
+  pagina telt.
+- **Iedereen mag lezen, alleen beheerders analyseren.** De GET-route en de RLS staan open
+  voor elke ingelogde collega (het team moet oude rapporten kunnen inzien); de POST-route
+  en het tabblad zelf nog niet.
+- **Ophalen in twee stappen.** Eerst zelf met browserheaders; weigert de site dat (de
+  botbescherming van udenhout.nl gaf direct een 403), dan haalt Claude de pagina op via
+  de web_fetch-tool en gebruiken we alleen de opgehaalde tekst. Claude ziet dus altijd
+  tekst en structuur, nooit de schermweergave — de prompt zegt dat ook, zodat criterium 3
+  en 9 benoemen wat daardoor niet vast te stellen is.
+
 ### Component- en codepatronen
 
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,

@@ -3,58 +3,102 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isClaudeGeconfigureerd } from "@/lib/config";
 import { isBeheerder } from "@/lib/gebruikersbeheer";
+import {
+  RAPPORT_SCHEMA,
+  bewaarAnalyse,
+  haalAnalyse,
+  lijstAnalyses,
+  normaliseerUrl,
+  type Rapport,
+} from "@/lib/landingspagina";
+import { AUDIT_PROMPT } from "@/lib/landingspaginaPrompt";
+import { haalProfielen } from "@/lib/profielen";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Een volledig auditrapport (tien criteria met onderbouwing) duurt al snel een paar minuten.
+export const maxDuration = 300;
 
 /**
- * Landingspagina-analyse: haalt de opgegeven pagina op, maakt er platte tekst van en
- * laat Claude hem als campagne-landingspagina beoordelen met een cijfer per onderdeel.
+ * Landingspagina-audit (Monitoren → Landingspagina).
+ *
+ * GET              → alle bewaarde analyses (url, datum, eindcijfer, door wie)
+ * GET ?id=…        → één analyse met het volledige rapport
+ * POST { url }     → pagina ophalen, laten beoordelen, bewaren (upsert op url)
  *
  * Ophalen gaat in twee stappen: eerst zelf (met browserheaders), en weigert de site dat
- * (bv. een 403 van de botbescherming), dan laat Claude de pagina zelf ophalen via de
- * web_fetch-tool. Bewust simpel: geen opslag, geen kostenregistratie.
+ * (bv. een 403 van de botbescherming), dan haalt Claude de pagina op via de web_fetch-tool
+ * en gebruiken we de tekst die dat oplevert. De beoordeling zelf is in beide gevallen
+ * dezelfde aanroep, met structured output volgens RAPPORT_SCHEMA.
+ *
+ * Lezen mag iedereen die ingelogd is (het team moet oude analyses kunnen inzien); een
+ * nieuwe analyse starten voorlopig alleen de beheerders, net als het tabblad zelf.
  */
 const MODEL = process.env.LANDINGSPAGINA_MODEL || "claude-sonnet-5";
 
 /** Genoeg voor een lange landingspagina, zonder de prompt onnodig op te blazen. */
-const MAX_TEKST = 40_000;
+const MAX_TEKST = 60_000;
 
-const PROMPT = `Je bent een expert in campagne-landingspagina's (conversie-optimalisatie, copywriting, UX) in de automotive-branche.
-Analyseer de landingspagina hieronder en geef per onderdeel een cijfer van 1 tot 10 met een korte toelichting (1–2 zinnen):
+type Namen = Record<string, { naam: string | null }>;
 
-1. Eerste indruk en boodschap (is direct duidelijk wat het aanbod is?)
-2. Kopteksten en copy
-3. Call-to-action (duidelijkheid, zichtbaarheid, aantal)
-4. Vertrouwen en bewijs (reviews, keurmerken, merk)
-5. Formulier / conversiedrempel
-6. Structuur en scanbaarheid
-7. Aansluiting op een campagne (focus, geen afleiding)
-
-Sluit af met een eindcijfer en de drie belangrijkste verbeterpunten.
-Antwoord in het Nederlands, in Markdown, met een tabel voor de cijfers.
-Je ziet alleen de tekst en structuur van de pagina, geen opmaak of afbeeldingen — houd daar rekening mee.`;
-
-/** Titel, meta-description, koppen, knoppen/links en lopende tekst uit de HTML. */
+/** Titel, meta-description, koppen, knoppen, links, afbeeldingen en lopende tekst uit de HTML. */
 function naarTekst(html: string): string {
   return html
-    .replace(/<(script|style|noscript|svg)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/gi, "\n[META DESCRIPTION] $1\n")
     .replace(/<title[^>]*>([\s\S]*?)<\/title>/gi, "\n[TITEL] $1\n")
     .replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, "\n[H$1] $2\n")
-    .replace(/<(button)[^>]*>([\s\S]*?)<\/button>/gi, " [KNOP: $2] ")
+    .replace(/<button[^>]*>([\s\S]*?)<\/button>/gi, " [KNOP: $1] ")
+    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, " [LINK: $1] ")
+    .replace(/<img[^>]*alt=["']([^"']+)["'][^>]*>/gi, " [AFBEELDING: $1] ")
     .replace(/<form\b/gi, "\n[FORMULIER]\n<form")
-    .replace(/<input[^>]*(?:placeholder|name)=["']([^"']*)["'][^>]*>/gi, " [VELD: $1] ")
-    .replace(/<(br|p|div|li|section|tr)\b[^>]*>/gi, "\n")
+    .replace(/<(input|textarea|select)[^>]*(?:placeholder|aria-label|name)=["']([^"']*)["'][^>]*>/gi, " [VELD: $2] ")
+    .replace(/<(br|p|div|li|section|tr|header|footer|nav|article)\b[^>]*>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
+    .replace(/&euro;/g, "€")
+    .replace(/\[(KNOP|LINK):\s*\]/g, "")
     .replace(/[ \t]+/g, " ")
     .replace(/\n\s*\n+/g, "\n")
     .trim()
     .slice(0, MAX_TEKST);
+}
+
+export async function GET(request: Request) {
+  const gebruiker = await getGebruiker();
+  if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
+
+  try {
+    const supabase = await createClient();
+    const id = new URL(request.url).searchParams.get("id");
+
+    if (id) {
+      const analyse = await haalAnalyse(supabase, id);
+      if (!analyse) return NextResponse.json({ fout: "Analyse niet gevonden." }, { status: 404 });
+      const namen: Namen = await haalProfielen(supabase, [analyse.geanalyseerdDoor]).catch(() => ({}));
+      return NextResponse.json({
+        analyse: { ...analyse, geanalyseerdDoorNaam: namen[analyse.geanalyseerdDoor]?.naam ?? null },
+      });
+    }
+
+    const rijen = await lijstAnalyses(supabase);
+    const namen: Namen = await haalProfielen(
+      supabase,
+      rijen.map((r) => r.geanalyseerdDoor),
+    ).catch(() => ({}));
+    return NextResponse.json({
+      analyses: rijen.map((r) => ({ ...r, geanalyseerdDoorNaam: namen[r.geanalyseerdDoor]?.naam ?? null })),
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { fout: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -76,18 +120,25 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ fout: "Vul een geldige URL in (https://…)." }, { status: 400 });
   }
+  const genormaliseerd = normaliseerUrl(adres);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-  // Eerst zelf ophalen; weigert de site ons (botbescherming), dan haalt Claude hem op.
-  const eigen = await haalZelfOp(adres);
-
   try {
-    const analyse =
-      "tekst" in eigen
-        ? await analyseerTekst(client, adres, eigen.tekst)
-        : await analyseerViaWebFetch(client, adres, eigen.fout);
-    return NextResponse.json({ analyse });
+    // Eerst zelf ophalen; weigert de site ons (botbescherming), dan haalt Claude hem op.
+    const eigen = await haalZelfOp(adres);
+    const tekst = "tekst" in eigen ? eigen.tekst : await haalViaWebFetch(client, adres, eigen.fout);
+
+    const rapport = await beoordeel(client, genormaliseerd, tekst);
+
+    const supabase = await createClient();
+    const item = await bewaarAnalyse(supabase, {
+      url: genormaliseerd,
+      rapport,
+      model: MODEL,
+      gebruikerId: gebruiker.id,
+    });
+    return NextResponse.json({ analyse: { ...item, geanalyseerdDoorNaam: null, rapport } });
   } catch (err) {
     return NextResponse.json(
       { fout: err instanceof Error ? err.message : String(err) },
@@ -125,74 +176,82 @@ async function haalZelfOp(adres: URL): Promise<{ tekst: string } | { fout: strin
   }
 }
 
-function tekstVan(content: Anthropic.ContentBlock[]): string {
-  return content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n");
-}
-
-async function analyseerTekst(client: Anthropic, adres: URL, tekst: string): Promise<string> {
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: `${PROMPT}\n\nURL: ${adres.href}\n\n<pagina>\n${tekst}\n</pagina>`,
-      },
-    ],
-  });
-  return tekstVan(response.content);
-}
-
 /**
- * Terugval: Claude haalt de pagina zelf op via de web_fetch-tool (vanaf de servers van
- * Anthropic, niet vanaf Vercel). Beperkt tot het domein van de opgegeven URL.
+ * Terugval: Claude haalt de pagina op via de web_fetch-tool (vanaf de servers van
+ * Anthropic, niet vanaf Vercel), beperkt tot het domein van de opgegeven URL. We
+ * gebruiken alleen de opgehaalde tekst uit het toolresultaat; de beoordeling is daarna
+ * dezelfde aanroep als wanneer we de pagina zelf hadden kunnen ophalen.
  */
-async function analyseerViaWebFetch(
-  client: Anthropic,
-  adres: URL,
-  eigenFout: string,
-): Promise<string> {
+async function haalViaWebFetch(client: Anthropic, adres: URL, eigenFout: string): Promise<string> {
   const messages: Anthropic.MessageParam[] = [
     {
       role: "user",
-      content:
-        `Haal eerst deze pagina op met de web_fetch-tool: ${adres.href}\n\n${PROMPT}\n\n` +
-        "Lukt het ophalen niet, antwoord dan alleen met: OPHALEN_MISLUKT",
+      content: `Haal deze pagina op met de web_fetch-tool en antwoord daarna alleen met "OK": ${adres.href}`,
     },
   ];
   const tools: Anthropic.ToolUnion[] = [
-    {
-      type: "web_fetch_20260209",
-      name: "web_fetch",
-      max_uses: 2,
-      allowed_domains: [adres.hostname],
-    },
+    { type: "web_fetch_20260209", name: "web_fetch", max_uses: 1, allowed_domains: [adres.hostname] },
   ];
 
-  // Server-tools kunnen de beurt pauzeren (pause_turn); dan gewoon doorzetten.
-  let response = await client.messages.create({ model: MODEL, max_tokens: 6000, messages, tools });
+  let response = await client.messages.create({ model: MODEL, max_tokens: 1000, messages, tools });
   for (let i = 0; i < 3 && response.stop_reason === "pause_turn"; i++) {
     messages.push({ role: "assistant", content: response.content });
-    response = await client.messages.create({ model: MODEL, max_tokens: 6000, messages, tools });
+    response = await client.messages.create({ model: MODEL, max_tokens: 1000, messages, tools });
   }
 
-  const fetchFout = response.content.find(
-    (b): b is Anthropic.WebFetchToolResultBlock =>
-      b.type === "web_fetch_tool_result" && b.content.type === "web_fetch_tool_result_error",
-  );
-  const analyse = tekstVan(response.content).trim();
-  if (fetchFout || !analyse || analyse.includes("OPHALEN_MISLUKT")) {
-    const code =
-      fetchFout && fetchFout.content.type === "web_fetch_tool_result_error"
-        ? ` (${fetchFout.content.error_code})`
-        : "";
-    throw new Error(
-      `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude lukte het niet${code}. ` +
-        "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
-    );
+  for (const blok of response.content) {
+    if (blok.type !== "web_fetch_tool_result") continue;
+    if (blok.content.type === "web_fetch_tool_result_error") {
+      throw new Error(
+        `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude lukte het niet (${blok.content.error_code}). ` +
+          "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
+      );
+    }
+    const bron = blok.content.content.source;
+    if (bron.type === "text" && bron.data.trim()) return bron.data.slice(0, MAX_TEKST);
   }
-  return analyse;
+  throw new Error(
+    `Pagina ophalen mislukt: ${eigenFout}, en ook via Claude kwam er geen tekst terug. ` +
+      "De site blokkeert waarschijnlijk geautomatiseerde verzoeken.",
+  );
+}
+
+/** De eigenlijke audit: prompt van marketing, uitvoer als JSON volgens RAPPORT_SCHEMA. */
+async function beoordeel(client: Anthropic, url: string, tekst: string): Promise<Rapport> {
+  const stream = client.messages.stream({
+    model: MODEL,
+    max_tokens: 32000,
+    system: AUDIT_PROMPT,
+    output_config: { effort: "medium", format: { type: "json_schema", schema: RAPPORT_SCHEMA } },
+    messages: [
+      {
+        role: "user",
+        content: `Te beoordelen URL: ${url}\n\nInhoud van de pagina:\n<pagina>\n${tekst}\n</pagina>`,
+      },
+    ],
+  });
+  const response = await stream.finalMessage();
+
+  if (response.stop_reason === "refusal") throw new Error("Claude weigerde deze pagina te beoordelen.");
+  if (response.stop_reason === "max_tokens") {
+    throw new Error("Het rapport werd te lang en is afgebroken. Probeer het opnieuw.");
+  }
+
+  const json = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  let rapport: Rapport;
+  try {
+    rapport = JSON.parse(json) as Rapport;
+  } catch {
+    throw new Error("Het rapport kwam niet in het verwachte formaat terug. Probeer het opnieuw.");
+  }
+
+  // Het schema kan geen bereik afdwingen; hier de cijfers binnen 0-10 houden.
+  const binnen = (n: number) => Math.min(10, Math.max(0, Number.isFinite(n) ? n : 0));
+  rapport.url = url;
+  rapport.eindcijfer = Math.round(binnen(rapport.eindcijfer) * 10) / 10;
+  rapport.criteria = rapport.criteria.map((c) => ({ ...c, score: Math.round(binnen(c.score)) }));
+  return rapport;
 }
