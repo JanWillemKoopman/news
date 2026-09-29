@@ -18,7 +18,7 @@ import { haalProfielen } from "@/lib/profielen";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-// Een volledig auditrapport (tien criteria met onderbouwing) duurt al snel een paar minuten.
+// Een volledig auditrapport (zeven criteria met score en potentie) duurt al snel een paar minuten.
 export const maxDuration = 300;
 
 /**
@@ -315,6 +315,10 @@ async function beoordeel(
   rapport.campagnecontext = campagnecontext;
   rapport.met_screenshot = screenshot.length > 0;
   rapport.eindcijfer = Math.round(binnen(rapport.eindcijfer) * 10) / 10;
-  rapport.criteria = rapport.criteria.map((c) => ({ ...c, score: Math.round(binnen(c.score)) }));
+  rapport.criteria = rapport.criteria.map((c) => {
+    const score = Math.round(binnen(c.score));
+    // De potentie is nooit lager dan de score; het schema kan dat niet afdwingen.
+    return { ...c, score, potentie: Math.max(score, Math.round(binnen(c.potentie ?? score))) };
+  });
   return rapport;
 }

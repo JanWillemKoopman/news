@@ -1,10 +1,13 @@
 "use client";
 
 import type { Criterium, Niveau, Rapport } from "@/lib/landingspagina";
+import ScoreMatrix from "./ScoreMatrix";
+import { useTween } from "./useTween";
 
 /**
- * Het auditrapport van één landingspagina: kop met eindcijfer, samenvatting, scorecard,
- * de tien criteria uitgewerkt, top 5 verbeterpunten en de conclusie. Puur weergave —
+ * Het auditrapport van één landingspagina: kop met eindcijfer, top 5 verbeterpunten, de
+ * scorematrix (score tegen potentie), de zeven criteria in één of twee zinnen, en daaronder
+ * conclusie, samenvatting en toelichting op het eindcijfer. Puur weergave —
  * alles komt uit het bewaarde rapport (lib/landingspagina.ts → Rapport).
  */
 
@@ -38,9 +41,13 @@ export function formatDatum(iso: string) {
   });
 }
 
-function Sectie({ titel, children }: { titel: string; children: React.ReactNode }) {
+/** `volgorde` bepaalt hoe laat de sectie omhoog schuift; ze komen één voor één in beeld. */
+function Sectie({ titel, volgorde, children }: { titel: string; volgorde: number; children: React.ReactNode }) {
   return (
-    <section className="rounded-panel border border-line bg-card px-7 py-6 shadow-subtle">
+    <section
+      className="rapport-in rounded-panel border border-line bg-card px-7 py-6 shadow-subtle"
+      style={{ ["--i" as string]: volgorde }}
+    >
       <h2 className="label-theme mb-4 text-label text-ink-muted">{titel}</h2>
       {children}
     </section>
@@ -56,14 +63,6 @@ function ScoreChip({ score, groot = false }: { score: number; groot?: boolean })
       {formatCijfer(score)}
       <span className="ml-0.5 text-xs font-normal opacity-70">/10</span>
     </span>
-  );
-}
-
-function ScoreBalk({ score }: { score: number }) {
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-pill bg-progress-track">
-      <div className={`h-full rounded-pill ${scoreKleur(score).vlak}`} style={{ width: `${score * 10}%` }} />
-    </div>
   );
 }
 
@@ -107,37 +106,33 @@ function Alinea({ tekst }: { tekst: string }) {
   );
 }
 
-function CriteriumKaart({ c }: { c: Criterium }) {
+function CriteriumRegel({ c }: { c: Criterium }) {
+  const winst = (c.potentie ?? c.score) - c.score;
   return (
-    <article id={`criterium-${c.nummer}`} className="rounded-panel border border-line bg-card px-7 py-6 shadow-subtle">
-      <header className="mb-4 flex items-start justify-between gap-6">
-        <div>
-          <p className="text-meta text-ink-faint">Criterium {c.nummer}</p>
-          <h3 className="font-sans-w7 text-base font-semibold text-ink">{c.naam}</h3>
-        </div>
-        <ScoreChip score={c.score} groot />
-      </header>
-
-      <Alinea tekst={c.beoordeling} />
-
-      <div className="mt-5 grid grid-cols-2 gap-4">
-        <div className="rounded-card border-l-2 border-positive bg-surface px-4 py-3">
-          <p className="label-theme mb-1.5 text-label text-positive">Wat gaat goed</p>
-          <Alinea tekst={c.wat_goed_gaat} />
-        </div>
-        <div className="rounded-card border-l-2 border-negative bg-surface px-4 py-3">
-          <p className="label-theme mb-1.5 text-label text-negative">Wat kan beter</p>
-          <Alinea tekst={c.wat_beter_kan} />
+    <li id={`criterium-${c.nummer}`} className="grid scroll-mt-6 grid-cols-[15rem_1fr] gap-6 py-4 first:pt-0 last:pb-0">
+      <div>
+        <p className="text-meta text-ink-faint">Criterium {c.nummer}</p>
+        <h3 className="font-sans-w7 text-sm font-semibold text-ink">{c.naam}</h3>
+        <div className="mt-2 flex items-center gap-2">
+          <ScoreChip score={c.score} />
+          {winst > 0 && c.potentie !== undefined && (
+            <span className="text-meta tabular-nums text-ink-muted">
+              → {formatCijfer(c.potentie)} <span className="text-positive">+{winst}</span>
+            </span>
+          )}
         </div>
       </div>
-
-      {c.concreet_advies.trim() && (
-        <div className="mt-4 rounded-card bg-surface-tint px-4 py-3">
-          <p className="label-theme mb-1.5 text-label text-ink-muted">Concreet advies</p>
-          <Alinea tekst={c.concreet_advies} />
-        </div>
-      )}
-    </article>
+      <div>
+        <Alinea tekst={c.beoordeling} />
+        {/* Oudere rapporten (tien criteria) hadden nog een apart veld voor wat beter kan. */}
+        {c.wat_beter_kan?.trim() && (
+          <div className="mt-3 rounded-card border-l-2 border-negative bg-surface px-4 py-3">
+            <p className="label-theme mb-1.5 text-label text-negative">Wat kan beter</p>
+            <Alinea tekst={c.wat_beter_kan} />
+          </div>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -149,6 +144,8 @@ export default function LandingspaginaRapport({
   geanalyseerdOp: string;
 }) {
   const eind = scoreKleur(rapport.eindcijfer);
+  // Het eindcijfer telt op vanaf nul; de rest van de pagina schuift er één voor één achteraan.
+  const getoondEind = Math.round(useTween(rapport.eindcijfer, 1100) * 10) / 10;
   const samenvatting: [string, string, string][] = [
     ["Wat gaat goed", rapport.samenvatting.wat_gaat_goed, "bg-positive"],
     ["Wat gaat minder goed", rapport.samenvatting.wat_gaat_minder_goed, "bg-negative"],
@@ -160,7 +157,7 @@ export default function LandingspaginaRapport({
   return (
     <div className="space-y-6">
       {/* Kop: welke pagina, wanneer, en het eindcijfer */}
-      <section className="kaart-accent kaart-omlijst rounded-panel border border-line bg-card px-7 py-6 shadow-card">
+      <section className="rapport-in kaart-accent kaart-omlijst rounded-panel border border-line bg-card px-7 py-6 shadow-card">
         <div className="flex items-start justify-between gap-10">
           <div className="min-w-0">
             <p className="label-theme text-label text-ink-muted">Landingpage-audit</p>
@@ -197,16 +194,52 @@ export default function LandingspaginaRapport({
           <div className={`flex w-40 shrink-0 flex-col items-center rounded-card px-5 py-4 ${eind.zacht}`}>
             <p className="label-theme text-label text-ink-muted">Eindcijfer</p>
             <p className={`font-sans-w7 text-5xl font-semibold leading-tight tabular-nums ${eind.tekst}`}>
-              {formatCijfer(rapport.eindcijfer)}
+              {formatCijfer(getoondEind)}
             </p>
             <p className={`text-sm font-medium ${eind.tekst}`}>{oordeel(rapport.eindcijfer)}</p>
           </div>
         </div>
       </section>
 
-      <Sectie titel="Conclusie en samenvatting">
+      <Sectie titel="Top 5 verbeterpunten" volgorde={1}>
+        <ol className="space-y-1.5">
+          {rapport.top_verbeterpunten.map((p, i) => (
+            <li
+              key={i}
+              className="rapport-in group grid grid-cols-[2rem_1fr] gap-3 rounded-card px-2 py-1.5 duration-[var(--duur-snel)] ease-merk transition-[background-color,transform] hover:translate-x-0.5 hover:bg-surface-tint"
+              style={{ ["--i" as string]: i + 3 }}
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-on-primary tabular-nums duration-[var(--duur-snel)] ease-merk transition-transform group-hover:scale-110">
+                {i + 1}
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-sans-w7 text-sm font-semibold text-ink">{p.titel}</p>
+                  {p.impact && <NiveauLabel label="Impact" niveau={p.impact} hoogIsGoed />}
+                  {p.inspanning && <NiveauLabel label="Inspanning" niveau={p.inspanning} hoogIsGoed={false} />}
+                </div>
+                <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{p.toelichting}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </Sectie>
+
+      <Sectie titel="Scorematrix" volgorde={2}>
+        <ScoreMatrix criteria={rapport.criteria} />
+      </Sectie>
+
+      <Sectie titel="Per criterium" volgorde={3}>
+        <ul className="divide-y divide-line-soft">
+          {rapport.criteria.map((c) => (
+            <CriteriumRegel key={c.nummer} c={c} />
+          ))}
+        </ul>
+      </Sectie>
+
+      <Sectie titel="Conclusie en samenvatting" volgorde={4}>
         {/* De conclusie eerst, als losse punten: het antwoord op "is deze pagina klaar
-            voor betaald verkeer?" hoort bovenaan, niet als blok tekst onderaan. */}
+            voor betaald verkeer?", daarna de samenvatting in vijf regels. */}
         <ul className="mb-5 space-y-2 border-b border-line-soft pb-5">
           {zinnen(rapport.conclusie).map((zin, i) => (
             <li key={i} className="flex gap-3 text-sm leading-relaxed text-ink">
@@ -228,70 +261,11 @@ export default function LandingspaginaRapport({
         </ul>
       </Sectie>
 
-      <Sectie titel="Scorecard">
-        <table className="w-full text-sm">
-          <tbody className="divide-y divide-line-soft">
-            {rapport.criteria.map((c) => (
-              <tr key={c.nummer}>
-                <td className="w-64 py-2.5 pr-4 align-middle">
-                  {/* Geen #-link: de URL draagt al de stand van de kanaalpagina's (urlstand). */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      document
-                        .getElementById(`criterium-${c.nummer}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
-                    className="text-left text-ink hover:text-primary"
-                  >
-                    <span className="mr-2 text-ink-faint tabular-nums">{c.nummer}.</span>
-                    {c.naam}
-                  </button>
-                </td>
-                <td className="w-40 py-2.5 pr-4 align-middle">
-                  <ScoreBalk score={c.score} />
-                </td>
-                <td className="w-20 py-2.5 pr-4 align-middle">
-                  <ScoreChip score={c.score} />
-                </td>
-                <td className="py-2.5 align-middle text-ink-muted">{c.korte_beoordeling}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Sectie>
-
-      <div className="space-y-4">
-        {rapport.criteria.map((c) => (
-          <CriteriumKaart key={c.nummer} c={c} />
-        ))}
-      </div>
-
-      <Sectie titel="Eindcijfer">
+      <Sectie titel="Eindcijfer" volgorde={5}>
         <div className="flex items-start gap-6">
           <ScoreChip score={rapport.eindcijfer} groot />
           <Alinea tekst={rapport.eindcijfer_toelichting} />
         </div>
-      </Sectie>
-
-      <Sectie titel="Top 5 verbeterpunten">
-        <ol className="space-y-4">
-          {rapport.top_verbeterpunten.map((p, i) => (
-            <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-on-primary tabular-nums">
-                {i + 1}
-              </span>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-sans-w7 text-sm font-semibold text-ink">{p.titel}</p>
-                  {p.impact && <NiveauLabel label="Impact" niveau={p.impact} hoogIsGoed />}
-                  {p.inspanning && <NiveauLabel label="Inspanning" niveau={p.inspanning} hoogIsGoed={false} />}
-                </div>
-                <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{p.toelichting}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
       </Sectie>
 
     </div>

@@ -586,12 +586,19 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   alleen Claude-gebruik.
 
 - **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), aangescherpt na
-  feedback: tien criteria met elk één centrale vraag (een probleem telt maar bij één
-  criterium), een expliciet onderscheid tussen observatie, interpretatie en aanname, en
+  feedback: zeven criteria met elk één centrale vraag (Relevantie & boodschap, Eerste
+  scherm, Aanbod & overtuiging, CTA & conversie, Vertrouwen & bezwaren, Structuur &
+  scanbaarheid, Beeld & presentatie), elk met een score én een potentie (de verwachte
+  score als de marketeer het punt oppakt), een expliciet onderscheid tussen observatie, interpretatie en aanname, en
   geen uitspraken over wat Claude niet kan zien (fotokwaliteit, schermpositie, een
   onbekende advertentie). Claude levert JSON volgens `RAPPORT_SCHEMA` (structured outputs,
   `lib/landingspagina.ts`) en het dashboard maakt het rapport zelf op
   (`LandingspaginaRapport.tsx`). De top 5 verbeterpunten hebben impact en inspanning.
+  Volgorde van het rapport: kop met eindcijfer, top 5, de scorematrix (`ScoreMatrix.tsx`:
+  score tegen potentie, met dezelfde criteria als rij ernaast), de zeven criteria in één of
+  twee zinnen, en onderaan conclusie, samenvatting en de toelichting op het eindcijfer.
+  Rapporten van vóór de invoering (tien criteria, geen `potentie`) blijven leesbaar: de
+  matrix zet ze op de diagonaal en zegt dat er geen potentie is bepaald.
 - **Optionele campagnecontext.** Onder de URL staat een veld voor de campagnebelofte of
   advertentietekst. Zonder dat veld beoordeelt Claude de message match alleen op de
   pagina zelf en zegt dat erbij; met het veld toetst het of de belofte wordt waargemaakt.
@@ -616,8 +623,8 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   die binnen het CMS campagnepagina's bouwen: tekst, koppen, knoppen, formulieren, FAQ,
   beeldkeuze en de volgorde van blokken. Header, (mega)menu, footer, het designtemplate
   en techniek (snelheid, tracking, SEO-techniek) kunnen zij niet aanpassen, dus de prompt
-  sluit die expliciet uit van beoordeling en advies. Criterium 9 ("Beeld &
-  contentpresentatie") gaat over hun eigen keuzes, niet over het template. De route knipt
+  sluit die expliciet uit van beoordeling en advies. Criterium 7 ("Beeld &
+  presentatie") gaat over hun eigen keuzes, niet over het template. De route knipt
   menu, site-header en footer bovendien al uit de HTML (`alleenPaginaInhoud`) voordat
   Claude hem ziet; een `<header>` binnen `<main>` blijft staan, want dat is vaak de hero.
 - **Ophalen.** De route haalt de pagina zelf op met browserheaders. Weigert de site dat

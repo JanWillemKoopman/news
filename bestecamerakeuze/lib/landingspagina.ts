@@ -10,11 +10,15 @@ export interface Criterium {
   nummer: number;
   naam: string;
   score: number;
-  korte_beoordeling: string;
+  /** Verwachte score als het punt wordt opgepakt. Ontbreekt bij rapporten van vóór de invoering ervan. */
+  potentie?: number;
+  /** Eén of twee zinnen: hoe het criterium scoort en wat er beter kan. */
   beoordeling: string;
-  wat_goed_gaat: string;
-  wat_beter_kan: string;
-  concreet_advies: string;
+  /** Alleen bij oudere rapporten (tien criteria, uitgebreide onderbouwing). */
+  korte_beoordeling?: string;
+  wat_goed_gaat?: string;
+  wat_beter_kan?: string;
+  concreet_advies?: string;
 }
 
 export interface Rapport {
@@ -92,11 +96,8 @@ export const RAPPORT_SCHEMA = object({
       nummer: { type: "integer" },
       naam: tekst,
       score: { type: "integer" },
-      korte_beoordeling: tekst,
+      potentie: { type: "integer" },
       beoordeling: tekst,
-      wat_goed_gaat: tekst,
-      wat_beter_kan: tekst,
-      concreet_advies: tekst,
     }),
   },
   eindcijfer: { type: "number" },

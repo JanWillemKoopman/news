@@ -430,9 +430,46 @@ body {
   animation: status-dot-ademen var(--duur-adem) ease-in-out infinite;
 }
 
+/* Landingspagina-rapport: secties en regels schuiven één voor één omhoog in beeld
+   (vertraging via --i), en de kans die het meest oplevert krijgt een pulserende ring. */
+@keyframes rapport-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rapport-in {
+  animation: rapport-in 520ms var(--ease-merk) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes puls-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+.puls-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: puls-ring 2.2s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .status-dot-ademen,
-  .laadvlak {
+  .laadvlak,
+  .rapport-in,
+  .puls-ring {
     animation: none;
   }
 
