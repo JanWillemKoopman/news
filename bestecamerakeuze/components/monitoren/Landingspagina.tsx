@@ -225,7 +225,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
 
       {bezig && (
         <div className="laadvlak rounded-panel border border-line bg-card px-6 py-5 text-sm text-ink-muted shadow-subtle">
-          De pagina wordt opgehaald en beoordeeld op tien criteria. Dit duurt meestal één tot
+          De pagina wordt opgehaald en beoordeeld op zeven criteria. Dit duurt meestal één tot
           drie minuten — laat dit tabblad open.
         </div>
       )}
