@@ -95,7 +95,7 @@ export default function BeoordelingUitleg() {
               Een AI-model (ChatGPT, model GPT-6 Sol) bekijkt de pagina zoals een ervaren
               specialist in campagnepagina&apos;s dat zou doen, en tegelijk door de ogen van de
               bezoeker die via de campagne binnenkomt. Het geeft per onderdeel een cijfer met
-              uitleg, een eindcijfer en vijf concrete verbeterpunten.
+              uitleg, een eindcijfer en concrete verbeterpunten.
             </p>
             <p>
               Het uitgangspunt: <B>een campagnepagina heeft één taak.</B> Er komt één groep
@@ -257,9 +257,12 @@ export default function BeoordelingUitleg() {
                 analyseer opnieuw.
               </li>
               <li>
-                <B>Links:</B> de conclusie als kort verhaal, en de top 5 verbeterpunten in de
-                volgorde waarin je ze het beste kunt oppakken. Bij elk punt staat de verwachte
-                impact op conversie en hoeveel werk het is in het CMS.
+                <B>Links:</B> de conclusie als kort verhaal, en de verbeterpunten in de
+                volgorde waarin je ze het beste kunt oppakken. Er is geen vast aantal: een sterke
+                pagina heeft er soms maar één of twee, een pagina met veel ruimte voor verbetering
+                tot tien. Bij elk punt staan twee labels: <B>urgentie</B> (hoe dringend het is) en{" "}
+                <B>impact</B> (het verwachte effect op conversie), elk hoog, midden of laag. Hoog is
+                rood, midden lichtrood, laag grijs. <B>Twee keer rood betekent: eerst oppakken.</B>
               </li>
               <li>
                 <B>Rechts:</B> waarom de criteria bij deze campagne zo wegen, en per criterium
