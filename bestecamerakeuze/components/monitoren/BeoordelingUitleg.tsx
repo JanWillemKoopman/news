@@ -288,6 +288,30 @@ export default function BeoordelingUitleg() {
             </Lijst>
           </Sectie>
 
+          <Sectie titel="Ontwerpvoorstel">
+            <Lijst>
+              <li>
+                Heb je een screenshot meegestuurd, dan tekent een beeldmodel na de analyse de
+                pagina opnieuw, met de belangrijkste verbeterpunten verwerkt. Het staat onder het
+                rapport, met per wijziging bij welk verbeterpunt die hoort.
+              </li>
+              <li>
+                Het design blijft dat van de screenshot: header, footer, kleuren, lettertypes en
+                knoppen veranderen niet. Alleen wat je zelf in het CMS aanpast, verandert:
+                teksten, knoppen, formulieren, beeldkeuze en de volgorde van blokken.
+              </li>
+              <li>
+                Het is een gegenereerde afbeelding, geen echte pagina. Feiten die niet op de
+                pagina staan, worden niet verzonnen maar tussen [haken] gezet. Controleer teksten
+                voordat je ze overneemt.
+              </li>
+              <li>
+                Geen screenshot meegestuurd, of wil je een nieuw voorstel? Upload hem onder het
+                rapport opnieuw; de screenshot wordt nergens bewaard.
+              </li>
+            </Lijst>
+          </Sectie>
+
           <Sectie titel="Goed om te weten">
             <Lijst>
               <li>

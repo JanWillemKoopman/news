@@ -94,6 +94,30 @@ export interface AnalyseItem {
 
 export interface Analyse extends AnalyseItem {
   rapport: Rapport;
+  /** Ontwerpvoorstel bij dit rapport; null als er (nog) geen is of als het bij een vorig rapport hoort. */
+  ontwerp?: Ontwerp | null;
+}
+
+export type WijzigingSoort = "aangepast" | "nieuw" | "verwijderd" | "verplaatst";
+
+/** Eén wijziging die het ontwerpvoorstel doorvoert, met het verbeterpunt waar hij uit komt. */
+export interface Wijziging {
+  blok: string;
+  soort: WijzigingSoort;
+  /** Wat er verandert, met de nieuwe tekst letterlijk waar dat kan. */
+  wat: string;
+  /** Nummer van het verbeterpunt in het rapport (1-based), 0 als het nergens direct uit volgt. */
+  verbeterpunt: number;
+}
+
+/** Ontwerpvoorstel: de pagina opnieuw getekend met de belangrijkste verbeterpunten verwerkt. */
+export interface Ontwerp {
+  /** De verbeterde pagina als data-URL (webp). */
+  afbeelding: string;
+  /** Twee of drie zinnen: wat er in dit voorstel anders is. */
+  samenvatting: string;
+  wijzigingen: Wijziging[];
+  gemaaktOp: string;
 }
 
 const tekst = { type: "string" } as const;
@@ -151,6 +175,24 @@ export const RAPPORT_SCHEMA = object({
     }),
   },
   conclusie: tekst,
+});
+
+/**
+ * JSON-schema voor de ontwerpbrief (app/api/landingspagina/ontwerp): wat er verandert, voor
+ * de marketeer, en de opdracht voor het beeldmodel (Engels, met de Nederlandse teksten letterlijk).
+ */
+export const ONTWERP_SCHEMA = object({
+  samenvatting: tekst,
+  wijzigingen: {
+    type: "array",
+    items: object({
+      blok: tekst,
+      soort: { type: "string", enum: ["aangepast", "nieuw", "verwijderd", "verplaatst"] },
+      wat: tekst,
+      verbeterpunt: { type: "integer" },
+    }),
+  },
+  beeldopdracht: tekst,
 });
 
 /** Parameters die alleen iets zeggen over de bron van het bezoek, niet over de pagina. */
@@ -217,7 +259,64 @@ export async function haalAnalyse(supabase: SupabaseClient, id: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  return { ...naarItem(data), rapport: data.rapport as Rapport };
+  const item = naarItem(data);
+  // Een mislukt ontwerp (bv. migratie 0030 nog niet gedraaid) mag het rapport niet blokkeren.
+  const ontwerp = await haalOntwerp(supabase, item.id, item.geanalyseerdOp).catch(() => null);
+  return { ...item, rapport: data.rapport as Rapport, ontwerp };
+}
+
+const ONTWERPEN = "landingspagina_ontwerpen";
+
+/**
+ * Het ontwerp bij een analyse, of null. Een ontwerp van vóór de laatste analyse hoort bij
+ * het vorige rapport (opnieuw analyseren houdt dezelfde id) en tonen we niet.
+ */
+export async function haalOntwerp(
+  supabase: SupabaseClient,
+  analyseId: string,
+  geanalyseerdOp: string,
+): Promise<Ontwerp | null> {
+  const { data, error } = await supabase
+    .schema(SCHEMA)
+    .from(ONTWERPEN)
+    .select("afbeelding, ontwerp, gemaakt_op")
+    .eq("analyse_id", analyseId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || new Date(data.gemaakt_op) < new Date(geanalyseerdOp)) return null;
+  const ontwerp = data.ontwerp as Pick<Ontwerp, "samenvatting" | "wijzigingen">;
+  return {
+    afbeelding: data.afbeelding as string,
+    samenvatting: ontwerp.samenvatting ?? "",
+    wijzigingen: ontwerp.wijzigingen ?? [],
+    gemaaktOp: data.gemaakt_op as string,
+  };
+}
+
+/** Upsert op analyse: een nieuw ontwerp vervangt het vorige. */
+export async function bewaarOntwerp(
+  supabase: SupabaseClient,
+  analyseId: string,
+  ontwerp: Omit<Ontwerp, "gemaaktOp">,
+  { model, gebruikerId }: { model: string; gebruikerId: string },
+): Promise<Ontwerp> {
+  const gemaaktOp = new Date().toISOString();
+  const { error } = await supabase
+    .schema(SCHEMA)
+    .from(ONTWERPEN)
+    .upsert(
+      {
+        analyse_id: analyseId,
+        afbeelding: ontwerp.afbeelding,
+        ontwerp: { samenvatting: ontwerp.samenvatting, wijzigingen: ontwerp.wijzigingen },
+        model,
+        gemaakt_door: gebruikerId,
+        gemaakt_op: gemaaktOp,
+      },
+      { onConflict: "analyse_id" },
+    );
+  if (error) throw new Error(error.message);
+  return { ...ontwerp, gemaaktOp };
 }
 
 /** Upsert op url: een nieuwe analyse van dezelfde pagina vervangt het oude rapport. */

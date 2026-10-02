@@ -8,7 +8,8 @@ import LandingspaginaRapport, {
   formatCijfer,
   scoreKleur,
 } from "@/components/monitoren/LandingspaginaRapport";
-import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
+import OntwerpVoorstel from "@/components/monitoren/OntwerpVoorstel";
+import type { Analyse, AnalyseItem, Ontwerp } from "@/lib/landingspagina";
 import { CRITERIA, VERKEERSBRONNEN } from "@/lib/landingspaginaCriteria";
 import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 
@@ -23,6 +24,11 @@ import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
  * en elke lopende analyse staat als eigen regel onder het formulier tot hij klaar is. Het
  * tabpaneel blijft gemount als je een ander tabblad opent (AppShell), dus een analyse loopt
  * ook door als je even weg klikt.
+ *
+ * Is er een screenshot meegestuurd, dan start na de analyse vanzelf het ontwerpvoorstel
+ * (app/api/landingspagina/ontwerp): de pagina opnieuw getekend met de verbeterpunten
+ * verwerkt. Dat staat onder het rapport (OntwerpVoorstel.tsx) en loopt ook door als je
+ * het rapport al opent.
  */
 
 interface LopendeAnalyse {
@@ -48,6 +54,8 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [lijstFout, setLijstFout] = useState<string | null>(null);
   const [open, setOpen] = useState<Analyse | null>(null);
   const [laadtRapport, setLaadtRapport] = useState<string | null>(null);
+  /** Per analyse-id: wordt er een ontwerp gemaakt, of ging dat mis. */
+  const [ontwerpStatus, setOntwerpStatus] = useState<Record<string, { bezig: boolean; fout?: string }>>({});
 
   const haalLijst = useCallback(() => {
     fetch("/api/landingspagina")
@@ -106,8 +114,35 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       }
       werkBij(sleutel, { status: "klaar", analyse: antwoord.analyse });
       haalLijst();
+      // Met screenshot meteen door naar het ontwerpvoorstel; zonder kan het beeldmodel het design niet zien.
+      if (instellingen.screenshot.length) void maakOntwerp(antwoord.analyse.id, instellingen.screenshot);
     } catch (err) {
       werkBij(sleutel, { status: "fout", fout: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  /** Laat de pagina opnieuw tekenen met de verbeterpunten verwerkt; het resultaat komt in het rapport. */
+  async function maakOntwerp(analyseId: string, stukken: string[]) {
+    setOntwerpStatus((s) => ({ ...s, [analyseId]: { bezig: true } }));
+    try {
+      const res = await fetch("/api/landingspagina/ontwerp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: analyseId, screenshot: stukken }),
+      });
+      const antwoord = (await res.json().catch(() => ({}))) as { ontwerp?: Ontwerp; fout?: string };
+      if (!res.ok || !antwoord.ontwerp) throw new Error(antwoord.fout ?? `Ontwerp maken mislukt (${res.status}).`);
+      const ontwerp = antwoord.ontwerp;
+      setOpen((o) => (o?.id === analyseId ? { ...o, ontwerp } : o));
+      setLopend((huidig) =>
+        huidig.map((l) => (l.analyse?.id === analyseId ? { ...l, analyse: { ...l.analyse, ontwerp } } : l)),
+      );
+      setOntwerpStatus((s) => ({ ...s, [analyseId]: { bezig: false } }));
+    } catch (err) {
+      setOntwerpStatus((s) => ({
+        ...s,
+        [analyseId]: { bezig: false, fout: err instanceof Error ? err.message : String(err) },
+      }));
     }
   }
 
@@ -280,6 +315,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
         {lopend.length > 0 && (
           <LopendeAnalyses
             lopend={lopend}
+            ontwerpBezig={(id) => ontwerpStatus[id]?.bezig ?? false}
             onBekijk={(l) => {
               if (l.analyse) toon(l.analyse);
               verbergLopend(l.sleutel);
@@ -323,6 +359,13 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               rapport={open.rapport}
               geanalyseerdOp={open.geanalyseerdOp}
             />
+            <OntwerpVoorstel
+              ontwerp={open.ontwerp}
+              verbeterpunten={open.rapport.top_verbeterpunten}
+              bezig={ontwerpStatus[open.id]?.bezig ?? false}
+              fout={ontwerpStatus[open.id]?.fout ?? null}
+              onMaak={(stukken) => void maakOntwerp(open.id, stukken)}
+            />
           </div>
         ) : (
           <AnalyseLijst
@@ -361,10 +404,12 @@ function hostVan(url: string) {
 
 function LopendeAnalyses({
   lopend,
+  ontwerpBezig,
   onBekijk,
   onVerberg,
 }: {
   lopend: LopendeAnalyse[];
+  ontwerpBezig: (analyseId: string) => boolean;
   onBekijk: (l: LopendeAnalyse) => void;
   onVerberg: (sleutel: number) => void;
 }) {
@@ -391,7 +436,12 @@ function LopendeAnalyses({
               </p>
               <p className={`truncate text-meta ${l.status === "fout" ? "text-negative" : "text-ink-faint"}`}>
                 {l.status === "bezig" && `Wordt beoordeeld · gestart om ${tijd(l.gestart)}`}
-                {l.status === "klaar" && "Klaar"}
+                {l.status === "klaar" &&
+                  (l.analyse && ontwerpBezig(l.analyse.id)
+                    ? "Klaar · ontwerpvoorstel wordt gemaakt"
+                    : l.analyse?.ontwerp
+                      ? "Klaar · met ontwerpvoorstel"
+                      : "Klaar")}
                 {l.status === "fout" && l.fout}
               </p>
             </div>
