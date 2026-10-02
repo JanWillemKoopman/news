@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { BlokOordeel, InfoStatus, Verkeersbron } from "./landingspaginaCriteria";
 
 /**
  * Landingspagina-audits — zie supabase/migrations/0028_landingspagina_analyses.sql en
@@ -10,37 +11,60 @@ export interface Criterium {
   nummer: number;
   naam: string;
   score: number;
-  /** Verwachte score als het punt wordt opgepakt. Ontbreekt bij rapporten van vóór de invoering ervan. */
-  potentie?: number;
-  /** Eén of twee zinnen: hoe het criterium scoort en wat er beter kan. */
+  /** Hoe zwaar dit criterium bij deze campagne weegt, in procenten (samen 100). Door het model gekozen. */
+  gewicht?: number;
+  /** Eén of twee zinnen: waarom dit cijfer en wat er beter kan. */
   beoordeling: string;
-  /** Alleen bij oudere rapporten (tien criteria, uitgebreide onderbouwing). */
+  /** Alleen bij oudere rapporten (zeven criteria met scorematrix). */
+  potentie?: number;
+  /** Alleen bij de oudste rapporten (tien criteria, uitgebreide onderbouwing). */
   korte_beoordeling?: string;
   wat_goed_gaat?: string;
   wat_beter_kan?: string;
   concreet_advies?: string;
 }
 
+/** Eén onderdeel dat de bezoeker nodig heeft om de actie te nemen. */
+export interface InfoPunt {
+  onderdeel: string;
+  status: InfoStatus;
+  toelichting: string;
+}
+
+/** Eén contentblok op de pagina en of het bijdraagt aan het doel. */
+export interface Blok {
+  blok: string;
+  oordeel: BlokOordeel;
+  reden: string;
+}
+
 export interface Rapport {
   url: string;
-  type_pagina: string;
+  /** Korte eigen omschrijving van het model, bijv. het soort campagne. */
+  campagnetype?: string;
+  /** Door de marketeer opgegeven (door de route gezet). */
+  verkeersbron?: Verkeersbron;
   primaire_conversie: string;
-  samenvatting: {
-    wat_gaat_goed: string;
-    wat_gaat_minder_goed: string;
-    grootste_conversierisico: string;
-    belangrijkste_kans: string;
-    eerst_aanpakken: string;
-  };
+  /** Wie de bezoeker is, wat die al weet en waarmee die komt. */
+  bezoeker?: string;
+  verwachte_informatie?: InfoPunt[];
+  /** Waarom de criteria bij deze campagne zo zwaar wegen. */
+  weging_toelichting?: string;
+  blokken?: Blok[];
   criteria: Criterium[];
+  /** Het eindoordeel van het model, met de weging als leidraad (geen rekensom). */
   eindcijfer: number;
   eindcijfer_toelichting: string;
   top_verbeterpunten: Verbeterpunt[];
+  /** Kort verhaal (enkele zinnen) met de conclusie. */
   conclusie: string;
-  /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door het model). */
+  /** Doel en doelgroep zoals de marketeer ze beschreef (door de route gezet, niet door het model). */
   campagnecontext?: string | null;
   /** Of er bij deze analyse een screenshot is meegestuurd (door de route gezet). */
   met_screenshot?: boolean;
+  /** Alleen bij oudere rapporten. */
+  type_pagina?: string;
+  samenvatting?: Record<string, string>;
 }
 
 export type Niveau = "hoog" | "middel" | "laag";
@@ -80,23 +104,33 @@ function object(properties: Record<string, unknown>) {
 
 /** JSON-schema voor structured outputs; de veldnamen volgen de rapportstructuur uit de prompt. */
 export const RAPPORT_SCHEMA = object({
-  url: tekst,
-  type_pagina: tekst,
+  campagnetype: tekst,
   primaire_conversie: tekst,
-  samenvatting: object({
-    wat_gaat_goed: tekst,
-    wat_gaat_minder_goed: tekst,
-    grootste_conversierisico: tekst,
-    belangrijkste_kans: tekst,
-    eerst_aanpakken: tekst,
-  }),
+  bezoeker: tekst,
+  verwachte_informatie: {
+    type: "array",
+    items: object({
+      onderdeel: tekst,
+      status: { type: "string", enum: ["duidelijk", "onduidelijk", "ontbreekt"] },
+      toelichting: tekst,
+    }),
+  },
+  weging_toelichting: tekst,
+  blokken: {
+    type: "array",
+    items: object({
+      blok: tekst,
+      oordeel: { type: "string", enum: ["kern", "aanpassen", "overbodig"] },
+      reden: tekst,
+    }),
+  },
   criteria: {
     type: "array",
     items: object({
       nummer: { type: "integer" },
       naam: tekst,
+      gewicht: { type: "integer" },
       score: { type: "integer" },
-      potentie: { type: "integer" },
       beoordeling: tekst,
     }),
   },

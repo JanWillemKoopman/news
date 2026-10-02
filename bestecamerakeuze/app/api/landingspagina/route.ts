@@ -13,12 +13,13 @@ import {
   type Rapport,
 } from "@/lib/landingspagina";
 import { AUDIT_PROMPT } from "@/lib/landingspaginaPrompt";
+import { CRITERIA, VERKEERSBRONNEN, normaliseerGewichten, type Verkeersbron } from "@/lib/landingspaginaCriteria";
 import { MAX_STUKKEN } from "@/lib/screenshotDelen";
 import { haalProfielen } from "@/lib/profielen";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-// Een volledig auditrapport (zeven criteria met score en potentie) duurt al snel een paar minuten.
+// Een volledig auditrapport (zeven criteria met weging, verwachte informatie en blokkenanalyse) duurt al snel een paar minuten.
 export const maxDuration = 300;
 
 /**
@@ -26,12 +27,15 @@ export const maxDuration = 300;
  *
  * GET              → alle bewaarde analyses (url, datum, eindcijfer, door wie)
  * GET ?id=…        → één analyse met het volledige rapport
- * POST { url }     → pagina ophalen, laten beoordelen, bewaren (upsert op url)
+ * POST { url, verkeersbron?, campagnecontext?, screenshot? }
+ *                  → pagina ophalen, laten beoordelen, bewaren (upsert op url)
  * DELETE ?id=…     → analyse verwijderen (alleen beheerders)
  *
  * De beoordeling draait op OpenAI (ChatGPT, model GPT-6 Sol) via de Responses API, met
  * structured output volgens RAPPORT_SCHEMA en de screenshot als afbeeldingen. De sleutel
- * staat in CHATGPT_KEY. De rest van het dashboard (chat, kennisbank) draait nog op Claude.
+ * staat in CHATGPT_KEY. Het model bepaalt per campagne zelf de weging van de
+ * criteria en het eindcijfer; hier worden alleen namen, bereik en de som van de weging
+ * rechtgezet. De rest van het dashboard (chat, kennisbank) draait nog op Claude.
  *
  * De pagina halen we zelf op met browserheaders. Weigert de site dat (bv. een 403 van de
  * botbescherming) en is er een screenshot, dan gaat de analyse door op de screenshot
@@ -164,14 +168,18 @@ export async function POST(request: Request) {
   const {
     url,
     campagnecontext: ruweContext,
+    verkeersbron: ruweBron,
     screenshot: ruweScreenshot,
   } = (await request.json().catch(() => ({}))) as {
     url?: string;
     campagnecontext?: string;
+    verkeersbron?: string;
     screenshot?: unknown;
   };
-  // Optioneel: campagnebelofte, advertentietekst of briefing voor de message match.
+  // Optioneel: doel en doelgroep van de campagne, in de woorden van de marketeer.
   const campagnecontext = String(ruweContext ?? "").trim().slice(0, 4000) || null;
+  // Zonder bron gaan we uit van gemengd verkeer.
+  const verkeersbron = VERKEERSBRONNEN.find((b) => b === ruweBron) ?? "Onbekend of gemengd";
   // Optioneel: de screenshot van de volledige pagina, in de browser al in stukken
   // geknipt (lib/screenshotDelen.ts): base64-JPEG's van boven naar beneden.
   const screenshot = Array.isArray(ruweScreenshot)
@@ -202,7 +210,11 @@ export async function POST(request: Request) {
     }
     const tekst = "tekst" in eigen ? eigen.tekst : null;
 
-    const rapport = await beoordeel(client, genormaliseerd, tekst, campagnecontext, screenshot);
+    const rapport = await beoordeel(client, genormaliseerd, tekst, {
+      campagnecontext,
+      verkeersbron,
+      screenshot,
+    });
 
     const supabase = await createClient();
     const item = await bewaarAnalyse(supabase, {
@@ -254,12 +266,20 @@ async function beoordeel(
   client: OpenAI,
   url: string,
   tekst: string | null,
-  campagnecontext: string | null,
-  screenshot: string[],
+  {
+    campagnecontext,
+    verkeersbron,
+    screenshot,
+  }: {
+    campagnecontext: string | null;
+    verkeersbron: Verkeersbron;
+    screenshot: string[];
+  },
 ): Promise<Rapport> {
+  const bron = `Verkeersbron: ${verkeersbron}`;
   const context = campagnecontext
-    ? `Campagnecontext (aangeleverd door de marketeer):\n<campagne>\n${campagnecontext}\n</campagne>`
-    : "Campagnecontext: niet aangeleverd. De advertentie en campagnebelofte zijn dus onbekend.";
+    ? `Doel en doelgroep van de campagne (omschreven door de marketeer):\n<doel>\n${campagnecontext}\n</doel>`
+    : "Doel en doelgroep: niet omschreven — leid ze af van de pagina en zeg dat het een afleiding is.";
   const screenshotUitleg = screenshot.length
     ? `Screenshot: de ${screenshot.length} afbeelding(en) hierboven zijn samen één volledige screenshot van de pagina, van boven naar beneden in volgorde. De bovenkant van de eerste afbeelding is het begin van de pagina.`
     : "Screenshot: niet aangeleverd. Je hebt alleen de uitgelezen tekst.";
@@ -284,7 +304,7 @@ async function beoordeel(
               detail: "high",
             }),
           ),
-          { type: "input_text", text: `Te beoordelen URL: ${url}\n\n${context}\n\n${screenshotUitleg}\n\n${inhoud}` },
+          { type: "input_text", text: `Te beoordelen URL: ${url}\n\n${bron}\n\n${context}\n\n${screenshotUitleg}\n\n${inhoud}` },
         ],
       },
     ],
@@ -302,23 +322,34 @@ async function beoordeel(
     .find((c) => c.type === "refusal");
   if (weigering) throw new Error("ChatGPT weigerde deze pagina te beoordelen.");
 
-  let rapport: Rapport;
+  let antwoord: Omit<Rapport, "url">;
   try {
-    rapport = JSON.parse(response.output_text) as Rapport;
+    antwoord = JSON.parse(response.output_text) as Omit<Rapport, "url">;
   } catch {
     throw new Error("Het rapport kwam niet in het verwachte formaat terug. Probeer het opnieuw.");
   }
 
-  // Het schema kan geen bereik afdwingen; hier de cijfers binnen 0-10 houden.
   const binnen = (n: number) => Math.min(10, Math.max(0, Number.isFinite(n) ? n : 0));
-  rapport.url = url;
-  rapport.campagnecontext = campagnecontext;
-  rapport.met_screenshot = screenshot.length > 0;
-  rapport.eindcijfer = Math.round(binnen(rapport.eindcijfer) * 10) / 10;
-  rapport.criteria = rapport.criteria.map((c) => {
-    const score = Math.round(binnen(c.score));
-    // De potentie is nooit lager dan de score; het schema kan dat niet afdwingen.
-    return { ...c, score, potentie: Math.max(score, Math.round(binnen(c.potentie ?? score))) };
-  });
-  return rapport;
+  // Vaste nummers en namen, ook als het model ze anders schrijft of door elkaar zet.
+  const gekozen = CRITERIA.map(
+    (naam, i) => antwoord.criteria.find((x) => x.nummer === i + 1) ?? antwoord.criteria[i],
+  );
+  const gewichten = normaliseerGewichten(gekozen.map((c) => c?.gewicht ?? 0));
+  const criteria = CRITERIA.map((naam, i) => ({
+    nummer: i + 1,
+    naam,
+    gewicht: gewichten[i],
+    score: Math.round(binnen(gekozen[i]?.score ?? 0)),
+    beoordeling: gekozen[i]?.beoordeling ?? "",
+  }));
+
+  return {
+    ...antwoord,
+    url,
+    verkeersbron,
+    campagnecontext,
+    met_screenshot: screenshot.length > 0,
+    criteria,
+    eindcijfer: Math.round(binnen(antwoord.eindcijfer) * 10) / 10,
+  };
 }
