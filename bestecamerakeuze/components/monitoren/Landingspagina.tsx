@@ -9,7 +9,7 @@ import LandingspaginaRapport, {
   scoreKleur,
 } from "@/components/monitoren/LandingspaginaRapport";
 import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
-import { CAMPAGNETYPES, VERKEERSBRONNEN } from "@/lib/landingspaginaScore";
+import { VERKEERSBRONNEN } from "@/lib/landingspaginaCriteria";
 import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 
 /**
@@ -22,8 +22,6 @@ import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [url, setUrl] = useState("");
   const [campagne, setCampagne] = useState("");
-  // Leeg = het model bepaalt het type zelf.
-  const [campagnetype, setCampagnetype] = useState("");
   const [verkeersbron, setVerkeersbron] = useState<string>(VERKEERSBRONNEN[0]);
   const [screenshot, setScreenshot] = useState<(GedeeldeScreenshot & { naam: string }) | null>(null);
   const [leestScreenshot, setLeestScreenshot] = useState(false);
@@ -59,7 +57,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
 
   async function analyseer(
     teAnalyseren: string,
-    instellingen: { campagnecontext: string; campagnetype: string; verkeersbron: string },
+    instellingen: { campagnecontext: string; verkeersbron: string },
   ) {
     if (!teAnalyseren.trim() || bezig) return;
     setBezig(true);
@@ -71,7 +69,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
         body: JSON.stringify({
           url: teAnalyseren.trim(),
           campagnecontext: instellingen.campagnecontext.trim(),
-          campagnetype: instellingen.campagnetype,
           verkeersbron: instellingen.verkeersbron,
           screenshot: screenshot?.stukken ?? [],
         }),
@@ -82,7 +79,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       }
       setUrl("");
       setCampagne("");
-      setCampagnetype("");
       setScreenshot(null);
       toon(antwoord.analyse);
       haalLijst();
@@ -140,7 +136,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void analyseer(url, { campagnecontext: campagne, campagnetype, verkeersbron });
+          void analyseer(url, { campagnecontext: campagne, verkeersbron });
         }}
         className="space-y-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
       >
@@ -162,47 +158,32 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
             {bezig ? "Bezig…" : "Analyseer"}
           </button>
         </div>
-        {/* Type en bron bepalen welke informatie de bezoeker verwacht en wat hij al weet;
-            daar wordt de pagina op afgerekend (lib/landingspaginaPrompt.ts). */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-meta text-ink-muted">
-            Type campagne
-            <select
-              value={campagnetype}
-              onChange={(e) => setCampagnetype(e.target.value)}
-              disabled={bezig}
-              className="mt-1 w-full rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
-            >
-              <option value="">Laat de analyse het bepalen</option>
-              {CAMPAGNETYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-meta text-ink-muted">
-            Bezoekers komen via
-            <select
-              value={verkeersbron}
-              onChange={(e) => setVerkeersbron(e.target.value)}
-              disabled={bezig}
-              className="mt-1 w-full rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
-            >
-              {VERKEERSBRONNEN.map((b) => (
-                <option key={b}>{b}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {/* Zonder deze context kan het model de message match alleen op de pagina zelf
-            beoordelen; met doel en e-mail- of advertentietekst toetst het of de belofte wordt waargemaakt. */}
-        <textarea
-          value={campagne}
-          onChange={(e) => setCampagne(e.target.value)}
-          disabled={bezig}
-          rows={3}
-          placeholder="Optioneel, maar sterk aangeraden: doel, doelgroep en de tekst van de e-mail of advertentie. Bijv. “Uitnodiging per e-mail aan contacten met opt-in voor Volkswagen. Doel: aanmeldingen voor de ID. Cross en ID. Tiguan Roadshow, zaterdag 24 oktober in Den Bosch.”"
-          className="w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
-        />
+        {/* De bron bepaalt wat de bezoeker al weet; het doel waar de pagina op wordt
+            afgerekend. Zonder doel leidt het model het af van de pagina. */}
+        <label className="block text-meta text-ink-muted">
+          Bezoekers komen via
+          <select
+            value={verkeersbron}
+            onChange={(e) => setVerkeersbron(e.target.value)}
+            disabled={bezig}
+            className="mt-1 block w-80 rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
+          >
+            {VERKEERSBRONNEN.map((b) => (
+              <option key={b}>{b}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-meta text-ink-muted">
+          Doel en doelgroep van de campagne
+          <textarea
+            value={campagne}
+            onChange={(e) => setCampagne(e.target.value)}
+            disabled={bezig}
+            rows={3}
+            placeholder="Optioneel, maar sterk aangeraden: wat moet deze pagina opleveren, en voor wie is hij bedoeld?"
+            className="mt-1 block w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+          />
+        </label>
 
         {/* Screenshot van de volledige pagina: wordt in de browser in leesbare stukken
             geknipt (lib/screenshotDelen.ts) en speelt in de prompt een hoofdrol. */}
@@ -266,7 +247,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
 
       {bezig && (
         <div className="laadvlak rounded-panel border border-line bg-card px-6 py-5 text-sm text-ink-muted shadow-subtle">
-          De pagina wordt opgehaald en beoordeeld op zes criteria. Dit duurt meestal één tot
+          De pagina wordt opgehaald en beoordeeld op zeven criteria. Dit duurt meestal één tot
           drie minuten — laat dit tabblad open.
         </div>
       )}
@@ -293,7 +274,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               onClick={() =>
                 void analyseer(open.url, {
                   campagnecontext: open.rapport.campagnecontext ?? "",
-                  campagnetype: open.rapport.campagnetype ?? "",
                   verkeersbron: open.rapport.verkeersbron ?? "Onbekend of gemengd",
                 })
               }

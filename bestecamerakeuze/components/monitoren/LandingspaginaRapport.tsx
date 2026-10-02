@@ -1,12 +1,12 @@
 "use client";
 
 import type { Blok, Criterium, InfoPunt, Niveau, Rapport } from "@/lib/landingspagina";
-import { CRITERIA } from "@/lib/landingspaginaScore";
 
 /**
  * Het auditrapport van één landingspagina, opgemaakt als een schoolrapport: bovenaan de
- * kop met het eindcijfer, daaronder twee kolommen. Links het verhaal (conclusie) en de
- * top 5 verbeterpunten, rechts de cijfers per criterium met toelichting. Geen grafieken,
+ * kop met het eindcijfer en hoe het model de campagne begreep, daaronder twee kolommen.
+ * Links het verhaal (conclusie) en de top 5 verbeterpunten, rechts de cijfers per
+ * criterium met de weging die het model voor deze campagne koos. Geen grafieken,
  * geen animaties. Puur weergave — alles komt uit het bewaarde rapport (lib/landingspagina.ts).
  * Oudere rapporten (zeven of tien criteria, zonder checklist en blokken) blijven leesbaar.
  */
@@ -79,9 +79,9 @@ function Blokken({ blokken }: { blokken: Blok[] }) {
   return (
     <ul className="mt-3 space-y-1.5">
       {blokken.map((b, i) => (
-        <li key={i} className="grid grid-cols-[5rem_1fr] gap-2 text-sm leading-snug">
+        <li key={i} className="grid grid-cols-[5.5rem_1fr] gap-2 text-sm leading-snug">
           <span
-            className={`text-meta ${b.oordeel === "overbodig" ? "text-negative" : b.oordeel === "inkorten" ? "text-orange" : "text-ink-faint"}`}
+            className={`text-meta ${b.oordeel === "overbodig" ? "text-negative" : b.oordeel === "kern" ? "text-ink-faint" : "text-orange"}`}
           >
             {b.oordeel}
           </span>
@@ -98,7 +98,7 @@ function Blokken({ blokken }: { blokken: Blok[] }) {
 }
 
 function CriteriumRegel({ c, rapport }: { c: Criterium; rapport: Rapport }) {
-  const gewicht = CRITERIA.find((x) => x.naam === c.naam)?.gewicht;
+  const gewicht = c.gewicht;
   return (
     <li className="py-4 first:pt-0 last:pb-0">
       <div className="flex items-baseline justify-between gap-4">
@@ -111,10 +111,10 @@ function CriteriumRegel({ c, rapport }: { c: Criterium; rapport: Rapport }) {
         </span>
       </div>
       <p className="mt-1 text-sm leading-relaxed text-ink-muted">{c.beoordeling || c.korte_beoordeling}</p>
-      {c.nummer === 2 && rapport.verwachte_informatie?.length ? (
+      {c.naam === "Informatie & bezwaren" && rapport.verwachte_informatie?.length ? (
         <Checklist punten={rapport.verwachte_informatie} />
       ) : null}
-      {c.nummer === 4 && rapport.blokken?.length ? <Blokken blokken={rapport.blokken} /> : null}
+      {c.naam === "Focus & opbouw" && rapport.blokken?.length ? <Blokken blokken={rapport.blokken} /> : null}
     </li>
   );
 }
@@ -134,10 +134,11 @@ export default function LandingspaginaRapport({
 }) {
   const eind = scoreKleur(rapport.eindcijfer);
   const gegevens: [string, string | null | undefined][] = [
-    ["Type campagne", rapport.campagnetype ?? rapport.type_pagina],
+    ["Campagne", rapport.campagnetype ?? rapport.type_pagina],
+    ["Opgegeven doel", rapport.campagnecontext],
+    ["Primaire actie", rapport.primaire_conversie],
     ["Bezoekers via", rapport.verkeersbron],
-    ["Doel", rapport.primaire_conversie],
-    ["Context", rapport.campagnecontext],
+    ["Bezoeker", rapport.bezoeker],
     ["Screenshot", rapport.met_screenshot ? "Meegestuurd" : "Niet meegestuurd"],
     ["Geanalyseerd", formatDatum(geanalyseerdOp)],
   ];
@@ -207,6 +208,12 @@ export default function LandingspaginaRapport({
 
         <section className="rounded-panel border border-line bg-card px-7 py-6 shadow-subtle">
           <Kop>Cijfers per criterium</Kop>
+          {rapport.weging_toelichting && (
+            <p className="mb-5 border-b border-line-soft pb-4 text-sm leading-relaxed text-ink-muted">
+              <span className="font-medium text-ink">Weging. </span>
+              {rapport.weging_toelichting}
+            </p>
+          )}
           <ul className="divide-y divide-line-soft">
             {rapport.criteria.map((c) => (
               <CriteriumRegel key={c.nummer} c={c} rapport={rapport} />
@@ -215,8 +222,8 @@ export default function LandingspaginaRapport({
           <div className="mt-4 flex items-baseline justify-between border-t-2 border-line pt-4">
             <span className="text-sm font-semibold text-ink">
               Eindcijfer
-              {rapport.verwachte_informatie && (
-                <span className="ml-2 font-normal text-ink-faint">gewogen gemiddelde</span>
+              {rapport.weging_toelichting && (
+                <span className="ml-2 font-normal text-ink-faint">eindoordeel, met de weging als leidraad</span>
               )}
             </span>
             <span className={`font-sans-w7 text-xl font-semibold tabular-nums ${cijferKleur(rapport.eindcijfer)}`}>

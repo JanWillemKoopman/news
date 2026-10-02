@@ -585,40 +585,37 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   `input_image`. Deze aanroepen tellen niet mee in het tabblad Kosten; dat registreert
   alleen Claude-gebruik.
 
-- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), herzien na feedback dat
-  zeven generieke criteria niet bij elke campagne passen (een roadshow-uitnodiging werd
-  afgerekend op prijs en looptijd) en dat ruis op de pagina te weinig werd afgestraft. Het
-  model werkt nu in twee stappen:
-  1. **Doel en verwachting.** Het bepaalt het campagnetype (evenement, prijs-/leaseactie,
-     proefrit, modelintroductie, serviceactie, overig) en stelt per type een checklist op
-     met de informatie die de bezoeker verwacht (`verwachte_informatie`: duidelijk /
-     onduidelijk / ontbreekt). De verkeersbron telt mee: wie uit een e-mail aan bestaande
-     contacten komt, heeft geen merk- of showroompromotie nodig.
-  2. **Elk blok op nut.** Elk contentblok krijgt `kern`, `inkorten` of `overbodig`
-     (`blokken`). Algemene showroom-, modellen-, EV-uitleg- en galerijblokken die niet bij
-     het doel horen zijn overbodig, ook als ze goed gemaakt zijn.
-  Daarna zes criteria met een vaste weging (`lib/landingspaginaScore.ts`): Doel &
-  aansluiting 10%, **Verwachte informatie 25%**, Duidelijkheid & consistentie 20%,
-  **Focus: geen overbodige content 20%**, Eerste scherm 10%, Aanmelden & conversie 15%.
-- **Het cijfer rekent de route uit, niet het model.** Het model geeft per criterium een
-  cijfer; de route legt er twee plafonds op (verwachte informatie: −2 per ontbrekend en −1
-  per onduidelijk onderdeel; focus: één overbodig blok max. 7, twee 5, drie 4, meer 3) en
-  het eindcijfer is het gewogen gemiddelde. Zo krijgen twee pagina's met dezelfde gebreken
-  hetzelfde cijfer, en is het eindcijfer na te rekenen. De rekenregels staan ook in de
-  prompt, zodat het model er niet tegenin hoeft te schrijven. Getest in
-  `lib/landingspaginaScore.test.ts`.
+- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`) en bewust geschreven in
+  principes, niet in vaste lijstjes of voorbeelden: met voorbeelden werd het model te
+  gekaderd en ging het rare dingen doen. De werkwijze:
+  1. **Begrijp de campagne.** Wat voor campagne, welke ene actie, wie de bezoeker is, wat
+     die al weet, en welke informatie die nodig heeft (`verwachte_informatie`: duidelijk /
+     onduidelijk / ontbreekt) — door het model zelf samengesteld, niet uit een standaardlijst.
+  2. **Bepaal de weging.** Het model verdeelt per campagne 100 procentpunten over de zeven
+     criteria en legt uit waarom (`weging_toelichting`). De route rondt die alleen af naar
+     een som van precies 100 (`normaliseerGewichten` in `lib/landingspaginaCriteria.ts`).
+  3. **Elk blok op nut.** `kern`, `aanpassen` of `overbodig` (`blokken`). Overbodige
+     content telt als echte fout in Focus & opbouw.
+  4. **Zeven criteria**, elk gekoppeld aan iets wat de marketeer zelf aanpast: Doel &
+     doelgroep, Eerste scherm, Informatie & bezwaren, Duidelijkheid & consistentie, Focus &
+     opbouw, Actie & formulier, Beeld. De namen liggen vast (zodat rapporten vergelijkbaar
+     blijven), de weging niet.
+- **Het eindcijfer is een oordeel, geen rekensom.** Het model geeft het zelf, met de
+  weging als leidraad. Er was een periode met vaste wegingen, plafonds en een berekend
+  gewogen gemiddelde; dat is op verzoek teruggedraaid omdat de zwaarte per campagne
+  verschilt.
+- **Geen message match.** De e-mail of advertentie waarmee de bezoeker binnenkomt kan niet
+  worden meegegeven, dus de prompt beoordeelt niet of de pagina daarop aansluit. Wel geeft
+  de marketeer de verkeersbron (wat weet de bezoeker al) en optioneel een omschrijving van
+  doel en doelgroep (`rapport.campagnecontext`). Beide worden bewaard en hergebruikt bij
+  "Opnieuw analyseren".
 - **Het rapport is een schoolrapport** (`LandingspaginaRapport.tsx`), bewust zonder
-  grafieken of animaties: bovenaan de kop met eindcijfer, daaronder twee kolommen. Links
-  de conclusie als kort verhaal en de top 5 verbeterpunten, rechts de cijfers per
-  criterium met weging en toelichting; onder criterium 2 de checklist (✓ ? ✗), onder
-  criterium 4 de blokken met de overbodige doorgestreept. Alleen een onvoldoende is rood.
-  De scorematrix met potentie is eruit. Oudere rapporten (zeven of tien criteria) blijven
-  leesbaar: ze tonen hun eigen criteria zonder weging, checklist of blokken.
-- **Type, bron en context in het formulier.** Onder de URL staan twee keuzelijsten (type
-  campagne, standaard "laat de analyse het bepalen"; bezoekers komen via, standaard
-  e-mail) en een veld voor doel, doelgroep en de e-mail- of advertentietekst. Zonder dat
-  veld beoordeelt het model de message match alleen op de pagina zelf. Alle drie worden in
-  het rapport bewaard en hergebruikt bij "Opnieuw analyseren".
+  grafieken of animaties: bovenaan de kop met eindcijfer en hoe het model de campagne
+  begreep (campagne, primaire actie, bezoeker), daaronder twee kolommen. Links de
+  conclusie als kort verhaal en de top 5 verbeterpunten, rechts de weging-toelichting en de
+  cijfers per criterium met hun gewicht; onder Informatie & bezwaren de checklist (✓ ? ✗),
+  onder Focus & opbouw de blokken met de overbodige doorgestreept. Alleen een onvoldoende
+  is rood. Oudere rapporten blijven leesbaar met hun eigen criteria.
 - **Screenshot uploaden.** Onder de URL staat een knop voor een JPEG (of PNG) van de
   volledige pagina. De browser knipt hem in stukken van 1000 × 1400 px
   (`lib/screenshotDelen.ts`, max. 10 stukken): één lange afbeelding zou de API verkleinen

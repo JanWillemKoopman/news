@@ -1,11 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  CAMPAGNETYPES,
-  type BlokOordeel,
-  type Campagnetype,
-  type InfoStatus,
-  type Verkeersbron,
-} from "./landingspaginaScore";
+import type { BlokOordeel, InfoStatus, Verkeersbron } from "./landingspaginaCriteria";
 
 /**
  * Landingspagina-audits — zie supabase/migrations/0028_landingspagina_analyses.sql en
@@ -17,6 +11,8 @@ export interface Criterium {
   nummer: number;
   naam: string;
   score: number;
+  /** Hoe zwaar dit criterium bij deze campagne weegt, in procenten (samen 100). Door het model gekozen. */
+  gewicht?: number;
   /** Eén of twee zinnen: waarom dit cijfer en wat er beter kan. */
   beoordeling: string;
   /** Alleen bij oudere rapporten (zeven criteria met scorematrix). */
@@ -28,14 +24,14 @@ export interface Criterium {
   concreet_advies?: string;
 }
 
-/** Eén onderdeel dat de bezoeker bij dit type campagne verwacht (criterium 2). */
+/** Eén onderdeel dat de bezoeker nodig heeft om de actie te nemen. */
 export interface InfoPunt {
   onderdeel: string;
   status: InfoStatus;
   toelichting: string;
 }
 
-/** Eén contentblok op de pagina en of het bijdraagt aan het doel (criterium 4). */
+/** Eén contentblok op de pagina en of het bijdraagt aan het doel. */
 export interface Blok {
   blok: string;
   oordeel: BlokOordeel;
@@ -44,20 +40,25 @@ export interface Blok {
 
 export interface Rapport {
   url: string;
-  campagnetype?: Campagnetype;
-  /** Door de marketeer opgegeven, anders "Onbekend of gemengd" (door de route gezet). */
+  /** Korte eigen omschrijving van het model, bijv. het soort campagne. */
+  campagnetype?: string;
+  /** Door de marketeer opgegeven (door de route gezet). */
   verkeersbron?: Verkeersbron;
   primaire_conversie: string;
+  /** Wie de bezoeker is, wat die al weet en waarmee die komt. */
+  bezoeker?: string;
   verwachte_informatie?: InfoPunt[];
+  /** Waarom de criteria bij deze campagne zo zwaar wegen. */
+  weging_toelichting?: string;
   blokken?: Blok[];
   criteria: Criterium[];
-  /** Gewogen gemiddelde van de criteria, berekend door de route (lib/landingspaginaScore.ts). */
+  /** Het eindoordeel van het model, met de weging als leidraad (geen rekensom). */
   eindcijfer: number;
   eindcijfer_toelichting: string;
   top_verbeterpunten: Verbeterpunt[];
   /** Kort verhaal (enkele zinnen) met de conclusie. */
   conclusie: string;
-  /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door het model). */
+  /** Doel en doelgroep zoals de marketeer ze beschreef (door de route gezet, niet door het model). */
   campagnecontext?: string | null;
   /** Of er bij deze analyse een screenshot is meegestuurd (door de route gezet). */
   met_screenshot?: boolean;
@@ -101,13 +102,11 @@ function object(properties: Record<string, unknown>) {
   };
 }
 
-/**
- * JSON-schema voor structured outputs; de veldnamen volgen de rapportstructuur uit de prompt.
- * Het eindcijfer staat er bewust niet in: dat rekent de route zelf uit.
- */
+/** JSON-schema voor structured outputs; de veldnamen volgen de rapportstructuur uit de prompt. */
 export const RAPPORT_SCHEMA = object({
-  campagnetype: { type: "string", enum: [...CAMPAGNETYPES] },
+  campagnetype: tekst,
   primaire_conversie: tekst,
+  bezoeker: tekst,
   verwachte_informatie: {
     type: "array",
     items: object({
@@ -116,11 +115,12 @@ export const RAPPORT_SCHEMA = object({
       toelichting: tekst,
     }),
   },
+  weging_toelichting: tekst,
   blokken: {
     type: "array",
     items: object({
       blok: tekst,
-      oordeel: { type: "string", enum: ["kern", "inkorten", "overbodig"] },
+      oordeel: { type: "string", enum: ["kern", "aanpassen", "overbodig"] },
       reden: tekst,
     }),
   },
@@ -129,10 +129,12 @@ export const RAPPORT_SCHEMA = object({
     items: object({
       nummer: { type: "integer" },
       naam: tekst,
+      gewicht: { type: "integer" },
       score: { type: "integer" },
       beoordeling: tekst,
     }),
   },
+  eindcijfer: { type: "number" },
   eindcijfer_toelichting: tekst,
   top_verbeterpunten: {
     type: "array",
