@@ -30,7 +30,7 @@ export const maxDuration = 300;
  * 1. GPT-6 Sol krijgt de screenshot en het rapport en schrijft een ontwerpbrief
  *    (ONTWERP_SCHEMA): de wijzigingen voor de marketeer en een beeldopdracht met elke
  *    nieuwe tekst letterlijk erin.
- * 2. Het beeldmodel (gpt-image-2) tekent met die opdracht de nieuwe pagina, met de
+ * 2. Het beeldmodel (gpt-image-2.5-flare) tekent met die opdracht de nieuwe pagina, met de
  *    screenshot-stukken als voorbeeld, zodat het design gelijk blijft.
  *
  * Zonder screenshot kan dit niet: het beeldmodel heeft het design nodig. De screenshot
@@ -38,7 +38,12 @@ export const maxDuration = 300;
  * analyse zelf; lezen gaat via GET /api/landingspagina?id=….
  */
 const MODEL = process.env.LANDINGSPAGINA_MODEL || "gpt-6-sol";
-const BEELDMODEL = process.env.LANDINGSPAGINA_BEELDMODEL || "gpt-image-2";
+/**
+ * Flare boven Sunburst: dezelfde tokenprijs en beeldkwaliteit, maar tot de helft sneller,
+ * en de brief plus het beeld moeten samen binnen maxDuration. Sunburst is sterker in
+ * precieze bewerkingen over meerdere beurten; dat hebben we hier niet nodig.
+ */
+const BEELDMODEL = process.env.LANDINGSPAGINA_BEELDMODEL || "gpt-image-2.5-flare";
 /** Staand 1:3, de uiterste verhouding: een campagnepagina is lang, en zo blijft tekst leesbaar. */
 const FORMAAT = "1024x3072";
 

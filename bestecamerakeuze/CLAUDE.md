@@ -652,9 +652,11 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   - **Twee stappen.** GPT-6 Sol krijgt screenshot en rapport en schrijft een ontwerpbrief
     (`ONTWERP_SCHEMA`, prompt in `lib/landingspaginaOntwerpPrompt.ts`): de wijzigingen voor
     de marketeer en een Engelse beeldopdracht met elke Nederlandse tekst letterlijk erin.
-    Daarna tekent het beeldmodel (`gpt-image-2`, te overschrijven met
+    Daarna tekent het beeldmodel (`gpt-image-2.5-flare`, te overschrijven met
     `LANDINGSPAGINA_BEELDMODEL`) via `images.edit` de pagina, met de screenshot-stukken als
-    voorbeeld. Direct het rapport aan het beeldmodel geven werkt slechter: dat verzint dan
+    voorbeeld. Flare en Sunburst hebben dezelfde tokenprijs en beeldkwaliteit; Flare is
+    tot de helft sneller, en dat telt binnen `maxDuration`. In `high` op 1024 × 3072 kost
+    het beeld zo'n $0,15–0,20, plus de brief. Direct het rapport aan het beeldmodel geven werkt slechter: dat verzint dan
     zelf teksten en kiest niet welke punten voorgaan.
   - **Zelfde design, zelfde scope als de audit.** Header, footer, kleuren, typografie en
     componenten blijven gelijk; alleen wat de content marketeer beheert verandert. Feiten
