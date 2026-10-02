@@ -585,25 +585,40 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   `input_image`. Deze aanroepen tellen niet mee in het tabblad Kosten; dat registreert
   alleen Claude-gebruik.
 
-- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), aangescherpt na
-  feedback: zeven criteria met elk één centrale vraag (Relevantie & boodschap, Eerste
-  scherm, Aanbod & overtuiging, CTA & conversie, Vertrouwen & bezwaren, Structuur &
-  scanbaarheid, Beeld & presentatie), elk met een score én een potentie (de verwachte
-  score als de marketeer het punt oppakt), een expliciet onderscheid tussen observatie, interpretatie en aanname, en
-  geen uitspraken over wat Claude niet kan zien (fotokwaliteit, schermpositie, een
-  onbekende advertentie). Claude levert JSON volgens `RAPPORT_SCHEMA` (structured outputs,
-  `lib/landingspagina.ts`) en het dashboard maakt het rapport zelf op
-  (`LandingspaginaRapport.tsx`). De top 5 verbeterpunten hebben impact en inspanning.
-  Volgorde van het rapport: kop met eindcijfer, top 5, de scorematrix (`ScoreMatrix.tsx`:
-  score tegen potentie, met dezelfde criteria als rij ernaast), de zeven criteria in één of
-  twee zinnen, en onderaan conclusie, samenvatting en de toelichting op het eindcijfer.
-  Rapporten van vóór de invoering (tien criteria, geen `potentie`) blijven leesbaar: de
-  matrix zet ze op de diagonaal en zegt dat er geen potentie is bepaald.
-- **Optionele campagnecontext.** Onder de URL staat een veld voor de campagnebelofte of
-  advertentietekst. Zonder dat veld beoordeelt Claude de message match alleen op de
-  pagina zelf en zegt dat erbij; met het veld toetst het of de belofte wordt waargemaakt.
-  De context wordt in het rapport bewaard (`rapport.campagnecontext`) en hergebruikt bij
-  "Opnieuw analyseren".
+- **De prompt is van marketing** (`lib/landingspaginaPrompt.ts`), herzien na feedback dat
+  zeven generieke criteria niet bij elke campagne passen (een roadshow-uitnodiging werd
+  afgerekend op prijs en looptijd) en dat ruis op de pagina te weinig werd afgestraft. Het
+  model werkt nu in twee stappen:
+  1. **Doel en verwachting.** Het bepaalt het campagnetype (evenement, prijs-/leaseactie,
+     proefrit, modelintroductie, serviceactie, overig) en stelt per type een checklist op
+     met de informatie die de bezoeker verwacht (`verwachte_informatie`: duidelijk /
+     onduidelijk / ontbreekt). De verkeersbron telt mee: wie uit een e-mail aan bestaande
+     contacten komt, heeft geen merk- of showroompromotie nodig.
+  2. **Elk blok op nut.** Elk contentblok krijgt `kern`, `inkorten` of `overbodig`
+     (`blokken`). Algemene showroom-, modellen-, EV-uitleg- en galerijblokken die niet bij
+     het doel horen zijn overbodig, ook als ze goed gemaakt zijn.
+  Daarna zes criteria met een vaste weging (`lib/landingspaginaScore.ts`): Doel &
+  aansluiting 10%, **Verwachte informatie 25%**, Duidelijkheid & consistentie 20%,
+  **Focus: geen overbodige content 20%**, Eerste scherm 10%, Aanmelden & conversie 15%.
+- **Het cijfer rekent de route uit, niet het model.** Het model geeft per criterium een
+  cijfer; de route legt er twee plafonds op (verwachte informatie: −2 per ontbrekend en −1
+  per onduidelijk onderdeel; focus: één overbodig blok max. 7, twee 5, drie 4, meer 3) en
+  het eindcijfer is het gewogen gemiddelde. Zo krijgen twee pagina's met dezelfde gebreken
+  hetzelfde cijfer, en is het eindcijfer na te rekenen. De rekenregels staan ook in de
+  prompt, zodat het model er niet tegenin hoeft te schrijven. Getest in
+  `lib/landingspaginaScore.test.ts`.
+- **Het rapport is een schoolrapport** (`LandingspaginaRapport.tsx`), bewust zonder
+  grafieken of animaties: bovenaan de kop met eindcijfer, daaronder twee kolommen. Links
+  de conclusie als kort verhaal en de top 5 verbeterpunten, rechts de cijfers per
+  criterium met weging en toelichting; onder criterium 2 de checklist (✓ ? ✗), onder
+  criterium 4 de blokken met de overbodige doorgestreept. Alleen een onvoldoende is rood.
+  De scorematrix met potentie is eruit. Oudere rapporten (zeven of tien criteria) blijven
+  leesbaar: ze tonen hun eigen criteria zonder weging, checklist of blokken.
+- **Type, bron en context in het formulier.** Onder de URL staan twee keuzelijsten (type
+  campagne, standaard "laat de analyse het bepalen"; bezoekers komen via, standaard
+  e-mail) en een veld voor doel, doelgroep en de e-mail- of advertentietekst. Zonder dat
+  veld beoordeelt het model de message match alleen op de pagina zelf. Alle drie worden in
+  het rapport bewaard en hergebruikt bij "Opnieuw analyseren".
 - **Screenshot uploaden.** Onder de URL staat een knop voor een JPEG (of PNG) van de
   volledige pagina. De browser knipt hem in stukken van 1000 × 1400 px
   (`lib/screenshotDelen.ts`, max. 10 stukken): één lange afbeelding zou de API verkleinen
@@ -623,8 +638,7 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   die binnen het CMS campagnepagina's bouwen: tekst, koppen, knoppen, formulieren, FAQ,
   beeldkeuze en de volgorde van blokken. Header, (mega)menu, footer, het designtemplate
   en techniek (snelheid, tracking, SEO-techniek) kunnen zij niet aanpassen, dus de prompt
-  sluit die expliciet uit van beoordeling en advies. Criterium 7 ("Beeld &
-  presentatie") gaat over hun eigen keuzes, niet over het template. De route knipt
+  sluit die expliciet uit van beoordeling en advies. De route knipt
   menu, site-header en footer bovendien al uit de HTML (`alleenPaginaInhoud`) voordat
   Claude hem ziet; een `<header>` binnen `<main>` blijft staan, want dat is vaak de hero.
 - **Ophalen.** De route haalt de pagina zelf op met browserheaders. Weigert de site dat

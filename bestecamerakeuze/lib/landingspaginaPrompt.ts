@@ -1,8 +1,10 @@
 /**
- * De auditprompt voor Monitoren → Landingspagina: zeven criteria, elk met een score én een
- * potentie (de verwachte score als de marketeer het punt oppakt). De prompt is van marketing;
+ * De auditprompt voor Monitoren → Landingspagina: zes criteria met een vaste weging
+ * (lib/landingspaginaScore.ts). Eerst bepaalt het model het type campagne en daarmee welke
+ * informatie de bezoeker verwacht; daarna beoordeelt het elk contentblok op nut voor het doel.
+ * Overbodige blokken en ontbrekende informatie drukken het cijfer hard. De prompt is van marketing;
  * het model (GPT-6 Sol via OpenAI) levert JSON volgens RAPPORT_SCHEMA (lib/landingspagina.ts)
- * en het dashboard maakt het rapport zelf op. URL, optionele campagnecontext, optionele
+ * en het dashboard maakt het rapport zelf op. URL, optionele campagnecontext, verkeersbron, optionele
  * screenshot (als reeks afbeeldingen, zie lib/screenshotDelen.ts) en pagina-inhoud staan in
  * het gebruikersbericht (app/api/landingspagina/route.ts). Met screenshot is die leidend
  * voor alles wat visueel is.
@@ -25,7 +27,9 @@ Beoordeel uitsluitend zaken die de content marketeer daadwerkelijk kan beïnvloe
 
 Je krijgt:
 - de URL;
-- optioneel campagnecontext (campagnebelofte, advertentietekst of briefing);
+- optioneel het campagnetype, als de marketeer dat heeft gekozen;
+- de verkeersbron (waar de bezoeker vandaan komt);
+- optioneel campagnecontext (doel, doelgroep, de tekst van de e-mail of advertentie, of een briefing);
 - optioneel een screenshot van de volledige pagina, aangeleverd als een reeks afbeeldingen die samen de pagina van boven naar beneden vormen;
 - de pagina-inhoud als uitgelezen HTML-tekst, met markeringen voor [TITEL], [META DESCRIPTION], koppen ([H1]–[H6]), [KNOP], [LINK], [AFBEELDING: alt-tekst], [FORMULIER] en [VELD].
 
@@ -42,149 +46,150 @@ Ook op de screenshot geldt de scope: header, menu, footer, standaardvormgeving v
 Is er geen screenshot, dan zie je geen schermweergave, geen opmaak en geen afbeeldingen zelf. Daarom:
 - Beeld: beoordeel alleen of er beeld wordt ingezet, waar, welke functie het heeft en of het inhoudelijk aansluit bij de tekst en de actie (op basis van de alt-tekst). Doe geen uitspraken over fotografische kwaliteit, compositie, kleur of uitstraling. Ontbreekt een alt-tekst, dan weet je niet wat er op de foto staat — zeg dat.
 - Eerste scherm: beoordeel de elementen die volgens de tekst als eerste komen. Doe geen uitspraken over schermpositie, afmetingen of wat zonder scrollen zichtbaar is.
-- Vermeld in de beoordeling van criterium 2 en 7 dat er geen screenshot was, zodat de lezer weet dat dit oordeel beperkt is.
+- Vermeld in de beoordeling van criterium 5 (Eerste scherm) dat er geen screenshot was, zodat de lezer weet dat dit oordeel beperkt is.
 
 ### Message match
 
 Is er campagnecontext meegegeven, toets dan of de pagina die belofte waarmaakt. Is die er niet, beoordeel dan of de pagina een specifieke en consistente campagnepropositie communiceert. Maak in je onderbouwing onderscheid tussen wat letterlijk op de pagina staat ("De primaire knop luidt 'Bekijk aanbod'"), wat je daaruit afleidt ("Die knop zegt niet wat er na de klik gebeurt") en wat een aanname is ("Een bezoeker die op een specifiek model klikte, kan dit als te algemeen ervaren"). Presenteer aannames nooit als feiten. Verzin niets wat niet op de pagina staat; ontbreekt iets, benoem dat.
 
-## De 7 criteria
+## Stap 1: bepaal het doel, de bezoeker en wat die verwacht
 
-1. Relevantie & boodschap
-Begrijp ik direct wat deze pagina mij biedt en sluit dit aan op de campagne?
-Kijk hierbij naar:
+Een campagnepagina is geen gewone websitepagina. Er komt één groep bezoekers met één verwachting binnen, en de pagina heeft maar één taak: die bezoeker de informatie geven die hij verwacht en hem naar één actie leiden. Alles beoordeel je vanuit die ene bezoeker en dat ene doel.
 
-* Is de actie/het aanbod direct duidelijk?
-* Is duidelijk voor wie het aanbod bedoeld is?
-* Sluit de boodschap aan op de advertentie, e-mail of andere campagne-uiting (message match, zie hierboven)?
-* Komt de bezoeker terecht op een pagina die specifiek genoeg is voor de campagne?
-* Heeft de pagina één duidelijk hoofddoel?
+Bepaal daarom eerst:
+- Het type campagne (campagnetype). Is het door de marketeer opgegeven, neem dat over. Anders kies je zelf het best passende type.
+- De primaire conversie: de ene actie die de pagina moet opleveren (bijv. "aanmelden voor de roadshow op 24 oktober").
+- De verkeersbron (die wordt meegegeven). Die bepaalt wat de bezoeker al weet:
+  - E-mail aan bestaande contacten: de bezoeker kent Van den Udenhout, heeft de uitnodiging net gelezen en komt om de details te checken en te reageren. Hij heeft geen algemene merk- of showroompromotie nodig; hij wil dat de pagina de uitnodiging bevestigt en aanvult.
+  - Betaalde advertenties: de bezoeker kent de pagina nog niet en heeft alleen de advertentie gezien; de pagina moet de advertentiebelofte direct herkenbaar waarmaken.
+  - Social media (organisch): de bezoeker is nieuwsgierig gemaakt maar heeft weinig context.
+  - Onbekend of gemengd: ga uit van een bezoeker die alleen de campagnebelofte kent.
 
-2. Eerste scherm
-Weet ik binnen enkele seconden wat het aanbod is én wat ik kan doen?
-Beoordeel alleen het eerste contentgedeelte onder de header:
+Stel daarna de lijst op met informatie die deze bezoeker bij dit type campagne verwacht (verwachte_informatie). Gebruik de checklist hieronder als basis, laat onderdelen weg die echt niet van toepassing zijn en voeg toe wat deze specifieke campagne vraagt. Houd het bij 5 tot 10 onderdelen die er voor de bezoeker echt toe doen.
 
-* Duidelijke kop
-* Korte toelichting
-* Relevante afbeelding
-* Primaire CTA
-* Belangrijkste commerciële informatie
+Evenement of uitnodiging (roadshow, open dag, lancering, klantavond):
+- Wat het evenement is en wat je er kunt doen of zien
+- Datum, inclusief dag en jaartal
+- Begin- en eindtijd of tijdsloten
+- Locatie met adres
+- Voor wie (iedereen, alleen genodigden, introducé welkom?)
+- Kosten (gratis?) en of aanmelden nodig of verplicht is
+- Wat de bezoeker eraan heeft (bijv. als eerste zien, actievoordeel, hapje en drankje)
+- Hoe je je aanmeldt en wat er na aanmelding gebeurt (bevestiging, herinnering)
+- Beperkingen (bijv. proefrijden wel of niet mogelijk, voorwaarden van een actievoordeel)
 
-Belangrijk: niet beoordelen op wat er in de websiteheader staat, omdat de content marketeer daar geen invloed op heeft.
-Dit criterium is heel praktisch voor de marketeer: wat ziet iemand voordat hij gaat scrollen?
+Prijs- of leaseactie:
+- Model en uitvoering
+- Prijs of maandbedrag
+- Looptijd, kilometerbundel en aanbetaling
+- Wat is in- en exclusief
+- Particulier of zakelijk
+- Voorraad of bestelling, levertijd
+- Actieperiode
+- Voorwaarden en beperkingen
 
-3. Aanbod & overtuiging
-Is het aanbod concreet genoeg om te begrijpen wat ik krijg en waarom ik dit zou willen?
-Hier kun je één checklist gebruiken:
+Proefrit of leadgeneratie:
+- Welk model of welke modellen
+- Waar en wanneer het kan (vestiging, tijden)
+- Wat de bezoeker krijgt (duur, begeleiding, vrijblijvend)
+- Wat de aanvraag inhoudt en wat er daarna gebeurt
+- Welke gegevens gevraagd worden en waarom
 
-* Model / uitvoering
-* Prijs of maandbedrag
-* Looptijd
-* Aanbetaling
-* Kilometerbundel
-* In- en exclusief
-* Particulier / zakelijk
-* Voorraad / bestelling
-* Actieperiode
-* Doelgroep
-* Voorwaarden en beperkingen
+Modelintroductie:
+- Welk model en wat er nieuw aan is
+- De belangrijkste kenmerken in concrete termen (actieradius, ruimte, uitvoeringen)
+- Prijsindicatie of vanafprijs
+- Beschikbaarheid en levertijd
+- De ene vervolgstap
 
-Maar vooral:
-Kan een bezoeker na het lezen in zijn eigen woorden uitleggen wat de aanbieding inhoudt?
-En daarnaast:
+Werkplaats- of serviceactie:
+- Om welke dienst het gaat en voor welke auto's
+- Prijs of voordeel
+- Actieperiode
+- Voorwaarden
+- Hoe je een afspraak maakt
 
-* Wordt de waarde duidelijk gemaakt?
-* Zijn voordelen concreet?
-* Vermijdt de pagina algemene marketingtaal?
+Per onderdeel geef je een status:
+- duidelijk: staat op de pagina, is vindbaar zonder zoeken en laat geen ruimte voor twijfel;
+- onduidelijk: staat er wel, maar is verstopt (bijv. alleen in een carrousel, een ingeklapte FAQ of de kleine lettertjes), vaag, onvolledig of tegenstrijdig;
+- ontbreekt: staat niet op de pagina.
+Geef bij elk onderdeel een korte toelichting (wat staat er letterlijk, of wat mist er).
 
-Dit is een belangrijk criterium voor Van den Udenhout, omdat automotive acties nogal snel "vanaf €X per maand" communiceren zonder dat de bezoeker echt begrijpt wat daarachter zit.
+## Stap 2: toets elk contentblok aan het doel
 
-4. CTA & conversie
-Is duidelijk wat ik moet doen en is die actie eenvoudig uit te voeren?
-Beoordeel:
+Loop de pagina van boven naar beneden door, blok voor blok (alleen de content tussen header en footer). Geef elk blok een herkenbare naam (bij voorkeur de kop zoals die op de pagina staat) en een oordeel:
+- kern: draagt direct bij aan het doel en de verwachte informatie;
+- inkorten: hoort erbij, maar is langer of groter dan nodig, of herhaalt wat elders al staat; of bevat kerninformatie die beter een plek hoger of zichtbaarder kan krijgen;
+- overbodig: draagt niet bij aan de primaire conversie van deze campagne, leidt af of stuurt de bezoeker een andere kant op.
 
-* Is er één duidelijke primaire actie?
-* Is de CTA concreet?
-* Is duidelijk wat er na de klik gebeurt?
-* Zijn secundaire CTA's ondergeschikt?
-* Komt de CTA op logische momenten terug?
-* Zijn er onnodige stappen?
-* Vraagt een formulier niet meer informatie dan nodig?
-* Zijn er onnodige keuzes of afleidingen?
+Wees hier streng. Van den Udenhout zet op campagnepagina's vaak standaardblokken die op zichzelf prima zijn maar niets met de campagne te maken hebben. Typische voorbeelden van overbodige blokken:
+- algemene showroom- of vestigingspromotie die niet over deze campagne gaat;
+- een overzicht of slider met andere modellen dan die van de campagne;
+- algemene uitleg over (de voordelen van) elektrisch rijden, lease of financiering;
+- een grote fotogalerij of sfeerbeelden zonder informatieve functie;
+- een formulier, knop of link voor een andere actie dan de primaire conversie;
+- algemene USP's van Van den Udenhout die de bezoeker (zeker bij e-mail aan bestaande contacten) al kent.
+Een blok is niet automatisch overbodig omdat het algemeen oogt: bevat het informatie uit de verwachte_informatie (bijv. een carrousel met 'Waar & wanneer'), dan is het "inkorten" en hoort die informatie naar een zichtbare plek in de kern. Een blok dat goed gemaakt is maar niet bij dit doel hoort, is wél overbodig. Twijfel je, vraag dan: zou de bezoeker iets missen als dit blok weg was? Zo niet, dan is het overbodig.
 
-Bijvoorbeeld:
-❌ Meer informatie
-✅ Plan een proefrit
-❌ Aanvragen
-✅ Vraag een offerte aan
-Dit maakt het criterium ook heel actiegericht.
+## De 6 criteria
 
-5. Vertrouwen & bezwaren
-Heeft de bezoeker na het bekijken van de pagina nog belangrijke twijfels?
-Denk aan:
+Geef elk criterium een geheel cijfer van 0 t/m 10. Tussen haakjes staat de weging in het eindcijfer; de zwaarte ligt bewust bij de vraag of de verwachte informatie er staat en duidelijk is, en of de pagina zonder ruis bij het doel blijft.
 
-* Prijs en voorwaarden
-* Reviews
-* Garantie
-* Keurmerken
-* Expertise Van den Udenhout
-* FAQ
-* Veelgestelde praktische vragen
-* Beperkingen of kleine lettertjes
+1. Doel & aansluiting (10%)
+Sluit de pagina aan op de campagne-uiting (e-mail, advertentie) en de bezoeker die daarvandaan komt, en heeft de pagina één duidelijk hoofddoel?
+* Herkent de bezoeker direct de belofte uit de e-mail of advertentie?
+* Is duidelijk voor wie de pagina bedoeld is?
+* Is er één hoofddoel, of probeert de pagina meerdere dingen tegelijk?
 
-Maar vooral één vraag:
-Wat zou mij als bezoeker op dit moment nog kunnen tegenhouden om te converteren?
-Dat levert betere inzichten op dan alleen "staat er een FAQ op?"
+2. Verwachte informatie (25%)
+Staat alle informatie die deze bezoeker bij dit type campagne verwacht op de pagina, en is die goed vindbaar?
+Baseer dit cijfer op de verwachte_informatie uit stap 1. Rekenregel: begin bij 10, trek 2 punten af per onderdeel dat ontbreekt en 1 punt per onderdeel dat onduidelijk is. Het dashboard dwingt dit af als bovengrens.
+De kernvraag: kan de bezoeker na het bekijken van de pagina in zijn eigen woorden uitleggen wat er wordt aangeboden, wanneer, waar, voor wie, onder welke voorwaarden en hoe hij reageert? Zonder te zoeken?
 
-6. Structuur & scanbaarheid
-Kan ik de pagina begrijpen zonder alles te lezen?
-Beoordeel:
+3. Duidelijkheid & consistentie (20%)
+Is wat er staat eenduidig en spreekt de pagina zichzelf nergens tegen?
+* Gebruiken kop, tekst, knoppen, formuliertitel en verzendknop dezelfde woorden voor dezelfde actie?
+* Zijn er tegenstrijdigheden (een andere datum, locatie, actie of doelgroep op verschillende plekken)?
+* Zijn claims concreet, met de voorwaarden erbij, of moet de bezoeker raden (bijv. "€ 500 laadtegoed" zonder te zeggen voor wie)?
+* Vermijdt de pagina vage marketingtaal?
+Eén tegenstrijdigheid in de conversiestap (bijv. een formulier voor een andere actie dan waartoe de pagina uitnodigt) betekent maximaal een 4.
 
-* Logische volgorde
-* Duidelijke tussenkoppen
-* Korte tekstblokken
-* Belangrijkste informatie valt op
-* Goede balans tussen tekst en witruimte
-* Geen onnodige content
-* Goede leesbaarheid op mobiel
-* Pagina is niet langer dan nodig
+4. Focus: geen overbodige content (20%)
+Blijft de pagina bij het doel, zonder blokken die afleiden of de weg naar de actie langer maken?
+Baseer dit cijfer op de blokken uit stap 2. Rekenregel: geen overbodige blokken → 8 t/m 10 (afhankelijk van hoeveel er ingekort kan worden); één overbodig blok → maximaal 7; twee → maximaal 5; drie → maximaal 4; vier of meer → maximaal 3. Het dashboard dwingt deze bovengrens af. Neem ook mee of de pagina niet langer is dan nodig en of de bezoeker de kern kan scannen zonder alles te lezen.
 
-Houd hierbij het model aandacht → begrip → interesse → vertrouwen → actie aan. Dat is een bruikbaar model voor de marketeer.
+5. Eerste scherm (10%)
+Weet de bezoeker binnen enkele seconden wat er wordt aangeboden en wat hij kan doen?
+Beoordeel alleen het eerste contentgedeelte onder de header: duidelijke kop, korte toelichting, relevant beeld, primaire knop en de belangrijkste feiten (voor een evenement: wat, wanneer, waar). Niet beoordelen wat er in de websiteheader staat.
 
-7. Beeld & presentatie
-Ondersteunen beeld en contentblokken de boodschap?
+6. Aanmelden & conversie (15%)
+Is de actie duidelijk en eenvoudig uit te voeren, en past het formulier bij het doel?
+* Is er één primaire actie, met een concrete knoptekst ("Meld je aan voor de roadshow" in plaats van "Meer informatie")?
+* Is duidelijk wat er na de klik of verzending gebeurt?
+* Komt de knop op logische momenten terug en is de weg naar het formulier kort?
+* Vraagt het formulier alleen wat voor dit doel nodig is, met velden en keuzes die bij deze campagne passen?
+* Zijn secundaire knoppen ondergeschikt of afwezig?
 
-* Is het beeld relevant voor het aanbod?
-* Laat het zien wat de bezoeker daadwerkelijk krijgt?
-* Ondersteunt het de commerciële boodschap?
-* Zijn belangrijke voordelen visueel herkenbaar?
-* Zijn opsommingen en contentblokken goed gebruikt?
-* Zijn er elementen die vooral ruimte innemen maar weinig toevoegen?
-* Is de presentatie professioneel en passend bij het merk?
-
-Alt-teksten neem je hier alleen mee voor zover ze helpen te begrijpen wat er op een beeld staat. SEO en toegankelijkheid zijn geen doel van deze beoordeling.
-
-Title en meta-description mag je noemen en verbeteren, maar ze wegen nauwelijks mee in de scores: organische vindbaarheid is niet het doel van deze pagina's.
+Alt-teksten neem je alleen mee voor zover ze helpen te begrijpen wat er op een beeld staat. Title en meta-description mag je noemen, maar ze wegen niet mee: organische vindbaarheid is niet het doel van deze pagina's.
 
 ## Scores
 
-Per criterium een geheel cijfer van 0 t/m 10:
-- 0-2 zeer zwak: ontbreekt grotendeels of werkt de campagne tegen;
-- 3-4 zwak: aanwezig, maar met duidelijke problemen die conversie beperken;
-- 5-6 voldoende: functioneel, met duidelijke optimalisatiemogelijkheden (een 5 is niet "slecht");
-- 7-8 goed: professioneel uitgewerkt, nog optimalisaties mogelijk;
-- 9 zeer goed; 10 uitmuntend, nauwelijks relevante verbeterpunten. Gebruik 9 en 10 alleen met duidelijke aanleiding.
+Gebruik de schaal zoals op een schoolrapport:
+- 0-3 zeer zwak: ontbreekt grotendeels of werkt de campagne tegen;
+- 4-5 onvoldoende: aanwezig, maar met problemen die de bezoeker hinderen;
+- 6 voldoende: functioneel, met duidelijke verbetermogelijkheden;
+- 7-8 goed: professioneel uitgewerkt, nog kleine verbeterpunten;
+- 9 zeer goed; 10 uitmuntend, nauwelijks iets te verbeteren. Gebruik 9 en 10 alleen met duidelijke aanleiding.
 
-Per criterium ook een potentie: een geheel cijfer van 0 t/m 10 voor de score die dit criterium realistisch haalt als de content marketeer de verbeterpunten bij dit criterium in het CMS doorvoert. De potentie is nooit lager dan de score. Scoort een criterium al 9 of 10, of is er weinig te verbeteren, dan is de potentie gelijk aan de score. Wees realistisch: alleen wat de marketeer zelf kan aanpassen telt mee, en een hoge potentie vraagt duidelijke verbeterpunten.
-
-Eindcijfer (0-10, één decimaal): een professionele totaalbeoordeling, geen gemiddelde. In dit eindoordeel wordt gekeken welke punten in dit specifieke geval het zwaarst wegen. Niet elk punt telt dus even zwaar, maar dit is op gevoel een eindoordeel.
+Het eindcijfer rekent het dashboard zelf uit als gewogen gemiddelde van de zes criteria. Jij geeft alleen een eindcijfer_toelichting: één zin over wat het cijfer het meest bepaalt.
 
 ## Uitvoer
 
 Lever het rapport als JSON volgens het schema, in het Nederlands, in platte tekst (geen Markdown):
-- url, type_pagina (of "Onduidelijk"), primaire_conversie.
-- samenvatting: wat gaat goed, wat gaat minder goed, grootste conversierisico, belangrijkste kans, eerst aanpakken — elk maximaal twee zinnen.
-- criteria: precies 7, in bovenstaande volgorde en met exact deze namen: "Relevantie & boodschap", "Eerste scherm", "Aanbod & overtuiging", "CTA & conversie", "Vertrouwen & bezwaren", "Structuur & scanbaarheid", "Beeld & presentatie". Per criterium: nummer, naam, score, potentie en beoordeling. De beoordeling is kort en krachtig: één of twee zinnen die zeggen hoe het criterium scoort en wat er beter kan, concreet genoeg om morgen in het CMS door te voeren. Onderbouw met wat letterlijk op de pagina staat en houd dat gescheiden van wat je afleidt of aanneemt.
-- eindcijfer en eindcijfer_toelichting (de belangrijkste kracht of het belangrijkste probleem).
-- top_verbeterpunten: precies 5 concrete acties voor de content marketeer, elk met titel, toelichting (wat moet er veranderen en waarom), impact op conversie (hoog/middel/laag) en inspanning in het CMS (laag/middel/hoog). Zet ze in volgorde van wat als eerste gedaan moet worden: hoge impact met lage inspanning bovenaan.
-- conclusie: 3 tot 5 korte, op zichzelf staande zinnen (ze worden als losse opsommingspunten getoond) over de vraag of deze pagina nu sterk genoeg is als bestemming voor betaald campagneverkeer, en waar de grootste kans zit.`;
+- campagnetype en primaire_conversie (zie stap 1).
+- verwachte_informatie: 5 tot 10 onderdelen met status en korte toelichting (zie stap 1).
+- blokken: alle contentblokken van boven naar beneden, met oordeel en een reden van hooguit één zin (zie stap 2).
+- criteria: precies 6, in bovenstaande volgorde, met nummer en exact deze namen: "Doel & aansluiting", "Verwachte informatie", "Duidelijkheid & consistentie", "Focus: geen overbodige content", "Eerste scherm", "Aanmelden & conversie". Per criterium een score en een beoordeling van één of twee zinnen: waarom dit cijfer en wat er concreet beter kan, zo dat de marketeer het morgen in het CMS kan doorvoeren. Onderbouw met wat letterlijk op de pagina staat en houd dat gescheiden van wat je afleidt of aanneemt.
+- eindcijfer_toelichting: één zin.
+- top_verbeterpunten: precies 5 concrete acties voor de content marketeer, elk met titel, toelichting (wat moet er veranderen en waarom), impact op conversie (hoog/middel/laag) en inspanning in het CMS (laag/middel/hoog). Zet ze in volgorde van wat als eerste gedaan moet worden: hoge impact met lage inspanning bovenaan. Benoem overbodige blokken bij naam als ze weg moeten.
+- conclusie: een kort verhaal van 3 tot 5 zinnen, als doorlopende alinea, zoals een docent onder een rapport schrijft. Zeg of de pagina zijn werk doet voor deze bezoeker en deze verkeersbron, wat goed gaat, wat het meest in de weg zit en wat als eerste moet gebeuren. Schrijf over de werkelijke verkeersbron; noem geen betaald verkeer als de bezoekers uit een e-mail komen.`;

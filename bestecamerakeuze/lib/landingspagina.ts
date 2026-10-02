@@ -1,4 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  CAMPAGNETYPES,
+  type BlokOordeel,
+  type Campagnetype,
+  type InfoStatus,
+  type Verkeersbron,
+} from "./landingspaginaScore";
 
 /**
  * Landingspagina-audits — zie supabase/migrations/0028_landingspagina_analyses.sql en
@@ -10,37 +17,53 @@ export interface Criterium {
   nummer: number;
   naam: string;
   score: number;
-  /** Verwachte score als het punt wordt opgepakt. Ontbreekt bij rapporten van vóór de invoering ervan. */
-  potentie?: number;
-  /** Eén of twee zinnen: hoe het criterium scoort en wat er beter kan. */
+  /** Eén of twee zinnen: waarom dit cijfer en wat er beter kan. */
   beoordeling: string;
-  /** Alleen bij oudere rapporten (tien criteria, uitgebreide onderbouwing). */
+  /** Alleen bij oudere rapporten (zeven criteria met scorematrix). */
+  potentie?: number;
+  /** Alleen bij de oudste rapporten (tien criteria, uitgebreide onderbouwing). */
   korte_beoordeling?: string;
   wat_goed_gaat?: string;
   wat_beter_kan?: string;
   concreet_advies?: string;
 }
 
+/** Eén onderdeel dat de bezoeker bij dit type campagne verwacht (criterium 2). */
+export interface InfoPunt {
+  onderdeel: string;
+  status: InfoStatus;
+  toelichting: string;
+}
+
+/** Eén contentblok op de pagina en of het bijdraagt aan het doel (criterium 4). */
+export interface Blok {
+  blok: string;
+  oordeel: BlokOordeel;
+  reden: string;
+}
+
 export interface Rapport {
   url: string;
-  type_pagina: string;
+  campagnetype?: Campagnetype;
+  /** Door de marketeer opgegeven, anders "Onbekend of gemengd" (door de route gezet). */
+  verkeersbron?: Verkeersbron;
   primaire_conversie: string;
-  samenvatting: {
-    wat_gaat_goed: string;
-    wat_gaat_minder_goed: string;
-    grootste_conversierisico: string;
-    belangrijkste_kans: string;
-    eerst_aanpakken: string;
-  };
+  verwachte_informatie?: InfoPunt[];
+  blokken?: Blok[];
   criteria: Criterium[];
+  /** Gewogen gemiddelde van de criteria, berekend door de route (lib/landingspaginaScore.ts). */
   eindcijfer: number;
   eindcijfer_toelichting: string;
   top_verbeterpunten: Verbeterpunt[];
+  /** Kort verhaal (enkele zinnen) met de conclusie. */
   conclusie: string;
   /** Campagnebelofte/advertentietekst die bij de analyse is meegegeven (door de route gezet, niet door het model). */
   campagnecontext?: string | null;
   /** Of er bij deze analyse een screenshot is meegestuurd (door de route gezet). */
   met_screenshot?: boolean;
+  /** Alleen bij oudere rapporten. */
+  type_pagina?: string;
+  samenvatting?: Record<string, string>;
 }
 
 export type Niveau = "hoog" | "middel" | "laag";
@@ -78,29 +101,38 @@ function object(properties: Record<string, unknown>) {
   };
 }
 
-/** JSON-schema voor structured outputs; de veldnamen volgen de rapportstructuur uit de prompt. */
+/**
+ * JSON-schema voor structured outputs; de veldnamen volgen de rapportstructuur uit de prompt.
+ * Het eindcijfer staat er bewust niet in: dat rekent de route zelf uit.
+ */
 export const RAPPORT_SCHEMA = object({
-  url: tekst,
-  type_pagina: tekst,
+  campagnetype: { type: "string", enum: [...CAMPAGNETYPES] },
   primaire_conversie: tekst,
-  samenvatting: object({
-    wat_gaat_goed: tekst,
-    wat_gaat_minder_goed: tekst,
-    grootste_conversierisico: tekst,
-    belangrijkste_kans: tekst,
-    eerst_aanpakken: tekst,
-  }),
+  verwachte_informatie: {
+    type: "array",
+    items: object({
+      onderdeel: tekst,
+      status: { type: "string", enum: ["duidelijk", "onduidelijk", "ontbreekt"] },
+      toelichting: tekst,
+    }),
+  },
+  blokken: {
+    type: "array",
+    items: object({
+      blok: tekst,
+      oordeel: { type: "string", enum: ["kern", "inkorten", "overbodig"] },
+      reden: tekst,
+    }),
+  },
   criteria: {
     type: "array",
     items: object({
       nummer: { type: "integer" },
       naam: tekst,
       score: { type: "integer" },
-      potentie: { type: "integer" },
       beoordeling: tekst,
     }),
   },
-  eindcijfer: { type: "number" },
   eindcijfer_toelichting: tekst,
   top_verbeterpunten: {
     type: "array",
