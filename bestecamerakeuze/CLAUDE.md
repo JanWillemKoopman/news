@@ -644,6 +644,33 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   (eerste scherm, knoppen, hiërarchie, fotokeuze). Zonder screenshot blijft het model
   binnen wat de tekst laat zien. De screenshot zelf wordt niet bewaard, alleen
   `rapport.met_screenshot`; wie opnieuw analyseert, uploadt hem opnieuw.
+- **Ontwerpvoorstel.** Na een analyse mét screenshot start de pagina vanzelf een tweede
+  aanroep (`app/api/landingspagina/ontwerp/route.ts`) die de pagina opnieuw laat tekenen
+  met de belangrijkste verbeterpunten verwerkt, in het design van de screenshot. Het staat
+  onder het rapport (`OntwerpVoorstel.tsx`): links de afbeelding, rechts de samenvatting en
+  de wijzigingen met het verbeterpunt waar ze uit komen.
+  - **Twee stappen.** GPT-6 Sol krijgt screenshot en rapport en schrijft een ontwerpbrief
+    (`ONTWERP_SCHEMA`, prompt in `lib/landingspaginaOntwerpPrompt.ts`): de wijzigingen voor
+    de marketeer en een Engelse beeldopdracht met elke Nederlandse tekst letterlijk erin.
+    Daarna tekent het beeldmodel (`gpt-image-2.5-flare`, te overschrijven met
+    `LANDINGSPAGINA_BEELDMODEL`) via `images.edit` de pagina, met de screenshot-stukken als
+    voorbeeld. Flare en Sunburst hebben dezelfde tokenprijs en beeldkwaliteit; Flare is
+    tot de helft sneller, en dat telt binnen `maxDuration`. In `high` op 1024 × 3072 kost
+    het beeld zo'n $0,15–0,20, plus de brief. Direct het rapport aan het beeldmodel geven werkt slechter: dat verzint dan
+    zelf teksten en kiest niet welke punten voorgaan.
+  - **Zelfde design, zelfde scope als de audit.** Header, footer, kleuren, typografie en
+    componenten blijven gelijk; alleen wat de content marketeer beheert verandert. Feiten
+    die niet op de pagina staan komen er als `[invulplek]` in, niet verzonnen.
+  - **Formaat 1024 × 3072** (staand 1:3, de uiterste verhouding die het model aankan): de
+    hele pagina in één beeld, in hoogte samengedrukt. Webp, als data-URL.
+  - **Een aparte tabel** (`landingspagina_ontwerpen`, migratie 0030, één rij per analyse).
+    Opnieuw analyseren houdt dezelfde id, dus een ontwerp dat ouder is dan de laatste
+    analyse hoort bij het vorige rapport: `haalOntwerp` geeft dan null.
+  - **Geen screenshot, geen ontwerp.** Zonder screenshot kent het beeldmodel het design
+    niet. Bij een rapport zonder ontwerp (of om het opnieuw te maken) upload je de
+    screenshot onder het rapport; ook hier wordt hij niet bewaard.
+  - **Tijd.** Brief (reasoning `low`) plus beeld in `high` duurt samen twee tot vier minuten,
+    binnen `maxDuration` 300. Geen retries in de client: twee pogingen passen er niet in.
 - **Eén regel per pagina.** `landingspagina_analyses.url` is uniek (migratie 0028); opnieuw
   analyseren overschrijft het rapport. `normaliseerUrl` haalt trackingparameters, `#` en
   een slash aan het eind weg, zodat een advertentielink met utm-parameters niet als aparte
