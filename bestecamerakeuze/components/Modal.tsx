@@ -8,6 +8,8 @@ type Props = {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  /** Voor lange uitleg: een breder en hoger paneel. */
+  breed?: boolean;
 };
 
 /**
@@ -20,7 +22,7 @@ type Props = {
  * vormen elk hun eigen stacking context, en die wordt alleen vergeleken met siblings
  * daarbinnen, niet globaal. Een portal naar <body> omzeilt dat volledig.
  */
-export default function Modal({ title, onClose, children }: Props) {
+export default function Modal({ title, onClose, children, breed = false }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [gemount, setGemount] = useState(false);
 
@@ -47,7 +49,7 @@ export default function Modal({ title, onClose, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-panel border border-line bg-card shadow-modal"
+        className={`flex w-full flex-col rounded-panel border border-line bg-card shadow-modal ${breed ? "max-h-[88vh] max-w-3xl" : "max-h-[80vh] max-w-md"}`}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-4">
           <p className="font-sans-w7 text-sm font-bold text-ink">{title}</p>

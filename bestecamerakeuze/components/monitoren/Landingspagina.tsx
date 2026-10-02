@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconClose, IconPhoto } from "@/components/icons";
+import BeoordelingUitleg from "@/components/monitoren/BeoordelingUitleg";
 import Inlogprompt from "@/components/Inlogprompt";
 import LandingspaginaRapport, {
   formatCijfer,
@@ -132,171 +133,175 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   }
 
   return (
-    <div className="space-y-6">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void analyseer(url, { campagnecontext: campagne, verkeersbron });
-        }}
-        className="space-y-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
-      >
-        <div className="flex gap-3">
-          <input
-            type="url"
-            required
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://www.udenhout.nl/acties/…"
-            disabled={bezig}
-            className="w-full rounded-card border border-line bg-card px-4 py-2.5 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={bezig}
-            className="shrink-0 rounded-button bg-primary px-5 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-60"
-          >
-            {bezig ? "Bezig…" : "Analyseer"}
-          </button>
-        </div>
-        {/* De bron bepaalt wat de bezoeker al weet; het doel waar de pagina op wordt
-            afgerekend. Zonder doel leidt het model het af van de pagina. */}
-        <label className="block text-meta text-ink-muted">
-          Bezoekers komen via
-          <select
-            value={verkeersbron}
-            onChange={(e) => setVerkeersbron(e.target.value)}
-            disabled={bezig}
-            className="mt-1 block w-80 rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
-          >
-            {VERKEERSBRONNEN.map((b) => (
-              <option key={b}>{b}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-meta text-ink-muted">
-          Doel en doelgroep van de campagne
-          <textarea
-            value={campagne}
-            onChange={(e) => setCampagne(e.target.value)}
-            disabled={bezig}
-            rows={3}
-            placeholder="Optioneel, maar sterk aangeraden: wat moet deze pagina opleveren, en voor wie is hij bedoeld?"
-            className="mt-1 block w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
-          />
-        </label>
-
-        {/* Screenshot van de volledige pagina: wordt in de browser in leesbare stukken
-            geknipt (lib/screenshotDelen.ts) en speelt in de prompt een hoofdrol. */}
-        <input
-          ref={bestandInvoer}
-          type="file"
-          accept="image/jpeg,image/png"
-          className="hidden"
-          onChange={(e) => void kiesScreenshot(e.target.files?.[0])}
-        />
-        {screenshot ? (
-          <div className="flex items-start gap-4 rounded-card border border-positive/40 bg-positive/5 px-4 py-3">
-            <div className="h-24 w-16 shrink-0 overflow-hidden rounded-control border border-line bg-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={screenshot.voorbeeld} alt="Voorvertoning van de screenshot" className="w-full" />
-            </div>
-            <div className="min-w-0 flex-1 text-sm">
-              <p className="font-medium text-positive">Screenshot geüpload</p>
-              <p className="truncate text-ink" title={screenshot.naam}>
-                {screenshot.naam}
-              </p>
-              <p className="text-meta text-ink-muted">
-                {screenshot.breedte} × {screenshot.hoogte} px · gaat mee als {screenshot.stukken.length}{" "}
-                {screenshot.stukken.length === 1 ? "deel" : "delen"}
-              </p>
-              {screenshot.afgekapt && (
-                <p className="text-meta text-orange">
-                  De pagina is erg lang; alleen het bovenste deel wordt meegestuurd.
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setScreenshot(null)}
+    <>
+      {/* Buiten de space-y-wrapper: een marge op een fixed knop verschuift hem. */}
+      <BeoordelingUitleg />
+      <div className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void analyseer(url, { campagnecontext: campagne, verkeersbron });
+          }}
+          className="space-y-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
+        >
+          <div className="flex gap-3">
+            <input
+              type="url"
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.udenhout.nl/acties/…"
               disabled={bezig}
-              title="Screenshot verwijderen"
-              aria-label="Screenshot verwijderen"
-              className="rounded-control p-1.5 text-ink-faint transition-colors hover:bg-negative/10 hover:text-negative disabled:opacity-60"
+              className="w-full rounded-card border border-line bg-card px-4 py-2.5 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={bezig}
+              className="shrink-0 rounded-button bg-primary px-5 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-60"
             >
-              <IconClose className="h-4 w-4" />
+              {bezig ? "Bezig…" : "Analyseer"}
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => bestandInvoer.current?.click()}
-              disabled={bezig || leestScreenshot}
-              className="inline-flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
+          {/* De bron bepaalt wat de bezoeker al weet; het doel waar de pagina op wordt
+              afgerekend. Zonder doel leidt het model het af van de pagina. */}
+          <label className="block text-meta text-ink-muted">
+            Bezoekers komen via
+            <select
+              value={verkeersbron}
+              onChange={(e) => setVerkeersbron(e.target.value)}
+              disabled={bezig}
+              className="mt-1 block w-80 rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
             >
-              <IconPhoto className="h-4 w-4 text-ink-muted" />
-              {leestScreenshot ? "Screenshot verwerken…" : "Screenshot uploaden"}
-            </button>
-            <span className="text-meta text-ink-faint">
-              Optioneel, maar sterk aangeraden: een JPEG van de volledige pagina, zodat ook het
-              beeld wordt beoordeeld.
-            </span>
+              {VERKEERSBRONNEN.map((b) => (
+                <option key={b}>{b}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-meta text-ink-muted">
+            Doel en doelgroep van de campagne
+            <textarea
+              value={campagne}
+              onChange={(e) => setCampagne(e.target.value)}
+              disabled={bezig}
+              rows={3}
+              placeholder="Optioneel, maar sterk aangeraden: wat moet deze pagina opleveren, en voor wie is hij bedoeld?"
+              className="mt-1 block w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
+            />
+          </label>
+
+          {/* Screenshot van de volledige pagina: wordt in de browser in leesbare stukken
+              geknipt (lib/screenshotDelen.ts) en speelt in de prompt een hoofdrol. */}
+          <input
+            ref={bestandInvoer}
+            type="file"
+            accept="image/jpeg,image/png"
+            className="hidden"
+            onChange={(e) => void kiesScreenshot(e.target.files?.[0])}
+          />
+          {screenshot ? (
+            <div className="flex items-start gap-4 rounded-card border border-positive/40 bg-positive/5 px-4 py-3">
+              <div className="h-24 w-16 shrink-0 overflow-hidden rounded-control border border-line bg-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={screenshot.voorbeeld} alt="Voorvertoning van de screenshot" className="w-full" />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="font-medium text-positive">Screenshot geüpload</p>
+                <p className="truncate text-ink" title={screenshot.naam}>
+                  {screenshot.naam}
+                </p>
+                <p className="text-meta text-ink-muted">
+                  {screenshot.breedte} × {screenshot.hoogte} px · gaat mee als {screenshot.stukken.length}{" "}
+                  {screenshot.stukken.length === 1 ? "deel" : "delen"}
+                </p>
+                {screenshot.afgekapt && (
+                  <p className="text-meta text-orange">
+                    De pagina is erg lang; alleen het bovenste deel wordt meegestuurd.
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setScreenshot(null)}
+                disabled={bezig}
+                title="Screenshot verwijderen"
+                aria-label="Screenshot verwijderen"
+                className="rounded-control p-1.5 text-ink-faint transition-colors hover:bg-negative/10 hover:text-negative disabled:opacity-60"
+              >
+                <IconClose className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => bestandInvoer.current?.click()}
+                disabled={bezig || leestScreenshot}
+                className="inline-flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
+              >
+                <IconPhoto className="h-4 w-4 text-ink-muted" />
+                {leestScreenshot ? "Screenshot verwerken…" : "Screenshot uploaden"}
+              </button>
+              <span className="text-meta text-ink-faint">
+                Optioneel, maar sterk aangeraden: een JPEG van de volledige pagina, zodat ook het
+                beeld wordt beoordeeld.
+              </span>
+            </div>
+          )}
+        </form>
+
+        {bezig && (
+          <div className="laadvlak rounded-panel border border-line bg-card px-6 py-5 text-sm text-ink-muted shadow-subtle">
+            De pagina wordt opgehaald en beoordeeld op zeven criteria. Dit duurt meestal één tot
+            drie minuten — laat dit tabblad open.
           </div>
         )}
-      </form>
 
-      {bezig && (
-        <div className="laadvlak rounded-panel border border-line bg-card px-6 py-5 text-sm text-ink-muted shadow-subtle">
-          De pagina wordt opgehaald en beoordeeld op zeven criteria. Dit duurt meestal één tot
-          drie minuten — laat dit tabblad open.
-        </div>
-      )}
-
-      {fout && (
-        <div className="rounded-panel border border-negative/30 bg-card px-5 py-4 text-sm text-negative shadow-subtle">
-          {fout}
-        </div>
-      )}
-
-      {open ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setOpen(null)}
-              className="text-sm text-ink-muted transition-colors hover:text-ink"
-            >
-              ← Alle geanalyseerde pagina&apos;s
-            </button>
-            <button
-              type="button"
-              disabled={bezig}
-              onClick={() =>
-                void analyseer(open.url, {
-                  campagnecontext: open.rapport.campagnecontext ?? "",
-                  verkeersbron: open.rapport.verkeersbron ?? "Onbekend of gemengd",
-                })
-              }
-              className="rounded-button border border-line bg-card px-4 py-1.5 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
-            >
-              Opnieuw analyseren
-            </button>
+        {fout && (
+          <div className="rounded-panel border border-negative/30 bg-card px-5 py-4 text-sm text-negative shadow-subtle">
+            {fout}
           </div>
-          <LandingspaginaRapport
-            rapport={open.rapport}
-            geanalyseerdOp={open.geanalyseerdOp}
+        )}
+
+        {open ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setOpen(null)}
+                className="text-sm text-ink-muted transition-colors hover:text-ink"
+              >
+                ← Alle geanalyseerde pagina&apos;s
+              </button>
+              <button
+                type="button"
+                disabled={bezig}
+                onClick={() =>
+                  void analyseer(open.url, {
+                    campagnecontext: open.rapport.campagnecontext ?? "",
+                    verkeersbron: open.rapport.verkeersbron ?? "Onbekend of gemengd",
+                  })
+                }
+                className="rounded-button border border-line bg-card px-4 py-1.5 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
+              >
+                Opnieuw analyseren
+              </button>
+            </div>
+            <LandingspaginaRapport
+              rapport={open.rapport}
+              geanalyseerdOp={open.geanalyseerdOp}
+            />
+          </div>
+        ) : (
+          <AnalyseLijst
+            lijst={lijst}
+            fout={lijstFout}
+            laadt={laadtRapport}
+            onOpen={openRapport}
+            onVerwijder={verwijder}
           />
-        </div>
-      ) : (
-        <AnalyseLijst
-          lijst={lijst}
-          fout={lijstFout}
-          laadt={laadtRapport}
-          onOpen={openRapport}
-          onVerwijder={verwijder}
-        />
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 

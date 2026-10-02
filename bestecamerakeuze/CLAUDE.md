@@ -616,6 +616,12 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   cijfers per criterium met hun gewicht; onder Informatie & bezwaren de checklist (✓ ? ✗),
   onder Focus & opbouw de blokken met de overbodige doorgestreept. Alleen een onvoldoende
   is rood. Oudere rapporten blijven leesbaar met hun eigen criteria.
+- **Uitleg achter de i-knop.** Rechtsboven op dit tabblad (op de plek van het lampje op de
+  Kanalen-pagina's, links naast het oogje) staat een i-knop met een brede pop-up
+  (`BeoordelingUitleg.tsx`, `Modal` met `breed`) die in gewone taal uitlegt hoe een pagina
+  wordt beoordeeld, hoe de weging en het eindcijfer tot stand komen en hoe je het rapport
+  leest. **Pas die tekst mee aan** als de prompt of de criteria veranderen, anders vertelt
+  het dashboard iets anders dan het model doet.
 - **Screenshot uploaden.** Onder de URL staat een knop voor een JPEG (of PNG) van de
   volledige pagina. De browser knipt hem in stukken van 1000 × 1400 px
   (`lib/screenshotDelen.ts`, max. 10 stukken): één lange afbeelding zou de API verkleinen
