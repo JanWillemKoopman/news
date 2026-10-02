@@ -350,6 +350,8 @@ async function beoordeel(
     campagnecontext,
     met_screenshot: screenshot.length > 0,
     criteria,
+    // Geen vast aantal verbeterpunten, wel een bovengrens (zie de prompt).
+    top_verbeterpunten: (antwoord.top_verbeterpunten ?? []).slice(0, 10),
     eindcijfer: Math.round(binnen(antwoord.eindcijfer) * 10) / 10,
   };
 }

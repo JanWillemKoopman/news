@@ -612,10 +612,24 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
 - **Het rapport is een schoolrapport** (`LandingspaginaRapport.tsx`), bewust zonder
   grafieken of animaties: bovenaan de kop met eindcijfer en hoe het model de campagne
   begreep (campagne, primaire actie, bezoeker), daaronder twee kolommen. Links de
-  conclusie als kort verhaal en de top 5 verbeterpunten, rechts de weging-toelichting en de
-  cijfers per criterium met hun gewicht; onder Informatie & bezwaren de checklist (✓ ? ✗),
+  conclusie als kort verhaal en de verbeterpunten, rechts de weging-toelichting en de
+  cijfers per criterium met hun gewicht (het cijfer rechts naast de tekst, verticaal
+  gecentreerd); onder Informatie & bezwaren de checklist (✓ ? ✗),
   onder Focus & opbouw de blokken met de overbodige doorgestreept. Alleen een onvoldoende
   is rood. Oudere rapporten blijven leesbaar met hun eigen criteria.
+- **Verbeterpunten: geen vast aantal.** Het model geeft er zoveel als de pagina nodig heeft
+  (maximaal 10, de route kapt daarop af): een sterke pagina soms één of twee. Elk punt
+  heeft een **urgentie** en een **impact** (hoog/middel/laag), als omlijnde labels rechts
+  van de titel: hoog rood, middel lichtrood, laag grijs — twee keer rood is eerst
+  oppakken. Oudere rapporten hadden impact + inspanning; die tonen alleen hun impact.
+- **De lijst toont per pagina alle criteriumcijfers** naast het eindcijfer, met hetzelfde
+  kleurgebruik. `lijstAnalyses` haalt daarvoor alleen `rapport->criteria` op, niet het
+  hele rapport. Rapporten met oudere criteria hebben lege cellen.
+- **Analyses lopen parallel.** Het formulier blijft bruikbaar en leegt zich na
+  "Analyseer"; elke lopende analyse staat als regel in het blok Analyses (bezig → klaar met
+  eindcijfer en "Bekijk rapport", of de foutmelding). Dezelfde URL twee keer tegelijk kan
+  niet. Het tabpaneel blijft gemount (AppShell), dus wegklikken stopt een analyse niet;
+  de pagina herladen wel.
 - **Uitleg achter de i-knop.** Rechtsboven op dit tabblad (op de plek van het lampje op de
   Kanalen-pagina's, links naast het oogje) staat een i-knop met een brede pop-up
   (`BeoordelingUitleg.tsx`, `Modal` met `breed`) die in gewone taal uitlegt hoe een pagina

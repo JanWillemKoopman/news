@@ -5,7 +5,7 @@ import type { Blok, Criterium, InfoPunt, Niveau, Rapport } from "@/lib/landingsp
 /**
  * Het auditrapport van één landingspagina, opgemaakt als een schoolrapport: bovenaan de
  * kop met het eindcijfer en hoe het model de campagne begreep, daaronder twee kolommen.
- * Links het verhaal (conclusie) en de top 5 verbeterpunten, rechts de cijfers per
+ * Links het verhaal (conclusie) en de verbeterpunten, rechts de cijfers per
  * criterium met de weging die het model voor deze campagne koos. Geen grafieken,
  * geen animaties. Puur weergave — alles komt uit het bewaarde rapport (lib/landingspagina.ts).
  * Oudere rapporten (zeven of tien criteria, zonder checklist en blokken) blijven leesbaar.
@@ -101,16 +101,19 @@ function CriteriumRegel({ c, rapport }: { c: Criterium; rapport: Rapport }) {
   const gewicht = c.gewicht;
   return (
     <li className="py-4 first:pt-0 last:pb-0">
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-sm font-semibold text-ink">
-          {c.nummer}. {c.naam}
-          {gewicht !== undefined && <span className="ml-2 font-normal text-ink-faint">weegt {gewicht}%</span>}
-        </h3>
-        <span className={`font-sans-w7 text-xl font-semibold tabular-nums ${cijferKleur(c.score)}`}>
+      {/* Het cijfer rechts naast kop en toelichting, verticaal gecentreerd, met ruimte ervoor. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-8">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">
+            {c.nummer}. {c.naam}
+            {gewicht !== undefined && <span className="ml-2 font-normal text-ink-faint">weegt {gewicht}%</span>}
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-ink-muted">{c.beoordeling || c.korte_beoordeling}</p>
+        </div>
+        <span className={`text-center font-sans-w7 text-2xl font-semibold tabular-nums ${cijferKleur(c.score)}`}>
           {formatCijfer(c.score)}
         </span>
       </div>
-      <p className="mt-1 text-sm leading-relaxed text-ink-muted">{c.beoordeling || c.korte_beoordeling}</p>
       {c.naam === "Informatie & bezwaren" && rapport.verwachte_informatie?.length ? (
         <Checklist punten={rapport.verwachte_informatie} />
       ) : null}
@@ -119,10 +122,19 @@ function CriteriumRegel({ c, rapport }: { c: Criterium; rapport: Rapport }) {
   );
 }
 
-function niveauTekst(p: { impact?: Niveau; inspanning?: Niveau }) {
-  return [p.impact && `impact ${p.impact}`, p.inspanning && `inspanning ${p.inspanning}`]
-    .filter(Boolean)
-    .join(" · ");
+/** Hoog is rood, midden zit tussen rood en grijs in, laag is grijs. Twee keer rood = eerst oppakken. */
+const NIVEAU_STIJL: Record<Niveau, string> = {
+  hoog: "border-negative/50 bg-negative/15 text-negative",
+  middel: "border-negative/25 bg-negative/5 text-ink",
+  laag: "border-line bg-surface text-ink-muted",
+};
+
+function NiveauLabel({ label, niveau }: { label: string; niveau: Niveau }) {
+  return (
+    <span className={`whitespace-nowrap rounded-control border px-2 py-0.5 text-meta ${NIVEAU_STIJL[niveau]}`}>
+      {label} {niveau === "middel" ? "midden" : niveau}
+    </span>
+  );
 }
 
 export default function LandingspaginaRapport({
@@ -190,15 +202,22 @@ export default function LandingspaginaRapport({
           </section>
 
           <section className="rounded-panel border border-line bg-card px-7 py-6 shadow-subtle">
-            <Kop>Top 5 verbeterpunten</Kop>
+            <Kop>Verbeterpunten</Kop>
             <ol className="space-y-4">
               {rapport.top_verbeterpunten.map((p, i) => (
                 <li key={i} className="grid grid-cols-[1.5rem_1fr] gap-2">
                   <span className="text-sm font-semibold tabular-nums text-ink-muted">{i + 1}.</span>
                   <div>
-                    <p className="text-sm font-semibold text-ink">{p.titel}</p>
+                    <div className="flex items-start justify-between gap-4">
+                      <p className="text-sm font-semibold text-ink">{p.titel}</p>
+                      {(p.urgentie || p.impact) && (
+                        <div className="flex shrink-0 gap-1.5">
+                          {p.urgentie && <NiveauLabel label="Urgentie" niveau={p.urgentie} />}
+                          {p.impact && <NiveauLabel label="Impact" niveau={p.impact} />}
+                        </div>
+                      )}
+                    </div>
                     <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{p.toelichting}</p>
-                    {niveauTekst(p) && <p className="mt-1 text-meta text-ink-faint">{niveauTekst(p)}</p>}
                   </div>
                 </li>
               ))}
@@ -219,14 +238,14 @@ export default function LandingspaginaRapport({
               <CriteriumRegel key={c.nummer} c={c} rapport={rapport} />
             ))}
           </ul>
-          <div className="mt-4 flex items-baseline justify-between border-t-2 border-line pt-4">
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-8 border-t-2 border-line pt-4">
             <span className="text-sm font-semibold text-ink">
               Eindcijfer
               {rapport.weging_toelichting && (
                 <span className="ml-2 font-normal text-ink-faint">eindoordeel, met de weging als leidraad</span>
               )}
             </span>
-            <span className={`font-sans-w7 text-xl font-semibold tabular-nums ${cijferKleur(rapport.eindcijfer)}`}>
+            <span className={`text-center font-sans-w7 text-2xl font-semibold tabular-nums ${cijferKleur(rapport.eindcijfer)}`}>
               {formatCijfer(rapport.eindcijfer)}
             </span>
           </div>

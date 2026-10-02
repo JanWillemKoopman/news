@@ -72,8 +72,11 @@ export type Niveau = "hoog" | "middel" | "laag";
 export interface Verbeterpunt {
   titel: string;
   toelichting: string;
-  /** Ontbreken bij rapporten van vóór de invoering ervan. */
+  /** Hoe dringend het is om dit op te pakken. Ontbreekt bij oudere rapporten. */
+  urgentie?: Niveau;
+  /** Verwachte impact op conversie. Ontbreekt bij de oudste rapporten. */
   impact?: Niveau;
+  /** Alleen bij oudere rapporten (inspanning in het CMS). */
   inspanning?: Niveau;
 }
 
@@ -85,6 +88,8 @@ export interface AnalyseItem {
   eerstGeanalyseerdOp: string;
   geanalyseerdDoor: string;
   geanalyseerdDoorNaam: string | null;
+  /** Cijfer per criterium, voor de kolommen in de lijst. Ontbreekt na een POST (dan is het hele rapport er). */
+  criteria?: { naam: string; score: number }[];
 }
 
 export interface Analyse extends AnalyseItem {
@@ -141,8 +146,8 @@ export const RAPPORT_SCHEMA = object({
     items: object({
       titel: tekst,
       toelichting: tekst,
+      urgentie: { type: "string", enum: ["hoog", "middel", "laag"] },
       impact: { type: "string", enum: ["hoog", "middel", "laag"] },
-      inspanning: { type: "string", enum: ["laag", "middel", "hoog"] },
     }),
   },
   conclusie: tekst,
@@ -173,7 +178,14 @@ const TABEL = "landingspagina_analyses";
 const KOLOMMEN = "id, url, eindcijfer, geanalyseerd_op, eerst_geanalyseerd_op, geanalyseerd_door";
 
 function naarItem(r: Record<string, unknown>): Omit<AnalyseItem, "geanalyseerdDoorNaam"> {
+  const criteria = Array.isArray(r.criteria)
+    ? (r.criteria as { naam?: unknown; score?: unknown }[]).map((c) => ({
+        naam: String(c.naam ?? ""),
+        score: Number(c.score),
+      }))
+    : undefined;
   return {
+    ...(criteria ? { criteria } : {}),
     id: r.id as string,
     url: r.url as string,
     // numeric komt als string terug uit PostgREST.
@@ -188,7 +200,8 @@ export async function lijstAnalyses(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .schema(SCHEMA)
     .from(TABEL)
-    .select(KOLOMMEN)
+    // Alleen de criteria uit het rapport, niet het hele jsonb: de lijst toont per pagina de cijfers.
+    .select(`${KOLOMMEN}, criteria:rapport->criteria`)
     .order("geanalyseerd_op", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);

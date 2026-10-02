@@ -6,11 +6,10 @@ import BeoordelingUitleg from "@/components/monitoren/BeoordelingUitleg";
 import Inlogprompt from "@/components/Inlogprompt";
 import LandingspaginaRapport, {
   formatCijfer,
-  formatDatum,
   scoreKleur,
 } from "@/components/monitoren/LandingspaginaRapport";
 import type { Analyse, AnalyseItem } from "@/lib/landingspagina";
-import { VERKEERSBRONNEN } from "@/lib/landingspaginaCriteria";
+import { CRITERIA, VERKEERSBRONNEN } from "@/lib/landingspaginaCriteria";
 import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
 
 /**
@@ -19,7 +18,23 @@ import { deelScreenshot, type GedeeldeScreenshot } from "@/lib/screenshotDelen";
  * pagina die ooit is geanalyseerd, met datum en eindcijfer; een klik opent het rapport.
  * Dezelfde pagina opnieuw analyseren vervangt het rapport, dus elke pagina staat er één
  * keer in.
+ *
+ * Analyses lopen naast elkaar: het formulier blijft bruikbaar terwijl er een analyse loopt,
+ * en elke lopende analyse staat als eigen regel onder het formulier tot hij klaar is. Het
+ * tabpaneel blijft gemount als je een ander tabblad opent (AppShell), dus een analyse loopt
+ * ook door als je even weg klikt.
  */
+
+interface LopendeAnalyse {
+  sleutel: number;
+  url: string;
+  gestart: Date;
+  status: "bezig" | "klaar" | "fout";
+  fout?: string;
+  analyse?: Analyse;
+}
+
+let volgnummer = 0;
 export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [url, setUrl] = useState("");
   const [campagne, setCampagne] = useState("");
@@ -27,7 +42,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
   const [screenshot, setScreenshot] = useState<(GedeeldeScreenshot & { naam: string }) | null>(null);
   const [leestScreenshot, setLeestScreenshot] = useState(false);
   const bestandInvoer = useRef<HTMLInputElement>(null);
-  const [bezig, setBezig] = useState(false);
+  const [lopend, setLopend] = useState<LopendeAnalyse[]>([]);
   const [fout, setFout] = useState<string | null>(null);
   const [lijst, setLijst] = useState<AnalyseItem[] | null>(null);
   const [lijstFout, setLijstFout] = useState<string | null>(null);
@@ -56,38 +71,48 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function werkBij(sleutel: number, wijziging: Partial<LopendeAnalyse>) {
+    setLopend((huidig) => huidig.map((l) => (l.sleutel === sleutel ? { ...l, ...wijziging } : l)));
+  }
+
+  /** Start een analyse naast eventuele andere; het formulier is meteen weer vrij. */
   async function analyseer(
     teAnalyseren: string,
-    instellingen: { campagnecontext: string; verkeersbron: string },
+    instellingen: { campagnecontext: string; verkeersbron: string; screenshot: string[] },
   ) {
-    if (!teAnalyseren.trim() || bezig) return;
-    setBezig(true);
+    const adres = teAnalyseren.trim();
+    if (!adres) return;
+    if (lopend.some((l) => l.status === "bezig" && l.url === adres)) {
+      setFout("Deze pagina wordt al geanalyseerd.");
+      return;
+    }
     setFout(null);
+    const sleutel = ++volgnummer;
+    setLopend((huidig) => [{ sleutel, url: adres, gestart: new Date(), status: "bezig" }, ...huidig]);
     try {
       const res = await fetch("/api/landingspagina", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: teAnalyseren.trim(),
+          url: adres,
           campagnecontext: instellingen.campagnecontext.trim(),
           verkeersbron: instellingen.verkeersbron,
-          screenshot: screenshot?.stukken ?? [],
+          screenshot: instellingen.screenshot,
         }),
       });
       const antwoord = (await res.json().catch(() => ({}))) as { analyse?: Analyse; fout?: string };
       if (!res.ok || !antwoord.analyse) {
         throw new Error(antwoord.fout ?? `Analyse mislukt (${res.status}).`);
       }
-      setUrl("");
-      setCampagne("");
-      setScreenshot(null);
-      toon(antwoord.analyse);
+      werkBij(sleutel, { status: "klaar", analyse: antwoord.analyse });
       haalLijst();
     } catch (err) {
-      setFout(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBezig(false);
+      werkBij(sleutel, { status: "fout", fout: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  function verbergLopend(sleutel: number) {
+    setLopend((huidig) => huidig.filter((l) => l.sleutel !== sleutel));
   }
 
   async function kiesScreenshot(bestand: File | undefined) {
@@ -140,7 +165,15 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void analyseer(url, { campagnecontext: campagne, verkeersbron });
+            void analyseer(url, {
+              campagnecontext: campagne,
+              verkeersbron,
+              screenshot: screenshot?.stukken ?? [],
+            });
+            // Meteen leeg: de volgende pagina kan al worden ingevuld terwijl deze loopt.
+            setUrl("");
+            setCampagne("");
+            setScreenshot(null);
           }}
           className="space-y-3 rounded-panel border border-line bg-card px-5 py-5 shadow-subtle"
         >
@@ -151,15 +184,13 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.udenhout.nl/acties/…"
-              disabled={bezig}
               className="w-full rounded-card border border-line bg-card px-4 py-2.5 text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
             />
             <button
               type="submit"
-              disabled={bezig}
               className="shrink-0 rounded-button bg-primary px-5 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-60"
             >
-              {bezig ? "Bezig…" : "Analyseer"}
+              Analyseer
             </button>
           </div>
           {/* De bron bepaalt wat de bezoeker al weet; het doel waar de pagina op wordt
@@ -169,7 +200,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
             <select
               value={verkeersbron}
               onChange={(e) => setVerkeersbron(e.target.value)}
-              disabled={bezig}
               className="mt-1 block w-80 rounded-card border border-line bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
             >
               {VERKEERSBRONNEN.map((b) => (
@@ -182,7 +212,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
             <textarea
               value={campagne}
               onChange={(e) => setCampagne(e.target.value)}
-              disabled={bezig}
               rows={3}
               placeholder="Optioneel, maar sterk aangeraden: wat moet deze pagina opleveren, en voor wie is hij bedoeld?"
               className="mt-1 block w-full resize-y rounded-card border border-line bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none disabled:opacity-60"
@@ -222,7 +251,6 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               <button
                 type="button"
                 onClick={() => setScreenshot(null)}
-                disabled={bezig}
                 title="Screenshot verwijderen"
                 aria-label="Screenshot verwijderen"
                 className="rounded-control p-1.5 text-ink-faint transition-colors hover:bg-negative/10 hover:text-negative disabled:opacity-60"
@@ -235,7 +263,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               <button
                 type="button"
                 onClick={() => bestandInvoer.current?.click()}
-                disabled={bezig || leestScreenshot}
+                disabled={leestScreenshot}
                 className="inline-flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
               >
                 <IconPhoto className="h-4 w-4 text-ink-muted" />
@@ -249,11 +277,15 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
           )}
         </form>
 
-        {bezig && (
-          <div className="laadvlak rounded-panel border border-line bg-card px-6 py-5 text-sm text-ink-muted shadow-subtle">
-            De pagina wordt opgehaald en beoordeeld op zeven criteria. Dit duurt meestal één tot
-            drie minuten — laat dit tabblad open.
-          </div>
+        {lopend.length > 0 && (
+          <LopendeAnalyses
+            lopend={lopend}
+            onBekijk={(l) => {
+              if (l.analyse) toon(l.analyse);
+              verbergLopend(l.sleutel);
+            }}
+            onVerberg={verbergLopend}
+          />
         )}
 
         {fout && (
@@ -274,11 +306,12 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
               </button>
               <button
                 type="button"
-                disabled={bezig}
+                disabled={lopend.some((l) => l.status === "bezig" && l.url === open.url)}
                 onClick={() =>
                   void analyseer(open.url, {
                     campagnecontext: open.rapport.campagnecontext ?? "",
                     verkeersbron: open.rapport.verkeersbron ?? "Onbekend of gemengd",
+                    screenshot: [],
                   })
                 }
                 className="rounded-button border border-line bg-card px-4 py-1.5 text-sm text-ink transition-colors hover:border-primary disabled:opacity-60"
@@ -303,6 +336,127 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
       </div>
     </>
   );
+}
+
+function tijd(d: Date) {
+  return d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+}
+
+function padVan(url: string) {
+  try {
+    const adres = new URL(url);
+    return adres.pathname === "/" ? adres.hostname : adres.pathname + adres.search;
+  } catch {
+    return url;
+  }
+}
+
+function hostVan(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+function LopendeAnalyses({
+  lopend,
+  onBekijk,
+  onVerberg,
+}: {
+  lopend: LopendeAnalyse[];
+  onBekijk: (l: LopendeAnalyse) => void;
+  onVerberg: (sleutel: number) => void;
+}) {
+  const aantalBezig = lopend.filter((l) => l.status === "bezig").length;
+  return (
+    <section className="rounded-panel border border-line bg-card shadow-subtle">
+      <header className="flex items-baseline justify-between border-b border-line-soft px-6 py-3">
+        <h2 className="label-theme text-label text-ink-muted">Analyses</h2>
+        {aantalBezig > 0 && (
+          <span className="text-meta text-ink-faint">
+            {aantalBezig} bezig · duurt meestal één tot drie minuten per pagina
+          </span>
+        )}
+      </header>
+      <ul className="divide-y divide-line-soft">
+        {lopend.map((l) => (
+          <li
+            key={l.sleutel}
+            className={`flex items-center gap-4 px-6 py-3 text-sm ${l.status === "bezig" ? "laadvlak" : ""}`}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-ink" title={l.url}>
+                {padVan(l.url)}
+              </p>
+              <p className={`truncate text-meta ${l.status === "fout" ? "text-negative" : "text-ink-faint"}`}>
+                {l.status === "bezig" && `Wordt beoordeeld · gestart om ${tijd(l.gestart)}`}
+                {l.status === "klaar" && "Klaar"}
+                {l.status === "fout" && l.fout}
+              </p>
+            </div>
+            {l.status === "klaar" && l.analyse && <Cijfer score={l.analyse.eindcijfer} />}
+            {l.status === "klaar" && (
+              <button
+                type="button"
+                onClick={() => onBekijk(l)}
+                className="rounded-button border border-line bg-card px-3 py-1 text-sm text-ink transition-colors hover:border-primary"
+              >
+                Bekijk rapport
+              </button>
+            )}
+            {l.status !== "bezig" && (
+              <button
+                type="button"
+                onClick={() => onVerberg(l.sleutel)}
+                title="Verbergen"
+                aria-label="Verbergen"
+                className="rounded-control p-1.5 text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+              >
+                <IconClose className="h-4 w-4" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Korte kolomkoppen voor de criteria; de volledige naam staat in de tooltip. */
+const KORT: Record<string, string> = {
+  "Doel & doelgroep": "Doel",
+  "Eerste scherm": "1e scherm",
+  "Informatie & bezwaren": "Info",
+  "Duidelijkheid & consistentie": "Duidelijk",
+  "Focus & opbouw": "Focus",
+  "Actie & formulier": "Actie",
+  Beeld: "Beeld",
+};
+
+/** Zelfde kleurgebruik als het eindcijfer: rood onvoldoende, oranje 5,5–7, groen daarboven. */
+function Cijfer({ score }: { score: number | null | undefined }) {
+  if (score === null || score === undefined || !Number.isFinite(score)) {
+    return <span className="text-ink-faint">—</span>;
+  }
+  const kleur = scoreKleur(score);
+  return (
+    <span
+      className={`inline-block min-w-10 rounded-control px-2 py-1 text-center font-sans-w7 font-semibold tabular-nums ${kleur.zacht} ${kleur.tekst}`}
+    >
+      {formatCijfer(score)}
+    </span>
+  );
+}
+
+function korteDatum(iso: string) {
+  return new Date(iso).toLocaleString("nl-NL", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function AnalyseLijst({
@@ -342,8 +496,17 @@ function AnalyseLijst({
           <thead>
             <tr className="text-left text-label text-ink-faint">
               <th className="label-theme px-6 py-2.5 font-normal">Pagina</th>
-              <th className="label-theme w-72 whitespace-nowrap px-4 py-2.5 font-normal">Laatst geanalyseerd</th>
-              <th className="label-theme w-28 px-4 py-2.5 text-right font-normal">Eindcijfer</th>
+              <th className="label-theme w-44 whitespace-nowrap px-4 py-2.5 font-normal">Geanalyseerd</th>
+              {CRITERIA.map((naam) => (
+                <th
+                  key={naam}
+                  title={naam}
+                  className="label-theme w-16 whitespace-nowrap px-1 py-2.5 text-center font-normal"
+                >
+                  {KORT[naam] ?? naam}
+                </th>
+              ))}
+              <th className="label-theme w-24 whitespace-nowrap px-4 py-2.5 text-right font-normal">Eindcijfer</th>
               <th className="w-20 px-4 py-2.5">
                 <span className="sr-only">Verwijderen</span>
               </th>
@@ -351,7 +514,6 @@ function AnalyseLijst({
           </thead>
           <tbody className="divide-y divide-line-soft border-t border-line-soft">
             {lijst.map((a) => {
-              const adres = new URL(a.url);
               return (
                 <tr
                   key={a.id}
@@ -360,21 +522,19 @@ function AnalyseLijst({
                 >
                   <td className="max-w-0 px-6 py-3">
                     <p className="truncate font-medium text-ink" title={a.url}>
-                      {adres.pathname === "/" ? adres.hostname : adres.pathname + adres.search}
+                      {padVan(a.url)}
                     </p>
-                    <p className="truncate text-meta text-ink-faint">{adres.hostname}</p>
+                    <p className="truncate text-meta text-ink-faint">{hostVan(a.url)}</p>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{formatDatum(a.geanalyseerdOp)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{korteDatum(a.geanalyseerdOp)}</td>
+                  {/* Oudere rapporten hadden andere criteria: die cellen blijven leeg. */}
+                  {CRITERIA.map((naam) => (
+                    <td key={naam} className="px-1 py-3 text-center">
+                      <Cijfer score={a.criteria?.find((c) => c.naam === naam)?.score} />
+                    </td>
+                  ))}
                   <td className="px-4 py-3 text-right">
-                    {a.eindcijfer === null ? (
-                      <span className="text-ink-faint">—</span>
-                    ) : (
-                      <span
-                        className={`inline-block min-w-12 rounded-control px-2.5 py-1 text-center font-sans-w7 font-semibold tabular-nums ${scoreKleur(a.eindcijfer).zacht} ${scoreKleur(a.eindcijfer).tekst}`}
-                      >
-                        {formatCijfer(a.eindcijfer)}
-                      </span>
-                    )}
+                    <Cijfer score={a.eindcijfer} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
