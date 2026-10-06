@@ -24,6 +24,7 @@ type Props = {
   campagnes: React.ReactNode;
   tijdlijn: React.ReactNode;
   campagnebeheer: React.ReactNode;
+  kpiOverzicht: React.ReactNode;
   socialAds: React.ReactNode;
   googleAds: React.ReactNode;
   organisch: React.ReactNode;
@@ -87,6 +88,10 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   campagnebeheer: {
     title: "Campagnebeheer",
     subtitle: "Campagnes toevoegen en alle velden bewerken — direct in sync met de sheet.",
+  },
+  "kpi-overzicht": {
+    title: "KPI overzicht",
+    subtitle: "De belangrijkste kerncijfers in één dashboard.",
   },
   "social-ads": {
     title: "Social ads",
@@ -163,6 +168,7 @@ export default function AppShell({
   campagnes,
   tijdlijn,
   campagnebeheer,
+  kpiOverzicht,
   socialAds,
   googleAds,
   organisch,
@@ -271,6 +277,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "campagnebeheer"}>
           {campagnebeheer}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "kpi-overzicht"}>
+          {bezocht.has("kpi-overzicht") ? kpiOverzicht : null}
         </div>
         {/* De zes Kanalen-panelen blijven net als de rest gemount, maar ze halen hun
             data pas op zodra ze voor het eerst getoond worden — zie useKanaalData. Een

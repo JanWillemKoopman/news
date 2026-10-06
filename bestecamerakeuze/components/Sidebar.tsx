@@ -6,6 +6,7 @@ import NavigationItem from "@/components/NavigationItem";
 import {
   IconAdHeart,
   IconBrain,
+  IconChartBar,
   IconCalendar,
   IconCoin,
   IconGlobe,
@@ -23,6 +24,7 @@ export type DashboardView =
   | "campagnes"
   | "tijdlijn"
   | "campagnebeheer"
+  | "kpi-overzicht"
   | "social-ads"
   | "google-ads"
   | "organisch"
@@ -124,7 +126,17 @@ export default function Sidebar({
             onClick={() => onNavigate("campagnebeheer")}
           />
 
-          {/* Kanalen staat ná Campagnes: de campagnetabel is waar het weekoverleg begint,
+          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+            KPI&apos;s
+          </p>
+          <NavigationItem
+            icon={<IconChartBar />}
+            label="KPI overzicht"
+            active={actief === "kpi-overzicht"}
+            onClick={() => onNavigate("kpi-overzicht")}
+          />
+
+          {/* Kanalen staat ná KPI's: de campagnetabel is waar het weekoverleg begint,
               de kanaalcijfers zijn waar je doorklikt als je wilt weten waaróm een campagne
               loopt zoals hij loopt. Social en Google staan apart omdat het twee andere
               gesprekken zijn — bereik en beeld tegenover zoekintentie. De koppeltabel

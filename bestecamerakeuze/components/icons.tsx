@@ -452,6 +452,18 @@ export function IconUserCircle({ className }: IconProps) {
   );
 }
 
+/** KPI's: staafgrafiek op een as. */
+export function IconChartBar({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M4 4v16h16" />
+      <path d="M8.5 16v-4" />
+      <path d="M12.5 16V8" />
+      <path d="M16.5 16v-6" />
+    </svg>
+  );
+}
+
 /** Website: de wereldbol, want dit tabblad gaat over de sites zelf en niet over een kanaal. */
 export function IconGlobe({ className }: IconProps) {
   return (

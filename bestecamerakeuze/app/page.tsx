@@ -13,6 +13,7 @@ import InstellingenPaneel from "@/components/instellingen/InstellingenPaneel";
 import KennisEnActies from "@/components/kennisacties/KennisEnActies";
 import ScorePaneel from "@/components/scores/ScorePaneel";
 import KennisPaneel from "@/components/kennis/KennisPaneel";
+import KpiOverzicht from "@/components/kpi/KpiOverzicht";
 import BudgetBeheer from "@/components/monitoren/BudgetBeheer";
 import Landingspagina from "@/components/monitoren/Landingspagina";
 import KostenPaneel from "@/components/kosten/KostenPaneel";
@@ -82,6 +83,7 @@ export default async function DashboardPage() {
         }
         tijdlijn={<CampagneTijdlijn />}
         campagnebeheer={<CampagneBeheer ingelogd={ingelogd} />}
+        kpiOverzicht={<KpiOverzicht />}
         socialAds={<SocialAdsPaneel ingelogd={ingelogd} />}
         googleAds={<GoogleAdsPaneel ingelogd={ingelogd} />}
         organisch={<OrganischPaneel ingelogd={ingelogd} />}
