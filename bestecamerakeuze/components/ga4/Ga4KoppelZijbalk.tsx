@@ -10,6 +10,8 @@ import {
   VELD_LABELS,
   VOORWAARDE_VELDEN,
   controleerRegels,
+  gisteren,
+  telPeriode,
   zoekEvents,
   type Ga4Telling,
   type Operator,
@@ -25,19 +27,27 @@ type Opties = { events: EventOptie[]; websites: string[]; kanaalgroepen: string[
 
 /**
  * De keuzelijsten veranderen hooguit één keer per nacht (de sync), dus één keer ophalen
- * per paginabezoek is genoeg — ook als iemand tien campagnes achter elkaar koppelt.
+ * per periode per paginabezoek is genoeg — ook als iemand tien campagnes achter elkaar
+ * koppelt. De periode is de looptijd van de campagne: campagnes met dezelfde looptijd
+ * delen hun lijst.
  */
-let optiesBelofte: Promise<Opties> | null = null;
-function haalOpties(): Promise<Opties> {
-  optiesBelofte ??= fetch("/api/campagne-ga4/opties").then(async (res) => {
-    const data = (await res.json().catch(() => ({}))) as Partial<Opties> & { fout?: string };
-    if (!res.ok) {
-      optiesBelofte = null;
-      throw new Error(data.fout ?? "Kon de GA4-events niet ophalen.");
-    }
-    return { events: data.events ?? [], websites: data.websites ?? [], kanaalgroepen: data.kanaalgroepen ?? [] };
-  });
-  return optiesBelofte;
+const optiesBeloftes = new Map<string, Promise<Opties>>();
+function haalOpties(periode: { van: string; tot: string } | null): Promise<Opties> {
+  const sleutel = periode ? `${periode.van}|${periode.tot}` : "";
+  let belofte = optiesBeloftes.get(sleutel);
+  if (!belofte) {
+    const zoek = periode ? `?${new URLSearchParams(periode)}` : "";
+    belofte = fetch(`/api/campagne-ga4/opties${zoek}`).then(async (res) => {
+      const data = (await res.json().catch(() => ({}))) as Partial<Opties> & { fout?: string };
+      if (!res.ok) {
+        optiesBeloftes.delete(sleutel);
+        throw new Error(data.fout ?? "Kon de GA4-events niet ophalen.");
+      }
+      return { events: data.events ?? [], websites: data.websites ?? [], kanaalgroepen: data.kanaalgroepen ?? [] };
+    });
+    optiesBeloftes.set(sleutel, belofte);
+  }
+  return belofte;
 }
 
 const LEGE_REGEL: Regel = { events: [], voorwaarden: [] };
@@ -67,9 +77,17 @@ export default function Ga4KoppelZijbalk({ campagne, onClose }: { campagne: Camp
   sluitRef.current = onClose;
   const [sluit] = useState(() => () => sluitRef.current());
 
+  // De eventlijst telt standaard over de looptijd van de campagne, net als de telling zelf
+  // (tot en met gisteren). Begint de campagne nog, of heeft hij geen startdatum, dan over
+  // de laatste negentig dagen.
+  const looptijd = useMemo(() => {
+    const p = telPeriode(campagne.startdatum, campagne.einddatum, gisteren());
+    return p && p.van <= p.tot ? p : null;
+  }, [campagne.startdatum, campagne.einddatum]);
+
   useEffect(() => {
-    haalOpties().then(setOpties, (err) => setOptiesFout(err instanceof Error ? err.message : String(err)));
-  }, []);
+    haalOpties(looptijd).then(setOpties, (err) => setOptiesFout(err instanceof Error ? err.message : String(err)));
+  }, [looptijd]);
 
   // Lege regels (nog geen event gekozen) tellen niet mee in het voorbeeld en worden bij
   // het opslaan weggelaten — één lege regel staat er standaard, als uitnodiging.
@@ -132,6 +150,7 @@ export default function Ga4KoppelZijbalk({ campagne, onClose }: { campagne: Camp
               nummer={i + 1}
               regel={regel}
               opties={opties}
+              looptijd={looptijd}
               onChange={(r) => werkRegelBij(i, r)}
               onVerwijder={
                 regels.length > 1 ? () => setRegels((huidig) => huidig.filter((_, j) => j !== i)) : undefined
@@ -201,12 +220,14 @@ function RegelBlok({
   nummer,
   regel,
   opties,
+  looptijd,
   onChange,
   onVerwijder,
 }: {
   nummer: number;
   regel: Regel;
   opties: Opties | null;
+  looptijd: { van: string; tot: string } | null;
   onChange: (regel: Regel) => void;
   onVerwijder?: () => void;
 }) {
@@ -235,6 +256,7 @@ function RegelBlok({
         <EventKiezer
           gekozen={regel.events}
           opties={opties?.events ?? null}
+          looptijd={looptijd}
           onChange={(events) => onChange({ ...regel, events })}
         />
       </div>
@@ -361,10 +383,12 @@ function VoorwaardeRij({
 function EventKiezer({
   gekozen,
   opties,
+  looptijd,
   onChange,
 }: {
   gekozen: string[];
   opties: EventOptie[] | null;
+  looptijd: { van: string; tot: string } | null;
   onChange: (events: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -477,7 +501,11 @@ function EventKiezer({
             )}
           </div>
           <p className="border-t border-line px-3 py-1.5 text-meta text-ink-faint">
-            {zoek.trim() ? "Beste treffers" : "Top 10"} op aantal over de laatste 90 dagen, alle websites samen.
+            {zoek.trim() ? "Beste treffers" : "Top 10"} op aantal{" "}
+            {looptijd
+              ? `tussen ${formatDate(looptijd.van)} en ${formatDate(looptijd.tot)} (looptijd van de campagne)`
+              : "over de laatste 90 dagen"}
+            , alle websites samen.
           </p>
         </div>
       )}

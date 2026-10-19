@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   bouwTelQuery,
   controleerRegels,
+  gisteren,
   omschrijfRegel,
   regelsSql,
   telPeriode,
@@ -149,4 +150,10 @@ test("zoekEvents zoekt per woord en negeert streepjes en hoofdletters", () => {
     "generate_lead_offerte",
   ]);
   assert.deepEqual(zoekEvents(opties, "bestaatniet"), { top: [], meer: 0 });
+});
+
+test("gisteren rekent in Nederlandse tijd, ook vlak na middernacht", () => {
+  // 19 okt 2026 00:30 in Amsterdam is 18 okt 22:30 UTC.
+  assert.equal(gisteren(new Date("2026-10-18T22:30:00Z")), "2026-10-18");
+  assert.equal(gisteren(new Date("2026-10-19T12:00:00Z")), "2026-10-18");
 });

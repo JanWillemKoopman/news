@@ -714,8 +714,9 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
 
 - **Syntec** is wat Campagnebeheer altijd was: de sheetvelden, bewerkbaar in-place.
 - **Google Analytics** (`components/ga4/Ga4Koppeltabel.tsx`) koppelt elke campagne aan de
-  GA4-events die voor hem als conversie tellen. Alleen de campagnenaam, de koppeling en
-  (als controle) de telling — geen sheetvelden. Bewerken gaat in een zijbalk
+  GA4-events die voor hem als conversie tellen. De campagnenaam, merk, model, start- en
+  einddatum (alleen lezen — bewerken doe je op Syntec), de koppeling en (als controle)
+  de telling; verder geen sheetvelden. Bewerken gaat in een zijbalk
   (`Ga4KoppelZijbalk.tsx`), want een koppeling past niet in een cel.
   - **Regels.** Een campagne heeft één of meer regels (onderling "of"); een regel heeft
     events (onderling "of") en voorwaarden (onderling "en") op paginapad, querystring,
@@ -742,7 +743,11 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
     regels worden los opgeslagen zonder elkaar te overschrijven (`zetGa4Koppeling`).
   - **De eventkiezer toont altijd de top 10** op volume, en tijdens het typen de top 10
     van de treffers (`zoekEvents`: per woord, streepjes tellen niet, dus "lead proefrit"
-    vindt `generate_lead_proefrit`). De keuzelijst komt uit `v_ga4_events` en niet uit
+    vindt `generate_lead_proefrit`). Het aantal en de volgorde gaan standaard over de
+    **looptijd van de campagne** (start- tot einddatum, tot en met gisteren — dezelfde
+    periode als de telling); events die alleen buiten die periode vuurden staan er met
+    nul in, zodat ze vindbaar blijven. Zonder startdatum of vóór de start: de laatste 90
+    dagen. De keuzelijst komt uit `v_ga4_events` en niet uit
     `v_ga4_event_paginas`: die tweede is leeg tot de historie is opgehaald, en een lege
     keuzelijst laat niemand een koppeling maken. De ruisevents staan er niet in, want die
     kunnen nooit iets tellen.

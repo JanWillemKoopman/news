@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Ga4KoppelZijbalk from "@/components/ga4/Ga4KoppelZijbalk";
 import { IconPencil, IconPlus } from "@/components/icons";
 import { useCampagneFilters } from "@/lib/campagneFilterContext";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { omschrijfRegel } from "@/lib/ga4Koppeling";
 import { useGa4Koppelingen } from "@/lib/ga4KoppelingContext";
 import type { Campagne } from "@/lib/sheet";
@@ -12,14 +12,25 @@ import type { Campagne } from "@/lib/sheet";
 /**
  * Campagnebeheer → Google Analytics: per campagne welke GA4-events als conversie tellen.
  *
- * Bewust alleen de campagnenaam en de koppeling, niet de sheetvelden van het tabblad
- * Syntec: dit tabblad beantwoordt één vraag ("wat telt hier als conversie?"). De telling
+ * Naast de campagnenaam alleen merk, model en looptijd — precies wat je nodig hebt om de
+ * koppeling te kiezen (welke pagina's, welke periode) — en verder geen sheetvelden: dit
+ * tabblad beantwoordt één vraag ("wat telt hier als conversie?"). Ze staan er alleen ter
+ * informatie; bewerken gebeurt op het tabblad Syntec, zodat er maar één plek is waar een
+ * sheetveld verandert. De telling
  * staat er wél naast, als controle — een koppeling die nul oplevert terwijl de campagne
  * al weken loopt, is meestal een verkeerd gespeld pad, en dat zie je hier meteen.
  *
  * Het bewerken gebeurt in een zijbalk en niet in de cel: een regel heeft events én
  * voorwaarden, en dat past niet in een tabelcel van 150 pixels.
  */
+/** Ter informatie, niet bewerkbaar — zelfde volgorde en notatie als het tabblad Syntec. */
+const INFO_KOLOMMEN: { label: string; breedte: number; waarde: (c: Campagne) => string }[] = [
+  { label: "Merk", breedte: 110, waarde: (c) => c.merk || "—" },
+  { label: "Model", breedte: 110, waarde: (c) => c.model || "—" },
+  { label: "Startdatum", breedte: 100, waarde: (c) => formatDate(c.startdatum) },
+  { label: "Einddatum", breedte: 100, waarde: (c) => formatDate(c.einddatum) },
+];
+
 export default function Ga4Koppeltabel() {
   const { filtered } = useCampagneFilters();
   const { koppelingen, tellingen, laden, fout } = useGa4Koppelingen();
@@ -49,6 +60,9 @@ export default function Ga4Koppeltabel() {
           <table className="w-full table-fixed border-separate border-spacing-0 text-left">
             <colgroup>
               <col style={{ width: 260 }} />
+              {INFO_KOLOMMEN.map((k) => (
+                <col key={k.label} style={{ width: k.breedte }} />
+              ))}
               <col />
               <col style={{ width: 140 }} />
             </colgroup>
@@ -60,6 +74,15 @@ export default function Ga4Koppeltabel() {
                 >
                   Campagne naam
                 </th>
+                {INFO_KOLOMMEN.map((k) => (
+                  <th
+                    key={k.label}
+                    scope="col"
+                    className="label-theme sticky top-0 z-10 border-b border-line bg-card px-3 py-3 text-label text-ink-faint"
+                  >
+                    {k.label}
+                  </th>
+                ))}
                 <th
                   scope="col"
                   className="label-theme sticky top-0 z-10 border-b border-line bg-card px-4 py-3 text-label text-ink-faint"
@@ -86,6 +109,11 @@ export default function Ga4Koppeltabel() {
                     >
                       {campagne.naam}
                     </th>
+                    {INFO_KOLOMMEN.map((k) => (
+                      <td key={k.label} className="border-b border-line-soft px-3 py-3 align-top text-xs text-ink">
+                        {k.waarde(campagne)}
+                      </td>
+                    ))}
                     <td className="border-b border-line-soft px-4 py-3 align-top text-xs text-ink">
                       {regels.length === 0 ? (
                         <button
