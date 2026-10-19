@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Campagne } from "@/lib/sheet";
 import BewerkbaarVeld from "@/components/BewerkbaarVeld";
 import CampagneFilterBalk from "@/components/CampagneFilterBalk";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { useCampagneFilters } from "@/lib/campagneFilterContext";
+import { useIsActief } from "@/lib/kanalen/actieveWeergave";
+import Ga4Koppeltabel from "@/components/ga4/Ga4Koppeltabel";
 
 type Kolom = {
   label: string;
@@ -109,6 +111,24 @@ type Props = {
 };
 
 /**
+ * De twee tabbladen van Campagnebeheer. "Syntec" is de sheet (de velden die ook in het
+ * "Nieuwe campagne"-formulier staan); "Google Analytics" koppelt elke campagne aan de
+ * GA4-events die voor hem als conversie tellen.
+ *
+ * Dit is de enige pagina met tabs boven de inhoud, en dat is een uitzondering op "geen
+ * dubbele navigatie" in CLAUDE.md — op verzoek, en verdedigbaar omdat het hier niet om
+ * twee pagina's gaat maar om twee kanten van dezelfde campagnelijst. Zie CLAUDE.md.
+ */
+const TABBLADEN = [
+  { id: "syntec", label: "Syntec" },
+  { id: "ga", label: "Google Analytics" },
+] as const;
+type Tabblad = (typeof TABBLADEN)[number]["id"];
+
+/** `?beheer=ga` in de URL, zodat het tabblad een refresh overleeft — zie lib/kanalen/urlstand.ts. */
+const URL_PARAMETER = "beheer";
+
+/**
  * Beheeroverzicht van alle campagnes: één rij per campagne, alle velden uit het
  * "Nieuwe campagne"-formulier bewerkbaar in-place — precies de velden die ook in de
  * sheet staan. Elke wijziging gaat via hetzelfde schrijf-endpoint als de bewerkbare
@@ -116,14 +136,25 @@ type Props = {
  * sync met de sheet: de sheet is en blijft de bron (zie CLAUDE.md).
  */
 export default function CampagneBeheer({ ingelogd }: Props) {
-  const { filtered } = useCampagneFilters();
+  const actief = useIsActief("campagnebeheer");
+  const [tabblad, setTabblad] = useState<Tabblad>("syntec");
 
-  // Nieuwste startdatum eerst, net als het tabblad Campagnes (zie sortByStartdatumDesc
-  // in CampaignDashboard.tsx) — campagnes zonder startdatum staan onderaan.
-  const gesorteerd = useMemo(
-    () => [...filtered].sort((a, b) => (b.startdatum ?? "").localeCompare(a.startdatum ?? "")),
-    [filtered],
-  );
+  // Uit de URL lezen in een effect en niet in de initiële state, om dezelfde reden als
+  // `?tab=` in AppShell: de server rendert altijd het eerste tabblad.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get(URL_PARAMETER) === "ga") setTabblad("ga");
+  }, []);
+
+  // Alleen schrijven zolang Campagnebeheer open staat: het paneel blijft gemount als je
+  // wegklikt, en dan hoort `?beheer=` niet mee te verhuizen naar een ander tabblad.
+  useEffect(() => {
+    if (!actief) return;
+    const params = new URLSearchParams(window.location.search);
+    if (tabblad === "ga") params.set(URL_PARAMETER, "ga");
+    else params.delete(URL_PARAMETER);
+    const zoek = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
+  }, [actief, tabblad]);
 
   if (!ingelogd) {
     return (
@@ -144,8 +175,53 @@ export default function CampagneBeheer({ ingelogd }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div role="tablist" aria-label="Campagnebeheer" className="flex gap-6 border-b border-line">
+        {TABBLADEN.map((t) => {
+          const gekozen = tabblad === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={gekozen}
+              onClick={() => setTabblad(t.id)}
+              className={`-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                gekozen
+                  ? "border-primary font-medium text-ink"
+                  : "border-transparent text-ink-muted hover:text-ink"
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
       <CampagneFilterBalk />
 
+      <div role="tabpanel" hidden={tabblad !== "syntec"}>
+        <SyntecTabel />
+      </div>
+      <div role="tabpanel" hidden={tabblad !== "ga"}>
+        <Ga4Koppeltabel />
+      </div>
+    </div>
+  );
+}
+
+/** Tabblad "Syntec": de velden uit de sheet, precies zoals Campagnebeheer was. */
+function SyntecTabel() {
+  const { filtered } = useCampagneFilters();
+
+  // Nieuwste startdatum eerst, net als het tabblad Campagnes (zie sortByStartdatumDesc
+  // in CampaignDashboard.tsx) — campagnes zonder startdatum staan onderaan.
+  const gesorteerd = useMemo(
+    () => [...filtered].sort((a, b) => (b.startdatum ?? "").localeCompare(a.startdatum ?? "")),
+    [filtered],
+  );
+
+  return (
+    <>
       {gesorteerd.length === 0 ? (
         <div className="rounded-panel border border-line bg-card px-6 py-10 text-center shadow-card">
           <p className="text-sm text-ink-muted">
@@ -212,6 +288,6 @@ export default function CampagneBeheer({ ingelogd }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

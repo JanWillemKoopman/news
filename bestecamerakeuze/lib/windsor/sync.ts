@@ -32,9 +32,12 @@ import {
   haalVeldcatalogus,
   tekst,
   type Connector,
+  type WindsorFilter,
   type WindsorRij,
 } from "@/lib/windsor/api";
 import {
+  GA4_EVENT_RUIS,
+  GA4_EVENTPAGINAVELDEN,
   GA4_EVENTVELDEN,
   GA4_LANDINGSVELDEN,
   GA4_PAGINAVELDEN,
@@ -1465,4 +1468,139 @@ export async function syncGa4Events(
     "datum, account_id, event_naam, kanaalgroep",
   );
   return { onderdeel: "ga4-events", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
+}
+
+// ---------------------------------------------------------------------------
+// Website — events × pagina, voor de GA-conversies per campagne
+// ---------------------------------------------------------------------------
+
+/**
+ * Parameters die per klik of per verzending uniek zijn en niets over de pagina zeggen.
+ *
+ * Ze moeten eruit vóór het schrijven, niet bij het lezen: `fbclid` alleen al maakte op
+ * udenhout.nl van 116 bezoeken aan dezelfde pagina 116 verschillende sleutels op één dag.
+ * De utm-parameters staan erbij omdat de utm-campagne al een eigen kolom heeft
+ * (`campagne`) — in de querystring zijn ze alleen een tweede, rommeliger kopie daarvan.
+ * Vergeleken wordt zonder hoofdlettergevoeligheid (`M_BT` en `m_bt` komen allebei voor).
+ */
+const TRACKINGPARAMETERS = new Set([
+  "fbclid",
+  "gclid",
+  "gbraid",
+  "wbraid",
+  "dclid",
+  "gclsrc",
+  "msclkid",
+  "ttclid",
+  "li_fat_id",
+  "twclid",
+  "srsltid",
+  "_gl",
+  "_ga",
+  "m_bt",
+  "mc_cid",
+  "mc_eid",
+  "email_id",
+]);
+
+function isTrackingParameter(naam: string): boolean {
+  const n = naam.toLowerCase();
+  return n.startsWith("utm_") || TRACKINGPARAMETERS.has(n);
+}
+
+/**
+ * Een querystring zonder trackingparameters, in de oorspronkelijke volgorde en
+ * schrijfwijze. Niet gedecodeerd: wie filtert op "merk=audi" moet precies zien wat er in
+ * de adresbalk stond, en een decode-fout op een half gecodeerde URL mag geen rij kosten.
+ */
+export function schoonQuerystring(querystring: string): string {
+  return querystring
+    .split("&")
+    .filter((deel) => {
+      if (!deel) return false;
+      const naam = deel.split("=")[0];
+      return !isTrackingParameter(naam);
+    })
+    .join("&");
+}
+
+/** `/auto?merk=audi&fbclid=x` → `["/auto", "merk=audi"]`. Een `#…` valt weg. */
+export function splitsPaginaPad(padMetQuery: string): [string, string] {
+  const zonderAnker = padMetQuery.split("#")[0];
+  const vraagteken = zonderAnker.indexOf("?");
+  if (vraagteken === -1) return [zonderAnker, ""];
+  return [zonderAnker.slice(0, vraagteken), schoonQuerystring(zonderAnker.slice(vraagteken + 1))];
+}
+
+const GA4_EVENTPAGINA_KOLOMMEN = [
+  "datum",
+  "account_id",
+  "website",
+  "event_naam",
+  "pagina",
+  "querystring",
+  "kanaalgroep",
+  "campagne",
+  "events",
+  "conversies",
+];
+
+/**
+ * Events × pagina's, zonder de events die op elke pagina vuren.
+ *
+ * Het filter gaat mee naar Windsor (`GA4_EVENT_RUIS`), zodat page_view en consorten niet
+ * eens over de lijn komen — met querystring erbij zou dat per property per dag ruim
+ * honderdduizend rijen zijn. Hier wordt nog eens gefilterd, als vangnet: valt het filter
+ * aan Windsors kant ooit stilletjes weg, dan wordt de sync trager maar de tabel niet
+ * ineens dertig keer zo groot.
+ *
+ * Na het splitsen en opschonen van de querystring vallen er rijen samen (dezelfde pagina,
+ * ander fbclid); `telSamen` telt die op, net als bij de andere GA4-tabellen.
+ */
+export async function syncGa4EventPaginas(
+  client: Client,
+  van: string,
+  tot: string,
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const filter: WindsorFilter = [];
+  for (const event of GA4_EVENT_RUIS) {
+    if (filter.length > 0) filter.push("and");
+    filter.push(["event_name", "neq", event]);
+  }
+  const rijen = await haalOp("googleanalytics4", GA4_EVENTPAGINAVELDEN, van, tot, filter);
+  const ruis = new Set(GA4_EVENT_RUIS);
+
+  const uit = rijen
+    .filter((r) => tekst(r.date) && tekst(r.account_id) && tekst(r.event_name))
+    .filter((r) => !ruis.has(tekst(r.event_name) as string))
+    .map((r) => {
+      const [pagina, querystring] = splitsPaginaPad(dimensie(r.page_path_plus_query_string));
+      return [
+        tekst(r.date),
+        tekst(r.account_id) as string,
+        tekst(r.account_name),
+        dimensie(r.event_name),
+        dimensie(pagina),
+        dimensie(querystring),
+        dimensie(r.session_default_channel_group),
+        dimensie(r.campaign),
+        getal(r.event_count),
+        getal(r.conversions),
+      ];
+    });
+
+  const geschreven = await schrijfBatch(
+    client,
+    "windsor_ga4_event_paginas",
+    GA4_EVENTPAGINA_KOLOMMEN,
+    telSamen(uit, [0, 1, 3, 4, 5, 6, 7], [8, 9]),
+    "datum, account_id, event_naam, pagina, querystring, kanaalgroep, campagne",
+  );
+  return {
+    onderdeel: "ga4-event-paginas",
+    gelezen: rijen.length,
+    geschreven,
+    duurMs: Date.now() - start,
+  };
 }

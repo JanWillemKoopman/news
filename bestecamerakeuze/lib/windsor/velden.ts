@@ -475,6 +475,37 @@ export const GA4_EVENTVELDEN = [
 ];
 
 /**
+ * De vijfde opvraging: events × pagina, voor de GA-conversies per campagne.
+ *
+ * Dit is de kruising die hierboven bewust níet in de vier opvragingen zit. Hij komt er
+ * toch, maar smal: zonder de events die op vrijwel elk pad vuren (`GA4_EVENT_RUIS`). Die
+ * vier waren de hele reden van de sprong naar 100.000 rijen per dag; zonder ze levert
+ * udenhout.nl er ±4.000. Zie `supabase/migrations/0031_ga4_campagne_conversies.sql`.
+ *
+ * `page_path_plus_query_string` en niet `page_path`: de querystring is waar een merk- of
+ * modelfilter op de occasionpagina's in staat (`/auto?merk=audi`), en daar moet een
+ * campagne op kunnen koppelen. De sync splitst hem daarna in pad en querystring.
+ */
+export const GA4_EVENTPAGINAVELDEN = [
+  "date",
+  "account_id",
+  "account_name",
+  "event_name",
+  "page_path_plus_query_string",
+  "session_default_channel_group",
+  "campaign",
+  "event_count",
+  "conversions",
+];
+
+/**
+ * De events die op vrijwel elke pagina vuren en daarom niet in de events × pagina's
+ * worden opgehaald. session_start staat er bewust níet bij: een sessie die op de
+ * campagnepagina begint is voor een campagne een volwaardig doel.
+ */
+export const GA4_EVENT_RUIS = ["page_view", "scroll", "user_engagement", "first_visit"];
+
+/**
  * De vaste velden per connector.
  *
  * De maatwerkconversies staan hier bewust níet bij: die heten per account anders en

@@ -336,7 +336,7 @@ melding. Vandaar de huidige opzet:
 
 #### Wat `deel=website` ophaalt
 
-Vier opvragingen bij dezelfde GA4-connector, want GA4 kent geen rij waarin een sessie, een
+Vier (sinds 0031 vijf) opvragingen bij dezelfde GA4-connector, want GA4 kent geen rij waarin een sessie, een
 pagina en een event tegelijk passen — één sessie raakt tien pagina's en elke pagina vuurt
 vijf events. Ze schrijven in vier tabellen (migratie `0025_windsor_ga4.sql`):
 
@@ -356,10 +356,29 @@ Twee dingen die er bewust **niet** in zitten:
 
 - **Bron/medium bij een landingspagina.** Verdubbelt die tabel (gemeten 946 → 2.100 rijen
   per dag op de grootste property) terwijl de kanaalgroep dezelfde vraag beantwoordt.
-- **De pagina bij een event.** Dat is de kruising die op één property van ±4.000 naar ruim
-  100.000 rijen per dag springt: vrijwel elk pad vuurt `page_view`, `scroll`,
-  `session_start` en `user_engagement`. Per pagina staat er daarom wél hoeveel events en
-  hoeveel key events er vuurden, maar niet welke.
+- **De pagina bij een event — in volle breedte.** Dat is de kruising die op één property
+  van ±4.000 naar ruim 100.000 rijen per dag springt: vrijwel elk pad vuurt `page_view`,
+  `scroll`, `session_start` en `user_engagement`. Per pagina staat er daarom wél hoeveel
+  events en hoeveel key events er vuurden, maar niet welke.
+
+Een **vijfde opvraging** (migratie `0031_ga4_campagne_conversies.sql`) haalt die kruising
+wél op, maar smal, voor de GA-conversies per campagne (Campagnebeheer → Google Analytics):
+
+| Tabel | Korrel | Beantwoordt |
+| --- | --- | --- |
+| `windsor_ga4_event_paginas` | dag × property × event × pagina × querystring × kanaalgroep × campagne | welk event op welke pagina (en met welke filters in de URL) vuurde |
+
+Zonder `page_view`, `scroll`, `user_engagement` en `first_visit` — het filter gaat mee
+naar Windsor, dus die rijen komen niet eens over de lijn. `session_start` zit er wél in:
+een sessie die op de campagnepagina begon is een volwaardig campagnedoel. De querystring
+wordt vóór het schrijven ontdaan van trackingparameters (`fbclid`, `gclid`, `msclkid`,
+`utm_…`, `M_BT`, …), anders wordt elke klik een eigen rij. Gemeten op udenhout.nl op één
+dag: 3.862 rijen.
+
+**Na het uitrollen van 0031 eenmalig de historie ophalen**, anders telt een campagne die
+al liep pas vanaf de eerste nacht: haal via de knop "Data ophalen" (op de
+kanaalpagina's) de **Website** op over **12 maanden**. De andere vier GA4-tabellen worden
+daarbij opnieuw weggeschreven; dat is onschadelijk (upsert).
 
 En één cijfer dat anders optelt dan de rest: **gebruikers**. GA4 ontdubbelt dat binnen de
 opgevraagde periode en wij bewaren dagcijfers, dus wie op drie dagen langskwam telt in een

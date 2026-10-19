@@ -20,7 +20,7 @@ export const maxDuration = 300;
  *   ?deel=advertenties  — Meta, Google en LinkedIn Ads (±60 s)
  *   ?deel=organisch     — posts van Facebook, Instagram en LinkedIn (±120 s)
  *   ?deel=account       — pagina- en volgercijfers (±65 s)
- *   ?deel=website       — de vier GA4-opvragingen (±60 s voor dertig dagen)
+ *   ?deel=website       — de vijf GA4-opvragingen (±60 s voor dertig dagen, vóór de vijfde gemeten)
  *
  * Ze staan elk in een eigen uur (02:10, 03:10, 04:10, 05:10 UTC). Op het Hobby-plan van
  * Vercel is de cron-timing per uur nauwkeurig met een marge van 59 minuten, dus delen

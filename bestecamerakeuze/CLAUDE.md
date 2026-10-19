@@ -51,7 +51,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   Onderaan, buiten de groepen: Kosten, Instellingen en het gebruikersprofiel. Eén actieve
   state, subtiel gemarkeerd — geen felle kleuren.
 - **Geen dubbele navigatie**: de tabbladtitels staan alleen in de sidebar, nooit ook nog
-  eens als een rij tabs boven de content.
+  eens als een rij tabs boven de content. **Eén uitzondering**, op verzoek:
+  Campagnebeheer heeft twee tabs (Syntec en Google Analytics, zie hieronder). Dat zijn
+  geen twee pagina's maar twee kanten van dezelfde campagnelijst; maak er geen precedent
+  van voor andere pagina's.
 - **Page header**: paginatitel + korte subtitel links; rechts contextuele status (bv.
   "N campagnes live", "Laatst bijgewerkt HH:MM") en een subtiele update-actie — geen
   grote primaire knop voor een routinehandeling.
@@ -63,8 +66,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - Campagnes blijven **kolommen naast elkaar**, metrics blijven **rijen**; dit patroon
   nooit vervangen door aparte cards per campagne.
 - Rijen zijn gegroepeerd in vaste volgorde: **Planning → Budget → Leads → Orders**
-  (leads vóór orders, want orders is de laatste stap van de funnel). Groepskoppen zijn
-  klein, uppercase en subtiel (geen zware nadruk).
+  (leads vóór orders, want orders is de laatste stap van de funnel), met daaronder, los
+  van die funnel, **Google Analytics** (Doel GA conversies, GA conversies — zie
+  "Campagnebeheer → Google Analytics"). Groepskoppen zijn klein, uppercase en subtiel
+  (geen zware nadruk).
 - Sticky eerste kolom (metric-labels) én sticky kolomkoppen (campagnenamen), zodat je
   bij veel campagnes altijd weet naar welke metric en welke campagne je kijkt. Gebruik
   `border-separate` i.p.v. `border-collapse` op tabellen met sticky cellen — anders
@@ -690,6 +695,42 @@ pagina beoordelen als campagne-landingspagina van Van den Udenhout.
   op alleen de screenshot, als die er is; zonder screenshot krijgt de gebruiker de vraag
   er een te uploaden. (Toen dit tabblad nog op Claude draaide, was er een terugval via
   Claude's web_fetch-tool; OpenAI heeft geen vergelijkbare tool om één URL op te halen.)
+
+### Campagnebeheer → Syntec en Google Analytics
+
+Campagnebeheer (`components/beheer/CampagneBeheer.tsx`) heeft twee tabs boven de
+filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
+
+- **Syntec** is wat Campagnebeheer altijd was: de sheetvelden, bewerkbaar in-place.
+- **Google Analytics** (`components/ga4/Ga4Koppeltabel.tsx`) koppelt elke campagne aan de
+  GA4-events die voor hem als conversie tellen. Alleen de campagnenaam, de koppeling en
+  (als controle) de telling — geen sheetvelden. Bewerken gaat in een zijbalk
+  (`Ga4KoppelZijbalk.tsx`), want een koppeling past niet in een cel.
+  - **Regels.** Een campagne heeft één of meer regels (onderling "of"); een regel heeft
+    events (onderling "of") en voorwaarden (onderling "en") op paginapad, querystring,
+    pad + querystring, website, kanaalgroep of utm-campagne, met bevat / bevat niet / is /
+    is niet / begint met, hoofdletterongevoelig. Alle regels staan in één `where … or …`,
+    dus een event dat twee regels matcht telt één keer. Rekenwerk en SQL:
+    `lib/ga4Koppeling.ts`, getest in `lib/ga4Koppeling.test.ts` — waarden altijd als
+    parameter, kolomnamen uit een vaste lijst.
+  - **Geteld wordt `events`, niet `conversies`**: ook een event dat in GA4 geen key event
+    is telt mee als het is aangevinkt. Over de looptijd uit de sheet, tot en met gisteren
+    (`telPeriode`).
+  - **Het voorbeeld onderaan de zijbalk telt het concept** vóór het opslaan, via dezelfde
+    route (`/api/campagne-ga4/tellen` krijgt de regels mee in plaats van ze te lezen).
+    Een koppeling die je pas na opslaan kunt controleren, controleert niemand.
+  - **Data**: `windsor_ga4_event_paginas` (migratie 0031) — events × pagina ×
+    querystring, zónder page_view, scroll, user_engagement en first_visit (`GA4_EVENT_RUIS`)
+    en met de trackingparameters uit de querystring gehaald (`schoonQuerystring` in
+    `lib/windsor/sync.ts`). session_start zit er bewust wél in: een sessie die op de
+    campagnepagina begint is een volwaardig doel. Zet de ruisevents er niet bij en laat
+    `fbclid` en consorten er niet in: allebei laten de tabel exploderen.
+  - **Opslag**: `campagne_ga4_doelen` (migratie 0031), gekoppeld op campagnenaam zoals
+    `campagne_cijfers`. Het **doel** staat daar ook en niet in de sheet; het wordt
+    ingevuld in de campagnetabel (rij "Doel GA conversies", `Ga4Cellen.tsx`). Doel en
+    regels worden los opgeslagen zonder elkaar te overschrijven (`zetGa4Koppeling`).
+  - **Eén ophaalactie** voor de campagnetabel en dit tabblad
+    (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
 
 ### Component- en codepatronen
 
