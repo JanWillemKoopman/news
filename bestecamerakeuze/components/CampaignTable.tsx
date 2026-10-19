@@ -12,6 +12,8 @@ import BewerkbaarVeld from "@/components/BewerkbaarVeld";
 import CampaignHeader from "@/components/CampaignHeader";
 import MetricCell, { PlainCell } from "@/components/MetricCell";
 import { Ga4ConversieCel, Ga4DoelCel } from "@/components/ga4/Ga4Cellen";
+import { bronVanCampagne, type CampagneBron } from "@/lib/campagneBron";
+import { useGa4Koppelingen } from "@/lib/ga4KoppelingContext";
 
 type Metric = {
   label: string;
@@ -34,12 +36,20 @@ type Metric = {
 type Group = {
   title: string;
   metrics: Metric[];
+  /**
+   * Uit welke bron deze groep komt. Een campagne meet óf Syntec óf Google Analytics
+   * (`bronVanCampagne`); bij de andere bron staat er "n.v.t." en is het vlak gedimd.
+   * Groepen zonder bron (Planning, Budget) gelden altijd.
+   */
+  bron?: CampagneBron;
 };
 
 /**
  * Volgorde bewust: PLANNING → BUDGET → LEADS → ORDERS. Leads vóór orders, want orders
- * is de laatste stap van de funnel. Daaronder, los van die funnel, GOOGLE ANALYTICS: wat
- * er op de website gebeurde, volgens de koppeling op Campagnebeheer → Google Analytics.
+ * is de laatste stap van de funnel. Daaronder, los van die funnel, CONVERSIES (GOOGLE
+ * ANALYTICS): wat er op de website gebeurde, volgens de koppeling op Campagnebeheer →
+ * Google Analytics. Leads en orders komen uit Syntec; een campagne gebruikt óf die twee
+ * óf de conversies, en de kop zegt bij elke groep waar hij vandaan komt.
  *
  * Elke metric draagt zijn eigen uitleg mee. Die staat hier en niet in een los
  * documentje, omdat een uitleg die naast het cijfer staat gelezen wordt en een uitleg
@@ -111,7 +121,8 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: "Leads",
+    title: "Leads (Syntec)",
+    bron: "syntec",
     metrics: [
       {
         label: "Leads totaal",
@@ -146,7 +157,8 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: "Orders",
+    title: "Orders (Syntec)",
+    bron: "syntec",
     metrics: [
       {
         label: "Doel orders totaal",
@@ -176,16 +188,17 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: "Google Analytics",
+    title: "Conversies (Google Analytics)",
+    bron: "ga",
     metrics: [
       {
-        label: "Doel GA conversies",
+        label: "Doel conversies",
         uitleg:
           "Hoeveel websiteconversies (GA4) deze campagne moet opleveren. Vul je zelf in; welke events meetellen leg je vast op Campagnebeheer → Google Analytics.",
         render: (c, ingelogd) => <Ga4DoelCel campagne={c} bewerkbaar={ingelogd} />,
       },
       {
-        label: "GA conversies",
+        label: "Conversies",
         uitleg:
           "Hoe vaak de gekoppelde GA4-events vuurden tussen start- en einddatum (tot en met gisteren). Een streepje betekent: nog niet gekoppeld. Eronder: hoeveel procent dat is van het doel.",
         render: (c) => <Ga4ConversieCel campagne={c} />,
@@ -213,6 +226,14 @@ export default function CampaignTable({
   cijfers,
   onCijferChange,
 }: Props) {
+  const { koppelingen } = useGa4Koppelingen();
+  const bronnen = Object.fromEntries(
+    campagnes.map((c) => [c.naam, bronVanCampagne(c, koppelingen[c.naam])]),
+  );
+  /** Is deze groep voor deze campagne niet van toepassing (de andere bron is gekozen)? */
+  const nvt = (group: Group, c: Campagne) =>
+    Boolean(group.bron && bronnen[c.naam] && bronnen[c.naam] !== group.bron);
+
   if (campagnes.length === 0) {
     return (
       <div className="rounded-panel border border-line bg-card px-6 py-10 text-center shadow-card">
@@ -272,10 +293,12 @@ export default function CampaignTable({
                   >
                     {group.title}
                   </th>
-                  {campagnes.map((_, i) => (
+                  {campagnes.map((c) => (
                     <td
-                      key={i}
-                      className="border-b border-line-soft bg-surface-tint [border-left:1px_dashed_var(--color-line-soft)]"
+                      key={c.naam}
+                      className={`border-b border-line-soft bg-surface-tint [border-left:1px_dashed_var(--color-line-soft)] ${
+                        nvt(group, c) ? "opacity-80" : ""
+                      }`}
                     />
                   ))}
                 </tr>
@@ -295,9 +318,17 @@ export default function CampaignTable({
                     {campagnes.map((c) => (
                       <td
                         key={c.naam}
-                        className="border-b border-line-soft px-3 py-3 align-top [border-left:1px_dashed_var(--color-line-soft)]"
+                        className={`border-b border-line-soft px-3 py-3 align-top [border-left:1px_dashed_var(--color-line-soft)] ${
+                          nvt(group, c) ? "opacity-80" : ""
+                        }`}
                       >
-                        {metric.bewerken && ingelogd ? (
+                        {/* De andere bron is gekozen: "n.v.t." in plaats van een nul of een
+                            streepje, dat zou lezen als "niets gehaald". Ook niet bewerkbaar —
+                            wie van bron wil wisselen, haalt eerst de koppeling of de
+                            sheetwaarden weg. 20% doorschijnend (opacity-80), op verzoek. */}
+                        {nvt(group, c) ? (
+                          <PlainCell value="n.v.t." muted />
+                        ) : metric.bewerken && ingelogd ? (
                           <BewerkbaarVeld
                             campagneNaam={c.naam}
                             veld={metric.bewerken.veld}

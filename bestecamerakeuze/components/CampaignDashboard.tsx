@@ -43,6 +43,12 @@ function Leeswijzer() {
           doel is afgesproken. Staat er een streepje, dan ontbreekt dat doel in de sheet.
         </li>
         <li>
+          <span className="font-medium text-ink">Een campagne meet óf leads en orders (Syntec), óf
+          conversies (Google Analytics).</span> Wat niet van toepassing is staat er als
+          &ldquo;n.v.t.&rdquo; en iets lichter; heeft een campagne allebei, dan telt Google
+          Analytics.
+        </li>
+        <li>
           <span className="font-medium text-ink">Klik op een campagnenaam</span> om het logboek van
           die campagne te openen: observaties, hypotheses, besluiten en acties.
         </li>

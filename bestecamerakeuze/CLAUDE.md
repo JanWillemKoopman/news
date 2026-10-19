@@ -67,9 +67,17 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   nooit vervangen door aparte cards per campagne.
 - Rijen zijn gegroepeerd in vaste volgorde: **Planning → Budget → Leads → Orders**
   (leads vóór orders, want orders is de laatste stap van de funnel), met daaronder, los
-  van die funnel, **Google Analytics** (Doel GA conversies, GA conversies — zie
-  "Campagnebeheer → Google Analytics"). Groepskoppen zijn klein, uppercase en subtiel
-  (geen zware nadruk).
+  van die funnel, **Conversies (Google Analytics)** (Doel conversies, Conversies — zie
+  "Campagnebeheer → Google Analytics"). Leads en Orders heten "Leads (Syntec)" en
+  "Orders (Syntec)", zodat de kop zegt waar het cijfer vandaan komt. Groepskoppen zijn
+  klein, uppercase en subtiel (geen zware nadruk).
+- **Een campagne meet óf Syntec óf Google Analytics** (`bronVanCampagne` in
+  `lib/campagneBron.ts`, getest). Google Analytics zodra er een GA-koppeling of GA-doel
+  is; Syntec zodra er leads zijn (meer dan nul) of een doel op leads of orders. Allebei:
+  Google Analytics wint, want een koppeling is een bewuste keuze en een sheetveld kan
+  een doorgetrokken formule zijn. De groepen van de andere bron tonen per cel "n.v.t."
+  (niet bewerkbaar) en staan 20% doorschijnend (`opacity-80`), op verzoek — een lege of
+  nul-cel zou lezen als "niets gehaald". Geen van beide ingevuld: niets gedimd.
 - Sticky eerste kolom (metric-labels) én sticky kolomkoppen (campagnenamen), zodat je
   bij veel campagnes altijd weet naar welke metric en welke campagne je kijkt. Gebruik
   `border-separate` i.p.v. `border-collapse` op tabellen met sticky cellen — anders
