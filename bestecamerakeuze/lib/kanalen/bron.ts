@@ -1378,8 +1378,8 @@ export interface Ga4Opties {
 }
 
 /**
- * De keuzelijsten van de koppelzijbalk: alle events die de laatste negentig dagen vuurden,
- * met hun volume (zodat de twee die ertoe doen bovenaan staan en niet tussen veertig
+ * De keuzelijsten van de koppelzijbalk: alle events die de laatste negentig dagen (of in de
+ * looptijd van de campagne) vuurden, met hun volume in die looptijd (zodat de twee die ertoe doen bovenaan staan en niet tussen veertig
  * klikevents verdwijnen), en de websites en kanaalgroepen voor de voorwaarden.
  *
  * Bewust uit `v_ga4_events` en `v_ga4_verkeer`, niet uit `v_ga4_event_paginas` waar de
@@ -1388,17 +1388,29 @@ export interface Ga4Opties {
  * eventnamen zijn in beide tabellen dezelfde. De ruisevents gaan er wél uit: die staan
  * niet in de telling (`GA4_EVENT_RUIS`), dus aanvinken zou altijd nul opleveren.
  */
-export async function haalGa4Opties(): Promise<Ga4Opties> {
+export async function haalGa4Opties(periode?: { van: string; tot: string }): Promise<Ga4Opties> {
   return metVerbinding(async (client) => {
     const [events, websites, kanalen] = await Promise.all([
+      // Met een periode (de looptijd van de campagne) telt en sorteert de lijst over díe
+      // dagen, zodat bovenaan staat wat er tijdens de campagne gebeurde. De events van de
+      // laatste negentig dagen staan er daarnaast óók in, met nul als ze in de looptijd
+      // niet vuurden: een campagne mag koppelen aan een formulier dat pas later live ging,
+      // en dat moet dan wel te vinden zijn.
       client.query(
-        `select event_naam, sum(events) as aantal, sum(conversies) > 0 as key_event
+        `select event_naam,
+                coalesce(sum(events) filter (
+                  where datum between coalesce($2::date, current_date - 90)
+                                  and coalesce($3::date, current_date)
+                ), 0) as aantal,
+                coalesce(sum(conversies), 0) > 0 as key_event
            from dataloket.v_ga4_events
-          where datum >= current_date - 90 and event_naam <> ''
+          where datum >= least(coalesce($2::date, current_date - 90), current_date - 90)
+            and event_naam <> ''
             and event_naam <> all($1::text[])
           group by event_naam
-          order by aantal desc`,
-        [GA4_EVENT_RUIS],
+          order by aantal desc, sum(events) desc`,
+        // Zonder periode (een campagne zonder startdatum): gewoon de laatste 90 dagen.
+        [GA4_EVENT_RUIS, periode?.van ?? null, periode?.tot ?? null],
       ),
       client.query(
         `select distinct website from dataloket.v_ga4_verkeer

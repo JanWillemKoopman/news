@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isKanalenGeconfigureerd, telGa4Conversies } from "@/lib/kanalen/bron";
-import { controleerRegels, telPeriode, type TelVraag } from "@/lib/ga4Koppeling";
+import { controleerRegels, gisteren, telPeriode, type TelVraag } from "@/lib/ga4Koppeling";
 
 export const dynamic = "force-dynamic";
 
 const MAX_CAMPAGNES = 300;
-
-/** Gisteren in Nederlandse tijd: de sync draait 's nachts, dus vandaag staat er nog niet in. */
-function gisteren(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(d);
-}
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 

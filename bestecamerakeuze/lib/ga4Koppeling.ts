@@ -270,6 +270,13 @@ export function telPeriode(
   return { van: startdatum, tot };
 }
 
+/** Gisteren in Nederlandse tijd: de sync draait 's nachts, dus vandaag staat er nog niet in. */
+export function gisteren(nu: Date = new Date()): string {
+  const d = new Date(nu);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(d);
+}
+
 /** Korte omschrijving van een regel, voor in de tabel: "proefrit, offerte · pagina bevat /audi". */
 export function omschrijfRegel(regel: Regel): string {
   const events = regel.events.join(", ");
