@@ -10,6 +10,7 @@ import {
   VELD_LABELS,
   VOORWAARDE_VELDEN,
   controleerRegels,
+  zoekEvents,
   type Ga4Telling,
   type Operator,
   type Regel,
@@ -379,12 +380,13 @@ function EventKiezer({
     return () => document.removeEventListener("mousedown", klikBuiten);
   }, [open]);
 
-  const term = zoek.trim().toLowerCase();
-  const zichtbaar = useMemo(
-    () => (opties ?? []).filter((o) => !term || o.event.toLowerCase().includes(term) || gekozen.includes(o.event)),
-    [opties, term, gekozen],
-  );
-  const eigenEvent = zoek.trim() && !(opties ?? []).some((o) => o.event === zoek.trim()) ? zoek.trim() : null;
+  // Altijd de top 10, ook zonder zoekterm: een lege lijst met "begin maar te typen" helpt
+  // niemand die de technische eventnaam nog niet kent. Gekozen events staan als chips
+  // boven de knop, dus die hoeven hier niet buiten de top om terug te komen.
+  const { top: zichtbaar, meer } = useMemo(() => zoekEvents(opties ?? [], zoek), [opties, zoek]);
+  const eigenEvent = opties !== null && zichtbaar.length === 0 && zoek.trim() ? zoek.trim() : null;
+  // Zelf een naam toevoegen alleen als er niets gevonden is: anders staat "“lead
+  // proefrit” toevoegen" naast het echte `generate_lead_proefrit`, en dat leidt af.
 
   function toggle(event: string) {
     onChange(gekozen.includes(event) ? gekozen.filter((e) => e !== event) : [...gekozen, event]);
@@ -423,7 +425,7 @@ function EventKiezer({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-10 mt-1 flex max-h-80 flex-col rounded-control border border-line bg-card shadow-dropdown">
+        <div className="absolute left-0 right-0 top-full z-10 mt-1 flex max-h-120 flex-col rounded-control border border-line bg-card shadow-dropdown">
           <div className="flex items-center gap-2 border-b border-line px-3 py-2">
             <IconSearch className="h-3.5 w-3.5 text-ink-faint" />
             <input
@@ -455,6 +457,11 @@ function EventKiezer({
             {opties !== null && zichtbaar.length === 0 && !eigenEvent && (
               <p className="px-3 py-2 text-xs text-ink-faint">Geen events gevonden.</p>
             )}
+            {meer > 0 && (
+              <p className="px-3 py-1.5 text-meta text-ink-faint">
+                Nog {formatNumber(meer)} {meer === 1 ? "event" : "events"} — typ verder om te zoeken.
+              </p>
+            )}
             {eigenEvent && !gekozen.includes(eigenEvent) && (
               <button
                 type="button"
@@ -470,7 +477,7 @@ function EventKiezer({
             )}
           </div>
           <p className="border-t border-line px-3 py-1.5 text-meta text-ink-faint">
-            Aantallen over de laatste 90 dagen, alle websites samen.
+            {zoek.trim() ? "Beste treffers" : "Top 10"} op aantal over de laatste 90 dagen, alle websites samen.
           </p>
         </div>
       )}

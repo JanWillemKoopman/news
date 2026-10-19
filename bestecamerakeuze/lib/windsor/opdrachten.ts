@@ -48,6 +48,8 @@ export interface Opdracht {
   bijgewerktOp: string;
   afgerondOp: string | null;
   fout: string | null;
+  /** Alleen ontbrekende rijen toevoegen, nooit overschrijven — zie migratie 0032. */
+  alleenAanvullen: boolean;
 }
 
 function alsOpdracht(rij: Record<string, unknown>): Opdracht {
@@ -63,13 +65,15 @@ function alsOpdracht(rij: Record<string, unknown>): Opdracht {
     bijgewerktOp: new Date(rij.bijgewerkt_op as string).toISOString(),
     afgerondOp: rij.afgerond_op ? new Date(rij.afgerond_op as string).toISOString() : null,
     fout: (rij.fout as string) || null,
+    alleenAanvullen: Boolean(rij.alleen_aanvullen),
   };
 }
 
 /** De kolommen die `alsOpdracht` verwacht; datums als tekst, want `pg` maakt er anders Date van. */
 const KOLOMMEN = `deel, van::text as van, tot::text as tot,
                   gevraagd_van::text as gevraagd_van, gevraagd_tot::text as gevraagd_tot,
-                  schakels, rijen, gestart_op, bijgewerkt_op, afgerond_op, fout`;
+                  schakels, rijen, gestart_op, bijgewerkt_op, afgerond_op, fout,
+                  alleen_aanvullen`;
 
 /**
  * Zet de opdracht voor elk gevraagd deel klaar, en gooit een eventuele vorige om.
@@ -82,13 +86,14 @@ export async function zetOpdrachten(
   client: Client,
   delen: readonly string[],
   periode: Periode,
+  alleenAanvullen = false,
 ): Promise<void> {
   if (delen.length === 0) return;
   await client.query(
     `insert into dataloket.sync_opdrachten
        (deel, van, tot, gevraagd_van, gevraagd_tot, schakels, rijen, bezig_tot,
-        gestart_op, bijgewerkt_op, afgerond_op, fout)
-     select d, $2::date, $3::date, $2::date, $3::date, 0, 0, null, now(), now(), null, null
+        gestart_op, bijgewerkt_op, afgerond_op, fout, alleen_aanvullen)
+     select d, $2::date, $3::date, $2::date, $3::date, 0, 0, null, now(), now(), null, null, $4
        from unnest($1::text[]) as d
      on conflict (deel) do update
         set van = excluded.van,
@@ -101,8 +106,9 @@ export async function zetOpdrachten(
             gestart_op = now(),
             bijgewerkt_op = now(),
             afgerond_op = null,
-            fout = null`,
-    [[...delen], periode.van, periode.tot],
+            fout = null,
+            alleen_aanvullen = excluded.alleen_aanvullen`,
+    [[...delen], periode.van, periode.tot, alleenAanvullen],
   );
 }
 

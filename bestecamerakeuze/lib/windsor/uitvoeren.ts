@@ -137,6 +137,7 @@ async function draai(
   van: string,
   tot: string,
   gestartOp: number,
+  alleenAanvullen: boolean,
 ): Promise<{ resultaten: SyncResultaat[]; gedaan: Periode | null; restant: Periode | null }> {
   const verzameld = new Map<string, SyncResultaat>();
   const alles = deel === null;
@@ -219,33 +220,35 @@ async function draai(
     }
 
     if (website) {
+      // Met `alleenAanvullen` (de knop op de pagina Website, migratie 0032) blijven rijen die
+      // er al staan ongemoeid en komen alleen ontbrekende rijen erbij.
       // Vier opvragingen op vier korrels (plus de events × pagina's hieronder) — GA4 heeft geen rij waarin een sessie, een
       // pagina en een event tegelijk passen. Ze staan los van elkaar, dus een property
       // die op één ervan een fout geeft laat de andere drie staan.
       tel(
         verzameld,
-        await probeer(() => syncGa4Verkeer(client, stuk.van, stuk.tot), "ga4-verkeer"),
+        await probeer(() => syncGa4Verkeer(client, stuk.van, stuk.tot, alleenAanvullen), "ga4-verkeer"),
       );
       tel(
         verzameld,
         await probeer(
-          () => syncGa4Landingspaginas(client, stuk.van, stuk.tot),
+          () => syncGa4Landingspaginas(client, stuk.van, stuk.tot, alleenAanvullen),
           "ga4-landingspaginas",
         ),
       );
       tel(
         verzameld,
-        await probeer(() => syncGa4Paginas(client, stuk.van, stuk.tot), "ga4-paginas"),
+        await probeer(() => syncGa4Paginas(client, stuk.van, stuk.tot, alleenAanvullen), "ga4-paginas"),
       );
       tel(
         verzameld,
-        await probeer(() => syncGa4Events(client, stuk.van, stuk.tot), "ga4-events"),
+        await probeer(() => syncGa4Events(client, stuk.van, stuk.tot, alleenAanvullen), "ga4-events"),
       );
       // De vijfde: events × pagina, voor de GA-conversies per campagne (migratie 0031).
       tel(
         verzameld,
         await probeer(
-          () => syncGa4EventPaginas(client, stuk.van, stuk.tot),
+          () => syncGa4EventPaginas(client, stuk.van, stuk.tot, alleenAanvullen),
           "ga4-event-paginas",
         ),
       );
@@ -300,7 +303,15 @@ async function draai(
 export async function voerSyncUit(
   deel: Deel | null,
   periodeOfDagen: Periode | number = VENSTER_DAGEN,
+  opties: { alleenAanvullen?: boolean } = {},
 ): Promise<SyncUitkomst> {
+  // Aanvullen bestaat alleen voor de website. De andere delen kennen het niet, en een vlag
+  // die stilletjes niets doet is erger dan een die weigert: dan denkt iemand dat zijn
+  // advertentiecijfers beschermd zijn terwijl ze gewoon worden overschreven.
+  const alleenAanvullen = Boolean(opties.alleenAanvullen);
+  if (alleenAanvullen && deel !== "website") {
+    throw new Error("Alleen aanvullen kan op dit moment alleen voor de website.");
+  }
   if (!isWindsorGeconfigureerd()) {
     throw new Error("WINDSOR_API_KEY ontbreekt.");
   }
@@ -323,7 +334,7 @@ export async function voerSyncUit(
     );
     const runId = runRes.rows[0].id;
 
-    const { resultaten, gedaan, restant } = await draai(client, deel, van, tot, start);
+    const { resultaten, gedaan, restant } = await draai(client, deel, van, tot, start, alleenAanvullen);
 
     const gelezen = resultaten.reduce((t, r) => t + r.gelezen, 0);
     const geschreven = resultaten.reduce((t, r) => t + r.geschreven, 0);

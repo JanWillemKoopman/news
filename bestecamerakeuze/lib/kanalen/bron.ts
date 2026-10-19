@@ -32,7 +32,7 @@ import { Client } from "pg";
 import type { Kubus } from "@/lib/kanalen/kubus";
 import type { CampagneBudget } from "@/lib/kanalen/budget";
 import type { DagRegel } from "@/lib/kanalen/budgetBeheer";
-import { labelVoorConversie } from "@/lib/windsor/velden";
+import { GA4_EVENT_RUIS, labelVoorConversie } from "@/lib/windsor/velden";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { haalOpdrachten, type Opdracht } from "@/lib/windsor/opdrachten";
 import { bouwTelQuery, verwerkTelling, type Ga4Telling, type TelVraag } from "@/lib/ga4Koppeling";
@@ -1381,24 +1381,32 @@ export interface Ga4Opties {
  * De keuzelijsten van de koppelzijbalk: alle events die de laatste negentig dagen vuurden,
  * met hun volume (zodat de twee die ertoe doen bovenaan staan en niet tussen veertig
  * klikevents verdwijnen), en de websites en kanaalgroepen voor de voorwaarden.
+ *
+ * Bewust uit `v_ga4_events` en `v_ga4_verkeer`, niet uit `v_ga4_event_paginas` waar de
+ * telling zelf op draait: die tabel bestaat pas sinds migratie 0031 en is leeg tot de
+ * historie is opgehaald — en een lege keuzelijst laat niemand een koppeling maken. De
+ * eventnamen zijn in beide tabellen dezelfde. De ruisevents gaan er wél uit: die staan
+ * niet in de telling (`GA4_EVENT_RUIS`), dus aanvinken zou altijd nul opleveren.
  */
 export async function haalGa4Opties(): Promise<Ga4Opties> {
   return metVerbinding(async (client) => {
     const [events, websites, kanalen] = await Promise.all([
       client.query(
         `select event_naam, sum(events) as aantal, sum(conversies) > 0 as key_event
-           from dataloket.v_ga4_event_paginas
+           from dataloket.v_ga4_events
           where datum >= current_date - 90 and event_naam <> ''
+            and event_naam <> all($1::text[])
           group by event_naam
           order by aantal desc`,
+        [GA4_EVENT_RUIS],
       ),
       client.query(
-        `select distinct website from dataloket.v_ga4_event_paginas
+        `select distinct website from dataloket.v_ga4_verkeer
           where datum >= current_date - 90 and coalesce(website, '') <> ''
           order by website`,
       ),
       client.query(
-        `select distinct kanaalgroep from dataloket.v_ga4_event_paginas
+        `select distinct kanaalgroep from dataloket.v_ga4_verkeer
           where datum >= current_date - 90 and kanaalgroep <> ''
           order by kanaalgroep`,
       ),

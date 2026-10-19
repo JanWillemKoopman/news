@@ -528,6 +528,17 @@ niet uit af te lezen zijn:
   het blok staat apart en niet als kolom in de campagnetabel. Het rekenwerk (verstreken
   tijd tegen benut budget) staat in `lib/kanalen/budget.ts`, zonder React en zonder
   database, en is daarmee getest.
+- **"Data ophalen" staat alleen op de pagina Website**, rechtsboven links naast het
+  lampje (`dataOphalen` op `KanaalPagina`). Hij is in september 2026 van alle
+  Kanalen-pagina's gehaald en in oktober op verzoek alleen hier teruggezet, voor de
+  historie van de GA-conversies per campagne. Hij haalt alleen de website op en
+  **vult alleen aan**: `alleen_aanvullen` op de opdracht (migratie 0032) laat
+  `schrijfBatch` `on conflict do nothing` doen, dus een rij die er al staat verandert
+  nooit en er verdwijnt nooit iets. De vlag staat op de opdracht en niet in het verzoek,
+  zodat ook een schakel die de cron later oppakt zo schrijft. Aanvullen bestaat alleen
+  voor de website: route én `voerSyncUit` weigeren het voor andere delen in plaats van het
+  stil te negeren. De nachtelijke sync blijft wél overschrijven (late toeschrijving);
+  geen van beide verwijdert ooit een rij.
 - **Testen zonder bundler.** `npm test` draait met `scripts/test-resolver.mjs`, een
   resolve-hook die het `@/`-alias en imports zonder extensie afhandelt. Zonder dat was een
   `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
@@ -729,6 +740,12 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
     `campagne_cijfers`. Het **doel** staat daar ook en niet in de sheet; het wordt
     ingevuld in de campagnetabel (rij "Doel GA conversies", `Ga4Cellen.tsx`). Doel en
     regels worden los opgeslagen zonder elkaar te overschrijven (`zetGa4Koppeling`).
+  - **De eventkiezer toont altijd de top 10** op volume, en tijdens het typen de top 10
+    van de treffers (`zoekEvents`: per woord, streepjes tellen niet, dus "lead proefrit"
+    vindt `generate_lead_proefrit`). De keuzelijst komt uit `v_ga4_events` en niet uit
+    `v_ga4_event_paginas`: die tweede is leeg tot de historie is opgehaald, en een lege
+    keuzelijst laat niemand een koppeling maken. De ruisevents staan er niet in, want die
+    kunnen nooit iets tellen.
   - **Eén ophaalactie** voor de campagnetabel en dit tabblad
     (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
 

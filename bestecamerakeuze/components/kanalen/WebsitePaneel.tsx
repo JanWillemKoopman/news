@@ -125,6 +125,9 @@ export default function WebsitePaneel({ ingelogd }: { ingelogd: boolean }) {
       // Search zakt weg" het bericht waar iemand 's ochtends iets mee doet, en een
       // campagne zie je al op de advertentiepagina's.
       signaalDimensie="kanaalgroep"
+      // Alleen hier staat "Data ophalen" nog, en alleen aanvullend: de historie hoort
+      // erbij te komen zonder dat er ooit iets van wat er al staat verandert.
+      dataOphalen={{ deel: "website", alleenAanvullen: true }}
       filterDimensies={[
         { id: "website", label: "Website" },
         { id: "kanaalgroep", label: "Kanaal" },
