@@ -11,12 +11,14 @@ import {
 import BewerkbaarVeld from "@/components/BewerkbaarVeld";
 import CampaignHeader from "@/components/CampaignHeader";
 import MetricCell, { PlainCell } from "@/components/MetricCell";
+import { Ga4ConversieCel, Ga4DoelCel } from "@/components/ga4/Ga4Cellen";
 
 type Metric = {
   label: string;
   /** Eén zin in gewone taal: wat staat hier, en waar moet je op letten? Zie "Zo lees je dit". */
   uitleg: string;
-  render: (campagne: Campagne) => ReactNode;
+  /** `ingelogd` alleen voor cellen die zelf hun opslag regelen (het GA-doel, in Supabase). */
+  render: (campagne: Campagne, ingelogd: boolean) => ReactNode;
   /**
    * Alleen op metrics die een handmatig ingevulde waarde in de sheet zijn — Leads totaal,
    * Leads online en Orders totaal komen ergens anders vandaan en zijn hier bewust nooit
@@ -36,7 +38,8 @@ type Group = {
 
 /**
  * Volgorde bewust: PLANNING → BUDGET → LEADS → ORDERS. Leads vóór orders, want orders
- * is de laatste stap van de funnel.
+ * is de laatste stap van de funnel. Daaronder, los van die funnel, GOOGLE ANALYTICS: wat
+ * er op de website gebeurde, volgens de koppeling op Campagnebeheer → Google Analytics.
  *
  * Elke metric draagt zijn eigen uitleg mee. Die staat hier en niet in een los
  * documentje, omdat een uitleg die naast het cijfer staat gelezen wordt en een uitleg
@@ -172,6 +175,23 @@ const GROUPS: Group[] = [
       },
     ],
   },
+  {
+    title: "Google Analytics",
+    metrics: [
+      {
+        label: "Doel GA conversies",
+        uitleg:
+          "Hoeveel websiteconversies (GA4) deze campagne moet opleveren. Vul je zelf in; welke events meetellen leg je vast op Campagnebeheer → Google Analytics.",
+        render: (c, ingelogd) => <Ga4DoelCel campagne={c} bewerkbaar={ingelogd} />,
+      },
+      {
+        label: "GA conversies",
+        uitleg:
+          "Hoe vaak de gekoppelde GA4-events vuurden tussen start- en einddatum (tot en met gisteren). Een streepje betekent: nog niet gekoppeld. Eronder: hoeveel procent dat is van het doel.",
+        render: (c) => <Ga4ConversieCel campagne={c} />,
+      },
+    ],
+  },
 ];
 
 type Props = {
@@ -284,10 +304,10 @@ export default function CampaignTable({
                             initieleWaarde={metric.bewerken.huidigeWaarde(c)}
                             type={metric.bewerken.type}
                           >
-                            {metric.render(c)}
+                            {metric.render(c, ingelogd)}
                           </BewerkbaarVeld>
                         ) : (
-                          metric.render(c)
+                          metric.render(c, ingelogd)
                         )}
                       </td>
                     ))}

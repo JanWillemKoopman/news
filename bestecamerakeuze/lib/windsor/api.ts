@@ -183,11 +183,20 @@ function apiSleutel(): string {
   return sleutel;
 }
 
+/**
+ * Een filter zoals Windsor hem aanneemt: `[["event_name","neq","page_view"],"and",…]`.
+ * Gefilterd wordt aan Windsors kant, dus wat wegvalt komt niet eens over de lijn — bij de
+ * events × pagina's is dat het verschil tussen een paar duizend en ruim honderdduizend
+ * rijen per dag (zie `syncGa4EventPaginas`).
+ */
+export type WindsorFilter = (readonly [string, string, string | number | null] | "and" | "or")[];
+
 export async function haalOp(
   connector: Connector,
   velden: string[],
   van: string,
   tot: string,
+  filter?: WindsorFilter,
 ): Promise<WindsorRij[]> {
   const sleutel = apiSleutel();
 
@@ -201,6 +210,7 @@ export async function haalOp(
     select_accounts: accounts.join(","),
     api_key: sleutel,
   });
+  if (filter && filter.length > 0) query.set("filter", JSON.stringify(filter));
 
   let laatsteFout: Error | null = null;
 

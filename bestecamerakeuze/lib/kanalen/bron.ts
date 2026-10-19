@@ -35,6 +35,7 @@ import type { DagRegel } from "@/lib/kanalen/budgetBeheer";
 import { labelVoorConversie } from "@/lib/windsor/velden";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { haalOpdrachten, type Opdracht } from "@/lib/windsor/opdrachten";
+import { bouwTelQuery, verwerkTelling, type Ga4Telling, type TelVraag } from "@/lib/ga4Koppeling";
 
 /** Boven deze periodelengte vat de server samen tot weken. */
 export const DAG_KORREL_MAX_DAGEN = 120;
@@ -1340,6 +1341,76 @@ export async function haalSyncStand(): Promise<SyncStand> {
     return {
       laatsteSync: moment ? new Date(moment as string).toISOString() : null,
       loopt: Number(res.rows[0]?.lopend ?? 0) > 0,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GA-conversies per campagne (Campagnebeheer → Google Analytics)
+// ---------------------------------------------------------------------------
+
+/**
+ * Telt per campagne de aangevinkte GA4-events binnen zijn looptijd. De query zelf wordt
+ * gebouwd in `lib/ga4Koppeling.ts` (getest, alle waarden als parameter); hier wordt hij
+ * alleen uitgevoerd. Een campagne zonder treffers staat niet in het antwoord — de
+ * aanroeper maakt daar nul van als er wél regels zijn.
+ */
+export async function telGa4Conversies(vragen: TelVraag[]): Promise<Record<string, Ga4Telling>> {
+  const query = bouwTelQuery(vragen);
+  if (!query) return {};
+  return metVerbinding(async (client) => {
+    const res = await client.query(query.sql, query.params);
+    return verwerkTelling(res.rows);
+  });
+}
+
+export interface Ga4EventOptie {
+  event: string;
+  aantal: number;
+  /** GA4 telt dit event als key event (er staan conversies bij). */
+  keyEvent: boolean;
+}
+
+export interface Ga4Opties {
+  events: Ga4EventOptie[];
+  websites: string[];
+  kanaalgroepen: string[];
+}
+
+/**
+ * De keuzelijsten van de koppelzijbalk: alle events die de laatste negentig dagen vuurden,
+ * met hun volume (zodat de twee die ertoe doen bovenaan staan en niet tussen veertig
+ * klikevents verdwijnen), en de websites en kanaalgroepen voor de voorwaarden.
+ */
+export async function haalGa4Opties(): Promise<Ga4Opties> {
+  return metVerbinding(async (client) => {
+    const [events, websites, kanalen] = await Promise.all([
+      client.query(
+        `select event_naam, sum(events) as aantal, sum(conversies) > 0 as key_event
+           from dataloket.v_ga4_event_paginas
+          where datum >= current_date - 90 and event_naam <> ''
+          group by event_naam
+          order by aantal desc`,
+      ),
+      client.query(
+        `select distinct website from dataloket.v_ga4_event_paginas
+          where datum >= current_date - 90 and coalesce(website, '') <> ''
+          order by website`,
+      ),
+      client.query(
+        `select distinct kanaalgroep from dataloket.v_ga4_event_paginas
+          where datum >= current_date - 90 and kanaalgroep <> ''
+          order by kanaalgroep`,
+      ),
+    ]);
+    return {
+      events: events.rows.map((r) => ({
+        event: String(r.event_naam),
+        aantal: Number(r.aantal ?? 0),
+        keyEvent: Boolean(r.key_event),
+      })),
+      websites: websites.rows.map((r) => String(r.website)),
+      kanaalgroepen: kanalen.rows.map((r) => String(r.kanaalgroep)),
     };
   });
 }

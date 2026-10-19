@@ -23,6 +23,7 @@ import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
+import { Ga4KoppelingProvider } from "@/lib/ga4KoppelingContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
 import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { TeamDataProvider } from "@/lib/teamData";
@@ -60,6 +61,9 @@ export default async function DashboardPage() {
 
   return (
     <CampagneFilterProvider campagnes={campagnes}>
+      {/* De GA-koppelingen per campagne, gedeeld door de campagnetabel en Campagnebeheer
+          → Google Analytics — zie lib/ga4KoppelingContext.tsx. */}
+      <Ga4KoppelingProvider ingelogd={ingelogd}>
       {/* Eén ophaalactie voor alles wat het team zelf vastlegt, gedeeld door de
           tabbladen Scores en Kennis en acties (en door de weekwinnaar-pop-up in
           AppShell) — zie lib/teamData.tsx. */}
@@ -126,6 +130,7 @@ export default async function DashboardPage() {
         instellingen={<InstellingenPaneel ingelogd={ingelogd} email={gebruiker.email} />}
         />
       </TeamDataProvider>
+      </Ga4KoppelingProvider>
     </CampagneFilterProvider>
   );
 }

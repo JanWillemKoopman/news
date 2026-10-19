@@ -9,6 +9,7 @@ import {
   syncConversieActies,
   syncFacebookPagina,
   syncFacebookPosts,
+  syncGa4EventPaginas,
   syncGa4Events,
   syncGa4Landingspaginas,
   syncGa4Paginas,
@@ -218,7 +219,7 @@ async function draai(
     }
 
     if (website) {
-      // Vier opvragingen op vier korrels — GA4 heeft geen rij waarin een sessie, een
+      // Vier opvragingen op vier korrels (plus de events × pagina's hieronder) — GA4 heeft geen rij waarin een sessie, een
       // pagina en een event tegelijk passen. Ze staan los van elkaar, dus een property
       // die op één ervan een fout geeft laat de andere drie staan.
       tel(
@@ -239,6 +240,14 @@ async function draai(
       tel(
         verzameld,
         await probeer(() => syncGa4Events(client, stuk.van, stuk.tot), "ga4-events"),
+      );
+      // De vijfde: events × pagina, voor de GA-conversies per campagne (migratie 0031).
+      tel(
+        verzameld,
+        await probeer(
+          () => syncGa4EventPaginas(client, stuk.van, stuk.tot),
+          "ga4-event-paginas",
+        ),
       );
     }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { telSamen } from "@/lib/windsor/sync";
+import { schoonQuerystring, splitsPaginaPad, telSamen } from "@/lib/windsor/sync";
 import { GA4_EVENTVELDEN, GA4_LANDINGSVELDEN, GA4_PAGINAVELDEN, OPHAALVELDEN } from "@/lib/windsor/velden";
 
 /**
@@ -89,4 +89,19 @@ test("elke GA4-opvraging draagt de kanaalgroep mee", () => {
     assert.ok(velden.includes("date"));
     assert.ok(velden.includes("account_id"));
   }
+});
+
+test("splitsPaginaPad scheidt pad en querystring en haalt trackingparameters eruit", () => {
+  assert.deepEqual(splitsPaginaPad("/auto?merk=audi&sort=meest-bekeken"), ["/auto", "merk=audi&sort=meest-bekeken"]);
+  assert.deepEqual(splitsPaginaPad("/acties/a2-e-tron?fbclid=IwZX"), ["/acties/a2-e-tron", ""]);
+  assert.deepEqual(splitsPaginaPad("/werkplaatsplanner?email_id=&M_BT=6626"), ["/werkplaatsplanner", ""]);
+  assert.deepEqual(splitsPaginaPad("/volkswagen"), ["/volkswagen", ""]);
+  assert.deepEqual(splitsPaginaPad("/a#top"), ["/a", ""]);
+});
+
+test("schoonQuerystring laat de rest in volgorde staan en negeert hoofdletters", () => {
+  assert.equal(
+    schoonQuerystring("merk=audi&utm_source=fb&GCLID=x&type=occasions&msclkid=y"),
+    "merk=audi&type=occasions",
+  );
 });
