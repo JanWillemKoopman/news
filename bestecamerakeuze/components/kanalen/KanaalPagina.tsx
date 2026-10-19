@@ -10,6 +10,7 @@ import UitsplitsingPaneel from "@/components/kanalen/UitsplitsingPaneel";
 import StatistiekTabel from "@/components/kanalen/StatistiekTabel";
 import TijdGrafiek from "@/components/kanalen/TijdGrafiek";
 import Inlogprompt from "@/components/Inlogprompt";
+import DataOphalen from "@/components/kanalen/DataOphalen";
 import { IconLightbulb } from "@/components/icons";
 import {
   eigenPeriode,
@@ -143,6 +144,13 @@ type Props = {
    * dan niet.
    */
   verbergZonderConversieActies?: string[];
+  /**
+   * Zet de knop "Data ophalen" rechtsboven in het scherm, voor dit ene onderdeel. Alleen
+   * de pagina Website heeft hem (op verzoek terug, oktober 2026): daar is de historie van
+   * de GA-conversies per campagne nodig. Met `alleenAanvullen` overschrijft hij nooit iets
+   * wat er al staat — zie `DataOphalen.tsx` en migratie 0032.
+   */
+  dataOphalen?: { deel: "website"; alleenAanvullen: boolean };
 };
 
 export default function KanaalPagina({
@@ -159,6 +167,7 @@ export default function KanaalPagina({
   signaalDrempel,
   verbergZonderConversieLeads,
   verbergZonderConversieActies,
+  dataOphalen,
 }: Props) {
   const periodes = useMemo(() => standaardPeriodes(), []);
   // De URL wint bij het openen: een gedeelde link hoort te tonen wat de afzender zag.
@@ -431,6 +440,21 @@ export default function KanaalPagina({
         >
           <IconLightbulb className="h-[18px] w-[18px]" />
         </button>
+      )}
+
+      {/* "Data ophalen" staat links naast het lampje, op dezelfde vaste hoogte. Het
+          paneel blijft gemount als je wegklikt, maar staat dan op `hidden` — en daarmee
+          verdwijnt deze vaste knop ook, net als het lampje. */}
+      {dataOphalen && (
+        <div className="fixed right-28 top-4 z-50">
+          <DataOphalen
+            onKlaar={data.herlaad}
+            laatsteSync={data.laatsteSync}
+            loopt={data.syncLoopt}
+            deel={dataOphalen.deel}
+            alleenAanvullen={dataOphalen.alleenAanvullen}
+          />
+        </div>
       )}
 
       {uitsplitsing && uitsplitsing.tabel.uitsplitsing && (

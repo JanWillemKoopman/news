@@ -376,9 +376,10 @@ wordt vóór het schrijven ontdaan van trackingparameters (`fbclid`, `gclid`, `m
 dag: 3.862 rijen.
 
 **Na het uitrollen van 0031 eenmalig de historie ophalen**, anders telt een campagne die
-al liep pas vanaf de eerste nacht: haal via de knop "Data ophalen" (op de
-kanaalpagina's) de **Website** op over **12 maanden**. De andere vier GA4-tabellen worden
-daarbij opnieuw weggeschreven; dat is onschadelijk (upsert).
+al liep pas vanaf de eerste nacht: haal via de knop "Data ophalen" (rechtsboven
+op de pagina Website) **12 maanden** op. Die knop vult alleen aan: rijen die er al staan
+blijven ongemoeid (migratie `0032_sync_alleen_aanvullen.sql`). In de andere vier
+GA4-tabellen komen daarbij alleen de dagen bij die nog ontbraken.
 
 En één cijfer dat anders optelt dan de rest: **gebruikers**. GA4 ontdubbelt dat binnen de
 opgevraagde periode en wij bewaren dagcijfers, dus wie op drie dagen langskwam telt in een

@@ -7,6 +7,7 @@ import {
   regelsSql,
   telPeriode,
   verwerkTelling,
+  zoekEvents,
   type Regel,
 } from "@/lib/ga4Koppeling";
 
@@ -125,4 +126,27 @@ test("omschrijving voor in de tabel", () => {
     }),
     "proefrit, offerte · paginapad bevat “/audi”",
   );
+});
+
+test("zoekEvents geeft zonder zoekterm de top 10 en telt de rest", () => {
+  const opties = Array.from({ length: 15 }, (_, i) => ({ event: `event_${i}` }));
+  const { top, meer } = zoekEvents(opties, "");
+  assert.equal(top.length, 10);
+  assert.equal(top[0].event, "event_0");
+  assert.equal(meer, 5);
+});
+
+test("zoekEvents zoekt per woord en negeert streepjes en hoofdletters", () => {
+  const opties = [
+    { event: "session_start" },
+    { event: "generate_lead_proefrit" },
+    { event: "generate_lead_offerte" },
+    { event: "click_cta_vdp" },
+  ];
+  assert.deepEqual(zoekEvents(opties, "Lead Proefrit").top.map((o) => o.event), ["generate_lead_proefrit"]);
+  assert.deepEqual(zoekEvents(opties, "generate_lead").top.map((o) => o.event), [
+    "generate_lead_proefrit",
+    "generate_lead_offerte",
+  ]);
+  assert.deepEqual(zoekEvents(opties, "bestaatniet"), { top: [], meer: 0 });
 });

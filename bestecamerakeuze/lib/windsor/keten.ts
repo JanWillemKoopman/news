@@ -73,8 +73,12 @@ export function kanDoorschakelen(): boolean {
  * knop in het dashboard meteen terug met "hij loopt" in plaats van drie minuten stil te
  * staan op een verbinding die de browser toch niet zo lang openhoudt.
  */
-export async function zetOpdrachtKlaar(delen: readonly Deel[], periode: Periode): Promise<void> {
-  await metSchrijfverbinding((client) => zetOpdrachten(client, delen, periode));
+export async function zetOpdrachtKlaar(
+  delen: readonly Deel[],
+  periode: Periode,
+  alleenAanvullen = false,
+): Promise<void> {
+  await metSchrijfverbinding((client) => zetOpdrachten(client, delen, periode, alleenAanvullen));
 }
 
 export interface SchakelUitkomst {
@@ -108,7 +112,10 @@ export async function voerSchakelUit(): Promise<SchakelUitkomst> {
 
   let uitkomst;
   try {
-    uitkomst = await voerSyncUit(deel, teDoen);
+    // De vlag komt van de opdracht, niet van wie deze schakel startte: een ronde die de
+    // cron na een gebroken ketting oppakt, moet net zo voorzichtig schrijven als de knop
+    // die hem begon.
+    uitkomst = await voerSyncUit(deel, teDoen, { alleenAanvullen: opdracht.alleenAanvullen });
   } catch (err) {
     // De schakel is omgevallen vóór er iets is opgehaald. De opdracht hoort dan gewoon
     // weer aan de beurt te zijn in plaats van zijn claim uit te zitten.

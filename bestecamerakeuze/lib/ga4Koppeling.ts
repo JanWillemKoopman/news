@@ -279,3 +279,27 @@ export function omschrijfRegel(regel: Regel): string {
     .join(" en ");
   return `${events} · ${voorwaarden}`;
 }
+
+/**
+ * De suggesties in de eventkiezer: de `max` grootste events die bij de zoekterm passen.
+ *
+ * Zonder zoekterm is dat gewoon de top op volume. Met zoekterm telt elk woord apart en
+ * maakt een liggend streepje niet uit, zodat "lead proefrit" ook `generate_lead_proefrit`
+ * vindt — de namen in GA4 zijn technisch, de zoekvraag niet. De lijst komt al op volume
+ * gesorteerd binnen (`haalGa4Opties`); `meer` zegt hoeveel er buiten de top vallen.
+ */
+export function zoekEvents<T extends { event: string }>(
+  opties: T[],
+  zoek: string,
+  max = 10,
+): { top: T[]; meer: number } {
+  const woorden = zoek.toLowerCase().replace(/[_-]+/g, " ").split(/\s+/).filter(Boolean);
+  const passend =
+    woorden.length === 0
+      ? opties
+      : opties.filter((o) => {
+          const naam = o.event.toLowerCase().replace(/[_-]+/g, " ");
+          return woorden.every((w) => naam.includes(w));
+        });
+  return { top: passend.slice(0, max), meer: Math.max(0, passend.length - max) };
+}

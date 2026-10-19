@@ -167,15 +167,26 @@ export default function DataOphalen({
   onKlaar,
   laatsteSync,
   loopt,
+  deel,
+  alleenAanvullen = false,
 }: {
   onKlaar: () => void;
   /** Wanneer de laatste geslaagde sync eindigde. */
   laatsteSync: string | null;
   /** Loopt er al een sync (door de cron of door een collega)? */
   loopt: boolean;
+  /** Eén onderdeel in plaats van alle vier — op de pagina Website alleen de website. */
+  deel?: Stap["deel"];
+  /**
+   * Rijen die er al staan blijven ongemoeid; alleen ontbrekende rijen komen erbij
+   * (migratie 0032). Zo kan een handmatige ronde nooit historie vervangen.
+   */
+  alleenAanvullen?: boolean;
 }) {
+  const stappen = deel ? STAPPEN.filter((s) => s.deel === deel) : STAPPEN;
   const [open, setOpen] = useState(false);
-  const [dagen, setDagen] = useState(90);
+  // Aanvullen is er juist voor de historie, dus daar staat een jaar voorgekozen.
+  const [dagen, setDagen] = useState(alleenAanvullen ? 365 : 90);
   const [starten, setStarten] = useState(false);
   const [opdrachten, setOpdrachten] = useState<Opdracht[] | null>(null);
   const [startfout, setStartfout] = useState<string | null>(null);
@@ -187,11 +198,12 @@ export default function DataOphalen({
 
   // Een opdracht die stilstaat telt niet als bezig: anders blijft de knop voorgoed op
   // "Bezig…" staan en is opnieuw starten precies wat je niet kunt.
-  const bezig = (opdrachten ?? []).some(
-    (o) => !o.afgerondOp && !o.vastgelopen && !staatStil(o),
-  );
+  // Alleen de opdrachten van de onderdelen die deze knop start: een advertentie-import
+  // die een collega elders draait, hoort de knop op Website niet op "Bezig…" te zetten.
+  const relevant = (opdrachten ?? []).filter((o) => stappen.some((s) => s.deel === o.deel));
+  const bezig = relevant.some((o) => !o.afgerondOp && !o.vastgelopen && !staatStil(o));
   const afgerond =
-    opdrachten !== null && opdrachten.length > 0 && opdrachten.every((o) => o.afgerondOp);
+    opdrachten !== null && relevant.length > 0 && relevant.every((o) => o.afgerondOp);
 
   const peil = useCallback(async () => {
     try {
@@ -233,7 +245,7 @@ export default function DataOphalen({
       const res = await fetch("/api/kanalen/ophalen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dagen }),
+        body: JSON.stringify({ dagen, deel, alleenAanvullen }),
       });
       const data = (await res.json()) as { fout?: string; achtergrond?: boolean };
       if (!res.ok) throw new Error(data.fout ?? `Mislukt (${res.status}).`);
@@ -259,11 +271,19 @@ export default function DataOphalen({
 
       {open && (
         <Modal title="Data ophalen bij Windsor.ai" onClose={() => setOpen(false)}>
-          <p className="text-sm text-ink-muted">
-            Normaal gebeurt dit elke nacht vanzelf. Gebruik dit voor de eerste vulling, of
-            als er een nacht is overgeslagen. Twee keer draaien kan geen kwaad — de cijfers
-            worden overschreven, niet opgeteld.
-          </p>
+          {alleenAanvullen ? (
+            <p className="text-sm text-ink-muted">
+              Vult de historie aan met wat er nog ontbreekt. Cijfers die al in het dashboard
+              staan blijven precies zoals ze zijn: er wordt niets overschreven en niets
+              verwijderd, alleen toegevoegd. Twee keer draaien kan dus geen kwaad.
+            </p>
+          ) : (
+            <p className="text-sm text-ink-muted">
+              Normaal gebeurt dit elke nacht vanzelf. Gebruik dit voor de eerste vulling, of
+              als er een nacht is overgeslagen. Twee keer draaien kan geen kwaad — de cijfers
+              worden overschreven, niet opgeteld.
+            </p>
+          )}
 
           <p className="mt-3 text-meta text-ink-faint">
             {laatsteSync
@@ -278,8 +298,8 @@ export default function DataOphalen({
             <p className="mt-3 flex items-start gap-2 rounded-control border border-line bg-surface-tint px-3 py-2 text-meta text-ink-muted">
               <IconRefresh className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Er lijkt al een sync te draaien — door de nachtelijke cron of door een collega.
-              Wachten tot die klaar is scheelt jullie allebei een paar minuten; starten kan wel,
-              het overschrijft alleen dezelfde rijen.
+              Wachten tot die klaar is scheelt jullie allebei een paar minuten; starten kan wel
+              {alleenAanvullen ? " en raakt niets aan wat er al staat." : ", het overschrijft alleen dezelfde rijen."}
             </p>
           )}
 
@@ -306,7 +326,7 @@ export default function DataOphalen({
           </div>
 
           <ol className="mt-5 flex flex-col gap-0 border-t border-line">
-            {STAPPEN.map((stap, i) => {
+            {stappen.map((stap, i) => {
               const stand = standVan((opdrachten ?? []).find((o) => o.deel === stap.deel));
               return (
                 <li
@@ -323,7 +343,8 @@ export default function DataOphalen({
                     {stand.soort === "klaar" && (
                       <p className="mt-1 text-meta text-positive">
                         historie opgehaald vanaf {kortDatum(stand.vanaf)} —{" "}
-                        {stand.rijen.toLocaleString("nl-NL")} rijen
+                        {stand.rijen.toLocaleString("nl-NL")}{" "}
+                        {alleenAanvullen ? "nieuwe rijen toegevoegd" : "rijen"}
                       </p>
                     )}
                     {stand.soort === "klaar" && stand.waarschuwing && (

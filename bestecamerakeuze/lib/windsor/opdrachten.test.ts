@@ -22,6 +22,7 @@ function opdracht(opties: Partial<Opdracht> = {}): Opdracht {
     bijgewerktOp: "2026-09-14T12:00:00.000Z",
     afgerondOp: null,
     fout: null,
+    alleenAanvullen: false,
     ...opties,
   };
 }

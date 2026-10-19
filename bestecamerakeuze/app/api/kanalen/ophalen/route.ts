@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isWindsorGeconfigureerd } from "@/lib/windsor/api";
-import { DELEN } from "@/lib/windsor/uitvoeren";
+import { DELEN, isDeel } from "@/lib/windsor/uitvoeren";
 import { kanDoorschakelen, schakelDoor, zetOpdrachtKlaar } from "@/lib/windsor/keten";
 import { haalOpdrachtStanden, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { isVastgelopen } from "@/lib/windsor/opdrachten";
@@ -38,6 +38,13 @@ export const maxDuration = 60;
  * zichzelf door (`lib/windsor/keten.ts`). Deze POST zet de opdracht klaar, zet de eerste
  * schakel in gang en is meteen klaar; de GET ernaast vertelt hoe ver het staat. Het
  * venster mag daarna dicht.
+ *
+ * ## Eén deel, en alleen aanvullen
+ *
+ * Met `deel` start je één onderdeel in plaats van alle vier — de knop op de pagina Website
+ * haalt alleen de website op. Met `alleenAanvullen` blijven rijen die er al staan
+ * ongemoeid en komen alleen ontbrekende rijen erbij (migratie 0032); dat kan alleen voor
+ * de website, de route weigert het voor de rest in plaats van het stilletjes te negeren.
  */
 
 /** Een datum uit de body: alleen YYYY-MM-DD telt, zodat er nooit tekst in de query belandt. */
@@ -96,14 +103,27 @@ export async function POST(request: Request) {
   const periode =
     isDatum(body.van) && isDatum(body.tot) ? { van: body.van, tot: body.tot } : standaardVenster(dagen);
 
+  if (body.deel !== undefined && !isDeel(body.deel)) {
+    return NextResponse.json({ fout: "Onbekend onderdeel." }, { status: 400 });
+  }
+  const delen = isDeel(body.deel) ? [body.deel] : DELEN;
+  const alleenAanvullen = body.alleenAanvullen === true;
+  if (alleenAanvullen && !(delen.length === 1 && delen[0] === "website")) {
+    return NextResponse.json(
+      { fout: "Alleen aanvullen kan op dit moment alleen voor de website." },
+      { status: 400 },
+    );
+  }
+
   try {
-    await zetOpdrachtKlaar(DELEN, periode);
+    await zetOpdrachtKlaar(delen, periode, alleenAanvullen);
     after(() => schakelDoor(new URL(request.url).origin));
 
     return NextResponse.json({
       gestart: true,
       periode,
-      delen: DELEN,
+      delen,
+      alleenAanvullen,
       /**
        * Zonder `CRON_SECRET` kan de server zichzelf niet aanroepen. De opdracht staat er
        * dan wel, maar hij komt pas vannacht aan de beurt via de cron. Dat hoort in beeld

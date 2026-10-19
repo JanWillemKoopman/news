@@ -211,12 +211,18 @@ function conversiesUit(rij: WindsorRij, velden: string[]): Record<string, number
  * maar hier gaat het om tienduizenden per nacht en dan is één round-trip per rij de
  * traagste schakel van de hele job.
  */
+/**
+ * `alleenNieuw`: rijen die er al staan blijven ongemoeid (`on conflict do nothing`), en
+ * het teruggegeven aantal is dan het aantal rijen dat er werkelijk bij kwam. Zie migratie
+ * 0032 — de knop "Data ophalen" op de pagina Website mag nooit iets overschrijven.
+ */
 async function schrijfBatch(
   client: Client,
   tabel: string,
   kolommen: string[],
   rijen: unknown[][],
   conflictSleutel: string,
+  alleenNieuw = false,
 ): Promise<number> {
   if (rijen.length === 0) return 0;
 
@@ -250,13 +256,13 @@ async function schrijfBatch(
       return `(${plaatshouders.join(", ")})`;
     });
 
-    await client.query(
+    const res = await client.query(
       `insert into dataloket.${tabel} (${kolommen.join(", ")})
        values ${groepen.join(", ")}
-       on conflict (${conflictSleutel}) do update set ${bijwerken}`,
+       on conflict (${conflictSleutel}) ${alleenNieuw ? "do nothing" : `do update set ${bijwerken}`}`,
       waarden,
     );
-    geschreven += deel.length;
+    geschreven += alleenNieuw ? (res.rowCount ?? 0) : deel.length;
   }
   return geschreven;
 }
@@ -1291,6 +1297,7 @@ export async function syncGa4Verkeer(
   client: Client,
   van: string,
   tot: string,
+  alleenNieuw = false,
 ): Promise<SyncResultaat> {
   const start = Date.now();
   const rijen = await haalOp("googleanalytics4", GA4_VERKEERVELDEN, van, tot);
@@ -1323,6 +1330,7 @@ export async function syncGa4Verkeer(
     GA4_VERKEER_KOLOMMEN,
     telSamen(uit, [0, 1, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13]),
     "datum, account_id, kanaalgroep, bron_medium, campagne, apparaat",
+    alleenNieuw,
   );
   return { onderdeel: "ga4-verkeer", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
@@ -1345,6 +1353,7 @@ export async function syncGa4Landingspaginas(
   client: Client,
   van: string,
   tot: string,
+  alleenNieuw = false,
 ): Promise<SyncResultaat> {
   const start = Date.now();
   const rijen = await haalOp("googleanalytics4", GA4_LANDINGSVELDEN, van, tot);
@@ -1371,6 +1380,7 @@ export async function syncGa4Landingspaginas(
     GA4_LANDINGS_KOLOMMEN,
     telSamen(uit, [0, 1, 3, 4, 5], [6, 7, 8, 9, 10]),
     "datum, account_id, landingspagina, kanaalgroep, campagne",
+    alleenNieuw,
   );
   return {
     onderdeel: "ga4-landingspaginas",
@@ -1398,6 +1408,7 @@ export async function syncGa4Paginas(
   client: Client,
   van: string,
   tot: string,
+  alleenNieuw = false,
 ): Promise<SyncResultaat> {
   const start = Date.now();
   const rijen = await haalOp("googleanalytics4", GA4_PAGINAVELDEN, van, tot);
@@ -1424,6 +1435,7 @@ export async function syncGa4Paginas(
     GA4_PAGINA_KOLOMMEN,
     telSamen(uit, [0, 1, 3, 4], [5, 6, 7, 8, 9, 10]),
     "datum, account_id, pagina, kanaalgroep",
+    alleenNieuw,
   );
   return { onderdeel: "ga4-paginas", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
@@ -1443,6 +1455,7 @@ export async function syncGa4Events(
   client: Client,
   van: string,
   tot: string,
+  alleenNieuw = false,
 ): Promise<SyncResultaat> {
   const start = Date.now();
   const rijen = await haalOp("googleanalytics4", GA4_EVENTVELDEN, van, tot);
@@ -1466,6 +1479,7 @@ export async function syncGa4Events(
     GA4_EVENT_KOLOMMEN,
     telSamen(uit, [0, 1, 3, 4], [5, 6, 7]),
     "datum, account_id, event_naam, kanaalgroep",
+    alleenNieuw,
   );
   return { onderdeel: "ga4-events", gelezen: rijen.length, geschreven, duurMs: Date.now() - start };
 }
@@ -1561,6 +1575,7 @@ export async function syncGa4EventPaginas(
   client: Client,
   van: string,
   tot: string,
+  alleenNieuw = false,
 ): Promise<SyncResultaat> {
   const start = Date.now();
   const filter: WindsorFilter = [];
@@ -1596,6 +1611,7 @@ export async function syncGa4EventPaginas(
     GA4_EVENTPAGINA_KOLOMMEN,
     telSamen(uit, [0, 1, 3, 4, 5, 6, 7], [8, 9]),
     "datum, account_id, event_naam, pagina, querystring, kanaalgroep, campagne",
+    alleenNieuw,
   );
   return {
     onderdeel: "ga4-event-paginas",
