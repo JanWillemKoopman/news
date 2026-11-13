@@ -60,6 +60,9 @@ interface Doelwit {
   url: string;
   /** Kopteksten die het verzoek moet meesturen; leeg bij een SAS-URL. */
   headers: Record<string, string>;
+  /** Het storage-account en het pad, voor in een foutmelding. */
+  account: string;
+  pad: string;
 }
 
 export class SelligentNietGeconfigureerd extends Error {
@@ -166,7 +169,23 @@ export function tekstOmTeOndertekenen(
 /** Waar we het verzoek naartoe sturen, en met welke kopteksten. */
 function doelwit(verb: "GET" | "HEAD"): Doelwit {
   const sas = process.env.SELLIGENT_BLOB_URL;
-  if (sas) return { url: sas, headers: {} };
+  if (sas) {
+    // Bij een SAS-URL staat het pad al in de URL; eruit halen zodat een foutmelding ook
+    // dan zegt waar hij heeft gekeken — zonder het token zelf te tonen.
+    let account = "(uit SELLIGENT_BLOB_URL)";
+    let pad = sas;
+    try {
+      const url = new URL(sas);
+      account = url.hostname.split(".")[0];
+      pad = url.pathname;
+    } catch {
+      throw new Error(
+        "SELLIGENT_BLOB_URL is geen geldige URL. Hij hoort te beginnen met https:// en " +
+          "het SAS-token als querystring te hebben.",
+      );
+    }
+    return { url: sas, headers: {}, account, pad };
+  }
 
   const verbinding = process.env.SELLIGENT_AZURE_CONNECTION_STRING;
   if (!verbinding) throw new SelligentNietGeconfigureerd();
@@ -188,25 +207,63 @@ function doelwit(verb: "GET" | "HEAD"): Doelwit {
   return {
     url: `${protocol}://${account}.blob.${suffix}${pad}`,
     headers: { ...headers, Authorization: `SharedKey ${account}:${signatuur}` },
+    account,
+    pad,
   };
 }
 
-/** Een leesbare fout in plaats van het XML-lichaam dat Azure teruggeeft. */
-async function fout(res: Response): Promise<Error> {
-  const lichaam = await res.text().catch(() => "");
-  const code = lichaam.match(/<Code>([^<]+)<\/Code>/)?.[1];
+/**
+ * Een leesbare fout in plaats van het XML-lichaam dat Azure teruggeeft.
+ *
+ * **De foutcode komt uit de koptekst en niet uit het lichaam**, en dat is geen detail: op
+ * een `HEAD` stuurt Azure per definitie geen lichaam mee, dus wie alleen daarnaar kijkt
+ * houdt van een mislukte `HEAD` niets over dan "HTTP 404" — en dat zegt precies niet wat
+ * je moet weten, namelijk of de container ontbreekt, het bestand ontbreekt, of het pad
+ * nergens op slaat. `x-ms-error-code` staat er altijd.
+ *
+ * Het storage-account en het pad staan in het bericht, omdat dat bij een 404 de twee
+ * dingen zijn die fout kunnen staan. Ze zijn niet geheim: de sleutel staat er niet bij.
+ */
+async function fout(res: Response, account: string, pad: string): Promise<Error> {
+  const uitKop = res.headers.get("x-ms-error-code");
+  const lichaam = uitKop ? "" : await res.text().catch(() => "");
+  const code = uitKop || lichaam.match(/<Code>([^<]+)<\/Code>/)?.[1] || "";
+
   const uitleg: Record<string, string> = {
     AuthenticationFailed:
       "Azure wees de sleutel af. Controleer SELLIGENT_AZURE_CONNECTION_STRING; is de " +
       "accountsleutel geroteerd, dan staat hier de oude.",
-    AuthorizationPermissionMismatch:
-      "De sleutel of het SAS-token mag dit bestand niet lezen.",
-    BlobNotFound: "Het bestand staat niet (meer) op dit pad in de container.",
-    ContainerNotFound: "De container bestaat niet onder dit storage-account.",
+    AuthorizationPermissionMismatch: "De sleutel of het SAS-token mag dit bestand niet lezen.",
     AuthorizationFailure: "Het SAS-token is verlopen of geldt niet voor dit pad.",
+    BlobNotFound:
+      "Het storage-account en de container kloppen, maar op dit pad staat geen bestand. " +
+      "Controleer de bestandsnaam (hoofdlettergevoelig) of zet SELLIGENT_BLOB_PAD.",
+    ContainerNotFound:
+      "Dit storage-account heeft geen container met deze naam. Meestal betekent dat dat " +
+      "de connection string van een ánder storage-account is dan het account waar de " +
+      "export op staat. Controleer AccountName, of zet SELLIGENT_BLOB_CONTAINER.",
+    ResourceNotFound: "Azure vindt op dit pad niets onder dit storage-account.",
+    InvalidUri:
+      "Azure kan dit pad niet lezen. Staat er een schuine streep te veel of te weinig in " +
+      "SELLIGENT_BLOB_CONTAINER of SELLIGENT_BLOB_PAD?",
+    AccountIsDisabled: "Dit storage-account staat uit in Azure.",
+    InvalidAuthenticationInfo:
+      "Azure begreep de legitimatie niet. Meestal is de connection string onvolledig " +
+      "geplakt — hij hoort te eindigen op EndpointSuffix=core.windows.net.",
   };
-  const bericht = code && uitleg[code] ? uitleg[code] : code || `HTTP ${res.status}`;
-  return new Error(`Azure Blob Storage: ${bericht}`);
+
+  const kern =
+    (code && uitleg[code]) ||
+    (res.status === 404
+      ? "Azure vond hier niets. Meestal wijst het storage-account of de container ergens " +
+        "anders heen dan waar de export staat."
+      : "") ||
+    code ||
+    `HTTP ${res.status}`;
+
+  return new Error(
+    `Azure Blob Storage: ${kern} (gevraagd: ${account} → ${pad}${code ? `, ${code}` : ""})`,
+  );
 }
 
 /**
@@ -216,9 +273,9 @@ async function fout(res: Response): Promise<Error> {
  * bytes, en vertelt via de ETag of de 36 MB eronder nog hetzelfde zijn.
  */
 export async function haalBlobKop(signaal?: AbortSignal): Promise<BlobKop> {
-  const { url, headers } = doelwit("HEAD");
+  const { url, headers, account, pad } = doelwit("HEAD");
   const res = await fetch(url, { method: "HEAD", headers, cache: "no-store", signal: signaal });
-  if (!res.ok) throw await fout(res);
+  if (!res.ok) throw await fout(res, account, pad);
   return {
     bytes: Number(res.headers.get("content-length") ?? 0),
     gewijzigdOp: res.headers.get("last-modified")
@@ -237,9 +294,9 @@ export async function haalBlobKop(signaal?: AbortSignal): Promise<BlobKop> {
  * de plek om het te veranderen.
  */
 export async function haalBlobTekst(signaal?: AbortSignal): Promise<string> {
-  const { url, headers } = doelwit("GET");
+  const { url, headers, account, pad } = doelwit("GET");
   const res = await fetch(url, { headers, cache: "no-store", signal: signaal });
-  if (!res.ok) throw await fout(res);
+  if (!res.ok) throw await fout(res, account, pad);
   const tekst = await res.text();
   // Azure levert de export met een UTF-8 BOM; die hoort niet in de eerste kolomnaam.
   return tekst.charCodeAt(0) === 0xfeff ? tekst.slice(1) : tekst;

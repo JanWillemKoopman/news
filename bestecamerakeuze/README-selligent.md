@@ -55,6 +55,26 @@ SELLIGENT_BLOB_PAD=autoline/users_customers_dashboard.csv
 
 Staan beide variabelen gezet, dan wint de SAS-URL.
 
+## Als het tabblad een fout toont
+
+De foutmelding op het tabblad is de eerste plek om te kijken: hij noemt het
+storage-account, het pad waar is gekeken en de code die Azure teruggaf. Die code komt uit
+de koptekst `x-ms-error-code` en niet uit het antwoordlichaam — op een `HEAD` stuurt Azure
+geen lichaam mee, dus anders staat er alleen "HTTP 404" en weet je nog niets.
+
+| Wat er staat | Wat het betekent |
+|---|---|
+| `ContainerNotFound` | Het storage-account in de connection string heeft geen container met deze naam. Bijna altijd: de string is van een **ander storage-account** dan waar de export op staat. Vergelijk `AccountName` met het account dat in het analyse-notebook staat. |
+| `BlobNotFound` | Account en container kloppen, het bestand staat niet op dit pad. Blobnamen zijn hoofdlettergevoelig. Staat de export ergens anders, zet dan `SELLIGENT_BLOB_PAD`. |
+| `AuthenticationFailed` | De sleutel is afgewezen — meestal is hij in Azure geroteerd en staat de oude nog in Vercel. |
+| `InvalidAuthenticationInfo` | De connection string is onvolledig geplakt; hij hoort te eindigen op `EndpointSuffix=core.windows.net`. |
+| `AuthorizationFailure` | Het SAS-token is verlopen of geldt niet voor dit pad. |
+
+Let op bij het plakken in Vercel: geen aanhalingstekens eromheen, de hele string inclusief
+de `==` aan het eind van de sleutel, en de variabele aanzetten voor Production, Preview én
+Development. Omgevingsvariabelen worden bij de build ingelezen, dus een wijziging vraagt
+een nieuwe deploy.
+
 ## Hoe het werkt
 
 | | |
