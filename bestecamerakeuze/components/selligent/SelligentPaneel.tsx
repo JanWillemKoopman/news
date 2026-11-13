@@ -5,9 +5,10 @@ import Inlogprompt from "@/components/Inlogprompt";
 import SelligentFilters from "@/components/selligent/SelligentFilters";
 import SelligentGrafiek from "@/components/selligent/SelligentGrafiek";
 import SelligentKolommen from "@/components/selligent/SelligentKolommen";
+import SelligentMerkBalk from "@/components/selligent/SelligentMerkBalk";
 import { GroteMetrics, OptinStrip } from "@/components/selligent/SelligentMetrics";
 import type { Datacheck } from "@/lib/selligent/datacheck";
-import type { Filter, Stand, Veld } from "@/lib/selligent/stand";
+import { MAIL_KOLOMMEN, MERK_KOLOM, type Filter, type Stand, type Veld } from "@/lib/selligent/stand";
 
 /**
  * Selligent: filters op elke kolom, één metric, en de maandgrafiek eronder.
@@ -175,11 +176,30 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
       })}`
     : null;
 
+  // Merk heeft zijn eigen balk boven de pagina en hoort daarom niet óók in het raster:
+  // twee controls op dezelfde filterwaarde spreken elkaar niet tegen, maar het zijn wel
+  // twee plekken om te kijken.
+  const merkVeld = velden?.find((v) => v.naam === MERK_KOLOM && v.soort === "lijst") ?? null;
+  // Het mailadres heeft geen filter in de balk, op verzoek. Het staat als metric in beeld
+  // (alleen het aantal), en een zoekveld waarin je een adres intypt om te zien of het
+  // bestaat, is iets anders dan een dashboard — dat hoort in Selligent zelf.
+  const rasterVelden =
+    velden?.filter((v) => v !== merkVeld && !MAIL_KOLOMMEN.includes(v.naam)) ?? null;
+
   return (
     <div className="flex flex-col gap-6">
-      {velden ? (
+      {merkVeld && (
+        <SelligentMerkBalk
+          veld={merkVeld}
+          filter={filters[merkVeld.naam]}
+          onFilter={(f) => zetFilter(merkVeld.naam, f)}
+          bezig={laadtStand}
+        />
+      )}
+
+      {rasterVelden ? (
         <SelligentFilters
-          velden={velden}
+          velden={rasterVelden}
           filters={filters}
           onFilter={zetFilter}
           onWisAlles={() => setFilters({})}
@@ -209,6 +229,9 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
             contacten={stand.contacten}
             contactenTotaal={stand.contactenTotaal}
             contactKolom={stand.contactKolom}
+            emails={stand.emails}
+            emailsTotaal={stand.emailsTotaal}
+            emailKolom={stand.emailKolom}
             autos={stand.autos}
             autosTotaal={stand.autosTotaal}
             autoKolom={stand.autoKolom}
@@ -219,14 +242,15 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
 
           <OptinStrip
             optins={stand.optins}
+            contacten={stand.contacten}
             actief={actieveOptins}
             onKies={zetOptin}
             bezig={laadtStand}
           />
 
           <SelligentGrafiek
-            titel="Contacten per maand"
-            toelichting="De maand waarin het account is aangemaakt. Een contact met meerdere auto's staat één keer in zijn eigen maand."
+            titel="Contacten toegevoegd in Selligent per maand"
+            toelichting="De maand waarin het contact in Selligent is aangemaakt. Een contact met meerdere auto's staat één keer in zijn eigen maand."
             reeksnaam="Contacten"
             eenheid={["contact", "contacten"]}
             maanden={stand.maanden}
@@ -237,12 +261,12 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           />
 
           <SelligentGrafiek
-            titel="Auto's per maand"
-            toelichting="De maand waarin de auto is afgeleverd. Elke auto telt één keer, ook als hij bij meerdere rijen hoort."
+            titel="Auto's toegevoegd in Selligent per maand"
+            toelichting="De auto's van de contacten die in die maand in Selligent zijn aangemaakt. Elke auto telt één keer, ook als hij bij meerdere rijen hoort."
             reeksnaam="Auto's"
             eenheid={["auto", "auto's"]}
             maanden={stand.autoMaanden}
-            kolom={stand.leverKolom}
+            kolom={stand.autoDatumKolom}
             zonderDatum={stand.autosZonderDatum}
             kleurIndex={1}
             bezig={laadtStand}

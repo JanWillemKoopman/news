@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import { IconChevronDown, IconClose, IconRefresh } from "@/components/icons";
-import type { Filter, Veld } from "@/lib/selligent/stand";
+import { groepeerVelden, type Filter, type Veld } from "@/lib/selligent/stand";
 import { toonWaarde, weergaveNamen } from "@/lib/selligent/weergave";
 
 /**
@@ -17,15 +17,23 @@ import { toonWaarde, weergaveNamen } from "@/lib/selligent/weergave";
  * Dichtgeklapt blijft staan wát er aanstaat — de chips met de actieve filters — zodat de
  * balk ook gesloten vertelt waar je naar kijkt.
  *
- * ## Waarom het een raster is en geen rij
+ * ## Waarom het een raster is, en in groepen
  *
  * De gewone filterbalk van het dashboard (`FilterBar`) heeft er vier of vijf. Hier zijn
- * het er zesentwintig, en dat is geen tekortkoming maar de opdracht: de export heeft
- * zesentwintig kolommen en je moet op elke kolom kunnen filteren. Zesentwintig controls
- * op één rij wordt een horizontale scrollbalk waarin je het filter dat je zoekt niet meer
- * vindt, dus ze staan in een raster van vier, in de volgorde van het bestand — dezelfde
- * volgorde als het kolomoverzicht onderaan de pagina, zodat de twee naast elkaar te
- * leggen zijn.
+ * het er vijfentwintig, en dat is geen tekortkoming maar de opdracht: elke kolom van de
+ * export is te filteren. Vijfentwintig controls op één rij wordt een horizontale
+ * scrollbalk, en vijfentwintig op één hoop in een raster is een muur waarin je het filter
+ * dat je zoekt niet terugvindt.
+ *
+ * Ze staan daarom in een raster van vier, onder kopjes die uit de kolomnamen zelf komen:
+ * de losse velden eerst, dan `PREFERENCES`, dan `VDUVEHICLES` (zie `groepeerVelden` in
+ * `lib/selligent/stand.ts`). Daarmee is de balk een inhoudsopgave in plaats van een lijst.
+ * Binnen een groep blijft de volgorde van het bestand staan, dezelfde als in het
+ * kolomoverzicht onderaan de pagina, zodat de twee naast elkaar te leggen zijn.
+ *
+ * Merk staat hier niet tussen: dat filter heeft zijn eigen balk boven de pagina
+ * (`SelligentMerkBalk`). Twee controls op één filterwaarde zouden elkaar niet
+ * tegenspreken — het is dezelfde waarde — maar het is wel twee plekken om te kijken.
  *
  * ## Drie soorten control, en waarom niet één
  *
@@ -57,6 +65,27 @@ type Props = {
   verversBezig: boolean;
 };
 
+/**
+ * Een leesbare kop per groep, met het voorvoegsel erbij.
+ *
+ * `PREFERENCES` en `VDUVEHICLES` zijn de namen die de export zelf gebruikt, en als kop
+ * boven een blok filters lezen ze als geschreeuw. Een Nederlandse naam ervóór maakt in
+ * één oogopslag duidelijk waar een blok over gaat; het voorvoegsel blijft er grijs
+ * achter staan, zodat de koppeling met de kolomnamen eronder — en met het
+ * kolomoverzicht onderaan de pagina — zichtbaar blijft.
+ *
+ * Een voorvoegsel dat hier niet in staat, draagt gewoon zichzelf als kop. Deze lijst is
+ * dus een verfraaiing en nooit een voorwaarde: een nieuw voorvoegsel in de export levert
+ * vanzelf een blok op, alleen zonder Nederlandse naam.
+ */
+const GROEP_NAMEN: Record<string, string> = {
+  PREFERENCES: "Voorkeuren",
+  VDUVEHICLES: "Voertuig",
+};
+
+/** De kop boven het blok met de kolommen die geen voorvoegsel delen. */
+const LOSSE_GROEP = "Algemeen";
+
 /** Hoe een actief filter in één regel leest, voor de chip erboven. */
 function chipTekst(veld: Veld, filter: Filter): string | null {
   if (filter.waarden && filter.waarden.length > 0) {
@@ -81,6 +110,7 @@ export default function SelligentFilters({
   verversBezig,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const groepen = useMemo(() => groepeerVelden(velden), [velden]);
   const chips = velden
     .map((veld) => {
       const filter = filters[veld.naam];
@@ -161,15 +191,51 @@ export default function SelligentFilters({
             Eén filter per kolom. Meerdere waarden binnen één filter is &ldquo;of&rdquo;,
             meerdere filters samen is &ldquo;en&rdquo;.
           </p>
-          <div className="mt-1 grid grid-cols-2 items-start gap-x-2 gap-y-1 xl:grid-cols-4">
-            {velden.map((veld) => (
-              <VeldControl
-                key={veld.naam}
-                veld={veld}
-                filter={filters[veld.naam]}
-                onFilter={(f) => onFilter(veld.naam, f)}
-              />
-            ))}
+          {/* Elk blok met een eigen omlijning en een streep onder de kop: bij
+              vijfentwintig controls is "waar hoort dit filter bij" de eerste vraag, en
+              die hoort het scherm te beantwoorden voordat iemand de kolomnamen gaat
+              lezen. */}
+          <div className="mt-3 flex flex-col gap-3">
+            {groepen.map((groep) => {
+              const actief = groep.velden.filter((v) => filters[v.naam]).length;
+              const naam = groep.voorvoegsel
+                ? (GROEP_NAMEN[groep.voorvoegsel] ?? groep.voorvoegsel)
+                : LOSSE_GROEP;
+              const toonVoorvoegsel =
+                groep.voorvoegsel && GROEP_NAMEN[groep.voorvoegsel] ? groep.voorvoegsel : null;
+
+              return (
+                <section
+                  key={groep.voorvoegsel ?? "los"}
+                  className="rounded-card border border-line bg-surface-tint px-4 py-3"
+                >
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line pb-2">
+                    <h3 className="flex items-baseline gap-2">
+                      <span className="font-sans-w7 text-sm font-semibold text-ink">
+                        {naam}
+                      </span>
+                      {toonVoorvoegsel && (
+                        <code className="text-meta text-ink-faint">{toonVoorvoegsel}</code>
+                      )}
+                    </h3>
+                    <span className="text-meta text-ink-faint">
+                      {groep.velden.length} {groep.velden.length === 1 ? "kolom" : "kolommen"}
+                      {actief > 0 && ` · ${actief} actief`}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 items-start gap-x-2 gap-y-1 xl:grid-cols-4">
+                    {groep.velden.map((veld) => (
+                      <VeldControl
+                        key={veld.naam}
+                        veld={veld}
+                        filter={filters[veld.naam]}
+                        onFilter={(f) => onFilter(veld.naam, f)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </>
       )}

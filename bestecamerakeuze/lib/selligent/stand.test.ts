@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { LEEG_OPTIE, selectie, standVan, veldenVan } from "./stand.ts";
+import { LEEG_OPTIE, groepeerVelden, selectie, standVan, veldenVan } from "./stand.ts";
 import { bouwTabel, type Tabel } from "./tabel.ts";
 
 const META = { pad: "output/test.csv", bytes: 0, gewijzigdOp: null, etag: null };
@@ -159,13 +159,13 @@ test("auto's tellen verschillende voertuig-id's, los van het aantal contacten", 
   assert.equal(stand.contacten, 3);
 });
 
-test("de autografiek groepeert op afleverdatum, niet op de creatiedatum van het account", () => {
+test("de autografiek staat op dezelfde datum als de contacten, want beide tellen wat erbij kwam", () => {
+  // Bewust niet op de afleverdatum: de grafiek heet "toegevoegd in Selligent", en een
+  // auto die in 2022 is afgeleverd aan een contact van 2021 kwam in 2021 in Selligent.
   const stand = standVan(proeftabel(), []);
-  assert.equal(stand.leverKolom, "VDUVEHICLES_DELIVERY_DT");
+  assert.equal(stand.autoDatumKolom, "CREATED_DT");
   assert.deepEqual(stand.autoMaanden, [
-    { maand: "2022-01", aantal: 2 },
-    { maand: "2022-02", aantal: 0 },
-    { maand: "2022-03", aantal: 1 },
+    { maand: "2021-02", aantal: 3 },
   ]);
 });
 
@@ -174,8 +174,9 @@ test("een opt-in telt contacten en niet rijen", () => {
   const vdu = stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!;
   // Id 1 staat in twee rijen op True; dat is één contact met een opt-in.
   assert.equal(vdu.contacten, 1);
-  // Ingevuld: id 1 (True) en id 2 (False). Id 3 liet het leeg en telt dus niet mee.
-  assert.equal(vdu.ingevuld, 2);
+  // De noemer op het scherm is het totale aantal contacten, niet het aantal dat iets
+  // invulde: 1 van 3, en niet 1 van 2.
+  assert.equal(stand.contacten, 3);
 });
 
 test("alleen booleaanse kolommen leveren een opt-in-tegel op", () => {
@@ -201,7 +202,6 @@ test("True wordt hoofdletterongevoelig en met spaties eromheen herkend", () => {
   );
   const optin = standVan(tabel, []).optins.find((o) => o.kolom === "PREFERENCES_X")!;
   assert.equal(optin.contacten, 2);
-  assert.equal(optin.ingevuld, 3);
 });
 
 test("zonder voertuigkolom blijft de rest van de stand gewoon werken", () => {
@@ -211,4 +211,67 @@ test("zonder voertuigkolom blijft de rest van de stand gewoon werken", () => {
   assert.equal(stand.autoKolom, null);
   assert.deepEqual(stand.autoMaanden, []);
   assert.equal(stand.contacten, 1);
+});
+
+test("de filters groeperen op het voorvoegsel dat de kolomnamen delen", () => {
+  const velden = veldenVan(
+    bouwTabel(
+      '"ID";"MAIL";"PREFERENCES_VW";"PREFERENCES_AUDI";"PREFERENCES_SEAT";' +
+        '"VDUVEHICLES_BRAND";"VDUVEHICLES_MODEL";"VDUVEHICLES_FUEL_TYPE"\n' +
+        '"1";"a@b.nl";"True";"False";"True";"Audi";"A3";"B"\n',
+      META,
+    ),
+  );
+  const groepen = groepeerVelden(velden);
+  assert.deepEqual(
+    groepen.map((g) => [g.voorvoegsel, g.velden.map((v) => v.naam)]),
+    [
+      // De losse velden eerst, zonder kopje.
+      [null, ["ID", "MAIL"]],
+      ["PREFERENCES", ["PREFERENCES_VW", "PREFERENCES_AUDI", "PREFERENCES_SEAT"]],
+      ["VDUVEHICLES", ["VDUVEHICLES_BRAND", "VDUVEHICLES_MODEL", "VDUVEHICLES_FUEL_TYPE"]],
+    ],
+  );
+});
+
+test("onder de drempel blijft een voorvoegsel een los veld", () => {
+  // Een kopje boven één of twee filters is geen indeling maar ruis.
+  const velden = veldenVan(
+    bouwTabel('"ID";"CREATED_DT";"MODIFIED_DT"\n"1";"3/02/2021";"4/02/2021"\n', META),
+  );
+  const groepen = groepeerVelden(velden);
+  assert.equal(groepen.length, 1);
+  assert.equal(groepen[0].voorvoegsel, null);
+  assert.deepEqual(groepen[0].velden.map((v) => v.naam), ["ID", "CREATED_DT", "MODIFIED_DT"]);
+});
+
+test("zonder losse velden komt er geen leeg eerste blok", () => {
+  const velden = veldenVan(
+    bouwTabel('"P_A";"P_B";"P_C"\n"1";"2";"3"\n', META),
+  );
+  const groepen = groepeerVelden(velden);
+  assert.deepEqual(groepen.map((g) => g.voorvoegsel), ["P"]);
+});
+
+test("e-mailadressen worden geteld als verschillende waarden", () => {
+  const stand = standVan(proeftabel(), []);
+  // Drie verschillende adressen op vier rijen: id 1 staat er met hetzelfde adres twee keer in.
+  assert.equal(stand.emails, 3);
+  assert.equal(stand.emailKolom, "MAIL");
+});
+
+test("een kolom met echte aantallen adressen levert geen optielijst op", () => {
+  // Zo kan er nooit een lijst adressen naar de browser gaan; in de echte export staan er
+  // 125.369 verschillende in, ver boven de drempel voor een aanvinklijst.
+  const regels = ['"MAIL"'];
+  for (let i = 0; i < 1200; i++) regels.push(`"nr${i}@voorbeeld.nl"`);
+  const veld = veldenVan(bouwTabel(regels.join("\n") + "\n", META))[0];
+  assert.equal(veld.soort, "tekst");
+  assert.equal(veld.opties, undefined);
+});
+
+test("het aantal adressen volgt de filters, net als de andere metrics", () => {
+  const stand = standVan(proeftabel(), [{ kolom: "MERK", waarden: ["Audi"] }]);
+  assert.equal(stand.emails, 1);
+  assert.equal(stand.emailsTotaal, 3);
 });

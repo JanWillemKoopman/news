@@ -6,13 +6,23 @@ import type { Optin } from "@/lib/selligent/stand";
 /**
  * De cijferkoppen van het tabblad: twee grote metrics, en de opt-ins eronder.
  *
- * ## Waarom Contacten en Auto's naast elkaar, en het aantal rijen nergens
+ * ## Drie tellingen, en het aantal rijen nergens
  *
- * Dat zijn de twee dingen die je in dit bestand kunt tellen, en het zijn er allebei
- * minder dan er rijen zijn: 169.290 rijen is 137.424 contacten met 108.470 auto's, want
- * een rij is een contact mét een voertuig. Het aantal rijen staat daarom niet als derde
- * tegel maar als kleine regel eronder — het is de teller van het bestand, niet een cijfer
- * waarop je stuurt.
+ * Contacten, e-mailadressen en auto's zijn de drie dingen die je in dit bestand kunt
+ * tellen, en het zijn er alle drie minder dan er rijen zijn: 169.290 rijen is 137.424
+ * contacten met 125.369 adressen en 108.470 auto's, want een rij is een contact mét een
+ * voertuig. Het aantal rijen staat daarom niet als vierde tegel maar als kleine regel
+ * eronder — het is de teller van het bestand, niet een cijfer waarop je stuurt.
+ *
+ * Dat er minder adressen dan contacten zijn is op zichzelf een signaal: contacten die
+ * hetzelfde adres delen, of er geen hebben.
+ *
+ * ## Wat er bij de e-mailtegel staat, en wat er niet staat
+ *
+ * Er staat dat de adressen zelf de server niet verlaten, en dat is letterlijk zo: alleen
+ * dit aantal gaat over de lijn. Er staat **niet** dat ze gehasht of geanonimiseerd zijn,
+ * want dat zijn ze niet — in de CSV op Azure staan ze gewoon leesbaar. Een geruststelling
+ * op een dashboard moet waar zijn, anders is hij schadelijker dan geen geruststelling.
  *
  * ## De opt-ins zijn klikbaar, en dat is het punt
  *
@@ -20,12 +30,13 @@ import type { Optin } from "@/lib/selligent/stand";
  * `True` en de hele pagina rekent mee. Zo is de rij tegels een ingang tot de cijfers en
  * geen los overzichtje dat je daarna met de hand in de filterbalk moet naspelen.
  *
- * ## Twee getallen per opt-in, want één liegt
+ * ## Eén noemer voor alle tegels: alle contacten
  *
- * Bij deze export is "nog niets ingevuld" vaak de grootste groep: `PREFERENCES_VDU` is
- * voor 40% gevuld. "47.084 van 137.424 contacten" leest dan als een schamele opt-in,
- * terwijl het "47.084 van de 68.533 die antwoord gaven" is. De tegel toont daarom het
- * aantal, en daaronder het aandeel van wie een antwoord gaf — met de balk op dát aandeel.
+ * Het percentage is het aandeel van álle contacten in de selectie, niet van de contacten
+ * die in die kolom iets hadden ingevuld. Dat laatste stond er eerst, en het leverde
+ * percentages op die niet te plaatsen waren: "48% van 50.054" bij een teller van 24.273,
+ * terwijl het bestand 137.424 contacten heeft. Met één noemer zijn de tegels onderling te
+ * vergelijken, en dat is waar een rij tegels voor bedoeld is.
  *
  * ## Welke kolommen hier staan, bepaalt het bestand
  *
@@ -42,6 +53,9 @@ export function GroteMetrics({
   contacten,
   contactenTotaal,
   contactKolom,
+  emails,
+  emailsTotaal,
+  emailKolom,
   autos,
   autosTotaal,
   autoKolom,
@@ -52,6 +66,9 @@ export function GroteMetrics({
   contacten: number;
   contactenTotaal: number;
   contactKolom: string | null;
+  emails: number;
+  emailsTotaal: number;
+  emailKolom: string | null;
   autos: number;
   autosTotaal: number;
   autoKolom: string | null;
@@ -60,7 +77,7 @@ export function GroteMetrics({
   bezig: boolean;
 }) {
   return (
-    <div className={`grid grid-cols-2 gap-6 transition-opacity ${bezig ? "opacity-60" : ""}`}>
+    <div className={`grid grid-cols-3 gap-6 transition-opacity ${bezig ? "opacity-60" : ""}`}>
       <GroteTegel
         label="Contacten"
         waarde={contacten}
@@ -68,6 +85,19 @@ export function GroteMetrics({
         kolom={contactKolom}
         gefilterd={gefilterd}
         onder={`uit ${getal(rijen)} rijen`}
+      />
+      <GroteTegel
+        label="E-mailadressen"
+        waarde={emails}
+        totaal={emailsTotaal}
+        kolom={emailKolom}
+        gefilterd={gefilterd}
+        onder={
+          contacten > 0 && emails < contacten
+            ? `${getal(contacten - emails)} contacten delen er een of hebben er geen`
+            : undefined
+        }
+        noot="Alleen geteld, nooit getoond: geen enkel adres verlaat de server."
       />
       <GroteTegel
         label="Auto's"
@@ -92,6 +122,7 @@ function GroteTegel({
   kolom,
   gefilterd,
   onder,
+  noot,
 }: {
   label: string;
   waarde: number;
@@ -99,6 +130,8 @@ function GroteTegel({
   kolom: string | null;
   gefilterd: boolean;
   onder?: string;
+  /** Een extra regel onder de tegel, bijvoorbeeld over wat er met de waarden gebeurt. */
+  noot?: string;
 }) {
   return (
     <section className="kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card">
@@ -119,17 +152,21 @@ function GroteTegel({
           Deze export heeft geen kolom om dit te tellen.
         </p>
       )}
+      {noot && <p className="mt-2 text-meta text-ink-faint">{noot}</p>}
     </section>
   );
 }
 
 export function OptinStrip({
   optins,
+  contacten,
   actief,
   onKies,
   bezig,
 }: {
   optins: Optin[];
+  /** Alle contacten in de selectie — de noemer van elke tegel. */
+  contacten: number;
   /** De kolomnamen waarop nu op `True` gefilterd wordt. */
   actief: string[];
   onKies: (kolom: string, aan: boolean) => void;
@@ -145,9 +182,8 @@ export function OptinStrip({
     >
       <h2 className="font-sans-w7 text-cell font-semibold text-ink">Opt-ins</h2>
       <p className="mt-0.5 max-w-prose text-meta text-ink-faint">
-        Contacten die op <code>True</code> staan, per voorkeur. Het percentage is het
-        aandeel van de contacten die hier een antwoord gaven — leeg telt niet als
-        &ldquo;nee&rdquo;. Klik een tegel om erop te filteren.
+        Contacten die op <code>True</code> staan, per voorkeur, als aandeel van alle{" "}
+        {getal(contacten)} contacten in deze selectie. Klik een tegel om erop te filteren.
       </p>
 
       <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 xl:grid-cols-5">
@@ -155,6 +191,7 @@ export function OptinStrip({
           <OptinTegel
             key={optin.kolom}
             optin={optin}
+            noemer={contacten}
             aan={actief.includes(optin.kolom)}
             onKies={(aan) => onKies(optin.kolom, aan)}
           />
@@ -166,14 +203,16 @@ export function OptinStrip({
 
 function OptinTegel({
   optin,
+  noemer,
   aan,
   onKies,
 }: {
   optin: Optin;
+  noemer: number;
   aan: boolean;
   onKies: (aan: boolean) => void;
 }) {
-  const aandeel = optin.ingevuld > 0 ? optin.contacten / optin.ingevuld : 0;
+  const aandeel = noemer > 0 ? optin.contacten / noemer : 0;
   return (
     <li>
       <button
@@ -197,7 +236,7 @@ function OptinTegel({
           <ProgressBar percent={aandeel * 100} className="h-1 w-full" />
         </span>
         <span className="mt-1 block text-meta text-ink-faint">
-          {Math.round(aandeel * 100)}% van {getal(optin.ingevuld)} ingevuld
+          {Math.round(aandeel * 100)}% van alle contacten
         </span>
       </button>
     </li>

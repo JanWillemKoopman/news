@@ -127,30 +127,58 @@ zelf, dan verandert er niets en mag die regel weg.
   aanvinklijst (vanaf dertien opties met een zoekveld erin), een datumkolom van/tot, en
   daarboven een zoekveld op een stuk van de waarde. Meerdere waarden binnen één filter is
   "of", meerdere filters samen is "en".
-- **Twee metrics naast elkaar: Contacten en Auto's.** Het aantal verschillende `ID`'s en
+- **Drie metrics naast elkaar: Contacten, E-mailadressen en Auto's.** Het aantal verschillende `ID`'s en
   het aantal verschillende `VDUVEHICLES_VEHICLE_ID`'s binnen de selectie — allebei níét het
   aantal rijen. Een rij is een contact mét een voertuig: 169.290 rijen op 137.424 contacten
   met 108.470 auto's. Het aantal rijen staat als kleine regel onder de metric en niet als
   derde tegel; het is de teller van het bestand, geen cijfer waarop je stuurt. Ontbreekt een
   kolom, dan valt de pagina terug (`CUSTOMER_ID`, het kenteken) en zegt in beeld welke kolom
   ze telde.
-- **Een rij opt-in-tegels**, één per booleaanse kolom: hoeveel contacten er op `True` staan.
-  Welke kolommen dat zijn staat nergens opgesomd — het zijn de kolommen die als booleaans
-  uit de data komen, dus een nieuwe voorkeur in de export levert vanzelf een tegel op. Elke
-  tegel is tegelijk het filter dat erbij hoort: klikken zet die kolom op `True` en de hele
-  pagina rekent mee.
-  - **Twee getallen per tegel, want één liegt.** Bij deze export is "nog niets ingevuld"
-    vaak de grootste groep: `PREFERENCES_VDU` is voor 40% gevuld. "33.768 van 137.424" leest
-    als een schamele opt-in, terwijl het "33.768 van de 48.797 die antwoord gaven" is — 69%.
-    De tegel toont het aantal, en daaronder het aandeel van wie antwoordde. Leeg telt niet
-    als "nee".
-- **Contacten per maand van accountaanmaak** (`CREATED_DT`) en **Auto's per maand van
-  aflevering** (`VDUVEHICLES_DELIVERY_DT`), allebei als lijn. Per contact respectievelijk
-  per auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een
-  grafiek niet afwijken van het cijfer erboven. De afleverdatum en niet de creatiedatum van
-  het account: een auto hoort thuis in de maand waarin hij is afgeleverd. Wil je een andere
-  datumkolom, dan is `LEVER_KOLOMMEN` in `lib/selligent/stand.ts` de regel die je verzet.
-- **De filterbalk staat bovenaan en dicht.** Vijfentwintig controls uitgeklapt vullen het
+  - **E-mailadressen** telt de verschillende waarden in `MAIL`. Bij de tegel staat dat de
+    adressen alleen geteld en nooit getoond worden, en dat is letterlijk zo: alleen dit
+    aantal gaat over de lijn. Er staat **niet** dat ze gehasht of geanonimiseerd zijn, want
+    dat zijn ze niet — in de CSV op Azure staan ze gewoon leesbaar. Wil je dat het wél waar
+    is, dan moet dat bij de bron gebeuren (gehasht aanleveren, of de kolom uit de export
+    halen); de pagina blijft dan gewoon werken en telt dan hashes.
+  - **`MAIL` heeft geen filter in de balk**, op verzoek. Het staat als metric in beeld; een
+    zoekveld waarin je een adres intypt om te zien of het bestaat, is iets anders dan een
+    dashboard en hoort in Selligent zelf.
+- **Een rij opt-in-tegels**, één per booleaanse kolom: hoeveel contacten er op `True` staan,
+  als aandeel van álle contacten in de selectie. Welke kolommen dat zijn staat nergens
+  opgesomd — het zijn de kolommen die als booleaans uit de data komen, dus een nieuwe
+  voorkeur in de export levert vanzelf een tegel op. Elke tegel is tegelijk het filter dat
+  erbij hoort: klikken zet die kolom op `True` en de hele pagina rekent mee.
+  - **Eén noemer voor alle tegels.** Er stond eerst het aandeel van de contacten die in die
+    kolom iets hadden ingevuld ("48% van 50.054" bij een teller van 24.273), en dat was niet
+    te plaatsen naast een bestand van 137.424 contacten. Nu is het overal hetzelfde getal
+    eronder, dus de tegels zijn onderling te vergelijken.
+- **"Contacten toegevoegd in Selligent per maand"** en **"Auto's toegevoegd in Selligent per
+  maand"**, allebei als lijn en allebei op `CREATED_DT`. Per contact respectievelijk per
+  auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een grafiek
+  niet afwijken van het cijfer erboven.
+  - De autografiek stond eerst op `VDUVEHICLES_DELIVERY_DT`, de afleverdatum. Op zichzelf
+    een zinnig cijfer, maar het antwoordt op een andere vraag dan de titel stelt: een auto
+    die in 2018 is afgeleverd aan een contact dat in 2025 is aangemaakt, kwam in 2025 in
+    Selligent. Wil je alsnog de afleverdatum, dan is `AUTO_DATUM_KOLOMMEN` in
+    `lib/selligent/stand.ts` de regel die je verzet — plus de titel.
+- **Een merkbalk bovenaan**, horizontaal en altijd zichtbaar: alle merken uit
+  `VDUVEHICLES_BRAND` naast elkaar, standaard allemaal aan, los uit te zetten. Er is geen
+  aparte "alles"-stand: alles aan betekent geen filter op die kolom, en zodra je er een
+  uitzet wordt het filter wat er overblijft — dezelfde ene filterwaarde, alleen anders
+  getekend. "Geen merk" (`LEEG_OPTIE`) staat er als eigen knop bij, want 58.235 rijen hebben
+  geen merkwaarde; zonder die knop zou één merk uitzetten stilzwijgend ook alle contacten
+  zonder auto wegfilteren. De logo's komen uit de bestaande set (`getBrandLogo`); wat die
+  niet kent (`BWG`, `AM_PKW`, …) blijft tekst. Merk staat daarom níét ook in het filterraster:
+  twee controls op dezelfde waarde zijn twee plekken om te kijken.
+- **De filterbalk staat bovenaan en dicht**, en de controls staan onder kopjes die uit de
+  kolomnamen zelf komen: **Algemeen**, **Voorkeuren** (`PREFERENCES`) en **Voertuig**
+  (`VDUVEHICLES`), elk als een eigen omlijnd blok met een streep onder de kop. Die indeling
+  staat nergens met de hand opgesomd — kolommen die hetzelfde voorvoegsel delen krijgen
+  vanaf drie stuks een eigen blok (`groepeerVelden` in `lib/selligent/stand.ts`), dus een
+  nieuwe `PREFERENCES_`-kolom schuift vanzelf bij de andere voorkeuren aan. De Nederlandse
+  koppen komen uit `GROEP_NAMEN` in `SelligentFilters.tsx` met het voorvoegsel er grijs
+  achter; een voorvoegsel dat daar niet in staat draagt gewoon zichzelf als kop, dus die
+  lijst is een verfraaiing en nooit een voorwaarde. Vijfentwintig controls uitgeklapt vullen het
   halve scherm en duwen de cijfers onder de vouw; bovenaan omdat filteren het eerste is wat
   je doet. Dichtgeklapt blijft staan wát er aanstaat — de chips met de actieve filters.
   Rechts ernaast staat hoe vers het bestand is en de knop Opnieuw ophalen. Het pad, de
