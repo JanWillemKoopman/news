@@ -38,11 +38,13 @@ import type { MaandPunt } from "@/lib/selligent/stand";
  * dezelfde doorloop die de contacten telt — zo kan de som van de grafiek niet afwijken
  * van de metric erboven.
  *
- * ## Twee knoppen die er wél zijn
+ * ## De knoppen die er wél zijn
  *
- * - **Vanaf 2015.** Van de 169.000 rijen zijn er maar een paar duizend van vóór 2015, dus
- *   op de volle reeks is driekwart van de breedte een vlakke lijn langs de nul en zit alle
- *   beweging in de laatste centimeters. De grafiek opent daarom op de laatste tien jaar.
+ * - **Het bereik.** Van de 169.000 rijen zijn er maar een paar duizend van vóór 2015, en
+ *   op de afleverdatum staat 42% van de auto's op een plaatshouder uit 1900 — op de volle
+ *   reeks is dus driekwart van de breedte een vlakke lijn langs de nul en zit alle beweging
+ *   in de laatste centimeters. Er zijn daarom drie bereiken, en de grafiek opent op het
+ *   kortste.
  * - **Logaritmisch.** Eén maand (een migratie) kan tienduizenden accounts bevatten, en
  *   dan drukt die ene piek de rest van het decennium plat. Dit is geen standaard, want een
  *   logaritmische as leest niemand per ongeluk goed; hij staat er voor het moment dat je
@@ -58,8 +60,18 @@ import type { MaandPunt } from "@/lib/selligent/stand";
  * het in beeld.
  */
 
-/** Vanaf welk jaar de ingekorte weergave begint. */
-const KORT_VANAF = new Date().getUTCFullYear() - 10;
+/**
+ * De ingekorte bereiken, in jaren terug vanaf nu — het eerste is de stand waarop de
+ * grafiek opent.
+ *
+ * Bewust relatief en niet als vaste jaartallen: "de laatste drie kalenderjaren" blijft
+ * kloppen, terwijl een hardgecodeerde 2024 over een paar jaar een willekeurig verleden
+ * venster is dat niemand meer heeft gekozen. Op het moment van schrijven levert dit
+ * "Vanaf 2024" en "Vanaf 2016" op.
+ */
+const KORTE_BEREIKEN = [2, 10];
+
+const HUIDIG_JAAR = new Date().getUTCFullYear();
 
 function maandLabel(maand: string): string {
   const [jaar, nr] = maand.split("-");
@@ -93,11 +105,29 @@ export default function SelligentGrafiek({
   bezig: boolean;
 }) {
   const kleuren = useGrafiekKleuren();
-  const [alles, setAlles] = useState(false);
+  // `null` betekent "volg de standaard"; zodra je zelf een bereik kiest blijft die staan,
+  // ook als een filterwijziging de reeks korter maakt.
+  const [keuze, setKeuze] = useState<number | null>(null);
   const [logaritmisch, setLogaritmisch] = useState(false);
 
+  const eersteJaar = maanden.length > 0 ? Number(maanden[0].maand.slice(0, 4)) : null;
+
+  /**
+   * De beschikbare bereiken, van kort naar lang, met het volledige bereik als laatste.
+   * Een bereik dat vóór de eerste maand begint voegt niets toe en verdwijnt.
+   */
+  const bereiken = useMemo(() => {
+    if (eersteJaar === null) return [];
+    const kort = KORTE_BEREIKEN.map((jaren) => HUIDIG_JAAR - jaren).filter((j) => j > eersteJaar);
+    return [...kort, eersteJaar];
+  }, [eersteJaar]);
+
+  const vanaf = keuze !== null && bereiken.includes(keuze) ? keuze : (bereiken[0] ?? null);
+  const volledig = bereiken.length > 0 ? bereiken[bereiken.length - 1] : null;
+
   const data = useMemo(() => {
-    const reeks = alles ? maanden : maanden.filter((m) => Number(m.maand.slice(0, 4)) >= KORT_VANAF);
+    const reeks =
+      vanaf === null ? maanden : maanden.filter((m) => Number(m.maand.slice(0, 4)) >= vanaf);
     return reeks.map((m) => ({
       maand: m.maand,
       label: maandLabel(m.maand),
@@ -105,21 +135,18 @@ export default function SelligentGrafiek({
       // helemaal niet en trekt de lijn eroverheen. `null` laat het gat zichtbaar.
       aantal: logaritmisch && m.aantal === 0 ? null : m.aantal,
     }));
-  }, [maanden, alles, logaritmisch]);
+  }, [maanden, vanaf, logaritmisch]);
 
-  const eersteJaar = maanden.length > 0 ? Number(maanden[0].maand.slice(0, 4)) : null;
-  const heeftOudere = eersteJaar !== null && eersteJaar < KORT_VANAF;
-
-  // Hoeveel er buiten de ingekorte weergave vallen. Bij de afleverdatum is dat de helft
-  // van alle auto's, dus dit is geen voetnoot maar de hoofdzaak.
+  // Hoeveel er buiten de getoonde weergave vallen. Bij de afleverdatum is dat bijna de
+  // helft van alle auto's, dus dit is geen voetnoot maar de hoofdzaak.
   const buitenBereik = useMemo(
     () =>
-      alles
+      vanaf === null
         ? 0
         : maanden
-            .filter((m) => Number(m.maand.slice(0, 4)) < KORT_VANAF)
+            .filter((m) => Number(m.maand.slice(0, 4)) < vanaf)
             .reduce((som, m) => som + m.aantal, 0),
-    [maanden, alles],
+    [maanden, vanaf],
   );
 
   return (
@@ -133,23 +160,21 @@ export default function SelligentGrafiek({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {heeftOudere && (
+          {bereiken.length > 1 && (
             <div className="flex rounded-control border border-line p-0.5">
-              {[
-                { aan: false, label: `Vanaf ${KORT_VANAF}` },
-                { aan: true, label: `Vanaf ${eersteJaar}` },
-              ].map((keuze) => (
+              {bereiken.map((jaar) => (
                 <button
-                  key={String(keuze.aan)}
+                  key={jaar}
                   type="button"
-                  onClick={() => setAlles(keuze.aan)}
+                  onClick={() => setKeuze(jaar)}
+                  aria-pressed={jaar === vanaf}
                   className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                    keuze.aan === alles
+                    jaar === vanaf
                       ? "bg-primary text-on-primary"
                       : "text-ink-muted hover:bg-surface"
                   }`}
                 >
-                  {keuze.label}
+                  Vanaf {jaar}
                 </button>
               ))}
             </div>
@@ -227,9 +252,9 @@ export default function SelligentGrafiek({
       {buitenBereik > 0 && (
         <p className="mt-3 text-meta text-ink-faint">
           {buitenBereik.toLocaleString("nl-NL")} {buitenBereik === 1 ? eenheid[0] : eenheid[1]}{" "}
-          {buitenBereik === 1 ? "valt" : "vallen"} vóór {KORT_VANAF} en {buitenBereik === 1 ? "staat" : "staan"}{" "}
-          dus niet in beeld. Zet de weergave op &ldquo;vanaf {eersteJaar}&rdquo; om{" "}
-          {buitenBereik === 1 ? "hem" : "ze"} erbij te zien.
+          {buitenBereik === 1 ? "valt" : "vallen"} vóór {vanaf} en{" "}
+          {buitenBereik === 1 ? "staat" : "staan"} dus niet in beeld. Zet de weergave op
+          &ldquo;vanaf {volledig}&rdquo; om {buitenBereik === 1 ? "hem" : "ze"} erbij te zien.
         </p>
       )}
 
