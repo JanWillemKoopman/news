@@ -5,7 +5,7 @@ import Inlogprompt from "@/components/Inlogprompt";
 import SelligentFilters from "@/components/selligent/SelligentFilters";
 import SelligentGrafiek from "@/components/selligent/SelligentGrafiek";
 import SelligentKolommen from "@/components/selligent/SelligentKolommen";
-import { IconRefresh } from "@/components/icons";
+import { GroteMetrics, OptinStrip } from "@/components/selligent/SelligentMetrics";
 import type { Datacheck } from "@/lib/selligent/datacheck";
 import type { Filter, Stand, Veld } from "@/lib/selligent/stand";
 
@@ -30,6 +30,14 @@ import type { Filter, Stand, Veld } from "@/lib/selligent/stand";
  * nieuwe antwoord binnen is. `volgnummer` zorgt ervoor dat een antwoord dat te laat komt
  * de nieuwere stand niet overschrijft — met zesentwintig filters is de kans op twee
  * verzoeken door elkaar heen reëel.
+ *
+ * ## De volgorde van het scherm
+ *
+ * Filters bovenaan en dicht, dan de cijfers, dan de grafieken, en het kolomoverzicht
+ * onderaan. Je komt hier voor een getal; de filterbalk is het gereedschap waarmee je dat
+ * getal aanscherpt, en gereedschap hoort niet het halve scherm te vullen voordat je
+ * gezien hebt waar je naar kijkt. Wat er wél altijd staat zijn de chips met de actieve
+ * filters, zodat de dichte balk nog steeds vertelt waar de cijfers over gaan.
  *
  * ## Waarom het typen in een zoekveld niet direct een verzoek doet
  *
@@ -124,6 +132,20 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
     return () => clearTimeout(tijd);
   }, [ingelogd, velden, actieveFilters, haalStand]);
 
+  /** Een opt-in-tegel aan- of uitzetten: dat is hetzelfde als het filter op `True` zetten. */
+  function zetOptin(kolom: string, aan: boolean) {
+    zetFilter(kolom, aan ? { kolom, waarden: ["True"] } : null);
+  }
+
+  /** Welke opt-ins nu als filter aanstaan, zodat de tegels hun eigen stand tonen. */
+  const actieveOptins = useMemo(
+    () =>
+      Object.values(filters)
+        .filter((f) => f.waarden?.length === 1 && f.waarden[0] === "True")
+        .map((f) => f.kolom),
+    [filters],
+  );
+
   function zetFilter(kolom: string, filter: Filter | null) {
     setFilters((huidig) => {
       const volgende = { ...huidig };
@@ -144,109 +166,88 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
   }
 
   const gefilterd = actieveFilters.length > 0;
+  const bijgewerkt = datacheck?.bestand.gewijzigdOp
+    ? `Bijgewerkt ${new Date(datacheck.bestand.gewijzigdOp).toLocaleString("nl-NL", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="font-sans-w7 text-cell font-semibold text-ink">Het bestand</h2>
-            <p className="mt-1 max-w-prose text-meta text-ink-faint">
-              Rechtstreeks uit Azure Blob Storage. Er wordt niets van deze data in het
-              dashboard of in Supabase opgeslagen — filteren gebeurt op de server, en
-              alleen de aantallen komen hier terecht.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void verversAlles()}
-            disabled={laadtVelden}
-            className="flex shrink-0 items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink disabled:cursor-wait disabled:opacity-60"
-          >
-            <IconRefresh className={`h-4 w-4 ${laadtVelden ? "animate-spin" : ""}`} />
-            {laadtVelden ? "Ophalen…" : "Opnieuw ophalen"}
-          </button>
-        </div>
-
-        {fout && (
-          <p className="mt-4 rounded-control border border-line bg-surface-tint px-3 py-2 text-sm text-negative">
-            {fout}
-          </p>
-        )}
-
-        {!datacheck && !fout && (
-          <p className="mt-4 text-sm text-ink-muted">
-            {laadtVelden
-              ? "Het bestand is 36 MB; de eerste keer duurt ongeveer tien seconden."
-              : "Nog niets opgehaald."}
-          </p>
-        )}
-
-        {datacheck && (
-          <p className="mt-4 text-meta text-ink-faint">
-            <code>{datacheck.bestand.pad}</code> · {megabytes(datacheck.bestand.bytes)} ·{" "}
-            {getal(datacheck.rijen)} rijen · door Selligent neergezet op{" "}
-            {datumTijd(datacheck.bestand.gewijzigdOp)}
-            {datacheck.overgeslagenRijen > 0 && (
-              <>
-                {" "}
-                · {getal(datacheck.overgeslagenRijen)} rijen overgeslagen (afwijkend aantal
-                velden)
-              </>
-            )}
-          </p>
-        )}
-      </section>
-
-      {velden && (
+      {velden ? (
         <SelligentFilters
           velden={velden}
           filters={filters}
           onFilter={zetFilter}
           onWisAlles={() => setFilters({})}
+          bijgewerkt={bijgewerkt}
+          onVerversen={() => void verversAlles()}
+          verversBezig={laadtVelden}
         />
+      ) : (
+        <section className="rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
+          <p className="text-sm text-ink-muted">
+            {laadtVelden
+              ? "Even geduld — het bestand is 36 MB en de eerste keer duurt ongeveer tien seconden."
+              : "Nog niets opgehaald."}
+          </p>
+        </section>
       )}
 
-      {/* De metric. Eén cijfer, groot, met eronder waar het op rust — het aantal rijen
-          erbij is context en geen tweede metric: een rij is een contact mét een voertuig,
-          dus die twee getallen horen niet naast elkaar als gelijkwaardige KPI's te staan. */}
-      <section
-        className={`kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card transition-opacity ${
-          laadtStand ? "opacity-60" : ""
-        }`}
-      >
-        <p className="label-theme text-label text-ink-faint">Contacten</p>
-        <p className="titel-theme mt-1 font-sans-w7 text-title font-semibold text-ink">
-          {stand ? getal(stand.contacten) : "—"}
+      {fout && (
+        <p className="rounded-panel border border-line bg-surface-tint px-5 py-4 text-sm text-negative">
+          {fout}
         </p>
-        {stand && (
-          <p className="mt-1 text-meta text-ink-muted">
-            {gefilterd
-              ? `van ${getal(stand.contactenTotaal)} in het hele bestand`
-              : "alle contacten in het bestand"}{" "}
-            · uit {getal(stand.rijen)} rijen
-            {stand.contactKolom && (
-              <>
-                {" "}
-                · verschillende waarden in <code>{stand.contactKolom}</code>
-              </>
-            )}
-          </p>
-        )}
-        {stand && stand.contactKolom === null && (
-          <p className="mt-1 text-meta text-ink-faint">
-            Er zit geen id-kolom in deze export, dus contacten zijn niet te tellen.
-          </p>
-        )}
-      </section>
+      )}
 
       {stand && (
-        <SelligentGrafiek
-          maanden={stand.maanden}
-          kolom={stand.creatieKolom}
-          zonderDatum={stand.zonderCreatiedatum}
-          bezig={laadtStand}
-        />
+        <>
+          <GroteMetrics
+            contacten={stand.contacten}
+            contactenTotaal={stand.contactenTotaal}
+            contactKolom={stand.contactKolom}
+            autos={stand.autos}
+            autosTotaal={stand.autosTotaal}
+            autoKolom={stand.autoKolom}
+            rijen={stand.rijen}
+            gefilterd={gefilterd}
+            bezig={laadtStand}
+          />
+
+          <OptinStrip
+            optins={stand.optins}
+            actief={actieveOptins}
+            onKies={zetOptin}
+            bezig={laadtStand}
+          />
+
+          <SelligentGrafiek
+            titel="Contacten per maand"
+            toelichting="De maand waarin het account is aangemaakt. Een contact met meerdere auto's staat één keer in zijn eigen maand."
+            reeksnaam="Contacten"
+            eenheid={["contact", "contacten"]}
+            maanden={stand.maanden}
+            kolom={stand.creatieKolom}
+            zonderDatum={stand.zonderCreatiedatum}
+            kleurIndex={0}
+            bezig={laadtStand}
+          />
+
+          <SelligentGrafiek
+            titel="Auto's per maand"
+            toelichting="De maand waarin de auto is afgeleverd. Elke auto telt één keer, ook als hij bij meerdere rijen hoort."
+            reeksnaam="Auto's"
+            eenheid={["auto", "auto's"]}
+            maanden={stand.autoMaanden}
+            kolom={stand.leverKolom}
+            zonderDatum={stand.autosZonderDatum}
+            kleurIndex={1}
+            bezig={laadtStand}
+          />
+        </>
       )}
 
       {datacheck && <SelligentKolommen datacheck={datacheck} />}

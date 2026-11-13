@@ -15,7 +15,11 @@ import { AS_GROOTTE } from "@/components/chat/chartTheme";
 import type { MaandPunt } from "@/lib/selligent/stand";
 
 /**
- * Contacten per maand waarin hun account is aangemaakt.
+ * Een maandreeks als lijn — contacten op creatiedatum, auto's op afleverdatum.
+ *
+ * Eén component voor allebei, met dezelfde vorm en dezelfde knoppen: de twee grafieken
+ * staan onder elkaar op dezelfde pagina, en twee verschillende vormen voor twee reeksen
+ * van hetzelfde soort zou suggereren dat er iets anders staat dan er staat.
  *
  * ## Waarom een lijn en geen staven
  *
@@ -54,16 +58,29 @@ function maandLabel(maand: string): string {
 }
 
 export default function SelligentGrafiek({
+  titel,
+  toelichting,
+  reeksnaam,
+  eenheid,
   maanden,
   kolom,
   zonderDatum,
+  kleurIndex = 0,
   bezig,
 }: {
+  titel: string;
+  toelichting: string;
+  /** Hoe de reeks in de tooltip heet. */
+  reeksnaam: string;
+  /** Het woord voor één en meer, voor de zin onder de grafiek: ["contact", "contacten"]. */
+  eenheid: [string, string];
   maanden: MaandPunt[];
-  /** Welke kolom de creatiedatum is — staat in de kop, zodat het cijfer navraagbaar is. */
+  /** Op welke datumkolom gegroepeerd is — staat in de kop, zodat het cijfer navraagbaar is. */
   kolom: string | null;
-  /** Contacten in de selectie zonder leesbare creatiedatum; die staan in geen enkele maand. */
+  /** Hoeveel er in de selectie geen leesbare datum hebben; die staan in geen enkele maand. */
   zonderDatum: number;
+  /** Welke categoriekleur uit het theme; de twee grafieken krijgen er elk een eigen. */
+  kleurIndex?: number;
   bezig: boolean;
 }) {
   const kleuren = useGrafiekKleuren();
@@ -77,7 +94,7 @@ export default function SelligentGrafiek({
       label: maandLabel(m.maand),
       // Een logaritmische as kan niet bij nul beginnen; recharts tekent zo'n punt dan
       // helemaal niet en trekt de lijn eroverheen. `null` laat het gat zichtbaar.
-      contacten: logaritmisch && m.contacten === 0 ? null : m.contacten,
+      aantal: logaritmisch && m.aantal === 0 ? null : m.aantal,
     }));
   }, [maanden, alles, logaritmisch]);
 
@@ -88,11 +105,10 @@ export default function SelligentGrafiek({
     <section className="kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Contacten per maand</h2>
+          <h2 className="font-sans-w7 text-cell font-semibold text-ink">{titel}</h2>
           <p className="mt-0.5 max-w-prose text-meta text-ink-muted">
-            De maand waarin het account is aangemaakt
-            {kolom && <> (<code>{kolom}</code>)</>}, binnen de gekozen filters. Een contact
-            met meerdere voertuigen staat één keer in zijn eigen maand.
+            {toelichting}
+            {kolom && <> Gegroepeerd op <code>{kolom}</code>.</>}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -136,7 +152,7 @@ export default function SelligentGrafiek({
       <div className={`mt-4 h-72 w-full transition-opacity ${bezig ? "opacity-60" : ""}`}>
         {data.length === 0 ? (
           <p className="flex h-full items-center justify-center text-sm text-ink-muted">
-            Geen contacten met een creatiedatum binnen deze filters.
+            Niets met een leesbare datum binnen deze filters.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -162,7 +178,7 @@ export default function SelligentGrafiek({
               <Tooltip
                 formatter={(v) => [
                   typeof v === "number" ? v.toLocaleString("nl-NL") : "—",
-                  "Contacten",
+                  reeksnaam,
                 ]}
                 contentStyle={{
                   borderRadius: 10,
@@ -174,9 +190,9 @@ export default function SelligentGrafiek({
               />
               <Line
                 type={kleuren.lijnvorm}
-                dataKey="contacten"
-                name="Contacten"
-                stroke={kleuren.categorieen[0]}
+                dataKey="aantal"
+                name={reeksnaam}
+                stroke={kleuren.categorieen[kleurIndex % kleuren.categorieen.length]}
                 strokeWidth={kleuren.lijndikte}
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: kleuren.vlak }}
@@ -189,10 +205,10 @@ export default function SelligentGrafiek({
 
       {zonderDatum > 0 && (
         <p className="mt-3 text-meta text-ink-faint">
-          {zonderDatum.toLocaleString("nl-NL")} contact
-          {zonderDatum === 1 ? "" : "en"} in deze selectie {zonderDatum === 1 ? "heeft" : "hebben"}{" "}
-          geen leesbare creatiedatum en {zonderDatum === 1 ? "staat" : "staan"} dus in geen
-          enkele maand. De metric erboven telt {zonderDatum === 1 ? "hem" : "ze"} wel mee.
+          {zonderDatum.toLocaleString("nl-NL")} {zonderDatum === 1 ? eenheid[0] : eenheid[1]} in
+          deze selectie {zonderDatum === 1 ? "heeft" : "hebben"} geen leesbare datum en{" "}
+          {zonderDatum === 1 ? "staat" : "staan"} dus in geen enkele maand. De metric erboven
+          telt {zonderDatum === 1 ? "hem" : "ze"} wel mee.
         </p>
       )}
     </section>

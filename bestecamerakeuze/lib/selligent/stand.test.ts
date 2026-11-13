@@ -11,11 +11,11 @@ const META = { pad: "output/test.csv", bytes: 0, gewijzigdOp: null, etag: null }
  */
 function proeftabel(): Tabel {
   return bouwTabel(
-    '"ID";"MERK";"MAIL";"CREATED_DT"\n' +
-      '"1";"Volkswagen";"a@b.nl";"3/02/2021 6:00:22"\n' +
-      '"1";"Audi";"a@b.nl";"3/02/2021 6:00:22"\n' +
-      '"2";"Volkswagen";"c@d.nl";"15/02/2021 0:00:00"\n' +
-      '"3";"";"e@f.nl";"1/05/2021 0:00:00"\n',
+    '"ID";"MERK";"MAIL";"CREATED_DT";"VDUVEHICLES_VEHICLE_ID";"VDUVEHICLES_DELIVERY_DT";"PREFERENCES_VDU"\n' +
+      '"1";"Volkswagen";"a@b.nl";"3/02/2021 6:00:22";"100";"5/01/2022 0:00:00";"True"\n' +
+      '"1";"Audi";"a@b.nl";"3/02/2021 6:00:22";"101";"6/03/2022 0:00:00";"True"\n' +
+      '"2";"Volkswagen";"c@d.nl";"15/02/2021 0:00:00";"102";"7/01/2022 0:00:00";"False"\n' +
+      '"3";"";"e@f.nl";"1/05/2021 0:00:00";"";"";""\n',
     META,
   );
 }
@@ -32,10 +32,10 @@ test("een contact met twee auto's staat één keer in de maandgrafiek", () => {
   assert.equal(stand.creatieKolom, "CREATED_DT");
   // Februari heeft twee contacten (id 1 met twee auto's, en id 2), niet drie rijen.
   assert.deepEqual(stand.maanden, [
-    { maand: "2021-02", contacten: 2 },
-    { maand: "2021-03", contacten: 0 },
-    { maand: "2021-04", contacten: 0 },
-    { maand: "2021-05", contacten: 1 },
+    { maand: "2021-02", aantal: 2 },
+    { maand: "2021-03", aantal: 0 },
+    { maand: "2021-04", aantal: 0 },
+    { maand: "2021-05", aantal: 1 },
   ]);
 });
 
@@ -92,7 +92,7 @@ test("een rij met een onleesbare datum valt buiten elk datumbereik", () => {
   const zonder = standVan(tabel, []);
   assert.equal(zonder.contacten, 2);
   assert.equal(zonder.zonderCreatiedatum, 1);
-  assert.equal(zonder.maanden.reduce((s, m) => s + m.contacten, 0), 1);
+  assert.equal(zonder.maanden.reduce((s, m) => s + m.aantal, 0), 1);
 });
 
 test("een filter op een kolom die niet bestaat filtert niets weg", () => {
@@ -109,7 +109,15 @@ test("elke kolom krijgt een filter, en de soort volgt uit de data", () => {
   const velden = veldenVan(proeftabel());
   assert.deepEqual(
     velden.map((v) => v.naam),
-    ["ID", "MERK", "MAIL", "CREATED_DT"],
+    [
+      "ID",
+      "MERK",
+      "MAIL",
+      "CREATED_DT",
+      "VDUVEHICLES_VEHICLE_ID",
+      "VDUVEHICLES_DELIVERY_DT",
+      "PREFERENCES_VDU",
+    ],
   );
   assert.equal(velden.find((v) => v.naam === "CREATED_DT")!.soort, "datum");
   assert.equal(velden.find((v) => v.naam === "MERK")!.soort, "lijst");
@@ -141,4 +149,66 @@ test("selectie geeft een masker dat even lang is als het aantal rijen", () => {
   assert.equal(masker.length, 4);
   assert.equal(rijen, 1);
   assert.equal([...masker].filter((m) => m === 1).length, 1);
+});
+
+test("auto's tellen verschillende voertuig-id's, los van het aantal contacten", () => {
+  const stand = standVan(proeftabel(), []);
+  // Drie auto's op drie contacten: id 1 heeft er twee, id 3 heeft er geen.
+  assert.equal(stand.autos, 3);
+  assert.equal(stand.autoKolom, "VDUVEHICLES_VEHICLE_ID");
+  assert.equal(stand.contacten, 3);
+});
+
+test("de autografiek groepeert op afleverdatum, niet op de creatiedatum van het account", () => {
+  const stand = standVan(proeftabel(), []);
+  assert.equal(stand.leverKolom, "VDUVEHICLES_DELIVERY_DT");
+  assert.deepEqual(stand.autoMaanden, [
+    { maand: "2022-01", aantal: 2 },
+    { maand: "2022-02", aantal: 0 },
+    { maand: "2022-03", aantal: 1 },
+  ]);
+});
+
+test("een opt-in telt contacten en niet rijen", () => {
+  const stand = standVan(proeftabel(), []);
+  const vdu = stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!;
+  // Id 1 staat in twee rijen op True; dat is één contact met een opt-in.
+  assert.equal(vdu.contacten, 1);
+  // Ingevuld: id 1 (True) en id 2 (False). Id 3 liet het leeg en telt dus niet mee.
+  assert.equal(vdu.ingevuld, 2);
+});
+
+test("alleen booleaanse kolommen leveren een opt-in-tegel op", () => {
+  const stand = standVan(proeftabel(), []);
+  assert.deepEqual(
+    stand.optins.map((o) => o.kolom),
+    ["PREFERENCES_VDU"],
+  );
+});
+
+test("de opt-ins volgen de filters, net als de metrics", () => {
+  const stand = standVan(proeftabel(), [{ kolom: "MERK", waarden: ["Audi"] }]);
+  assert.equal(stand.contacten, 1);
+  assert.equal(stand.autos, 1);
+  assert.equal(stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!.contacten, 1);
+});
+
+test("True wordt hoofdletterongevoelig en met spaties eromheen herkend", () => {
+  // De waarde zelf blijft onbewerkt in de tabel staan; alleen de telling kijkt soepel.
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_X"\n"1";"true"\n"2";"True "\n"3";"False"\n',
+    META,
+  );
+  const optin = standVan(tabel, []).optins.find((o) => o.kolom === "PREFERENCES_X")!;
+  assert.equal(optin.contacten, 2);
+  assert.equal(optin.ingevuld, 3);
+});
+
+test("zonder voertuigkolom blijft de rest van de stand gewoon werken", () => {
+  const tabel = bouwTabel('"ID";"MERK"\n"1";"Audi"\n', META);
+  const stand = standVan(tabel, []);
+  assert.equal(stand.autos, 0);
+  assert.equal(stand.autoKolom, null);
+  assert.deepEqual(stand.autoMaanden, []);
+  assert.equal(stand.contacten, 1);
 });

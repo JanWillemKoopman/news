@@ -1,12 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
-import { IconClose } from "@/components/icons";
+import { IconChevronDown, IconClose, IconRefresh } from "@/components/icons";
 import type { Filter, Veld } from "@/lib/selligent/stand";
 import { toonWaarde, weergaveNamen } from "@/lib/selligent/weergave";
 
 /**
  * De filterbalk van het tabblad Selligent: één control per kolom van de export.
+ *
+ * ## Hij staat bovenaan en dicht
+ *
+ * Dicht, omdat vijfentwintig controls uitgeklapt het halve scherm vullen en de cijfers
+ * waar je voor komt dan onder de vouw duwen. Bovenaan, omdat filteren het eerste is wat
+ * je doet en een filterbalk onder de cijfers je laat scrollen voor elke aanpassing.
+ * Dichtgeklapt blijft staan wát er aanstaat — de chips met de actieve filters — zodat de
+ * balk ook gesloten vertelt waar je naar kijkt.
  *
  * ## Waarom het een raster is en geen rij
  *
@@ -42,6 +51,10 @@ type Props = {
   filters: Record<string, Filter>;
   onFilter: (kolom: string, filter: Filter | null) => void;
   onWisAlles: () => void;
+  /** Hoe vers het bestand is, in één regel; `null` zolang dat nog niet bekend is. */
+  bijgewerkt: string | null;
+  onVerversen: () => void;
+  verversBezig: boolean;
 };
 
 /** Hoe een actief filter in één regel leest, voor de chip erboven. */
@@ -58,7 +71,16 @@ function chipTekst(veld: Veld, filter: Filter): string | null {
   return null;
 }
 
-export default function SelligentFilters({ velden, filters, onFilter, onWisAlles }: Props) {
+export default function SelligentFilters({
+  velden,
+  filters,
+  onFilter,
+  onWisAlles,
+  bijgewerkt,
+  onVerversen,
+  verversBezig,
+}: Props) {
+  const [open, setOpen] = useState(false);
   const chips = velden
     .map((veld) => {
       const filter = filters[veld.naam];
@@ -69,28 +91,54 @@ export default function SelligentFilters({ velden, filters, onFilter, onWisAlles
     .filter((c): c is { veld: Veld; tekst: string } => c !== null);
 
   return (
-    <section className="rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Filters</h2>
-          <p className="mt-0.5 text-meta text-ink-faint">
-            Eén filter per kolom, {velden.length} in totaal. Meerdere waarden binnen één
-            filter is &ldquo;of&rdquo;, meerdere filters samen is &ldquo;en&rdquo;.
-          </p>
-        </div>
-        {chips.length > 0 && (
+    <section className="rounded-panel border border-line bg-card px-5 py-3 shadow-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+        >
+          <IconChevronDown
+            className={`h-4 w-4 shrink-0 text-ink-muted transition-transform duration-[var(--duur-snel)] ease-merk ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+          <span className="font-sans-w7 text-cell font-semibold text-ink">Filters</span>
+          <span className="text-meta text-ink-faint">
+            {chips.length === 0
+              ? `${velden.length} kolommen`
+              : `${chips.length} actief van ${velden.length}`}
+          </span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          {bijgewerkt && <span className="text-meta text-ink-faint">{bijgewerkt}</span>}
+          {chips.length > 0 && (
+            <button
+              type="button"
+              onClick={onWisAlles}
+              className="rounded-control px-2 py-1 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink"
+            >
+              Alles wissen
+            </button>
+          )}
           <button
             type="button"
-            onClick={onWisAlles}
-            className="rounded-control px-2 py-1 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink"
+            onClick={onVerversen}
+            disabled={verversBezig}
+            className="flex shrink-0 items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink disabled:cursor-wait disabled:opacity-60"
           >
-            Alles wissen
+            <IconRefresh className={`h-4 w-4 ${verversBezig ? "animate-spin" : ""}`} />
+            {verversBezig ? "Ophalen…" : "Opnieuw ophalen"}
           </button>
-        )}
+        </div>
       </div>
 
+      {/* De chips blijven staan als de balk dicht is: ook gesloten hoort hij te vertellen
+          waar je naar kijkt. */}
       {chips.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
+        <ul className="mt-2 flex flex-wrap gap-1.5">
           {chips.map(({ veld, tekst }) => (
             <li key={veld.naam}>
               <button
@@ -107,16 +155,24 @@ export default function SelligentFilters({ velden, filters, onFilter, onWisAlles
         </ul>
       )}
 
-      <div className="mt-3 grid grid-cols-2 items-start gap-x-2 gap-y-1 xl:grid-cols-4">
-        {velden.map((veld) => (
-          <VeldControl
-            key={veld.naam}
-            veld={veld}
-            filter={filters[veld.naam]}
-            onFilter={(f) => onFilter(veld.naam, f)}
-          />
-        ))}
-      </div>
+      {open && (
+        <>
+          <p className="mt-3 border-t border-line pt-3 text-meta text-ink-faint">
+            Eén filter per kolom. Meerdere waarden binnen één filter is &ldquo;of&rdquo;,
+            meerdere filters samen is &ldquo;en&rdquo;.
+          </p>
+          <div className="mt-1 grid grid-cols-2 items-start gap-x-2 gap-y-1 xl:grid-cols-4">
+            {velden.map((veld) => (
+              <VeldControl
+                key={veld.naam}
+                veld={veld}
+                filter={filters[veld.naam]}
+                onFilter={(f) => onFilter(veld.naam, f)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }

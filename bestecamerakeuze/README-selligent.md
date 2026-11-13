@@ -127,13 +127,35 @@ zelf, dan verandert er niets en mag die regel weg.
   aanvinklijst (vanaf dertien opties met een zoekveld erin), een datumkolom van/tot, en
   daarboven een zoekveld op een stuk van de waarde. Meerdere waarden binnen één filter is
   "of", meerdere filters samen is "en".
-- **Eén metric: Contacten.** Het aantal verschillende `ID`'s binnen de selectie — niet het
-  aantal rijen. Een rij is een contact mét een voertuig: 169.290 rijen op 137.424 id's, dus
-  wie drie auto's heeft zou er drie keer in zitten. Staat `ID` niet in de export, dan valt
-  de pagina terug op `CUSTOMER_ID` en zegt in beeld welke kolom ze telde.
-- **Contacten per maand van accountaanmaak** (`CREATED_DT`), als lijn. Ook hier per contact
-  en niet per rij, uit dezelfde doorloop als de metric — zo kan de som van de grafiek niet
-  afwijken van het cijfer erboven.
+- **Twee metrics naast elkaar: Contacten en Auto's.** Het aantal verschillende `ID`'s en
+  het aantal verschillende `VDUVEHICLES_VEHICLE_ID`'s binnen de selectie — allebei níét het
+  aantal rijen. Een rij is een contact mét een voertuig: 169.290 rijen op 137.424 contacten
+  met 108.470 auto's. Het aantal rijen staat als kleine regel onder de metric en niet als
+  derde tegel; het is de teller van het bestand, geen cijfer waarop je stuurt. Ontbreekt een
+  kolom, dan valt de pagina terug (`CUSTOMER_ID`, het kenteken) en zegt in beeld welke kolom
+  ze telde.
+- **Een rij opt-in-tegels**, één per booleaanse kolom: hoeveel contacten er op `True` staan.
+  Welke kolommen dat zijn staat nergens opgesomd — het zijn de kolommen die als booleaans
+  uit de data komen, dus een nieuwe voorkeur in de export levert vanzelf een tegel op. Elke
+  tegel is tegelijk het filter dat erbij hoort: klikken zet die kolom op `True` en de hele
+  pagina rekent mee.
+  - **Twee getallen per tegel, want één liegt.** Bij deze export is "nog niets ingevuld"
+    vaak de grootste groep: `PREFERENCES_VDU` is voor 40% gevuld. "33.768 van 137.424" leest
+    als een schamele opt-in, terwijl het "33.768 van de 48.797 die antwoord gaven" is — 69%.
+    De tegel toont het aantal, en daaronder het aandeel van wie antwoordde. Leeg telt niet
+    als "nee".
+- **Contacten per maand van accountaanmaak** (`CREATED_DT`) en **Auto's per maand van
+  aflevering** (`VDUVEHICLES_DELIVERY_DT`), allebei als lijn. Per contact respectievelijk
+  per auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een
+  grafiek niet afwijken van het cijfer erboven. De afleverdatum en niet de creatiedatum van
+  het account: een auto hoort thuis in de maand waarin hij is afgeleverd. Wil je een andere
+  datumkolom, dan is `LEVER_KOLOMMEN` in `lib/selligent/stand.ts` de regel die je verzet.
+- **De filterbalk staat bovenaan en dicht.** Vijfentwintig controls uitgeklapt vullen het
+  halve scherm en duwen de cijfers onder de vouw; bovenaan omdat filteren het eerste is wat
+  je doet. Dichtgeklapt blijft staan wát er aanstaat — de chips met de actieve filters.
+  Rechts ernaast staat hoe vers het bestand is en de knop Opnieuw ophalen. Het pad, de
+  grootte en het rijaantal staan in het kolomoverzicht onderaan; die hoorden niet als eigen
+  blok bovenaan de pagina, waar ze ruimte innamen van de cijfers waarvoor je komt.
 
 ### De cache, en waarom dat geen opslag is
 
@@ -157,9 +179,9 @@ waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
 | Ophalen | 7,4 s |
 | Ombouwen naar de tabel | 2,0 s |
 | Geheugen van de tabel | 99 MB (296 MB piek tijdens het ombouwen) |
-| Filteren | 5–40 ms, ook met alle 26 filters tegelijk aan |
+| Filteren, tellen en groeperen | 11–41 ms, ook met alle filters tegelijk aan |
 | Antwoord met de filtercontrols | 11,6 kB |
-| Antwoord met de metric en de grafiek | 16,6 kB |
+| Antwoord met de metrics en de grafieken | 62,4 kB |
 
 ## Persoonsgegevens
 
