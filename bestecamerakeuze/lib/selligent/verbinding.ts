@@ -267,6 +267,46 @@ async function fout(res: Response, account: string, pad: string): Promise<Error>
 }
 
 /**
+ * Het verzoek doen, met een leesbare melding als het netwerk al afhaakt.
+ *
+ * `fetch` gooit bij een onbereikbare host een kale `TypeError: fetch failed`, zonder te
+ * zeggen welke host. Dat is precies de melding die je krijgt als de connection string
+ * niet helemaal is geplakt: op `EndpointSuffix=core.windows` (zonder `.net`) wordt de
+ * hostnaam `…blob.core.windows`, en die bestaat niet. Hier staat dus wél welke host is
+ * geprobeerd en wat daar meestal aan mankeert.
+ */
+async function verzoek(
+  url: string,
+  init: RequestInit,
+  account: string,
+  pad: string,
+): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch (err) {
+    const host = (() => {
+      try {
+        return new URL(url).host;
+      } catch {
+        return "(onleesbare URL)";
+      }
+    })();
+    const einde = host.endsWith(".core.windows.net")
+      ? ""
+      : " De hostnaam eindigt niet op .core.windows.net, dus de connection string is " +
+        "waarschijnlijk niet helemaal geplakt — hij hoort te eindigen op " +
+        "EndpointSuffix=core.windows.net.";
+    throw new Error(
+      `Azure Blob Storage is niet bereikbaar op ${host}.${einde} ` +
+        `(${err instanceof Error ? err.message : String(err)})`,
+    );
+  }
+  if (!res.ok) throw await fout(res, account, pad);
+  return res;
+}
+
+/**
  * De eigenschappen van het bestand ophalen, zonder het te downloaden.
  *
  * Dit is wat de cache goedkoop houdt: een HEAD kost één verzoek en een paar honderd
@@ -274,8 +314,12 @@ async function fout(res: Response, account: string, pad: string): Promise<Error>
  */
 export async function haalBlobKop(signaal?: AbortSignal): Promise<BlobKop> {
   const { url, headers, account, pad } = doelwit("HEAD");
-  const res = await fetch(url, { method: "HEAD", headers, cache: "no-store", signal: signaal });
-  if (!res.ok) throw await fout(res, account, pad);
+  const res = await verzoek(
+    url,
+    { method: "HEAD", headers, cache: "no-store", signal: signaal },
+    account,
+    pad,
+  );
   return {
     bytes: Number(res.headers.get("content-length") ?? 0),
     gewijzigdOp: res.headers.get("last-modified")
@@ -295,8 +339,7 @@ export async function haalBlobKop(signaal?: AbortSignal): Promise<BlobKop> {
  */
 export async function haalBlobTekst(signaal?: AbortSignal): Promise<string> {
   const { url, headers, account, pad } = doelwit("GET");
-  const res = await fetch(url, { headers, cache: "no-store", signal: signaal });
-  if (!res.ok) throw await fout(res, account, pad);
+  const res = await verzoek(url, { headers, cache: "no-store", signal: signaal }, account, pad);
   const tekst = await res.text();
   // Azure levert de export met een UTF-8 BOM; die hoort niet in de eerste kolomnaam.
   return tekst.charCodeAt(0) === 0xfeff ? tekst.slice(1) : tekst;

@@ -69,6 +69,7 @@ geen lichaam mee, dus anders staat er alleen "HTTP 404" en weet je nog niets.
 | `AuthenticationFailed` | De sleutel is afgewezen — meestal is hij in Azure geroteerd en staat de oude nog in Vercel. |
 | `InvalidAuthenticationInfo` | De connection string is onvolledig geplakt; hij hoort te eindigen op `EndpointSuffix=core.windows.net`. |
 | `AuthorizationFailure` | Het SAS-token is verlopen of geldt niet voor dit pad. |
+| `niet bereikbaar op …` | De hostnaam bestaat niet. Eindigt hij niet op `.core.windows.net`, dan is de connection string halverwege afgekapt bij het plakken. |
 
 Let op bij het plakken in Vercel: geen aanhalingstekens eromheen, de hele string inclusief
 de `==` aan het eind van de sleutel, en de variabele aanzetten voor Production, Preview én
