@@ -177,10 +177,16 @@ zelf, dan verandert er niets en mag die regel weg.
   auto's; alleen de verdeling over de maanden verschilt, en een test legt dat vast.
   - **Let op de plaatshouders in deze kolom.** 46.074 van de 108.470 auto's staan op
     1 januari 1900, en nog eens 2.278 hebben helemaal geen leesbare datum. De grafiek opent
-    op de laatste tien jaar, dus die 1900-groep is dan niet in beeld — en daarom staat er
-    onder elke grafiek hoeveel er buiten het getoonde bereik vallen, met de knop ernaast om
-    het erbij te halen. Zonder die regel toont deze grafiek een kleine helft van de auto's
-    en ziet hij eruit alsof hij over alle auto's gaat.
+    op de laatste drie kalenderjaren, dus die 1900-groep is dan niet in beeld — en daarom
+    staat er onder elke grafiek hoeveel er buiten het getoonde bereik vallen, met de knoppen
+    ernaast om het erbij te halen. Zonder die regel toont deze grafiek een fractie van de
+    auto's en ziet hij eruit alsof hij over alle auto's gaat.
+  - **Drie bereiken per grafiek**: vanaf twee jaar terug (de stand waarop hij opent), vanaf
+    tien jaar terug, en de volledige reeks. Die grenzen staan relatief in `KORTE_BEREIKEN`
+    (`SelligentGrafiek.tsx`) en niet als vaste jaartallen: "de laatste drie kalenderjaren"
+    blijft kloppen, terwijl een hardgecodeerde 2024 over een paar jaar een willekeurig
+    verleden venster is dat niemand meer heeft gekozen. Een bereik dat vóór de eerste maand
+    van de reeks begint verdwijnt vanzelf.
 - **Een merkbalk bovenaan**, horizontaal en altijd zichtbaar: alle merken uit
   `VDUVEHICLES_BRAND` naast elkaar, standaard allemaal aan, los uit te zetten. Er is geen
   aparte "alles"-stand: alles aan betekent geen filter op die kolom, en zodra je er een
