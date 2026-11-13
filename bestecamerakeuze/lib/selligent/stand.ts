@@ -55,6 +55,16 @@ export const ZOEKBAAR_VANAF = 12;
  */
 export const CONTACT_KOLOMMEN = ["ID", "CUSTOMER_ID"];
 
+/**
+ * Welke kolom de e-mailadressen telt.
+ *
+ * Alleen het **aantal verschillende** waarden komt in beeld; geen enkel adres verlaat de
+ * server. Dat is geen aparte beveiliging die iemand kan vergeten aan te zetten: de kolom
+ * heeft 125.369 verschillende waarden en valt daarmee ver boven {@link MAX_OPTIES}, dus
+ * er bestaat voor deze kolom geen optielijst die naar de browser zou kunnen gaan.
+ */
+export const MAIL_KOLOMMEN = ["MAIL", "EMAIL"];
+
 /** Welke datumkolom de contactengrafiek tekent, in volgorde van voorkeur. */
 export const CREATIE_KOLOMMEN = ["CREATED_DT"];
 
@@ -71,11 +81,18 @@ export const AUTO_KOLOMMEN = ["VDUVEHICLES_VEHICLE_ID", "VDUVEHICLES_LICENSE_PLA
 /**
  * Welke datumkolom de autografiek tekent.
  *
- * De afleverdatum en niet de creatiedatum van het account: een auto hoort thuis in de
- * maand waarin hij is afgeleverd, niet in de maand waarin zijn eigenaar ooit een account
- * kreeg. Wil je hem op een andere datumkolom, dan is dit de regel die je verzet.
+ * Dezelfde als die van de contacten, en dat is een bewuste keuze die uitleg verdient
+ * omdat het er eerst anders stond. Beide grafieken gaan over wat er **in Selligent is
+ * bijgekomen** per maand, en dat moment is voor een auto hetzelfde moment als voor zijn
+ * contact: `CREATED_DT`. Eerder stond deze grafiek op `VDUVEHICLES_DELIVERY_DT`, de
+ * afleverdatum — op zichzelf een zinnig cijfer, maar het antwoordt op een andere vraag
+ * ("wanneer is deze auto geleverd") dan de titel stelt. Een auto die in 2018 is
+ * afgeleverd aan een contact dat in 2025 is aangemaakt, hoort onder deze titel in 2025.
+ *
+ * Wil je alsnog de afleverdatum: zet hier `["VDUVEHICLES_DELIVERY_DT"]` en pas de titel
+ * in `SelligentPaneel` aan — dat is de hele wijziging.
  */
-export const LEVER_KOLOMMEN = ["VDUVEHICLES_DELIVERY_DT"];
+export const AUTO_DATUM_KOLOMMEN = CREATIE_KOLOMMEN;
 
 /**
  * Welke waarde als "aangevinkt" geldt bij een opt-in.
@@ -86,6 +103,75 @@ export const LEVER_KOLOMMEN = ["VDUVEHICLES_DELIVERY_DT"];
  */
 function isWaar(waarde: string): boolean {
   return waarde.trim().toLowerCase() === "true";
+}
+
+/**
+ * De kolom die als merkbalk boven de filters staat in plaats van in het raster.
+ *
+ * Merk is het filter dat het vaakst wordt aangeraakt, en het is er een waarvan je de
+ * stand in één oogopslag wil zien — niet achter een dichtgeklapte balk en een uitklapmenu.
+ * Daarom staat hij apart, altijd zichtbaar, met alle merken aan tot je er een uitzet.
+ * Zit de kolom niet in de export, dan is er simpelweg geen merkbalk.
+ */
+export const MERK_KOLOM = "VDUVEHICLES_BRAND";
+
+/** Vanaf hoeveel kolommen met hetzelfde voorvoegsel die een eigen kopje krijgen. */
+const MIN_GROEP = 3;
+
+export interface Veldgroep {
+  /**
+   * Het gedeelde voorvoegsel van de kolomnamen in deze groep, of `null` voor het blok met
+   * de kolommen die er geen delen. Dat blok komt eerst — het zijn de id's en de datums,
+   * waar je mee begint. Hoe de koppen eruitzien bepaalt de UI (`GROEP_NAMEN` in
+   * `components/selligent/SelligentFilters.tsx`); hier staat alleen de indeling.
+   */
+  voorvoegsel: string | null;
+  velden: Veld[];
+}
+
+/**
+ * De filters in groepen, op het voorvoegsel dat de kolomnamen delen.
+ *
+ * Vijfentwintig controls op één hoop is een muur; dezelfde vijfentwintig onder de kopjes
+ * `PREFERENCES` en `VDUVEHICLES` is een inhoudsopgave. De indeling komt uit de namen zelf
+ * en staat nergens met de hand opgesomd: een nieuwe `PREFERENCES_`-kolom schuift vanzelf
+ * bij de andere voorkeuren aan, en een nieuw voorvoegsel krijgt vanzelf een eigen kopje
+ * zodra er {@link MIN_GROEP} kolommen mee beginnen. Onder die drempel blijft het een los
+ * veld, want een kopje boven één filter is geen indeling maar ruis.
+ *
+ * Binnen een groep blijft de volgorde van het bestand staan, net als in het
+ * kolomoverzicht — zo zijn de twee naast elkaar te leggen.
+ */
+export function groepeerVelden(velden: Veld[]): Veldgroep[] {
+  const telling = new Map<string, number>();
+  for (const veld of velden) {
+    const voorvoegsel = voorvoegselVan(veld.naam);
+    if (voorvoegsel) telling.set(voorvoegsel, (telling.get(voorvoegsel) ?? 0) + 1);
+  }
+
+  const los: Veld[] = [];
+  const groepen = new Map<string, Veld[]>();
+  for (const veld of velden) {
+    const voorvoegsel = voorvoegselVan(veld.naam);
+    if (voorvoegsel && (telling.get(voorvoegsel) ?? 0) >= MIN_GROEP) {
+      const groep = groepen.get(voorvoegsel);
+      if (groep) groep.push(veld);
+      else groepen.set(voorvoegsel, [veld]);
+    } else {
+      los.push(veld);
+    }
+  }
+
+  const resultaat: Veldgroep[] = [];
+  if (los.length > 0) resultaat.push({ voorvoegsel: null, velden: los });
+  for (const [voorvoegsel, groep] of groepen) resultaat.push({ voorvoegsel, velden: groep });
+  return resultaat;
+}
+
+/** Het stuk vóór de eerste liggende streep, of `null` als de naam er geen heeft. */
+function voorvoegselVan(naam: string): string | null {
+  const streep = naam.indexOf("_");
+  return streep > 0 ? naam.slice(0, streep) : null;
 }
 
 export type FilterSoort = "lijst" | "tekst" | "datum";
@@ -128,9 +214,16 @@ export interface MaandPunt {
 export interface Optin {
   /** De kolomnaam, onbewerkt — dezelfde naam als in de filterbalk en het kolomoverzicht. */
   kolom: string;
+  /**
+   * Het aantal contacten met een waarde die als waar geldt in deze kolom.
+   *
+   * Afgezet tegen `Stand.contacten` — álle contacten in de selectie — en niet tegen het
+   * aantal contacten dat hier iets had ingevuld. Dat laatste stond er eerst en leverde
+   * percentages op die niemand kon plaatsen: "48% van 50.054" terwijl de teller 24.273 is
+   * en het bestand 137.424 contacten heeft. Eén noemer voor alle tegels maakt ze
+   * onderling vergelijkbaar, en dat is waar een rij tegels voor bedoeld is.
+   */
   contacten: number;
-  /** Hoeveel contacten in deze selectie een waarde in deze kolom hebben (True of False). */
-  ingevuld: number;
 }
 
 export interface Stand {
@@ -140,6 +233,10 @@ export interface Stand {
   contactKolom: string | null;
   /** Het totaal zonder enig filter, zodat de UI "van" kan zeggen. */
   contactenTotaal: number;
+  /** Het aantal verschillende e-mailadressen binnen de selectie — alleen het aantal. */
+  emails: number;
+  emailKolom: string | null;
+  emailsTotaal: number;
   /** Het aantal verschillende voertuigen binnen de selectie. */
   autos: number;
   autoKolom: string | null;
@@ -153,9 +250,9 @@ export interface Stand {
   creatieKolom: string | null;
   /** Contacten binnen de selectie zonder leesbare creatiedatum — die staan in geen enkele maand. */
   zonderCreatiedatum: number;
-  /** De maandreeks auto's op afleverdatum. */
+  /** De maandreeks auto's, op dezelfde datumkolom als de contacten. */
   autoMaanden: MaandPunt[];
-  leverKolom: string | null;
+  autoDatumKolom: string | null;
   /** Auto's binnen de selectie zonder leesbare afleverdatum. */
   autosZonderDatum: number;
   /** Hoe lang het filteren en tellen duurde, in milliseconden. */
@@ -398,9 +495,8 @@ function perMaandGeteld(
  * filters en het kolomoverzicht.
  *
  * Geteld worden **contacten** en geen rijen: wie drie auto's heeft en één keer opt-in
- * gaf, is één opt-in. Daarnaast telt `ingevuld` hoeveel contacten er überhaupt een
- * antwoord gaven, want bij deze export is leeg vaak de grootste groep en dan zegt "47.084
- * van 137.424" iets heel anders dan "47.084 van 68.533".
+ * gaf, is één opt-in. De noemer is het totale aantal contacten in de selectie, dus de
+ * tegels zijn onderling te vergelijken.
  */
 function telOptins(
   tabel: Tabel,
@@ -419,14 +515,7 @@ function telOptins(
     for (let c = 1; c < kolom.waarden.length; c++) {
       if (isWaar(kolom.waarden[c])) waarCodes[c] = 1;
     }
-    return {
-      kolom,
-      waarCodes,
-      gezienWaar: new Uint8Array(aantalIds),
-      gezienIngevuld: new Uint8Array(aantalIds),
-      waar: 0,
-      ingevuld: 0,
-    };
+    return { kolom, waarCodes, gezienWaar: new Uint8Array(aantalIds), waar: 0 };
   });
 
   for (let i = 0; i < masker.length; i++) {
@@ -434,20 +523,14 @@ function telOptins(
     const id = idCodes[i];
     if (id === 0) continue;
     for (const o of opzet) {
-      const code = o.kolom.codes[i];
-      if (code === 0) continue;
-      if (!o.gezienIngevuld[id]) {
-        o.gezienIngevuld[id] = 1;
-        o.ingevuld++;
-      }
-      if (o.waarCodes[code] === 1 && !o.gezienWaar[id]) {
+      if (o.waarCodes[o.kolom.codes[i]] === 1 && !o.gezienWaar[id]) {
         o.gezienWaar[id] = 1;
         o.waar++;
       }
     }
   }
 
-  return opzet.map((o) => ({ kolom: o.kolom.naam, contacten: o.waar, ingevuld: o.ingevuld }));
+  return opzet.map((o) => ({ kolom: o.kolom.naam, contacten: o.waar }));
 }
 
 /**
@@ -463,15 +546,16 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
 
   const idKolom = kiesKolom(tabel, CONTACT_KOLOMMEN);
   const autoKolom = kiesKolom(tabel, AUTO_KOLOMMEN);
+  const mailKolom = kiesKolom(tabel, MAIL_KOLOMMEN);
   const creatie = kiesKolom(tabel, CREATIE_KOLOMMEN, (k) => k.type === "datum");
-  const lever = kiesKolom(tabel, LEVER_KOLOMMEN);
+  const autoDatum = kiesKolom(tabel, AUTO_DATUM_KOLOMMEN, (k) => k.type === "datum");
 
   const contact = idKolom
     ? perMaandGeteld(idKolom.codes, idKolom.waarden.length, creatie, masker)
     : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
   const auto = autoKolom
-    ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, lever, masker)
+    ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, autoDatum, masker)
     : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
   return {
@@ -479,6 +563,11 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
     contactKolom: idKolom?.naam ?? null,
     // Het totaal zonder filter, zodat de UI "van" kan zeggen zonder een tweede verzoek.
     contactenTotaal: idKolom ? telVerschillend(idKolom.codes, idKolom.waarden.length) : 0,
+    emails: mailKolom
+      ? telVerschillend(mailKolom.codes, mailKolom.waarden.length, masker)
+      : 0,
+    emailKolom: mailKolom?.naam ?? null,
+    emailsTotaal: mailKolom ? telVerschillend(mailKolom.codes, mailKolom.waarden.length) : 0,
     autos: auto.aantal,
     autoKolom: autoKolom?.naam ?? null,
     autosTotaal: autoKolom ? telVerschillend(autoKolom.codes, autoKolom.waarden.length) : 0,
@@ -488,7 +577,7 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
     creatieKolom: creatie?.naam ?? null,
     zonderCreatiedatum: contact.zonderDatum,
     autoMaanden: auto.maanden,
-    leverKolom: lever?.naam ?? null,
+    autoDatumKolom: autoDatum?.naam ?? null,
     autosZonderDatum: auto.zonderDatum,
     duurMs: Date.now() - begin,
   };
