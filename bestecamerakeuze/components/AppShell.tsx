@@ -30,6 +30,7 @@ type Props = {
   organisch: React.ReactNode;
   accountOntwikkeling: React.ReactNode;
   website: React.ReactNode;
+  selligent: React.ReactNode;
   koppeltabel: React.ReactNode;
   budgetBeheer: React.ReactNode;
   landingspagina: React.ReactNode;
@@ -114,6 +115,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle:
       "Wat er op de websites gebeurt: bezoek, instappunten, pagina's, events en conversies.",
   },
+  selligent: {
+    title: "Selligent",
+    subtitle:
+      "Het klantenbestand uit de Selligent-export: hoe vers het bestand is en wat erin staat.",
+  },
   "budget-beheer": {
     title: "Budget beheer",
     subtitle: "Uitgaven en klikken van de maand tegen budget en doel, per account en platform.",
@@ -174,6 +180,7 @@ export default function AppShell({
   organisch,
   accountOntwikkeling,
   website,
+  selligent,
   koppeltabel,
   budgetBeheer,
   landingspagina,
@@ -298,6 +305,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "website"}>
           {bezocht.has("website") ? website : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "selligent"}>
+          {bezocht.has("selligent") ? selligent : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "koppeltabel"}>
           {bezocht.has("koppeltabel") ? koppeltabel : null}

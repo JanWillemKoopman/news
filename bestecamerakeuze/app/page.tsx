@@ -6,6 +6,7 @@ import AccountPaneel from "@/components/kanalen/AccountPaneel";
 import GoogleAdsPaneel from "@/components/kanalen/GoogleAdsPaneel";
 import Koppeltabel from "@/components/kanalen/Koppeltabel";
 import OrganischPaneel from "@/components/kanalen/OrganischPaneel";
+import SelligentPaneel from "@/components/kanalen/SelligentPaneel";
 import SocialAdsPaneel from "@/components/kanalen/SocialAdsPaneel";
 import WebsitePaneel from "@/components/kanalen/WebsitePaneel";
 import ChatPaneel from "@/components/chat/ChatPaneel";
@@ -93,6 +94,7 @@ export default async function DashboardPage() {
         organisch={<OrganischPaneel ingelogd={ingelogd} />}
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
+        selligent={<SelligentPaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}
         landingspagina={

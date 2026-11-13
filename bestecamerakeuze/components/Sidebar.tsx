@@ -10,6 +10,7 @@ import {
   IconCalendar,
   IconCoin,
   IconGlobe,
+  IconMail,
   IconMegaphone,
   IconPhoto,
   IconSearch,
@@ -30,6 +31,7 @@ export type DashboardView =
   | "organisch"
   | "account-ontwikkeling"
   | "website"
+  | "selligent"
   | "koppeltabel"
   | "budget-beheer"
   | "landingspagina"
@@ -178,6 +180,17 @@ export default function Sidebar({
             label="Website"
             active={actief === "website"}
             onClick={() => onNavigate("website")}
+          />
+          {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
+              erboven gaan over wat er in een periode gebeurde, dit over de stand van het
+              klantenbestand waar de e-mail naartoe gaat — geen dag-op-dagcijfer maar de
+              basis eronder. De data komt ook ergens anders vandaan dan de rest van
+              Kanalen: rechtstreeks uit de Azure-export, niet uit Windsor. */}
+          <NavigationItem
+            icon={<IconMail />}
+            label="Selligent"
+            active={actief === "selligent"}
+            onClick={() => onNavigate("selligent")}
           />
 
           {/* Tools (voorheen Monitoren) staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
