@@ -55,8 +55,38 @@ export const ZOEKBAAR_VANAF = 12;
  */
 export const CONTACT_KOLOMMEN = ["ID", "CUSTOMER_ID"];
 
-/** Welke datumkolom de grafiek tekent, in volgorde van voorkeur. */
+/** Welke datumkolom de contactengrafiek tekent, in volgorde van voorkeur. */
 export const CREATIE_KOLOMMEN = ["CREATED_DT"];
+
+/**
+ * Welke kolom "auto's" telt, in volgorde van voorkeur.
+ *
+ * `VDUVEHICLES_VEHICLE_ID` is de sleutel van het voertuig; het kenteken is de terugval
+ * omdat een auto in de loop van zijn leven een nieuw kenteken kan krijgen en dan twee
+ * keer zou tellen. De aantallen liggen in de praktijk dicht bij elkaar (108.470 tegen
+ * 108.480), en de pagina zegt in beeld welke kolom ze telde.
+ */
+export const AUTO_KOLOMMEN = ["VDUVEHICLES_VEHICLE_ID", "VDUVEHICLES_LICENSE_PLATE"];
+
+/**
+ * Welke datumkolom de autografiek tekent.
+ *
+ * De afleverdatum en niet de creatiedatum van het account: een auto hoort thuis in de
+ * maand waarin hij is afgeleverd, niet in de maand waarin zijn eigenaar ooit een account
+ * kreeg. Wil je hem op een andere datumkolom, dan is dit de regel die je verzet.
+ */
+export const LEVER_KOLOMMEN = ["VDUVEHICLES_DELIVERY_DT"];
+
+/**
+ * Welke waarde als "aangevinkt" geldt bij een opt-in.
+ *
+ * De export schrijft `True`/`False`; de vergelijking is hoofdletterongevoelig en negeert
+ * spaties aan de rand, zodat een rij met `"true "` niet stilletjes buiten de telling
+ * valt. De waarde zelf blijft onbewerkt — zie `lib/selligent/tabel.ts`.
+ */
+function isWaar(waarde: string): boolean {
+  return waarde.trim().toLowerCase() === "true";
+}
 
 export type FilterSoort = "lijst" | "tekst" | "datum";
 
@@ -90,24 +120,44 @@ export interface Filter {
 export interface MaandPunt {
   /** `yyyy-mm`. */
   maand: string;
+  /** Het aantal — contacten in de ene grafiek, auto's in de andere. */
+  aantal: number;
+}
+
+/** Eén opt-in-tegel: hoeveel contacten er in deze kolom op `True` staan. */
+export interface Optin {
+  /** De kolomnaam, onbewerkt — dezelfde naam als in de filterbalk en het kolomoverzicht. */
+  kolom: string;
   contacten: number;
+  /** Hoeveel contacten in deze selectie een waarde in deze kolom hebben (True of False). */
+  ingevuld: number;
 }
 
 export interface Stand {
-  /** Het aantal verschillende id's binnen de selectie — de metric. */
+  /** Het aantal verschillende id's binnen de selectie. */
   contacten: number;
   /** Welke kolom daarvoor geteld is, zodat het cijfer navraagbaar is. */
   contactKolom: string | null;
-  /** Hoeveel rijen aan de selectie voldoen; context bij de metric, geen tweede metric. */
-  rijen: number;
   /** Het totaal zonder enig filter, zodat de UI "van" kan zeggen. */
   contactenTotaal: number;
-  /** De maandreeks op creatiedatum, oplopend; maanden zonder contacten zitten erin met 0. */
+  /** Het aantal verschillende voertuigen binnen de selectie. */
+  autos: number;
+  autoKolom: string | null;
+  autosTotaal: number;
+  /** Hoeveel rijen aan de selectie voldoen; context bij de metrics, geen derde metric. */
+  rijen: number;
+  /** Per booleaanse kolom het aantal contacten dat erop `True` staat, in de volgorde van het bestand. */
+  optins: Optin[];
+  /** De maandreeks contacten op creatiedatum, oplopend; lege maanden zitten erin met 0. */
   maanden: MaandPunt[];
-  /** Welke kolom de grafiek tekent. */
   creatieKolom: string | null;
   /** Contacten binnen de selectie zonder leesbare creatiedatum — die staan in geen enkele maand. */
   zonderCreatiedatum: number;
+  /** De maandreeks auto's op afleverdatum. */
+  autoMaanden: MaandPunt[];
+  leverKolom: string | null;
+  /** Auto's binnen de selectie zonder leesbare afleverdatum. */
+  autosZonderDatum: number;
   /** Hoe lang het filteren en tellen duurde, in milliseconden. */
   duurMs: number;
 }
@@ -257,101 +307,189 @@ function kiesKolom(
   return null;
 }
 
+/** Het aantal verschillende codes dat in de selectie voorkomt, code 0 (leeg) niet meegeteld. */
+function telVerschillend(codes: Int32Array, aantalWaarden: number, masker?: Uint8Array): number {
+  const gezien = new Uint8Array(aantalWaarden);
+  let aantal = 0;
+  for (let i = 0; i < codes.length; i++) {
+    if (masker && masker[i] === 0) continue;
+    const code = codes[i];
+    // Code 0 is de lege waarde; alle lege cellen zouden anders samen voor één contact of
+    // één auto doorgaan.
+    if (code === 0 || gezien[code]) continue;
+    gezien[code] = 1;
+    aantal++;
+  }
+  return aantal;
+}
+
 /**
- * De metric en de maandreeks voor één filterselectie.
+ * Een maandreeks zonder gaten, van de vroegste tot de laatste maand.
  *
- * Het tellen van contacten per maand gebruikt één `Int32Array` over de codes van de
- * id-kolom in plaats van een `Set` per maand: 480 maanden × 137.000 id's als aparte sets
- * zou tientallen megabytes kosten, terwijl elk contact per definitie één creatiedatum
- * heeft. Staan er voor hetzelfde id tóch twee verschillende datums in het bestand, dan
- * telt de laatste rij — dat is een tegenstrijdigheid in de export, geen keuze van de
- * grafiek.
+ * Een lijngrafiek die een stille maand overslaat trekt een rechte lijn over het gat en
+ * suggereert aanwas die er niet was.
+ */
+function maandReeks(perMaand: Map<number, number>): MaandPunt[] {
+  if (perMaand.size === 0) return [];
+  const sleutels = [...perMaand.keys()].sort((a, b) => a - b);
+  const reeks: MaandPunt[] = [];
+  for (let m = sleutels[0]; m <= sleutels[sleutels.length - 1]; m++) {
+    reeks.push({ maand: maandSleutel(m), aantal: perMaand.get(m) ?? 0 });
+  }
+  return reeks;
+}
+
+/**
+ * Per sleutel (een contact, een auto) de maand waarin hij hoort, en hoeveel het er zijn.
+ *
+ * Eén `Int32Array` over de codes van de sleutelkolom, en geen `Set` per maand: 484 maanden
+ * × 137.000 id's als aparte sets zou tientallen megabytes kosten, terwijl elk contact per
+ * definitie één creatiedatum heeft en elke auto één afleverdatum. Staan er voor dezelfde
+ * sleutel tóch twee verschillende datums in het bestand, dan telt de laatste rij — dat is
+ * een tegenstrijdigheid in de export, geen keuze van de grafiek.
+ *
+ * −1 betekent "nog niet gezien", −2 "gezien maar zonder leesbare datum".
+ */
+function perMaandGeteld(
+  sleutelCodes: Int32Array,
+  aantalSleutels: number,
+  datumKolom: Kolom | null,
+  masker: Uint8Array,
+): { aantal: number; maanden: MaandPunt[]; zonderDatum: number } {
+  const maandVan = new Int32Array(aantalSleutels).fill(-1);
+  const maandPerCode = datumKolom?.maandPerCode ?? null;
+  const datumCodes = datumKolom?.codes ?? null;
+  let aantal = 0;
+
+  for (let i = 0; i < masker.length; i++) {
+    if (masker[i] === 0) continue;
+    const sleutel = sleutelCodes[i];
+    if (sleutel === 0) continue;
+    const maand = maandPerCode && datumCodes ? maandPerCode[datumCodes[i]] : -1;
+    if (maandVan[sleutel] === -1) {
+      aantal++;
+      maandVan[sleutel] = maand >= 0 ? maand : -2;
+    } else if (maand >= 0) {
+      maandVan[sleutel] = maand;
+    }
+  }
+
+  const perMaand = new Map<number, number>();
+  let zonderDatum = 0;
+  for (let c = 1; c < maandVan.length; c++) {
+    const maand = maandVan[c];
+    if (maand === -1) continue;
+    if (maand === -2) {
+      zonderDatum++;
+      continue;
+    }
+    perMaand.set(maand, (perMaand.get(maand) ?? 0) + 1);
+  }
+
+  return { aantal, maanden: maandReeks(perMaand), zonderDatum };
+}
+
+/**
+ * Hoeveel contacten er per opt-in op `True` staan.
+ *
+ * Welke kolommen dit zijn staat nergens opgesomd: het zijn de kolommen die als booleaans
+ * uit de data komen. Komt er een voorkeur bij in de export, dan verschijnt de tegel
+ * vanzelf; verdwijnt er een, dan verdwijnt de tegel. Dat is dezelfde regel als bij de
+ * filters en het kolomoverzicht.
+ *
+ * Geteld worden **contacten** en geen rijen: wie drie auto's heeft en één keer opt-in
+ * gaf, is één opt-in. Daarnaast telt `ingevuld` hoeveel contacten er überhaupt een
+ * antwoord gaven, want bij deze export is leeg vaak de grootste groep en dan zegt "47.084
+ * van 137.424" iets heel anders dan "47.084 van 68.533".
+ */
+function telOptins(
+  tabel: Tabel,
+  idCodes: Int32Array,
+  aantalIds: number,
+  masker: Uint8Array,
+): Optin[] {
+  const kolommen = tabel.kolommen.filter((k) => k.type === "booleaans");
+  if (kolommen.length === 0) return [];
+
+  const opzet = kolommen.map((kolom) => {
+    // Een vlag per code en niet één "True"-code: de waarden staan onbewerkt in de tabel,
+    // dus "True", "true" en "True " zijn drie verschillende codes die alle drie waar zijn.
+    // Alleen de eerste pakken telde de rest stilzwijgend als niet-aangevinkt.
+    const waarCodes = new Uint8Array(kolom.waarden.length);
+    for (let c = 1; c < kolom.waarden.length; c++) {
+      if (isWaar(kolom.waarden[c])) waarCodes[c] = 1;
+    }
+    return {
+      kolom,
+      waarCodes,
+      gezienWaar: new Uint8Array(aantalIds),
+      gezienIngevuld: new Uint8Array(aantalIds),
+      waar: 0,
+      ingevuld: 0,
+    };
+  });
+
+  for (let i = 0; i < masker.length; i++) {
+    if (masker[i] === 0) continue;
+    const id = idCodes[i];
+    if (id === 0) continue;
+    for (const o of opzet) {
+      const code = o.kolom.codes[i];
+      if (code === 0) continue;
+      if (!o.gezienIngevuld[id]) {
+        o.gezienIngevuld[id] = 1;
+        o.ingevuld++;
+      }
+      if (o.waarCodes[code] === 1 && !o.gezienWaar[id]) {
+        o.gezienWaar[id] = 1;
+        o.waar++;
+      }
+    }
+  }
+
+  return opzet.map((o) => ({ kolom: o.kolom.naam, contacten: o.waar, ingevuld: o.ingevuld }));
+}
+
+/**
+ * De metrics en de twee maandreeksen voor één filterselectie.
+ *
+ * Alles komt uit dezelfde doorloop over dezelfde selectie, zodat de cijfers op het scherm
+ * per definitie bij elkaar horen: de som van de contactengrafiek kan niet afwijken van de
+ * metric erboven, en een opt-in kan niet hoger uitkomen dan het aantal contacten.
  */
 export function standVan(tabel: Tabel, filters: Filter[]): Stand {
   const begin = Date.now();
   const { masker, rijen } = selectie(tabel, filters);
 
   const idKolom = kiesKolom(tabel, CONTACT_KOLOMMEN);
+  const autoKolom = kiesKolom(tabel, AUTO_KOLOMMEN);
   const creatie = kiesKolom(tabel, CREATIE_KOLOMMEN, (k) => k.type === "datum");
+  const lever = kiesKolom(tabel, LEVER_KOLOMMEN);
 
-  if (!idKolom) {
-    return {
-      contacten: 0,
-      contactKolom: null,
-      rijen,
-      contactenTotaal: 0,
-      maanden: [],
-      creatieKolom: creatie?.naam ?? null,
-      zonderCreatiedatum: 0,
-      duurMs: Date.now() - begin,
-    };
-  }
+  const contact = idKolom
+    ? perMaandGeteld(idKolom.codes, idKolom.waarden.length, creatie, masker)
+    : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
-  const idCodes = idKolom.codes;
-  // Per id-code de maand van zijn creatiedatum: −1 = nog niet gezien, −2 = gezien maar
-  // zonder leesbare datum. Zo zijn "hoeveel contacten" en "hoeveel per maand" één
-  // doorloop, en kloppen ze per definitie met elkaar.
-  const maandVanId = new Int32Array(idKolom.waarden.length).fill(-1);
-  let contacten = 0;
-  const maandPerCode = creatie?.maandPerCode ?? null;
-  const creatieCodes = creatie?.codes ?? null;
-
-  for (let i = 0; i < masker.length; i++) {
-    if (masker[i] === 0) continue;
-    const id = idCodes[i];
-    // Een rij zonder id telt niet als contact; met code 0 zouden alle lege id's samen
-    // voor één contact doorgaan.
-    if (id === 0) continue;
-    const maand = maandPerCode && creatieCodes ? maandPerCode[creatieCodes[i]] : -1;
-    if (maandVanId[id] === -1) {
-      contacten++;
-      maandVanId[id] = maand >= 0 ? maand : -2;
-    } else if (maand >= 0) {
-      maandVanId[id] = maand;
-    }
-  }
-
-  const perMaand = new Map<number, number>();
-  let zonder = 0;
-  for (let c = 1; c < maandVanId.length; c++) {
-    const maand = maandVanId[c];
-    if (maand === -1) continue;
-    if (maand === -2) {
-      zonder++;
-      continue;
-    }
-    perMaand.set(maand, (perMaand.get(maand) ?? 0) + 1);
-  }
-
-  // Elke maand tussen de eerste en de laatste, ook de lege: een lijngrafiek die een stille
-  // maand overslaat trekt een rechte lijn over het gat en suggereert aanwas die er niet was.
-  const maanden: MaandPunt[] = [];
-  if (perMaand.size > 0) {
-    const sleutels = [...perMaand.keys()].sort((a, b) => a - b);
-    for (let m = sleutels[0]; m <= sleutels[sleutels.length - 1]; m++) {
-      maanden.push({ maand: maandSleutel(m), contacten: perMaand.get(m) ?? 0 });
-    }
-  }
-
-  // Het totaal zonder filter: hetzelfde tellen over alle rijen, zodat de UI "12.000 van
-  // 137.424" kan zeggen zonder een tweede verzoek.
-  const totaal = new Uint8Array(idKolom.waarden.length);
-  let contactenTotaal = 0;
-  for (let i = 0; i < idCodes.length; i++) {
-    const id = idCodes[i];
-    if (id === 0 || totaal[id]) continue;
-    totaal[id] = 1;
-    contactenTotaal++;
-  }
+  const auto = autoKolom
+    ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, lever, masker)
+    : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
   return {
-    contacten,
-    contactKolom: idKolom.naam,
+    contacten: contact.aantal,
+    contactKolom: idKolom?.naam ?? null,
+    // Het totaal zonder filter, zodat de UI "van" kan zeggen zonder een tweede verzoek.
+    contactenTotaal: idKolom ? telVerschillend(idKolom.codes, idKolom.waarden.length) : 0,
+    autos: auto.aantal,
+    autoKolom: autoKolom?.naam ?? null,
+    autosTotaal: autoKolom ? telVerschillend(autoKolom.codes, autoKolom.waarden.length) : 0,
     rijen,
-    contactenTotaal,
-    maanden,
+    optins: idKolom ? telOptins(tabel, idKolom.codes, idKolom.waarden.length, masker) : [],
+    maanden: contact.maanden,
     creatieKolom: creatie?.naam ?? null,
-    zonderCreatiedatum: zonder,
+    zonderCreatiedatum: contact.zonderDatum,
+    autoMaanden: auto.maanden,
+    leverKolom: lever?.naam ?? null,
+    autosZonderDatum: auto.zonderDatum,
     duurMs: Date.now() - begin,
   };
 }

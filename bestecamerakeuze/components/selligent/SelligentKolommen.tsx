@@ -35,6 +35,10 @@ function datum(iso: string): string {
   return new Date(iso).toLocaleDateString("nl-NL", { dateStyle: "medium" });
 }
 
+function megabytes(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toLocaleString("nl-NL", { maximumFractionDigits: 1 })} MB`;
+}
+
 export default function SelligentKolommen({ datacheck }: { datacheck: Datacheck }) {
   const [open, setOpen] = useState(false);
 
@@ -63,6 +67,29 @@ export default function SelligentKolommen({ datacheck }: { datacheck: Datacheck 
 
       {open && (
         <>
+          {/* Waar de cijfers vandaan komen. Dit stond eerst als een apart blok bovenaan de
+              pagina; daar nam het ruimte in van de cijfers waarvoor je komt. Hier staat het
+              bij de rest van het naslagwerk, en vindbaar wanneer iemand het nodig heeft. */}
+          <p className="border-t border-line px-5 py-3 text-meta text-ink-faint">
+            Rechtstreeks uit Azure Blob Storage: <code>{datacheck.bestand.pad}</code> ·{" "}
+            {megabytes(datacheck.bestand.bytes)} · {getal(datacheck.rijen)} rijen · door
+            Selligent neergezet op{" "}
+            {datacheck.bestand.gewijzigdOp
+              ? new Date(datacheck.bestand.gewijzigdOp).toLocaleString("nl-NL", {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                })
+              : "onbekend"}
+            {datacheck.overgeslagenRijen > 0 && (
+              <>
+                {" "}
+                · {getal(datacheck.overgeslagenRijen)} rijen overgeslagen (afwijkend aantal
+                velden)
+              </>
+            )}
+            . Er wordt niets van deze data opgeslagen — filteren gebeurt op de server en
+            alleen de aantallen komen in de browser terecht.
+          </p>
           <p className="flex items-start gap-2 border-t border-line px-5 py-3 text-meta text-ink-faint">
             <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
