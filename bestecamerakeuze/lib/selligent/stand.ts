@@ -95,6 +95,20 @@ export const AUTO_KOLOMMEN = ["VDUVEHICLES_VEHICLE_ID", "VDUVEHICLES_LICENSE_PLA
 export const AUTO_DATUM_KOLOMMEN = CREATIE_KOLOMMEN;
 
 /**
+ * De afleverdatum, voor de derde grafiek.
+ *
+ * Die staat er náást de twee "toegevoegd in Selligent"-grafieken en niet in plaats van:
+ * het zijn twee verschillende vragen over dezelfde auto's. "Wanneer kwam deze auto in
+ * Selligent" volgt zijn contact; "wanneer is deze auto afgeleverd" is een eigenschap van
+ * de auto zelf, en dat is het cijfer waar een servicecampagne op rust.
+ *
+ * Let op bij het lezen: deze kolom bevat sentinel-datums (1 januari 1900) en datums in de
+ * toekomst, dus de reeks loopt van 1900 tot 2028. De grafiek opent op de laatste tien
+ * jaar; de knop ernaast laat de volle reeks zien, inclusief die rommel.
+ */
+export const LEVER_KOLOMMEN = ["VDUVEHICLES_DELIVERY_DT"];
+
+/**
  * Welke waarde als "aangevinkt" geldt bij een opt-in.
  *
  * De export schrijft `True`/`False`; de vergelijking is hoofdletterongevoelig en negeert
@@ -253,8 +267,13 @@ export interface Stand {
   /** De maandreeks auto's, op dezelfde datumkolom als de contacten. */
   autoMaanden: MaandPunt[];
   autoDatumKolom: string | null;
-  /** Auto's binnen de selectie zonder leesbare afleverdatum. */
+  /** Auto's binnen de selectie zonder leesbare datum in de bovenstaande reeks. */
   autosZonderDatum: number;
+  /** De maandreeks auto's op afleverdatum — een andere vraag dan `autoMaanden`. */
+  leverMaanden: MaandPunt[];
+  leverKolom: string | null;
+  /** Auto's binnen de selectie zonder leesbare afleverdatum. */
+  autosZonderLeverdatum: number;
   /** Hoe lang het filteren en tellen duurde, in milliseconden. */
   duurMs: number;
 }
@@ -549,6 +568,7 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
   const mailKolom = kiesKolom(tabel, MAIL_KOLOMMEN);
   const creatie = kiesKolom(tabel, CREATIE_KOLOMMEN, (k) => k.type === "datum");
   const autoDatum = kiesKolom(tabel, AUTO_DATUM_KOLOMMEN, (k) => k.type === "datum");
+  const lever = kiesKolom(tabel, LEVER_KOLOMMEN, (k) => k.type === "datum");
 
   const contact = idKolom
     ? perMaandGeteld(idKolom.codes, idKolom.waarden.length, creatie, masker)
@@ -557,6 +577,13 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
   const auto = autoKolom
     ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, autoDatum, masker)
     : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
+
+  // Dezelfde auto's, op een andere datum gegroepeerd. Het aantal komt dus uit op
+  // hetzelfde totaal; alleen de verdeling over de maanden verschilt.
+  const geleverd =
+    autoKolom && lever
+      ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, lever, masker)
+      : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
   return {
     contacten: contact.aantal,
@@ -579,6 +606,9 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
     autoMaanden: auto.maanden,
     autoDatumKolom: autoDatum?.naam ?? null,
     autosZonderDatum: auto.zonderDatum,
+    leverMaanden: geleverd.maanden,
+    leverKolom: lever?.naam ?? null,
+    autosZonderLeverdatum: geleverd.zonderDatum,
     duurMs: Date.now() - begin,
   };
 }

@@ -275,3 +275,32 @@ test("het aantal adressen volgt de filters, net als de andere metrics", () => {
   assert.equal(stand.emails, 1);
   assert.equal(stand.emailsTotaal, 3);
 });
+
+test("de afleverdatum krijgt een eigen reeks, náást die op creatiedatum", () => {
+  const stand = standVan(proeftabel(), []);
+  assert.equal(stand.leverKolom, "VDUVEHICLES_DELIVERY_DT");
+  // Dezelfde drie auto's, anders over de maanden verdeeld.
+  assert.deepEqual(stand.leverMaanden, [
+    { maand: "2022-01", aantal: 2 },
+    { maand: "2022-02", aantal: 0 },
+    { maand: "2022-03", aantal: 1 },
+  ]);
+  assert.deepEqual(stand.autoMaanden, [{ maand: "2021-02", aantal: 3 }]);
+  // Beide reeksen tellen op tot hetzelfde aantal auto's.
+  const som = (r: { aantal: number }[]) => r.reduce((s, m) => s + m.aantal, 0);
+  assert.equal(som(stand.leverMaanden) + stand.autosZonderLeverdatum, stand.autos);
+  assert.equal(som(stand.autoMaanden) + stand.autosZonderDatum, stand.autos);
+});
+
+test("auto's zonder afleverdatum vallen buiten die reeks maar tellen wel als auto", () => {
+  const tabel = bouwTabel(
+    '"ID";"VDUVEHICLES_VEHICLE_ID";"CREATED_DT";"VDUVEHICLES_DELIVERY_DT"\n' +
+      '"1";"100";"3/02/2021";"5/01/2022"\n' +
+      '"2";"101";"3/02/2021";""\n',
+    META,
+  );
+  const stand = standVan(tabel, []);
+  assert.equal(stand.autos, 2);
+  assert.equal(stand.autosZonderLeverdatum, 1);
+  assert.deepEqual(stand.leverMaanden, [{ maand: "2022-01", aantal: 1 }]);
+});

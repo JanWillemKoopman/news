@@ -271,6 +271,20 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
             kleurIndex={1}
             bezig={laadtStand}
           />
+
+          {stand.leverKolom && (
+            <SelligentGrafiek
+              titel="Afgeleverde auto's per maand"
+              toelichting="De maand waarin de auto is afgeleverd. Dezelfde auto's als hierboven, maar op de datum van de auto zelf in plaats van die van zijn contact — let op de sentinel-datums uit 1900 in deze kolom."
+              reeksnaam="Auto's"
+              eenheid={["auto", "auto's"]}
+              maanden={stand.leverMaanden}
+              kolom={stand.leverKolom}
+              zonderDatum={stand.autosZonderLeverdatum}
+              kleurIndex={2}
+              bezig={laadtStand}
+            />
+          )}
         </>
       )}
 

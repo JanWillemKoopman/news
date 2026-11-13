@@ -156,11 +156,20 @@ zelf, dan verandert er niets en mag die regel weg.
   maand"**, allebei als lijn en allebei op `CREATED_DT`. Per contact respectievelijk per
   auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een grafiek
   niet afwijken van het cijfer erboven.
-  - De autografiek stond eerst op `VDUVEHICLES_DELIVERY_DT`, de afleverdatum. Op zichzelf
-    een zinnig cijfer, maar het antwoordt op een andere vraag dan de titel stelt: een auto
-    die in 2018 is afgeleverd aan een contact dat in 2025 is aangemaakt, kwam in 2025 in
-    Selligent. Wil je alsnog de afleverdatum, dan is `AUTO_DATUM_KOLOMMEN` in
-    `lib/selligent/stand.ts` de regel die je verzet — plus de titel.
+  - De autografiek stond eerst op `VDUVEHICLES_DELIVERY_DT`, de afleverdatum. Dat
+    antwoordt op een andere vraag dan de titel stelt: een auto die in 2018 is afgeleverd
+    aan een contact dat in 2025 is aangemaakt, kwam in 2025 in Selligent. Die vraag is nu
+    een eigen grafiek (hieronder) in plaats van een andere lezing van deze.
+- **"Afgeleverde auto's per maand"** (`VDUVEHICLES_DELIVERY_DT`), als derde grafiek.
+  Dezelfde auto's, op de datum van de auto zelf in plaats van die van zijn contact — het
+  cijfer waar een servicecampagne op rust. Beide reeksen tellen op tot hetzelfde aantal
+  auto's; alleen de verdeling over de maanden verschilt, en een test legt dat vast.
+  - **Let op de plaatshouders in deze kolom.** 46.074 van de 108.470 auto's staan op
+    1 januari 1900, en nog eens 2.278 hebben helemaal geen leesbare datum. De grafiek opent
+    op de laatste tien jaar, dus die 1900-groep is dan niet in beeld — en daarom staat er
+    onder elke grafiek hoeveel er buiten het getoonde bereik vallen, met de knop ernaast om
+    het erbij te halen. Zonder die regel toont deze grafiek een kleine helft van de auto's
+    en ziet hij eruit alsof hij over alle auto's gaat.
 - **Een merkbalk bovenaan**, horizontaal en altijd zichtbaar: alle merken uit
   `VDUVEHICLES_BRAND` naast elkaar, standaard allemaal aan, los uit te zetten. Er is geen
   aparte "alles"-stand: alles aan betekent geen filter op die kolom, en zodra je er een
@@ -209,7 +218,7 @@ waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
 | Geheugen van de tabel | 99 MB (296 MB piek tijdens het ombouwen) |
 | Filteren, tellen en groeperen | 11–41 ms, ook met alle filters tegelijk aan |
 | Antwoord met de filtercontrols | 11,6 kB |
-| Antwoord met de metrics en de grafieken | 62,4 kB |
+| Antwoord met de metrics en de drie grafieken | 77,4 kB |
 
 ## Persoonsgegevens
 

@@ -47,6 +47,15 @@ import type { MaandPunt } from "@/lib/selligent/stand";
  *   dan drukt die ene piek de rest van het decennium plat. Dit is geen standaard, want een
  *   logaritmische as leest niemand per ongeluk goed; hij staat er voor het moment dat je
  *   wil zien of de rest van de reeks eigenlijk wel beweegt.
+ *
+ * ## En een regel die zegt wat je níét ziet
+ *
+ * Een ingekorte weergave verzwijgt per definitie iets, en bij deze data kan dat heel veel
+ * zijn: 46.074 van de 108.470 auto's hebben 1 januari 1900 als afleverdatum — een
+ * plaatshouder, geen aflevering. Zonder die regel staat er een grafiek over een kleine
+ * helft van de auto's die eruitziet alsof hij over alle auto's gaat. De regel onder de
+ * grafiek telt daarom op wat er buiten het getoonde bereik valt, en de knop ernaast haalt
+ * het in beeld.
  */
 
 /** Vanaf welk jaar de ingekorte weergave begint. */
@@ -100,6 +109,18 @@ export default function SelligentGrafiek({
 
   const eersteJaar = maanden.length > 0 ? Number(maanden[0].maand.slice(0, 4)) : null;
   const heeftOudere = eersteJaar !== null && eersteJaar < KORT_VANAF;
+
+  // Hoeveel er buiten de ingekorte weergave vallen. Bij de afleverdatum is dat de helft
+  // van alle auto's, dus dit is geen voetnoot maar de hoofdzaak.
+  const buitenBereik = useMemo(
+    () =>
+      alles
+        ? 0
+        : maanden
+            .filter((m) => Number(m.maand.slice(0, 4)) < KORT_VANAF)
+            .reduce((som, m) => som + m.aantal, 0),
+    [maanden, alles],
+  );
 
   return (
     <section className="kaart-omlijst kaart-accent rounded-panel border border-line bg-card p-5 shadow-card">
@@ -202,6 +223,15 @@ export default function SelligentGrafiek({
           </ResponsiveContainer>
         )}
       </div>
+
+      {buitenBereik > 0 && (
+        <p className="mt-3 text-meta text-ink-faint">
+          {buitenBereik.toLocaleString("nl-NL")} {buitenBereik === 1 ? eenheid[0] : eenheid[1]}{" "}
+          {buitenBereik === 1 ? "valt" : "vallen"} vóór {KORT_VANAF} en {buitenBereik === 1 ? "staat" : "staan"}{" "}
+          dus niet in beeld. Zet de weergave op &ldquo;vanaf {eersteJaar}&rdquo; om{" "}
+          {buitenBereik === 1 ? "hem" : "ze"} erbij te zien.
+        </p>
+      )}
 
       {zonderDatum > 0 && (
         <p className="mt-3 text-meta text-ink-faint">
