@@ -1,7 +1,7 @@
 "use client";
 
 import ProgressBar from "@/components/ProgressBar";
-import type { Optin } from "@/lib/selligent/stand";
+import { LEEG_OPTIE, type Optin, type OptinStand } from "@/lib/selligent/stand";
 
 /**
  * De cijferkoppen van het tabblad: twee grote metrics, en de opt-ins eronder.
@@ -26,9 +26,21 @@ import type { Optin } from "@/lib/selligent/stand";
  *
  * ## De opt-ins zijn klikbaar, en dat is het punt
  *
- * Elke tegel is tegelijk het filter dat erbij hoort: klikken zet `PREFERENCES_VDU` op
- * `True` en de hele pagina rekent mee. Zo is de rij tegels een ingang tot de cijfers en
- * geen los overzichtje dat je daarna met de hand in de filterbalk moet naspelen.
+ * Elke tegel is tegelijk het filter dat erbij hoort: klikken zet `PREFERENCES_VDU` op de
+ * gekozen stand en de hele pagina rekent mee. Zo is de rij tegels een ingang tot de
+ * cijfers en geen los overzichtje dat je daarna met de hand in de filterbalk moet
+ * naspelen. Het filter gebruikt de ruwe waarden die de server meestuurt, niet een
+ * verzonnen `"True"` — anders zou een tegel van 24.273 een filter van 24.270 kunnen
+ * opleveren zodra er ergens `"true "` in het bestand staat.
+ *
+ * ## Drie standen, en waarom ze naast elkaar bestaan
+ *
+ * `True` is wie zich heeft aangemeld, `False` wie bewust nee zei, en **Onbekend** wie
+ * nooit iets heeft ingevuld — en dat laatste is bij deze export vaak de grootste groep.
+ * Die drie zijn drie verschillende doelgroepen: je mailt niet naar `False`, maar
+ * `Onbekend` is juist waar een opt-in-campagne begint. Ze sluiten elkaar uit en tellen
+ * samen op tot alle contacten in de selectie, dus de schakelaar bovenaan verdeelt steeds
+ * dezelfde taart opnieuw.
  *
  * ## Eén noemer voor alle tegels: alle contacten
  *
@@ -157,9 +169,24 @@ function GroteTegel({
   );
 }
 
+const STANDEN: { id: OptinStand; label: string; uitleg: string }[] = [
+  { id: "waar", label: "True", uitleg: "contacten die zich hebben aangemeld" },
+  { id: "onwaar", label: "False", uitleg: "contacten die bewust nee zeiden" },
+  { id: "onbekend", label: "Onbekend", uitleg: "contacten die hier nooit iets invulden" },
+];
+
+/** Het aantal en de waarden die bij de gekozen stand horen. */
+function standVanOptin(optin: Optin, stand: OptinStand): { aantal: number; waarden: string[] } {
+  if (stand === "waar") return { aantal: optin.waar, waarden: optin.waarWaarden };
+  if (stand === "onwaar") return { aantal: optin.onwaar, waarden: optin.onwaarWaarden };
+  return { aantal: optin.onbekend, waarden: [LEEG_OPTIE] };
+}
+
 export function OptinStrip({
   optins,
   contacten,
+  stand,
+  onStand,
   actief,
   onKies,
   bezig,
@@ -167,12 +194,16 @@ export function OptinStrip({
   optins: Optin[];
   /** Alle contacten in de selectie — de noemer van elke tegel. */
   contacten: number;
-  /** De kolomnamen waarop nu op `True` gefilterd wordt. */
+  stand: OptinStand;
+  onStand: (stand: OptinStand) => void;
+  /** De kolomnamen waarop nu op de gekozen stand gefilterd wordt. */
   actief: string[];
-  onKies: (kolom: string, aan: boolean) => void;
+  onKies: (kolom: string, waarden: string[] | null) => void;
   bezig: boolean;
 }) {
   if (optins.length === 0) return null;
+
+  const gekozen = STANDEN.find((s) => s.id === stand) ?? STANDEN[0];
 
   return (
     <section
@@ -180,39 +211,65 @@ export function OptinStrip({
         bezig ? "opacity-60" : ""
       }`}
     >
-      <h2 className="font-sans-w7 text-cell font-semibold text-ink">Opt-ins</h2>
-      <p className="mt-0.5 max-w-prose text-meta text-ink-faint">
-        Contacten die op <code>True</code> staan, per voorkeur, als aandeel van alle{" "}
-        {getal(contacten)} contacten in deze selectie. Klik een tegel om erop te filteren.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div>
+          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Opt-ins</h2>
+          <p className="mt-0.5 max-w-prose text-meta text-ink-faint">
+            Per voorkeur het aantal {gekozen.uitleg}, als aandeel van alle{" "}
+            {getal(contacten)} contacten in deze selectie. De drie standen sluiten elkaar
+            uit en tellen samen op tot dat aantal. Klik een tegel om erop te filteren.
+          </p>
+        </div>
+        <div className="flex shrink-0 rounded-control border border-line p-0.5">
+          {STANDEN.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onStand(s.id)}
+              aria-pressed={s.id === stand}
+              className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                s.id === stand ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3 xl:grid-cols-5">
-        {optins.map((optin) => (
-          <OptinTegel
-            key={optin.kolom}
-            optin={optin}
-            noemer={contacten}
-            aan={actief.includes(optin.kolom)}
-            onKies={(aan) => onKies(optin.kolom, aan)}
-          />
-        ))}
+        {optins.map((optin) => {
+          const { aantal, waarden } = standVanOptin(optin, stand);
+          return (
+            <OptinTegel
+              key={optin.kolom}
+              kolom={optin.kolom}
+              aantal={aantal}
+              noemer={contacten}
+              aan={actief.includes(optin.kolom)}
+              onKies={(aan: boolean) => onKies(optin.kolom, aan ? waarden : null)}
+            />
+          );
+        })}
       </ul>
     </section>
   );
 }
 
 function OptinTegel({
-  optin,
+  kolom,
+  aantal,
   noemer,
   aan,
   onKies,
 }: {
-  optin: Optin;
+  kolom: string;
+  aantal: number;
   noemer: number;
   aan: boolean;
   onKies: (aan: boolean) => void;
 }) {
-  const aandeel = noemer > 0 ? optin.contacten / noemer : 0;
+  const aandeel = noemer > 0 ? aantal / noemer : 0;
   return (
     <li>
       <button
@@ -223,14 +280,11 @@ function OptinTegel({
           aan ? "border-primary bg-primary-light" : "border-line hover:bg-surface"
         }`}
       >
-        <span
-          className="label-theme block truncate text-label text-ink-faint"
-          title={optin.kolom}
-        >
-          {optin.kolom}
+        <span className="label-theme block truncate text-label text-ink-faint" title={kolom}>
+          {kolom}
         </span>
         <span className="mt-0.5 block font-sans-w7 text-cell font-semibold text-ink">
-          {getal(optin.contacten)}
+          {getal(aantal)}
         </span>
         <span className="mt-1.5 block">
           <ProgressBar percent={aandeel * 100} className="h-1 w-full" />

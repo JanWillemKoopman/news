@@ -8,7 +8,15 @@ import SelligentKolommen from "@/components/selligent/SelligentKolommen";
 import SelligentMerkBalk from "@/components/selligent/SelligentMerkBalk";
 import { GroteMetrics, OptinStrip } from "@/components/selligent/SelligentMetrics";
 import type { Datacheck } from "@/lib/selligent/datacheck";
-import { MAIL_KOLOMMEN, MERK_KOLOM, type Filter, type Stand, type Veld } from "@/lib/selligent/stand";
+import {
+  LEEG_OPTIE,
+  MAIL_KOLOMMEN,
+  MERK_KOLOM,
+  type Filter,
+  type OptinStand,
+  type Stand,
+  type Veld,
+} from "@/lib/selligent/stand";
 
 /**
  * Selligent: filters op elke kolom, één metric, en de maandgrafiek eronder.
@@ -67,6 +75,7 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [datacheck, setDatacheck] = useState<Datacheck | null>(null);
   const [stand, setStand] = useState<Stand | null>(null);
   const [filters, setFilters] = useState<Record<string, Filter>>({});
+  const [optinStand, setOptinStand] = useState<OptinStand>("waar");
   const [fout, setFout] = useState<string | null>(null);
   const [laadtVelden, setLaadtVelden] = useState(false);
   const [laadtStand, setLaadtStand] = useState(false);
@@ -133,19 +142,41 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
     return () => clearTimeout(tijd);
   }, [ingelogd, velden, actieveFilters, haalStand]);
 
-  /** Een opt-in-tegel aan- of uitzetten: dat is hetzelfde als het filter op `True` zetten. */
-  function zetOptin(kolom: string, aan: boolean) {
-    zetFilter(kolom, aan ? { kolom, waarden: ["True"] } : null);
+  /**
+   * Een opt-in-tegel aan- of uitzetten: dat is hetzelfde als het filter op die kolom op
+   * de waarden van de gekozen stand zetten. De waarden komen van de server mee, zodat het
+   * filter precies de contacten pakt die in het cijfer op de tegel zitten.
+   */
+  function zetOptin(kolom: string, waarden: string[] | null) {
+    zetFilter(kolom, waarden && waarden.length > 0 ? { kolom, waarden } : null);
   }
 
-  /** Welke opt-ins nu als filter aanstaan, zodat de tegels hun eigen stand tonen. */
-  const actieveOptins = useMemo(
-    () =>
-      Object.values(filters)
-        .filter((f) => f.waarden?.length === 1 && f.waarden[0] === "True")
-        .map((f) => f.kolom),
-    [filters],
-  );
+  /**
+   * Welke opt-ins nu als filter aanstaan, zodat de tegels hun eigen stand tonen.
+   *
+   * Een tegel licht alleen op als het filter exact de waarden van de getoonde stand is:
+   * sta je op "Onbekend" terwijl er op `True` gefilterd is, dan hoort die tegel niet
+   * actief te lijken — het cijfer erop gaat dan over iets anders dan het filter.
+   */
+  const actieveOptins = useMemo(() => {
+    const hoort = (optin: { waarWaarden: string[]; onwaarWaarden: string[] }) =>
+      optinStand === "waar"
+        ? optin.waarWaarden
+        : optinStand === "onwaar"
+          ? optin.onwaarWaarden
+          : [LEEG_OPTIE];
+    return (stand?.optins ?? [])
+      .filter((optin) => {
+        const filter = filters[optin.kolom];
+        const verwacht = hoort(optin);
+        if (!filter?.waarden || verwacht.length === 0) return false;
+        return (
+          filter.waarden.length === verwacht.length &&
+          verwacht.every((w) => filter.waarden!.includes(w))
+        );
+      })
+      .map((optin) => optin.kolom);
+  }, [filters, stand, optinStand]);
 
   function zetFilter(kolom: string, filter: Filter | null) {
     setFilters((huidig) => {
@@ -243,6 +274,8 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           <OptinStrip
             optins={stand.optins}
             contacten={stand.contacten}
+            stand={optinStand}
+            onStand={setOptinStand}
             actief={actieveOptins}
             onKies={zetOptin}
             bezig={laadtStand}

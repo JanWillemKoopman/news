@@ -169,14 +169,51 @@ test("de autografiek staat op dezelfde datum als de contacten, want beide tellen
   ]);
 });
 
-test("een opt-in telt contacten en niet rijen", () => {
+test("een opt-in telt contacten en niet rijen, in drie standen", () => {
   const stand = standVan(proeftabel(), []);
   const vdu = stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!;
   // Id 1 staat in twee rijen op True; dat is één contact met een opt-in.
-  assert.equal(vdu.contacten, 1);
-  // De noemer op het scherm is het totale aantal contacten, niet het aantal dat iets
-  // invulde: 1 van 3, en niet 1 van 2.
-  assert.equal(stand.contacten, 3);
+  assert.equal(vdu.waar, 1);
+  // Id 2 staat op False, id 3 liet het leeg.
+  assert.equal(vdu.onwaar, 1);
+  assert.equal(vdu.onbekend, 1);
+  // De drie standen sluiten elkaar uit en dekken alle contacten.
+  assert.equal(vdu.waar + vdu.onwaar + vdu.onbekend, stand.contacten);
+});
+
+test("de waarden per stand komen onbewerkt uit het bestand mee", () => {
+  // Zodat een klik op een tegel precies de contacten filtert die in het cijfer zitten,
+  // ook als er "true" naast "True " in de kolom staat.
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_X"\n"1";"true"\n"2";"True "\n"3";"False"\n"4";""\n',
+    META,
+  );
+  const optin = standVan(tabel, []).optins.find((o) => o.kolom === "PREFERENCES_X")!;
+  assert.deepEqual(optin.waarWaarden.sort(), ["True ", "true"]);
+  assert.deepEqual(optin.onwaarWaarden, ["False"]);
+  assert.equal(optin.waar, 2);
+  assert.equal(optin.onwaar, 1);
+  assert.equal(optin.onbekend, 1);
+});
+
+test("het sterkste antwoord wint als een contact meerdere rijen heeft", () => {
+  // Eén auto met True en één met leeg maakt het contact een opt-in, niet half onbekend.
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_X"\n"1";"True"\n"1";""\n"2";"False"\n"2";""\n',
+    META,
+  );
+  const optin = standVan(tabel, []).optins.find((o) => o.kolom === "PREFERENCES_X")!;
+  assert.equal(optin.waar, 1);
+  assert.equal(optin.onwaar, 1);
+  assert.equal(optin.onbekend, 0);
+});
+
+test("onbekend telt alleen contacten die in de selectie zitten", () => {
+  // Anders zou elk weggefilterd contact als "onbekend" blijven meetellen.
+  const stand = standVan(proeftabel(), [{ kolom: "MERK", waarden: ["Audi"] }]);
+  const vdu = stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!;
+  assert.equal(stand.contacten, 1);
+  assert.equal(vdu.waar + vdu.onwaar + vdu.onbekend, 1);
 });
 
 test("alleen booleaanse kolommen leveren een opt-in-tegel op", () => {
@@ -191,7 +228,7 @@ test("de opt-ins volgen de filters, net als de metrics", () => {
   const stand = standVan(proeftabel(), [{ kolom: "MERK", waarden: ["Audi"] }]);
   assert.equal(stand.contacten, 1);
   assert.equal(stand.autos, 1);
-  assert.equal(stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!.contacten, 1);
+  assert.equal(stand.optins.find((o) => o.kolom === "PREFERENCES_VDU")!.waar, 1);
 });
 
 test("True wordt hoofdletterongevoelig en met spaties eromheen herkend", () => {
@@ -201,7 +238,7 @@ test("True wordt hoofdletterongevoelig en met spaties eromheen herkend", () => {
     META,
   );
   const optin = standVan(tabel, []).optins.find((o) => o.kolom === "PREFERENCES_X")!;
-  assert.equal(optin.contacten, 2);
+  assert.equal(optin.waar, 2);
 });
 
 test("zonder voertuigkolom blijft de rest van de stand gewoon werken", () => {

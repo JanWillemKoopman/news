@@ -119,6 +119,14 @@ function isWaar(waarde: string): boolean {
   return waarde.trim().toLowerCase() === "true";
 }
 
+/** De tegenhanger van {@link isWaar}, met dezelfde soepelheid. */
+function isOnwaar(waarde: string): boolean {
+  return waarde.trim().toLowerCase() === "false";
+}
+
+/** Welke van de drie standen een opt-in-tegel laat zien. */
+export type OptinStand = "waar" | "onwaar" | "onbekend";
+
 /**
  * De kolom die als merkbalk boven de filters staat in plaats van in het raster.
  *
@@ -224,20 +232,39 @@ export interface MaandPunt {
   aantal: number;
 }
 
-/** Eén opt-in-tegel: hoeveel contacten er in deze kolom op `True` staan. */
+/**
+ * Eén opt-in-tegel: hoe de contacten in deze kolom verdeeld zijn over `True`, `False` en
+ * "nog niets ingevuld".
+ *
+ * ## De drie standen tellen samen op tot alle contacten
+ *
+ * Een contact staat in meerdere rijen zodra het meerdere auto's heeft, en die rijen
+ * kunnen in theorie verschillende waarden dragen. Een contact telt daarom in de
+ * stérkste stand die het ergens heeft: één rij met `True` maakt het contact een opt-in,
+ * anders beslist een `False`, en pas als er nergens iets staat is het onbekend. Zo kan
+ * een contact nooit in twee tegels tegelijk meetellen en geldt altijd
+ * `waar + onwaar + onbekend === Stand.contacten`. Een test legt dat vast.
+ *
+ * ## Waarom de waarden erbij zitten
+ *
+ * `waarWaarden` en `onwaarWaarden` zijn de ruwe waarden uit het bestand die in deze
+ * kolom als waar respectievelijk onwaar gelden — meestal alleen `"True"` en `"False"`,
+ * maar sinds de data onbewerkt is kunnen `"true"` en `"True "` aparte waarden zijn. De
+ * UI filtert daarop als je een tegel aanklikt, zodat het filter precies de contacten
+ * pakt die in het cijfer zitten. Zou de UI zelf `"True"` verzinnen, dan zou een tegel van
+ * 24.273 een filter van 24.270 kunnen opleveren.
+ */
 export interface Optin {
   /** De kolomnaam, onbewerkt — dezelfde naam als in de filterbalk en het kolomoverzicht. */
   kolom: string;
-  /**
-   * Het aantal contacten met een waarde die als waar geldt in deze kolom.
-   *
-   * Afgezet tegen `Stand.contacten` — álle contacten in de selectie — en niet tegen het
-   * aantal contacten dat hier iets had ingevuld. Dat laatste stond er eerst en leverde
-   * percentages op die niemand kon plaatsen: "48% van 50.054" terwijl de teller 24.273 is
-   * en het bestand 137.424 contacten heeft. Eén noemer voor alle tegels maakt ze
-   * onderling vergelijkbaar, en dat is waar een rij tegels voor bedoeld is.
-   */
-  contacten: number;
+  /** Contacten met een waarde die als waar geldt. */
+  waar: number;
+  /** Contacten zonder waar-waarde maar met een onwaar-waarde. */
+  onwaar: number;
+  /** Contacten die in deze kolom nergens iets hebben staan. */
+  onbekend: number;
+  waarWaarden: string[];
+  onwaarWaarden: string[];
 }
 
 export interface Stand {
@@ -514,8 +541,8 @@ function perMaandGeteld(
  * filters en het kolomoverzicht.
  *
  * Geteld worden **contacten** en geen rijen: wie drie auto's heeft en één keer opt-in
- * gaf, is één opt-in. De noemer is het totale aantal contacten in de selectie, dus de
- * tegels zijn onderling te vergelijken.
+ * gaf, is één opt-in. De noemer op het scherm is het totale aantal contacten in de
+ * selectie, dus de tegels zijn onderling te vergelijken.
  */
 function telOptins(
   tabel: Tabel,
@@ -527,14 +554,32 @@ function telOptins(
   if (kolommen.length === 0) return [];
 
   const opzet = kolommen.map((kolom) => {
-    // Een vlag per code en niet één "True"-code: de waarden staan onbewerkt in de tabel,
+    // Een rang per code en niet één "True"-code: de waarden staan onbewerkt in de tabel,
     // dus "True", "true" en "True " zijn drie verschillende codes die alle drie waar zijn.
-    // Alleen de eerste pakken telde de rest stilzwijgend als niet-aangevinkt.
-    const waarCodes = new Uint8Array(kolom.waarden.length);
+    // 3 = waar, 2 = onwaar, 1 = wel iets maar geen van beide, 0 = leeg.
+    const rangPerCode = new Uint8Array(kolom.waarden.length);
+    const waarWaarden: string[] = [];
+    const onwaarWaarden: string[] = [];
     for (let c = 1; c < kolom.waarden.length; c++) {
-      if (isWaar(kolom.waarden[c])) waarCodes[c] = 1;
+      const waarde = kolom.waarden[c];
+      if (isWaar(waarde)) {
+        rangPerCode[c] = 3;
+        waarWaarden.push(waarde);
+      } else if (isOnwaar(waarde)) {
+        rangPerCode[c] = 2;
+        onwaarWaarden.push(waarde);
+      } else {
+        rangPerCode[c] = 1;
+      }
     }
-    return { kolom, waarCodes, gezienWaar: new Uint8Array(aantalIds), waar: 0 };
+    return {
+      kolom,
+      rangPerCode,
+      waarWaarden,
+      onwaarWaarden,
+      // Per contact de hoogste rang die het ergens heeft; 0 = nergens iets.
+      rangVanId: new Uint8Array(aantalIds),
+    };
   });
 
   for (let i = 0; i < masker.length; i++) {
@@ -542,14 +587,41 @@ function telOptins(
     const id = idCodes[i];
     if (id === 0) continue;
     for (const o of opzet) {
-      if (o.waarCodes[o.kolom.codes[i]] === 1 && !o.gezienWaar[id]) {
-        o.gezienWaar[id] = 1;
-        o.waar++;
-      }
+      const rang = o.rangPerCode[o.kolom.codes[i]];
+      if (rang > o.rangVanId[id]) o.rangVanId[id] = rang;
     }
   }
 
-  return opzet.map((o) => ({ kolom: o.kolom.naam, contacten: o.waar }));
+  // Welke id's er in deze selectie überhaupt voorkomen; alleen die mogen meetellen in
+  // "onbekend". Zonder deze stap zouden alle id's uit het hele bestand als onbekend
+  // gelden zodra je ook maar iets wegfiltert.
+  const inSelectie = new Uint8Array(aantalIds);
+  for (let i = 0; i < masker.length; i++) {
+    if (masker[i] === 1 && idCodes[i] !== 0) inSelectie[idCodes[i]] = 1;
+  }
+
+  return opzet.map((o) => {
+    let waar = 0;
+    let onwaar = 0;
+    let onbekend = 0;
+    for (let c = 1; c < inSelectie.length; c++) {
+      if (inSelectie[c] === 0) continue;
+      const rang = o.rangVanId[c];
+      if (rang === 3) waar++;
+      else if (rang === 2) onwaar++;
+      // Rang 1 is een waarde die geen True en geen False is — bij deze export komt die
+      // niet voor, maar hij hoort bij "niet aangevinkt" en niet bij "niets ingevuld".
+      else if (rang === 0) onbekend++;
+    }
+    return {
+      kolom: o.kolom.naam,
+      waar,
+      onwaar,
+      onbekend,
+      waarWaarden: o.waarWaarden,
+      onwaarWaarden: o.onwaarWaarden,
+    };
+  });
 }
 
 /**

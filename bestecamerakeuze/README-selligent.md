@@ -143,15 +143,26 @@ zelf, dan verandert er niets en mag die regel weg.
   - **`MAIL` heeft geen filter in de balk**, op verzoek. Het staat als metric in beeld; een
     zoekveld waarin je een adres intypt om te zien of het bestaat, is iets anders dan een
     dashboard en hoort in Selligent zelf.
-- **Een rij opt-in-tegels**, één per booleaanse kolom: hoeveel contacten er op `True` staan,
-  als aandeel van álle contacten in de selectie. Welke kolommen dat zijn staat nergens
-  opgesomd — het zijn de kolommen die als booleaans uit de data komen, dus een nieuwe
-  voorkeur in de export levert vanzelf een tegel op. Elke tegel is tegelijk het filter dat
-  erbij hoort: klikken zet die kolom op `True` en de hele pagina rekent mee.
+- **Een rij opt-in-tegels**, één per booleaanse kolom, met een schakelaar **True / False /
+  Onbekend** erboven. Welke kolommen dat zijn staat nergens opgesomd — het zijn de kolommen
+  die als booleaans uit de data komen, dus een nieuwe voorkeur in de export levert vanzelf
+  een tegel op. Elke tegel is tegelijk het filter dat erbij hoort: klikken filtert op de
+  getoonde stand en de hele pagina rekent mee.
+  - **Drie standen die elkaar uitsluiten.** `True` is wie zich aanmeldde, `False` wie
+    bewust nee zei, en `Onbekend` wie nooit iets invulde — bij deze export vaak de grootste
+    groep (`PREFERENCES_VELOO`: 27 True, 8.004 False, 129.393 Onbekend). Dat zijn drie
+    verschillende doelgroepen: je mailt niet naar `False`, maar `Onbekend` is juist waar een
+    opt-in-campagne begint. Een contact staat in meerdere rijen zodra het meerdere auto's
+    heeft, en telt daarom in de stérkste stand die het ergens heeft (True > False > leeg).
+    Zo geldt altijd `waar + onwaar + onbekend === contacten`, en een test legt dat vast.
   - **Eén noemer voor alle tegels.** Er stond eerst het aandeel van de contacten die in die
     kolom iets hadden ingevuld ("48% van 50.054" bij een teller van 24.273), en dat was niet
     te plaatsen naast een bestand van 137.424 contacten. Nu is het overal hetzelfde getal
     eronder, dus de tegels zijn onderling te vergelijken.
+  - **Het filter gebruikt de ruwe waarden uit het bestand**, die de server per tegel
+    meestuurt — niet een verzonnen `"True"`. Sinds de data onbewerkt is kunnen `"true"` en
+    `"True "` aparte waarden zijn, en dan zou een tegel van 24.273 een filter van 24.270
+    opleveren.
 - **"Contacten toegevoegd in Selligent per maand"** en **"Auto's toegevoegd in Selligent per
   maand"**, allebei als lijn en allebei op `CREATED_DT`. Per contact respectievelijk per
   auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een grafiek
