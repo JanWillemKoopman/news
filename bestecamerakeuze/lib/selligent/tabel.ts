@@ -30,6 +30,19 @@
  * daarna een vergelijking van twee getallen, en de maandgrafiek hoeft geen datum meer te
  * lezen.
  *
+ * ## De waarden blijven precies zoals ze in de CSV staan
+ *
+ * Er gaat geen enkele bewerking overheen: geen opschoning, geen vertaaltabel, en ook geen
+ * spaties weghalen. `B` en `Benzine` blijven twee verschillende brandstoffen, `BWG` blijft
+ * tussen de merken staan, en een waarde van één spatie is een waarde en niet "leeg" — hij
+ * krijgt een eigen code naast de lege string. Dat is een bewuste eis: het dashboard moet
+ * laten zien wat er in het bestand staat, niet wat ervan te maken valt.
+ *
+ * Eén uitzondering, en die is noodzakelijk: om te bepalen of een kolom een **datumkolom**
+ * is, wordt de waarde voor de herkenning wél ontdaan van spaties. Anders is `" 3/02/2021"`
+ * geen datum en krijgt die kolom geen van/tot-filter. De waarde zelf blijft onaangeroerd;
+ * alleen de vraag "wat voor soort waarde is dit" wordt op de getrimde tekst beantwoord.
+ *
  * ## Niets hiervan raakt schijf
  *
  * De tabel leeft in het geheugen van de serverless instance en verdwijnt met hem. Er
@@ -191,6 +204,25 @@ export function bepaalScheiding(eersteRegel: string): string {
 
 const MS_PER_DAG = 86_400_000;
 
+/**
+ * Kolommen die het dashboard niet toont, op verzoek.
+ *
+ * Geslacht hoort niet op dit tabblad thuis, en de kolom gaat ook uit de export zelf
+ * verdwijnen. Tot die tijd wordt hij hier overgeslagen, en dat gebeurt met opzet in
+ * `bouwTabel` en niet pas in de weergave: zo komt de kolom helemaal niet in het geheugen
+ * en kan hij dus ook niet per ongeluk ergens opduiken — niet in een filter, niet in het
+ * kolomoverzicht, niet in een antwoord van de API. Verdwijnt hij uit de export, dan
+ * verandert er niets en mag deze regel weg.
+ *
+ * Vergelijking op de hele naam, ongeacht hoofdletters.
+ */
+export const VERBORGEN_KOLOMMEN = ["GENDER", "GESLACHT"];
+
+export function isVerborgenKolom(naam: string): boolean {
+  const klein = naam.trim().toLowerCase();
+  return VERBORGEN_KOLOMMEN.some((verborgen) => verborgen.toLowerCase() === klein);
+}
+
 /** Wat we per kolom bijhouden tijdens het inlezen. */
 interface Bouwer {
   naam: string;
@@ -222,21 +254,28 @@ export function bouwTabel(
   );
 
   let kop: string[] | null = null;
+  let overslaan: boolean[] = [];
   let bouwers: Bouwer[] = [];
   let rijen = 0;
   let overgeslagen = 0;
 
   doorloopCsv(tekst, scheiding, (velden) => {
     if (!kop) {
+      // De kolomnaam wél trimmen: dat is een koprij en geen data, en een kop met een
+      // spatie erachter zou een filterlabel met een spatie erachter opleveren.
       kop = velden.map((v) => v.trim());
-      bouwers = kop.map((naam) => ({
-        naam,
-        index: new Map([["", 0]]),
-        waarden: [""],
-        aantallen: [0],
-        codes: [],
-        types: new Map(),
-      }));
+      // `overslaan` werkt op positie, want de rijen eronder worden op positie gelezen.
+      overslaan = kop.map(isVerborgenKolom);
+      bouwers = kop
+        .filter((_, i) => !overslaan[i])
+        .map((naam) => ({
+          naam,
+          index: new Map([["", 0]]),
+          waarden: [""],
+          aantallen: [0],
+          codes: [],
+          types: new Map(),
+        }));
       return;
     }
     // Een rij met een ander aantal velden is niet betrouwbaar uit te splitsen; het
@@ -248,10 +287,14 @@ export function bouwTabel(
       return;
     }
     rijen++;
+    let b = 0;
     for (let k = 0; k < velden.length; k++) {
-      const bouwer = bouwers[k];
-      const waarde = velden[k].trim();
-      const type = typeVan(velden[k]);
+      if (overslaan[k]) continue;
+      const bouwer = bouwers[b++];
+      // Onbewerkt, precies zoals het in de CSV staat. Het type wordt wél op de getrimde
+      // tekst bepaald, anders is " 3/02/2021" geen datum — zie de kop van dit bestand.
+      const waarde = velden[k];
+      const type = typeVan(waarde);
       bouwer.types.set(type, (bouwer.types.get(type) ?? 0) + 1);
 
       let code = bouwer.index.get(waarde);

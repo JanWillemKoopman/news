@@ -4,6 +4,7 @@ import { useState } from "react";
 import ProgressBar from "@/components/ProgressBar";
 import { IconChevronDown, IconInfo } from "@/components/icons";
 import type { Datacheck, KolomCheck, WaardeType } from "@/lib/selligent/datacheck";
+import { toonWaarde } from "@/lib/selligent/weergave";
 
 /**
  * Het kolomoverzicht, ingeklapt onder de filters.
@@ -119,7 +120,7 @@ function KolomRegel({ kolom, rijen }: { kolom: KolomCheck; rijen: number }) {
               key={w.waarde}
               className="rounded-control bg-surface px-2 py-0.5 text-meta text-ink-muted"
             >
-              {w.waarde} <span className="text-ink-faint">{getal(w.aantal)}</span>
+              {toonWaarde(w.waarde)} <span className="text-ink-faint">{getal(w.aantal)}</span>
             </li>
           ))}
           {rest > 0 && (

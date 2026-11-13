@@ -6,6 +6,7 @@ import {
   dagNummer,
   doorloopCsv,
   leesDatum,
+  isVerborgenKolom,
   maandSleutel,
 } from "./tabel.ts";
 
@@ -114,4 +115,47 @@ test("leest een yyyy-mm-dd naar een dagnummer en weigert de rest", () => {
   assert.equal(dagNummer("1970-01-02"), 1);
   assert.equal(dagNummer("3/02/2021"), null);
   assert.equal(dagNummer(""), null);
+});
+
+test("de waarden blijven onbewerkt: een spatie is een waarde, geen lege cel", () => {
+  // De export bevat bij VDUVEHICLES_FUEL_TYPE een waarde van één spatie (11 rijen) en bij
+  // VDUVEHICLES_MODEL waarden met een spatie aan de rand. Die horen in het dashboard te
+  // staan zoals ze in het bestand staan, en niet stilletzwijgend samengevoegd te worden.
+  const tabel = bouwTabel('"BRANDSTOF"\n"B"\n" "\n"B "\n""\n', META);
+  const kolom = tabel.kolommen[0];
+  assert.deepEqual(kolom.waarden.slice(1).sort(), [" ", "B", "B "]);
+  // Alleen de echt lege cel telt als leeg.
+  assert.equal(kolom.aantallen[0], 1);
+  assert.equal(kolom.gevuld, 3);
+});
+
+test("het type wordt wél op de getrimde tekst bepaald", () => {
+  // Anders is " 3/02/2021" geen datum en krijgt die kolom geen van/tot-filter.
+  const tabel = bouwTabel('"D"\n" 3/02/2021 "\n"4/02/2021"\n', META);
+  assert.equal(tabel.kolommen[0].type, "datum");
+  const metSpatie = tabel.kolommen[0].waarden.indexOf(" 3/02/2021 ");
+  assert.equal(metSpatie > 0, true, "de waarde zelf blijft onbewerkt");
+  assert.equal(tabel.kolommen[0].dagPerCode![metSpatie], dagNummer("2021-02-03"));
+});
+
+test("de kolomnaam wordt wel getrimd, want dat is een kop en geen data", () => {
+  assert.equal(bouwTabel('" MERK "\n"Audi"\n', META).kolommen[0].naam, "MERK");
+});
+
+test("geslacht staat niet in de tabel, ook niet als de export hem nog levert", () => {
+  const tabel = bouwTabel('"ID";"GENDER";"MERK"\n"1";"M";"Audi"\n"2";"V";"Seat"\n', META);
+  assert.deepEqual(
+    tabel.kolommen.map((k) => k.naam),
+    ["ID", "MERK"],
+  );
+  // De kolommen ernaast schuiven niet op: de waarden horen nog bij de goede kolom.
+  assert.deepEqual(tabel.kolommen[1].waarden.slice(1).sort(), ["Audi", "Seat"]);
+  assert.equal(tabel.rijen, 2);
+});
+
+test("herkent de verborgen kolom ongeacht hoofdletters en spaties", () => {
+  assert.equal(isVerborgenKolom("GENDER"), true);
+  assert.equal(isVerborgenKolom(" geslacht "), true);
+  assert.equal(isVerborgenKolom("GENDER_SOURCE"), false);
+  assert.equal(isVerborgenKolom("VDUVEHICLES_BRAND"), false);
 });

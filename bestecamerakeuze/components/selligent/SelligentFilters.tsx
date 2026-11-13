@@ -3,6 +3,7 @@
 import FilterSelect from "@/components/FilterSelect";
 import { IconClose } from "@/components/icons";
 import type { Filter, Veld } from "@/lib/selligent/stand";
+import { toonWaarde, weergaveNamen } from "@/lib/selligent/weergave";
 
 /**
  * De filterbalk van het tabblad Selligent: één control per kolom van de export.
@@ -47,7 +48,7 @@ type Props = {
 function chipTekst(veld: Veld, filter: Filter): string | null {
   if (filter.waarden && filter.waarden.length > 0) {
     return filter.waarden.length === 1
-      ? `${veld.naam}: ${filter.waarden[0]}`
+      ? `${veld.naam}: ${toonWaarde(filter.waarden[0])}`
       : `${veld.naam}: ${filter.waarden.length} waarden`;
   }
   if (filter.bevat) return `${veld.naam} bevat "${filter.bevat}"`;
@@ -137,6 +138,7 @@ function VeldControl({
           options={veld.opties ?? []}
           selected={filter?.waarden ?? []}
           zoekbaar={veld.zoekbaar}
+          labels={weergaveNamen(veld.opties ?? [])}
           onChange={(waarden) =>
             onFilter(waarden.length > 0 ? { kolom: veld.naam, waarden } : null)
           }

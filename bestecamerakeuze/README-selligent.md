@@ -64,16 +64,48 @@ Staan beide variabelen gezet, dan wint de SAS-URL.
 | `lib/selligent/bron.ts` | Die tabel bewaren tussen verzoeken, met de ETag-vergelijking en het slot op gelijktijdig opbouwen. |
 | `lib/selligent/stand.ts` | De filters, de metric (contacten) en de maandreeks. |
 | `lib/selligent/datacheck.ts` | Het kolomoverzicht onderaan de pagina, afgeleid uit dezelfde tabel. |
+| `lib/selligent/weergave.ts` | Het enige wat met een waarde gebeurt vóór hij op het scherm komt: witruimte zichtbaar maken. Zie "De data blijft ruw". |
 | `app/api/selligent/route.ts` | De filtercontrols plus het kolomoverzicht. Eén keer per paginabezoek. |
 | `app/api/selligent/stand/route.ts` | De metric en de grafiek voor één filterselectie. Bij elke filterwijziging. |
 | `components/selligent/` | Het tabblad: `SelligentPaneel` (de pagina), `SelligentFilters`, `SelligentGrafiek`, `SelligentKolommen`. |
 
+### De data blijft ruw
+
+Er gaat **geen enkele bewerking** overheen. `B` en `Benzine` blijven twee verschillende
+brandstoffen, `BWG` en `AM_PKW` blijven tussen de merken staan, `OPTOUT` blijft een reeks
+codes, en spaties worden niet weggehaald: een waarde van één spatie is een waarde en geen
+lege cel. Wie hier ooit een opschoonlaag overheen wil leggen: dat is uitdrukkelijk niet
+gevraagd, en het dashboard hoort te tonen wat er in het bestand staat.
+
+Twee dingen gebeuren er wél, en allebei om een reden die niets met opschonen te maken
+heeft:
+
+1. **Het type wordt op de getrimde tekst bepaald.** Anders is `" 3/02/2021"` geen datum en
+   krijgt die kolom geen van/tot-filter. De waarde zelf blijft onaangeroerd; alleen de
+   vraag "wat voor soort waarde is dit" wordt op de getrimde tekst beantwoord.
+2. **Witruimte wordt zichtbaar gemaakt op het scherm** (`lib/selligent/weergave.ts`): een
+   waarde met een spatie aan de rand komt tussen aanhalingstekens te staan, dus `" "` en
+   `"Golf "` naast `Golf`. Zonder dat is de spatie-waarde in `VDUVEHICLES_FUEL_TYPE` (11
+   rijen) een lege regel in de keuzelijst en zijn de vier `VDUVEHICLES_MODEL`-waarden met
+   een spatie niet van hun buur te onderscheiden. Filteren gaat altijd over de echte
+   waarde; dit is uitsluitend weergave, en het maakt de rommel juist zíchtbaar in plaats
+   van hem weg te poetsen.
+
+### Eén kolom staat er niet: geslacht
+
+`GENDER` wordt overgeslagen — geen filter, niet in het kolomoverzicht, niet in een
+antwoord van de API. Dat gebeurt met opzet in `bouwTabel` (`VERBORGEN_KOLOMMEN` in
+`lib/selligent/tabel.ts`) en niet pas in de weergave: zo komt de kolom helemaal niet in
+het geheugen en kan hij dus nergens per ongeluk opduiken. Verdwijnt hij uit de export
+zelf, dan verandert er niets en mag die regel weg.
+
 ### Wat de pagina doet
 
-- **Een filter op elke kolom.** De soort control volgt uit de data en staat nergens met de
-  hand ingevuld: tot 1.000 verschillende waarden een aanvinklijst (vanaf dertien opties met
-  een zoekveld erin), een datumkolom van/tot, en daarboven een zoekveld op een stuk van de
-  waarde. Meerdere waarden binnen één filter is "of", meerdere filters samen is "en".
+- **Een filter op elke kolom** (25 sinds `GENDER` eruit is). De soort control volgt uit de
+  data en staat nergens met de hand ingevuld: tot 1.000 verschillende waarden een
+  aanvinklijst (vanaf dertien opties met een zoekveld erin), een datumkolom van/tot, en
+  daarboven een zoekveld op een stuk van de waarde. Meerdere waarden binnen één filter is
+  "of", meerdere filters samen is "en".
 - **Eén metric: Contacten.** Het aantal verschillende `ID`'s binnen de selectie — niet het
   aantal rijen. Een rij is een contact mét een voertuig: 169.290 rijen op 137.424 id's, dus
   wie drie auto's heeft zou er drie keer in zitten. Staat `ID` niet in de export, dan valt
@@ -105,7 +137,7 @@ waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
 | Ombouwen naar de tabel | 2,0 s |
 | Geheugen van de tabel | 99 MB (296 MB piek tijdens het ombouwen) |
 | Filteren | 5–40 ms, ook met alle 26 filters tegelijk aan |
-| Antwoord met de filtercontrols | 18,8 kB |
+| Antwoord met de filtercontrols | 11,6 kB |
 | Antwoord met de metric en de grafiek | 16,6 kB |
 
 ## Persoonsgegevens
@@ -122,16 +154,11 @@ categorieën over de lijn. Dat komt uit drie dingen die los van elkaar werken:
    aparte controle die iemand kan vergeten aan te zetten, maar een gevolg van het feit dat
    honderdduizend opties geen keuzelijst is.
 3. **Een naamregel in het kolomoverzicht.** Dat blok toont per kolom juist de
-   meestvoorkomende waarden, en daar is cardinaliteit alleen niet genoeg: `GENDER` heeft er
-   tien. Kolommen waarvan de naam naar een persoon of voertuig verwijst (`mail`,
-   `plate`/`kenteken`, `gender`/`geslacht`, `naam`, `adres`, `postcode`, `telefoon`,
-   `geboorte`, `iban`, …) laten daar nooit waarden zien, hoe weinig verschillende er ook in
-   staan.
-
-Let op het onderscheid tussen 2 en 3: in de **filterbalk** is `GENDER` wél een gewone
-aanvinklijst met zijn tien waarden, want er is gevraagd om een filter op elke kolom met de
-kolommen precies zoals ze zijn, en `M`/`V`/`U` zijn categorieën en geen persoonsgegevens
-over een individu. In het **kolomoverzicht** staan ze niet.
+   meestvoorkomende waarden, en daar is cardinaliteit alleen niet genoeg. Kolommen waarvan
+   de naam naar een persoon of voertuig verwijst (`mail`, `plate`/`kenteken`, `naam`,
+   `adres`, `postcode`, `telefoon`, `geboorte`, `iban`, …) laten daar nooit waarden zien,
+   hoe weinig verschillende er ook in staan.
+4. **Geslacht staat er helemaal niet in** — zie hierboven.
 
 Wil iemand later individuele rijen kunnen inzien, dan is dat een aparte beslissing met een
 eigen slot — `BEPERKTE_SECTIES_TOEGESTANE_EMAILS` in `components/Sidebar.tsx` is het
@@ -167,7 +194,8 @@ cijfers op deze pagina kunt, en wat nog niet. Wat de doorrekening liet zien (13 
   `-2` — en 154.249 van de rijen zijn leeg. Wat die codes betekenen moet uit Selligent
   komen voordat er een opt-outcijfer op gebouwd wordt.
 - **`VDUVEHICLES_FUEL_TYPE` mengt codes en labels**: `B`, `D`, `E`, `H` naast `Diesel`,
-  `Elektriciteit`, `Hybride Benzine`. Twee schrijfwijzen voor dezelfde brandstof.
+  `Elektriciteit`, `Hybride Benzine`. Twee schrijfwijzen voor dezelfde brandstof, en
+  daarnaast één waarde die uit een spatie bestaat (11 rijen).
 - **`VDUVEHICLES_BRAND` bevat ook codes**: `BWG` (10.770 rijen), `AM_PKW` (6.754),
   `AM_BWG`. En 58.235 rijen hebben helemaal geen merk.
 - **Datums staan dag-eerst** (`3/02/2021 6:00:22`). `new Date()` leest dat als 2 maart; de
