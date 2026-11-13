@@ -207,7 +207,12 @@ zelf, dan verandert er niets en mag die regel weg.
   lijst is een verfraaiing en nooit een voorwaarde. Vijfentwintig controls uitgeklapt vullen het
   halve scherm en duwen de cijfers onder de vouw; bovenaan omdat filteren het eerste is wat
   je doet. Dichtgeklapt blijft staan wát er aanstaat — de chips met de actieve filters.
-  Rechts ernaast staat hoe vers het bestand is en de knop Opnieuw ophalen. Het pad, de
+  Rechts ernaast staan de versheid van het bestand, **Reset filters** en **Opnieuw
+  ophalen**. Reset filters staat er altijd — uitgeschakeld als er niets aanstaat, anders
+  met het aantal erbij — en zet álle filters terug, dus ook de merkbalk. Dat laatste is de
+  reden dat hij het aantal van de hele pagina meekrijgt en niet zelf telt: merk zit niet in
+  zijn eigen veldenlijst, en een knop die doodstaat terwijl er in de merkbalk iets uitstaat
+  laat je zonder enige manier om dat terug te zetten. Het pad, de
   grootte en het rijaantal staan in het kolomoverzicht onderaan; die hoorden niet als eigen
   blok bovenaan de pagina, waar ze ruimte innamen van de cijfers waarvoor je komt.
 

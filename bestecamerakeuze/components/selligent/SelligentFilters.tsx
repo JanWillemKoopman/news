@@ -59,6 +59,14 @@ type Props = {
   filters: Record<string, Filter>;
   onFilter: (kolom: string, filter: Filter | null) => void;
   onWisAlles: () => void;
+  /**
+   * Hoeveel filters er over de héle pagina aanstaan, dus inclusief de merkbalk.
+   *
+   * Nodig omdat deze component zijn eigen `velden` kent en merk daar niet in zit: zonder
+   * dit getal zou de resetknop doodstaan terwijl er in de merkbalk wel degelijk iets
+   * uitstaat, en dan is er geen enkele knop die dat terugzet.
+   */
+  aantalActief: number;
   /** Hoe vers het bestand is, in één regel; `null` zolang dat nog niet bekend is. */
   bijgewerkt: string | null;
   onVerversen: () => void;
@@ -105,6 +113,7 @@ export default function SelligentFilters({
   filters,
   onFilter,
   onWisAlles,
+  aantalActief,
   bijgewerkt,
   onVerversen,
   verversBezig,
@@ -144,15 +153,27 @@ export default function SelligentFilters({
 
         <div className="flex items-center gap-2">
           {bijgewerkt && <span className="text-meta text-ink-faint">{bijgewerkt}</span>}
-          {chips.length > 0 && (
-            <button
-              type="button"
-              onClick={onWisAlles}
-              className="rounded-control px-2 py-1 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink"
-            >
-              Alles wissen
-            </button>
-          )}
+          {/* Staat er altijd, ook als er niets aanstaat — dan uitgeschakeld. Een knop die
+              verschijnt en verdwijnt laat je zoeken naar wat er net nog stond, en bij een
+              dichtgeklapte balk met vijfentwintig filters is "alles terug naar normaal"
+              precies de handeling die je blind moet kunnen doen. */}
+          <button
+            type="button"
+            onClick={onWisAlles}
+            disabled={aantalActief === 0}
+            title={
+              aantalActief === 0
+                ? "Er staan geen filters aan"
+                : "Zet alle filters terug, ook de merkbalk"
+            }
+            className="flex items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+          >
+            <IconClose className="h-3.5 w-3.5" />
+            Reset filters
+            {aantalActief > 0 && (
+              <span className="text-ink-faint">({aantalActief})</span>
+            )}
+          </button>
           <button
             type="button"
             onClick={onVerversen}
