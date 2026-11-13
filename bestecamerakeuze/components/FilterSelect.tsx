@@ -18,6 +18,17 @@ type Props = {
    * afgekapte lijst geen filter maar een zoekplaatje.
    */
   zoekbaar?: boolean;
+  /**
+   * Een andere tekst op het scherm voor bepaalde waarden, als `waarde → weergave`.
+   *
+   * Bestaat voor het tabblad Selligent, dat de waarden onbewerkt uit de CSV toont. Daar
+   * zitten waarden tussen die uit witruimte bestaan of er een spatie aan hebben, en die
+   * zijn in een lijst niet van elkaar te onderscheiden; `lib/selligent/weergave.ts` zet
+   * die tussen aanhalingstekens. Er verandert niets aan de waarde zelf: zoeken,
+   * aanvinken en terugmelden gaan onveranderd over de echte waarde. Zonder deze prop
+   * gedraagt de control zich precies als voorheen.
+   */
+  labels?: Record<string, string>;
 };
 
 /**
@@ -26,7 +37,15 @@ type Props = {
  * (checkboxes in het paneel); de knop zelf toont gewoon "Alle" of het aantal
  * geselecteerd, in plaats van vijf losse pill-buttons.
  */
-export default function FilterSelect({ label, options, selected, onChange, zoekbaar = false }: Props) {
+export default function FilterSelect({
+  label,
+  options,
+  selected,
+  onChange,
+  zoekbaar = false,
+  labels,
+}: Props) {
+  const toon = (waarde: string) => labels?.[waarde] ?? waarde;
   const [open, setOpen] = useState(false);
   const [zoek, setZoek] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -55,14 +74,19 @@ export default function FilterSelect({ label, options, selected, onChange, zoekb
   const zichtbareOpties = useMemo(() => {
     if (!zoekbaar || !zoek.trim()) return options;
     const term = zoek.trim().toLowerCase();
-    return options.filter((o) => o.toLowerCase().includes(term) || selected.includes(o));
-  }, [options, zoek, zoekbaar, selected]);
+    return options.filter(
+      (o) =>
+        o.toLowerCase().includes(term) ||
+        (labels?.[o] ?? "").toLowerCase().includes(term) ||
+        selected.includes(o),
+    );
+  }, [options, zoek, zoekbaar, selected, labels]);
 
   const valueLabel =
     selected.length === 0
       ? "Alle"
       : selected.length === 1
-        ? selected[0]
+        ? toon(selected[0])
         : `${selected.length} geselecteerd`;
 
   return (
@@ -124,7 +148,7 @@ export default function FilterSelect({ label, options, selected, onChange, zoekb
                 {zichtbareOpties.map((option) => (
                   <label
                     key={option}
-                    title={zoekbaar ? option : undefined}
+                    title={zoekbaar ? toon(option) : undefined}
                     className="flex cursor-pointer items-center gap-2 rounded-control px-2 py-1.5 text-sm text-ink hover:bg-surface"
                   >
                     <input
@@ -133,7 +157,7 @@ export default function FilterSelect({ label, options, selected, onChange, zoekb
                       onChange={() => toggle(option)}
                       className="h-3.5 w-3.5 shrink-0 rounded border-line"
                     />
-                    <span className="truncate">{option}</span>
+                    <span className="truncate">{toon(option)}</span>
                   </label>
                 ))}
               </>
