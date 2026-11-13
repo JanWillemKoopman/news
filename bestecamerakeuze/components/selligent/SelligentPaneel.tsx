@@ -234,6 +234,7 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           filters={filters}
           onFilter={zetFilter}
           onWisAlles={() => setFilters({})}
+          aantalActief={actieveFilters.length}
           bijgewerkt={bijgewerkt}
           onVerversen={() => void verversAlles()}
           verversBezig={laadtVelden}
