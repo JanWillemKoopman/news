@@ -118,7 +118,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   selligent: {
     title: "Selligent",
     subtitle:
-      "Het klantenbestand uit de Selligent-export: hoe vers het bestand is en wat erin staat.",
+      "Het klantenbestand uit de Selligent-export: filter op elke kolom en zie hoeveel contacten er overblijven.",
   },
   "budget-beheer": {
     title: "Budget beheer",

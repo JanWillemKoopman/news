@@ -60,56 +60,105 @@ Staan beide variabelen gezet, dan wint de SAS-URL.
 | | |
 |---|---|
 | `lib/selligent/verbinding.ts` | Het ophalen bij Azure, inclusief het ondertekenen met de accountsleutel (HMAC, zoals de Azure-SDK doet). Er zit bewust géén `@azure/storage-blob` in: die levert een paar megabyte bundle voor dit ene stukje rekenwerk. |
-| `lib/selligent/datacheck.ts` | De 36 MB regel voor regel doorlopen en terugbrengen tot een paar kilobyte: rijaantal, en per kolom het type, de vulgraad, het aantal verschillende waarden en de verdeling. De rijen worden nooit samen in het geheugen gezet. |
-| `app/api/selligent/route.ts` | De route eromheen: inlogcontrole, `maxDuration = 60`, en de cache hieronder. |
-| `components/kanalen/SelligentPaneel.tsx` | Het tabblad zelf. |
+| `lib/selligent/tabel.ts` | De 36 MB ombouwen naar een woordenboek-gecodeerde tabel in het geheugen: per kolom de verschillende waarden één keer, en per rij alleen de index daarin. Dat is wat filteren op elke kolom binnen milliseconden houdt. |
+| `lib/selligent/bron.ts` | Die tabel bewaren tussen verzoeken, met de ETag-vergelijking en het slot op gelijktijdig opbouwen. |
+| `lib/selligent/stand.ts` | De filters, de metric (contacten) en de maandreeks. |
+| `lib/selligent/datacheck.ts` | Het kolomoverzicht onderaan de pagina, afgeleid uit dezelfde tabel. |
+| `app/api/selligent/route.ts` | De filtercontrols plus het kolomoverzicht. Eén keer per paginabezoek. |
+| `app/api/selligent/stand/route.ts` | De metric en de grafiek voor één filterselectie. Bij elke filterwijziging. |
+| `components/selligent/` | Het tabblad: `SelligentPaneel` (de pagina), `SelligentFilters`, `SelligentGrafiek`, `SelligentKolommen`. |
+
+### Wat de pagina doet
+
+- **Een filter op elke kolom.** De soort control volgt uit de data en staat nergens met de
+  hand ingevuld: tot 1.000 verschillende waarden een aanvinklijst (vanaf dertien opties met
+  een zoekveld erin), een datumkolom van/tot, en daarboven een zoekveld op een stuk van de
+  waarde. Meerdere waarden binnen één filter is "of", meerdere filters samen is "en".
+- **Eén metric: Contacten.** Het aantal verschillende `ID`'s binnen de selectie — niet het
+  aantal rijen. Een rij is een contact mét een voertuig: 169.290 rijen op 137.424 id's, dus
+  wie drie auto's heeft zou er drie keer in zitten. Staat `ID` niet in de export, dan valt
+  de pagina terug op `CUSTOMER_ID` en zegt in beeld welke kolom ze telde.
+- **Contacten per maand van accountaanmaak** (`CREATED_DT`), als lijn. Ook hier per contact
+  en niet per rij, uit dezelfde doorloop als de metric — zo kan de som van de grafiek niet
+  afwijken van het cijfer erboven.
 
 ### De cache, en waarom dat geen opslag is
 
-36 MB bij elk paginabezoek downloaden is tien seconden wachten per collega per keer, en
-Azure rekent uitgaand verkeer af. Daarom doet de route eerst een `HEAD` op het blob —
+Zonder cache zou elke klik op een filter 36 MB downloaden en tien seconden duren. Daarom
+blijft de omgebouwde tabel in het geheugen van de serverless instance staan, en kost een
+filterwijziging alleen nog het filteren. Elk verzoek doet eerst een `HEAD` op het blob —
 één verzoek, een paar honderd bytes — en vergelijkt de **ETag** die Azure teruggeeft met
-die van de vorige doorrekening. Gelijk betekent byte-voor-byte hetzelfde bestand, en dus
-hetzelfde antwoord; dan gaat de bewaarde doorrekening terug zonder download.
+die van de bewaarde tabel. Gelijk betekent byte-voor-byte hetzelfde bestand; anders wordt
+de tabel opnieuw opgebouwd. Een verse export is dus bij het eerstvolgende verzoek binnen,
+zonder dat iemand iets hoeft te verversen.
 
-Wat bewaard wordt is alleen dat geaggregeerde antwoord: geen mailadressen, geen kentekens,
-geen rijen. Het leeft in het geheugen van de serverless instance en verdwijnt als die
-wordt opgeruimd. De blob blijft de enige bron; een nieuwe export verandert de ETag en is
-bij het eerstvolgende bezoek binnen. De knop **Opnieuw ophalen** slaat de vergelijking
-over (`?vers=1`).
+Wat bewaard wordt is geen bestand: het is de gecodeerde tabel in het werkgeheugen van één
+instance. Hij verdwijnt als die wordt opgeruimd, overleeft geen deploy, en is van buiten
+niet te lezen. Het is een versnelling, geen opslag, en de blob blijft de enige bron van
+waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
+
+### Gemeten op het echte bestand
+
+| | |
+|---|---|
+| Ophalen | 7,4 s |
+| Ombouwen naar de tabel | 2,0 s |
+| Geheugen van de tabel | 99 MB (296 MB piek tijdens het ombouwen) |
+| Filteren | 5–40 ms, ook met alle 26 filters tegelijk aan |
+| Antwoord met de filtercontrols | 18,8 kB |
+| Antwoord met de metric en de grafiek | 16,6 kB |
 
 ## Persoonsgegevens
 
-De export bevat gegevens over personen. Het tabblad is daarom zo gebouwd dat er **geen
-enkele waarde uit een identificerende kolom de browser bereikt**. Twee sloten, los van
-elkaar, in `lib/selligent/datacheck.ts`:
+De export bevat gegevens over personen. Het tabblad is zo gebouwd dat er **geen enkele
+waarde uit een identificerende kolom de browser bereikt** — er gaan alleen aantallen en
+categorieën over de lijn. Dat komt uit drie dingen die los van elkaar werken:
 
-1. **Op naam.** Kolommen waarvan de naam naar een persoon of voertuig verwijst (`mail`,
+1. **Filteren gebeurt op de server.** De rijen zelf verlaten de server nooit; de browser
+   stuurt een filter en krijgt een aantal terug.
+2. **De vorm van de filtercontrol.** Een kolom krijgt alleen een optielijst als er weinig
+   verschillende waarden in staan. Mailadres (125.359), kenteken (108.480) en de id's
+   komen daar ruim boven en krijgen dus een zoekveld in plaats van een lijst. Dat is geen
+   aparte controle die iemand kan vergeten aan te zetten, maar een gevolg van het feit dat
+   honderdduizend opties geen keuzelijst is.
+3. **Een naamregel in het kolomoverzicht.** Dat blok toont per kolom juist de
+   meestvoorkomende waarden, en daar is cardinaliteit alleen niet genoeg: `GENDER` heeft er
+   tien. Kolommen waarvan de naam naar een persoon of voertuig verwijst (`mail`,
    `plate`/`kenteken`, `gender`/`geslacht`, `naam`, `adres`, `postcode`, `telefoon`,
-   `geboorte`, `iban`, …) leveren nooit waarden — ook niet als er maar drie verschillende
-   in staan.
-2. **Op cardinaliteit.** Voorbeeldwaarden komen alleen mee bij een kolom met weinig
-   verschillende waarden. Een kolom met 125.000 verschillende waarden is per definitie een
-   identificerend veld en levert alleen een aantal.
+   `geboorte`, `iban`, …) laten daar nooit waarden zien, hoe weinig verschillende er ook in
+   staan.
 
-Wat er wél doorkomt zijn aantallen en verdelingen van categorieën. Dat is wat dit tabblad
-voor alle collega's open laat staan. Wil iemand later individuele rijen kunnen inzien, dan
-is dat een aparte beslissing met een eigen slot — `BEPERKTE_SECTIES_TOEGESTANE_EMAILS` in
-`components/Sidebar.tsx` is het patroon dat het dashboard daarvoor al heeft.
+Let op het onderscheid tussen 2 en 3: in de **filterbalk** is `GENDER` wél een gewone
+aanvinklijst met zijn tien waarden, want er is gevraagd om een filter op elke kolom met de
+kolommen precies zoals ze zijn, en `M`/`V`/`U` zijn categorieën en geen persoonsgegevens
+over een individu. In het **kolomoverzicht** staan ze niet.
+
+Wil iemand later individuele rijen kunnen inzien, dan is dat een aparte beslissing met een
+eigen slot — `BEPERKTE_SECTIES_TOEGESTANE_EMAILS` in `components/Sidebar.tsx` is het
+patroon dat het dashboard daarvoor al heeft.
 
 ## Dat de kolommen kunnen veranderen is uitgangspunt, geen uitzondering
 
-Nergens in de code staat een lijst met verwachte kolommen. De datacheck leest de koprij en
-beschrijft wat ze daar vindt. Dat is met opzet: `MAIL` en `GENDER` gaan uit de export
+Nergens in de code staat een lijst met verwachte kolommen. `bouwTabel` leest de koprij en
+bouwt zijn kolommen op wat ze daar vindt; de filterbalk en het kolomoverzicht volgen
+daaruit. Dat is met opzet: `MAIL` en `GENDER` gaan uit de export
 omdat het persoonsgegevens zijn, en een tabblad dat daarop crasht of stilletjes nullen
 toont is erger dan een tabblad dat gewoon een kolom minder laat zien. Nieuwe kolommen
 verschijnen om dezelfde reden vanzelf. Er is een test die dit vastlegt
-(`lib/selligent/datacheck.test.ts`).
+(`lib/selligent/tabel.test.ts`, `lib/selligent/stand.test.ts`). Hetzelfde geldt voor een
+filter op een kolom die niet meer bestaat: dat wordt genegeerd in plaats van alles weg te
+filteren, zodat een bewaarde selectie nooit een leeg scherm oplevert.
+
+Twee kolommen zijn wél bij naam bekend, en met opzet maar op één plek: welke kolom
+"contacten" telt (`CONTACT_KOLOMMEN`) en welke de grafiek tekent (`CREATIE_KOLOMMEN`), in
+`lib/selligent/stand.ts`. Allebei met een terugval, en de pagina zegt in beeld welke kolom
+ze gebruikte.
 
 ## Wat er in de data opvalt
 
-Met opzet nog geen grafieken: de export is rommeliger dan hij lijkt, en dat hoort eerst op
-tafel te liggen. Wat de eerste doorrekening liet zien (13 november 2026, 169.290 rijen):
+De export is rommeliger dan hij lijkt. Dit staat hier omdat het bepaalt wat je met de
+cijfers op deze pagina kunt, en wat nog niet. Wat de doorrekening liet zien (13 november
+2026, 169.290 rijen):
 
 - **Een rij is geen klant.** 169.290 rijen tegen 130.211 verschillende `CUSTOMER_ID` en
   108.481 verschillende kentekens: het is klant × voertuig. Zonder dedupe telt elk cijfer
@@ -125,3 +174,13 @@ tafel te liggen. Wat de eerste doorrekening liet zien (13 november 2026, 169.290
   parser in `datacheck.ts` doet het goed en heeft daar een test voor.
 - **`CREATED_DT` loopt van 1986 tot 2026**, met 81.203 rijen in 2025 alleen — dat ziet
   eruit als een migratie en niet als aanwas.
+- **Eén maand is een migratie, niet aanwas.** Juni 2025 levert 35.601 contacten op; de
+  maand erna 10.648 en de rest van het jaar een paar duizend. Van de 484 maanden zitten er
+  bovendien maar een paar duizend contacten vóór 2015. Daarom opent de grafiek op de
+  laatste tien jaar en zit er een knop voor een logaritmische as: zonder die twee is
+  driekwart van de breedte een vlakke lijn langs de nul.
+- **285 contacten hebben geen leesbare creatiedatum.** Die staan in geen enkele maand en
+  worden onder de grafiek apart gemeld, zodat de som van de grafiek navraagbaar blijft:
+  137.139 in de maanden + 285 = 137.424 contacten.
+- **`ID` en `CUSTOMER_ID` zijn niet hetzelfde aantal**: 137.424 tegen 130.210, en
+  `CUSTOMER_ID` mist in 4% van de rijen. De metric telt `ID` en zegt dat in beeld.
