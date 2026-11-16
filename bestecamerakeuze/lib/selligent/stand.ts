@@ -298,6 +298,10 @@ export interface Stand {
   autoDatumKolom: string | null;
   /** Auto's binnen de selectie zonder leesbare datum in de bovenstaande reeks. */
   autosZonderDatum: number;
+  /** De maandreeks unieke e-mailadressen, op dezelfde datumkolom als de contacten. */
+  emailMaanden: MaandPunt[];
+  /** Unieke e-mailadressen binnen de selectie zonder leesbare datum. */
+  emailsZonderDatum: number;
   /** De maandreeks auto's op afleverdatum — een andere vraag dan `autoMaanden`. */
   leverMaanden: MaandPunt[];
   leverKolom: string | null;
@@ -652,6 +656,11 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
     ? perMaandGeteld(autoKolom.codes, autoKolom.waarden.length, autoDatum, masker)
     : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
 
+  // Unieke e-mailadressen per maand van aanmaak (de maand van het eerst geziene contact).
+  const mail = mailKolom
+    ? perMaandGeteld(mailKolom.codes, mailKolom.waarden.length, creatie, masker)
+    : { aantal: 0, maanden: [] as MaandPunt[], zonderDatum: 0 };
+
   // Dezelfde auto's, op een andere datum gegroepeerd. Het aantal komt dus uit op
   // hetzelfde totaal; alleen de verdeling over de maanden verschilt.
   const geleverd =
@@ -680,6 +689,8 @@ export function standVan(tabel: Tabel, filters: Filter[]): Stand {
     autoMaanden: auto.maanden,
     autoDatumKolom: autoDatum?.naam ?? null,
     autosZonderDatum: auto.zonderDatum,
+    emailMaanden: mail.maanden,
+    emailsZonderDatum: mail.zonderDatum,
     leverMaanden: geleverd.maanden,
     leverKolom: lever?.naam ?? null,
     autosZonderLeverdatum: geleverd.zonderDatum,

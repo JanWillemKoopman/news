@@ -295,6 +295,18 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           />
 
           <SelligentGrafiek
+            titel="Unieke e-mailadressen toegevoegd in Selligent per maand"
+            toelichting="De maand waarin het e-mailadres in Selligent is aangemaakt. Een e-mailadres dat bij meerdere contacten of auto's hoort staat één keer in zijn eigen maand."
+            reeksnaam="E-mailadressen"
+            eenheid={["e-mailadres", "e-mailadressen"]}
+            maanden={stand.emailMaanden}
+            kolom={stand.creatieKolom}
+            zonderDatum={stand.emailsZonderDatum}
+            kleurIndex={0}
+            bezig={laadtStand}
+          />
+
+          <SelligentGrafiek
             titel="Auto's toegevoegd in Selligent per maand"
             toelichting="De auto's van de contacten die in die maand in Selligent zijn aangemaakt. Elke auto telt één keer, ook als hij bij meerdere rijen hoort."
             reeksnaam="Auto's"
