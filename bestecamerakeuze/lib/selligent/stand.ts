@@ -48,12 +48,14 @@ export const ZOEKBAAR_VANAF = 12;
 /**
  * Welke kolom "contacten" telt, in volgorde van voorkeur.
  *
- * `ID` is de sleutel van de contactentabel van Selligent en is in elke rij gevuld;
- * `CUSTOMER_ID` komt uit het dealersysteem en mist in 4% van de rijen. Staat de eerste
- * er niet, dan pakt de pagina de volgende — en ze zegt in beeld welke ze telde, want het
- * zijn verschillende aantallen.
+ * Een contact is een unieke `CUSTOMER_ID` (op verzoek van marketing): dat is de klant
+ * zoals het dealersysteem hem kent. `ID` is de sleutel van de contactentabel van Selligent
+ * en geeft een hoger aantal (137.424 tegen 130.210), omdat dezelfde klant onder meerdere
+ * id's kan staan. Let op: `CUSTOMER_ID` mist in ±4% van de rijen; die rijen tellen niet
+ * mee als contact (een lege waarde is geen klant). Staat `CUSTOMER_ID` niet in de export,
+ * dan valt de pagina terug op `ID` — en ze zegt in beeld welke ze telde.
  */
-export const CONTACT_KOLOMMEN = ["ID", "CUSTOMER_ID"];
+export const CONTACT_KOLOMMEN = ["CUSTOMER_ID", "ID"];
 
 /**
  * Welke kolom de e-mailadressen telt.

@@ -313,4 +313,7 @@ cijfers op deze pagina kunt, en wat nog niet. Wat de doorrekening liet zien (13 
   worden onder de grafiek apart gemeld, zodat de som van de grafiek navraagbaar blijft:
   137.139 in de maanden + 285 = 137.424 contacten.
 - **`ID` en `CUSTOMER_ID` zijn niet hetzelfde aantal**: 137.424 tegen 130.210, en
-  `CUSTOMER_ID` mist in 4% van de rijen. De metric telt `ID` en zegt dat in beeld.
+  `CUSTOMER_ID` mist in 4% van de rijen. Sinds nu telt de metric (en de grafiek) unieke
+  `CUSTOMER_ID`'s, op verzoek van marketing; rijen zonder `CUSTOMER_ID` tellen dus niet
+  mee als contact. Staat de kolom niet in de export, dan valt hij terug op `ID`. Het
+  scherm zegt welke kolom is geteld.
