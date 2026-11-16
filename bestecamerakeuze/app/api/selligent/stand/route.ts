@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { haalTabel } from "@/lib/selligent/bron";
-import { standVan, type Filter } from "@/lib/selligent/stand";
+import { standVan, type Filter, type MinstensEenOptin } from "@/lib/selligent/stand";
 import { isSelligentGeconfigureerd } from "@/lib/selligent/verbinding";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +34,10 @@ export async function POST(request: Request) {
     minstensEenOptin?: unknown;
   };
   const filters = schoneFilters(body.filters);
-  const minstensEenOptin = body.minstensEenOptin === true;
+  const minstensEenOptin: MinstensEenOptin =
+    body.minstensEenOptin === "waar" || body.minstensEenOptin === "onwaar"
+      ? body.minstensEenOptin
+      : null;
 
   try {
     const tabel = await haalTabel();

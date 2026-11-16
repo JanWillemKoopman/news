@@ -13,6 +13,7 @@ import {
   MAIL_KOLOMMEN,
   MERK_KOLOM,
   type Filter,
+  type MinstensEenOptin,
   type OptinStand,
   type Stand,
   type Veld,
@@ -76,9 +77,9 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [stand, setStand] = useState<Stand | null>(null);
   const [filters, setFilters] = useState<Record<string, Filter>>({});
   const [optinStand, setOptinStand] = useState<OptinStand>("waar");
-  // Contacten met op minstens één opt-in True, ongeacht welke. Een eigen vlag en geen
-  // filter: filters zijn "en" tussen kolommen, dit is "of" over alle opt-inkolommen.
-  const [minstensEenOptin, setMinstensEenOptin] = useState(false);
+  // "Minimaal 1 opt-in": waar/onwaar over alle opt-inkolommen samen. Een eigen toestand en
+  // geen gewoon filter: filters zijn "en" tussen kolommen, dit is "of" over de kolommen.
+  const [minstensEenOptin, setMinstensEenOptin] = useState<MinstensEenOptin>(null);
   const [fout, setFout] = useState<string | null>(null);
   const [laadtVelden, setLaadtVelden] = useState(false);
   const [laadtStand, setLaadtStand] = useState(false);
@@ -108,7 +109,7 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
     }
   }, []);
 
-  const haalStand = useCallback(async (actief: Filter[], minstensEenOptin: boolean) => {
+  const haalStand = useCallback(async (actief: Filter[], minstensEenOptin: MinstensEenOptin) => {
     const eigen = ++volgnummer.current;
     setLaadtStand(true);
     try {
@@ -239,8 +240,11 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           onFilter={zetFilter}
           onWisAlles={() => {
             setFilters({});
-            setMinstensEenOptin(false);
+            setMinstensEenOptin(null);
           }}
+          optinKolommen={(stand?.optins ?? []).map((o) => o.kolom)}
+          minstensEenOptin={minstensEenOptin}
+          onMinstensEenOptin={setMinstensEenOptin}
           aantalActief={aantalActief}
           bijgewerkt={bijgewerkt}
           onVerversen={() => void verversAlles()}
@@ -286,8 +290,6 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
             onStand={setOptinStand}
             actief={actieveOptins}
             onKies={zetOptin}
-            minstensEen={minstensEenOptin}
-            onMinstensEen={setMinstensEenOptin}
             bezig={laadtStand}
           />
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import { IconChevronDown, IconClose, IconRefresh } from "@/components/icons";
-import { groepeerVelden, type Filter, type Veld } from "@/lib/selligent/stand";
+import { groepeerVelden, type Filter, type MinstensEenOptin, type Veld } from "@/lib/selligent/stand";
 import { toonWaarde, weergaveNamen } from "@/lib/selligent/weergave";
 
 /**
@@ -59,6 +59,10 @@ type Props = {
   filters: Record<string, Filter>;
   onFilter: (kolom: string, filter: Filter | null) => void;
   onWisAlles: () => void;
+  /** De opt-inkolommen die "Minimaal 1 opt-in" samen telt, zoals de server ze vond. */
+  optinKolommen: string[];
+  minstensEenOptin: MinstensEenOptin;
+  onMinstensEenOptin: (waarde: MinstensEenOptin) => void;
   /**
    * Hoeveel filters er over de héle pagina aanstaan, dus inclusief de merkbalk.
    *
@@ -113,6 +117,9 @@ export default function SelligentFilters({
   filters,
   onFilter,
   onWisAlles,
+  optinKolommen,
+  minstensEenOptin,
+  onMinstensEenOptin,
   aantalActief,
   bijgewerkt,
   onVerversen,
@@ -128,6 +135,8 @@ export default function SelligentFilters({
       return tekst ? { veld, tekst } : null;
     })
     .filter((c): c is { veld: Veld; tekst: string } => c !== null);
+
+  const aantalChips = chips.length + (minstensEenOptin ? 1 : 0);
 
   return (
     <section className="rounded-panel border border-line bg-card px-5 py-3 shadow-subtle">
@@ -145,9 +154,9 @@ export default function SelligentFilters({
           />
           <span className="font-sans-w7 text-cell font-semibold text-ink">Filters</span>
           <span className="text-meta text-ink-faint">
-            {chips.length === 0
+            {aantalChips === 0
               ? `${velden.length} kolommen`
-              : `${chips.length} actief van ${velden.length}`}
+              : `${aantalChips} actief van ${velden.length + 1}`}
           </span>
         </button>
 
@@ -188,8 +197,21 @@ export default function SelligentFilters({
 
       {/* De chips blijven staan als de balk dicht is: ook gesloten hoort hij te vertellen
           waar je naar kijkt. */}
-      {chips.length > 0 && (
+      {aantalChips > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
+          {minstensEenOptin && (
+            <li>
+              <button
+                type="button"
+                onClick={() => onMinstensEenOptin(null)}
+                title="Dit filter wissen"
+                className="flex items-center gap-1 rounded-control bg-primary-light px-2 py-0.5 text-meta text-primary transition-opacity duration-[var(--duur-snel)] hover:opacity-80"
+              >
+                Minimaal 1 opt-in: {minstensEenOptin === "waar" ? "Waar" : "Onwaar"}
+                <IconClose className="h-3 w-3" />
+              </button>
+            </li>
+          )}
           {chips.map(({ veld, tekst }) => (
             <li key={veld.naam}>
               <button
@@ -217,6 +239,11 @@ export default function SelligentFilters({
               die hoort het scherm te beantwoorden voordat iemand de kolomnamen gaat
               lezen. */}
           <div className="mt-3 flex flex-col gap-3">
+            <MinstensEenOptinControl
+              kolommen={optinKolommen}
+              waarde={minstensEenOptin}
+              onChange={onMinstensEenOptin}
+            />
             {groepen.map((groep) => {
               const actief = groep.velden.filter((v) => filters[v.naam]).length;
               const naam = groep.voorvoegsel
@@ -347,5 +374,67 @@ function VeldControl({
         className="w-full rounded-control border border-line bg-card px-2 py-1 text-sm text-ink placeholder:text-ink-faint"
       />
     </div>
+  );
+}
+
+const OPTIN_KEUZES: { waarde: MinstensEenOptin; label: string }[] = [
+  { waarde: null, label: "Alle" },
+  { waarde: "waar", label: "Waar" },
+  { waarde: "onwaar", label: "Onwaar" },
+];
+
+/**
+ * Het filter "Minimaal 1 opt-in": waar of onwaar over alle opt-ins samen.
+ *
+ * - **Waar**: het contact heeft op minstens één opt-in `True`, welke maakt niet uit.
+ * - **Onwaar**: het contact heeft op geen enkele opt-in `True` (dus `False` of nooit iets
+ *   ingevuld).
+ *
+ * Het telt de opt-inkolommen die de server als booleaans herkent — dezelfde als de tegels
+ * onder de cijfers. Welke dat zijn staat hier zichtbaar bij (aantal, en de namen in de
+ * tooltip), zodat je kunt nagaan dat er geen opt-in ontbreekt.
+ */
+function MinstensEenOptinControl({
+  kolommen,
+  waarde,
+  onChange,
+}: {
+  kolommen: string[];
+  waarde: MinstensEenOptin;
+  onChange: (waarde: MinstensEenOptin) => void;
+}) {
+  return (
+    <section className="rounded-card border border-line bg-surface-tint px-4 py-3">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line pb-2">
+        <h3 className="font-sans-w7 text-sm font-semibold text-ink">Minimaal 1 opt-in</h3>
+        <span className="text-meta text-ink-faint" title={kolommen.join("\n")}>
+          over {kolommen.length} {kolommen.length === 1 ? "opt-in" : "opt-ins"}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-control border border-line p-0.5">
+          {OPTIN_KEUZES.map((k) => (
+            <button
+              key={k.label}
+              type="button"
+              onClick={() => onChange(k.waarde)}
+              aria-pressed={k.waarde === waarde}
+              className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                k.waarde === waarde ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+              }`}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-meta text-ink-faint">
+          Waar: op minstens één opt-in True, welke maakt niet uit. Onwaar: op geen enkele opt-in
+          True.
+        </p>
+      </div>
+      {kolommen.length > 0 && (
+        <p className="mt-2 text-meta text-ink-faint">{kolommen.join(" · ")}</p>
+      )}
+    </section>
   );
 }

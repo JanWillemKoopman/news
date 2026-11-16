@@ -143,6 +143,7 @@ zelf, dan verandert er niets en mag die regel weg.
   - **`MAIL` heeft geen filter in de balk**, op verzoek. Het staat als metric in beeld; een
     zoekveld waarin je een adres intypt om te zien of het bestaat, is iets anders dan een
     dashboard en hoort in Selligent zelf.
+- **Filter "Minimaal 1 opt-in"** (Alle / Waar / Onwaar) in de filterbalk: Waar = het contact heeft op minstens één opt-in True, Onwaar = op geen enkele. Per contact beslist, over alle booleaanse kolommen; de balk toont hoeveel en welke opt-ins het telt.
 - **Een rij opt-in-tegels**, één per booleaanse kolom, met een schakelaar **True / False /
   Onbekend** erboven. Welke kolommen dat zijn staat nergens opgesomd — het zijn de kolommen
   die als booleaans uit de data komen, dus een nieuwe voorkeur in de export levert vanzelf

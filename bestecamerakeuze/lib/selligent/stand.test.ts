@@ -342,7 +342,7 @@ test("auto's zonder afleverdatum vallen buiten die reeks maar tellen wel als aut
   assert.deepEqual(stand.leverMaanden, [{ maand: "2022-01", aantal: 1 }]);
 });
 
-test("minstens één opt-in pakt contacten met True op welke kolom dan ook", () => {
+test("minimaal 1 opt-in: waar pakt contacten met True op welke kolom dan ook", () => {
   const tabel = bouwTabel(
     '"ID";"PREFERENCES_A";"PREFERENCES_B"\n' +
       '"1";"True";"False"\n' + // alleen A
@@ -351,11 +351,39 @@ test("minstens één opt-in pakt contacten met True op welke kolom dan ook", () 
       '"4";"";""\n', // onbekend
     META,
   );
-  const stand = standVan(tabel, [], true);
-  assert.equal(stand.contacten, 2);
-  assert.equal(stand.rijen, 2);
-  // Zonder de vlag verandert er niets.
-  assert.equal(standVan(tabel, [], false).contacten, 4);
+  assert.equal(standVan(tabel, [], "waar").contacten, 2);
+  assert.equal(standVan(tabel, [], "waar").rijen, 2);
+  assert.equal(standVan(tabel, [], null).contacten, 4);
   // Combineert met gewone filters als "en".
-  assert.equal(standVan(tabel, [{ kolom: "PREFERENCES_A", waarden: ["True"] }], true).contacten, 1);
+  assert.equal(standVan(tabel, [{ kolom: "PREFERENCES_A", waarden: ["True"] }], "waar").contacten, 1);
+});
+
+test("minimaal 1 opt-in: onwaar is het tegenovergestelde en samen zijn ze alle contacten", () => {
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_A";"PREFERENCES_B"\n' +
+      '"1";"True";"False"\n' +
+      '"2";"False";"True"\n' +
+      '"3";"False";"False"\n' +
+      '"4";"";""\n',
+    META,
+  );
+  const waar = standVan(tabel, [], "waar");
+  const onwaar = standVan(tabel, [], "onwaar");
+  assert.equal(onwaar.contacten, 2);
+  assert.equal(waar.contacten + onwaar.contacten, standVan(tabel, []).contacten);
+});
+
+test("minimaal 1 opt-in beslist per contact, niet per rij", () => {
+  // Contact 1 heeft een True op de ene auto en niets op de andere: het is waar, en beide
+  // rijen blijven staan. Zo valt een contact nooit half in waar en half in onwaar.
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_A"\n"1";"True"\n"1";""\n"2";"False"\n',
+    META,
+  );
+  const waar = standVan(tabel, [], "waar");
+  assert.equal(waar.contacten, 1);
+  assert.equal(waar.rijen, 2);
+  const onwaar = standVan(tabel, [], "onwaar");
+  assert.equal(onwaar.contacten, 1);
+  assert.equal(onwaar.rijen, 1);
 });
