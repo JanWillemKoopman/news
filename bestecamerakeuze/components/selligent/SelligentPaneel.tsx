@@ -76,6 +76,9 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [stand, setStand] = useState<Stand | null>(null);
   const [filters, setFilters] = useState<Record<string, Filter>>({});
   const [optinStand, setOptinStand] = useState<OptinStand>("waar");
+  // Contacten met op minstens één opt-in True, ongeacht welke. Een eigen vlag en geen
+  // filter: filters zijn "en" tussen kolommen, dit is "of" over alle opt-inkolommen.
+  const [minstensEenOptin, setMinstensEenOptin] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [laadtVelden, setLaadtVelden] = useState(false);
   const [laadtStand, setLaadtStand] = useState(false);
@@ -105,14 +108,14 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
     }
   }, []);
 
-  const haalStand = useCallback(async (actief: Filter[]) => {
+  const haalStand = useCallback(async (actief: Filter[], minstensEenOptin: boolean) => {
     const eigen = ++volgnummer.current;
     setLaadtStand(true);
     try {
       const res = await fetch("/api/selligent/stand", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters: actief }),
+        body: JSON.stringify({ filters: actief, minstensEenOptin }),
         cache: "no-store",
       });
       const data = (await res.json()) as { stand?: Stand; fout?: string };
@@ -138,9 +141,9 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
 
   useEffect(() => {
     if (!ingelogd || !velden) return;
-    const tijd = setTimeout(() => void haalStand(actieveFilters), WACHT_MS);
+    const tijd = setTimeout(() => void haalStand(actieveFilters, minstensEenOptin), WACHT_MS);
     return () => clearTimeout(tijd);
-  }, [ingelogd, velden, actieveFilters, haalStand]);
+  }, [ingelogd, velden, actieveFilters, minstensEenOptin, haalStand]);
 
   /**
    * Een opt-in-tegel aan- of uitzetten: dat is hetzelfde als het filter op die kolom op
@@ -190,14 +193,15 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
   async function verversAlles() {
     setStand(null);
     await haalVelden(true);
-    await haalStand(actieveFilters);
+    await haalStand(actieveFilters, minstensEenOptin);
   }
 
   if (!ingelogd) {
     return <Inlogprompt tekst="De Selligent-export staat achter de inlog." />;
   }
 
-  const gefilterd = actieveFilters.length > 0;
+  const aantalActief = actieveFilters.length + (minstensEenOptin ? 1 : 0);
+  const gefilterd = aantalActief > 0;
   const bijgewerkt = datacheck?.bestand.gewijzigdOp
     ? `Bijgewerkt ${new Date(datacheck.bestand.gewijzigdOp).toLocaleString("nl-NL", {
         day: "numeric",
@@ -233,8 +237,11 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           velden={rasterVelden}
           filters={filters}
           onFilter={zetFilter}
-          onWisAlles={() => setFilters({})}
-          aantalActief={actieveFilters.length}
+          onWisAlles={() => {
+            setFilters({});
+            setMinstensEenOptin(false);
+          }}
+          aantalActief={aantalActief}
           bijgewerkt={bijgewerkt}
           onVerversen={() => void verversAlles()}
           verversBezig={laadtVelden}
@@ -279,6 +286,8 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
             onStand={setOptinStand}
             actief={actieveOptins}
             onKies={zetOptin}
+            minstensEen={minstensEenOptin}
+            onMinstensEen={setMinstensEenOptin}
             bezig={laadtStand}
           />
 

@@ -29,13 +29,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json().catch(() => ({}))) as { filters?: unknown };
+  const body = (await request.json().catch(() => ({}))) as {
+    filters?: unknown;
+    minstensEenOptin?: unknown;
+  };
   const filters = schoneFilters(body.filters);
+  const minstensEenOptin = body.minstensEenOptin === true;
 
   try {
     const tabel = await haalTabel();
     return NextResponse.json({
-      stand: standVan(tabel, filters),
+      stand: standVan(tabel, filters, minstensEenOptin),
       gewijzigdOp: tabel.gewijzigdOp,
     });
   } catch (err) {

@@ -189,8 +189,13 @@ export function OptinStrip({
   onStand,
   actief,
   onKies,
+  minstensEen,
+  onMinstensEen,
   bezig,
 }: {
+  /** Staat het filter "minstens één opt-in op True" aan? */
+  minstensEen: boolean;
+  onMinstensEen: (aan: boolean) => void;
   optins: Optin[];
   /** Alle contacten in de selectie — de noemer van elke tegel. */
   contacten: number;
@@ -220,6 +225,19 @@ export function OptinStrip({
             uit en tellen samen op tot dat aantal. Klik een tegel om erop te filteren.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => onMinstensEen(!minstensEen)}
+          aria-pressed={minstensEen}
+          title={`Selecteer alle contacten die op minstens één van de ${optins.length} opt-ins True hebben`}
+          className={`shrink-0 rounded-control border px-3 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+            minstensEen
+              ? "border-primary bg-primary text-on-primary"
+              : "border-line text-ink-muted hover:bg-surface"
+          }`}
+        >
+          Minimaal 1 opt-in
+        </button>
         <div className="flex shrink-0 rounded-control border border-line p-0.5">
           {STANDEN.map((s) => (
             <button

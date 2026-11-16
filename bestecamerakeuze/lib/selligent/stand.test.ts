@@ -341,3 +341,21 @@ test("auto's zonder afleverdatum vallen buiten die reeks maar tellen wel als aut
   assert.equal(stand.autosZonderLeverdatum, 1);
   assert.deepEqual(stand.leverMaanden, [{ maand: "2022-01", aantal: 1 }]);
 });
+
+test("minstens één opt-in pakt contacten met True op welke kolom dan ook", () => {
+  const tabel = bouwTabel(
+    '"ID";"PREFERENCES_A";"PREFERENCES_B"\n' +
+      '"1";"True";"False"\n' + // alleen A
+      '"2";"False";"True"\n' + // alleen B
+      '"3";"False";"False"\n' + // geen enkele
+      '"4";"";""\n', // onbekend
+    META,
+  );
+  const stand = standVan(tabel, [], true);
+  assert.equal(stand.contacten, 2);
+  assert.equal(stand.rijen, 2);
+  // Zonder de vlag verandert er niets.
+  assert.equal(standVan(tabel, [], false).contacten, 4);
+  // Combineert met gewone filters als "en".
+  assert.equal(standVan(tabel, [{ kolom: "PREFERENCES_A", waarden: ["True"] }], true).contacten, 1);
+});
