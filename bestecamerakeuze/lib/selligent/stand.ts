@@ -416,9 +416,31 @@ function codesDoor(kolom: Kolom, filter: Filter): Uint8Array | null {
  * selectie is vaak groot (zonder filter alle 169.290 rijen), en een byte-array is dan
  * zowel kleiner als sneller te doorlopen dan een array met getallen.
  */
-export function selectie(tabel: Tabel, filters: Filter[]): { masker: Uint8Array; rijen: number } {
+export function selectie(
+  tabel: Tabel,
+  filters: Filter[],
+  minstensEenOptin = false,
+): { masker: Uint8Array; rijen: number } {
   const masker = new Uint8Array(tabel.rijen).fill(1);
   let rijen = tabel.rijen;
+
+  // "Minstens één opt-in" is een *of* over alle booleaanse kolommen, en past dus niet in
+  // het gewone filter (dat is *en* tussen kolommen). Een rij blijft staan zodra één van
+  // de opt-inkolommen er op True staat; welke maakt niet uit.
+  if (minstensEenOptin) {
+    const optins = tabel.kolommen
+      .filter((k) => k.type === "booleaans")
+      .map((k) => ({
+        codes: k.codes,
+        waar: Uint8Array.from(k.waarden, (w, c) => (c > 0 && isWaar(w) ? 1 : 0)),
+      }));
+    for (let i = 0; i < masker.length; i++) {
+      if (!optins.some((o) => o.waar[o.codes[i]] === 1)) {
+        masker[i] = 0;
+        rijen--;
+      }
+    }
+  }
 
   for (const filter of filters) {
     const kolom = tabel.kolommen.find((k) => k.naam === filter.kolom);
@@ -637,9 +659,9 @@ function telOptins(
  * per definitie bij elkaar horen: de som van de contactengrafiek kan niet afwijken van de
  * metric erboven, en een opt-in kan niet hoger uitkomen dan het aantal contacten.
  */
-export function standVan(tabel: Tabel, filters: Filter[]): Stand {
+export function standVan(tabel: Tabel, filters: Filter[], minstensEenOptin = false): Stand {
   const begin = Date.now();
-  const { masker, rijen } = selectie(tabel, filters);
+  const { masker, rijen } = selectie(tabel, filters, minstensEenOptin);
 
   const idKolom = kiesKolom(tabel, CONTACT_KOLOMMEN);
   const autoKolom = kiesKolom(tabel, AUTO_KOLOMMEN);
