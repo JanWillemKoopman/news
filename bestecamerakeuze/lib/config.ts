@@ -67,3 +67,21 @@ export function chatGereedheid(): ChatGereedheid {
 export function isWindsorGeconfigureerd(): boolean {
   return Boolean(process.env.WINDSOR_API_KEY);
 }
+
+/**
+ * De koppeling met de Selligent-export op Azure Blob Storage (tabblad Kanalen → Selligent).
+ *
+ * Twee manieren, en de eerste is de veilige: `SELLIGENT_BLOB_URL` is een SAS-URL met
+ * alleen leesrecht op dit ene pad en een einddatum, `SELLIGENT_AZURE_CONNECTION_STRING`
+ * is de accountsleutel waarmee je het hele storage-account kunt lezen én schrijven. Staat
+ * de SAS-URL er, dan gebruikt de app die.
+ *
+ * Deze check staat hier en niet alleen in `lib/selligent/verbinding.ts` omdat die module
+ * `node:crypto` importeert voor het ondertekenen; dit bestand blijft vrij van
+ * server-only imports zodat de UI de stand ook mag opvragen.
+ */
+export function isSelligentGeconfigureerd(): boolean {
+  return Boolean(
+    process.env.SELLIGENT_BLOB_URL || process.env.SELLIGENT_AZURE_CONNECTION_STRING,
+  );
+}
