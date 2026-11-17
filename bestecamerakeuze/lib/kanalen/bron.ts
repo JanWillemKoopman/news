@@ -83,7 +83,7 @@ export function isKanalenGeconfigureerd(): boolean {
   return Boolean(process.env.DATAQUERY_DATABASE_URL);
 }
 
-async function metVerbinding<T>(werk: (client: Client) => Promise<T>): Promise<T> {
+export async function metVerbinding<T>(werk: (client: Client) => Promise<T>): Promise<T> {
   const connectionString = process.env.DATAQUERY_DATABASE_URL;
   if (!connectionString) throw new Error("DATAQUERY_DATABASE_URL ontbreekt.");
   eisVerbindingssnaar(connectionString, "DATAQUERY_DATABASE_URL");

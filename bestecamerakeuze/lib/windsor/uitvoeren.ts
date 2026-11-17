@@ -12,6 +12,7 @@ import {
   syncGa4EventPaginas,
   syncGa4Events,
   syncGa4Landingspaginas,
+  syncGa4Leads,
   syncGa4Paginas,
   syncGa4Verkeer,
   syncGoogleAds,
@@ -25,6 +26,7 @@ import {
   type Periode,
   type SyncResultaat,
 } from "@/lib/windsor/sync";
+import { leadsVenster } from "@/lib/leads/bereik";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 /**
@@ -276,6 +278,18 @@ async function draai(
 
     gedaanVan = stuk.van;
     if (!gedaanTot) gedaanTot = stuk.tot;
+  }
+
+  // De leads van udenhout.nl (tabblad Leads, migratie 0033). Staan buiten de stukken: het
+  // is altijd hetzelfde venster van dertig dagen, en de tabel wordt per ronde helemaal
+  // vervangen — per stuk wissen zou elk stuk de vorige weggooien.
+  //
+  // Twee voorwaarden. Niet bij "alleen aanvullen": die knop mag per definitie niets
+  // vervangen, en dit onderdeel vervangt alles. En alleen als de gevraagde periode
+  // gisteren bereikt: een inhaalronde over een periode van een half jaar geleden zegt
+  // niets over de laatste dertig dagen, en zou ze nodeloos opnieuw ophalen.
+  if (website && !alleenAanvullen && tot >= leadsVenster().tot) {
+    tel(verzameld, await probeer(() => syncGa4Leads(client), "ga4-leads"));
   }
 
   // Deze twee kijken over de hele tabel en horen dus ná de stukken, één keer.

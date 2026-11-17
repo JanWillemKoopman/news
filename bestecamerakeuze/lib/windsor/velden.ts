@@ -499,6 +499,31 @@ export const GA4_EVENTPAGINAVELDEN = [
 ];
 
 /**
+ * De zesde opvraging: de lead-events van udenhout.nl met hun parameters, voor het
+ * tabblad Leads (migratie 0033).
+ *
+ * `customevent_car_brand`, `customevent_car_model` en `customevent_form_location` zijn
+ * event-parameters (custom dimensions) van de property van udenhout.nl. Ze bestaan alleen
+ * daar; op een andere property geeft Windsor een fout voor een onbekend veld, en daarom
+ * gaat deze opvraging altijd met een expliciete accountlijst (`lib/leads/bereik.ts`).
+ *
+ * Geen `account_id`, geen kanaalgroep: de property is er één en het kanaal volgt uit
+ * bron/medium. Zeven dimensies, onder de grens van negen die GA4 per opvraging toestaat;
+ * de overige custom parameters (`filter_*`, `search_term`, `event_category` …) zijn op
+ * lead-events leeg en zouden alleen rijen toevoegen.
+ */
+export const GA4_LEADVELDEN = [
+  "date",
+  "event_name",
+  "session_source_medium",
+  "campaign",
+  "customevent_car_brand",
+  "customevent_car_model",
+  "customevent_form_location",
+  "event_count",
+];
+
+/**
  * De events die op vrijwel elke pagina vuren en daarom niet in de events × pagina's
  * worden opgehaald. session_start staat er bewust níet bij: een sessie die op de
  * campagnepagina begint is voor een campagne een volwaardig doel.

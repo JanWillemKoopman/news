@@ -4,6 +4,7 @@ import CampaignDashboard from "@/components/CampaignDashboard";
 import CampagneBeheer from "@/components/beheer/CampagneBeheer";
 import AccountPaneel from "@/components/kanalen/AccountPaneel";
 import GoogleAdsPaneel from "@/components/kanalen/GoogleAdsPaneel";
+import LeadsPaneel from "@/components/leads/LeadsPaneel";
 import Koppeltabel from "@/components/kanalen/Koppeltabel";
 import OrganischPaneel from "@/components/kanalen/OrganischPaneel";
 import SelligentPaneel from "@/components/selligent/SelligentPaneel";
@@ -94,6 +95,7 @@ export default async function DashboardPage() {
         organisch={<OrganischPaneel ingelogd={ingelogd} />}
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
+        leads={<LeadsPaneel ingelogd={ingelogd} />}
         selligent={<SelligentPaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}
