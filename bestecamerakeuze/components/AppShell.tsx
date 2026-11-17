@@ -30,6 +30,7 @@ type Props = {
   organisch: React.ReactNode;
   accountOntwikkeling: React.ReactNode;
   website: React.ReactNode;
+  leads: React.ReactNode;
   selligent: React.ReactNode;
   koppeltabel: React.ReactNode;
   budgetBeheer: React.ReactNode;
@@ -66,6 +67,7 @@ const TEAM_VIEWS: DashboardView[] = [
   "organisch",
   "account-ontwikkeling",
   "website",
+  "leads",
 ];
 
 const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
@@ -114,6 +116,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "Website",
     subtitle:
       "Wat er op de websites gebeurt: bezoek, instappunten, pagina's, events en conversies.",
+  },
+  leads: {
+    title: "Leads",
+    subtitle:
+      "Offerte- en proefritaanvragen van udenhout.nl: welk merk en model, via welk kanaal, en wat de betaalde campagnes kostten.",
   },
   selligent: {
     title: "Selligent",
@@ -180,6 +187,7 @@ export default function AppShell({
   organisch,
   accountOntwikkeling,
   website,
+  leads,
   selligent,
   koppeltabel,
   budgetBeheer,
@@ -305,6 +313,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "website"}>
           {bezocht.has("website") ? website : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "leads"}>
+          {bezocht.has("leads") ? leads : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "selligent"}>
           {bezocht.has("selligent") ? selligent : null}

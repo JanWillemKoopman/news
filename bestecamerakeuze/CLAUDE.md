@@ -552,6 +552,71 @@ niet uit af te lezen zijn:
   `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
   dat is een rare eis aan juist de code die het rekenwerk doet.
 
+### Kanalen → Leads
+
+Tabblad onder **Kanalen**, direct onder Website (view `leads`, `components/leads/`, route
+`app/api/leads/route.ts`). Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
+andere aanvragen die als GA4-event met "lead" in de naam worden afgevuurd, met merk, model,
+kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
+
+- **Afbakening staat op één plek** (`lib/leads/bereik.ts`): GA4-property 255949462
+  (udenhout.nl), Google Ads-account "Udenhout", Meta-account "Van den Udenhout", dertig
+  dagen tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
+  `generate_lead_*`; de andere properties van het concern leverden nul lead-events. Het
+  aparte Google Ads-account "Van den Udenhout Lease" staat niet in de Windsor-sync.
+- **De leadtabel is een rollend venster en geen archief** (`windsor_ga4_leads`, migratie
+  0033) en dat is de manier waarop hij zo klein blijft (±1.100 rijen, ±160 kB). Op verzoek zo
+  compact mogelijk, dus ook wat er *niet* in staat: geen uitgaven (die staan al in
+  `windsor_advertenties` en komen via `v_leads_uitgaven` bij het lezen erbij), geen account,
+  website, kanaalgroep of inleestijdstip, geen primary key en geen index (elke query leest
+  de hele tabel; een index zou hem alleen verdubbelen). `aantal` is een smallint.
+  Dubbele sleutels voorkomt `leadRijenUitWindsor`, dat ze optelt vóór het schrijven.
+- **De sync vervangt de hele tabel** (`syncGa4Leads` in `lib/windsor/sync.ts`): eerst
+  ophalen, dan pas wissen en schrijven in één transactie. Faalt Windsor, dan staat gisteren's
+  data er nog; een leeg antwoord is een fout (geen nul) en laat de tabel ongemoeid. Hij draait
+  in het onderdeel `website`, **buiten** de stukken van dertig dagen (per stuk wissen zou elk
+  stuk het vorige weggooien), niet bij "alleen aanvullen" (die knop mag niets vervangen) en
+  alleen als de gevraagde periode gisteren bereikt (een inhaalronde over een half jaar
+  geleden zegt niets over de laatste dertig dagen).
+- **Parameters.** Merk, model en formulier (`customevent_car_brand`, `…car_model`,
+  `…form_location`) zijn event-parameters die alleen op deze property bestaan, en alleen
+  gevuld zijn op proefrit-, offerte-, private lease- en financieringsformulieren (±20% van
+  de leads). De overige custom parameters (`filter_*`, `search_term`, `event_category` …) zijn
+  op lead-events leeg en worden dus niet opgehaald. GA4 staat negen dimensies per opvraging
+  toe; er zijn er zeven. Het formulier `model_titel` stuurt de naam van het veld mee in plaats
+  van het model: dat telt als "onbekend" (`schoonParameter`), het merk blijft staan.
+- **De koppeling loopt over platform én campagnenaam** (`lib/leads/koppel.ts`), niet over de
+  naam alleen. Bing-verkeer in GA4 heeft dezelfde campagnenamen als Google ("T | Branding
+  VDU"); op naam alleen kregen Bing-leads Google's kosten. De naam wordt genormaliseerd
+  (hoofdletters, spaties, soort streepje: Meta schrijft een gedachtestreepje).
+- **Kosten zijn een verdeling, geen meting.** De uitgaven van een campagne gaan gelijk over
+  zijn leads (€ 500 en tien leads = € 50 per lead, ook voor een vacature- of proefritlead). Dat
+  staat ook zo op het scherm. `koppel.test.ts` rekent na dat toegerekende kosten plus uitgaven
+  zonder lead precies de uitgaven zijn: er mag geen euro zoekraken.
+- **Betaald is niet hetzelfde als "kosten bekend".** Bing en LinkedIn zijn betaald maar hebben
+  hier geen kostenbron (`geen-bron`), en een betaalde lead met een campagne die bij Google of
+  Meta niet bestaat (`(not set)`, een andere naam) is `geen-match`. Beide krijgen
+  `kosten: null` en staan in de UI als "onbekend", nooit als € 0: nul zou beweren dat het
+  gratis was. "Kosten per betaalde lead" deelt alleen door leads waarvan de kosten bekend zijn.
+- **Uitgaven zonder lead verdwijnen niet.** Een campagne met kosten en nul leads krijgt niets
+  toegerekend maar staat in `zonderLead`, in het kerncijfer Uitgaven en (zonder filter) in de
+  campagnetabel. Zonder dat leest elke campagne die niets opleverde als gratis.
+- **Kanaal volgt uit bron/medium** (`lib/leads/kanaal.ts`), niet uit GA4's kanaalgroep:
+  Pmax en Demand Gen staan daar als "Cross-network" terwijl ze gewoon Google Ads zijn, en
+  een extra kolom kost opslag. `(data not available)` is "Onbekend", ook al is het
+  vermoedelijk Google Ads: raden-als-feit hoort niet in een kostentabel.
+- **Vacatures tellen mee.** `generate_lead_vacature` is ruim 30% van de events en hoort bij
+  de Meta-vacaturecampagnes; het is geen autolead. Gevraagd was alle events met "lead" in de
+  naam, dus ze zitten erin en zijn weg te filteren via Soort lead.
+- **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
+- **Weergave.** Alles filtert in het geheugen (één ophaalactie). De modellentabel toont
+  alleen leads mét model (een bovenste rij "Onbekend" zegt niets over welke auto's mensen
+  willen; de omvang staat in de toelichting), en bij merken staat "Onbekend" onderaan. Een
+  sterretje achter een bedrag betekent dat de rij ook betaalde leads zonder bekende kosten
+  bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
+  dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
+  bij elkaar horen.
+
 ### Monitoren → Budget beheer
 
 Onder **Kanalen** staat een eigen groep **Monitoren** met één tabblad, **Budget beheer**

@@ -15,6 +15,7 @@ import {
   IconPhoto,
   IconSearch,
   IconSettings,
+  IconTarget,
   IconTrophy,
   IconUserCircle,
 } from "@/components/icons";
@@ -31,6 +32,7 @@ export type DashboardView =
   | "organisch"
   | "account-ontwikkeling"
   | "website"
+  | "leads"
   | "selligent"
   | "koppeltabel"
   | "budget-beheer"
@@ -180,6 +182,15 @@ export default function Sidebar({
             label="Website"
             active={actief === "website"}
             onClick={() => onNavigate("website")}
+          />
+          {/* Leads staat direct onder Website: het zijn de leads die op de website
+              worden afgevuurd (GA4-events), gekoppeld aan wat de betaalde kanalen kostten.
+              Je komt er vanuit de vraag "wat leverde het op", niet vanuit een kanaal. */}
+          <NavigationItem
+            icon={<IconTarget />}
+            label="Leads"
+            active={actief === "leads"}
+            onClick={() => onNavigate("leads")}
           />
           {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
               erboven gaan over wat er in een periode gebeurde, dit over de stand van het

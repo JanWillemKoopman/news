@@ -197,10 +197,19 @@ export async function haalOp(
   van: string,
   tot: string,
   filter?: WindsorFilter,
+  /**
+   * Alleen deze accounts, in plaats van alle accounts van de connector.
+   *
+   * Bestaat voor het tabblad Leads, dat uitsluitend over udenhout.nl gaat: één GA4-
+   * property uit de zestien. Zonder deze parameter haalt de opvraging alle properties op
+   * en moet er achteraf worden weggefilterd — wat de omvang van het antwoord vergroot
+   * zonder dat iets ervan wordt gebruikt.
+   */
+  alleenAccounts?: string[],
 ): Promise<WindsorRij[]> {
   const sleutel = apiSleutel();
 
-  const accounts = accountsVoor(connector);
+  const accounts = alleenAccounts ?? accountsVoor(connector);
   if (accounts.length === 0) return [];
 
   const query = new URLSearchParams({

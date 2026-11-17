@@ -40,6 +40,7 @@ import {
   GA4_EVENTPAGINAVELDEN,
   GA4_EVENTVELDEN,
   GA4_LANDINGSVELDEN,
+  GA4_LEADVELDEN,
   GA4_PAGINAVELDEN,
   GA4_VERKEERVELDEN,
   OPHAALVELDEN,
@@ -47,6 +48,8 @@ import {
   isConversieActie,
   labelVoorConversie,
 } from "@/lib/windsor/velden";
+import { LEADS_GA4_PROPERTY, leadsVenster } from "@/lib/leads/bereik";
+import { leadRijenUitWindsor, type LeadRij } from "@/lib/leads/normaliseer";
 
 /** Hoeveel dagen terug de sync standaard opnieuw ophaalt. */
 export const VENSTER_DAGEN = 30;
@@ -1617,6 +1620,124 @@ export async function syncGa4EventPaginas(
     onderdeel: "ga4-event-paginas",
     gelezen: rijen.length,
     geschreven,
+    duurMs: Date.now() - start,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Leads van udenhout.nl — het tabblad Leads (migratie 0033)
+// ---------------------------------------------------------------------------
+
+const LEAD_KOLOMMEN = [
+  "datum",
+  "event",
+  "bron_medium",
+  "campagne",
+  "merk",
+  "model",
+  "formulier",
+  "aantal",
+];
+
+/**
+ * Schrijft de leadrijen met één multi-row insert per batch.
+ *
+ * Bewust een kale `insert` en geen upsert: de tabel heeft geen primary key (zie de kop van
+ * migratie 0033) en wordt vlak ervoor leeggemaakt. `leadRijenUitWindsor` heeft de rijen
+ * al op hun sleutel samengevoegd, dus er kunnen geen dubbelen binnenkomen.
+ */
+async function schrijfLeads(client: Client, leads: LeadRij[]): Promise<number> {
+  const BATCH = 500;
+  for (let i = 0; i < leads.length; i += BATCH) {
+    const deel = leads.slice(i, i + BATCH);
+    const waarden: unknown[] = [];
+    const groepen = deel.map((r) => {
+      const rij = [r.datum, r.event, r.bronMedium, r.campagne, r.merk, r.model, r.formulier, r.aantal];
+      const plaatshouders = rij.map((waarde) => {
+        waarden.push(waarde);
+        return `$${waarden.length}`;
+      });
+      return `(${plaatshouders.join(", ")})`;
+    });
+    await client.query(
+      `insert into dataloket.windsor_ga4_leads (${LEAD_KOLOMMEN.join(", ")}) values ${groepen.join(", ")}`,
+      waarden,
+    );
+  }
+  return leads.length;
+}
+
+export interface LeadsSyncOpties {
+  /** Voor tests: een andere opvraging dan de echte Windsor-aanroep. */
+  haal?: typeof haalOp;
+  /** Voor tests: een vast "nu", zodat het venster niet met de klok meeschuift. */
+  nu?: Date;
+}
+
+/**
+ * De lead-events van udenhout.nl: de laatste dertig dagen, elke nacht vervangen.
+ *
+ * Dit is het enige onderdeel van de sync dat zijn tabel **leegmaakt** in plaats van bij te
+ * werken, en dat is de bedoeling: de leadtabel is een rollend venster van dertig dagen en
+ * geen archief (zie de kop van migratie 0033). Dat maakt hem klein, en het maakt
+ * opruimen overbodig — de tabel kan niet groeien.
+ *
+ * Twee dingen houden dat veilig:
+ *
+ *  1. **Eerst ophalen, dan pas wissen.** Faalt Windsor, dan staat gisteren's data er nog.
+ *     Een nacht zonder verversing is een stuk beter dan een lege tabel.
+ *  2. **Een leeg antwoord is een fout, geen nul.** Dertig dagen zonder één lead op
+ *     udenhout.nl bestaat niet; een leeg antwoord is een storing aan Windsors kant of een
+ *     verkeerd veld, en dan hoort de tabel ongemoeid te blijven.
+ *
+ * Wissen en schrijven staan in één transactie: een lezer ziet de oude of de nieuwe stand,
+ * nooit een halve.
+ *
+ * Staat buiten de stukken van `draai`: het venster is altijd dezelfde dertig dagen,
+ * welke periode de aanroeper ook vroeg — zie `lib/windsor/uitvoeren.ts`.
+ */
+export async function syncGa4Leads(
+  client: Client,
+  opties: LeadsSyncOpties = {},
+): Promise<SyncResultaat> {
+  const start = Date.now();
+  const { van, tot } = leadsVenster(opties.nu);
+  const haal = opties.haal ?? haalOp;
+
+  const rijen = await haal(
+    "googleanalytics4",
+    GA4_LEADVELDEN,
+    van,
+    tot,
+    [["event_name", "contains", "lead"]],
+    [LEADS_GA4_PROPERTY],
+  );
+  const leads = leadRijenUitWindsor(rijen);
+
+  if (leads.length === 0) {
+    return {
+      onderdeel: "ga4-leads",
+      gelezen: rijen.length,
+      geschreven: 0,
+      duurMs: Date.now() - start,
+      fout: `geen lead-events ontvangen voor ${van} t/m ${tot}; de tabel is ongemoeid gelaten`,
+    };
+  }
+
+  await client.query("begin");
+  try {
+    await client.query("delete from dataloket.windsor_ga4_leads");
+    await schrijfLeads(client, leads);
+    await client.query("commit");
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    throw err;
+  }
+
+  return {
+    onderdeel: "ga4-leads",
+    gelezen: rijen.length,
+    geschreven: leads.length,
     duurMs: Date.now() - start,
   };
 }
