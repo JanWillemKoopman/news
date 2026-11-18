@@ -15,6 +15,7 @@ import {
   ONBEKEND,
   filterRegels,
   groepeer,
+  heeftFilters,
   kostenPerLead,
   leadSoort,
   perDag,
@@ -140,14 +141,20 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const totalen = useMemo(() => telTotalen(regels), [regels]);
   const totalenAlles = useMemo(() => telTotalen(alleRegels), [alleRegels]);
 
-  const filtersActief =
-    filters.events.length > 0 ||
-    filters.kanalen.length > 0 ||
-    filters.merken.length > 0 ||
-    filters.betaald !== "alle";
+  const filtersActief = heeftFilters(filters);
 
   const eventOpties = useMemo(() => opties(alleRegels, (r) => r.event), [alleRegels]);
   const kanaalOpties = useMemo(() => opties(alleRegels, (r) => r.kanaal), [alleRegels]);
+  // De ruwe GA4-waarden, op volgorde van grootte. Een lege waarde heet "Onbekend", net als
+  // bij merk en model: een lege regel in een keuzelijst is niet aan te klikken.
+  const bronMediumOpties = useMemo(
+    () => opties(alleRegels, (r) => waardeOfOnbekend(r.bronMedium)),
+    [alleRegels],
+  );
+  const campagneOpties = useMemo(
+    () => opties(alleRegels, (r) => waardeOfOnbekend(r.campagne)),
+    [alleRegels],
+  );
   const merkOpties = useMemo(() => opties(alleRegels, (r) => waardeOfOnbekend(r.merk)), [alleRegels]);
   const eventLabels = useMemo(
     () => Object.fromEntries(eventOpties.map((e) => [e, leadSoort(e)])),
@@ -267,6 +274,20 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
             options={kanaalOpties}
             selected={filters.kanalen}
             onChange={(kanalen) => setFilters((f) => ({ ...f, kanalen }))}
+          />
+          <FilterSelect
+            label="Sessiebron / medium"
+            options={bronMediumOpties}
+            selected={filters.bronMedia}
+            onChange={(bronMedia) => setFilters((f) => ({ ...f, bronMedia }))}
+            zoekbaar
+          />
+          <FilterSelect
+            label="Sessiecampagne"
+            options={campagneOpties}
+            selected={filters.campagnes}
+            onChange={(campagnes) => setFilters((f) => ({ ...f, campagnes }))}
+            zoekbaar
           />
           <FilterSelect
             label="Merk"
@@ -423,9 +444,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           <ul className="mt-3 flex flex-col gap-2 text-meta text-ink-muted">
             <li>
               <strong className="text-ink">Een lead</strong> is een GA4-event met &quot;lead&quot; in de
-              naam op udenhout.nl, over de laatste dertig dagen. Het telt events, niet unieke
-              personen: iemand die twee formulieren invult is twee leads. Vacatures
-              (generate_lead_vacature) tellen mee; filter ze weg via Soort lead.
+              naam op udenhout.nl, over de laatste dertig dagen, plus een paar events die het team
+              als lead aanwees (de bedankpagina van de werkplaatsplanner en de verhuurevents). Het
+              telt events, niet unieke personen: iemand die twee formulieren invult is twee leads.
+              Vacatures en de werkplaatsplanner tellen mee en zijn groot; filter ze weg via Soort
+              lead.
             </li>
             <li>
               <strong className="text-ink">Betaald</strong> is verkeer met medium cpc of paid. De

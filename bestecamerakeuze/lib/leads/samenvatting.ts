@@ -22,14 +22,42 @@ export type BetaaldFilter = "alle" | "betaald" | "onbetaald";
 export interface LeadFilters {
   /** Lege lijst = geen filter. */
   events: string[];
+  /** Het kanaal zoals dit dashboard het afleidt ("Google Ads", "Direct", …). */
   kanalen: string[];
+  /**
+   * De sessiebron/medium zoals GA4 hem levert, onbewerkt ("google / cpc",
+   * "gaspedaal.nl / referral"). Het kanaal hierboven is een samenvatting daarvan; dit is
+   * de waarde zelf, voor wie wil weten welke bron precies de lead bracht.
+   */
+  bronMedia: string[];
+  /** De sessiecampagne zoals GA4 hem levert, onbewerkt ("T | Branding VDU", "(organic)"). */
+  campagnes: string[];
   merken: string[];
   betaald: BetaaldFilter;
 }
 
-export const GEEN_FILTERS: LeadFilters = { events: [], kanalen: [], merken: [], betaald: "alle" };
+export const GEEN_FILTERS: LeadFilters = {
+  events: [],
+  kanalen: [],
+  bronMedia: [],
+  campagnes: [],
+  merken: [],
+  betaald: "alle",
+};
 
-/** "Onbekend" voor een lege merk-, model- of formulierwaarde. */
+/** Staat er minstens één filter aan? */
+export function heeftFilters(f: LeadFilters): boolean {
+  return (
+    f.events.length > 0 ||
+    f.kanalen.length > 0 ||
+    f.bronMedia.length > 0 ||
+    f.campagnes.length > 0 ||
+    f.merken.length > 0 ||
+    f.betaald !== "alle"
+  );
+}
+
+/** "Onbekend" voor een lege merk-, model-, formulier-, bron- of campagnewaarde. */
 export const ONBEKEND = "Onbekend";
 
 export function waardeOfOnbekend(waarde: string): string {
@@ -40,6 +68,8 @@ export function waardeOfOnbekend(waarde: string): string {
 export function voldoetAanFilters(r: LeadRegel, f: LeadFilters): boolean {
   if (f.events.length > 0 && !f.events.includes(r.event)) return false;
   if (f.kanalen.length > 0 && !f.kanalen.includes(r.kanaal)) return false;
+  if (f.bronMedia.length > 0 && !f.bronMedia.includes(waardeOfOnbekend(r.bronMedium))) return false;
+  if (f.campagnes.length > 0 && !f.campagnes.includes(waardeOfOnbekend(r.campagne))) return false;
   if (f.merken.length > 0 && !f.merken.includes(waardeOfOnbekend(r.merk))) return false;
   if (f.betaald === "betaald" && r.platform === null) return false;
   if (f.betaald === "onbetaald" && r.platform !== null) return false;
@@ -144,6 +174,16 @@ export function perDag(regels: LeadRegel[], van: string, tot: string): DagPunt[]
 }
 
 /**
+ * Namen voor de events die het team als lead aanwees (`LEADS_EXTRA_EVENTS`) en waarvan de
+ * naam zonder uitleg niet voor zich spreekt. Een bedankpagina is geen formulier: de naam
+ * zegt dat het om een bezoek aan de bevestigingspagina gaat.
+ */
+const EVENT_NAMEN: Record<string, string> = {
+  bedanktpagina_werkplaatsplanner: "Werkplaatsplanner (bedankpagina)",
+  verhuur_aanvraag: "Autoverhuur aanvraag",
+};
+
+/**
  * Een leesbare naam voor een leadevent.
  *
  * `generate_lead_proefrit` → "Proefrit". Het kale `generate_lead` is het algemene event
@@ -152,6 +192,8 @@ export function perDag(regels: LeadRegel[], van: string, tot: string): DagPunt[]
  * tabel terug te vinden is in GA4.
  */
 export function leadSoort(event: string): string {
+  const bekend = EVENT_NAMEN[event];
+  if (bekend) return bekend;
   const rest = event.replace(/^generate_lead_?/i, "").replace(/_/g, " ").trim();
   if (rest === "") return "Algemeen";
   if (rest === rest.toUpperCase() && rest.length <= 6) return rest; // HMODH

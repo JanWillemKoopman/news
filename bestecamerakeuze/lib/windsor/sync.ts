@@ -48,7 +48,7 @@ import {
   isConversieActie,
   labelVoorConversie,
 } from "@/lib/windsor/velden";
-import { LEADS_GA4_PROPERTY, leadsVenster } from "@/lib/leads/bereik";
+import { LEADS_EXTRA_EVENTS, LEADS_GA4_PROPERTY, leadsVenster } from "@/lib/leads/bereik";
 import { leadRijenUitWindsor, type LeadRij } from "@/lib/leads/normaliseer";
 
 /** Hoeveel dagen terug de sync standaard opnieuw ophaalt. */
@@ -1667,6 +1667,21 @@ async function schrijfLeads(client: Client, leads: LeadRij[]): Promise<number> {
   return leads.length;
 }
 
+/**
+ * Het filter dat de lead-events bij Windsor vraagt: alles met "lead" in de naam, of een van
+ * de events die het team zelf als lead aanwees (`LEADS_EXTRA_EVENTS`).
+ *
+ * Aan Windsors kant gefilterd, zodat wat geen lead is niet eens over de lijn komt.
+ * `leadRijenUitWindsor` filtert daarna nog eens met dezelfde regel, als vangnet.
+ */
+export function leadEventFilter(): WindsorFilter {
+  const filter: WindsorFilter = [["event_name", "contains", "lead"]];
+  for (const event of LEADS_EXTRA_EVENTS) {
+    filter.push("or", ["event_name", "eq", event]);
+  }
+  return filter;
+}
+
 export interface LeadsSyncOpties {
   /** Voor tests: een andere opvraging dan de echte Windsor-aanroep. */
   haal?: typeof haalOp;
@@ -1709,7 +1724,7 @@ export async function syncGa4Leads(
     GA4_LEADVELDEN,
     van,
     tot,
-    [["event_name", "contains", "lead"]],
+    leadEventFilter(),
     [LEADS_GA4_PROPERTY],
   );
   const leads = leadRijenUitWindsor(rijen);

@@ -605,9 +605,31 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   Pmax en Demand Gen staan daar als "Cross-network" terwijl ze gewoon Google Ads zijn, en
   een extra kolom kost opslag. `(data not available)` is "Onbekend", ook al is het
   vermoedelijk Google Ads: raden-als-feit hoort niet in een kostentabel.
-- **Vacatures tellen mee.** `generate_lead_vacature` is ruim 30% van de events en hoort bij
-  de Meta-vacaturecampagnes; het is geen autolead. Gevraagd was alle events met "lead" in de
-  naam, dus ze zitten erin en zijn weg te filteren via Soort lead.
+- **Wat telt als lead: "lead" in de naam, plus een lijst die het team zelf aanwees.** De lijst
+  staat in `LEADS_EXTRA_EVENTS` (`lib/leads/bereik.ts`): `bedanktpagina_werkplaatsplanner`,
+  `verhuur_aanvraag`, `verhuuractie_verzonden`, `verhuur_losse_formulieren` en
+  `offerte_onderhoud`. De regel zit op één plek (`isLeadEvent`) en het Windsor-filter wordt
+  eruit gebouwd (`leadEventFilter`: `contains lead` of `eq` per event). Een event toevoegen is
+  dus één regel in die lijst; de volgende sync haalt hem op. **Meten wat er werkelijk vuurt**
+  (november 2026, drie maanden, alle zestien properties): alleen
+  `bedanktpagina_werkplaatsplanner` vuurt, 65–270 keer per dag. De vier verhuur-/offerte-events
+  stonden nergens; ze staan in de lijst zodat ze meetellen zodra ze gaan vuren. Een verkeerd
+  gespelde naam geeft geen fout maar ook nooit een rij.
+- **De werkplaatsplanner is groter dan alle andere leads samen** (±4.500 van ±6.100 events in
+  dertig dagen) en is een bedankpagina, geen formulier. Hij telt mee omdat het team dat
+  vroeg, maar hij verdrukt de rest: de kosten van een campagne worden over meer leads
+  verdeeld (kosten per betaalde lead zakte van ± € 46 naar ± € 16) en het aandeel onbetaald
+  stijgt. Filter hem weg via Soort lead om de autoleads te zien. Een bedankpagina kan bij een
+  verversing opnieuw vuren; dat is niet gecontroleerd.
+- **Vacatures tellen mee.** `generate_lead_vacature` is ruim 30% van de events met "lead" in de
+  naam en hoort bij de Meta-vacaturecampagnes; het is geen autolead. Gevraagd was alle events
+  met "lead" in de naam, dus ze zitten erin en zijn weg te filteren via Soort lead.
+- **Filters.** Soort lead, Kanaal, Sessiebron / medium, Sessiecampagne en Merk, plus de
+  schakelaar Alle/Betaald/Onbetaald; tussen filters geldt "en", binnen een filter "of". Kanaal
+  is een samenvatting die dit dashboard afleidt (`kanaal.ts`); Sessiebron / medium en
+  Sessiecampagne zijn de ruwe GA4-waarden, voor wie wil weten welke bron of campagne
+  precies de lead bracht. Een lege waarde heet "Onbekend". Ze staan bewust naast elkaar en
+  niet in plaats van elkaar: het kanaal is te kiezen zonder de schrijfwijzen van GA4 te kennen.
 - **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
 - **Weergave.** Alles filtert in het geheugen (één ophaalactie). De modellentabel toont
   alleen leads mét model (een bovenste rij "Onbekend" zegt niets over welke auto's mensen

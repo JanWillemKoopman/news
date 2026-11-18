@@ -1,3 +1,4 @@
+import { LEADS_EXTRA_EVENTS } from "@/lib/leads/bereik";
 import { getal, tekst, type WindsorRij } from "@/lib/windsor/api";
 
 /**
@@ -68,9 +69,14 @@ export function schoonParameter(waarde: unknown): string {
   return SJABLOON_WAARDEN.has(schoon.toLowerCase()) ? "" : schoon;
 }
 
-/** Een event telt mee zodra "lead" ergens in de naam staat, in welke schrijfwijze ook. */
+/**
+ * Een event telt mee zodra "lead" ergens in de naam staat, in welke schrijfwijze ook, of
+ * als het een van de events is die het team zelf aanwees (`LEADS_EXTRA_EVENTS`).
+ */
 export function isLeadEvent(naam: string): boolean {
-  return /lead/i.test(naam);
+  if (/lead/i.test(naam)) return true;
+  const klein = naam.toLowerCase();
+  return LEADS_EXTRA_EVENTS.some((e) => e.toLowerCase() === klein);
 }
 
 function sleutelVan(r: LeadRij): string {

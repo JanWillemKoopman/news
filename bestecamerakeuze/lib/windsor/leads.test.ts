@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Client } from "pg";
-import { LEADS_GA4_PROPERTY } from "@/lib/leads/bereik";
-import { syncGa4Leads } from "@/lib/windsor/sync";
+import { LEADS_EXTRA_EVENTS, LEADS_GA4_PROPERTY } from "@/lib/leads/bereik";
+import { leadEventFilter, syncGa4Leads } from "@/lib/windsor/sync";
 import type { WindsorRij } from "@/lib/windsor/api";
 import { GA4_LEADVELDEN } from "@/lib/windsor/velden";
 
@@ -57,8 +57,37 @@ test("vraagt alleen de property van udenhout.nl en alleen lead-events op, over d
   assert.deepEqual(velden, GA4_LEADVELDEN);
   assert.equal(van, "2026-10-18");
   assert.equal(tot, "2026-11-16");
-  assert.deepEqual(filter, [["event_name", "contains", "lead"]]);
+  assert.deepEqual(filter, leadEventFilter());
   assert.deepEqual(accounts, [LEADS_GA4_PROPERTY]);
+});
+
+test("het Windsor-filter vraagt alles met 'lead' én elk aangewezen extra event, met 'or'", () => {
+  const filter = leadEventFilter();
+  assert.deepEqual(filter[0], ["event_name", "contains", "lead"]);
+  // Na het eerste element komen paren van "or" en een gelijkheidsvoorwaarde, in volgorde.
+  assert.equal(filter.length, 1 + 2 * LEADS_EXTRA_EVENTS.length);
+  LEADS_EXTRA_EVENTS.forEach((event, i) => {
+    assert.equal(filter[1 + 2 * i], "or");
+    assert.deepEqual(filter[2 + 2 * i], ["event_name", "eq", event]);
+  });
+  // Nergens een "and": dat zou van de lijst een lege verzameling maken.
+  assert.equal(filter.includes("and"), false);
+});
+
+test("de extra events worden meegeschreven, ook als er 'lead' niet in de naam staat", async () => {
+  const { client, queries } = nepClient();
+  const uitkomst = await syncGa4Leads(client, {
+    nu: NU,
+    haal: async () => [
+      windsorRij(),
+      windsorRij({ event_name: "bedanktpagina_werkplaatsplanner", event_count: 150 }),
+      windsorRij({ event_name: "page_view", event_count: 999 }),
+    ],
+  });
+  assert.equal(uitkomst.geschreven, 2);
+  const insert = queries.find((q) => q.sql.startsWith("insert"));
+  const events = [insert?.waarden[1], insert?.waarden[9]];
+  assert.deepEqual(events.sort(), ["bedanktpagina_werkplaatsplanner", "generate_lead_proefrit"]);
 });
 
 test("wist en schrijft in één transactie, in die volgorde", async () => {
