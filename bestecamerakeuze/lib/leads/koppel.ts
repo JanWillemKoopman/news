@@ -60,7 +60,7 @@ export interface LeadInvoer {
 
 /** De uitgaven van één campagne over het hele venster, uit `v_leads_uitgaven`. */
 export interface UitgavenInvoer {
-  bron: "google" | "meta";
+  bron: "google" | "meta" | "linkedin";
   campagne: string;
   uitgaven: number;
   klikken: number;

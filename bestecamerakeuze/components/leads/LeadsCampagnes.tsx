@@ -42,7 +42,7 @@ export default function LeadsCampagnes({ rijen, totaal }: Props) {
       <header className="border-b border-line px-5 py-4">
         <h2 className="font-sans-w7 text-cell font-semibold text-ink">Betaalde campagnes</h2>
         <p className="mt-0.5 text-meta text-ink-muted">
-          Elke campagne van Google Ads en Meta Ads met zijn echte uitgaven, gekoppeld aan de leads
+          Elke campagne van Google Ads, Meta Ads en LinkedIn Ads met zijn echte uitgaven, gekoppeld aan de leads
           uit GA4 op platform en campagnenaam. Campagnes zonder leads staan er ook in. Bij een
           filter op de leads staan hier alleen de toegerekende kosten van de leads binnen het filter.
         </p>

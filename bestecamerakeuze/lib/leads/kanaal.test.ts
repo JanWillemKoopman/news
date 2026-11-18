@@ -8,13 +8,13 @@ test("betaald verkeer krijgt het platform waar de kosten te vinden zijn", () => 
   assert.deepEqual(kanaalVan("ig / paid"), { kanaal: "Meta Ads", platform: "meta" });
 });
 
-test("Bing en LinkedIn zijn betaald maar hebben geen kostenbron", () => {
+test("Bing is betaald maar heeft geen kostenbron; LinkedIn wel", () => {
   const bing = kanaalVan("bing / cpc");
   const linkedin = kanaalVan("linkedin / paid");
   assert.equal(bing.platform, "microsoft");
   assert.equal(linkedin.platform, "linkedin");
   assert.equal(heeftKostenbron(bing.platform), false);
-  assert.equal(heeftKostenbron(linkedin.platform), false);
+  assert.equal(heeftKostenbron(linkedin.platform), true);
   assert.equal(heeftKostenbron("google"), true);
   assert.equal(heeftKostenbron("meta"), true);
   assert.equal(heeftKostenbron(null), false);

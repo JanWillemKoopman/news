@@ -560,8 +560,8 @@ andere aanvragen die als GA4-event met "lead" in de naam worden afgevuurd, met m
 kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 
 - **Afbakening staat op één plek** (`lib/leads/bereik.ts`): GA4-property 255949462
-  (udenhout.nl), Google Ads-account "Udenhout", Meta-account "Van den Udenhout", dertig
-  dagen tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
+  (udenhout.nl), Google Ads-account "Udenhout", Meta-account "Van den Udenhout",
+  LinkedIn-account "Van den Udenhout Groep", dertig dagen tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
   `generate_lead_*`; de andere properties van het concern leverden nul lead-events. Het
   aparte Google Ads-account "Van den Udenhout Lease" staat niet in de Windsor-sync.
 - **De leadtabel is een rollend venster en geen archief** (`windsor_ga4_leads`, migratie
@@ -610,8 +610,12 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   hetzelfde getal als de totaalregel, en dat is bedoeld. Met een filter op de leads bestaat het
   totaal niet meer (campagnekosten zijn niet op merk of model te filteren): dan zijn het
   toegerekende kosten van de selectie, en dat staat bij het kerncijfer.
-- **Betaald is niet hetzelfde als "kosten bekend".** Bing en LinkedIn zijn betaald maar hebben
-  hier geen kostenbron (`geen-bron`), en een betaalde lead met een campagne die bij Google of
+- **Betaald is niet hetzelfde als "kosten bekend".** Bing is betaald maar heeft hier geen
+  kostenbron (`geen-bron`). LinkedIn heeft er wel een (klein: ± € 1.600 per maand, drie
+  campagnes), maar de UTM-naam in GA4 is een korte slug ("vriendenprijs") terwijl de campagne
+  bij LinkedIn "VW Bedrijfswagens - Vriendenprijs - 2026" heet: die koppelt niet, wat bewust niet
+  met raden wordt opgelost. Het geld staat dan wél in het totaal (als "zonder lead"). Een
+  betaalde lead met een campagne die bij Google of
   Meta niet bestaat (`(not set)`, een andere naam) is `geen-match`. Beide krijgen
   `kosten: null` en staan in de UI als "onbekend", nooit als € 0: nul zou beweren dat het
   gratis was. "Kosten per betaalde lead" deelt alleen door leads waarvan de kosten bekend zijn.

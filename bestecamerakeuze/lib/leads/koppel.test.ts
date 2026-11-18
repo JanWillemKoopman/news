@@ -180,3 +180,35 @@ test("de uitgaven per platform zijn de echte uitgaven, ook van campagnes zonder 
   assert.deepEqual(k.uitgavenPerPlatform, { google: 150, meta: 30 });
   assert.equal(k.uitgavenTotaal, 180);
 });
+
+test("LinkedIn-uitgaven worden gekoppeld op platform en campagnenaam", () => {
+  const k = koppelLeads(
+    [lead({ bronMedium: "linkedin / paid", campagne: "Vriendenprijs 2026", aantal: 2 })],
+    [{ bron: "linkedin", campagne: "Vriendenprijs 2026", uitgaven: 400, klikken: 5, vertoningen: 50 }],
+  );
+  assert.equal(k.regels[0].platform, "linkedin");
+  assert.equal(k.regels[0].status, "toegerekend");
+  assert.equal(k.regels[0].kosten, 400);
+  assert.deepEqual(k.uitgavenPerPlatform, { linkedin: 400 });
+});
+
+test("een LinkedIn-lead met een andere campagnenaam krijgt geen kosten, maar de uitgaven blijven in het totaal", () => {
+  // In werkelijkheid: GA4 kent "vriendenprijs", LinkedIn "VW Bedrijfswagens - Vriendenprijs - 2026".
+  const k = koppelLeads(
+    [lead({ bronMedium: "linkedin / paid", campagne: "vriendenprijs", aantal: 1 })],
+    [{ bron: "linkedin", campagne: "VW Bedrijfswagens - Vriendenprijs - 2026", uitgaven: 775, klikken: 119, vertoningen: 1 }],
+  );
+  assert.equal(k.regels[0].status, "geen-match");
+  assert.equal(k.regels[0].kosten, null);
+  assert.equal(k.uitgavenTotaal, 775);
+  assert.equal(k.zonderLead.uitgaven, 775);
+});
+
+test("LinkedIn en Google met dezelfde campagnenaam blijven gescheiden", () => {
+  const k = koppelLeads(
+    [lead({ aantal: 1 }), lead({ bronMedium: "linkedin / paid", aantal: 1 })],
+    [uitgave({ uitgaven: 10 }), uitgave({ bron: "linkedin", uitgaven: 90 })],
+  );
+  assert.equal(k.regels.find((r) => r.platform === "google")?.kosten, 10);
+  assert.equal(k.regels.find((r) => r.platform === "linkedin")?.kosten, 90);
+});
