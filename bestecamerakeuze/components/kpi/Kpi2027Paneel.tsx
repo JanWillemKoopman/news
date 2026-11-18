@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
+import GaOverzichtTabel from "@/components/kpi/GaOverzichtTabel";
 import KpiKaart from "@/components/kpi/KpiKaart";
 import { IconInfo, IconRefresh } from "@/components/icons";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
@@ -213,6 +214,8 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting of bijgeschat.
         </span>
       </p>
+
+      {website && website.kpis.length > 0 && <GaOverzichtTabel website={website} />}
 
       {website && website.kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">

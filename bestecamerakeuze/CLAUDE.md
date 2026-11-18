@@ -797,6 +797,11 @@ realisatie van 2027.
   erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
   de koppeling verandert.
 
+- **Bovenaan staat dezelfde overzichtstabel als op KPI's 2027 Syntec** (`GaOverzichtTabel.tsx`),
+  voor de gekozen website: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie en
+  Voortgang, met de definities eronder. Kader, kolommen, regels en definities zijn gedeeld
+  (`OverzichtTabel.tsx`); alleen de uitleg van de kolom 2026 verschilt. Bewust **zonder
+  totaalregel**: sessies, gebruikers en aanvragen optellen betekent niets.
 - **Het groeipercentage is per KPI met de hand aan te passen** (november 2026, op verzoek;
   geldt ook voor KPI's 2027 Syntec). Klik op het percentage in het kaartje Groei, typ een
   getal (komma of punt, "-3" mag) en druk op Enter of klik weg; Escape annuleert. Target,
@@ -855,11 +860,12 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
-- **Bovenaan staat een overzichtstabel** (`SyntecOverzichtTabel.tsx`), in de indeling van de
+- **Bovenaan staat een overzichtstabel** (`SyntecOverzichtTabel.tsx`, opgebouwd uit de
+  gedeelde onderdelen in `OverzichtTabel.tsx`, net als die op KPI's 2027 GA), in de indeling van de
   doelentabel van het team: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie
   2027 en Voortgang, met de definities er direct onder. Elk getal komt uit dezelfde
   `SyntecKpiRegel` als de kaart, dus tabel en kaarten lopen niet uit elkaar. Voortgang
-  (`voortgang` in `rekenen.ts`, getest) is de realisatie tegen het lineaire deel van het
+  (`voortgang` in `lib/kpi2027/rekenen.ts`, getest) is de realisatie tegen het lineaire deel van het
   jaartarget tot de peildatum (target × dag ÷ 365), als ±%; tot 2027 begint een streepje.
 - **"Offerte + private lease" is een combinatiekaart** (`SYNTEC_COMBINATIES`), geen KPI:
   hij staat in de groep Eigen website maar telt niet mee in het groepstotaal. Reden: sinds
