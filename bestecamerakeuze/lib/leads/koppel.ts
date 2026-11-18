@@ -104,6 +104,12 @@ export interface Koppeling {
   zonderLead: { uitgaven: number; campagnes: number };
   /** Alles wat Google en Meta in dit venster uitgaven. */
   uitgavenTotaal: number;
+  /**
+   * De echte uitgaven per platform, ook van campagnes zonder lead en ook die niet aan een
+   * lead te koppelen zijn. De kanalentabel toont dit en niet de toegerekende kosten: een
+   * platform dat € 32.827 uitgaf, hoort daar niet als € 27.229 te staan.
+   */
+  uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
 }
 
 function sleutelVan(platform: BetaaldPlatform, campagne: string): string {
@@ -127,7 +133,9 @@ export function koppelLeads(leads: LeadInvoer[], uitgaven: UitgavenInvoer[]): Ko
   // 1. De uitgaven per (platform, campagne). Het eerste voorkomen levert de weergavenaam.
   const kosten = new Map<string, UitgavenPerCampagne>();
   let uitgavenTotaal = 0;
+  const uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>> = {};
   for (const u of uitgaven) {
+    uitgavenPerPlatform[u.bron] = (uitgavenPerPlatform[u.bron] ?? 0) + u.uitgaven;
     // Ook een Ads-campagne zonder bruikbare naam telt mee: ze kan nooit aan GA4 gekoppeld
     // worden (een lead met zo'n campagne is niet te herleiden), maar het geld is wel
     // uitgegeven en hoort dus in het totaal en in "zonder lead".
@@ -223,7 +231,7 @@ export function koppelLeads(leads: LeadInvoer[], uitgaven: UitgavenInvoer[]): Ko
       a.campagne.localeCompare(b.campagne, "nl"),
   );
 
-  return { regels, campagnes, zonderLead, uitgavenTotaal };
+  return { regels, campagnes, zonderLead, uitgavenTotaal, uitgavenPerPlatform };
 }
 
 /** Hoe een platform in een zin heet, voor de uitleg bij "kosten onbekend". */

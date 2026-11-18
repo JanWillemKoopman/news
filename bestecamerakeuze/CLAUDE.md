@@ -589,18 +589,37 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   naam alleen. Bing-verkeer in GA4 heeft dezelfde campagnenamen als Google ("T | Branding
   VDU"); op naam alleen kregen Bing-leads Google's kosten. De naam wordt genormaliseerd
   (hoofdletters, spaties, soort streepje: Meta schrijft een gedachtestreepje).
-- **Kosten zijn een verdeling, geen meting.** De uitgaven van een campagne gaan gelijk over
-  zijn leads (€ 500 en tien leads = € 50 per lead, ook voor een vacature- of proefritlead). Dat
-  staat ook zo op het scherm. `koppel.test.ts` rekent na dat toegerekende kosten plus uitgaven
-  zonder lead precies de uitgaven zijn: er mag geen euro zoekraken.
+- **De totale uitgaven zijn de basis, en elke tabel telt erbij op.** Uitgaven bestaan per
+  platform en campagne (een feit uit Google Ads en Meta); leads bestaan per lead. Onder het
+  campagneniveau (merk, model, soort, formulier) is geld per lead dus een **indicatie**: de
+  uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads = € 50 per lead,
+  ook voor een vacature- of proefritlead). Dat staat zo op het scherm. Omdat een campagne zonder
+  lead geen merk of model heeft, staat zijn geld op een eigen regel **"Campagnes zonder
+  lead"** onder die tabellen; rijen plus die regel zijn precies de totale uitgaven, en elke
+  tabel heeft een **totaalregel** die álle rijen telt, ook die achter "Toon alle" (het totaal
+  komt van buiten de tabel, niet uit de zichtbare rijen). `samenvatting.test.ts` rekent na dat
+  dit voor merk, soort, formulier, model en kanalen optelt; er mag geen euro zoekraken.
+- **De kanalentabel toont de echte uitgaven per platform** (`metPlatformUitgaven`,
+  `uitgavenPerPlatform`), niet de toegerekende kosten: een platform dat € 32.827 uitgaf stond
+  eerder op € 27.229 omdat campagnes zonder lead buiten beeld vielen, en dat was voor collega's
+  onbegrijpelijk. Een platform zonder lead krijgt toch een rij.
+- **Kosten per betaalde lead.** Zonder filters: **alle** uitgaven van Google en Meta gedeeld
+  door **alle** betaalde leads van Google en Meta (`kostenPerLeadTotaal`, inclusief
+  campagnes die niets opleverden en leads zonder herkenbare campagne). Een rij in een
+  tabel deelt de aan haar toegerekende kosten door haar leads met bekende kosten; dat is niet
+  hetzelfde getal als de totaalregel, en dat is bedoeld. Met een filter op de leads bestaat het
+  totaal niet meer (campagnekosten zijn niet op merk of model te filteren): dan zijn het
+  toegerekende kosten van de selectie, en dat staat bij het kerncijfer.
 - **Betaald is niet hetzelfde als "kosten bekend".** Bing en LinkedIn zijn betaald maar hebben
   hier geen kostenbron (`geen-bron`), en een betaalde lead met een campagne die bij Google of
   Meta niet bestaat (`(not set)`, een andere naam) is `geen-match`. Beide krijgen
   `kosten: null` en staan in de UI als "onbekend", nooit als € 0: nul zou beweren dat het
   gratis was. "Kosten per betaalde lead" deelt alleen door leads waarvan de kosten bekend zijn.
 - **Uitgaven zonder lead verdwijnen niet.** Een campagne met kosten en nul leads krijgt niets
-  toegerekend maar staat in `zonderLead`, in het kerncijfer Uitgaven en (zonder filter) in de
-  campagnetabel. Zonder dat leest elke campagne die niets opleverde als gratis.
+  toegerekend, maar staat in de campagnetabel met "geen leads" en in de regel "Campagnes zonder
+  lead" onder de andere tabellen (zonder filter). Zonder dat leest elke campagne die niets
+  opleverde als gratis. Het kerncijfer Uitgaven toont bewust één totaal en splitst niet in
+  "toegerekend" en "zonder lead": die splitsing was voor collega's niet te volgen.
 - **Kanaal volgt uit bron/medium** (`lib/leads/kanaal.ts`), niet uit GA4's kanaalgroep:
   Pmax en Demand Gen staan daar als "Cross-network" terwijl ze gewoon Google Ads zijn, en
   een extra kolom kost opslag. `(data not available)` is "Onbekend", ook al is het
@@ -631,11 +650,11 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   precies de lead bracht. Een lege waarde heet "Onbekend". Ze staan bewust naast elkaar en
   niet in plaats van elkaar: het kanaal is te kiezen zonder de schrijfwijzen van GA4 te kennen.
 - **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
-- **Weergave.** Alles filtert in het geheugen (één ophaalactie). De modellentabel toont
-  alleen leads mét model (een bovenste rij "Onbekend" zegt niets over welke auto's mensen
-  willen; de omvang staat in de toelichting), en bij merken staat "Onbekend" onderaan. Een
-  sterretje achter een bedrag betekent dat de rij ook betaalde leads zonder bekende kosten
-  bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
+- **Weergave.** Alles filtert in het geheugen (één ophaalactie). Bij merken en modellen staat
+  "Onbekend" **vast onderaan** (`vastgezet`) en niet in de uitklapbare lijst: hij is vaak de
+  grootste groep en zou de echte merken wegduwen, maar hij moet zichtbaar blijven omdat de
+  tabel anders niet optelt. Een sterretje achter een bedrag betekent dat de rij ook betaalde
+  leads zonder bekende kosten bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
   dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
   bij elkaar horen.
 

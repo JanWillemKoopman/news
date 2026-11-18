@@ -7,7 +7,9 @@ import {
   groepeer,
   heeftFilters,
   kostenPerLead,
+  kostenPerLeadTotaal,
   leadSoort,
+  metPlatformUitgaven,
   perDag,
   telTotalen,
 } from "@/lib/leads/samenvatting";
@@ -193,4 +195,104 @@ test("een leesbare naam voor een leadevent", () => {
   assert.equal(leadSoort("generate_lead_HMODH"), "HMODH");
   assert.equal(leadSoort("generate_lead_privatelease"), "Privatelease");
   assert.equal(leadSoort("generate_lead_private_lease"), "Private lease");
+});
+
+// ---------------------------------------------------------------------------
+// Totale uitgaven als basis: elke tabel telt op tot wat er is uitgegeven
+// ---------------------------------------------------------------------------
+
+const optellen = (getallen: number[]) => getallen.reduce((t, g) => t + g, 0);
+
+/** Twee Google-campagnes met leads (met merk en zonder), een Google-campagne zonder lead, Meta zonder lead, en Bing. */
+function sluitend() {
+  const k = koppelLeads(
+    [
+      lead({ aantal: 4, merk: "Audi", model: "Q4 e-tron", campagne: "Camp A" }),
+      lead({ aantal: 6, merk: "", model: "", campagne: "Camp A" }),
+      lead({ aantal: 5, merk: "Volkswagen", model: "Tiguan", campagne: "Camp B" }),
+      lead({ aantal: 3, bronMedium: "bing / cpc", campagne: "Camp A" }),
+      lead({ aantal: 2, campagne: "(not set)", merk: "Skoda", model: "Fabia" }),
+      lead({ aantal: 7, bronMedium: "google / organic", campagne: "(organic)", merk: "", model: "" }),
+    ],
+    [
+      { bron: "google", campagne: "Camp A", uitgaven: 1000, klikken: 1, vertoningen: 1 },
+      { bron: "google", campagne: "Camp B", uitgaven: 500, klikken: 1, vertoningen: 1 },
+      { bron: "google", campagne: "Camp C zonder lead", uitgaven: 300, klikken: 1, vertoningen: 1 },
+      { bron: "meta", campagne: "Meta zonder lead", uitgaven: 200, klikken: 1, vertoningen: 1 },
+    ],
+  );
+  return k;
+}
+
+test("de uitgaven per merk plus 'campagnes zonder lead' zijn precies de totale uitgaven", () => {
+  const k = sluitend();
+  const perMerk = groepeer(k.regels, (r) => r.merk || "Onbekend");
+  const som = optellen(perMerk.map((g) => g.kosten)) + k.zonderLead.uitgaven;
+  assert.ok(Math.abs(som - k.uitgavenTotaal) < 1e-9, `${som} !== ${k.uitgavenTotaal}`);
+  assert.equal(k.uitgavenTotaal, 2000);
+});
+
+test("hetzelfde geldt voor soort, formulier en model (alle rijen samen, inclusief onbekend)", () => {
+  const k = sluitend();
+  for (const sleutel of [
+    (r: LeadRegel) => r.event,
+    (r: LeadRegel) => r.formulier || "Onbekend",
+    (r: LeadRegel) => `${r.merk}\u0000${r.model}`,
+  ]) {
+    const som = optellen(groepeer(k.regels, sleutel).map((g) => g.kosten)) + k.zonderLead.uitgaven;
+    assert.ok(Math.abs(som - k.uitgavenTotaal) < 1e-9);
+  }
+});
+
+test("de kanalentabel toont de echte uitgaven per platform en telt op tot het totaal", () => {
+  const k = sluitend();
+  const kanalen = metPlatformUitgaven(groepeer(k.regels, (r) => r.kanaal), k.uitgavenPerPlatform);
+  const google = kanalen.find((g) => g.sleutel === "Google Ads");
+  const meta = kanalen.find((g) => g.sleutel === "Meta Ads");
+  // Google: € 1.800 en niet het toegerekende deel; de campagne zonder lead telt mee.
+  assert.equal(google?.kosten, 1800);
+  assert.equal(google?.zonderKosten, 0);
+  // Meta heeft geen enkele lead maar wél uitgaven: de rij bestaat toch.
+  assert.equal(meta?.kosten, 200);
+  assert.equal(meta?.leads, 0);
+  assert.equal(optellen(kanalen.map((g) => g.kosten)), k.uitgavenTotaal);
+});
+
+test("kosten per lead in een kanaalrij delen alle leads van het platform, ook die zonder herkenbare campagne", () => {
+  const k = sluitend();
+  const kanalen = metPlatformUitgaven(groepeer(k.regels, (r) => r.kanaal), k.uitgavenPerPlatform);
+  const google = kanalen.find((g) => g.sleutel === "Google Ads");
+  // 4 + 6 + 5 + 2 = 17 Google-leads, waarvan 2 zonder herkenbare campagne.
+  assert.equal(google?.metKosten, 17);
+  assert.ok(Math.abs((kostenPerLead(google!) ?? 0) - 1800 / 17) < 1e-9);
+});
+
+test("kosten per betaalde lead zonder filters: alle uitgaven gedeeld door alle betaalde leads met kostenbron", () => {
+  const k = sluitend();
+  const t = telTotalen(k.regels);
+  // Bing (3 leads) heeft geen kostenbron en telt niet mee in de noemer.
+  assert.equal(t.kostenbronLeads, 17);
+  assert.ok(Math.abs((kostenPerLeadTotaal(t, k.uitgavenTotaal, false) ?? 0) - 2000 / 17) < 1e-9);
+});
+
+test("kosten per betaalde lead met een filter: toegerekende kosten van de selectie", () => {
+  const k = sluitend();
+  const selectie = telTotalen(filterRegels(k.regels, { ...GEEN_FILTERS, merken: ["Audi"] }));
+  assert.equal(kostenPerLeadTotaal(selectie, k.uitgavenTotaal, true), kostenPerLead(selectie));
+});
+
+test("kosten per betaalde lead is niet te berekenen zonder betaalde leads", () => {
+  const k = koppelLeads(
+    [lead({ bronMedium: "google / organic", campagne: "(organic)" })],
+    [{ bron: "google", campagne: "T | Branding VDU", uitgaven: 100, klikken: 1, vertoningen: 1 }],
+  );
+  assert.equal(kostenPerLeadTotaal(telTotalen(k.regels), 100, false), null);
+});
+
+test("metPlatformUitgaven verandert de invoer niet", () => {
+  const k = sluitend();
+  const groepen = groepeer(k.regels, (r) => r.kanaal);
+  const voor = JSON.stringify(groepen);
+  metPlatformUitgaven(groepen, k.uitgavenPerPlatform);
+  assert.equal(JSON.stringify(groepen), voor);
 });

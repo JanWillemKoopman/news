@@ -9,6 +9,7 @@ import LeadsCampagnes from "@/components/leads/LeadsCampagnes";
 import LeadsGrafiek from "@/components/leads/LeadsGrafiek";
 import LeadsTabel from "@/components/leads/LeadsTabel";
 import { bouwCampagneRijen } from "@/lib/leads/campagnes";
+import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import type { CampagneRegel, LeadRegel } from "@/lib/leads/koppel";
 import {
   GEEN_FILTERS,
@@ -16,7 +17,8 @@ import {
   filterRegels,
   groepeer,
   heeftFilters,
-  kostenPerLead,
+  kostenPerLeadTotaal,
+  metPlatformUitgaven,
   leadSoort,
   perDag,
   telTotalen,
@@ -46,6 +48,7 @@ interface Antwoord {
   campagnes: CampagneRegel[];
   zonderLead: { uitgaven: number; campagnes: number };
   uitgavenTotaal: number;
+  uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
   laatsteSync: string | null;
   syncLoopt: boolean;
   fout?: string;
@@ -161,21 +164,23 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     [eventOpties],
   );
 
-  const perKanaal = useMemo(() => groepeer(regels, (r) => r.kanaal), [regels]);
+  // Zonder filters tonen de kanalen Google Ads en Meta Ads de echte uitgaven van het
+  // platform (ook van campagnes zonder lead); met een filter zijn het de toegerekende kosten
+  // van de selectie, want de uitgaven van een campagne zijn niet op merk of model te filteren.
+  const perKanaal = useMemo(() => {
+    const groepen = groepeer(regels, (r) => r.kanaal);
+    if (filtersActief) return groepen;
+    return metPlatformUitgaven(groepen, data?.uitgavenPerPlatform ?? {}).sort(
+      (a, b) => b.leads - a.leads || a.sleutel.localeCompare(b.sleutel, "nl"),
+    );
+  }, [regels, data, filtersActief]);
   const perSoort = useMemo(() => groepeer(regels, (r) => r.event), [regels]);
-  // "Onbekend" onderaan: bij een merk of model is hij vaak de grootste groep, en zou de
-  // echte merken naar beneden duwen. Hij blijft wél in de tabel staan — zijn omvang is zelf
-  // een cijfer waar je iets aan hebt.
-  const perMerk = useMemo(
-    () =>
-      groepeer(regels, (r) => waardeOfOnbekend(r.merk)).sort(
-        (a, b) => Number(a.sleutel === ONBEKEND) - Number(b.sleutel === ONBEKEND),
-      ),
-    [regels],
-  );
-  // De modellentabel toont alleen leads mét model: een tabel waarvan de bovenste rij
-  // "Onbekend" is, zegt niets over welke auto's mensen willen. Hoeveel er buiten vallen
-  // staat in de toelichting.
+  // "Onbekend" staat vast onderaan en niet in de uitklapbare lijst: bij een merk of model is
+  // hij vaak de grootste groep en zou de echte merken naar beneden duwen, maar hij moet
+  // zichtbaar blijven omdat de tabel anders niet optelt tot het totaal.
+  const merkGroepen = useMemo(() => groepeer(regels, (r) => waardeOfOnbekend(r.merk)), [regels]);
+  const perMerk = useMemo(() => merkGroepen.filter((g) => g.sleutel !== ONBEKEND), [merkGroepen]);
+  const merkOnbekend = useMemo(() => merkGroepen.filter((g) => g.sleutel === ONBEKEND), [merkGroepen]);
   const perModel = useMemo(
     () =>
       groepeer(
@@ -183,6 +188,10 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         (r) => `${waardeOfOnbekend(r.merk)}\u0000${r.model}`,
         (r) => waardeOfOnbekend(r.merk),
       ),
+    [regels],
+  );
+  const modelOnbekend = useMemo(
+    () => groepeer(regels.filter((r) => r.model === ""), () => ONBEKEND),
     [regels],
   );
   const perFormulier = useMemo(() => groepeer(regels, (r) => waardeOfOnbekend(r.formulier)), [regels]);
@@ -240,7 +249,21 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   }
 
   const pct = (n: number) => (totalen.leads > 0 ? (n / totalen.leads) * 100 : null);
-  const perBetaaldeLead = kostenPerLead(totalen);
+  // De basis is de totale uitgave van Google en Meta. Met een filter op de leads bestaat dat
+  // totaal niet meer; dan zijn het de toegerekende kosten van de selectie.
+  const uitgavenBasis = filtersActief ? totalen.kosten : data.uitgavenTotaal;
+  const perBetaaldeLead = kostenPerLeadTotaal(totalen, data.uitgavenTotaal, filtersActief);
+  const zonderLead = filtersActief ? null : data.zonderLead;
+  const tabelTotaal = {
+    totaal: totalen,
+    totaalUitgaven: uitgavenBasis,
+    totaalPerLead: perBetaaldeLead,
+  };
+  const campagneTotaal = {
+    leads: campagneRijen.reduce((t, r) => t + r.leads, 0),
+    uitgaven: campagneRijen.reduce((t, r) => t + (r.kosten ?? 0), 0),
+    perLead: perBetaaldeLead,
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -360,13 +383,18 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         />
         <Kaart
           label="Uitgaven"
-          waarde={formatteer(totalen.kosten, "euro-heel")}
-          toelichting={filtersActief ? "toegerekend aan deze leads" : "toegerekend aan de leads"}
+          waarde={formatteer(uitgavenBasis, "euro-heel")}
+          toelichting={
+            filtersActief
+              ? `toegerekend aan deze selectie, van ${formatteer(data.uitgavenTotaal, "euro-heel")} in totaal`
+              : "Google Ads en Meta Ads"
+          }
           noot={
-            !filtersActief && data.zonderLead.campagnes > 0
-              ? `+ ${formatteer(data.zonderLead.uitgaven, "euro-heel")} aan ${data.zonderLead.campagnes} ${
-                  data.zonderLead.campagnes === 1 ? "campagne" : "campagnes"
-                } zonder lead`
+            !filtersActief
+              ? `Google ${formatteer(data.uitgavenPerPlatform.google ?? 0, "euro-heel")} · Meta ${formatteer(
+                  data.uitgavenPerPlatform.meta ?? 0,
+                  "euro-heel",
+                )}`
               : undefined
           }
         />
@@ -374,9 +402,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           label="Kosten per betaalde lead"
           waarde={perBetaaldeLead === null ? "—" : formatteer(perBetaaldeLead, "euro-exact")}
           toelichting={
-            totalen.metKosten > 0
-              ? `gemiddeld over ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
-              : "geen betaalde leads met bekende kosten"
+            filtersActief
+              ? totalen.metKosten > 0
+                ? `toegerekende kosten ÷ ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
+                : "geen betaalde leads met bekende kosten"
+              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google en Meta`
           }
         />
       </div>
@@ -386,55 +416,65 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
       <div className="grid grid-cols-2 items-start gap-6">
         <LeadsTabel
           titel="Kanalen"
-          toelichting="Uit welk kanaal de leads binnenkwamen, afgeleid van bron en medium in GA4."
+          toelichting={
+            filtersActief
+              ? "Uit welk kanaal de leads binnenkwamen. Met een filter zijn de uitgaven toegerekend aan de geselecteerde leads."
+              : "Uit welk kanaal de leads binnenkwamen, afgeleid van bron en medium in GA4. Bij Google Ads en Meta Ads staan de echte uitgaven van het platform."
+          }
           labelKop="Kanaal"
           groepen={perKanaal}
-          totaalLeads={totalen.leads}
+          {...tabelTotaal}
           toonBetaald={false}
         />
         <LeadsTabel
           titel="Soort lead"
-          toelichting="Het GA4-event dat vuurde: een proefrit-, offerte- of andere aanvraag."
+          toelichting="Het GA4-event dat vuurde. Uitgaven zijn een indicatie: de kosten van elke campagne zijn gelijk verdeeld over zijn leads."
           labelKop="Soort"
           groepen={perSoort}
-          totaalLeads={totalen.leads}
+          {...tabelTotaal}
+          zonderLead={zonderLead}
           labelVan={(g) => leadSoort(g.sleutel)}
         />
         <LeadsTabel
           titel="Merken"
           toelichting={
             totalen.leads > 0
-              ? `${formatteer((metMerk / totalen.leads) * 100, "procent")} van de leads heeft een merk. Alleen formulieren voor proefrit, offerte, private lease en financiering sturen het mee.`
+              ? `${formatteer((metMerk / totalen.leads) * 100, "procent")} van de leads heeft een merk; alleen formulieren voor proefrit, offerte, private lease en financiering sturen het mee. Uitgaven zijn een indicatie: de kosten van elke campagne zijn gelijk verdeeld over zijn leads.`
               : undefined
           }
           labelKop="Merk"
           groepen={perMerk}
-          totaalLeads={totalen.leads}
+          vastgezet={merkOnbekend}
+          {...tabelTotaal}
+          zonderLead={zonderLead}
           maxRijen={20}
         />
         <LeadsTabel
           titel="Modellen"
           toelichting={
             totalen.leads > 0
-              ? `Alleen leads met een model: ${formatteer((metModel / totalen.leads) * 100, "procent")} van de leads. De rest stuurt geen model mee, of de veldnaam (model_titel) in plaats van het model.`
+              ? `${formatteer((metModel / totalen.leads) * 100, "procent")} van de leads heeft een model. Onbekend is geen model meegestuurd, of de veldnaam (model_titel) in plaats van het model. Uitgaven zijn een indicatie.`
               : undefined
           }
           labelKop="Model"
           groepen={perModel}
-          totaalLeads={totalen.leads}
+          vastgezet={modelOnbekend}
+          {...tabelTotaal}
+          zonderLead={zonderLead}
           labelVan={(g) => g.sleutel.split("\u0000")[1] ?? g.sleutel}
         />
       </div>
 
-      <LeadsCampagnes rijen={campagneRijen} />
+      <LeadsCampagnes rijen={campagneRijen} totaal={campagneTotaal} />
 
       <div className="grid grid-cols-2 items-start gap-6">
         <LeadsTabel
           titel="Formulier"
-          toelichting="Op welke plek op de site het formulier stond (form_location)."
+          toelichting="Op welke plek op de site het formulier stond (form_location). Uitgaven zijn een indicatie."
           labelKop="Formulier"
           groepen={perFormulier}
-          totaalLeads={totalen.leads}
+          {...tabelTotaal}
+          zonderLead={zonderLead}
         />
         <section className="kaart-omlijst rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
           <h2 className="flex items-center gap-2 font-sans-w7 text-cell font-semibold text-ink">
@@ -456,9 +496,12 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               een lead als platform en campagnenaam overeenkomen.
             </li>
             <li>
-              <strong className="text-ink">De kosten zijn een verdeling, geen meting.</strong> De
-              uitgaven van een campagne gaan gelijk over zijn leads: € 500 en tien leads maakt elke
-              lead € 50, ook een vacature- of proefritlead.
+              <strong className="text-ink">Uitgaven en totalen.</strong> Bovenaan staat wat Google Ads
+              en Meta Ads samen uitgaven. Bij kanalen en campagnes zijn dat de echte uitgaven. Per
+              merk, model, soort en formulier is het een <strong className="text-ink">indicatie</strong>:
+              de uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads maakt
+              elke lead € 50, ook een vacature- of proefritlead). Google en Meta weten niet welke
+              lead welk deel kostte.
             </li>
             <li>
               <strong className="text-ink">&quot;Onbekend&quot;</strong> bij uitgaven betekent betaald
@@ -471,8 +514,10 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               bedrag en niet in de kosten per lead.
             </li>
             <li>
-              <strong className="text-ink">Uitgaven zonder lead</strong> staan in het kerncijfer en in
-              de campagnetabel, zodat een campagne die niets opleverde niet als gratis leest.
+              <strong className="text-ink">Campagnes zonder lead</strong> hebben uitgaven maar in deze
+              periode geen enkele lead in Google Analytics. Ze staan als eigen regel onder de tabellen
+              en in de campagnetabel, zodat elke tabel optelt tot de totale uitgaven. Met een filter
+              op de leads vervalt die regel, want ze horen dan niet bij de selectie.
             </li>
           </ul>
         </section>
