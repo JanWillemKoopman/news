@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
-import type { KpiOverzichtRegel, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
+import type { KpiOverzichtRegel, KpiUitkomst, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
 
 /**
  * Eén KPI: bovenaan de vier getallen waar het overleg om draait (2026 inclusief
@@ -15,7 +16,7 @@ import type { KpiOverzichtRegel, WebsiteOverzicht } from "@/lib/kpi2027/rekenen"
  * KPI, per website en per periode — zie `lib/kpi2027/definities.ts`.
  */
 
-function datumKort(datum: string): string {
+export function datumKort(datum: string): string {
   return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
     day: "numeric",
     month: "short",
@@ -23,7 +24,7 @@ function datumKort(datum: string): string {
   });
 }
 
-function aantal(waarde: number): string {
+export function aantal(waarde: number): string {
   return formatteer(Math.round(waarde), "aantal");
 }
 
@@ -44,9 +45,54 @@ export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; web
   const u = kpi.uitkomst;
 
   return (
+    <KpiKaartOpmaak naam={kpi.naam} uitkomst={u} realisatie={kpi.realisatie}>
+      <p>
+        <span className="text-ink-muted">Bron:</span> Google Analytics 4, {website.domein} (property {website.property}
+        {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
+        {kpi.events.length > 0 ? (
+          <>
+            Events (aantal keer gevuurd, event_count, {KPI_JAAR}
+            {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
+            {kpi.events.map((e, i) => (
+              <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
+                {i > 0 && " + "}
+                <code className="font-mono text-ink-muted">{e.naam}</code>
+                {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
+              </span>
+            ))}
+            .
+          </>
+        ) : (
+          kpi.bronTekst
+        )}
+      </p>
+      {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
+    </KpiKaartOpmaak>
+  );
+}
+
+/**
+ * De kaart zelf — kop, de vier kaartjes en de jaargrafiek — met de bronregel als
+ * `children`. Ook gebruikt door KPI's 2027 Syntec (`KpiSyntecKaart.tsx`), zodat beide
+ * tabbladen er precies hetzelfde uitzien en alleen de bron eronder verschilt.
+ */
+export function KpiKaartOpmaak({
+  naam,
+  uitkomst: u,
+  realisatie,
+  children,
+}: {
+  naam: string;
+  /** Null als er voor 2026 nog niets te rekenen valt. */
+  uitkomst: KpiUitkomst | null;
+  /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
+  realisatie: { waarde: number; peildatum: string | null };
+  children: ReactNode;
+}) {
+  return (
     <section className="kaart-omlijst flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
       <header className="flex items-baseline justify-between gap-4">
-        <h2 className="font-sans-w7 text-cell font-semibold text-ink">{kpi.naam}</h2>
+        <h2 className="font-sans-w7 text-cell font-semibold text-ink">{naam}</h2>
         {u && (
           <p className="text-right text-meta text-ink-muted">
             gemiddeld {perDagTekst(u.perDag)} per dag
@@ -80,10 +126,10 @@ export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; web
             />
             <Statistiek
               label={`Realisatie ${KPI_DOELJAAR}`}
-              waarde={aantal(kpi.realisatie.waarde)}
+              waarde={aantal(realisatie.waarde)}
               toelichting={
-                kpi.realisatie.peildatum
-                  ? `t/m ${datumKort(kpi.realisatie.peildatum)} · ${u.target > 0 ? formatteer((kpi.realisatie.waarde / u.target) * 100, "procent") : "—"} van het target`
+                realisatie.peildatum
+                  ? `t/m ${datumKort(realisatie.peildatum)} · ${u.target > 0 ? formatteer((realisatie.waarde / u.target) * 100, "procent") : "—"} van het target`
                   : `${KPI_DOELJAAR} is nog niet begonnen`
               }
             />
@@ -97,29 +143,7 @@ export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; web
         <p className="mt-3 text-sm text-ink-muted">Nog geen stand voor deze website.</p>
       )}
 
-      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">
-        <p>
-          <span className="text-ink-muted">Bron:</span> Google Analytics 4, {website.domein} (property {website.property}
-          {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
-          {kpi.events.length > 0 ? (
-            <>
-              Events (aantal keer gevuurd, event_count, {KPI_JAAR}
-              {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
-              {kpi.events.map((e, i) => (
-                <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
-                  {i > 0 && " + "}
-                  <code className="font-mono text-ink-muted">{e.naam}</code>
-                  {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
-                </span>
-              ))}
-              .
-            </>
-          ) : (
-            kpi.bronTekst
-          )}
-        </p>
-        {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
-      </footer>
+      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">{children}</footer>
     </section>
   );
 }

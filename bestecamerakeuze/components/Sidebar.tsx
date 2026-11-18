@@ -29,6 +29,7 @@ export type DashboardView =
   | "campagnebeheer"
   | "kpi-overzicht"
   | "kpi-2027"
+  | "kpi-2027-syntec"
   | "social-ads"
   | "google-ads"
   | "organisch"
@@ -148,6 +149,14 @@ export default function Sidebar({
             label="KPI's 2027"
             active={actief === "kpi-2027"}
             onClick={() => onNavigate("kpi-2027")}
+          />
+          {/* Dezelfde opzet, maar dan de websiteleads uit Syntec per bron in plaats van
+              de GA4-cijfers van udenhout.nl. */}
+          <NavigationItem
+            icon={<IconTarget />}
+            label="KPI's 2027 Syntec"
+            active={actief === "kpi-2027-syntec"}
+            onClick={() => onNavigate("kpi-2027-syntec")}
           />
 
           {/* Kanalen staat ná KPI's: de campagnetabel is waar het weekoverleg begint,

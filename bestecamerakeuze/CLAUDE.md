@@ -774,6 +774,48 @@ realisatie van 2027.
   erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
   de koppeling verandert.
 
+### KPI's → KPI's 2027 Syntec
+
+Derde tabblad onder **KPI's** (view `kpi-2027-syntec`, `components/kpi/Kpi2027SyntecPaneel.tsx`,
+route `app/api/kpi-2027-syntec/route.ts`). Precies dezelfde opzet als KPI's 2027 — dezelfde
+kaart (`KpiKaartOpmaak` in `KpiKaart.tsx`), grafiek, rekensom (`berekenKpi`), peildatum (de
+laatste zaterdag) en +5% — maar dan voor de websiteleads uit **Syntec**, per bron, in de
+drie groepen waarin het team de doelen voor 2026 vastlegde: Eigen website, PAH-websites en
+Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
+
+- **Bron is het sheet-tabblad "Data leads"**, dat `/api/sync` elke nacht naar
+  `dataloket.v_leads` kopieert. Geteld worden leads met kanaalgroep `Internet`, op de datum
+  Aangelegd. Geen opgeslagen stand en geen eigen cron: de route rekent bij elk verzoek uit
+  wat er in `v_leads` staat, t/m de peildatum.
+- **Welke lead bij welke KPI hoort staat alleen in `lib/kpi2027syntec/definities.ts`**,
+  in getest TypeScript (`classificeerLead`), op kanaal en onderwerp. Een lead telt bij
+  hoogstens één KPI (nagerekend in de test).
+- **Onder elke grafiek staat waar je naar kijkt, in drie delen** (`KpiSyntecKaart.tsx`):
+  *Wat telt mee* (elke regel met de periode waarin hij leads oplevert en het aantal),
+  *Keuzes in de definitie* (het veld `keuzes` per KPI in `definities.ts`, in gewone taal) en
+  een *Controle*: wat de definitie over heel 2025 telt × 1,2, naast het doel 2026 — zo
+  waren de doelen gesteld, dus dat getal laat zien of de definitie klopt. Een nieuwe KPI
+  zonder keuzes, of een regel van de eigen website zonder periode, laat de test falen.
+  Verander je een definitie, pas dan de keuzes in dezelfde wijziging aan.
+- **De naamswissel van april 2026.** Tot en met maart had elk formulier van udenhout.nl
+  een eigen kanaal (`Udenhout.nl offerteaanv.` …); vanaf april komt alles binnen onder
+  `Udenhout.nl` en zegt het onderwerp wat het is. Elke KPI van de eigen website heeft dus
+  een regel voor beide. Merksites en portals gaan alleen op kanaal.
+- **Keuzes van het team (november 2026)**: Private Groeilease telt bij Private lease (ook
+  het oude onderwerp `…growLease` in het offertekanaal); doorgestuurde mails (onderwerp
+  begint met "FW:") tellen bij de eigen website niet mee; VW PFS zonder retentieleads;
+  Audi.nl inclusief Audi Proefritmodule; ID.Polo Reservering (PAH), chat, WhatsApp en
+  bel-me-terug vallen buiten alle KPI's. De doelen 2026 waren de telling van 2025 × 1,2;
+  met deze regels klopt dat voor tien van de vijftien KPI's precies. Waar het niet klopt
+  (offerte, private lease, VW PFS) staat de reden onder de grafiek.
+- **Elke KPI rekent met het gemiddelde over alle dagen van 2026**, zoals gevraagd — ook
+  inruilvoorstel en contact, waar de nieuwe website sinds april veel meer oplevert. Een
+  KPI vanaf april laten rekenen kan met een meetperiode (`{ van: "2026-04-01" }`) in
+  `maandInvoerUitMaanden` (`uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
+  besluit van de eigenaar; niet op eigen initiatief veranderen.
+- **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
+  vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
+
 ### Monitoren → Budget beheer
 
 Onder **Kanalen** staat een eigen groep **Monitoren** met één tabblad, **Budget beheer**
