@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { werkKpiStandBij } from "@/lib/kpi2027/bijwerken";
+import { werkKpiStandenBij } from "@/lib/kpi2027/bijwerken";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
  * De wekelijkse bijwerking van het tabblad KPI's 2027, aangeroepen door Vercel Cron op
- * zondag (zie `vercel.json`). Rekent tot en met zaterdag, tot 2026 helemaal gemeten is;
- * daarna doet hij niets meer — zie `lib/kpi2027/bijwerken.ts`.
+ * zondag (zie `vercel.json`). Werkt voor alle websites de stand t/m zaterdag bij: in 2026
+ * de basis voor het target, vanaf januari 2027 de realisatie — zie
+ * `lib/kpi2027/bijwerken.ts`.
  *
  * Staat buiten de inlog (`CRON_PADEN` in `lib/toegang.ts`) en legitimeert zich met
  * `CRON_SECRET`, net als de andere cron-routes.
@@ -23,7 +24,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Niet geautoriseerd." }, { status: 401 });
   }
   try {
-    return NextResponse.json(await werkKpiStandBij());
+    const uitkomst = await werkKpiStandenBij();
+    return NextResponse.json(uitkomst, { status: uitkomst.ok ? 200 : 500 });
   } catch (err) {
     return NextResponse.json({ fout: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }

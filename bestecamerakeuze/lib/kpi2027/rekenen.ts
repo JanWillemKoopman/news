@@ -1,4 +1,12 @@
-import { KPI_GROEI, KPI_JAAR, type KpiDefinitie } from "@/lib/kpi2027/definities";
+import {
+  KPI_DOELJAAR,
+  KPI_GROEI,
+  KPI_JAAR,
+  eventBron,
+  type KpiDefinitie,
+  type KpiWebsite,
+  type Periode,
+} from "@/lib/kpi2027/definities";
 
 /**
  * Het rekenwerk achter het tabblad KPI's 2027: wat doet 2026 naar verwachting, en wat is
@@ -6,27 +14,36 @@ import { KPI_GROEI, KPI_JAAR, type KpiDefinitie } from "@/lib/kpi2027/definities
  *
  * Geen database, geen netwerk, geen React — pure functies, getest in `rekenen.test.ts`.
  *
- * ## De rekensom, zoals gevraagd
+ * ## De rekensom
  *
- *  1. **Gerealiseerd**: wat GA4 tot en met de peildatum telde.
- *  2. **Gemiddelde per dag**: gerealiseerd ÷ het aantal verstreken dagen.
- *  3. **Verwachting 2026**: gerealiseerd + gemiddelde × de resterende dagen van 2026.
+ *  1. **Gerealiseerd**: wat GA4 op de gemeten dagen t/m de peildatum telde.
+ *  2. **Gemiddelde per dag**: gerealiseerd ÷ het aantal gemeten dagen.
+ *  3. **Verwachting 2026**: gerealiseerd + gemiddelde × alle overige dagen van 2026 — de
+ *     resterende dagen, en de dagen waarop niet gemeten werd (`definities.ts`).
  *  4. **Target 2027**: verwachting × 1,05.
  *  5. **Maandtarget 2027**: het jaartarget ÷ 12 — bewust een gelijke twaalfde en geen
  *     verdeling naar het aantal dagen of het seizoen, zodat hij in het overleg na te
  *     rekenen is.
  *
- * Bewust een rechte lijn, net als de forecast op Budget beheer: geen seizoenspatroon,
- * geen trend. Dat is na te rekenen en uit te leggen, en het verschil wordt elke zondag
- * kleiner — op 31 december is er niets meer te verwachten.
+ * Bewust een rechte lijn, net als de forecast op Budget beheer: geen seizoenspatroon, geen
+ * trend. Dat is na te rekenen en uit te leggen, en het verschil wordt elke zondag kleiner.
+ *
+ * ## Per dag of per maand
+ *
+ * Events, sessies en aankopen staan per dag in de stand, gebruikers per maand (per maand
+ * ontdubbeld; een dagcijfer zou optellen tot een veel te hoog jaartotaal). Beide worden
+ * eerst teruggebracht tot twaalf maanden met per maand de gemeten waarde en het aantal
+ * gemeten dagen (`MaandInvoer`); vanaf daar is de som voor elke KPI dezelfde.
  *
  * ## Waarom de peildatum altijd een zaterdag is
  *
  * De stand wordt wekelijks op zondag bijgewerkt (cron in `vercel.json`) en rekent dan tot
- * en met de dag ervoor. `peildatumVoor` geeft daarom de laatste zaterdag vóór vandaag, wie
- * hem ook aanroept en op welke dag: een handmatige herberekening op woensdag levert
- * dezelfde peildatum als de zondag ervoor, en dus geen ander target midden in de week.
+ * en met de dag ervoor. `laatsteZaterdag` geeft de laatste zaterdag vóór vandaag, wie hem
+ * ook aanroept en op welke dag: een handmatige herberekening op woensdag levert dezelfde
+ * peildatum als de zondag ervoor, en dus geen ander target midden in de week.
  */
+
+const DAG_MS = 86_400_000;
 
 /** Aantal dagen in een maand (1 = januari). */
 export function dagenInMaand(jaar: number, maand: number): number {
@@ -45,8 +62,6 @@ function tekstVan(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-const DAG_MS = 86_400_000;
-
 /** Aantal dagen van `van` t/m `tot`, beide inbegrepen; nul als `tot` vóór `van` ligt. */
 export function dagenTussen(van: string, tot: string): number {
   const verschil = Math.round((alsDatum(tot) - alsDatum(van)) / DAG_MS);
@@ -64,39 +79,107 @@ export function datumInNederland(nu: Date): string {
   }).format(nu);
 }
 
-/**
- * De peildatum van de stand: de laatste zaterdag vóór vandaag (Nederlandse tijd), en
- * nooit later dan 31 december van het basisjaar. Vandaag telt nooit mee — de dag is niet
- * af — dus op een zaterdag is het de zaterdag van vorige week.
- *
- * `null` zolang er in het basisjaar nog geen zaterdag voorbij is: dan valt er niets te
- * rekenen.
- */
-export function peildatumVoor(nu: Date, jaar: number = KPI_JAAR): string | null {
+/** De laatste zaterdag vóór vandaag (Nederlandse kalender). Vandaag telt nooit mee. */
+export function laatsteZaterdag(nu: Date): string {
   const vandaag = alsDatum(datumInNederland(nu));
   const weekdag = new Date(vandaag).getUTCDay(); // 0 = zondag … 6 = zaterdag
   const terug = weekdag === 6 ? 7 : weekdag + 1;
-  const zaterdag = tekstVan(vandaag - terug * DAG_MS);
+  return tekstVan(vandaag - terug * DAG_MS);
+}
 
+/**
+ * De peildatum van de stand van `jaar`: de laatste zaterdag vóór vandaag, afgekapt op
+ * 31 december van dat jaar. `null` zolang er in dat jaar nog geen zaterdag voorbij is.
+ */
+export function peildatumVoor(nu: Date, jaar: number = KPI_JAAR): string | null {
+  const zaterdag = laatsteZaterdag(nu);
   const eind = `${jaar}-12-31`;
   if (zaterdag > eind) return eind;
   if (zaterdag < `${jaar}-01-01`) return null;
   return zaterdag;
 }
 
-/** Is 2026 met deze peildatum helemaal gemeten? Dan verandert de stand niet meer. */
+/** Is het jaar met deze peildatum helemaal voorbij? Dan verandert de stand niet meer. */
 export function isDefinitief(peildatum: string, jaar: number = KPI_JAAR): boolean {
   return peildatum >= `${jaar}-12-31`;
+}
+
+function binnen(datum: string, p: Periode): boolean {
+  return datum >= p.van && (p.tot === undefined || datum <= p.tot);
+}
+
+/** Telt deze dag als gemeten: binnen een meetperiode (of geen meetperiodes) en niet in de uitval? */
+export function isGemeten(
+  datum: string,
+  meetperiodes: readonly Periode[] | undefined,
+  uitval: readonly Periode[],
+): boolean {
+  if (uitval.some((p) => binnen(datum, p))) return false;
+  if (!meetperiodes || meetperiodes.length === 0) return true;
+  return meetperiodes.some((p) => binnen(datum, p));
+}
+
+/** Per maand: wat er op de gemeten dagen werd geteld, en hoeveel dagen dat waren. */
+export interface MaandInvoer {
+  waarde: number;
+  dagenGemeten: number;
+}
+
+/** Alle dagen van het jaar t/m de peildatum, per maand (index 0 = januari). */
+function dagenPerMaand(jaar: number, peildatum: string): string[][] {
+  const maanden: string[][] = Array.from({ length: 12 }, () => []);
+  const eind = alsDatum(peildatum < `${jaar}-12-31` ? peildatum : `${jaar}-12-31`);
+  for (let t = alsDatum(`${jaar}-01-01`); t <= eind; t += DAG_MS) {
+    const d = tekstVan(t);
+    maanden[Number(d.slice(5, 7)) - 1].push(d);
+  }
+  return maanden;
+}
+
+/** Van dagcijfers (datum → aantal) naar twaalf maanden, alleen over de gemeten dagen. */
+export function maandInvoerUitDagen(
+  dagwaarden: Readonly<Record<string, number>>,
+  peildatum: string,
+  meetperiodes: readonly Periode[] | undefined,
+  uitval: readonly Periode[],
+  jaar: number = KPI_JAAR,
+): MaandInvoer[] {
+  return dagenPerMaand(jaar, peildatum).map((dagen) => {
+    let waarde = 0;
+    let dagenGemeten = 0;
+    for (const d of dagen) {
+      if (!isGemeten(d, meetperiodes, uitval)) continue;
+      waarde += Math.max(0, Number(dagwaarden[d]) || 0);
+      dagenGemeten++;
+    }
+    return { waarde, dagenGemeten };
+  });
+}
+
+/**
+ * Van maandcijfers (gebruikers) naar twaalf maanden. Het maandcijfer beslaat precies de
+ * dagen waarop GA4 iets mat, dus de gemeten dagen zijn die waarop de property draaide.
+ */
+export function maandInvoerUitMaanden(
+  maandwaarden: readonly number[],
+  peildatum: string,
+  meetperiodes: readonly Periode[] | undefined,
+  uitval: readonly Periode[],
+  jaar: number = KPI_JAAR,
+): MaandInvoer[] {
+  return dagenPerMaand(jaar, peildatum).map((dagen, i) => {
+    const dagenGemeten = dagen.filter((d) => isGemeten(d, meetperiodes, uitval)).length;
+    return { waarde: dagenGemeten > 0 ? Math.max(0, Number(maandwaarden[i]) || 0) : 0, dagenGemeten };
+  });
 }
 
 /**
  * Wat er van een maand in de grafiek staat:
  *
- *  - `gerealiseerd` — de maand is voorbij en volledig gemeten;
+ *  - `gerealiseerd` — voorbij en elke dag gemeten;
  *  - `deels` — de peildatum valt erin: een deel gemeten, de rest verwachting;
  *  - `verwachting` — de maand moet nog komen;
- *  - `bijgeschat` — de maand ligt vóór de basis van deze KPI (zakelijke lease vóór april)
- *    en is met hetzelfde gemiddelde ingevuld als de toekomst.
+ *  - `bijgeschat` — voorbij, maar (deels) niet gemeten en met het gemiddelde ingevuld.
  */
 export type MaandSoort = "gerealiseerd" | "deels" | "verwachting" | "bijgeschat";
 
@@ -104,25 +187,24 @@ export interface MaandUitkomst {
   /** 1 = januari. */
   maand: number;
   soort: MaandSoort;
-  /** Wat GA4 in deze maand telde, binnen de basis en t/m de peildatum; anders null. */
+  /** Wat GA4 op de gemeten dagen van deze maand telde; null als er geen dag gemeten is. */
   gerealiseerd: number | null;
   /** Het verwachte maandtotaal: gerealiseerd plus het gemiddelde over de overige dagen. */
   verwacht: number;
-  /** Hoeveel dagen van deze maand gemeten zijn (binnen de basis, t/m de peildatum). */
   dagenGemeten: number;
   dagenInMaand: number;
 }
 
 export interface KpiUitkomst {
   peildatum: string;
-  /** Vanaf welke dag het gemiddelde rekent. */
-  basisVanaf: string;
-  /** Wat GA4 telde binnen de basis, t/m de peildatum. */
+  /** Wat GA4 op de gemeten dagen t/m de peildatum telde. */
   gerealiseerd: number;
   /** Het gemiddelde per gemeten dag. */
   perDag: number;
   dagenGemeten: number;
-  /** De dagen van het jaar die met het gemiddelde zijn ingevuld (toekomst + vóór de basis). */
+  /** Verstreken dagen (t/m de peildatum) die niet gemeten zijn. */
+  dagenNietGemeten: number;
+  /** Alle dagen van het jaar die met het gemiddelde zijn ingevuld. */
   dagenBijgeschat: number;
   /** Gemiddelde × de bijgeschatte dagen. */
   bijgeschat: number;
@@ -134,176 +216,222 @@ export interface KpiUitkomst {
   /** Target ÷ 12. */
   targetPerMaand: number;
   maanden: MaandUitkomst[];
-  /** True zodra het hele jaar gemeten is: dan is de verwachting de realisatie. */
+  /** True zodra het jaar voorbij is: dan verandert de stand niet meer. */
   definitief: boolean;
 }
 
-/**
- * Rekent één KPI uit, uit zijn twaalf maandcijfers.
- *
- * `maandwaarden` zijn de tellingen per maand (index 0 = januari) zoals GA4 ze tot en met
- * de peildatum gaf: een lopende maand bevat dus alleen zijn gemeten dagen, een toekomstige
- * maand nul. Maanden vóór `basisVanaf` tellen niet mee in het gemiddelde en worden
- * bijgeschat.
- */
+/** Rekent één KPI uit, uit zijn twaalf maanden (`maandInvoerUitDagen` / `…UitMaanden`). */
 export function berekenKpi(
-  maandwaarden: readonly number[],
+  maanden: readonly MaandInvoer[],
   peildatum: string,
-  opties: { basisVanaf?: string; groei?: number; jaar?: number } = {},
+  opties: { groei?: number; jaar?: number } = {},
 ): KpiUitkomst {
   const jaar = opties.jaar ?? KPI_JAAR;
   const groei = opties.groei ?? KPI_GROEI;
-  const basisVanaf = opties.basisVanaf ?? `${jaar}-01-01`;
-  if (!/^\d{4}-\d{2}-01$/.test(basisVanaf)) {
-    throw new Error(`basisVanaf moet de eerste van een maand zijn (de cijfers staan per maand), niet ${basisVanaf}.`);
-  }
+  const eindJaar = `${jaar}-12-31`;
+  const tot = peildatum < eindJaar ? peildatum : eindJaar;
 
-  const maandenMeta = Array.from({ length: 12 }, (_, i) => {
-    const maand = i + 1;
-    const mm = String(maand).padStart(2, "0");
-    const dagen = dagenInMaand(jaar, maand);
-    return { maand, begin: `${jaar}-${mm}-01`, eind: `${jaar}-${mm}-${String(dagen).padStart(2, "0")}`, dagen };
-  });
-
-  // Eerst het gemeten deel en het gemiddelde; pas daarna kan elke maand worden ingevuld.
-  let gerealiseerd = 0;
-  let dagenGemeten = 0;
-  const gemetenPerMaand = maandenMeta.map((m, i) => {
-    const binnenBasis = m.begin >= basisVanaf;
-    if (!binnenBasis || m.begin > peildatum) return { waarde: null as number | null, dagen: 0 };
-    const tot = m.eind < peildatum ? m.eind : peildatum;
-    const dagen = dagenTussen(m.begin, tot);
-    const waarde = Math.max(0, Number(maandwaarden[i]) || 0);
-    gerealiseerd += waarde;
-    dagenGemeten += dagen;
-    return { waarde, dagen };
-  });
-
+  const gerealiseerd = maanden.reduce((t, m) => t + m.waarde, 0);
+  const dagenGemeten = maanden.reduce((t, m) => t + m.dagenGemeten, 0);
   const perDag = dagenGemeten > 0 ? gerealiseerd / dagenGemeten : 0;
   const dagenBijgeschat = dagenInJaar(jaar) - dagenGemeten;
   const bijgeschat = perDag * dagenBijgeschat;
   const verwacht = gerealiseerd + bijgeschat;
   const target = verwacht * (1 + groei);
 
-  const maanden: MaandUitkomst[] = maandenMeta.map((m, i) => {
-    const gemeten = gemetenPerMaand[i];
+  const uitkomsten: MaandUitkomst[] = maanden.map((m, i) => {
+    const maand = i + 1;
+    const mm = String(maand).padStart(2, "0");
+    const dagen = dagenInMaand(jaar, maand);
+    const begin = `${jaar}-${mm}-01`;
+    const eind = `${jaar}-${mm}-${String(dagen).padStart(2, "0")}`;
     const soort: MaandSoort =
-      m.begin < basisVanaf
-        ? "bijgeschat"
-        : m.begin > peildatum
-          ? "verwachting"
-          : m.eind <= peildatum
-            ? "gerealiseerd"
-            : "deels";
+      begin > tot
+        ? "verwachting"
+        : m.dagenGemeten === dagen
+          ? "gerealiseerd"
+          : eind > tot
+            ? "deels"
+            : "bijgeschat";
     return {
-      maand: m.maand,
+      maand,
       soort,
-      gerealiseerd: gemeten.waarde,
-      verwacht: (gemeten.waarde ?? 0) + perDag * (m.dagen - gemeten.dagen),
-      dagenGemeten: gemeten.dagen,
-      dagenInMaand: m.dagen,
+      gerealiseerd: m.dagenGemeten > 0 ? m.waarde : null,
+      verwacht: m.waarde + perDag * (dagen - m.dagenGemeten),
+      dagenGemeten: m.dagenGemeten,
+      dagenInMaand: dagen,
     };
   });
 
   return {
     peildatum,
-    basisVanaf,
     gerealiseerd,
     perDag,
     dagenGemeten,
+    dagenNietGemeten: dagenTussen(`${jaar}-01-01`, tot) - dagenGemeten,
     dagenBijgeschat,
     bijgeschat,
     verwacht,
     groei,
     target,
     targetPerMaand: target / 12,
-    maanden,
-    definitief: isDefinitief(peildatum, jaar) && basisVanaf === `${jaar}-01-01`,
+    maanden: uitkomsten,
+    definitief: isDefinitief(peildatum, jaar),
   };
 }
 
 /**
- * De ruwe GA4-cijfers zoals de wekelijkse ophaalactie ze bewaart: twaalf maandcijfers
- * per event, plus sessies en gebruikers. De koppeling naar KPI's gebeurt pas bij het
+ * De ruwe GA4-cijfers van één website over één jaar, zoals de wekelijkse ophaalactie ze
+ * bewaart (`kpi_2027_standen`, migratie 0035). De koppeling naar KPI's gebeurt pas bij het
  * lezen, zodat een gewijzigde definitie meteen geldt zonder opnieuw op te halen.
  */
 export interface KpiStand {
+  website: string;
+  jaar: number;
   peildatum: string;
   berekendOp: string;
   definitief: boolean;
-  events: Record<string, number[]>;
-  sessies: number[];
+  /** Per bron (`sessies`, `aankopen`, `event:<naam>`, `event:<naam>@<pad>`): datum → aantal. */
+  dagen: Record<string, Record<string, number>>;
+  /** Actieve gebruikers per maand (index 0 = januari), per maand ontdubbeld. */
   gebruikers: number[];
 }
 
-function nulreeks(): number[] {
-  return Array.from({ length: 12 }, () => 0);
+/** De bronnen in de stand waar een KPI uit optelt (niet voor gebruikers). */
+export function bronnenVan(definitie: KpiDefinitie): string[] {
+  switch (definitie.bron.soort) {
+    case "sessies":
+      return ["sessies"];
+    case "aankopen":
+      return ["aankopen"];
+    case "gebruikers":
+      return [];
+    case "events":
+      return definitie.bron.events.map(eventBron);
+  }
 }
 
-/** De twaalf maandcijfers van één KPI, opgeteld uit de stand. */
-export function maandwaardenVoor(definitie: KpiDefinitie, stand: KpiStand): number[] {
-  if (definitie.bron.soort === "verkeer") {
-    const reeks = definitie.bron.veld === "sessies" ? stand.sessies : stand.gebruikers;
-    return nulreeks().map((_, i) => Number(reeks?.[i]) || 0);
-  }
-  const som = nulreeks();
-  for (const event of definitie.bron.events) {
-    const reeks = stand.events[event.naam];
-    if (!reeks) continue;
-    for (let i = 0; i < 12; i++) som[i] += Number(reeks[i]) || 0;
+/** De dagcijfers van één KPI: de som van zijn bronnen per datum. */
+export function dagwaardenVoor(definitie: KpiDefinitie, stand: KpiStand): Record<string, number> {
+  const som: Record<string, number> = {};
+  for (const bron of bronnenVan(definitie)) {
+    for (const [datum, n] of Object.entries(stand.dagen[bron] ?? {})) {
+      som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
+    }
   }
   return som;
 }
 
-/** Hoe vaak elk event van een KPI t/m de peildatum vuurde, voor de regel onder de grafiek. */
+/** De twaalf maanden van één KPI van een website, klaar voor `berekenKpi`. */
+export function maandInvoerVoor(
+  definitie: KpiDefinitie,
+  website: KpiWebsite,
+  stand: KpiStand,
+): MaandInvoer[] {
+  if (definitie.bron.soort === "gebruikers") {
+    return maandInvoerUitMaanden(stand.gebruikers, stand.peildatum, definitie.meetperiodes, website.uitval, stand.jaar);
+  }
+  return maandInvoerUitDagen(
+    dagwaardenVoor(definitie, stand),
+    stand.peildatum,
+    definitie.meetperiodes,
+    website.uitval,
+    stand.jaar,
+  );
+}
+
+/** Hoe vaak elk event van een KPI vuurde, over alle dagen in de stand. */
 export function eventTotalen(
   definitie: KpiDefinitie,
   stand: KpiStand,
-): { naam: string; toelichting?: string; aantal: number }[] {
+): { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[] {
   if (definitie.bron.soort !== "events") return [];
   return definitie.bron.events.map((e) => ({
     naam: e.naam,
+    paginaBevat: e.paginaBevat,
     toelichting: e.toelichting,
-    aantal: (stand.events[e.naam] ?? []).reduce((t, n) => t + (Number(n) || 0), 0),
-  }));
-}
-
-/** Alles wat het tabblad van één KPI nodig heeft: de definitie, de events en de uitkomst. */
-export interface KpiOverzichtRegel {
-  sleutel: string;
-  naam: string;
-  bronTekst: string;
-  opmerking: string | null;
-  events: { naam: string; toelichting?: string; aantal: number }[];
-  uitkomst: KpiUitkomst;
-}
-
-/** Wat `/api/kpi-2027` teruggeeft. */
-export interface Kpi2027Antwoord {
-  stand: { peildatum: string; berekendOp: string; definitief: boolean } | null;
-  volgendeUpdate: string | null;
-  kpis: KpiOverzichtRegel[];
-  magBijwerken?: boolean;
-  fout?: string;
-}
-
-/** De negen KPI's uit één stand. */
-export function kpiOverzicht(stand: KpiStand, definities: readonly KpiDefinitie[]): KpiOverzichtRegel[] {
-  return definities.map((d) => ({
-    sleutel: d.sleutel,
-    naam: d.naam,
-    bronTekst: d.bronTekst,
-    opmerking: d.opmerking ?? null,
-    events: eventTotalen(d, stand),
-    uitkomst: berekenKpi(maandwaardenVoor(d, stand), stand.peildatum, { basisVanaf: d.basisVanaf }),
+    aantal: Object.values(stand.dagen[eventBron(e)] ?? {}).reduce((t, n) => t + (Number(n) || 0), 0),
   }));
 }
 
 /**
- * Wanneer de volgende stand verschijnt: de zondag na de volgende zaterdag, dus acht dagen
- * na de peildatum. Null als 2026 al helemaal gemeten is.
+ * De realisatie van het doeljaar t/m de peildatum van zijn stand: alles wat GA4 in dat jaar
+ * telde, zonder bijschatting — dit is het cijfer waar het target tegen afgezet wordt.
  */
-export function volgendeUpdate(peildatum: string, jaar: number = KPI_JAAR): string | null {
-  if (isDefinitief(peildatum, jaar)) return null;
-  return tekstVan(alsDatum(peildatum) + 8 * DAG_MS);
+export function realisatieVoor(definitie: KpiDefinitie, stand: KpiStand): number {
+  if (definitie.bron.soort === "gebruikers") return stand.gebruikers.reduce((t, n) => t + (Number(n) || 0), 0);
+  return Object.values(dagwaardenVoor(definitie, stand)).reduce((t, n) => t + n, 0);
+}
+
+/** Alles wat het tabblad van één KPI nodig heeft. */
+export interface KpiOverzichtRegel {
+  sleutel: string;
+  naam: string;
+  bronTekst: string | null;
+  opmerking: string | null;
+  events: { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[];
+  /** Null als er voor 2026 nog geen stand is. */
+  uitkomst: KpiUitkomst | null;
+  /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
+  realisatie: { waarde: number; peildatum: string | null };
+}
+
+export interface WebsiteOverzicht {
+  sleutel: string;
+  naam: string;
+  domein: string;
+  property: string;
+  uitgeslotenHosts: readonly string[];
+  uitvalTekst: string | null;
+  stand: { peildatum: string; berekendOp: string; definitief: boolean } | null;
+  standDoeljaar: { peildatum: string; berekendOp: string } | null;
+  volgendeUpdate: string | null;
+  kpis: KpiOverzichtRegel[];
+}
+
+/** Wat `/api/kpi-2027` teruggeeft. */
+export interface Kpi2027Antwoord {
+  websites: WebsiteOverzicht[];
+  magBijwerken?: boolean;
+  fout?: string;
+}
+
+/**
+ * Wanneer de volgende stand verschijnt: de zondag na de volgende zaterdag, dus acht dagen
+ * na de laatste peildatum. Null als beide jaren voorbij zijn.
+ */
+export function volgendeUpdate(laatstePeildatum: string): string | null {
+  if (laatstePeildatum >= `${KPI_DOELJAAR}-12-31`) return null;
+  return tekstVan(alsDatum(laatstePeildatum) + 8 * DAG_MS);
+}
+
+/** Het overzicht van één website uit zijn stand van 2026 en (als die er al is) van 2027. */
+export function websiteOverzicht(
+  website: KpiWebsite,
+  stand: KpiStand | null,
+  standDoeljaar: KpiStand | null,
+): WebsiteOverzicht {
+  const laatste = standDoeljaar?.peildatum ?? stand?.peildatum ?? null;
+  return {
+    sleutel: website.sleutel,
+    naam: website.naam,
+    domein: website.domein,
+    property: website.property,
+    uitgeslotenHosts: website.uitgeslotenHosts,
+    uitvalTekst: website.uitvalTekst ?? null,
+    stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
+    standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,
+    volgendeUpdate: laatste ? volgendeUpdate(laatste) : null,
+    kpis: website.kpis.map((d) => ({
+      sleutel: d.sleutel,
+      naam: d.naam,
+      bronTekst: d.bronTekst ?? null,
+      opmerking: d.opmerking ?? null,
+      events: stand ? eventTotalen(d, stand) : [],
+      uitkomst: stand ? berekenKpi(maandInvoerVoor(d, website, stand), stand.peildatum, { jaar: stand.jaar }) : null,
+      realisatie: standDoeljaar
+        ? { waarde: realisatieVoor(d, standDoeljaar), peildatum: standDoeljaar.peildatum }
+        : { waarde: 0, peildatum: null },
+    })),
+  };
 }

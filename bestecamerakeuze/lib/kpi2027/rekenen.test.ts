@@ -1,20 +1,34 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { KPI_DEFINITIES, kpiEvents } from "@/lib/kpi2027/definities";
+import { KPI_WEBSITES, eventBron, gewoneEvents, padEvents, vindWebsite } from "@/lib/kpi2027/definities";
 import {
   berekenKpi,
   dagenTussen,
   datumInNederland,
-  eventTotalen,
-  kpiOverzicht,
-  maandwaardenVoor,
+  dagwaardenVoor,
+  isGemeten,
+  laatsteZaterdag,
+  maandInvoerUitDagen,
+  maandInvoerUitMaanden,
   peildatumVoor,
+  realisatieVoor,
   volgendeUpdate,
+  websiteOverzicht,
   type KpiStand,
+  type MaandInvoer,
 } from "@/lib/kpi2027/rekenen";
 
 function bijna(werkelijk: number, verwacht: number, marge = 1e-9) {
   assert.ok(Math.abs(werkelijk - verwacht) < marge, `${werkelijk} ≠ ${verwacht}`);
+}
+
+/** Elke dag van `van` t/m `tot` dezelfde waarde. */
+function elkeDag(van: string, tot: string, waarde: number): Record<string, number> {
+  const uit: Record<string, number> = {};
+  for (let t = Date.parse(`${van}T00:00:00Z`); t <= Date.parse(`${tot}T00:00:00Z`); t += 86_400_000) {
+    uit[new Date(t).toISOString().slice(0, 10)] = waarde;
+  }
+  return uit;
 }
 
 test("dagenTussen telt beide grenzen mee", () => {
@@ -24,43 +38,44 @@ test("dagenTussen telt beide grenzen mee", () => {
 });
 
 test("de peildatum is de laatste zaterdag vóór vandaag", () => {
-  // Woensdag 18 november 2026 → zaterdag 14 november.
-  assert.equal(peildatumVoor(new Date("2026-11-18T12:00:00Z")), "2026-11-14");
-  // Zondag 15 november → gisteren.
-  assert.equal(peildatumVoor(new Date("2026-11-15T09:00:00Z")), "2026-11-14");
-  // Zaterdag 21 november zelf is nog niet af → de zaterdag ervoor.
-  assert.equal(peildatumVoor(new Date("2026-11-21T20:00:00Z")), "2026-11-14");
-  // Maandag 16 november → nog steeds 14 november: midden in de week verandert er niets.
-  assert.equal(peildatumVoor(new Date("2026-11-16T08:00:00Z")), "2026-11-14");
+  assert.equal(peildatumVoor(new Date("2026-11-18T12:00:00Z")), "2026-11-14"); // woensdag
+  assert.equal(peildatumVoor(new Date("2026-11-15T09:00:00Z")), "2026-11-14"); // zondag
+  assert.equal(peildatumVoor(new Date("2026-11-21T20:00:00Z")), "2026-11-14"); // zaterdag zelf
+  assert.equal(peildatumVoor(new Date("2026-11-16T08:00:00Z")), "2026-11-14"); // maandag
 });
 
 test("de peildatum volgt de Nederlandse kalender, niet UTC", () => {
-  // Zondag 22 november 00:30 in Nederland is zaterdag 23:30 UTC.
-  const nu = new Date("2026-11-21T23:30:00Z");
+  const nu = new Date("2026-11-21T23:30:00Z"); // zondag 00:30 in Nederland
   assert.equal(datumInNederland(nu), "2026-11-22");
   assert.equal(peildatumVoor(nu), "2026-11-21");
 });
 
-test("na de jaarwisseling blijft de peildatum op 31 december staan", () => {
-  // Zondag 3 januari 2027 → zaterdag 2 januari, afgekapt op 31 december.
+test("na de jaarwisseling blijft de peildatum van 2026 op 31 december staan", () => {
+  assert.equal(laatsteZaterdag(new Date("2027-01-03T10:00:00Z")), "2027-01-02");
   assert.equal(peildatumVoor(new Date("2027-01-03T10:00:00Z")), "2026-12-31");
-  assert.equal(peildatumVoor(new Date("2027-06-01T10:00:00Z")), "2026-12-31");
-  // Zondag 27 december → zaterdag 26 december.
+  assert.equal(peildatumVoor(new Date("2027-01-03T10:00:00Z"), 2027), "2027-01-02");
   assert.equal(peildatumVoor(new Date("2026-12-27T10:00:00Z")), "2026-12-26");
-});
-
-test("vóór de eerste zaterdag van het jaar valt er niets te rekenen", () => {
-  // Vrijdag 2 januari 2026: de laatste zaterdag is 27 december 2025.
   assert.equal(peildatumVoor(new Date("2026-01-02T10:00:00Z")), null);
 });
 
-test("verwachting = gerealiseerd + gemiddelde per dag × resterende dagen; target = +5%", () => {
-  // Elke dag precies 10, t/m zaterdag 14 november (318 dagen).
-  const peildatum = "2026-11-14";
-  const maanden = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 14, 0].map((d) => d * 10);
-  const u = berekenKpi(maanden, peildatum);
+test("gemeten: binnen een meetperiode en buiten de uitval", () => {
+  const uitval = [{ van: "2026-06-25", tot: "2026-08-11" }];
+  assert.equal(isGemeten("2026-06-24", undefined, uitval), true);
+  assert.equal(isGemeten("2026-06-25", undefined, uitval), false);
+  assert.equal(isGemeten("2026-08-11", undefined, uitval), false);
+  assert.equal(isGemeten("2026-08-12", undefined, uitval), true);
+  const perioden = [{ van: "2026-02-02", tot: "2026-03-31" }, { van: "2026-09-03" }];
+  assert.equal(isGemeten("2026-02-01", perioden, []), false);
+  assert.equal(isGemeten("2026-03-31", perioden, []), true);
+  assert.equal(isGemeten("2026-05-01", perioden, []), false);
+  assert.equal(isGemeten("2026-11-14", perioden, []), true);
+});
 
+test("verwachting = gemeten + gemiddelde per dag × overige dagen; target = +5%", () => {
+  const maanden = maandInvoerUitDagen(elkeDag("2026-01-01", "2026-11-14", 10), "2026-11-14", undefined, []);
+  const u = berekenKpi(maanden, "2026-11-14");
   assert.equal(u.dagenGemeten, 318);
+  assert.equal(u.dagenNietGemeten, 0);
   assert.equal(u.gerealiseerd, 3180);
   bijna(u.perDag, 10);
   assert.equal(u.dagenBijgeschat, 47);
@@ -68,22 +83,11 @@ test("verwachting = gerealiseerd + gemiddelde per dag × resterende dagen; targe
   bijna(u.target, 3650 * 1.05);
   bijna(u.targetPerMaand, (3650 * 1.05) / 12);
   assert.equal(u.definitief, false);
-});
-
-test("de maanden: voorbij is gerealiseerd, de lopende deels, de rest verwachting", () => {
-  const maanden = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 14, 0].map((d) => d * 10);
-  const u = berekenKpi(maanden, "2026-11-14");
-
   assert.equal(u.maanden[9].soort, "gerealiseerd");
-  assert.equal(u.maanden[9].verwacht, 310);
   assert.equal(u.maanden[10].soort, "deels");
-  assert.equal(u.maanden[10].gerealiseerd, 140);
-  bijna(u.maanden[10].verwacht, 300); // 140 gemeten + 16 dagen × 10
+  bijna(u.maanden[10].verwacht, 300);
   assert.equal(u.maanden[11].soort, "verwachting");
   assert.equal(u.maanden[11].gerealiseerd, null);
-  bijna(u.maanden[11].verwacht, 310);
-
-  // De maanden tellen samen precies op tot de jaarverwachting.
   bijna(
     u.maanden.reduce((t, m) => t + m.verwacht, 0),
     u.verwacht,
@@ -91,116 +95,143 @@ test("de maanden: voorbij is gerealiseerd, de lopende deels, de rest verwachting
   );
 });
 
-test("een peildatum op de laatste dag van een maand maakt die maand gerealiseerd", () => {
-  const u = berekenKpi([310, 280, 310, 0, 0, 0, 0, 0, 0, 0, 0, 0], "2026-03-31");
-  assert.equal(u.maanden[2].soort, "gerealiseerd");
-  assert.equal(u.maanden[3].soort, "verwachting");
-  assert.equal(u.dagenGemeten, 90);
+test("uitval wordt bijgeschat en niet als nul geteld", () => {
+  // Elke dag 10, behalve een gat zonder data van 25 juni t/m 11 augustus.
+  const dagen = { ...elkeDag("2026-01-01", "2026-06-24", 10), ...elkeDag("2026-08-12", "2026-11-14", 10) };
+  const uitval = [{ van: "2026-06-25", tot: "2026-08-11" }];
+  const u = berekenKpi(maandInvoerUitDagen(dagen, "2026-11-14", undefined, uitval), "2026-11-14");
+  assert.equal(u.dagenNietGemeten, 48);
+  bijna(u.perDag, 10);
+  bijna(u.verwacht, 3650); // zonder bijschatting zou het 3170 zijn
+  assert.equal(u.maanden[5].soort, "bijgeschat"); // juni: 24 van 30 dagen gemeten
+  assert.equal(u.maanden[5].dagenGemeten, 24);
+  assert.equal(u.maanden[6].soort, "bijgeschat"); // juli: niets gemeten
+  assert.equal(u.maanden[6].gerealiseerd, null);
+  bijna(u.maanden[6].verwacht, 310);
 });
 
-test("met basisVanaf telt alleen de periode vanaf die dag, en de maanden ervoor worden bijgeschat", () => {
-  // Januari t/m maart vrijwel niets (2 in maart), vanaf april 2 per dag.
-  const peildatum = "2026-11-14";
-  const maanden = [0, 0, 2, 60, 62, 60, 62, 62, 60, 62, 28, 0];
-  const u = berekenKpi(maanden, peildatum, { basisVanaf: "2026-04-01" });
-
-  const dagenVanafApril = 30 + 31 + 30 + 31 + 31 + 30 + 31 + 14; // 228
-  assert.equal(u.dagenGemeten, dagenVanafApril);
-  assert.equal(u.gerealiseerd, 456); // de 2 van maart tellen niet mee
-  bijna(u.perDag, 2);
-  bijna(u.verwacht, 2 * 365);
+test("een event buiten zijn meetperiode telt niet mee", () => {
+  // Het oude event vuurt in mei nog een paar keer, maar mei is niet gemeten.
+  const dagen = { ...elkeDag("2026-02-02", "2026-03-31", 1), "2026-05-12": 3, ...elkeDag("2026-09-03", "2026-11-14", 2) };
+  const perioden = [{ van: "2026-02-02", tot: "2026-03-31" }, { van: "2026-09-03" }];
+  const u = berekenKpi(maandInvoerUitDagen(dagen, "2026-11-14", perioden, []), "2026-11-14");
+  assert.equal(u.dagenGemeten, 58 + 73);
+  assert.equal(u.gerealiseerd, 58 + 146);
+  assert.equal(u.maanden[4].gerealiseerd, null);
   assert.equal(u.maanden[0].soort, "bijgeschat");
-  assert.equal(u.maanden[0].gerealiseerd, null);
-  bijna(u.maanden[0].verwacht, 62);
-  assert.equal(u.maanden[3].soort, "gerealiseerd");
-  // Zonder volledige meting is de stand nooit definitief, ook niet op 31 december.
-  assert.equal(berekenKpi(maanden, "2026-12-31", { basisVanaf: "2026-04-01" }).definitief, false);
 });
 
-test("basisVanaf midden in een maand wordt geweigerd: de cijfers staan per maand", () => {
-  assert.throws(() => berekenKpi(new Array(12).fill(0), "2026-11-14", { basisVanaf: "2026-04-15" }));
+test("gebruikers per maand: een maand zonder gemeten dag telt niet, een halve maand wel half", () => {
+  const maandcijfers = [100, 100, 100, 100, 100, 80, 0, 60, 100, 100, 50, 0];
+  const uitval = [{ van: "2026-06-25", tot: "2026-08-11" }];
+  const maanden = maandInvoerUitMaanden(maandcijfers, "2026-11-14", undefined, uitval);
+  assert.deepEqual(maanden[6], { waarde: 0, dagenGemeten: 0 } satisfies MaandInvoer);
+  assert.equal(maanden[5].dagenGemeten, 24);
+  assert.equal(maanden[7].dagenGemeten, 20);
+  assert.equal(maanden[10].dagenGemeten, 14);
 });
 
-test("op 31 december is alles gerealiseerd en is de stand definitief", () => {
-  const maanden = new Array(12).fill(100);
-  const u = berekenKpi(maanden, "2026-12-31");
+test("op 31 december is alles voorbij en is de stand definitief", () => {
+  const u = berekenKpi(maandInvoerUitDagen(elkeDag("2026-01-01", "2026-12-31", 2), "2026-12-31", undefined, []), "2026-12-31");
   assert.equal(u.dagenBijgeschat, 0);
-  assert.equal(u.verwacht, 1200);
+  assert.equal(u.verwacht, 730);
   assert.equal(u.definitief, true);
   assert.ok(u.maanden.every((m) => m.soort === "gerealiseerd"));
 });
 
 test("zonder gemeten dagen is het gemiddelde nul in plaats van NaN", () => {
-  const u = berekenKpi(new Array(12).fill(0), "2026-03-14", { basisVanaf: "2026-04-01" });
+  const u = berekenKpi(maandInvoerUitDagen({}, "2026-03-14", [{ van: "2026-04-01" }], []), "2026-03-14");
   assert.equal(u.perDag, 0);
-  assert.equal(u.verwacht, 0);
   assert.equal(u.target, 0);
 });
 
-const stand: KpiStand = {
-  peildatum: "2026-11-14",
-  berekendOp: "2026-11-15T10:15:00Z",
-  definitief: false,
-  events: {
-    generate_lead_proefrit_aanvraag: [69, 63, 60, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    generate_lead_proefrit: [0, 0, 8, 134, 114, 95, 87, 105, 92, 200, 70, 0],
-  },
-  sessies: [120005, 104261, 121828, 99690, 115192, 111505, 105515, 104351, 102579, 119878, 60000, 0],
-  gebruikers: [71918, 62133, 72800, 58728, 73350, 71672, 66488, 64351, 61858, 68082, 40000, 0],
-};
-
-test("een KPI telt de maandcijfers van al zijn events bij elkaar op", () => {
-  const proefrit = KPI_DEFINITIES.find((d) => d.sleutel === "proefritaanvragen")!;
-  const reeks = maandwaardenVoor(proefrit, stand);
-  assert.equal(reeks[0], 69);
-  assert.equal(reeks[2], 68);
-  assert.equal(reeks[3], 135);
-  assert.equal(reeks[11], 0);
-  assert.deepEqual(
-    eventTotalen(proefrit, stand).map(({ naam, aantal }) => ({ naam, aantal })),
-    [
-      { naam: "generate_lead_proefrit_aanvraag", aantal: 193 },
-      { naam: "generate_lead_proefrit", aantal: 905 },
-    ],
-  );
-});
-
-test("een event dat niet in de stand staat telt als nul", () => {
-  const verhuur = KPI_DEFINITIES.find((d) => d.sleutel === "verhuur")!;
-  assert.deepEqual(maandwaardenVoor(verhuur, stand), new Array(12).fill(0));
-});
-
-test("sessies en gebruikers komen uit hun eigen reeks", () => {
-  const sessies = KPI_DEFINITIES.find((d) => d.sleutel === "sessies")!;
-  const gebruikers = KPI_DEFINITIES.find((d) => d.sleutel === "gebruikers")!;
-  assert.equal(maandwaardenVoor(sessies, stand)[0], 120005);
-  assert.equal(maandwaardenVoor(gebruikers, stand)[0], 71918);
-});
-
-test("de volgende update is de zondag na de volgende zaterdag, tot 2026 gemeten is", () => {
+test("de volgende update is acht dagen na de laatste peildatum, tot eind 2027", () => {
   assert.equal(volgendeUpdate("2026-11-14"), "2026-11-22");
   assert.equal(volgendeUpdate("2026-12-26"), "2027-01-03");
-  assert.equal(volgendeUpdate("2026-12-31"), null);
+  assert.equal(volgendeUpdate("2027-01-02"), "2027-01-10");
+  assert.equal(volgendeUpdate("2027-12-31"), null);
 });
 
-test("het overzicht levert alle negen KPI's met hun uitkomst", () => {
-  const regels = kpiOverzicht(stand, KPI_DEFINITIES);
-  assert.equal(regels.length, 9);
-  const zakelijk = regels.find((r) => r.sleutel === "zakelijke-lease")!;
-  assert.equal(zakelijk.uitkomst.basisVanaf, "2026-04-01");
-  const sessies = regels.find((r) => r.sleutel === "sessies")!;
-  assert.equal(sessies.events.length, 0);
-  assert.ok(sessies.uitkomst.target > sessies.uitkomst.verwacht);
+function stand(over: Partial<KpiStand>): KpiStand {
+  return {
+    website: "bentley",
+    jaar: 2026,
+    peildatum: "2026-11-14",
+    berekendOp: "2026-11-15T10:15:00Z",
+    definitief: false,
+    dagen: {},
+    gebruikers: new Array(12).fill(0),
+    ...over,
+  };
+}
+
+test("een KPI telt zijn bronnen per dag bij elkaar op, inclusief een event met padvoorwaarde", () => {
+  const bentley = vindWebsite("bentley")!;
+  const offerte = bentley.kpis.find((k) => k.sleutel === "offerteaanvragen")!;
+  const s = stand({
+    dagen: {
+      "event:Contactaanvraag@/caw-bedankt/offerte/": { "2026-03-04": 1, "2026-05-27": 2 },
+      "event:generate_lead_offerte": { "2026-10-20": 1, "2026-11-03": 1 },
+      "event:Contactaanvraag": { "2026-08-09": 1 }, // een proefrit: hoort er niet bij
+    },
+  });
+  assert.deepEqual(dagwaardenVoor(offerte, s), { "2026-03-04": 1, "2026-05-27": 2, "2026-10-20": 1, "2026-11-03": 1 });
 });
 
-test("de definities: negen KPI's, unieke sleutels, en een basis altijd op de eerste van een maand", () => {
-  assert.equal(KPI_DEFINITIES.length, 9);
-  assert.equal(new Set(KPI_DEFINITIES.map((d) => d.sleutel)).size, 9);
-  for (const d of KPI_DEFINITIES) {
-    if (d.basisVanaf) assert.match(d.basisVanaf, /^\d{4}-\d{2}-01$/);
+test("de realisatie van 2027 is de som van alles in de stand van 2027, zonder bijschatting", () => {
+  const veloo = vindWebsite("veloo")!;
+  const aankopen = veloo.kpis.find((k) => k.sleutel === "productaankopen")!;
+  const s = stand({ website: "veloo", jaar: 2027, peildatum: "2027-01-09", dagen: { aankopen: { "2027-01-04": 2, "2027-01-08": 1 } } });
+  assert.equal(realisatieVoor(aankopen, s), 3);
+  const udenhout = vindWebsite("udenhout")!;
+  const gebruikers = udenhout.kpis.find((k) => k.sleutel === "gebruikers")!;
+  assert.equal(realisatieVoor(gebruikers, stand({ jaar: 2027, gebruikers: [500, ...new Array(11).fill(0)] })), 500);
+});
+
+test("het overzicht zonder stand van 2027 toont realisatie 0 en geen peildatum", () => {
+  const pgz = vindWebsite("pgz")!;
+  const o = websiteOverzicht(pgz, stand({ website: "pgz", dagen: { sessies: elkeDag("2026-01-01", "2026-11-14", 80) } }), null);
+  assert.equal(o.kpis.length, pgz.kpis.length);
+  for (const k of o.kpis) assert.deepEqual(k.realisatie, { waarde: 0, peildatum: null });
+  const sessies = o.kpis.find((k) => k.sleutel === "sessies")!;
+  bijna(sessies.uitkomst!.verwacht, 80 * 365);
+  assert.equal(o.volgendeUpdate, "2026-11-22");
+});
+
+test("zonder enige stand is er geen uitkomst, wel de lijst KPI's", () => {
+  const o = websiteOverzicht(vindWebsite("veloo")!, null, null);
+  assert.ok(o.kpis.every((k) => k.uitkomst === null));
+  assert.equal(o.stand, null);
+});
+
+test("de definities: zes websites, unieke sleutels, geldige perioden, geen event twee keer per website", () => {
+  assert.equal(KPI_WEBSITES.length, 6);
+  assert.equal(new Set(KPI_WEBSITES.map((w) => w.sleutel)).size, 6);
+  const datum = /^\d{4}-\d{2}-\d{2}$/;
+  for (const w of KPI_WEBSITES) {
+    assert.match(w.property, /^\d+$/);
+    assert.equal(new Set(w.kpis.map((k) => k.sleutel)).size, w.kpis.length, w.sleutel);
+    for (const p of w.uitval) {
+      assert.match(p.van, datum);
+      assert.ok(p.tot && p.tot >= p.van);
+    }
+    const bronnen: string[] = [];
+    for (const k of w.kpis) {
+      for (const p of k.meetperiodes ?? []) {
+        assert.match(p.van, datum);
+        if (p.tot) assert.ok(p.tot >= p.van, `${w.sleutel}/${k.sleutel}`);
+      }
+      if (k.bron.soort === "events") bronnen.push(...k.bron.events.map(eventBron));
+      else assert.ok(k.bronTekst, `${w.sleutel}/${k.sleutel} mist een bronTekst`);
+    }
+    // Eén aanvraag mag niet bij twee KPI's van dezelfde website meetellen.
+    assert.equal(new Set(bronnen).size, bronnen.length, w.sleutel);
+    assert.equal(gewoneEvents(w).length + padEvents(w).length, bronnen.length, w.sleutel);
   }
-  // Geen event bij twee KPI's: dan zou één aanvraag twee keer meetellen.
-  const alle = KPI_DEFINITIES.flatMap((d) => (d.bron.soort === "events" ? d.bron.events.map((e) => e.naam) : []));
-  assert.equal(new Set(alle).size, alle.length);
-  assert.equal(kpiEvents().length, alle.length);
+});
+
+test("de uitgesloten hosts zijn nooit het live domein", () => {
+  for (const w of KPI_WEBSITES) {
+    for (const host of w.uitgeslotenHosts) assert.ok(!host.endsWith(`www.${w.domein}`) && host !== w.domein, host);
+  }
 });
