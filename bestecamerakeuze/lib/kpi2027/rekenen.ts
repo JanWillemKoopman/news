@@ -5,7 +5,6 @@ import {
   eventBron,
   type KpiDefinitie,
   type KpiWebsite,
-  type Periode,
 } from "@/lib/kpi2027/definities";
 
 /**
@@ -19,7 +18,8 @@ import {
  *  1. **Gerealiseerd**: wat GA4 op de gemeten dagen t/m de peildatum telde.
  *  2. **Gemiddelde per dag**: gerealiseerd ÷ het aantal gemeten dagen.
  *  3. **Verwachting 2026**: gerealiseerd + gemiddelde × alle overige dagen van 2026 — de
- *     resterende dagen, en de dagen waarop niet gemeten werd (`definities.ts`).
+ *     resterende dagen, en de dagen waarop de property 0 sessies had (`uitvalUitStand`).
+ *     Een dag mét sessies telt altijd als gemeten, ook als een event die dag niet vuurde.
  *  4. **Target 2027**: verwachting × 1,05.
  *  5. **Maandtarget 2027**: het jaartarget ÷ 12 — bewust een gelijke twaalfde en geen
  *     verdeling naar het aantal dagen of het seizoen, zodat hij in het overleg na te
@@ -104,19 +104,35 @@ export function isDefinitief(peildatum: string, jaar: number = KPI_JAAR): boolea
   return peildatum >= `${jaar}-12-31`;
 }
 
-function binnen(datum: string, p: Periode): boolean {
-  return datum >= p.van && (p.tot === undefined || datum <= p.tot);
+/** Een aaneengesloten reeks dagen, `van` t/m `tot`. */
+export interface Periode {
+  van: string;
+  tot: string;
 }
 
-/** Telt deze dag als gemeten: binnen een meetperiode (of geen meetperiodes) en niet in de uitval? */
-export function isGemeten(
-  datum: string,
-  meetperiodes: readonly Periode[] | undefined,
-  uitval: readonly Periode[],
-): boolean {
-  if (uitval.some((p) => binnen(datum, p))) return false;
-  if (!meetperiodes || meetperiodes.length === 0) return true;
-  return meetperiodes.some((p) => binnen(datum, p));
+/**
+ * De dagen waarop de property **0 sessies** had, t/m de peildatum, samengevoegd tot
+ * aaneengesloten periodes. Dat zijn de enige dagen die worden bijgeschat: daar werkte de
+ * tracking niet. Een dag met sessies telt altijd als gemeten, ook als een event die dag
+ * niet vuurde — keuze van de eigenaar, zie `definities.ts`.
+ */
+export function uitvalUitStand(stand: Pick<KpiStand, "dagen" | "peildatum" | "jaar">): Periode[] {
+  const sessies = stand.dagen.sessies ?? {};
+  const periodes: Periode[] = [];
+  for (const dagen of dagenPerMaand(stand.jaar, stand.peildatum)) {
+    for (const d of dagen) {
+      if ((Number(sessies[d]) || 0) > 0) continue;
+      const vorige = periodes[periodes.length - 1];
+      if (vorige && tekstVan(alsDatum(vorige.tot) + DAG_MS) === d) vorige.tot = d;
+      else periodes.push({ van: d, tot: d });
+    }
+  }
+  return periodes;
+}
+
+/** Telt deze dag als gemeten, oftewel valt hij buiten de uitval? */
+export function isGemeten(datum: string, uitval: readonly Periode[]): boolean {
+  return !uitval.some((p) => datum >= p.van && datum <= p.tot);
 }
 
 /** Per maand: wat er op de gemeten dagen werd geteld, en hoeveel dagen dat waren. */
@@ -140,7 +156,6 @@ function dagenPerMaand(jaar: number, peildatum: string): string[][] {
 export function maandInvoerUitDagen(
   dagwaarden: Readonly<Record<string, number>>,
   peildatum: string,
-  meetperiodes: readonly Periode[] | undefined,
   uitval: readonly Periode[],
   jaar: number = KPI_JAAR,
 ): MaandInvoer[] {
@@ -148,7 +163,7 @@ export function maandInvoerUitDagen(
     let waarde = 0;
     let dagenGemeten = 0;
     for (const d of dagen) {
-      if (!isGemeten(d, meetperiodes, uitval)) continue;
+      if (!isGemeten(d, uitval)) continue;
       waarde += Math.max(0, Number(dagwaarden[d]) || 0);
       dagenGemeten++;
     }
@@ -163,12 +178,11 @@ export function maandInvoerUitDagen(
 export function maandInvoerUitMaanden(
   maandwaarden: readonly number[],
   peildatum: string,
-  meetperiodes: readonly Periode[] | undefined,
   uitval: readonly Periode[],
   jaar: number = KPI_JAAR,
 ): MaandInvoer[] {
   return dagenPerMaand(jaar, peildatum).map((dagen, i) => {
-    const dagenGemeten = dagen.filter((d) => isGemeten(d, meetperiodes, uitval)).length;
+    const dagenGemeten = dagen.filter((d) => isGemeten(d, uitval)).length;
     return { waarde: dagenGemeten > 0 ? Math.max(0, Number(maandwaarden[i]) || 0) : 0, dagenGemeten };
   });
 }
@@ -179,7 +193,7 @@ export function maandInvoerUitMaanden(
  *  - `gerealiseerd` — voorbij en elke dag gemeten;
  *  - `deels` — de peildatum valt erin: een deel gemeten, de rest verwachting;
  *  - `verwachting` — de maand moet nog komen;
- *  - `bijgeschat` — voorbij, maar (deels) niet gemeten en met het gemiddelde ingevuld.
+ *  - `bijgeschat` — voorbij, maar (deels) zonder sessies en met het gemiddelde ingevuld.
  */
 export type MaandSoort = "gerealiseerd" | "deels" | "verwachting" | "bijgeschat";
 
@@ -208,7 +222,7 @@ export interface KpiUitkomst {
   /** Het gemiddelde per gemeten dag. */
   perDag: number;
   dagenGemeten: number;
-  /** Verstreken dagen (t/m de peildatum) die niet gemeten zijn. */
+  /** Verstreken dagen (t/m de peildatum) zonder sessies, dus niet gemeten. */
   dagenNietGemeten: number;
   /** Alle dagen van het jaar die met het gemiddelde zijn ingevuld. */
   dagenBijgeschat: number;
@@ -320,44 +334,88 @@ export function bronnenVan(definitie: KpiDefinitie): string[] {
 /** De dagcijfers van één KPI: de som van zijn bronnen per datum. */
 export function dagwaardenVoor(definitie: KpiDefinitie, stand: KpiStand): Record<string, number> {
   const som: Record<string, number> = {};
+  const extern = definitie.externeBron;
   for (const bron of bronnenVan(definitie)) {
     for (const [datum, n] of Object.entries(stand.dagen[bron] ?? {})) {
+      // Waar een andere bron geldt, tellen de GA4-cijfers niet mee.
+      if (extern && datum <= extern.tot) continue;
+      som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
+    }
+  }
+  if (extern) {
+    const jaar = `${stand.jaar}-`;
+    for (const [datum, n] of Object.entries(extern.dagen)) {
+      if (!datum.startsWith(jaar) || datum > extern.tot) continue;
       som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
     }
   }
   return som;
 }
 
-/** De twaalf maanden van één KPI van een website, klaar voor `berekenKpi`. */
-export function maandInvoerVoor(
-  definitie: KpiDefinitie,
-  website: KpiWebsite,
-  stand: KpiStand,
-): MaandInvoer[] {
-  if (definitie.bron.soort === "gebruikers") {
-    return maandInvoerUitMaanden(stand.gebruikers, stand.peildatum, definitie.meetperiodes, website.uitval, stand.jaar);
-  }
-  return maandInvoerUitDagen(
-    dagwaardenVoor(definitie, stand),
-    stand.peildatum,
-    definitie.meetperiodes,
-    website.uitval,
-    stand.jaar,
-  );
+/** De uitval na `tot`: dagen t/m `tot` zijn door een andere bron gedekt en dus gemeten. */
+export function uitvalNa(uitval: readonly Periode[], tot: string): Periode[] {
+  const dagNa = tekstVan(alsDatum(tot) + DAG_MS);
+  return uitval.filter((p) => p.tot > tot).map((p) => (p.van > tot ? p : { van: dagNa, tot: p.tot }));
 }
 
-/** Hoe vaak elk event van een KPI vuurde, over alle dagen in de stand. */
+/** De twaalf maanden van één KPI, klaar voor `berekenKpi`. */
+export function maandInvoerVoor(
+  definitie: KpiDefinitie,
+  stand: KpiStand,
+  uitval: readonly Periode[] = uitvalUitStand(stand),
+): MaandInvoer[] {
+  if (definitie.bron.soort === "gebruikers") {
+    return maandInvoerUitMaanden(stand.gebruikers, stand.peildatum, uitval, stand.jaar);
+  }
+  const eigenUitval = definitie.externeBron ? uitvalNa(uitval, definitie.externeBron.tot) : uitval;
+  return maandInvoerUitDagen(dagwaardenVoor(definitie, stand), stand.peildatum, eigenUitval, stand.jaar);
+}
+
+const MAANDNAMEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+
+function datumTekst(datum: string): string {
+  return `${Number(datum.slice(8, 10))} ${MAANDNAMEN[Number(datum.slice(5, 7)) - 1]}`;
+}
+
+/** De uitval in gewone taal, voor bovenaan het tabblad; null als er geen dag zonder sessies was. */
+export function uitvalTekst(uitval: readonly Periode[], jaar: number = KPI_JAAR): string | null {
+  if (uitval.length === 0) return null;
+  const delen = uitval.map((p) =>
+    p.van === p.tot ? `op ${datumTekst(p.van)}` : `van ${datumTekst(p.van)} t/m ${datumTekst(p.tot)}`,
+  );
+  const lijst = delen.length === 1 ? delen[0] : `${delen.slice(0, -1).join(", ")} en ${delen[delen.length - 1]}`;
+  const zin = lijst.charAt(0).toUpperCase() + lijst.slice(1);
+  return `${zin} ${jaar} had deze property 0 sessies: daar werkte de tracking niet. Die dagen zijn bij elke KPI met het gemiddelde per gemeten dag bijgeschat; alle andere dagen tellen zoals gemeten.`;
+}
+
+/** Hoe vaak elk event van een KPI vuurde, over de dagen in de stand waarop GA4 telt. */
 export function eventTotalen(
   definitie: KpiDefinitie,
   stand: KpiStand,
 ): { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[] {
   if (definitie.bron.soort !== "events") return [];
+  const na = definitie.externeBron?.tot ?? "";
   return definitie.bron.events.map((e) => ({
     naam: e.naam,
     paginaBevat: e.paginaBevat,
     toelichting: e.toelichting,
-    aantal: Object.values(stand.dagen[eventBron(e)] ?? {}).reduce((t, n) => t + (Number(n) || 0), 0),
+    aantal: Object.entries(stand.dagen[eventBron(e)] ?? {})
+      .filter(([datum]) => datum > na)
+      .reduce((t, [, n]) => t + (Number(n) || 0), 0),
   }));
+}
+
+/** Wat de andere bron in het jaar van de stand bijdraagt, voor onder de grafiek. */
+export function externeBronTotaal(
+  definitie: KpiDefinitie,
+  stand: KpiStand,
+): { naam: string; omschrijving: string; tot: string; aantal: number } | null {
+  const extern = definitie.externeBron;
+  if (!extern || extern.tot < `${stand.jaar}-01-01`) return null;
+  const aantal = Object.entries(extern.dagen)
+    .filter(([datum]) => datum.startsWith(`${stand.jaar}-`) && datum <= extern.tot && datum <= stand.peildatum)
+    .reduce((t, [, n]) => t + (Number(n) || 0), 0);
+  return { naam: extern.naam, omschrijving: extern.omschrijving, tot: extern.tot, aantal };
 }
 
 /**
@@ -376,6 +434,8 @@ export interface KpiOverzichtRegel {
   bronTekst: string | null;
   opmerking: string | null;
   events: { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[];
+  /** Een andere bron voor het begin van het jaar (Porsche-werkplaats), met wat die bijdraagt. */
+  externeBron: { naam: string; omschrijving: string; tot: string; aantal: number } | null;
   /** Null als er voor 2026 nog geen stand is. */
   uitkomst: KpiUitkomst | null;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
@@ -411,6 +471,19 @@ export function volgendeUpdate(laatstePeildatum: string): string | null {
   return tekstVan(alsDatum(laatstePeildatum) + 8 * DAG_MS);
 }
 
+/**
+ * De uitvaltekst, met erachter welke KPI's die dagen uit een andere bron halen en daar dus
+ * niet bijgeschat zijn (Porsche-werkplaats uit de planning).
+ */
+function uitvalMetUitzonderingen(website: KpiWebsite, uitval: readonly Periode[], jaar: number): string | null {
+  const tekst = uitvalTekst(uitval, jaar);
+  if (!tekst) return null;
+  const gedekt = website.kpis.filter((k) => k.externeBron && uitval.some((p) => p.van <= k.externeBron!.tot));
+  if (gedekt.length === 0) return tekst;
+  const namen = gedekt.map((k) => `${k.naam.toLowerCase()} (uit ${k.externeBron!.naam})`).join(" en ");
+  return `${tekst} Uitzondering: ${namen}, die voor die dagen een eigen bron ${gedekt.length === 1 ? "heeft" : "hebben"} en daar niet is bijgeschat.`;
+}
+
 /** Het overzicht van één website uit zijn stand van 2026 en (als die er al is) van 2027. */
 export function websiteOverzicht(
   website: KpiWebsite,
@@ -418,13 +491,14 @@ export function websiteOverzicht(
   standDoeljaar: KpiStand | null,
 ): WebsiteOverzicht {
   const laatste = standDoeljaar?.peildatum ?? stand?.peildatum ?? null;
+  const uitval = stand ? uitvalUitStand(stand) : [];
   return {
     sleutel: website.sleutel,
     naam: website.naam,
     domein: website.domein,
     property: website.property,
     uitgeslotenHosts: website.uitgeslotenHosts,
-    uitvalTekst: website.uitvalTekst ?? null,
+    uitvalTekst: stand ? uitvalMetUitzonderingen(website, uitval, stand.jaar) : null,
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,
     volgendeUpdate: laatste ? volgendeUpdate(laatste) : null,
@@ -434,7 +508,8 @@ export function websiteOverzicht(
       bronTekst: d.bronTekst ?? null,
       opmerking: d.opmerking ?? null,
       events: stand ? eventTotalen(d, stand) : [],
-      uitkomst: stand ? berekenKpi(maandInvoerVoor(d, website, stand), stand.peildatum, { jaar: stand.jaar }) : null,
+      externeBron: stand ? externeBronTotaal(d, stand) : null,
+      uitkomst: stand ? berekenKpi(maandInvoerVoor(d, stand, uitval), stand.peildatum, { jaar: stand.jaar }) : null,
       realisatie: standDoeljaar
         ? { waarde: realisatieVoor(d, standDoeljaar), peildatum: standDoeljaar.peildatum }
         : { waarde: 0, peildatum: null },

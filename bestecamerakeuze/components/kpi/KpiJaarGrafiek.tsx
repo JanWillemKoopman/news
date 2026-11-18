@@ -12,9 +12,9 @@ import type { MaandSoort, MaandUitkomst } from "@/lib/kpi2027/rekenen";
  * De 2026-lijn is één kleur in twee stukken: doorgetrokken waar GA4 de maand volledig mat,
  * gestippeld waar het (deels) verwachting is. Zo leest de lopende maand niet als een
  * instorting — november bevat t/m de peildatum maar de helft van zijn dagen — en is in één
- * oogopslag te zien hoeveel van het jaartotaal nog een schatting is. Maanden waarin (een
- * deel van) de dagen niet gemeten is, staan ook gestippeld: die zijn bijgeschat — zakelijke
- * lease van udenhout.nl in januari t/m maart, de Porsche-sites in juli.
+ * oogopslag te zien hoeveel van het jaartotaal nog een schatting is. Maanden met dagen
+ * waarop de property 0 sessies had, staan ook gestippeld: die dagen zijn bijgeschat — de
+ * Porsche-sites in juni t/m augustus 2026.
  *
  * Het target is een vlakke lijn: het jaartarget gedeeld door twaalf, elke maand gelijk.
  *
@@ -253,8 +253,8 @@ function MaandTooltip({
       regel2026 = `2026 bijgeschat: ${formatteer(p.verwacht, "aantal")}`;
       toelichting =
         p.dagenGemeten > 0
-          ? `waarvan ${formatteer(p.gerealiseerd, "aantal")} gemeten (${p.dagenGemeten} van ${p.dagenInMaand} dagen); de rest met het gemiddelde per dag`
-          : "niet gemeten; ingevuld met het gemiddelde per dag";
+          ? `waarvan ${formatteer(p.gerealiseerd, "aantal")} gemeten (${p.dagenGemeten} van ${p.dagenInMaand} dagen); de dagen zonder sessies met het gemiddelde per dag`
+          : "0 sessies op de website; ingevuld met het gemiddelde per dag";
       break;
   }
   if (p.toelichting) toelichting = p.toelichting;

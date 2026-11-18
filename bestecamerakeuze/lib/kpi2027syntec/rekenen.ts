@@ -252,8 +252,15 @@ function datumTekst(datum: string): string {
  * en vult `berekenKpi` de maanden ervóór met het gemiddelde (soort "bijgeschat").
  */
 export function uitkomstVoorKpi(kpi: SyntecKpi, maanden: readonly number[], peildatum: string): KpiUitkomst {
-  const meetperiodes = kpi.meetVanaf ? [{ van: kpi.meetVanaf }] : undefined;
-  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, meetperiodes, []), peildatum);
+  // De dagen vóór meetVanaf gaan als "niet gemeten" (uitval) mee: 1 januari t/m de dag ervoor.
+  const uitval = kpi.meetVanaf
+    ? [{ van: `${kpi.meetVanaf.slice(0, 4)}-01-01`, tot: dagErvoor(kpi.meetVanaf) }]
+    : [];
+  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, uitval), peildatum);
+}
+
+function dagErvoor(datum: string): string {
+  return new Date(Date.parse(`${datum}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 }
 
 /**
