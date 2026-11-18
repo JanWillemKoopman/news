@@ -685,6 +685,21 @@ udenhout.nl het target voor 2027: wat 2026 naar verwachting doet, plus 5%.
   maandtarget één-op-één naast het GA4-maandrapport van 2027 past.
 - **Geteld wordt `event_count`**, net als op Leads en bij de GA-conversies per campagne —
   niet het aantal key events.
+- **OPEN BESLUIT (november 2026, nog niet genomen): rekenen drie KPI's ook vanaf april?**
+  Door de trackingwissel verschilt het niveau per maand sterk tussen januari–maart en de
+  rest van het jaar:
+  - Offerte onderhoud: ±170 per maand in januari–maart, daarna ±60–140.
+  - Private lease: ±25 per maand in januari–maart, daarna ±60–190.
+  - Proefritaanvragen: ±65 per maand in januari–maart, daarna ±90–200.
+
+  Het gemiddelde over het hele jaar mengt die twee periodes, en daarmee ook de verwachting
+  en het target. Het alternatief is deze drie net als zakelijke lease te laten rekenen met
+  het gemiddelde vanaf april (`basisVanaf: "2026-04-01"` in `definities.ts`, één regel per
+  KPI; de bewaarde stand hoeft niet opnieuw opgehaald te worden). De eigenaar van het
+  dashboard heeft aangegeven dit een belangrijk punt te vinden en er zelf over te willen
+  beslissen. **Verander dit dus niet op eigen initiatief**; tot het besluit er is rekenen
+  ze met het gemiddelde over alle dagen van 2026, zoals oorspronkelijk gevraagd. Werk dit
+  punt bij (en de opmerking bij deze KPI's in `definities.ts`) zodra het besluit valt.
 - **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd. 2026 is doorgetrokken
   waar de maand volledig gemeten is en gestippeld waar het (deels) verwachting of
   bijgeschat is — anders leest de half gemeten lopende maand als een instorting. Het

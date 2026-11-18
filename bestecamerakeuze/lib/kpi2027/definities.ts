@@ -25,6 +25,15 @@ import { LEADS_GA4_PROPERTY } from "@/lib/leads/bereik";
  * t/m maart met datzelfde gemiddelde bij. Alle andere KPI's rekenen met het gemiddelde
  * over alle dagen van 2026, zoals gevraagd.
  *
+ * ## Open besluit: proefritaanvragen, private lease en offerte onderhoud
+ *
+ * Ook bij deze drie verschilt het niveau sterk tussen januari–maart en de rest van het jaar
+ * (offerte onderhoud ±170 per maand tegen ±60–140, private lease ±25 tegen ±60–190,
+ * proefritaanvragen ±65 tegen ±90–200). Of ze daarom net als zakelijke lease vanaf april
+ * moeten rekenen (`basisVanaf`), is een besluit dat de eigenaar van het dashboard nog moet
+ * nemen — zie "OPEN BESLUIT" in CLAUDE.md. Niet op eigen initiatief veranderen; tot dan
+ * rekenen ze over alle dagen van 2026.
+ *
  * ## Waarom events en geen key events
  *
  * Geteld wordt `event_count`: hoe vaak het event vuurde. Dat is dezelfde keuze als op het
