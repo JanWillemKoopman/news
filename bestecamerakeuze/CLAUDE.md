@@ -675,26 +675,32 @@ realisatie van 2027.
   Maastricht, PGZ, Bentley Maastricht, VELOO), het gekozen tabblad in de URL
   (`?kpisite=pgz`). Dat is op verzoek een **tweede uitzondering** op "geen dubbele
   navigatie" (naast Campagnebeheer): het is één pagina voor een andere GA4-property, geen
-  aparte pagina. Alles per website — property, uitgesloten hosts, uitval, KPI's en events —
+  aparte pagina. Alles per website — property, uitgesloten hosts, KPI's en events —
   staat op één plek: `lib/kpi2027/definities.ts`.
 - **De rekensom** (`lib/kpi2027/rekenen.ts`, getest): wat GA4 op de **gemeten** dagen t/m de
   peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van 2026 =
   verwachting 2026. Target 2027 = verwachting × 1,05 (voor elke KPI); maandtarget =
   jaartarget ÷ 12 (bewust een gelijke twaalfde, geen seizoen). Een rechte lijn, net als de
   forecast op Budget beheer: na te rekenen in het overleg.
-- **Gemeten en niet gemeten dagen** (keuze van het team, november 2026, dezelfde regel als
-  eerder bij zakelijke lease): dagen zonder meting tellen niet als nul maar worden met het
-  gemiddelde ingevuld, en een event dat in een niet-gemeten periode toch vuurt telt niet
-  mee. Twee niveaus: `uitval` op de website (beide Porsche-properties maten van 25 juni
-  t/m 11 augustus 2026 helemaal niets, ook geen sessies — dat staat ook bovenaan hun tab)
-  en `meetperiodes` per KPI (wanneer het event bestond). Elke meetperiode is de eerste en
-  laatste dag waarop het event in 2026 werd gezien, per dag gemeten in november 2026:
-  Porsche-aanvragen vanaf 30 januari (op beide sites tegelijk; ervoor nul terwijl er wel
-  bezoek was), werkplaats Brabant 2 feb–31 mrt en vanaf 3 sep, werkplaats Maastricht vanaf
-  3 sep, PGZ offerte vanaf 11 okt, Bentley offerte 4 mrt–29 sep en vanaf 20 okt, Bentley
-  contact en werkplaats vanaf 21 okt, udenhout zakelijke lease vanaf 1 april. Bij Bentley
-  contact/werkplaats en PGZ offerte rust het target daardoor op weinig dagen; dat staat
-  onder die grafieken.
+- **Alleen geschat op dagen zonder sessies** (besluit van de eigenaar, november 2026):
+  "overal waar de tracking gewoon werkte de daadwerkelijk gemeten cijfers, alleen op dagen
+  waar de tracking niet werkte (dagen zonder sessies) een schatting, verder nergens." Een
+  dag met 0 sessies op de property wordt bij elke KPI van die website met het gemiddelde
+  per gemeten dag ingevuld; een dag mét sessies telt altijd zoals gemeten, ook als een
+  event die dag niet vuurde of nog niet bestond. `uitvalUitStand` in `rekenen.ts` leest die
+  dagen uit de sessiecijfers van de stand zelf — er staat nergens een handmatige lijst, dus
+  een nieuwe uitval wordt vanzelf herkend en bovenaan de tab gemeld (`uitvalTekst`). Nu:
+  beide Porsche-properties van 25 juni t/m 11 augustus 2026; de andere websites hebben elke
+  dag data.
+  - **Wat dit verving.** Eerst stonden er meetperiodes per KPI (zakelijke lease vanaf
+    april, Porsche-aanvragen vanaf 30 januari, werkplaats Brabant 2 feb–31 mrt en vanaf
+    3 sep, werkplaats Maastricht vanaf 3 sep, PGZ offerte vanaf 11 okt, Bentley offerte
+    4 mrt–29 sep en vanaf 20 okt, Bentley contact en werkplaats vanaf 21 okt). Die schatten
+    te veel bij: bij werkplaats Brabant was 348 van de 543 verwachte afspraken een schatting
+    over dagen waarop de site gewoon mat. Zet ze niet terug zonder dat daarom gevraagd wordt.
+  - **Gevolg.** Waar een event pas laat in het jaar begon, is het target vooral wat er sinds
+    dat moment binnenkwam (Bentley contact 1, werkplaats 4, PGZ offerte 5). Dat staat in de
+    opmerking onder die grafieken.
 - **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
   bekende test-, staging- en vreemde domeinen eruit (`uitgeslotenHosts`); "(not set)" telt
   mee. Sessies en gebruikers zijn cijfers per sessie/persoon, gesplitst naar een dimensie
@@ -726,7 +732,7 @@ realisatie van 2027.
   per website per jaar, elke week overschreven). Per bron (`sessies`, `aankopen`,
   `event:<naam>`, `event:<naam>@<pad>`) een map datum → aantal, plus gebruikers per maand.
   Welke bron bij welke KPI hoort en welke dagen gemeten zijn, wordt pas bij het lezen
-  toegepast — een gewijzigde definitie of meetperiode geldt dus meteen, zonder opnieuw op
+  toegepast — een gewijzigde definitie geldt dus meteen, zonder opnieuw op
   te halen (een nieuw event komt er bij de volgende run of met de knop bij).
 - **Gebruikers: actieve gebruikers (`active_users`), per maand ontdubbeld**, op alle zes de
   websites (keuze van het team; udenhout.nl gebruikte eerst `totalusers`, een verschil van
@@ -753,21 +759,12 @@ realisatie van 2027.
 - **Geteld wordt `event_count`**, net als op Leads en bij de GA-conversies per campagne —
   niet het aantal key events. VELOO's Productaankopen is `ecommerce_purchases` (afgeronde
   bestellingen).
-- **OPEN BESLUIT (november 2026, nog niet genomen): rekenen drie KPI's ook vanaf april?**
-  Door de trackingwissel verschilt het niveau per maand sterk tussen januari–maart en de
-  rest van het jaar:
-  - Offerte onderhoud: ±170 per maand in januari–maart, daarna ±60–140.
-  - Private lease: ±25 per maand in januari–maart, daarna ±60–190.
-  - Proefritaanvragen: ±65 per maand in januari–maart, daarna ±90–200.
-
-  Het gemiddelde over het hele jaar mengt die twee periodes, en daarmee ook de verwachting
-  en het target. Het alternatief is deze drie net als zakelijke lease te laten rekenen met
-  het gemiddelde vanaf april (`meetperiodes: [{ van: "2026-04-01" }]` in `definities.ts`, één regel per
-  KPI; de bewaarde stand hoeft niet opnieuw opgehaald te worden). De eigenaar van het
-  dashboard heeft aangegeven dit een belangrijk punt te vinden en er zelf over te willen
-  beslissen. **Verander dit dus niet op eigen initiatief**; tot het besluit er is rekenen
-  ze met het gemiddelde over alle dagen van 2026, zoals oorspronkelijk gevraagd. Werk dit
-  punt bij (en de opmerking bij deze KPI's in `definities.ts`) zodra het besluit valt.
+- **Besloten (november 2026): proefritaanvragen, private lease en offerte onderhoud van
+  udenhout.nl rekenen over alle dagen.** Door de trackingwissel verschilt het niveau per
+  maand sterk tussen januari–maart en de rest van het jaar (offerte onderhoud ±170 per
+  maand tegen ±60–140, private lease ±25 tegen ±60–190, proefritaanvragen ±65 tegen
+  ±90–200). Het stond open of ze vanaf april moesten rekenen; de regel "alleen schatten op
+  dagen zonder sessies" beslist het: januari–maart is gemeten, dus die cijfers tellen.
 - **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd. 2026 is doorgetrokken
   waar de maand volledig gemeten is en gestippeld waar het (deels) verwachting of
   bijgeschat is — anders leest de half gemeten lopende maand als een instorting, en de
@@ -813,8 +810,9 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   (offerte, private lease, VW PFS) staat de reden onder de grafiek.
 - **Elke KPI rekent met het gemiddelde over alle dagen van 2026**, zoals gevraagd — ook
   inruilvoorstel en contact, waar de nieuwe website sinds april veel meer oplevert. Een
-  KPI vanaf april laten rekenen kan met een meetperiode (`{ van: "2026-04-01" }`) in
-  `maandInvoerUitMaanden` (`uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
+  KPI vanaf april laten rekenen kan door januari t/m maart als niet-gemeten mee te geven
+  (`[{ van: "2026-01-01", tot: "2026-03-31" }]` als derde argument van
+  `maandInvoerUitMaanden`, in `uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
   besluit van de eigenaar; niet op eigen initiatief veranderen.
 - **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
   vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".

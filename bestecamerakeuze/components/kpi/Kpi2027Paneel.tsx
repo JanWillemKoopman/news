@@ -178,7 +178,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
         <span>
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = wat Google Analytics op
           de gemeten dagen t/m de peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van{" "}
-          {KPI_JAAR} (de resterende dagen, en dagen waarop niet gemeten werd).{" "}
+          {KPI_JAAR} (de resterende dagen, en dagen waarop de website 0 sessies had).{" "}
           <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting +{groeiTekst}; het
           maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles wordt elke zondag bijgewerkt t/m zaterdag. In de grafiek is de
