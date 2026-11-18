@@ -6,24 +6,24 @@
  * precies op wat hier staat, en het tabblad toont onder elke grafiek wat er hier staat.
  * Een event toevoegen is dus één regel; de eerstvolgende zondag haalt hem op.
  *
- * ## Gemeten en niet gemeten dagen
+ * ## Wanneer er geschat wordt: alleen op dagen zonder sessies
  *
  * De rekensom (`rekenen.ts`) neemt het gemiddelde per dag over de **gemeten** dagen en vult
- * de rest van het jaar daarmee in: de toekomst, maar ook dagen waarop de meting nog niet
- * bestond of kapot was. Welke dagen gemeten zijn, staat hier op twee niveaus:
+ * de rest van het jaar daarmee in. Gemeten is elke dag waarop de property sessies had;
+ * alleen een dag met **0 sessies** telt als "tracking werkte niet" en wordt bijgeschat — bij
+ * elke KPI van die website. Dat leest `rekenen.ts` uit de sessiecijfers in de stand zelf;
+ * er staat hier dus geen lijst met uitvaldagen die kan verouderen.
  *
- *  - `uitval` op de website: dagen waarop de hele property niets mat (beide Porsche-sites
- *    van 25 juni t/m 11 augustus 2026 — ook geen sessies). Geldt voor elke KPI.
- *  - `meetperiodes` op een KPI: wanneer het event bestond. Zonder meetperiodes is het hele
- *    jaar gemeten. Een event dat in een niet-gemeten periode toch een keer vuurt (een
- *    losse test, een restant van de oude meting) telt niet mee.
+ * Een dag mét sessies maar zonder een bepaald event telt gewoon als nul, ook als dat event
+ * toen nog niet bestond of kapot was. Dat is een keuze van de eigenaar van het dashboard
+ * (november 2026): "overal waar de tracking gewoon werkte de daadwerkelijk gemeten cijfers,
+ * alleen op dagen zonder sessies een schatting, verder nergens". Hij vervangt de eerdere
+ * meetperiodes per KPI (zakelijke lease vanaf april, Porsche-werkplaats vanaf september,
+ * Bentley vanaf 21 oktober …), die te veel bijschatten. Waar een event pas laat in het jaar
+ * begon, valt het target daardoor laag uit; dat staat onder die grafieken.
  *
- * Dat is een keuze van het team (november 2026), dezelfde als eerder bij zakelijke lease
- * van udenhout.nl: een ontbrekend event bewijst niet dat er geen aanvragen waren, en een
- * nul over een periode zonder meting zou het target kunstmatig drukken. Elke meetperiode
- * hieronder is de eerste en laatste dag waarop het event in 2026 werd gezien (gemeten in
- * november 2026, per dag over 1 januari t/m 17 november), en staat ook in gewone taal
- * onder de grafiek.
+ * Nu herkend: beide Porsche-properties hadden van 25 juni t/m 11 augustus 2026 geen enkele
+ * sessie. De andere websites hebben elke dag data.
  *
  * ## Domeinen
  *
@@ -37,14 +37,11 @@
  * daar zijn samen een paar sessies, en www.plan-it-online.nl hoort bij de
  * werkplaatsplanner.
  *
- * ## Open besluit: proefritaanvragen, private lease en offerte onderhoud (udenhout.nl)
+ * ## Besloten: proefritaanvragen, private lease en offerte onderhoud (udenhout.nl)
  *
  * Bij deze drie verschilt het niveau sterk tussen januari–maart en de rest van het jaar
- * (offerte onderhoud ±170 per maand tegen ±60–140, private lease ±25 tegen ±60–190,
- * proefritaanvragen ±65 tegen ±90–200), maar beide periodes zijn wél gemeten — het is een
- * trackingwissel, geen gat. Of ze daarom vanaf april moeten rekenen, is een besluit dat de
- * eigenaar van het dashboard nog moet nemen — zie "OPEN BESLUIT" in CLAUDE.md. Niet op
- * eigen initiatief veranderen; tot dan rekenen ze over alle dagen van 2026.
+ * (trackingwissel). Het stond open of ze vanaf april moesten rekenen; de regel hierboven
+ * beslist het: januari–maart is gemeten (de site had sessies), dus die cijfers tellen.
  *
  * ## Waarom events en geen key events
  *
@@ -61,12 +58,6 @@ export const KPI_DOELJAAR = 2027;
 
 /** De groei die op de verwachting van het basisjaar komt: +5%, voor elke KPI. */
 export const KPI_GROEI = 0.05;
-
-/** Een periode van `van` t/m `tot` (beide inbegrepen); zonder `tot` loopt hij door. */
-export interface Periode {
-  van: string;
-  tot?: string;
-}
 
 export interface KpiEvent {
   /** De eventnaam precies zoals GA4 hem kent — hoofdletters tellen. */
@@ -87,8 +78,6 @@ export interface KpiDefinitie {
   sleutel: string;
   naam: string;
   bron: KpiBron;
-  /** Wanneer deze KPI gemeten werd; zonder deze lijst het hele jaar (minus de uitval). */
-  meetperiodes?: readonly Periode[];
   /** De bron in gewone taal, voor sessies, gebruikers en aankopen. */
   bronTekst?: string;
   /** Een opmerking onder de bron, als er iets is wat de lezer moet weten. */
@@ -105,10 +94,6 @@ export interface KpiWebsite {
   property: string;
   /** Hostnames die niet meetellen (test, staging, andere sites in dezelfde property). */
   uitgeslotenHosts: readonly string[];
-  /** Dagen waarop de hele property niets mat. */
-  uitval: readonly Periode[];
-  /** De uitval in gewone taal, bovenaan het tabblad. */
-  uitvalTekst?: string;
   kpis: readonly KpiDefinitie[];
 }
 
@@ -129,19 +114,6 @@ const GEBRUIKERS: KpiDefinitie = {
     "Het jaar is de som van de twaalf maanden: wie in drie maanden terugkomt, telt drie keer. Zo is het maandtarget één-op-één te vergelijken met het maandcijfer in GA4.",
 };
 
-/** Beide Porsche-properties maten van 25 juni t/m 11 augustus 2026 helemaal niets. */
-const PORSCHE_UITVAL: readonly Periode[] = [{ van: "2026-06-25", tot: "2026-08-11" }];
-const PORSCHE_UITVAL_TEKST =
-  "Van 25 juni t/m 11 augustus 2026 heeft deze property niets gemeten, ook geen sessies. Die dagen zijn bij elke KPI met het gemiddelde per gemeten dag bijgeschat.";
-
-/**
- * De aanvraag-events op beide Porsche-sites verschijnen voor het eerst op 30 januari 2026
- * (Brabant contact en meer info, Maastricht meer info), terwijl er in januari gewoon bezoek
- * was. Bij Brabant komen er zo'n zeven meer-info-aanvragen per maand binnen; drie weken nul
- * is dan geen toeval maar een meting die nog niet liep.
- */
-const PORSCHE_LEADS_VANAF: readonly Periode[] = [{ van: "2026-01-30" }];
-
 function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
   return [
     SESSIES,
@@ -153,7 +125,6 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
         soort: "events",
         events: [{ naam: "generate_lead_contact", toelichting: "op /over-ons-contact/contact/bedankt" }],
       },
-      meetperiodes: PORSCHE_LEADS_VANAF,
     },
     {
       sleutel: "meer-info",
@@ -162,7 +133,6 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
         soort: "events",
         events: [{ naam: "generate_lead_info", toelichting: "onder meer voorraadpagina's met /bedankt-info" }],
       },
-      meetperiodes: PORSCHE_LEADS_VANAF,
       opmerking:
         vestiging === "brabant"
           ? "Telt ook de bedankpagina voor Porsche Approved Garantie mee, niet alleen aanvragen over voorraadauto's."
@@ -175,7 +145,6 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
         soort: "events",
         events: [{ naam: "generate_lead_proefrit", toelichting: "onder meer /bedankt-proefrit en /bedankt-beide" }],
       },
-      meetperiodes: PORSCHE_LEADS_VANAF,
     },
     vestiging === "brabant"
       ? {
@@ -194,14 +163,8 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
               },
             ],
           },
-          // Februari en maart ±35 per maand, april t/m augustus vier keer in vijf maanden
-          // terwijl het bezoek normaal was: daar liep de oude meting niet meer.
-          meetperiodes: [
-            { van: "2026-02-02", tot: "2026-03-31" },
-            { van: "2026-09-03" },
-          ],
           opmerking:
-            "Gemeten van 2 februari t/m 31 maart en vanaf 3 september; daartussen vuurde de oude meting vrijwel niet (4× in vijf maanden) en is bijgeschat. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
+            "Januari en april t/m augustus vuurde er vrijwel geen werkplaats-event (4× in vijf maanden) terwijl de website wel bezoek mat; die maanden tellen zoals gemeten, wat het jaar en het target drukt. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
         }
       : {
           sleutel: "werkplaatsafspraken",
@@ -219,9 +182,8 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
               },
             ],
           },
-          meetperiodes: [{ van: "2026-09-03" }],
           opmerking:
-            "Pas gemeten vanaf 3 september (de oude meting vuurde alleen op 19 mei, 3×); de dagen daarvoor zijn bijgeschat. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
+            "Vóór 3 september vuurde er vrijwel geen werkplaats-event (alleen op 19 mei, 3×) terwijl de website wel bezoek mat; die maanden tellen zoals gemeten, wat het jaar en het target drukt. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
         },
   ];
 }
@@ -233,7 +195,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "udenhout.nl",
     property: "255949462",
     uitgeslotenHosts: [],
-    uitval: [],
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -286,10 +247,8 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
             { naam: "generate_lead_leasecontact", toelichting: "vanaf april, contactformulier op /leasen/contact" },
           ],
         },
-        // Vóór april vrijwel niet gemeten (generate_lead_zakelijk_lease vuurde 2×).
-        meetperiodes: [{ van: "2026-04-01" }],
         opmerking:
-          "Vóór april werd zakelijke lease vrijwel niet gemeten. Het gemiddelde per dag rekent daarom vanaf 1 april, en januari t/m maart zijn met dat gemiddelde bijgeschat.",
+          "Vóór april werd zakelijke lease vrijwel niet gemeten (2 aanvragen in januari t/m maart). Die maanden tellen zoals gemeten, wat het jaar en het target drukt.",
       },
       {
         sleutel: "verhuur",
@@ -334,8 +293,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     // www. en zonder www. zijn allebei de live site. De tweede property met dezelfde naam
     // ("(inactief)") wordt niet gebruikt: de aanvragen staan in deze.
     uitgeslotenHosts: [],
-    uitval: PORSCHE_UITVAL,
-    uitvalTekst: PORSCHE_UITVAL_TEKST,
     kpis: porscheKpis("brabant"),
   },
   {
@@ -344,8 +301,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "porschecentrummaastricht.nl",
     property: "306394313",
     uitgeslotenHosts: [],
-    uitval: PORSCHE_UITVAL,
-    uitvalTekst: PORSCHE_UITVAL_TEKST,
     kpis: porscheKpis("maastricht"),
   },
   {
@@ -354,7 +309,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "pgz.nl",
     property: "405407306",
     uitgeslotenHosts: ["staging.pgz.nl"],
-    uitval: [],
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -382,8 +336,8 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
             { naam: "generate_lead_offerte", toelichting: "voertuigpagina's, /contact en /cosmetics, vanaf 11 okt" },
           ],
         },
-        meetperiodes: [{ van: "2026-10-11" }],
-        opmerking: "Het event bestaat pas sinds 11 oktober; de dagen daarvoor zijn bijgeschat.",
+        opmerking:
+          "Het event bestaat pas sinds 11 oktober. De maanden daarvoor tellen als nul, omdat de website toen wel mat: het target is dus vooral wat er sinds oktober binnenkwam.",
       },
     ],
   },
@@ -393,7 +347,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "bentley-maastricht.nl",
     property: "435349999",
     uitgeslotenHosts: ["bentley-maastricht.acc2.ddp.uname-it.digital", "pon-test-maastricht.uname-it.digital"],
-    uitval: [],
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -411,21 +364,15 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
             { naam: "generate_lead_offerte", toelichting: "vanaf 20 okt" },
           ],
         },
-        // De oude naam staat ook op de bedankpagina van een proefrit; vandaar het pad.
-        meetperiodes: [
-          { van: "2026-03-04", tot: "2026-09-29" },
-          { van: "2026-10-20" },
-        ],
         opmerking:
-          "Contactaanvraag vuurt ook bij een proefrit; alleen die met /caw-bedankt/offerte/ in het pad zijn offertes. Gemeten van 4 maart t/m 29 september en vanaf 20 oktober; daarvoor en daartussen bijgeschat.",
+          "Contactaanvraag vuurt ook bij een proefrit; alleen die met /caw-bedankt/offerte/ in het pad zijn offertes. Vóór 4 maart en van 30 september t/m 19 oktober vuurde geen offerte-event; die dagen tellen als nul.",
       },
       {
         sleutel: "contactaanvragen",
         naam: "Contactaanvragen",
         bron: { soort: "events", events: [{ naam: "generate_lead_contact", toelichting: "op /contact, vanaf 21 okt" }] },
-        meetperiodes: [{ van: "2026-10-21" }],
         opmerking:
-          "Pas gemeten vanaf 21 oktober, met nog maar een handvol aanvragen: de verwachting voor 2026 en dus het target rusten op weinig dagen.",
+          "Het event bestaat pas sinds 21 oktober. De maanden daarvoor tellen als nul, omdat de website toen wel mat: het target is dus vooral wat er sinds oktober binnenkwam.",
       },
       {
         sleutel: "werkplaatsafspraken",
@@ -434,9 +381,8 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
           soort: "events",
           events: [{ naam: "generate_lead_werkplaats", toelichting: "op /service, vanaf 21 okt" }],
         },
-        meetperiodes: [{ van: "2026-10-21" }],
         opmerking:
-          "Pas gemeten vanaf 21 oktober, met nog maar een handvol aanvragen: de verwachting voor 2026 en dus het target rusten op weinig dagen. Het telt online aanvragen, geen bevestigde afspraken.",
+          "Het event bestaat pas sinds 21 oktober. De maanden daarvoor tellen als nul, omdat de website toen wel mat: het target is dus vooral wat er sinds oktober binnenkwam. Het telt online aanvragen, geen bevestigde afspraken.",
       },
     ],
   },
@@ -446,7 +392,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "veloo.nl",
     property: "381559171",
     uitgeslotenHosts: ["www.johnvermeulenfietsplezier.nl", "gtm-msr.appspot.com"],
-    uitval: [],
     kpis: [
       SESSIES,
       {
