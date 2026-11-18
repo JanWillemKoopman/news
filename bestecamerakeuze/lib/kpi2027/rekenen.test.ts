@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KPI_WEBSITES, eventBron, gewoneEvents, padEvents, vindWebsite } from "@/lib/kpi2027/definities";
+import { WERKPLAATS_EXPORT_BRABANT, WERKPLAATS_EXPORT_MAASTRICHT } from "@/lib/kpi2027/werkplaatsExport";
 import {
   berekenKpi,
   dagenTussen,
   datumInNederland,
   dagwaardenVoor,
+  eventTotalen,
   isGemeten,
   laatsteZaterdag,
   maandInvoerUitDagen,
@@ -13,6 +15,8 @@ import {
   maandInvoerVoor,
   peildatumVoor,
   realisatieVoor,
+  externeBronTotaal,
+  uitvalNa,
   uitvalTekst,
   uitvalUitStand,
   volgendeUpdate,
@@ -244,5 +248,74 @@ test("de definities: zes websites, unieke sleutels, geldige perioden, geen event
 test("de uitgesloten hosts zijn nooit het live domein", () => {
   for (const w of KPI_WEBSITES) {
     for (const host of w.uitgeslotenHosts) assert.ok(!host.endsWith(`www.${w.domein}`) && host !== w.domein, host);
+  }
+});
+
+test("uitvalNa knipt de uitval af op de dag na de andere bron", () => {
+  const uitval = [{ van: "2026-06-25", tot: "2026-08-11" }, { van: "2026-10-30", tot: "2026-11-02" }];
+  assert.deepEqual(uitvalNa(uitval, "2026-10-31"), [{ van: "2026-11-01", tot: "2026-11-02" }]);
+  assert.deepEqual(uitvalNa(uitval, "2026-05-31"), uitval);
+});
+
+test("Porsche-werkplaats: t/m oktober de planning (ook tijdens de uitval), daarna GA4", () => {
+  const brabant = vindWebsite("porsche-brabant")!;
+  const werkplaats = brabant.kpis.find((k) => k.sleutel === "werkplaatsafspraken")!;
+  const sessies = { ...elkeDag("2026-01-01", "2026-06-24", 900), ...elkeDag("2026-08-12", "2026-11-14", 900) };
+  const s: KpiStand = {
+    website: "porsche-brabant", jaar: 2026, peildatum: "2026-11-14", berekendOp: "", definitief: false,
+    dagen: {
+      sessies,
+      // GA4 vuurde in oktober 86× en in november 13×; alleen november telt.
+      "event:generate_lead_werkplaats": { "2026-10-02": 86, "2026-11-03": 13 },
+    },
+    gebruikers: new Array(12).fill(0),
+  };
+  const dagen = dagwaardenVoor(werkplaats, s);
+  assert.equal(dagen["2026-10-02"] ?? 0, WERKPLAATS_EXPORT_BRABANT["2026-10-02"] ?? 0);
+  assert.equal(dagen["2026-11-03"], 13);
+
+  const u = berekenKpi(maandInvoerVoor(werkplaats, s), s.peildatum);
+  assert.equal(u.dagenNietGemeten, 0); // juli valt in de uitval, maar de planning dekt hem
+  assert.equal(u.maanden[6].soort, "gerealiseerd");
+  assert.equal(u.maanden[6].gerealiseerd, 13);
+  assert.equal(u.maanden[9].gerealiseerd, 127);
+  assert.equal(u.maanden[10].gerealiseerd, 13);
+  assert.equal(u.gerealiseerd, 384 + 13);
+
+  assert.deepEqual(
+    eventTotalen(werkplaats, s).map((e) => e.aantal),
+    [13],
+  );
+  assert.deepEqual(externeBronTotaal(werkplaats, s), {
+    naam: "de werkplaatsplanning",
+    omschrijving: 'export van de werkplaatsplanning, afspraken per "Datum Van Aanvraag", ALvestiging 10',
+    tot: "2026-10-31",
+    aantal: 384,
+  });
+
+  // De andere KPI's van dezelfde website blijven de uitval bijschatten.
+  const contact = brabant.kpis.find((k) => k.sleutel === "contactaanvragen")!;
+  assert.equal(berekenKpi(maandInvoerVoor(contact, s), s.peildatum).dagenNietGemeten, 48);
+  // En de melding bovenaan noemt de uitzondering.
+  assert.match(websiteOverzicht(brabant, s, null).uitvalTekst ?? "", /Uitzondering: werkplaatsafspraken \(uit de werkplaatsplanning\)/);
+});
+
+test("de realisatie van 2027 telt de planning van 2026 niet mee", () => {
+  const werkplaats = vindWebsite("porsche-maastricht")!.kpis.find((k) => k.sleutel === "werkplaatsafspraken")!;
+  const s: KpiStand = {
+    website: "porsche-maastricht", jaar: 2027, peildatum: "2027-01-09", berekendOp: "", definitief: false,
+    dagen: { sessies: elkeDag("2027-01-01", "2027-01-09", 400), "event:generate_lead_werkplaats": { "2027-01-05": 2 } },
+    gebruikers: new Array(12).fill(0),
+  };
+  assert.equal(realisatieVoor(werkplaats, s), 2);
+  assert.equal(externeBronTotaal(werkplaats, s), null);
+});
+
+test("de export klopt met de maandtotalen uit het bestand", () => {
+  const som = (r: Readonly<Record<string, number>>) => Object.values(r).reduce((t, n) => t + n, 0);
+  assert.equal(som(WERKPLAATS_EXPORT_BRABANT), 384);
+  assert.equal(som(WERKPLAATS_EXPORT_MAASTRICHT), 168);
+  for (const r of [WERKPLAATS_EXPORT_BRABANT, WERKPLAATS_EXPORT_MAASTRICHT]) {
+    for (const datum of Object.keys(r)) assert.ok(datum >= "2026-01-01" && datum <= "2026-10-31", datum);
   }
 });
