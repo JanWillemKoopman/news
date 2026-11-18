@@ -27,12 +27,21 @@ import {
  *  3. Sessies per dag — en voor VELOO ook `ecommerce_purchases`.
  *  4. Actieve gebruikers per maand (`year_month`): per maand ontdubbeld.
  *
- * De eerste drie halen `hostname` als dimensie mee en laten de uitgesloten hosts in de
- * code vallen: sessies, events en aankopen tellen exact op over hostnames (een event heeft
- * er precies één). Gebruikers niet — wie op twee hosts kwam, zou twee keer tellen — dus
- * daar gaat de uitsluiting als filter mee naar Windsor. Zo bestaat elk filter uit één soort
- * verbinding ("of" óf "en"), precies de vorm die de nachtelijke sync al jaren gebruikt; een
- * genest filter is bij Windsor niet nodig en dus ook niet geprobeerd.
+ * ## Waar de uitgesloten hosts wegvallen
+ *
+ * **Events** (1 en 2) halen `hostname` als dimensie mee en laten de uitgesloten hosts in
+ * de code vallen: een event heeft precies één hostname, dus de telling per hostname telt
+ * exact op.
+ *
+ * **Sessies en gebruikers** (3 en 4) niet: dat zijn cijfers per sessie of per persoon,
+ * gesplitst naar een dimensie per event. Eén sessie waarvan het session_start-event geen
+ * hostname heeft, telt dan zowel onder "(not set)" als onder www. Gemeten: udenhout.nl
+ * kwam opgeteld per hostname op 1,57 miljoen sessies tegen 1,16 miljoen echt, PGZ op
+ * 24.776 tegen 15.107. Daar gaat de uitsluiting dus als filter mee naar Windsor, zonder
+ * hostname als dimensie — dan telt GA4 elke sessie en elke gebruiker één keer.
+ *
+ * Elk filter bestaat uit één soort verbinding ("of" óf "en"), precies de vorm die de
+ * nachtelijke sync al gebruikt; een genest filter is niet nodig en dus niet geprobeerd.
  */
 
 export interface OpgehaaldeStand {
@@ -69,7 +78,7 @@ export function eventFilter(events: readonly string[]): WindsorFilter {
   return filter;
 }
 
-/** "Hostname is niet a en niet b …", alleen voor de gebruikersopvraging. */
+/** "Hostname is niet a en niet b …", voor de opvragingen van sessies en gebruikers. */
 export function hostUitsluiting(hosts: readonly string[]): WindsorFilter | undefined {
   if (hosts.length === 0) return undefined;
   const filter: WindsorFilter = [];
@@ -94,7 +103,10 @@ export interface WebsiteRijen {
   gebruikers: WindsorRij[];
 }
 
-/** Van Windsor-rijen naar de stand van één website. Uitgesloten hosts tellen niet mee. */
+/**
+ * Van Windsor-rijen naar de stand van één website. Bij de events vallen de uitgesloten
+ * hosts hier weg; sessies en gebruikers zijn al gefilterd aangeleverd (zie de kop).
+ */
 export function standUitRijen(website: KpiWebsite, rijen: WebsiteRijen, jaar: number = KPI_JAAR): OpgehaaldeStand {
   const uitgesloten = new Set(website.uitgeslotenHosts);
   const telt = (rij: WindsorRij) => !uitgesloten.has(tekst(rij.hostname) ?? "");
@@ -119,7 +131,7 @@ export function standUitRijen(website: KpiWebsite, rijen: WebsiteRijen, jaar: nu
 
   for (const rij of rijen.verkeer) {
     const datum = datumUit(rij.date, jaar);
-    if (!datum || !telt(rij)) continue;
+    if (!datum) continue;
     telOp(dagen, "sessies", datum, getal(rij.sessions));
     telOp(dagen, "aankopen", datum, getal(rij.ecommerce_purchases));
   }
@@ -175,10 +187,10 @@ export async function haalWebsiteStand(
     ),
     haal(
       "googleanalytics4",
-      heeftAankopen(website) ? ["date", "hostname", "sessions", "ecommerce_purchases"] : ["date", "hostname", "sessions"],
+      heeftAankopen(website) ? ["date", "sessions", "ecommerce_purchases"] : ["date", "sessions"],
       van,
       peildatum,
-      undefined,
+      hostUitsluiting(website.uitgeslotenHosts),
       accounts,
     ),
     haal("googleanalytics4", ["year_month", "active_users"], van, peildatum, hostUitsluiting(website.uitgeslotenHosts), accounts),

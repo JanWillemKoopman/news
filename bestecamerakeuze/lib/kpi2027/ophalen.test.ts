@@ -20,26 +20,43 @@ test("de filters zijn plat: alleen 'of' tussen events, alleen 'en' tussen hosts"
   assert.equal(hostUitsluiting([]), undefined);
 });
 
-test("uitgesloten hosts tellen niet mee, '(not set)' wel", () => {
+test("bij events vallen uitgesloten hosts in de code weg, '(not set)' telt mee", () => {
   const pgz = vindWebsite("pgz")!;
   const stand = standUitRijen(pgz, {
     events: [
       { date: "2026-10-12", event_name: "generate_lead_offerte", hostname: "www.pgz.nl", event_count: 1 },
+      { date: "2026-10-12", event_name: "generate_lead_offerte", hostname: "(not set)", event_count: 1 },
       { date: "2026-10-12", event_name: "generate_lead_offerte", hostname: "staging.pgz.nl", event_count: 5 },
       { date: "2026-10-12", event_name: "click_tel", hostname: "www.pgz.nl", event_count: 9 },
     ],
     padEvents: {},
-    verkeer: [
-      { date: "2026-10-12", hostname: "www.pgz.nl", sessions: 40 },
-      { date: "2026-10-12", hostname: "(not set)", sessions: 25 },
-      { date: "2026-10-12", hostname: "staging.pgz.nl", sessions: 3 },
-    ],
+    // Sessies komen al gefilterd en zonder hostname binnen (zie de volgende test).
+    verkeer: [{ date: "2026-10-12", sessions: 40 }],
     gebruikers: [{ year_month: "202610", active_users: 800 }],
   });
-  assert.deepEqual(stand.dagen["event:generate_lead_offerte"], { "2026-10-12": 1 });
+  assert.deepEqual(stand.dagen["event:generate_lead_offerte"], { "2026-10-12": 2 });
   assert.equal(stand.dagen["event:click_tel"], undefined);
-  assert.deepEqual(stand.dagen.sessies, { "2026-10-12": 65 });
+  assert.deepEqual(stand.dagen.sessies, { "2026-10-12": 40 });
   assert.equal(stand.gebruikers[9], 800);
+});
+
+test("sessies en gebruikers worden door GA4 gefilterd, nooit per hostname opgeteld", async () => {
+  // Per hostname optellen telt een sessie met een hostnameloos session_start dubbel
+  // (udenhout.nl: 1,57 miljoen opgeteld tegen 1,16 miljoen echt).
+  const aanroepen: { velden: string[]; filter?: WindsorFilter }[] = [];
+  const haal = async (_c: string, velden: string[], _v: string, _t: string, filter?: WindsorFilter) => {
+    aanroepen.push({ velden, filter });
+    return velden.includes("sessions") ? [{ date: "2026-01-01", sessions: 10 }] : [];
+  };
+  await haalWebsiteStand(vindWebsite("pgz")!, "2026-11-14", 2026, haal as never);
+  for (const a of aanroepen.filter((a) => a.velden.includes("sessions") || a.velden.includes("active_users"))) {
+    assert.equal(a.velden.includes("hostname"), false);
+    assert.deepEqual(a.filter, [["hostname", "neq", "staging.pgz.nl"]]);
+  }
+  // Zonder uitgesloten hosts ook geen filter.
+  aanroepen.length = 0;
+  await haalWebsiteStand(vindWebsite("udenhout")!, "2026-11-14", 2026, haal as never);
+  assert.equal(aanroepen.find((a) => a.velden.includes("sessions"))!.filter, undefined);
 });
 
 test("per website precies de opvragingen die zijn KPI's nodig hebben", async () => {
@@ -53,7 +70,7 @@ test("per website precies de opvragingen die zijn KPI's nodig hebben", async () 
     accounts?: string[],
   ): Promise<WindsorRij[]> => {
     aanroepen.push({ velden, filter, accounts, van, tot });
-    if (velden.includes("sessions")) return [{ date: "2026-01-01", hostname: "www.bentley-maastricht.nl", sessions: 10 }];
+    if (velden.includes("sessions")) return [{ date: "2026-01-01", sessions: 10 }];
     if (velden.includes("event_name")) return [];
     if (velden.includes("active_users")) return [{ year_month: "202601", active_users: 7 }];
     return [{ date: "2026-03-04", hostname: "www.bentley-maastricht.nl", event_count: 1 }];

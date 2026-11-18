@@ -28,11 +28,14 @@
  * ## Domeinen
  *
  * Per website gaan bekende test-, staging- en vreemde domeinen eruit
- * (`uitgeslotenHosts`); al het andere telt mee, ook hostname "(not set)". Dat laatste is
- * bewust: bij PGZ heeft 39% van de sessies geen hostname (bij udenhout.nl 26%), terwijl
- * staging er maar 8 had. Een filter op alléén het live domein zou dus vooral echte sessies
- * weggooien. udenhout.nl heeft geen uitsluitingen: de vreemde hosts daar zijn samen een
- * paar sessies, en www.plan-it-online.nl hoort bij de werkplaatsplanner.
+ * (`uitgeslotenHosts`); al het andere telt mee, ook hostname "(not set)". Een sessie
+ * waarvan het session_start-event geen hostname heeft, staat in GA4 zowel onder "(not set)"
+ * als onder het echte domein — bij PGZ leek daardoor 39% van de sessies hostnameloos,
+ * terwijl het grotendeels dezelfde sessies waren. Uitsluiten in plaats van insluiten houdt
+ * alles wat echt is binnen, en `ophalen.ts` laat GA4 de sessies en gebruikers zelf
+ * filteren zodat niets dubbel telt. udenhout.nl heeft geen uitsluitingen: de vreemde hosts
+ * daar zijn samen een paar sessies, en www.plan-it-online.nl hoort bij de
+ * werkplaatsplanner.
  *
  * ## Open besluit: proefritaanvragen, private lease en offerte onderhoud (udenhout.nl)
  *

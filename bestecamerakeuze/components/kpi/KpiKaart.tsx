@@ -27,9 +27,17 @@ function aantal(waarde: number): string {
   return formatteer(Math.round(waarde), "aantal");
 }
 
+/** Hoe kleiner het getal, hoe meer decimalen: "0,04 per dag" zegt meer dan "0,0 per dag". */
 function perDagTekst(waarde: number): string {
-  const decimalen = waarde < 10 ? 1 : 0;
+  const decimalen = waarde < 1 ? 2 : waarde < 10 ? 1 : 0;
   return waarde.toLocaleString("nl-NL", { minimumFractionDigits: decimalen, maximumFractionDigits: decimalen });
+}
+
+/** Een maandtarget onder de tien op één decimaal: 1,3 per maand is geen 1 per maand. */
+function perMaandTekst(waarde: number): string {
+  return waarde < 10
+    ? waarde.toLocaleString("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    : aantal(waarde);
 }
 
 export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; website: WebsiteOverzicht }) {
@@ -62,7 +70,7 @@ export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; web
             <Statistiek
               label={`Target ${KPI_DOELJAAR}`}
               waarde={aantal(u.target)}
-              toelichting={`${aantal(u.targetPerMaand)} per maand`}
+              toelichting={`${perMaandTekst(u.targetPerMaand)} per maand`}
               nadruk
             />
             <Statistiek
