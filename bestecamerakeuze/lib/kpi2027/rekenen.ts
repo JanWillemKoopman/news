@@ -328,12 +328,28 @@ export function bronnenVan(definitie: KpiDefinitie): string[] {
 /** De dagcijfers van één KPI: de som van zijn bronnen per datum. */
 export function dagwaardenVoor(definitie: KpiDefinitie, stand: KpiStand): Record<string, number> {
   const som: Record<string, number> = {};
+  const extern = definitie.externeBron;
   for (const bron of bronnenVan(definitie)) {
     for (const [datum, n] of Object.entries(stand.dagen[bron] ?? {})) {
+      // Waar een andere bron geldt, tellen de GA4-cijfers niet mee.
+      if (extern && datum <= extern.tot) continue;
+      som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
+    }
+  }
+  if (extern) {
+    const jaar = `${stand.jaar}-`;
+    for (const [datum, n] of Object.entries(extern.dagen)) {
+      if (!datum.startsWith(jaar) || datum > extern.tot) continue;
       som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
     }
   }
   return som;
+}
+
+/** De uitval na `tot`: dagen t/m `tot` zijn door een andere bron gedekt en dus gemeten. */
+export function uitvalNa(uitval: readonly Periode[], tot: string): Periode[] {
+  const dagNa = tekstVan(alsDatum(tot) + DAG_MS);
+  return uitval.filter((p) => p.tot > tot).map((p) => (p.van > tot ? p : { van: dagNa, tot: p.tot }));
 }
 
 /** De twaalf maanden van één KPI, klaar voor `berekenKpi`. */
@@ -345,7 +361,8 @@ export function maandInvoerVoor(
   if (definitie.bron.soort === "gebruikers") {
     return maandInvoerUitMaanden(stand.gebruikers, stand.peildatum, uitval, stand.jaar);
   }
-  return maandInvoerUitDagen(dagwaardenVoor(definitie, stand), stand.peildatum, uitval, stand.jaar);
+  const eigenUitval = definitie.externeBron ? uitvalNa(uitval, definitie.externeBron.tot) : uitval;
+  return maandInvoerUitDagen(dagwaardenVoor(definitie, stand), stand.peildatum, eigenUitval, stand.jaar);
 }
 
 const MAANDNAMEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
@@ -365,18 +382,34 @@ export function uitvalTekst(uitval: readonly Periode[], jaar: number = KPI_JAAR)
   return `${zin} ${jaar} had deze property 0 sessies: daar werkte de tracking niet. Die dagen zijn bij elke KPI met het gemiddelde per gemeten dag bijgeschat; alle andere dagen tellen zoals gemeten.`;
 }
 
-/** Hoe vaak elk event van een KPI vuurde, over alle dagen in de stand. */
+/** Hoe vaak elk event van een KPI vuurde, over de dagen in de stand waarop GA4 telt. */
 export function eventTotalen(
   definitie: KpiDefinitie,
   stand: KpiStand,
 ): { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[] {
   if (definitie.bron.soort !== "events") return [];
+  const na = definitie.externeBron?.tot ?? "";
   return definitie.bron.events.map((e) => ({
     naam: e.naam,
     paginaBevat: e.paginaBevat,
     toelichting: e.toelichting,
-    aantal: Object.values(stand.dagen[eventBron(e)] ?? {}).reduce((t, n) => t + (Number(n) || 0), 0),
+    aantal: Object.entries(stand.dagen[eventBron(e)] ?? {})
+      .filter(([datum]) => datum > na)
+      .reduce((t, [, n]) => t + (Number(n) || 0), 0),
   }));
+}
+
+/** Wat de andere bron in het jaar van de stand bijdraagt, voor onder de grafiek. */
+export function externeBronTotaal(
+  definitie: KpiDefinitie,
+  stand: KpiStand,
+): { naam: string; omschrijving: string; tot: string; aantal: number } | null {
+  const extern = definitie.externeBron;
+  if (!extern || extern.tot < `${stand.jaar}-01-01`) return null;
+  const aantal = Object.entries(extern.dagen)
+    .filter(([datum]) => datum.startsWith(`${stand.jaar}-`) && datum <= extern.tot && datum <= stand.peildatum)
+    .reduce((t, [, n]) => t + (Number(n) || 0), 0);
+  return { naam: extern.naam, omschrijving: extern.omschrijving, tot: extern.tot, aantal };
 }
 
 /**
@@ -395,6 +428,8 @@ export interface KpiOverzichtRegel {
   bronTekst: string | null;
   opmerking: string | null;
   events: { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[];
+  /** Een andere bron voor het begin van het jaar (Porsche-werkplaats), met wat die bijdraagt. */
+  externeBron: { naam: string; omschrijving: string; tot: string; aantal: number } | null;
   /** Null als er voor 2026 nog geen stand is. */
   uitkomst: KpiUitkomst | null;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
@@ -430,6 +465,19 @@ export function volgendeUpdate(laatstePeildatum: string): string | null {
   return tekstVan(alsDatum(laatstePeildatum) + 8 * DAG_MS);
 }
 
+/**
+ * De uitvaltekst, met erachter welke KPI's die dagen uit een andere bron halen en daar dus
+ * niet bijgeschat zijn (Porsche-werkplaats uit de planning).
+ */
+function uitvalMetUitzonderingen(website: KpiWebsite, uitval: readonly Periode[], jaar: number): string | null {
+  const tekst = uitvalTekst(uitval, jaar);
+  if (!tekst) return null;
+  const gedekt = website.kpis.filter((k) => k.externeBron && uitval.some((p) => p.van <= k.externeBron!.tot));
+  if (gedekt.length === 0) return tekst;
+  const namen = gedekt.map((k) => `${k.naam.toLowerCase()} (uit ${k.externeBron!.naam})`).join(" en ");
+  return `${tekst} Uitzondering: ${namen}, die voor die dagen een eigen bron ${gedekt.length === 1 ? "heeft" : "hebben"} en daar niet is bijgeschat.`;
+}
+
 /** Het overzicht van één website uit zijn stand van 2026 en (als die er al is) van 2027. */
 export function websiteOverzicht(
   website: KpiWebsite,
@@ -444,7 +492,7 @@ export function websiteOverzicht(
     domein: website.domein,
     property: website.property,
     uitgeslotenHosts: website.uitgeslotenHosts,
-    uitvalTekst: stand ? uitvalTekst(uitval, stand.jaar) : null,
+    uitvalTekst: stand ? uitvalMetUitzonderingen(website, uitval, stand.jaar) : null,
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,
     volgendeUpdate: laatste ? volgendeUpdate(laatste) : null,
@@ -454,6 +502,7 @@ export function websiteOverzicht(
       bronTekst: d.bronTekst ?? null,
       opmerking: d.opmerking ?? null,
       events: stand ? eventTotalen(d, stand) : [],
+      externeBron: stand ? externeBronTotaal(d, stand) : null,
       uitkomst: stand ? berekenKpi(maandInvoerVoor(d, stand, uitval), stand.peildatum, { jaar: stand.jaar }) : null,
       realisatie: standDoeljaar
         ? { waarde: realisatieVoor(d, standDoeljaar), peildatum: standDoeljaar.peildatum }

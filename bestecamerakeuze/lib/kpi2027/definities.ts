@@ -1,3 +1,9 @@
+import {
+  WERKPLAATS_EXPORT_BRABANT,
+  WERKPLAATS_EXPORT_MAASTRICHT,
+  WERKPLAATS_EXPORT_TOT,
+} from "@/lib/kpi2027/werkplaatsExport";
+
 /**
  * De websites en KPI's waarvoor het tabblad KPI's 2027 een target zet.
  *
@@ -74,10 +80,28 @@ export type KpiBron =
   | { soort: "aankopen" }
   | { soort: "events"; events: readonly KpiEvent[] };
 
+/**
+ * Een andere bron dan Google Analytics voor het begin van het jaar: t/m `tot` tellen deze
+ * dagcijfers in plaats van de GA4-cijfers, en geldt elke dag als gemeten (de bron dekt hem,
+ * ook als de website toen 0 sessies had). Daarna weer GA4 met de gewone regel.
+ */
+export interface ExterneBron {
+  /** T/m deze dag geldt deze bron. */
+  tot: string;
+  /** Korte naam in een zin: "de werkplaatsplanning". */
+  naam: string;
+  /** Wat er precies geteld wordt, voor onder de grafiek. */
+  omschrijving: string;
+  /** Aantal per dag (alleen dagen met een waarde). */
+  dagen: Readonly<Record<string, number>>;
+}
+
 export interface KpiDefinitie {
   sleutel: string;
   naam: string;
   bron: KpiBron;
+  /** Een andere bron voor het begin van het jaar (Porsche-werkplaats t/m oktober). */
+  externeBron?: ExterneBron;
   /** De bron in gewone taal, voor sessies, gebruikers en aankopen. */
   bronTekst?: string;
   /** Een opmerking onder de bron, als er iets is wat de lezer moet weten. */
@@ -146,45 +170,28 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
         events: [{ naam: "generate_lead_proefrit", toelichting: "onder meer /bedankt-proefrit en /bedankt-beide" }],
       },
     },
-    vestiging === "brabant"
-      ? {
-          sleutel: "werkplaatsafspraken",
-          naam: "Werkplaatsafspraken",
-          bron: {
-            soort: "events",
-            events: [
-              {
-                naam: "generate_lead_werkplaatsafspraak",
-                toelichting: "op /service-onderhoud/werkplaatsafspraak/bedankt, gemeten 2 feb t/m 31 mrt",
-              },
-              {
-                naam: "generate_lead_werkplaats",
-                toelichting: "op /service-onderhoud/werkplaatsafspraak, vanaf 3 sep",
-              },
-            ],
-          },
-          opmerking:
-            "Januari en april t/m augustus vuurde er vrijwel geen werkplaats-event (4× in vijf maanden) terwijl de website wel bezoek mat; die maanden tellen zoals gemeten, wat het jaar en het target drukt. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
-        }
-      : {
-          sleutel: "werkplaatsafspraken",
-          naam: "Werkplaatsafspraken",
-          bron: {
-            soort: "events",
-            events: [
-              {
-                naam: "generate_lead_werkplaatsafspraak",
-                toelichting: "op /service-onderhoud/werkplaatsafspraak/bedankt, alleen 19 mei gezien",
-              },
-              {
-                naam: "generate_lead_werkplaats",
-                toelichting: "op /service-onderhoud/werkplaatsafspraak, vanaf 3 sep",
-              },
-            ],
-          },
-          opmerking:
-            "Vóór 3 september vuurde er vrijwel geen werkplaats-event (alleen op 19 mei, 3×) terwijl de website wel bezoek mat; die maanden tellen zoals gemeten, wat het jaar en het target drukt. generate_lead_werkplaats vuurt op de formulierpagina zelf: of dat pas na verzenden gebeurt, is nog niet gecontroleerd. Het telt online aanvragen, geen bevestigde afspraken.",
-        },
+    {
+      sleutel: "werkplaatsafspraken",
+      naam: "Werkplaatsafspraken",
+      bron: {
+        soort: "events",
+        events: [{ naam: "generate_lead_werkplaats", toelichting: "op /service-onderhoud/werkplaatsafspraak" }],
+      },
+      // Januari t/m oktober uit de werkplaatsplanning, op verzoek: de GA4-meting van de
+      // werkplaats liep het grootste deel van 2026 niet (Brabant: alleen feb–mrt en vanaf
+      // 3 sep; Maastricht: pas vanaf 3 sep), de planning wel. Zie werkplaatsExport.ts.
+      externeBron: {
+        tot: WERKPLAATS_EXPORT_TOT,
+        naam: "de werkplaatsplanning",
+        omschrijving: `export van de werkplaatsplanning, afspraken per "Datum Van Aanvraag", ALvestiging ${vestiging === "brabant" ? "10" : "20"}`,
+        dagen: vestiging === "brabant" ? WERKPLAATS_EXPORT_BRABANT : WERKPLAATS_EXPORT_MAASTRICHT,
+      },
+      opmerking:
+        (vestiging === "maastricht"
+          ? "Maastricht staat pas vanaf 20 februari in de export; januari en begin februari tellen als 0. "
+          : "") +
+        "Vanaf 1 november telt Google Analytics: generate_lead_werkplaats vuurt op de formulierpagina zelf, en of dat pas na verzenden gebeurt is nog niet gecontroleerd. De planning telt afspraken, GA4 online aanvragen — de twee sluiten niet per se op elkaar aan.",
+    },
   ];
 }
 

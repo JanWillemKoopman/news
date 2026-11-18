@@ -24,6 +24,13 @@ export function datumKort(datum: string): string {
   });
 }
 
+/** De dag na `datum` (YYYY-MM-DD). */
+function dagNa(datum: string): string {
+  const d = new Date(`${datum}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export function aantal(waarde: number): string {
   return formatteer(Math.round(waarde), "aantal");
 }
@@ -46,12 +53,19 @@ export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; web
 
   return (
     <KpiKaartOpmaak naam={kpi.naam} uitkomst={u} realisatie={kpi.realisatie}>
+      {kpi.externeBron && (
+        <p className="mb-1">
+          <span className="text-ink-muted">Bron t/m {datumKort(kpi.externeBron.tot)}:</span> {kpi.externeBron.omschrijving}{" "}
+          ({aantal(kpi.externeBron.aantal)} afspraken in {KPI_JAAR}). Die dagen zijn gemeten, ook waar de website niets mat.
+        </p>
+      )}
       <p>
-        <span className="text-ink-muted">Bron:</span> Google Analytics 4, {website.domein} (property {website.property}
+        <span className="text-ink-muted">{kpi.externeBron ? `Bron vanaf ${datumKort(dagNa(kpi.externeBron.tot))}:` : "Bron:"}</span>{" "}
+        Google Analytics 4, {website.domein} (property {website.property}
         {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
         {kpi.events.length > 0 ? (
           <>
-            Events (aantal keer gevuurd, event_count, {KPI_JAAR}
+            Events (aantal keer gevuurd, event_count, {kpi.externeBron ? `vanaf ${datumKort(dagNa(kpi.externeBron.tot))}` : KPI_JAAR}
             {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
             {kpi.events.map((e, i) => (
               <span key={`${e.naam}${e.paginaBevat ?? ""}`}>

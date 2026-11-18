@@ -701,6 +701,29 @@ realisatie van 2027.
   - **Gevolg.** Waar een event pas laat in het jaar begon, is het target vooral wat er sinds
     dat moment binnenkwam (Bentley contact 1, werkplaats 4, PGZ offerte 5). Dat staat in de
     opmerking onder die grafieken.
+- **Porsche-werkplaats januari t/m oktober uit de werkplaatsplanning** (verzoek van de
+  eigenaar, 18 november 2026). Voor de KPI Werkplaatsafspraken van Porsche Centrum Brabant
+  en Maastricht tellen t/m 31 oktober 2026 de afspraken uit een export van de
+  werkplaatsplanning, vanaf 1 november weer GA4 (`generate_lead_werkplaats`). De GA4-meting
+  van de werkplaats liep het grootste deel van het jaar niet; de planning wel.
+  - **Hoe geteld**: één rij is één afspraak (eigen id), per dag van de kolom "Datum Van
+    Aanvraag" (volgens de eigenaar de datum van de werkplaatsafspraak), ALvestiging 10 =
+    Brabant, 20 = Maastricht. Brabant 384, Maastricht 168 (Maastricht pas vanaf 20 februari
+    in de export; daarvoor 0). Vijf rijen met hetzelfde kenteken op dezelfde dag en
+    vestiging tellen mee.
+  - **Waar het staat**: alleen de aantallen per dag, in `lib/kpi2027/werkplaatsExport.ts`.
+    Het exportbestand bevat kentekens, e-mailadressen en opmerkingen en hoort **niet** in
+    de repository of de database. Een nieuwe export verwerken = dat bestand opnieuw
+    genereren (tellen per dag en vestiging) en de datum `WERKPLAATS_EXPORT_TOT` verzetten.
+  - **Hoe het rekent**: `externeBron` op de KPI (`definities.ts`). T/m `tot` vervangen de
+    exportcijfers de GA4-cijfers en geldt elke dag als gemeten — ook tijdens de
+    Porsche-uitval van 25 juni t/m 11 augustus, want de planning liep gewoon door
+    (`uitvalNa`). Daarna weer GA4 met de gewone regel. De melding bovenaan de Porsche-tabs
+    noemt deze uitzondering, en onder de grafiek staan beide bronnen met hun aantallen.
+    De realisatie van 2027 telt alleen GA4.
+  - **Let op**: de planning telt afspraken, GA4 online aanvragen; ze sluiten niet per se op
+    elkaar aan. In oktober telde de planning 127 (Brabant) en GA4 86; over 1–13 november
+    allebei 13 in Brabant, in Maastricht 10 tegen 6.
 - **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
   bekende test-, staging- en vreemde domeinen eruit (`uitgeslotenHosts`); "(not set)" telt
   mee. Sessies en gebruikers zijn cijfers per sessie/persoon, gesplitst naar een dimensie
