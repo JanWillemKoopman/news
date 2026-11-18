@@ -67,6 +67,8 @@ export interface SyntecRegel {
   onderwerpBevat?: readonly string[];
   /** Het onderwerp bevat géén van deze waarden. */
   onderwerpBevatNiet?: readonly string[];
+  /** Wanneer deze regel leads oplevert, voor de bron onder de grafiek ("t/m maart 2026"). */
+  periode?: string;
 }
 
 export interface SyntecKpi {
@@ -79,11 +81,23 @@ export interface SyntecKpi {
   regels: readonly SyntecRegel[];
   /** Onderwerpen die bij deze KPI nooit meetellen, wat de regel ook zegt. */
   nooitOnderwerpBegintMet?: readonly string[];
-  /** Een extra opmerking onder de bron, als er iets is wat de lezer moet weten. */
-  opmerking?: string;
+  /**
+   * De beslissingen achter deze definitie, in gewone taal, onder de grafiek. Een target is
+   * pas bruikbaar als iedereen weet wat er wel en niet in zit, en waarom.
+   */
+  keuzes: readonly string[];
 }
 
 const GEEN_DOORGESTUURDE_MAIL = ["fw:"] as const;
+
+const OUD = "t/m maart 2026, eigen kanaal per formulier";
+const NIEUW = "vanaf april 2026, kanaal Udenhout.nl + onderwerp";
+
+const KEUZE_NAAMSWISSEL =
+  "In april 2026 veranderde Syntec de indeling: tot en met maart had elk formulier van udenhout.nl een eigen kanaal, sindsdien komt alles binnen onder het kanaal ‘Udenhout.nl’ en zegt het onderwerp wat voor aanvraag het is. Daarom telt deze KPI een regel voor elke periode.";
+const KEUZE_DOORGESTUURD =
+  "Doorgestuurde mails (onderwerp begint met ‘FW:’) tellen niet mee: dat zijn mails die een collega handmatig doorstuurde, geen websiteformulieren.";
+const KEUZE_HEEL_KANAAL = "Alle leads met dit kanaal tellen mee, ongeacht het onderwerp.";
 
 export const SYNTEC_KPIS: readonly SyntecKpi[] = [
   // --- Eigen website ------------------------------------------------------------------
@@ -93,12 +107,17 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "eigen-website",
     doel2026: 3250,
     regels: [
-      { kanalen: ["Udenhout.nl offerteaanv."], onderwerpBevatNiet: ["growlease"] },
-      { kanalen: ["Udenhout.nl"], onderwerpIs: ["Offerte aanvraag", "Offerteaanvraag"] },
+      { kanalen: ["Udenhout.nl offerteaanv."], onderwerpBevatNiet: ["growlease"], periode: OUD },
+      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Offerte aanvraag", "Offerteaanvraag"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
-    opmerking:
-      "Sinds april 2026 komt een offerte voor private lease binnen als ‘Offerte private lease’ en telt die bij Private lease; ook de Private Groeilease telt daar. Het doel 2026 rekende die nog hier.",
+    keuzes: [
+      KEUZE_NAAMSWISSEL,
+      "De Private Groeilease telt hier niet, maar bij Private lease. Tot en met maart kwam hij binnen in dit kanaal (onderwerp ‘…growLease’); sinds april als ‘Offerte private lease’, en dan is hij niet meer van gewone private lease te scheiden. Alleen zo zijn beide periodes vergelijkbaar.",
+      "Een offerte voor private lease (onderwerp ‘Offerte private lease’) telt bij Private lease.",
+      KEUZE_DOORGESTUURD,
+      "Het doel 2026 rekende de groeilease nog hier. Daardoor ligt de realisatie onder dat doel en die van Private lease er ver boven; samen kloppen ze wel.",
+    ],
   },
   {
     sleutel: "proefrit",
@@ -106,11 +125,15 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "eigen-website",
     doel2026: 1875,
     regels: [
-      { kanalen: ["Udenhout.nl proefritaanv."] },
-      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Proefrit"] },
+      { kanalen: ["Udenhout.nl proefritaanv."], periode: OUD },
+      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Proefrit"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
-    opmerking: "Inclusief proefritformulieren van campagnes, zoals ‘Proefrit Raval Breda’.",
+    keuzes: [
+      KEUZE_NAAMSWISSEL,
+      "Proefritformulieren van campagnes tellen mee (bijvoorbeeld ‘Proefrit Raval Breda’): het blijft een proefritaanvraag.",
+      KEUZE_DOORGESTUURD,
+    ],
   },
   {
     sleutel: "private-lease",
@@ -125,13 +148,19 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
           "Udenhout.nl Private Groeilease",
           "UdenhoutPrivateLease.nl",
         ],
+        periode: OUD,
       },
-      { kanalen: ["Udenhout.nl offerteaanv."], onderwerpBevat: ["growlease"] },
-      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Offerte private lease", "Private lease offerte"] },
+      { kanalen: ["Udenhout.nl offerteaanv."], onderwerpBevat: ["growlease"], periode: "t/m maart 2026, Private Groeilease" },
+      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Offerte private lease", "Private lease offerte"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
-    opmerking:
-      "Inclusief de Private Groeilease (t/m maart onder het offertekanaal). Het doel 2026 rekende de groeilease nog bij offerte; daarom ligt dit cijfer er ver boven.",
+    keuzes: [
+      KEUZE_NAAMSWISSEL,
+      "Inclusief de Private Groeilease: tot en met maart kwam die binnen in het offertekanaal (onderwerp ‘…growLease’), sinds april als ‘Offerte private lease’. Na april is hij niet meer van gewone private lease te scheiden, dus telt hij in beide periodes hier.",
+      "Ook private lease voor expats en het kanaal ‘UdenhoutPrivateLease.nl’ tellen mee.",
+      KEUZE_DOORGESTUURD,
+      "Het doel 2026 rekende de groeilease nog bij offerte. Daardoor ligt de realisatie ver boven dat doel en die van offerte eronder; samen kloppen ze wel.",
+    ],
   },
   {
     sleutel: "inruil",
@@ -139,12 +168,15 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "eigen-website",
     doel2026: 7,
     regels: [
-      { kanalen: ["Udenhout.nl inruilvoorstel"] },
-      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["inruil"] },
+      { kanalen: ["Udenhout.nl inruilvoorstel"], periode: OUD },
+      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["inruil"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
-    opmerking:
-      "Het formulier van de nieuwe website (sinds april 2026) levert veel meer inruilvoorstellen op dan het oude: ±1 per maand tot en met maart, daarna ±25. Het jaargemiddelde mengt die twee periodes.",
+    keuzes: [
+      KEUZE_NAAMSWISSEL,
+      KEUZE_DOORGESTUURD,
+      "Het formulier van de nieuwe website levert veel meer inruilvoorstellen op dan het oude: ±1 per maand tot en met maart, daarna ±25. Dat is geen telfout. Het jaargemiddelde, en dus het target, mengt die twee periodes; het doel 2026 is daarmee achterhaald.",
+    ],
   },
   {
     sleutel: "contact",
@@ -152,34 +184,52 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "eigen-website",
     doel2026: 122,
     regels: [
-      { kanalen: ["Udenhout.nl contact"] },
-      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Algemeen contactformulier"] },
+      { kanalen: ["Udenhout.nl contact"], periode: OUD },
+      { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Algemeen contactformulier"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
-    opmerking:
-      "Het contactformulier van de nieuwe website (sinds april 2026) levert meer aanvragen op dan het oude kanaal.",
+    keuzes: [
+      KEUZE_NAAMSWISSEL,
+      KEUZE_DOORGESTUURD,
+      "Het contactformulier van de nieuwe website levert sinds april meer aanvragen op dan het oude kanaal. Het jaargemiddelde, en dus het target, mengt die twee periodes.",
+    ],
   },
 
   // --- PAH-websites -------------------------------------------------------------------
-  { sleutel: "volkswagen-nl", naam: "Volkswagen.nl", groep: "pah", doel2026: 1378, regels: [{ kanalen: ["Volkswagen.nl"] }] },
-  { sleutel: "skoda-nl", naam: "Skoda.nl", groep: "pah", doel2026: 1282, regels: [{ kanalen: ["Skoda.nl"] }] },
+  {
+    sleutel: "volkswagen-nl",
+    naam: "Volkswagen.nl",
+    groep: "pah",
+    doel2026: 1378,
+    regels: [{ kanalen: ["Volkswagen.nl"] }],
+    keuzes: [
+      KEUZE_HEEL_KANAAL,
+      "Reserveringen voor de ID. Polo (kanaal ‘ID.Polo Reservering (PAH)’) tellen niet mee: het zijn reserveringen en ze zaten niet in het doel 2026.",
+    ],
+  },
+  { sleutel: "skoda-nl", naam: "Skoda.nl", groep: "pah", doel2026: 1282, regels: [{ kanalen: ["Skoda.nl"] }], keuzes: [KEUZE_HEEL_KANAAL] },
   {
     sleutel: "audi-nl",
     naam: "Audi.nl",
     groep: "pah",
     doel2026: 828,
     regels: [{ kanalen: ["Audi.nl", "Audi Proefritmodule"] }],
-    opmerking: "Inclusief de Audi Proefritmodule (sinds april 2025).",
+    keuzes: [
+      KEUZE_HEEL_KANAAL,
+      "Inclusief de Audi Proefritmodule (een eigen kanaal sinds april 2025, voor proefritten via Audi). Het doel 2026 klopt alleen als die meetelt.",
+    ],
   },
-  { sleutel: "seat-nl", naam: "Seat.nl", groep: "pah", doel2026: 214, regels: [{ kanalen: ["Seat.nl"] }] },
+  { sleutel: "seat-nl", naam: "Seat.nl", groep: "pah", doel2026: 214, regels: [{ kanalen: ["Seat.nl"] }], keuzes: [KEUZE_HEEL_KANAAL] },
   {
     sleutel: "vwpfs",
     naam: "VW PFS private lease aanvraag",
     groep: "pah",
     doel2026: 460,
     regels: [{ kanalen: ["VWPFS private lease aanvraag"], onderwerpBevatNiet: ["retentie"] }],
-    opmerking:
-      "Zonder retentieleads (een bestaand contract dat afloopt): dat is geen nieuwe aanvraag. Het doel 2026 rekende die nog wel mee.",
+    keuzes: [
+      "Retentieleads tellen niet mee (onderwerp met ‘retentie’, en het aparte kanaal ‘VWPFS Retentie_TB’): dat zijn bestaande klanten van wie het contract afloopt, geen nieuwe private lease-aanvraag.",
+      "Het doel 2026 rekende de retentieleads nog wel mee. Daarom ligt de realisatie eronder; het kanaal loopt daarnaast ook echt terug.",
+    ],
   },
   {
     sleutel: "vw-bedrijfswagens-nl",
@@ -187,6 +237,7 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "pah",
     doel2026: 50,
     regels: [{ kanalen: ["Vwbedrijfswagens.nl"] }],
+    keuzes: [KEUZE_HEEL_KANAAL],
   },
 
   // --- Externe portals ----------------------------------------------------------------
@@ -196,14 +247,23 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "portals",
     doel2026: 457,
     regels: [{ kanalen: ["Autoscout24.nl & Autotrader", "Autotrader.nl"] }],
+    keuzes: [KEUZE_HEEL_KANAAL, "Ook het losse kanaal ‘Autotrader.nl’ (een paar leads per jaar) telt mee."],
   },
-  { sleutel: "autotrack", naam: "Autotrack.nl", groep: "portals", doel2026: 318, regels: [{ kanalen: ["Autotrack.nl"] }] },
+  {
+    sleutel: "autotrack",
+    naam: "Autotrack.nl",
+    groep: "portals",
+    doel2026: 318,
+    regels: [{ kanalen: ["Autotrack.nl"] }],
+    keuzes: [KEUZE_HEEL_KANAAL],
+  },
   {
     sleutel: "viabovag",
     naam: "ViaBovag.nl",
     groep: "portals",
     doel2026: 402,
     regels: [{ kanalen: ["ViaBovag.nl", "viaBOVAG.nl_TB"] }],
+    keuzes: [KEUZE_HEEL_KANAAL, "Ook de variant ‘viaBOVAG.nl_TB’ telt mee: dezelfde bron, anders gespeld."],
   },
   {
     sleutel: "financiallease",
@@ -211,7 +271,14 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
     groep: "portals",
     doel2026: 14,
     regels: [{ kanalen: ["Financiallease.nl", "Financiallease.nl_TB"] }],
+    keuzes: [KEUZE_HEEL_KANAAL, "Ook de variant ‘Financiallease.nl_TB’ telt mee: dezelfde bron, anders gespeld."],
   },
+];
+
+/** De keuzes die voor elk totaal gelden, onder de totaalkaarten. */
+export const SYNTEC_TOTAAL_KEUZES: readonly string[] = [
+  "Een totaal is de optelsom van de KPI's erboven; elke lead telt bij hoogstens één KPI. De keuzes per KPI staan onder de afzonderlijke kaarten.",
+  "Chat, WhatsApp (SaySimple), bel-me-terug en reserveringen voor de ID. Polo tellen bij geen enkele KPI: ze zaten niet in de doelen voor 2026.",
 ];
 
 function schoon(tekst: string | null | undefined): string {

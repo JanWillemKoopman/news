@@ -27,8 +27,9 @@ test("het nieuwe kanaal Udenhout.nl deelt in op onderwerp", () => {
   assert.equal(kpiVan("Udenhout.nl", "inruilvoorstel"), "inruil");
   assert.equal(kpiVan("Udenhout.nl", "Inruilaanvraag"), "inruil");
   assert.equal(kpiVan("Udenhout.nl", "Algemeen contactformulier"), "contact");
-  // Een offerte voor een specifiek model is geen exacte "Offerte aanvraag": niet raden.
-  assert.equal(kpiVan("Udenhout.nl", "Offerte aanvraag Volkswagen ID.4"), null);
+  // Een offerte met de modelnaam erachter is net zo goed een offerte.
+  assert.equal(kpiVan("Udenhout.nl", "Offerte aanvraag Volkswagen ID.4"), "offerte");
+  assert.equal(kpiVan("Udenhout.nl", "Online offerte aanvraag Audi A5 via Private Lease"), null);
   assert.equal(kpiVan("Udenhout.nl", ""), null);
 });
 
@@ -111,4 +112,32 @@ test("de bronregel is leesbaar", () => {
     beschrijfRegel({ kanalen: ["Udenhout.nl"], onderwerpIs: ["Offerte aanvraag", "Offerteaanvraag"] }),
     "kanaal ‘Udenhout.nl’, onderwerp ‘Offerte aanvraag’ of ‘Offerteaanvraag’",
   );
+});
+
+test("elke KPI legt zijn keuzes uit, en elke regel van de eigen website zegt over welke periode hij gaat", () => {
+  for (const kpi of SYNTEC_KPIS) {
+    assert.ok(kpi.keuzes.length > 0, `${kpi.naam} heeft geen keuzes`);
+    if (kpi.groep === "eigen-website") {
+      for (const r of kpi.regels) assert.ok(r.periode, `${kpi.naam}: regel zonder periode`);
+    }
+  }
+});
+
+test("de controle op 2025 telt per KPI en per totaal, en de bron draagt de periode", () => {
+  const vorigJaar: SyntecTelling[] = [
+    { kanaal: "Udenhout.nl proefritaanv.", onderwerp: "Proefrit aanvraag", maand: 3, aantal: 1500 },
+    { kanaal: "Udenhout.nl proefritaanv.", onderwerp: "Proefrit aanvraag", maand: 9, aantal: 82 },
+    { kanaal: "Skoda.nl", onderwerp: "", maand: 6, aantal: 1068 },
+    { kanaal: "SaySimple whatsapp", onderwerp: "", maand: 6, aantal: 5 },
+  ];
+  const o = syntecOverzicht([], "2026-11-14", undefined, vorigJaar);
+  const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const proefrit = eigen.kpis.find((k) => k.sleutel === "proefrit")!;
+  assert.equal(proefrit.vorigJaar, 1582);
+  assert.equal(proefrit.bron[0].periode, "t/m maart 2026, eigen kanaal per formulier");
+  assert.equal(eigen.totaal.vorigJaar, 1582);
+  assert.equal(o.totaal.vorigJaar, 1582 + 1068);
+  assert.ok(o.totaal.keuzes.length > 0);
+  // Zonder 2025 is er geen controle, en dat is geen nul.
+  assert.equal(syntecOverzicht([], "2026-11-14").totaal.vorigJaar, null);
 });

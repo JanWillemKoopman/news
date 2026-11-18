@@ -27,14 +27,16 @@ export async function GET() {
   try {
     const peildatum = peildatumVoor(new Date());
     const ingelezenOp = await haalSyntecIngelezenOp().catch(() => null);
-    const antwoord: Kpi2027SyntecAntwoord = peildatum
-      ? {
-          peildatum,
-          ingelezenOp,
-          volgendeUpdate: volgendeUpdate(peildatum),
-          overzicht: syntecOverzicht(await haalSyntecTellingen(peildatum), peildatum),
-        }
-      : { peildatum: null, ingelezenOp, volgendeUpdate: null, overzicht: null };
+    let antwoord: Kpi2027SyntecAntwoord = { peildatum: null, ingelezenOp, volgendeUpdate: null, overzicht: null };
+    if (peildatum) {
+      const { basisjaar, vorigJaar } = await haalSyntecTellingen(peildatum);
+      antwoord = {
+        peildatum,
+        ingelezenOp,
+        volgendeUpdate: volgendeUpdate(peildatum),
+        overzicht: syntecOverzicht(basisjaar, peildatum, undefined, vorigJaar),
+      };
+    }
     return NextResponse.json(antwoord, {
       headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=3600" },
     });

@@ -1,6 +1,7 @@
 import {
   SYNTEC_GROEPEN,
   SYNTEC_KPIS,
+  SYNTEC_TOTAAL_KEUZES,
   beschrijfRegel,
   classificeerLead,
   type SyntecGroep,
@@ -32,6 +33,8 @@ export interface SyntecTelling {
 export interface SyntecBronRegel {
   /** De regel in gewone taal. */
   tekst: string;
+  /** Wanneer de regel leads oplevert ("t/m maart 2026 …"), of null. */
+  periode: string | null;
   /** Hoeveel leads via deze regel meetelden, t/m de peildatum. */
   aantal: number;
 }
@@ -45,7 +48,13 @@ export interface SyntecKpiRegel {
   bron: SyntecBronRegel[];
   /** Bij een totaal: de KPI's die erin zitten. */
   onderdelen: string[];
-  opmerking: string | null;
+  /** De beslissingen achter de definitie, in gewone taal. */
+  keuzes: string[];
+  /**
+   * Wat deze definitie over heel 2025 telt — de controle op de definitie: de doelen voor
+   * 2026 waren de telling van 2025 × 1,2. Null als 2025 niet is meegegeven.
+   */
+  vorigJaar: number | null;
   uitkomst: KpiUitkomst;
 }
 
@@ -83,17 +92,36 @@ function telOp(reeksen: number[][]): number[] {
   return som;
 }
 
+/** Per KPI het totaal van een jaar, voor de controle op 2025. */
+export function jaartotalen(
+  tellingen: readonly SyntecTelling[],
+  kpis: readonly SyntecKpi[] = SYNTEC_KPIS,
+): Map<string, number> {
+  const totalen = new Map<string, number>(kpis.map((k) => [k.sleutel, 0]));
+  for (const t of tellingen) {
+    const treffer = classificeerLead(t.kanaal, t.onderwerp, kpis);
+    if (treffer) totalen.set(treffer.kpi.sleutel, totalen.get(treffer.kpi.sleutel)! + (Number(t.aantal) || 0));
+  }
+  return totalen;
+}
+
 /**
  * Deelt de tellingen in en rekent elke KPI, elke groep en het totaal uit.
  *
  * Tellingen moeten al beperkt zijn tot kanaalgroep Internet, het basisjaar en t/m de
  * peildatum — dat doet de query (`bron.ts`). Een maand buiten 1–12 wordt genegeerd.
+ * `vorigJaar` zijn de tellingen van heel 2025, voor de controleregel onder de grafiek.
  */
 export function syntecOverzicht(
   tellingen: readonly SyntecTelling[],
   peildatum: string,
   kpis: readonly SyntecKpi[] = SYNTEC_KPIS,
+  vorigJaar: readonly SyntecTelling[] | null = null,
 ): SyntecOverzicht {
+  const totalenVorigJaar = vorigJaar ? jaartotalen(vorigJaar, kpis) : null;
+  const somVorigJaar = (delen: readonly SyntecKpi[]) =>
+    totalenVorigJaar ? delen.reduce((t, k) => t + (totalenVorigJaar.get(k.sleutel) ?? 0), 0) : null;
+
   const perKpi = new Map<string, { maanden: number[]; perRegel: number[] }>(
     kpis.map((k) => [k.sleutel, { maanden: nulreeks(), perRegel: k.regels.map(() => 0) }]),
   );
@@ -118,9 +146,10 @@ export function syntecOverzicht(
       sleutel: kpi.sleutel,
       naam: kpi.naam,
       doel2026: kpi.doel2026,
-      bron: kpi.regels.map((r, i) => ({ tekst: beschrijfRegel(r), aantal: data.perRegel[i] })),
+      bron: kpi.regels.map((r, i) => ({ tekst: beschrijfRegel(r), periode: r.periode ?? null, aantal: data.perRegel[i] })),
       onderdelen: [],
-      opmerking: kpi.opmerking ?? null,
+      keuzes: [...kpi.keuzes],
+      vorigJaar: somVorigJaar([kpi]),
       uitkomst: berekenKpi(data.maanden, peildatum),
     };
   };
@@ -131,7 +160,8 @@ export function syntecOverzicht(
     doel2026: delen.reduce((t, k) => t + k.doel2026, 0),
     bron: [],
     onderdelen: delen.map((k) => k.naam),
-    opmerking: null,
+    keuzes: [...SYNTEC_TOTAAL_KEUZES],
+    vorigJaar: somVorigJaar(delen),
     // Optellen vóór het rekenen of erna geeft hetzelfde (alles is lineair); zo staat er
     // gewoon één berekening, met dezelfde maandlijn als elke andere kaart.
     uitkomst: berekenKpi(telOp(delen.map((k) => perKpi.get(k.sleutel)!.maanden)), peildatum),

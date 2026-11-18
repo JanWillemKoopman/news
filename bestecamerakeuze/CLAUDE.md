@@ -745,8 +745,14 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   wat er in `v_leads` staat, t/m de peildatum.
 - **Welke lead bij welke KPI hoort staat alleen in `lib/kpi2027syntec/definities.ts`**,
   in getest TypeScript (`classificeerLead`), op kanaal en onderwerp. Een lead telt bij
-  hoogstens één KPI (nagerekend in de test). Onder elke grafiek staat per regel hoeveel
-  leads erdoor meetelden, plus het doel 2026.
+  hoogstens één KPI (nagerekend in de test).
+- **Onder elke grafiek staat waar je naar kijkt, in drie delen** (`KpiSyntecKaart.tsx`):
+  *Wat telt mee* (elke regel met de periode waarin hij leads oplevert en het aantal),
+  *Keuzes in de definitie* (het veld `keuzes` per KPI in `definities.ts`, in gewone taal) en
+  een *Controle*: wat de definitie over heel 2025 telt × 1,2, naast het doel 2026 — zo
+  waren de doelen gesteld, dus dat getal laat zien of de definitie klopt. Een nieuwe KPI
+  zonder keuzes, of een regel van de eigen website zonder periode, laat de test falen.
+  Verander je een definitie, pas dan de keuzes in dezelfde wijziging aan.
 - **De naamswissel van april 2026.** Tot en met maart had elk formulier van udenhout.nl
   een eigen kanaal (`Udenhout.nl offerteaanv.` …); vanaf april komt alles binnen onder
   `Udenhout.nl` en zegt het onderwerp wat het is. Elke KPI van de eigen website heeft dus
