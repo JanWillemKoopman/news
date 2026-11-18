@@ -1,5 +1,5 @@
 import { metVerbinding } from "@/lib/kanalen/bron";
-import { LEADS_GOOGLE_ACCOUNT, LEADS_META_ACCOUNT } from "@/lib/leads/bereik";
+import { LEADS_GOOGLE_ACCOUNT, LEADS_LINKEDIN_ACCOUNT, LEADS_META_ACCOUNT } from "@/lib/leads/bereik";
 import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import {
   koppelLeads,
@@ -81,12 +81,13 @@ export async function haalLeads(): Promise<LeadsData> {
               coalesce(sum(vertoningen), 0) as vertoningen
          from dataloket.v_leads_uitgaven
         where datum between $1 and $2
-          and ((bron = 'google' and account_id = $3) or (bron = 'meta' and account_id = $4))
+          and ((bron = 'google' and account_id = $3) or (bron = 'meta' and account_id = $4)
+               or (bron = 'linkedin' and account_id = $5))
         group by bron, campagne`,
-      [van, tot, LEADS_GOOGLE_ACCOUNT, LEADS_META_ACCOUNT],
+      [van, tot, LEADS_GOOGLE_ACCOUNT, LEADS_META_ACCOUNT, LEADS_LINKEDIN_ACCOUNT],
     );
     const uitgaven: UitgavenInvoer[] = uitgavenRes.rows.map((r) => ({
-      bron: r.bron === "meta" ? "meta" : "google",
+      bron: r.bron === "meta" ? "meta" : r.bron === "linkedin" ? "linkedin" : "google",
       campagne: String(r.campagne ?? ""),
       uitgaven: Number(r.uitgaven),
       klikken: Number(r.klikken),

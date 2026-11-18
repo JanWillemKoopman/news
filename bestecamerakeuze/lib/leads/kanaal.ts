@@ -26,8 +26,8 @@ export interface KanaalInfo {
   platform: BetaaldPlatform | null;
 }
 
-/** De platformen waarvan dit dashboard de kosten kent (Google Ads en Meta Ads). */
-export const PLATFORMEN_MET_KOSTEN: readonly BetaaldPlatform[] = ["google", "meta"];
+/** De platformen waarvan dit dashboard de kosten kent (Google Ads, Meta Ads en LinkedIn Ads). */
+export const PLATFORMEN_MET_KOSTEN: readonly BetaaldPlatform[] = ["google", "meta", "linkedin"];
 
 export function heeftKostenbron(platform: BetaaldPlatform | null): boolean {
   return platform !== null && PLATFORMEN_MET_KOSTEN.includes(platform);

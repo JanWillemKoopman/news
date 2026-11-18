@@ -387,14 +387,14 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           toelichting={
             filtersActief
               ? `toegerekend aan deze selectie, van ${formatteer(data.uitgavenTotaal, "euro-heel")} in totaal`
-              : "Google Ads en Meta Ads"
+              : "Google Ads, Meta Ads en LinkedIn Ads"
           }
           noot={
             !filtersActief
               ? `Google ${formatteer(data.uitgavenPerPlatform.google ?? 0, "euro-heel")} · Meta ${formatteer(
                   data.uitgavenPerPlatform.meta ?? 0,
                   "euro-heel",
-                )}`
+                )} · LinkedIn ${formatteer(data.uitgavenPerPlatform.linkedin ?? 0, "euro-heel")}`
               : undefined
           }
         />
@@ -406,7 +406,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               ? totalen.metKosten > 0
                 ? `toegerekende kosten ÷ ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
                 : "geen betaalde leads met bekende kosten"
-              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google en Meta`
+              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn`
           }
         />
       </div>
@@ -419,7 +419,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           toelichting={
             filtersActief
               ? "Uit welk kanaal de leads binnenkwamen. Met een filter zijn de uitgaven toegerekend aan de geselecteerde leads."
-              : "Uit welk kanaal de leads binnenkwamen, afgeleid van bron en medium in GA4. Bij Google Ads en Meta Ads staan de echte uitgaven van het platform."
+              : "Uit welk kanaal de leads binnenkwamen, afgeleid van bron en medium in GA4. Bij Google, Meta en LinkedIn Ads staan de echte uitgaven van het platform."
           }
           labelKop="Kanaal"
           groepen={perKanaal}
@@ -492,12 +492,12 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
             </li>
             <li>
               <strong className="text-ink">Betaald</strong> is verkeer met medium cpc of paid. De
-              uitgaven komen uit Google Ads (Udenhout) en Meta Ads (Van den Udenhout) en horen bij
+              uitgaven komen uit Google Ads (Udenhout), Meta Ads (Van den Udenhout) en LinkedIn Ads (Van den Udenhout Groep) en horen bij
               een lead als platform en campagnenaam overeenkomen.
             </li>
             <li>
-              <strong className="text-ink">Uitgaven en totalen.</strong> Bovenaan staat wat Google Ads
-              en Meta Ads samen uitgaven. Bij kanalen en campagnes zijn dat de echte uitgaven. Per
+              <strong className="text-ink">Uitgaven en totalen.</strong> Bovenaan staat wat Google Ads,
+              Meta Ads en LinkedIn Ads samen uitgaven. Bij kanalen en campagnes zijn dat de echte uitgaven. Per
               merk, model, soort en formulier is het een <strong className="text-ink">indicatie</strong>:
               de uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads maakt
               elke lead € 50, ook een vacature- of proefritlead). Google en Meta weten niet welke

@@ -17,6 +17,7 @@
  *  - Google Ads: het account "Udenhout". Het aparte account "Van den Udenhout Lease"
  *    staat niet in de Windsor-sync en dus ook niet in de database.
  *  - Meta Ads: het account "Van den Udenhout".
+ *  - LinkedIn Ads: het account "Van den Udenhout Groep" (klein, een paar campagnes).
  *
  * ## Waarom precies dertig dagen
  *
@@ -35,6 +36,9 @@ export const LEADS_GOOGLE_ACCOUNT = "210-769-6929";
 
 /** Meta Ads-account "Van den Udenhout" in `windsor_advertenties.account_id`. */
 export const LEADS_META_ACCOUNT = "69324444";
+
+/** LinkedIn Ads-account "Van den Udenhout Groep" in `windsor_advertenties.account_id`. */
+export const LEADS_LINKEDIN_ACCOUNT = "500669928";
 
 /** Hoeveel dagen de leadtabel bevat. */
 export const LEADS_DAGEN = 30;
