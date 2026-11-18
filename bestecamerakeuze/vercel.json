@@ -39,6 +39,10 @@
     {
       "path": "/api/windsor-sync?deel=organisch&dagen=60&terug=60",
       "schedule": "30 7 * * 0"
+    },
+    {
+      "path": "/api/kpi-2027/bijwerken",
+      "schedule": "15 10 * * 0"
     }
   ]
 }

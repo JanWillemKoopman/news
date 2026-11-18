@@ -639,6 +639,59 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
   bij elkaar horen.
 
+### KPI's → KPI's 2027
+
+Tweede tabblad onder **KPI's**, direct onder KPI overzicht (view `kpi-2027`,
+`components/kpi/Kpi2027Paneel.tsx`, route `app/api/kpi-2027/route.ts`). Per KPI van
+udenhout.nl het target voor 2027: wat 2026 naar verwachting doet, plus 5%.
+
+- **De rekensom** (`lib/kpi2027/rekenen.ts`, getest): gerealiseerd t/m de peildatum, plus
+  het gemiddelde per dag × de resterende dagen van 2026 = verwachting 2026. Target 2027 =
+  verwachting × 1,05; maandtarget = jaartarget ÷ 12 (bewust een gelijke twaalfde, geen
+  seizoen). Een rechte lijn, net als de forecast op Budget beheer: na te rekenen in het
+  overleg.
+- **Wekelijks op zondag, tot 2026 voorbij is.** Cron `/api/kpi-2027/bijwerken` (zondag
+  10:15 UTC, `vercel.json`, buiten de inlog via `CRON_PADEN`). De **peildatum is altijd de
+  laatste zaterdag vóór vandaag** (`peildatumVoor`, Nederlandse kalender), afgekapt op
+  31 december. De knop "Nu bijwerken" (alleen beheerders, `POST /api/kpi-2027`) rekent dus
+  midden in de week tot dezelfde zaterdag als de zondag ervoor — geen ander target op
+  woensdag. Zodra er een stand met peildatum 31 december staat (`definitief`, de run van
+  zondag 3 januari 2027) slaat de cron over; de knop forceert wél.
+- **Rechtstreeks bij Windsor, niet uit de GA4-tabellen** (`lib/kpi2027/ophalen.ts`).
+  `windsor_ga4_events` en `windsor_ga4_verkeer` beginnen op 1 augustus 2026 en kennen
+  gebruikers alleen per dag. Twee kleine opvragingen op `year_month` over property
+  255949462: de KPI-events (gefilterd aan Windsors kant) en sessies + `totalusers`. Een
+  antwoord zonder sessies is een fout; dan blijft de stand van vorige week staan.
+- **Opslag: de ruwe maandcijfers, niet de KPI's** (`kpi_2027_standen`, migratie 0034, één
+  rij per peildatum). Welk event bij welke KPI hoort staat alleen in
+  `lib/kpi2027/definities.ts` en wordt bij het lezen toegepast — een gewijzigde koppeling
+  geldt dus meteen, zonder opnieuw op te halen (zolang het event al werd opgehaald; een
+  nieuw event komt er bij de volgende run of met de knop bij).
+- **Twee generaties events.** udenhout.nl wisselde eind maart 2026 van tracking: tot en met
+  maart `generate_lead_proefrit_aanvraag`, `…offerte_aanvraag`, `offerte_onderhoud`,
+  `verhuur_aanvraag` (+ `verhuuractie_verzonden`, `verhuur_losse_formulieren`),
+  `private_groeilease`; vanaf april `generate_lead_proefrit`, `…offerte`,
+  `…onderhoudsofferte`, `…verhuur`, `…privatelease`. Elke KPI telt beide generaties op.
+  `generate_lead_private_lease` (formulier "stock prive") vuurt het hele jaar door naast
+  `generate_lead_privatelease` (/offerte en /acties/groeilease): andere formulieren, dus
+  allebei private lease. Gemeten in november 2026, per maand over het hele jaar.
+- **Keuzes van het team** (november 2026): zakelijke lease = `generate_lead_zakelijk_lease`
+  + `generate_lead_zakelijk_offerte` (formulieren "stock zakelijk"/"pagina zakelijk") +
+  `generate_lead_leasecontact` (/leasen/contact); een zakelijke offerte telt dus níet bij
+  Offerteaanvragen. Omdat zakelijke lease vóór april vrijwel niet werd gemeten (2 events),
+  rekent die KPI met het gemiddelde vanaf 1 april en schat hij januari t/m maart daarmee
+  bij (`basisVanaf`, altijd de eerste van een maand). Gebruikers zijn **per maand
+  ontdubbeld** (het GA4-maandcijfer), het jaar is de som van de maanden — zodat het
+  maandtarget één-op-één naast het GA4-maandrapport van 2027 past.
+- **Geteld wordt `event_count`**, net als op Leads en bij de GA-conversies per campagne —
+  niet het aantal key events.
+- **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd. 2026 is doorgetrokken
+  waar de maand volledig gemeten is en gestippeld waar het (deels) verwachting of
+  bijgeschat is — anders leest de half gemeten lopende maand als een instorting. Het
+  maandtarget is een vlakke lijn. As vanaf nul. Onder elke grafiek in kleine letters welke
+  GA4-statistiek of welke events (met periode en aantal) erin zitten; pas die tekst in
+  `definities.ts` mee aan als de koppeling verandert.
+
 ### Monitoren → Budget beheer
 
 Onder **Kanalen** staat een eigen groep **Monitoren** met één tabblad, **Budget beheer**

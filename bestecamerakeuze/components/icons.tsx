@@ -474,3 +474,13 @@ export function IconGlobe({ className }: IconProps) {
     </svg>
   );
 }
+
+/** KPI's 2027: een stijgende lijn met een pijlpunt — waar we naartoe willen groeien. */
+export function IconTrendUp({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M4 17l5.5-5.5 4 4L20 9" />
+      <path d="M15 9h5v5" />
+    </svg>
+  );
+}

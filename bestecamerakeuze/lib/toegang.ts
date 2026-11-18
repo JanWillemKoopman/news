@@ -14,10 +14,11 @@
 /**
  * Routes die Vercel Cron aanroept. Die verzoeken komen zonder sessie binnen en
  * legitimeren zich met `CRON_SECRET` in de Authorization-header, wat de route zelf
- * controleert (`app/api/sync/route.ts`, `app/api/windsor-sync/route.ts`). Zou de inlog
- * ze tegenhouden, dan stopt de nachtelijke sync zonder dat iemand het merkt.
+ * controleert (`app/api/sync/route.ts`, `app/api/windsor-sync/route.ts`,
+ * `app/api/kpi-2027/bijwerken/route.ts`). Zou de inlog ze tegenhouden, dan stopt de
+ * nachtelijke sync zonder dat iemand het merkt.
  */
-export const CRON_PADEN = ["/api/sync", "/api/windsor-sync"] as const;
+export const CRON_PADEN = ["/api/sync", "/api/windsor-sync", "/api/kpi-2027/bijwerken"] as const;
 
 export type Toegangsbesluit =
   /** Laat het verzoek door. */
