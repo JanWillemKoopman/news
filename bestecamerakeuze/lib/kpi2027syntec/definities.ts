@@ -289,6 +289,33 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
   },
 ];
 
+/**
+ * Een combinatie: een extra kaart die een paar KPI's samen laat zien, zonder zelf een KPI
+ * te zijn. Hij telt niet mee in het groepstotaal (dan zouden die leads dubbel tellen).
+ */
+export interface SyntecCombinatie {
+  sleutel: string;
+  naam: string;
+  groep: SyntecGroep;
+  /** De sleutels van de KPI's die erin zitten. */
+  onderdelen: readonly string[];
+  keuzes: readonly string[];
+}
+
+export const SYNTEC_COMBINATIES: readonly SyntecCombinatie[] = [
+  {
+    sleutel: "offerte-en-private-lease",
+    naam: "Udenhout.nl offerte + private lease",
+    groep: "eigen-website",
+    onderdelen: ["offerte", "private-lease"],
+    keuzes: [
+      "Offerteaanvraag en private lease aanvraag samen. Dit is het cijfer dat over heel 2026 eerlijk te vergelijken is. Sinds de nieuwe website (april 2026) komt een offerte voor private lease binnen als ‘Offerte private lease’ en telt hij bij private lease; daarvóór kwam hij binnen als gewone ‘Offerte aanvraag’. In de sheet staat bij die oude offertes niet of het om koop of lease ging, dus per lead is dat achteraf niet uit elkaar te halen — samen maakt het niet uit in welk bakje een aanvraag viel.",
+      "Wat de data wel laat zien: offertes voor gebruikte auto's liepen na april gewoon door, offertes voor nieuwe auto's halveerden (±73 → ±36 per maand), en ‘Offerte private lease’ is altijd een nieuwe auto. Waarschijnlijk komen zo'n 35 à 40 offertes per maand sinds april dus als private lease binnen; dat is een schatting op totalen, geen telling.",
+      "Telt niet mee in Totaal eigen website: de leads staan daar al in via de twee losse KPI's.",
+    ],
+  },
+];
+
 /** De keuzes die voor elk totaal gelden, onder de totaalkaarten. */
 export const SYNTEC_TOTAAL_KEUZES: readonly string[] = [
   "Een totaal is de optelsom van de KPI's erboven — van hun verwachting, target en realisatie; elke lead telt bij hoogstens één KPI. De keuzes per KPI staan onder de afzonderlijke kaarten.",

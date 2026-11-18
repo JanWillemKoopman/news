@@ -1,7 +1,9 @@
 import {
   SYNTEC_GROEPEN,
+  SYNTEC_COMBINATIES,
   SYNTEC_KPIS,
   SYNTEC_TOTAAL_KEUZES,
+  type SyntecCombinatie,
   beschrijfRegel,
   classificeerLead,
   type SyntecGroep,
@@ -70,6 +72,8 @@ export interface SyntecGroepOverzicht {
   sleutel: SyntecGroep;
   naam: string;
   kpis: SyntecKpiRegel[];
+  /** Extra kaarten die een paar KPI's samen tonen (`SYNTEC_COMBINATIES`); niet in het totaal. */
+  combinaties: SyntecKpiRegel[];
   totaal: SyntecKpiRegel;
 }
 
@@ -123,11 +127,13 @@ export function syntecOverzicht(
   peildatum: string,
   opties: {
     kpis?: readonly SyntecKpi[];
+    combinaties?: readonly SyntecCombinatie[];
     vorigJaar?: readonly SyntecTelling[] | null;
     doeljaar?: { tellingen: readonly SyntecTelling[]; peildatum: string } | null;
   } = {},
 ): SyntecOverzicht {
   const kpis = opties.kpis ?? SYNTEC_KPIS;
+  const combinaties = opties.combinaties ?? SYNTEC_COMBINATIES;
   const totalenVorigJaar = opties.vorigJaar ? jaartotalen(opties.vorigJaar, kpis) : null;
   const somVorigJaar = (delen: readonly SyntecKpi[]) =>
     totalenVorigJaar ? delen.reduce((t, k) => t + (totalenVorigJaar.get(k.sleutel) ?? 0), 0) : null;
@@ -198,12 +204,23 @@ export function syntecOverzicht(
     };
   };
 
+  const combinatieVan = (c: SyntecCombinatie): SyntecKpiRegel => {
+    const delen = c.onderdelen.map((s) => {
+      const kpi = kpis.find((k) => k.sleutel === s);
+      if (!kpi) throw new Error(`Combinatie ${c.sleutel} verwijst naar onbekende KPI ${s}.`);
+      return kpi;
+    });
+    const som = totaalVan(c.sleutel, c.naam, delen);
+    return { ...som, keuzes: [...c.keuzes] };
+  };
+
   const groepen = SYNTEC_GROEPEN.map((g) => {
     const delen = kpis.filter((k) => k.groep === g.sleutel);
     return {
       sleutel: g.sleutel,
       naam: g.naam,
       kpis: delen.map(regelVoor),
+      combinaties: combinaties.filter((c) => c.groep === g.sleutel).map(combinatieVan),
       totaal: totaalVan(`totaal-${g.sleutel}`, g.totaalNaam, delen),
     };
   }).filter((g) => g.kpis.length > 0);

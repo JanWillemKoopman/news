@@ -820,6 +820,16 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **"Offerte + private lease" is een combinatiekaart** (`SYNTEC_COMBINATIES`), geen KPI:
+  hij staat in de groep Eigen website maar telt niet mee in het groepstotaal. Reden: sinds
+  april komt een offerte voor private lease binnen als "Offerte private lease"; daarvóór als
+  gewone offerte, en in de sheet staat bij die oude offertes niet of het koop of lease was.
+  Per lead is dat dus niet te herstellen (onderzocht: Lead Type, Klantsoort, Model en
+  Sluitreden zeggen het niet); samen is het cijfer wel over heel 2026 vergelijkbaar.
+- **Er staat een waarschuwing als de leads langer dan twee dagen niet zijn ingelezen**
+  (laatste gelukte run in `sync_runs`). In oktober en november 2026 liep de nachtelijke
+  kopie wekenlang vast (zie "Sheet-sync in blokken" hieronder) en toonde dit tabblad
+  gewoon nullen.
 - **Een totaal is de som van zijn kaarten** (`somVanUitkomsten`), niet een nieuwe
   berekening over de opgetelde maanden: zodra KPI's over verschillende dagen rekenen,
   zou dat een ander target geven dan de kaarten erboven samen. Een maand is in een
@@ -827,6 +837,21 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   tooltip (`MaandUitkomst.toelichting`) welk deel gemeten is en wat bijgeschat.
 - **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
   vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
+
+### Sheet-sync in blokken
+
+`/api/sync` (elke nacht, `vercel.json`) kopieert de sheet-tabbladen uit `lib/sync/bronnen.ts`
+naar Postgres in één transactie: eerst `truncate`, dan alles erin. Tot november 2026 deed hij
+dat met één `insert` per regel. "Data leads" groeide naar ±110.000 regels (±97.000 leads plus
+lege opvulregels), en zoveel losse rondgangen pasten niet in de 300 seconden van Vercel: de
+functie werd afgebroken, de transactie teruggedraaid, en `leads_raw` bleef van 19 oktober tot
+half november op 99 regels staan, terwijl `sync_runs` elke nacht een gestarte run zonder
+eindtijd liet zien. Nu schrijft hij in blokken van 5.000 regels per query, met één
+JSON-parameter die `json_populate_recordset` naar de kolomtypes van de doeltabel omzet
+(`lib/sync/blokken.ts`, getest). Lege opvulregels worden geteld maar niet meer elk met hun
+inhoud in `sync_afwijkingen` gezet; van de overige afgekeurde regels bewaart hij er hoogstens
+500 per run. **Zie je in `sync_runs` runs zonder `geeindigd_op`, dan is de functie
+afgebroken** — kijk dan eerst naar de duur, niet naar de data.
 
 ### Monitoren → Budget beheer
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { BRONNEN, haalSheetOp, type Bron, type GeparsteRij } from "@/lib/sync/bronnen";
+import { bouwBlokInsert, inBlokken, rijenAlsRecords, teBewarenAfwijkingen } from "@/lib/sync/blokken";
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 
 export const dynamic = "force-dynamic";
@@ -65,32 +66,34 @@ async function syncBron(client: Client, bron: Bron): Promise<SyncResultaat> {
       goed.push(rij);
     }
 
-    const dbKolommen = Object.values(bron.kolommen);
-    const sheetKolommen = Object.keys(bron.kolommen);
-
     // Volledige verversing in één transactie: bij duizenden rijen simpeler en
     // betrouwbaarder dan bijhouden wat er veranderd is. Mislukt er iets halverwege, dan
     // blijft de oude inhoud staan in plaats van een half gevulde tabel.
+    //
+    // In blokken van duizenden regels per query (`lib/sync/blokken.ts`), niet per regel:
+    // ±97.000 losse inserts voor "Data leads" pasten niet in de vijf minuten van Vercel,
+    // waardoor de functie werd afgebroken en de tabel wekenlang op een oude stand bleef.
+    const insert = bouwBlokInsert(bron);
     await client.query("begin");
     await client.query(`truncate table dataloket.${bron.doeltabel}`);
-
-    for (const rij of goed) {
-      const waarden = sheetKolommen.map((k) => rij.waarden[k] ?? null);
-      const plaatshouders = waarden.map((_, i) => `$${i + 1}`).join(", ");
-      await client.query(
-        `insert into dataloket.${bron.doeltabel} (${dbKolommen.join(", ")})
-         values (${plaatshouders})
-         on conflict (${bron.sleutelKolom}) do nothing`,
-        waarden,
-      );
+    for (const blok of inBlokken(goed)) {
+      await client.query(insert, [JSON.stringify(rijenAlsRecords(blok, bron))]);
     }
     await client.query("commit");
 
-    for (const { rij, reden } of afgekeurd) {
+    // Lege opvulregels worden alleen geteld; van de rest bewaren we er hoogstens een paar
+    // honderd met hun ruwe inhoud, in één query.
+    const bewaren = teBewarenAfwijkingen(afgekeurd, bron);
+    if (bewaren.length > 0) {
       await client.query(
         `insert into dataloket.sync_afwijkingen (run_id, bron, rijnummer, reden, ruwe_rij)
-         values ($1, $2, $3, $4, $5)`,
-        [runId, bron.naam, rij.rijnummer, reden, JSON.stringify(rij.waarden)],
+         select $1, $2, a.rijnummer, a.reden, a.ruwe_rij
+           from json_to_recordset($3::json) as a(rijnummer integer, reden text, ruwe_rij jsonb)`,
+        [
+          runId,
+          bron.naam,
+          JSON.stringify(bewaren.map(({ rij, reden }) => ({ rijnummer: rij.rijnummer, reden, ruwe_rij: rij.waarden }))),
+        ],
       );
     }
 

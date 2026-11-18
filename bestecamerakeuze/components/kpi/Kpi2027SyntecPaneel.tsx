@@ -24,6 +24,12 @@ import type { Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
 const VANAF_APRIL = SYNTEC_KPIS.filter((k) => k.meetVanaf).map((k) => k.naam.replace(/^Udenhout\.nl /, ""));
 const VANAF_APRIL_TEKST = VANAF_APRIL.join(" en ").replace(/^./, (c) => c.toUpperCase());
 
+/** Langer dan twee dagen niet ingelezen: dan is de nachtelijke kopie minstens één keer mislukt. */
+function verouderd(ingelezenOp: string | null): boolean {
+  if (!ingelezenOp) return true;
+  return Date.now() - Date.parse(ingelezenOp) > 2 * 86_400_000;
+}
+
 function datumLang(datum: string): string {
   return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
     weekday: "long",
@@ -94,6 +100,17 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
 
+      {/* De nachtelijke kopie van de sheet liep wekenlang stil vast zonder dat iemand het
+          zag: het tabblad toonde gewoon nullen. Wie naar targets kijkt, moet weten dat de
+          cijfers achterlopen. */}
+      {data && !bezig && verouderd(data.ingelezenOp) && (
+        <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">
+          Let op: de leads uit Syntec zijn{" "}
+          {data.ingelezenOp ? `voor het laatst ingelezen ${momentTekst(data.ingelezenOp)}` : "nog nooit ingelezen"}. De
+          nachtelijke kopie van het tabblad Data leads loopt achter, dus deze cijfers zijn niet actueel.
+        </p>
+      )}
+
       {/* Dezelfde vorm als de uitvalmelding op KPI's 2027: een afwijkende rekenbasis hoort
           bovenaan te staan, niet alleen in de kleine letters onder één grafiek. */}
       {VANAF_APRIL.length > 0 && (
@@ -128,6 +145,9 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
               <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
                 {groep.kpis.map((kpi) => (
+                  <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} />
+                ))}
+                {groep.combinaties.map((kpi) => (
                   <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} />
                 ))}
                 <KpiSyntecKaart kpi={groep.totaal} />

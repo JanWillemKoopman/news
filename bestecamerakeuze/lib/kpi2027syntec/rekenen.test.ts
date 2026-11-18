@@ -218,3 +218,22 @@ test("meetVanaf is altijd de eerste van een maand (de tellingen staan per maand)
     if (kpi.meetVanaf) assert.match(kpi.meetVanaf, /^\d{4}-\d{2}-01$/, kpi.naam);
   }
 });
+
+test("offerte + private lease is de som van beide, met hun eigen doel, en telt niet mee in het totaal", () => {
+  const tellingen: SyntecTelling[] = [
+    { kanaal: "Udenhout.nl offerteaanv.", onderwerp: "Offerte aanvraag", maand: 2, aantal: 300 },
+    { kanaal: "Udenhout.nl offerteaanv.", onderwerp: "Module.Car.Index.Mail.Request.Subject.growLease", maand: 2, aantal: 100 },
+    { kanaal: "Udenhout.nl", onderwerp: "Offerte private lease", maand: 6, aantal: 150 },
+    { kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag", maand: 6, aantal: 50 },
+  ];
+  const o = syntecOverzicht(tellingen, "2026-12-31");
+  const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const samen = eigen.combinaties.find((c) => c.sleutel === "offerte-en-private-lease")!;
+  assert.equal(samen.uitkomst.verwacht, 550);
+  assert.equal(samen.doel2026, 3250 + 500);
+  assert.deepEqual(samen.onderdelen, ["Udenhout.nl offerteaanvraag", "Udenhout.nl private lease aanvraag"]);
+  assert.ok(samen.keuzes[0].startsWith("Offerteaanvraag en private lease aanvraag samen"));
+  // Het groepstotaal telt de losse KPI's, niet de combinatie erbij.
+  assert.equal(eigen.totaal.uitkomst.verwacht, 600);
+  assert.equal(o.groepen.find((g) => g.sleutel === "pah")!.combinaties.length, 0);
+});
