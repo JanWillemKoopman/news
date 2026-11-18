@@ -2,17 +2,17 @@
 
 import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
-import { KPI_DOELJAAR, KPI_JAAR, KPI_PROPERTY } from "@/lib/kpi2027/definities";
-import type { KpiOverzichtRegel } from "@/lib/kpi2027/rekenen";
+import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
+import type { KpiOverzichtRegel, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
 
 /**
- * Eén KPI: bovenaan de drie getallen waar het overleg om draait (2026 inclusief
- * verwachting, het target voor 2027 en de groei in procenten), daaronder de jaargrafiek en
- * in kleine letters welke GA4-cijfers erin zitten.
+ * Eén KPI: bovenaan de vier getallen waar het overleg om draait (2026 inclusief
+ * verwachting, het target voor 2027, de groei in procenten en de realisatie van 2027),
+ * daaronder de jaargrafiek en in kleine letters welke GA4-cijfers erin zitten.
  *
  * De bron staat onder elke grafiek en niet één keer onderaan de pagina: een target is pas
  * bruikbaar als iedereen weet wat er precies geteld wordt, en de events verschillen per
- * KPI (en per periode — zie `lib/kpi2027/definities.ts`).
+ * KPI, per website en per periode — zie `lib/kpi2027/definities.ts`.
  */
 
 function datumKort(datum: string): string {
@@ -32,57 +32,73 @@ function perDagTekst(waarde: number): string {
   return waarde.toLocaleString("nl-NL", { minimumFractionDigits: decimalen, maximumFractionDigits: decimalen });
 }
 
-export default function KpiKaart({ kpi }: { kpi: KpiOverzichtRegel }) {
+export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; website: WebsiteOverzicht }) {
   const u = kpi.uitkomst;
-  const peildatum = datumKort(u.peildatum);
-  const groeiAantal = u.target - u.verwacht;
-  const basisNietJanuari = u.basisVanaf !== `${KPI_JAAR}-01-01`;
 
   return (
     <section className="kaart-omlijst flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
       <header className="flex items-baseline justify-between gap-4">
         <h2 className="font-sans-w7 text-cell font-semibold text-ink">{kpi.naam}</h2>
-        <p className="text-meta text-ink-muted">
-          gemiddeld {perDagTekst(u.perDag)} per dag
-          {basisNietJanuari ? ` (vanaf ${datumKort(u.basisVanaf)})` : ""}
-        </p>
+        {u && (
+          <p className="text-right text-meta text-ink-muted">
+            gemiddeld {perDagTekst(u.perDag)} per dag
+            {u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
+          </p>
+        )}
       </header>
 
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        <Statistiek
-          label={u.definitief ? `${KPI_JAAR}` : `${KPI_JAAR} incl. verwachting`}
-          waarde={aantal(u.verwacht)}
-          toelichting={
-            u.definitief
-              ? "volledig gemeten"
-              : `${aantal(u.gerealiseerd)} gemeten t/m ${peildatum} · ${aantal(u.bijgeschat)} verwacht`
-          }
-        />
-        <Statistiek
-          label={`Target ${KPI_DOELJAAR}`}
-          waarde={aantal(u.target)}
-          toelichting={`${aantal(u.targetPerMaand)} per maand`}
-          nadruk
-        />
-        <Statistiek
-          label="Groei"
-          waarde={`${u.groei >= 0 ? "+" : "−"}${formatteer(Math.abs(u.groei) * 100, "procent")}`}
-          toelichting={`${groeiAantal >= 0 ? "+" : "−"}${aantal(Math.abs(groeiAantal))} t.o.v. ${KPI_JAAR}`}
-        />
-      </div>
+      {u ? (
+        <>
+          <div className="mt-3 grid grid-cols-4 gap-2.5">
+            <Statistiek
+              label={u.definitief ? `${KPI_JAAR}` : `${KPI_JAAR} incl. verwachting`}
+              waarde={aantal(u.verwacht)}
+              toelichting={
+                u.definitief && u.dagenBijgeschat === 0
+                  ? "volledig gemeten"
+                  : `${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`} · ${aantal(u.bijgeschat)} ${u.dagenNietGemeten > 0 ? "bijgeschat" : "verwacht"}`
+              }
+            />
+            <Statistiek
+              label={`Target ${KPI_DOELJAAR}`}
+              waarde={aantal(u.target)}
+              toelichting={`${aantal(u.targetPerMaand)} per maand`}
+              nadruk
+            />
+            <Statistiek
+              label="Groei"
+              waarde={`${u.groei >= 0 ? "+" : "−"}${formatteer(Math.abs(u.groei) * 100, "procent")}`}
+              toelichting={`${u.target - u.verwacht >= 0 ? "+" : "−"}${aantal(Math.abs(u.target - u.verwacht))} t.o.v. ${KPI_JAAR}`}
+            />
+            <Statistiek
+              label={`Realisatie ${KPI_DOELJAAR}`}
+              waarde={aantal(kpi.realisatie.waarde)}
+              toelichting={
+                kpi.realisatie.peildatum
+                  ? `t/m ${datumKort(kpi.realisatie.peildatum)} · ${u.target > 0 ? formatteer((kpi.realisatie.waarde / u.target) * 100, "procent") : "—"} van het target`
+                  : `${KPI_DOELJAAR} is nog niet begonnen`
+              }
+            />
+          </div>
 
-      <div className="mt-4 h-56">
-        <KpiJaarGrafiek maanden={u.maanden} targetPerMaand={u.targetPerMaand} peildatumTekst={peildatum} />
-      </div>
+          <div className="mt-4 h-56">
+            <KpiJaarGrafiek maanden={u.maanden} targetPerMaand={u.targetPerMaand} peildatumTekst={datumKort(u.peildatum)} />
+          </div>
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-ink-muted">Nog geen stand voor deze website.</p>
+      )}
 
       <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">
         <p>
-          <span className="text-ink-muted">Bron:</span> Google Analytics 4, udenhout.nl (property {KPI_PROPERTY}).{" "}
+          <span className="text-ink-muted">Bron:</span> Google Analytics 4, {website.domein} (property {website.property}
+          {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
           {kpi.events.length > 0 ? (
             <>
-              Events (aantal keer gevuurd, event_count, {KPI_JAAR} t/m {peildatum}):{" "}
+              Events (aantal keer gevuurd, event_count, {KPI_JAAR}
+              {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
               {kpi.events.map((e, i) => (
-                <span key={e.naam}>
+                <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
                   {i > 0 && " + "}
                   <code className="font-mono text-ink-muted">{e.naam}</code>
                   {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
