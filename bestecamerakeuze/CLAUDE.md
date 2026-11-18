@@ -840,6 +840,12 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **Bovenaan staat een overzichtstabel** (`SyntecOverzichtTabel.tsx`), in de indeling van de
+  doelentabel van het team: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie
+  2027 en Voortgang, met de definities er direct onder. Elk getal komt uit dezelfde
+  `SyntecKpiRegel` als de kaart, dus tabel en kaarten lopen niet uit elkaar. Voortgang
+  (`voortgang` in `rekenen.ts`, getest) is de realisatie tegen het lineaire deel van het
+  jaartarget tot de peildatum (target × dag ÷ 365), als ±%; tot 2027 begint een streepje.
 - **"Offerte + private lease" is een combinatiekaart** (`SYNTEC_COMBINATIES`), geen KPI:
   hij staat in de groep Eigen website maar telt niet mee in het groepstotaal. Reden: sinds
   april komt een offerte voor private lease binnen als "Offerte private lease"; daarvóór als

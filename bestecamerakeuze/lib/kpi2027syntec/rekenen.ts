@@ -9,8 +9,11 @@ import {
   type SyntecGroep,
   type SyntecKpi,
 } from "@/lib/kpi2027syntec/definities";
+import { KPI_DOELJAAR } from "@/lib/kpi2027/definities";
 import {
   berekenKpi,
+  dagenInJaar,
+  dagenTussen,
   maandInvoerUitMaanden,
   type KpiUitkomst,
   type MaandSoort,
@@ -318,4 +321,26 @@ export function somVanUitkomsten(delen: readonly { naam: string; uitkomst: KpiUi
     maanden,
     definitief: delen.every((d) => d.uitkomst.definitief),
   };
+}
+
+/**
+ * Ligt een KPI in 2027 op schema? Voor de kolom Voortgang in de overzichtstabel.
+ *
+ * Het jaartarget lineair over de dagen van 2027 verdeeld: wie op dag 40 zit, hoort
+ * target × 40 / 365 binnen te hebben (`targetTotNu`). De afwijking is de realisatie ten
+ * opzichte daarvan: +10% is 10% vóór op schema, −10% erachter. Dezelfde rechte lijn als de
+ * verwachting voor 2026, zodat hij in het overleg na te rekenen is.
+ *
+ * `null` zolang 2027 niet begonnen is (geen peildatum), of als er geen target is.
+ */
+export function voortgang(
+  target: number,
+  realisatie: { waarde: number; peildatum: string | null },
+  jaar: number = KPI_DOELJAAR,
+): { dagen: number; targetTotNu: number; afwijking: number } | null {
+  if (!realisatie.peildatum || target <= 0) return null;
+  const dagen = dagenTussen(`${jaar}-01-01`, realisatie.peildatum);
+  if (dagen <= 0) return null;
+  const targetTotNu = (target * dagen) / dagenInJaar(jaar);
+  return { dagen, targetTotNu, afwijking: realisatie.waarde / targetTotNu - 1 };
 }

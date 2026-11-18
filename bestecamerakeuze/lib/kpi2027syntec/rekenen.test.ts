@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { SYNTEC_KPIS, beschrijfRegel, classificeerLead } from "@/lib/kpi2027syntec/definities";
-import { syntecOverzicht, type SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
+import { syntecOverzicht, voortgang, type SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
 
 function kpiVan(kanaal: string, onderwerp: string): string | null {
   return classificeerLead(kanaal, onderwerp)?.kpi.sleutel ?? null;
@@ -236,4 +236,16 @@ test("offerte + private lease is de som van beide, met hun eigen doel, en telt n
   // Het groepstotaal telt de losse KPI's, niet de combinatie erbij.
   assert.equal(eigen.totaal.uitkomst.verwacht, 600);
   assert.equal(o.groepen.find((g) => g.sleutel === "pah")!.combinaties.length, 0);
+});
+
+test("voortgang: realisatie tegen het lineaire target tot vandaag", () => {
+  // 365 per jaar, peildatum 10 januari → 10 hoort binnen te zijn.
+  const v = voortgang(365, { waarde: 12, peildatum: "2027-01-10" })!;
+  assert.equal(v.dagen, 10);
+  assert.ok(Math.abs(v.targetTotNu - 10) < 1e-9);
+  assert.ok(Math.abs(v.afwijking - 0.2) < 1e-9);
+  assert.ok(Math.abs(voortgang(365, { waarde: 8, peildatum: "2027-01-10" })!.afwijking + 0.2) < 1e-9);
+  // 2027 nog niet begonnen, of geen target: geen voortgang.
+  assert.equal(voortgang(365, { waarde: 0, peildatum: null }), null);
+  assert.equal(voortgang(0, { waarde: 5, peildatum: "2027-01-10" }), null);
 });

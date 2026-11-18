@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import KpiSyntecKaart from "@/components/kpi/KpiSyntecKaart";
+import SyntecOverzichtTabel from "@/components/kpi/SyntecOverzichtTabel";
 import { IconInfo } from "@/components/icons";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
@@ -140,6 +141,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
 
       {overzicht && (
         <>
+          <SyntecOverzichtTabel overzicht={overzicht} />
           {overzicht.groepen.map((groep) => (
             <section key={groep.sleutel} className="flex flex-col gap-3">
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
