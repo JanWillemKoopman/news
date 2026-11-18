@@ -16,6 +16,7 @@ import {
   IconSearch,
   IconSettings,
   IconTarget,
+  IconTrendUp,
   IconTrophy,
   IconUserCircle,
 } from "@/components/icons";
@@ -27,6 +28,7 @@ export type DashboardView =
   | "tijdlijn"
   | "campagnebeheer"
   | "kpi-overzicht"
+  | "kpi-2027"
   | "social-ads"
   | "google-ads"
   | "organisch"
@@ -138,6 +140,14 @@ export default function Sidebar({
             label="KPI overzicht"
             active={actief === "kpi-overzicht"}
             onClick={() => onNavigate("kpi-overzicht")}
+          />
+          {/* De targets voor 2027 staan direct onder het overzicht: het overzicht is waar
+              je de stand leest, dit is waar je hem tegen afzet. */}
+          <NavigationItem
+            icon={<IconTrendUp />}
+            label="KPI's 2027"
+            active={actief === "kpi-2027"}
+            onClick={() => onNavigate("kpi-2027")}
           />
 
           {/* Kanalen staat ná KPI's: de campagnetabel is waar het weekoverleg begint,

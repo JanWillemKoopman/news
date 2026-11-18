@@ -28,6 +28,9 @@ test("een API-route zonder sessie krijgt een weigering, geen omleiding", () => {
 test("de cron-routes blijven bereikbaar zonder sessie", () => {
   assert.equal(besluit("/api/sync", false).soort, "door");
   assert.equal(besluit("/api/windsor-sync", false).soort, "door");
+  assert.equal(besluit("/api/kpi-2027/bijwerken", false).soort, "door");
+  // Het tabblad zelf (lezen en de knop) blijft achter de inlog.
+  assert.equal(besluit("/api/kpi-2027", false).soort, "weiger");
 });
 
 test("de auth-routes blijven bereikbaar zonder sessie", () => {
