@@ -802,6 +802,12 @@ realisatie van 2027.
   Voortgang, met de definities eronder. Kader, kolommen, regels en definities zijn gedeeld
   (`OverzichtTabel.tsx`); alleen de uitleg van de kolom 2026 verschilt. Bewust **zonder
   totaalregel**: sessies, gebruikers en aanvragen optellen betekent niets.
+- **Target % is ook in de overzichtstabel aan te passen** (op beide tabbladen), met precies
+  hetzelfde gedrag als het kaartje Groei: dezelfde hook (`useGroeiBewerken` in
+  `GroeiBewerken.tsx`), dezelfde opslag en dezelfde herberekening in het paneel, dus tabel
+  en kaart tonen altijd hetzelfde getal. Een aangepast percentage heeft in de tabel een
+  pijltje ervoor dat terugzet naar +5%. Totalen en combinaties op Syntec zijn ook hier niet
+  aan te passen.
 - **Het groeipercentage is per KPI met de hand aan te passen** (november 2026, op verzoek;
   geldt ook voor KPI's 2027 Syntec). Klik op het percentage in het kaartje Groei, typ een
   getal (komma of punt, "-3" mag) en druk op Enter of klik weg; Escape annuleert. Target,

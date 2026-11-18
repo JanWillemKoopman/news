@@ -150,7 +150,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
 
       {overzicht && (
         <>
-          <SyntecOverzichtTabel overzicht={overzicht} />
+          <SyntecOverzichtTabel overzicht={overzicht} opslaanGroei={zetGroei} />
           {overzicht.groepen.map((groep) => (
             <section key={groep.sleutel} className="flex flex-col gap-3">
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>

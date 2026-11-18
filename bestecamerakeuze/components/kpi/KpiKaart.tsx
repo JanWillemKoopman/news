@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
-import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
-import { leesPercentage, percentageInvoer } from "@/lib/kpi2027/groeiInvoer";
+import { STANDAARD_GROEI_TEKST, groeiTekst, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
+import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import type { KpiOverzichtRegel, KpiUitkomst, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
 
 /**
@@ -208,30 +208,14 @@ function Statistiek({
   );
 }
 
-function groeiTekst(groei: number): string {
-  return `${groei >= 0 ? "+" : "−"}${formatteer(Math.abs(groei) * 100, "procent")}`;
-}
-
 /**
  * Het kaartje Groei. Bij een gewone KPI klik je op het percentage en typ je een ander
- * getal: Enter of wegklikken slaat op, Escape annuleert. Het target, het maandtarget en de
- * lijn in de grafiek rekenen meteen mee (de ouder past de uitkomst aan met `metGroei`).
+ * getal (`useGroeiBewerken`, hetzelfde gedrag als in de overzichtstabel). Het target, het
+ * maandtarget en de lijn in de grafiek rekenen meteen mee (de ouder past de uitkomst aan
+ * met `metGroei`).
  */
 function GroeiStatistiek({ uitkomst: u, instelling }: { uitkomst: KpiUitkomst; instelling?: GroeiInstelling }) {
-  const [bewerken, setBewerken] = useState(false);
-  const [invoer, setInvoer] = useState("");
-  const [bezig, setBezig] = useState(false);
-  const [fout, setFout] = useState<string | null>(null);
-  const veld = useRef<HTMLInputElement>(null);
-  // Enter slaat op en haalt daarmee de focus weg; dan hoort blur niet nóg eens op te slaan.
-  const klaar = useRef(false);
-
-  useEffect(() => {
-    if (bewerken) veld.current?.select();
-  }, [bewerken]);
-
   const verschil = `${u.target - u.verwacht >= 0 ? "+" : "−"}${aantal(Math.abs(u.target - u.verwacht))} t.o.v. ${KPI_JAAR}`;
-  const standaard = groeiTekst(KPI_GROEI);
 
   if (instelling?.soort !== "bewerkbaar") {
     return (
@@ -242,46 +226,19 @@ function GroeiStatistiek({ uitkomst: u, instelling }: { uitkomst: KpiUitkomst; i
       />
     );
   }
+  return <BewerkbareGroei uitkomst={u} instelling={instelling} verschil={verschil} />;
+}
 
-  const opslaan = instelling.opslaan;
-
-  function begin() {
-    if (bezig) return;
-    klaar.current = false;
-    setFout(null);
-    setInvoer(percentageInvoer(u.groei));
-    setBewerken(true);
-  }
-
-  async function bewaar(groei: number | null) {
-    setBezig(true);
-    setFout(null);
-    try {
-      await opslaan(groei);
-      setBewerken(false);
-    } catch (err) {
-      setFout(err instanceof Error ? err.message : "Opslaan mislukt.");
-    } finally {
-      setBezig(false);
-    }
-  }
-
-  async function bevestig() {
-    if (klaar.current) return;
-    const groei = leesPercentage(invoer);
-    if (groei === null) {
-      setFout("Typ een percentage, bijvoorbeeld 7,5.");
-      return;
-    }
-    klaar.current = true;
-    if (Math.abs(groei - u.groei) < 1e-9) {
-      setBewerken(false);
-      return;
-    }
-    // Precies de standaard typen is hetzelfde als terugzetten: dan blijft er geen rij staan.
-    await bewaar(Math.abs(groei - KPI_GROEI) < 1e-9 ? null : groei);
-    klaar.current = false;
-  }
+function BewerkbareGroei({
+  uitkomst: u,
+  instelling,
+  verschil,
+}: {
+  uitkomst: KpiUitkomst;
+  instelling: Extract<GroeiInstelling, { soort: "bewerkbaar" }>;
+  verschil: string;
+}) {
+  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(u.groei, instelling.opslaan);
 
   return (
     <div
@@ -295,27 +252,7 @@ function GroeiStatistiek({ uitkomst: u, instelling }: { uitkomst: KpiUitkomst; i
       {bewerken ? (
         <span className="flex items-center gap-1">
           <input
-            ref={veld}
-            type="text"
-            inputMode="decimal"
-            aria-label="Groeipercentage"
-            value={invoer}
-            disabled={bezig}
-            onChange={(e) => {
-              setInvoer(e.target.value);
-              setFout(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void bevestig();
-              } else if (e.key === "Escape") {
-                klaar.current = true;
-                setBewerken(false);
-                setFout(null);
-              }
-            }}
-            onBlur={() => void bevestig()}
+            {...invoerProps}
             className="w-16 rounded-control border border-primary bg-card px-1.5 py-0.5 font-sans-w7 text-cell font-bold text-ink outline-none"
           />
           <span className="font-sans-w7 text-cell font-bold text-ink">%</span>
@@ -336,10 +273,10 @@ function GroeiStatistiek({ uitkomst: u, instelling }: { uitkomst: KpiUitkomst; i
       {instelling.aangepast && !bewerken && !bezig && (
         <button
           type="button"
-          onClick={() => void bewaar(null)}
+          onClick={terugzetten}
           className="w-fit text-meta text-ink-muted underline underline-offset-2 hover:text-ink"
         >
-          terug naar {standaard}
+          terug naar {STANDAARD_GROEI_TEKST}
         </button>
       )}
     </div>

@@ -12,7 +12,14 @@ import type { WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
  * Bewust zonder totaalregel: de KPI's van één website zijn verschillende dingen
  * (sessies, gebruikers, aanvragen), en die optellen levert een getal op dat niets betekent.
  */
-export default function GaOverzichtTabel({ website }: { website: WebsiteOverzicht }) {
+export default function GaOverzichtTabel({
+  website,
+  opslaanGroei,
+}: {
+  website: WebsiteOverzicht;
+  /** Slaat het percentage van één KPI op en rekent tabel en kaart opnieuw uit. */
+  opslaanGroei: (kpi: string, groei: number | null) => Promise<void>;
+}) {
   return (
     <OverzichtTabel
       peildatum2027={website.standDoeljaar?.peildatum ?? null}
@@ -26,7 +33,14 @@ export default function GaOverzichtTabel({ website }: { website: WebsiteOverzich
     >
       <tbody>
         {website.kpis.map((kpi) => (
-          <OverzichtRegel key={kpi.sleutel} naam={kpi.naam} uitkomst={kpi.uitkomst} realisatie={kpi.realisatie} soort="kpi" />
+          <OverzichtRegel
+            key={kpi.sleutel}
+            naam={kpi.naam}
+            uitkomst={kpi.uitkomst}
+            realisatie={kpi.realisatie}
+            soort="kpi"
+            groei={{ aangepast: kpi.groeiAangepast, opslaan: (groei) => opslaanGroei(kpi.sleutel, groei) }}
+          />
         ))}
       </tbody>
     </OverzichtTabel>

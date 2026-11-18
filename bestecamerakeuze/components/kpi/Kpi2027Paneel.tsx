@@ -215,7 +215,9 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
         </span>
       </p>
 
-      {website && website.kpis.length > 0 && <GaOverzichtTabel website={website} />}
+      {website && website.kpis.length > 0 && (
+        <GaOverzichtTabel website={website} opslaanGroei={(kpi, groei) => zetGroei(website.sleutel, kpi, groei)} />
+      )}
 
       {website && website.kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">

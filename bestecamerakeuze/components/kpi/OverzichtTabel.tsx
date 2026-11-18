@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 import { formatteer } from "@/components/chat/chartTheme";
+import { STANDAARD_GROEI_TEKST, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
+import { IconRefresh } from "@/components/icons";
 import { aantal, datumKort } from "@/components/kpi/KpiKaart";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { voortgang, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
@@ -35,12 +37,18 @@ export function OverzichtRegel({
   uitkomst: u,
   realisatie,
   soort,
+  groei,
 }: {
   naam: string;
   /** Null als er voor deze KPI nog niets te rekenen valt: dan streepjes. */
   uitkomst: KpiUitkomst | null;
   realisatie: { waarde: number; peildatum: string | null };
   soort: RegelSoort;
+  /**
+   * Alleen bij een gewone KPI: dan is Target % aan te klikken en aan te passen, precies
+   * zoals het kaartje Groei. Een totaal of combinatie volgt uit zijn KPI's.
+   */
+  groei?: { aangepast: boolean; opslaan: (groei: number | null) => Promise<void> };
 }) {
   const v = u ? voortgang(u.target, realisatie) : null;
   const vet = soort === "totaal" || soort === "eindtotaal";
@@ -62,7 +70,9 @@ export function OverzichtRegel({
       </th>
       <td className={cel}>{u ? aantal(u.verwacht) : streepje}</td>
       <td className={`${cel} bg-primary-light/60`}>{u ? aantal(u.target) : streepje}</td>
-      <td className={cel}>{u ? procent(u.groei) : streepje}</td>
+      <td className={cel}>
+        {u && groei ? <GroeiCel groei={u.groei} {...groei} /> : u ? procent(u.groei) : streepje}
+      </td>
       <td className={cel}>{aantal(realisatie.waarde)}</td>
       <td className={cel}>
         {v ? (
@@ -77,6 +87,64 @@ export function OverzichtRegel({
         )}
       </td>
     </tr>
+  );
+}
+
+/**
+ * Target % als aan te klikken getal: dezelfde invoer als op de kaart (`useGroeiBewerken`).
+ * Een aangepast percentage krijgt een stip en een knopje om terug te gaan naar de standaard.
+ */
+function GroeiCel({
+  groei,
+  aangepast,
+  opslaan,
+}: {
+  groei: number;
+  aangepast: boolean;
+  opslaan: (groei: number | null) => Promise<void>;
+}) {
+  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(groei, opslaan);
+
+  return (
+    <span className="inline-flex flex-col items-end">
+      <span className="inline-flex items-center justify-end gap-1">
+        {bewerken ? (
+          <>
+            <input
+              {...invoerProps}
+              className="w-14 rounded-control border border-primary bg-card px-1.5 py-0.5 text-right text-sm text-ink outline-none"
+            />
+            <span>%</span>
+          </>
+        ) : (
+          <>
+            {aangepast && !bezig && (
+              <button
+                type="button"
+                onClick={terugzetten}
+                title={`Aangepast — klik om terug te gaan naar ${STANDAARD_GROEI_TEKST}`}
+                aria-label={`Terug naar ${STANDAARD_GROEI_TEKST}`}
+                className="rounded-control p-0.5 text-ink-faint transition-colors duration-[var(--duur-snel)] ease-merk hover:text-ink"
+              >
+                <IconRefresh className="h-3 w-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={begin}
+              disabled={bezig}
+              title="Klik om het groeipercentage aan te passen"
+              className={`rounded-control px-1 underline decoration-dotted underline-offset-4 transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint disabled:cursor-wait ${
+                aangepast ? "decoration-primary" : "decoration-ink-faint"
+              }`}
+            >
+              {bezig ? "…" : procent(groei)}
+            </button>
+          </>
+        )}
+      </span>
+      {fout && <span className="mt-0.5 max-w-48 text-right text-meta font-normal text-negative">{fout}</span>}
+    </span>
   );
 }
 
@@ -147,7 +215,12 @@ export function OverzichtTabel({
           Het doel voor {KPI_DOELJAAR}: de verwachting voor {KPI_JAAR} plus het Target %.
         </dd>
         <dt className="font-semibold text-ink">Target %</dt>
-        <dd>Hoeveel procent het Target {KPI_DOELJAAR} boven de verwachting voor {KPI_JAAR} ligt.</dd>
+        <dd>
+          Hoeveel procent het Target {KPI_DOELJAAR} boven de verwachting voor {KPI_JAAR} ligt; standaard{" "}
+          {STANDAARD_GROEI_TEKST}. Klik op het percentage van een KPI om het aan te passen (Enter om op te slaan, Escape om
+          te annuleren): het target, de voortgang en de kaart eronder rekenen meteen mee, en het geldt voor iedereen. Het
+          pijltje ervoor zet een aangepast percentage terug naar {STANDAARD_GROEI_TEKST}.
+        </dd>
         <dt className="font-semibold text-ink">Realisatie</dt>
         <dd>
           Wat er in {KPI_DOELJAAR} werkelijk is binnengekomen, t/m de laatste zaterdag. Tot 1 januari {KPI_DOELJAAR} staat
