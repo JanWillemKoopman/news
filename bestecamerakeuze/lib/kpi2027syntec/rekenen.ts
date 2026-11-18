@@ -139,7 +139,7 @@ export function syntecOverzicht(
       : { waarde: 0, peildatum: null };
   // Syntec telt elke dag; "gemeten dagen" zijn dus gewoon alle dagen t/m de peildatum.
   const uitkomstVan = (maanden: number[]) =>
-    berekenKpi(maandInvoerUitMaanden(maanden, peildatum, undefined, []), peildatum);
+    berekenKpi(maandInvoerUitMaanden(maanden, peildatum, []), peildatum);
 
   const perKpi = new Map<string, { maanden: number[]; perRegel: number[] }>(
     kpis.map((k) => [k.sleutel, { maanden: nulreeks(), perRegel: k.regels.map(() => 0) }]),

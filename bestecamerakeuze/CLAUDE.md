@@ -810,8 +810,9 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   (offerte, private lease, VW PFS) staat de reden onder de grafiek.
 - **Elke KPI rekent met het gemiddelde over alle dagen van 2026**, zoals gevraagd — ook
   inruilvoorstel en contact, waar de nieuwe website sinds april veel meer oplevert. Een
-  KPI vanaf april laten rekenen kan met een meetperiode (`{ van: "2026-04-01" }`) in
-  `maandInvoerUitMaanden` (`uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
+  KPI vanaf april laten rekenen kan door januari t/m maart als niet-gemeten mee te geven
+  (`[{ van: "2026-01-01", tot: "2026-03-31" }]` als derde argument van
+  `maandInvoerUitMaanden`, in `uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
   besluit van de eigenaar; niet op eigen initiatief veranderen.
 - **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
   vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
