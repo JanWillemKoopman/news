@@ -7,7 +7,13 @@ import {
   type SyntecGroep,
   type SyntecKpi,
 } from "@/lib/kpi2027syntec/definities";
-import { berekenKpi, maandInvoerUitMaanden, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
+import {
+  berekenKpi,
+  maandInvoerUitMaanden,
+  type KpiUitkomst,
+  type MaandSoort,
+  type MaandUitkomst,
+} from "@/lib/kpi2027/rekenen";
 
 /**
  * Het rekenwerk achter het tabblad KPI's 2027 Syntec.
@@ -90,12 +96,6 @@ function nulreeks(): number[] {
   return Array.from({ length: 12 }, () => 0);
 }
 
-function telOp(reeksen: number[][]): number[] {
-  const som = nulreeks();
-  for (const reeks of reeksen) for (let i = 0; i < 12; i++) som[i] += reeks[i] ?? 0;
-  return som;
-}
-
 /** Per KPI het totaal van een jaar, voor de controle op 2025. */
 export function jaartotalen(
   tellingen: readonly SyntecTelling[],
@@ -137,9 +137,6 @@ export function syntecOverzicht(
     doeljaar && totalenDoeljaar
       ? { waarde: delen.reduce((t, k) => t + (totalenDoeljaar.get(k.sleutel) ?? 0), 0), peildatum: doeljaar.peildatum }
       : { waarde: 0, peildatum: null };
-  // Syntec telt elke dag; "gemeten dagen" zijn dus gewoon alle dagen t/m de peildatum.
-  const uitkomstVan = (maanden: number[]) =>
-    berekenKpi(maandInvoerUitMaanden(maanden, peildatum, undefined, []), peildatum);
 
   const perKpi = new Map<string, { maanden: number[]; perRegel: number[] }>(
     kpis.map((k) => [k.sleutel, { maanden: nulreeks(), perRegel: k.regels.map(() => 0) }]),
@@ -156,8 +153,13 @@ export function syntecOverzicht(
     }
     const doel = perKpi.get(treffer.kpi.sleutel)!;
     doel.maanden[t.maand - 1] += aantal;
-    doel.perRegel[treffer.regel] += aantal;
+    // "Wat telt mee" toont alleen wat in de verwachting meetelt: niet de maanden vóór meetVanaf.
+    if (t.maand >= eersteMaand(treffer.kpi)) doel.perRegel[treffer.regel] += aantal;
   }
+
+  const uitkomsten = new Map<string, KpiUitkomst>(
+    kpis.map((k) => [k.sleutel, uitkomstVoorKpi(k, perKpi.get(k.sleutel)!.maanden, peildatum)]),
+  );
 
   const regelVoor = (kpi: SyntecKpi): SyntecKpiRegel => {
     const data = perKpi.get(kpi.sleutel)!;
@@ -169,24 +171,32 @@ export function syntecOverzicht(
       onderdelen: [],
       keuzes: [...kpi.keuzes],
       vorigJaar: somVorigJaar([kpi]),
-      uitkomst: uitkomstVan(data.maanden),
+      uitkomst: uitkomsten.get(kpi.sleutel)!,
       realisatie: realisatieVan([kpi]),
     };
   };
 
-  const totaalVan = (sleutel: string, naam: string, delen: readonly SyntecKpi[]): SyntecKpiRegel => ({
-    sleutel,
-    naam,
-    doel2026: delen.reduce((t, k) => t + k.doel2026, 0),
-    bron: [],
-    onderdelen: delen.map((k) => k.naam),
-    keuzes: [...SYNTEC_TOTAAL_KEUZES],
-    vorigJaar: somVorigJaar(delen),
-    // Optellen vóór het rekenen of erna geeft hetzelfde (alles is lineair); zo staat er
-    // gewoon één berekening, met dezelfde maandlijn als elke andere kaart.
-    uitkomst: uitkomstVan(telOp(delen.map((k) => perKpi.get(k.sleutel)!.maanden))),
-    realisatie: realisatieVan(delen),
-  });
+  const totaalVan = (sleutel: string, naam: string, delen: readonly SyntecKpi[]): SyntecKpiRegel => {
+    const vanafApril = delen.filter((k) => k.meetVanaf);
+    return {
+      sleutel,
+      naam,
+      doel2026: delen.reduce((t, k) => t + k.doel2026, 0),
+      bron: [],
+      onderdelen: delen.map((k) => k.naam),
+      keuzes: [
+        ...SYNTEC_TOTAAL_KEUZES,
+        ...(vanafApril.length > 0
+          ? [
+              `${vanafApril.map((k) => k.naam).join(" en ")} ${vanafApril.length > 1 ? "rekenen" : "rekent"} vanaf ${datumTekst(vanafApril[0].meetVanaf!)}: ${vanafApril.length > 1 ? "hun" : "zijn"} maanden daarvóór zijn bijgeschat. Daarom staan die maanden in dit totaal gestippeld.`,
+            ]
+          : []),
+      ],
+      vorigJaar: somVorigJaar(delen),
+      uitkomst: somVanUitkomsten(delen.map((k) => ({ naam: k.naam, uitkomst: uitkomsten.get(k.sleutel)! }))),
+      realisatie: realisatieVan(delen),
+    };
+  };
 
   const groepen = SYNTEC_GROEPEN.map((g) => {
     const delen = kpis.filter((k) => k.groep === g.sleutel);
@@ -202,5 +212,86 @@ export function syntecOverzicht(
     groepen,
     totaal: totaalVan("totaal", "Totaal", kpis),
     nietIngedeeld,
+  };
+}
+
+/** De eerste maand (1–12) die in de verwachting meetelt. */
+function eersteMaand(kpi: SyntecKpi): number {
+  return kpi.meetVanaf ? Number(kpi.meetVanaf.slice(5, 7)) : 1;
+}
+
+function datumTekst(datum: string): string {
+  return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Eén KPI uitrekenen. Syntec telt elke dag, dus de gemeten dagen zijn alle dagen t/m de
+ * peildatum — behalve bij een KPI met `meetVanaf`: dan tellen pas de dagen vanaf die datum,
+ * en vult `berekenKpi` de maanden ervóór met het gemiddelde (soort "bijgeschat").
+ */
+export function uitkomstVoorKpi(kpi: SyntecKpi, maanden: readonly number[], peildatum: string): KpiUitkomst {
+  const meetperiodes = kpi.meetVanaf ? [{ van: kpi.meetVanaf }] : undefined;
+  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, meetperiodes, []), peildatum);
+}
+
+/**
+ * Een totaal als optelsom van de uitkomsten van zijn KPI's — niet opnieuw uitgerekend uit
+ * de opgetelde maanden. Dat zou hetzelfde zijn zolang elke KPI over dezelfde dagen rekent,
+ * maar inruilvoorstel en contact rekenen vanaf april: een totaal hoort dan precies de som
+ * te zijn van de kaarten erboven, target voor target.
+ *
+ * Een maand is in het totaal pas "gemeten" als hij dat bij elke KPI is. Is hij bij een
+ * deel bijgeschat, dan zegt de tooltip welk deel gemeten is en wat er is bijgeschat.
+ */
+export function somVanUitkomsten(delen: readonly { naam: string; uitkomst: KpiUitkomst }[]): KpiUitkomst {
+  const eerste = delen[0].uitkomst;
+  const som = (f: (u: KpiUitkomst) => number) => delen.reduce((t, d) => t + f(d.uitkomst), 0);
+
+  const maanden: MaandUitkomst[] = eerste.maanden.map((m0, i) => {
+    const per = delen.map((d) => ({ naam: d.naam, m: d.uitkomst.maanden[i] }));
+    const soorten = per.map((p) => p.m.soort);
+    const soort: MaandSoort = soorten.includes("verwachting")
+      ? "verwachting"
+      : soorten.includes("deels")
+        ? "deels"
+        : soorten.includes("bijgeschat")
+          ? "bijgeschat"
+          : "gerealiseerd";
+    const gemeten = per.reduce((t, p) => t + (p.m.gerealiseerd ?? 0), 0);
+    const bijgeschatteDelen = per.filter((p) => p.m.soort === "bijgeschat").map((p) => p.naam);
+    return {
+      maand: m0.maand,
+      soort,
+      gerealiseerd: per.some((p) => p.m.gerealiseerd !== null) ? gemeten : null,
+      verwacht: per.reduce((t, p) => t + p.m.verwacht, 0),
+      dagenGemeten: Math.min(...per.map((p) => p.m.dagenGemeten)),
+      dagenInMaand: m0.dagenInMaand,
+      ...(soort === "bijgeschat"
+        ? {
+            toelichting: `waarvan ${Math.round(gemeten).toLocaleString("nl-NL")} gemeten; ${bijgeschatteDelen.join(" en ")} ${bijgeschatteDelen.length > 1 ? "zijn" : "is"} voor deze maand bijgeschat met het gemiddelde vanaf april`,
+          }
+        : {}),
+    };
+  });
+
+  return {
+    peildatum: eerste.peildatum,
+    gerealiseerd: som((u) => u.gerealiseerd),
+    perDag: som((u) => u.perDag),
+    dagenGemeten: Math.max(...delen.map((d) => d.uitkomst.dagenGemeten)),
+    dagenNietGemeten: 0,
+    dagenBijgeschat: Math.max(...delen.map((d) => d.uitkomst.dagenBijgeschat)),
+    bijgeschat: som((u) => u.bijgeschat),
+    verwacht: som((u) => u.verwacht),
+    groei: eerste.groei,
+    target: som((u) => u.target),
+    targetPerMaand: som((u) => u.targetPerMaand),
+    maanden,
+    definitief: delen.every((d) => d.uitkomst.definitief),
   };
 }

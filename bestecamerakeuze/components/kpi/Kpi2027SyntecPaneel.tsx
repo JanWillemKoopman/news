@@ -5,6 +5,7 @@ import Inlogprompt from "@/components/Inlogprompt";
 import KpiSyntecKaart from "@/components/kpi/KpiSyntecKaart";
 import { IconInfo } from "@/components/icons";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
+import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
 import { isDefinitief } from "@/lib/kpi2027/rekenen";
 import type { Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
 
@@ -18,6 +19,10 @@ import type { Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
  *
  * Welke Syntec-leads bij welke KPI horen staat in `lib/kpi2027syntec/definities.ts`.
  */
+
+/** De KPI's met een latere rekenbasis (`meetVanaf`), voor de melding bovenaan. */
+const VANAF_APRIL = SYNTEC_KPIS.filter((k) => k.meetVanaf).map((k) => k.naam.replace(/^Udenhout\.nl /, ""));
+const VANAF_APRIL_TEKST = VANAF_APRIL.join(" en ").replace(/^./, (c) => c.toUpperCase());
 
 function datumLang(datum: string): string {
   return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
@@ -88,6 +93,21 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
       </div>
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
+
+      {/* Dezelfde vorm als de uitvalmelding op KPI's 2027: een afwijkende rekenbasis hoort
+          bovenaan te staan, niet alleen in de kleine letters onder één grafiek. */}
+      {VANAF_APRIL.length > 0 && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>
+            <strong className="font-semibold">{VANAF_APRIL_TEKST} rekenen vanaf 1 april {KPI_JAAR}.</strong> Het
+            formulier van de nieuwe website levert sinds april veel meer aanvragen op dan het oude. Daarom telt bij deze
+            KPI&apos;s alleen april en later mee in het gemiddelde per dag, en zijn januari t/m maart met dat gemiddelde
+            bijgeschat (gestippeld in de grafiek). Zo gaat het target {KPI_DOELJAAR} uit van het niveau van de nieuwe
+            website. De totalen waar ze in zitten tellen hun kaarten op.
+          </span>
+        </p>
+      )}
 
       <p className="flex items-start gap-2 text-meta text-ink-muted">
         <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />

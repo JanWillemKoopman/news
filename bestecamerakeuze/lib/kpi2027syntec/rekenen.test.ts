@@ -156,3 +156,65 @@ test("de realisatie van 2027 telt per KPI en per totaal, en is nul zolang 2027 n
   assert.deepEqual(o.totaal.realisatie, { waarde: 15, peildatum: "2027-01-09" });
   assert.deepEqual(syntecOverzicht([], "2026-11-14").totaal.realisatie, { waarde: 0, peildatum: null });
 });
+
+test("inruilvoorstel en contact rekenen vanaf april: januari t/m maart bijgeschat met dat gemiddelde", () => {
+  const tellingen: SyntecTelling[] = [
+    { kanaal: "Udenhout.nl inruilvoorstel", onderwerp: "", maand: 1, aantal: 1 },
+    { kanaal: "Udenhout.nl inruilvoorstel", onderwerp: "", maand: 2, aantal: 1 },
+    // april t/m juni: 91 dagen, 91 inruilvoorstellen → één per dag.
+    { kanaal: "Udenhout.nl", onderwerp: "inruilvoorstel", maand: 4, aantal: 30 },
+    { kanaal: "Udenhout.nl", onderwerp: "inruilvoorstel", maand: 5, aantal: 31 },
+    { kanaal: "Udenhout.nl", onderwerp: "inruilvoorstel", maand: 6, aantal: 30 },
+    { kanaal: "Seat.nl", onderwerp: "", maand: 1, aantal: 181 },
+  ];
+  const o = syntecOverzicht(tellingen, "2026-06-30");
+  const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const inruil = eigen.kpis.find((k) => k.sleutel === "inruil")!;
+  const u = inruil.uitkomst;
+
+  // De twee oude inruilvoorstellen van januari en februari tellen niet mee.
+  assert.equal(u.gerealiseerd, 91);
+  assert.equal(u.perDag, 1);
+  assert.equal(u.verwacht, 365);
+  assert.equal(u.dagenNietGemeten, 90);
+  assert.deepEqual(u.maanden.slice(0, 4).map((m) => m.soort), ["bijgeschat", "bijgeschat", "bijgeschat", "gerealiseerd"]);
+  assert.equal(u.maanden[0].verwacht, 31);
+  // "Wat telt mee" toont alleen wat in de verwachting zit.
+  assert.deepEqual(inruil.bron.map((b) => b.aantal), [0, 91]);
+  assert.ok(inruil.keuzes[0].startsWith("Rekent vanaf 1 april 2026"));
+  // Het onderwerp van een andere KPI rekent gewoon vanaf januari.
+  const seat = o.groepen.find((g) => g.sleutel === "pah")!.kpis.find((k) => k.sleutel === "seat-nl")!;
+  assert.equal(seat.uitkomst.dagenNietGemeten, 0);
+});
+
+test("een totaal is precies de som van zijn kaarten, ook als een KPI vanaf april rekent", () => {
+  const tellingen: SyntecTelling[] = [
+    { kanaal: "Udenhout.nl proefritaanv.", onderwerp: "", maand: 1, aantal: 100 },
+    { kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag", maand: 5, aantal: 120 },
+    { kanaal: "Udenhout.nl", onderwerp: "Algemeen contactformulier", maand: 5, aantal: 20 },
+  ];
+  const o = syntecOverzicht(tellingen, "2026-06-30");
+  const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const somTarget = eigen.kpis.reduce((t, k) => t + k.uitkomst.target, 0);
+  const somVerwacht = eigen.kpis.reduce((t, k) => t + k.uitkomst.verwacht, 0);
+  assert.ok(Math.abs(eigen.totaal.uitkomst.target - somTarget) < 1e-9);
+  assert.ok(Math.abs(eigen.totaal.uitkomst.verwacht - somVerwacht) < 1e-9);
+  for (let i = 0; i < 12; i++) {
+    const som = eigen.kpis.reduce((t, k) => t + k.uitkomst.maanden[i].verwacht, 0);
+    assert.ok(Math.abs(eigen.totaal.uitkomst.maanden[i].verwacht - som) < 1e-9);
+  }
+  // Januari: proefrit gemeten, contact bijgeschat → in het totaal bijgeschat, met uitleg.
+  assert.equal(eigen.totaal.uitkomst.maanden[0].soort, "bijgeschat");
+  assert.match(eigen.totaal.uitkomst.maanden[0].toelichting ?? "", /waarvan 100 gemeten; .*contact.* bijgeschat/);
+  assert.ok(eigen.totaal.keuzes.some((k) => k.includes("rekenen vanaf 1 april 2026")));
+  // Bij de PAH zit geen KPI die vanaf april rekent, dus ook geen regel daarover.
+  const pah = o.groepen.find((g) => g.sleutel === "pah")!;
+  assert.ok(!pah.totaal.keuzes.some((k) => k.includes("1 april")));
+  assert.equal(pah.totaal.uitkomst.maanden[0].soort, "gerealiseerd");
+});
+
+test("meetVanaf is altijd de eerste van een maand (de tellingen staan per maand)", () => {
+  for (const kpi of SYNTEC_KPIS) {
+    if (kpi.meetVanaf) assert.match(kpi.meetVanaf, /^\d{4}-\d{2}-01$/, kpi.naam);
+  }
+});

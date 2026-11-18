@@ -193,6 +193,12 @@ export interface MaandUitkomst {
   verwacht: number;
   dagenGemeten: number;
   dagenInMaand: number;
+  /**
+   * Optioneel: een eigen uitleg voor de tooltip, in plaats van de standaardzin bij deze
+   * soort. Gebruikt door de totaalkaarten van KPI's 2027 Syntec, waar één maand gemeten
+   * en bijgeschatte KPI's kan optellen.
+   */
+  toelichting?: string;
 }
 
 export interface KpiUitkomst {

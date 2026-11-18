@@ -811,11 +811,20 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   bel-me-terug vallen buiten alle KPI's. De doelen 2026 waren de telling van 2025 × 1,2;
   met deze regels klopt dat voor tien van de vijftien KPI's precies. Waar het niet klopt
   (offerte, private lease, VW PFS) staat de reden onder de grafiek.
-- **Elke KPI rekent met het gemiddelde over alle dagen van 2026**, zoals gevraagd — ook
-  inruilvoorstel en contact, waar de nieuwe website sinds april veel meer oplevert. Een
-  KPI vanaf april laten rekenen kan met een meetperiode (`{ van: "2026-04-01" }`) in
-  `maandInvoerUitMaanden` (`uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
-  besluit van de eigenaar; niet op eigen initiatief veranderen.
+- **Inruilvoorstel en contact rekenen vanaf 1 april 2026** (besluit van de eigenaar,
+  november 2026); alle andere KPI's met het gemiddelde over alle dagen van 2026. Het
+  formulier van de nieuwe website levert sinds april veel meer op (inruil ±1 → ±25 per
+  maand, contact ±14 → ±20). `meetVanaf` op de KPI in `definities.ts` maakt van die datum
+  een meetperiode (`uitkomstVoorKpi`): januari t/m maart tellen niet mee in het gemiddelde
+  en worden ermee bijgeschat, gestippeld in de grafiek — net als zakelijke lease op KPI's
+  2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
+  het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
+  ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **Een totaal is de som van zijn kaarten** (`somVanUitkomsten`), niet een nieuwe
+  berekening over de opgetelde maanden: zodra KPI's over verschillende dagen rekenen,
+  zou dat een ander target geven dan de kaarten erboven samen. Een maand is in een
+  totaal pas gemeten als hij dat bij elke KPI is; anders staat hij gestippeld en zegt de
+  tooltip (`MaandUitkomst.toelichting`) welk deel gemeten is en wat bijgeschat.
 - **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
   vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
 

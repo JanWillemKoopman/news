@@ -82,6 +82,12 @@ export interface SyntecKpi {
   /** Onderwerpen die bij deze KPI nooit meetellen, wat de regel ook zegt. */
   nooitOnderwerpBegintMet?: readonly string[];
   /**
+   * Vanaf welke dag de verwachting rekent (altijd de eerste van een maand, de tellingen
+   * staan per maand). Standaard 1 januari. Wat ervóór ligt telt niet mee in het gemiddelde
+   * en wordt met het gemiddelde bijgeschat — precies zoals zakelijke lease op KPI's 2027.
+   */
+  meetVanaf?: string;
+  /**
    * De beslissingen achter deze definitie, in gewone taal, onder de grafiek. Een target is
    * pas bruikbaar als iedereen weet wat er wel en niet in zit, en waarom.
    */
@@ -98,6 +104,11 @@ const KEUZE_NAAMSWISSEL =
 const KEUZE_DOORGESTUURD =
   "Doorgestuurde mails (onderwerp begint met ‘FW:’) tellen niet mee: dat zijn mails die een collega handmatig doorstuurde, geen websiteformulieren.";
 const KEUZE_HEEL_KANAAL = "Alle leads met dit kanaal tellen mee, ongeacht het onderwerp.";
+
+/** De afspraak voor inruilvoorstel en contact (november 2026), in gewone taal. */
+function KEUZE_REKENT_VANAF_APRIL(wat: string, niveau: string): string {
+  return `Rekent vanaf 1 april 2026 (besluit november 2026). Het formulier van de nieuwe website levert veel meer ${wat} op dan het oude (${niveau}). Daarom telt alleen april en later mee in het gemiddelde per dag, en zijn januari t/m maart met dat gemiddelde bijgeschat (gestippeld in de grafiek). Zo gaat het target 2027 uit van het niveau van de nieuwe website.`;
+}
 
 export const SYNTEC_KPIS: readonly SyntecKpi[] = [
   // --- Eigen website ------------------------------------------------------------------
@@ -172,10 +183,12 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
       { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["inruil"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
+    meetVanaf: "2026-04-01",
     keuzes: [
+      KEUZE_REKENT_VANAF_APRIL("inruilvoorstellen", "±1 per maand tot en met maart, daarna ±25"),
       KEUZE_NAAMSWISSEL,
       KEUZE_DOORGESTUURD,
-      "Het formulier van de nieuwe website levert veel meer inruilvoorstellen op dan het oude: ±1 per maand tot en met maart, daarna ±25. Dat is geen telfout. Het jaargemiddelde, en dus het target, mengt die twee periodes; het doel 2026 is daarmee achterhaald.",
+      "Het doel 2026 (7) ging nog uit van het oude formulier en is daarmee achterhaald.",
     ],
   },
   {
@@ -188,10 +201,11 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
       { kanalen: ["Udenhout.nl"], onderwerpBegintMet: ["Algemeen contactformulier"], periode: NIEUW },
     ],
     nooitOnderwerpBegintMet: GEEN_DOORGESTUURDE_MAIL,
+    meetVanaf: "2026-04-01",
     keuzes: [
+      KEUZE_REKENT_VANAF_APRIL("contactaanvragen", "±14 per maand tot en met maart, daarna ±20"),
       KEUZE_NAAMSWISSEL,
       KEUZE_DOORGESTUURD,
-      "Het contactformulier van de nieuwe website levert sinds april meer aanvragen op dan het oude kanaal. Het jaargemiddelde, en dus het target, mengt die twee periodes.",
     ],
   },
 
@@ -277,7 +291,7 @@ export const SYNTEC_KPIS: readonly SyntecKpi[] = [
 
 /** De keuzes die voor elk totaal gelden, onder de totaalkaarten. */
 export const SYNTEC_TOTAAL_KEUZES: readonly string[] = [
-  "Een totaal is de optelsom van de KPI's erboven; elke lead telt bij hoogstens één KPI. De keuzes per KPI staan onder de afzonderlijke kaarten.",
+  "Een totaal is de optelsom van de KPI's erboven — van hun verwachting, target en realisatie; elke lead telt bij hoogstens één KPI. De keuzes per KPI staan onder de afzonderlijke kaarten.",
   "Chat, WhatsApp (SaySimple), bel-me-terug en reserveringen voor de ID. Polo tellen bij geen enkele KPI: ze zaten niet in de doelen voor 2026.",
 ];
 

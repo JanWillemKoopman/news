@@ -51,6 +51,7 @@ interface Punt {
   verwacht: number;
   dagenGemeten: number;
   dagenInMaand: number;
+  toelichting: string | null;
 }
 
 /**
@@ -82,6 +83,7 @@ export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Pu
       verwacht: waarde,
       dagenGemeten: m.dagenGemeten,
       dagenInMaand: m.dagenInMaand,
+      toelichting: m.toelichting ?? null,
     };
   });
 }
@@ -255,6 +257,7 @@ function MaandTooltip({
           : "niet gemeten; ingevuld met het gemiddelde per dag";
       break;
   }
+  if (p.toelichting) toelichting = p.toelichting;
 
   return (
     <div className="rounded-card border border-line bg-card px-3 py-2 text-xs shadow-card">
