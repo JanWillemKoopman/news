@@ -99,7 +99,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle: "De belangrijkste kerncijfers in één dashboard.",
   },
   "kpi-2027": {
-    title: "KPI's 2027",
+    title: "KPI's 2027 GA",
     subtitle:
       "De targets voor 2027 per KPI en per website: wat 2026 naar verwachting doet, plus 5%.",
   },
