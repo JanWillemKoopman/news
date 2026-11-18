@@ -26,6 +26,7 @@ type Props = {
   campagnebeheer: React.ReactNode;
   kpiOverzicht: React.ReactNode;
   kpi2027: React.ReactNode;
+  kpi2027Syntec: React.ReactNode;
   socialAds: React.ReactNode;
   googleAds: React.ReactNode;
   organisch: React.ReactNode;
@@ -101,6 +102,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "KPI's 2027",
     subtitle:
       "De targets voor 2027 per KPI van udenhout.nl: wat 2026 naar verwachting doet, plus 5%.",
+  },
+  "kpi-2027-syntec": {
+    title: "KPI's 2027 Syntec",
+    subtitle:
+      "De targets voor 2027 per websitebron in Syntec: wat 2026 naar verwachting doet, plus 5%.",
   },
   "social-ads": {
     title: "Social ads",
@@ -189,6 +195,7 @@ export default function AppShell({
   campagnebeheer,
   kpiOverzicht,
   kpi2027,
+  kpi2027Syntec,
   socialAds,
   googleAds,
   organisch,
@@ -305,6 +312,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "kpi-2027"}>
           {bezocht.has("kpi-2027") ? kpi2027 : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "kpi-2027-syntec"}>
+          {bezocht.has("kpi-2027-syntec") ? kpi2027Syntec : null}
         </div>
         {/* De zes Kanalen-panelen blijven net als de rest gemount, maar ze halen hun
             data pas op zodra ze voor het eerst getoond worden — zie useKanaalData. Een

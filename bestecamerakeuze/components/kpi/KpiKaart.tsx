@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
 import { KPI_DOELJAAR, KPI_JAAR, KPI_PROPERTY } from "@/lib/kpi2027/definities";
-import type { KpiOverzichtRegel } from "@/lib/kpi2027/rekenen";
+import type { KpiOverzichtRegel, KpiUitkomst } from "@/lib/kpi2027/rekenen";
 
 /**
  * Eén KPI: bovenaan de drie getallen waar het overleg om draait (2026 inclusief
@@ -15,7 +16,7 @@ import type { KpiOverzichtRegel } from "@/lib/kpi2027/rekenen";
  * KPI (en per periode — zie `lib/kpi2027/definities.ts`).
  */
 
-function datumKort(datum: string): string {
+export function datumKort(datum: string): string {
   return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
     day: "numeric",
     month: "short",
@@ -23,7 +24,7 @@ function datumKort(datum: string): string {
   });
 }
 
-function aantal(waarde: number): string {
+export function aantal(waarde: number): string {
   return formatteer(Math.round(waarde), "aantal");
 }
 
@@ -33,7 +34,46 @@ function perDagTekst(waarde: number): string {
 }
 
 export default function KpiKaart({ kpi }: { kpi: KpiOverzichtRegel }) {
-  const u = kpi.uitkomst;
+  const peildatum = datumKort(kpi.uitkomst.peildatum);
+  return (
+    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst}>
+      <p>
+        <span className="text-ink-muted">Bron:</span> Google Analytics 4, udenhout.nl (property {KPI_PROPERTY}).{" "}
+        {kpi.events.length > 0 ? (
+          <>
+            Events (aantal keer gevuurd, event_count, {KPI_JAAR} t/m {peildatum}):{" "}
+            {kpi.events.map((e, i) => (
+              <span key={e.naam}>
+                {i > 0 && " + "}
+                <code className="font-mono text-ink-muted">{e.naam}</code>
+                {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
+              </span>
+            ))}
+            .
+          </>
+        ) : (
+          kpi.bronTekst
+        )}
+      </p>
+      {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
+    </KpiKaartOpmaak>
+  );
+}
+
+/**
+ * De kaart zelf — kop, de drie kaartjes en de jaargrafiek — met de bronregel als
+ * `children`. Ook gebruikt door KPI's 2027 Syntec (`KpiSyntecKaart.tsx`), zodat beide
+ * tabbladen er precies hetzelfde uitzien en alleen de bron eronder verschilt.
+ */
+export function KpiKaartOpmaak({
+  naam,
+  uitkomst: u,
+  children,
+}: {
+  naam: string;
+  uitkomst: KpiUitkomst;
+  children: ReactNode;
+}) {
   const peildatum = datumKort(u.peildatum);
   const groeiAantal = u.target - u.verwacht;
   const basisNietJanuari = u.basisVanaf !== `${KPI_JAAR}-01-01`;
@@ -41,7 +81,7 @@ export default function KpiKaart({ kpi }: { kpi: KpiOverzichtRegel }) {
   return (
     <section className="kaart-omlijst flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
       <header className="flex items-baseline justify-between gap-4">
-        <h2 className="font-sans-w7 text-cell font-semibold text-ink">{kpi.naam}</h2>
+        <h2 className="font-sans-w7 text-cell font-semibold text-ink">{naam}</h2>
         <p className="text-meta text-ink-muted">
           gemiddeld {perDagTekst(u.perDag)} per dag
           {basisNietJanuari ? ` (vanaf ${datumKort(u.basisVanaf)})` : ""}
@@ -75,27 +115,7 @@ export default function KpiKaart({ kpi }: { kpi: KpiOverzichtRegel }) {
         <KpiJaarGrafiek maanden={u.maanden} targetPerMaand={u.targetPerMaand} peildatumTekst={peildatum} />
       </div>
 
-      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">
-        <p>
-          <span className="text-ink-muted">Bron:</span> Google Analytics 4, udenhout.nl (property {KPI_PROPERTY}).{" "}
-          {kpi.events.length > 0 ? (
-            <>
-              Events (aantal keer gevuurd, event_count, {KPI_JAAR} t/m {peildatum}):{" "}
-              {kpi.events.map((e, i) => (
-                <span key={e.naam}>
-                  {i > 0 && " + "}
-                  <code className="font-mono text-ink-muted">{e.naam}</code>
-                  {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
-                </span>
-              ))}
-              .
-            </>
-          ) : (
-            kpi.bronTekst
-          )}
-        </p>
-        {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
-      </footer>
+      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">{children}</footer>
     </section>
   );
 }
