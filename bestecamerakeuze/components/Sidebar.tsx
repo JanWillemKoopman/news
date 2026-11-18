@@ -146,7 +146,7 @@ export default function Sidebar({
               je de stand leest, dit is waar je hem tegen afzet. */}
           <NavigationItem
             icon={<IconTrendUp />}
-            label="KPI's 2027"
+            label="KPI's 2027 GA"
             active={actief === "kpi-2027"}
             onClick={() => onNavigate("kpi-2027")}
           />

@@ -1,9 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
-import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
+import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
+import { leesPercentage, percentageInvoer } from "@/lib/kpi2027/groeiInvoer";
 import type { KpiOverzichtRegel, KpiUitkomst, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
 
 /**
@@ -48,11 +49,33 @@ function perMaandTekst(waarde: number): string {
     : aantal(waarde);
 }
 
-export default function KpiKaart({ kpi, website }: { kpi: KpiOverzichtRegel; website: WebsiteOverzicht }) {
+/**
+ * Hoe de groei op een kaart aan te passen is:
+ *  - `bewerkbaar`: klikken en een ander percentage typen; `opslaan(null)` = terug naar +5%;
+ *  - `afgeleid`: een totaal, waarvan het percentage volgt uit de kaarten erin.
+ */
+export type GroeiInstelling =
+  | { soort: "bewerkbaar"; aangepast: boolean; opslaan: (groei: number | null) => Promise<void> }
+  | { soort: "afgeleid" };
+
+export default function KpiKaart({
+  kpi,
+  website,
+  opslaanGroei,
+}: {
+  kpi: KpiOverzichtRegel;
+  website: WebsiteOverzicht;
+  opslaanGroei: (groei: number | null) => Promise<void>;
+}) {
   const u = kpi.uitkomst;
 
   return (
-    <KpiKaartOpmaak naam={kpi.naam} uitkomst={u} realisatie={kpi.realisatie}>
+    <KpiKaartOpmaak
+      naam={kpi.naam}
+      uitkomst={u}
+      realisatie={kpi.realisatie}
+      groei={{ soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }}
+    >
       {kpi.externeBron && (
         <p className="mb-1">
           <span className="text-ink-muted">Bron t/m {datumKort(kpi.externeBron.tot)}:</span> {kpi.externeBron.omschrijving}{" "}
@@ -94,6 +117,7 @@ export function KpiKaartOpmaak({
   naam,
   uitkomst: u,
   realisatie,
+  groei,
   children,
 }: {
   naam: string;
@@ -101,6 +125,8 @@ export function KpiKaartOpmaak({
   uitkomst: KpiUitkomst | null;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
   realisatie: { waarde: number; peildatum: string | null };
+  /** Zonder: het percentage staat er alleen. */
+  groei?: GroeiInstelling;
   children: ReactNode;
 }) {
   return (
@@ -133,11 +159,7 @@ export function KpiKaartOpmaak({
               toelichting={`${perMaandTekst(u.targetPerMaand)} per maand`}
               nadruk
             />
-            <Statistiek
-              label="Groei"
-              waarde={`${u.groei >= 0 ? "+" : "−"}${formatteer(Math.abs(u.groei) * 100, "procent")}`}
-              toelichting={`${u.target - u.verwacht >= 0 ? "+" : "−"}${aantal(Math.abs(u.target - u.verwacht))} t.o.v. ${KPI_JAAR}`}
-            />
+            <GroeiStatistiek uitkomst={u} instelling={groei} />
             <Statistiek
               label={`Realisatie ${KPI_DOELJAAR}`}
               waarde={aantal(realisatie.waarde)}
@@ -182,6 +204,144 @@ function Statistiek({
       <span className="label-theme text-label text-ink-faint">{label}</span>
       <span className="font-sans-w7 text-cell font-bold text-ink">{waarde}</span>
       <span className="text-meta text-ink-muted">{toelichting}</span>
+    </div>
+  );
+}
+
+function groeiTekst(groei: number): string {
+  return `${groei >= 0 ? "+" : "−"}${formatteer(Math.abs(groei) * 100, "procent")}`;
+}
+
+/**
+ * Het kaartje Groei. Bij een gewone KPI klik je op het percentage en typ je een ander
+ * getal: Enter of wegklikken slaat op, Escape annuleert. Het target, het maandtarget en de
+ * lijn in de grafiek rekenen meteen mee (de ouder past de uitkomst aan met `metGroei`).
+ */
+function GroeiStatistiek({ uitkomst: u, instelling }: { uitkomst: KpiUitkomst; instelling?: GroeiInstelling }) {
+  const [bewerken, setBewerken] = useState(false);
+  const [invoer, setInvoer] = useState("");
+  const [bezig, setBezig] = useState(false);
+  const [fout, setFout] = useState<string | null>(null);
+  const veld = useRef<HTMLInputElement>(null);
+  // Enter slaat op en haalt daarmee de focus weg; dan hoort blur niet nóg eens op te slaan.
+  const klaar = useRef(false);
+
+  useEffect(() => {
+    if (bewerken) veld.current?.select();
+  }, [bewerken]);
+
+  const verschil = `${u.target - u.verwacht >= 0 ? "+" : "−"}${aantal(Math.abs(u.target - u.verwacht))} t.o.v. ${KPI_JAAR}`;
+  const standaard = groeiTekst(KPI_GROEI);
+
+  if (instelling?.soort !== "bewerkbaar") {
+    return (
+      <Statistiek
+        label="Groei"
+        waarde={groeiTekst(u.groei)}
+        toelichting={instelling?.soort === "afgeleid" ? `${verschil} · som van de kaarten` : verschil}
+      />
+    );
+  }
+
+  const opslaan = instelling.opslaan;
+
+  function begin() {
+    if (bezig) return;
+    klaar.current = false;
+    setFout(null);
+    setInvoer(percentageInvoer(u.groei));
+    setBewerken(true);
+  }
+
+  async function bewaar(groei: number | null) {
+    setBezig(true);
+    setFout(null);
+    try {
+      await opslaan(groei);
+      setBewerken(false);
+    } catch (err) {
+      setFout(err instanceof Error ? err.message : "Opslaan mislukt.");
+    } finally {
+      setBezig(false);
+    }
+  }
+
+  async function bevestig() {
+    if (klaar.current) return;
+    const groei = leesPercentage(invoer);
+    if (groei === null) {
+      setFout("Typ een percentage, bijvoorbeeld 7,5.");
+      return;
+    }
+    klaar.current = true;
+    if (Math.abs(groei - u.groei) < 1e-9) {
+      setBewerken(false);
+      return;
+    }
+    // Precies de standaard typen is hetzelfde als terugzetten: dan blijft er geen rij staan.
+    await bewaar(Math.abs(groei - KPI_GROEI) < 1e-9 ? null : groei);
+    klaar.current = false;
+  }
+
+  return (
+    <div
+      className={`flex flex-col gap-1 rounded-card border px-3 py-2.5 ${
+        instelling.aangepast ? "border-primary bg-surface-tint" : "border-line bg-surface-tint"
+      }`}
+    >
+      <span className="label-theme text-label text-ink-faint">
+        Groei{instelling.aangepast ? " · aangepast" : ""}
+      </span>
+      {bewerken ? (
+        <span className="flex items-center gap-1">
+          <input
+            ref={veld}
+            type="text"
+            inputMode="decimal"
+            aria-label="Groeipercentage"
+            value={invoer}
+            disabled={bezig}
+            onChange={(e) => {
+              setInvoer(e.target.value);
+              setFout(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void bevestig();
+              } else if (e.key === "Escape") {
+                klaar.current = true;
+                setBewerken(false);
+                setFout(null);
+              }
+            }}
+            onBlur={() => void bevestig()}
+            className="w-16 rounded-control border border-primary bg-card px-1.5 py-0.5 font-sans-w7 text-cell font-bold text-ink outline-none"
+          />
+          <span className="font-sans-w7 text-cell font-bold text-ink">%</span>
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={begin}
+          title="Klik om het groeipercentage aan te passen"
+          className="-mx-1 w-fit rounded-control px-1 text-left font-sans-w7 text-cell font-bold text-ink underline decoration-dotted decoration-ink-faint underline-offset-4 transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-card"
+        >
+          {groeiTekst(u.groei)}
+        </button>
+      )}
+      <span className={`text-meta ${fout ? "text-negative" : "text-ink-muted"}`}>
+        {fout ?? (bezig ? "Opslaan…" : verschil)}
+      </span>
+      {instelling.aangepast && !bewerken && !bezig && (
+        <button
+          type="button"
+          onClick={() => void bewaar(null)}
+          className="w-fit text-meta text-ink-muted underline underline-offset-2 hover:text-ink"
+        >
+          terug naar {standaard}
+        </button>
+      )}
     </div>
   );
 }

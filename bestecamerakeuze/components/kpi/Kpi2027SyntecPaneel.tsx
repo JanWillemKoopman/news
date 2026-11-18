@@ -8,7 +8,8 @@ import { IconInfo } from "@/components/icons";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
 import { isDefinitief } from "@/lib/kpi2027/rekenen";
-import type { Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
+import { pasSyntecGroeiToe, type Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
+import { slaGroeiOp } from "@/components/kpi/groeiOpslaan";
 
 /**
  * KPI's 2027 Syntec: per websitebron uit Syntec het target voor 2027 — de verwachting voor
@@ -68,6 +69,12 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
       .catch((err: unknown) => setFout(err instanceof Error ? err.message : String(err)))
       .finally(() => setBezig(false));
   }, [ingelogd]);
+
+  /** Bewaart het percentage van één KPI; de kaart en de totalen waar hij in zit rekenen mee. */
+  async function zetGroei(sleutel: string, groei: number | null) {
+    await slaGroeiOp({ tabblad: "kpi-2027-syntec", website: "", kpi: sleutel, groei });
+    setData((oud) => oud?.overzicht ? { ...oud, overzicht: pasSyntecGroeiToe(oud.overzicht, sleutel, groei) } : oud);
+  }
 
   if (!ingelogd) return <Inlogprompt tekst="Log in om de KPI's en targets te bekijken." />;
 
@@ -132,7 +139,9 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
         <span>
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = de leads die Syntec
           t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van {KPI_JAAR}.{" "}
-          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting +{groeiTekst}; het
+          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting plus de groei
+          (standaard +{groeiTekst}; klik op het percentage bij Groei om het per KPI aan te passen — dat geldt voor
+          iedereen). Een totaal is de som van zijn kaarten, ook het target; zijn percentage volgt daaruit. Het
           maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles schuift elke zondag op t/m zaterdag. In de grafiek is de
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting.
@@ -147,7 +156,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
               <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
                 {groep.kpis.map((kpi) => (
-                  <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} />
+                  <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} opslaanGroei={(groei) => zetGroei(kpi.sleutel, groei)} />
                 ))}
                 {groep.combinaties.map((kpi) => (
                   <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} />

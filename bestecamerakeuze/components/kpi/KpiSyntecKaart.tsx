@@ -1,6 +1,6 @@
 "use client";
 
-import { KpiKaartOpmaak, aantal, datumKort } from "@/components/kpi/KpiKaart";
+import { KpiKaartOpmaak, aantal, datumKort, type GroeiInstelling } from "@/components/kpi/KpiKaart";
 import { KPI_JAAR } from "@/lib/kpi2027/definities";
 import type { SyntecKpiRegel } from "@/lib/kpi2027syntec/rekenen";
 
@@ -22,11 +22,22 @@ const VORIG_JAAR = KPI_JAAR - 1;
 /** De factor waarmee het team de doelen voor 2026 uit de telling van 2025 afleidde. */
 const DOELFACTOR = 1.2;
 
-export default function KpiSyntecKaart({ kpi }: { kpi: SyntecKpiRegel }) {
+export default function KpiSyntecKaart({
+  kpi,
+  opslaanGroei,
+}: {
+  kpi: SyntecKpiRegel;
+  /** Alleen bij een gewone KPI: een totaal of combinatie volgt uit zijn kaarten. */
+  opslaanGroei?: (groei: number | null) => Promise<void>;
+}) {
   const peildatum = datumKort(kpi.uitkomst.peildatum);
+  const groei: GroeiInstelling =
+    opslaanGroei && kpi.onderdeelSleutels.length === 0
+      ? { soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }
+      : { soort: "afgeleid" };
 
   return (
-    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst} realisatie={kpi.realisatie}>
+    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst} realisatie={kpi.realisatie} groei={groei}>
       <p>
         <span className="text-ink-muted">Bron:</span> Syntec, sheet-tabblad Data leads. Alleen leads met kanaalgroep
         Internet, geteld op de datum Aangelegd ({KPI_JAAR} t/m {peildatum}).

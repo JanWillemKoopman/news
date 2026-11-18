@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { SYNTEC_KPIS, beschrijfRegel, classificeerLead } from "@/lib/kpi2027syntec/definities";
-import { syntecOverzicht, voortgang, type SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
+import { pasSyntecGroeiToe, syntecOverzicht, voortgang, type SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
 
 function kpiVan(kanaal: string, onderwerp: string): string | null {
   return classificeerLead(kanaal, onderwerp)?.kpi.sleutel ?? null;
@@ -248,4 +248,29 @@ test("voortgang: realisatie tegen het lineaire target tot vandaag", () => {
   // 2027 nog niet begonnen, of geen target: geen voortgang.
   assert.equal(voortgang(365, { waarde: 0, peildatum: null }), null);
   assert.equal(voortgang(0, { waarde: 5, peildatum: "2027-01-10" }), null);
+});
+
+test("een aangepast percentage telt door in totaal en combinatie, en de browser rekent hetzelfde als de server", () => {
+  const tellingen: SyntecTelling[] = [
+    { kanaal: "Udenhout.nl offerteaanv.", onderwerp: "Offerte aanvraag", maand: 2, aantal: 300 },
+    { kanaal: "Udenhout.nl", onderwerp: "Offerte private lease", maand: 6, aantal: 150 },
+    { kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag", maand: 6, aantal: 50 },
+    { kanaal: "Volkswagen.nl", onderwerp: "", maand: 2, aantal: 30 },
+  ];
+  const server = syntecOverzicht(tellingen, "2026-12-31", { groei: new Map([["offerte", 0.2]]) });
+  const eigen = server.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const offerte = eigen.kpis.find((k) => k.sleutel === "offerte")!;
+  assert.equal(offerte.groeiAangepast, true);
+  assert.ok(Math.abs(offerte.uitkomst.target - 360) < 1e-9);
+  // Totaal: 360 + 150 × 1,05 + 50 × 1,05 = 570; groei = 570 / 500 − 1.
+  assert.ok(Math.abs(eigen.totaal.uitkomst.target - 570) < 1e-9);
+  assert.ok(Math.abs(eigen.totaal.uitkomst.groei - 0.14) < 1e-9);
+  const samen = eigen.combinaties.find((c) => c.sleutel === "offerte-en-private-lease")!;
+  assert.ok(Math.abs(samen.uitkomst.target - (360 + 157.5)) < 1e-9);
+  assert.ok(Math.abs(server.totaal.uitkomst.target - (570 + 31.5)) < 1e-9);
+
+  const browser = pasSyntecGroeiToe(syntecOverzicht(tellingen, "2026-12-31"), "offerte", 0.2);
+  assert.deepEqual(browser, server);
+  // En terug naar de standaard.
+  assert.deepEqual(pasSyntecGroeiToe(server, "offerte", null), syntecOverzicht(tellingen, "2026-12-31"));
 });

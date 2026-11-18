@@ -797,6 +797,21 @@ realisatie van 2027.
   erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
   de koppeling verandert.
 
+- **Het groeipercentage is per KPI met de hand aan te passen** (november 2026, op verzoek;
+  geldt ook voor KPI's 2027 Syntec). Klik op het percentage in het kaartje Groei, typ een
+  getal (komma of punt, "-3" mag) en druk op Enter of klik weg; Escape annuleert. Target,
+  maandtarget en de targetlijn in de grafiek rekenen meteen mee (`metGroei` in
+  `rekenen.ts`). Opslag: `dataloket.kpi_2027_groei` (migratie 0036), één rij per tabblad ×
+  website × KPI, gedeeld voor het hele team; alleen afwijkingen van +5% staan erin, en
+  "terug naar 5%" (of precies 5 typen) haalt de rij weg. Elke ingelogde collega mag het
+  (`POST /api/kpi-2027/groei`, die controleert dat de KPI in `definities.ts` bestaat). Lukt
+  het lezen van die tabel niet, dan rekent het tabblad gewoon met +5% (`leesGroeiVeilig`).
+  De GET-routes van beide tabbladen staan daarom op `no-store`: anders toont herladen
+  binnen vijf minuten het oude percentage. Op KPI's 2027 Syntec hebben totalen en
+  combinaties **geen eigen percentage**: hun target is de som van hun kaarten en hun groei
+  volgt daaruit (target ÷ verwachting − 1); `pasSyntecGroeiToe` telt ze in de browser
+  opnieuw op, en de test rekent na dat dat precies is wat de server uitrekent.
+
 ### KPI's → KPI's 2027 Syntec
 
 Derde tabblad onder **KPI's** (view `kpi-2027-syntec`, `components/kpi/Kpi2027SyntecPaneel.tsx`,
