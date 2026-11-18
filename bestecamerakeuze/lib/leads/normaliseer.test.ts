@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { LEADS_EXTRA_EVENTS } from "@/lib/leads/bereik";
 import { MAX_AANTAL, isLeadEvent, leadRijenUitWindsor, schoonParameter, schoonWaarde } from "@/lib/leads/normaliseer";
 import type { WindsorRij } from "@/lib/windsor/api";
 
@@ -23,6 +24,33 @@ test("een event telt als lead zodra 'lead' in de naam staat, in elke schrijfwijz
   assert.equal(isLeadEvent("Lead_formulier"), true);
   assert.equal(isLeadEvent("page_view"), false);
   assert.equal(isLeadEvent("form_submit"), false);
+});
+
+test("de door het team aangewezen events tellen ook als lead, zonder 'lead' in de naam", () => {
+  for (const event of LEADS_EXTRA_EVENTS) {
+    assert.equal(isLeadEvent(event), true, event);
+  }
+  assert.equal(isLeadEvent("bedanktpagina_werkplaatsplanner"), true);
+  assert.equal(isLeadEvent("verhuur_aanvraag"), true);
+  assert.equal(isLeadEvent("offerte_onderhoud"), true);
+  // De schrijfwijze van GA4 is hoofdlettergevoelig; hier niet, zodat een afwijkende
+  // hoofdletter een lead niet laat verdwijnen.
+  assert.equal(isLeadEvent("Verhuur_Aanvraag"), true);
+});
+
+test("events die er sterk op lijken maar niet zijn aangewezen, tellen niet mee", () => {
+  assert.equal(isLeadEvent("bedanktpagina_proefrit"), false);
+  assert.equal(isLeadEvent("verhuur_bekeken"), false);
+  assert.equal(isLeadEvent("offerte"), false);
+  assert.equal(isLeadEvent("page_view"), false);
+});
+
+test("een extra event komt als leadrij door de normalisatie, met zijn eigen naam", () => {
+  const [lead] = leadRijenUitWindsor([
+    rij({ event_name: "bedanktpagina_werkplaatsplanner", customevent_car_brand: "(not set)", event_count: 150 }),
+  ]);
+  assert.equal(lead.event, "bedanktpagina_werkplaatsplanner");
+  assert.equal(lead.aantal, 150);
 });
 
 test("(not set) en leeg zijn dezelfde toestand: een lege string", () => {

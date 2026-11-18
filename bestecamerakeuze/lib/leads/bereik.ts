@@ -39,6 +39,30 @@ export const LEADS_META_ACCOUNT = "69324444";
 /** Hoeveel dagen de leadtabel bevat. */
 export const LEADS_DAGEN = 30;
 
+/**
+ * Events die ook als lead tellen, hoewel er "lead" niet in de naam staat.
+ *
+ * Het uitgangspunt is "alles met 'lead' in de naam" (`isLeadEvent`); dit zijn de
+ * uitzonderingen die het team zelf aanwees. Een event hoort hier pas bij als iemand heeft
+ * besloten dat hij een lead is: ze lijken op leads, maar een bedankpagina kan bijvoorbeeld
+ * ook bij een verversing opnieuw vuren.
+ *
+ * **Meten wat er daadwerkelijk vuurt.** Bij het toevoegen (november 2026, over de laatste
+ * drie maanden en alle zestien GA4-properties) vuurde alleen
+ * `bedanktpagina_werkplaatsplanner`: 65–270 keer per dag, ruim 4.400 per dertig dagen en
+ * daarmee meer dan alle andere leads samen. De overige vier stonden er niet. Ze staan hier
+ * toch, zodat ze meetellen zodra ze gaan vuren; zolang ze dat niet doen leveren ze niets
+ * op. Klopt een naam niet, dan is dat in GA4 (DebugView) te controleren — een verkeerd
+ * gespelde naam levert geen foutmelding maar ook nooit een rij.
+ */
+export const LEADS_EXTRA_EVENTS: readonly string[] = [
+  "bedanktpagina_werkplaatsplanner",
+  "verhuur_aanvraag",
+  "verhuuractie_verzonden",
+  "verhuur_losse_formulieren",
+  "offerte_onderhoud",
+];
+
 export interface LeadsVenster {
   van: string;
   tot: string;

@@ -5,6 +5,7 @@ import {
   GEEN_FILTERS,
   filterRegels,
   groepeer,
+  heeftFilters,
   kostenPerLead,
   leadSoort,
   perDag,
@@ -77,6 +78,60 @@ test("filteren op kanaal en op event", () => {
   assert.equal(telTotalen(filterRegels(regels, { ...GEEN_FILTERS, events: ["generate_lead_offerte"] })).leads, 0);
 });
 
+test("filteren op de ruwe sessiebron/medium van GA4", () => {
+  const regels = voorbeeld();
+  const cpc = filterRegels(regels, { ...GEEN_FILTERS, bronMedia: ["google / cpc"] });
+  assert.equal(telTotalen(cpc).leads, 4);
+  assert.ok(cpc.every((r) => r.bronMedium === "google / cpc"));
+  // Meerdere waarden zijn een "of".
+  assert.equal(
+    telTotalen(filterRegels(regels, { ...GEEN_FILTERS, bronMedia: ["google / cpc", "bing / cpc"] })).leads,
+    7,
+  );
+});
+
+test("filteren op de ruwe sessiecampagne van GA4, ook een vulwaarde als (organic)", () => {
+  const regels = voorbeeld();
+  assert.equal(
+    telTotalen(filterRegels(regels, { ...GEEN_FILTERS, campagnes: ["T | Branding VDU"] })).leads,
+    7,
+  );
+  assert.equal(telTotalen(filterRegels(regels, { ...GEEN_FILTERS, campagnes: ["(organic)"] })).leads, 5);
+});
+
+test("een lege bron of campagne is te kiezen als 'Onbekend'", () => {
+  const regels = koppelLeads(
+    [lead({ bronMedium: "", campagne: "", aantal: 2 }), lead({ aantal: 5 })],
+    [],
+  ).regels;
+  assert.equal(telTotalen(filterRegels(regels, { ...GEEN_FILTERS, bronMedia: ["Onbekend"] })).leads, 2);
+  assert.equal(telTotalen(filterRegels(regels, { ...GEEN_FILTERS, campagnes: ["Onbekend"] })).leads, 2);
+});
+
+test("filters combineren als 'en' tussen de filters en 'of' binnen een filter", () => {
+  const regels = voorbeeld();
+  const filters = {
+    ...GEEN_FILTERS,
+    bronMedia: ["google / cpc", "bing / cpc"],
+    campagnes: ["T | Branding VDU"],
+    merken: ["Audi"],
+  };
+  // Google (2 Audi-leads) en Bing (3 Audi-leads) allebei binnen de campagne: 5.
+  assert.equal(telTotalen(filterRegels(regels, filters)).leads, 5);
+  // Één bron eruit, en alleen Google blijft over: de filters sluiten elkaar uit als "en".
+  assert.equal(telTotalen(filterRegels(regels, { ...filters, bronMedia: ["google / cpc"] })).leads, 2);
+  // Een ander merk dat bij geen enkele regel hoort: niets blijft over.
+  assert.equal(telTotalen(filterRegels(regels, { ...filters, merken: ["Seat"] })).leads, 0);
+});
+
+test("heeftFilters ziet elk soort filter, ook de nieuwe", () => {
+  assert.equal(heeftFilters(GEEN_FILTERS), false);
+  assert.equal(heeftFilters({ ...GEEN_FILTERS, bronMedia: ["google / cpc"] }), true);
+  assert.equal(heeftFilters({ ...GEEN_FILTERS, campagnes: ["x"] }), true);
+  assert.equal(heeftFilters({ ...GEEN_FILTERS, kanalen: ["Direct"] }), true);
+  assert.equal(heeftFilters({ ...GEEN_FILTERS, betaald: "onbetaald" }), true);
+});
+
 test("een filter verandert de kosten per rij niet", () => {
   // Kosten worden toegerekend vóór het filteren: de campagne kost wat ze kost, ook als
   // je maar één merk bekijkt.
@@ -121,6 +176,14 @@ test("per dag staan ook de dagen zonder lead, en betaald en onbetaald apart", ()
       ["2026-11-04", 0, 0],
     ],
   );
+});
+
+test("de aangewezen events hebben een leesbare naam", () => {
+  assert.equal(leadSoort("bedanktpagina_werkplaatsplanner"), "Werkplaatsplanner (bedankpagina)");
+  assert.equal(leadSoort("verhuur_aanvraag"), "Autoverhuur aanvraag");
+  assert.equal(leadSoort("verhuuractie_verzonden"), "Verhuuractie verzonden");
+  assert.equal(leadSoort("verhuur_losse_formulieren"), "Verhuur losse formulieren");
+  assert.equal(leadSoort("offerte_onderhoud"), "Offerte onderhoud");
 });
 
 test("een leesbare naam voor een leadevent", () => {
