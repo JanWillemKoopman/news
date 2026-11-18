@@ -9,9 +9,11 @@ import {
   type SyntecGroep,
   type SyntecKpi,
 } from "@/lib/kpi2027syntec/definities";
+import { KPI_GROEI } from "@/lib/kpi2027/definities";
 import {
   berekenKpi,
   maandInvoerUitMaanden,
+  metGroei,
   type KpiUitkomst,
   type MaandSoort,
   type MaandUitkomst,
@@ -56,6 +58,13 @@ export interface SyntecKpiRegel {
   bron: SyntecBronRegel[];
   /** Bij een totaal: de KPI's die erin zitten. */
   onderdelen: string[];
+  /** Bij een totaal of combinatie: de sleutels van die KPI's; leeg bij een gewone KPI. */
+  onderdeelSleutels: string[];
+  /**
+   * True als het groeipercentage met de hand is aangepast. Alleen een gewone KPI heeft een
+   * eigen percentage; bij een totaal volgt het uit zijn kaarten.
+   */
+  groeiAangepast: boolean;
   /** De beslissingen achter de definitie, in gewone taal. */
   keuzes: string[];
   /**
@@ -130,6 +139,8 @@ export function syntecOverzicht(
     combinaties?: readonly SyntecCombinatie[];
     vorigJaar?: readonly SyntecTelling[] | null;
     doeljaar?: { tellingen: readonly SyntecTelling[]; peildatum: string } | null;
+    /** Met de hand aangepaste percentages per KPI-sleutel; de rest rekent met +5%. */
+    groei?: ReadonlyMap<string, number>;
   } = {},
 ): SyntecOverzicht {
   const kpis = opties.kpis ?? SYNTEC_KPIS;
@@ -164,7 +175,7 @@ export function syntecOverzicht(
   }
 
   const uitkomsten = new Map<string, KpiUitkomst>(
-    kpis.map((k) => [k.sleutel, uitkomstVoorKpi(k, perKpi.get(k.sleutel)!.maanden, peildatum)]),
+    kpis.map((k) => [k.sleutel, uitkomstVoorKpi(k, perKpi.get(k.sleutel)!.maanden, peildatum, opties.groei?.get(k.sleutel))]),
   );
 
   const regelVoor = (kpi: SyntecKpi): SyntecKpiRegel => {
@@ -175,6 +186,8 @@ export function syntecOverzicht(
       doel2026: kpi.doel2026,
       bron: kpi.regels.map((r, i) => ({ tekst: beschrijfRegel(r), periode: r.periode ?? null, aantal: data.perRegel[i] })),
       onderdelen: [],
+      onderdeelSleutels: [],
+      groeiAangepast: opties.groei?.has(kpi.sleutel) ?? false,
       keuzes: [...kpi.keuzes],
       vorigJaar: somVorigJaar([kpi]),
       uitkomst: uitkomsten.get(kpi.sleutel)!,
@@ -190,6 +203,8 @@ export function syntecOverzicht(
       doel2026: delen.reduce((t, k) => t + k.doel2026, 0),
       bron: [],
       onderdelen: delen.map((k) => k.naam),
+      onderdeelSleutels: delen.map((k) => k.sleutel),
+      groeiAangepast: false,
       keuzes: [
         ...SYNTEC_TOTAAL_KEUZES,
         ...(vanafApril.length > 0
@@ -251,12 +266,17 @@ function datumTekst(datum: string): string {
  * peildatum — behalve bij een KPI met `meetVanaf`: dan tellen pas de dagen vanaf die datum,
  * en vult `berekenKpi` de maanden ervóór met het gemiddelde (soort "bijgeschat").
  */
-export function uitkomstVoorKpi(kpi: SyntecKpi, maanden: readonly number[], peildatum: string): KpiUitkomst {
+export function uitkomstVoorKpi(
+  kpi: SyntecKpi,
+  maanden: readonly number[],
+  peildatum: string,
+  groei?: number,
+): KpiUitkomst {
   // De dagen vóór meetVanaf gaan als "niet gemeten" (uitval) mee: 1 januari t/m de dag ervoor.
   const uitval = kpi.meetVanaf
     ? [{ van: `${kpi.meetVanaf.slice(0, 4)}-01-01`, tot: dagErvoor(kpi.meetVanaf) }]
     : [];
-  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, uitval), peildatum);
+  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, uitval), peildatum, { groei });
 }
 
 function dagErvoor(datum: string): string {
@@ -303,6 +323,8 @@ export function somVanUitkomsten(delen: readonly { naam: string; uitkomst: KpiUi
     };
   });
 
+  const verwacht = som((u) => u.verwacht);
+  const target = som((u) => u.target);
   return {
     peildatum: eerste.peildatum,
     gerealiseerd: som((u) => u.gerealiseerd),
@@ -311,11 +333,52 @@ export function somVanUitkomsten(delen: readonly { naam: string; uitkomst: KpiUi
     dagenNietGemeten: 0,
     dagenBijgeschat: Math.max(...delen.map((d) => d.uitkomst.dagenBijgeschat)),
     bijgeschat: som((u) => u.bijgeschat),
-    verwacht: som((u) => u.verwacht),
-    groei: eerste.groei,
-    target: som((u) => u.target),
+    verwacht,
+    // Met verschillende percentages per KPI is de groei van een totaal het gewogen
+    // gemiddelde: wat het opgetelde target boven de opgetelde verwachting ligt.
+    groei: verwacht > 0 ? target / verwacht - 1 : eerste.groei,
+    target,
     targetPerMaand: som((u) => u.targetPerMaand),
     maanden,
     definitief: delen.every((d) => d.uitkomst.definitief),
+  };
+}
+
+/**
+ * Het overzicht met een ander percentage voor één KPI (null = terug naar de standaard),
+ * zonder de leads opnieuw te tellen: de KPI krijgt het nieuwe target (`metGroei`) en elk
+ * totaal en elke combinatie waar hij in zit wordt opnieuw opgeteld. Voor de browser, direct
+ * na het typen; de server rekent bij het volgende verzoek hetzelfde uit (`syntecOverzicht`
+ * met `groei`).
+ */
+export function pasSyntecGroeiToe(overzicht: SyntecOverzicht, sleutel: string, groei: number | null): SyntecOverzicht {
+  const kpis = new Map<string, SyntecKpiRegel>();
+  const groepen = overzicht.groepen.map((g) => ({
+    ...g,
+    kpis: g.kpis.map((k) => {
+      const nieuw =
+        k.sleutel === sleutel
+          ? { ...k, uitkomst: metGroei(k.uitkomst, groei ?? KPI_GROEI), groeiAangepast: groei !== null }
+          : k;
+      kpis.set(nieuw.sleutel, nieuw);
+      return nieuw;
+    }),
+  }));
+  const optellen = (r: SyntecKpiRegel): SyntecKpiRegel =>
+    r.onderdeelSleutels.includes(sleutel)
+      ? {
+          ...r,
+          uitkomst: somVanUitkomsten(
+            r.onderdeelSleutels.map((s) => {
+              const kpi = kpis.get(s)!;
+              return { naam: kpi.naam, uitkomst: kpi.uitkomst };
+            }),
+          ),
+        }
+      : r;
+  return {
+    ...overzicht,
+    groepen: groepen.map((g) => ({ ...g, combinaties: g.combinaties.map(optellen), totaal: optellen(g.totaal) })),
+    totaal: optellen(overzicht.totaal),
   };
 }

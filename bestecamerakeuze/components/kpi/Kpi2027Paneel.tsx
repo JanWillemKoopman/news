@@ -6,11 +6,12 @@ import KpiKaart from "@/components/kpi/KpiKaart";
 import { IconInfo, IconRefresh } from "@/components/icons";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR, KPI_WEBSITES } from "@/lib/kpi2027/definities";
-import type { Kpi2027Antwoord } from "@/lib/kpi2027/rekenen";
+import { metGroei, type Kpi2027Antwoord } from "@/lib/kpi2027/rekenen";
+import { slaGroeiOp } from "@/components/kpi/groeiOpslaan";
 
 /**
  * KPI's 2027: per website en per KPI het target voor 2027 — de verwachting voor heel 2026
- * plus 5% — met de realisatie van 2026 in een jaargrafiek en die van 2027 ernaast.
+ * plus 5%, of het percentage dat iemand per KPI heeft ingetypt — met de realisatie van 2026 in een jaargrafiek en die van 2027 ernaast.
  *
  * Bovenaan één tab per website. Dat is een uitzondering op de regel "geen dubbele
  * navigatie" (CLAUDE.md), op verzoek: het zijn geen aparte pagina's maar dezelfde pagina
@@ -99,6 +100,32 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
     }
   }
 
+  /** Bewaart het percentage van één KPI en rekent de kaart meteen opnieuw uit. */
+  async function zetGroei(websiteSleutel: string, kpiSleutel: string, groei: number | null) {
+    await slaGroeiOp({ tabblad: "kpi-2027", website: websiteSleutel, kpi: kpiSleutel, groei });
+    setData((oud) =>
+      oud && {
+        ...oud,
+        websites: oud.websites.map((w) =>
+          w.sleutel !== websiteSleutel
+            ? w
+            : {
+                ...w,
+                kpis: w.kpis.map((k) =>
+                  k.sleutel !== kpiSleutel
+                    ? k
+                    : {
+                        ...k,
+                        uitkomst: k.uitkomst && metGroei(k.uitkomst, groei ?? KPI_GROEI),
+                        groeiAangepast: groei !== null,
+                      },
+                ),
+              },
+        ),
+      },
+    );
+  }
+
   if (!ingelogd) return <Inlogprompt tekst="Log in om de KPI's en targets te bekijken." />;
 
   const website = data?.websites.find((w) => w.sleutel === gekozen) ?? null;
@@ -179,8 +206,9 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = wat Google Analytics op
           de gemeten dagen t/m de peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van{" "}
           {KPI_JAAR} (de resterende dagen, en dagen waarop de website 0 sessies had).{" "}
-          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting +{groeiTekst}; het
-          maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
+          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting plus de groei
+          (standaard +{groeiTekst}; klik op het percentage bij Groei om het per KPI aan te passen — dat geldt voor
+          iedereen); het maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles wordt elke zondag bijgewerkt t/m zaterdag. In de grafiek is de
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting of bijgeschat.
         </span>
@@ -189,7 +217,12 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
       {website && website.kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
           {website.kpis.map((kpi) => (
-            <KpiKaart key={kpi.sleutel} kpi={kpi} website={website} />
+            <KpiKaart
+              key={kpi.sleutel}
+              kpi={kpi}
+              website={website}
+              opslaanGroei={(groei) => zetGroei(website.sleutel, kpi.sleutel, groei)}
+            />
           ))}
         </div>
       )}

@@ -301,6 +301,17 @@ export function berekenKpi(
 }
 
 /**
+ * Dezelfde uitkomst met een ander groeipercentage: alleen het target en het maandtarget
+ * schuiven mee, de verwachting voor het basisjaar blijft. Gebruikt voor het percentage dat
+ * een gebruiker per KPI met de hand aanpast (`lib/kpi2027/groei.ts`), op de server én in de
+ * browser direct na het typen.
+ */
+export function metGroei(u: KpiUitkomst, groei: number): KpiUitkomst {
+  const target = u.verwacht * (1 + groei);
+  return { ...u, groei, target, targetPerMaand: target / 12 };
+}
+
+/**
  * De ruwe GA4-cijfers van één website over één jaar, zoals de wekelijkse ophaalactie ze
  * bewaart (`kpi_2027_standen`, migratie 0035). De koppeling naar KPI's gebeurt pas bij het
  * lezen, zodat een gewijzigde definitie meteen geldt zonder opnieuw op te halen.
@@ -438,6 +449,8 @@ export interface KpiOverzichtRegel {
   externeBron: { naam: string; omschrijving: string; tot: string; aantal: number } | null;
   /** Null als er voor 2026 nog geen stand is. */
   uitkomst: KpiUitkomst | null;
+  /** True als het groeipercentage met de hand is aangepast (anders de standaard, +5%). */
+  groeiAangepast: boolean;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
   realisatie: { waarde: number; peildatum: string | null };
 }
@@ -489,6 +502,8 @@ export function websiteOverzicht(
   website: KpiWebsite,
   stand: KpiStand | null,
   standDoeljaar: KpiStand | null,
+  /** Het met de hand aangepaste percentage per KPI-sleutel, of undefined voor de standaard. */
+  groeiVoor: (kpi: string) => number | undefined = () => undefined,
 ): WebsiteOverzicht {
   const laatste = standDoeljaar?.peildatum ?? stand?.peildatum ?? null;
   const uitval = stand ? uitvalUitStand(stand) : [];
@@ -502,17 +517,23 @@ export function websiteOverzicht(
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,
     volgendeUpdate: laatste ? volgendeUpdate(laatste) : null,
-    kpis: website.kpis.map((d) => ({
+    kpis: website.kpis.map((d) => {
+      const groei = groeiVoor(d.sleutel);
+      return {
       sleutel: d.sleutel,
       naam: d.naam,
       bronTekst: d.bronTekst ?? null,
       opmerking: d.opmerking ?? null,
       events: stand ? eventTotalen(d, stand) : [],
       externeBron: stand ? externeBronTotaal(d, stand) : null,
-      uitkomst: stand ? berekenKpi(maandInvoerVoor(d, stand, uitval), stand.peildatum, { jaar: stand.jaar }) : null,
+      uitkomst: stand
+        ? berekenKpi(maandInvoerVoor(d, stand, uitval), stand.peildatum, { jaar: stand.jaar, groei })
+        : null,
+      groeiAangepast: groei !== undefined,
       realisatie: standDoeljaar
         ? { waarde: realisatieVoor(d, standDoeljaar), peildatum: standDoeljaar.peildatum }
         : { waarde: 0, peildatum: null },
-    })),
+      };
+    }),
   };
 }

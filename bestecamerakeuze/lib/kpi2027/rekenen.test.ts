@@ -21,6 +21,7 @@ import {
   uitvalUitStand,
   volgendeUpdate,
   websiteOverzicht,
+  metGroei,
   type KpiStand,
   type MaandInvoer,
 } from "@/lib/kpi2027/rekenen";
@@ -318,4 +319,22 @@ test("de export klopt met de maandtotalen uit het bestand", () => {
   for (const r of [WERKPLAATS_EXPORT_BRABANT, WERKPLAATS_EXPORT_MAASTRICHT]) {
     for (const datum of Object.keys(r)) assert.ok(datum >= "2026-01-01" && datum <= "2026-10-31", datum);
   }
+});
+
+test("een aangepast percentage verzet target en maandtarget, niet de verwachting", () => {
+  const pgz = vindWebsite("pgz")!;
+  const s = stand({ website: "pgz", dagen: { sessies: elkeDag("2026-01-01", "2026-11-14", 80) } });
+  const o = websiteOverzicht(pgz, s, null, (kpi) => (kpi === "sessies" ? 0.12 : undefined));
+  const sessies = o.kpis.find((k) => k.sleutel === "sessies")!;
+  assert.equal(sessies.groeiAangepast, true);
+  assert.equal(sessies.uitkomst!.groei, 0.12);
+  bijna(sessies.uitkomst!.verwacht, 80 * 365);
+  bijna(sessies.uitkomst!.target, 80 * 365 * 1.12);
+  bijna(sessies.uitkomst!.targetPerMaand, (80 * 365 * 1.12) / 12);
+  const ander = o.kpis.find((k) => k.sleutel !== "sessies")!;
+  assert.equal(ander.groeiAangepast, false);
+  assert.equal(ander.uitkomst!.groei, 0.05);
+  // metGroei in de browser geeft precies wat de server uitrekent.
+  const standaard = websiteOverzicht(pgz, s, null).kpis.find((k) => k.sleutel === "sessies")!;
+  assert.deepEqual(metGroei(standaard.uitkomst!, 0.12), sessies.uitkomst);
 });

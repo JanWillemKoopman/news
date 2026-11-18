@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { KPI_DOELJAAR } from "@/lib/kpi2027/definities";
+import { leesGroeiVeilig } from "@/lib/kpi2027/groei";
+import { groeiSleutel } from "@/lib/kpi2027/groeiInvoer";
 import { peildatumVoor, volgendeUpdate } from "@/lib/kpi2027/rekenen";
+import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
 import { haalSyntecIngelezenOp, haalSyntecTellingen } from "@/lib/kpi2027syntec/bron";
 import { syntecOverzicht, type Kpi2027SyntecAntwoord } from "@/lib/kpi2027syntec/rekenen";
 
@@ -40,7 +43,15 @@ export async function GET() {
     };
     if (peildatum) {
       const laatste = peildatumDoeljaar ?? peildatum;
-      const { vorigJaar, basisjaar, doeljaar } = await haalSyntecTellingen(laatste);
+      const [{ vorigJaar, basisjaar, doeljaar }, opgeslagen] = await Promise.all([
+        haalSyntecTellingen(laatste),
+        leesGroeiVeilig("kpi-2027-syntec"),
+      ]);
+      const groei = new Map<string, number>();
+      for (const k of SYNTEC_KPIS) {
+        const g = opgeslagen.get(groeiSleutel("", k.sleutel));
+        if (g !== undefined) groei.set(k.sleutel, g);
+      }
       antwoord = {
         peildatum,
         peildatumDoeljaar,
@@ -48,12 +59,14 @@ export async function GET() {
         volgendeUpdate: volgendeUpdate(laatste),
         overzicht: syntecOverzicht(basisjaar, peildatum, {
           vorigJaar,
+          groei,
           doeljaar: peildatumDoeljaar ? { tellingen: doeljaar, peildatum: peildatumDoeljaar } : null,
         }),
       };
     }
     return NextResponse.json(antwoord, {
-      headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=3600" },
+      // Niet in de browser cachen: een net aangepast percentage moet er na herladen staan.
+      headers: { "Cache-Control": "private, no-store" },
     });
   } catch (err) {
     return NextResponse.json({ fout: err instanceof Error ? err.message : String(err) }, { status: 500 });

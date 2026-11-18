@@ -4,6 +4,8 @@ import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { werkKpiStandenBij } from "@/lib/kpi2027/bijwerken";
 import { leesStanden } from "@/lib/kpi2027/bron";
+import { leesGroeiVeilig } from "@/lib/kpi2027/groei";
+import { groeiSleutel } from "@/lib/kpi2027/groeiInvoer";
 import { KPI_DOELJAAR, KPI_JAAR, KPI_WEBSITES } from "@/lib/kpi2027/definities";
 import { websiteOverzicht, type Kpi2027Antwoord } from "@/lib/kpi2027/rekenen";
 
@@ -20,13 +22,14 @@ export const maxDuration = 300;
  * `lib/kpi2027/bijwerken.ts`.
  */
 async function antwoord(): Promise<Kpi2027Antwoord> {
-  const standen = await leesStanden();
+  const [standen, groei] = await Promise.all([leesStanden(), leesGroeiVeilig("kpi-2027")]);
   return {
     websites: KPI_WEBSITES.map((w) =>
       websiteOverzicht(
         w,
         standen.find((s) => s.website === w.sleutel && s.jaar === KPI_JAAR) ?? null,
         standen.find((s) => s.website === w.sleutel && s.jaar === KPI_DOELJAAR) ?? null,
+        (kpi) => groei.get(groeiSleutel(w.sleutel, kpi)),
       ),
     ),
   };
@@ -44,7 +47,8 @@ export async function GET() {
   try {
     return NextResponse.json(
       { ...(await antwoord()), magBijwerken: isBeheerder(gebruiker.email) },
-      { headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=3600" } },
+      // Niet in de browser cachen: een net aangepast percentage moet er na herladen staan.
+      { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (err) {
     return NextResponse.json({ fout: err instanceof Error ? err.message : String(err) }, { status: 500 });
