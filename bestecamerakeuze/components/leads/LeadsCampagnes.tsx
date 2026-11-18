@@ -25,20 +25,26 @@ import { PLATFORM_LABEL } from "@/lib/leads/kanaal";
 
 const STANDAARD_RIJEN = 12;
 
-export default function LeadsCampagnes({ rijen }: { rijen: CampagneRij[] }) {
+type Props = {
+  rijen: CampagneRij[];
+  /** De totalen over álle campagnes, ook de verborgen rijen achter "Toon alle". */
+  totaal: { leads: number; uitgaven: number; perLead: number | null };
+};
+
+export default function LeadsCampagnes({ rijen, totaal }: Props) {
   const [alles, setAlles] = useState(false);
   const zichtbaar = alles ? rijen : rijen.slice(0, STANDAARD_RIJEN);
 
-  const kopken = ["Campagne", "Platform", "Leads", "Uitgaven", "Per lead"];
+  const kopken = ["Campagne", "Platform", "Leads", "Uitgaven", "Per betaalde lead"];
 
   return (
     <section className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle">
       <header className="border-b border-line px-5 py-4">
         <h2 className="font-sans-w7 text-cell font-semibold text-ink">Betaalde campagnes</h2>
         <p className="mt-0.5 text-meta text-ink-muted">
-          Uitgaven uit Google Ads en Meta Ads, gekoppeld aan de leads uit GA4 op platform en
-          campagnenaam. Bij een filter staan hier alleen de toegerekende kosten van de leads die
-          binnen het filter vallen.
+          Elke campagne van Google Ads en Meta Ads met zijn echte uitgaven, gekoppeld aan de leads
+          uit GA4 op platform en campagnenaam. Campagnes zonder leads staan er ook in. Bij een
+          filter op de leads staan hier alleen de toegerekende kosten van de leads binnen het filter.
         </p>
       </header>
 
@@ -106,6 +112,25 @@ export default function LeadsCampagnes({ rijen }: { rijen: CampagneRij[] }) {
               ))
             )}
           </tbody>
+          {rijen.length > 0 && (
+            <tfoot>
+              <tr>
+                <td className="border-t border-line bg-surface-tint px-4 py-2.5 font-semibold text-ink">
+                  Totaal ({rijen.length} {rijen.length === 1 ? "campagne" : "campagnes"})
+                </td>
+                <td className="border-t border-line bg-surface-tint px-4 py-2.5" />
+                <td className="border-t border-line bg-surface-tint px-4 py-2.5 text-right font-semibold text-ink">
+                  {formatteer(totaal.leads, "aantal")}
+                </td>
+                <td className="border-t border-line bg-surface-tint px-4 py-2.5 text-right font-semibold text-ink">
+                  {formatteer(totaal.uitgaven, "euro-heel")}
+                </td>
+                <td className="border-t border-line bg-surface-tint px-4 py-2.5 text-right font-semibold text-ink">
+                  {totaal.perLead === null ? "—" : formatteer(totaal.perLead, "euro-exact")}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 

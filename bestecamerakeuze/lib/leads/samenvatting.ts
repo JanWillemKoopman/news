@@ -1,3 +1,9 @@
+import {
+  PLATFORMEN_MET_KOSTEN,
+  PLATFORM_LABEL,
+  heeftKostenbron,
+  type BetaaldPlatform,
+} from "@/lib/leads/kanaal";
 import type { LeadRegel } from "@/lib/leads/koppel";
 
 /**
@@ -90,10 +96,24 @@ export interface Totalen {
   zonderKosten: number;
   /** Som van de toegerekende kosten. */
   kosten: number;
+  /**
+   * Betaalde leads van platformen waarvan we de kosten kennen (Google en Meta), ook als hun
+   * campagne niet te vinden was. Dit is de noemer van "totale uitgaven ÷ betaalde leads":
+   * alles wat Google en Meta uitgaven, gedeeld door alle leads die zij brachten.
+   */
+  kostenbronLeads: number;
 }
 
 export function telTotalen(regels: LeadRegel[]): Totalen {
-  const t: Totalen = { leads: 0, betaald: 0, onbetaald: 0, metKosten: 0, zonderKosten: 0, kosten: 0 };
+  const t: Totalen = {
+    leads: 0,
+    betaald: 0,
+    onbetaald: 0,
+    metKosten: 0,
+    zonderKosten: 0,
+    kosten: 0,
+    kostenbronLeads: 0,
+  };
   for (const r of regels) {
     t.leads += r.aantal;
     if (r.platform === null) {
@@ -101,6 +121,7 @@ export function telTotalen(regels: LeadRegel[]): Totalen {
       continue;
     }
     t.betaald += r.aantal;
+    if (heeftKostenbron(r.platform)) t.kostenbronLeads += r.aantal;
     if (r.status === "toegerekend") {
       t.metKosten += r.aantal;
       t.kosten += r.kosten ?? 0;
@@ -114,6 +135,72 @@ export function telTotalen(regels: LeadRegel[]): Totalen {
 /** Kosten per betaalde lead, gedeeld door de leads waarvan de kosten bekend zijn. */
 export function kostenPerLead(t: Pick<Totalen, "kosten" | "metKosten">): number | null {
   return t.metKosten > 0 ? t.kosten / t.metKosten : null;
+}
+
+/**
+ * Kosten per betaalde lead voor een totaalregel of kerncijfer.
+ *
+ * Zonder filters: **alle** uitgaven van Google en Meta, gedeeld door **alle** betaalde leads
+ * van Google en Meta. Dat is het getal waar de vraag "wat kost een lead ons" om vraagt, en
+ * het is inclusief de campagnes die niets opleverden — wie die weglaat, rekent zich rijk.
+ *
+ * Met een filter bestaat dat totaal niet meer (de uitgaven van een campagne zijn niet op
+ * merk of model te filteren); dan zijn het de toegerekende kosten van de selectie, gedeeld
+ * door de leads in de selectie waarvan de kosten bekend zijn.
+ */
+export function kostenPerLeadTotaal(
+  t: Totalen,
+  uitgavenTotaal: number,
+  filtersActief: boolean,
+): number | null {
+  if (filtersActief) return kostenPerLead(t);
+  return t.kostenbronLeads > 0 ? uitgavenTotaal / t.kostenbronLeads : null;
+}
+
+/**
+ * Zet bij de kanalen Google Ads en Meta Ads de **echte uitgaven van het platform** in
+ * plaats van de toegerekende kosten.
+ *
+ * De toegerekende kosten laten de campagnes zonder lead en de leads zonder herkenbare
+ * campagne buiten beeld, waardoor een platform dat € 32.827 uitgaf in de tabel op € 27.229
+ * stond en de tabel niet optelde tot het totaal. Een kanaal is een platform; de uitgaven
+ * van een platform zijn een feit uit Google Ads of Meta, en daar hoort geen verdeling bij.
+ *
+ * Een platform zonder één lead in de selectie krijgt toch een rij: geld dat is uitgegeven
+ * en niets opleverde moet er staan, niet ontbreken omdat er geen lead is om hem aan te
+ * hangen.
+ *
+ * Alleen aanroepen zonder filters; bij een filter zijn de toegerekende kosten juist de
+ * bedoeling.
+ */
+export function metPlatformUitgaven(
+  groepen: Groep[],
+  perPlatform: Partial<Record<BetaaldPlatform, number>>,
+): Groep[] {
+  const uit = groepen.map((g) => ({ ...g }));
+  for (const platform of PLATFORMEN_MET_KOSTEN) {
+    const uitgaven = perPlatform[platform];
+    if (uitgaven === undefined) continue;
+    const label = PLATFORM_LABEL[platform];
+    const rij = uit.find((g) => g.sleutel === label);
+    if (rij) {
+      rij.kosten = uitgaven;
+      rij.metKosten = rij.kostenbronLeads;
+      rij.zonderKosten = 0;
+    } else if (uitgaven > 0) {
+      uit.push({
+        sleutel: label,
+        leads: 0,
+        betaald: 0,
+        onbetaald: 0,
+        metKosten: 0,
+        zonderKosten: 0,
+        kosten: uitgaven,
+        kostenbronLeads: 0,
+      });
+    }
+  }
+  return uit;
 }
 
 export interface Groep extends Totalen {

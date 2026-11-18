@@ -167,3 +167,16 @@ test("een Ads-campagne zonder naam telt mee in de uitgaven", () => {
   assert.equal(k.uitgavenTotaal, 40);
   assert.equal(k.zonderLead.uitgaven, 40);
 });
+
+test("de uitgaven per platform zijn de echte uitgaven, ook van campagnes zonder lead", () => {
+  const k = koppelLeads(
+    [lead({ aantal: 2 })],
+    [
+      uitgave({ uitgaven: 100 }),
+      uitgave({ campagne: "Zonder lead", uitgaven: 50 }),
+      uitgave({ bron: "meta", campagne: "Meta", uitgaven: 30 }),
+    ],
+  );
+  assert.deepEqual(k.uitgavenPerPlatform, { google: 150, meta: 30 });
+  assert.equal(k.uitgavenTotaal, 180);
+});

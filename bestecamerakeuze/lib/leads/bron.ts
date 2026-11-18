@@ -1,5 +1,6 @@
 import { metVerbinding } from "@/lib/kanalen/bron";
 import { LEADS_GOOGLE_ACCOUNT, LEADS_META_ACCOUNT } from "@/lib/leads/bereik";
+import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import {
   koppelLeads,
   type CampagneRegel,
@@ -34,6 +35,7 @@ export interface LeadsData {
   campagnes: CampagneRegel[];
   zonderLead: { uitgaven: number; campagnes: number };
   uitgavenTotaal: number;
+  uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
 }
 
 export async function haalLeads(): Promise<LeadsData> {
@@ -55,7 +57,15 @@ export async function haalLeads(): Promise<LeadsData> {
     }));
 
     if (leads.length === 0) {
-      return { van: null, tot: null, regels: [], campagnes: [], zonderLead: { uitgaven: 0, campagnes: 0 }, uitgavenTotaal: 0 };
+      return {
+        van: null,
+        tot: null,
+        regels: [],
+        campagnes: [],
+        zonderLead: { uitgaven: 0, campagnes: 0 },
+        uitgavenTotaal: 0,
+        uitgavenPerPlatform: {},
+      };
     }
 
     const van = leads[0].datum;
