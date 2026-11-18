@@ -130,7 +130,7 @@ test("de controle op 2025 telt per KPI en per totaal, en de bron draagt de perio
     { kanaal: "Skoda.nl", onderwerp: "", maand: 6, aantal: 1068 },
     { kanaal: "SaySimple whatsapp", onderwerp: "", maand: 6, aantal: 5 },
   ];
-  const o = syntecOverzicht([], "2026-11-14", undefined, vorigJaar);
+  const o = syntecOverzicht([], "2026-11-14", { vorigJaar });
   const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
   const proefrit = eigen.kpis.find((k) => k.sleutel === "proefrit")!;
   assert.equal(proefrit.vorigJaar, 1582);
@@ -140,4 +140,19 @@ test("de controle op 2025 telt per KPI en per totaal, en de bron draagt de perio
   assert.ok(o.totaal.keuzes.length > 0);
   // Zonder 2025 is er geen controle, en dat is geen nul.
   assert.equal(syntecOverzicht([], "2026-11-14").totaal.vorigJaar, null);
+});
+
+test("de realisatie van 2027 telt per KPI en per totaal, en is nul zolang 2027 niet begonnen is", () => {
+  const doeljaar = {
+    tellingen: [
+      { kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag", maand: 1, aantal: 12 },
+      { kanaal: "Seat.nl", onderwerp: "", maand: 1, aantal: 3 },
+    ],
+    peildatum: "2027-01-09",
+  };
+  const o = syntecOverzicht([], "2026-12-31", { doeljaar });
+  const proefrit = o.groepen[0].kpis.find((k) => k.sleutel === "proefrit")!;
+  assert.deepEqual(proefrit.realisatie, { waarde: 12, peildatum: "2027-01-09" });
+  assert.deepEqual(o.totaal.realisatie, { waarde: 15, peildatum: "2027-01-09" });
+  assert.deepEqual(syntecOverzicht([], "2026-11-14").totaal.realisatie, { waarde: 0, peildatum: null });
 });

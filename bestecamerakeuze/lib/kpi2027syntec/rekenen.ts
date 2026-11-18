@@ -7,7 +7,7 @@ import {
   type SyntecGroep,
   type SyntecKpi,
 } from "@/lib/kpi2027syntec/definities";
-import { berekenKpi, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
+import { berekenKpi, maandInvoerUitMaanden, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
 
 /**
  * Het rekenwerk achter het tabblad KPI's 2027 Syntec.
@@ -56,6 +56,8 @@ export interface SyntecKpiRegel {
    */
   vorigJaar: number | null;
   uitkomst: KpiUitkomst;
+  /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
+  realisatie: { waarde: number; peildatum: string | null };
 }
 
 export interface SyntecGroepOverzicht {
@@ -75,6 +77,8 @@ export interface SyntecOverzicht {
 /** Wat `/api/kpi-2027-syntec` teruggeeft. */
 export interface Kpi2027SyntecAntwoord {
   peildatum: string | null;
+  /** T/m welke dag de realisatie van 2027 telt; null zolang 2027 niet begonnen is. */
+  peildatumDoeljaar: string | null;
   /** Wanneer de sheet voor het laatst naar de database is gekopieerd. */
   ingelezenOp: string | null;
   volgendeUpdate: string | null;
@@ -110,17 +114,32 @@ export function jaartotalen(
  *
  * Tellingen moeten al beperkt zijn tot kanaalgroep Internet, het basisjaar en t/m de
  * peildatum — dat doet de query (`bron.ts`). Een maand buiten 1–12 wordt genegeerd.
- * `vorigJaar` zijn de tellingen van heel 2025, voor de controleregel onder de grafiek.
+ *
+ *  - `vorigJaar`: de tellingen van heel 2025, voor de controleregel onder de grafiek;
+ *  - `doeljaar`: de tellingen van 2027 t/m zijn peildatum, voor het kaartje Realisatie 2027.
  */
 export function syntecOverzicht(
   tellingen: readonly SyntecTelling[],
   peildatum: string,
-  kpis: readonly SyntecKpi[] = SYNTEC_KPIS,
-  vorigJaar: readonly SyntecTelling[] | null = null,
+  opties: {
+    kpis?: readonly SyntecKpi[];
+    vorigJaar?: readonly SyntecTelling[] | null;
+    doeljaar?: { tellingen: readonly SyntecTelling[]; peildatum: string } | null;
+  } = {},
 ): SyntecOverzicht {
-  const totalenVorigJaar = vorigJaar ? jaartotalen(vorigJaar, kpis) : null;
+  const kpis = opties.kpis ?? SYNTEC_KPIS;
+  const totalenVorigJaar = opties.vorigJaar ? jaartotalen(opties.vorigJaar, kpis) : null;
   const somVorigJaar = (delen: readonly SyntecKpi[]) =>
     totalenVorigJaar ? delen.reduce((t, k) => t + (totalenVorigJaar.get(k.sleutel) ?? 0), 0) : null;
+  const doeljaar = opties.doeljaar ?? null;
+  const totalenDoeljaar = doeljaar ? jaartotalen(doeljaar.tellingen, kpis) : null;
+  const realisatieVan = (delen: readonly SyntecKpi[]) =>
+    doeljaar && totalenDoeljaar
+      ? { waarde: delen.reduce((t, k) => t + (totalenDoeljaar.get(k.sleutel) ?? 0), 0), peildatum: doeljaar.peildatum }
+      : { waarde: 0, peildatum: null };
+  // Syntec telt elke dag; "gemeten dagen" zijn dus gewoon alle dagen t/m de peildatum.
+  const uitkomstVan = (maanden: number[]) =>
+    berekenKpi(maandInvoerUitMaanden(maanden, peildatum, undefined, []), peildatum);
 
   const perKpi = new Map<string, { maanden: number[]; perRegel: number[] }>(
     kpis.map((k) => [k.sleutel, { maanden: nulreeks(), perRegel: k.regels.map(() => 0) }]),
@@ -150,7 +169,8 @@ export function syntecOverzicht(
       onderdelen: [],
       keuzes: [...kpi.keuzes],
       vorigJaar: somVorigJaar([kpi]),
-      uitkomst: berekenKpi(data.maanden, peildatum),
+      uitkomst: uitkomstVan(data.maanden),
+      realisatie: realisatieVan([kpi]),
     };
   };
 
@@ -164,7 +184,8 @@ export function syntecOverzicht(
     vorigJaar: somVorigJaar(delen),
     // Optellen vóór het rekenen of erna geeft hetzelfde (alles is lineair); zo staat er
     // gewoon één berekening, met dezelfde maandlijn als elke andere kaart.
-    uitkomst: berekenKpi(telOp(delen.map((k) => perKpi.get(k.sleutel)!.maanden)), peildatum),
+    uitkomst: uitkomstVan(telOp(delen.map((k) => perKpi.get(k.sleutel)!.maanden))),
+    realisatie: realisatieVan(delen),
   });
 
   const groepen = SYNTEC_GROEPEN.map((g) => {

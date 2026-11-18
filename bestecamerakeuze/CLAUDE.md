@@ -54,7 +54,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   eens als een rij tabs boven de content. **Eén uitzondering**, op verzoek:
   Campagnebeheer heeft twee tabs (Syntec en Google Analytics, zie hieronder). Dat zijn
   geen twee pagina's maar twee kanten van dezelfde campagnelijst; maak er geen precedent
-  van voor andere pagina's.
+  van voor andere pagina's. Een **tweede uitzondering**, ook op verzoek: KPI's 2027 heeft
+  één tab per website (zie "KPI's → KPI's 2027") — dezelfde pagina voor een andere
+  GA4-property.
 - **Page header**: paginatitel + korte subtitel links; rechts contextuele status (bv.
   "N campagnes live", "Laatst bijgewerkt HH:MM") en een subtiele update-actie — geen
   grote primaire knop voor een routinehandeling.
@@ -665,49 +667,92 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 ### KPI's → KPI's 2027
 
 Tweede tabblad onder **KPI's**, direct onder KPI overzicht (view `kpi-2027`,
-`components/kpi/Kpi2027Paneel.tsx`, route `app/api/kpi-2027/route.ts`). Per KPI van
-udenhout.nl het target voor 2027: wat 2026 naar verwachting doet, plus 5%.
+`components/kpi/Kpi2027Paneel.tsx`, route `app/api/kpi-2027/route.ts`). Per website en per
+KPI het target voor 2027: wat 2026 naar verwachting doet, plus 5%, en daarnaast de
+realisatie van 2027.
 
-- **De rekensom** (`lib/kpi2027/rekenen.ts`, getest): gerealiseerd t/m de peildatum, plus
-  het gemiddelde per dag × de resterende dagen van 2026 = verwachting 2026. Target 2027 =
-  verwachting × 1,05; maandtarget = jaartarget ÷ 12 (bewust een gelijke twaalfde, geen
-  seizoen). Een rechte lijn, net als de forecast op Budget beheer: na te rekenen in het
-  overleg.
-- **Wekelijks op zondag, tot 2026 voorbij is.** Cron `/api/kpi-2027/bijwerken` (zondag
-  10:15 UTC, `vercel.json`, buiten de inlog via `CRON_PADEN`). De **peildatum is altijd de
-  laatste zaterdag vóór vandaag** (`peildatumVoor`, Nederlandse kalender), afgekapt op
-  31 december. De knop "Nu bijwerken" (alleen beheerders, `POST /api/kpi-2027`) rekent dus
-  midden in de week tot dezelfde zaterdag als de zondag ervoor — geen ander target op
-  woensdag. Zodra er een stand met peildatum 31 december staat (`definitief`, de run van
-  zondag 3 januari 2027) slaat de cron over; de knop forceert wél.
+- **Zes websites als tabs bovenaan** (udenhout.nl, Porsche Centrum Brabant, Porsche Centrum
+  Maastricht, PGZ, Bentley Maastricht, VELOO), het gekozen tabblad in de URL
+  (`?kpisite=pgz`). Dat is op verzoek een **tweede uitzondering** op "geen dubbele
+  navigatie" (naast Campagnebeheer): het is één pagina voor een andere GA4-property, geen
+  aparte pagina. Alles per website — property, uitgesloten hosts, uitval, KPI's en events —
+  staat op één plek: `lib/kpi2027/definities.ts`.
+- **De rekensom** (`lib/kpi2027/rekenen.ts`, getest): wat GA4 op de **gemeten** dagen t/m de
+  peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van 2026 =
+  verwachting 2026. Target 2027 = verwachting × 1,05 (voor elke KPI); maandtarget =
+  jaartarget ÷ 12 (bewust een gelijke twaalfde, geen seizoen). Een rechte lijn, net als de
+  forecast op Budget beheer: na te rekenen in het overleg.
+- **Gemeten en niet gemeten dagen** (keuze van het team, november 2026, dezelfde regel als
+  eerder bij zakelijke lease): dagen zonder meting tellen niet als nul maar worden met het
+  gemiddelde ingevuld, en een event dat in een niet-gemeten periode toch vuurt telt niet
+  mee. Twee niveaus: `uitval` op de website (beide Porsche-properties maten van 25 juni
+  t/m 11 augustus 2026 helemaal niets, ook geen sessies — dat staat ook bovenaan hun tab)
+  en `meetperiodes` per KPI (wanneer het event bestond). Elke meetperiode is de eerste en
+  laatste dag waarop het event in 2026 werd gezien, per dag gemeten in november 2026:
+  Porsche-aanvragen vanaf 30 januari (op beide sites tegelijk; ervoor nul terwijl er wel
+  bezoek was), werkplaats Brabant 2 feb–31 mrt en vanaf 3 sep, werkplaats Maastricht vanaf
+  3 sep, PGZ offerte vanaf 11 okt, Bentley offerte 4 mrt–29 sep en vanaf 20 okt, Bentley
+  contact en werkplaats vanaf 21 okt, udenhout zakelijke lease vanaf 1 april. Bij Bentley
+  contact/werkplaats en PGZ offerte rust het target daardoor op weinig dagen; dat staat
+  onder die grafieken.
+- **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
+  bekende test-, staging- en vreemde domeinen eruit (`uitgeslotenHosts`); "(not set)" telt
+  mee. Sessies en gebruikers zijn cijfers per sessie/persoon, gesplitst naar een dimensie
+  per event: een sessie met een hostnameloos session_start staat dan onder "(not set)" én
+  onder www. Opgeteld per hostname kwam udenhout.nl op 1,57 miljoen sessies tegen 1,16
+  miljoen echt, PGZ op 24.776 tegen 15.107 (de "39% (not set)" bij PGZ was dus vooral
+  dubbeltelling, geen extra verkeer). Daarom gaat de uitsluiting voor sessies, aankopen en
+  gebruikers als filter mee naar Windsor, zonder hostname als dimensie; alleen bij events
+  (één hostname per event) valt hij in de code weg (`ophalen.ts`, met een test die precies
+  dit bewaakt).
+- **Wekelijks op zondag.** Cron `/api/kpi-2027/bijwerken` (zondag 10:15 UTC, `vercel.json`,
+  buiten de inlog via `CRON_PADEN`), voor alle websites na elkaar; een website die faalt
+  laat de andere staan. De **peildatum is altijd de laatste zaterdag vóór vandaag**
+  (`laatsteZaterdag`, Nederlandse kalender). De knop "Nu bijwerken" (alleen beheerders,
+  `POST /api/kpi-2027`) rekent dus midden in de week tot dezelfde zaterdag als de zondag
+  ervoor. **Vanaf zondag 3 januari 2027** wordt 2026 één laatste keer t/m 31 december
+  opgehaald en definitief (daarna verandert de basis alleen nog met de knop), en begint de
+  stand van 2027: het kaartje **Realisatie 2027** (nu 0, "2027 is nog niet begonnen") telt
+  vanaf dan wekelijks mee, met het percentage van het jaartarget (`opdrachtenVoor` in
+  `bijwerken.ts`).
 - **Rechtstreeks bij Windsor, niet uit de GA4-tabellen** (`lib/kpi2027/ophalen.ts`).
-  `windsor_ga4_events` en `windsor_ga4_verkeer` beginnen op 1 augustus 2026 en kennen
-  gebruikers alleen per dag. Twee kleine opvragingen op `year_month` over property
-  255949462: de KPI-events (gefilterd aan Windsors kant) en sessies + `totalusers`. Een
-  antwoord zonder sessies is een fout; dan blijft de stand van vorige week staan.
-- **Opslag: de ruwe maandcijfers, niet de KPI's** (`kpi_2027_standen`, migratie 0034, één
-  rij per peildatum). Welk event bij welke KPI hoort staat alleen in
-  `lib/kpi2027/definities.ts` en wordt bij het lezen toegepast — een gewijzigde koppeling
-  geldt dus meteen, zonder opnieuw op te halen (zolang het event al werd opgehaald; een
-  nieuw event komt er bij de volgende run of met de knop bij).
-- **Twee generaties events.** udenhout.nl wisselde eind maart 2026 van tracking: tot en met
-  maart `generate_lead_proefrit_aanvraag`, `…offerte_aanvraag`, `offerte_onderhoud`,
-  `verhuur_aanvraag` (+ `verhuuractie_verzonden`, `verhuur_losse_formulieren`),
-  `private_groeilease`; vanaf april `generate_lead_proefrit`, `…offerte`,
-  `…onderhoudsofferte`, `…verhuur`, `…privatelease`. Elke KPI telt beide generaties op.
-  `generate_lead_private_lease` (formulier "stock prive") vuurt het hele jaar door naast
-  `generate_lead_privatelease` (/offerte en /acties/groeilease): andere formulieren, dus
-  allebei private lease. Gemeten in november 2026, per maand over het hele jaar.
-- **Keuzes van het team** (november 2026): zakelijke lease = `generate_lead_zakelijk_lease`
-  + `generate_lead_zakelijk_offerte` (formulieren "stock zakelijk"/"pagina zakelijk") +
-  `generate_lead_leasecontact` (/leasen/contact); een zakelijke offerte telt dus níet bij
-  Offerteaanvragen. Omdat zakelijke lease vóór april vrijwel niet werd gemeten (2 events),
-  rekent die KPI met het gemiddelde vanaf 1 april en schat hij januari t/m maart daarmee
-  bij (`basisVanaf`, altijd de eerste van een maand). Gebruikers zijn **per maand
-  ontdubbeld** (het GA4-maandcijfer), het jaar is de som van de maanden — zodat het
-  maandtarget één-op-één naast het GA4-maandrapport van 2027 past.
+  `windsor_ga4_events` en `windsor_ga4_verkeer` beginnen op 1 augustus 2026, kennen geen
+  hostname en gebruikers alleen per dag. Per website vier kleine opvragingen met elk een
+  plat filter (alleen "of" of alleen "en"): events per dag, events met een padvoorwaarde
+  (Bentley's `Contactaanvraag` met `/caw-bedankt/offerte/`), sessies (+ VELOO's
+  `ecommerce_purchases`) per dag, en `active_users` per maand. Een antwoord zonder sessies
+  is een fout; dan blijft de vorige stand staan.
+- **Opslag: de ruwe dagcijfers, niet de KPI's** (`kpi_2027_standen`, migratie 0035, één rij
+  per website per jaar, elke week overschreven). Per bron (`sessies`, `aankopen`,
+  `event:<naam>`, `event:<naam>@<pad>`) een map datum → aantal, plus gebruikers per maand.
+  Welke bron bij welke KPI hoort en welke dagen gemeten zijn, wordt pas bij het lezen
+  toegepast — een gewijzigde definitie of meetperiode geldt dus meteen, zonder opnieuw op
+  te halen (een nieuw event komt er bij de volgende run of met de knop bij).
+- **Gebruikers: actieve gebruikers (`active_users`), per maand ontdubbeld**, op alle zes de
+  websites (keuze van het team; udenhout.nl gebruikte eerst `totalusers`, een verschil van
+  een paar promille). Het jaar is de som van de maanden, zodat het maandtarget één-op-één
+  naast het GA4-maandrapport van 2027 past.
+- **Twee generaties events op udenhout.nl.** udenhout.nl wisselde eind maart 2026 van
+  tracking: tot en met maart `generate_lead_proefrit_aanvraag`, `…offerte_aanvraag`,
+  `offerte_onderhoud`, `verhuur_aanvraag` (+ `verhuuractie_verzonden`,
+  `verhuur_losse_formulieren`), `private_groeilease`; vanaf april `generate_lead_proefrit`,
+  `…offerte`, `…onderhoudsofferte`, `…verhuur`, `…privatelease`. Elke KPI telt beide
+  generaties op. `generate_lead_private_lease` (formulier "stock prive") vuurt het hele jaar
+  door naast `generate_lead_privatelease` (/offerte en /acties/groeilease): andere
+  formulieren, dus allebei private lease. Zakelijke lease = `generate_lead_zakelijk_lease`
+  + `generate_lead_zakelijk_offerte` + `generate_lead_leasecontact`; een zakelijke offerte
+  telt dus níet bij Offerteaanvragen.
+- **Niet opgenomen: Sollicitaties (social) bij de twee Porsche-sites.** Op beide domeinen
+  bestaat geen event voor een afgeronde sollicitatie (de werken-bij-pagina's verwijzen naar
+  e-mail; een klik op een mailadres is geen verzonden sollicitatie). In de PGZ-property
+  vuren `generate_lead_vacature` (/vacatures, geen onderscheid Brabant/Maastricht) en
+  `job_application` (vacaturepagina's, alleen 1–12 januari gezien); niet optellen zolang
+  niet vaststaat of ze dezelfde sollicitatie kunnen registreren. Zodra er een bevestigd
+  event is: combineren met de vestiging en `session_default_channel_group` (Paid Social,
+  eventueel Organic Social). Op verzoek weggelaten in plaats van als lege kaart getoond.
 - **Geteld wordt `event_count`**, net als op Leads en bij de GA-conversies per campagne —
-  niet het aantal key events.
+  niet het aantal key events. VELOO's Productaankopen is `ecommerce_purchases` (afgeronde
+  bestellingen).
 - **OPEN BESLUIT (november 2026, nog niet genomen): rekenen drie KPI's ook vanaf april?**
   Door de trackingwissel verschilt het niveau per maand sterk tussen januari–maart en de
   rest van het jaar:
@@ -717,7 +762,7 @@ udenhout.nl het target voor 2027: wat 2026 naar verwachting doet, plus 5%.
 
   Het gemiddelde over het hele jaar mengt die twee periodes, en daarmee ook de verwachting
   en het target. Het alternatief is deze drie net als zakelijke lease te laten rekenen met
-  het gemiddelde vanaf april (`basisVanaf: "2026-04-01"` in `definities.ts`, één regel per
+  het gemiddelde vanaf april (`meetperiodes: [{ van: "2026-04-01" }]` in `definities.ts`, één regel per
   KPI; de bewaarde stand hoeft niet opnieuw opgehaald te worden). De eigenaar van het
   dashboard heeft aangegeven dit een belangrijk punt te vinden en er zelf over te willen
   beslissen. **Verander dit dus niet op eigen initiatief**; tot het besluit er is rekenen
@@ -725,10 +770,12 @@ udenhout.nl het target voor 2027: wat 2026 naar verwachting doet, plus 5%.
   punt bij (en de opmerking bij deze KPI's in `definities.ts`) zodra het besluit valt.
 - **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd. 2026 is doorgetrokken
   waar de maand volledig gemeten is en gestippeld waar het (deels) verwachting of
-  bijgeschat is — anders leest de half gemeten lopende maand als een instorting. Het
-  maandtarget is een vlakke lijn. As vanaf nul. Onder elke grafiek in kleine letters welke
-  GA4-statistiek of welke events (met periode en aantal) erin zitten; pas die tekst in
-  `definities.ts` mee aan als de koppeling verandert.
+  bijgeschat is — anders leest de half gemeten lopende maand als een instorting, en de
+  Porsche-uitval als een ravijn. Het maandtarget is een vlakke lijn. As vanaf nul; onder de
+  tien op één decimaal, anders vallen lijn en target bij de kleine KPI's samen. Onder elke
+  grafiek in kleine letters welke GA4-statistiek of welke events (met periode en aantal)
+  erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
+  de koppeling verandert.
 
 ### KPI's → KPI's 2027 Syntec
 
@@ -766,8 +813,11 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   (offerte, private lease, VW PFS) staat de reden onder de grafiek.
 - **Elke KPI rekent met het gemiddelde over alle dagen van 2026**, zoals gevraagd — ook
   inruilvoorstel en contact, waar de nieuwe website sinds april veel meer oplevert. Een
-  KPI vanaf april laten rekenen kan met `basisVanaf` in `berekenKpi`, maar is een besluit
-  van de eigenaar; niet op eigen initiatief veranderen.
+  KPI vanaf april laten rekenen kan met een meetperiode (`{ van: "2026-04-01" }`) in
+  `maandInvoerUitMaanden` (`uitkomstVan` in `lib/kpi2027syntec/rekenen.ts`), maar is een
+  besluit van de eigenaar; niet op eigen initiatief veranderen.
+- **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
+  vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
 
 ### Monitoren → Budget beheer
 

@@ -26,7 +26,7 @@ export default function KpiSyntecKaart({ kpi }: { kpi: SyntecKpiRegel }) {
   const peildatum = datumKort(kpi.uitkomst.peildatum);
 
   return (
-    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst}>
+    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst} realisatie={kpi.realisatie}>
       <p>
         <span className="text-ink-muted">Bron:</span> Syntec, sheet-tabblad Data leads. Alleen leads met kanaalgroep
         Internet, geteld op de datum Aangelegd ({KPI_JAAR} t/m {peildatum}).

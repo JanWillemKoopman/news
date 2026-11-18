@@ -4,18 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import KpiKaart from "@/components/kpi/KpiKaart";
 import { IconInfo, IconRefresh } from "@/components/icons";
-import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
+import { useIsActief } from "@/lib/kanalen/actieveWeergave";
+import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR, KPI_WEBSITES } from "@/lib/kpi2027/definities";
 import type { Kpi2027Antwoord } from "@/lib/kpi2027/rekenen";
 
 /**
- * KPI's 2027: per KPI van udenhout.nl het target voor 2027 — de verwachting voor heel 2026
- * plus 5% — met de realisatie van 2026 in een jaargrafiek ernaast.
+ * KPI's 2027: per website en per KPI het target voor 2027 — de verwachting voor heel 2026
+ * plus 5% — met de realisatie van 2026 in een jaargrafiek en die van 2027 ernaast.
  *
- * De stand wordt wekelijks op zondag bijgewerkt tot en met zaterdag (`vercel.json`,
- * `lib/kpi2027/bijwerken.ts`), tot 2026 voorbij is. Deze pagina leest alleen die stand;
- * het rekenwerk staat in `lib/kpi2027/rekenen.ts` en welk GA4-cijfer bij welke KPI hoort
- * in `lib/kpi2027/definities.ts`.
+ * Bovenaan één tab per website. Dat is een uitzondering op de regel "geen dubbele
+ * navigatie" (CLAUDE.md), op verzoek: het zijn geen aparte pagina's maar dezelfde pagina
+ * voor een andere property. Het gekozen tabblad staat in de URL (`?kpisite=pgz`).
+ *
+ * De standen worden wekelijks op zondag bijgewerkt tot en met zaterdag (`vercel.json`,
+ * `lib/kpi2027/bijwerken.ts`). Deze pagina leest ze alleen; het rekenwerk staat in
+ * `lib/kpi2027/rekenen.ts` en welk GA4-cijfer bij welke KPI hoort in
+ * `lib/kpi2027/definities.ts`.
  */
+
+const URL_PARAMETER = "kpisite";
+const STANDAARD = KPI_WEBSITES[0].sleutel;
 
 function datumLang(datum: string): string {
   return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
@@ -39,16 +47,36 @@ function momentTekst(iso: string): string {
 }
 
 export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
+  const actief = useIsActief("kpi-2027");
   const [data, setData] = useState<Kpi2027Antwoord | null>(null);
   const [bezig, setBezig] = useState(true);
   const [bijwerken, setBijwerken] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
+  const [gekozen, setGekozen] = useState<string>(STANDAARD);
+
+  // Uit de URL lezen in een effect, om dezelfde reden als `?tab=` in AppShell: de server
+  // rendert altijd het eerste tabblad.
+  useEffect(() => {
+    const uitUrl = new URLSearchParams(window.location.search).get(URL_PARAMETER);
+    if (uitUrl && KPI_WEBSITES.some((w) => w.sleutel === uitUrl)) setGekozen(uitUrl);
+  }, []);
+
+  // Alleen schrijven zolang dit tabblad open staat: het paneel blijft gemount als je
+  // wegklikt, en dan hoort `?kpisite=` niet mee te verhuizen naar een ander tabblad.
+  useEffect(() => {
+    if (!actief) return;
+    const params = new URLSearchParams(window.location.search);
+    if (gekozen === STANDAARD) params.delete(URL_PARAMETER);
+    else params.set(URL_PARAMETER, gekozen);
+    const zoek = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
+  }, [actief, gekozen]);
 
   const verwerk = useCallback(async (res: Response) => {
     const antwoord = (await res.json()) as Kpi2027Antwoord;
     if (!res.ok) throw new Error(antwoord.fout ?? `Ophalen mislukt (${res.status}).`);
     setData(antwoord);
-    setFout(null);
+    setFout(antwoord.fout ?? null);
   }, []);
 
   useEffect(() => {
@@ -73,30 +101,52 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
 
   if (!ingelogd) return <Inlogprompt tekst="Log in om de KPI's en targets te bekijken." />;
 
-  const stand = data?.stand ?? null;
+  const website = data?.websites.find((w) => w.sleutel === gekozen) ?? null;
+  const stand = website?.stand ?? null;
   const groeiTekst = `${Math.round(KPI_GROEI * 100)}%`;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      <div role="tablist" aria-label="Website" className="flex flex-wrap gap-x-6 border-b border-line">
+        {KPI_WEBSITES.map((w) => {
+          const aan = gekozen === w.sleutel;
+          return (
+            <button
+              key={w.sleutel}
+              type="button"
+              role="tab"
+              aria-selected={aan}
+              onClick={() => setGekozen(w.sleutel)}
+              className={`-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                aan ? "border-primary font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink"
+              }`}
+            >
+              {w.naam}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="kaart-omlijst flex items-center justify-between gap-6 rounded-panel border border-line bg-card px-5 py-3.5 shadow-card">
         <div>
-          {stand ? (
+          {website && stand ? (
             <>
               <p className="font-sans-w7 text-sm font-semibold text-ink">
+                {website.domein} ·{" "}
                 {stand.definitief
-                  ? `${KPI_JAAR} is volledig gemeten — dit is de definitieve basis voor ${KPI_DOELJAAR}`
-                  : `Stand t/m ${datumLang(stand.peildatum)}`}
+                  ? `${KPI_JAAR} is voorbij — dit is de definitieve basis voor ${KPI_DOELJAAR}`
+                  : `stand t/m ${datumLang(stand.peildatum)}`}
               </p>
               <p className="mt-0.5 text-meta text-ink-muted">
-                Bijgewerkt {momentTekst(stand.berekendOp)}
-                {data?.volgendeUpdate ? ` · volgende update ${datumLang(data.volgendeUpdate)}` : ""}
+                Bijgewerkt {momentTekst(website.standDoeljaar?.berekendOp ?? stand.berekendOp)}
+                {website.volgendeUpdate ? ` · volgende update ${datumLang(website.volgendeUpdate)}` : ""}
               </p>
             </>
           ) : (
             <p className="text-sm text-ink-muted">
               {bezig
                 ? "Laden…"
-                : "Er staat nog geen stand klaar. De eerste verschijnt zondag; een beheerder kan hem nu al laten berekenen."}
+                : "Er staat voor deze website nog geen stand klaar. De eerste verschijnt zondag; een beheerder kan hem nu al laten berekenen."}
             </p>
           )}
         </div>
@@ -105,32 +155,41 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
             type="button"
             onClick={werkBij}
             disabled={bijwerken}
-            title="Haalt 2026 opnieuw op bij Google Analytics, t/m de laatste zaterdag — dezelfde stand als de update op zondag."
+            title="Haalt 2026 voor alle websites opnieuw op bij Google Analytics, t/m de laatste zaterdag — dezelfde stand als de update op zondag."
             className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface disabled:cursor-wait disabled:opacity-70"
           >
             <IconRefresh className={`h-3.5 w-3.5 ${bijwerken ? "animate-spin" : ""}`} />
-            {bijwerken ? "Bezig… (± 30 s)" : "Nu bijwerken"}
+            {bijwerken ? "Bezig… (± 1–2 min)" : "Nu bijwerken"}
           </button>
         )}
       </div>
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
 
+      {website?.uitvalTekst && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>{website.uitvalTekst}</span>
+        </p>
+      )}
+
       <p className="flex items-start gap-2 text-meta text-ink-muted">
         <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
-          <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = wat Google Analytics
-          t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van {KPI_JAAR}.{" "}
-          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting +{groeiTekst};
-          het maandtarget is het jaartarget ÷ 12. De stand wordt elke zondag bijgewerkt t/m zaterdag, tot {KPI_JAAR}{" "}
-          voorbij is. In de grafiek is de doorgetrokken lijn gemeten en de gestippelde lijn verwachting.
+          <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = wat Google Analytics op
+          de gemeten dagen t/m de peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van{" "}
+          {KPI_JAAR} (de resterende dagen, en dagen waarop niet gemeten werd).{" "}
+          <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting +{groeiTekst}; het
+          maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
+          telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles wordt elke zondag bijgewerkt t/m zaterdag. In de grafiek is de
+          doorgetrokken lijn gemeten en de gestippelde lijn verwachting of bijgeschat.
         </span>
       </p>
 
-      {data && data.kpis.length > 0 && (
+      {website && website.kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
-          {data.kpis.map((kpi) => (
-            <KpiKaart key={kpi.sleutel} kpi={kpi} />
+          {website.kpis.map((kpi) => (
+            <KpiKaart key={kpi.sleutel} kpi={kpi} website={website} />
           ))}
         </div>
       )}

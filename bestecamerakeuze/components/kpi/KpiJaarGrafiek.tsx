@@ -12,8 +12,9 @@ import type { MaandSoort, MaandUitkomst } from "@/lib/kpi2027/rekenen";
  * De 2026-lijn is één kleur in twee stukken: doorgetrokken waar GA4 de maand volledig mat,
  * gestippeld waar het (deels) verwachting is. Zo leest de lopende maand niet als een
  * instorting — november bevat t/m de peildatum maar de helft van zijn dagen — en is in één
- * oogopslag te zien hoeveel van het jaartotaal nog een schatting is. Bij zakelijke lease
- * staan ook januari t/m maart gestippeld: die zijn bijgeschat, niet gemeten.
+ * oogopslag te zien hoeveel van het jaartotaal nog een schatting is. Maanden waarin (een
+ * deel van) de dagen niet gemeten is, staan ook gestippeld: die zijn bijgeschat — zakelijke
+ * lease van udenhout.nl in januari t/m maart, de Porsche-sites in juli.
  *
  * Het target is een vlakke lijn: het jaartarget gedeeld door twaalf, elke maand gelijk.
  *
@@ -52,10 +53,19 @@ interface Punt {
   dagenInMaand: number;
 }
 
+/**
+ * Afronden voor de grafiek: hele getallen, maar onder de tien op één decimaal. Bij een KPI
+ * met een paar aanvragen per maand (Bentley, PGZ) zou 1,25 anders 1 worden en vallen de
+ * 2026-lijn en het target samen terwijl ze verschillen.
+ */
+function rond(waarde: number): number {
+  return Math.abs(waarde) < 10 ? Math.round(waarde * 10) / 10 : Math.round(waarde);
+}
+
 export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Punt[] {
   const gemeten = (m: MaandUitkomst | undefined) => m?.soort === "gerealiseerd";
   return maanden.map((m, i) => {
-    const waarde = Math.round(m.verwacht);
+    const waarde = rond(m.verwacht);
     // Een gemeten maand naast een geschatte krijgt óók een punt op de gestippelde lijn,
     // anders hangen de twee stukken los van elkaar in de lucht.
     const vorigeGeschat = i > 0 && !gemeten(maanden[i - 1]);
@@ -67,8 +77,8 @@ export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Pu
       soort: m.soort,
       gemeten: gemeten(m) ? waarde : null,
       verwachting: !gemeten(m) || raaktSchatting ? waarde : null,
-      target: Math.round(targetPerMaand),
-      gerealiseerd: m.gerealiseerd === null ? null : Math.round(m.gerealiseerd),
+      target: rond(targetPerMaand),
+      gerealiseerd: m.gerealiseerd === null ? null : rond(m.gerealiseerd),
       verwacht: waarde,
       dagenGemeten: m.dagenGemeten,
       dagenInMaand: m.dagenInMaand,
@@ -78,10 +88,13 @@ export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Pu
 
 /** Het punt op de lijn in de vorm van het merk: gevuld, open (Bentley) of vierkant. */
 function puntVorm(kleuren: GrafiekKleuren, kleur: string, open: boolean) {
-  function Vorm(props: { cx?: number; cy?: number; index?: number; value?: unknown }) {
+  function Vorm(props: { cx?: number; cy?: number; index?: number; value?: unknown; payload?: Punt }) {
     if (props.cx === undefined || props.cy === undefined || props.value === null || props.value === undefined) {
       return <g key={props.index} />;
     }
+    // Een gemeten maand die aan een geschatte grenst, staat op beide lijnen. Het open
+    // bolletje van de stippellijn zou dan het gevulde bedekken; die maand is gemeten.
+    if (open && props.payload?.soort === "gerealiseerd") return <g key={props.index} />;
     const hol = open || kleuren.punt === "open";
     if (kleuren.punt === "vierkant") {
       return (
@@ -236,7 +249,10 @@ function MaandTooltip({
       break;
     case "bijgeschat":
       regel2026 = `2026 bijgeschat: ${formatteer(p.verwacht, "aantal")}`;
-      toelichting = "niet gemeten; ingevuld met het gemiddelde per dag";
+      toelichting =
+        p.dagenGemeten > 0
+          ? `waarvan ${formatteer(p.gerealiseerd, "aantal")} gemeten (${p.dagenGemeten} van ${p.dagenInMaand} dagen); de rest met het gemiddelde per dag`
+          : "niet gemeten; ingevuld met het gemiddelde per dag";
       break;
   }
 

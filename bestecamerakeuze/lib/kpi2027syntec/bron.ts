@@ -1,5 +1,5 @@
 import { metVerbinding } from "@/lib/kanalen/bron";
-import { KPI_JAAR } from "@/lib/kpi2027/definities";
+import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { SYNTEC_KANAALGROEP } from "@/lib/kpi2027syntec/definities";
 import type { SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
 
@@ -8,18 +8,22 @@ import type { SyntecTelling } from "@/lib/kpi2027syntec/rekenen";
  * sheet-tabblad "Data leads", elke nacht gekopieerd door `/api/sync`).
  *
  * Eén kleine groepering: per jaar, kanaal, onderwerp en maand het aantal leads met
- * kanaalgroep Internet in het basisjaar t/m de peildatum, plus het hele jaar ervoor. Een
+ * kanaalgroep Internet, van 2025 t/m de laatste zaterdag. Een
  * paar duizend regels. Welke regel bij welke KPI hoort beslist `definities.ts` in getest
  * TypeScript, niet een `case when` in SQL die niemand terugleest.
  *
  * Geen opgeslagen stand zoals bij KPI's 2027: de data staat al in de database, en de
  * peildatum (de laatste zaterdag) houdt het target een hele week gelijk.
  */
-export async function haalSyntecTellingen(
-  peildatum: string,
-): Promise<{ basisjaar: SyntecTelling[]; vorigJaar: SyntecTelling[] }> {
+export async function haalSyntecTellingen(tot: string): Promise<{
+  vorigJaar: SyntecTelling[];
+  basisjaar: SyntecTelling[];
+  doeljaar: SyntecTelling[];
+}> {
   return metVerbinding(async (client) => {
-    // Heel het jaar ervoor gaat mee voor de controle op de definitie (doel 2026 = 2025 × 1,2).
+    // Van 1 januari van het jaar vóór het basisjaar t/m `tot` (de laatste zaterdag): 2025
+    // voor de controle op de definitie (doel 2026 = 2025 × 1,2), 2026 voor de verwachting
+    // en het target, en 2027 zodra dat begonnen is voor de realisatie.
     const res = await client.query(
       `select extract(year from aangelegd)::int as jaar,
               kanaal,
@@ -31,20 +35,21 @@ export async function haalSyntecTellingen(
           and aangelegd >= make_date($2::int - 1, 1, 1)
           and aangelegd < $3::date + 1
         group by 1, 2, 3, 4`,
-      [SYNTEC_KANAALGROEP, KPI_JAAR, peildatum],
+      [SYNTEC_KANAALGROEP, KPI_JAAR, tot],
     );
-    const basisjaar: SyntecTelling[] = [];
-    const vorigJaar: SyntecTelling[] = [];
+    const uitkomst = { vorigJaar: [] as SyntecTelling[], basisjaar: [] as SyntecTelling[], doeljaar: [] as SyntecTelling[] };
     for (const r of res.rows) {
-      const telling = {
+      const jaar = Number(r.jaar);
+      const lijst =
+        jaar === KPI_JAAR - 1 ? uitkomst.vorigJaar : jaar === KPI_JAAR ? uitkomst.basisjaar : jaar === KPI_DOELJAAR ? uitkomst.doeljaar : null;
+      lijst?.push({
         kanaal: String(r.kanaal ?? ""),
         onderwerp: String(r.onderwerp ?? ""),
         maand: Number(r.maand),
         aantal: Number(r.aantal),
-      };
-      (Number(r.jaar) === KPI_JAAR ? basisjaar : vorigJaar).push(telling);
+      });
     }
-    return { basisjaar, vorigJaar };
+    return uitkomst;
   });
 }
 
