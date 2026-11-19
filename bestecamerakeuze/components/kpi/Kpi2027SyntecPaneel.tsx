@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
+import EerdereJarenSchakelaar, { useEerdereJaren } from "@/components/kpi/EerdereJaren";
 import KpiSyntecKaart from "@/components/kpi/KpiSyntecKaart";
 import SyntecOverzichtTabel from "@/components/kpi/SyntecOverzichtTabel";
 import { IconInfo } from "@/components/icons";
@@ -54,6 +55,7 @@ function momentTekst(iso: string): string {
 }
 
 export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
+  const [eerdereJaren] = useEerdereJaren();
   const [data, setData] = useState<Kpi2027SyntecAntwoord | null>(null);
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
@@ -104,6 +106,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
             <p className="text-sm text-ink-muted">{bezig ? "Laden…" : "Er valt nog niets te rekenen."}</p>
           )}
         </div>
+        <EerdereJarenSchakelaar />
       </div>
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
@@ -144,7 +147,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
           iedereen). Een totaal is de som van zijn kaarten, ook het target; zijn percentage volgt daaruit. Het
           maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles schuift elke zondag op t/m zaterdag. In de grafiek is de
-          doorgetrokken lijn gemeten en de gestippelde lijn verwachting; de dunne lijnen zijn 2024 en 2025 met dezelfde definitie, zoals gemeten.
+          doorgetrokken lijn gemeten en de gestippelde lijn verwachting. Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
         </span>
       </p>
 
@@ -156,19 +159,19 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
               <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
                 {groep.kpis.map((kpi) => (
-                  <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} opslaanGroei={(groei) => zetGroei(kpi.sleutel, groei)} />
+                  <KpiSyntecKaart toonEerdereJaren={eerdereJaren} key={kpi.sleutel} kpi={kpi} opslaanGroei={(groei) => zetGroei(kpi.sleutel, groei)} />
                 ))}
                 {groep.combinaties.map((kpi) => (
-                  <KpiSyntecKaart key={kpi.sleutel} kpi={kpi} />
+                  <KpiSyntecKaart toonEerdereJaren={eerdereJaren} key={kpi.sleutel} kpi={kpi} />
                 ))}
-                <KpiSyntecKaart kpi={groep.totaal} />
+                <KpiSyntecKaart toonEerdereJaren={eerdereJaren} kpi={groep.totaal} />
               </div>
             </section>
           ))}
           <section className="flex flex-col gap-3">
             <h2 className="label-theme text-label text-ink-faint">Totaal</h2>
             <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
-              <KpiSyntecKaart kpi={overzicht.totaal} />
+              <KpiSyntecKaart toonEerdereJaren={eerdereJaren} kpi={overzicht.totaal} />
             </div>
           </section>
         </>

@@ -946,6 +946,12 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **Eerdere jaren staan standaard uit.** Rechts in de statusbalk van KPI's 2027 GA én Syntec
+  staat de schakelaar "Eerdere jaren" (`components/kpi/EerdereJaren.tsx`): uit toont een
+  grafiek alleen 2026, de verwachting en het maandtarget; aan ook de vergelijkingslijnen
+  (GA: 2025 waar die er is, Syntec: 2024 en 2025) met hun regel onder de grafiek. Eén
+  keuze voor beide tabbladen, per browser onthouden in localStorage
+  (`kpi-eerdere-jaren`); de server rendert altijd "uit".
 - **De grafieken tonen ook 2024 en 2025** als dunne lijnen (`eerdereJaren` per KPI, totaal en
   combinatie; `SYNTEC_EERDERE_JAREN` in `bron.ts`), met dezelfde definitie en zoals gemeten.
   Ze tellen nergens mee: geen verwachting, geen target. `meetVanaf` geldt er niet voor (dat

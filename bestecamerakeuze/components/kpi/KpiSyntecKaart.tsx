@@ -24,9 +24,12 @@ const DOELFACTOR = 1.2;
 
 export default function KpiSyntecKaart({
   kpi,
+  toonEerdereJaren = false,
   opslaanGroei,
 }: {
   kpi: SyntecKpiRegel;
+  /** De schakelaar "Eerdere jaren" (`EerdereJaren.tsx`): zonder staan 2024 en 2025 er niet in. */
+  toonEerdereJaren?: boolean;
   /** Alleen bij een gewone KPI: een totaal of combinatie volgt uit zijn kaarten. */
   opslaanGroei?: (groei: number | null) => Promise<void>;
 }) {
@@ -42,7 +45,7 @@ export default function KpiSyntecKaart({
       uitkomst={kpi.uitkomst}
       realisatie={kpi.realisatie}
       groei={groei}
-      vergelijking={kpi.eerdereJaren}
+      vergelijking={toonEerdereJaren ? kpi.eerdereJaren : null}
     >
       <p>
         <span className="text-ink-muted">Bron:</span> Syntec, sheet-tabblad Data leads. Alleen leads met kanaalgroep
@@ -92,7 +95,7 @@ export default function KpiSyntecKaart({
           <>het doel {KPI_JAAR} was {aantal(kpi.doel2026)}.</>
         )}
       </p>
-      {kpi.eerdereJaren.length > 0 && (
+      {toonEerdereJaren && kpi.eerdereJaren.length > 0 && (
         <p className="mt-1">
           <span className="text-ink-muted">Lijnen {kpi.eerdereJaren.map((j) => j.jaar).join(" en ")}:</span> dezelfde
           definitie over het hele jaar, zoals gemeten ({kpi.eerdereJaren.map((j) => `${j.jaar}: ${aantal(j.totaal)}`).join(", ")}).

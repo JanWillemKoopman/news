@@ -73,10 +73,13 @@ export default function KpiKaart({
   website,
   opslaanGroei,
   kanalen,
+  toonEerdereJaren = false,
 }: {
   kpi: KpiOverzichtRegel;
   website: WebsiteOverzicht;
   opslaanGroei: (groei: number | null) => Promise<void>;
+  /** De schakelaar "Eerdere jaren" (`EerdereJaren.tsx`): zonder staat er geen vergelijkingslijn. */
+  toonEerdereJaren?: boolean;
   /** Alleen bij een website met `kanaalverdeling`: dan staat het knopje "Kanalen" erop. */
   kanalen?: KanalenStand;
 }) {
@@ -92,7 +95,7 @@ export default function KpiKaart({
       uitkomst={u}
       realisatie={kpi.realisatie}
       groei={{ soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }}
-      vergelijking={kpi.vergelijking}
+      vergelijking={toonEerdereJaren ? kpi.vergelijking : null}
       wissel={
         kanalen
           ? {
@@ -170,7 +173,7 @@ export default function KpiKaart({
         )}
       </p>
       {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
-      {kpi.vergelijking && (
+      {toonEerdereJaren && kpi.vergelijking && (
         <p className="mt-1">
           <span className="text-ink-muted">Lijn {kpi.vergelijking.jaar}:</span> dezelfde bron over heel{" "}
           {kpi.vergelijking.jaar}, zoals gemeten: {aantal(kpi.vergelijking.totaal)}
@@ -195,7 +198,7 @@ export default function KpiKaart({
           . Telt niet mee in het target.
         </p>
       )}
-      {kpi.zonderVergelijking && <p className="mt-1">{kpi.zonderVergelijking}</p>}
+      {toonEerdereJaren && kpi.zonderVergelijking && <p className="mt-1">{kpi.zonderVergelijking}</p>}
     </KpiKaartOpmaak>
   );
 }

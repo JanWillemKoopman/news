@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import GaOverzichtTabel from "@/components/kpi/GaOverzichtTabel";
+import EerdereJarenSchakelaar, { useEerdereJaren } from "@/components/kpi/EerdereJaren";
 import KpiKaart, { type KanalenStand } from "@/components/kpi/KpiKaart";
 import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
 import { IconInfo, IconRefresh } from "@/components/icons";
@@ -50,6 +51,7 @@ function momentTekst(iso: string): string {
 }
 
 export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
+  const [eerdereJaren] = useEerdereJaren();
   const actief = useIsActief("kpi-2027");
   const [data, setData] = useState<Kpi2027Antwoord | null>(null);
   const [bezig, setBezig] = useState(true);
@@ -200,7 +202,9 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
             </p>
           )}
         </div>
-        {data?.magBijwerken && (
+        <div className="flex shrink-0 items-center gap-2">
+          <EerdereJarenSchakelaar />
+          {data?.magBijwerken && (
           <button
             type="button"
             onClick={werkBij}
@@ -211,12 +215,13 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
             <IconRefresh className={`h-3.5 w-3.5 ${bijwerken ? "animate-spin" : ""}`} />
             {bijwerken ? "Bezig… (± 1–2 min)" : "Nu bijwerken"}
           </button>
-        )}
+          )}
+        </div>
       </div>
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
 
-      {website?.vergelijkingTekst && (
+      {eerdereJaren && website?.vergelijkingTekst && (
         <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
           <span>{website.vergelijkingTekst}</span>
@@ -256,6 +261,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
               kpi={kpi}
               website={website}
               opslaanGroei={(groei) => zetGroei(website.sleutel, kpi.sleutel, groei)}
+              toonEerdereJaren={eerdereJaren}
               kanalen={
                 website.kanaalverdeling
                   ? {
