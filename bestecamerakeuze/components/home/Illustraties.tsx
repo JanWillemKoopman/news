@@ -249,50 +249,101 @@ export function InterneDataIllustratie() {
 }
 
 /**
- * Campagnes monitoren: een billboard met een advertentie erop en een doelwit (de
- * doelgroep) ervoor; bij hover komt het doelwit ring voor ring omhoog en de poster een
- * fractie mee.
+ * Campagnes monitoren: een billboard met een autoadvertentie (we zijn een autodealer):
+ * links de auto in zijaanzicht, rechts kop, tekstregels en een knop. Bij hover komt het
+ * bord een fractie omhoog en rijdt de auto een stukje naar rechts.
  */
 export function CampagnesIllustratie() {
   const s = 16;
   const p = maakProjectie(150, 95, s);
-  // Billboard langs de x-as; het zichtbare voorvlak ligt op y = 0,25.
+  // Billboard langs de x-as; het zichtbare voorvlak ligt op y = vy, dus alles op het bord
+  // tekenen we in (u, v) = (x, z) op dat vlak.
   const vy = 0.25;
+  const bb = 8.2;
   const pz = 2.2;
-  const ph = 3.4;
-  const vlak = (x1: number, z1: number, x2: number, z2: number) =>
-    pts([p(x1, vy, z1), p(x2, vy, z1), p(x2, vy, z2), p(x1, vy, z2)]);
-  const lijn = (x1: number, x2: number, z: number) => pts([p(x1, vy, z), p(x2, vy, z)]);
+  const ph = 3.6;
+  const f = (u: number, v: number) => p(u, vy, pz + v);
+  const vlak = (u1: number, v1: number, u2: number, v2: number) =>
+    pts([f(u1, v1), f(u2, v1), f(u2, v2), f(u1, v2)]);
+  const lijn = (u1: number, u2: number, v: number) => pts([f(u1, v), f(u2, v)]);
+
+  // De auto, in zijaanzicht, met zijn linkerkant op u0 en de weg op v0.
+  const u0 = 0.55;
+  const v0 = 0.7;
+  const k = 1.25; // schaal van de auto op het bord
+  const auto = (pnt: [number, number][]) =>
+    pts(pnt.map(([u, v]) => f(u0 + u * k, v0 + v * k)));
+  const carrosserie: [number, number][] = [
+    [0.05, 0.22],
+    [0, 0.55],
+    [0.2, 0.68],
+    [0.95, 0.8],
+    [1.45, 1.28],
+    [2.45, 1.28],
+    [3.0, 0.82],
+    [3.45, 0.72],
+    [3.6, 0.5],
+    [3.55, 0.22],
+  ];
+  const ruiten: [number, number][][] = [
+    [
+      [1.08, 0.84],
+      [1.52, 1.2],
+      [1.95, 1.2],
+      [1.95, 0.84],
+    ],
+    [
+      [2.05, 0.84],
+      [2.05, 1.2],
+      [2.4, 1.2],
+      [2.78, 0.84],
+    ],
+  ];
+  // Een wiel is een cirkel in het vlak van het bord; in deze projectie een scheve ellips,
+  // dus als veelhoek berekend in plaats van als <ellipse>.
+  const wiel = (cu: number, r: number) =>
+    auto(
+      Array.from({ length: 20 }, (_, i) => {
+        const a = (i / 20) * Math.PI * 2;
+        return [cu + Math.cos(a) * r, 0.22 + Math.sin(a) * r] as [number, number];
+      }),
+    );
 
   return (
-    <Tekening label="Billboard met advertentie en een doelwit" viewBox="33 -11 233 233">
-      {/* grondplaat, zodat billboard en doelwit op hetzelfde vlak staan */}
-      <Blok p={p} x={-0.6} y={-0.6} z={-0.25} b={7.5} d={7.6} h={0.25} />
-      <Blok p={p} x={1.1} y={0} z={0} b={0.25} d={0.25} h={pz} />
-      <Blok p={p} x={4.9} y={0} z={0} b={0.25} d={0.25} h={pz} />
+    <Tekening label="Billboard met een autoadvertentie" viewBox="91 -12 201 214">
+      {/* grondplaat */}
+      <Blok p={p} x={-0.6} y={-0.6} z={-0.25} b={bb + 1.2} d={3.4} h={0.25} />
+      <Blok p={p} x={1.4} y={0} z={0} b={0.25} d={0.25} h={pz} />
+      <Blok p={p} x={bb - 1.65} y={0} z={0} b={0.25} d={0.25} h={pz} />
       <g className="iso-beweeg" style={beweeg(0, -3)}>
-        <Blok p={p} x={0} y={0} z={pz} b={6.3} d={vy} h={ph} />
-        {/* de advertentie: beeldvlak met een "zon", kop, twee regels en een knop */}
-        <polygon points={vlak(0.4, pz + 0.4, 3.1, pz + ph - 0.4)} />
-        <polyline
-          fill="none"
-          strokeOpacity={0.6}
-          points={pts([p(0.6, vy, pz + 0.9), p(1.5, vy, pz + 1.9), p(2.1, vy, pz + 1.4), p(2.9, vy, pz + 2.3)])}
-        />
-        <polyline fill="none" points={lijn(3.5, 5.8, pz + ph - 0.7)} />
-        <polyline fill="none" strokeOpacity={0.6} points={lijn(3.5, 5.4, pz + ph - 1.25)} />
-        <polyline fill="none" strokeOpacity={0.6} points={lijn(3.5, 5.0, pz + ph - 1.65)} />
-        <polygon points={vlak(3.5, pz + 0.45, 5.0, pz + 0.95)} />
-      </g>
-      {[
-        { r: 2.1, i: 0 },
-        { r: 1.4, i: 1 },
-        { r: 0.7, i: 2 },
-      ].map(({ r, i }) => (
-        <g key={i} className="iso-beweeg" style={beweeg(0, -(i + 1) * 3, 60 + i * 70)}>
-          <Schijf p={p} s={s} x={4.1} y={4.3} z={i * 0.3} r={r} h={0.3} />
+        <Blok p={p} x={0} y={0} z={pz} b={bb} d={vy} h={ph} />
+        <polygon points={vlak(0.25, 0.25, bb - 0.25, ph - 0.25)} />
+        {/* de weg onder de auto */}
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(0.45, 5.25, v0 - 0.02)} />
+        {/* kop, twee regels en een knop */}
+        <polyline fill="none" points={lijn(5.5, bb - 0.55, ph - 0.85)} />
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(5.5, bb - 0.85, ph - 1.35)} />
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(5.5, bb - 1.25, ph - 1.7)} />
+        <polygon points={vlak(5.5, 0.6, 6.9, 1.1)} />
+        <g
+          className="iso-beweeg"
+          style={beweeg(0.35 * 0.866 * s, 0.35 * 0.5 * s, 120)}
+        >
+          <polygon points={auto(carrosserie)} />
+          {ruiten.map((r, i) => (
+            <polygon key={i} points={auto(r)} />
+          ))}
+          {/* deurnaad en koplamp */}
+          <polyline fill="none" strokeOpacity={0.6} points={auto([[2.0, 0.3], [2.0, 0.82]])} />
+          <polyline fill="none" strokeOpacity={0.6} points={auto([[3.3, 0.58], [3.52, 0.58]])} />
+          {[0.75, 2.85].map((cu) => (
+            <g key={cu}>
+              <polygon points={wiel(cu, 0.3)} />
+              <polygon points={wiel(cu, 0.13)} />
+            </g>
+          ))}
         </g>
-      ))}
+      </g>
     </Tekening>
   );
 }

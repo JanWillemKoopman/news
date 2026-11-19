@@ -53,7 +53,7 @@ export function bepaalToegang({ pad, zoek, ingelogd }: Verzoek): Toegangsbesluit
     return pad === "/login" ? { soort: "naar-dashboard" } : { soort: "door" };
   }
 
-  if (pad === "/login") return { soort: "door" };
+  if (pad === "/login" || pad === "/voorbeeld") return { soort: "door" };
   if (pad === "/api" || pad.startsWith("/api/")) return { soort: "weiger" };
 
   return { soort: "naar-login", verder: verderWaarde(pad, zoek) };
