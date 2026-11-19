@@ -96,7 +96,8 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
   er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
   kubussen komen omhoog, bij Interne data komen de databaseschijven los en stijgen de
-  datablokjes op, bij Campagnes komt het doelwit voor het billboard ring voor ring omhoog); uit bij
+  datablokjes op, bij Campagnes een billboard met een autoadvertentie (we zijn een autodealer) dat iets
+  omhoogkomt terwijl de auto erop een stukje naar rechts rijdt); uit bij
   `prefers-reduced-motion`. Houd die beweging klein.
 
 ### De campagnetabel
