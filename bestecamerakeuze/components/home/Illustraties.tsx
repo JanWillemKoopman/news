@@ -242,85 +242,76 @@ export function KanalenIllustratie() {
 }
 
 /**
- * Een liggende cilinder (schijf) op het grondvlak: zijkant met de onderste halve ellips,
- * daarboven de volledige bovenellips. Een cirkel met straal r wordt in deze projectie een
- * ellips van 1,22·r breed en 0,71·r hoog (× schaal).
- */
-function Schijf({
-  p,
-  s,
-  x,
-  y,
-  z,
-  r,
-  h,
-  band = false,
-}: {
-  p: Projectie;
-  s: number;
-  x: number;
-  y: number;
-  z: number;
-  r: number;
-  h: number;
-  band?: boolean;
-}) {
-  const rx = 1.2247 * r * s;
-  const ry = 0.7071 * r * s;
-  const [cx, onder] = p(x, y, z);
-  const boven = p(x, y, z + h)[1];
-  const midden = (onder + boven) / 2;
-  const f = (n: number) => n.toFixed(1);
-  return (
-    <g>
-      <path
-        d={`M${f(cx - rx)},${f(boven)} L${f(cx - rx)},${f(onder)} A${f(rx)},${f(ry)} 0 0 0 ${f(cx + rx)},${f(onder)} L${f(cx + rx)},${f(boven)} Z`}
-      />
-      {band && (
-        <path
-          fill="none"
-          strokeOpacity={0.6}
-          d={`M${f(cx - rx)},${f(midden)} A${f(rx)},${f(ry)} 0 0 0 ${f(cx + rx)},${f(midden)}`}
-        />
-      )}
-      <ellipse cx={f(cx)} cy={f(boven)} rx={f(rx)} ry={f(ry)} />
-    </g>
-  );
-}
-
-/**
- * Interne data: een database van drie schijven met datablokjes erboven; bij hover komen
- * de schijven los van elkaar en stijgen de blokjes op.
+ * Interne data: een serverkast met schijflades (de database) en ernaast een stapeltje
+ * klantkaarten (de leads uit Syntec, de contacten uit Selligent). Bij hover schuiven de
+ * lades één voor één een stukje open en waaieren de kaarten uit.
  */
 export function InterneDataIllustratie() {
-  const s = 18;
-  const p = maakProjectie(160, 130, s);
-  const r = 2.4;
-  const h = 0.85;
-  const tussen = 1.15;
-  const lagen = [0, 1, 2];
-  const top = (lagen.length - 1) * tussen + h;
-  const blokjes = [
-    { x: -0.9, y: -0.2, z: 0.9 },
-    { x: 0.3, y: -0.9, z: 1.5 },
-    { x: 0.5, y: 0.4, z: 2.2 },
-  ];
+  const s = 16;
+  const p = maakProjectie(150, 70, s);
+  type Pt = [number, number];
+  // Serverkast
+  const kb = 2.4;
+  const kd = 2.4;
+  const kh = 4.4;
+  const lades = [0, 1, 2, 3, 4];
+  // Een stap richting de kijker (langs +y) in px, voor het openschuiven van een lade.
+  const uit = (eenheden: number) => beweeg(-eenheden * 0.866 * s, eenheden * 0.5 * s);
+  // Klantkaarten
+  const kaartX = 3.6;
+  const kaartY = 1.2;
+  const kaartB = 3.0;
+  const kaartD = 2.0;
+  const dikte = 0.12;
+  const kaarten = [0, 1, 2];
+  const bovenZ = (kaarten.length - 1) * 0.28 + dikte;
+  const op = ([x, y]: Pt) => p(kaartX + x, kaartY + y, bovenZ);
+  const lijn = (punten: Pt[]) => pts(punten.map(op));
+  const avatar = Array.from({ length: 24 }, (_, j) => {
+    const a = (j / 24) * Math.PI * 2;
+    return [0.6 + Math.cos(a) * 0.32, 0.62 + Math.sin(a) * 0.32] as Pt;
+  });
 
   return (
-    <Tekening label="Database van drie schijven met datablokjes" viewBox="92 -2 136 174">
-      {lagen.map((i) => (
-        <g key={i} className="iso-beweeg" style={beweeg(0, -i * 4)}>
-          <Schijf p={p} s={s} x={0} y={0} z={i * tussen} r={r} h={h} band />
-          {/* statuslampjes op de voorkant */}
-          {[0, 1, 2].map((l) => {
-            const [lx, ly] = p(1.2 + l * 0.35, 1.9 - l * 0.35, i * tussen + h * 0.5);
-            return <circle key={l} cx={lx.toFixed(1)} cy={ly.toFixed(1)} r={1.4} />;
-          })}
-        </g>
+    <Tekening label="Serverkast met schijflades en een stapel klantkaarten" viewBox="72 -14 201 190">
+      {/* grondplaat */}
+      <Blok p={p} x={-0.5} y={-0.5} z={-0.25} b={7.6} d={4.3} h={0.25} />
+      <Blok p={p} x={0} y={0} z={0} b={kb} d={kd} h={kh} />
+      {/* ventilatiesleuven op de zijkant */}
+      {[0, 1, 2].map((i) => (
+        <polyline
+          key={i}
+          fill="none"
+          strokeOpacity={0.6}
+          points={pts([p(kb, 0.5, kh - 0.5 - i * 0.25), p(kb, 1.9, kh - 0.5 - i * 0.25)])}
+        />
       ))}
-      {blokjes.map((b, j) => (
-        <g key={j} className="iso-beweeg" style={beweeg(0, -12 - j * 4, 100 + j * 60)}>
-          <Blok p={p} x={b.x} y={b.y} z={top + b.z} b={0.55} d={0.55} h={0.55} />
+      {lades.map((i) => {
+        const z = 0.3 + i * 0.78;
+        return (
+          <g key={i} className="iso-beweeg" style={{ ...uit(i % 2 === 0 ? 0.45 : 0.25), ["--vertraging" as string]: `${i * 60}ms` }}>
+            <Blok p={p} x={0.25} y={kd} z={z} b={kb - 0.5} d={0.14} h={0.55} />
+            {/* greep en statuslampje op de voorkant van de lade */}
+            <polyline fill="none" points={pts([p(0.6, kd + 0.14, z + 0.28), p(1.3, kd + 0.14, z + 0.28)])} />
+            {(() => {
+              const [lx, ly] = p(1.85, kd + 0.14, z + 0.28);
+              return <circle cx={lx.toFixed(1)} cy={ly.toFixed(1)} r={1.6} />;
+            })()}
+          </g>
+        );
+      })}
+      {kaarten.map((i) => (
+        <g key={i} className="iso-beweeg" style={beweeg(i * 0.3 * 0.866 * s, i * 0.3 * 0.5 * s - i * 3, 80 + i * 60)}>
+          <Blok p={p} x={kaartX} y={kaartY} z={i * 0.28} b={kaartB} d={kaartD} h={dikte} />
+          {i === kaarten.length - 1 && (
+            <>
+              <polygon points={lijn(avatar)} />
+              <polyline fill="none" points={lijn([[1.2, 0.5], [2.6, 0.5]])} />
+              <polyline fill="none" strokeOpacity={0.6} points={lijn([[1.2, 0.85], [2.3, 0.85]])} />
+              <polyline fill="none" strokeOpacity={0.6} points={lijn([[0.35, 1.35], [2.6, 1.35]])} />
+              <polyline fill="none" strokeOpacity={0.6} points={lijn([[0.35, 1.65], [2.0, 1.65]])} />
+            </>
+          )}
         </g>
       ))}
     </Tekening>

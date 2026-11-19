@@ -78,18 +78,25 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 
 - **Het dashboard opent op een startscherm** (view `home`, `components/home/HomeDashboard.tsx`,
   november 2026 op verzoek). Bovenaan gecentreerd "Marketing dashboard" (geen PageHeader),
-  daaronder vier blokken in een raster van 2 × 2: **KPI's** (linksboven), **Kanalen**
+  daaronder vier blokken in een raster van 2 × 2: **KPI's 2027** (linksboven), **Kanalen**
   (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok heeft een
-  klein grijs kopje met de groepsnaam uit de sidebar en daaronder een eigen titel (`kopje` en
-  `titel` in `GROEPEN`): Key performance indicators, Online kanalen analyseren, Interne data
-  en Campagnes monitoren. Elk blok is een groep
-  uit de sidebar en toont dezelfde pagina's met hetzelfde label en icoon, zodat het
-  startscherm naar elk tabblad doorverwijst. Voeg je in `Sidebar.tsx` een tabblad toe, zet
-  hem dan ook in `GROEPEN`. Wie een tabblad niet mag zien (`lib/beperkteTabbladen.ts`), ziet
-  hem hier ook niet. **Leads Syntec en Selligent staan onder Tools** (november 2026, op
-  verzoek; in de sidebar én hier): het zijn interne bronnen, geen online kanalen. Budget
-  beheer en Landingspagina staan er ook onder maar zijn nu voor iedereen verborgen. Een
-  groep zonder zichtbare pagina's zegt dat in één regel.
+  klein grijs kopje met de groepsnaam uit de sidebar en daaronder een eigen titel: Key
+  performance indicators, Online kanalen analyseren, Interne data en Campagnes monitoren.
+- **Sidebar en startscherm delen één lijst** (`components/navigatie.tsx`, `NAV_GROEPEN`):
+  groepsnamen, pagina's, labels en iconen staan daar, en beide filteren met dezelfde
+  `magTabbladZien` (`zichtbarePaginas`). Een gebruiker ziet op het startscherm dus precies
+  de pagina's die hij in de sidebar ziet — dat was een expliciete eis. Een tabblad
+  toevoegen of verplaatsen = één regel in `NAV_GROEPEN`; zet nooit een losse
+  `NavigationItem` voor een groepspagina terug in `Sidebar.tsx`. Een groep zonder zichtbare
+  pagina krijgt in de sidebar geen kopje en zegt op het startscherm dat in één regel.
+- **Indeling en namen (november 2026, op verzoek):** de groep KPI's heet **KPI's 2027** met
+  **KPI's Google Analytics** (`kpi-2027`) en **KPI's Syntec** (`kpi-2027-syntec`); **KPI's
+  2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
+  **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
+  **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
+  (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
+  hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
+  het over deze pagina's onder hun nieuwe naam en plek.
 - **Naar het startscherm**: klik op "Marketing / Marketing dashboard" linksboven in de
   sidebar. Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
   `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
@@ -98,8 +105,8 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
   er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
   kubussen met de tekens van Google Ads, Instagram, Google Analytics en LinkedIn komen
-  omhoog (lijnversies, geen echte merklogo's), bij Interne data komen de databaseschijven los en stijgen de
-  datablokjes op, bij Campagnes een billboard met een autoadvertentie (we zijn een autodealer) dat iets
+  omhoog (lijnversies, geen echte merklogo's), bij Interne data een serverkast waarvan de
+  lades openschuiven naast een stapel klantkaarten die uitwaaiert, bij Campagnes een billboard met een autoadvertentie (we zijn een autodealer) dat iets
   omhoogkomt terwijl de auto erop een stukje naar rechts rijdt); uit bij
   `prefers-reduced-motion`. Houd die beweging klein.
 

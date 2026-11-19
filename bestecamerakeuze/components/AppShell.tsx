@@ -107,12 +107,12 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle: "De belangrijkste kerncijfers in één dashboard.",
   },
   "kpi-2027": {
-    title: "KPI's 2027 GA",
+    title: "KPI's Google Analytics",
     subtitle:
       "De targets voor 2027 per KPI en per website: wat 2026 naar verwachting doet, plus 5% (per KPI aan te passen).",
   },
   "kpi-2027-syntec": {
-    title: "KPI's 2027 Syntec",
+    title: "KPI's Syntec",
     subtitle:
       "De targets voor 2027 per websitebron in Syntec: wat 2026 naar verwachting doet, plus 5% (per KPI aan te passen).",
   },
@@ -143,12 +143,12 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
       "Offerte- en proefritaanvragen van udenhout.nl: welk merk en model, via welk kanaal, en wat de betaalde campagnes kostten.",
   },
   "leads-syntec": {
-    title: "Leads Syntec",
+    title: "Syntec leads",
     subtitle:
       "Alle leads die bij Van den Udenhout binnenkomen, uit Syntec: per merk, model en kanaal, uitgesplitst in online en offline.",
   },
   selligent: {
-    title: "Selligent",
+    title: "Selligent database",
     subtitle:
       "Het klantenbestand uit de Selligent-export: filter op elke kolom en zie hoeveel contacten er overblijven.",
   },

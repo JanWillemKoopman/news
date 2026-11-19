@@ -1,24 +1,13 @@
 "use client";
 
 import type { DashboardView } from "@/components/Sidebar";
-import { magTabbladZien } from "@/lib/beperkteTabbladen";
+import { IconArrowRight } from "@/components/icons";
 import {
-  IconAdHeart,
-  IconArrowRight,
-  IconCalendar,
-  IconChartBar,
-  IconCoin,
-  IconGlobe,
-  IconMail,
-  IconMegaphone,
-  IconPhoto,
-  IconSearch,
-  IconSettings,
-  IconTarget,
-  IconTrendUp,
-  IconUserCircle,
-  IconUsers,
-} from "@/components/icons";
+  navGroep,
+  zichtbarePaginas,
+  type NavGroepId,
+  type NavPagina,
+} from "@/components/navigatie";
 import {
   CampagnesIllustratie,
   KanalenIllustratie,
@@ -26,76 +15,50 @@ import {
   InterneDataIllustratie,
 } from "@/components/home/Illustraties";
 
-type Pagina = { view: DashboardView; label: string; icon: React.ReactNode };
-
-type Groep = {
+type Blok = {
   fig: string;
-  /** Klein, grijs kopje boven de titel: de naam van de groep in de sidebar. */
-  kopje: string;
+  /** Welke sidebargroep dit blok is: kopje én pagina's komen daar vandaan. */
+  groep: NavGroepId;
   titel: string;
   omschrijving: string;
   illustratie: React.ReactNode;
-  paginas: Pagina[];
 };
 
 /**
  * De vier blokken van het startscherm, in de volgorde links-boven, rechts-boven,
- * links-onder, rechts-onder. Elk blok is een groep uit de sidebar (`Sidebar.tsx`) met
- * dezelfde pagina's, labels en iconen: voeg je daar een tabblad toe, zet hem hier ook neer.
- * Wie een tabblad niet mag zien (`lib/beperkteTabbladen.ts`), ziet hem hier ook niet.
+ * links-onder, rechts-onder. Het grijze kopje en de pagina's komen uit
+ * `components/navigatie.tsx`, dezelfde lijst als de sidebar, gefilterd met dezelfde
+ * `magTabbladZien`: een gebruiker ziet hier precies de pagina's die hij ook in de sidebar
+ * ziet. Hier staat alleen wat het startscherm zelf toevoegt.
  */
-const GROEPEN: Groep[] = [
+const BLOKKEN: Blok[] = [
   {
     fig: "FIG 0.1",
-    kopje: "KPI's",
+    groep: "kpis",
     titel: "Key performance indicators",
-    omschrijving: "De kerncijfers van dit jaar en de targets voor 2027.",
+    omschrijving: "De targets voor 2027 per website en per Syntec-bron.",
     illustratie: <KpiIllustratie />,
-    paginas: [
-      { view: "kpi-overzicht", label: "KPI's 2026", icon: <IconChartBar /> },
-      { view: "kpi-2027", label: "KPI's 2027 GA", icon: <IconTrendUp /> },
-      { view: "kpi-2027-syntec", label: "KPI's 2027 Syntec", icon: <IconTarget /> },
-    ],
   },
   {
     fig: "FIG 0.2",
-    kopje: "Kanalen",
+    groep: "kanalen",
     titel: "Online kanalen analyseren",
     omschrijving: "Wat elk online kanaal deed: betaald, organisch en de website.",
     illustratie: <KanalenIllustratie />,
-    paginas: [
-      { view: "social-ads", label: "Social ads", icon: <IconAdHeart /> },
-      { view: "google-ads", label: "Google Ads", icon: <IconSearch /> },
-      { view: "organisch", label: "Social organisch", icon: <IconPhoto /> },
-      { view: "account-ontwikkeling", label: "Social accounts", icon: <IconUserCircle /> },
-      { view: "website", label: "Website", icon: <IconGlobe /> },
-      { view: "leads", label: "Leads", icon: <IconTarget /> },
-    ],
   },
   {
     fig: "FIG 0.3",
-    kopje: "Tools",
+    groep: "tools",
     titel: "Interne data",
     omschrijving: "De leads uit Syntec en het klantenbestand uit Selligent.",
     illustratie: <InterneDataIllustratie />,
-    paginas: [
-      { view: "leads-syntec", label: "Leads Syntec", icon: <IconUsers /> },
-      { view: "selligent", label: "Selligent", icon: <IconMail /> },
-      { view: "budget-beheer", label: "Budget beheer", icon: <IconCoin /> },
-      { view: "landingspagina", label: "Landingspagina", icon: <IconGlobe /> },
-    ],
   },
   {
     fig: "FIG 0.4",
-    kopje: "Campagnes",
+    groep: "campagnes",
     titel: "Campagnes monitoren",
     omschrijving: "Alle campagnes, hun looptijd en het beheer ervan.",
     illustratie: <CampagnesIllustratie />,
-    paginas: [
-      { view: "campagnes", label: "Campagnes", icon: <IconMegaphone /> },
-      { view: "tijdlijn", label: "Tijdlijn", icon: <IconCalendar /> },
-      { view: "campagnebeheer", label: "Campagnebeheer", icon: <IconSettings /> },
-    ],
   },
 ];
 
@@ -111,39 +74,45 @@ export default function HomeDashboard({ onNavigate, gebruikerEmail }: Props) {
       <h1 className="titel-theme text-center text-ink">Marketing dashboard</h1>
 
       <div className="mt-8 grid grid-cols-2 gap-6">
-        {GROEPEN.map((groep) => (
-          <GroepBlok
-            key={groep.titel}
-            groep={groep}
-            paginas={groep.paginas.filter((pg) => magTabbladZien(pg.view, gebruikerEmail))}
-            onNavigate={onNavigate}
-          />
-        ))}
+        {BLOKKEN.map((blok) => {
+          const groep = navGroep(blok.groep);
+          return (
+            <GroepBlok
+              key={blok.groep}
+              blok={blok}
+              kopje={groep.naam}
+              paginas={zichtbarePaginas(groep, gebruikerEmail)}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function GroepBlok({
-  groep,
+  blok,
+  kopje,
   paginas,
   onNavigate,
 }: {
-  groep: Groep;
-  paginas: Pagina[];
+  blok: Blok;
+  kopje: string;
+  paginas: NavPagina[];
   onNavigate: (view: DashboardView) => void;
 }) {
   return (
     <section className="iso-blok kaart-accent kaart-omlijst flex flex-col rounded-panel border border-line bg-card shadow-card">
       <div className="relative px-7 pt-6">
-        <span className="font-mono text-label tracking-[0.08em] text-ink-faint">{groep.fig}</span>
-        <div className="mx-auto mt-1 h-[230px] max-w-[380px]">{groep.illustratie}</div>
+        <span className="font-mono text-label tracking-[0.08em] text-ink-faint">{blok.fig}</span>
+        <div className="mx-auto mt-1 h-[230px] max-w-[380px]">{blok.illustratie}</div>
       </div>
 
       <div className="flex flex-1 flex-col px-7 pb-6 pt-4">
-        <p className="label-theme text-label text-ink-faint">{groep.kopje}</p>
-        <h2 className="mt-0.5 font-sans-w7 text-base font-bold text-ink">{groep.titel}</h2>
-        <p className="mt-1 text-meta text-ink-muted">{groep.omschrijving}</p>
+        <p className="label-theme text-label text-ink-faint">{kopje}</p>
+        <h2 className="mt-0.5 font-sans-w7 text-base font-bold text-ink">{blok.titel}</h2>
+        <p className="mt-1 text-meta text-ink-muted">{blok.omschrijving}</p>
 
         {paginas.length > 0 ? (
           <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-line-soft pt-3">
