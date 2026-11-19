@@ -162,57 +162,135 @@ export function KanalenIllustratie() {
   );
 }
 
-/** Tools: een bedieningspaneel met drie schuiven; bij hover schuiven de knoppen een stukje op. */
-export function ToolsIllustratie() {
-  const s = 20;
-  const p = maakProjectie(143, 70, s);
-  const b = 7;
-  const d = 5;
-  const h = 0.5;
-  const sleuven = [
-    { y: 1.1, kx: 1.4, verschuif: 1.4 },
-    { y: 2.5, kx: 4.2, verschuif: -1.2 },
-    { y: 3.9, kx: 2.4, verschuif: 1.9 },
+/**
+ * Een liggende cilinder (schijf) op het grondvlak: zijkant met de onderste halve ellips,
+ * daarboven de volledige bovenellips. Een cirkel met straal r wordt in deze projectie een
+ * ellips van 1,22·r breed en 0,71·r hoog (× schaal).
+ */
+function Schijf({
+  p,
+  s,
+  x,
+  y,
+  z,
+  r,
+  h,
+  band = false,
+}: {
+  p: Projectie;
+  s: number;
+  x: number;
+  y: number;
+  z: number;
+  r: number;
+  h: number;
+  band?: boolean;
+}) {
+  const rx = 1.2247 * r * s;
+  const ry = 0.7071 * r * s;
+  const [cx, onder] = p(x, y, z);
+  const boven = p(x, y, z + h)[1];
+  const midden = (onder + boven) / 2;
+  const f = (n: number) => n.toFixed(1);
+  return (
+    <g>
+      <path
+        d={`M${f(cx - rx)},${f(boven)} L${f(cx - rx)},${f(onder)} A${f(rx)},${f(ry)} 0 0 0 ${f(cx + rx)},${f(onder)} L${f(cx + rx)},${f(boven)} Z`}
+      />
+      {band && (
+        <path
+          fill="none"
+          strokeOpacity={0.6}
+          d={`M${f(cx - rx)},${f(midden)} A${f(rx)},${f(ry)} 0 0 0 ${f(cx + rx)},${f(midden)}`}
+        />
+      )}
+      <ellipse cx={f(cx)} cy={f(boven)} rx={f(rx)} ry={f(ry)} />
+    </g>
+  );
+}
+
+/**
+ * Interne data: een database van drie schijven met datablokjes erboven; bij hover komen
+ * de schijven los van elkaar en stijgen de blokjes op.
+ */
+export function InterneDataIllustratie() {
+  const s = 18;
+  const p = maakProjectie(160, 130, s);
+  const r = 2.4;
+  const h = 0.85;
+  const tussen = 1.15;
+  const lagen = [0, 1, 2];
+  const top = (lagen.length - 1) * tussen + h;
+  const blokjes = [
+    { x: -0.9, y: -0.2, z: 0.9 },
+    { x: 0.3, y: -0.9, z: 1.5 },
+    { x: 0.5, y: 0.4, z: 2.2 },
   ];
 
   return (
-    <Tekening label="Bedieningspaneel met drie schuiven" viewBox="44 44 232 158">
-      <Blok p={p} x={0} y={0} z={0} b={b} d={d} h={h} />
-      {sleuven.map((sl, i) => (
-        <g key={i}>
-          <polyline fill="none" points={pts([p(0.6, sl.y, h), p(b - 0.6, sl.y, h)])} />
-          {/* maatstreepjes langs de sleuf */}
-          {[1, 2, 3, 4, 5, 6].map((t) => (
-            <polyline
-              key={t}
-              fill="none"
-              strokeOpacity={0.6}
-              points={pts([p(t, sl.y + 0.28, h), p(t, sl.y + 0.45, h)])}
-            />
-          ))}
-          <g
-            className="iso-beweeg"
-            style={beweeg(sl.verschuif * 0.866 * s, sl.verschuif * 0.5 * s, i * 60)}
-          >
-            <Blok p={p} x={sl.kx - 0.35} y={sl.y - 0.3} z={h} b={0.7} d={0.6} h={0.75} />
-          </g>
+    <Tekening label="Database van drie schijven met datablokjes" viewBox="92 -2 136 174">
+      {lagen.map((i) => (
+        <g key={i} className="iso-beweeg" style={beweeg(0, -i * 4)}>
+          <Schijf p={p} s={s} x={0} y={0} z={i * tussen} r={r} h={h} band />
+          {/* statuslampjes op de voorkant */}
+          {[0, 1, 2].map((l) => {
+            const [lx, ly] = p(1.2 + l * 0.35, 1.9 - l * 0.35, i * tussen + h * 0.5);
+            return <circle key={l} cx={lx.toFixed(1)} cy={ly.toFixed(1)} r={1.4} />;
+          })}
+        </g>
+      ))}
+      {blokjes.map((b, j) => (
+        <g key={j} className="iso-beweeg" style={beweeg(0, -12 - j * 4, 100 + j * 60)}>
+          <Blok p={p} x={b.x} y={b.y} z={top + b.z} b={0.55} d={0.55} h={0.55} />
         </g>
       ))}
     </Tekening>
   );
 }
 
-/** Campagnes: een rij staande panelen als een tijdlijn; bij hover loopt er een golf doorheen. */
+/**
+ * Campagnes monitoren: een billboard met een advertentie erop en een doelwit (de
+ * doelgroep) ervoor; bij hover komt het doelwit ring voor ring omhoog en de poster een
+ * fractie mee.
+ */
 export function CampagnesIllustratie() {
   const s = 16;
-  const p = maakProjectie(139, 112, s);
-  const hoogtes = [5.4, 4.6, 3.9, 3.3, 2.7, 2.2, 1.8, 1.4, 1.1, 0.8];
+  const p = maakProjectie(150, 95, s);
+  // Billboard langs de x-as; het zichtbare voorvlak ligt op y = 0,25.
+  const vy = 0.25;
+  const pz = 2.2;
+  const ph = 3.4;
+  const vlak = (x1: number, z1: number, x2: number, z2: number) =>
+    pts([p(x1, vy, z1), p(x2, vy, z1), p(x2, vy, z2), p(x1, vy, z2)]);
+  const lijn = (x1: number, x2: number, z: number) => pts([p(x1, vy, z), p(x2, vy, z)]);
 
   return (
-    <Tekening label="Rij staande panelen als een tijdlijn" viewBox="72 10 170 199">
-      {hoogtes.map((hoogte, i) => (
-        <g key={i} className="iso-beweeg" style={beweeg(0, -4, i * 35)}>
-          <Blok p={p} x={i * 0.7} y={0} z={0} b={0.22} d={4} h={hoogte} />
+    <Tekening label="Billboard met advertentie en een doelwit" viewBox="33 -11 233 233">
+      {/* grondplaat, zodat billboard en doelwit op hetzelfde vlak staan */}
+      <Blok p={p} x={-0.6} y={-0.6} z={-0.25} b={7.5} d={7.6} h={0.25} />
+      <Blok p={p} x={1.1} y={0} z={0} b={0.25} d={0.25} h={pz} />
+      <Blok p={p} x={4.9} y={0} z={0} b={0.25} d={0.25} h={pz} />
+      <g className="iso-beweeg" style={beweeg(0, -3)}>
+        <Blok p={p} x={0} y={0} z={pz} b={6.3} d={vy} h={ph} />
+        {/* de advertentie: beeldvlak met een "zon", kop, twee regels en een knop */}
+        <polygon points={vlak(0.4, pz + 0.4, 3.1, pz + ph - 0.4)} />
+        <polyline
+          fill="none"
+          strokeOpacity={0.6}
+          points={pts([p(0.6, vy, pz + 0.9), p(1.5, vy, pz + 1.9), p(2.1, vy, pz + 1.4), p(2.9, vy, pz + 2.3)])}
+        />
+        <polyline fill="none" points={lijn(3.5, 5.8, pz + ph - 0.7)} />
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(3.5, 5.4, pz + ph - 1.25)} />
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(3.5, 5.0, pz + ph - 1.65)} />
+        <polygon points={vlak(3.5, pz + 0.45, 5.0, pz + 0.95)} />
+      </g>
+      {[
+        { r: 2.1, i: 0 },
+        { r: 1.4, i: 1 },
+        { r: 0.7, i: 2 },
+      ].map(({ r, i }) => (
+        <g key={i} className="iso-beweeg" style={beweeg(0, -(i + 1) * 3, 60 + i * 70)}>
+          <Schijf p={p} s={s} x={4.1} y={4.3} z={i * 0.3} r={r} h={0.3} />
         </g>
       ))}
     </Tekening>

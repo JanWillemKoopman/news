@@ -23,13 +23,15 @@ import {
   CampagnesIllustratie,
   KanalenIllustratie,
   KpiIllustratie,
-  ToolsIllustratie,
+  InterneDataIllustratie,
 } from "@/components/home/Illustraties";
 
 type Pagina = { view: DashboardView; label: string; icon: React.ReactNode };
 
 type Groep = {
   fig: string;
+  /** Klein, grijs kopje boven de titel: de naam van de groep in de sidebar. */
+  kopje: string;
   titel: string;
   omschrijving: string;
   illustratie: React.ReactNode;
@@ -45,7 +47,8 @@ type Groep = {
 const GROEPEN: Groep[] = [
   {
     fig: "FIG 0.1",
-    titel: "KPI's",
+    kopje: "KPI's",
+    titel: "Key performance indicators",
     omschrijving: "De kerncijfers van dit jaar en de targets voor 2027.",
     illustratie: <KpiIllustratie />,
     paginas: [
@@ -56,7 +59,8 @@ const GROEPEN: Groep[] = [
   },
   {
     fig: "FIG 0.2",
-    titel: "Kanalen",
+    kopje: "Kanalen",
+    titel: "Online kanalen analyseren",
     omschrijving: "Wat elk kanaal deed: betaald, organisch, de website en de leads.",
     illustratie: <KanalenIllustratie />,
     paginas: [
@@ -72,9 +76,10 @@ const GROEPEN: Groep[] = [
   },
   {
     fig: "FIG 0.3",
-    titel: "Tools",
+    kopje: "Tools",
+    titel: "Interne data",
     omschrijving: "Budget bewaken en landingspagina's laten beoordelen.",
-    illustratie: <ToolsIllustratie />,
+    illustratie: <InterneDataIllustratie />,
     paginas: [
       { view: "budget-beheer", label: "Budget beheer", icon: <IconCoin /> },
       { view: "landingspagina", label: "Landingspagina", icon: <IconGlobe /> },
@@ -82,7 +87,8 @@ const GROEPEN: Groep[] = [
   },
   {
     fig: "FIG 0.4",
-    titel: "Campagnes",
+    kopje: "Campagnes",
+    titel: "Campagnes monitoren",
     omschrijving: "Alle campagnes, hun looptijd en het beheer ervan.",
     illustratie: <CampagnesIllustratie />,
     paginas: [
@@ -135,7 +141,8 @@ function GroepBlok({
       </div>
 
       <div className="flex flex-1 flex-col px-7 pb-6 pt-4">
-        <h2 className="font-sans-w7 text-base font-bold text-ink">{groep.titel}</h2>
+        <p className="label-theme text-label text-ink-faint">{groep.kopje}</p>
+        <h2 className="mt-0.5 font-sans-w7 text-base font-bold text-ink">{groep.titel}</h2>
         <p className="mt-1 text-meta text-ink-muted">{groep.omschrijving}</p>
 
         {paginas.length > 0 ? (

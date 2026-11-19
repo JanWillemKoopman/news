@@ -79,7 +79,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - **Het dashboard opent op een startscherm** (view `home`, `components/home/HomeDashboard.tsx`,
   november 2026 op verzoek). Bovenaan gecentreerd "Marketing dashboard" (geen PageHeader),
   daaronder vier blokken in een raster van 2 × 2: **KPI's** (linksboven), **Kanalen**
-  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok is een groep
+  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok heeft een
+  klein grijs kopje met de groepsnaam uit de sidebar en daaronder een eigen titel (`kopje` en
+  `titel` in `GROEPEN`): Key performance indicators, Online kanalen analyseren, Interne data
+  en Campagnes monitoren. Elk blok is een groep
   uit de sidebar en toont dezelfde pagina's met hetzelfde label en icoon, zodat het
   startscherm naar elk tabblad doorverwijst. Voeg je in `Sidebar.tsx` een tabblad toe, zet
   hem dan ook in `GROEPEN`. Wie een tabblad niet mag zien (`lib/beperkteTabbladen.ts`), ziet
@@ -92,7 +95,8 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in
   `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
   er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
-  kubussen komen omhoog, schuiven schuiven op, een golf door de panelen); uit bij
+  kubussen komen omhoog, bij Interne data komen de databaseschijven los en stijgen de
+  datablokjes op, bij Campagnes komt het doelwit voor het billboard ring voor ring omhoog); uit bij
   `prefers-reduced-motion`. Houd die beweging klein.
 
 ### De campagnetabel
