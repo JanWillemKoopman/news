@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { IconChevronDown } from "@/components/icons";
 import KpiJaarGrafiek, { type VergelijkLijn } from "@/components/kpi/KpiJaarGrafiek";
 import KanaalGrafiek from "@/components/kpi/KanaalGrafiek";
 import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
@@ -12,7 +13,7 @@ import type { KpiOverzichtRegel, KpiUitkomst, WebsiteOverzicht } from "@/lib/kpi
 /**
  * Eén KPI: bovenaan de vier getallen waar het overleg om draait (2026 inclusief
  * verwachting, het target voor 2027, de groei in procenten en de realisatie van 2027),
- * daaronder de jaargrafiek en in kleine letters welke GA4-cijfers erin zitten.
+ * daaronder de jaargrafiek en, ingeklapt achter "Lees definitie", welke GA4-cijfers erin zitten.
  *
  * De bron staat onder elke grafiek en niet één keer onderaan de pagina: een target is pas
  * bruikbaar als iedereen weet wat er precies geteld wordt, en de events verschillen per
@@ -306,11 +307,41 @@ export function KpiKaartOpmaak({
         <p className="mt-3 text-sm text-ink-muted">Nog geen stand voor deze website.</p>
       )}
 
-      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">
+      <Definitie>
         {toonWissel && wissel?.toelichting}
         {children}
-      </footer>
+      </Definitie>
     </section>
+  );
+}
+
+/**
+ * De toelichting onder de grafiek (bron, wat telt mee, keuzes), standaard ingeklapt achter
+ * een balk "Lees definitie" — op verzoek (november 2026): uitgeschreven onder elke kaart
+ * maakte dat de pagina onrustig. Eén klik klapt hem per kaart uit; de inhoud blijft
+ * volledig, hij staat alleen niet meer standaard in beeld.
+ */
+function Definitie({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <footer className="mt-3 border-t border-line-soft pt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-control px-1 py-1 text-left text-meta text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint hover:text-ink"
+      >
+        <span>{open ? "Verberg definitie" : "Lees definitie"}</span>
+        <IconChevronDown
+          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-[var(--duur-snel)] ease-merk ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div id={id} hidden={!open} className="px-1 pt-1.5 pb-0.5 text-meta text-ink-faint">
+        {children}
+      </div>
+    </footer>
   );
 }
 

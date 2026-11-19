@@ -13,18 +13,16 @@ import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
  *  2. **Bron**: uit welk systeem, welke leads (kanaalgroep Internet) en op welke datum geteld;
  *  3. **Wat telt mee**: per regel kanaal + onderwerp, met de periode en het aantal — bij een
  *     totaal of combinatie welke KPI's erin zitten;
- *  4. **Keuzes**: de beslissingen die tot deze definitie leidden, in gewone taal;
- *  5. **Controle**: wat de definitie over 2025 telt, × 1,2, naast het doel 2026 — zo waren
- *     de doelen gesteld, dus komt dat in de buurt, dan klopt de definitie.
+ *  4. **Keuzes**: de beslissingen die tot deze definitie leidden, in gewone taal.
+ *
+ * Er stond ook een controleregel (telling 2025 × 1,2 naast het doel 2026); die is er in
+ * november 2026 op verzoek af, want achterhaald. De toelichting staat standaard ingeklapt
+ * achter "Lees definitie" (`KpiKaartOpmaak`).
  *
  * Net als bij KPI's 2027 staat dit onder elke grafiek en niet één keer onderaan de pagina:
  * een target is pas bruikbaar als iedereen weet wat er geteld wordt, en hier verschilt dat
  * per KPI én per periode (zie `lib/kpi2027syntec/definities.ts`).
  */
-
-const VORIG_JAAR = KPI_JAAR - 1;
-/** De factor waarmee het team de doelen voor 2026 uit de telling van 2025 afleidde. */
-const DOELFACTOR = 1.2;
 
 /** "2026-04-01" → "1 april 2026". */
 function datumLang(datum: string): string {
@@ -120,21 +118,6 @@ export default function KpiSyntecKaart({
         </>
       )}
 
-      <p className="mt-2">
-        <span className="text-ink-muted">Controle op de definitie:</span>{" "}
-        {kpi.vorigJaar !== null ? (
-          <>
-            met deze definitie telde heel {VORIG_JAAR} {aantal(kpi.vorigJaar)} leads; ×{" "}
-            {String(DOELFACTOR).replace(".", ",")} = {aantal(kpi.vorigJaar * DOELFACTOR)}. Het doel {KPI_JAAR} was{" "}
-            {aantal(kpi.doel2026)}: de doelen voor {KPI_JAAR} zijn destijds gesteld als de telling van {VORIG_JAAR} + 20%.
-            Liggen die twee getallen dicht bij elkaar, dan telt deze definitie hetzelfde als waarop het doel is
-            gebaseerd; een groot verschil wordt bij de keuzes{isSom ? " van de losse KPI's" : ""} verklaard. Dit is
-            alleen een controle en telt niet mee in de verwachting of het target.
-          </>
-        ) : (
-          <>het doel {KPI_JAAR} was {aantal(kpi.doel2026)}. Dit telt niet mee in de verwachting of het target.</>
-        )}
-      </p>
       {toonEerdereJaren && kpi.eerdereJaren.length > 0 && (
         <p className="mt-1">
           <span className="text-ink-muted">Dunne lijnen {kpi.eerdereJaren.map((j) => j.jaar).join(" en ")}:</span>{" "}

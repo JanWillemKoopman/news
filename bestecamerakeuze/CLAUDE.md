@@ -815,9 +815,14 @@ realisatie van 2027.
   bijgeschat is — anders leest de half gemeten lopende maand als een instorting, en de
   Porsche-uitval als een ravijn. Het maandtarget is een vlakke lijn. As vanaf nul; onder de
   tien op één decimaal, anders vallen lijn en target bij de kleine KPI's samen. Onder elke
-  grafiek in kleine letters welke GA4-statistiek of welke events (met periode en aantal)
+  grafiek, ingeklapt achter de balk "Lees definitie" (zie hieronder), welke GA4-statistiek of welke events (met periode en aantal)
   erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
   de koppeling verandert.
+- **De toelichting onder een grafiek staat standaard ingeklapt** (november 2026, op verzoek,
+  op KPI's 2027 GA én Syntec): een balk "Lees definitie" met een pijltje klapt hem per kaart
+  uit (`Definitie` in `KpiKaart.tsx`, gedeeld via `KpiKaartOpmaak`). Volledig uitgeschreven
+  onder elke kaart maakte de pagina onrustig. De inhoud blijft volledig; zet hem niet weer
+  standaard open zonder dat daarom gevraagd wordt.
 - **Lijn 2025 op udenhout.nl** (november 2026, op verzoek): een derde, dunnere lijn in elke
   grafiek van die tab, met 2025 per maand zoals gemeten. Hij telt **nergens** mee (niet in de
   verwachting, niet in het target) en is alleen context. Alleen udenhout.nl heeft hem
@@ -937,9 +942,10 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   totalen waar ze in zitten ook dat januari t/m maart is bijgeschat) en *Bron* (Syntec via
   het sheet-tabblad Data leads, kanaalgroep Internet, geteld op de datum Aangelegd), dan
   *Wat telt mee* (elke regel met de periode waarin hij leads oplevert en het aantal),
-  *Keuzes in de definitie* (het veld `keuzes` per KPI in `definities.ts`, in gewone taal) en
-  een *Controle*: wat de definitie over heel 2025 telt × 1,2, naast het doel 2026 — zo
-  waren de doelen gesteld, dus dat getal laat zien of de definitie klopt. Een nieuwe KPI
+  en *Keuzes in de definitie* (het veld `keuzes` per KPI in `definities.ts`, in gewone
+  taal). De *Controle* (telling 2025 × 1,2 naast het doel 2026) is er in november 2026 op
+  verzoek af: achterhaald. `vorigJaar` en `doel2026` worden nog wel uitgerekend, maar niet
+  meer getoond. Een nieuwe KPI
   zonder keuzes, of een regel van de eigen website zonder periode, laat de test falen.
   Verander je een definitie, pas dan de keuzes in dezelfde wijziging aan.
 - **De naamswissel van april 2026.** Tot en met maart had elk formulier van udenhout.nl
