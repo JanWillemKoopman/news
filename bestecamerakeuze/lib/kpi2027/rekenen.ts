@@ -530,10 +530,14 @@ export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Verg
  * bronnen als de grafiek. Gebruikt als controle naast de kanaalverdeling, en die dekt
  * alleen de property van de website zelf: een optellende externe bron (udenhoutlease.nl
  * bij zakelijke lease) blijft hier daarom buiten, anders lijkt elke maand waarin die
- * meetelt een verschil.
+ * meetelt een verschil. Een maand waarin een **vervangende** bron telt (Porsche-werkplaats
+ * t/m oktober 2026: de werkplaatsplanning) heeft geen controle (null): de grafiek telt dan
+ * afspraken uit de planning, de kanaalverdeling online aanvragen in GA4.
  */
 export function kpiMaandTotaal(definitie: KpiDefinitie, stand: KpiStand, maand: string): number | null {
   if (!maand.startsWith(`${stand.jaar}-`) || `${maand}-01` > stand.peildatum) return null;
+  const extern = definitie.externeBron;
+  if (extern && !extern.optellen && `${maand}-01` <= extern.tot) return null;
   if (definitie.bron.soort === "gebruikers") return Math.max(0, Number(stand.gebruikers[Number(maand.slice(5, 7)) - 1]) || 0);
   const zonderOptellen = definitie.externeBron?.optellen ? { ...definitie, externeBron: undefined } : definitie;
   let som = 0;

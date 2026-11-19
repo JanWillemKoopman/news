@@ -142,6 +142,9 @@ export default function KpiKaart({
                   {opgeteld
                     ? ` De aanvragen uit ${opgeteld.naam} zitten er niet in: dat is een andere GA4-property, de verdeling gaat alleen over ${website.domein}.`
                     : ""}
+                  {vervangend
+                    ? ` De verdeling is altijd Google Analytics, ook in de maanden waarin de grafiek ${vervangend.naam} telt (t/m ${datumKort(vervangend.tot)}): ${vervangend.naam} kent geen kanaal. In die maanden gaat de verdeling dus over de online aanvragen die GA4 zag, en GA4 mat die toen grotendeels niet — een lege of kleine staaf zegt daar niets.`
+                    : ""}
                 </p>
               ),
             }

@@ -2,7 +2,7 @@ import { getal, tekst, type WindsorRij } from "@/lib/windsor/api";
 import { eventBron, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/definities";
 
 /**
- * De kanaalverdeling achter het knopje "Kanalen" op KPI's 2027 GA (nu alleen udenhout.nl):
+ * De kanaalverdeling achter het knopje "Kanalen" op KPI's 2027 GA (elke website):
  * per KPI en per maand, vanaf januari 2025, welk deel uit welk kanaal kwam.
  *
  * Pure functies, getest in `kanalen.test.ts`. Het ophalen en bewaren staat in
@@ -30,12 +30,19 @@ import { eventBron, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/def
  * Pepper; Meta-advertenties met de plaatsing als medium (`fb / Facebook_Mobile_Feed`,
  * `ig / Instagram_Stories`) heten "Unassigned"; en "Paid Search" gooit Google en Bing op
  * één hoop. De regels hieronder zijn gemaakt op wat udenhout.nl werkelijk binnenkrijgt
- * (november 2026 geïnventariseerd over 2025 en 2026).
+ * (november 2026 geïnventariseerd over 2025 en 2026) en daarna nagelopen op de andere vijf
+ * websites (Porsche Brabant en Maastricht, PGZ, Bentley, VELOO). Daar kwam bij: `Google /
+ * Ads` en `Google / Ads-Extensie` (handmatig getagde advertenties), de Belgische
+ * Marktplaats (2dehands, 2ememain), Elferspot, mobile.de en Porsche Finder als portal, en
+ * `google / product_sync` (gratis productvermeldingen van de VELOO-webshop) als organisch.
+ * Merksites van fietsmerken (Gazelle, Kalkhoff, Urban Arrow) en `porsche.com` zijn
+ * verwijzingen, net als de merksites van udenhout.nl.
  *
  * De regels, in deze volgorde (de eerste die past, wint):
  *
  *  1. Leeg, "(not set)" of "(data not available)" → Verwijzingen & overig (onbekend).
- *  2. **Betaald**: medium `cpc`, `ppc`, `cpm`, `cpv`, `display` of iets met "paid" — of een
+ *  2. **Betaald**: medium `cpc`, `ppc`, `cpm`, `cpv`, `display`, iets met "paid" of iets
+ *     dat met "ads" begint (`Google / Ads-Extensie`) — of een
  *     Meta-bron (`facebook`, `fb`, `instagram`, `ig`) met een medium dat geen verwijzing,
  *     social, organic of e-mail is: dat zijn de plaatsingsnamen uit Meta-advertenties.
  *     Google → **Google Ads**, Meta → **Meta Ads**, al het andere (Bing, LinkedIn, DPG,
@@ -43,14 +50,15 @@ import { eventBron, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/def
  *  3. **AI-assistenten** (ChatGPT, Perplexity, Gemini, Copilot, Claude) → Verwijzingen &
  *     overig, vóór de regel voor organisch: `chatgpt.com / organic` is geen zoekmachine.
  *     Te klein voor een eigen kleur (±0,2% van de sessies).
- *  4. **Autoportals** (Gaspedaal, AutoTrack, AutoScout24, Marktplaats, JP.cars,
- *     AutoWereld, ViaBOVAG), ongeacht het medium: `gaspedaal / app` hoort erbij.
+ *  4. **Autoportals** (Gaspedaal, AutoTrack, AutoScout24, Marktplaats en 2dehands,
+ *     JP.cars, AutoWereld, ViaBOVAG, mobile.de, Elferspot, Porsche Finder), ongeacht het
+ *     medium: `gaspedaal / app` hoort erbij.
  *  5. **Direct**: `(direct)` of medium `(none)`.
  *  6. **Social organisch**: medium `social`, of een socialmediabron (Facebook, Instagram,
  *     LinkedIn, WhatsApp, X, YouTube, TikTok, Pinterest, Linktree …) zonder betaald medium.
  *  7. **Organisch zoeken**: medium `organic`, het Google Bedrijfsprofiel (`gmb`,
  *     `googlemijnbedrijf / vermelding`) en verwijzingen van zoekmachines
- *     (`nl.search.yahoo.com`, `search.brave.com`). Het Bedrijfsprofiel telt hier mee zoals
+ *     (`nl.search.yahoo.com`, `search.brave.com`), en `google / product_sync`. Het Bedrijfsprofiel telt hier mee zoals
  *     GA4 het ook doet; als eigen groep zou het een negende kleur kosten.
  *  8. Al het andere → **Verwijzingen & overig**: e-mail (de nieuwsbrief), merksites
  *     (`werkplaats.volkswagen.nl`), Pepper, de eigen leasesites, interne links (Teams,
@@ -86,7 +94,7 @@ export const KANALEN = [
   {
     sleutel: "autoportals",
     naam: "Autoportals",
-    uitleg: "Occasionsites: Gaspedaal (site en app), AutoTrack, AutoScout24, Marktplaats, JP.cars.",
+    uitleg: "Occasionsites: Gaspedaal (site en app), AutoTrack, AutoScout24, Marktplaats/2dehands, JP.cars, mobile.de, Elferspot, Porsche Finder.",
   },
   {
     sleutel: "direct",
@@ -106,7 +114,20 @@ export type KanaalSleutel = (typeof KANALEN)[number]["sleutel"];
 const BETAALDE_MEDIA = new Set(["cpc", "ppc", "cpm", "cpv", "display", "paidsearch", "paidsocial"]);
 const META = ["facebook", "fb", "instagram", "ig", "meta"];
 const AI = ["chatgpt", "openai", "perplexity", "gemini", "copilot", "claude"];
-const AUTOPORTALS = ["gaspedaal", "autotrack", "autoscout24", "marktplaats", "jp.cars", "autowereld", "viabovag"];
+const AUTOPORTALS = [
+  "gaspedaal",
+  "autotrack",
+  "autoscout24",
+  "marktplaats",
+  "2dehands",
+  "2ememain",
+  "jp.cars",
+  "autowereld",
+  "viabovag",
+  "mobile.de",
+  "elferspot",
+  "finder.porsche.com",
+];
 const SOCIAL = [
   "facebook",
   "fb",
@@ -144,7 +165,7 @@ function bronIs(bron: string, namen: readonly string[]): boolean {
 
 function isBetaaldMedium(medium: string): boolean {
   const m = medium.replace(/[\s_-]/g, "");
-  return BETAALDE_MEDIA.has(m) || m.startsWith("paid");
+  return BETAALDE_MEDIA.has(m) || m.startsWith("paid") || m.startsWith("ads");
 }
 
 /** Het kanaal van één `bron / medium` (zie de regels in de kop). */
@@ -164,7 +185,7 @@ export function kanaalVoor(bronMedium: string): KanaalSleutel {
   if (AUTOPORTALS.some((p) => bron.includes(p))) return "autoportals";
   if (bron === "(direct)" || medium === "(none)") return "direct";
   if (medium === "social" || bronIs(bron, SOCIAL)) return "social-organisch";
-  if (BEDRIJFSPROFIEL.includes(bron) || medium === "organic") return "organisch-zoeken";
+  if (BEDRIJFSPROFIEL.includes(bron) || medium === "organic" || medium === "product_sync") return "organisch-zoeken";
   if (ZOEKMACHINES.some((z) => bron.includes(z))) return "organisch-zoeken";
   return "overig";
 }
@@ -190,7 +211,10 @@ export interface KanaalVerdeling {
   van: string;
   /** T/m welke dag: de laatste zaterdag, net als de standen. */
   peildatum: string;
-  /** Per bron (`sessies`, `gebruikers`, `event:<naam>`) per maand per bron/medium. */
+  /**
+   * Per bron (`sessies`, `gebruikers`, `aankopen`, `event:<naam>`, `event:<naam>@<pad>`)
+   * per maand per bron/medium — dezelfde bronsleutels als `kpi_2027_standen`.
+   */
   bronnen: Record<string, MaandPerBronMedium>;
   /** De staart: per bron per maand al per kanaal (volgens de regels). */
   staart: Record<string, MaandPerKanaal>;
@@ -221,13 +245,15 @@ function telOp<T extends string>(doel: Record<string, Record<string, Partial<Rec
 }
 
 /**
- * Van Windsor-rijen naar de verdeling. `verkeer` heeft per maand × bron/medium sessies en
- * actieve gebruikers (de uitgesloten hosts zijn daar al als filter weggelaten), `events`
- * per maand × bron/medium × event × hostname het aantal keer gevuurd.
+ * Van Windsor-rijen naar de verdeling. `verkeer` heeft per maand × bron/medium sessies,
+ * actieve gebruikers en (VELOO) aankopen (de uitgesloten hosts zijn daar al als filter
+ * weggelaten), `events` per maand × bron/medium × event × hostname het aantal keer gevuurd,
+ * en `padEvents` hetzelfde voor elk event met een padvoorwaarde (Bentley: Contactaanvraag
+ * op /caw-bedankt/offerte/), per bronsleutel (`eventBron`) een eigen opvraging.
  */
 export function verdelingUitRijen(
   website: KpiWebsite,
-  rijen: { verkeer: WindsorRij[]; events: WindsorRij[] },
+  rijen: { verkeer: WindsorRij[]; events: WindsorRij[]; padEvents?: Record<string, WindsorRij[]> },
   peildatum: string,
   gezocht: readonly string[],
   max: number = BRON_MEDIA_MAX,
@@ -258,12 +284,20 @@ export function verdelingUitRijen(
     const bm = tekst(rij.session_source_medium) ?? "";
     tel("sessies", maand, bm, getal(rij.sessions));
     tel("gebruikers", maand, bm, getal(rij.active_users));
+    if (rij.ecommerce_purchases !== undefined) tel("aankopen", maand, bm, getal(rij.ecommerce_purchases));
   }
   for (const rij of rijen.events) {
     const maand = maandSleutel(rij.year_month);
     const naam = tekst(rij.event_name);
     if (!maand || !naam || !events.has(naam) || uitgesloten.has(tekst(rij.hostname) ?? "")) continue;
     tel(`event:${naam}`, maand, tekst(rij.session_source_medium) ?? "", getal(rij.event_count));
+  }
+  for (const [bron, padRijen] of Object.entries(rijen.padEvents ?? {})) {
+    for (const rij of padRijen) {
+      const maand = maandSleutel(rij.year_month);
+      if (!maand || uitgesloten.has(tekst(rij.hostname) ?? "")) continue;
+      tel(bron, maand, tekst(rij.session_source_medium) ?? "", getal(rij.event_count));
+    }
   }
 
   const staartRijen = gesorteerd.slice(max);
@@ -334,9 +368,9 @@ function bronnenVoor(definitie: KpiDefinitie): string[] {
     case "gebruikers":
       return ["gebruikers"];
     case "aankopen":
-      return [];
+      return ["aankopen"];
     case "events":
-      return definitie.bron.events.filter((e) => !e.paginaBevat).map(eventBron);
+      return definitie.bron.events.map(eventBron);
   }
 }
 

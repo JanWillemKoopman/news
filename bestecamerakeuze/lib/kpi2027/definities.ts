@@ -160,7 +160,8 @@ export interface KpiWebsite {
   vergelijkingsjaar?: Vergelijkingsjaar;
   /**
    * Optioneel: het knopje "Kanalen" op elke grafiek, met per maand vanaf januari 2025 het
-   * aandeel per kanaal (`lib/kpi2027/kanalen.ts`). Nu alleen udenhout.nl.
+   * aandeel per kanaal (`lib/kpi2027/kanalen.ts`). Staat op elke website aan (udenhout.nl
+   * sinds november 2026, de andere vijf een paar dagen later, op verzoek).
    */
   kanaalverdeling?: boolean;
   kpis: readonly KpiDefinitie[];
@@ -366,6 +367,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     // www. en zonder www. zijn allebei de live site. De tweede property met dezelfde naam
     // ("(inactief)") wordt niet gebruikt: de aanvragen staan in deze.
     uitgeslotenHosts: [],
+    kanaalverdeling: true,
     kpis: porscheKpis("brabant"),
   },
   {
@@ -374,6 +376,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "porschecentrummaastricht.nl",
     property: "306394313",
     uitgeslotenHosts: [],
+    kanaalverdeling: true,
     kpis: porscheKpis("maastricht"),
   },
   {
@@ -382,6 +385,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "pgz.nl",
     property: "405407306",
     uitgeslotenHosts: ["staging.pgz.nl"],
+    kanaalverdeling: true,
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -420,6 +424,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "bentley-maastricht.nl",
     property: "435349999",
     uitgeslotenHosts: ["bentley-maastricht.acc2.ddp.uname-it.digital", "pon-test-maastricht.uname-it.digital"],
+    kanaalverdeling: true,
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -465,6 +470,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "veloo.nl",
     property: "381559171",
     uitgeslotenHosts: ["www.johnvermeulenfietsplezier.nl", "gtm-msr.appspot.com"],
+    kanaalverdeling: true,
     kpis: [
       SESSIES,
       {

@@ -7,6 +7,9 @@ import { haalWebsiteStand } from "@/lib/kpi2027/ophalen";
 import { haalKanaalVerdeling, schrijfKanaalVerdeling } from "@/lib/kpi2027/kanalenBron";
 import { isDefinitief, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
 
+/** Hoeveel kanaalverdelingen de cron tegelijk ophaalt (zie de lus onderaan). */
+const KANALEN_TEGELIJK = 3;
+
 /**
  * De wekelijkse bijwerking van het tabblad KPI's 2027, voor alle websites, los van wie hem
  * start.
@@ -23,8 +26,9 @@ import { isDefinitief, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
  *    t/m 31 december en als definitief weggeschreven; daarna verandert de basis niet meer
  *    (alleen de knop kan hem nog forceren). Tegelijk begint de stand van 2027: de
  *    realisatie die tegen het target wordt afgezet, elke week t/m zaterdag, tot 2027 voorbij is.
- *  - **De kanaalverdeling** (`kanaalverdeling` in `definities.ts`, udenhout.nl) wordt elke
- *    week opnieuw opgehaald, van januari 2025 t/m de zaterdag (`kanalenBron.ts`).
+ *  - **De kanaalverdeling** (`kanaalverdeling` in `definities.ts`, elke website) wordt elke
+ *    week opnieuw opgehaald, van januari 2025 t/m de zaterdag (`kanalenBron.ts`), drie
+ *    websites tegelijk.
  *  - **Het vergelijkingsjaar** van een website (`vergelijkingsjaar` in `definities.ts`,
  *    udenhout.nl: 2025) wordt één keer opgehaald en is meteen definitief.
  *
@@ -140,17 +144,25 @@ export async function werkKpiStandenBij(
       if (opdracht) resultaten.push(await werkWebsiteBij(client, website, opdracht, false));
     }
     // De kanaalverdeling (knopje "Kanalen"): elke week opnieuw over de hele periode, t/m
-    // dezelfde zaterdag als de standen.
+    // dezelfde zaterdag als de standen. Drie websites tegelijk (elk twee of drie
+    // opvragingen): na elkaar past zes keer bijna twee jaar niet ruim in de 300 seconden.
     const zaterdag = laatsteZaterdag(opties.nu ?? new Date());
-    for (const website of KPI_WEBSITES.filter((w) => w.kanaalverdeling)) {
-      const basis = { website: `${website.sleutel} (kanalen)`, jaar: KPI_JAAR, peildatum: zaterdag };
-      try {
-        const verdeling = await haalKanaalVerdeling(website, zaterdag);
-        await schrijfKanaalVerdeling(client, verdeling);
-        resultaten.push({ ...basis, status: "bijgewerkt", rijen: Object.keys(verdeling.bronnen).length });
-      } catch (err) {
-        resultaten.push({ ...basis, status: "mislukt", rijen: 0, fout: err instanceof Error ? err.message : String(err) });
-      }
+    const metKanalen = KPI_WEBSITES.filter((w) => w.kanaalverdeling);
+    for (let i = 0; i < metKanalen.length; i += KANALEN_TEGELIJK) {
+      const groep = metKanalen.slice(i, i + KANALEN_TEGELIJK);
+      const uitkomsten = await Promise.all(
+        groep.map(async (website): Promise<WebsiteUitkomst> => {
+          const basis = { website: `${website.sleutel} (kanalen)`, jaar: KPI_JAAR, peildatum: zaterdag };
+          try {
+            const verdeling = await haalKanaalVerdeling(website, zaterdag);
+            await schrijfKanaalVerdeling(client, verdeling);
+            return { ...basis, status: "bijgewerkt", rijen: Object.keys(verdeling.bronnen).length };
+          } catch (err) {
+            return { ...basis, status: "mislukt", rijen: 0, fout: err instanceof Error ? err.message : String(err) };
+          }
+        }),
+      );
+      resultaten.push(...uitkomsten);
     }
 
     const fouten = resultaten.filter((r) => r.status === "mislukt");

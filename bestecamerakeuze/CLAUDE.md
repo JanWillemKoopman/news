@@ -853,7 +853,8 @@ realisatie van 2027.
     opnieuw op. Rekenwerk: `vergelijkingVoor` in `rekenen.ts`, getest.
   - Een andere website erbij = `vergelijkingsjaar` op die website zetten, nadat in Windsor
     is nagekeken dat dat jaar volledig gemeten is en met dezelfde events.
-- **Knopje "Kanalen" op udenhout.nl** (november 2026, op verzoek): rechtsboven op elke kaart
+- **Knopje "Kanalen" op elke website** (november 2026, op verzoek; eerst udenhout.nl, een paar
+  dagen later ook Porsche Brabant en Maastricht, PGZ, Bentley en VELOO): rechtsboven op elke kaart
   een klein schuifje (`WisselKnop` / `GrafiekWissel` in `KpiKaart.tsx`) dat de grafiek op
   dezelfde plek vervangt door een gestapelde staafgrafiek tot 100% (`KanaalGrafiek.tsx`):
   per maand vanaf januari 2025 t/m de lopende maand het aandeel per kanaal. Geen targets.
@@ -865,15 +866,27 @@ realisatie van 2027.
     `kpiMaandTotaal` in `rekenen.ts`); zo niet, dan staat het KPI-cijfer erbij. Een
     **optellende** externe bron (udenhoutlease.nl bij zakelijke lease) is een andere
     property en zit dus niet in de verdeling: de controle laat hem buiten, en onder de
-    grafiek staat dat die aanvragen er niet in zitten.
+    grafiek staat dat die aanvragen er niet in zitten. Een **vervangende** externe bron
+    (Porsche-werkplaats t/m oktober 2026: de werkplaatsplanning) kent geen kanaal: in die
+    maanden is de verdeling gewoon GA4 (toen grotendeels niet gemeten), heeft de tooltip geen
+    controlecijfer (`kpiMaandTotaal` geeft null) en zegt de regel onder de grafiek dat.
+  - **Alle soorten bron doen mee**, net als in `ophalen.ts`: events met een padvoorwaarde
+    (Bentley: Contactaanvraag op /caw-bedankt/offerte/) krijgen een eigen opvraging met
+    hetzelfde `page_path`-filter, en VELOO's productaankopen komen uit `ecommerce_purchases`
+    in de verkeersopvraging (bron `aankopen`). Een nieuwe soort bron in `definities.ts` moet
+    hier dus ook bij, anders blijft die kanaalgrafiek leeg.
   - **De indeling** (`lib/kpi2027/kanalen.ts`, getest op de bron/media die udenhout.nl echt
-    binnenkrijgt): acht groepen, in de volgorde van de stapel — Google Ads, Meta Ads, Overig
+    binnenkrijgt, en nagelopen in Windsor op de andere vijf websites): acht groepen, in de volgorde van de stapel — Google Ads, Meta Ads, Overig
     betaald, Organisch zoeken (incl. Google Bedrijfsprofiel), Social organisch,
     Autoportals (Gaspedaal e.a.), Direct, Verwijzingen & overig. Bewust niet GA4's eigen
     kanaalgroep en niet `lib/leads/kanaal.ts`: Gaspedaal (na Google Ads de grootste bron) is
     daar "Referral", Meta-advertenties met de plaatsing als medium "Unassigned". Acht is het
     maximum: meer kleuren is in een gestapelde staaf niet te lezen. De regels en de
     redenering staan in de kop van `kanalen.ts`; pas een regel daar aan, met een testgeval.
+    Erbij gekomen voor de andere websites: medium dat met "ads" begint is betaald (`Google /
+    Ads-Extensie` bij Porsche), 2dehands/2ememain, Elferspot, mobile.de en Porsche Finder zijn
+    autoportals, `google / product_sync` (VELOO-webshop) is organisch. Merksites (porsche.com,
+    fietsmerken) blijven verwijzingen; VELOO heeft geen autoportals, die kleur blijft daar leeg.
   - **Kleuren**: vaste volgorde per kanaal (`LICHT`/`DONKER` in `KanaalGrafiek.tsx`),
     doorgerekend op onderscheid (ook bij kleurenblindheid), "Verwijzingen & overig" grijs.
     Bewust niet de themakleuren: die reeks heeft er zes.
@@ -883,8 +896,10 @@ realisatie van 2027.
     in `staart` (volgens de regels), zodat de rij klein blijft. De indeling gebeurt bij het
     lezen (`kanalenVoorKpi`), dus een aangepaste regel of handmatige keuze geldt meteen voor
     de losse bron/media; de staart volgt een gewijzigde regel pas na de volgende
-    ophaalronde. Elke zondag opnieuw over de hele periode in de cron (`bijwerken.ts`); staat
-    er nog niets, dan haalt de eerste klik hem op (`/api/kpi-2027/kanalen`, `kanalenBron.ts`).
+    ophaalronde. Elke zondag opnieuw over de hele periode in de cron (`bijwerken.ts`, drie
+    websites tegelijk, `KANALEN_TEGELIJK`, zodat zes websites in de 300 seconden passen);
+    staat er nog niets, dan haalt de eerste klik hem op (`/api/kpi-2027/kanalen`,
+    `kanalenBron.ts`). Handmatige keuzes gelden per website.
   - **Knop "Kanaalgroepindeling"** rechts in de statusbalk (alleen op een website met
     `kanaalverdeling`): een brede zijbalk (`KanaalIndeling.tsx`, `Drawer` met `breed`) met de
     losse bron/media op sessies, hun kanaalgroep en per regel een keuzelijst. Een keuze gaat

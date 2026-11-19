@@ -2,7 +2,7 @@ import { Client } from "pg";
 import { haalOp, isWindsorGeconfigureerd, type WindsorRij } from "@/lib/windsor/api";
 import { metVerbinding } from "@/lib/kanalen/bron";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
-import { gewoneEvents, type KpiWebsite } from "@/lib/kpi2027/definities";
+import { eventBron, gewoneEvents, heeftAankopen, padEvents, type KpiWebsite } from "@/lib/kpi2027/definities";
 import { eventFilter, hostUitsluiting } from "@/lib/kpi2027/ophalen";
 import { KANALEN_VANAF, verdelingUitRijen, type KanaalVerdeling } from "@/lib/kpi2027/kanalen";
 
@@ -10,14 +10,16 @@ import { KANALEN_VANAF, verdelingUitRijen, type KanaalVerdeling } from "@/lib/kp
  * Ophalen, bewaren en lezen van de kanaalverdeling (`kpi_2027_kanalen`, migratie 0037).
  * De indeling zelf staat in `kanalen.ts`.
  *
- * Twee opvragingen bij Windsor, van 1 januari 2025 t/m de peildatum, per maand ×
- * sessiebron/medium:
+ * Opvragingen bij Windsor, van 1 januari 2025 t/m de peildatum, per maand ×
+ * sessiebron/medium — dezelfde als `ophalen.ts` voor de standen:
  *
- *  1. Sessies en actieve gebruikers. De uitgesloten hosts gaan als filter mee, zonder
- *     hostname als dimensie — dezelfde reden als in `ophalen.ts`: per hostname opgeteld
- *     tellen sessies dubbel.
+ *  1. Sessies en actieve gebruikers, en bij VELOO ook `ecommerce_purchases`. De
+ *     uitgesloten hosts gaan als filter mee, zonder hostname als dimensie — dezelfde reden
+ *     als in `ophalen.ts`: per hostname opgeteld tellen sessies dubbel.
  *  2. De events van de KPI's (`event_count`), met hostname als dimensie; de uitgesloten
  *     hosts vallen in `verdelingUitRijen` weg.
+ *  3. Per event met een padvoorwaarde (Bentley: Contactaanvraag op /caw-bedankt/offerte/)
+ *     een eigen opvraging, met hetzelfde filter op `page_path` als de stand.
  *
  * Elke week opnieuw over de hele periode (in de cron en met "Nu bijwerken"), zodat een
  * aangepaste indeling binnen een week overal geldt. Bestaat er nog geen verdeling, dan
@@ -31,10 +33,13 @@ export async function haalKanaalVerdeling(
 ): Promise<KanaalVerdeling> {
   const accounts = [website.property];
   const events = gewoneEvents(website);
-  const [verkeer, eventRijen] = await Promise.all([
+  const metPad = padEvents(website);
+  const [verkeer, eventRijen, padRijen] = await Promise.all([
     haal(
       "googleanalytics4",
-      ["year_month", "session_source_medium", "sessions", "active_users"],
+      heeftAankopen(website)
+        ? ["year_month", "session_source_medium", "sessions", "active_users", "ecommerce_purchases"]
+        : ["year_month", "session_source_medium", "sessions", "active_users"],
       KANALEN_VANAF,
       peildatum,
       hostUitsluiting(website.uitgeslotenHosts),
@@ -50,11 +55,25 @@ export async function haalKanaalVerdeling(
           accounts,
         )
       : Promise.resolve([] as WindsorRij[]),
+    Promise.all(
+      metPad.map((e) =>
+        haal(
+          "googleanalytics4",
+          ["year_month", "session_source_medium", "hostname", "event_count"],
+          KANALEN_VANAF,
+          peildatum,
+          [["event_name", "eq", e.naam], "and", ["page_path", "contains", e.paginaBevat ?? ""]],
+          accounts,
+        ),
+      ),
+    ),
   ]);
   if (verkeer.length === 0) {
     throw new Error(`${website.naam}: GA4 gaf geen sessies per bron/medium; de vorige verdeling blijft staan.`);
   }
-  return verdelingUitRijen(website, { verkeer, events: eventRijen }, peildatum, events);
+  const padEventRijen: Record<string, WindsorRij[]> = {};
+  metPad.forEach((e, i) => (padEventRijen[eventBron(e)] = padRijen[i]));
+  return verdelingUitRijen(website, { verkeer, events: eventRijen, padEvents: padEventRijen }, peildatum, events);
 }
 
 /** Schrijft de verdeling van één website weg; overschrijft de vorige. */

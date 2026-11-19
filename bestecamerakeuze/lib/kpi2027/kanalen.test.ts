@@ -239,3 +239,106 @@ test("een handmatige keuze gaat vóór de regels, in elke grafiek en in de tabel
   assert.deepEqual(regels[1], { bronMedium: "nl.pepper.com / referral", sessies: 40, regel: "overig", kanaal: "autoportals", handmatig: true });
   assert.equal(regels[0].handmatig, false);
 });
+
+test("de bron/media van de andere vijf websites, nagelopen in november 2026", () => {
+  const verwacht: Record<string, string> = {
+    // Handmatig getagde Google-advertenties (Porsche).
+    "Google / Ads": "google-ads",
+    "Google / Ads-Extensie": "google-ads",
+    "google / paid": "google-ads",
+    "l.facebook.com / paid": "meta-ads", // VELOO
+    "facebook / paid": "meta-ads",
+    "linkedin / paid": "overig-betaald",
+    // Portals: de Belgische Marktplaats, Elferspot, mobile.de en Porsche Finder.
+    "2dehands / referral": "autoportals",
+    "2ememain / referral": "autoportals",
+    "elferspot.com / referral": "autoportals",
+    "home.mobile.de / referral": "autoportals",
+    "finder.porsche.com / referral": "autoportals",
+    "autoscout24.be / referral": "autoportals",
+    // Gratis productvermeldingen van de VELOO-webshop.
+    "google / product_sync": "organisch-zoeken",
+    "gmb / organic": "organisch-zoeken",
+    // Merksites en mail blijven verwijzingen.
+    "porsche.com / referral": "overig",
+    "configurator.porsche.com / referral": "overig",
+    "gazelle.nl / referral": "overig",
+    "kalkhoff-bikes.com / referral": "overig",
+    "campaign / email": "overig",
+    "SAPHybris / email": "overig",
+    "chatgpt.com / ai-assistant": "overig",
+  };
+  for (const [bm, kanaal] of Object.entries(verwacht)) assert.equal(kanaalVoor(bm), kanaal, bm);
+});
+
+test("elke website heeft de kanaalverdeling, en elke KPI telt uit een bron die de verdeling ophaalt", () => {
+  for (const sleutel of ["udenhout", "porsche-brabant", "porsche-maastricht", "pgz", "bentley", "veloo"]) {
+    assert.equal(vindWebsite(sleutel)?.kanaalverdeling, true, sleutel);
+  }
+});
+
+test("Bentley: een event met padvoorwaarde telt mee in de verdeling, uitgesloten hosts niet", () => {
+  const bentley = vindWebsite("bentley")!;
+  const offerte = bentley.kpis.find((k) => k.sleutel === "offerteaanvragen")!;
+  const v = verdelingUitRijen(
+    bentley,
+    {
+      verkeer: [{ year_month: "202605", session_source_medium: "facebook / paid", sessions: 100, active_users: 80 }],
+      events: [
+        { year_month: "202610", session_source_medium: "google / cpc", event_name: "generate_lead_offerte", hostname: "www.bentley-maastricht.nl", event_count: 2 },
+      ],
+      padEvents: {
+        "event:Contactaanvraag@/caw-bedankt/offerte/": [
+          { year_month: "202605", session_source_medium: "facebook / paid", hostname: "www.bentley-maastricht.nl", event_count: 3 },
+          { year_month: "202605", session_source_medium: "facebook / paid", hostname: "pon-test-maastricht.uname-it.digital", event_count: 9 },
+        ],
+      },
+    },
+    "2026-10-31",
+    ["generate_lead_offerte"],
+  );
+  const maanden = kanalenVoorKpi(offerte, v).maanden;
+  const mei = maanden.find((m) => m.maand === "2026-05")!;
+  const okt = maanden.find((m) => m.maand === "2026-10")!;
+  assert.equal(mei.totaal, 3);
+  assert.equal(mei.perKanaal[KANALEN.findIndex((k) => k.sleutel === "meta-ads")], 3);
+  assert.equal(okt.totaal, 2);
+});
+
+test("VELOO: productaankopen per kanaal, uit ecommerce_purchases", () => {
+  const veloo = vindWebsite("veloo")!;
+  const aankopen = veloo.kpis.find((k) => k.bron.soort === "aankopen")!;
+  const v = verdelingUitRijen(
+    veloo,
+    {
+      verkeer: [
+        { year_month: "202603", session_source_medium: "google / cpc", sessions: 500, active_users: 400, ecommerce_purchases: 4 },
+        { year_month: "202603", session_source_medium: "gmb / organic", sessions: 100, active_users: 90, ecommerce_purchases: 1 },
+      ],
+      events: [],
+    },
+    "2026-03-31",
+    [],
+  );
+  const maart = kanalenVoorKpi(aankopen, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(maart.totaal, 5);
+  assert.equal(maart.perKanaal[KANALEN.findIndex((k) => k.sleutel === "google-ads")], 4);
+  assert.equal(maart.perKanaal[KANALEN.findIndex((k) => k.sleutel === "organisch-zoeken")], 1);
+});
+
+test("controle naast de kanaalverdeling: geen KPI-cijfer in maanden met een vervangende bron", async () => {
+  const { kpiMaandTotaal } = await import("@/lib/kpi2027/rekenen");
+  const werkplaats = vindWebsite("porsche-brabant")!.kpis.find((k) => k.sleutel === "werkplaatsafspraken")!;
+  assert.ok(werkplaats.externeBron && !werkplaats.externeBron.optellen, "de planning vervangt GA4");
+  const stand = {
+    website: "porsche-brabant",
+    jaar: 2026,
+    peildatum: "2026-11-14",
+    berekendOp: "2026-11-15T10:15:00Z",
+    definitief: false,
+    dagen: { "event:generate_lead_werkplaats": { "2026-09-10": 2, "2026-11-03": 4 } },
+    gebruikers: new Array(12).fill(0),
+  };
+  assert.equal(kpiMaandTotaal(werkplaats, stand, "2026-09"), null);
+  assert.equal(kpiMaandTotaal(werkplaats, stand, "2026-11"), 4);
+});
