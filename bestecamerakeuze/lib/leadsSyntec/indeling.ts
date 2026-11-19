@@ -1,5 +1,5 @@
 /**
- * Hoe een lead uit Syntec wordt ingedeeld: internet of offline, en welk merk.
+ * Hoe een lead uit Syntec wordt ingedeeld: online of offline, en welk merk.
  *
  * Het model wordt bewust **niet** ingedeeld: op verzoek (november 2026) staat het precies
  * zoals in de kolom Model van de sheet, dus "POLO" en "Polo (6) GP" zijn twee waarden.
@@ -12,11 +12,15 @@
  */
 
 // ---------------------------------------------------------------------------
-// Internet of offline
+// Online of offline
 // ---------------------------------------------------------------------------
 
 /**
- * De kolom die internet en offline scheidt is **Kanaalgroep**: "Internet" tegenover
+ * Op het dashboard heet het **Online** (op verzoek van de eigenaar, november 2026); in Syntec
+ * heet die kanaalgroep "Internet". De sheetwaarde blijft daarom `INTERNET_GROEP`, de naam op
+ * het scherm is `ONLINE`.
+ *
+ * De kolom die online en offline scheidt is **Kanaalgroep**: "Internet" tegenover
  * Showroom, Acquisitie, Mail en Telefoon. De sheet heeft ook een kolom "Status" met
  * Online/Offline, maar dat is de status van de *campagne* (een lookup uit de Campagnes-tab,
  * alleen gevuld bij de ±18% leads met een campagne) en zegt niets over de lead zelf.
@@ -26,21 +30,26 @@
  */
 export const INTERNET_GROEP = "Internet";
 
-export type Herkomst = "internet" | "offline";
+/** De naam op het scherm voor de kanaalgroep "Internet". */
+export const ONLINE = "Online";
+
+export type Herkomst = "online" | "offline";
 
 export function herkomstVan(kanaalgroep: string): Herkomst {
-  return kanaalgroep.trim() === INTERNET_GROEP ? "internet" : "offline";
+  return kanaalgroep.trim() === INTERNET_GROEP ? "online" : "offline";
 }
 
-/** Leesbare naam voor een kanaalgroep; een lege waarde krijgt een naam. */
+/** Leesbare naam voor een kanaalgroep: "Internet" heet Online, een lege waarde krijgt een naam. */
 export const GEEN_KANAALGROEP = "Geen kanaalgroep";
 
 export function kanaalgroepLabel(kanaalgroep: string): string {
-  return kanaalgroep.trim() || GEEN_KANAALGROEP;
+  const s = kanaalgroep.trim();
+  if (s === INTERNET_GROEP) return ONLINE;
+  return s || GEEN_KANAALGROEP;
 }
 
-/** De vaste volgorde van de kanaalgroepen: internet eerst, daarna offline op grootte. */
-export const KANAALGROEP_VOLGORDE = [INTERNET_GROEP, "Showroom", "Acquisitie", "Mail", "Telefoon", GEEN_KANAALGROEP];
+/** De vaste volgorde van de kanaalgroepen (zoals op het scherm): online eerst, dan offline op grootte. */
+export const KANAALGROEP_VOLGORDE = [ONLINE, "Showroom", "Acquisitie", "Mail", "Telefoon", GEEN_KANAALGROEP];
 
 // ---------------------------------------------------------------------------
 // Merk

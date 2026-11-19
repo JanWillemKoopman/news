@@ -9,13 +9,15 @@ import {
   kanaalgroepLabel,
 } from "@/lib/leadsSyntec/indeling";
 
-test("internet is alleen kanaalgroep Internet; de rest en leeg is offline", () => {
-  assert.equal(herkomstVan("Internet"), "internet");
-  assert.equal(herkomstVan(" Internet "), "internet");
+test("online is alleen kanaalgroep Internet; de rest en leeg is offline", () => {
+  assert.equal(herkomstVan("Internet"), "online");
+  assert.equal(herkomstVan(" Internet "), "online");
   for (const groep of ["Showroom", "Acquisitie", "Mail", "Telefoon", ""]) {
     assert.equal(herkomstVan(groep), "offline", groep);
   }
   assert.equal(kanaalgroepLabel(""), GEEN_KANAALGROEP);
+  // In Syntec heet de kanaalgroep "Internet"; op het scherm heet hij Online.
+  assert.equal(kanaalgroepLabel("Internet"), "Online");
   assert.equal(kanaalgroepLabel("Mail"), "Mail");
 });
 

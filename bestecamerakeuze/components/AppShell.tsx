@@ -140,7 +140,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   "leads-syntec": {
     title: "Leads Syntec",
     subtitle:
-      "Alle leads die bij Van den Udenhout binnenkomen, uit Syntec: per merk, model en kanaal, uitgesplitst in internet en offline.",
+      "Alle leads die bij Van den Udenhout binnenkomen, uit Syntec: per merk, model en kanaal, uitgesplitst in online en offline.",
   },
   selligent: {
     title: "Selligent",

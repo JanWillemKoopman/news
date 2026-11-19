@@ -223,7 +223,7 @@ export default function Sidebar({
           )}
           {/* Leads Syntec staat direct onder Leads: niet wat de website afvuurt, maar alle
               leads die bij Van den Udenhout binnenkomen (Syntec, via het sheet-tabblad
-              "Data leads"), per merk, model en kanaal en uitgesplitst in internet en offline.
+              "Data leads"), per merk, model en kanaal en uitgesplitst in online en offline.
               Voor iedereen zichtbaar. */}
           <NavigationItem
             icon={<IconUsers />}

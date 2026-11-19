@@ -4,15 +4,15 @@ import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { formatteer } from "@/components/chat/chartTheme";
 import { IconDownload } from "@/components/icons";
 import { downloadCsv } from "@/lib/csv";
-import { INTERNET_GROEP, KANAALGROEP_VOLGORDE } from "@/lib/leadsSyntec/indeling";
+import { KANAALGROEP_VOLGORDE, ONLINE } from "@/lib/leadsSyntec/indeling";
 import { groepeer, type Groep, type SyntecRegel } from "@/lib/leadsSyntec/samenvatting";
 
 /**
  * Kanalen × merk: per kanaal hoeveel leads er binnenkwamen, in totaal en per merk.
  *
- * De rijen staan in twee blokken, **Internet** en **Offline**, elk met een eigen
+ * De rijen staan in twee blokken, **Online** en **Offline**, elk met een eigen
  * subtotaal; binnen Offline nog eens per kanaalgroep (Showroom, Acquisitie, Mail,
- * Telefoon). Zo staat de splitsing internet/offline in de tabel zelf en niet in een extra
+ * Telefoon). Zo staat de splitsing online/offline in de tabel zelf en niet in een extra
  * kolom — de kolommen zijn voor de merken.
  *
  * Een merkkolom verschijnt alleen als er in de selectie leads voor dat merk zijn: met het
@@ -39,7 +39,7 @@ interface Blok {
   label: string;
   /** Subtotaal van het blok. */
   totaal: Groep;
-  /** Kanaalgroepen binnen het blok (Offline), of één groep zonder kop (Internet). */
+  /** Kanaalgroepen binnen het blok (Offline), of één groep zonder kop (Online). */
   groepen: { naam: string | null; totaal: Groep; kanalen: Groep[] }[];
 }
 
@@ -55,7 +55,7 @@ export default function SyntecKanaalMatrix({ regels, merken, toelichting }: Prop
       const i = KANAALGROEP_VOLGORDE.indexOf(groep);
       return i === -1 ? KANAALGROEP_VOLGORDE.length : i;
     };
-    const maakBlok = (sleutel: "internet" | "offline", label: string): Blok | null => {
+    const maakBlok = (sleutel: "online" | "offline", label: string): Blok | null => {
       const eigen = regels.filter((r) => r.herkomst === sleutel);
       const subtotaal = groepeer(eigen, () => label)[0];
       if (!subtotaal) return null;
@@ -67,7 +67,7 @@ export default function SyntecKanaalMatrix({ regels, merken, toelichting }: Prop
         label,
         totaal: subtotaal,
         groepen: perGroep.map((g) => ({
-          naam: sleutel === "internet" && g.sleutel === INTERNET_GROEP ? null : g.sleutel,
+          naam: sleutel === "online" && g.sleutel === ONLINE ? null : g.sleutel,
           totaal: g,
           kanalen: groepeer(
             eigen.filter((r) => r.kanaalgroep === g.sleutel),
@@ -77,7 +77,7 @@ export default function SyntecKanaalMatrix({ regels, merken, toelichting }: Prop
       };
     };
     return {
-      blokken: [maakBlok("internet", "Internet"), maakBlok("offline", "Offline")].filter(
+      blokken: [maakBlok("online", ONLINE), maakBlok("offline", "Offline")].filter(
         (b): b is Blok => b !== null,
       ),
       totaal: alles ?? null,

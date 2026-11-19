@@ -181,14 +181,14 @@ export function filterRegels(regels: SyntecRegel[], f: SyntecFilters, periode: P
 
 export interface Telling {
   totaal: number;
-  internet: number;
+  online: number;
   offline: number;
 }
 
-export const NUL: Telling = { totaal: 0, internet: 0, offline: 0 };
+export const NUL: Telling = { totaal: 0, online: 0, offline: 0 };
 
 export function tel(regels: SyntecRegel[]): Telling {
-  const t = { totaal: 0, internet: 0, offline: 0 };
+  const t = { totaal: 0, online: 0, offline: 0 };
   for (const r of regels) {
     t.totaal += r.aantal;
     t[r.herkomst] += r.aantal;
@@ -203,7 +203,7 @@ export interface Groep extends Telling {
 }
 
 /**
- * Groepeert regels op een sleutel en telt per groep het totaal, internet, offline en per
+ * Groepeert regels op een sleutel en telt per groep het totaal, online, offline en per
  * merk. Gesorteerd op het totaal (groot eerst), bij gelijke stand op naam.
  */
 export function groepeer(regels: SyntecRegel[], sleutelVan: (r: SyntecRegel) => string): Groep[] {
@@ -212,7 +212,7 @@ export function groepeer(regels: SyntecRegel[], sleutelVan: (r: SyntecRegel) => 
     const s = sleutelVan(r);
     let g = groepen.get(s);
     if (!g) {
-      g = { sleutel: s, totaal: 0, internet: 0, offline: 0, perMerk: {} };
+      g = { sleutel: s, totaal: 0, online: 0, offline: 0, perMerk: {} };
       groepen.set(s, g);
     }
     g.totaal += r.aantal;
@@ -226,7 +226,7 @@ export function groepeer(regels: SyntecRegel[], sleutelVan: (r: SyntecRegel) => 
 export function tellingVan(groepen: Groep[] | undefined, sleutel: string): Telling | null {
   if (!groepen) return null;
   const g = groepen.find((x) => x.sleutel === sleutel);
-  return g ? { totaal: g.totaal, internet: g.internet, offline: g.offline } : NUL;
+  return g ? { totaal: g.totaal, online: g.online, offline: g.offline } : NUL;
 }
 
 /** Opties voor een keuzelijst, op volgorde van grootte. */
@@ -327,7 +327,7 @@ export interface ReeksPunt {
   begin: string;
   /** Laatste dag van het vak binnen de periode. */
   eind: string;
-  internet: number;
+  online: number;
   offline: number;
   /**
    * Valt het vak helemaal binnen de periode, met complete dagen? Niet bij een eerste of
@@ -375,7 +375,7 @@ export function reeks(
     const punt: ReeksPunt = {
       begin: begin < periode.van ? periode.van : begin,
       eind: laatste > periode.tot ? periode.tot : laatste,
-      internet: 0,
+      online: 0,
       offline: 0,
       volledig:
         begin >= periode.van &&

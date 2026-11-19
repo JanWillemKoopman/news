@@ -47,15 +47,16 @@ test("pakUit deelt merk en herkomst in; het model blijft letterlijk", () => {
   assert.deepEqual(
     regels.map((r) => [r.herkomst, r.merk, r.model]),
     [
-      ["internet", "Volkswagen", "POLO"],
+      ["online", "Volkswagen", "POLO"],
       ["offline", "Volkswagen", "Polo (6) GP"],
       ["offline", "Overige merken", "Fiesta"],
       ["offline", "Onbekend", "Onbekend"],
-      ["internet", "Volkswagen Bedrijfswagens", "Caddy"],
-      ["internet", "Volkswagen", "POLO"],
+      ["online", "Volkswagen Bedrijfswagens", "Caddy"],
+      ["online", "Volkswagen", "POLO"],
     ],
   );
   assert.equal(regels[3].kanaalgroep, "Geen kanaalgroep");
+  assert.equal(regels[0].kanaalgroep, "Online");
   assert.equal(regels[3].ordersoort, "Onbekend");
   assert.equal(regels[0].soort, "Offerte");
   assert.equal(regels[2].dubbel, true);
@@ -67,8 +68,8 @@ test("filteren: periode, herkomst, dubbel en 'of' binnen een filter", () => {
   const nov2026 = { van: "2026-11-01", tot: "2026-11-30" };
   assert.equal(tel(filterRegels(regels, GEEN_FILTERS, nov2026)).totaal, 15);
   assert.equal(tel(filterRegels(regels, GEEN_FILTERS, null)).totaal, 22);
-  assert.deepEqual(tel(filterRegels(regels, GEEN_FILTERS, nov2026)), { totaal: 15, internet: 7, offline: 8 });
-  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, herkomst: "internet" }, nov2026)).totaal, 7);
+  assert.deepEqual(tel(filterRegels(regels, GEEN_FILTERS, nov2026)), { totaal: 15, online: 7, offline: 8 });
+  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, herkomst: "online" }, nov2026)).totaal, 7);
   assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, zonderDubbel: true }, nov2026)).totaal, 13);
   assert.equal(
     tel(filterRegels(regels, { ...GEEN_FILTERS, merken: ["Volkswagen", "Onbekend"] }, nov2026)).totaal,
@@ -80,11 +81,11 @@ test("filteren: periode, herkomst, dubbel en 'of' binnen een filter", () => {
   assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["Onbekend"] }, nov2026)).totaal, 1);
 });
 
-test("groeperen telt internet, offline en per merk; modelregels zijn merk plus letterlijk model", () => {
+test("groeperen telt online, offline en per merk; modelregels zijn merk plus letterlijk model", () => {
   const regels = filterRegels(pakUit(kubus()), GEEN_FILTERS, { van: "2026-11-01", tot: "2026-11-30" });
   const perKanaal = groepeer(regels, (r) => r.kanaal);
   assert.deepEqual(
-    perKanaal.map((g) => [g.sleutel, g.totaal, g.internet, g.offline]),
+    perKanaal.map((g) => [g.sleutel, g.totaal, g.online, g.offline]),
     [
       ["CST", 7, 0, 7],
       ["Udenhout.nl", 7, 7, 0],
@@ -135,7 +136,7 @@ test("vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeer
   const regels = pakUit(kubus());
   const dagen = reeks(regels, { van: "2026-11-01", tot: "2026-11-04" }, "dag");
   assert.deepEqual(
-    dagen.map((p) => [p.begin, p.internet, p.offline]),
+    dagen.map((p) => [p.begin, p.online, p.offline]),
     [
       ["2026-11-01", 0, 0],
       ["2026-11-02", 3, 5],
@@ -146,7 +147,7 @@ test("vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeer
   // Per week: 26 oktober t/m 8 november 2026 zijn twee volle weken (maandag–zondag).
   const weken = reeks(regels, { van: "2026-10-26", tot: "2026-11-08" }, "week");
   assert.deepEqual(
-    weken.map((p) => [p.begin, p.eind, p.internet + p.offline, p.volledig]),
+    weken.map((p) => [p.begin, p.eind, p.online + p.offline, p.volledig]),
     [
       ["2026-10-26", "2026-11-01", 0, true],
       ["2026-11-02", "2026-11-08", 15, true],
@@ -157,7 +158,7 @@ test("vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeer
   assert.equal(maanden[0].volledig, false);
   assert.equal(maanden[1].volledig, true);
   assert.equal(maanden[12].volledig, false);
-  assert.equal(maanden.reduce((t, p) => t + p.internet + p.offline, 0), 22);
+  assert.equal(maanden.reduce((t, p) => t + p.online + p.offline, 0), 22);
 
   // Een halve dag (de export liep halverwege) maakt zijn vak onvolledig, de rest niet.
   const metHalveDag = reeks(regels, { van: "2026-11-01", tot: "2026-11-03" }, "dag", "2026-11-03");

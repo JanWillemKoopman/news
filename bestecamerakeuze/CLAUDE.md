@@ -684,8 +684,16 @@ route `app/api/leads-syntec/route.ts`, rekenwerk in `lib/leadsSyntec/`). **Voor 
 zichtbaar.** Waar Leads toont wat udenhout.nl als GA4-event afvuurt, toont dit tabblad álle
 leads die bij Van den Udenhout binnenkomen: het sheet-tabblad "Data leads" (Syntec), dat
 `/api/sync` elke nacht naar `dataloket.v_leads` kopieert. Gevraagd (november 2026): per merk
-hoeveel leads, een totaal, overal uitgesplitst in internet en offline, en per kanaal, merk en
+hoeveel leads, een totaal, overal uitgesplitst in online en offline, en per kanaal, merk en
 model op te halen.
+
+- **Online heet overal Online, niet Internet** (verzoek van de eigenaar, november 2026): in de
+  filterknop, de kerncijfers, de tabelkolommen, de CSV, de kanalentabel, de grafiek en de
+  URL (`f.herkomst=online`; oude links met `internet` werken nog). In Syntec heet de
+  kanaalgroep wél "Internet": `INTERNET_GROEP` is de sheetwaarde, `ONLINE` de naam op het
+  scherm, en `kanaalgroepLabel` zet de ene om in de andere — ook in het filter Kanaalgroep.
+  Alleen waar uitgelegd wordt waar het cijfer vandaan komt, staat "kanaalgroep Internet in
+  Syntec".
 
 - **Wat er in de sheet staat** (onderzocht november 2026): ±110.600 regels, waarvan ±97.750
   leads (de rest zijn lege opvulregels zonder kanaal), van 1 januari 2024 t/m twee dagen
@@ -693,8 +701,8 @@ model op te halen.
   in 5 kanaalgroepen; CST (offertes die verkopers in de showroom maken) is met ±42% veruit de
   grootste bron. De campagnekolommen (Budget, Uitgaven, Doel …, Status) zijn lookups uit de
   Campagnes-tab en worden hier niet gebruikt.
-- **Internet of offline = de kolom Kanaalgroep** (`herkomstVan` in `indeling.ts`): "Internet"
-  is internet (±34%), Showroom, Acquisitie, Mail en Telefoon zijn offline. ±240 leads uit
+- **Online of offline = de kolom Kanaalgroep** (`herkomstVan` in `indeling.ts`): "Internet"
+  is online (±34%), Showroom, Acquisitie, Mail en Telefoon zijn offline. ±240 leads uit
   2024–2025 hebben geen kanaalgroep (Mailing, Pon Lead, Werkplaats, Chat) en tellen als
   offline. **Niet** de kolom Status: die zegt Online/Offline, maar dat is de status van de
   *campagne* (alleen gevuld bij leads met een campagne). Dat is precies de verwarring die
@@ -726,8 +734,8 @@ model op te halen.
   (`f.korrel`) als hij niet op week staat.
 - **De grafiek is gestapeld: Online altijd onder in blauw, Offline erbovenop in grijs**
   (verzoek van de eigenaar, november 2026; eerst groen en oranje, dat is teruggedraaid), met
-  het aantal midden in elk deel en het totaal boven de staaf. In de grafiek heet internet
-  **Online** (legenda en tooltip); op de rest van de pagina heet het nog Internet. Blauw staat
+  het aantal midden in elk deel en het totaal boven de staaf. Net als op de rest van de pagina
+  heet internet hier **Online**. Blauw staat
   per theme vast (`blauw` in `GrafiekKleuren`, `lib/themes.ts`) en is niet `categorieen[0]`,
   want die is bij Audi, SEAT en Porsche rood en bij Škoda groen; grijs is `context`. De
   tekstkleur in een deel wordt op contrast gekozen (label- of vlakkleur van het theme), ook
@@ -747,12 +755,12 @@ model op te halen.
   "A2 e-tron" bij BMW-leads; de campagnes staan al op het tabblad Campagnes), Klantsoort (62%
   leeg) en order geworden (recente leads hebben nog geen order, dus een conversiepercentage
   per periode zakt altijd naar het heden toe).
-- **Opbouw.** Filterbalk (periode, internet/offline, kanaalgroep, kanaal, merk, model, nieuw
+- **Opbouw.** Filterbalk (periode, online/offline, kanaalgroep, kanaal, merk, model, nieuw
   of gebruikt, soort aanvraag, vergelijken, zonder dubbele), vier kerncijfers, de grafiek
   (online en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
-  matrix: internet en offline als blokken met subtotaal, offline per kanaalgroep, de merken
-  als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Internet, Offline en %
-  internet, een totaalregel over álle rijen, "Onbekend" vast onderaan en een CSV-knop.
+  matrix: online en offline als blokken met subtotaal, offline per kanaalgroep, de merken
+  als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Online, Offline en %
+  online, een totaalregel over álle rijen, "Onbekend" vast onderaan en een CSV-knop.
   Bulkimports zijn als piek te zien (31 juli 2026: 476 leads VDU Retentie; 2 november 2025: ±850
   Autoline) — dat staat in "Zo lees je dit", niet weggepoetst.
 

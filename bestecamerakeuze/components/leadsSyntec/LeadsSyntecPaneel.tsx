@@ -43,14 +43,14 @@ import {
 /**
  * Leads Syntec: alle leads die bij Van den Udenhout binnenkomen, uit Syntec via het
  * sheet-tabblad "Data leads" — per merk, model en kanaal, en overal uitgesplitst in
- * internet en offline.
+ * online en offline.
  *
- * Van boven naar beneden: de filterbalk (periode, internet/offline, filters, vergelijken
+ * Van boven naar beneden: de filterbalk (periode, online/offline, filters, vergelijken
  * met vorig jaar), vier kerncijfers, de grafiek, de merken en de soort aanvraag, de
  * modellen, de kanalen per merk, en nieuw of gebruikt. Eén ophaalactie voor alle jaren;
  * alles daarna gebeurt in het geheugen.
  *
- * De indeling (wat internet is, welk merk) staat in
+ * De indeling (wat online is, welk merk) staat in
  * `lib/leadsSyntec/indeling.ts`, het rekenwerk in `lib/leadsSyntec/samenvatting.ts`, en de
  * keuzes erachter in CLAUDE.md onder "Kanalen → Leads Syntec".
  */
@@ -61,7 +61,7 @@ const MERK_KOLOMMEN = [...EIGEN_MERKEN, OVERIGE_MERKEN, ONBEKEND];
 
 const HERKOMST_KEUZES: { id: HerkomstFilter; label: string }[] = [
   { id: "alle", label: "Alle" },
-  { id: "internet", label: "Internet" },
+  { id: "online", label: "Online" },
   { id: "offline", label: "Offline" },
 ];
 
@@ -165,7 +165,7 @@ function Schakelaar({ aan, onClick, children, uit, titel }: {
 
 /** De tellingen per sleutel als map, voor de vergelijking met vorig jaar. */
 function alsMap(groepen: Groep[]): Map<string, Telling> {
-  return new Map(groepen.map((g) => [g.sleutel, { totaal: g.totaal, internet: g.internet, offline: g.offline }]));
+  return new Map(groepen.map((g) => [g.sleutel, { totaal: g.totaal, online: g.online, offline: g.offline }]));
 }
 
 /** Eén groep met een eigen sleutel, opgeteld over de gegeven regels (voor vastgezette rijen). */
@@ -268,7 +268,9 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     const herkomst = f.herkomst?.[0];
     setFilters({
       ...GEEN_FILTERS,
-      herkomst: herkomst === "internet" || herkomst === "offline" ? herkomst : "alle",
+      // "internet" is de oude naam in links van vóór de hernoeming naar Online.
+      herkomst:
+        herkomst === "online" || herkomst === "internet" ? "online" : herkomst === "offline" ? "offline" : "alle",
       zonderDubbel: f.dubbel?.[0] === "weg",
       ...Object.fromEntries(Object.entries(URL_LIJSTEN).map(([url, veld]) => [veld, f[url] ?? []])),
     });
@@ -494,7 +496,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line-soft pt-3">
-            <div className="flex rounded-control border border-line p-0.5" role="group" aria-label="Internet of offline">
+            <div className="flex rounded-control border border-line p-0.5" role="group" aria-label="Online of offline">
               {HERKOMST_KEUZES.map((k) => (
                 <button
                   key={k.id}
@@ -595,10 +597,10 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
           vergelijking={delta(totaal.totaal, totaalVorig?.totaal)}
         />
         <Kaart
-          label="Internet"
-          waarde={formatteer(totaal.internet, "aantal")}
-          toelichting={`${pct(totaal.internet)} van de leads · kanaalgroep Internet`}
-          vergelijking={delta(totaal.internet, totaalVorig?.internet)}
+          label="Online"
+          waarde={formatteer(totaal.online, "aantal")}
+          toelichting={`${pct(totaal.online)} van de leads · in Syntec kanaalgroep Internet`}
+          vergelijking={delta(totaal.online, totaalVorig?.online)}
         />
         <Kaart
           label="Offline"
@@ -634,7 +636,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       <div className="grid grid-cols-2 items-start gap-6">
         <SyntecTabel
           titel="Merken"
-          toelichting="Per merk het aantal leads, uitgesplitst in internet en offline. Overige merken (vooral occasions en inruil) zijn uit te klappen."
+          toelichting="Per merk het aantal leads, uitgesplitst in online en offline. Overige merken (vooral occasions en inruil) zijn uit te klappen."
           labelKop="Merk"
           groepen={merken.groepen}
           vastgezet={merken.vastgezet}
@@ -647,7 +649,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
         />
         <SyntecTabel
           titel="Soort aanvraag"
-          toelichting="Het Lead Type in Syntec. Alleen bij internetleads ingevuld (offerte, proefrit, private lease …); een offline lead is altijd Overig."
+          toelichting="Het Lead Type in Syntec. Alleen bij online leads ingevuld (offerte, proefrit, private lease …); een offline lead is altijd Overig."
           labelKop="Soort"
           groepen={soorten.groepen}
           vastgezet={soorten.vastgezet}
@@ -685,7 +687,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       <SyntecKanaalMatrix
         regels={selectie}
         merken={MERK_KOLOMMEN}
-        toelichting="Per kanaal hoeveel leads er binnenkwamen, per merk. Eerst internet, dan offline per kanaalgroep, elk met een subtotaal."
+        toelichting="Per kanaal hoeveel leads er binnenkwamen, per merk. Eerst online, dan offline per kanaalgroep, elk met een subtotaal."
       />
 
       <div className="grid grid-cols-2 items-start gap-6">
@@ -712,14 +714,14 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               wordt op de datum <em>Aangelegd</em>. Het telt registraties, geen personen.
             </li>
             <li>
-              <strong className="text-ink">Internet of offline</strong> volgt uit de kolom{" "}
-              <em>Kanaalgroep</em>: &quot;Internet&quot; is internet, Showroom, Acquisitie, Mail en Telefoon zijn
+              <strong className="text-ink">Online of offline</strong> volgt uit de kolom{" "}
+              <em>Kanaalgroep</em>: wat Syntec &quot;Internet&quot; noemt is online, Showroom, Acquisitie, Mail en Telefoon zijn
               offline. Een handvol oude leads zonder kanaalgroep telt als offline. De kolom <em>Status</em>{" "}
               (Online/Offline) in de sheet gaat over de campagne, niet over de lead.
             </li>
             <li>
               <strong className="text-ink">CST is de grootste bron</strong> (ruim 40% van alle leads): offertes
-              die verkopers in de showroom maken. Wie alleen de aanvragen van buitenaf wil zien, kiest Internet.
+              die verkopers in de showroom maken. Wie alleen de aanvragen van buitenaf wil zien, kiest Online.
             </li>
             <li>
               <strong className="text-ink">Modellen</strong> staan letterlijk zoals in de kolom Model van Syntec,

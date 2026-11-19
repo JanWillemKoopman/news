@@ -72,7 +72,7 @@ function vakLang(p: ReeksPunt, korrel: Korrel): string {
 interface Punt {
   label: string;
   lang: string;
-  internet: number;
+  online: number;
   offline: number;
   totaal: number;
   vorig: number | null;
@@ -200,7 +200,7 @@ function VakTooltip({ active, payload }: TooltipProps) {
       <p className="mt-1 text-ink">
         {formatteer(p.totaal, "aantal")} {p.totaal === 1 ? "lead" : "leads"}
       </p>
-      <p className="text-ink-muted">Online: {formatteer(p.internet, "aantal")}</p>
+      <p className="text-ink-muted">Online: {formatteer(p.online, "aantal")}</p>
       <p className="text-ink-muted">Offline: {formatteer(p.offline, "aantal")}</p>
       {p.vorig !== null && <p className="text-ink-muted">Vorig jaar: {formatteer(p.vorig, "aantal")}</p>}
       {!p.volledig && (
@@ -230,10 +230,10 @@ export default function SyntecGrafiek({
         return {
           label: vakLabel(p, korrel),
           lang: vakLang(p, korrel),
-          internet: p.internet,
+          online: p.online,
           offline: p.offline,
-          totaal: p.internet + p.offline,
-          vorig: v ? v.internet + v.offline : null,
+          totaal: p.online + p.offline,
+          vorig: v ? v.online + v.offline : null,
           volledig: p.volledig,
         };
       }),
@@ -319,12 +319,12 @@ export default function SyntecGrafiek({
             />
             <Tooltip content={<VakTooltip />} cursor={{ fill: kleuren.raster }} />
             {/* Volgorde = stapelvolgorde: online onderop, offline erbovenop. */}
-            <Bar dataKey="internet" name="Online" stackId="leads" fill={kleuren.blauw} isAnimationActive={false}>
+            <Bar dataKey="online" name="Online" stackId="leads" fill={kleuren.blauw} isAnimationActive={false}>
               {data.map((d, i) => (
                 <Cell key={i} fillOpacity={d.volledig ? 1 : LICHT} />
               ))}
               <LabelList
-                dataKey="internet"
+                dataKey="online"
                 content={(p) => {
                   const lp = p as LabelProps;
                   return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? online.licht : online.vol} />;

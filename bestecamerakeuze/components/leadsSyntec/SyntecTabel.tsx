@@ -9,7 +9,7 @@ import { verschil, type Groep, type Telling } from "@/lib/leadsSyntec/samenvatti
 
 /**
  * Eén tabel van het tabblad Leads Syntec: per rij het totaal, het aandeel, en dat totaal
- * uitgesplitst naar internet en offline — op verzoek "overal het totaal, uitgesplitst".
+ * uitgesplitst naar online en offline — op verzoek "overal het totaal, uitgesplitst".
  *
  * - **De totaalregel telt álle rijen**, ook die achter "Toon alle" en de vastgezette
  *   ("Onbekend" onderaan). Het totaal komt van buiten (`totaal`), niet uit de zichtbare
@@ -86,8 +86,8 @@ function Getal({
   );
 }
 
-function pctInternet(t: Telling): string {
-  return t.totaal > 0 ? formatteer((t.internet / t.totaal) * 100, "procent") : "—";
+function pctOnline(t: Telling): string {
+  return t.totaal > 0 ? formatteer((t.online / t.totaal) * 100, "procent") : "—";
 }
 
 export default function SyntecTabel({
@@ -121,9 +121,9 @@ export default function SyntecTabel({
     ...(extraKolom ? [extraKolom.kop] : []),
     "Totaal",
     "Aandeel",
-    "Internet",
+    "Online",
     "Offline",
-    "% internet",
+    "% online",
   ];
 
   function exporteer() {
@@ -131,9 +131,9 @@ export default function SyntecTabel({
       labelKop,
       ...(extraKolom ? [extraKolom.kop] : []),
       "Totaal",
-      "Internet",
+      "Online",
       "Offline",
-      ...(vergelijk ? ["Totaal vorig jaar", "Internet vorig jaar", "Offline vorig jaar"] : []),
+      ...(vergelijk ? ["Totaal vorig jaar", "Online vorig jaar", "Offline vorig jaar"] : []),
     ];
     const rij = (g: Groep, label: string) => {
       const v = vorig?.get(g.sleutel);
@@ -141,12 +141,12 @@ export default function SyntecTabel({
         [labelKop]: label,
         ...(extraKolom ? { [extraKolom.kop]: extraKolom.tekst(g) } : {}),
         Totaal: g.totaal,
-        Internet: g.internet,
+        Online: g.online,
         Offline: g.offline,
         ...(vergelijk
           ? {
               "Totaal vorig jaar": v?.totaal ?? 0,
-              "Internet vorig jaar": v?.internet ?? 0,
+              "Online vorig jaar": v?.online ?? 0,
               "Offline vorig jaar": v?.offline ?? 0,
             }
           : {}),
@@ -157,12 +157,12 @@ export default function SyntecTabel({
       [labelKop]: "Totaal",
       ...(extraKolom ? { [extraKolom.kop]: "" } : {}),
       Totaal: totaal.totaal,
-      Internet: totaal.internet,
+      Online: totaal.online,
       Offline: totaal.offline,
       ...(vergelijk
         ? {
             "Totaal vorig jaar": totaalVorig?.totaal ?? 0,
-            "Internet vorig jaar": totaalVorig?.internet ?? 0,
+            "Online vorig jaar": totaalVorig?.online ?? 0,
             "Offline vorig jaar": totaalVorig?.offline ?? 0,
           }
         : {}),
@@ -220,12 +220,12 @@ export default function SyntecTabel({
             {totaal.totaal > 0 ? formatteer((g.totaal / totaal.totaal) * 100, "procent") : "—"}
           </td>
           <td className={`${CEL} text-right`}>
-            <Getal nu={g.internet} toen={v?.internet} vergelijk={vergelijk} />
+            <Getal nu={g.online} toen={v?.online} vergelijk={vergelijk} />
           </td>
           <td className={`${CEL} text-right`}>
             <Getal nu={g.offline} toen={v?.offline} vergelijk={vergelijk} />
           </td>
-          <td className={`${CEL} text-right text-ink-muted`}>{pctInternet(g)}</td>
+          <td className={`${CEL} text-right text-ink-muted`}>{pctOnline(g)}</td>
         </tr>
         {isOpen && onderliggend?.map((o) => rij(o, true))}
       </Fragment>
@@ -294,12 +294,12 @@ export default function SyntecTabel({
                   {totaal.totaal > 0 ? formatteer(100, "procent") : "—"}
                 </td>
                 <td className={`${VOET} text-right font-semibold`}>
-                  <Getal nu={totaal.internet} toen={totaalVorig?.internet} vergelijk={vergelijk} />
+                  <Getal nu={totaal.online} toen={totaalVorig?.online} vergelijk={vergelijk} />
                 </td>
                 <td className={`${VOET} text-right font-semibold`}>
                   <Getal nu={totaal.offline} toen={totaalVorig?.offline} vergelijk={vergelijk} />
                 </td>
-                <td className={`${VOET} text-right text-ink-muted`}>{pctInternet(totaal)}</td>
+                <td className={`${VOET} text-right text-ink-muted`}>{pctOnline(totaal)}</td>
               </tr>
             </tfoot>
           )}
