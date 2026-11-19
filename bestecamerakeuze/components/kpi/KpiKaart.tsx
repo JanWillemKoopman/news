@@ -68,6 +68,9 @@ export default function KpiKaart({
   opslaanGroei: (groei: number | null) => Promise<void>;
 }) {
   const u = kpi.uitkomst;
+  // Een andere bron vervangt GA4 (Porsche-werkplaats) of telt erbij op (udenhoutlease.nl).
+  const vervangend = kpi.externeBron && !kpi.externeBron.optellen ? kpi.externeBron : null;
+  const opgeteld = kpi.externeBron?.optellen ? kpi.externeBron : null;
 
   return (
     <KpiKaartOpmaak
@@ -76,19 +79,26 @@ export default function KpiKaart({
       realisatie={kpi.realisatie}
       groei={{ soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }}
     >
-      {kpi.externeBron && (
+      {vervangend && (
         <p className="mb-1">
-          <span className="text-ink-muted">Bron t/m {datumKort(kpi.externeBron.tot)}:</span> {kpi.externeBron.omschrijving}{" "}
-          ({aantal(kpi.externeBron.aantal)} afspraken in {KPI_JAAR}). Die dagen zijn gemeten, ook waar de website niets mat.
+          <span className="text-ink-muted">Bron t/m {datumKort(vervangend.tot)}:</span> {vervangend.omschrijving}{" "}
+          ({aantal(vervangend.aantal)} {vervangend.eenheid} in {KPI_JAAR}). Die dagen zijn gemeten, ook waar de website niets mat.
+        </p>
+      )}
+      {opgeteld && (
+        <p className="mb-1">
+          <span className="text-ink-muted">Opgeteld t/m {datumKort(opgeteld.tot)}:</span> {opgeteld.omschrijving}{" "}
+          ({aantal(opgeteld.aantal)} {opgeteld.eenheid} in {KPI_JAAR}, vaste cijfers). Komt bovenop de bron hieronder, niet in
+          plaats ervan.
         </p>
       )}
       <p>
-        <span className="text-ink-muted">{kpi.externeBron ? `Bron vanaf ${datumKort(dagNa(kpi.externeBron.tot))}:` : "Bron:"}</span>{" "}
+        <span className="text-ink-muted">{vervangend ? `Bron vanaf ${datumKort(dagNa(vervangend.tot))}:` : "Bron:"}</span>{" "}
         Google Analytics 4, {website.domein} (property {website.property}
         {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
         {kpi.events.length > 0 ? (
           <>
-            Events (aantal keer gevuurd, event_count, {kpi.externeBron ? `vanaf ${datumKort(dagNa(kpi.externeBron.tot))}` : KPI_JAAR}
+            Events (aantal keer gevuurd, event_count, {vervangend ? `vanaf ${datumKort(dagNa(vervangend.tot))}` : KPI_JAAR}
             {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
             {kpi.events.map((e, i) => (
               <span key={`${e.naam}${e.paginaBevat ?? ""}`}>

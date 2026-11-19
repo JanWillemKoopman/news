@@ -291,6 +291,8 @@ test("Porsche-werkplaats: t/m oktober de planning (ook tijdens de uitval), daarn
     naam: "de werkplaatsplanning",
     omschrijving: 'export van de werkplaatsplanning, afspraken per "Datum Van Aanvraag", ALvestiging 10',
     tot: "2026-10-31",
+    optellen: false,
+    eenheid: "afspraken",
     aantal: 384,
   });
 
@@ -337,4 +339,38 @@ test("een aangepast percentage verzet target en maandtarget, niet de verwachting
   // metGroei in de browser geeft precies wat de server uitrekent.
   const standaard = websiteOverzicht(pgz, s, null).kpis.find((k) => k.sleutel === "sessies")!;
   assert.deepEqual(metGroei(standaard.uitkomst!, 0.12), sessies.uitkomst);
+});
+
+test("Zakelijke lease udenhout.nl: udenhoutlease.nl t/m maart opgeteld bij GA4, niet in plaats ervan", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const zakelijk = udenhout.kpis.find((k) => k.sleutel === "zakelijke-lease")!;
+  const s: KpiStand = {
+    website: "udenhout", jaar: 2026, peildatum: "2026-11-14", berekendOp: "", definitief: false,
+    dagen: {
+      // Eén dag zonder sessies in mei: die blijft bijgeschat, want de leasesite dekt hem niet.
+      sessies: { ...elkeDag("2026-01-01", "2026-05-09", 3000), ...elkeDag("2026-05-11", "2026-11-14", 3000) },
+      "event:generate_lead_zakelijk_lease": { "2026-01-09": 1, "2026-03-10": 1 },
+      "event:generate_lead_zakelijk_offerte": { "2026-04-02": 5 },
+    },
+    gebruikers: new Array(12).fill(0),
+  };
+  const dagen = dagwaardenVoor(zakelijk, s);
+  // 9 januari: 4 via udenhoutlease.nl + 1 op udenhout.nl.
+  assert.equal(dagen["2026-01-09"], 5);
+  assert.equal(dagen["2026-04-02"], 5);
+
+  const u = berekenKpi(maandInvoerVoor(zakelijk, s), s.peildatum);
+  assert.equal(u.maanden[0].gerealiseerd, 40 + 1);
+  assert.equal(u.maanden[1].gerealiseerd, 35);
+  assert.equal(u.maanden[2].gerealiseerd, 34 + 1);
+  assert.equal(u.dagenNietGemeten, 1);
+
+  // De events onder de grafiek tellen het hele jaar, ook januari t/m maart.
+  assert.deepEqual(eventTotalen(zakelijk, s).map((e) => e.aantal), [2, 5, 0]);
+  const extern = externeBronTotaal(zakelijk, s)!;
+  assert.equal(extern.aantal, 109);
+  assert.equal(extern.optellen, true);
+  assert.equal(extern.eenheid, "aanvragen");
+  // En de uitvalmelding noemt hem niet als uitzondering.
+  assert.doesNotMatch(websiteOverzicht(udenhout, s, null).uitvalTekst ?? "", /Uitzondering/);
 });

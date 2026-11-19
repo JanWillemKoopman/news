@@ -724,6 +724,25 @@ realisatie van 2027.
   - **Let op**: de planning telt afspraken, GA4 online aanvragen; ze sluiten niet per se op
     elkaar aan. In oktober telde de planning 127 (Brabant) en GA4 86; over 1–13 november
     allebei 13 in Brabant, in Maastricht 10 tegen 6.
+- **Zakelijke lease (udenhout.nl): januari t/m maart ook udenhoutlease.nl** (besluit van de
+  eigenaar, 19 november 2026). Tot en met maart 2026 kwamen de zakelijke leads binnen via de
+  aparte site udenhoutlease.nl, met een eigen GA4-property (344604643). Begin april stopte
+  die site en verhuisden de zakelijke leads naar udenhout.nl. Zonder correctie telde de KPI
+  voor januari t/m maart alleen de 2 aanvragen die op udenhout.nl zelf binnenkwamen.
+  - **Wat telt mee**: de twee key events van udenhoutlease.nl, `offerte_aanvraag`
+    (/contact/vrijblijvende-offerte, 100×) en `contact_verzonden` (/contact, 9×), samen 109
+    (jan 40, feb 35, mrt 34). **Niet**: het proefritformulier (6) en de actieformulieren
+    per merk (20). Die vuren alleen een algemeen `form_submit` en zijn op udenhout.nl ook
+    geen zakelijke lease.
+  - **Hoe het rekent**: `externeBron` met `optellen: true`. Anders dan bij de
+    Porsche-werkplaats **vervangt** deze bron GA4 niet, maar **telt hij erbij op**: de
+    events van udenhout.nl blijven het hele jaar tellen, en de uitvalregel blijft gewoon
+    staan (een dag zonder sessies op udenhout.nl wordt nog steeds bijgeschat; de
+    uitvalmelding bovenaan noemt deze bron dus niet als uitzondering). Onder de grafiek
+    staat hij als "Opgeteld t/m 31 mrt". De realisatie van 2027 telt alleen udenhout.nl.
+  - **Waar het staat**: de dagcijfers in `lib/kpi2027/udenhoutleaseExport.ts`, eenmalig
+    via Windsor opgehaald. Ze liggen vast: na 31 maart meet udenhoutlease.nl geen aanvragen
+    meer, dus de wekelijkse ophaalactie haalt die property niet op.
 - **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
   bekende test-, staging- en vreemde domeinen eruit (`uitgeslotenHosts`); "(not set)" telt
   mee. Sessies en gebruikers zijn cijfers per sessie/persoon, gesplitst naar een dimensie
@@ -769,8 +788,9 @@ realisatie van 2027.
   generaties op. `generate_lead_private_lease` (formulier "stock prive") vuurt het hele jaar
   door naast `generate_lead_privatelease` (/offerte en /acties/groeilease): andere
   formulieren, dus allebei private lease. Zakelijke lease = `generate_lead_zakelijk_lease`
-  + `generate_lead_zakelijk_offerte` + `generate_lead_leasecontact`; een zakelijke offerte
-  telt dus níet bij Offerteaanvragen.
+  + `generate_lead_zakelijk_offerte` + `generate_lead_leasecontact`, plus januari t/m maart
+  de aanvragen van udenhoutlease.nl (zie hierboven); een zakelijke offerte telt dus níet bij
+  Offerteaanvragen.
 - **Niet opgenomen: Sollicitaties (social) bij de twee Porsche-sites.** Op beide domeinen
   bestaat geen event voor een afgeronde sollicitatie (de werken-bij-pagina's verwijzen naar
   e-mail; een klik op een mailadres is geen verzonden sollicitatie). In de PGZ-property

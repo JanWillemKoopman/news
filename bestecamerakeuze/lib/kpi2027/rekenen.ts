@@ -371,8 +371,8 @@ export function dagwaardenVoor(definitie: KpiDefinitie, stand: KpiStand): Record
   const extern = definitie.externeBron;
   for (const bron of bronnenVan(definitie)) {
     for (const [datum, n] of Object.entries(stand.dagen[bron] ?? {})) {
-      // Waar een andere bron geldt, tellen de GA4-cijfers niet mee.
-      if (extern && datum <= extern.tot) continue;
+      // Waar een vervangende bron geldt, tellen de GA4-cijfers niet mee.
+      if (extern && !extern.optellen && datum <= extern.tot) continue;
       som[datum] = (som[datum] ?? 0) + (Number(n) || 0);
     }
   }
@@ -401,7 +401,9 @@ export function maandInvoerVoor(
   if (definitie.bron.soort === "gebruikers") {
     return maandInvoerUitMaanden(stand.gebruikers, stand.peildatum, uitval, stand.jaar);
   }
-  const eigenUitval = definitie.externeBron ? uitvalNa(uitval, definitie.externeBron.tot) : uitval;
+  // Alleen een vervangende bron dekt de dagen zonder sessies; een optellende niet.
+  const extern = definitie.externeBron;
+  const eigenUitval = extern && !extern.optellen ? uitvalNa(uitval, extern.tot) : uitval;
   return maandInvoerUitDagen(dagwaardenVoor(definitie, stand), stand.peildatum, eigenUitval, stand.jaar);
 }
 
@@ -428,7 +430,8 @@ export function eventTotalen(
   stand: KpiStand,
 ): { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[] {
   if (definitie.bron.soort !== "events") return [];
-  const na = definitie.externeBron?.tot ?? "";
+  const extern = definitie.externeBron;
+  const na = extern && !extern.optellen ? extern.tot : "";
   return definitie.bron.events.map((e) => ({
     naam: e.naam,
     paginaBevat: e.paginaBevat,
@@ -439,17 +442,35 @@ export function eventTotalen(
   }));
 }
 
+/** Wat een andere bron in het jaar van de stand bijdraagt, voor onder de grafiek. */
+export interface ExterneBronRegel {
+  naam: string;
+  omschrijving: string;
+  tot: string;
+  /** True: opgeteld bij GA4; false: in plaats van GA4. */
+  optellen: boolean;
+  eenheid: string;
+  aantal: number;
+}
+
 /** Wat de andere bron in het jaar van de stand bijdraagt, voor onder de grafiek. */
 export function externeBronTotaal(
   definitie: KpiDefinitie,
   stand: KpiStand,
-): { naam: string; omschrijving: string; tot: string; aantal: number } | null {
+): ExterneBronRegel | null {
   const extern = definitie.externeBron;
   if (!extern || extern.tot < `${stand.jaar}-01-01`) return null;
   const aantal = Object.entries(extern.dagen)
     .filter(([datum]) => datum.startsWith(`${stand.jaar}-`) && datum <= extern.tot && datum <= stand.peildatum)
     .reduce((t, [, n]) => t + (Number(n) || 0), 0);
-  return { naam: extern.naam, omschrijving: extern.omschrijving, tot: extern.tot, aantal };
+  return {
+    naam: extern.naam,
+    omschrijving: extern.omschrijving,
+    tot: extern.tot,
+    optellen: extern.optellen === true,
+    eenheid: extern.eenheid,
+    aantal,
+  };
 }
 
 /**
@@ -468,8 +489,8 @@ export interface KpiOverzichtRegel {
   bronTekst: string | null;
   opmerking: string | null;
   events: { naam: string; paginaBevat?: string; toelichting?: string; aantal: number }[];
-  /** Een andere bron voor het begin van het jaar (Porsche-werkplaats), met wat die bijdraagt. */
-  externeBron: { naam: string; omschrijving: string; tot: string; aantal: number } | null;
+  /** Een andere bron voor het begin van het jaar (Porsche-werkplaats, udenhoutlease.nl), met wat die bijdraagt. */
+  externeBron: ExterneBronRegel | null;
   /** Null als er voor 2026 nog geen stand is. */
   uitkomst: KpiUitkomst | null;
   /** True als het groeipercentage met de hand is aangepast (anders de standaard, +5%). */
@@ -514,7 +535,9 @@ export function volgendeUpdate(laatstePeildatum: string): string | null {
 function uitvalMetUitzonderingen(website: KpiWebsite, uitval: readonly Periode[], jaar: number): string | null {
   const tekst = uitvalTekst(uitval, jaar);
   if (!tekst) return null;
-  const gedekt = website.kpis.filter((k) => k.externeBron && uitval.some((p) => p.van <= k.externeBron!.tot));
+  const gedekt = website.kpis.filter(
+    (k) => k.externeBron && !k.externeBron.optellen && uitval.some((p) => p.van <= k.externeBron!.tot),
+  );
   if (gedekt.length === 0) return tekst;
   const namen = gedekt.map((k) => `${k.naam.toLowerCase()} (uit ${k.externeBron!.naam})`).join(" en ");
   return `${tekst} Uitzondering: ${namen}, die voor die dagen een eigen bron ${gedekt.length === 1 ? "heeft" : "hebben"} en daar niet is bijgeschat.`;
