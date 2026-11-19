@@ -1098,6 +1098,10 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **Ook de uitleg bovenaan en de definities onder de overzichtstabel staan standaard
+  ingeklapt** achter dezelfde balk "Lees definitie" als onder de grafieken (verzoek november
+  2026), op KPI's 2027 GA én Syntec: `Definitie` uit `KpiKaart.tsx` (met `zonderLijn` voor de
+  uitleg bovenaan) en in `OverzichtTabel.tsx`.
 - **Eerdere jaren staan standaard uit.** Rechts in de statusbalk van KPI's 2027 GA én Syntec
   staat de schakelaar "Eerdere jaren" (`components/kpi/EerdereJaren.tsx`): uit toont een
   grafiek alleen 2026, de verwachting en het maandtarget; aan ook de vergelijkingslijnen

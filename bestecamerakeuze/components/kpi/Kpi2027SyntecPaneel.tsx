@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import EerdereJarenSchakelaar, { useEerdereJaren } from "@/components/kpi/EerdereJaren";
 import KpiSyntecKaart from "@/components/kpi/KpiSyntecKaart";
+import { Definitie } from "@/components/kpi/KpiKaart";
 import SyntecOverzichtTabel from "@/components/kpi/SyntecOverzichtTabel";
 import { IconInfo } from "@/components/icons";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR } from "@/lib/kpi2027/definities";
@@ -137,8 +138,8 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
         </p>
       )}
 
-      <p className="flex items-start gap-2 text-meta text-ink-muted">
-        <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      {/* Standaard ingeklapt, net als de definitie onder de grafieken (verzoek november 2026). */}
+      <Definitie zonderLijn>
         <span>
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = de leads die Syntec
           t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van {KPI_JAAR}.{" "}
@@ -149,7 +150,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles schuift elke zondag op t/m zaterdag. In de grafiek is de
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting. Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
         </span>
-      </p>
+      </Definitie>
 
       {overzicht && (
         <>

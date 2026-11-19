@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import GaOverzichtTabel from "@/components/kpi/GaOverzichtTabel";
 import EerdereJarenSchakelaar, { useEerdereJaren } from "@/components/kpi/EerdereJaren";
-import KpiKaart, { type KanalenStand } from "@/components/kpi/KpiKaart";
+import KpiKaart, { Definitie, type KanalenStand } from "@/components/kpi/KpiKaart";
 import KanaalIndeling from "@/components/kpi/KanaalIndeling";
 import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
 import { IconInfo, IconRefresh, IconTable } from "@/components/icons";
@@ -263,8 +263,8 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
         </p>
       )}
 
-      <p className="flex items-start gap-2 text-meta text-ink-muted">
-        <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      {/* Standaard ingeklapt, net als de definitie onder de grafieken (verzoek november 2026). */}
+      <Definitie zonderLijn>
         <span>
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = wat Google Analytics op
           de gemeten dagen t/m de peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van{" "}
@@ -275,7 +275,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles wordt elke zondag bijgewerkt t/m zaterdag. In de grafiek is de
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting of bijgeschat.
         </span>
-      </p>
+      </Definitie>
 
       {website && website.kpis.length > 0 && (
         <GaOverzichtTabel website={website} opslaanGroei={(kpi, groei) => zetGroei(website.sleutel, kpi, groei)} />

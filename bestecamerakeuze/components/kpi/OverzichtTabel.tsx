@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { formatteer } from "@/components/chat/chartTheme";
 import { STANDAARD_GROEI_TEKST, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
 import { IconRefresh } from "@/components/icons";
-import { aantal, datumKort } from "@/components/kpi/KpiKaart";
+import { Definitie, aantal, datumKort } from "@/components/kpi/KpiKaart";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { voortgang, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
 
@@ -207,7 +207,8 @@ export function OverzichtTabel({
         </table>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-line-soft pt-3 text-meta text-ink-muted">
+      <Definitie>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-meta text-ink-muted">
         <dt className="font-semibold text-ink">{KPI_JAAR}</dt>
         <dd>{uitlegJaar}</dd>
         <dt className="font-semibold text-ink">Target {KPI_DOELJAAR}</dt>
@@ -240,6 +241,7 @@ export function OverzichtTabel({
           </>
         )}
       </dl>
+      </Definitie>
     </section>
   );
 }

@@ -357,12 +357,16 @@ export function KpiKaartOpmaak({
  * een balk "Lees definitie" — op verzoek (november 2026): uitgeschreven onder elke kaart
  * maakte dat de pagina onrustig. Eén klik klapt hem per kaart uit; de inhoud blijft
  * volledig, hij staat alleen niet meer standaard in beeld.
+ *
+ * Ook gebruikt voor de uitleg bovenaan KPI's 2027 GA en Syntec en voor de definities onder
+ * de overzichtstabel (verzoek november 2026: ook die standaard ingeklapt). `zonderLijn`
+ * laat de streep erboven weg waar er geen kaartinhoud boven staat.
  */
-function Definitie({ children }: { children: ReactNode }) {
+export function Definitie({ children, zonderLijn = false }: { children: ReactNode; zonderLijn?: boolean }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <footer className="mt-3 border-t border-line-soft pt-2">
+    <footer className={zonderLijn ? "" : "mt-3 border-t border-line-soft pt-2"}>
       <button
         type="button"
         aria-expanded={open}
