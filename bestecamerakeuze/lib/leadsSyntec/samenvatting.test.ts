@@ -27,14 +27,15 @@ function kubus(): SyntecKubus {
     modellen: ["POLO", "Polo (6) GP", "Fiesta", "", "Caddy"],
     ordersoorten: ["Nieuw", "Gebruikt", ""],
     soorten: ["Offerte", "Overig"],
-    // dag, kanaal, merk, model, ordersoort, soort, dubbel, aantal
+    klantsoorten: ["", "Zakelijk", "Particulier"],
+    // dag, kanaal, merk, model, ordersoort, soort, klantsoort, dubbel, aantal
     regels: [
-      [0, 0, 0, 0, 0, 0, 0, 3],
-      [0, 1, 0, 1, 0, 1, 0, 5],
-      [1, 1, 1, 2, 1, 1, 1, 2],
-      [1, 2, 2, 3, 2, 1, 0, 1],
-      [1, 0, 3, 4, 0, 0, 0, 4],
-      [2, 0, 0, 0, 0, 0, 0, 7],
+      [0, 0, 0, 0, 0, 0, 0, 0, 3],
+      [0, 1, 0, 1, 0, 1, 1, 0, 5],
+      [1, 1, 1, 2, 1, 1, 2, 1, 2],
+      [1, 2, 2, 3, 2, 1, 0, 0, 1],
+      [1, 0, 3, 4, 0, 0, 0, 0, 4],
+      [2, 0, 0, 0, 0, 0, 0, 0, 7],
     ],
   };
 }
@@ -57,6 +58,8 @@ test("pakUit deelt merk en herkomst in; het model blijft letterlijk", () => {
   assert.equal(regels[0].kanaalgroep, "Online");
   assert.equal(regels[3].ordersoort, "Onbekend");
   assert.equal(regels[0].soort, "Offerte");
+  assert.equal(regels[0].klantsoort, "Onbekend");
+  assert.equal(regels[1].klantsoort, "Zakelijk");
   assert.equal(regels[2].dubbel, true);
   assert.equal(regels[2].merkDetail, "FORD");
 });
@@ -77,6 +80,12 @@ test("filteren: periode, herkomst, dubbel en 'of' binnen een filter", () => {
   assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["POLO"] }, nov2026)).totaal, 3);
   assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["POLO", "Polo (6) GP"] }, nov2026)).totaal, 8);
   assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["Onbekend"] }, nov2026)).totaal, 1);
+  // Klantsoort: een lege waarde is als "Onbekend" te kiezen.
+  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, klantsoorten: ["Zakelijk"] }, nov2026)).totaal, 5);
+  assert.equal(
+    tel(filterRegels(regels, { ...GEEN_FILTERS, klantsoorten: ["Particulier", "Onbekend"] }, nov2026)).totaal,
+    10,
+  );
 });
 
 test("groeperen telt online, offline en per merk; modelregels zijn merk plus letterlijk model", () => {

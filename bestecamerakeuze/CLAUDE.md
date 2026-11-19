@@ -720,8 +720,8 @@ model op te halen.
   modelfamilies (±120); die is er op verzoek uit gehaald — zet hem niet terug zonder dat
   daarom gevraagd wordt.
 - **Eén ophaalactie voor alle jaren** (`haalSyntecLeads`): gegroepeerd per dag × kanaal ×
-  merk × ruw model × ordersoort × lead type × dubbel, ±69.000 regels, als getallen met
-  woordenlijsten (±1,7 MB, ±275 kB gzip; de query ±1 s). Periode en filters gebeuren daarna
+  merk × model × ordersoort × lead type × klantsoort × dubbel, ±75.000 regels, als getallen met
+  woordenlijsten (±1,8 MB, ±295 kB gzip; de query ±1 s). Periode en filters gebeuren daarna
   in het geheugen (`samenvatting.ts`, getest). Door het model
   is bijna elke combinatie uniek (±0,7 regel per lead).
 - **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
@@ -759,11 +759,16 @@ model op te halen.
   dus minder weg en lijkt een recente periode relatief hoger.
 - **Bewust niet op de pagina**: de kolom Campagnes (een formule in de sheet, pas vanaf 2026
   gevuld en in oktober–november vrijwel alles "Multimerk Actie", met vreemde toewijzingen als
-  "A2 e-tron" bij BMW-leads; de campagnes staan al op het tabblad Campagnes), Klantsoort (62%
-  leeg) en order geworden (recente leads hebben nog geen order, dus een conversiepercentage
-  per periode zakt altijd naar het heden toe).
+  "A2 e-tron" bij BMW-leads; de campagnes staan al op het tabblad Campagnes) en order geworden (recente leads hebben nog
+  geen order, dus een conversiepercentage per periode zakt altijd naar het heden toe).
+- **Filter Klantsoort** (op verzoek, november 2026): Zakelijk, Particulier en "Onbekend" (leeg,
+  altijd achteraan). Let op hoe scheef het gevuld is: ±38% van de leads heeft een klantsoort,
+  en dat zijn vooral CST-offertes (±35.000 van de ±37.600); bij online leads is hij 96% leeg.
+  "Zakelijk" kiezen laat dus vrijwel alleen offline over. Het staat ook in "Zo lees je dit".
+  Alleen een filter, geen tabel: een verdeling waarin "Onbekend" de grootste groep is, zegt
+  weinig.
 - **Opbouw.** Filterbalk (periode, online/offline, kanaalgroep, kanaal, merk, model, nieuw
-  of gebruikt, soort aanvraag, zonder dubbele), vier kerncijfers, de grafiek
+  of gebruikt, soort aanvraag, klantsoort, zonder dubbele), vier kerncijfers, de grafiek
   (online en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
   matrix: online en offline als blokken met subtotaal, offline per kanaalgroep, de merken
   als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Online, Offline en %

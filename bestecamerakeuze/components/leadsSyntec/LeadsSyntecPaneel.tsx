@@ -70,6 +70,7 @@ const URL_LIJSTEN = {
   model: "modellen",
   ordersoort: "ordersoorten",
   soort: "soorten",
+  klantsoort: "klantsoorten",
 } as const satisfies Record<string, keyof SyntecFilters>;
 
 const SLEUTEL_MODEL_ONBEKEND = "\u0001model-onbekend";
@@ -315,6 +316,14 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       ],
       ordersoorten: opties(inPeriode, (r) => r.ordersoort),
       soorten: opties(inPeriode, (r) => r.soort),
+      // Zakelijk en Particulier op grootte; "Onbekend" (leeg, de meerderheid) altijd achteraan.
+      klantsoorten: [
+        ...opties(
+          inPeriode.filter((r) => r.klantsoort !== ONBEKEND),
+          (r) => r.klantsoort,
+        ),
+        ...(inPeriode.some((r) => r.klantsoort === ONBEKEND) ? [ONBEKEND] : []),
+      ],
     }),
     [inPeriode],
   );
@@ -484,6 +493,12 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
                 selected={filters.soorten}
                 onChange={zet("soorten")}
               />
+              <FilterSelect
+                label="Klantsoort"
+                options={keuzes.klantsoorten}
+                selected={filters.klantsoorten}
+                onChange={zet("klantsoorten")}
+              />
             </div>
             <div className="ml-auto flex items-center gap-2">
               <Schakelaar
@@ -629,6 +644,11 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               ook in het filter. Dezelfde auto komt daardoor onder meerdere namen voor (POLO, Polo (6) GP,
               VOLKSWAGEN POLO); kies ze samen in het filter Model om ze op te tellen. Alleen een leeg veld heet
               &quot;Onbekend&quot;.
+            </li>
+            <li>
+              <strong className="text-ink">Klantsoort</strong> (Zakelijk of Particulier) is maar bij ±38% van de
+              leads ingevuld, vooral bij CST-offertes in de showroom. Bij online leads is hij bijna altijd leeg;
+              een leeg veld kies je in het filter als &quot;Onbekend&quot;.
             </li>
             <li>
               <strong className="text-ink">Dubbele leads</strong> (sluitreden Dubbel of [SA] Dubbel, ±9%) tellen

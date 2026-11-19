@@ -34,6 +34,7 @@ export interface SyntecKubus {
   modellen: string[];
   ordersoorten: string[];
   soorten: string[];
+  klantsoorten: string[];
   regels: number[][];
 }
 
@@ -44,6 +45,7 @@ export const KUBUS_KOLOMMEN = [
   "model",
   "ordersoort",
   "soort",
+  "klantsoort",
   "dubbel",
   "aantal",
 ] as const;
@@ -75,6 +77,8 @@ export interface SyntecRegel {
   model: string;
   ordersoort: string;
   soort: string;
+  /** Zakelijk of Particulier; leeg (±62%, bij online leads bijna altijd) heet "Onbekend". */
+  klantsoort: string;
   dubbel: boolean;
   aantal: number;
 }
@@ -83,7 +87,7 @@ export interface SyntecRegel {
 export function pakUit(kubus: SyntecKubus): SyntecRegel[] {
   const merkCache = kubus.merken.map((m) => deelMerkIn(m));
 
-  return kubus.regels.map(([dag, kanaal, merk, model, ordersoort, soort, dubbel, aantal]) => {
+  return kubus.regels.map(([dag, kanaal, merk, model, ordersoort, soort, klantsoort, dubbel, aantal]) => {
     const k = kubus.kanalen[kanaal] ?? { kanaal: "", kanaalgroep: "" };
     const m = merkCache[merk] ?? { merk: ONBEKEND, detail: ONBEKEND };
     return {
@@ -96,6 +100,7 @@ export function pakUit(kubus: SyntecKubus): SyntecRegel[] {
       model: (kubus.modellen[model] ?? "").trim() || ONBEKEND,
       ordersoort: (kubus.ordersoorten[ordersoort] ?? "").trim() || ONBEKEND,
       soort: (kubus.soorten[soort] ?? "").trim() || ONBEKEND,
+      klantsoort: (kubus.klantsoorten[klantsoort] ?? "").trim() || ONBEKEND,
       dubbel: dubbel === 1,
       aantal,
     };
@@ -117,6 +122,7 @@ export interface SyntecFilters {
   modellen: string[];
   ordersoorten: string[];
   soorten: string[];
+  klantsoorten: string[];
   /** Leads met sluitreden "Dubbel" of "[SA] Dubbel" weglaten. */
   zonderDubbel: boolean;
 }
@@ -129,6 +135,7 @@ export const GEEN_FILTERS: SyntecFilters = {
   modellen: [],
   ordersoorten: [],
   soorten: [],
+  klantsoorten: [],
   zonderDubbel: false,
 };
 
@@ -149,7 +156,8 @@ export function heeftFilters(f: SyntecFilters): boolean {
     f.merken.length > 0 ||
     f.modellen.length > 0 ||
     f.ordersoorten.length > 0 ||
-    f.soorten.length > 0
+    f.soorten.length > 0 ||
+    f.klantsoorten.length > 0
   );
 }
 
@@ -171,7 +179,8 @@ export function filterRegels(regels: SyntecRegel[], f: SyntecFilters, periode: P
       in_(f.merken, r.merk) &&
       in_(f.modellen, r.model) &&
       in_(f.ordersoorten, r.ordersoort) &&
-      in_(f.soorten, r.soort),
+      in_(f.soorten, r.soort) &&
+      in_(f.klantsoorten, r.klantsoort),
   );
 }
 
