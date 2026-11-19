@@ -26,6 +26,7 @@ import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
 import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
+import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
 import { Ga4KoppelingProvider } from "@/lib/ga4KoppelingContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
@@ -99,7 +100,10 @@ export default async function DashboardPage() {
         organisch={<OrganischPaneel ingelogd={ingelogd} />}
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
-        leads={<LeadsPaneel ingelogd={ingelogd} />}
+        leads={
+          // Alleen voor de eigenaar (lib/beperkteTabbladen.ts); de API-route controleert dit ook zelf.
+          magBeperkteTabbladenZien(gebruiker.email) ? <LeadsPaneel ingelogd={ingelogd} /> : null
+        }
         selligent={<SelligentPaneel ingelogd={ingelogd} />}
         koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
         budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}

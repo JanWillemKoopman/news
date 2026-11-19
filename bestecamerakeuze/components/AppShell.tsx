@@ -12,6 +12,7 @@ import { IconPlus } from "@/components/icons";
 import { ActieveWeergaveProvider } from "@/lib/kanalen/actieveWeergave";
 import { wisUrlStand } from "@/lib/kanalen/urlstand";
 import { useTeamData } from "@/lib/teamData";
+import { magTabbladZien } from "@/lib/beperkteTabbladen";
 
 type Props = {
   gebruikerEmail: string | null;
@@ -237,6 +238,9 @@ export default function AppShell({
   useEffect(() => {
     const gevraagd = new URLSearchParams(window.location.search).get("tab");
     if (!gevraagd || !(gevraagd in TITLES)) return;
+    // Een tabblad dat alleen de eigenaar ziet (Leads, Landingspagina), opent via de URL ook
+    // niet voor een ander: dan blijft het campagnetabblad staan.
+    if (!magTabbladZien(gevraagd, gebruikerEmail)) return;
     const view = gevraagd as DashboardView;
     setActief(view);
     setBezocht((eerder) => (eerder.has(view) ? eerder : new Set(eerder).add(view)));

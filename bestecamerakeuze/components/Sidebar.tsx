@@ -3,6 +3,7 @@
 import GebruikersMenu from "@/components/GebruikersMenu";
 import LogoMark from "@/components/LogoMark";
 import NavigationItem from "@/components/NavigationItem";
+import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import {
   IconAdHeart,
   IconBrain,
@@ -70,10 +71,8 @@ export default function Sidebar({
 }: Props) {
   const weergavenaam = profielNaam || naamVoor(gebruikerEmail);
 
-  const BEPERKTE_SECTIES_TOEGESTANE_EMAILS = ["koopman.janwillem@gmail.com", "jkoopman@udenhout.nl"];
-  const toontBeperkteSecties =
-    !!gebruikerEmail &&
-    BEPERKTE_SECTIES_TOEGESTANE_EMAILS.includes(gebruikerEmail.toLowerCase());
+  // Leads en Landingspagina ziet alleen de eigenaar (`lib/beperkteTabbladen.ts`).
+  const toontBeperkteSecties = magBeperkteTabbladenZien(gebruikerEmail);
 
   return (
     // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover klapt hij uit
@@ -204,13 +203,16 @@ export default function Sidebar({
           />
           {/* Leads staat direct onder Website: het zijn de leads die op de website
               worden afgevuurd (GA4-events), gekoppeld aan wat de betaalde kanalen kostten.
-              Je komt er vanuit de vraag "wat leverde het op", niet vanuit een kanaal. */}
-          <NavigationItem
-            icon={<IconTarget />}
-            label="Leads"
-            active={actief === "leads"}
-            onClick={() => onNavigate("leads")}
-          />
+              Je komt er vanuit de vraag "wat leverde het op", niet vanuit een kanaal.
+              Alleen zichtbaar voor de eigenaar (november 2026, op verzoek). */}
+          {toontBeperkteSecties && (
+            <NavigationItem
+              icon={<IconTarget />}
+              label="Leads"
+              active={actief === "leads"}
+              onClick={() => onNavigate("leads")}
+            />
+          )}
           {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
               erboven gaan over wat er in een periode gebeurde, dit over de stand van het
               klantenbestand waar de e-mail naartoe gaat — geen dag-op-dagcijfer maar de

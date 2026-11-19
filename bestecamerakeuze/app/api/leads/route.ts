@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
+import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import { haalSyncStand, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { haalLeads } from "@/lib/leads/bron";
 
@@ -21,6 +22,10 @@ export async function GET() {
   const gebruiker = await getGebruiker();
   if (!gebruiker) {
     return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
+  }
+  // Het tabblad Leads is alleen voor de eigenaar (lib/beperkteTabbladen.ts).
+  if (!magBeperkteTabbladenZien(gebruiker.email)) {
+    return NextResponse.json({ fout: "Geen toegang tot dit tabblad." }, { status: 403 });
   }
 
   if (!isKanalenGeconfigureerd()) {

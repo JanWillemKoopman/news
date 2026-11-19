@@ -557,7 +557,12 @@ niet uit af te lezen zijn:
 ### Kanalen → Leads
 
 Tabblad onder **Kanalen**, direct onder Website (view `leads`, `components/leads/`, route
-`app/api/leads/route.ts`). Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
+`app/api/leads/route.ts`). **Alleen zichtbaar voor de eigenaar** (zijn twee accounts,
+november 2026 op verzoek), net als Landingspagina: de lijst staat in
+`lib/beperkteTabbladen.ts` en geldt op vier plekken — de sidebar, `AppShell` (`?tab=leads`
+opent voor een ander niet), `app/page.tsx` (het paneel wordt niet gerenderd) en de route
+(403). Die module staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser
+laadt, en daar staat het standaardwachtwoord in. Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
 andere aanvragen die als GA4-event met "lead" in de naam worden afgevuurd, met merk, model,
 kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 
