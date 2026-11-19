@@ -465,6 +465,27 @@ body {
   animation: puls-ring 2.2s ease-out infinite;
 }
 
+/* Startscherm (components/home): de isometrische lijntekeningen bewegen een paar pixels
+   zodra de muis boven het blok staat. Elke bewegende groep krijgt zijn eigen verschuiving
+   mee via --dx/--dy en eventueel een --vertraging, zodat een golf of uitwaaiering ontstaat. */
+.iso-lijnen {
+  stroke-opacity: 0.4;
+  transition: stroke-opacity var(--duur-traag) var(--ease-merk);
+}
+.iso-lijnen * {
+  vector-effect: non-scaling-stroke;
+}
+.iso-blok:hover .iso-lijnen {
+  stroke-opacity: 0.7;
+}
+.iso-beweeg {
+  transition: transform calc(var(--duur-traag) * 2) var(--ease-merk);
+  transition-delay: var(--vertraging, 0ms);
+}
+.iso-blok:hover .iso-beweeg {
+  transform: translate(var(--dx, 0px), var(--dy, 0px));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .status-dot-ademen,
   .laadvlak,
@@ -473,7 +494,8 @@ body {
     animation: none;
   }
 
-  .kaart-hover:hover {
+  .kaart-hover:hover,
+  .iso-blok:hover .iso-beweeg {
     transform: none;
   }
 }

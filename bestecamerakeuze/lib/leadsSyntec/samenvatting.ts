@@ -253,7 +253,7 @@ export function dagenTussen({ van, tot }: Periode): number {
 }
 
 /** De id's van de vaste periodes; een andere id in de URL (bv. het oude "vorig-jaar") telt niet. */
-export const VASTE_PERIODE_IDS = ["maand", "vorige-maand", "30d", "90d", "jaar", "alles"] as const;
+export const VASTE_PERIODE_IDS = ["maand", "vorige-maand", "30d", "90d", "12m", "jaar", "alles"] as const;
 
 export interface SyntecPeriode extends Periode {
   id: string;
@@ -288,6 +288,7 @@ export function vastePeriodes(eersteDag: string, laatsteDag: string): SyntecPeri
     },
     { id: "30d", label: "30 dagen", van: terug(30), tot: laatsteDag },
     { id: "90d", label: "90 dagen", van: terug(90), tot: laatsteDag },
+    { id: "12m", label: "12 maanden", van: terug(365), tot: laatsteDag },
     { id: "jaar", label: "Dit jaar", van: begrens(`${j}-01-01`), tot: laatsteDag },
     { id: "alles", label: "Alles", van: eersteDag, tot: laatsteDag },
   ];

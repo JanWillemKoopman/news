@@ -121,6 +121,7 @@ test("vaste periodes lopen tot de laatste dag met leads", () => {
   assert.deepEqual([p.maand.van, p.maand.tot], ["2026-11-01", "2026-11-17"]);
   assert.deepEqual([p["vorige-maand"].van, p["vorige-maand"].tot], ["2026-10-01", "2026-10-31"]);
   assert.deepEqual([p["30d"].van, p["30d"].tot], ["2026-10-19", "2026-11-17"]);
+  assert.deepEqual([p["12m"].van, p["12m"].tot], ["2025-11-18", "2026-11-17"]);
   assert.deepEqual([p.jaar.van, p.jaar.tot], ["2026-01-01", "2026-11-17"]);
   // "Vorig jaar" staat er op verzoek niet (meer) bij.
   assert.equal(p["vorig-jaar"], undefined);

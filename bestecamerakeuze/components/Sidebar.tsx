@@ -1,29 +1,13 @@
 "use client";
 
 import GebruikersMenu from "@/components/GebruikersMenu";
-import LogoMark from "@/components/LogoMark";
 import NavigationItem from "@/components/NavigationItem";
 import { magTabbladZien } from "@/lib/beperkteTabbladen";
-import {
-  IconAdHeart,
-  IconBrain,
-  IconChartBar,
-  IconCalendar,
-  IconCoin,
-  IconGlobe,
-  IconMail,
-  IconMegaphone,
-  IconPhoto,
-  IconSearch,
-  IconSettings,
-  IconTarget,
-  IconTrendUp,
-  IconTrophy,
-  IconUserCircle,
-  IconUsers,
-} from "@/components/icons";
+import { IconBrain, IconTrophy } from "@/components/icons";
+import { NAV_GROEPEN, zichtbarePaginas } from "@/components/navigatie";
 
 export type DashboardView =
+  | "home"
   | "scores"
   | "kennisacties"
   | "campagnes"
@@ -85,15 +69,24 @@ export default function Sidebar({
     // heen valt in plaats van hem opzij te duwen — geen layoutshift op hover.
     <aside className="group absolute inset-y-0 left-0 flex w-[72px] flex-col justify-between overflow-x-hidden overflow-y-auto border-r border-sidebar-line sidebar-vlak px-4 py-5 transition-[width] duration-[var(--duur)] ease-merk hover:z-40 hover:w-[240px] hover:shadow-dropdown">
       <div>
-        <div className="flex items-center gap-2.5 px-0.5">
-          <LogoMark className="h-9 w-9 text-[13px]" />
-          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[160px] group-hover:opacity-100">
-            <span className="block font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink">
-              Marketing
-            </span>
-            <span className="block text-label text-sidebar-ink-muted">VDU & PGZ</span>
+        {/* Geen beeldmerk meer (op verzoek): alleen de titel "Marketing dashboard",
+            horizontaal gecentreerd, die met de sidebar mee uitklapt. Een klik erop brengt
+            je naar het startscherm. De vaste hoogte houdt de navigatie eronder op dezelfde
+            plek, ook ingeklapt. */}
+        <button
+          type="button"
+          onClick={() => onNavigate("home")}
+          aria-label="Naar het startscherm"
+          aria-current={actief === "home" ? "page" : undefined}
+          className="flex h-9 w-full items-center justify-center text-center"
+        >
+          <span className="max-w-0 overflow-hidden whitespace-nowrap font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[200px] group-hover:opacity-100">
+            Marketing dashboard
           </span>
-        </div>
+        </button>
+        {/* Witte streep onder de titel, 80% transparant (op verzoek). sidebar-ink is het
+            "wit" van de navigatieschil, zodat de streep ook in elk theme klopt. */}
+        <div aria-hidden="true" className="mt-3 h-px w-full bg-sidebar-ink/20" />
 
         <nav aria-label="Hoofdnavigatie" className="mt-6 flex flex-col gap-0.5">
           {/* Staan bewust bóven de groep "Campagnes" en zonder eigen groepskopje: dit is
@@ -118,154 +111,29 @@ export default function Sidebar({
             />
           )}
 
-          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-            Campagnes
-          </p>
-          <NavigationItem
-            icon={<IconMegaphone />}
-            label="Campagnes"
-            active={actief === "campagnes"}
-            onClick={() => onNavigate("campagnes")}
-          />
-          <NavigationItem
-            icon={<IconCalendar />}
-            label="Tijdlijn"
-            active={actief === "tijdlijn"}
-            onClick={() => onNavigate("tijdlijn")}
-          />
-          <NavigationItem
-            icon={<IconSettings />}
-            label="Campagnebeheer"
-            active={actief === "campagnebeheer"}
-            onClick={() => onNavigate("campagnebeheer")}
-          />
-
-          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-            KPI&apos;s
-          </p>
-          <NavigationItem
-            icon={<IconChartBar />}
-            label="KPI's 2026"
-            active={actief === "kpi-overzicht"}
-            onClick={() => onNavigate("kpi-overzicht")}
-          />
-          {/* De targets voor 2027 staan direct onder het overzicht: het overzicht is waar
-              je de stand leest, dit is waar je hem tegen afzet. */}
-          <NavigationItem
-            icon={<IconTrendUp />}
-            label="KPI's 2027 GA"
-            active={actief === "kpi-2027"}
-            onClick={() => onNavigate("kpi-2027")}
-          />
-          {/* Dezelfde opzet, maar dan de websiteleads uit Syntec per bron in plaats van
-              de GA4-cijfers van udenhout.nl. */}
-          <NavigationItem
-            icon={<IconTarget />}
-            label="KPI's 2027 Syntec"
-            active={actief === "kpi-2027-syntec"}
-            onClick={() => onNavigate("kpi-2027-syntec")}
-          />
-
-          {/* Kanalen staat ná KPI's: de campagnetabel is waar het weekoverleg begint,
-              de kanaalcijfers zijn waar je doorklikt als je wilt weten waaróm een campagne
-              loopt zoals hij loopt. Social en Google staan apart omdat het twee andere
-              gesprekken zijn — bereik en beeld tegenover zoekintentie. De koppeltabel
-              staat niet in deze lijst maar bovenaan in het profielmenu (GebruikersMenu),
-              boven Kosten — je komt er alleen als je iets te koppelen hebt, niet als
-              onderdeel van de dagelijkse navigatie. */}
-          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-            Kanalen
-          </p>
-          <NavigationItem
-            icon={<IconAdHeart />}
-            label="Social ads"
-            active={actief === "social-ads"}
-            onClick={() => onNavigate("social-ads")}
-          />
-          <NavigationItem
-            icon={<IconSearch />}
-            label="Google Ads"
-            active={actief === "google-ads"}
-            onClick={() => onNavigate("google-ads")}
-          />
-          <NavigationItem
-            icon={<IconPhoto />}
-            label="Social organisch"
-            active={actief === "organisch"}
-            onClick={() => onNavigate("organisch")}
-          />
-          <NavigationItem
-            icon={<IconUserCircle />}
-            label="Social accounts"
-            active={actief === "account-ontwikkeling"}
-            onClick={() => onNavigate("account-ontwikkeling")}
-          />
-          {/* Website staat onderaan de groep en niet bovenaan: de vier tabbladen
-              erboven gaan over wat je zelf de deur uit doet, dit tabblad over waar dat
-              landt. Je klikt hier dus naartoe vanuit een kanaal, niet andersom. */}
-          <NavigationItem
-            icon={<IconGlobe />}
-            label="Website"
-            active={actief === "website"}
-            onClick={() => onNavigate("website")}
-          />
-          {/* Leads staat direct onder Website: het zijn de leads die op de website
-              worden afgevuurd (GA4-events), gekoppeld aan wat de betaalde kanalen kostten.
-              Je komt er vanuit de vraag "wat leverde het op", niet vanuit een kanaal.
-              Alleen zichtbaar voor de eigenaar (november 2026, op verzoek). */}
-          {zie("leads") && (
-            <NavigationItem
-              icon={<IconTarget />}
-              label="Leads"
-              active={actief === "leads"}
-              onClick={() => onNavigate("leads")}
-            />
-          )}
-          {/* Leads Syntec staat direct onder Leads: niet wat de website afvuurt, maar alle
-              leads die bij Van den Udenhout binnenkomen (Syntec, via het sheet-tabblad
-              "Data leads"), per merk, model en kanaal en uitgesplitst in online en offline.
-              Voor iedereen zichtbaar. */}
-          <NavigationItem
-            icon={<IconUsers />}
-            label="Leads Syntec"
-            active={actief === "leads-syntec"}
-            onClick={() => onNavigate("leads-syntec")}
-          />
-          {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
-              erboven gaan over wat er in een periode gebeurde, dit over de stand van het
-              klantenbestand waar de e-mail naartoe gaat — geen dag-op-dagcijfer maar de
-              basis eronder. De data komt ook ergens anders vandaan dan de rest van
-              Kanalen: rechtstreeks uit de Azure-export, niet uit Windsor. */}
-          <NavigationItem
-            icon={<IconMail />}
-            label="Selligent"
-            active={actief === "selligent"}
-            onClick={() => onNavigate("selligent")}
-          />
-
-          {/* Tools (voorheen Monitoren) staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
-              kopje of dat binnen de afspraak blijft — budget en klikdoel per maand. */}
-          {(zie("budget-beheer") || zie("landingspagina")) && (
-            <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-              Tools
-            </p>
-          )}
-          {zie("budget-beheer") && (
-            <NavigationItem
-              icon={<IconCoin />}
-              label="Budget beheer"
-              active={actief === "budget-beheer"}
-              onClick={() => onNavigate("budget-beheer")}
-            />
-          )}
-          {zie("landingspagina") && (
-            <NavigationItem
-              icon={<IconGlobe />}
-              label="Landingspagina"
-              active={actief === "landingspagina"}
-              onClick={() => onNavigate("landingspagina")}
-            />
-          )}
+          {/* De groepen zelf (Campagnes, KPI's 2027, Kanalen, Tools) staan in
+              `components/navigatie.tsx`, gedeeld met het startscherm. Een groep zonder
+              zichtbare pagina krijgt ook geen kopje. */}
+          {NAV_GROEPEN.map((groep) => {
+            const paginas = zichtbarePaginas(groep, gebruikerEmail);
+            if (paginas.length === 0) return null;
+            return (
+              <div key={groep.id} className="flex flex-col gap-0.5">
+                <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+                  {groep.naam}
+                </p>
+                {paginas.map((pg) => (
+                  <NavigationItem
+                    key={pg.view}
+                    icon={pg.icon}
+                    label={pg.label}
+                    active={actief === pg.view}
+                    onClick={() => onNavigate(pg.view)}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </nav>
       </div>
 

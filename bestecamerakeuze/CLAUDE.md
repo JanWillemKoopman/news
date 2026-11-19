@@ -74,6 +74,43 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - **Filterbalk**: één samenhangend component (aantal + filters + eventueel een inline
   ververs-actie) in plaats van losse knoppen die verspreid op de pagina staan.
 
+### Het startscherm (Home)
+
+- **Het dashboard opent op een startscherm** (view `home`, `components/home/HomeDashboard.tsx`,
+  november 2026 op verzoek). Bovenaan gecentreerd "Marketing dashboard" (geen PageHeader),
+  daaronder vier blokken in een raster van 2 × 2: **KPI's 2027** (linksboven), **Kanalen**
+  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok heeft een
+  klein grijs kopje met de groepsnaam uit de sidebar en daaronder een eigen titel: Key
+  performance indicators, Online kanalen analyseren, Interne data en Campagnes monitoren.
+- **Sidebar en startscherm delen één lijst** (`components/navigatie.tsx`, `NAV_GROEPEN`):
+  groepsnamen, pagina's, labels en iconen staan daar, en beide filteren met dezelfde
+  `magTabbladZien` (`zichtbarePaginas`). Een gebruiker ziet op het startscherm dus precies
+  de pagina's die hij in de sidebar ziet — dat was een expliciete eis. Een tabblad
+  toevoegen of verplaatsen = één regel in `NAV_GROEPEN`; zet nooit een losse
+  `NavigationItem` voor een groepspagina terug in `Sidebar.tsx`. Een groep zonder zichtbare
+  pagina krijgt in de sidebar geen kopje en zegt op het startscherm dat in één regel.
+- **Indeling en namen (november 2026, op verzoek):** de groep KPI's heet **KPI's 2027** met
+  **KPI's Google Analytics** (`kpi-2027`) en **KPI's Syntec** (`kpi-2027-syntec`); **KPI's
+  2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
+  **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
+  **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
+  (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
+  hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
+  het over deze pagina's onder hun nieuwe naam en plek.
+- **Naar het startscherm**: klik op de titel "Marketing dashboard" bovenaan de sidebar
+  (horizontaal gecentreerd, met een witte streep eronder op 20% dekking —
+  `bg-sidebar-ink/20`; geen subregel meer). Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
+  `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
+- **De illustraties** (`components/home/Illustraties.tsx`) zijn isometrische lijntekeningen
+  in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in
+  `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
+  er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
+  kubussen met de tekens van Google Ads, Instagram, Google Analytics en LinkedIn komen
+  omhoog (lijnversies, geen echte merklogo's), bij Interne data een serverkast waarvan de
+  lades openschuiven naast een stapel klantkaarten die uitwaaiert, bij Campagnes een billboard met een autoadvertentie (we zijn een autodealer) dat iets
+  omhoogkomt terwijl de auto erop een stukje naar rechts rijdt); uit bij
+  `prefers-reduced-motion`. Houd die beweging klein.
+
 ### De campagnetabel
 
 - Campagnes blijven **kolommen naast elkaar**, metrics blijven **rijen**; dit patroon
@@ -284,7 +321,8 @@ lak.
 
 De zes tabbladen onder **Kanalen** (Social ads, Google Ads, Social organisch, Social
 accounts, Website, Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`)
-— Leads, Leads Syntec en Selligent staan ook onder Kanalen maar hebben een eigen paneel:
+— Leads staat ook onder Kanalen (Leads Syntec en Selligent sinds november 2026 onder
+Tools); die hebben een eigen paneel:
 filterbalk, grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
 niet uit af te lezen zijn:
 
@@ -727,7 +765,7 @@ model op te halen.
 - **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
   sheet loopt een dag of twee achter, en vanaf vandaag gerekend eindigt elke grafiek met lege
   dagen. De export loopt soms halverwege een dag (laatste lead 12:40); die dag tekent lichter
-  (`halveDag` in `reeks`). Standaard 30 dagen; periode en filters staan in de URL.
+  (`halveDag` in `reeks`). Standaard 12 maanden; periode en filters staan in de URL.
 - **Dag, week of maand kies je met knopjes rechtsboven de grafiek** (verzoek november 2026),
   **standaard per week** (maandag t/m zondag), los van de lengte van de periode. Een week of
   maand die maar half in de periode valt, tekent lichter. De keuze staat in de URL

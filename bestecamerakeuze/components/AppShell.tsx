@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import Sidebar, { type DashboardView } from "@/components/Sidebar";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import Toast from "@/components/Toast";
+import HomeDashboard from "@/components/home/HomeDashboard";
 import NieuweCampagneKnop from "@/components/NieuweCampagneKnop";
 import NieuwBerichtZijbalk from "@/components/kennisacties/NieuwBerichtZijbalk";
 import WeekwinnaarPopup from "@/components/scores/WeekwinnaarPopup";
@@ -76,6 +77,10 @@ const TEAM_VIEWS: DashboardView[] = [
 ];
 
 const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
+  home: {
+    title: "Marketing dashboard",
+    subtitle: "Het startscherm met alle onderdelen van het dashboard.",
+  },
   scores: {
     title: "Scores",
     subtitle: "Het teamdoel, de weekstand en de totaalstand van iedereen die vastlegt.",
@@ -102,12 +107,12 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle: "De belangrijkste kerncijfers in één dashboard.",
   },
   "kpi-2027": {
-    title: "KPI's 2027 GA",
+    title: "KPI's Google Analytics",
     subtitle:
       "De targets voor 2027 per KPI en per website: wat 2026 naar verwachting doet, plus 5% (per KPI aan te passen).",
   },
   "kpi-2027-syntec": {
-    title: "KPI's 2027 Syntec",
+    title: "KPI's Syntec",
     subtitle:
       "De targets voor 2027 per websitebron in Syntec: wat 2026 naar verwachting doet, plus 5% (per KPI aan te passen).",
   },
@@ -138,12 +143,12 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
       "Offerte- en proefritaanvragen van udenhout.nl: welk merk en model, via welk kanaal, en wat de betaalde campagnes kostten.",
   },
   "leads-syntec": {
-    title: "Leads Syntec",
+    title: "Syntec leads",
     subtitle:
       "Alle leads die bij Van den Udenhout binnenkomen, uit Syntec: per merk, model en kanaal, uitgesplitst in online en offline.",
   },
   selligent: {
-    title: "Selligent",
+    title: "Selligent database",
     subtitle:
       "Het klantenbestand uit de Selligent-export: filter op elke kolom en zie hoeveel contacten er overblijven.",
   },
@@ -221,7 +226,7 @@ export default function AppShell({
   kosten,
   instellingen,
 }: Props) {
-  const [actief, setActief] = useState<DashboardView>("campagnes");
+  const [actief, setActief] = useState<DashboardView>("home");
 
   /**
    * Welke tabbladen zijn ooit geopend?
@@ -240,14 +245,14 @@ export default function AppShell({
   /**
    * Het open tabblad staat in de URL (`?tab=social-ads`), zodat een link naar een
    * kanaalpagina daadwerkelijk daar opent. Bewust in een effect en niet in de
-   * initiële state: de server rendert altijd het campagnetabblad, en dat moet
+   * initiële state: de server rendert altijd het startscherm, en dat moet
    * overeenkomen met de eerste render in de browser.
    */
   useEffect(() => {
     const gevraagd = new URLSearchParams(window.location.search).get("tab");
     if (!gevraagd || !(gevraagd in TITLES)) return;
     // Een tabblad dat alleen de eigenaar ziet (Leads, Landingspagina), opent via de URL ook
-    // niet voor een ander: dan blijft het campagnetabblad staan.
+    // niet voor een ander: dan blijft het startscherm staan.
     if (!magTabbladZien(gevraagd, gebruikerEmail)) return;
     const view = gevraagd as DashboardView;
     setActief(view);
@@ -259,7 +264,7 @@ export default function AppShell({
     setBezocht((eerder) => (eerder.has(view) ? eerder : new Set(eerder).add(view)));
 
     const params = new URLSearchParams(window.location.search);
-    if (view === "campagnes") params.delete("tab");
+    if (view === "home") params.delete("tab");
     else params.set("tab", view);
     const zoek = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
@@ -295,7 +300,7 @@ export default function AppShell({
           lampje ernaast (`KanaalPagina.tsx`), zodat de status-/updateknop in de
           PageHeader er niet onder verdwijnt. */}
       <main className="min-w-0 flex-1 py-6 pl-8 pr-28">
-        {actief !== "chat" && (
+        {actief !== "chat" && actief !== "home" && (
           <PageHeader
             title={title}
             subtitle={subtitle}
@@ -304,6 +309,11 @@ export default function AppShell({
           />
         )}
 
+        {/* Het startscherm (geen PageHeader: de titel staat daar gecentreerd in het
+            scherm zelf). Vier blokken die naar elk tabblad uit de sidebar doorverwijzen. */}
+        <div role="tabpanel" hidden={actief !== "home"}>
+          <HomeDashboard onNavigate={navigeer} gebruikerEmail={gebruikerEmail} />
+        </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "scores"}>
           {scores}
         </div>

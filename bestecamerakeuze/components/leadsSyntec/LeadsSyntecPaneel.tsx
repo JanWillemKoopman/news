@@ -53,7 +53,8 @@ import {
  */
 
 const VIEW = "leads-syntec";
-const STANDAARD_PERIODE = "30d";
+// Standaard de afgelopen twaalf maanden (verzoek november 2026).
+const STANDAARD_PERIODE = "12m";
 const MERK_KOLOMMEN = [...EIGEN_MERKEN, OVERIGE_MERKEN, ONBEKEND];
 
 const HERKOMST_KEUZES: { id: HerkomstFilter; label: string }[] = [
