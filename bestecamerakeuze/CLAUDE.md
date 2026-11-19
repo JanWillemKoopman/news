@@ -724,6 +724,19 @@ model op te halen.
   **standaard per week** (maandag t/m zondag), los van de lengte van de periode. Een week of
   maand die maar half in de periode valt, tekent lichter. De keuze staat in de URL
   (`f.korrel`) als hij niet op week staat.
+- **De grafiek is gestapeld: Online altijd onder in blauw, Offline erbovenop in grijs**
+  (verzoek van de eigenaar, november 2026; eerst groen en oranje, dat is teruggedraaid), met
+  het aantal midden in elk deel en het totaal boven de staaf. In de grafiek heet internet
+  **Online** (legenda en tooltip); op de rest van de pagina heet het nog Internet. Blauw staat
+  per theme vast (`blauw` in `GrafiekKleuren`, `lib/themes.ts`) en is niet `categorieen[0]`,
+  want die is bij Audi, SEAT en Porsche rood en bij Škoda groen; grijs is `context`. De
+  tekstkleur in een deel wordt op contrast gekozen (label- of vlakkleur van het theme), ook
+  voor een lichtere halve staaf. Een getal verschijnt alleen als het past (staaf ≥ 24 px
+  breed, deel ≥ 15 px hoog): per dag over 90 dagen staan er dus geen getallen, alleen in de
+  tooltip. Het totaal staat op het bovenste deel dat er is — offline, of online als er dat vak
+  geen offline lead was, want een deel van nul hoogte krijgt in Recharts geen label. De
+  cijfers hebben een rand in de kleur eronder, zodat de stippellijn van vorig jaar er niet
+  doorheen loopt.
 - **Vergelijk met vorig jaar** (schakelaar, standaard uit) zet dezelfde datums een jaar eerder
   ernaast: onder elk getal, op de kerncijfers en als lijn in de grafiek. Alleen als die datums
   helemaal in de sheet staan (vanaf januari 2024), anders staat de knop uit.
@@ -736,7 +749,7 @@ model op te halen.
   per periode zakt altijd naar het heden toe).
 - **Opbouw.** Filterbalk (periode, internet/offline, kanaalgroep, kanaal, merk, model, nieuw
   of gebruikt, soort aanvraag, vergelijken, zonder dubbele), vier kerncijfers, de grafiek
-  (internet en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
+  (online en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
   matrix: internet en offline als blokken met subtotaal, offline per kanaalgroep, de merken
   als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Internet, Offline en %
   internet, een totaalregel over álle rijen, "Onbekend" vast onderaan en een CSV-knop.

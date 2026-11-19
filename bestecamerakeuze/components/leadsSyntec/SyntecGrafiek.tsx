@@ -18,16 +18,16 @@ import { useGrafiekKleuren } from "@/components/ThemeProvider";
 import { KORRELS, type Korrel, type ReeksPunt } from "@/lib/leadsSyntec/samenvatting";
 
 /**
- * Leads per dag, week of maand, gestapeld: internet (online) altijd onder in groen, offline
- * altijd erbovenop in oranje (verzoek van de eigenaar, november 2026). In elk deel staat in
- * het midden hoeveel leads het waren, en boven de staaf het totaal — zo lees je internet,
- * offline en totaal af zonder over de staaf te hoeven bewegen. Rechtsboven kies je met drie
+ * Leads per dag, week of maand, gestapeld: Online (kanaalgroep Internet) altijd onder in
+ * blauw, Offline altijd erbovenop in grijs (verzoek van de eigenaar, november 2026). In elk
+ * deel staat in het midden hoeveel leads het waren, en boven de staaf het totaal — zo lees je
+ * online, offline en totaal af zonder over de staaf te hoeven bewegen. Rechtsboven kies je met drie
  * knopjes of de grafiek per dag, week of maand staat; standaard per week.
  *
  * Een getal verschijnt alleen als het past: in een smalle staaf (bv. 90 dagen per dag) of
  * een te laag deel blijft hij weg in plaats van over de rand te lopen; de tooltip heeft
- * altijd alle drie. Groen en oranje komen uit het theme (`groen`/`oranje` in
- * `lib/themes.ts`), de tekstkleur in de staaf wordt gekozen op contrast met die kleur.
+ * altijd alle drie. Blauw komt uit het theme (`blauw` in `lib/themes.ts`), grijs is de
+ * contextkleur van het theme; de tekstkleur in de staaf wordt gekozen op contrast.
  *
  * Met "Vergelijk met vorig jaar" staat het totaal van dezelfde datums een jaar eerder er als
  * lijn overheen, per vak op **positie** uitgelijnd (week 3 tegen week 3).
@@ -163,7 +163,7 @@ function MiddenLabel({ stijl, ...p }: LabelProps & { stijl: LabelStijl }) {
 }
 
 /**
- * Het totaal boven de staaf. Staat op het bovenste deel dat er is: offline, of internet als
+ * Het totaal boven de staaf. Staat op het bovenste deel dat er is: offline, of online als
  * er in dat vak geen offline lead was (een deel van nul hoogte krijgt van Recharts geen label).
  */
 function TotaalLabel({ kleur, halo, ...p }: LabelProps & { kleur: string; halo: string }) {
@@ -200,7 +200,7 @@ function VakTooltip({ active, payload }: TooltipProps) {
       <p className="mt-1 text-ink">
         {formatteer(p.totaal, "aantal")} {p.totaal === 1 ? "lead" : "leads"}
       </p>
-      <p className="text-ink-muted">Internet: {formatteer(p.internet, "aantal")}</p>
+      <p className="text-ink-muted">Online: {formatteer(p.internet, "aantal")}</p>
       <p className="text-ink-muted">Offline: {formatteer(p.offline, "aantal")}</p>
       {p.vorig !== null && <p className="text-ink-muted">Vorig jaar: {formatteer(p.vorig, "aantal")}</p>}
       {!p.volledig && (
@@ -244,8 +244,8 @@ export default function SyntecGrafiek({
   // kleur: per staaf via een Cell, zodat het getal er gewoon in blijft staan.
   const LICHT = 0.45;
   const stijl = (vul: string): LabelStijl => ({ tekst: tekstOp(vul, [kleuren.label, kleuren.vlak]), halo: vul });
-  const groen = { vol: stijl(kleuren.groen), licht: stijl(gemengd(kleuren.groen, kleuren.vlak, LICHT)) };
-  const oranje = { vol: stijl(kleuren.oranje), licht: stijl(gemengd(kleuren.oranje, kleuren.vlak, LICHT)) };
+  const online = { vol: stijl(kleuren.blauw), licht: stijl(gemengd(kleuren.blauw, kleuren.vlak, LICHT)) };
+  const offline = { vol: stijl(kleuren.context), licht: stijl(gemengd(kleuren.context, kleuren.vlak, LICHT)) };
   const vak = (index: number | undefined) => data[index ?? -1];
   const per = korrel === "dag" ? "dag" : korrel === "week" ? "week" : "maand";
 
@@ -255,8 +255,8 @@ export default function SyntecGrafiek({
         <div>
           <h2 className="font-sans-w7 text-cell font-semibold text-ink">Leads per {per}</h2>
           <p className="mt-0.5 text-meta text-ink-muted">
-            Internet (online, groen) is kanaalgroep Internet in Syntec; offline (oranje) is alles daarbuiten
-            (showroom, acquisitie, mail en telefoon). In de staaf staat het aantal per deel, erboven het
+            Online (blauw) is kanaalgroep Internet in Syntec; offline (grijs) is alles daarbuiten (showroom,
+            acquisitie, mail en telefoon). In de staaf staat het aantal per deel, erboven het
             totaal.
             {vorig ? " De lijn is het totaal van dezelfde datums vorig jaar." : ""}
             {heeftHalf
@@ -283,11 +283,11 @@ export default function SyntecGrafiek({
       {/* De legenda in HTML: dan staat de lijn van vorig jaar er als lijn in en niet als blokje. */}
       <div className="mt-3 flex justify-end gap-4 text-meta text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.groen }} />
-          Internet
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.blauw }} />
+          Online
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.oranje }} />
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.context }} />
           Offline
         </span>
         {vorig && (
@@ -318,8 +318,8 @@ export default function SyntecGrafiek({
               tickFormatter={(v: number) => formatteer(v, "aantal")}
             />
             <Tooltip content={<VakTooltip />} cursor={{ fill: kleuren.raster }} />
-            {/* Volgorde = stapelvolgorde: internet onderop, offline erbovenop. */}
-            <Bar dataKey="internet" name="Internet" stackId="leads" fill={kleuren.groen} isAnimationActive={false}>
+            {/* Volgorde = stapelvolgorde: online onderop, offline erbovenop. */}
+            <Bar dataKey="internet" name="Online" stackId="leads" fill={kleuren.blauw} isAnimationActive={false}>
               {data.map((d, i) => (
                 <Cell key={i} fillOpacity={d.volledig ? 1 : LICHT} />
               ))}
@@ -327,7 +327,7 @@ export default function SyntecGrafiek({
                 dataKey="internet"
                 content={(p) => {
                   const lp = p as LabelProps;
-                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? groen.licht : groen.vol} />;
+                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? online.licht : online.vol} />;
                 }}
               />
               <LabelList
@@ -343,7 +343,7 @@ export default function SyntecGrafiek({
               dataKey="offline"
               name="Offline"
               stackId="leads"
-              fill={kleuren.oranje}
+              fill={kleuren.context}
               radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
               isAnimationActive={false}
             >
@@ -354,7 +354,7 @@ export default function SyntecGrafiek({
                 dataKey="offline"
                 content={(p) => {
                   const lp = p as LabelProps;
-                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? oranje.licht : oranje.vol} />;
+                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? offline.licht : offline.vol} />;
                 }}
               />
               <LabelList
