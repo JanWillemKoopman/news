@@ -359,3 +359,18 @@ test("minstens één opt-in pakt contacten met True op welke kolom dan ook", () 
   // Combineert met gewone filters als "en".
   assert.equal(standVan(tabel, [{ kolom: "PREFERENCES_A", waarden: ["True"] }], true).contacten, 1);
 });
+
+test("minimaal 1 opt-in geldt per contactpersoon: al zijn rijen blijven staan", () => {
+  const tabel = bouwTabel(
+    '"ID";"VDUVEHICLES_VEHICLE_ID";"PREFERENCES_A";"PREFERENCES_B"\n' +
+      '"1";"100";"True";"False"\n' + // contact 1, auto 100: opt-in
+      '"1";"101";"";""\n' + // contact 1, auto 101: niets ingevuld op deze rij
+      '"2";"102";"False";"False"\n', // contact 2: nergens True
+    META,
+  );
+  const stand = standVan(tabel, [], true);
+  assert.equal(stand.contacten, 1);
+  // Beide auto's van contact 1 tellen mee, niet alleen de rij met de True.
+  assert.equal(stand.autos, 2);
+  assert.equal(stand.rijen, 2);
+});

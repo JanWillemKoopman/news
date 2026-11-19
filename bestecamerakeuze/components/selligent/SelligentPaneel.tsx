@@ -237,6 +237,8 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
           velden={rasterVelden}
           filters={filters}
           onFilter={zetFilter}
+          minstensEenOptin={minstensEenOptin}
+          onMinstensEenOptin={setMinstensEenOptin}
           onWisAlles={() => {
             setFilters({});
             setMinstensEenOptin(false);
@@ -286,8 +288,6 @@ export default function SelligentPaneel({ ingelogd }: { ingelogd: boolean }) {
             onStand={setOptinStand}
             actief={actieveOptins}
             onKies={zetOptin}
-            minstensEen={minstensEenOptin}
-            onMinstensEen={setMinstensEenOptin}
             bezig={laadtStand}
           />
 

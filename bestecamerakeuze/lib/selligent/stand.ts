@@ -424,24 +424,6 @@ export function selectie(
   const masker = new Uint8Array(tabel.rijen).fill(1);
   let rijen = tabel.rijen;
 
-  // "Minstens één opt-in" is een *of* over alle booleaanse kolommen, en past dus niet in
-  // het gewone filter (dat is *en* tussen kolommen). Een rij blijft staan zodra één van
-  // de opt-inkolommen er op True staat; welke maakt niet uit.
-  if (minstensEenOptin) {
-    const optins = tabel.kolommen
-      .filter((k) => k.type === "booleaans")
-      .map((k) => ({
-        codes: k.codes,
-        waar: Uint8Array.from(k.waarden, (w, c) => (c > 0 && isWaar(w) ? 1 : 0)),
-      }));
-    for (let i = 0; i < masker.length; i++) {
-      if (!optins.some((o) => o.waar[o.codes[i]] === 1)) {
-        masker[i] = 0;
-        rijen--;
-      }
-    }
-  }
-
   for (const filter of filters) {
     const kolom = tabel.kolommen.find((k) => k.naam === filter.kolom);
     // Een filter op een kolom die niet meer in de export zit, wordt genegeerd in plaats
@@ -457,6 +439,48 @@ export function selectie(
       if (door[codes[i]] === 0) {
         masker[i] = 0;
         rijen--;
+      }
+    }
+  }
+
+  // "Minimaal 1 opt-in" (filter onder Voorkeuren): de contactpersoon moet op minstens één
+  // van alle opt-ins True hebben staan, zodat hij op minstens één manier te bereiken is.
+  // Een *of* over alle booleaanse kolommen, en dus geen gewoon filter (dat is *en* tussen
+  // kolommen). Per contact en niet per rij: een contact met twee auto's dat op één rij een
+  // True heeft, blijft met beide rijen staan — net zoals een opt-in-tegel een contact telt
+  // in de sterkste stand die het ergens heeft. Dit gebeurt ná de kolomfilters, zodat het
+  // over dezelfde rijen gaat als de tegels op het scherm.
+  if (minstensEenOptin) {
+    const optins = tabel.kolommen
+      .filter((k) => k.type === "booleaans")
+      .map((k) => ({
+        codes: k.codes,
+        waar: Uint8Array.from(k.waarden, (w, c) => (c > 0 && isWaar(w) ? 1 : 0)),
+      }));
+    const rijWaar = (i: number) => optins.some((o) => o.waar[o.codes[i]] === 1);
+    const idKolom = kiesKolom(tabel, CONTACT_KOLOMMEN);
+
+    if (idKolom) {
+      const idCodes = idKolom.codes;
+      const contactWaar = new Uint8Array(idKolom.waarden.length);
+      for (let i = 0; i < masker.length; i++) {
+        if (masker[i] === 1 && idCodes[i] !== 0 && rijWaar(i)) contactWaar[idCodes[i]] = 1;
+      }
+      for (let i = 0; i < masker.length; i++) {
+        if (masker[i] === 0) continue;
+        // Een rij zonder id hoort bij geen contact; die beslist op zichzelf.
+        const door = idCodes[i] !== 0 ? contactWaar[idCodes[i]] === 1 : rijWaar(i);
+        if (!door) {
+          masker[i] = 0;
+          rijen--;
+        }
+      }
+    } else {
+      for (let i = 0; i < masker.length; i++) {
+        if (masker[i] === 1 && !rijWaar(i)) {
+          masker[i] = 0;
+          rijen--;
+        }
       }
     }
   }

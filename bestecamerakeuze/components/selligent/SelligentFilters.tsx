@@ -58,6 +58,9 @@ type Props = {
   velden: Veld[];
   filters: Record<string, Filter>;
   onFilter: (kolom: string, filter: Filter | null) => void;
+  /** Het filter "Minimaal 1 opt-in" onder Voorkeuren (zie `selectie` in `lib/selligent/stand.ts`). */
+  minstensEenOptin: boolean;
+  onMinstensEenOptin: (aan: boolean) => void;
   onWisAlles: () => void;
   /**
    * Hoeveel filters er over de héle pagina aanstaan, dus inclusief de merkbalk.
@@ -91,6 +94,15 @@ const GROEP_NAMEN: Record<string, string> = {
   VDUVEHICLES: "Voertuig",
 };
 
+/** Het blok waarin het filter "Minimaal 1 opt-in" staat. */
+const OPTIN_GROEP = "PREFERENCES";
+const OPTIN_LABEL = "Minimaal 1 opt-in";
+const OPTIN_JA = "Ja";
+const OPTIN_UITLEG =
+  "De contactpersoon moet minimaal 1 van alle opt-in mogelijkheden op True hebben staan, zodat we " +
+  "hem op minimaal 1 manier kunnen bereiken. Per contactpersoon: heeft hij op één van zijn auto's " +
+  "een opt-in, dan tellen al zijn auto's mee.";
+
 /** De kop boven het blok met de kolommen die geen voorvoegsel delen. */
 const LOSSE_GROEP = "Algemeen";
 
@@ -112,6 +124,8 @@ export default function SelligentFilters({
   velden,
   filters,
   onFilter,
+  minstensEenOptin,
+  onMinstensEenOptin,
   onWisAlles,
   aantalActief,
   bijgewerkt,
@@ -128,6 +142,7 @@ export default function SelligentFilters({
       return tekst ? { veld, tekst } : null;
     })
     .filter((c): c is { veld: Veld; tekst: string } => c !== null);
+  const aantalChips = chips.length + (minstensEenOptin ? 1 : 0);
 
   return (
     <section className="rounded-panel border border-line bg-card px-5 py-3 shadow-subtle">
@@ -145,9 +160,9 @@ export default function SelligentFilters({
           />
           <span className="font-sans-w7 text-cell font-semibold text-ink">Filters</span>
           <span className="text-meta text-ink-faint">
-            {chips.length === 0
+            {aantalChips === 0
               ? `${velden.length} kolommen`
-              : `${chips.length} actief van ${velden.length}`}
+              : `${aantalChips} actief van ${velden.length}`}
           </span>
         </button>
 
@@ -188,8 +203,21 @@ export default function SelligentFilters({
 
       {/* De chips blijven staan als de balk dicht is: ook gesloten hoort hij te vertellen
           waar je naar kijkt. */}
-      {chips.length > 0 && (
+      {aantalChips > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
+          {minstensEenOptin && (
+            <li>
+              <button
+                type="button"
+                onClick={() => onMinstensEenOptin(false)}
+                title="Dit filter wissen"
+                className="flex items-center gap-1 rounded-control bg-primary-light px-2 py-0.5 text-meta text-primary transition-opacity duration-[var(--duur-snel)] hover:opacity-80"
+              >
+                {OPTIN_LABEL}
+                <IconClose className="h-3 w-3" />
+              </button>
+            </li>
+          )}
           {chips.map(({ veld, tekst }) => (
             <li key={veld.naam}>
               <button
@@ -218,7 +246,10 @@ export default function SelligentFilters({
               lezen. */}
           <div className="mt-3 flex flex-col gap-3">
             {groepen.map((groep) => {
-              const actief = groep.velden.filter((v) => filters[v.naam]).length;
+              const isOptinGroep = groep.voorvoegsel === OPTIN_GROEP;
+              const actief =
+                groep.velden.filter((v) => filters[v.naam]).length +
+                (isOptinGroep && minstensEenOptin ? 1 : 0);
               const naam = groep.voorvoegsel
                 ? (GROEP_NAMEN[groep.voorvoegsel] ?? groep.voorvoegsel)
                 : LOSSE_GROEP;
@@ -245,6 +276,18 @@ export default function SelligentFilters({
                     </span>
                   </div>
                   <div className="grid grid-cols-2 items-start gap-x-2 gap-y-1 xl:grid-cols-4">
+                    {/* "Minimaal 1 opt-in" staat vooraan in Voorkeuren: het is een filter
+                        over al deze kolommen samen ("of"), geen kolom van zichzelf. */}
+                    {isOptinGroep && (
+                      <div className="min-w-0" title={OPTIN_UITLEG}>
+                        <FilterSelect
+                          label={OPTIN_LABEL}
+                          options={[OPTIN_JA]}
+                          selected={minstensEenOptin ? [OPTIN_JA] : []}
+                          onChange={(waarden) => onMinstensEenOptin(waarden.includes(OPTIN_JA))}
+                        />
+                      </div>
+                    )}
                     {groep.velden.map((veld) => (
                       <VeldControl
                         key={veld.naam}

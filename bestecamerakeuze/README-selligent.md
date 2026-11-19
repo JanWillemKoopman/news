@@ -163,6 +163,15 @@ zelf, dan verandert er niets en mag die regel weg.
     meestuurt — niet een verzonnen `"True"`. Sinds de data onbewerkt is kunnen `"true"` en
     `"True "` aparte waarden zijn, en dan zou een tegel van 24.273 een filter van 24.270
     opleveren.
+- **Filter "Minimaal 1 opt-in"** (bovenaan het blok Voorkeuren in de filterbalk; stond eerst
+  als knop boven de tegels, op verzoek verplaatst in november 2026). Definitie: de
+  contactpersoon moet minimaal 1 van alle opt-in mogelijkheden (alle booleaanse kolommen) op
+  True hebben staan, zodat we hem op minimaal 1 manier kunnen bereiken. Een *of* over die
+  kolommen, en **per contactpersoon**: heeft een contact op één van zijn rijen een True, dan
+  blijven al zijn rijen (en auto's) staan — net als de tegels, die een contact in zijn
+  sterkste stand tellen. Het wordt toegepast ná de kolomfilters (`selectie` in
+  `lib/selligent/stand.ts`, getest). Eerder werkte het per rij, waardoor de andere auto's van
+  zo'n contact wegvielen.
 - **"Contacten toegevoegd in Selligent per maand"** en **"Auto's toegevoegd in Selligent per
   maand"**, allebei als lijn en allebei op `CREATED_DT`. Per contact respectievelijk per
   auto en niet per rij, uit dezelfde doorloop als de metrics — zo kan de som van een grafiek
