@@ -57,6 +57,17 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   van voor andere pagina's. Een **tweede uitzondering**, ook op verzoek: KPI's 2027 heeft
   één tab per website (zie "KPI's → KPI's 2027") — dezelfde pagina voor een andere
   GA4-property.
+- **Wie welk tabblad ziet** (november 2026, op verzoek van de eigenaar), op één plek:
+  `lib/beperkteTabbladen.ts`, getest. **Voor niemand** (ook niet de eigenaar): Scores,
+  Kennis en acties, Budget beheer, Koppeltabel en Kosten — de code staat er nog, terugzetten
+  is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar** (zijn twee accounts):
+  Leads, Landingspagina en Instellingen. Toegepast in de sidebar en het profielmenu, in
+  `AppShell` (`?tab=…` opent een verborgen tabblad niet, en de weekwinnaar-pop-up van
+  Scores verschijnt niet) en in `app/page.tsx` (het paneel wordt niet gerenderd). De module
+  staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser laadt, en daar staat
+  het standaardwachtwoord in. Waar hieronder nog over Scores, Kennis en acties, Budget
+  beheer, Koppeltabel of Kosten staat, gaat dat over tabbladen die nu niet in beeld zijn.
+  "KPI overzicht" heet sindsdien **KPI's 2026** (view blijft `kpi-overzicht`).
 - **Page header**: paginatitel + korte subtitel links; rechts contextuele status (bv.
   "N campagnes live", "Laatst bijgewerkt HH:MM") en een subtiele update-actie — geen
   grote primaire knop voor een routinehandeling.
@@ -557,12 +568,8 @@ niet uit af te lezen zijn:
 ### Kanalen → Leads
 
 Tabblad onder **Kanalen**, direct onder Website (view `leads`, `components/leads/`, route
-`app/api/leads/route.ts`). **Alleen zichtbaar voor de eigenaar** (zijn twee accounts,
-november 2026 op verzoek), net als Landingspagina: de lijst staat in
-`lib/beperkteTabbladen.ts` en geldt op vier plekken — de sidebar, `AppShell` (`?tab=leads`
-opent voor een ander niet), `app/page.tsx` (het paneel wordt niet gerenderd) en de route
-(403). Die module staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser
-laadt, en daar staat het standaardwachtwoord in. Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
+`app/api/leads/route.ts`). **Alleen zichtbaar voor de eigenaar** (zie "Wie welk tabblad
+ziet" hieronder); `/api/leads` geeft anderen daarnaast een 403. Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
 andere aanvragen die als GA4-event met "lead" in de naam worden afgevuurd, met merk, model,
 kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 

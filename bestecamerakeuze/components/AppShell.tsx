@@ -96,7 +96,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     subtitle: "Campagnes toevoegen en alle velden bewerken — direct in sync met de sheet.",
   },
   "kpi-overzicht": {
-    title: "KPI overzicht",
+    title: "KPI's 2026",
     subtitle: "De belangrijkste kerncijfers in één dashboard.",
   },
   "kpi-2027": {
@@ -396,7 +396,8 @@ export default function AppShell({
       {/* Beide renderen via een portal naar <body>, dus ze staan los van het actieve
           tabblad: de weekuitslag hoort maandagochtend te verschijnen waar je ook bent, en
           de puntenbevestiging hoort te blijven staan als de zijbalk dichtgaat. */}
-      <WeekwinnaarPopup />
+      {/* Hoort bij Scores: staat dat tabblad verborgen (lib/beperkteTabbladen.ts), dan ook de pop-up. */}
+      {magTabbladZien("scores", gebruikerEmail) && <WeekwinnaarPopup />}
       <Toast melding={melding} onWeg={wisMelding} />
       </div>
     </ActieveWeergaveProvider>

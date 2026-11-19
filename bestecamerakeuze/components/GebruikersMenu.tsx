@@ -11,6 +11,9 @@ type Props = {
   avatarUrl: string | null;
   /** Alleen tonen voor wie ook de rest van de Kanalen-sectie ziet — zie Sidebar.tsx. */
   toontKoppeltabel: boolean;
+  /** Kosten en Instellingen: wie ze ziet staat in `lib/beperkteTabbladen.ts`. */
+  toontKosten: boolean;
+  toontInstellingen: boolean;
   onKoppeltabel: () => void;
   onKosten: () => void;
   onInstellingen: () => void;
@@ -29,6 +32,8 @@ export default function GebruikersMenu({
   email,
   avatarUrl,
   toontKoppeltabel,
+  toontKosten,
+  toontInstellingen,
   onKoppeltabel,
   onKosten,
   onInstellingen,
@@ -110,31 +115,35 @@ export default function GebruikersMenu({
                 Koppeltabel
               </button>
             )}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onKosten();
-              }}
-              className="mt-1 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-            >
-              <IconCoin className="h-4 w-4 text-ink-faint" />
-              Kosten
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onInstellingen();
-              }}
-              className="flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-            >
-              <IconSettings className="h-4 w-4 text-ink-faint" />
-              Instellingen
-            </button>
-            <div className="my-1 border-t border-line-soft" />
+            {toontKosten && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onKosten();
+                }}
+                className="mt-1 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+              >
+                <IconCoin className="h-4 w-4 text-ink-faint" />
+                Kosten
+              </button>
+            )}
+            {toontInstellingen && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onInstellingen();
+                }}
+                className="mt-1 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+              >
+                <IconSettings className="h-4 w-4 text-ink-faint" />
+                Instellingen
+              </button>
+            )}
+            {(toontKoppeltabel || toontKosten || toontInstellingen) && <div className="my-1 border-t border-line-soft" />}
             {email ? (
               // POST i.p.v. GET, zodat een prefetch of linkscanner je niet per ongeluk
               // uitlogt — zie app/auth/signout/route.ts.

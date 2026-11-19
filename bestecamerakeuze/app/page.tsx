@@ -26,7 +26,7 @@ import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
 import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
-import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
+import { magTabbladZien } from "@/lib/beperkteTabbladen";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
 import { Ga4KoppelingProvider } from "@/lib/ga4KoppelingContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
@@ -59,6 +59,9 @@ export default async function DashboardPage() {
   // `ingelogd`-controle als derde slot (naast de middleware en de controle hier), en
   // elke API-route controleert daarnaast zijn eigen verzoek.
   const ingelogd = true;
+  // Wie welk tabblad ziet (lib/beperkteTabbladen.ts). Een tabblad dat iemand niet ziet,
+  // wordt voor hem ook niet gerenderd: dan staat het nergens in de pagina.
+  const zie = (view: string) => magTabbladZien(view, gebruiker.email);
 
   const profiel = await haalProfiel(await createClient(), gebruiker.id).catch(() => null);
 
@@ -85,8 +88,8 @@ export default async function DashboardPage() {
         profielAvatarUrl={profiel?.avatarUrl ?? null}
         liveCount={liveCount}
         ingelogd={ingelogd}
-        scores={<ScorePaneel />}
-        kennisacties={<KennisEnActies />}
+        scores={zie("scores") ? <ScorePaneel /> : null}
+        kennisacties={zie("kennisacties") ? <KennisEnActies /> : null}
         campagnes={
           <CampaignDashboard notitiesBeschikbaar={isSupabaseGeconfigureerd()} ingelogd={ingelogd} />
         }
@@ -101,15 +104,15 @@ export default async function DashboardPage() {
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
         leads={
-          // Alleen voor de eigenaar (lib/beperkteTabbladen.ts); de API-route controleert dit ook zelf.
-          magBeperkteTabbladenZien(gebruiker.email) ? <LeadsPaneel ingelogd={ingelogd} /> : null
+          // Alleen voor de eigenaar; de API-route controleert dit ook zelf.
+          zie("leads") ? <LeadsPaneel ingelogd={ingelogd} /> : null
         }
         selligent={<SelligentPaneel ingelogd={ingelogd} />}
-        koppeltabel={<Koppeltabel ingelogd={ingelogd} />}
-        budgetBeheer={<BudgetBeheer ingelogd={ingelogd} />}
+        koppeltabel={zie("koppeltabel") ? <Koppeltabel ingelogd={ingelogd} /> : null}
+        budgetBeheer={zie("budget-beheer") ? <BudgetBeheer ingelogd={ingelogd} /> : null}
         landingspagina={
-          // Alleen voor de twee beheeraccounts; de API-route controleert dit ook zelf.
-          isBeheerder(gebruiker.email) ? <Landingspagina ingelogd={ingelogd} /> : null
+          // Alleen voor de eigenaar; de API-route controleert analyseren ook zelf.
+          zie("landingspagina") ? <Landingspagina ingelogd={ingelogd} /> : null
         }
         prikbord={
           gereed.gereed ? (
@@ -133,13 +136,13 @@ export default async function DashboardPage() {
           )
         }
         kosten={
-          gereed.gereed ? (
+          !zie("kosten") ? null : gereed.gereed ? (
             <KostenPaneel ingelogd={ingelogd} />
           ) : (
             <NietGeconfigureerd ontbreekt={gereed.ontbreekt} />
           )
         }
-        instellingen={<InstellingenPaneel ingelogd={ingelogd} email={gebruiker.email} />}
+        instellingen={zie("instellingen") ? <InstellingenPaneel ingelogd={ingelogd} email={gebruiker.email} /> : null}
         />
       </TeamDataProvider>
       </Ga4KoppelingProvider>

@@ -10,7 +10,7 @@ const KPI_RAPPORT_URL =
 export default function KpiOverzicht() {
   return (
     <iframe
-      title="KPI overzicht"
+      title="KPI's 2026"
       src={KPI_RAPPORT_URL}
       allowFullScreen
       sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"

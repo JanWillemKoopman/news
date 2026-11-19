@@ -3,7 +3,7 @@
 import GebruikersMenu from "@/components/GebruikersMenu";
 import LogoMark from "@/components/LogoMark";
 import NavigationItem from "@/components/NavigationItem";
-import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
+import { magTabbladZien } from "@/lib/beperkteTabbladen";
 import {
   IconAdHeart,
   IconBrain,
@@ -71,8 +71,10 @@ export default function Sidebar({
 }: Props) {
   const weergavenaam = profielNaam || naamVoor(gebruikerEmail);
 
-  // Leads en Landingspagina ziet alleen de eigenaar (`lib/beperkteTabbladen.ts`).
-  const toontBeperkteSecties = magBeperkteTabbladenZien(gebruikerEmail);
+  // Wie welk tabblad ziet staat in `lib/beperkteTabbladen.ts`: Scores, Kennis en acties,
+  // Budget beheer, Koppeltabel en Kosten niemand; Leads, Landingspagina en Instellingen
+  // alleen de eigenaar.
+  const zie = (view: DashboardView) => magTabbladZien(view, gebruikerEmail);
 
   return (
     // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover klapt hij uit
@@ -97,18 +99,22 @@ export default function Sidebar({
               de cijfers eronder vertellen wat er gebeurde, dit waarom. Scores staat
               vooraan omdat de weekstand de aanleiding is om iets vast te leggen; wat er
               vastligt lees je op het tabblad erna. */}
-          <NavigationItem
-            icon={<IconTrophy />}
-            label="Scores"
-            active={actief === "scores"}
-            onClick={() => onNavigate("scores")}
-          />
-          <NavigationItem
-            icon={<IconBrain />}
-            label="Kennis en acties"
-            active={actief === "kennisacties"}
-            onClick={() => onNavigate("kennisacties")}
-          />
+          {zie("scores") && (
+            <NavigationItem
+              icon={<IconTrophy />}
+              label="Scores"
+              active={actief === "scores"}
+              onClick={() => onNavigate("scores")}
+            />
+          )}
+          {zie("kennisacties") && (
+            <NavigationItem
+              icon={<IconBrain />}
+              label="Kennis en acties"
+              active={actief === "kennisacties"}
+              onClick={() => onNavigate("kennisacties")}
+            />
+          )}
 
           <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
             Campagnes
@@ -137,7 +143,7 @@ export default function Sidebar({
           </p>
           <NavigationItem
             icon={<IconChartBar />}
-            label="KPI overzicht"
+            label="KPI's 2026"
             active={actief === "kpi-overzicht"}
             onClick={() => onNavigate("kpi-overzicht")}
           />
@@ -205,7 +211,7 @@ export default function Sidebar({
               worden afgevuurd (GA4-events), gekoppeld aan wat de betaalde kanalen kostten.
               Je komt er vanuit de vraag "wat leverde het op", niet vanuit een kanaal.
               Alleen zichtbaar voor de eigenaar (november 2026, op verzoek). */}
-          {toontBeperkteSecties && (
+          {zie("leads") && (
             <NavigationItem
               icon={<IconTarget />}
               label="Leads"
@@ -227,16 +233,20 @@ export default function Sidebar({
 
           {/* Tools (voorheen Monitoren) staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
               kopje of dat binnen de afspraak blijft — budget en klikdoel per maand. */}
-          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-            Tools
-          </p>
-          <NavigationItem
-            icon={<IconCoin />}
-            label="Budget beheer"
-            active={actief === "budget-beheer"}
-            onClick={() => onNavigate("budget-beheer")}
-          />
-          {toontBeperkteSecties && (
+          {(zie("budget-beheer") || zie("landingspagina")) && (
+            <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+              Tools
+            </p>
+          )}
+          {zie("budget-beheer") && (
+            <NavigationItem
+              icon={<IconCoin />}
+              label="Budget beheer"
+              active={actief === "budget-beheer"}
+              onClick={() => onNavigate("budget-beheer")}
+            />
+          )}
+          {zie("landingspagina") && (
             <NavigationItem
               icon={<IconGlobe />}
               label="Landingspagina"
@@ -255,7 +265,9 @@ export default function Sidebar({
           naam={weergavenaam}
           email={gebruikerEmail}
           avatarUrl={profielAvatarUrl}
-          toontKoppeltabel
+          toontKoppeltabel={zie("koppeltabel")}
+          toontKosten={zie("kosten")}
+          toontInstellingen={zie("instellingen")}
           onKoppeltabel={() => onNavigate("koppeltabel")}
           onKosten={() => onNavigate("kosten")}
           onInstellingen={() => onNavigate("instellingen")}
