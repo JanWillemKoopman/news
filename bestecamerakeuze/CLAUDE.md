@@ -97,8 +97,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
   hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
   het over deze pagina's onder hun nieuwe naam en plek.
-- **Naar het startscherm**: klik op "Marketing / Marketing dashboard" linksboven in de
-  sidebar. Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
+- **Naar het startscherm**: klik op de titel "Marketing dashboard" bovenaan de sidebar
+  (horizontaal gecentreerd, met een witte streep eronder op 20% dekking —
+  `bg-sidebar-ink/20`; geen subregel meer). Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
   `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
 - **De illustraties** (`components/home/Illustraties.tsx`) zijn isometrische lijntekeningen
   in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in
