@@ -1,7 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import KpiJaarGrafiek, { type VergelijkLijn } from "@/components/kpi/KpiJaarGrafiek";
+import KanaalGrafiek from "@/components/kpi/KanaalGrafiek";
+import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
 import { formatteer } from "@/components/chat/chartTheme";
 import { STANDAARD_GROEI_TEKST, groeiTekst, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
@@ -58,16 +60,28 @@ export type GroeiInstelling =
   | { soort: "bewerkbaar"; aangepast: boolean; opslaan: (groei: number | null) => Promise<void> }
   | { soort: "afgeleid" };
 
+/** De kanaalverdeling van de hele website, één keer opgehaald voor alle kaarten. */
+export interface KanalenStand {
+  status: "leeg" | "laden" | "klaar" | "fout";
+  antwoord: KanalenAntwoord | null;
+  /** Haalt de verdeling op als dat nog niet gebeurd is; meteen terug als hij er al is. */
+  laad: () => void;
+}
+
 export default function KpiKaart({
   kpi,
   website,
   opslaanGroei,
+  kanalen,
 }: {
   kpi: KpiOverzichtRegel;
   website: WebsiteOverzicht;
   opslaanGroei: (groei: number | null) => Promise<void>;
+  /** Alleen bij een website met `kanaalverdeling`: dan staat het knopje "Kanalen" erop. */
+  kanalen?: KanalenStand;
 }) {
   const u = kpi.uitkomst;
+  const kanaalReeks = kanalen?.antwoord?.kpis?.[kpi.sleutel];
   // Een andere bron vervangt GA4 (Porsche-werkplaats) of telt erbij op (udenhoutlease.nl).
   const vervangend = kpi.externeBron && !kpi.externeBron.optellen ? kpi.externeBron : null;
   const opgeteld = kpi.externeBron?.optellen ? kpi.externeBron : null;
@@ -79,6 +93,47 @@ export default function KpiKaart({
       realisatie={kpi.realisatie}
       groei={{ soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }}
       vergelijking={kpi.vergelijking}
+      wissel={
+        kanalen
+          ? {
+              label: "Kanalen",
+              titel: "Wissel naar het aandeel per kanaal per maand, vanaf januari 2025",
+              bijOpenen: kanalen.laad,
+              inhoud:
+                kanalen.status === "klaar" && kanaalReeks && kanalen.antwoord?.peildatum ? (
+                  <KanaalGrafiek
+                    kanalen={kanaalReeks}
+                    peildatum={kanalen.antwoord.peildatum}
+                    peildatumTekst={datumKort(kanalen.antwoord.peildatum)}
+                    eenheid={kpi.naam.toLowerCase()}
+                  />
+                ) : kanalen.status === "fout" ? (
+                  <p className="flex h-full items-center justify-center px-6 text-center text-sm text-negative">
+                    De kanaalverdeling kon niet worden opgehaald: {kanalen.antwoord?.fout ?? "onbekende fout"}
+                  </p>
+                ) : (
+                  <p className="flex h-full items-center justify-center px-6 text-center text-sm text-ink-muted">
+                    Kanaalverdeling ophalen… De allereerste keer haalt het dashboard hem bij Google Analytics op; dat
+                    kan een minuut duren.
+                  </p>
+                ),
+              toelichting: (
+                <p className="mb-1">
+                  <span className="text-ink-muted">Kanalen:</span> per maand het aandeel per kanaal, op GA4&apos;s
+                  sessiebron/medium, januari 2025 t/m{" "}
+                  {kanalen.antwoord?.peildatum ? datumKort(kanalen.antwoord.peildatum) : "de laatste zaterdag"} (de lopende maand
+                  lichter). Ga met de muis over een kanaal in de legenda voor wat erin zit.
+                  {kpi.sleutel === "gebruikers"
+                    ? " Een gebruiker die in dezelfde maand via twee kanalen kwam, telt in allebei."
+                    : ""}
+                  {opgeteld
+                    ? ` De aanvragen uit ${opgeteld.naam} zitten er niet in: dat is een andere GA4-property, de verdeling gaat alleen over ${website.domein}.`
+                    : ""}
+                </p>
+              ),
+            }
+          : undefined
+      }
     >
       {vervangend && (
         <p className="mb-1">
@@ -156,6 +211,7 @@ export function KpiKaartOpmaak({
   realisatie,
   groei,
   vergelijking = null,
+  wissel,
   children,
 }: {
   naam: string;
@@ -167,18 +223,37 @@ export function KpiKaartOpmaak({
   groei?: GroeiInstelling;
   /** Optioneel: een eerder jaar als extra lijn in de grafiek (udenhout.nl: 2025). */
   vergelijking?: VergelijkLijn | readonly VergelijkLijn[] | null;
+  /**
+   * Optioneel: een klein knopje rechtsboven dat de grafiek op dezelfde plek vervangt door
+   * een andere (de kanaalverdeling op KPI's 2027 GA). De rest van de kaart blijft staan.
+   */
+  wissel?: GrafiekWissel;
   children: ReactNode;
 }) {
+  const [toonWissel, setToonWissel] = useState(false);
   return (
     <section className="kaart-omlijst flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
       <header className="flex items-baseline justify-between gap-4">
         <h2 className="font-sans-w7 text-cell font-semibold text-ink">{naam}</h2>
-        {u && (
-          <p className="text-right text-meta text-ink-muted">
-            gemiddeld {perDagTekst(u.perDag)} per dag
-            {u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {u && !toonWissel && (
+            <p className="text-right text-meta text-ink-muted">
+              gemiddeld {perDagTekst(u.perDag)} per dag
+              {u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
+            </p>
+          )}
+          {u && wissel && (
+            <WisselKnop
+              label={wissel.label}
+              titel={wissel.titel}
+              aan={toonWissel}
+              zet={(aan) => {
+                setToonWissel(aan);
+                if (aan) wissel.bijOpenen?.();
+              }}
+            />
+          )}
+        </div>
       </header>
 
       {u ? (
@@ -212,19 +287,26 @@ export function KpiKaartOpmaak({
           </div>
 
           <div className="mt-4 h-56">
-            <KpiJaarGrafiek
-              maanden={u.maanden}
-              targetPerMaand={u.targetPerMaand}
-              peildatumTekst={datumKort(u.peildatum)}
-              vergelijking={vergelijking}
-            />
+            {toonWissel && wissel ? (
+              wissel.inhoud
+            ) : (
+              <KpiJaarGrafiek
+                maanden={u.maanden}
+                targetPerMaand={u.targetPerMaand}
+                peildatumTekst={datumKort(u.peildatum)}
+                vergelijking={vergelijking}
+              />
+            )}
           </div>
         </>
       ) : (
         <p className="mt-3 text-sm text-ink-muted">Nog geen stand voor deze website.</p>
       )}
 
-      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">{children}</footer>
+      <footer className="mt-3 border-t border-line-soft pt-2.5 text-meta text-ink-faint">
+        {toonWissel && wissel?.toelichting}
+        {children}
+      </footer>
     </section>
   );
 }
@@ -325,5 +407,56 @@ function BewerkbareGroei({
         </button>
       )}
     </div>
+  );
+}
+
+/** Een andere grafiek op dezelfde plek, achter een klein knopje rechtsboven in de kaart. */
+export interface GrafiekWissel {
+  /** Naast het knopje: "Kanalen". */
+  label: string;
+  /** Uitleg bij de muis. */
+  titel: string;
+  /** Bij het aanzetten, bijvoorbeeld om de data op te halen. */
+  bijOpenen?: () => void;
+  inhoud: ReactNode;
+  /** Bovenaan de voetregel zolang de andere grafiek in beeld is. */
+  toelichting?: ReactNode;
+}
+
+/** Een klein schuifje met een label ervoor; bewust onopvallend, het is een tweede blik. */
+function WisselKnop({
+  label,
+  titel,
+  aan,
+  zet,
+}: {
+  label: string;
+  titel: string;
+  aan: boolean;
+  zet: (aan: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={aan}
+      title={titel}
+      onClick={() => zet(!aan)}
+      className="flex shrink-0 items-center gap-1.5 rounded-control px-1 py-0.5 text-meta text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:text-ink"
+    >
+      {label}
+      <span
+        aria-hidden="true"
+        className={`relative inline-block h-3.5 w-6 rounded-pill transition-colors duration-[var(--duur-snel)] ease-merk ${
+          aan ? "bg-primary" : "bg-line"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-2.5 w-2.5 rounded-pill bg-card shadow-subtle transition-transform duration-[var(--duur-snel)] ease-merk ${
+            aan ? "translate-x-3" : "translate-x-0.5"
+          }`}
+        />
+      </span>
+    </button>
   );
 }

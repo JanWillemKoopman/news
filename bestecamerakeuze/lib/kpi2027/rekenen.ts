@@ -525,6 +525,24 @@ export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Verg
   };
 }
 
+/**
+ * Wat een KPI in één maand ("2025-03") telde volgens zijn stand, zoals gemeten: dezelfde
+ * bronnen als de grafiek. Gebruikt als controle naast de kanaalverdeling, en die dekt
+ * alleen de property van de website zelf: een optellende externe bron (udenhoutlease.nl
+ * bij zakelijke lease) blijft hier daarom buiten, anders lijkt elke maand waarin die
+ * meetelt een verschil.
+ */
+export function kpiMaandTotaal(definitie: KpiDefinitie, stand: KpiStand, maand: string): number | null {
+  if (!maand.startsWith(`${stand.jaar}-`) || `${maand}-01` > stand.peildatum) return null;
+  if (definitie.bron.soort === "gebruikers") return Math.max(0, Number(stand.gebruikers[Number(maand.slice(5, 7)) - 1]) || 0);
+  const zonderOptellen = definitie.externeBron?.optellen ? { ...definitie, externeBron: undefined } : definitie;
+  let som = 0;
+  for (const [datum, n] of Object.entries(dagwaardenVoor(zonderOptellen, stand))) {
+    if (datum.startsWith(`${maand}-`) && datum <= stand.peildatum) som += Math.max(0, n);
+  }
+  return som;
+}
+
 /** Wat een externe bron in het jaar van de stand t/m de peildatum telt. */
 function externAantalIn(extern: NonNullable<KpiDefinitie["externeBron"]>, stand: KpiStand): number {
   return Object.entries(extern.dagen)
@@ -560,6 +578,8 @@ export interface WebsiteOverzicht {
   property: string;
   uitgeslotenHosts: readonly string[];
   uitvalTekst: string | null;
+  /** Heeft deze website het knopje "Kanalen" op elke grafiek? */
+  kanaalverdeling: boolean;
   /** Bovenaan de tab, als de website een vergelijkingsjaar heeft én daar een stand van is. */
   vergelijkingTekst: string | null;
   stand: { peildatum: string; berekendOp: string; definitief: boolean } | null;
@@ -619,6 +639,7 @@ export function websiteOverzicht(
     property: website.property,
     uitgeslotenHosts: website.uitgeslotenHosts,
     uitvalTekst: stand ? uitvalMetUitzonderingen(website, uitval, stand.jaar) : null,
+    kanaalverdeling: Boolean(website.kanaalverdeling),
     vergelijkingTekst: vergelijk ? (website.vergelijkingsjaar?.toelichting ?? null) : null,
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,

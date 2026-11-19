@@ -845,6 +845,37 @@ realisatie van 2027.
     opnieuw op. Rekenwerk: `vergelijkingVoor` in `rekenen.ts`, getest.
   - Een andere website erbij = `vergelijkingsjaar` op die website zetten, nadat in Windsor
     is nagekeken dat dat jaar volledig gemeten is en met dezelfde events.
+- **Knopje "Kanalen" op udenhout.nl** (november 2026, op verzoek): rechtsboven op elke kaart
+  een klein schuifje (`WisselKnop` / `GrafiekWissel` in `KpiKaart.tsx`) dat de grafiek op
+  dezelfde plek vervangt door een gestapelde staafgrafiek tot 100% (`KanaalGrafiek.tsx`):
+  per maand vanaf januari 2025 t/m de lopende maand het aandeel per kanaal. Geen targets.
+  De vier kaartjes erboven blijven staan; de lopende maand staat lichter.
+  - **Dezelfde data als deze pagina, niet die van Leads.** Dezelfde property, events per KPI
+    (`definities.ts`) en hostregels, sessies en actieve gebruikers per maand, alleen met
+    `session_source_medium` erbij — dat zit niet in `kpi_2027_standen`. Per maand toont de
+    tooltip of het kanaaltotaal gelijk is aan de KPI-grafiek (`kpiTotaal`,
+    `kpiMaandTotaal` in `rekenen.ts`); zo niet, dan staat het KPI-cijfer erbij. Een
+    **optellende** externe bron (udenhoutlease.nl bij zakelijke lease) is een andere
+    property en zit dus niet in de verdeling: de controle laat hem buiten, en onder de
+    grafiek staat dat die aanvragen er niet in zitten.
+  - **De indeling** (`lib/kpi2027/kanalen.ts`, getest op de bron/media die udenhout.nl echt
+    binnenkrijgt): acht groepen, in de volgorde van de stapel — Google Ads, Meta Ads, Overig
+    betaald, Organisch zoeken (incl. Google Bedrijfsprofiel), Social organisch,
+    Autoportals (Gaspedaal e.a.), Direct, Verwijzingen & overig. Bewust niet GA4's eigen
+    kanaalgroep en niet `lib/leads/kanaal.ts`: Gaspedaal (na Google Ads de grootste bron) is
+    daar "Referral", Meta-advertenties met de plaatsing als medium "Unassigned". Acht is het
+    maximum: meer kleuren is in een gestapelde staaf niet te lezen. De regels en de
+    redenering staan in de kop van `kanalen.ts`; pas een regel daar aan, met een testgeval.
+  - **Kleuren**: vaste volgorde per kanaal (`LICHT`/`DONKER` in `KanaalGrafiek.tsx`),
+    doorgerekend op onderscheid (ook bij kleurenblindheid), "Verwijzingen & overig" grijs.
+    Bewust niet de themakleuren: die reeks heeft er zes.
+  - **Opslag** (`kpi_2027_kanalen`, migratie 0037): één rij per website, al ingedeeld per
+    bron × maand × kanaal, plus per kanaal de grootste bron/media. Elke zondag opnieuw over de
+    hele periode in de cron (`bijwerken.ts`); staat er nog niets, dan haalt de eerste klik
+    hem op (`/api/kpi-2027/kanalen`, `kanalenBron.ts`). Een aangepaste indeling geldt dus na
+    de volgende ophaalronde.
+  - **Gebruikers** tellen per maand per kanaal: wie in één maand via twee kanalen kwam, telt in
+    allebei. Dat staat onder de grafiek.
 
 - **Bovenaan staat dezelfde overzichtstabel als op KPI's 2027 Syntec** (`GaOverzichtTabel.tsx`),
   voor de gekozen website: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie en
