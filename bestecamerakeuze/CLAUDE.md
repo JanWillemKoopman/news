@@ -822,7 +822,10 @@ realisatie van 2027.
   op KPI's 2027 GA én Syntec): een balk "Lees definitie" met een pijltje klapt hem per kaart
   uit (`Definitie` in `KpiKaart.tsx`, gedeeld via `KpiKaartOpmaak`). Volledig uitgeschreven
   onder elke kaart maakte de pagina onrustig. De inhoud blijft volledig; zet hem niet weer
-  standaard open zonder dat daarom gevraagd wordt.
+  standaard open zonder dat daarom gevraagd wordt. Opbouw op GA (`KpiKaart`), net als op
+  Syntec: *Grafiek* (wat de lijnen zijn, en hoeveel dagen zonder sessies zijn ingevuld),
+  *Bron* (property, uitgesloten hosts, wekelijkse stand), eventueel een andere of opgetelde
+  bron, en *Wat telt mee* (de events met periode en aantal, of de statistiek).
 - **Lijn 2025 op udenhout.nl** (november 2026, op verzoek): een derde, dunnere lijn in elke
   grafiek van die tab, met 2025 per maand zoals gemeten. Hij telt **nergens** mee (niet in de
   verwachting, niet in het target) en is alleen context. Alleen udenhout.nl heeft hem
