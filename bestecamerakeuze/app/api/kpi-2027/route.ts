@@ -30,6 +30,9 @@ async function antwoord(): Promise<Kpi2027Antwoord> {
         standen.find((s) => s.website === w.sleutel && s.jaar === KPI_JAAR) ?? null,
         standen.find((s) => s.website === w.sleutel && s.jaar === KPI_DOELJAAR) ?? null,
         (kpi) => groei.get(groeiSleutel(w.sleutel, kpi)),
+        w.vergelijkingsjaar
+          ? (standen.find((s) => s.website === w.sleutel && s.jaar === w.vergelijkingsjaar!.jaar) ?? null)
+          : null,
       ),
     ),
   };

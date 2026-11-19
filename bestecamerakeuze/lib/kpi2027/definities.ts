@@ -106,6 +106,21 @@ export interface KpiDefinitie {
   bronTekst?: string;
   /** Een opmerking onder de bron, als er iets is wat de lezer moet weten. */
   opmerking?: string;
+  /**
+   * Waarom deze KPI géén lijn voor het vergelijkingsjaar krijgt, terwijl zijn website die
+   * wel heeft (zakelijke lease op udenhout.nl: in 2025 niet gemeten). Staat onder de grafiek.
+   */
+  zonderVergelijking?: string;
+}
+
+/**
+ * Een eerder jaar als extra lijn in de grafieken van een website, ter vergelijking. Het
+ * telt niet mee in de verwachting of het target: het is alleen een lijn.
+ */
+export interface Vergelijkingsjaar {
+  jaar: number;
+  /** Wat de lezer moet weten om de lijn goed te lezen, bovenaan de tab. */
+  toelichting: string;
 }
 
 export interface KpiWebsite {
@@ -118,6 +133,8 @@ export interface KpiWebsite {
   property: string;
   /** Hostnames die niet meetellen (test, staging, andere sites in dezelfde property). */
   uitgeslotenHosts: readonly string[];
+  /** Optioneel: een eerder jaar als extra lijn in elke grafiek (nu alleen udenhout.nl, 2025). */
+  vergelijkingsjaar?: Vergelijkingsjaar;
   kpis: readonly KpiDefinitie[];
 }
 
@@ -202,6 +219,14 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     domein: "udenhout.nl",
     property: "255949462",
     uitgeslotenHosts: [],
+    // Onderzocht in november 2026: Windsor heeft deze property vanaf 1 januari 2025, elke
+    // dag met sessies (geen uitval), en heel 2025 draaide de oude tracking — dezelfde
+    // events als januari t/m maart 2026, die de KPI's hieronder al meetellen.
+    vergelijkingsjaar: {
+      jaar: 2025,
+      toelichting:
+        "De lijn 2025 telt dezelfde events als 2026, zoals gemeten (in 2025 had de website elke dag sessies, dus niets bijgeschat). Heel 2025 draaide de oude tracking; vanaf april 2026 de nieuwe. Een verschil tussen 2025 en 2026 vanaf april kan dus deels aan de andere meting liggen in plaats van aan meer of minder aanvragen. Zakelijke lease werd in 2025 niet gemeten en heeft geen lijn 2025.",
+    },
     kpis: [
       SESSIES,
       GEBRUIKERS,
@@ -256,6 +281,8 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
         },
         opmerking:
           "Vóór april werd zakelijke lease vrijwel niet gemeten (2 aanvragen in januari t/m maart). Die maanden tellen zoals gemeten, wat het jaar en het target drukt.",
+        zonderVergelijking:
+          "Geen lijn 2025: zakelijke lease werd in 2025 niet gemeten (5 aanvragen in augustus t/m oktober, verder niets).",
       },
       {
         sleutel: "verhuur",

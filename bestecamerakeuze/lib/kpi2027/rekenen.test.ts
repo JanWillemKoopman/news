@@ -22,6 +22,7 @@ import {
   volgendeUpdate,
   websiteOverzicht,
   metGroei,
+  vergelijkingVoor,
   type KpiStand,
   type MaandInvoer,
 } from "@/lib/kpi2027/rekenen";
@@ -337,4 +338,60 @@ test("een aangepast percentage verzet target en maandtarget, niet de verwachting
   // metGroei in de browser geeft precies wat de server uitrekent.
   const standaard = websiteOverzicht(pgz, s, null).kpis.find((k) => k.sleutel === "sessies")!;
   assert.deepEqual(metGroei(standaard.uitkomst!, 0.12), sessies.uitkomst);
+});
+
+test("vergelijkingsjaar: udenhout.nl krijgt een lijn 2025, per maand zoals gemeten", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  assert.equal(udenhout.vergelijkingsjaar?.jaar, 2025);
+  const s2026 = stand({ website: "udenhout", dagen: { sessies: elkeDag("2026-01-01", "2026-11-14", 3000) } });
+  const s2025 = stand({
+    website: "udenhout",
+    jaar: 2025,
+    peildatum: "2025-12-31",
+    definitief: true,
+    dagen: {
+      sessies: elkeDag("2025-01-01", "2025-12-31", 2000),
+      // Oude en nieuwe generatie tellen allebei, net als in 2026.
+      "event:generate_lead_proefrit_aanvraag": { "2025-01-10": 3, "2025-03-05": 2 },
+      "event:generate_lead_proefrit": { "2025-03-06": 1 },
+      // Een vreemd jaar in de stand telt niet mee.
+      "event:offerte_onderhoud": { "2024-12-31": 9, "2025-02-01": 4 },
+    },
+    gebruikers: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120],
+  });
+  const o = websiteOverzicht(udenhout, s2026, null, undefined, s2025);
+  const kpi = (sleutel: string) => o.kpis.find((k) => k.sleutel === sleutel)!;
+
+  assert.deepEqual(kpi("proefritaanvragen").vergelijking?.maanden, [3, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.equal(kpi("proefritaanvragen").vergelijking?.totaal, 6);
+  assert.deepEqual(
+    kpi("proefritaanvragen").vergelijking?.events.map((e) => [e.naam, e.aantal]),
+    [["generate_lead_proefrit_aanvraag", 5], ["generate_lead_proefrit", 1]],
+  );
+  assert.equal(kpi("offerte-onderhoud").vergelijking?.totaal, 4);
+  assert.equal(kpi("sessies").vergelijking?.maanden[0], 31 * 2000);
+  assert.equal(kpi("sessies").vergelijking?.totaal, 365 * 2000);
+  assert.equal(kpi("gebruikers").vergelijking?.totaal, 780);
+  assert.ok(o.vergelijkingTekst);
+
+  // Zakelijke lease werd in 2025 niet gemeten: geen lijn, wel de reden.
+  assert.equal(kpi("zakelijke-lease").vergelijking, null);
+  assert.match(kpi("zakelijke-lease").zonderVergelijking ?? "", /niet gemeten/);
+
+  // De lijn verandert niets aan de verwachting of het target.
+  const zonder = websiteOverzicht(udenhout, s2026, null);
+  assert.deepEqual(o.kpis.map((k) => k.uitkomst?.target), zonder.kpis.map((k) => k.uitkomst?.target));
+  assert.equal(zonder.vergelijkingTekst, null);
+  assert.ok(zonder.kpis.every((k) => k.vergelijking === null && k.zonderVergelijking === null));
+});
+
+test("vergelijkingsjaar: alleen websites die het hebben, en geen lijn bij een externe bron", () => {
+  const pgz = vindWebsite("pgz")!;
+  assert.equal(pgz.vergelijkingsjaar, undefined);
+  const s = stand({ website: "pgz", dagen: { sessies: elkeDag("2026-01-01", "2026-11-14", 80) } });
+  const vreemd = stand({ website: "pgz", jaar: 2025, peildatum: "2025-12-31", dagen: { sessies: { "2025-01-01": 5 } } });
+  assert.ok(websiteOverzicht(pgz, s, null, undefined, vreemd).kpis.every((k) => k.vergelijking === null));
+
+  const werkplaats = vindWebsite("porsche-brabant")!.kpis.find((k) => k.sleutel === "werkplaatsafspraken")!;
+  assert.equal(vergelijkingVoor(werkplaats, stand({ jaar: 2025, peildatum: "2025-12-31" })), null);
 });
