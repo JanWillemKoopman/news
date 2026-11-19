@@ -166,7 +166,7 @@ export function KpiKaartOpmaak({
   /** Zonder: het percentage staat er alleen. */
   groei?: GroeiInstelling;
   /** Optioneel: een eerder jaar als extra lijn in de grafiek (udenhout.nl: 2025). */
-  vergelijking?: VergelijkLijn | null;
+  vergelijking?: VergelijkLijn | readonly VergelijkLijn[] | null;
   children: ReactNode;
 }) {
   return (

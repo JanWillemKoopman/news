@@ -10,7 +10,8 @@ import type { MaandSoort, MaandUitkomst } from "@/lib/kpi2027/rekenen";
  * De jaargrafiek van één KPI: twee lijnen, zoals gevraagd — 2026 en het maandtarget 2027 —
  * en voor een website met een vergelijkingsjaar (udenhout.nl: 2025) een derde, dunnere lijn
  * met dat jaar zoals gemeten. Die telt nergens mee; hij staat er alleen om naast 2026 te
- * leggen.
+ * leggen. Er kunnen meerdere vergelijkingsjaren zijn (KPI's 2027 Syntec: 2024 en 2025);
+ * het jongste jaar krijgt de derde kleur van het palet, elk ouder jaar de volgende.
  *
  * De 2026-lijn is één kleur in twee stukken: doorgetrokken waar GA4 de maand volledig mat,
  * gestippeld waar het (deels) verwachting is. Zo leest de lopende maand niet als een
@@ -55,8 +56,10 @@ interface Punt {
   dagenGemeten: number;
   dagenInMaand: number;
   toelichting: string | null;
-  /** Het vergelijkingsjaar in deze maand, zoals gemeten; null zonder vergelijkingslijn. */
+  /** Het (eerste) vergelijkingsjaar in deze maand, zoals gemeten; null zonder vergelijkingslijn. */
   vergelijk: number | null;
+  /** Alle vergelijkingsjaren in deze maand, per jaar. */
+  jaren: Record<number, number>;
 }
 
 /** De lijn van het vergelijkingsjaar: welk jaar, en per maand wat er gemeten is. */
@@ -74,11 +77,18 @@ function rond(waarde: number): number {
   return Math.abs(waarde) < 10 ? Math.round(waarde * 10) / 10 : Math.round(waarde);
 }
 
+/** Eén lijn, een lijst of niets: altijd als lijst, jongste jaar eerst. */
+function alsLijst(vergelijking: VergelijkLijn | readonly VergelijkLijn[] | null): VergelijkLijn[] {
+  const lijst = vergelijking === null ? [] : Array.isArray(vergelijking) ? [...vergelijking] : [vergelijking as VergelijkLijn];
+  return lijst.sort((a, b) => b.jaar - a.jaar);
+}
+
 export function bouwPunten(
   maanden: MaandUitkomst[],
   targetPerMaand: number,
-  vergelijking: VergelijkLijn | null = null,
+  vergelijking: VergelijkLijn | readonly VergelijkLijn[] | null = null,
 ): Punt[] {
+  const lijnen = alsLijst(vergelijking);
   const gemeten = (m: MaandUitkomst | undefined) => m?.soort === "gerealiseerd";
   return maanden.map((m, i) => {
     const waarde = rond(m.verwacht);
@@ -99,7 +109,8 @@ export function bouwPunten(
       dagenGemeten: m.dagenGemeten,
       dagenInMaand: m.dagenInMaand,
       toelichting: m.toelichting ?? null,
-      vergelijk: vergelijking ? rond(vergelijking.maanden[i] ?? 0) : null,
+      vergelijk: lijnen.length > 0 ? rond(lijnen[0].maanden[i] ?? 0) : null,
+      jaren: Object.fromEntries(lijnen.map((l) => [l.jaar, rond(l.maanden[i] ?? 0)])),
     };
   });
 }
@@ -153,14 +164,20 @@ export default function KpiJaarGrafiek({
   targetPerMaand: number;
   /** "14 nov", voor de tooltip van de lopende maand. */
   peildatumTekst: string;
-  /** Optioneel: de lijn van het vergelijkingsjaar. */
-  vergelijking?: VergelijkLijn | null;
+  /** Optioneel: de lijn(en) van één of meer vergelijkingsjaren. */
+  vergelijking?: VergelijkLijn | readonly VergelijkLijn[] | null;
 }) {
   const kleuren = useGrafiekKleuren();
-  const punten = bouwPunten(maanden, targetPerMaand, vergelijking);
+  const lijnen = alsLijst(vergelijking);
+  const punten = bouwPunten(maanden, targetPerMaand, lijnen);
   const kleur2026 = kleuren.categorieen[0];
   const kleurTarget = kleuren.categorieen[1];
-  const kleurVergelijk = kleuren.categorieen[2];
+  // Jongste vergelijkingsjaar de derde paletkleur (zoals de 2025-lijn op KPI's 2027 GA),
+  // elk ouder jaar de volgende.
+  const vergelijkLijnen = lijnen.map((l, i) => ({
+    jaar: l.jaar,
+    kleur: kleuren.categorieen[(2 + i) % kleuren.categorieen.length],
+  }));
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -187,8 +204,7 @@ export default function KpiJaarGrafiek({
               peildatumTekst={peildatumTekst}
               kleur2026={kleur2026}
               kleurTarget={kleurTarget}
-              kleurVergelijk={kleurVergelijk}
-              vergelijkJaar={vergelijking?.jaar ?? null}
+              vergelijkLijnen={vergelijkLijnen}
             />
           }
           cursor={{ stroke: kleuren.raster, strokeWidth: 1 }}
@@ -203,20 +219,21 @@ export default function KpiJaarGrafiek({
           // Recharts de tekst in de lijnkleur, en oranje tekst op wit leest slecht.
           formatter={(waarde) => <span style={{ color: kleuren.as }}>{waarde}</span>}
         />
-        {vergelijking && (
-          // Eerst getekend, dus onder de lijnen van 2026: hij is context, niet het onderwerp.
-          // Dunner en zonder punten, zodat hij niet om aandacht vraagt.
+        {/* Eerst getekend (oudste jaar eerst), dus onder de lijnen van 2026: ze zijn context,
+            niet het onderwerp. Dunner en zonder punten, zodat ze niet om aandacht vragen. */}
+        {[...vergelijkLijnen].reverse().map((l) => (
           <Line
-            dataKey="vergelijk"
-            name={String(vergelijking.jaar)}
+            key={l.jaar}
+            dataKey={(p: Punt) => p.jaren[l.jaar] ?? null}
+            name={String(l.jaar)}
             type={kleuren.lijnvorm}
-            stroke={kleurVergelijk}
+            stroke={l.kleur}
             strokeWidth={Math.max(1, kleuren.lijndikte - 0.5)}
             dot={false}
             activeDot={{ r: 4, strokeWidth: 2, stroke: kleuren.vlak }}
             isAnimationActive={false}
           />
-        )}
+        ))}
         <Line
           dataKey="gemeten"
           name="2026"
@@ -266,16 +283,14 @@ function MaandTooltip({
   peildatumTekst,
   kleur2026,
   kleurTarget,
-  kleurVergelijk,
-  vergelijkJaar,
+  vergelijkLijnen,
 }: {
   active?: boolean;
   payload?: { payload: Punt }[];
   peildatumTekst: string;
   kleur2026: string;
   kleurTarget: string;
-  kleurVergelijk: string;
-  vergelijkJaar: number | null;
+  vergelijkLijnen: { jaar: number; kleur: string }[];
 }) {
   const p = payload?.[0]?.payload;
   if (!active || !p) return null;
@@ -313,22 +328,26 @@ function MaandTooltip({
         <span className="font-sans-w7 font-semibold">{regel2026}</span>
       </p>
       {toelichting && <p className="pl-5 text-ink-muted">{toelichting}</p>}
-      {vergelijkJaar !== null && p.vergelijk !== null && (
-        <>
-          <p className="mt-1 flex items-center gap-2 text-ink">
-            <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleurVergelijk }} />
-            <span>
-              {vergelijkJaar}: <span className="font-sans-w7 font-semibold">{formatteer(p.vergelijk, "aantal")}</span>
-            </span>
-          </p>
-          {p.vergelijk > 0 && (
-            <p className="pl-5 text-ink-muted">
-              2026 {p.verwacht >= p.vergelijk ? "+" : "−"}
-              {formatteer(Math.abs(p.verwacht / p.vergelijk - 1) * 100, "procent")} t.o.v. {vergelijkJaar}
+      {vergelijkLijnen.map(({ jaar, kleur }) => {
+        const waarde = p.jaren[jaar];
+        if (waarde === undefined) return null;
+        return (
+          <div key={jaar}>
+            <p className="mt-1 flex items-center gap-2 text-ink">
+              <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleur }} />
+              <span>
+                {jaar}: <span className="font-sans-w7 font-semibold">{formatteer(waarde, "aantal")}</span>
+              </span>
             </p>
-          )}
-        </>
-      )}
+            {waarde > 0 && (
+              <p className="pl-5 text-ink-muted">
+                2026 {p.verwacht >= waarde ? "+" : "−"}
+                {formatteer(Math.abs(p.verwacht / waarde - 1) * 100, "procent")} t.o.v. {jaar}
+              </p>
+            )}
+          </div>
+        );
+      })}
       <p className="mt-1 flex items-center gap-2 text-ink">
         <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleurTarget }} />
         <span>

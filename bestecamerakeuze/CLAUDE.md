@@ -915,6 +915,16 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
   2027. Het staat op drie plekken in beeld en hoort dat te blijven: de melding bovenaan
   het tabblad, de eerste keuze onder beide grafieken, en een regel onder elk totaal waar
   ze in zitten. "Wat telt mee" toont alleen de leads die in de verwachting meetellen.
+- **De grafieken tonen ook 2024 en 2025** als dunne lijnen (`eerdereJaren` per KPI, totaal en
+  combinatie; `SYNTEC_EERDERE_JAREN` in `bron.ts`), met dezelfde definitie en zoals gemeten.
+  Ze tellen nergens mee: geen verwachting, geen target. `meetVanaf` geldt er niet voor (dat
+  is een keuze voor de verwachting van 2026), doorgestuurde mails tellen er ook niet mee.
+  Nagerekend in november 2026: de indeling hoeft voor die jaren niet anders. In 2024 en
+  2025 bestonden alleen de oude kanalen, die de definities al dekken; wat er buiten valt
+  (chat, bel-me-terug, retentie, kleine portals als AutoWereld.nl, Marktplaats en Anwb.nl,
+  en de `_TB`-kanalen) zat ook niet in de doelen. `KpiJaarGrafiek` neemt daarvoor nu een
+  lijst vergelijkingsjaren aan: het jongste krijgt de derde paletkleur, elk ouder jaar de
+  volgende.
 - **Bovenaan staat een overzichtstabel** (`SyntecOverzichtTabel.tsx`, opgebouwd uit de
   gedeelde onderdelen in `OverzichtTabel.tsx`, net als die op KPI's 2027 GA), in de indeling van de
   doelentabel van het team: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie

@@ -75,6 +75,11 @@ export interface SyntecKpiRegel {
    * 2026 waren de telling van 2025 × 1,2. Null als 2025 niet is meegegeven.
    */
   vorigJaar: number | null;
+  /**
+   * De eerdere jaren (2024, 2025) per maand, met dezelfde definitie en zoals gemeten — voor
+   * de extra lijnen in de grafiek. Ze tellen nergens mee: geen verwachting, geen target.
+   */
+  eerdereJaren: { jaar: number; maanden: number[]; totaal: number }[];
   uitkomst: KpiUitkomst;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
   realisatie: { waarde: number; peildatum: string | null };
@@ -141,6 +146,8 @@ export function syntecOverzicht(
     kpis?: readonly SyntecKpi[];
     combinaties?: readonly SyntecCombinatie[];
     vorigJaar?: readonly SyntecTelling[] | null;
+    /** Hele eerdere jaren voor de extra lijnen in de grafiek (2024, 2025). */
+    eerdereJaren?: readonly { jaar: number; tellingen: readonly SyntecTelling[] }[];
     doeljaar?: { tellingen: readonly SyntecTelling[]; peildatum: string } | null;
     /** Met de hand aangepaste percentages per KPI-sleutel; de rest rekent met +5%. */
     groei?: ReadonlyMap<string, number>;
@@ -151,6 +158,27 @@ export function syntecOverzicht(
   const totalenVorigJaar = opties.vorigJaar ? jaartotalen(opties.vorigJaar, kpis) : null;
   const somVorigJaar = (delen: readonly SyntecKpi[]) =>
     totalenVorigJaar ? delen.reduce((t, k) => t + (totalenVorigJaar.get(k.sleutel) ?? 0), 0) : null;
+  // Per eerder jaar en per KPI de twaalf maanden — gewoon geteld, zonder meetVanaf: die
+  // geldt alleen voor de verwachting van 2026.
+  const eerdereJaren = [...(opties.eerdereJaren ?? [])]
+    .sort((a, b) => a.jaar - b.jaar)
+    .map(({ jaar, tellingen }) => {
+      const perKpiMaand = new Map<string, number[]>(kpis.map((k) => [k.sleutel, nulreeks()]));
+      for (const t of tellingen) {
+        const aantal = Number(t.aantal) || 0;
+        if (t.maand < 1 || t.maand > 12 || aantal <= 0) continue;
+        const treffer = classificeerLead(t.kanaal, t.onderwerp, kpis);
+        if (treffer) perKpiMaand.get(treffer.kpi.sleutel)![t.maand - 1] += aantal;
+      }
+      return { jaar, perKpiMaand };
+    });
+  const eerdereJarenVan = (delen: readonly SyntecKpi[]) =>
+    eerdereJaren.map(({ jaar, perKpiMaand }) => {
+      const maanden = nulreeks();
+      for (const k of delen) perKpiMaand.get(k.sleutel)!.forEach((n, i) => (maanden[i] += n));
+      return { jaar, maanden, totaal: maanden.reduce((t, n) => t + n, 0) };
+    });
+
   const doeljaar = opties.doeljaar ?? null;
   const totalenDoeljaar = doeljaar ? jaartotalen(doeljaar.tellingen, kpis) : null;
   const realisatieVan = (delen: readonly SyntecKpi[]) =>
@@ -193,6 +221,7 @@ export function syntecOverzicht(
       groeiAangepast: opties.groei?.has(kpi.sleutel) ?? false,
       keuzes: [...kpi.keuzes],
       vorigJaar: somVorigJaar([kpi]),
+      eerdereJaren: eerdereJarenVan([kpi]),
       uitkomst: uitkomsten.get(kpi.sleutel)!,
       realisatie: realisatieVan([kpi]),
     };
@@ -217,6 +246,7 @@ export function syntecOverzicht(
           : []),
       ],
       vorigJaar: somVorigJaar(delen),
+      eerdereJaren: eerdereJarenVan(delen),
       uitkomst: somVanUitkomsten(delen.map((k) => ({ naam: k.naam, uitkomst: uitkomsten.get(k.sleutel)! }))),
       realisatie: realisatieVan(delen),
     };

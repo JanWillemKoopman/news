@@ -37,7 +37,13 @@ export default function KpiSyntecKaart({
       : { soort: "afgeleid" };
 
   return (
-    <KpiKaartOpmaak naam={kpi.naam} uitkomst={kpi.uitkomst} realisatie={kpi.realisatie} groei={groei}>
+    <KpiKaartOpmaak
+      naam={kpi.naam}
+      uitkomst={kpi.uitkomst}
+      realisatie={kpi.realisatie}
+      groei={groei}
+      vergelijking={kpi.eerdereJaren}
+    >
       <p>
         <span className="text-ink-muted">Bron:</span> Syntec, sheet-tabblad Data leads. Alleen leads met kanaalgroep
         Internet, geteld op de datum Aangelegd ({KPI_JAAR} t/m {peildatum}).
@@ -86,6 +92,13 @@ export default function KpiSyntecKaart({
           <>het doel {KPI_JAAR} was {aantal(kpi.doel2026)}.</>
         )}
       </p>
+      {kpi.eerdereJaren.length > 0 && (
+        <p className="mt-1">
+          <span className="text-ink-muted">Lijnen {kpi.eerdereJaren.map((j) => j.jaar).join(" en ")}:</span> dezelfde
+          definitie over het hele jaar, zoals gemeten ({kpi.eerdereJaren.map((j) => `${j.jaar}: ${aantal(j.totaal)}`).join(", ")}).
+          Ze tellen nergens mee: ze staan er om {KPI_JAAR} naast te leggen.
+        </p>
+      )}
     </KpiKaartOpmaak>
   );
 }

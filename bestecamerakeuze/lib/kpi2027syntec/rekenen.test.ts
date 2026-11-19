@@ -274,3 +274,30 @@ test("een aangepast percentage telt door in totaal en combinatie, en de browser 
   // En terug naar de standaard.
   assert.deepEqual(pasSyntecGroeiToe(server, "offerte", null), syntecOverzicht(tellingen, "2026-12-31"));
 });
+
+test("eerdere jaren: per KPI en per totaal de maanden met dezelfde definitie, zonder meetVanaf", () => {
+  const eerdereJaren = [
+    {
+      jaar: 2025,
+      tellingen: [
+        { kanaal: "Udenhout.nl inruilvoorstel", onderwerp: "", maand: 1, aantal: 2 },
+        { kanaal: "Udenhout.nl offerteaanv.", onderwerp: "Offerte aanvraag", maand: 3, aantal: 40 },
+        { kanaal: "Udenhout.nl offerteaanv.", onderwerp: "FW: contactformulier", maand: 3, aantal: 9 },
+        { kanaal: "Skoda.nl", onderwerp: "", maand: 12, aantal: 7 },
+      ],
+    },
+    { jaar: 2024, tellingen: [{ kanaal: "Skoda.nl", onderwerp: "", maand: 5, aantal: 11 }] },
+  ];
+  const o = syntecOverzicht([], "2026-11-14", { eerdereJaren });
+  const eigen = o.groepen.find((g) => g.sleutel === "eigen-website")!;
+  const inruil = eigen.kpis.find((k) => k.sleutel === "inruil")!;
+  // Oudste jaar eerst; inruil telt januari 2025 gewoon mee (meetVanaf geldt alleen voor 2026).
+  assert.deepEqual(inruil.eerdereJaren.map((j) => j.jaar), [2024, 2025]);
+  assert.equal(inruil.eerdereJaren[1].maanden[0], 2);
+  // Doorgestuurde mails tellen ook in eerdere jaren niet mee.
+  assert.equal(eigen.kpis.find((k) => k.sleutel === "offerte")!.eerdereJaren[1].totaal, 40);
+  assert.equal(eigen.totaal.eerdereJaren[1].totaal, 42);
+  assert.deepEqual(o.totaal.eerdereJaren.map((j) => j.totaal), [11, 49]);
+  // Zonder eerdere jaren: geen lijnen.
+  assert.deepEqual(syntecOverzicht([], "2026-11-14").totaal.eerdereJaren, []);
+});

@@ -43,7 +43,7 @@ export async function GET() {
     };
     if (peildatum) {
       const laatste = peildatumDoeljaar ?? peildatum;
-      const [{ vorigJaar, basisjaar, doeljaar }, opgeslagen] = await Promise.all([
+      const [{ eerdereJaren, vorigJaar, basisjaar, doeljaar }, opgeslagen] = await Promise.all([
         haalSyntecTellingen(laatste),
         leesGroeiVeilig("kpi-2027-syntec"),
       ]);
@@ -59,6 +59,7 @@ export async function GET() {
         volgendeUpdate: volgendeUpdate(laatste),
         overzicht: syntecOverzicht(basisjaar, peildatum, {
           vorigJaar,
+          eerdereJaren,
           groei,
           doeljaar: peildatumDoeljaar ? { tellingen: doeljaar, peildatum: peildatumDoeljaar } : null,
         }),
