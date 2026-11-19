@@ -276,7 +276,7 @@ function Schakelaar({
  * afgelopen maand" het antwoord en dan is één klik het juiste aantal handelingen; maar
  * "van de start van de campagne tot nu" bestond tot nu toe helemaal niet.
  */
-function EigenPeriode({
+export function EigenPeriode({
   periode,
   onKies,
 }: {

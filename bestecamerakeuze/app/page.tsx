@@ -5,6 +5,7 @@ import CampagneBeheer from "@/components/beheer/CampagneBeheer";
 import AccountPaneel from "@/components/kanalen/AccountPaneel";
 import GoogleAdsPaneel from "@/components/kanalen/GoogleAdsPaneel";
 import LeadsPaneel from "@/components/leads/LeadsPaneel";
+import LeadsSyntecPaneel from "@/components/leadsSyntec/LeadsSyntecPaneel";
 import Koppeltabel from "@/components/kanalen/Koppeltabel";
 import OrganischPaneel from "@/components/kanalen/OrganischPaneel";
 import SelligentPaneel from "@/components/selligent/SelligentPaneel";
@@ -107,6 +108,7 @@ export default async function DashboardPage() {
           // Alleen voor de eigenaar; de API-route controleert dit ook zelf.
           zie("leads") ? <LeadsPaneel ingelogd={ingelogd} /> : null
         }
+        leadsSyntec={<LeadsSyntecPaneel ingelogd={ingelogd} />}
         selligent={<SelligentPaneel ingelogd={ingelogd} />}
         koppeltabel={zie("koppeltabel") ? <Koppeltabel ingelogd={ingelogd} /> : null}
         budgetBeheer={zie("budget-beheer") ? <BudgetBeheer ingelogd={ingelogd} /> : null}

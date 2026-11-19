@@ -34,6 +34,7 @@ type Props = {
   accountOntwikkeling: React.ReactNode;
   website: React.ReactNode;
   leads: React.ReactNode;
+  leadsSyntec: React.ReactNode;
   selligent: React.ReactNode;
   koppeltabel: React.ReactNode;
   budgetBeheer: React.ReactNode;
@@ -71,6 +72,7 @@ const TEAM_VIEWS: DashboardView[] = [
   "account-ontwikkeling",
   "website",
   "leads",
+  "leads-syntec",
 ];
 
 const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
@@ -134,6 +136,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "Leads",
     subtitle:
       "Offerte- en proefritaanvragen van udenhout.nl: welk merk en model, via welk kanaal, en wat de betaalde campagnes kostten.",
+  },
+  "leads-syntec": {
+    title: "Leads Syntec",
+    subtitle:
+      "Alle leads die bij Van den Udenhout binnenkomen, uit Syntec: per merk, model en kanaal, uitgesplitst in internet en offline.",
   },
   selligent: {
     title: "Selligent",
@@ -203,6 +210,7 @@ export default function AppShell({
   accountOntwikkeling,
   website,
   leads,
+  leadsSyntec,
   selligent,
   koppeltabel,
   budgetBeheer,
@@ -340,6 +348,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "leads"}>
           {bezocht.has("leads") ? leads : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "leads-syntec"}>
+          {bezocht.has("leads-syntec") ? leadsSyntec : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "selligent"}>
           {bezocht.has("selligent") ? selligent : null}

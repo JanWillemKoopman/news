@@ -283,7 +283,8 @@ lak.
 ### De Kanalen-pagina's
 
 De zes tabbladen onder **Kanalen** (Social ads, Google Ads, Social organisch, Social
-accounts, Website, Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`):
+accounts, Website, Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`)
+— Leads, Leads Syntec en Selligent staan ook onder Kanalen maar hebben een eigen paneel:
 filterbalk, grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
 niet uit af te lezen zijn:
 
@@ -675,6 +676,70 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   leads zonder bekende kosten bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
   dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
   bij elkaar horen.
+
+### Kanalen → Leads Syntec
+
+Tabblad onder **Kanalen**, direct onder Leads (view `leads-syntec`, `components/leadsSyntec/`,
+route `app/api/leads-syntec/route.ts`, rekenwerk in `lib/leadsSyntec/`). **Voor iedereen
+zichtbaar.** Waar Leads toont wat udenhout.nl als GA4-event afvuurt, toont dit tabblad álle
+leads die bij Van den Udenhout binnenkomen: het sheet-tabblad "Data leads" (Syntec), dat
+`/api/sync` elke nacht naar `dataloket.v_leads` kopieert. Gevraagd (november 2026): per merk
+hoeveel leads, een totaal, overal uitgesplitst in internet en offline, en per kanaal, merk en
+model op te halen.
+
+- **Wat er in de sheet staat** (onderzocht november 2026): ±110.600 regels, waarvan ±97.750
+  leads (de rest zijn lege opvulregels zonder kanaal), van 1 januari 2024 t/m twee dagen
+  geleden; ±2.500–3.800 per maand. Elke regel is één lead, geteld op **Aangelegd**. 86 kanalen
+  in 5 kanaalgroepen; CST (offertes die verkopers in de showroom maken) is met ±42% veruit de
+  grootste bron. De campagnekolommen (Budget, Uitgaven, Doel …, Status) zijn lookups uit de
+  Campagnes-tab en worden hier niet gebruikt.
+- **Internet of offline = de kolom Kanaalgroep** (`herkomstVan` in `indeling.ts`): "Internet"
+  is internet (±34%), Showroom, Acquisitie, Mail en Telefoon zijn offline. ±240 leads uit
+  2024–2025 hebben geen kanaalgroep (Mailing, Pon Lead, Werkplaats, Chat) en tellen als
+  offline. **Niet** de kolom Status: die zegt Online/Offline, maar dat is de status van de
+  *campagne* (alleen gevuld bij leads met een campagne). Dat is precies de verwarring die
+  je verwacht, dus het staat ook in "Zo lees je dit".
+- **Merk** (`deelMerkIn`): de zes eigen merken (Volkswagen, Škoda, Audi, VW
+  Bedrijfswagens, SEAT, CUPRA), "Overige merken" (Ford, Toyota … samen ±1%, vooral occasions
+  en inruil; in de merkentabel uit te klappen) en "Onbekend" (leeg, "Onbekend" en de
+  opvulwaarden "Z", "Y", "ZZZ", "P").
+- **Model = modelfamilie** (`modelFamilie`, getest): Syntec schrijft hetzelfde model op
+  ±430 manieren ("POLO", "Polo (6) GP", "VOLKSWAGEN POLO"). Generatie, GP/FL, kentekenkleur
+  en de merknaam ervoor vallen weg, carrosserie gaat mee in de familie (Golf Variant → Golf,
+  ID.7 Tourer → ID.7, Q4 Sportback e-tron → Q4 e-tron); dat levert ±120 families. De
+  schrijfwijzen staan per model in de tooltip. Alleen voor de eigen merken; bij overige
+  merken blijft het model staan zoals het er staat. Een nieuw model dat nergens in de lijst
+  past, verschijnt gewoon met zijn eigen naam — voeg het pas toe als er schrijfwijzen
+  samengevoegd moeten worden.
+- **Eén ophaalactie voor alle jaren** (`haalSyntecLeads`): gegroepeerd per dag × kanaal ×
+  merk × ruw model × ordersoort × lead type × dubbel, ±69.000 regels, als getallen met
+  woordenlijsten (±1,7 MB, ±275 kB gzip; de query ±1 s). Periode, filters en de vergelijking
+  met vorig jaar gebeuren daarna in het geheugen (`samenvatting.ts`, getest). Het ruwe model
+  zit erin voor de tooltip; daardoor is bijna elke combinatie uniek (±0,7 regel per lead).
+  Groeit dit ooit te groot, haal dan eerst het ruwe model eruit en lever de schrijfwijzen
+  apart.
+- **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
+  sheet loopt een dag of twee achter, en vanaf vandaag gerekend eindigt elke grafiek met lege
+  dagen. De export loopt soms halverwege een dag (laatste lead 12:40); die dag tekent lichter
+  (`halveDag` in `reeks`). Standaard 30 dagen; periode en filters staan in de URL.
+- **Vergelijk met vorig jaar** (schakelaar, standaard uit) zet dezelfde datums een jaar eerder
+  ernaast: onder elk getal, op de kerncijfers en als lijn in de grafiek. Alleen als die datums
+  helemaal in de sheet staan (vanaf januari 2024), anders staat de knop uit.
+- **Dubbele leads tellen mee** (sluitreden "Dubbel" of "[SA] Dubbel", ±9%), net als op KPI's
+  2027 Syntec; "Zonder dubbele leads" laat ze weg.
+- **Bewust niet op de pagina**: de kolom Campagnes (een formule in de sheet, pas vanaf 2026
+  gevuld en in oktober–november vrijwel alles "Multimerk Actie", met vreemde toewijzingen als
+  "A2 e-tron" bij BMW-leads; de campagnes staan al op het tabblad Campagnes), Klantsoort (62%
+  leeg) en order geworden (recente leads hebben nog geen order, dus een conversiepercentage
+  per periode zakt altijd naar het heden toe).
+- **Opbouw.** Filterbalk (periode, internet/offline, kanaalgroep, kanaal, merk, model, nieuw
+  of gebruikt, soort aanvraag, vergelijken, zonder dubbele), vier kerncijfers, de grafiek
+  (internet gestapeld op offline), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
+  matrix: internet en offline als blokken met subtotaal, offline per kanaalgroep, de merken
+  als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Internet, Offline en %
+  internet, een totaalregel over álle rijen, "Onbekend" vast onderaan en een CSV-knop.
+  Bulkimports zijn als piek te zien (31 juli 2026: 476 leads VDU Retentie; 2 november 2025: ±850
+  Autoline) — dat staat in "Zo lees je dit", niet weggepoetst.
 
 ### KPI's → KPI's 2027
 

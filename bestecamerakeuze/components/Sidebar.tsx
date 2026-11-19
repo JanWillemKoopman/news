@@ -20,6 +20,7 @@ import {
   IconTrendUp,
   IconTrophy,
   IconUserCircle,
+  IconUsers,
 } from "@/components/icons";
 
 export type DashboardView =
@@ -37,6 +38,7 @@ export type DashboardView =
   | "account-ontwikkeling"
   | "website"
   | "leads"
+  | "leads-syntec"
   | "selligent"
   | "koppeltabel"
   | "budget-beheer"
@@ -219,6 +221,16 @@ export default function Sidebar({
               onClick={() => onNavigate("leads")}
             />
           )}
+          {/* Leads Syntec staat direct onder Leads: niet wat de website afvuurt, maar alle
+              leads die bij Van den Udenhout binnenkomen (Syntec, via het sheet-tabblad
+              "Data leads"), per merk, model en kanaal en uitgesplitst in internet en offline.
+              Voor iedereen zichtbaar. */}
+          <NavigationItem
+            icon={<IconUsers />}
+            label="Leads Syntec"
+            active={actief === "leads-syntec"}
+            onClick={() => onNavigate("leads-syntec")}
+          />
           {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
               erboven gaan over wat er in een periode gebeurde, dit over de stand van het
               klantenbestand waar de e-mail naartoe gaat — geen dag-op-dagcijfer maar de
