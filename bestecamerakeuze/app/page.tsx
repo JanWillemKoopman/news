@@ -96,7 +96,7 @@ export default async function DashboardPage() {
         }
         tijdlijn={<CampagneTijdlijn />}
         campagnebeheer={<CampagneBeheer ingelogd={ingelogd} />}
-        kpiOverzicht={<KpiOverzicht />}
+        kpiOverzicht={zie("kpi-overzicht") ? <KpiOverzicht /> : null}
         kpi2027={<Kpi2027Paneel ingelogd={ingelogd} />}
         kpi2027Syntec={<Kpi2027SyntecPaneel ingelogd={ingelogd} />}
         socialAds={<SocialAdsPaneel ingelogd={ingelogd} />}

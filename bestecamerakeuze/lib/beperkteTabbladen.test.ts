@@ -13,14 +13,14 @@ test("Instellingen alleen voor de eigenaar", () => {
   }
 });
 
-test("Scores, Kennis en acties, Budget beheer, Koppeltabel, Kosten, Leads en Landingspagina voor niemand", () => {
-  for (const view of ["scores", "kennisacties", "budget-beheer", "koppeltabel", "kosten", "leads", "landingspagina"]) {
+test("Scores, Kennis en acties, Budget beheer, Koppeltabel, Kosten, Leads, Landingspagina en KPI's 2026 voor niemand", () => {
+  for (const view of ["scores", "kennisacties", "budget-beheer", "koppeltabel", "kosten", "leads", "landingspagina", "kpi-overzicht"]) {
     for (const email of [...EIGENAAR, ...ANDEREN]) assert.equal(magTabbladZien(view, email), false, `${view} ${email}`);
   }
 });
 
 test("de rest voor iedereen", () => {
-  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-overzicht", "kpi-2027", "website", "selligent"]) {
+  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-2027", "kpi-2027-syntec", "website", "selligent", "leads-syntec"]) {
     for (const email of [...EIGENAAR, ...ANDEREN]) assert.equal(magTabbladZien(view, email), true, `${view} ${email}`);
   }
 });
