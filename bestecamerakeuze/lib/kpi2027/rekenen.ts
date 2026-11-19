@@ -501,6 +501,20 @@ export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Verg
   };
 }
 
+/**
+ * Wat een KPI in één maand ("2025-03") telde volgens zijn stand, zoals gemeten: dezelfde
+ * bronnen als de grafiek. Gebruikt als controle naast de kanaalverdeling.
+ */
+export function kpiMaandTotaal(definitie: KpiDefinitie, stand: KpiStand, maand: string): number | null {
+  if (!maand.startsWith(`${stand.jaar}-`) || `${maand}-01` > stand.peildatum) return null;
+  if (definitie.bron.soort === "gebruikers") return Math.max(0, Number(stand.gebruikers[Number(maand.slice(5, 7)) - 1]) || 0);
+  let som = 0;
+  for (const [datum, n] of Object.entries(dagwaardenVoor(definitie, stand))) {
+    if (datum.startsWith(`${maand}-`) && datum <= stand.peildatum) som += Math.max(0, n);
+  }
+  return som;
+}
+
 /** Alles wat het tabblad van één KPI nodig heeft. */
 export interface KpiOverzichtRegel {
   sleutel: string;
@@ -529,6 +543,8 @@ export interface WebsiteOverzicht {
   property: string;
   uitgeslotenHosts: readonly string[];
   uitvalTekst: string | null;
+  /** Heeft deze website het knopje "Kanalen" op elke grafiek? */
+  kanaalverdeling: boolean;
   /** Bovenaan de tab, als de website een vergelijkingsjaar heeft én daar een stand van is. */
   vergelijkingTekst: string | null;
   stand: { peildatum: string; berekendOp: string; definitief: boolean } | null;
@@ -586,6 +602,7 @@ export function websiteOverzicht(
     property: website.property,
     uitgeslotenHosts: website.uitgeslotenHosts,
     uitvalTekst: stand ? uitvalMetUitzonderingen(website, uitval, stand.jaar) : null,
+    kanaalverdeling: Boolean(website.kanaalverdeling),
     vergelijkingTekst: vergelijk ? (website.vergelijkingsjaar?.toelichting ?? null) : null,
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import GaOverzichtTabel from "@/components/kpi/GaOverzichtTabel";
-import KpiKaart from "@/components/kpi/KpiKaart";
+import KpiKaart, { type KanalenStand } from "@/components/kpi/KpiKaart";
+import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
 import { IconInfo, IconRefresh } from "@/components/icons";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR, KPI_WEBSITES } from "@/lib/kpi2027/definities";
@@ -55,6 +56,27 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
   const [bijwerken, setBijwerken] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [gekozen, setGekozen] = useState<string>(STANDAARD);
+  // De kanaalverdeling per website (knopje "Kanalen"): pas opgehaald bij de eerste klik,
+  // en dan één keer voor alle kaarten van die website.
+  const [kanalen, setKanalen] = useState<Record<string, Omit<KanalenStand, "laad">>>({});
+  const kanalenGevraagd = useRef(new Set<string>());
+  const laadKanalen = useCallback((sleutel: string) => {
+    if (kanalenGevraagd.current.has(sleutel)) return;
+    kanalenGevraagd.current.add(sleutel);
+    setKanalen((oud) => ({ ...oud, [sleutel]: { status: "laden", antwoord: null } }));
+    fetch(`/api/kpi-2027/kanalen?website=${encodeURIComponent(sleutel)}`)
+      .then(async (res) => {
+        const antwoord = (await res.json().catch(() => ({ fout: `HTTP ${res.status}` }))) as KanalenAntwoord;
+        if (!res.ok || antwoord.fout) throw new Error(antwoord.fout ?? `HTTP ${res.status}`);
+        setKanalen((oud) => ({ ...oud, [sleutel]: { status: "klaar", antwoord } }));
+      })
+      .catch((err: unknown) => {
+        // Bij een fout mag een volgende klik het opnieuw proberen.
+        kanalenGevraagd.current.delete(sleutel);
+        const tekst = err instanceof Error ? err.message : String(err);
+        setKanalen((oud) => ({ ...oud, [sleutel]: { status: "fout", antwoord: { fout: tekst } } }));
+      });
+  }, []);
 
   // Uit de URL lezen in een effect, om dezelfde reden als `?tab=` in AppShell: de server
   // rendert altijd het eerste tabblad.
@@ -234,6 +256,14 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
               kpi={kpi}
               website={website}
               opslaanGroei={(groei) => zetGroei(website.sleutel, kpi.sleutel, groei)}
+              kanalen={
+                website.kanaalverdeling
+                  ? {
+                      ...(kanalen[website.sleutel] ?? { status: "leeg", antwoord: null }),
+                      laad: () => laadKanalen(website.sleutel),
+                    }
+                  : undefined
+              }
             />
           ))}
         </div>

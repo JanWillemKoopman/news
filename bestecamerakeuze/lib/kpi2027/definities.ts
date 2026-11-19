@@ -135,6 +135,11 @@ export interface KpiWebsite {
   uitgeslotenHosts: readonly string[];
   /** Optioneel: een eerder jaar als extra lijn in elke grafiek (nu alleen udenhout.nl, 2025). */
   vergelijkingsjaar?: Vergelijkingsjaar;
+  /**
+   * Optioneel: het knopje "Kanalen" op elke grafiek, met per maand vanaf januari 2025 het
+   * aandeel per kanaal (`lib/kpi2027/kanalen.ts`). Nu alleen udenhout.nl.
+   */
+  kanaalverdeling?: boolean;
   kpis: readonly KpiDefinitie[];
 }
 
@@ -222,6 +227,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     // Onderzocht in november 2026: Windsor heeft deze property vanaf 1 januari 2025, elke
     // dag met sessies (geen uitval), en heel 2025 draaide de oude tracking — dezelfde
     // events als januari t/m maart 2026, die de KPI's hieronder al meetellen.
+    kanaalverdeling: true,
     vergelijkingsjaar: {
       jaar: 2025,
       toelichting:

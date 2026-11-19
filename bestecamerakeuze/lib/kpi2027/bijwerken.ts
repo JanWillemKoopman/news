@@ -4,6 +4,7 @@ import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { isStandDefinitief, schrijfStand } from "@/lib/kpi2027/bron";
 import { KPI_DOELJAAR, KPI_JAAR, KPI_WEBSITES, type KpiWebsite } from "@/lib/kpi2027/definities";
 import { haalWebsiteStand } from "@/lib/kpi2027/ophalen";
+import { haalKanaalVerdeling, schrijfKanaalVerdeling } from "@/lib/kpi2027/kanalenBron";
 import { isDefinitief, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
 
 /**
@@ -22,6 +23,8 @@ import { isDefinitief, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
  *    t/m 31 december en als definitief weggeschreven; daarna verandert de basis niet meer
  *    (alleen de knop kan hem nog forceren). Tegelijk begint de stand van 2027: de
  *    realisatie die tegen het target wordt afgezet, elke week t/m zaterdag, tot 2027 voorbij is.
+ *  - **De kanaalverdeling** (`kanaalverdeling` in `definities.ts`, udenhout.nl) wordt elke
+ *    week opnieuw opgehaald, van januari 2025 t/m de zaterdag (`kanalenBron.ts`).
  *  - **Het vergelijkingsjaar** van een website (`vergelijkingsjaar` in `definities.ts`,
  *    udenhout.nl: 2025) wordt één keer opgehaald en is meteen definitief.
  *
@@ -135,6 +138,19 @@ export async function werkKpiStandenBij(
     for (const website of KPI_WEBSITES) {
       const opdracht = vergelijkingsOpdracht(website);
       if (opdracht) resultaten.push(await werkWebsiteBij(client, website, opdracht, false));
+    }
+    // De kanaalverdeling (knopje "Kanalen"): elke week opnieuw over de hele periode, t/m
+    // dezelfde zaterdag als de standen.
+    const zaterdag = laatsteZaterdag(opties.nu ?? new Date());
+    for (const website of KPI_WEBSITES.filter((w) => w.kanaalverdeling)) {
+      const basis = { website: `${website.sleutel} (kanalen)`, jaar: KPI_JAAR, peildatum: zaterdag };
+      try {
+        const verdeling = await haalKanaalVerdeling(website, zaterdag);
+        await schrijfKanaalVerdeling(client, verdeling);
+        resultaten.push({ ...basis, status: "bijgewerkt", rijen: Object.keys(verdeling.bronnen).length });
+      } catch (err) {
+        resultaten.push({ ...basis, status: "mislukt", rijen: 0, fout: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const fouten = resultaten.filter((r) => r.status === "mislukt");
