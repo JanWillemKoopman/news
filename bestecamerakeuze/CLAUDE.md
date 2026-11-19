@@ -808,7 +808,8 @@ realisatie van 2027.
   maand tegen ±60–140, private lease ±25 tegen ±60–190, proefritaanvragen ±65 tegen
   ±90–200). Het stond open of ze vanaf april moesten rekenen; de regel "alleen schatten op
   dagen zonder sessies" beslist het: januari–maart is gemeten, dus die cijfers tellen.
-- **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd. 2026 is doorgetrokken
+- **De grafiek** (`KpiJaarGrafiek.tsx`): twee lijnen, zoals gevraagd (op udenhout.nl een
+  derde voor 2025, zie hieronder). 2026 is doorgetrokken
   waar de maand volledig gemeten is en gestippeld waar het (deels) verwachting of
   bijgeschat is — anders leest de half gemeten lopende maand als een instorting, en de
   Porsche-uitval als een ravijn. Het maandtarget is een vlakke lijn. As vanaf nul; onder de
@@ -816,6 +817,31 @@ realisatie van 2027.
   grafiek in kleine letters welke GA4-statistiek of welke events (met periode en aantal)
   erin zitten en welke hosts zijn uitgesloten; pas die tekst in `definities.ts` mee aan als
   de koppeling verandert.
+- **Lijn 2025 op udenhout.nl** (november 2026, op verzoek): een derde, dunnere lijn in elke
+  grafiek van die tab, met 2025 per maand zoals gemeten. Hij telt **nergens** mee (niet in de
+  verwachting, niet in het target) en is alleen context. Alleen udenhout.nl heeft hem
+  (`vergelijkingsjaar` op de website in `definities.ts`).
+  - **Waarom het kan**: onderzocht bij Windsor. Property 255949462 heeft data vanaf
+    1 januari 2025, elke dag met sessies (geen uitval, dus niets bijgeschat), en heel 2025
+    draaide de oude tracking: dezelfde events als januari t/m maart 2026, die de KPI's al
+    meetellen. Er hoefde dus geen definitie bij.
+  - **Zakelijke lease heeft geen lijn** (`zonderVergelijking` op de KPI): in 2025 niet
+    op udenhout.nl niet gemeten (5 aanvragen in augustus t/m oktober); de zakelijke leads liepen
+    toen via udenhoutlease.nl, en die zijn voor 2025 niet opgehaald. De reden staat onder de
+    grafiek. Sinds hij udenhoutlease.nl als externe bron heeft, sluit ook die regel hieronder
+    hem uit.
+    `verhuuractie_verzonden` vuurt pas vanaf juli 2025; dat blijkt uit de eventtelling
+    onder de grafiek. Een KPI met een externe bron krijgt nooit een lijn: die bron dekt
+    alleen 2026.
+  - **Let op bij het lezen**: vanaf april 2026 draait de nieuwe tracking, dus een verschil
+    tussen 2025 en 2026 vanaf april kan deels aan de meting liggen. Dat staat bovenaan de tab
+    (`vergelijkingTekst`).
+  - **Ophalen**: één keer, als eigen rij in `kpi_2027_standen` (jaar 2025, meteen
+    definitief; `vergelijkingsOpdracht` in `bijwerken.ts`). De eerste cron of klik op "Nu
+    bijwerken" haalt hem op, daarna wordt hij overgeslagen. Ook de knop haalt hem niet
+    opnieuw op. Rekenwerk: `vergelijkingVoor` in `rekenen.ts`, getest.
+  - Een andere website erbij = `vergelijkingsjaar` op die website zetten, nadat in Windsor
+    is nagekeken dat dat jaar volledig gemeten is en met dezelfde events.
 
 - **Bovenaan staat dezelfde overzichtstabel als op KPI's 2027 Syntec** (`GaOverzichtTabel.tsx`),
   voor de gekozen website: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie en

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import KpiJaarGrafiek from "@/components/kpi/KpiJaarGrafiek";
+import KpiJaarGrafiek, { type VergelijkLijn } from "@/components/kpi/KpiJaarGrafiek";
 import { formatteer } from "@/components/chat/chartTheme";
 import { STANDAARD_GROEI_TEKST, groeiTekst, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
@@ -78,6 +78,7 @@ export default function KpiKaart({
       uitkomst={u}
       realisatie={kpi.realisatie}
       groei={{ soort: "bewerkbaar", aangepast: kpi.groeiAangepast, opslaan: opslaanGroei }}
+      vergelijking={kpi.vergelijking}
     >
       {vervangend && (
         <p className="mb-1">
@@ -114,6 +115,26 @@ export default function KpiKaart({
         )}
       </p>
       {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
+      {kpi.vergelijking && (
+        <p className="mt-1">
+          <span className="text-ink-muted">Lijn {kpi.vergelijking.jaar}:</span> dezelfde bron over heel{" "}
+          {kpi.vergelijking.jaar}, zoals gemeten: {aantal(kpi.vergelijking.totaal)}
+          {kpi.vergelijking.events.length > 0 && (
+            <>
+              {" "}(
+              {kpi.vergelijking.events.map((e, i) => (
+                <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
+                  {i > 0 && " + "}
+                  <code className="font-mono text-ink-muted">{e.naam}</code> {aantal(e.aantal)}×
+                </span>
+              ))}
+              )
+            </>
+          )}
+          . Telt niet mee in het target.
+        </p>
+      )}
+      {kpi.zonderVergelijking && <p className="mt-1">{kpi.zonderVergelijking}</p>}
     </KpiKaartOpmaak>
   );
 }
@@ -128,6 +149,7 @@ export function KpiKaartOpmaak({
   uitkomst: u,
   realisatie,
   groei,
+  vergelijking = null,
   children,
 }: {
   naam: string;
@@ -137,6 +159,8 @@ export function KpiKaartOpmaak({
   realisatie: { waarde: number; peildatum: string | null };
   /** Zonder: het percentage staat er alleen. */
   groei?: GroeiInstelling;
+  /** Optioneel: een eerder jaar als extra lijn in de grafiek (udenhout.nl: 2025). */
+  vergelijking?: VergelijkLijn | null;
   children: ReactNode;
 }) {
   return (
@@ -182,7 +206,12 @@ export function KpiKaartOpmaak({
           </div>
 
           <div className="mt-4 h-56">
-            <KpiJaarGrafiek maanden={u.maanden} targetPerMaand={u.targetPerMaand} peildatumTekst={datumKort(u.peildatum)} />
+            <KpiJaarGrafiek
+              maanden={u.maanden}
+              targetPerMaand={u.targetPerMaand}
+              peildatumTekst={datumKort(u.peildatum)}
+              vergelijking={vergelijking}
+            />
           </div>
         </>
       ) : (

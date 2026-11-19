@@ -22,6 +22,8 @@ import { isDefinitief, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
  *    t/m 31 december en als definitief weggeschreven; daarna verandert de basis niet meer
  *    (alleen de knop kan hem nog forceren). Tegelijk begint de stand van 2027: de
  *    realisatie die tegen het target wordt afgezet, elke week t/m zaterdag, tot 2027 voorbij is.
+ *  - **Het vergelijkingsjaar** van een website (`vergelijkingsjaar` in `definities.ts`,
+ *    udenhout.nl: 2025) wordt één keer opgehaald en is meteen definitief.
  *
  * Een website die faalt, laat de andere niet staan: elke website wordt los opgehaald en
  * weggeschreven, en de fouten komen samen terug en in `sync_runs` (bron `kpi-2027`). De
@@ -59,6 +61,17 @@ export function opdrachtenVoor(nu: Date): Opdracht[] {
     { jaar: KPI_JAAR, peildatum: `${KPI_JAAR}-12-31` },
     { jaar: KPI_DOELJAAR, peildatum: zaterdag < doeljaarEind ? zaterdag : doeljaarEind },
   ];
+}
+
+/**
+ * Het vergelijkingsjaar van een website (udenhout.nl: 2025), als opdracht t/m 31 december.
+ * Dat jaar is voorbij, dus de stand is meteen definitief: de eerste run haalt hem op, elke
+ * volgende slaat hem over (`isStandDefinitief`). Ook de knop "Nu bijwerken" haalt hem niet
+ * opnieuw op — die forceert alleen het basisjaar.
+ */
+export function vergelijkingsOpdracht(website: KpiWebsite): Opdracht | null {
+  const v = website.vergelijkingsjaar;
+  return v ? { jaar: v.jaar, peildatum: `${v.jaar}-12-31` } : null;
 }
 
 async function werkWebsiteBij(
@@ -118,6 +131,10 @@ export async function werkKpiStandenBij(
       for (const website of KPI_WEBSITES) {
         resultaten.push(await werkWebsiteBij(client, website, opdracht, forceer));
       }
+    }
+    for (const website of KPI_WEBSITES) {
+      const opdracht = vergelijkingsOpdracht(website);
+      if (opdracht) resultaten.push(await werkWebsiteBij(client, website, opdracht, false));
     }
 
     const fouten = resultaten.filter((r) => r.status === "mislukt");

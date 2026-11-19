@@ -7,7 +7,10 @@ import type { GrafiekKleuren } from "@/lib/themes";
 import type { MaandSoort, MaandUitkomst } from "@/lib/kpi2027/rekenen";
 
 /**
- * De jaargrafiek van één KPI: twee lijnen, zoals gevraagd — 2026 en het maandtarget 2027.
+ * De jaargrafiek van één KPI: twee lijnen, zoals gevraagd — 2026 en het maandtarget 2027 —
+ * en voor een website met een vergelijkingsjaar (udenhout.nl: 2025) een derde, dunnere lijn
+ * met dat jaar zoals gemeten. Die telt nergens mee; hij staat er alleen om naast 2026 te
+ * leggen.
  *
  * De 2026-lijn is één kleur in twee stukken: doorgetrokken waar GA4 de maand volledig mat,
  * gestippeld waar het (deels) verwachting is. Zo leest de lopende maand niet als een
@@ -52,6 +55,14 @@ interface Punt {
   dagenGemeten: number;
   dagenInMaand: number;
   toelichting: string | null;
+  /** Het vergelijkingsjaar in deze maand, zoals gemeten; null zonder vergelijkingslijn. */
+  vergelijk: number | null;
+}
+
+/** De lijn van het vergelijkingsjaar: welk jaar, en per maand wat er gemeten is. */
+export interface VergelijkLijn {
+  jaar: number;
+  maanden: readonly number[];
 }
 
 /**
@@ -63,7 +74,11 @@ function rond(waarde: number): number {
   return Math.abs(waarde) < 10 ? Math.round(waarde * 10) / 10 : Math.round(waarde);
 }
 
-export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Punt[] {
+export function bouwPunten(
+  maanden: MaandUitkomst[],
+  targetPerMaand: number,
+  vergelijking: VergelijkLijn | null = null,
+): Punt[] {
   const gemeten = (m: MaandUitkomst | undefined) => m?.soort === "gerealiseerd";
   return maanden.map((m, i) => {
     const waarde = rond(m.verwacht);
@@ -84,6 +99,7 @@ export function bouwPunten(maanden: MaandUitkomst[], targetPerMaand: number): Pu
       dagenGemeten: m.dagenGemeten,
       dagenInMaand: m.dagenInMaand,
       toelichting: m.toelichting ?? null,
+      vergelijk: vergelijking ? rond(vergelijking.maanden[i] ?? 0) : null,
     };
   });
 }
@@ -131,16 +147,20 @@ export default function KpiJaarGrafiek({
   maanden,
   targetPerMaand,
   peildatumTekst,
+  vergelijking = null,
 }: {
   maanden: MaandUitkomst[];
   targetPerMaand: number;
   /** "14 nov", voor de tooltip van de lopende maand. */
   peildatumTekst: string;
+  /** Optioneel: de lijn van het vergelijkingsjaar. */
+  vergelijking?: VergelijkLijn | null;
 }) {
   const kleuren = useGrafiekKleuren();
-  const punten = bouwPunten(maanden, targetPerMaand);
+  const punten = bouwPunten(maanden, targetPerMaand, vergelijking);
   const kleur2026 = kleuren.categorieen[0];
   const kleurTarget = kleuren.categorieen[1];
+  const kleurVergelijk = kleuren.categorieen[2];
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -162,7 +182,15 @@ export default function KpiJaarGrafiek({
           tickFormatter={(v: number) => formatteer(v, "aantal", true)}
         />
         <Tooltip
-          content={<MaandTooltip peildatumTekst={peildatumTekst} kleur2026={kleur2026} kleurTarget={kleurTarget} />}
+          content={
+            <MaandTooltip
+              peildatumTekst={peildatumTekst}
+              kleur2026={kleur2026}
+              kleurTarget={kleurTarget}
+              kleurVergelijk={kleurVergelijk}
+              vergelijkJaar={vergelijking?.jaar ?? null}
+            />
+          }
           cursor={{ stroke: kleuren.raster, strokeWidth: 1 }}
         />
         <Legend
@@ -175,6 +203,20 @@ export default function KpiJaarGrafiek({
           // Recharts de tekst in de lijnkleur, en oranje tekst op wit leest slecht.
           formatter={(waarde) => <span style={{ color: kleuren.as }}>{waarde}</span>}
         />
+        {vergelijking && (
+          // Eerst getekend, dus onder de lijnen van 2026: hij is context, niet het onderwerp.
+          // Dunner en zonder punten, zodat hij niet om aandacht vraagt.
+          <Line
+            dataKey="vergelijk"
+            name={String(vergelijking.jaar)}
+            type={kleuren.lijnvorm}
+            stroke={kleurVergelijk}
+            strokeWidth={Math.max(1, kleuren.lijndikte - 0.5)}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 2, stroke: kleuren.vlak }}
+            isAnimationActive={false}
+          />
+        )}
         <Line
           dataKey="gemeten"
           name="2026"
@@ -224,12 +266,16 @@ function MaandTooltip({
   peildatumTekst,
   kleur2026,
   kleurTarget,
+  kleurVergelijk,
+  vergelijkJaar,
 }: {
   active?: boolean;
   payload?: { payload: Punt }[];
   peildatumTekst: string;
   kleur2026: string;
   kleurTarget: string;
+  kleurVergelijk: string;
+  vergelijkJaar: number | null;
 }) {
   const p = payload?.[0]?.payload;
   if (!active || !p) return null;
@@ -267,6 +313,22 @@ function MaandTooltip({
         <span className="font-sans-w7 font-semibold">{regel2026}</span>
       </p>
       {toelichting && <p className="pl-5 text-ink-muted">{toelichting}</p>}
+      {vergelijkJaar !== null && p.vergelijk !== null && (
+        <>
+          <p className="mt-1 flex items-center gap-2 text-ink">
+            <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleurVergelijk }} />
+            <span>
+              {vergelijkJaar}: <span className="font-sans-w7 font-semibold">{formatteer(p.vergelijk, "aantal")}</span>
+            </span>
+          </p>
+          {p.vergelijk > 0 && (
+            <p className="pl-5 text-ink-muted">
+              2026 {p.verwacht >= p.vergelijk ? "+" : "−"}
+              {formatteer(Math.abs(p.verwacht / p.vergelijk - 1) * 100, "procent")} t.o.v. {vergelijkJaar}
+            </p>
+          )}
+        </>
+      )}
       <p className="mt-1 flex items-center gap-2 text-ink">
         <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleurTarget }} />
         <span>

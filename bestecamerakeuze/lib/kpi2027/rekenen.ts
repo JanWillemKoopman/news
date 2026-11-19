@@ -482,6 +482,46 @@ export function realisatieVoor(definitie: KpiDefinitie, stand: KpiStand): number
   return Object.values(dagwaardenVoor(definitie, stand)).reduce((t, n) => t + n, 0);
 }
 
+/**
+ * Een eerder jaar als extra lijn in de grafiek (`vergelijkingsjaar` in `definities.ts`):
+ * per maand wat GA4 telde, zoals gemeten. Niets bijgeschat en niets verwacht — het jaar is
+ * voorbij, en het telt niet mee in de verwachting of het target.
+ */
+export interface Vergelijking {
+  jaar: number;
+  /** Twaalf maanden (index 0 = januari), zoals gemeten. */
+  maanden: number[];
+  totaal: number;
+  /** Per event hoe vaak het in dat jaar vuurde, voor onder de grafiek. */
+  events: { naam: string; paginaBevat?: string; aantal: number }[];
+}
+
+/**
+ * De vergelijkingslijn van één KPI uit de stand van dat jaar. Null voor een KPI met
+ * `zonderVergelijking` (niet gemeten in dat jaar) of met een externe bron: die bron dekt
+ * alleen het basisjaar, en `dagwaardenVoor` zou de GA4-cijfers van het eerdere jaar dan
+ * wegfilteren.
+ */
+export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Vergelijking | null {
+  if (definitie.zonderVergelijking || definitie.externeBron) return null;
+  let maanden: number[];
+  if (definitie.bron.soort === "gebruikers") {
+    maanden = Array.from({ length: 12 }, (_, i) => Math.max(0, Number(stand.gebruikers[i]) || 0));
+  } else {
+    maanden = Array.from({ length: 12 }, () => 0);
+    for (const [datum, n] of Object.entries(dagwaardenVoor(definitie, stand))) {
+      if (!datum.startsWith(`${stand.jaar}-`) || datum > stand.peildatum) continue;
+      maanden[Number(datum.slice(5, 7)) - 1] += Math.max(0, n);
+    }
+  }
+  return {
+    jaar: stand.jaar,
+    maanden,
+    totaal: maanden.reduce((t, n) => t + n, 0),
+    events: eventTotalen(definitie, stand).map(({ naam, paginaBevat, aantal }) => ({ naam, paginaBevat, aantal })),
+  };
+}
+
 /** Alles wat het tabblad van één KPI nodig heeft. */
 export interface KpiOverzichtRegel {
   sleutel: string;
@@ -497,6 +537,10 @@ export interface KpiOverzichtRegel {
   groeiAangepast: boolean;
   /** De realisatie van 2027: 0 met `peildatum: null` zolang 2027 niet begonnen is. */
   realisatie: { waarde: number; peildatum: string | null };
+  /** De lijn van het vergelijkingsjaar; null als de website er geen heeft of nog geen stand. */
+  vergelijking: Vergelijking | null;
+  /** Waarom deze KPI geen vergelijkingslijn heeft terwijl de website die wel heeft. */
+  zonderVergelijking: string | null;
 }
 
 export interface WebsiteOverzicht {
@@ -506,6 +550,8 @@ export interface WebsiteOverzicht {
   property: string;
   uitgeslotenHosts: readonly string[];
   uitvalTekst: string | null;
+  /** Bovenaan de tab, als de website een vergelijkingsjaar heeft én daar een stand van is. */
+  vergelijkingTekst: string | null;
   stand: { peildatum: string; berekendOp: string; definitief: boolean } | null;
   standDoeljaar: { peildatum: string; berekendOp: string } | null;
   volgendeUpdate: string | null;
@@ -550,7 +596,10 @@ export function websiteOverzicht(
   standDoeljaar: KpiStand | null,
   /** Het met de hand aangepaste percentage per KPI-sleutel, of undefined voor de standaard. */
   groeiVoor: (kpi: string) => number | undefined = () => undefined,
+  /** De stand van het vergelijkingsjaar (`website.vergelijkingsjaar`), als die er is. */
+  standVergelijk: KpiStand | null = null,
 ): WebsiteOverzicht {
+  const vergelijk = website.vergelijkingsjaar && standVergelijk?.jaar === website.vergelijkingsjaar.jaar ? standVergelijk : null;
   const laatste = standDoeljaar?.peildatum ?? stand?.peildatum ?? null;
   const uitval = stand ? uitvalUitStand(stand) : [];
   return {
@@ -560,6 +609,7 @@ export function websiteOverzicht(
     property: website.property,
     uitgeslotenHosts: website.uitgeslotenHosts,
     uitvalTekst: stand ? uitvalMetUitzonderingen(website, uitval, stand.jaar) : null,
+    vergelijkingTekst: vergelijk ? (website.vergelijkingsjaar?.toelichting ?? null) : null,
     stand: stand ? { peildatum: stand.peildatum, berekendOp: stand.berekendOp, definitief: stand.definitief } : null,
     standDoeljaar: standDoeljaar ? { peildatum: standDoeljaar.peildatum, berekendOp: standDoeljaar.berekendOp } : null,
     volgendeUpdate: laatste ? volgendeUpdate(laatste) : null,
@@ -579,6 +629,8 @@ export function websiteOverzicht(
       realisatie: standDoeljaar
         ? { waarde: realisatieVoor(d, standDoeljaar), peildatum: standDoeljaar.peildatum }
         : { waarde: 0, peildatum: null },
+      vergelijking: vergelijk ? vergelijkingVoor(d, vergelijk) : null,
+      zonderVergelijking: vergelijk ? (d.zonderVergelijking ?? null) : null,
       };
     }),
   };

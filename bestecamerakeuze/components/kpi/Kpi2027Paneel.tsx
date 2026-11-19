@@ -194,6 +194,13 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
 
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
 
+      {website?.vergelijkingTekst && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>{website.vergelijkingTekst}</span>
+        </p>
+      )}
+
       {website?.uitvalTekst && (
         <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />

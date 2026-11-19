@@ -39,7 +39,7 @@ function rijNaarStand(r: Record<string, unknown>): KpiStand {
   };
 }
 
-/** Alle standen: per website hooguit één voor 2026 en één voor 2027. */
+/** Alle standen: per website hooguit één voor 2026, één voor 2027 en één voor zijn vergelijkingsjaar. */
 export async function leesStanden(): Promise<KpiStand[]> {
   return metVerbinding(async (client) => {
     const res = await client.query(
