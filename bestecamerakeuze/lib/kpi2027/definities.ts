@@ -3,6 +3,7 @@ import {
   WERKPLAATS_EXPORT_MAASTRICHT,
   WERKPLAATS_EXPORT_TOT,
 } from "@/lib/kpi2027/werkplaatsExport";
+import { UDENHOUTLEASE_AANVRAGEN, UDENHOUTLEASE_TOT } from "@/lib/kpi2027/udenhoutleaseExport";
 
 /**
  * De websites en KPI's waarvoor het tabblad KPI's 2027 een target zet.
@@ -49,6 +50,15 @@ import {
  * (trackingwissel). Het stond open of ze vanaf april moesten rekenen; de regel hierboven
  * beslist het: januari–maart is gemeten (de site had sessies), dus die cijfers tellen.
  *
+ * ## Zakelijke lease: udenhoutlease.nl t/m maart
+ *
+ * Tot en met maart 2026 kwamen de zakelijke leads binnen via de aparte site
+ * udenhoutlease.nl (eigen GA4-property 344604643); begin april stopte die site en verhuisden
+ * de zakelijke leads naar udenhout.nl. De KPI Zakelijke lease telt daarom januari t/m maart
+ * de aanvragen van udenhoutlease.nl op bij wat udenhout.nl zelf mat (`externeBron` met
+ * `optellen: true`, cijfers in `udenhoutleaseExport.ts`). Besluit van de eigenaar,
+ * 19 november 2026.
+ *
  * ## Waarom events en geen key events
  *
  * Geteld wordt `event_count`: hoe vaak het event vuurde. Dezelfde keuze als op het tabblad
@@ -81,13 +91,26 @@ export type KpiBron =
   | { soort: "events"; events: readonly KpiEvent[] };
 
 /**
- * Een andere bron dan Google Analytics voor het begin van het jaar: t/m `tot` tellen deze
- * dagcijfers in plaats van de GA4-cijfers, en geldt elke dag als gemeten (de bron dekt hem,
- * ook als de website toen 0 sessies had). Daarna weer GA4 met de gewone regel.
+ * Een andere bron dan Google Analytics van deze website voor het begin van het jaar. Twee
+ * soorten:
+ *
+ * - **Vervangen** (standaard, Porsche-werkplaats): t/m `tot` tellen deze dagcijfers in
+ *   plaats van de GA4-cijfers, en geldt elke dag als gemeten (de bron dekt hem, ook als de
+ *   website toen 0 sessies had). Daarna weer GA4 met de gewone regel.
+ * - **Optellen** (`optellen: true`, zakelijke lease via udenhoutlease.nl): t/m `tot` komen
+ *   deze dagcijfers bovenop de GA4-cijfers van de website, die gewoon blijven tellen. De
+ *   uitvalregel verandert niet: een dag zonder sessies op de website blijft bijgeschat.
  */
 export interface ExterneBron {
   /** T/m deze dag geldt deze bron. */
   tot: string;
+  /**
+   * True: optellen bij GA4 in plaats van GA4 te vervangen. Een optellende bron telt ook mee
+   * in de lijn van het vergelijkingsjaar, voor zover hij dagen in dat jaar heeft.
+   */
+  optellen?: boolean;
+  /** Wat één eenheid is, meervoud, voor onder de grafiek: "afspraken", "aanvragen". */
+  eenheid: string;
   /** Korte naam in een zin: "de werkplaatsplanning". */
   naam: string;
   /** Wat er precies geteld wordt, voor onder de grafiek. */
@@ -204,6 +227,7 @@ function porscheKpis(vestiging: "brabant" | "maastricht"): KpiDefinitie[] {
       // 3 sep; Maastricht: pas vanaf 3 sep), de planning wel. Zie werkplaatsExport.ts.
       externeBron: {
         tot: WERKPLAATS_EXPORT_TOT,
+        eenheid: "afspraken",
         naam: "de werkplaatsplanning",
         omschrijving: `export van de werkplaatsplanning, afspraken per "Datum Van Aanvraag", ALvestiging ${vestiging === "brabant" ? "10" : "20"}`,
         dagen: vestiging === "brabant" ? WERKPLAATS_EXPORT_BRABANT : WERKPLAATS_EXPORT_MAASTRICHT,
@@ -231,7 +255,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     vergelijkingsjaar: {
       jaar: 2025,
       toelichting:
-        "De lijn 2025 telt dezelfde events als 2026, zoals gemeten (in 2025 had de website elke dag sessies, dus niets bijgeschat). Heel 2025 draaide de oude tracking; vanaf april 2026 de nieuwe. Een verschil tussen 2025 en 2026 vanaf april kan dus deels aan de andere meting liggen in plaats van aan meer of minder aanvragen. Zakelijke lease werd in 2025 niet gemeten en heeft geen lijn 2025.",
+        "De lijn 2025 telt dezelfde events als 2026, zoals gemeten (in 2025 had de website elke dag sessies, dus niets bijgeschat). Heel 2025 draaide de oude tracking; vanaf april 2026 de nieuwe. Een verschil tussen 2025 en 2026 vanaf april kan dus deels aan de andere meting liggen in plaats van aan meer of minder aanvragen. Bij zakelijke lease is de lijn 2025 vooral udenhoutlease.nl: daar liepen de zakelijke leads in 2025.",
     },
     kpis: [
       SESSIES,
@@ -285,10 +309,19 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
             { naam: "generate_lead_leasecontact", toelichting: "vanaf april, contactformulier op /leasen/contact" },
           ],
         },
+        // Januari t/m maart kwamen de zakelijke leads binnen via udenhoutlease.nl, met een
+        // eigen GA4-property; die site stopte eind maart. Zie udenhoutleaseExport.ts.
+        externeBron: {
+          tot: UDENHOUTLEASE_TOT,
+          optellen: true,
+          eenheid: "aanvragen",
+          naam: "udenhoutlease.nl",
+          omschrijving:
+            "udenhoutlease.nl (GA4-property 344604643), de aparte zakelijke leasesite die eind maart stopte: offerte_aanvraag (/contact/vrijblijvende-offerte) + contact_verzonden (/contact)",
+          dagen: UDENHOUTLEASE_AANVRAGEN,
+        },
         opmerking:
-          "Vóór april werd zakelijke lease vrijwel niet gemeten (2 aanvragen in januari t/m maart). Die maanden tellen zoals gemeten, wat het jaar en het target drukt.",
-        zonderVergelijking:
-          "Geen lijn 2025: zakelijke lease werd in 2025 niet gemeten (5 aanvragen in augustus t/m oktober, verder niets).",
+          "Tot en met maart kwamen de zakelijke leads binnen via udenhoutlease.nl; vanaf april via udenhout.nl. Daarom telt januari t/m maart beide sites op: udenhoutlease.nl als aparte bron (vaste cijfers, die site meet niet meer) plus wat udenhout.nl zelf mat (2 aanvragen). Niet meegeteld van udenhoutlease.nl: het proefritformulier (6) en de actieformulieren per merk (20) — die zijn op udenhout.nl ook geen zakelijke lease.",
       },
       {
         sleutel: "verhuur",

@@ -292,6 +292,8 @@ test("Porsche-werkplaats: t/m oktober de planning (ook tijdens de uitval), daarn
     naam: "de werkplaatsplanning",
     omschrijving: 'export van de werkplaatsplanning, afspraken per "Datum Van Aanvraag", ALvestiging 10',
     tot: "2026-10-31",
+    optellen: false,
+    eenheid: "afspraken",
     aantal: 384,
   });
 
@@ -340,6 +342,42 @@ test("een aangepast percentage verzet target en maandtarget, niet de verwachting
   assert.deepEqual(metGroei(standaard.uitkomst!, 0.12), sessies.uitkomst);
 });
 
+test("Zakelijke lease udenhout.nl: udenhoutlease.nl t/m maart opgeteld bij GA4, niet in plaats ervan", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const zakelijk = udenhout.kpis.find((k) => k.sleutel === "zakelijke-lease")!;
+  const s: KpiStand = {
+    website: "udenhout", jaar: 2026, peildatum: "2026-11-14", berekendOp: "", definitief: false,
+    dagen: {
+      // Eén dag zonder sessies in mei: die blijft bijgeschat, want de leasesite dekt hem niet.
+      sessies: { ...elkeDag("2026-01-01", "2026-05-09", 3000), ...elkeDag("2026-05-11", "2026-11-14", 3000) },
+      "event:generate_lead_zakelijk_lease": { "2026-01-09": 1, "2026-03-10": 1 },
+      "event:generate_lead_zakelijk_offerte": { "2026-04-02": 5 },
+    },
+    gebruikers: new Array(12).fill(0),
+  };
+  const dagen = dagwaardenVoor(zakelijk, s);
+  // 9 januari: 4 via udenhoutlease.nl + 1 op udenhout.nl.
+  assert.equal(dagen["2026-01-09"], 5);
+  assert.equal(dagen["2026-04-02"], 5);
+
+  const u = berekenKpi(maandInvoerVoor(zakelijk, s), s.peildatum);
+  assert.equal(u.maanden[0].gerealiseerd, 40 + 1);
+  assert.equal(u.maanden[1].gerealiseerd, 35);
+  assert.equal(u.maanden[2].gerealiseerd, 34 + 1);
+  assert.equal(u.dagenNietGemeten, 1);
+
+  // De events onder de grafiek tellen het hele jaar, ook januari t/m maart.
+  assert.deepEqual(eventTotalen(zakelijk, s).map((e) => e.aantal), [2, 5, 0]);
+  const extern = externeBronTotaal(zakelijk, s)!;
+  assert.equal(extern.aantal, 109);
+  assert.equal(extern.optellen, true);
+  assert.equal(extern.eenheid, "aanvragen");
+  // En de uitvalmelding noemt hem niet als uitzondering.
+  assert.doesNotMatch(websiteOverzicht(udenhout, s, null).uitvalTekst ?? "", /Uitzondering/);
+  // De cijfers van 2025 in hetzelfde bestand lekken niet in 2026.
+  assert.ok(Object.keys(dagen).every((d) => d.startsWith("2026-")));
+});
+
 test("vergelijkingsjaar: udenhout.nl krijgt een lijn 2025, per maand zoals gemeten", () => {
   const udenhout = vindWebsite("udenhout")!;
   assert.equal(udenhout.vergelijkingsjaar?.jaar, 2025);
@@ -374,9 +412,13 @@ test("vergelijkingsjaar: udenhout.nl krijgt een lijn 2025, per maand zoals gemet
   assert.equal(kpi("gebruikers").vergelijking?.totaal, 780);
   assert.ok(o.vergelijkingTekst);
 
-  // Zakelijke lease werd in 2025 niet gemeten: geen lijn, wel de reden.
-  assert.equal(kpi("zakelijke-lease").vergelijking, null);
-  assert.match(kpi("zakelijke-lease").zonderVergelijking ?? "", /niet gemeten/);
+  // Zakelijke lease: in 2025 liep alles via udenhoutlease.nl, en dat telt in de lijn mee.
+  assert.deepEqual(kpi("zakelijke-lease").vergelijking?.maanden, [27, 32, 29, 29, 25, 18, 43, 28, 29, 38, 21, 27]);
+  assert.equal(kpi("zakelijke-lease").vergelijking?.totaal, 346);
+  assert.deepEqual(kpi("zakelijke-lease").vergelijking?.extern, { naam: "udenhoutlease.nl", aantal: 346 });
+  assert.equal(kpi("zakelijke-lease").zonderVergelijking, null);
+  // Een KPI zonder externe bron heeft geen externe bijdrage in de lijn.
+  assert.equal(kpi("proefritaanvragen").vergelijking?.extern, null);
 
   // De lijn verandert niets aan de verwachting of het target.
   const zonder = websiteOverzicht(udenhout, s2026, null);

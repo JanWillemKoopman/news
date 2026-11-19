@@ -724,6 +724,26 @@ realisatie van 2027.
   - **Let op**: de planning telt afspraken, GA4 online aanvragen; ze sluiten niet per se op
     elkaar aan. In oktober telde de planning 127 (Brabant) en GA4 86; over 1–13 november
     allebei 13 in Brabant, in Maastricht 10 tegen 6.
+- **Zakelijke lease (udenhout.nl): januari t/m maart ook udenhoutlease.nl** (besluit van de
+  eigenaar, 19 november 2026). Tot en met maart 2026 kwamen de zakelijke leads binnen via de
+  aparte site udenhoutlease.nl, met een eigen GA4-property (344604643). Begin april stopte
+  die site en verhuisden de zakelijke leads naar udenhout.nl. Zonder correctie telde de KPI
+  voor januari t/m maart alleen de 2 aanvragen die op udenhout.nl zelf binnenkwamen.
+  - **Wat telt mee**: de twee key events van udenhoutlease.nl, `offerte_aanvraag`
+    (/contact/vrijblijvende-offerte, 100×) en `contact_verzonden` (/contact, 9×), samen 109
+    (jan 40, feb 35, mrt 34). **Niet**: het proefritformulier (6) en de actieformulieren
+    per merk (20). Die vuren alleen een algemeen `form_submit` en zijn op udenhout.nl ook
+    geen zakelijke lease.
+  - **Hoe het rekent**: `externeBron` met `optellen: true`. Anders dan bij de
+    Porsche-werkplaats **vervangt** deze bron GA4 niet, maar **telt hij erbij op**: de
+    events van udenhout.nl blijven het hele jaar tellen, en de uitvalregel blijft gewoon
+    staan (een dag zonder sessies op udenhout.nl wordt nog steeds bijgeschat; de
+    uitvalmelding bovenaan noemt deze bron dus niet als uitzondering). Onder de grafiek
+    staat hij als "Opgeteld t/m 31 mrt". De realisatie van 2027 telt alleen udenhout.nl.
+  - **Waar het staat**: de dagcijfers (heel 2025 en januari t/m maart 2026) in
+    `lib/kpi2027/udenhoutleaseExport.ts`, eenmalig
+    via Windsor opgehaald. Ze liggen vast: na 31 maart meet udenhoutlease.nl geen aanvragen
+    meer, dus de wekelijkse ophaalactie haalt die property niet op.
 - **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
   bekende test-, staging- en vreemde domeinen eruit (`uitgeslotenHosts`); "(not set)" telt
   mee. Sessies en gebruikers zijn cijfers per sessie/persoon, gesplitst naar een dimensie
@@ -769,8 +789,9 @@ realisatie van 2027.
   generaties op. `generate_lead_private_lease` (formulier "stock prive") vuurt het hele jaar
   door naast `generate_lead_privatelease` (/offerte en /acties/groeilease): andere
   formulieren, dus allebei private lease. Zakelijke lease = `generate_lead_zakelijk_lease`
-  + `generate_lead_zakelijk_offerte` + `generate_lead_leasecontact`; een zakelijke offerte
-  telt dus níet bij Offerteaanvragen.
+  + `generate_lead_zakelijk_offerte` + `generate_lead_leasecontact`, plus januari t/m maart
+  de aanvragen van udenhoutlease.nl (zie hierboven); een zakelijke offerte telt dus níet bij
+  Offerteaanvragen.
 - **Niet opgenomen: Sollicitaties (social) bij de twee Porsche-sites.** Op beide domeinen
   bestaat geen event voor een afgeronde sollicitatie (de werken-bij-pagina's verwijzen naar
   e-mail; een klik op een mailadres is geen verzonden sollicitatie). In de PGZ-property
@@ -805,11 +826,16 @@ realisatie van 2027.
     1 januari 2025, elke dag met sessies (geen uitval, dus niets bijgeschat), en heel 2025
     draaide de oude tracking: dezelfde events als januari t/m maart 2026, die de KPI's al
     meetellen. Er hoefde dus geen definitie bij.
-  - **Zakelijke lease heeft geen lijn** (`zonderVergelijking` op de KPI): in 2025 niet
-    gemeten (5 aanvragen in augustus t/m oktober). De reden staat onder de grafiek.
-    `verhuuractie_verzonden` vuurt pas vanaf juli 2025; dat blijkt uit de eventtelling
-    onder de grafiek. Een KPI met een externe bron krijgt nooit een lijn: die bron dekt
-    alleen 2026.
+  - **Zakelijke lease: de lijn 2025 is udenhoutlease.nl** (besluit van de eigenaar,
+    19 november 2026). In 2025 liepen de zakelijke leads volledig via udenhoutlease.nl
+    (346: `offerte_aanvraag` 324 + `contact_verzonden` 22); udenhout.nl mat er maar 5
+    (augustus t/m oktober). De dagcijfers van 2025 staan in hetzelfde bestand als die van
+    2026 (`udenhoutleaseExport.ts`). Een **optellende** externe bron telt mee in de lijn van
+    het vergelijkingsjaar (`vergelijkingVoor`, `Vergelijking.extern`), en onder de grafiek
+    staat hoeveel ervan uit udenhoutlease.nl komt. Hij telt niet mee in verwachting of target.
+  - `verhuuractie_verzonden` vuurt pas vanaf juli 2025; dat blijkt uit de eventtelling
+    onder de grafiek. Een KPI met een **vervangende** externe bron (Porsche-werkplaats)
+    krijgt nooit een lijn: die bron dekt alleen 2026.
   - **Let op bij het lezen**: vanaf april 2026 draait de nieuwe tracking, dus een verschil
     tussen 2025 en 2026 vanaf april kan deels aan de meting liggen. Dat staat bovenaan de tab
     (`vergelijkingTekst`).
@@ -828,7 +854,10 @@ realisatie van 2027.
     (`definities.ts`) en hostregels, sessies en actieve gebruikers per maand, alleen met
     `session_source_medium` erbij — dat zit niet in `kpi_2027_standen`. Per maand toont de
     tooltip of het kanaaltotaal gelijk is aan de KPI-grafiek (`kpiTotaal`,
-    `kpiMaandTotaal` in `rekenen.ts`); zo niet, dan staat het KPI-cijfer erbij.
+    `kpiMaandTotaal` in `rekenen.ts`); zo niet, dan staat het KPI-cijfer erbij. Een
+    **optellende** externe bron (udenhoutlease.nl bij zakelijke lease) is een andere
+    property en zit dus niet in de verdeling: de controle laat hem buiten, en onder de
+    grafiek staat dat die aanvragen er niet in zitten.
   - **De indeling** (`lib/kpi2027/kanalen.ts`, getest op de bron/media die udenhout.nl echt
     binnenkrijgt): acht groepen, in de volgorde van de stapel — Google Ads, Meta Ads, Overig
     betaald, Organisch zoeken (incl. Google Bedrijfsprofiel), Social organisch,

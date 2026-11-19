@@ -156,3 +156,23 @@ test("kanaalverdeling en KPI-pagina tellen dezelfde bronnen: het totaal per maan
   assert.equal(april.totaal, kpiMaandTotaal(proefrit, stand, "2026-04"));
   assert.equal(kpiMaandTotaal(proefrit, stand, "2025-12"), null);
 });
+
+test("controle naast de kanaalverdeling: een optellende bron van een andere property telt niet mee", async () => {
+  const { kpiMaandTotaal, dagwaardenVoor } = await import("@/lib/kpi2027/rekenen");
+  const zakelijk = vindWebsite("udenhout")!.kpis.find((k) => k.sleutel === "zakelijke-lease")!;
+  assert.ok(zakelijk.externeBron?.optellen, "zakelijke lease telt udenhoutlease.nl op");
+  const stand = {
+    website: "udenhout",
+    jaar: 2026,
+    peildatum: "2026-11-14",
+    berekendOp: "2026-11-15T10:15:00Z",
+    definitief: false,
+    dagen: { "event:generate_lead_zakelijk_lease": { "2026-01-15": 1 } },
+    gebruikers: new Array(12).fill(0),
+  };
+  const kpiGrafiekJan = Object.entries(dagwaardenVoor(zakelijk, stand))
+    .filter(([d]) => d.startsWith("2026-01-"))
+    .reduce((t, [, n]) => t + n, 0);
+  assert.ok(kpiGrafiekJan > 1, "de KPI-grafiek telt udenhoutlease.nl wel mee");
+  assert.equal(kpiMaandTotaal(zakelijk, stand, "2026-01"), 1);
+});
