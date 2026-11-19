@@ -788,7 +788,12 @@ model op te halen.
   de standaard. Zet ze niet terug zonder dat daarom gevraagd wordt; een eerder jaar is nog
   wel te bekijken via de eigen periode.
 - **Dubbele leads tellen mee** (sluitreden "Dubbel" of "[SA] Dubbel", ±9%), net als op KPI's
-  2027 Syntec; "Zonder dubbele leads" laat ze weg.
+  2027 Syntec; "Zonder dubbele leads" laat ze weg. "[SA] Dubbel" is de naam t/m 2025,
+  "Dubbel" die van 2026. Online is vaker dubbel (11,7%) dan offline (7,1%). De tooltip van de
+  knop waarschuwt (op verzoek) dat een lead pas als dubbel telt als hij met die reden is
+  afgesloten: in november 2026 stond de helft van de leads nog open en was 5% als dubbel
+  gemarkeerd, tegen 10–16% in de maanden ervoor. Met de knop aan haalt hij in recente weken
+  dus minder weg en lijkt een recente periode relatief hoger.
 - **Bewust niet op de pagina**: de kolom Campagnes (een formule in de sheet, pas vanaf 2026
   gevuld en in oktober–november vrijwel alles "Multimerk Actie", met vreemde toewijzingen als
   "A2 e-tron" bij BMW-leads; de campagnes staan al op het tabblad Campagnes), Klantsoort (62%

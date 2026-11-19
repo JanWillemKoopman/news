@@ -489,7 +489,13 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               <Schakelaar
                 aan={filters.zonderDubbel}
                 onClick={() => setFilters((f) => ({ ...f, zonderDubbel: !f.zonderDubbel }))}
-                titel="Laat leads met sluitreden 'Dubbel' of '[SA] Dubbel' weg (±9% van alle leads)."
+                titel={
+                  "Laat leads weg die in Syntec zijn afgesloten met sluitreden 'Dubbel' of '[SA] Dubbel' " +
+                  "(±9% van alle leads). De oorspronkelijke lead blijft staan.\n\n" +
+                  "Let op: een lead telt pas als dubbel als hij met die reden is afgesloten. Recente leads " +
+                  "staan vaak nog open (november 2026: de helft), dus in de laatste weken haalt dit minder " +
+                  "weg dan er waarschijnlijk dubbel is. Een recente periode lijkt daardoor relatief hoger."
+                }
               >
                 Zonder dubbele leads
               </Schakelaar>
