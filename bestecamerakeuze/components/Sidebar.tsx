@@ -229,35 +229,25 @@ export default function Sidebar({
               onClick={() => onNavigate("leads")}
             />
           )}
-          {/* Leads Syntec staat direct onder Leads: niet wat de website afvuurt, maar alle
-              leads die bij Van den Udenhout binnenkomen (Syntec, via het sheet-tabblad
-              "Data leads"), per merk, model en kanaal en uitgesplitst in online en offline.
-              Voor iedereen zichtbaar. */}
+          {/* Tools (voorheen Monitoren) staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
+              kopje of dat binnen de afspraak blijft — budget en klikdoel per maand. */}
+          <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
+            Tools
+          </p>
+          {/* Leads Syntec en Selligent staan sinds november 2026 onder Tools (op verzoek):
+              het zijn interne bronnen (Syntec, de Selligent-export), geen online kanalen. */}
           <NavigationItem
             icon={<IconUsers />}
             label="Leads Syntec"
             active={actief === "leads-syntec"}
             onClick={() => onNavigate("leads-syntec")}
           />
-          {/* Selligent staat ná Website en daarmee onderaan de groep: de tabbladen
-              erboven gaan over wat er in een periode gebeurde, dit over de stand van het
-              klantenbestand waar de e-mail naartoe gaat — geen dag-op-dagcijfer maar de
-              basis eronder. De data komt ook ergens anders vandaan dan de rest van
-              Kanalen: rechtstreeks uit de Azure-export, niet uit Windsor. */}
           <NavigationItem
             icon={<IconMail />}
             label="Selligent"
             active={actief === "selligent"}
             onClick={() => onNavigate("selligent")}
           />
-
-          {/* Tools (voorheen Monitoren) staat ná Kanalen: de kanaalpagina's vertellen wat er gebeurde, dit
-              kopje of dat binnen de afspraak blijft — budget en klikdoel per maand. */}
-          {(zie("budget-beheer") || zie("landingspagina")) && (
-            <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-              Tools
-            </p>
-          )}
           {zie("budget-beheer") && (
             <NavigationItem
               icon={<IconCoin />}

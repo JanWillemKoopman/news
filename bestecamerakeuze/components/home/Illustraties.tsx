@@ -126,35 +126,114 @@ export function KpiIllustratie() {
   );
 }
 
-/** Kanalen: losse kubussen naast elkaar, elk een kanaal; bij hover komen ze los van elkaar omhoog. */
+/**
+ * Online kanalen: vier kubussen, elk met het teken van een kanaal op het bovenvlak —
+ * Google Ads, Instagram, Google Analytics en LinkedIn. Geen echte merklogo's maar
+ * eenvoudige lijnversies in dezelfde stijl als de rest van de tekening, plat op het
+ * bovenvlak gelegd. Bij hover komen de kubussen los van elkaar omhoog.
+ */
 export function KanalenIllustratie() {
   const s = 18;
   const p = maakProjectie(160, 88, s);
-  const kubussen = [
-    { x: 0, y: 0, h: 2.4, dy: -5 },
-    { x: 2.9, y: 0, h: 1.7, dy: -9 },
-    { x: 0, y: 2.9, h: 1.7, dy: -7 },
-    { x: 2.9, y: 2.9, h: 2.1, dy: -3 },
-  ];
   const k = 2.3;
+  type Pt = [number, number];
+  type Teken = "google-ads" | "instagram" | "analytics" | "linkedin";
+  const kubussen: { x: number; y: number; h: number; dy: number; teken: Teken }[] = [
+    { x: 0, y: 0, h: 2.4, dy: -5, teken: "google-ads" },
+    { x: 2.9, y: 0, h: 1.7, dy: -9, teken: "instagram" },
+    { x: 0, y: 2.9, h: 1.7, dy: -7, teken: "analytics" },
+    { x: 2.9, y: 2.9, h: 2.1, dy: -3, teken: "linkedin" },
+  ];
 
   return (
-    <Tekening label="Vier losse kubussen, elk een kanaal" viewBox="67 29 186 165">
+    <Tekening label="Vier kubussen met de tekens van Google Ads, Instagram, Google Analytics en LinkedIn" viewBox="67 29 186 165">
       {kubussen.map((c, i) => {
-        // Klein merkteken op het bovenvlak: drie streepjes, zoals een logo op een doos.
-        const z = c.h;
+        // Tekencoördinaten (u naar rechts, w omhoog, -0,7…0,7) op het bovenvlak: u loopt
+        // langs de x-as, "omhoog" is de -y-richting, zodat het teken rechtop leest.
         const mx = c.x + k / 2;
         const my = c.y + k / 2;
+        const g = ([u, w]: Pt) => p(mx + u * 1.3, my - w * 1.3, c.h);
+        const lijn = (punten: Pt[]) => pts(punten.map(g));
+        const cirkel = (cu: number, cw: number, r: number) =>
+          lijn(
+            Array.from({ length: 24 }, (_, j) => {
+              const a = (j / 24) * Math.PI * 2;
+              return [cu + Math.cos(a) * r, cw + Math.sin(a) * r] as Pt;
+            }),
+          );
+        const rondVierkant = (u1: number, w1: number, u2: number, w2: number, r: number) => {
+          const hoeken: [number, number, number][] = [
+            [u2 - r, w2 - r, 0],
+            [u1 + r, w2 - r, 90],
+            [u1 + r, w1 + r, 180],
+            [u2 - r, w1 + r, 270],
+          ];
+          const punten: Pt[] = [];
+          for (const [cu, cw, start] of hoeken) {
+            for (let j = 0; j <= 6; j++) {
+              const a = ((start + j * 15) * Math.PI) / 180;
+              punten.push([cu + Math.cos(a) * r, cw + Math.sin(a) * r]);
+            }
+          }
+          return lijn(punten);
+        };
+        // Een balk met dikte d tussen twee punten (de "pil" van het Google Ads-teken).
+        const balk = ([u1, w1]: Pt, [u2, w2]: Pt, d: number) => {
+          const lengte = Math.hypot(u2 - u1, w2 - w1);
+          const nu = (-(w2 - w1) / lengte) * (d / 2);
+          const nw = ((u2 - u1) / lengte) * (d / 2);
+          return lijn([
+            [u1 + nu, w1 + nw],
+            [u2 + nu, w2 + nw],
+            [u2 - nu, w2 - nw],
+            [u1 - nu, w1 - nw],
+          ]);
+        };
+
+        let teken: React.ReactNode = null;
+        if (c.teken === "google-ads") {
+          teken = (
+            <>
+              <polygon points={balk([0.02, 0.42], [-0.26, -0.16], 0.28)} />
+              <polygon points={balk([0.02, 0.42], [0.42, -0.4], 0.28)} />
+              <polygon points={cirkel(-0.4, -0.38, 0.17)} />
+            </>
+          );
+        } else if (c.teken === "instagram") {
+          teken = (
+            <>
+              <polygon points={rondVierkant(-0.55, -0.55, 0.55, 0.55, 0.2)} />
+              <polygon points={cirkel(0, 0, 0.24)} />
+              <polygon points={cirkel(0.34, 0.34, 0.05)} />
+            </>
+          );
+        } else if (c.teken === "analytics") {
+          teken = (
+            <>
+              <polygon points={rondVierkant(0.22, -0.55, 0.5, 0.55, 0.1)} />
+              <polygon points={rondVierkant(-0.14, -0.55, 0.14, 0.15, 0.1)} />
+              <polygon points={cirkel(-0.38, -0.41, 0.14)} />
+            </>
+          );
+        } else {
+          teken = (
+            <>
+              <polygon points={rondVierkant(-0.55, -0.55, 0.55, 0.55, 0.1)} />
+              <polygon points={cirkel(-0.3, 0.3, 0.07)} />
+              <polyline fill="none" points={lijn([[-0.3, 0.12], [-0.3, -0.38]])} />
+              <polyline fill="none" points={lijn([[-0.06, 0.12], [-0.06, -0.38]])} />
+              <polyline
+                fill="none"
+                points={lijn([[-0.06, -0.05], [0.04, 0.1], [0.2, 0.14], [0.32, 0.06], [0.34, -0.06], [0.34, -0.38]])}
+              />
+            </>
+          );
+        }
+
         return (
           <g key={i} className="iso-beweeg" style={beweeg(0, c.dy, i * 50)}>
             <Blok p={p} x={c.x} y={c.y} z={0} b={k} d={k} h={c.h} />
-            {[-0.18, 0, 0.18].map((o) => (
-              <polyline
-                key={o}
-                fill="none"
-                points={pts([p(mx - 0.35, my + o, z), p(mx + 0.35, my + o, z)])}
-              />
-            ))}
+            {teken}
           </g>
         );
       })}

@@ -86,8 +86,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   uit de sidebar en toont dezelfde pagina's met hetzelfde label en icoon, zodat het
   startscherm naar elk tabblad doorverwijst. Voeg je in `Sidebar.tsx` een tabblad toe, zet
   hem dan ook in `GROEPEN`. Wie een tabblad niet mag zien (`lib/beperkteTabbladen.ts`), ziet
-  hem hier ook niet; Tools is daardoor nu voor iedereen leeg (Budget beheer en
-  Landingspagina staan verborgen) en zegt dat in één regel.
+  hem hier ook niet. **Leads Syntec en Selligent staan onder Tools** (november 2026, op
+  verzoek; in de sidebar én hier): het zijn interne bronnen, geen online kanalen. Budget
+  beheer en Landingspagina staan er ook onder maar zijn nu voor iedereen verborgen. Een
+  groep zonder zichtbare pagina's zegt dat in één regel.
 - **Naar het startscherm**: klik op "Marketing / Marketing dashboard" linksboven in de
   sidebar. Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
   `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
@@ -95,7 +97,8 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in
   `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
   er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
-  kubussen komen omhoog, bij Interne data komen de databaseschijven los en stijgen de
+  kubussen met de tekens van Google Ads, Instagram, Google Analytics en LinkedIn komen
+  omhoog (lijnversies, geen echte merklogo's), bij Interne data komen de databaseschijven los en stijgen de
   datablokjes op, bij Campagnes een billboard met een autoadvertentie (we zijn een autodealer) dat iets
   omhoogkomt terwijl de auto erop een stukje naar rechts rijdt); uit bij
   `prefers-reduced-motion`. Houd die beweging klein.
@@ -310,7 +313,8 @@ lak.
 
 De zes tabbladen onder **Kanalen** (Social ads, Google Ads, Social organisch, Social
 accounts, Website, Koppeltabel) delen één component (`components/kanalen/KanaalPagina.tsx`)
-— Leads, Leads Syntec en Selligent staan ook onder Kanalen maar hebben een eigen paneel:
+— Leads staat ook onder Kanalen (Leads Syntec en Selligent sinds november 2026 onder
+Tools); die hebben een eigen paneel:
 filterbalk, grafiek, tabellen. Wat per pagina verschilt staat in de props. Een paar keuzes die daar
 niet uit af te lezen zijn:
 
