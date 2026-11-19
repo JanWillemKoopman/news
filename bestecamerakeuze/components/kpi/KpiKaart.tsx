@@ -89,6 +89,15 @@ export default function KpiKaart({
   // Een andere bron vervangt GA4 (Porsche-werkplaats) of telt erbij op (udenhoutlease.nl).
   const vervangend = kpi.externeBron && !kpi.externeBron.optellen ? kpi.externeBron : null;
   const opgeteld = kpi.externeBron?.optellen ? kpi.externeBron : null;
+  /** Wat de grafiek per maand telt, in gewone taal. */
+  const eenheid =
+    kpi.events.length > 0
+      ? `het aantal keer dat de events onder "Wat telt mee" vuurden`
+      : kpi.sleutel === "gebruikers"
+        ? "het aantal actieve gebruikers (per maand ontdubbeld)"
+        : kpi.sleutel === "sessies"
+          ? "het aantal sessies (bezoeken)"
+          : `het aantal ${kpi.naam.toLowerCase()}`;
 
   return (
     <KpiKaartOpmaak
@@ -139,45 +148,70 @@ export default function KpiKaart({
           : undefined
       }
     >
+      <p>
+        <span className="text-ink-muted">Grafiek:</span> per maand {eenheid} op {website.domein} in {KPI_JAAR}
+        {kpi.externeBron ? ", uit de bronnen hieronder" : ""}. De doorgetrokken lijn is een volledig gemeten maand; de
+        gestippelde lijn is (deels) verwachting
+        {u && u.dagenNietGemeten > 0
+          ? `, of bevat dagen waarop GA4 niets mat (0 sessies op de property). Die ${aantal(u.dagenNietGemeten)} dagen zijn ingevuld met het gemiddelde per gemeten dag`
+          : ""}
+        . De vlakke lijn is het maandtarget {KPI_DOELJAAR} (het jaartarget ÷ 12). De realisatie van {KPI_DOELJAAR} staat
+        in het vierde kaartje, niet in de grafiek.
+      </p>
+
+      <p className="mt-1">
+        <span className="text-ink-muted">Bron:</span> Google Analytics 4, property {website.property} ({website.domein}
+        {website.uitgeslotenHosts.length > 0
+          ? `; zonder ${website.uitgeslotenHosts.join(" en ")}, want dat zijn test-, staging- of vreemde domeinen`
+          : ""}
+        ). Per dag opgehaald en elke zondag bijgewerkt t/m de zaterdag ervoor.
+      </p>
+
       {vervangend && (
-        <p className="mb-1">
-          <span className="text-ink-muted">Bron t/m {datumKort(vervangend.tot)}:</span> {vervangend.omschrijving}{" "}
-          ({aantal(vervangend.aantal)} {vervangend.eenheid} in {KPI_JAAR}). Die dagen zijn gemeten, ook waar de website niets mat.
+        <p className="mt-1">
+          <span className="text-ink-muted">Andere bron t/m {datumKort(vervangend.tot)}:</span> {vervangend.omschrijving}{" "}
+          ({aantal(vervangend.aantal)} {vervangend.eenheid} in {KPI_JAAR}). Die dagen zijn gemeten, ook waar de website niets
+          mat; vanaf {datumKort(dagNa(vervangend.tot))} telt weer GA4.
         </p>
       )}
       {opgeteld && (
-        <p className="mb-1">
+        <p className="mt-1">
           <span className="text-ink-muted">Opgeteld t/m {datumKort(opgeteld.tot)}:</span> {opgeteld.omschrijving}{" "}
-          ({aantal(opgeteld.aantal)} {opgeteld.eenheid} in {KPI_JAAR}, vaste cijfers). Komt bovenop de bron hieronder, niet in
-          plaats ervan.
+          ({aantal(opgeteld.aantal)} {opgeteld.eenheid} in {KPI_JAAR}, vaste cijfers). Komt bovenop de GA4-telling
+          hieronder, niet in plaats ervan.
         </p>
       )}
-      <p>
-        <span className="text-ink-muted">{vervangend ? `Bron vanaf ${datumKort(dagNa(vervangend.tot))}:` : "Bron:"}</span>{" "}
-        Google Analytics 4, {website.domein} (property {website.property}
-        {website.uitgeslotenHosts.length > 0 ? `, zonder ${website.uitgeslotenHosts.join(" en ")}` : ""}).{" "}
-        {kpi.events.length > 0 ? (
-          <>
-            Events (aantal keer gevuurd, event_count, {vervangend ? `vanaf ${datumKort(dagNa(vervangend.tot))}` : KPI_JAAR}
-            {u ? ` t/m ${datumKort(u.peildatum)}` : ""}):{" "}
-            {kpi.events.map((e, i) => (
-              <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
-                {i > 0 && " + "}
-                <code className="font-mono text-ink-muted">{e.naam}</code>
-                {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
-              </span>
-            ))}
-            .
-          </>
-        ) : (
-          kpi.bronTekst
-        )}
+
+      <p className="mt-2 text-ink-muted">
+        Wat telt mee — {vervangend ? `vanaf ${datumKort(dagNa(vervangend.tot))}` : KPI_JAAR}
+        {u ? ` t/m ${datumKort(u.peildatum)}` : ""}
       </p>
-      {kpi.opmerking && <p className="mt-1">{kpi.opmerking}</p>}
+      {kpi.events.length > 0 ? (
+        <>
+          <p className="mt-0.5">
+            Het aantal keer dat deze events vuurden (event_count), opgeteld; een bezoeker die twee keer een formulier
+            verstuurt telt twee keer:
+          </p>
+          <ul className="mt-0.5 flex flex-col gap-0.5">
+            {kpi.events.map((e) => (
+              <li key={`${e.naam}${e.paginaBevat ?? ""}`} className="flex gap-1.5">
+                <span aria-hidden="true">•</span>
+                <span>
+                  <code className="font-mono text-ink-muted">{e.naam}</code>
+                  {` (${e.toelichting ? `${e.toelichting}, ` : ""}${aantal(e.aantal)}×)`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="mt-0.5">{kpi.bronTekst}</p>
+      )}
+      {kpi.opmerking && <p className="mt-2">{kpi.opmerking}</p>}
       {toonEerdereJaren && kpi.vergelijking && (
         <p className="mt-1">
-          <span className="text-ink-muted">Lijn {kpi.vergelijking.jaar}:</span> dezelfde bron over heel{" "}
-          {kpi.vergelijking.jaar}, zoals gemeten: {aantal(kpi.vergelijking.totaal)}
+          <span className="text-ink-muted">Dunne lijn {kpi.vergelijking.jaar}:</span> dezelfde bron over heel{" "}
+          {kpi.vergelijking.jaar}, per maand zoals gemeten (zonder bijschatting): {aantal(kpi.vergelijking.totaal)}
           {(kpi.vergelijking.events.length > 0 || kpi.vergelijking.extern) && (
             <>
               {" "}(
