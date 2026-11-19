@@ -69,23 +69,24 @@ export default function Sidebar({
     // heen valt in plaats van hem opzij te duwen — geen layoutshift op hover.
     <aside className="group absolute inset-y-0 left-0 flex w-[72px] flex-col justify-between overflow-x-hidden overflow-y-auto border-r border-sidebar-line sidebar-vlak px-4 py-5 transition-[width] duration-[var(--duur)] ease-merk hover:z-40 hover:w-[240px] hover:shadow-dropdown">
       <div>
-        {/* Geen beeldmerk meer (op verzoek): alleen de tekst, die met de sidebar mee
-            uitklapt. Een klik erop brengt je naar het startscherm. De vaste hoogte houdt
-            de navigatie eronder op dezelfde plek, ook ingeklapt. */}
+        {/* Geen beeldmerk meer (op verzoek): alleen de titel "Marketing dashboard",
+            horizontaal gecentreerd, die met de sidebar mee uitklapt. Een klik erop brengt
+            je naar het startscherm. De vaste hoogte houdt de navigatie eronder op dezelfde
+            plek, ook ingeklapt. */}
         <button
           type="button"
           onClick={() => onNavigate("home")}
           aria-label="Naar het startscherm"
           aria-current={actief === "home" ? "page" : undefined}
-          className="flex h-9 w-full items-center text-left"
+          className="flex h-9 w-full items-center justify-center text-center"
         >
-          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[180px] group-hover:opacity-100">
-            <span className="block font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink">
-              Marketing
-            </span>
-            <span className="block text-label text-sidebar-ink-muted">Marketing dashboard</span>
+          <span className="max-w-0 overflow-hidden whitespace-nowrap font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[200px] group-hover:opacity-100">
+            Marketing dashboard
           </span>
         </button>
+        {/* Witte streep onder de titel, 80% transparant (op verzoek). sidebar-ink is het
+            "wit" van de navigatieschil, zodat de streep ook in elk theme klopt. */}
+        <div aria-hidden="true" className="mt-3 h-px w-full bg-sidebar-ink/20" />
 
         <nav aria-label="Hoofdnavigatie" className="mt-6 flex flex-col gap-0.5">
           {/* Staan bewust bóven de groep "Campagnes" en zonder eigen groepskopje: dit is
