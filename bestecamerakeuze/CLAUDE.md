@@ -703,25 +703,27 @@ model op te halen.
   Bedrijfswagens, SEAT, CUPRA), "Overige merken" (Ford, Toyota … samen ±1%, vooral occasions
   en inruil; in de merkentabel uit te klappen) en "Onbekend" (leeg, "Onbekend" en de
   opvulwaarden "Z", "Y", "ZZZ", "P").
-- **Model = modelfamilie** (`modelFamilie`, getest): Syntec schrijft hetzelfde model op
-  ±430 manieren ("POLO", "Polo (6) GP", "VOLKSWAGEN POLO"). Generatie, GP/FL, kentekenkleur
-  en de merknaam ervoor vallen weg, carrosserie gaat mee in de familie (Golf Variant → Golf,
-  ID.7 Tourer → ID.7, Q4 Sportback e-tron → Q4 e-tron); dat levert ±120 families. De
-  schrijfwijzen staan per model in de tooltip. Alleen voor de eigen merken; bij overige
-  merken blijft het model staan zoals het er staat. Een nieuw model dat nergens in de lijst
-  past, verschijnt gewoon met zijn eigen naam — voeg het pas toe als er schrijfwijzen
-  samengevoegd moeten worden.
+- **Model staat letterlijk zoals in de sheet** (besluit van de eigenaar, november 2026): geen
+  samenvoeging, ook niet in het filter Model. Syntec schrijft dezelfde auto op veel manieren
+  ("POLO", "Polo (6) GP", "VOLKSWAGEN POLO"; ±550 waarden), en die staan dus als aparte
+  regels en keuzes. Alleen een leeg veld heet "Onbekend". De modellentabel toont merk en
+  model naast elkaar (`modelRijSleutel`: "Caddy" bij Volkswagen en bij Bedrijfswagens zijn
+  twee regels); het filter werkt op de modelwaarde alleen. Er stond eerst een indeling in
+  modelfamilies (±120); die is er op verzoek uit gehaald — zet hem niet terug zonder dat
+  daarom gevraagd wordt.
 - **Eén ophaalactie voor alle jaren** (`haalSyntecLeads`): gegroepeerd per dag × kanaal ×
   merk × ruw model × ordersoort × lead type × dubbel, ±69.000 regels, als getallen met
   woordenlijsten (±1,7 MB, ±275 kB gzip; de query ±1 s). Periode, filters en de vergelijking
-  met vorig jaar gebeuren daarna in het geheugen (`samenvatting.ts`, getest). Het ruwe model
-  zit erin voor de tooltip; daardoor is bijna elke combinatie uniek (±0,7 regel per lead).
-  Groeit dit ooit te groot, haal dan eerst het ruwe model eruit en lever de schrijfwijzen
-  apart.
+  met vorig jaar gebeuren daarna in het geheugen (`samenvatting.ts`, getest). Door het model
+  is bijna elke combinatie uniek (±0,7 regel per lead).
 - **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
   sheet loopt een dag of twee achter, en vanaf vandaag gerekend eindigt elke grafiek met lege
   dagen. De export loopt soms halverwege een dag (laatste lead 12:40); die dag tekent lichter
   (`halveDag` in `reeks`). Standaard 30 dagen; periode en filters staan in de URL.
+- **Dag, week of maand kies je met knopjes rechtsboven de grafiek** (verzoek november 2026),
+  **standaard per week** (maandag t/m zondag), los van de lengte van de periode. Een week of
+  maand die maar half in de periode valt, tekent lichter. De keuze staat in de URL
+  (`f.korrel`) als hij niet op week staat.
 - **Vergelijk met vorig jaar** (schakelaar, standaard uit) zet dezelfde datums een jaar eerder
   ernaast: onder elk getal, op de kerncijfers en als lijn in de grafiek. Alleen als die datums
   helemaal in de sheet staan (vanaf januari 2024), anders staat de knop uit.

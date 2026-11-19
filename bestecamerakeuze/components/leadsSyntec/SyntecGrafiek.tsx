@@ -13,10 +13,11 @@ import {
 } from "recharts";
 import { AS_GROOTTE, formatteer } from "@/components/chat/chartTheme";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
-import type { Korrel, ReeksPunt } from "@/lib/leadsSyntec/samenvatting";
+import { KORRELS, type Korrel, type ReeksPunt } from "@/lib/leadsSyntec/samenvatting";
 
 /**
- * Leads per dag, week of maand, gestapeld in internet en offline.
+ * Leads per dag, week of maand, gestapeld in internet en offline. Rechtsboven kies je met
+ * drie knopjes of de grafiek per dag, week of maand staat; standaard per week.
  *
  * Internet krijgt de eerste themakleur, offline de gedempte contextkleur: de vraag achter
  * dit tabblad is vooral hoeveel er via internet binnenkomt, en offline is de grote massa
@@ -97,11 +98,13 @@ export default function SyntecGrafiek({
   punten,
   vorig,
   korrel,
+  onKorrel,
 }: {
   punten: ReeksPunt[];
   /** Dezelfde vakken een jaar eerder, of null zonder vergelijking. */
   vorig: ReeksPunt[] | null;
   korrel: Korrel;
+  onKorrel: (korrel: Korrel) => void;
 }) {
   const kleuren = useGrafiekKleuren();
   const data = useMemo<Punt[]>(
@@ -128,15 +131,34 @@ export default function SyntecGrafiek({
 
   return (
     <section className="kaart-omlijst rounded-panel border border-line bg-card p-5 shadow-subtle">
-      <h2 className="font-sans-w7 text-cell font-semibold text-ink">Leads per {per}</h2>
-      <p className="mt-0.5 text-meta text-ink-muted">
-        Internet is kanaalgroep Internet in Syntec; offline is alles daarbuiten (showroom, acquisitie,
-        mail en telefoon).
-        {vorig ? " De lijn is het totaal van dezelfde datums vorig jaar." : ""}
-        {heeftHalf
-          ? " Een lichtere staaf is niet compleet: hij valt maar voor een deel in de periode, of de sheet loopt nog niet tot het eind van die dag."
-          : ""}
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-sans-w7 text-cell font-semibold text-ink">Leads per {per}</h2>
+          <p className="mt-0.5 text-meta text-ink-muted">
+            Internet is kanaalgroep Internet in Syntec; offline is alles daarbuiten (showroom, acquisitie,
+            mail en telefoon).
+            {vorig ? " De lijn is het totaal van dezelfde datums vorig jaar." : ""}
+            {heeftHalf
+              ? " Een lichtere staaf is niet compleet: hij valt maar voor een deel in de periode, of de sheet loopt nog niet tot het eind van die dag."
+              : ""}
+          </p>
+        </div>
+        <div className="flex shrink-0 rounded-control border border-line p-0.5" role="group" aria-label="Grafiek per dag, week of maand">
+          {KORRELS.map((k) => (
+            <button
+              key={k.id}
+              type="button"
+              onClick={() => onKorrel(k.id)}
+              aria-pressed={korrel === k.id}
+              className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                korrel === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+              }`}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {/* De legenda in HTML en niet via Recharts: twee staafreeksen per kleur (vol en licht
           voor een half vak) en een lijn horen er als drie regels in, niet als vijf. */}
       <div className="mt-3 flex justify-end gap-4 text-meta text-ink-muted">

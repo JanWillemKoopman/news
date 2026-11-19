@@ -7,10 +7,9 @@ import type { SyntecKubus } from "@/lib/leadsSyntec/samenvatting";
  *
  * Eén groepering over de hele tabel: per dag, kanaal, merk, model, ordersoort, lead type en
  * dubbel-of-niet het aantal leads. Dat is ±0,7 regel per lead (±69.000 voor
- * januari 2024 t/m november 2026), omdat bijna elke combinatie met het ruwe model uniek is.
- * Het ruwe model blijft erin zodat de pagina per modelfamilie kan tonen welke schrijfwijzen
- * er zijn samengevoegd; de indeling zelf gebeurt in getest TypeScript
- * (`lib/leadsSyntec/indeling.ts`), niet in SQL.
+ * januari 2024 t/m november 2026), omdat bijna elke combinatie met het model uniek is. Het
+ * model staat er letterlijk in, zoals in de sheet; het merk wordt ingedeeld in getest
+ * TypeScript (`lib/leadsSyntec/indeling.ts`), niet in SQL.
  *
  * Geen periode in de query: de pagina filtert periode én vergelijking met vorig jaar in het
  * geheugen, dus een andere periode kiezen kost geen tweede ophaalactie.

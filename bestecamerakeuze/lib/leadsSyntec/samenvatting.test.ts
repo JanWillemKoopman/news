@@ -5,8 +5,7 @@ import {
   filterRegels,
   groepeer,
   jaarTerug,
-  korrelVoor,
-  modelSleutelVan,
+  modelRijSleutel,
   pakUit,
   reeks,
   tel,
@@ -42,18 +41,18 @@ function kubus(): SyntecKubus {
   };
 }
 
-test("pakUit deelt merk, model, herkomst en lege waarden in", () => {
+test("pakUit deelt merk en herkomst in; het model blijft letterlijk", () => {
   const regels = pakUit(kubus());
   assert.equal(regels.length, 6);
   assert.deepEqual(
     regels.map((r) => [r.herkomst, r.merk, r.model]),
     [
-      ["internet", "Volkswagen", "Polo"],
-      ["offline", "Volkswagen", "Polo"],
+      ["internet", "Volkswagen", "POLO"],
+      ["offline", "Volkswagen", "Polo (6) GP"],
       ["offline", "Overige merken", "Fiesta"],
       ["offline", "Onbekend", "Onbekend"],
       ["internet", "Volkswagen Bedrijfswagens", "Caddy"],
-      ["internet", "Volkswagen", "Polo"],
+      ["internet", "Volkswagen", "POLO"],
     ],
   );
   assert.equal(regels[3].kanaalgroep, "Geen kanaalgroep");
@@ -75,14 +74,13 @@ test("filteren: periode, herkomst, dubbel en 'of' binnen een filter", () => {
     tel(filterRegels(regels, { ...GEEN_FILTERS, merken: ["Volkswagen", "Onbekend"] }, nov2026)).totaal,
     9,
   );
-  assert.equal(
-    tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: [modelSleutelVan({ merk: "Volkswagen", model: "Polo" })] }, nov2026))
-      .totaal,
-    8,
-  );
+  // Het modelfilter werkt op de letterlijke waarde: "POLO" is niet "Polo (6) GP".
+  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["POLO"] }, nov2026)).totaal, 3);
+  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["POLO", "Polo (6) GP"] }, nov2026)).totaal, 8);
+  assert.equal(tel(filterRegels(regels, { ...GEEN_FILTERS, modellen: ["Onbekend"] }, nov2026)).totaal, 1);
 });
 
-test("groeperen telt internet, offline, per merk en de schrijfwijzen", () => {
+test("groeperen telt internet, offline en per merk; modelregels zijn merk plus letterlijk model", () => {
   const regels = filterRegels(pakUit(kubus()), GEEN_FILTERS, { van: "2026-11-01", tot: "2026-11-30" });
   const perKanaal = groepeer(regels, (r) => r.kanaal);
   assert.deepEqual(
@@ -95,8 +93,17 @@ test("groeperen telt internet, offline, per merk en de schrijfwijzen", () => {
   );
   const udenhout = perKanaal.find((g) => g.sleutel === "Udenhout.nl");
   assert.deepEqual(udenhout?.perMerk, { Volkswagen: 3, "Volkswagen Bedrijfswagens": 4 });
-  const polo = groepeer(regels.filter((r) => r.model === "Polo"), modelSleutelVan, (r) => r.modelRuw);
-  assert.deepEqual(polo[0].onderdelen, { POLO: 3, "Polo (6) GP": 5 });
+  const modellen = groepeer(regels, modelRijSleutel);
+  assert.deepEqual(
+    modellen.map((g) => [g.sleutel, g.totaal]),
+    [
+      ["Volkswagen|Polo (6) GP", 5],
+      ["Volkswagen Bedrijfswagens|Caddy", 4],
+      ["Volkswagen|POLO", 3],
+      ["FORD|Fiesta", 2],
+      ["Onbekend|Onbekend", 1],
+    ],
+  );
   // De groepen samen zijn het totaal: er raakt niets zoek.
   assert.equal(perKanaal.reduce((t, g) => t + g.totaal, 0), tel(regels).totaal);
 });
@@ -120,10 +127,7 @@ test("vaste periodes lopen tot de laatste dag met leads", () => {
   assert.equal(vroeg["90d"].van, "2024-01-01");
 });
 
-test("korrel en vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeerd", () => {
-  assert.equal(korrelVoor({ van: "2026-10-19", tot: "2026-11-17" }), "dag");
-  assert.equal(korrelVoor({ van: "2026-08-20", tot: "2026-11-17" }), "week");
-  assert.equal(korrelVoor({ van: "2026-01-01", tot: "2026-11-17" }), "maand");
+test("vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeerd", () => {
   assert.equal(vakBegin("2026-11-19", "week"), "2026-11-16");
   assert.equal(vakBegin("2026-11-16", "week"), "2026-11-16");
   assert.equal(vakBegin("2026-11-19", "maand"), "2026-11-01");
@@ -137,6 +141,15 @@ test("korrel en vakken: per dag, per week vanaf maandag, per maand; halve vakken
       ["2026-11-02", 3, 5],
       ["2026-11-03", 4, 3],
       ["2026-11-04", 0, 0],
+    ],
+  );
+  // Per week: 26 oktober t/m 8 november 2026 zijn twee volle weken (maandag–zondag).
+  const weken = reeks(regels, { van: "2026-10-26", tot: "2026-11-08" }, "week");
+  assert.deepEqual(
+    weken.map((p) => [p.begin, p.eind, p.internet + p.offline, p.volledig]),
+    [
+      ["2026-10-26", "2026-11-01", 0, true],
+      ["2026-11-02", "2026-11-08", 15, true],
     ],
   );
   const maanden = reeks(regels, { van: "2025-11-03", tot: "2026-11-03" }, "maand");

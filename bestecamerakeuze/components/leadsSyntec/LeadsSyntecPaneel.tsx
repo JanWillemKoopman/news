@@ -21,16 +21,17 @@ import {
   filterRegels,
   groepeer,
   heeftFilters,
-  korrelVoor,
-  modelSleutelVan,
+  modelRijSleutel,
   opties,
   pakUit,
   reeks,
   tel,
+  STANDAARD_KORREL,
   vastePeriodes,
   verschil,
   vorigJaar,
   type Groep,
+  type Korrel,
   type HerkomstFilter,
   type LeadsSyntecAntwoord,
   type Periode,
@@ -49,7 +50,7 @@ import {
  * modellen, de kanalen per merk, en nieuw of gebruikt. Eén ophaalactie voor alle jaren;
  * alles daarna gebeurt in het geheugen.
  *
- * De indeling (wat internet is, welk merk, welke modelfamilie) staat in
+ * De indeling (wat internet is, welk merk) staat in
  * `lib/leadsSyntec/indeling.ts`, het rekenwerk in `lib/leadsSyntec/samenvatting.ts`, en de
  * keuzes erachter in CLAUDE.md onder "Kanalen → Leads Syntec".
  */
@@ -75,7 +76,6 @@ const URL_LIJSTEN = {
 } as const satisfies Record<string, keyof SyntecFilters>;
 
 const SLEUTEL_MODEL_ONBEKEND = "\u0001model-onbekend";
-const SLEUTEL_OVERIG = "\u0001overig";
 
 function momentTekst(iso: string | null): string {
   if (!iso) return "onbekend";
@@ -173,22 +173,27 @@ function samen(regels: SyntecRegel[], sleutel: string): Groep[] {
   return groepeer(regels, () => sleutel);
 }
 
-/** Modellen: de modelfamilies van de eigen merken, plus twee vaste rijen zodat de tabel optelt. */
+/**
+ * Modellen: merk en model precies zoals in de sheet, niets samengevoegd. Leads zonder model
+ * staan als één vaste rij onderaan, zodat de tabel optelt tot het totaal.
+ */
 function modelGroepen(regels: SyntecRegel[]) {
-  const metModel = regels.filter((r) => isEigenMerk(r.merk) && r.model !== ONBEKEND);
   return {
-    groepen: groepeer(metModel, modelSleutelVan, (r) => r.modelRuw || ONBEKEND),
-    vastgezet: [
-      ...samen(
-        regels.filter((r) => isEigenMerk(r.merk) && r.model === ONBEKEND),
-        SLEUTEL_MODEL_ONBEKEND,
-      ),
-      ...samen(
-        regels.filter((r) => !isEigenMerk(r.merk)),
-        SLEUTEL_OVERIG,
-      ),
-    ],
+    groepen: groepeer(
+      regels.filter((r) => r.model !== ONBEKEND),
+      modelRijSleutel,
+    ),
+    vastgezet: samen(
+      regels.filter((r) => r.model === ONBEKEND),
+      SLEUTEL_MODEL_ONBEKEND,
+    ),
   };
+}
+
+/** Een sleutel uit `modelRijSleutel` terug naar merk en model (het merk bevat nooit een "|"). */
+function deelRij(sleutel: string): { merk: string; model: string } {
+  const i = sleutel.indexOf("|");
+  return { merk: sleutel.slice(0, i), model: sleutel.slice(i + 1) };
 }
 
 function merkGroepen(regels: SyntecRegel[]) {
@@ -217,6 +222,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [eigen, setEigen] = useState<Periode | null>(null);
   const [filters, setFilters] = useState<SyntecFilters>(GEEN_FILTERS);
   const [vergelijk, setVergelijk] = useState(false);
+  const [korrel, setKorrel] = useState<Korrel>(STANDAARD_KORREL);
   const actief = useIsActief(VIEW);
   const urlGelezen = useRef(false);
 
@@ -267,6 +273,8 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       ...Object.fromEntries(Object.entries(URL_LIJSTEN).map(([url, veld]) => [veld, f[url] ?? []])),
     });
     setVergelijk(f.vergelijk?.[0] === "1");
+    const k = f.korrel?.[0];
+    if (k === "dag" || k === "week" || k === "maand") setKorrel(k);
   }, [actief]);
 
   useEffect(() => {
@@ -279,13 +287,14 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     if (filters.herkomst !== "alle") urlFilters.herkomst = [filters.herkomst];
     if (filters.zonderDubbel) urlFilters.dubbel = ["weg"];
     if (vergelijk) urlFilters.vergelijk = ["1"];
+    if (korrel !== STANDAARD_KORREL) urlFilters.korrel = [korrel];
     schrijfUrlStand({
       periodeId,
       van: eigen?.van ?? null,
       tot: eigen?.tot ?? null,
       filters: urlFilters,
     });
-  }, [actief, periodeId, eigen, filters, vergelijk]);
+  }, [actief, periodeId, eigen, filters, vergelijk, korrel]);
 
   const regels = useMemo(() => (data ? pakUit(data.kubus) : []), [data]);
   const periodes = useMemo(
@@ -330,26 +339,19 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
         ...EIGEN_MERKEN.filter((m) => inPeriode.some((r) => r.merk === m)),
         ...[OVERIGE_MERKEN, ONBEKEND].filter((m) => inPeriode.some((r) => r.merk === m)),
       ],
-      modellen: opties(
-        inPeriode.filter((r) => isEigenMerk(r.merk) && r.model !== ONBEKEND),
-        modelSleutelVan,
-      ),
+      // De letterlijke waarden uit de kolom Model, groot eerst; "Onbekend" (leeg) achteraan.
+      modellen: [
+        ...opties(
+          inPeriode.filter((r) => r.model !== ONBEKEND),
+          (r) => r.model,
+        ),
+        ...(inPeriode.some((r) => r.model === ONBEKEND) ? [ONBEKEND] : []),
+      ],
       ordersoorten: opties(inPeriode, (r) => r.ordersoort),
       soorten: opties(inPeriode, (r) => r.soort),
     }),
     [inPeriode],
   );
-  const modelLabels = useMemo(
-    () =>
-      Object.fromEntries(
-        keuzes.modellen.map((k) => {
-          const [merk, model] = k.split("|");
-          return [k, `${model} · ${merk}`];
-        }),
-      ),
-    [keuzes.modellen],
-  );
-
   const merken = useMemo(() => merkGroepen(selectie), [selectie]);
   const merkenVorig = useMemo(
     () => (selectieVorig ? alsMap(groepeer(selectieVorig, (r) => r.merk)) : null),
@@ -379,7 +381,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     [selectieVorig],
   );
 
-  const korrel = periode ? korrelVoor(periode) : "dag";
   // De export van de sheet loopt soms halverwege een dag (17 november, laatste lead 12:40):
   // die dag is dan nog niet compleet en wordt in de grafiek lichter getekend.
   const halveDag = useMemo(() => {
@@ -441,12 +442,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
 
   const zet = <K extends keyof SyntecFilters>(veld: K) => (waarde: SyntecFilters[K]) =>
     setFilters((f) => ({ ...f, [veld]: waarde }));
-
-  const modelTooltip = (g: Groep) => {
-    const delen = Object.entries(g.onderdelen).sort((a, b) => b[1] - a[1]);
-    if (delen.length <= 1) return null;
-    return `In Syntec als: ${delen.map(([naam, n]) => `${naam} (${formatteer(n, "aantal")})`).join(", ")}`;
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -534,7 +529,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
                 options={keuzes.modellen}
                 selected={filters.modellen}
                 onChange={zet("modellen")}
-                labels={modelLabels}
                 zoekbaar
               />
               <FilterSelect
@@ -635,7 +629,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
         />
       </div>
 
-      <SyntecGrafiek punten={punten} vorig={puntenVorig} korrel={korrel} />
+      <SyntecGrafiek punten={punten} vorig={puntenVorig} korrel={korrel} onKorrel={setKorrel} />
 
       <div className="grid grid-cols-2 items-start gap-6">
         <SyntecTabel
@@ -666,33 +660,23 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
 
       <SyntecTabel
         titel="Modellen"
-        toelichting="Per modelfamilie van de eigen merken. Schrijfwijzen zijn samengevoegd (POLO, Polo (6) GP en VOLKSWAGEN POLO zijn allemaal Polo); ga met de muis op een model staan om te zien welke."
+        toelichting="Het model precies zoals het in de kolom Model van Syntec staat, met het merk ernaast. Niets is samengevoegd: verschillende schrijfwijzen van dezelfde auto (POLO, Polo (6) GP) staan als aparte regels."
         labelKop="Model"
         groepen={modellen.groepen}
         vastgezet={modellen.vastgezet}
         totaal={totaal}
         vorig={modellenVorig}
         totaalVorig={totaalVorig}
-        labelVan={(g) =>
-          g.sleutel === SLEUTEL_MODEL_ONBEKEND
-            ? "Model onbekend"
-            : g.sleutel === SLEUTEL_OVERIG
-              ? "Overige en onbekende merken"
-              : g.sleutel.split("|")[1]
-        }
-        tekstVan={(g) =>
-          g.sleutel === SLEUTEL_MODEL_ONBEKEND
-            ? "Model onbekend"
-            : g.sleutel === SLEUTEL_OVERIG
-              ? "Overige en onbekende merken"
-              : g.sleutel.split("|")[1]
-        }
-        tooltipVan={modelTooltip}
+        labelVan={(g) => (g.sleutel === SLEUTEL_MODEL_ONBEKEND ? "Model onbekend" : deelRij(g.sleutel).model)}
+        tekstVan={(g) => (g.sleutel === SLEUTEL_MODEL_ONBEKEND ? "Model onbekend" : deelRij(g.sleutel).model)}
         extraKolom={{
           kop: "Merk",
-          waarde: (g) =>
-            g.sleutel.startsWith("\u0001") ? null : <MerkNaam merk={g.sleutel.split("|")[0]} />,
-          tekst: (g) => (g.sleutel.startsWith("\u0001") ? "" : g.sleutel.split("|")[0]),
+          waarde: (g) => {
+            if (g.sleutel === SLEUTEL_MODEL_ONBEKEND) return null;
+            const { merk } = deelRij(g.sleutel);
+            return <MerkNaam merk={merk} />;
+          },
+          tekst: (g) => (g.sleutel === SLEUTEL_MODEL_ONBEKEND ? "" : deelRij(g.sleutel).merk),
         }}
         maxRijen={15}
         csvNaam="leads-syntec-modellen"
@@ -738,10 +722,10 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               die verkopers in de showroom maken. Wie alleen de aanvragen van buitenaf wil zien, kiest Internet.
             </li>
             <li>
-              <strong className="text-ink">Modellen</strong> zijn samengevoegd tot modelfamilies: generatie
-              (&quot;(6)&quot;), GP/FL, kentekenkleur en de merknaam ervoor vallen weg, en de carrosserie gaat mee
-              in de familie (Golf Variant is Golf, ID.7 Tourer is ID.7). Overige merken tonen het model zoals het
-              in Syntec staat.
+              <strong className="text-ink">Modellen</strong> staan letterlijk zoals in de kolom Model van Syntec,
+              ook in het filter. Dezelfde auto komt daardoor onder meerdere namen voor (POLO, Polo (6) GP,
+              VOLKSWAGEN POLO); kies ze samen in het filter Model om ze op te tellen. Alleen een leeg veld heet
+              &quot;Onbekend&quot;.
             </li>
             <li>
               <strong className="text-ink">Dubbele leads</strong> (sluitreden Dubbel of [SA] Dubbel, ±9%) tellen

@@ -13,7 +13,6 @@ import {
   deelMerkIn,
   herkomstVan,
   kanaalgroepLabel,
-  modelFamilie,
   type Herkomst,
 } from "@/lib/leadsSyntec/indeling";
 
@@ -72,29 +71,17 @@ export interface SyntecRegel {
   merk: string;
   /** Bij "Overige merken" het merk zelf; anders gelijk aan `merk`. */
   merkDetail: string;
-  /** De modelfamilie (zie `modelFamilie`). */
+  /** Het model letterlijk zoals in de kolom Model; alleen een lege waarde heet "Onbekend". */
   model: string;
-  /** Het model zoals Syntec het schreef, voor de tooltip met schrijfwijzen. */
-  modelRuw: string;
   ordersoort: string;
   soort: string;
   dubbel: boolean;
   aantal: number;
 }
 
-/** Van de compacte kubus naar regels, met merk en model meteen ingedeeld. */
+/** Van de compacte kubus naar regels, met het merk meteen ingedeeld. */
 export function pakUit(kubus: SyntecKubus): SyntecRegel[] {
   const merkCache = kubus.merken.map((m) => deelMerkIn(m));
-  const modelCache = new Map<string, string>();
-  const familie = (merkIdx: number, modelIdx: number): string => {
-    const sleutel = `${merkIdx}:${modelIdx}`;
-    let f = modelCache.get(sleutel);
-    if (f === undefined) {
-      f = modelFamilie(merkCache[merkIdx]?.merk ?? ONBEKEND, kubus.modellen[modelIdx] ?? "");
-      modelCache.set(sleutel, f);
-    }
-    return f;
-  };
 
   return kubus.regels.map(([dag, kanaal, merk, model, ordersoort, soort, dubbel, aantal]) => {
     const k = kubus.kanalen[kanaal] ?? { kanaal: "", kanaalgroep: "" };
@@ -106,8 +93,7 @@ export function pakUit(kubus: SyntecKubus): SyntecRegel[] {
       herkomst: herkomstVan(k.kanaalgroep),
       merk: m.merk,
       merkDetail: m.detail,
-      model: m.merk === ONBEKEND ? ONBEKEND : familie(merk, model),
-      modelRuw: (kubus.modellen[model] ?? "").trim(),
+      model: (kubus.modellen[model] ?? "").trim() || ONBEKEND,
       ordersoort: (kubus.ordersoorten[ordersoort] ?? "").trim() || ONBEKEND,
       soort: (kubus.soorten[soort] ?? "").trim() || ONBEKEND,
       dubbel: dubbel === 1,
@@ -127,7 +113,7 @@ export interface SyntecFilters {
   kanaalgroepen: string[];
   kanalen: string[];
   merken: string[];
-  /** Als `modelSleutelVan` ("merk|model"): Caddy bestaat bij Volkswagen én Bedrijfswagens. */
+  /** De letterlijke modelwaarden; "Caddy" telt dus bij Volkswagen én Bedrijfswagens. */
   modellen: string[];
   ordersoorten: string[];
   soorten: string[];
@@ -146,8 +132,12 @@ export const GEEN_FILTERS: SyntecFilters = {
   zonderDubbel: false,
 };
 
-export function modelSleutelVan(r: Pick<SyntecRegel, "merk" | "model">): string {
-  return `${r.merk}|${r.model}`;
+/**
+ * Een regel in de modellentabel: merk en model samen, zoals ze in de sheet naast elkaar
+ * staan. "Caddy" bij Volkswagen en bij Volkswagen Bedrijfswagens zijn twee regels.
+ */
+export function modelRijSleutel(r: Pick<SyntecRegel, "merkDetail" | "model">): string {
+  return `${r.merkDetail}|${r.model}`;
 }
 
 export function heeftFilters(f: SyntecFilters): boolean {
@@ -179,7 +169,7 @@ export function filterRegels(regels: SyntecRegel[], f: SyntecFilters, periode: P
       in_(f.kanaalgroepen, r.kanaalgroep) &&
       in_(f.kanalen, r.kanaal) &&
       in_(f.merken, r.merk) &&
-      in_(f.modellen, modelSleutelVan(r)) &&
+      in_(f.modellen, r.model) &&
       in_(f.ordersoorten, r.ordersoort) &&
       in_(f.soorten, r.soort),
   );
@@ -210,34 +200,24 @@ export interface Groep extends Telling {
   sleutel: string;
   /** Per merk (eigen merk, "Overige merken" of "Onbekend"): voor de kanalentabel. */
   perMerk: Record<string, number>;
-  /** Per onderliggende waarde (bv. de schrijfwijzen van een model) met aantal. */
-  onderdelen: Record<string, number>;
 }
 
 /**
  * Groepeert regels op een sleutel en telt per groep het totaal, internet, offline en per
  * merk. Gesorteerd op het totaal (groot eerst), bij gelijke stand op naam.
  */
-export function groepeer(
-  regels: SyntecRegel[],
-  sleutelVan: (r: SyntecRegel) => string,
-  onderdeelVan?: (r: SyntecRegel) => string,
-): Groep[] {
+export function groepeer(regels: SyntecRegel[], sleutelVan: (r: SyntecRegel) => string): Groep[] {
   const groepen = new Map<string, Groep>();
   for (const r of regels) {
     const s = sleutelVan(r);
     let g = groepen.get(s);
     if (!g) {
-      g = { sleutel: s, totaal: 0, internet: 0, offline: 0, perMerk: {}, onderdelen: {} };
+      g = { sleutel: s, totaal: 0, internet: 0, offline: 0, perMerk: {} };
       groepen.set(s, g);
     }
     g.totaal += r.aantal;
     g[r.herkomst] += r.aantal;
     g.perMerk[r.merk] = (g.perMerk[r.merk] ?? 0) + r.aantal;
-    if (onderdeelVan) {
-      const o = onderdeelVan(r);
-      g.onderdelen[o] = (g.onderdelen[o] ?? 0) + r.aantal;
-    }
   }
   return [...groepen.values()].sort((a, b) => b.totaal - a.totaal || a.sleutel.localeCompare(b.sleutel, "nl"));
 }
@@ -328,15 +308,19 @@ export function vastePeriodes(eersteDag: string, laatsteDag: string): SyntecPeri
 // De reeks voor de grafiek
 // ---------------------------------------------------------------------------
 
+/**
+ * Per dag, week of maand — te kiezen met de knopjes boven de grafiek, standaard per week
+ * (verzoek november 2026). Een week loopt van maandag t/m zondag.
+ */
 export type Korrel = "dag" | "week" | "maand";
 
-/** Tot twee maanden per dag, tot zeven maanden per week, daarboven per maand. */
-export function korrelVoor(periode: Periode): Korrel {
-  const dagen = dagenTussen(periode);
-  if (dagen <= 62) return "dag";
-  if (dagen <= 210) return "week";
-  return "maand";
-}
+export const KORRELS: { id: Korrel; label: string }[] = [
+  { id: "dag", label: "Dag" },
+  { id: "week", label: "Week" },
+  { id: "maand", label: "Maand" },
+];
+
+export const STANDAARD_KORREL: Korrel = "week";
 
 export interface ReeksPunt {
   /** Eerste dag van het vak (YYYY-MM-DD). */
