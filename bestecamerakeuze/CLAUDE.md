@@ -740,7 +740,8 @@ realisatie van 2027.
     staan (een dag zonder sessies op udenhout.nl wordt nog steeds bijgeschat; de
     uitvalmelding bovenaan noemt deze bron dus niet als uitzondering). Onder de grafiek
     staat hij als "Opgeteld t/m 31 mrt". De realisatie van 2027 telt alleen udenhout.nl.
-  - **Waar het staat**: de dagcijfers in `lib/kpi2027/udenhoutleaseExport.ts`, eenmalig
+  - **Waar het staat**: de dagcijfers (heel 2025 en januari t/m maart 2026) in
+    `lib/kpi2027/udenhoutleaseExport.ts`, eenmalig
     via Windsor opgehaald. Ze liggen vast: na 31 maart meet udenhoutlease.nl geen aanvragen
     meer, dus de wekelijkse ophaalactie haalt die property niet op.
 - **Hostnames: uitsluiten, en nooit sessies per hostname optellen.** Per website gaan
@@ -825,14 +826,16 @@ realisatie van 2027.
     1 januari 2025, elke dag met sessies (geen uitval, dus niets bijgeschat), en heel 2025
     draaide de oude tracking: dezelfde events als januari t/m maart 2026, die de KPI's al
     meetellen. Er hoefde dus geen definitie bij.
-  - **Zakelijke lease heeft geen lijn** (`zonderVergelijking` op de KPI): in 2025 niet
-    op udenhout.nl niet gemeten (5 aanvragen in augustus t/m oktober); de zakelijke leads liepen
-    toen via udenhoutlease.nl, en die zijn voor 2025 niet opgehaald. De reden staat onder de
-    grafiek. Sinds hij udenhoutlease.nl als externe bron heeft, sluit ook die regel hieronder
-    hem uit.
-    `verhuuractie_verzonden` vuurt pas vanaf juli 2025; dat blijkt uit de eventtelling
-    onder de grafiek. Een KPI met een externe bron krijgt nooit een lijn: die bron dekt
-    alleen 2026.
+  - **Zakelijke lease: de lijn 2025 is udenhoutlease.nl** (besluit van de eigenaar,
+    19 november 2026). In 2025 liepen de zakelijke leads volledig via udenhoutlease.nl
+    (346: `offerte_aanvraag` 324 + `contact_verzonden` 22); udenhout.nl mat er maar 5
+    (augustus t/m oktober). De dagcijfers van 2025 staan in hetzelfde bestand als die van
+    2026 (`udenhoutleaseExport.ts`). Een **optellende** externe bron telt mee in de lijn van
+    het vergelijkingsjaar (`vergelijkingVoor`, `Vergelijking.extern`), en onder de grafiek
+    staat hoeveel ervan uit udenhoutlease.nl komt. Hij telt niet mee in verwachting of target.
+  - `verhuuractie_verzonden` vuurt pas vanaf juli 2025; dat blijkt uit de eventtelling
+    onder de grafiek. Een KPI met een **vervangende** externe bron (Porsche-werkplaats)
+    krijgt nooit een lijn: die bron dekt alleen 2026.
   - **Let op bij het lezen**: vanaf april 2026 draait de nieuwe tracking, dus een verschil
     tussen 2025 en 2026 vanaf april kan deels aan de meting liggen. Dat staat bovenaan de tab
     (`vergelijkingTekst`).

@@ -104,7 +104,10 @@ export type KpiBron =
 export interface ExterneBron {
   /** T/m deze dag geldt deze bron. */
   tot: string;
-  /** True: optellen bij GA4 in plaats van GA4 te vervangen. */
+  /**
+   * True: optellen bij GA4 in plaats van GA4 te vervangen. Een optellende bron telt ook mee
+   * in de lijn van het vergelijkingsjaar, voor zover hij dagen in dat jaar heeft.
+   */
   optellen?: boolean;
   /** Wat één eenheid is, meervoud, voor onder de grafiek: "afspraken", "aanvragen". */
   eenheid: string;
@@ -246,7 +249,7 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     vergelijkingsjaar: {
       jaar: 2025,
       toelichting:
-        "De lijn 2025 telt dezelfde events als 2026, zoals gemeten (in 2025 had de website elke dag sessies, dus niets bijgeschat). Heel 2025 draaide de oude tracking; vanaf april 2026 de nieuwe. Een verschil tussen 2025 en 2026 vanaf april kan dus deels aan de andere meting liggen in plaats van aan meer of minder aanvragen. Zakelijke lease werd in 2025 niet gemeten en heeft geen lijn 2025.",
+        "De lijn 2025 telt dezelfde events als 2026, zoals gemeten (in 2025 had de website elke dag sessies, dus niets bijgeschat). Heel 2025 draaide de oude tracking; vanaf april 2026 de nieuwe. Een verschil tussen 2025 en 2026 vanaf april kan dus deels aan de andere meting liggen in plaats van aan meer of minder aanvragen. Bij zakelijke lease is de lijn 2025 vooral udenhoutlease.nl: daar liepen de zakelijke leads in 2025.",
     },
     kpis: [
       SESSIES,
@@ -313,8 +316,6 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
         },
         opmerking:
           "Tot en met maart kwamen de zakelijke leads binnen via udenhoutlease.nl; vanaf april via udenhout.nl. Daarom telt januari t/m maart beide sites op: udenhoutlease.nl als aparte bron (vaste cijfers, die site meet niet meer) plus wat udenhout.nl zelf mat (2 aanvragen). Niet meegeteld van udenhoutlease.nl: het proefritformulier (6) en de actieformulieren per merk (20) — die zijn op udenhout.nl ook geen zakelijke lease.",
-        zonderVergelijking:
-          "Geen lijn 2025: zakelijke lease werd in 2025 op udenhout.nl niet gemeten (5 aanvragen in augustus t/m oktober, verder niets). De zakelijke leads liepen toen via udenhoutlease.nl, en die zijn voor 2025 niet opgehaald.",
       },
       {
         sleutel: "verhuur",

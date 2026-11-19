@@ -119,9 +119,15 @@ export default function KpiKaart({
         <p className="mt-1">
           <span className="text-ink-muted">Lijn {kpi.vergelijking.jaar}:</span> dezelfde bron over heel{" "}
           {kpi.vergelijking.jaar}, zoals gemeten: {aantal(kpi.vergelijking.totaal)}
-          {kpi.vergelijking.events.length > 0 && (
+          {(kpi.vergelijking.events.length > 0 || kpi.vergelijking.extern) && (
             <>
               {" "}(
+              {kpi.vergelijking.extern && (
+                <>
+                  {kpi.vergelijking.extern.naam} {aantal(kpi.vergelijking.extern.aantal)}
+                  {kpi.vergelijking.events.length > 0 && " + "}
+                </>
+              )}
               {kpi.vergelijking.events.map((e, i) => (
                 <span key={`${e.naam}${e.paginaBevat ?? ""}`}>
                   {i > 0 && " + "}

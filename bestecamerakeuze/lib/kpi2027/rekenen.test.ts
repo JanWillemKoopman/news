@@ -374,6 +374,8 @@ test("Zakelijke lease udenhout.nl: udenhoutlease.nl t/m maart opgeteld bij GA4, 
   assert.equal(extern.eenheid, "aanvragen");
   // En de uitvalmelding noemt hem niet als uitzondering.
   assert.doesNotMatch(websiteOverzicht(udenhout, s, null).uitvalTekst ?? "", /Uitzondering/);
+  // De cijfers van 2025 in hetzelfde bestand lekken niet in 2026.
+  assert.ok(Object.keys(dagen).every((d) => d.startsWith("2026-")));
 });
 
 test("vergelijkingsjaar: udenhout.nl krijgt een lijn 2025, per maand zoals gemeten", () => {
@@ -410,9 +412,13 @@ test("vergelijkingsjaar: udenhout.nl krijgt een lijn 2025, per maand zoals gemet
   assert.equal(kpi("gebruikers").vergelijking?.totaal, 780);
   assert.ok(o.vergelijkingTekst);
 
-  // Zakelijke lease werd in 2025 niet gemeten: geen lijn, wel de reden.
-  assert.equal(kpi("zakelijke-lease").vergelijking, null);
-  assert.match(kpi("zakelijke-lease").zonderVergelijking ?? "", /niet gemeten/);
+  // Zakelijke lease: in 2025 liep alles via udenhoutlease.nl, en dat telt in de lijn mee.
+  assert.deepEqual(kpi("zakelijke-lease").vergelijking?.maanden, [27, 32, 29, 29, 25, 18, 43, 28, 29, 38, 21, 27]);
+  assert.equal(kpi("zakelijke-lease").vergelijking?.totaal, 346);
+  assert.deepEqual(kpi("zakelijke-lease").vergelijking?.extern, { naam: "udenhoutlease.nl", aantal: 346 });
+  assert.equal(kpi("zakelijke-lease").zonderVergelijking, null);
+  // Een KPI zonder externe bron heeft geen externe bijdrage in de lijn.
+  assert.equal(kpi("proefritaanvragen").vergelijking?.extern, null);
 
   // De lijn verandert niets aan de verwachting of het target.
   const zonder = websiteOverzicht(udenhout, s2026, null);

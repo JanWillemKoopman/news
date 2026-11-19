@@ -460,9 +460,7 @@ export function externeBronTotaal(
 ): ExterneBronRegel | null {
   const extern = definitie.externeBron;
   if (!extern || extern.tot < `${stand.jaar}-01-01`) return null;
-  const aantal = Object.entries(extern.dagen)
-    .filter(([datum]) => datum.startsWith(`${stand.jaar}-`) && datum <= extern.tot && datum <= stand.peildatum)
-    .reduce((t, [, n]) => t + (Number(n) || 0), 0);
+  const aantal = externAantalIn(extern, stand);
   return {
     naam: extern.naam,
     omschrijving: extern.omschrijving,
@@ -494,16 +492,20 @@ export interface Vergelijking {
   totaal: number;
   /** Per event hoe vaak het in dat jaar vuurde, voor onder de grafiek. */
   events: { naam: string; paginaBevat?: string; aantal: number }[];
+  /** Wat een optellende externe bron in dat jaar bijdraagt (udenhoutlease.nl in 2025). */
+  extern: { naam: string; aantal: number } | null;
 }
 
 /**
  * De vergelijkingslijn van één KPI uit de stand van dat jaar. Null voor een KPI met
- * `zonderVergelijking` (niet gemeten in dat jaar) of met een externe bron: die bron dekt
- * alleen het basisjaar, en `dagwaardenVoor` zou de GA4-cijfers van het eerdere jaar dan
- * wegfilteren.
+ * `zonderVergelijking` (niet gemeten in dat jaar) of met een vervangende externe bron: die
+ * dekt alleen het basisjaar, en `dagwaardenVoor` zou de GA4-cijfers van het eerdere jaar
+ * dan wegfilteren. Een optellende bron (udenhoutlease.nl) telt wél mee: `dagwaardenVoor`
+ * neemt zijn dagen van dat jaar erbij.
  */
 export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Vergelijking | null {
-  if (definitie.zonderVergelijking || definitie.externeBron) return null;
+  const extern = definitie.externeBron;
+  if (definitie.zonderVergelijking || (extern && !extern.optellen)) return null;
   let maanden: number[];
   if (definitie.bron.soort === "gebruikers") {
     maanden = Array.from({ length: 12 }, (_, i) => Math.max(0, Number(stand.gebruikers[i]) || 0));
@@ -519,7 +521,15 @@ export function vergelijkingVoor(definitie: KpiDefinitie, stand: KpiStand): Verg
     maanden,
     totaal: maanden.reduce((t, n) => t + n, 0),
     events: eventTotalen(definitie, stand).map(({ naam, paginaBevat, aantal }) => ({ naam, paginaBevat, aantal })),
+    extern: extern ? { naam: extern.naam, aantal: externAantalIn(extern, stand) } : null,
   };
+}
+
+/** Wat een externe bron in het jaar van de stand t/m de peildatum telt. */
+function externAantalIn(extern: NonNullable<KpiDefinitie["externeBron"]>, stand: KpiStand): number {
+  return Object.entries(extern.dagen)
+    .filter(([datum]) => datum.startsWith(`${stand.jaar}-`) && datum <= extern.tot && datum <= stand.peildatum)
+    .reduce((t, [, n]) => t + (Number(n) || 0), 0);
 }
 
 /** Alles wat het tabblad van één KPI nodig heeft. */
