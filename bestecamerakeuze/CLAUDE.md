@@ -736,7 +736,7 @@ model op te halen.
   per periode zakt altijd naar het heden toe).
 - **Opbouw.** Filterbalk (periode, internet/offline, kanaalgroep, kanaal, merk, model, nieuw
   of gebruikt, soort aanvraag, vergelijken, zonder dubbele), vier kerncijfers, de grafiek
-  (internet gestapeld op offline), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
+  (internet en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
   matrix: internet en offline als blokken met subtotaal, offline per kanaalgroep, de merken
   als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Internet, Offline en %
   internet, een totaalregel over álle rijen, "Onbekend" vast onderaan en een CSV-knop.

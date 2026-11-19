@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import {
   Bar,
   CartesianGrid,
+  Cell,
   ComposedChart,
+  LabelList,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -16,13 +18,19 @@ import { useGrafiekKleuren } from "@/components/ThemeProvider";
 import { KORRELS, type Korrel, type ReeksPunt } from "@/lib/leadsSyntec/samenvatting";
 
 /**
- * Leads per dag, week of maand, gestapeld in internet en offline. Rechtsboven kies je met
- * drie knopjes of de grafiek per dag, week of maand staat; standaard per week.
+ * Leads per dag, week of maand, gestapeld: internet (online) altijd onder in groen, offline
+ * altijd erbovenop in oranje (verzoek van de eigenaar, november 2026). In elk deel staat in
+ * het midden hoeveel leads het waren, en boven de staaf het totaal — zo lees je internet,
+ * offline en totaal af zonder over de staaf te hoeven bewegen. Rechtsboven kies je met drie
+ * knopjes of de grafiek per dag, week of maand staat; standaard per week.
  *
- * Internet krijgt de eerste themakleur, offline de gedempte contextkleur: de vraag achter
- * dit tabblad is vooral hoeveel er via internet binnenkomt, en offline is de grote massa
- * eromheen. Met "Vergelijk met vorig jaar" staat het totaal van dezelfde datums een jaar
- * eerder er als lijn overheen, per vak op **positie** uitgelijnd (week 3 tegen week 3).
+ * Een getal verschijnt alleen als het past: in een smalle staaf (bv. 90 dagen per dag) of
+ * een te laag deel blijft hij weg in plaats van over de rand te lopen; de tooltip heeft
+ * altijd alle drie. Groen en oranje komen uit het theme (`groen`/`oranje` in
+ * `lib/themes.ts`), de tekstkleur in de staaf wordt gekozen op contrast met die kleur.
+ *
+ * Met "Vergelijk met vorig jaar" staat het totaal van dezelfde datums een jaar eerder er als
+ * lijn overheen, per vak op **positie** uitgelijnd (week 3 tegen week 3).
  *
  * Een eerste of laatste week/maand die maar half in de periode valt, wordt lichter
  * getekend: anders leest een halve maand als een inzakker. Hetzelfde voor de laatste dag
@@ -66,11 +74,119 @@ interface Punt {
   lang: string;
   internet: number;
   offline: number;
-  internetLicht: number;
-  offlineLicht: number;
   totaal: number;
   vorig: number | null;
   volledig: boolean;
+}
+
+/** Relatieve luminantie van een #rrggbb-kleur (WCAG). */
+function luminantie(hex: string): number {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+  if (!m) return 0;
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => {
+    const c = parseInt(h, 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrast(a: string, b: string): number {
+  const [l1, l2] = [luminantie(a), luminantie(b)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+
+/** De tekstkleur uit het theme (label of vlak) die het best leesbaar is op deze vulkleur. */
+function tekstOp(vul: string, opties: string[]): string {
+  return opties.reduce((best, k) => (contrast(vul, k) > contrast(vul, best) ? k : best), opties[0]);
+}
+
+/** Een kleur met dekking `dekking` over de ondergrond: wat je ziet bij een lichtere staaf. */
+function gemengd(kleur: string, ondergrond: string, dekking: number): string {
+  const rgb = (hex: string) => {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+    return m ? [m[1], m[2], m[3]].map((h) => parseInt(h, 16)) : [0, 0, 0];
+  };
+  const [a, b] = [rgb(kleur), rgb(ondergrond)];
+  return `#${a
+    .map((c, i) => Math.round(c * dekking + b[i] * (1 - dekking)).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/** Hoe een getal in een deel van de staaf eruitziet: tekstkleur en een rand in de vulkleur. */
+interface LabelStijl {
+  tekst: string;
+  /** Zelfde kleur als het deel: een smalle rand om de cijfers, zodat de lijn van vorig jaar
+   *  er niet dwars doorheen loopt. */
+  halo: string;
+}
+
+/** Minimale ruimte voor een getal: breedte van de staaf en hoogte van het deel, in pixels. */
+const MIN_BREEDTE = 24;
+const MIN_HOOGTE = 15;
+
+interface LabelProps {
+  x?: number | string;
+  y?: number | string;
+  width?: number | string;
+  height?: number | string;
+  value?: number | string | null;
+  index?: number;
+}
+
+function getal(v: LabelProps["value"]): number {
+  return typeof v === "number" ? v : Number(v ?? 0);
+}
+
+/** Het getal midden in een deel van de staaf, alleen als het er ruim in past. */
+function MiddenLabel({ stijl, ...p }: LabelProps & { stijl: LabelStijl }) {
+  const [x, y, w, h, v] = [Number(p.x), Number(p.y), Number(p.width), Number(p.height), getal(p.value)];
+  if (!v || w < MIN_BREEDTE || h < MIN_HOOGTE) return null;
+  const tekst = formatteer(v, "aantal");
+  if (tekst.length * 7 > w - 2) return null;
+  return (
+    <text
+      x={x + w / 2}
+      y={y + h / 2}
+      fill={stijl.tekst}
+      stroke={stijl.halo}
+      strokeWidth={3}
+      paintOrder="stroke"
+      fontSize={AS_GROOTTE}
+      fontWeight={600}
+      textAnchor="middle"
+      dominantBaseline="central"
+      pointerEvents="none"
+    >
+      {tekst}
+    </text>
+  );
+}
+
+/**
+ * Het totaal boven de staaf. Staat op het bovenste deel dat er is: offline, of internet als
+ * er in dat vak geen offline lead was (een deel van nul hoogte krijgt van Recharts geen label).
+ */
+function TotaalLabel({ kleur, halo, ...p }: LabelProps & { kleur: string; halo: string }) {
+  const [x, y, w, v] = [Number(p.x), Number(p.y), Number(p.width), getal(p.value)];
+  if (!v || w < MIN_BREEDTE - 6) return null;
+  const tekst = formatteer(v, "aantal");
+  if (tekst.length * 7 > w + 10) return null;
+  return (
+    <text
+      x={x + w / 2}
+      y={y - 6}
+      fill={kleur}
+      stroke={halo}
+      strokeWidth={3}
+      paintOrder="stroke"
+      fontSize={AS_GROOTTE}
+      fontWeight={700}
+      textAnchor="middle"
+      pointerEvents="none"
+    >
+      {tekst}
+    </text>
+  );
 }
 
 type TooltipProps = { active?: boolean; payload?: { payload: Punt }[] };
@@ -116,9 +232,6 @@ export default function SyntecGrafiek({
           lang: vakLang(p, korrel),
           internet: p.internet,
           offline: p.offline,
-          // Een half vak tekent in eigen, lichtere reeksen (gestapeld op dezelfde plek).
-          internetLicht: p.volledig ? 0 : p.internet,
-          offlineLicht: p.volledig ? 0 : p.offline,
           totaal: p.internet + p.offline,
           vorig: v ? v.internet + v.offline : null,
           volledig: p.volledig,
@@ -127,6 +240,13 @@ export default function SyntecGrafiek({
     [punten, vorig, korrel],
   );
   const heeftHalf = data.some((d) => !d.volledig);
+  // Een half vak (eerste/laatste week of maand, of een halve dag) tekent lichter, met dezelfde
+  // kleur: per staaf via een Cell, zodat het getal er gewoon in blijft staan.
+  const LICHT = 0.45;
+  const stijl = (vul: string): LabelStijl => ({ tekst: tekstOp(vul, [kleuren.label, kleuren.vlak]), halo: vul });
+  const groen = { vol: stijl(kleuren.groen), licht: stijl(gemengd(kleuren.groen, kleuren.vlak, LICHT)) };
+  const oranje = { vol: stijl(kleuren.oranje), licht: stijl(gemengd(kleuren.oranje, kleuren.vlak, LICHT)) };
+  const vak = (index: number | undefined) => data[index ?? -1];
   const per = korrel === "dag" ? "dag" : korrel === "week" ? "week" : "maand";
 
   return (
@@ -135,8 +255,9 @@ export default function SyntecGrafiek({
         <div>
           <h2 className="font-sans-w7 text-cell font-semibold text-ink">Leads per {per}</h2>
           <p className="mt-0.5 text-meta text-ink-muted">
-            Internet is kanaalgroep Internet in Syntec; offline is alles daarbuiten (showroom, acquisitie,
-            mail en telefoon).
+            Internet (online, groen) is kanaalgroep Internet in Syntec; offline (oranje) is alles daarbuiten
+            (showroom, acquisitie, mail en telefoon). In de staaf staat het aantal per deel, erboven het
+            totaal.
             {vorig ? " De lijn is het totaal van dezelfde datums vorig jaar." : ""}
             {heeftHalf
               ? " Een lichtere staaf is niet compleet: hij valt maar voor een deel in de periode, of de sheet loopt nog niet tot het eind van die dag."
@@ -159,15 +280,14 @@ export default function SyntecGrafiek({
           ))}
         </div>
       </div>
-      {/* De legenda in HTML en niet via Recharts: twee staafreeksen per kleur (vol en licht
-          voor een half vak) en een lijn horen er als drie regels in, niet als vijf. */}
+      {/* De legenda in HTML: dan staat de lijn van vorig jaar er als lijn in en niet als blokje. */}
       <div className="mt-3 flex justify-end gap-4 text-meta text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.categorieen[0] }} />
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.groen }} />
           Internet
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.context }} />
+          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.oranje }} />
           Offline
         </span>
         {vorig && (
@@ -179,7 +299,8 @@ export default function SyntecGrafiek({
       </div>
       <div className="mt-1 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 16, right: 8, bottom: 4, left: 4 }}>
+          {/* Ruimte bovenin voor het totaal boven de hoogste staaf. */}
+          <ComposedChart data={data} margin={{ top: 24, right: 8, bottom: 4, left: 4 }}>
             <CartesianGrid stroke={kleuren.raster} vertical={false} />
             <XAxis
               dataKey="label"
@@ -197,38 +318,54 @@ export default function SyntecGrafiek({
               tickFormatter={(v: number) => formatteer(v, "aantal")}
             />
             <Tooltip content={<VakTooltip />} cursor={{ fill: kleuren.raster }} />
+            {/* Volgorde = stapelvolgorde: internet onderop, offline erbovenop. */}
+            <Bar dataKey="internet" name="Internet" stackId="leads" fill={kleuren.groen} isAnimationActive={false}>
+              {data.map((d, i) => (
+                <Cell key={i} fillOpacity={d.volledig ? 1 : LICHT} />
+              ))}
+              <LabelList
+                dataKey="internet"
+                content={(p) => {
+                  const lp = p as LabelProps;
+                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? groen.licht : groen.vol} />;
+                }}
+              />
+              <LabelList
+                dataKey="totaal"
+                content={(p) => {
+                  const lp = p as LabelProps;
+                  if ((vak(lp.index)?.offline ?? 0) > 0) return null;
+                  return <TotaalLabel {...lp} kleur={kleuren.label} halo={kleuren.vlak} />;
+                }}
+              />
+            </Bar>
             <Bar
-              dataKey={(d: Punt) => (d.volledig ? d.internet : 0)}
-              name="Internet"
-              stackId="leads"
-              fill={kleuren.categorieen[0]}
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey={(d: Punt) => (d.volledig ? d.offline : 0)}
+              dataKey="offline"
               name="Offline"
               stackId="leads"
-              fill={kleuren.context}
+              fill={kleuren.oranje}
               radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
               isAnimationActive={false}
-            />
-            <Bar
-              dataKey="internetLicht"
-              stackId="leads"
-              fill={kleuren.categorieen[0]}
-              fillOpacity={0.45}
-              isAnimationActive={false}
-              legendType="none"
-            />
-            <Bar
-              dataKey="offlineLicht"
-              stackId="leads"
-              fill={kleuren.context}
-              fillOpacity={0.45}
-              radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
-              isAnimationActive={false}
-              legendType="none"
-            />
+            >
+              {data.map((d, i) => (
+                <Cell key={i} fillOpacity={d.volledig ? 1 : LICHT} />
+              ))}
+              <LabelList
+                dataKey="offline"
+                content={(p) => {
+                  const lp = p as LabelProps;
+                  return <MiddenLabel {...lp} stijl={vak(lp.index)?.volledig === false ? oranje.licht : oranje.vol} />;
+                }}
+              />
+              <LabelList
+                dataKey="totaal"
+                content={(p) => {
+                  const lp = p as LabelProps;
+                  if ((vak(lp.index)?.offline ?? 0) === 0) return null;
+                  return <TotaalLabel {...lp} kleur={kleuren.label} halo={kleuren.vlak} />;
+                }}
+              />
+            </Bar>
             {vorig && (
               <Line
                 dataKey="vorig"

@@ -52,6 +52,14 @@ export type GrafiekKleuren = {
    *  leest geen CSS-variabelen, dus dit is de TypeScript-kant van diezelfde kleur. */
   positief: string;
   negatief: string;
+  /**
+   * Een vast groen en oranje voor een grafiek die die kleuren als betekenis heeft: op Leads
+   * Syntec is internet (online) groen en offline oranje, op verzoek van de eigenaar
+   * (november 2026). Per theme afgestemd op de ondergrond, zodat een getal ín de staaf
+   * leesbaar blijft — op de donkere themes lichter dan op de lichte.
+   */
+  groen: string;
+  oranje: string;
   /** Dikte van de lijn in een lijngrafiek — Bentley trekt een haarlijn, VW een volle. */
   lijndikte: number;
   /** Vloeiend of recht van punt naar punt: Porsche en CUPRA tekenen hoekig. */
@@ -88,6 +96,8 @@ export const THEMES: readonly Theme[] = [
       label: "#19243b",
       positief: "#15803d",
       negatief: "#b91c1c",
+      groen: "#1f8a4c",
+      oranje: "#ec7a2d",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -108,6 +118,8 @@ export const THEMES: readonly Theme[] = [
       label: "#001e50",
       positief: "#008c46",
       negatief: "#c8102e",
+      groen: "#00875a",
+      oranje: "#e57a1f",
       lijndikte: 2.5,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -128,6 +140,8 @@ export const THEMES: readonly Theme[] = [
       label: "#fcfcfd",
       positief: "#31d0aa",
       negatief: "#ff6b7a",
+      groen: "#3fcf7f",
+      oranje: "#ffa040",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -148,6 +162,8 @@ export const THEMES: readonly Theme[] = [
       label: "#0e3a2f",
       positief: "#118a4e",
       negatief: "#b4321f",
+      groen: "#1e8e52",
+      oranje: "#e57a1f",
       lijndikte: 2.5,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -168,6 +184,8 @@ export const THEMES: readonly Theme[] = [
       label: "#111111",
       positief: "#0f8f5f",
       negatief: "#c8102e",
+      groen: "#13894f",
+      oranje: "#e2801e",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",
@@ -188,6 +206,8 @@ export const THEMES: readonly Theme[] = [
       label: "#f2f0ed",
       positief: "#4fb89a",
       negatief: "#e0554a",
+      groen: "#52c27d",
+      oranje: "#eb9a4c",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -208,6 +228,8 @@ export const THEMES: readonly Theme[] = [
       label: "#010205",
       positief: "#018a16",
       negatief: "#e00000",
+      groen: "#0f8a2e",
+      oranje: "#e07800",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -228,6 +250,8 @@ export const THEMES: readonly Theme[] = [
       label: "#0a0a0c",
       positief: "#0e8a4a",
       negatief: "#c8102e",
+      groen: "#0e8a4a",
+      oranje: "#e07800",
       lijndikte: 1.5,
       lijnvorm: "linear",
       punt: "vierkant",
@@ -248,6 +272,8 @@ export const THEMES: readonly Theme[] = [
       label: "#10231c",
       positief: "#1c6b4b",
       negatief: "#9c3123",
+      groen: "#2a7a52",
+      oranje: "#c97a2b",
       lijndikte: 1.25,
       lijnvorm: "monotone",
       punt: "open",
