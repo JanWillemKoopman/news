@@ -74,6 +74,27 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - **Filterbalk**: één samenhangend component (aantal + filters + eventueel een inline
   ververs-actie) in plaats van losse knoppen die verspreid op de pagina staan.
 
+### Het startscherm (Home)
+
+- **Het dashboard opent op een startscherm** (view `home`, `components/home/HomeDashboard.tsx`,
+  november 2026 op verzoek). Bovenaan gecentreerd "Marketing dashboard" (geen PageHeader),
+  daaronder vier blokken in een raster van 2 × 2: **KPI's** (linksboven), **Kanalen**
+  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok is een groep
+  uit de sidebar en toont dezelfde pagina's met hetzelfde label en icoon, zodat het
+  startscherm naar elk tabblad doorverwijst. Voeg je in `Sidebar.tsx` een tabblad toe, zet
+  hem dan ook in `GROEPEN`. Wie een tabblad niet mag zien (`lib/beperkteTabbladen.ts`), ziet
+  hem hier ook niet; Tools is daardoor nu voor iedereen leeg (Budget beheer en
+  Landingspagina staan verborgen) en zegt dat in één regel.
+- **Naar het startscherm**: klik op "Marketing / Marketing dashboard" linksboven in de
+  sidebar. Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
+  `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
+- **De illustraties** (`components/home/Illustraties.tsx`) zijn isometrische lijntekeningen
+  in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in
+  `--color-card`, dus ze wisselen vanzelf mee met elk theme. Bij hover over een blok beweegt
+  er een paar pixels iets (`.iso-blok` / `.iso-beweeg` in globals.css: platen waaieren uit,
+  kubussen komen omhoog, schuiven schuiven op, een golf door de panelen); uit bij
+  `prefers-reduced-motion`. Houd die beweging klein.
+
 ### De campagnetabel
 
 - Campagnes blijven **kolommen naast elkaar**, metrics blijven **rijen**; dit patroon
