@@ -11,8 +11,8 @@ import type { SyntecKubus } from "@/lib/leadsSyntec/samenvatting";
  * model staat er letterlijk in, zoals in de sheet; het merk wordt ingedeeld in getest
  * TypeScript (`lib/leadsSyntec/indeling.ts`), niet in SQL.
  *
- * Geen periode in de query: de pagina filtert periode én vergelijking met vorig jaar in het
- * geheugen, dus een andere periode kiezen kost geen tweede ophaalactie.
+ * Geen periode in de query: de pagina filtert de periode in het geheugen, dus een andere
+ * periode kiezen kost geen tweede ophaalactie.
  */
 export async function haalSyntecLeads(): Promise<{
   kubus: SyntecKubus;

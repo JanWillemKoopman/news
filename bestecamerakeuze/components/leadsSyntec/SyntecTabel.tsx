@@ -2,10 +2,9 @@
 
 import { Fragment, useState, type ReactNode } from "react";
 import { formatteer } from "@/components/chat/chartTheme";
-import Verschilregel from "@/components/kanalen/Verschilregel";
 import { IconChevronDown, IconDownload } from "@/components/icons";
 import { downloadCsv } from "@/lib/csv";
-import { verschil, type Groep, type Telling } from "@/lib/leadsSyntec/samenvatting";
+import type { Groep, Telling } from "@/lib/leadsSyntec/samenvatting";
 
 /**
  * Eén tabel van het tabblad Leads Syntec: per rij het totaal, het aandeel, en dat totaal
@@ -17,8 +16,6 @@ import { verschil, type Groep, type Telling } from "@/lib/leadsSyntec/samenvatti
  * - **"Onbekend" staat vast onderaan** (`vastgezet`) en niet tussen de rest: hij zou de
  *   echte merken of modellen wegduwen, maar moet zichtbaar blijven, anders telt de tabel
  *   niet op.
- * - **Vergelijken met vorig jaar** zet onder elk getal het verschil met dezelfde datums
- *   een jaar eerder, in dezelfde gedempte regel als op de kanaalpagina's.
  * - **Een rij kan uitklappen** (`uitklap`): bij "Overige merken" staan daaronder de merken
  *   zelf. De onderliggende regels tellen niet nog een keer mee.
  * - **CSV** rechtsboven zet precies deze tabel (alle rijen) in een bestand voor Excel.
@@ -41,9 +38,6 @@ type Props = {
   groepen: Groep[];
   vastgezet?: Groep[];
   totaal: Telling;
-  /** De telling per sleutel over dezelfde datums vorig jaar; null = niet vergelijken. */
-  vorig?: Map<string, Telling> | null;
-  totaalVorig?: Telling | null;
   /** Leesbare naam voor de sleutel. */
   labelVan?: (g: Groep) => ReactNode;
   /** Platte tekst voor de CSV en de tooltip. */
@@ -64,26 +58,8 @@ type Props = {
 const CEL = "border-b border-line-soft px-4 py-2.5 align-top";
 const VOET = "border-t border-line bg-surface-tint px-4 py-2.5 align-top";
 
-function Getal({
-  nu,
-  toen,
-  vergelijk,
-  sterk = false,
-}: {
-  nu: number;
-  toen: number | null | undefined;
-  vergelijk: boolean;
-  sterk?: boolean;
-}) {
-  return (
-    <span className="flex flex-col items-end">
-      <span className={sterk ? "font-medium text-ink" : "text-ink"}>{formatteer(nu, "aantal")}</span>
-      {/* Nul tegen nul zegt niets; zonder die regel blijft een kolom die door een filter leeg is rustig. */}
-      {vergelijk && (nu !== 0 || (toen ?? 0) !== 0) && (
-        <Verschilregel verschil={verschil(nu, toen ?? 0)} compact waarmee="vorig jaar" />
-      )}
-    </span>
-  );
+function Getal({ nu, sterk = false }: { nu: number; sterk?: boolean }) {
+  return <span className={sterk ? "font-medium text-ink" : "text-ink"}>{formatteer(nu, "aantal")}</span>;
 }
 
 function pctOnline(t: Telling): string {
@@ -97,8 +73,6 @@ export default function SyntecTabel({
   groepen,
   vastgezet = [],
   totaal,
-  vorig = null,
-  totaalVorig = null,
   labelVan,
   tekstVan,
   metaVan,
@@ -113,7 +87,6 @@ export default function SyntecTabel({
   const zichtbaar = alles ? groepen : groepen.slice(0, maxRijen);
   const verborgen = groepen.length - zichtbaar.length;
   const leeg = groepen.length === 0 && vastgezet.length === 0;
-  const vergelijk = vorig !== null;
   const tekst = (g: Groep) => tekstVan?.(g) ?? g.sleutel;
 
   const koppen = [
@@ -133,25 +106,14 @@ export default function SyntecTabel({
       "Totaal",
       "Online",
       "Offline",
-      ...(vergelijk ? ["Totaal vorig jaar", "Online vorig jaar", "Offline vorig jaar"] : []),
     ];
-    const rij = (g: Groep, label: string) => {
-      const v = vorig?.get(g.sleutel);
-      return {
-        [labelKop]: label,
-        ...(extraKolom ? { [extraKolom.kop]: extraKolom.tekst(g) } : {}),
-        Totaal: g.totaal,
-        Online: g.online,
-        Offline: g.offline,
-        ...(vergelijk
-          ? {
-              "Totaal vorig jaar": v?.totaal ?? 0,
-              "Online vorig jaar": v?.online ?? 0,
-              "Offline vorig jaar": v?.offline ?? 0,
-            }
-          : {}),
-      };
-    };
+    const rij = (g: Groep, label: string) => ({
+      [labelKop]: label,
+      ...(extraKolom ? { [extraKolom.kop]: extraKolom.tekst(g) } : {}),
+      Totaal: g.totaal,
+      Online: g.online,
+      Offline: g.offline,
+    });
     const rijen = [...groepen, ...vastgezet].map((g) => rij(g, tekst(g)));
     rijen.push({
       [labelKop]: "Totaal",
@@ -159,19 +121,11 @@ export default function SyntecTabel({
       Totaal: totaal.totaal,
       Online: totaal.online,
       Offline: totaal.offline,
-      ...(vergelijk
-        ? {
-            "Totaal vorig jaar": totaalVorig?.totaal ?? 0,
-            "Online vorig jaar": totaalVorig?.online ?? 0,
-            "Offline vorig jaar": totaalVorig?.offline ?? 0,
-          }
-        : {}),
     });
     downloadCsv(kolommen, rijen, csvNaam);
   }
 
   const rij = (g: Groep, ingesprongen = false): ReactNode => {
-    const v = vorig?.get(g.sleutel);
     const onderliggend = !ingesprongen ? uitklap?.(g) ?? null : null;
     const isOpen = open.has(g.sleutel);
     const meta = metaVan?.(g) ?? null;
@@ -214,16 +168,16 @@ export default function SyntecTabel({
           </td>
           {extraKolom && <td className={`${CEL} text-ink-muted`}>{extraKolom.waarde(g)}</td>}
           <td className={`${CEL} text-right`}>
-            <Getal nu={g.totaal} toen={v?.totaal} vergelijk={vergelijk} sterk={!ingesprongen} />
+            <Getal nu={g.totaal} sterk={!ingesprongen} />
           </td>
           <td className={`${CEL} text-right text-ink-muted`}>
             {totaal.totaal > 0 ? formatteer((g.totaal / totaal.totaal) * 100, "procent") : "—"}
           </td>
           <td className={`${CEL} text-right`}>
-            <Getal nu={g.online} toen={v?.online} vergelijk={vergelijk} />
+            <Getal nu={g.online} />
           </td>
           <td className={`${CEL} text-right`}>
-            <Getal nu={g.offline} toen={v?.offline} vergelijk={vergelijk} />
+            <Getal nu={g.offline} />
           </td>
           <td className={`${CEL} text-right text-ink-muted`}>{pctOnline(g)}</td>
         </tr>
@@ -288,16 +242,16 @@ export default function SyntecTabel({
                 <td className={`${VOET} font-semibold text-ink`}>Totaal</td>
                 {extraKolom && <td className={VOET} />}
                 <td className={`${VOET} text-right font-semibold`}>
-                  <Getal nu={totaal.totaal} toen={totaalVorig?.totaal} vergelijk={vergelijk} sterk />
+                  <Getal nu={totaal.totaal} sterk />
                 </td>
                 <td className={`${VOET} text-right text-ink-muted`}>
                   {totaal.totaal > 0 ? formatteer(100, "procent") : "—"}
                 </td>
                 <td className={`${VOET} text-right font-semibold`}>
-                  <Getal nu={totaal.online} toen={totaalVorig?.online} vergelijk={vergelijk} />
+                  <Getal nu={totaal.online} />
                 </td>
                 <td className={`${VOET} text-right font-semibold`}>
-                  <Getal nu={totaal.offline} toen={totaalVorig?.offline} vergelijk={vergelijk} />
+                  <Getal nu={totaal.offline} />
                 </td>
                 <td className={`${VOET} text-right text-ink-muted`}>{pctOnline(totaal)}</td>
               </tr>

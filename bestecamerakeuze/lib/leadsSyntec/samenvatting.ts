@@ -4,7 +4,7 @@
  *
  * Pure functies zonder React of database. Alles gebeurt in het geheugen: de route levert
  * één keer de hele leadtabel samengevat per dag (±69.000 regels voor bijna drie jaar), en
- * periode, filters en de vergelijking met vorig jaar kosten daarna geen ophaalactie meer.
+ * periode en filters kosten daarna geen ophaalactie meer.
  */
 
 import {
@@ -185,8 +185,6 @@ export interface Telling {
   offline: number;
 }
 
-export const NUL: Telling = { totaal: 0, online: 0, offline: 0 };
-
 export function tel(regels: SyntecRegel[]): Telling {
   const t = { totaal: 0, online: 0, offline: 0 };
   for (const r of regels) {
@@ -222,13 +220,6 @@ export function groepeer(regels: SyntecRegel[], sleutelVan: (r: SyntecRegel) => 
   return [...groepen.values()].sort((a, b) => b.totaal - a.totaal || a.sleutel.localeCompare(b.sleutel, "nl"));
 }
 
-/** De telling van één sleutel in een lijst groepen; nul als hij er niet in staat. */
-export function tellingVan(groepen: Groep[] | undefined, sleutel: string): Telling | null {
-  if (!groepen) return null;
-  const g = groepen.find((x) => x.sleutel === sleutel);
-  return g ? { totaal: g.totaal, online: g.online, offline: g.offline } : NUL;
-}
-
 /** Opties voor een keuzelijst, op volgorde van grootte. */
 export function opties(regels: SyntecRegel[], waardeVan: (r: SyntecRegel) => string): string[] {
   return groepeer(regels, waardeVan).map((g) => g.sleutel);
@@ -252,18 +243,8 @@ export function dagenTussen({ van, tot }: Periode): number {
   return Math.max(1, Math.round((datum(tot).getTime() - datum(van).getTime()) / DAG_MS) + 1);
 }
 
-/** Dezelfde dag een jaar eerder; 29 februari wordt 28 februari. */
-export function jaarTerug(dag: string): string {
-  const [j, m, d] = dag.split("-").map(Number);
-  const kandidaat = new Date(Date.UTC(j - 1, m - 1, d));
-  if (kandidaat.getUTCMonth() !== m - 1) return alsTekst(new Date(Date.UTC(j - 1, m - 1, d - 1)));
-  return alsTekst(kandidaat);
-}
-
-/** De vergelijkingsperiode: dezelfde datums een jaar eerder. */
-export function vorigJaar(periode: Periode): Periode {
-  return { van: jaarTerug(periode.van), tot: jaarTerug(periode.tot) };
-}
+/** De id's van de vaste periodes; een andere id in de URL (bv. het oude "vorig-jaar") telt niet. */
+export const VASTE_PERIODE_IDS = ["maand", "vorige-maand", "30d", "90d", "jaar", "alles"] as const;
 
 export interface SyntecPeriode extends Periode {
   id: string;
@@ -299,7 +280,6 @@ export function vastePeriodes(eersteDag: string, laatsteDag: string): SyntecPeri
     { id: "30d", label: "30 dagen", van: terug(30), tot: laatsteDag },
     { id: "90d", label: "90 dagen", van: terug(90), tot: laatsteDag },
     { id: "jaar", label: "Dit jaar", van: begrens(`${j}-01-01`), tot: laatsteDag },
-    { id: "vorig-jaar", label: "Vorig jaar", van: begrens(`${j - 1}-01-01`), tot: `${j - 1}-12-31` },
     { id: "alles", label: "Alles", van: eersteDag, tot: laatsteDag },
   ];
 }
@@ -391,31 +371,6 @@ export function reeks(
     if (punt) punt[r.herkomst] += r.aantal;
   }
   return punten;
-}
-
-// ---------------------------------------------------------------------------
-// Vergelijken
-// ---------------------------------------------------------------------------
-
-export interface Verschil {
-  nu: number | null;
-  toen: number | null;
-  absoluut: number | null;
-  relatief: number | null;
-  gunstig: boolean | null;
-}
-
-/** Meer leads is gunstig. Zonder vergelijkingscijfer (geen data vorig jaar) geen verschil. */
-export function verschil(nu: number, toen: number | null): Verschil {
-  if (toen === null) return { nu, toen: null, absoluut: null, relatief: null, gunstig: null };
-  const absoluut = nu - toen;
-  return {
-    nu,
-    toen,
-    absoluut,
-    relatief: toen === 0 ? null : absoluut / toen,
-    gunstig: absoluut === 0 ? null : absoluut > 0,
-  };
 }
 
 export { GEEN_KANAALGROEP, ONBEKEND };

@@ -7,7 +7,6 @@ import {
   Cell,
   ComposedChart,
   LabelList,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -28,9 +27,6 @@ import { KORRELS, type Korrel, type ReeksPunt } from "@/lib/leadsSyntec/samenvat
  * een te laag deel blijft hij weg in plaats van over de rand te lopen; de tooltip heeft
  * altijd alle drie. Blauw komt uit het theme (`blauw` in `lib/themes.ts`), grijs is de
  * contextkleur van het theme; de tekstkleur in de staaf wordt gekozen op contrast.
- *
- * Met "Vergelijk met vorig jaar" staat het totaal van dezelfde datums een jaar eerder er als
- * lijn overheen, per vak op **positie** uitgelijnd (week 3 tegen week 3).
  *
  * Een eerste of laatste week/maand die maar half in de periode valt, wordt lichter
  * getekend: anders leest een halve maand als een inzakker. Hetzelfde voor de laatste dag
@@ -75,7 +71,6 @@ interface Punt {
   online: number;
   offline: number;
   totaal: number;
-  vorig: number | null;
   volledig: boolean;
 }
 
@@ -115,8 +110,8 @@ function gemengd(kleur: string, ondergrond: string, dekking: number): string {
 /** Hoe een getal in een deel van de staaf eruitziet: tekstkleur en een rand in de vulkleur. */
 interface LabelStijl {
   tekst: string;
-  /** Zelfde kleur als het deel: een smalle rand om de cijfers, zodat de lijn van vorig jaar
-   *  er niet dwars doorheen loopt. */
+  /** Zelfde kleur als het deel: een smalle rand om de cijfers, zodat ze ook op de rand van
+   *  een deel of een rasterlijn leesbaar blijven. */
   halo: string;
 }
 
@@ -202,7 +197,6 @@ function VakTooltip({ active, payload }: TooltipProps) {
       </p>
       <p className="text-ink-muted">Online: {formatteer(p.online, "aantal")}</p>
       <p className="text-ink-muted">Offline: {formatteer(p.offline, "aantal")}</p>
-      {p.vorig !== null && <p className="text-ink-muted">Vorig jaar: {formatteer(p.vorig, "aantal")}</p>}
       {!p.volledig && (
         <p className="mt-1 text-meta text-ink-faint">Niet compleet: half in de periode of een halve dag in de sheet.</p>
       )}
@@ -212,32 +206,25 @@ function VakTooltip({ active, payload }: TooltipProps) {
 
 export default function SyntecGrafiek({
   punten,
-  vorig,
   korrel,
   onKorrel,
 }: {
   punten: ReeksPunt[];
-  /** Dezelfde vakken een jaar eerder, of null zonder vergelijking. */
-  vorig: ReeksPunt[] | null;
   korrel: Korrel;
   onKorrel: (korrel: Korrel) => void;
 }) {
   const kleuren = useGrafiekKleuren();
   const data = useMemo<Punt[]>(
     () =>
-      punten.map((p, i) => {
-        const v = vorig?.[i];
-        return {
-          label: vakLabel(p, korrel),
-          lang: vakLang(p, korrel),
-          online: p.online,
-          offline: p.offline,
-          totaal: p.online + p.offline,
-          vorig: v ? v.online + v.offline : null,
-          volledig: p.volledig,
-        };
-      }),
-    [punten, vorig, korrel],
+      punten.map((p) => ({
+        label: vakLabel(p, korrel),
+        lang: vakLang(p, korrel),
+        online: p.online,
+        offline: p.offline,
+        totaal: p.online + p.offline,
+        volledig: p.volledig,
+      })),
+    [punten, korrel],
   );
   const heeftHalf = data.some((d) => !d.volledig);
   // Een half vak (eerste/laatste week of maand, of een halve dag) tekent lichter, met dezelfde
@@ -258,7 +245,6 @@ export default function SyntecGrafiek({
             Online (blauw) is kanaalgroep Internet in Syntec; offline (grijs) is alles daarbuiten (showroom,
             acquisitie, mail en telefoon). In de staaf staat het aantal per deel, erboven het
             totaal.
-            {vorig ? " De lijn is het totaal van dezelfde datums vorig jaar." : ""}
             {heeftHalf
               ? " Een lichtere staaf is niet compleet: hij valt maar voor een deel in de periode, of de sheet loopt nog niet tot het eind van die dag."
               : ""}
@@ -280,7 +266,7 @@ export default function SyntecGrafiek({
           ))}
         </div>
       </div>
-      {/* De legenda in HTML: dan staat de lijn van vorig jaar er als lijn in en niet als blokje. */}
+      {/* De legenda in HTML, rechts boven de grafiek. */}
       <div className="mt-3 flex justify-end gap-4 text-meta text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.blauw }} />
@@ -290,12 +276,6 @@ export default function SyntecGrafiek({
           <span className="h-2.5 w-2.5 rounded-sm" style={{ background: kleuren.context }} />
           Offline
         </span>
-        {vorig && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-4 border-t-2 border-dashed" style={{ borderColor: kleuren.as }} />
-            Vorig jaar (totaal)
-          </span>
-        )}
       </div>
       <div className="mt-1 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -366,18 +346,6 @@ export default function SyntecGrafiek({
                 }}
               />
             </Bar>
-            {vorig && (
-              <Line
-                dataKey="vorig"
-                name="Vorig jaar"
-                type={kleuren.lijnvorm}
-                stroke={kleuren.as}
-                strokeWidth={Math.max(1, kleuren.lijndikte * 0.75)}
-                strokeDasharray="4 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

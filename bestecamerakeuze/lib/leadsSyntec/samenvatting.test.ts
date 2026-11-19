@@ -4,15 +4,13 @@ import {
   GEEN_FILTERS,
   filterRegels,
   groepeer,
-  jaarTerug,
   modelRijSleutel,
   pakUit,
   reeks,
   tel,
   vakBegin,
   vastePeriodes,
-  verschil,
-  vorigJaar,
+  VASTE_PERIODE_IDS,
   type SyntecKubus,
 } from "@/lib/leadsSyntec/samenvatting";
 
@@ -109,19 +107,18 @@ test("groeperen telt online, offline en per merk; modelregels zijn merk plus let
   assert.equal(perKanaal.reduce((t, g) => t + g.totaal, 0), tel(regels).totaal);
 });
 
-test("vorig jaar: dezelfde datums een jaar eerder, 29 februari wordt 28 februari", () => {
-  assert.equal(jaarTerug("2026-11-17"), "2025-11-17");
-  assert.equal(jaarTerug("2028-02-29"), "2027-02-28");
-  assert.deepEqual(vorigJaar({ van: "2026-01-01", tot: "2026-03-31" }), { van: "2025-01-01", tot: "2025-03-31" });
-});
-
 test("vaste periodes lopen tot de laatste dag met leads", () => {
   const p = Object.fromEntries(vastePeriodes("2024-01-01", "2026-11-17").map((x) => [x.id, x]));
   assert.deepEqual([p.maand.van, p.maand.tot], ["2026-11-01", "2026-11-17"]);
   assert.deepEqual([p["vorige-maand"].van, p["vorige-maand"].tot], ["2026-10-01", "2026-10-31"]);
   assert.deepEqual([p["30d"].van, p["30d"].tot], ["2026-10-19", "2026-11-17"]);
   assert.deepEqual([p.jaar.van, p.jaar.tot], ["2026-01-01", "2026-11-17"]);
-  assert.deepEqual([p["vorig-jaar"].van, p["vorig-jaar"].tot], ["2025-01-01", "2025-12-31"]);
+  // "Vorig jaar" staat er op verzoek niet (meer) bij.
+  assert.equal(p["vorig-jaar"], undefined);
+  assert.deepEqual(
+    vastePeriodes("2024-01-01", "2026-11-17").map((x) => x.id),
+    [...VASTE_PERIODE_IDS],
+  );
   assert.deepEqual([p.alles.van, p.alles.tot], ["2024-01-01", "2026-11-17"]);
   // Nooit vóór de eerste dag in de sheet.
   const vroeg = Object.fromEntries(vastePeriodes("2024-01-01", "2024-01-10").map((x) => [x.id, x]));
@@ -166,11 +163,4 @@ test("vakken: per dag, per week vanaf maandag, per maand; halve vakken gemarkeer
     metHalveDag.map((p) => p.volledig),
     [true, true, false],
   );
-});
-
-test("verschil: meer leads is gunstig, geen vergelijking zonder cijfer", () => {
-  assert.deepEqual(verschil(120, 100), { nu: 120, toen: 100, absoluut: 20, relatief: 0.2, gunstig: true });
-  assert.equal(verschil(80, 100).gunstig, false);
-  assert.equal(verschil(5, 0).relatief, null);
-  assert.equal(verschil(5, null).absoluut, null);
 });

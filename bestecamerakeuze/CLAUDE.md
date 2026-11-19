@@ -721,8 +721,8 @@ model op te halen.
   daarom gevraagd wordt.
 - **Eén ophaalactie voor alle jaren** (`haalSyntecLeads`): gegroepeerd per dag × kanaal ×
   merk × ruw model × ordersoort × lead type × dubbel, ±69.000 regels, als getallen met
-  woordenlijsten (±1,7 MB, ±275 kB gzip; de query ±1 s). Periode, filters en de vergelijking
-  met vorig jaar gebeuren daarna in het geheugen (`samenvatting.ts`, getest). Door het model
+  woordenlijsten (±1,7 MB, ±275 kB gzip; de query ±1 s). Periode en filters gebeuren daarna
+  in het geheugen (`samenvatting.ts`, getest). Door het model
   is bijna elke combinatie uniek (±0,7 regel per lead).
 - **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
   sheet loopt een dag of twee achter, en vanaf vandaag gerekend eindigt elke grafiek met lege
@@ -743,11 +743,13 @@ model op te halen.
   breed, deel ≥ 15 px hoog): per dag over 90 dagen staan er dus geen getallen, alleen in de
   tooltip. Het totaal staat op het bovenste deel dat er is — offline, of online als er dat vak
   geen offline lead was, want een deel van nul hoogte krijgt in Recharts geen label. De
-  cijfers hebben een rand in de kleur eronder, zodat de stippellijn van vorig jaar er niet
-  doorheen loopt.
-- **Vergelijk met vorig jaar** (schakelaar, standaard uit) zet dezelfde datums een jaar eerder
-  ernaast: onder elk getal, op de kerncijfers en als lijn in de grafiek. Alleen als die datums
-  helemaal in de sheet staan (vanaf januari 2024), anders staat de knop uit.
+  cijfers hebben een rand in de kleur eronder, zodat ze op een rasterlijn leesbaar blijven.
+- **Geen vergelijking met vorig jaar en geen periode "Vorig jaar"** (verzoek van de eigenaar,
+  november 2026). Er stond een schakelaar "Vergelijk met vorig jaar" (verschil onder elk
+  getal, lijn in de grafiek) en een periodeknop "Vorig jaar"; allebei zijn ze eruit gehaald,
+  met hun rekenwerk. Een oude link met `f.vergelijk=1` of `periode=vorig-jaar` valt terug op
+  de standaard. Zet ze niet terug zonder dat daarom gevraagd wordt; een eerder jaar is nog
+  wel te bekijken via de eigen periode.
 - **Dubbele leads tellen mee** (sluitreden "Dubbel" of "[SA] Dubbel", ±9%), net als op KPI's
   2027 Syntec; "Zonder dubbele leads" laat ze weg.
 - **Bewust niet op de pagina**: de kolom Campagnes (een formule in de sheet, pas vanaf 2026
@@ -756,7 +758,7 @@ model op te halen.
   leeg) en order geworden (recente leads hebben nog geen order, dus een conversiepercentage
   per periode zakt altijd naar het heden toe).
 - **Opbouw.** Filterbalk (periode, online/offline, kanaalgroep, kanaal, merk, model, nieuw
-  of gebruikt, soort aanvraag, vergelijken, zonder dubbele), vier kerncijfers, de grafiek
+  of gebruikt, soort aanvraag, zonder dubbele), vier kerncijfers, de grafiek
   (online en offline gestapeld), Merken en Soort aanvraag, Modellen, Kanalen per merk (een
   matrix: online en offline als blokken met subtotaal, offline per kanaalgroep, de merken
   als kolommen) en Nieuw of gebruikt. Elke tabel heeft Totaal, Aandeel, Online, Offline en %

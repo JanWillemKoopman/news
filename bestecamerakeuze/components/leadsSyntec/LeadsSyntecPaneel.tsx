@@ -7,7 +7,6 @@ import { getBrandLogo } from "@/components/brandLogos";
 import { formatteer } from "@/components/chat/chartTheme";
 import { IconInfo } from "@/components/icons";
 import { EigenPeriode } from "@/components/kanalen/KanalenFilterBalk";
-import Verschilregel from "@/components/kanalen/Verschilregel";
 import SyntecGrafiek from "@/components/leadsSyntec/SyntecGrafiek";
 import SyntecKanaalMatrix from "@/components/leadsSyntec/SyntecKanaalMatrix";
 import SyntecTabel from "@/components/leadsSyntec/SyntecTabel";
@@ -27,9 +26,8 @@ import {
   reeks,
   tel,
   STANDAARD_KORREL,
+  VASTE_PERIODE_IDS,
   vastePeriodes,
-  verschil,
-  vorigJaar,
   type Groep,
   type Korrel,
   type HerkomstFilter,
@@ -37,7 +35,6 @@ import {
   type Periode,
   type SyntecFilters,
   type SyntecRegel,
-  type Telling,
 } from "@/lib/leadsSyntec/samenvatting";
 
 /**
@@ -45,8 +42,8 @@ import {
  * sheet-tabblad "Data leads" — per merk, model en kanaal, en overal uitgesplitst in
  * online en offline.
  *
- * Van boven naar beneden: de filterbalk (periode, online/offline, filters, vergelijken
- * met vorig jaar), vier kerncijfers, de grafiek, de merken en de soort aanvraag, de
+ * Van boven naar beneden: de filterbalk (periode, online/offline, filters, zonder dubbele
+ * leads), vier kerncijfers, de grafiek, de merken en de soort aanvraag, de
  * modellen, de kanalen per merk, en nieuw of gebruikt. Eén ophaalactie voor alle jaren;
  * alles daarna gebeurt in het geheugen.
  *
@@ -117,42 +114,29 @@ function MerkNaam({ merk, toon = merk }: { merk: string; toon?: string }) {
   );
 }
 
-function Kaart({
-  label,
-  waarde,
-  toelichting,
-  vergelijking,
-}: {
-  label: string;
-  waarde: string;
-  toelichting: ReactNode;
-  vergelijking?: ReactNode;
-}) {
+function Kaart({ label, waarde, toelichting }: { label: string; waarde: string; toelichting: ReactNode }) {
   return (
     <div className="kaart-omlijst flex min-h-32 flex-col justify-center gap-1.5 rounded-card border border-line bg-card px-4 py-4 shadow-subtle">
       <span className="label-theme text-label text-ink-faint">{label}</span>
       <span className="titel-theme font-sans-w7 text-title font-semibold text-ink">{waarde}</span>
       <span className="text-meta text-ink-muted">{toelichting}</span>
-      {vergelijking}
     </div>
   );
 }
 
-function Schakelaar({ aan, onClick, children, uit, titel }: {
+function Schakelaar({ aan, onClick, children, titel }: {
   aan: boolean;
   onClick: () => void;
   children: ReactNode;
-  uit?: boolean;
   titel?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={uit}
       aria-pressed={aan}
       title={titel}
-      className={`whitespace-nowrap rounded-control border px-2.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`whitespace-nowrap rounded-control border px-2.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
         aan
           ? "border-primary bg-primary-light font-medium text-primary"
           : "border-line text-ink-muted hover:bg-surface hover:text-ink"
@@ -161,11 +145,6 @@ function Schakelaar({ aan, onClick, children, uit, titel }: {
       {children}
     </button>
   );
-}
-
-/** De tellingen per sleutel als map, voor de vergelijking met vorig jaar. */
-function alsMap(groepen: Groep[]): Map<string, Telling> {
-  return new Map(groepen.map((g) => [g.sleutel, { totaal: g.totaal, online: g.online, offline: g.offline }]));
 }
 
 /** Eén groep met een eigen sleutel, opgeteld over de gegeven regels (voor vastgezette rijen). */
@@ -221,7 +200,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [periodeId, setPeriodeId] = useState(STANDAARD_PERIODE);
   const [eigen, setEigen] = useState<Periode | null>(null);
   const [filters, setFilters] = useState<SyntecFilters>(GEEN_FILTERS);
-  const [vergelijk, setVergelijk] = useState(false);
   const [korrel, setKorrel] = useState<Korrel>(STANDAARD_KORREL);
   const actief = useIsActief(VIEW);
   const urlGelezen = useRef(false);
@@ -261,7 +239,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     if (stand.periodeId === "eigen" && stand.van && stand.tot) {
       setPeriodeId("eigen");
       setEigen({ van: stand.van, tot: stand.tot });
-    } else if (stand.periodeId) {
+    } else if (stand.periodeId && (VASTE_PERIODE_IDS as readonly string[]).includes(stand.periodeId)) {
       setPeriodeId(stand.periodeId);
     }
     const f = stand.filters;
@@ -274,7 +252,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       zonderDubbel: f.dubbel?.[0] === "weg",
       ...Object.fromEntries(Object.entries(URL_LIJSTEN).map(([url, veld]) => [veld, f[url] ?? []])),
     });
-    setVergelijk(f.vergelijk?.[0] === "1");
     const k = f.korrel?.[0];
     if (k === "dag" || k === "week" || k === "maand") setKorrel(k);
   }, [actief]);
@@ -288,7 +265,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     );
     if (filters.herkomst !== "alle") urlFilters.herkomst = [filters.herkomst];
     if (filters.zonderDubbel) urlFilters.dubbel = ["weg"];
-    if (vergelijk) urlFilters.vergelijk = ["1"];
     if (korrel !== STANDAARD_KORREL) urlFilters.korrel = [korrel];
     schrijfUrlStand({
       periodeId,
@@ -296,7 +272,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
       tot: eigen?.tot ?? null,
       filters: urlFilters,
     });
-  }, [actief, periodeId, eigen, filters, vergelijk, korrel]);
+  }, [actief, periodeId, eigen, filters, korrel]);
 
   const regels = useMemo(() => (data ? pakUit(data.kubus) : []), [data]);
   const periodes = useMemo(
@@ -309,12 +285,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     return p ? { van: p.van, tot: p.tot } : null;
   }, [periodeId, eigen, periodes]);
 
-  const vergelijkPeriode = useMemo(() => (periode ? vorigJaar(periode) : null), [periode]);
-  const vergelijkMogelijk = Boolean(
-    data?.eersteDag && vergelijkPeriode && vergelijkPeriode.van >= data.eersteDag,
-  );
-  const vergelijkAan = vergelijk && vergelijkMogelijk;
-
   // Alle regels in de periode, zonder filters: daaruit komen de keuzelijsten.
   const inPeriode = useMemo(
     () => (periode ? filterRegels(regels, GEEN_FILTERS, periode) : []),
@@ -324,13 +294,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     () => (periode ? filterRegels(regels, filters, periode) : []),
     [regels, filters, periode],
   );
-  const selectieVorig = useMemo(
-    () => (vergelijkAan && vergelijkPeriode ? filterRegels(regels, filters, vergelijkPeriode) : null),
-    [regels, filters, vergelijkAan, vergelijkPeriode],
-  );
-
   const totaal = useMemo(() => tel(selectie), [selectie]);
-  const totaalVorig = useMemo(() => (selectieVorig ? tel(selectieVorig) : null), [selectieVorig]);
   const totaalPeriode = useMemo(() => tel(inPeriode), [inPeriode]);
 
   const keuzes = useMemo(
@@ -355,33 +319,16 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
     [inPeriode],
   );
   const merken = useMemo(() => merkGroepen(selectie), [selectie]);
-  const merkenVorig = useMemo(
-    () => (selectieVorig ? alsMap(groepeer(selectieVorig, (r) => r.merk)) : null),
-    [selectieVorig],
-  );
   const overigeMerken = useMemo(
     () => groepeer(selectie.filter((r) => r.merk === OVERIGE_MERKEN), (r) => r.merkDetail),
     [selectie],
   );
 
   const modellen = useMemo(() => modelGroepen(selectie), [selectie]);
-  const modellenVorig = useMemo(() => {
-    if (!selectieVorig) return null;
-    const m = modelGroepen(selectieVorig);
-    return alsMap([...m.groepen, ...m.vastgezet]);
-  }, [selectieVorig]);
 
   const soorten = useMemo(() => metVast(groepeer(selectie, (r) => r.soort), ["Overig", ONBEKEND]), [selectie]);
-  const soortenVorig = useMemo(
-    () => (selectieVorig ? alsMap(groepeer(selectieVorig, (r) => r.soort)) : null),
-    [selectieVorig],
-  );
   const ordersoorten = useMemo(() => groepeer(selectie, (r) => r.ordersoort), [selectie]);
   const ordersoortenVast = useMemo(() => metVast(ordersoorten, [ONBEKEND]), [ordersoorten]);
-  const ordersoortenVorig = useMemo(
-    () => (selectieVorig ? alsMap(groepeer(selectieVorig, (r) => r.ordersoort)) : null),
-    [selectieVorig],
-  );
 
   // De export van de sheet loopt soms halverwege een dag (17 november, laatste lead 12:40):
   // die dag is dan nog niet compleet en wordt in de grafiek lichter getekend.
@@ -392,10 +339,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
   const punten = useMemo(
     () => (periode ? reeks(selectie, periode, korrel, halveDag) : []),
     [selectie, periode, korrel, halveDag],
-  );
-  const puntenVorig = useMemo(
-    () => (selectieVorig && vergelijkPeriode ? reeks(selectieVorig, vergelijkPeriode, korrel) : null),
-    [selectieVorig, vergelijkPeriode, korrel],
   );
 
   if (!ingelogd) return <Inlogprompt tekst="Log in om de leads te bekijken." />;
@@ -423,10 +366,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
 
   const filtersActief = heeftFilters(filters);
   const pct = (n: number) => (totaal.totaal > 0 ? formatteer((n / totaal.totaal) * 100, "procent") : "—");
-  const delta = (nu: number, toen: number | undefined) =>
-    totaalVorig ? (
-      <Verschilregel verschil={verschil(nu, toen ?? 0)} waarmee="vorig jaar" />
-    ) : undefined;
 
   // Hoe vers is dit? De sheet loopt een dag of twee achter; langer dan vier dagen geen
   // nieuwe lead, of twee dagen niet ingelezen, is een reden om de sync na te kijken.
@@ -548,18 +487,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
             </div>
             <div className="ml-auto flex items-center gap-2">
               <Schakelaar
-                aan={vergelijkAan}
-                onClick={() => setVergelijk((v) => !v)}
-                uit={!vergelijkMogelijk}
-                titel={
-                  vergelijkMogelijk
-                    ? `Zet ernaast: ${vergelijkPeriode ? periodeTekst(vergelijkPeriode) : ""}`
-                    : "Vergelijken kan alleen als dezelfde datums vorig jaar in de sheet staan (vanaf januari 2024)."
-                }
-              >
-                Vergelijk met vorig jaar
-              </Schakelaar>
-              <Schakelaar
                 aan={filters.zonderDubbel}
                 onClick={() => setFilters((f) => ({ ...f, zonderDubbel: !f.zonderDubbel }))}
                 titel="Laat leads met sluitreden 'Dubbel' of '[SA] Dubbel' weg (±9% van alle leads)."
@@ -577,11 +504,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               )}
             </div>
           </div>
-          {vergelijkAan && vergelijkPeriode && (
-            <p className="mt-2 text-meta text-ink-faint">
-              Vergeleken met {periodeTekst(vergelijkPeriode)}.
-            </p>
-          )}
         </div>
       </div>
 
@@ -594,44 +516,25 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
               ? `van ${formatteer(totaalPeriode.totaal, "aantal")} in deze periode`
               : `${formatteer(Math.round(totaal.totaal / dagenTussen(periode)), "aantal")} per dag gemiddeld`
           }
-          vergelijking={delta(totaal.totaal, totaalVorig?.totaal)}
         />
         <Kaart
           label="Online"
           waarde={formatteer(totaal.online, "aantal")}
           toelichting={`${pct(totaal.online)} van de leads · in Syntec kanaalgroep Internet`}
-          vergelijking={delta(totaal.online, totaalVorig?.online)}
         />
         <Kaart
           label="Offline"
           waarde={formatteer(totaal.offline, "aantal")}
           toelichting={`${pct(totaal.offline)} van de leads · showroom, acquisitie, mail, telefoon`}
-          vergelijking={delta(totaal.offline, totaalVorig?.offline)}
         />
         <Kaart
           label="Nieuw · gebruikt"
           waarde={`${formatteer(nieuw, "aantal")} · ${formatteer(gebruikt, "aantal")}`}
           toelichting={`${pct(nieuw)} nieuw, ${pct(gebruikt)} gebruikt (ordersoort)`}
-          vergelijking={
-            totaalVorig && ordersoortenVorig ? (
-              <span className="flex gap-3">
-                <Verschilregel
-                  verschil={verschil(nieuw, ordersoortenVorig.get("Nieuw")?.totaal ?? 0)}
-                  compact
-                  waarmee="vorig jaar"
-                />
-                <Verschilregel
-                  verschil={verschil(gebruikt, ordersoortenVorig.get("Gebruikt")?.totaal ?? 0)}
-                  compact
-                  waarmee="vorig jaar"
-                />
-              </span>
-            ) : undefined
-          }
         />
       </div>
 
-      <SyntecGrafiek punten={punten} vorig={puntenVorig} korrel={korrel} onKorrel={setKorrel} />
+      <SyntecGrafiek punten={punten} korrel={korrel} onKorrel={setKorrel} />
 
       <div className="grid grid-cols-2 items-start gap-6">
         <SyntecTabel
@@ -641,8 +544,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepen={merken.groepen}
           vastgezet={merken.vastgezet}
           totaal={totaal}
-          vorig={merkenVorig}
-          totaalVorig={totaalVorig}
           labelVan={(g) => <MerkNaam merk={g.sleutel} />}
           uitklap={(g) => (g.sleutel === OVERIGE_MERKEN ? overigeMerken : null)}
           csvNaam="leads-syntec-merken"
@@ -654,8 +555,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepen={soorten.groepen}
           vastgezet={soorten.vastgezet}
           totaal={totaal}
-          vorig={soortenVorig}
-          totaalVorig={totaalVorig}
           csvNaam="leads-syntec-soort-aanvraag"
         />
       </div>
@@ -667,8 +566,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
         groepen={modellen.groepen}
         vastgezet={modellen.vastgezet}
         totaal={totaal}
-        vorig={modellenVorig}
-        totaalVorig={totaalVorig}
         labelVan={(g) => (g.sleutel === SLEUTEL_MODEL_ONBEKEND ? "Model onbekend" : deelRij(g.sleutel).model)}
         tekstVan={(g) => (g.sleutel === SLEUTEL_MODEL_ONBEKEND ? "Model onbekend" : deelRij(g.sleutel).model)}
         extraKolom={{
@@ -698,8 +595,6 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
           groepen={ordersoortenVast.groepen}
           vastgezet={ordersoortenVast.vastgezet}
           totaal={totaal}
-          vorig={ordersoortenVorig}
-          totaalVorig={totaalVorig}
           csvNaam="leads-syntec-nieuw-of-gebruikt"
         />
         <section className="kaart-omlijst rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
@@ -741,8 +636,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
             <li>
               <strong className="text-ink">De periodes</strong> lopen tot de laatste lead in de sheet (die loopt
               een dag of twee achter), niet tot vandaag. Is die laatste dag nog niet compleet, dan staat hij
-              lichter in de grafiek. Vergelijk met vorig jaar zet dezelfde datums een jaar eerder ernaast; de
-              sheet begint op 1 januari 2024.
+              lichter in de grafiek. De sheet begint op 1 januari 2024.
             </li>
           </ul>
         </section>
