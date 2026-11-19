@@ -110,7 +110,9 @@ export async function leesKanaalVerdeling(
       [website],
     );
     const r = res.rows[0];
-    if (!r) return null;
+    // Een rij in de oude vorm (vóór migratie 0038: al ingedeeld, zonder losse bron/media)
+    // telt als "nog geen verdeling", zodat hij in de nieuwe vorm wordt opgehaald.
+    if (!r || !Array.isArray(r.bron_media) || r.bron_media.length === 0) return null;
     return {
       website: String(r.website),
       van: String(r.van),
