@@ -220,7 +220,7 @@ export default function KpiJaarGrafiek({
           formatter={(waarde) => <span style={{ color: kleuren.as }}>{waarde}</span>}
         />
         {/* Eerst getekend (oudste jaar eerst), dus onder de lijnen van 2026: ze zijn context,
-            niet het onderwerp. Dunner en zonder punten, zodat ze niet om aandacht vragen. */}
+            niet het onderwerp. Half zo dik als 2026 en zonder punten, zodat ze niet om aandacht vragen. */}
         {[...vergelijkLijnen].reverse().map((l) => (
           <Line
             key={l.jaar}
@@ -228,7 +228,7 @@ export default function KpiJaarGrafiek({
             name={String(l.jaar)}
             type={kleuren.lijnvorm}
             stroke={l.kleur}
-            strokeWidth={Math.max(1, kleuren.lijndikte - 0.5)}
+            strokeWidth={Math.max(0.75, kleuren.lijndikte / 2)}
             dot={false}
             activeDot={{ r: 4, strokeWidth: 2, stroke: kleuren.vlak }}
             isAnimationActive={false}
