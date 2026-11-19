@@ -5,8 +5,9 @@ import Inlogprompt from "@/components/Inlogprompt";
 import GaOverzichtTabel from "@/components/kpi/GaOverzichtTabel";
 import EerdereJarenSchakelaar, { useEerdereJaren } from "@/components/kpi/EerdereJaren";
 import KpiKaart, { type KanalenStand } from "@/components/kpi/KpiKaart";
+import KanaalIndeling from "@/components/kpi/KanaalIndeling";
 import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
-import { IconInfo, IconRefresh } from "@/components/icons";
+import { IconInfo, IconRefresh, IconTable } from "@/components/icons";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import { KPI_DOELJAAR, KPI_GROEI, KPI_JAAR, KPI_WEBSITES } from "@/lib/kpi2027/definities";
 import { metGroei, type Kpi2027Antwoord } from "@/lib/kpi2027/rekenen";
@@ -79,6 +80,19 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
         setKanalen((oud) => ({ ...oud, [sleutel]: { status: "fout", antwoord: { fout: tekst } } }));
       });
   }, []);
+
+  /**
+   * Opnieuw ophalen na een handmatige keuze in "Kanaalgroepindeling". De oude cijfers blijven
+   * in beeld tot de nieuwe binnen zijn, zodat de grafieken niet even leeg staan.
+   */
+  const herlaadKanalen = useCallback(async (sleutel: string) => {
+    const res = await fetch(`/api/kpi-2027/kanalen?website=${encodeURIComponent(sleutel)}`);
+    const antwoord = (await res.json().catch(() => ({ fout: `HTTP ${res.status}` }))) as KanalenAntwoord;
+    if (!res.ok || antwoord.fout) throw new Error(antwoord.fout ?? `HTTP ${res.status}`);
+    kanalenGevraagd.current.add(sleutel);
+    setKanalen((oud) => ({ ...oud, [sleutel]: { status: "klaar", antwoord } }));
+  }, []);
+  const [indelingOpen, setIndelingOpen] = useState(false);
 
   // Uit de URL lezen in een effect, om dezelfde reden als `?tab=` in AppShell: de server
   // rendert altijd het eerste tabblad.
@@ -204,6 +218,20 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <EerdereJarenSchakelaar />
+          {website?.kanaalverdeling && (
+            <button
+              type="button"
+              onClick={() => {
+                laadKanalen(website.sleutel);
+                setIndelingOpen(true);
+              }}
+              title="Alle sessiebron/media met de kanaalgroep waarin ze in de kanaalgrafieken tellen; met de hand aan te passen."
+              className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+            >
+              <IconTable className="h-3.5 w-3.5" />
+              Kanaalgroepindeling
+            </button>
+          )}
           {data?.magBijwerken && (
           <button
             type="button"
@@ -273,6 +301,16 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
             />
           ))}
         </div>
+      )}
+      {indelingOpen && website?.kanaalverdeling && (
+        <KanaalIndeling
+          websiteSleutel={website.sleutel}
+          domein={website.domein}
+          status={kanalen[website.sleutel]?.status ?? "laden"}
+          antwoord={kanalen[website.sleutel]?.antwoord ?? null}
+          herlaad={() => herlaadKanalen(website.sleutel)}
+          onClose={() => setIndelingOpen(false)}
+        />
       )}
     </div>
   );

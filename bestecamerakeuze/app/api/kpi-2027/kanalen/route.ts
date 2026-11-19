@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { vindWebsite } from "@/lib/kpi2027/definities";
-import { kanalenVoorKpi, metKpiTotalen, type KanaalVerdeling, type KanalenAntwoord } from "@/lib/kpi2027/kanalen";
+import {
+  bronMediumRegels,
+  kanalenVoorKpi,
+  metKpiTotalen,
+  type KanaalVerdeling,
+  type KanalenAntwoord,
+} from "@/lib/kpi2027/kanalen";
+import { leesKanaalKeuzesVeilig } from "@/lib/kpi2027/kanaalKeuzes";
 import { leesStanden } from "@/lib/kpi2027/bron";
 import { leesKanaalVerdeling, werkKanaalVerdelingBij } from "@/lib/kpi2027/kanalenBron";
 import { kpiMaandTotaal, laatsteZaterdag } from "@/lib/kpi2027/rekenen";
@@ -34,10 +41,14 @@ export async function GET(req: NextRequest) {
       verdeling = { ...nieuw, berekendOp: new Date().toISOString() };
     }
     // De standen van KPI's 2027 GA zelf, om per maand naast het kanaaltotaal te zetten.
-    const standen = (await leesStanden().catch(() => [])).filter((s) => s.website === website.sleutel);
+    const [alleStanden, keuzes] = await Promise.all([
+      leesStanden().catch(() => []),
+      leesKanaalKeuzesVeilig(website.sleutel),
+    ]);
+    const standen = alleStanden.filter((s) => s.website === website.sleutel);
     const kpis: NonNullable<KanalenAntwoord["kpis"]> = {};
     for (const k of website.kpis) {
-      kpis[k.sleutel] = metKpiTotalen(kanalenVoorKpi(k, verdeling), (maand) => {
+      kpis[k.sleutel] = metKpiTotalen(kanalenVoorKpi(k, verdeling, keuzes), (maand) => {
         const stand = standen.find((s) => s.jaar === Number(maand.slice(0, 4)));
         return stand ? kpiMaandTotaal(k, stand, maand) : null;
       });
@@ -48,9 +59,11 @@ export async function GET(req: NextRequest) {
         peildatum: verdeling.peildatum,
         berekendOp: verdeling.berekendOp,
         kpis,
-        voorbeelden: verdeling.voorbeelden,
+        bronMedia: bronMediumRegels(verdeling, keuzes),
+        staart: verdeling.staartInfo,
       },
-      { headers: { "Cache-Control": "private, max-age=300" } },
+      // Niet in de browser cachen: na een handmatige keuze moet de nieuwe indeling er staan.
+      { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (err) {
     return NextResponse.json<KanalenAntwoord>(

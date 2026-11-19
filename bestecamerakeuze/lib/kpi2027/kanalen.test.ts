@@ -100,8 +100,12 @@ test("verdeling: ingedeeld per maand en bron, uitgesloten hosts weg, totaal per 
     ["generate_lead_proefrit_aanvraag", "generate_lead_proefrit"],
   );
 
-  assert.deepEqual(v.bronnen.sessies["2025-01"], { "google-ads": 100, autoportals: 75 });
-  assert.deepEqual(v.voorbeelden.autoportals?.map((x) => x.bronMedium), ["gaspedaal / app", "gaspedaal.nl / referral"]);
+  // Los bewaard, per bron/medium (nog niet ingedeeld).
+  assert.deepEqual(v.bronnen.sessies["2025-01"], { "google / cpc": 100, "gaspedaal / app": 50, "gaspedaal.nl / referral": 25 });
+  assert.deepEqual(
+    v.bronMedia.map((x) => x.bronMedium),
+    ["google / cpc", "gaspedaal / app", "gaspedaal.nl / referral", "(direct) / (none)"],
+  );
 
   const proefrit = udenhout.kpis.find((k) => k.sleutel === "proefritaanvragen")!;
   const k = kanalenVoorKpi(proefrit, v);
@@ -175,4 +179,63 @@ test("controle naast de kanaalverdeling: een optellende bron van een andere prop
     .reduce((t, [, n]) => t + n, 0);
   assert.ok(kpiGrafiekJan > 1, "de KPI-grafiek telt udenhoutlease.nl wel mee");
   assert.equal(kpiMaandTotaal(zakelijk, stand, "2026-01"), 1);
+});
+
+test("de staart: kleine bron/media worden al per kanaal bewaard, de grote los", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const v = verdelingUitRijen(
+    udenhout,
+    {
+      verkeer: [
+        { year_month: "202501", session_source_medium: "google / cpc", sessions: 100, active_users: 80 },
+        { year_month: "202501", session_source_medium: "gaspedaal.nl / referral", sessions: 50, active_users: 40 },
+        { year_month: "202501", session_source_medium: "autotrack / referral", sessions: 3, active_users: 3 },
+        { year_month: "202501", session_source_medium: "klein.nl / referral", sessions: 2, active_users: 2 },
+      ],
+      events: [
+        { year_month: "202501", session_source_medium: "autotrack / referral", event_name: "generate_lead_proefrit_aanvraag", hostname: "www.udenhout.nl", event_count: 1 },
+      ],
+    },
+    "2025-01-31",
+    ["generate_lead_proefrit_aanvraag"],
+    2,
+  );
+  assert.deepEqual(v.bronMedia.map((x) => x.bronMedium), ["google / cpc", "gaspedaal.nl / referral"]);
+  assert.deepEqual(v.staartInfo, { aantal: 2, sessies: 5 });
+  assert.deepEqual(v.staart.sessies["2025-01"], { autoportals: 3, overig: 2 });
+  assert.deepEqual(v.staart["event:generate_lead_proefrit_aanvraag"]["2025-01"], { autoportals: 1 });
+  const sessies = udenhout.kpis.find((k) => k.sleutel === "sessies")!;
+  const jan = kanalenVoorKpi(sessies, v).maanden[0];
+  assert.equal(jan.totaal, 155);
+  assert.equal(jan.perKanaal[KANALEN.findIndex((k) => k.sleutel === "autoportals")], 53);
+});
+
+test("een handmatige keuze gaat vóór de regels, in elke grafiek en in de tabel", async () => {
+  const { bronMediumRegels } = await import("@/lib/kpi2027/kanalen");
+  const udenhout = vindWebsite("udenhout")!;
+  const v = verdelingUitRijen(
+    udenhout,
+    {
+      verkeer: [
+        { year_month: "202501", session_source_medium: "google / cpc", sessions: 100, active_users: 80 },
+        { year_month: "202501", session_source_medium: "nl.pepper.com / referral", sessions: 40, active_users: 30 },
+      ],
+      events: [
+        { year_month: "202501", session_source_medium: "nl.pepper.com / referral", event_name: "generate_lead_private_lease", hostname: "www.udenhout.nl", event_count: 6 },
+      ],
+    },
+    "2025-01-31",
+    ["generate_lead_private_lease"],
+  );
+  const keuzes = new Map([["nl.pepper.com / referral", "autoportals" as const]]);
+  const lease = udenhout.kpis.find((k) => k.sleutel === "private-lease")!;
+  const autoportals = KANALEN.findIndex((k) => k.sleutel === "autoportals");
+  const overig = KANALEN.findIndex((k) => k.sleutel === "overig");
+  assert.equal(kanalenVoorKpi(lease, v).maanden[0].perKanaal[overig], 6);
+  assert.equal(kanalenVoorKpi(lease, v, keuzes).maanden[0].perKanaal[autoportals], 6);
+  assert.equal(kanalenVoorKpi(lease, v, keuzes).maanden[0].perKanaal[overig], 0);
+
+  const regels = bronMediumRegels(v, keuzes);
+  assert.deepEqual(regels[1], { bronMedium: "nl.pepper.com / referral", sessies: 40, regel: "overig", kanaal: "autoportals", handmatig: true });
+  assert.equal(regels[0].handmatig, false);
 });

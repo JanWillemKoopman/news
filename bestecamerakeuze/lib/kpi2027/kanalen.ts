@@ -172,10 +172,17 @@ export function kanaalVoor(bronMedium: string): KanaalSleutel {
 /** Per maand ("2025-01") het aantal per kanaal. */
 export type MaandPerKanaal = Record<string, Partial<Record<KanaalSleutel, number>>>;
 
+/** Per maand ("2025-01") het aantal per bron/medium. */
+export type MaandPerBronMedium = Record<string, Record<string, number>>;
+
 /**
- * Wat er bewaard wordt (`kpi_2027_kanalen`, migratie 0037): per bron (`sessies`,
- * `gebruikers`, `event:<naam>`) per maand het aantal per kanaal, al ingedeeld. Plus per
- * kanaal de grootste bron/media, zodat op het scherm te zien is wat erin zit.
+ * Wat er bewaard wordt (`kpi_2027_kanalen`, migraties 0037 en 0038).
+ *
+ * De grootste bron/media (`BRON_MEDIA_MAX`, op sessies over de hele periode) staan er
+ * **los** in, nog niet ingedeeld: zo geldt een handmatige keuze in "Kanaalgroepindeling"
+ * meteen, zonder opnieuw op te halen. De lange staart (honderden bron/media met een
+ * handvol sessies, vaak eenmalige verwijzers) staat er al ingedeeld per kanaal in, zodat de
+ * rij klein blijft; die volgt altijd de regels.
  */
 export interface KanaalVerdeling {
   website: string;
@@ -183,10 +190,18 @@ export interface KanaalVerdeling {
   van: string;
   /** T/m welke dag: de laatste zaterdag, net als de standen. */
   peildatum: string;
-  bronnen: Record<string, MaandPerKanaal>;
-  /** Per kanaal de grootste bron/media op sessies over de hele periode. */
-  voorbeelden: Partial<Record<KanaalSleutel, { bronMedium: string; sessies: number }[]>>;
+  /** Per bron (`sessies`, `gebruikers`, `event:<naam>`) per maand per bron/medium. */
+  bronnen: Record<string, MaandPerBronMedium>;
+  /** De staart: per bron per maand al per kanaal (volgens de regels). */
+  staart: Record<string, MaandPerKanaal>;
+  /** De losse bron/media met hun sessies, van groot naar klein. */
+  bronMedia: { bronMedium: string; sessies: number }[];
+  /** Hoeveel bron/media en sessies in de staart zitten. */
+  staartInfo: { aantal: number; sessies: number };
 }
+
+/** Hoeveel bron/media er los bewaard worden en dus met de hand in te delen zijn. */
+export const BRON_MEDIA_MAX = 250;
 
 /** Vanaf wanneer de verdeling loopt. */
 export const KANALEN_VANAF = "2025-01-01";
@@ -199,14 +214,11 @@ export function maandSleutel(waarde: unknown): string | null {
   return maand >= 1 && maand <= 12 ? `${t.slice(0, 4)}-${t.slice(4, 6)}` : null;
 }
 
-function telOp(doel: Record<string, MaandPerKanaal>, bron: string, maand: string, kanaal: KanaalSleutel, n: number) {
+function telOp<T extends string>(doel: Record<string, Record<string, Partial<Record<T, number>>>>, bron: string, maand: string, sleutel: T, n: number) {
   if (!n) return;
   const perMaand = ((doel[bron] ??= {})[maand] ??= {});
-  perMaand[kanaal] = (perMaand[kanaal] ?? 0) + n;
+  perMaand[sleutel] = (perMaand[sleutel] ?? 0) + n;
 }
-
-/** Hoeveel bron/media er per kanaal als voorbeeld bewaard worden. */
-const VOORBEELDEN = 6;
 
 /**
  * Van Windsor-rijen naar de verdeling. `verkeer` heeft per maand × bron/medium sessies en
@@ -218,36 +230,64 @@ export function verdelingUitRijen(
   rijen: { verkeer: WindsorRij[]; events: WindsorRij[] },
   peildatum: string,
   gezocht: readonly string[],
+  max: number = BRON_MEDIA_MAX,
 ): KanaalVerdeling {
-  const bronnen: Record<string, MaandPerKanaal> = {};
-  const perBronMedium = new Map<string, number>();
   const uitgesloten = new Set(website.uitgeslotenHosts);
   const events = new Set(gezocht);
+
+  // Eerst bepalen welke bron/media los bewaard worden: de grootste op sessies.
+  const sessiesPer = new Map<string, number>();
+  for (const rij of rijen.verkeer) {
+    if (!maandSleutel(rij.year_month)) continue;
+    const bm = tekst(rij.session_source_medium) ?? "";
+    sessiesPer.set(bm, (sessiesPer.get(bm) ?? 0) + getal(rij.sessions));
+  }
+  const gesorteerd = [...sessiesPer].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  const los = new Set(gesorteerd.slice(0, max).map(([bm]) => bm));
+
+  const bronnen: Record<string, MaandPerBronMedium> = {};
+  const staart: Record<string, MaandPerKanaal> = {};
+  function tel(bron: string, maand: string, bm: string, n: number) {
+    if (los.has(bm)) telOp(bronnen, bron, maand, bm, n);
+    else telOp(staart, bron, maand, kanaalVoor(bm), n);
+  }
 
   for (const rij of rijen.verkeer) {
     const maand = maandSleutel(rij.year_month);
     if (!maand) continue;
     const bm = tekst(rij.session_source_medium) ?? "";
-    const kanaal = kanaalVoor(bm);
-    telOp(bronnen, "sessies", maand, kanaal, getal(rij.sessions));
-    telOp(bronnen, "gebruikers", maand, kanaal, getal(rij.active_users));
-    perBronMedium.set(bm, (perBronMedium.get(bm) ?? 0) + getal(rij.sessions));
+    tel("sessies", maand, bm, getal(rij.sessions));
+    tel("gebruikers", maand, bm, getal(rij.active_users));
   }
-
   for (const rij of rijen.events) {
     const maand = maandSleutel(rij.year_month);
     const naam = tekst(rij.event_name);
     if (!maand || !naam || !events.has(naam) || uitgesloten.has(tekst(rij.hostname) ?? "")) continue;
-    telOp(bronnen, `event:${naam}`, maand, kanaalVoor(tekst(rij.session_source_medium) ?? ""), getal(rij.event_count));
+    tel(`event:${naam}`, maand, tekst(rij.session_source_medium) ?? "", getal(rij.event_count));
   }
 
-  const voorbeelden: KanaalVerdeling["voorbeelden"] = {};
-  for (const [bronMedium, sessies] of [...perBronMedium].sort((a, b) => b[1] - a[1])) {
-    const lijst = (voorbeelden[kanaalVoor(bronMedium)] ??= []);
-    if (lijst.length < VOORBEELDEN && sessies > 0) lijst.push({ bronMedium: bronMedium || "(leeg)", sessies });
-  }
+  const staartRijen = gesorteerd.slice(max);
+  return {
+    website: website.sleutel,
+    van: KANALEN_VANAF,
+    peildatum,
+    bronnen,
+    staart,
+    bronMedia: gesorteerd.slice(0, max).map(([bronMedium, sessies]) => ({ bronMedium, sessies })),
+    staartInfo: { aantal: staartRijen.length, sessies: staartRijen.reduce((t, [, n]) => t + n, 0) },
+  };
+}
 
-  return { website: website.sleutel, van: KANALEN_VANAF, peildatum, bronnen, voorbeelden };
+/** Een handmatige keuze per bron/medium (`kpi_2027_kanaal_keuzes`), die vóór de regels gaat. */
+export type KanaalKeuzes = ReadonlyMap<string, KanaalSleutel>;
+
+/** Het kanaal van een bron/medium: de handmatige keuze, anders de regels. */
+export function kanaalMetKeuze(bronMedium: string, keuzes: KanaalKeuzes): KanaalSleutel {
+  return keuzes.get(bronMedium) ?? kanaalVoor(bronMedium);
+}
+
+export function isKanaalSleutel(waarde: unknown): waarde is KanaalSleutel {
+  return typeof waarde === "string" && KANALEN.some((k) => k.sleutel === waarde);
 }
 
 /** Alle maanden van `van` t/m de maand van `peildatum`, als "2025-01". */
@@ -300,17 +340,55 @@ function bronnenVoor(definitie: KpiDefinitie): string[] {
   }
 }
 
-/** De maanden van één KPI, van januari 2025 t/m de maand van de peildatum. */
-export function kanalenVoorKpi(definitie: KpiDefinitie, verdeling: KanaalVerdeling): KpiKanalen {
+/**
+ * De maanden van één KPI, van januari 2025 t/m de maand van de peildatum: de losse
+ * bron/media ingedeeld met de handmatige keuzes (anders de regels), plus de staart.
+ */
+export function kanalenVoorKpi(
+  definitie: KpiDefinitie,
+  verdeling: KanaalVerdeling,
+  keuzes: KanaalKeuzes = new Map(),
+): KpiKanalen {
   const bronnen = bronnenVoor(definitie);
+  const index = new Map(KANALEN.map((k, i) => [k.sleutel as KanaalSleutel, i]));
+  const kanaalVan = new Map<string, number>();
   return {
     maanden: maandenTussen(verdeling.van, verdeling.peildatum).map((maand) => {
-      const perKanaal = KANALEN.map((k) =>
-        bronnen.reduce((t, b) => t + Math.max(0, Number(verdeling.bronnen[b]?.[maand]?.[k.sleutel]) || 0), 0),
-      );
+      const perKanaal = KANALEN.map(() => 0);
+      for (const b of bronnen) {
+        for (const [bm, n] of Object.entries(verdeling.bronnen[b]?.[maand] ?? {})) {
+          let i = kanaalVan.get(bm);
+          if (i === undefined) kanaalVan.set(bm, (i = index.get(kanaalMetKeuze(bm, keuzes)) ?? KANALEN.length - 1));
+          perKanaal[i] += Math.max(0, Number(n) || 0);
+        }
+        for (const [k, n] of Object.entries(verdeling.staart[b]?.[maand] ?? {})) {
+          const i = index.get(k as KanaalSleutel);
+          if (i !== undefined) perKanaal[i] += Math.max(0, Number(n) || 0);
+        }
+      }
       return { maand, totaal: perKanaal.reduce((t, n) => t + n, 0), perKanaal, kpiTotaal: null };
     }),
   };
+}
+
+/** Eén regel in de tabel "Kanaalgroepindeling". */
+export interface BronMediumRegel {
+  bronMedium: string;
+  sessies: number;
+  /** Waar de regels hem indelen. */
+  regel: KanaalSleutel;
+  /** Waar hij nu staat: de handmatige keuze, anders de regel. */
+  kanaal: KanaalSleutel;
+  handmatig: boolean;
+}
+
+/** De tabel "Kanaalgroepindeling": de losse bron/media op sessies, met hun kanaal. */
+export function bronMediumRegels(verdeling: KanaalVerdeling, keuzes: KanaalKeuzes): BronMediumRegel[] {
+  return verdeling.bronMedia.map(({ bronMedium, sessies }) => {
+    const regel = kanaalVoor(bronMedium);
+    const keuze = keuzes.get(bronMedium);
+    return { bronMedium, sessies, regel, kanaal: keuze ?? regel, handmatig: keuze !== undefined && keuze !== regel };
+  });
 }
 
 /**
@@ -328,6 +406,8 @@ export interface KanalenAntwoord {
   berekendOp?: string;
   /** Per KPI-sleutel de maanden. */
   kpis?: Record<string, KpiKanalen>;
-  voorbeelden?: KanaalVerdeling["voorbeelden"];
+  /** De tabel "Kanaalgroepindeling". */
+  bronMedia?: BronMediumRegel[];
+  staart?: { aantal: number; sessies: number };
   fout?: string;
 }

@@ -60,15 +60,25 @@ export async function haalKanaalVerdeling(
 /** Schrijft de verdeling van één website weg; overschrijft de vorige. */
 export async function schrijfKanaalVerdeling(client: Client, v: KanaalVerdeling): Promise<void> {
   await client.query(
-    `insert into dataloket.kpi_2027_kanalen (website, van, peildatum, berekend_op, bronnen, voorbeelden)
-     values ($1, $2, $3, now(), $4::jsonb, $5::jsonb)
+    `insert into dataloket.kpi_2027_kanalen (website, van, peildatum, berekend_op, bronnen, staart, bron_media, staart_info)
+     values ($1, $2, $3, now(), $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb)
      on conflict (website) do update
        set van         = excluded.van,
            peildatum   = excluded.peildatum,
            berekend_op = excluded.berekend_op,
            bronnen     = excluded.bronnen,
-           voorbeelden = excluded.voorbeelden`,
-    [v.website, v.van, v.peildatum, JSON.stringify(v.bronnen), JSON.stringify(v.voorbeelden)],
+           staart      = excluded.staart,
+           bron_media  = excluded.bron_media,
+           staart_info = excluded.staart_info`,
+    [
+      v.website,
+      v.van,
+      v.peildatum,
+      JSON.stringify(v.bronnen),
+      JSON.stringify(v.staart),
+      JSON.stringify(v.bronMedia),
+      JSON.stringify(v.staartInfo),
+    ],
   );
 }
 
@@ -95,7 +105,7 @@ export async function leesKanaalVerdeling(
 ): Promise<(KanaalVerdeling & { berekendOp: string }) | null> {
   return metVerbinding(async (client) => {
     const res = await client.query(
-      `select website, van::text as van, peildatum::text as peildatum, berekend_op, bronnen, voorbeelden
+      `select website, van::text as van, peildatum::text as peildatum, berekend_op, bronnen, staart, bron_media, staart_info
          from dataloket.v_kpi_2027_kanalen where website = $1`,
       [website],
     );
@@ -107,7 +117,9 @@ export async function leesKanaalVerdeling(
       peildatum: String(r.peildatum),
       berekendOp: new Date(r.berekend_op as string).toISOString(),
       bronnen: (r.bronnen ?? {}) as KanaalVerdeling["bronnen"],
-      voorbeelden: (r.voorbeelden ?? {}) as KanaalVerdeling["voorbeelden"],
+      staart: (r.staart ?? {}) as KanaalVerdeling["staart"],
+      bronMedia: (r.bron_media ?? []) as KanaalVerdeling["bronMedia"],
+      staartInfo: (r.staart_info ?? { aantal: 0, sessies: 0 }) as KanaalVerdeling["staartInfo"],
     };
   });
 }

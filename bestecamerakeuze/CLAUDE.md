@@ -869,11 +869,24 @@ realisatie van 2027.
   - **Kleuren**: vaste volgorde per kanaal (`LICHT`/`DONKER` in `KanaalGrafiek.tsx`),
     doorgerekend op onderscheid (ook bij kleurenblindheid), "Verwijzingen & overig" grijs.
     Bewust niet de themakleuren: die reeks heeft er zes.
-  - **Opslag** (`kpi_2027_kanalen`, migratie 0037): één rij per website, al ingedeeld per
-    bron × maand × kanaal, plus per kanaal de grootste bron/media. Elke zondag opnieuw over de
-    hele periode in de cron (`bijwerken.ts`); staat er nog niets, dan haalt de eerste klik
-    hem op (`/api/kpi-2027/kanalen`, `kanalenBron.ts`). Een aangepaste indeling geldt dus na
-    de volgende ophaalronde.
+  - **Opslag** (`kpi_2027_kanalen`, migraties 0037 en 0038): één rij per website. De
+    250 grootste bron/media (op sessies, `BRON_MEDIA_MAX`) staan er **los** in, nog niet
+    ingedeeld (`bronnen`: bron → maand → bron/medium); de lange staart staat al per kanaal
+    in `staart` (volgens de regels), zodat de rij klein blijft. De indeling gebeurt bij het
+    lezen (`kanalenVoorKpi`), dus een aangepaste regel of handmatige keuze geldt meteen voor
+    de losse bron/media; de staart volgt een gewijzigde regel pas na de volgende
+    ophaalronde. Elke zondag opnieuw over de hele periode in de cron (`bijwerken.ts`); staat
+    er nog niets, dan haalt de eerste klik hem op (`/api/kpi-2027/kanalen`, `kanalenBron.ts`).
+  - **Knop "Kanaalgroepindeling"** rechts in de statusbalk (alleen op een website met
+    `kanaalverdeling`): een brede zijbalk (`KanaalIndeling.tsx`, `Drawer` met `breed`) met de
+    losse bron/media op sessies, hun kanaalgroep en per regel een keuzelijst. Een keuze gaat
+    vóór de regels (`kanaalMetKeuze`), geldt meteen in elke kanaalgrafiek en voor het hele
+    team (`kpi_2027_kanaal_keuzes`, migratie 0038, dezelfde rechten als het groeipercentage;
+    `POST /api/kpi-2027/kanalen/keuze`). De groep met "(regel)" kiezen haalt de keuze weg.
+    Onderaan staat hoeveel bron/media en sessies in de staart zitten; die zijn niet met de hand
+    in te delen. Snel blijven: de pagina zelf laadt hier niets voor — knop en schuifjes lezen
+    hetzelfde antwoord, dat pas bij de eerste klik wordt opgehaald (`no-store`, zodat een
+    keuze na herladen klopt).
   - **Gebruikers** tellen per maand per kanaal: wie in één maand via twee kanalen kwam, telt in
     allebei. Dat staat onder de grafiek.
 
