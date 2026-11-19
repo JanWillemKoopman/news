@@ -765,7 +765,7 @@ model op te halen.
 - **Periodes lopen tot de laatste lead in de sheet, niet tot vandaag** (`vastePeriodes`): de
   sheet loopt een dag of twee achter, en vanaf vandaag gerekend eindigt elke grafiek met lege
   dagen. De export loopt soms halverwege een dag (laatste lead 12:40); die dag tekent lichter
-  (`halveDag` in `reeks`). Standaard 30 dagen; periode en filters staan in de URL.
+  (`halveDag` in `reeks`). Standaard 12 maanden; periode en filters staan in de URL.
 - **Dag, week of maand kies je met knopjes rechtsboven de grafiek** (verzoek november 2026),
   **standaard per week** (maandag t/m zondag), los van de lengte van de periode. Een week of
   maand die maar half in de periode valt, tekent lichter. De keuze staat in de URL
