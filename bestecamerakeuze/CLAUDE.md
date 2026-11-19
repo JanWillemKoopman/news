@@ -932,7 +932,10 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
 - **Welke lead bij welke KPI hoort staat alleen in `lib/kpi2027syntec/definities.ts`**,
   in getest TypeScript (`classificeerLead`), op kanaal en onderwerp. Een lead telt bij
   hoogstens één KPI (nagerekend in de test).
-- **Onder elke grafiek staat waar je naar kijkt, in drie delen** (`KpiSyntecKaart.tsx`):
+- **Onder elke grafiek staat volledig waar je naar kijkt** (`KpiSyntecKaart.tsx`): eerst
+  *Grafiek* (wat de doorgetrokken, gestippelde en vlakke lijn zijn; bij inruil/contact en de
+  totalen waar ze in zitten ook dat januari t/m maart is bijgeschat) en *Bron* (Syntec via
+  het sheet-tabblad Data leads, kanaalgroep Internet, geteld op de datum Aangelegd), dan
   *Wat telt mee* (elke regel met de periode waarin hij leads oplevert en het aantal),
   *Keuzes in de definitie* (het veld `keuzes` per KPI in `definities.ts`, in gewone taal) en
   een *Controle*: wat de definitie over heel 2025 telt × 1,2, naast het doel 2026 — zo
