@@ -20,7 +20,7 @@ test("Scores, Kennis en acties, Budget beheer, Koppeltabel, Kosten, Leads, Landi
 });
 
 test("de rest voor iedereen", () => {
-  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-2027", "kpi-2027-syntec", "kpi-2027-social", "website", "selligent", "leads-syntec"]) {
+  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-2027", "kpi-2027-syntec", "kpi-2027-social", "kpi-2027-crm", "website", "selligent", "leads-syntec"]) {
     for (const email of [...EIGENAAR, ...ANDEREN]) assert.equal(magTabbladZien(view, email), true, `${view} ${email}`);
   }
 });

@@ -17,6 +17,7 @@ export type DashboardView =
   | "kpi-2027"
   | "kpi-2027-syntec"
   | "kpi-2027-social"
+  | "kpi-2027-crm"
   | "social-ads"
   | "google-ads"
   | "organisch"

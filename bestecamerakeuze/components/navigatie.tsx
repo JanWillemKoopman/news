@@ -63,6 +63,7 @@ export const NAV_GROEPEN: NavGroep[] = [
       { view: "kpi-2027", label: "KPI's Google Analytics", icon: <IconTrendUp /> },
       { view: "kpi-2027-syntec", label: "KPI's Syntec", icon: <IconTarget /> },
       { view: "kpi-2027-social", label: "KPI's social media", icon: <IconUsers /> },
+      { view: "kpi-2027-crm", label: "KPI's CRM", icon: <IconMail /> },
     ],
   },
   {

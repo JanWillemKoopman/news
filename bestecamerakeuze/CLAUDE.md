@@ -93,7 +93,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `NavigationItem` voor een groepspagina terug in `Sidebar.tsx`. Een groep zonder zichtbare
   pagina krijgt in de sidebar geen kopje en zegt op het startscherm dat in één regel.
 - **Indeling en namen (november 2026, op verzoek):** de groep KPI's heet **KPI's 2027** met
-  **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`) en **KPI's social media** (`kpi-2027-social`); **KPI's
+  **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`), **KPI's social media** (`kpi-2027-social`) en **KPI's CRM** (`kpi-2027-crm`); **KPI's
   2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
   **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
   **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
@@ -1265,6 +1265,35 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   waarde (het 30-dagenvenster komt elke nacht terug zonder stand), zodat er nooit meer dan één dag
   historie bleef. `schrijfBatch` laat voor `windsor_account_dag.volgers` nu een bekende stand staan
   (`coalesce`).
+
+### KPI's → KPI's CRM
+
+Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi2027CrmPaneel.tsx`, route
+`app/api/kpi-2027-crm/route.ts`, rekenwerk in `lib/kpi2027crm/`), op verzoek van de eigenaar (20 november
+2026): precies dezelfde opzet als de andere KPI-tabbladen — statusbalk, definitie, overzichtstabel
+(`CrmOverzichtTabel.tsx`, gedeelde `OverzichtTabel.tsx`) en per groep de kaarten (`KpiCrmKaart.tsx`,
+`KpiKaartOpmaak` als stand, net als volgers op social media).
+
+- **Bron is de Selligent-export op Azure**, hetzelfde bestand en dezelfde tabel in het geheugen als Tools →
+  Selligent database (`haalTabel` uit `lib/selligent/bron.ts`). Geen opslag, geen cron: elk verzoek leest de
+  laatste export (ETag-cache), "Opnieuw ophalen" doet `?vers=1`. Alleen aantallen gaan over de lijn.
+- **Alles telt unieke e-mailadressen** (kolom `MAIL`, terugval `EMAIL`; lege cel telt niet), zoals gevraagd.
+  **Contacten** = het aantal verschillende e-mailadressen (gelijk aan de tegel E-mailadressen op Tools →
+  Selligent). **Opt-in &lt;merk&gt;** = per booleaanse kolom het aantal verschillende e-mailadressen met
+  minstens één rij `True` (hoofdletterongevoelig, spaties aan de rand tellen niet). Welke kolommen dat zijn
+  staat nergens opgesomd: elke booleaanse kolom is een opt-in, dus een nieuwe voorkeur levert vanzelf een
+  KPI op. De namen (`PREFERENCES_VW` → "Opt-in Volkswagen") staan in `OPTIN_NAMEN` in `definities.ts`; een
+  onbekende kolom draagt zijn eigen naam, dus die lijst is een verfraaiing en nooit een voorwaarde.
+- **Een stand uit één meting** (`berekenStand`, besluit van de eigenaar): er wordt niets bewaard, dus januari
+  t/m de maand vóór de export krijgen dezelfde stand (`bijgeschat`, gestippeld, "Aangenomen" in de tooltip),
+  de maand van de export is gemeten, de maanden erna doorgetrokken. Stand eind 2026 = de laatste stand,
+  target eind 2027 = × 1,10 (`CRM_GROEI`, voor elke KPI; **niet** aan te passen — er is geen rij in
+  `kpi_2027_groei` voor dit tabblad, want die tabel staat met een check constraint op de drie andere).
+  Voortgang zoals volgers (`voortgangStand`).
+- **Let op vanaf 1 januari 2027**: dan ligt de export in 2027 en is hij de realisatie, maar de stand eind 2026
+  is niet meer te lezen (er wordt niets bewaard): de kaarten tonen dan "geen stand 2026". Wil je de basis
+  houden, leg dan vóór die tijd de stand van eind december vast (bv. een rij per KPI in een kleine tabel of
+  als constante in `definities.ts`).
 
 ### Sheet-sync in blokken
 

@@ -280,6 +280,7 @@ export function KpiKaartOpmaak({
   wissel,
   stand = false,
   leegTekst = "Nog geen stand voor deze website.",
+  kopTekst,
   children,
 }: {
   naam: string;
@@ -305,6 +306,8 @@ export function KpiKaartOpmaak({
   stand?: boolean;
   /** Wat er staat als er geen uitkomst is. */
   leegTekst?: string;
+  /** Optioneel een eigen regel rechtsboven in plaats van het gemiddelde per dag (KPI's CRM: de dag van de meting). */
+  kopTekst?: string;
   children: ReactNode;
 }) {
   const [toonWissel, setToonWissel] = useState(false);
@@ -316,12 +319,12 @@ export function KpiKaartOpmaak({
         <div className="flex items-center gap-3">
           {u && !toonWissel && (
             <p className="text-right text-meta text-ink-muted">
-              {stand
+              {kopTekst ?? (stand
                 ? u.perDag === 0
                   ? "nog geen trend bekend"
                   : `gemiddeld ${u.perDag > 0 ? "+" : "−"}${perDagTekst(Math.abs(u.perDag))} per dag`
-                : `gemiddeld ${perDagTekst(u.perDag)} per dag`}
-              {!stand && u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
+                : `gemiddeld ${perDagTekst(u.perDag)} per dag`)}
+              {!kopTekst && !stand && u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
             </p>
           )}
           {u && wissel && (

@@ -30,6 +30,7 @@ type Props = {
   kpi2027: React.ReactNode;
   kpi2027Syntec: React.ReactNode;
   kpi2027Social: React.ReactNode;
+  kpi2027Crm: React.ReactNode;
   socialAds: React.ReactNode;
   googleAds: React.ReactNode;
   organisch: React.ReactNode;
@@ -121,6 +122,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "KPI's social media",
     subtitle:
       "De targets voor 2027 per merk en kanaal: volgers en impressies van 2026 plus de groei die het team per KPI vastlegde.",
+  },
+  "kpi-2027-crm": {
+    title: "KPI's CRM",
+    subtitle:
+      "De targets voor 2027 uit de Selligent-database: contacten en opt-ins in unieke e-mailadressen, de stand van 2026 plus 10%.",
   },
   "social-ads": {
     title: "Social ads",
@@ -216,6 +222,7 @@ export default function AppShell({
   kpi2027,
   kpi2027Syntec,
   kpi2027Social,
+  kpi2027Crm,
   socialAds,
   googleAds,
   organisch,
@@ -347,6 +354,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "kpi-2027-social"}>
           {bezocht.has("kpi-2027-social") ? kpi2027Social : null}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "kpi-2027-crm"}>
+          {bezocht.has("kpi-2027-crm") ? kpi2027Crm : null}
         </div>
         {/* De zes Kanalen-panelen blijven net als de rest gemount, maar ze halen hun
             data pas op zodra ze voor het eerst getoond worden — zie useKanaalData. Een
