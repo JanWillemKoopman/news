@@ -1275,8 +1275,22 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
 `KpiKaartOpmaak` als stand, net als volgers op social media).
 
 - **Bron is de Selligent-export op Azure**, hetzelfde bestand en dezelfde tabel in het geheugen als Tools →
-  Selligent database (`haalTabel` uit `lib/selligent/bron.ts`). Geen opslag, geen cron: elk verzoek leest de
-  laatste export (ETag-cache), "Opnieuw ophalen" doet `?vers=1`. Alleen aantallen gaan over de lijn.
+  Selligent database (`haalTabel` uit `lib/selligent/bron.ts`). Elk verzoek leest de laatste export
+  (ETag-cache), "Opnieuw ophalen" doet `?vers=1`. Alleen aantallen gaan over de lijn.
+- **De dagstanden worden bewaard** (verzoek van de eigenaar, 20 november 2026): de export bevat alleen de
+  stand van vandaag, dus zonder opslag was de stand van 31 december 2026 (de basis voor het target) in januari
+  2027 al weg. `kpi_2027_crm_standen` (migratie 0040) heeft één rij per dag per KPI-sleutel (`contacten`,
+  `met-optin`, `autos`, `autos-optin`, `optin:<kolom>`) met **alleen het aantal** — geen e-mailadres of
+  kenteken, dus de afspraak uit README-selligent.md (geen persoonsgegevens in een tweede database) blijft staan.
+  De dag is die van de export (Last-Modified, Nederlandse kalender), niet die van de taak.
+  - **Wie schrijft**: de dagelijkse taak `/api/kpi-2027-crm/bijwerken` (Vercel Cron, elke dag 10:20 UTC, na
+    de ochtendexport; buiten de inlog via `CRON_PADEN`, met `CRON_SECRET`; `lib/kpi2027crm/bijwerken.ts`, run in
+    `sync_runs` met bron `kpi-2027-crm`) én, als vangnet, elk bezoek aan het tabblad (`GET /api/kpi-2027-crm`).
+    Allebei via `SYNC_DATABASE_URL` met upsert op (datum, kpi); er wordt nooit iets verwijderd. Lezen via de
+    view `v_kpi_2027_crm_standen` met `DATAQUERY_DATABASE_URL` (`lib/kpi2027crm/bron.ts`).
+  - **Lukt schrijven of lezen niet**, dan rekent het tabblad met alleen de stand van nu en staat er bovenaan een
+    rode melding (`historie.schrijfFout` / `leesFout`); zolang 2026 loopt, staat er een melding sinds wanneer er
+    bewaard wordt (`historie.vanaf`).
 - **Alles telt unieke e-mailadressen** (kolom `MAIL`, terugval `EMAIL`; lege cel telt niet), zoals gevraagd.
   **Contacten** = het aantal verschillende e-mailadressen (gelijk aan de tegel E-mailadressen op Tools →
   Selligent). **Opt-in &lt;merk&gt;** = per booleaanse kolom het aantal verschillende e-mailadressen met
@@ -1302,23 +1316,27 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
   `PREFERENCES_SERVICE`/`…SERVICES`, ook zonder voorvoegsel). Staat een ervan niet als True/False-kolom in
   de export, dan meldt de pagina dat bovenaan (`ontbrekend`) in plaats van dat de kaart stil ontbreekt.
 - **Onder elke grafiek de definitie** (verzoek van de eigenaar, 20 november 2026), ingeklapt achter "Lees
-  definitie" en in dezelfde opbouw als Syntec en social media (`KpiCrmKaart.tsx`): *Grafiek* (één meting,
-  welke maanden aangenomen en welke doorgetrokken zijn, doel eind 2027), *Bron* (het bestand en de kolommen
+  definitie" en in dezelfde opbouw als Syntec en social media (`KpiCrmKaart.tsx`): *Grafiek* (de bewaarde
+  metingen, welke maanden aangenomen en welke doorgetrokken zijn, doel eind 2027), *Bron* (het bestand en de kolommen
   die deze KPI leest), *Wat telt mee* (de telling met het aantal; bij Contacten en Auto's met opt-in ook de
   lijst opt-inkolommen die meetellen) en *Keuzes in de definitie* (`keuzesVoor` in `definities.ts`, met de
-  echte kolomnamen; elke KPI minstens drie, waaronder het target en de realisatie — getest). De uitleg
+  echte kolomnamen; elke KPI minstens drie, waaronder het target en hoe de dagstanden en de realisatie werken —
+  getest). De uitleg
   bovenaan de pagina en onder de overzichtstabel noemt alleen wat voor alle KPI's geldt. Verander je een
   telling in `rekenen.ts`, pas dan in dezelfde wijziging `KpiCrmKaart.tsx` en `keuzesVoor` aan.
-- **Een stand uit één meting** (`berekenStand`, besluit van de eigenaar): er wordt niets bewaard, dus januari
-  t/m de maand vóór de export krijgen dezelfde stand (`bijgeschat`, gestippeld, "Aangenomen" in de tooltip),
-  de maand van de export is gemeten, de maanden erna doorgetrokken. Stand eind 2026 = de laatste stand,
-  target eind 2027 = × 1,10 (`CRM_GROEI`, voor elke KPI; **niet** aan te passen — er is geen rij in
-  `kpi_2027_groei` voor dit tabblad, want die tabel staat met een check constraint op de drie andere).
-  Voortgang zoals volgers (`voortgangStand`).
-- **Let op vanaf 1 januari 2027**: dan ligt de export in 2027 en is hij de realisatie, maar de stand eind 2026
-  is niet meer te lezen (er wordt niets bewaard): de kaarten tonen dan "geen stand 2026". Wil je de basis
-  houden, leg dan vóór die tijd de stand van eind december vast (bv. een rij per KPI in een kleine tabel of
-  als constante in `definities.ts`).
+- **De stand uit de bewaarde metingen** (`berekenStand`): per KPI de reeks dag → aantal (bewaard plus de export
+  van nu, `metHuidigeStand`). Per maand de laatste stand van die maand (`gerealiseerd`); maanden vóór de eerste
+  bewaarde stand krijgen die eerste stand (`bijgeschat`, gestippeld, "Aangenomen" in de tooltip — zo wilde de
+  eigenaar het: een rechte lijn tot de eerste meting); een maand zonder meting tussen twee metingen de vorige
+  stand (`bijgeschat`); de maanden na de laatste meting de laatste stand doorgetrokken (`verwachting`, geen
+  trend). Stand eind 2026 = de laatste meting van 2026; target eind 2027 = × 1,10 (`CRM_GROEI`, voor elke KPI;
+  **niet** aan te passen — er is geen rij in `kpi_2027_groei` voor dit tabblad, want die tabel staat met een
+  check constraint op de drie andere). Na 31 december is 2026 `definitief`. Realisatie 2027 = de laatste meting
+  in 2027 (`realisatieUit`); voortgang zoals volgers (`voortgangStand`). Een KPI zonder bewaarde stand in 2026
+  (een kolom die pas in 2027 in de export komt) heeft geen basis, wel een realisatie.
+- **De eerste bewaarde dag is de dag waarop migratie 0040 en de code live staan.** Alles daarvóór is niet terug
+  te halen (de export kent geen historie van opt-ins), en dat staat zo in de melding bovenaan en onder elke
+  grafiek. Laat de taak dus vóór 31 december 2026 draaien.
 
 ### Sheet-sync in blokken
 
@@ -1577,8 +1595,9 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
   API-route die zelf `getGebruiker()` controleert. Een nieuw paneel of een nieuwe route
   staat dus dicht zonder dat je eraan hoeft te denken; wil je er iets buiten laten vallen,
   dan hoort dat als uitzondering in `lib/toegang.ts` te staan en niet elders. Buiten de
-  inlog vallen alleen de auth-routes en de twee cron-routes (`/api/sync`,
-  `/api/windsor-sync`), die zich met `CRON_SECRET` legitimeren. De `ingelogd`-prop en de
+  inlog vallen alleen de auth-routes en de cron-routes (`CRON_PADEN`: `/api/sync`,
+  `/api/windsor-sync` en de bijwerk-routes van KPI's 2027 GA, social media en CRM), die zich met
+  `CRON_SECRET` legitimeren. De `ingelogd`-prop en de
   `Inlogprompt` in de panelen blijven staan als laatste vangnet — ze horen niet meer in
   beeld te komen, maar een gat in de matcher mag nooit een open dashboard opleveren.
 - Inloggen is e-mailadres + wachtwoord (geen magic link, geen zelfregistratie):

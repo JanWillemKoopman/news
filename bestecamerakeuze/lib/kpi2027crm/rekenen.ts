@@ -27,17 +27,23 @@ import type { Tabel } from "@/lib/selligent/tabel";
  *
  * ## De stand (`berekenStand`)
  *
- * Er is precies één meting: de export van vandaag. Daarom, op verzoek van de eigenaar:
+ * Elke dag wordt van elke KPI het aantal bewaard (`kpi_2027_crm_standen`, migratie 0040, alleen
+ * aantallen — zie `bron.ts` en `bijwerken.ts`), plus de stand van de export die nu openstaat. Per
+ * KPI is er dus een reeks dag → aantal. Daaruit, per jaar:
  *
- *  1. **Januari t/m de maand vóór de meting**: dezelfde stand als de meting — een aanname
- *     (soort `bijgeschat`, gestippeld, met uitleg in de tooltip).
- *  2. **De maand van de meting**: de gemeten stand (soort `gerealiseerd`).
- *  3. **De maanden erna t/m december**: de stand doorgetrokken (soort `verwachting`).
- *  4. **Stand eind 2026** = de laatste stand; **target eind 2027** = die stand × (1 + 10%). In de
- *     grafiek een vlakke lijn "Doel eind 2027", net als volgers op KPI's social media.
+ *  1. **Maanden vóór de eerste meting** (in 2026: vóór 20 november, toen het bewaren begon):
+ *     dezelfde stand als de eerste meting — een aanname (soort `bijgeschat`, gestippeld, met
+ *     uitleg in de tooltip). Zo wilde de eigenaar het: een rechte lijn tot de eerste meting.
+ *  2. **Maanden met een meting**: de laatste stand in die maand (soort `gerealiseerd`).
+ *  3. **Een maand zonder meting tussen twee metingen** (de taak liep niet): de vorige stand,
+ *     gestippeld (`bijgeschat`).
+ *  4. **Maanden na de laatste meting** t/m december: de laatste stand doorgetrokken (soort
+ *     `verwachting`), geen trend.
+ *  5. **Stand eind 2026** = de laatste meting in 2026; **target eind 2027** = die stand × (1 + 10%).
+ *     In de grafiek een vlakke lijn "Doel eind 2027", net als volgers op KPI's social media.
  *
- * Zodra de export in 2027 ligt, is de stand van 2027 de **realisatie**. De stand eind 2026 is
- * dan niet meer te lezen (er wordt niets bewaard), dus dan valt er voor 2026 niets te rekenen.
+ * **Realisatie 2027** is de laatste meting in 2027. Omdat de dagstanden bewaard worden, blijft
+ * de stand eind 2026 ook in 2027 gewoon te lezen.
  */
 
 /**
@@ -195,9 +201,16 @@ export function telCrm(tabel: Tabel): CrmTellingen {
 
 /** Een stand als uitkomst, in de vorm die de gedeelde kaart en tabel lezen. */
 export interface CrmUitkomst extends KpiUitkomst {
-  /** De dag van de meting (de export). */
+  /** De dag van de laatste meting in het jaar. */
   standDatum: string;
+  /** De dag van de eerste meting in het jaar; de maanden ervóór zijn aangenomen. */
+  eersteDatum: string;
+  /** Hoeveel dagen in het jaar een meting hebben. */
+  metingen: number;
 }
+
+/** Per KPI-sleutel een reeks dag (YYYY-MM-DD) → aantal. */
+export type CrmReeksen = Record<string, Record<string, number>>;
 
 const MAANDEN = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
@@ -209,69 +222,124 @@ function rondAf(n: number): string {
   return Math.round(n).toLocaleString("nl-NL");
 }
 
+/** De metingen van één jaar, op datum gesorteerd. */
+function metingenIn(reeks: Readonly<Record<string, number>>, jaar: number): [string, number][] {
+  return Object.entries(reeks)
+    .filter(([d, n]) => d.startsWith(`${jaar}-`) && Number.isFinite(Number(n)))
+    .map(([d, n]): [string, number] => [d, Number(n)])
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
 /**
- * De stand van één KPI over het jaar, uit één meting (zie de kop van dit bestand). Null als de
- * meting niet in `jaar` valt.
+ * De stand van één KPI over het jaar, uit zijn dagstanden (zie de kop van dit bestand). Null als
+ * er in `jaar` geen enkele meting is.
+ *
+ * `vandaag` bepaalt alleen of het jaar voorbij is (`definitief`): na 31 december verandert de
+ * basis niet meer, ook als de laatste meting van een paar dagen eerder is.
  */
 export function berekenStand(
-  stand: number,
-  standDatum: string,
-  groei: number = CRM_GROEI,
-  jaar: number = KPI_JAAR,
+  reeks: Readonly<Record<string, number>>,
+  opties: { jaar?: number; groei?: number; vandaag?: string } = {},
 ): CrmUitkomst | null {
-  if (!standDatum.startsWith(`${jaar}-`)) return null;
-  const meetmaand = Number(standDatum.slice(5, 7));
+  const jaar = opties.jaar ?? KPI_JAAR;
+  const groei = opties.groei ?? CRM_GROEI;
+  const metingen = metingenIn(reeks, jaar);
+  if (metingen.length === 0) return null;
+  const [eersteDatum, eerste] = metingen[0];
+  const [laatsteDatum, laatste] = metingen[metingen.length - 1];
+  const eersteMaand = Number(eersteDatum.slice(5, 7));
+  const laatsteMaand = Number(laatsteDatum.slice(5, 7));
+
+  let vorige = eerste;
+  let vorigeDatum = eersteDatum;
   const maanden: MaandUitkomst[] = Array.from({ length: 12 }, (_, i) => {
     const maand = i + 1;
-    const basis = { maand, dagenInMaand: dagenInMaand(jaar, maand) };
-    if (maand < meetmaand) {
+    const mm = String(maand).padStart(2, "0");
+    const inMaand = metingen.filter(([d]) => d.slice(5, 7) === mm);
+    const basis = { maand, dagenInMaand: dagenInMaand(jaar, maand), dagenGemeten: inMaand.length };
+    if (maand < eersteMaand) {
       return {
         ...basis,
         soort: "bijgeschat",
         gerealiseerd: null,
-        verwacht: stand,
-        dagenGemeten: 0,
-        toelichting: `Aangenomen: gelijk aan de stand van ${datumKort(standDatum)} (${rondAf(stand)}). Er wordt geen historie bewaard.`,
+        verwacht: eerste,
+        toelichting: `Aangenomen: gelijk aan de eerste bewaarde stand (${rondAf(eerste)} op ${datumKort(eersteDatum)}). Van vóór die dag is niets bewaard.`,
       };
     }
-    if (maand === meetmaand) {
+    if (inMaand.length > 0) {
+      const [d, n] = inMaand[inMaand.length - 1];
+      vorige = n;
+      vorigeDatum = d;
       return {
         ...basis,
         soort: "gerealiseerd",
-        gerealiseerd: stand,
-        verwacht: stand,
-        dagenGemeten: 1,
-        toelichting: `Gemeten in de export van ${datumKort(standDatum)}`,
+        gerealiseerd: n,
+        verwacht: n,
+        toelichting: `Stand op ${datumKort(d)}${inMaand.length > 1 ? ` (${inMaand.length} metingen deze maand, de laatste telt)` : ""}`,
+      };
+    }
+    if (maand < laatsteMaand) {
+      return {
+        ...basis,
+        soort: "bijgeschat",
+        gerealiseerd: null,
+        verwacht: vorige,
+        toelichting: `Geen meting in deze maand: de vorige stand (${rondAf(vorige)} op ${datumKort(vorigeDatum)}).`,
       };
     }
     return {
       ...basis,
       soort: "verwachting",
       gerealiseerd: null,
-      verwacht: stand,
-      dagenGemeten: 0,
-      toelichting: maand === 12 ? "De laatste stand doorgetrokken tot 31 december: de basis voor het target" : "De laatste stand doorgetrokken",
+      verwacht: laatste,
+      toelichting:
+        maand === 12
+          ? "De laatste stand doorgetrokken tot 31 december: de basis voor het target"
+          : "De laatste stand doorgetrokken",
     };
   });
 
-  const target = stand * (1 + groei);
+  const target = laatste * (1 + groei);
+  const eindJaar = `${jaar}-12-31`;
   return {
-    peildatum: standDatum,
-    gerealiseerd: stand,
+    peildatum: laatsteDatum,
+    gerealiseerd: laatste,
     perDag: 0,
-    dagenGemeten: 1,
+    dagenGemeten: metingen.length,
     dagenNietGemeten: 0,
     dagenBijgeschat: 0,
     bijgeschat: 0,
-    verwacht: stand,
+    verwacht: laatste,
     groei,
     target,
     // Een stand heeft geen maandtarget: de lijn in de grafiek is het doel eind volgend jaar.
     targetPerMaand: target,
     maanden,
-    definitief: standDatum >= `${jaar}-12-31`,
-    standDatum,
+    definitief: laatsteDatum >= eindJaar || (opties.vandaag ?? "") > eindJaar,
+    standDatum: laatsteDatum,
+    eersteDatum,
+    metingen: metingen.length,
   };
+}
+
+/** De laatste meting in `jaar`, als realisatie; 0 zonder meting. */
+export function realisatieUit(
+  reeks: Readonly<Record<string, number>>,
+  jaar: number = KPI_DOELJAAR,
+): { waarde: number; peildatum: string | null } {
+  const laatste = metingenIn(reeks, jaar).at(-1);
+  return laatste ? { waarde: laatste[1], peildatum: laatste[0] } : { waarde: 0, peildatum: null };
+}
+
+/**
+ * De bewaarde dagstanden met de stand van de export van nu erbij; de export van nu gaat voor
+ * als dezelfde dag al bewaard is (die is dan van een eerdere export van dezelfde dag).
+ */
+export function metHuidigeStand(historie: CrmReeksen, telling: CrmTellingen, standDatum: string): CrmReeksen {
+  const uit: CrmReeksen = {};
+  for (const [kpi, reeks] of Object.entries(historie)) uit[kpi] = { ...reeks };
+  for (const t of telling.tellingen) uit[t.sleutel] = { ...(uit[t.sleutel] ?? {}), [standDatum]: t.aantal };
+  return uit;
 }
 
 /** Alles wat het tabblad van één KPI nodig heeft. */
@@ -313,12 +381,25 @@ export interface Kpi2027CrmAntwoord {
   ontbrekend: string[];
   /** De kolom met kentekens, of null (dan staan de auto-KPI's er niet). */
   kentekenKolom: string | null;
+  /**
+   * De bewaarde dagstanden: vanaf welke dag (de eerste meting van Contacten), hoeveel dagen, en
+   * of het lezen of het vastleggen van vandaag mislukte. `vanaf` null = nog niets bewaard.
+   */
+  historie: { vanaf: string | null; dagen: number; leesFout: string | null; schrijfFout: string | null };
   groepen: CrmGroep[];
   fout?: string;
 }
 
-/** Het overzicht uit de tellingen van één export, gemeten op `standDatum`. */
-export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroep[] {
+/**
+ * Het overzicht uit de tellingen van de export van nu (gemeten op `standDatum`) en de bewaarde
+ * dagstanden (`historie`). Zonder historie rekent elke KPI met alleen de meting van nu.
+ */
+export function crmOverzicht(
+  telling: CrmTellingen,
+  standDatum: string,
+  opties: { historie?: CrmReeksen; vandaag?: string } = {},
+): CrmGroep[] {
+  const reeksen = metHuidigeStand(opties.historie ?? {}, telling, standDatum);
   const mailKolom = telling.mailKolom ?? "MAIL";
   const optinKolommen = telling.tellingen.filter((t) => t.soort === "optin").map((t) => t.kolom);
   const regel = (t: CrmTelling): CrmKpiRegel => {
@@ -332,10 +413,8 @@ export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroe
       mailKolom,
       optinKolommen,
       algemeen,
-      uitkomst: berekenStand(t.aantal, standDatum),
-      realisatie: standDatum.startsWith(`${KPI_DOELJAAR}-`)
-        ? { waarde: t.aantal, peildatum: standDatum }
-        : { waarde: 0, peildatum: null },
+      uitkomst: berekenStand(reeksen[t.sleutel] ?? {}, { vandaag: opties.vandaag }),
+      realisatie: realisatieUit(reeksen[t.sleutel] ?? {}),
       keuzes: keuzesVoor({ soort: t.soort, mailKolom, kolom: t.kolom, algemeen }),
     };
   };

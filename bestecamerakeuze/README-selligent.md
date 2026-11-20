@@ -251,6 +251,14 @@ waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
 | Antwoord met de filtercontrols | 11,6 kB |
 | Antwoord met de metrics en de drie grafieken | 77,4 kB |
 
+## KPI's CRM bewaart alleen aantallen
+
+Het tabblad **KPI's CRM** (KPI's 2027) leest hetzelfde bestand. Omdat de export alleen de stand van vandaag
+bevat, legt dat tabblad elke dag van elke KPI het **aantal** vast in `dataloket.kpi_2027_crm_standen`
+(migratie 0040): bijvoorbeeld "20-11-2026, Opt-in Audi, 11.158". Er komt geen enkele waarde uit de export in
+de database — geen e-mailadres, kenteken of klantnummer. Wat hieronder staat over persoonsgegevens blijft dus
+onverkort gelden. Zie `CLAUDE.md` → "KPI's → KPI's CRM".
+
 ## Persoonsgegevens
 
 De export bevat gegevens over personen. Het tabblad is zo gebouwd dat er **geen enkele

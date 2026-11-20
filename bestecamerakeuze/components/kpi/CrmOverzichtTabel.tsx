@@ -28,14 +28,15 @@ export default function CrmOverzichtTabel({
       uitlegJaar={
         <>
           De stand op 31 december {KPI_JAAR}: unieke e-mailadressen (contacten en opt-ins) of unieke kentekens
-          (auto&apos;s) in de laatste Selligent-export. Er wordt geen historie bewaard, dus alle maanden van {KPI_JAAR}{" "}
-          krijgen die stand. Wat er per KPI precies geteld wordt, staat onder zijn grafiek.
+          (auto&apos;s): de laatste meting van {KPI_JAAR}. Elke dag wordt van elke KPI het aantal bewaard; zolang
+          {KPI_JAAR} loopt is dit de stand van de laatste export. Wat er per KPI precies geteld wordt, staat onder zijn
+          grafiek.
         </>
       }
       uitlegGroei={<>Hoeveel procent het target boven {KPI_JAAR} ligt: +10% voor elke CRM-KPI. Niet aan te passen.</>}
       uitlegRealisatie={
         <>
-          De stand van de laatste export in {KPI_DOELJAAR}, met dezelfde telling als de kolom {KPI_JAAR}. Tot 1 januari{" "}
+          De laatste meting in {KPI_DOELJAAR}, met dezelfde telling als de kolom {KPI_JAAR}. Tot 1 januari{" "}
           {KPI_DOELJAAR} staat hier 0.
         </>
       }

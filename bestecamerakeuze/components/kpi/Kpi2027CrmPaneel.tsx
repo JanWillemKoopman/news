@@ -120,15 +120,34 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
       {fout && <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">{fout}</p>}
 
       {/* Dezelfde vorm als de melding bij Instagram-volgers op KPI's social media: een
-          afwijkende rekenregel hoort bovenaan te staan, niet alleen onder één grafiek. */}
-      {standDatum && !peildatumDoeljaar && (
+          afwijkende rekenregel hoort bovenaan te staan, niet alleen onder één grafiek. Zolang
+          de bewaarde reeks in KPI_JAAR begint ná 1 januari, zijn de maanden ervóór aangenomen. */}
+      {data?.historie.vanaf && data.historie.vanaf.startsWith(`${KPI_JAAR}-`) && data.historie.vanaf > `${KPI_JAAR}-01-01` && (
         <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
           <span>
-            <strong className="font-semibold">Alleen de huidige stand is bekend.</strong> Er wordt geen historie bewaard:
-            januari t/m de maand vóór de export krijgen dezelfde stand als de export (gestippeld), en de stand eind{" "}
-            {KPI_JAAR} is de laatste stand. Het target {KPI_DOELJAAR} is die stand plus {groeiTekst}.
+            <strong className="font-semibold">
+              De standen worden bewaard sinds {datumLang(data.historie.vanaf)} ({aantal(data.historie.dagen)}{" "}
+              {data.historie.dagen === 1 ? "dag" : "dagen"}).
+            </strong>{" "}
+            Elke dag wordt van elke KPI het aantal vastgelegd (alleen aantallen, geen persoonsgegevens). De maanden van{" "}
+            {KPI_JAAR} vóór de eerste meting krijgen de eerste bewaarde stand (gestippeld). De stand eind {KPI_JAAR} is de
+            laatste meting van {KPI_JAAR}; het target {KPI_DOELJAAR} is die stand plus {groeiTekst}.
           </span>
+        </p>
+      )}
+
+      {/* Lukt bewaren of lezen niet, dan rekent het tabblad met alleen de stand van nu. Dat moet
+          in beeld: zonder bewaarde standen is de basis eind 2026 in 2027 weg. */}
+      {data && data.mailKolom && (data.historie.schrijfFout || data.historie.leesFout) && (
+        <p className="rounded-panel border border-line bg-card px-4 py-3 text-sm text-negative">
+          {data.historie.schrijfFout
+            ? `De stand van vandaag kon niet worden bewaard (${data.historie.schrijfFout}). `
+            : ""}
+          {data.historie.leesFout
+            ? `De bewaarde standen konden niet worden gelezen (${data.historie.leesFout}); de grafieken rekenen nu met alleen de stand van de export. `
+            : ""}
+          Zonder bewaarde standen is de stand eind {KPI_JAAR} in {KPI_DOELJAAR} niet meer te lezen.
         </p>
       )}
 
@@ -169,7 +188,8 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data?.kentekenKolom ?? "VDUVEHICLES_LICENSE_PLATE"}). &quot;Met opt-in&quot; betekent: het contact heeft op
           minstens één rij minstens één opt-in op True (VDU, Service of een merk). Elke True/False-kolom in de export is
           een opt-in en krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de
-          laatste export; de maanden ervóór krijgen dezelfde stand, gestippeld), het target de stand die er eind{" "}
+          laatste meting van {KPI_JAAR}; elke dag wordt van elke KPI het aantal bewaard, en de maanden vóór de eerste
+          meting krijgen de eerste bewaarde stand, gestippeld), het target de stand die er eind{" "}
           {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI, niet aan te passen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> is de stand van de laatste export in{" "}
           {KPI_DOELJAAR}. Selligent zet elke ochtend een nieuwe export neer; deze pagina leest steeds de laatste. Onder

@@ -10,7 +10,7 @@ import type { CrmKpiRegel } from "@/lib/kpi2027crm/rekenen";
  * als stand — net als volgers), met eronder, ingeklapt achter "Lees definitie", dezelfde
  * opbouw als op Syntec en social media:
  *
- *  1. **Grafiek**: wat de lijnen zijn (één meting, aangenomen maanden, doel eind 2027);
+ *  1. **Grafiek**: wat de lijnen zijn (de bewaarde metingen, aangenomen maanden, doel eind 2027);
  *  2. **Bron**: het bestand en de kolommen die deze KPI leest;
  *  3. **Wat telt mee**: de telling in gewone taal, met het aantal — bij "met opt-in" ook welke
  *     opt-inkolommen meetellen;
@@ -79,7 +79,8 @@ function watTeltMee(kpi: CrmKpiRegel): string {
 export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
   const u = kpi.uitkomst;
   const groei = `${Math.round(CRM_GROEI * 100)}%`;
-  const meetmaand = u ? Number(u.standDatum.slice(5, 7)) : null;
+  const eersteMaand = u ? Number(u.eersteDatum.slice(5, 7)) : null;
+  const laatsteMaand = u ? Number(u.standDatum.slice(5, 7)) : null;
   const metLijst = kpi.soort === "met-optin" || kpi.soort === "autos-optin";
 
   return (
@@ -88,18 +89,23 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       uitkomst={u}
       realisatie={kpi.realisatie}
       stand
-      kopTekst={u ? `één meting: stand op ${datumKort(u.standDatum)}` : undefined}
-      leegTekst={`Er is geen stand van ${KPI_JAAR} bekend: de export ligt buiten ${KPI_JAAR} en er wordt geen historie bewaard.`}
+      kopTekst={
+        u ? (u.metingen === 1 ? `één meting: stand op ${datumKort(u.standDatum)}` : `${aantal(u.metingen)} metingen · laatste ${datumKort(u.standDatum)}`) : undefined
+      }
+      leegTekst={`Er is geen stand van ${KPI_JAAR} bewaard voor deze KPI, dus ook geen basis voor het target.`}
     >
       <p>
-        <span className="text-ink-muted">Grafiek:</span> per maand het aantal unieke {telt(kpi)} in {KPI_JAAR}. Er is
-        één meting: de export van {u ? datumLang(u.standDatum) : "vandaag"}
-        {meetmaand ? `, het punt in ${MAANDNAMEN[meetmaand - 1]} (Stand ${KPI_JAAR})` : ""}.{" "}
-        {meetmaand && meetmaand > 1
-          ? `Januari t/m ${MAANDNAMEN[meetmaand - 2]} krijgen dezelfde stand: een aanname, gestippeld en in de tooltip "Aangenomen". `
+        <span className="text-ink-muted">Grafiek:</span> per maand het aantal unieke {telt(kpi)} in {KPI_JAAR}: de laatste
+        bewaarde stand van die maand (Stand {KPI_JAAR}). Elke dag wordt één meting bewaard
+        {u
+          ? `; voor deze KPI ${u.metingen === 1 ? `is dat er één, van ${datumLang(u.standDatum)}` : `zijn dat er ${aantal(u.metingen)}, van ${datumLang(u.eersteDatum)} t/m ${datumLang(u.standDatum)}`}`
           : ""}
-        {meetmaand && meetmaand < 12
-          ? `${meetmaand === 11 ? "December is" : `${MAANDNAMEN[meetmaand].replace(/^./, (c) => c.toUpperCase())} t/m december zijn`} de stand doorgetrokken tot 31 december (Stand ${KPI_JAAR} verwachting): de basis voor het target. `
+        .{" "}
+        {eersteMaand && eersteMaand > 1
+          ? `Januari t/m ${MAANDNAMEN[eersteMaand - 2]} krijgen de eerste bewaarde stand: een aanname, gestippeld en in de tooltip "Aangenomen". `
+          : ""}
+        {laatsteMaand && laatsteMaand < 12
+          ? `${laatsteMaand === 11 ? "December is" : `${MAANDNAMEN[laatsteMaand].replace(/^./, (c) => c.toUpperCase())} t/m december zijn`} de laatste stand doorgetrokken tot 31 december (Stand ${KPI_JAAR} verwachting): de basis voor het target. `
           : ""}
         De vlakke lijn is het doel eind {KPI_DOELJAAR}: de stand eind {KPI_JAAR} plus {groei}. Een stand telt niet op: het
         target is het aantal dat er eind {KPI_DOELJAAR} moet zijn, geen jaartotaal, en er is dus ook geen maandtarget. De
@@ -109,7 +115,8 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       <p className="mt-1">
         <span className="text-ink-muted">Bron:</span> de Selligent-export op Azure Blob Storage
         (output/autoline/users_customers_dashboard.csv), hetzelfde bestand als Tools → Selligent database. Selligent zet hem
-        elke ochtend vers neer; deze pagina leest steeds de laatste en bewaart niets. Gebruikte kolommen: {kolommenVan(kpi)}.
+        elke ochtend vers neer; deze pagina leest steeds de laatste. Elke dag wordt van elke KPI alleen het aantal bewaard
+        (tabel kpi_2027_crm_standen), geen e-mailadressen of kentekens. Gebruikte kolommen: {kolommenVan(kpi)}.
         Een rij is een contact mét een voertuig, dus één contact of auto kan op meerdere rijen staan; daarom telt alles
         unieke waarden en geen rijen.
       </p>

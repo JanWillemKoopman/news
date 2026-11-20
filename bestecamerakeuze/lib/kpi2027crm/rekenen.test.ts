@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CRM_GROEI, algemenePlek, optinNaam } from "@/lib/kpi2027crm/definities";
-import { berekenStand, crmOverzicht, telCrm } from "@/lib/kpi2027crm/rekenen";
+import { berekenStand, crmOverzicht, metHuidigeStand, telCrm } from "@/lib/kpi2027crm/rekenen";
 import { bouwTabel } from "@/lib/selligent/tabel";
 
 const META = { pad: "test.csv", bytes: 0, gewijzigdOp: null, etag: null };
@@ -55,8 +55,8 @@ test("zonder MAIL-kolom geen KPI's in plaats van nullen", () => {
   assert.deepEqual(t.tellingen, []);
 });
 
-test("de stand: vóór de meting aangenomen, daarna doorgetrokken, target +10%", () => {
-  const u = berekenStand(1000, "2026-11-20")!;
+test("één meting: vóór de meting aangenomen, daarna doorgetrokken, target +10%", () => {
+  const u = berekenStand({ "2026-11-20": 1000 })!;
   assert.equal(u.verwacht, 1000);
   assert.equal(u.target, 1000 * (1 + CRM_GROEI));
   assert.equal(u.targetPerMaand, u.target);
@@ -68,13 +68,69 @@ test("de stand: vóór de meting aangenomen, daarna doorgetrokken, target +10%",
   assert.ok(u.maanden.every((m) => m.verwacht === 1000));
   assert.equal(u.maanden[10].gerealiseerd, 1000);
   assert.equal(u.definitief, false);
+  assert.equal(u.eersteDatum, "2026-11-20");
 });
 
-test("een meting buiten 2026 levert geen basis op, wel realisatie in 2027", () => {
-  assert.equal(berekenStand(1000, "2027-02-01"), null);
+test("met historie: per maand de laatste stand, eind 2026 = de laatste meting van 2026", () => {
+  const u = berekenStand({
+    "2026-11-20": 1000,
+    "2026-11-30": 1010,
+    "2026-12-15": 1030,
+    "2026-12-31": 1050,
+    // Metingen uit 2027 tellen niet mee in de basis van 2026.
+    "2027-02-01": 1100,
+  })!;
+  assert.equal(u.verwacht, 1050);
+  assert.equal(u.standDatum, "2026-12-31");
+  assert.equal(u.metingen, 4);
+  assert.equal(u.maanden[10].gerealiseerd, 1010);
+  assert.equal(u.maanden[11].gerealiseerd, 1050);
+  assert.equal(u.maanden[11].soort, "gerealiseerd");
+  // Vóór de eerste meting: de eerste stand, aangenomen.
+  assert.equal(u.maanden[0].verwacht, 1000);
+  assert.equal(u.maanden[0].soort, "bijgeschat");
+  assert.equal(u.target, 1050 * (1 + CRM_GROEI));
+  assert.equal(u.definitief, true);
+});
+
+test("een maand zonder meting tussen twee metingen krijgt de vorige stand, gestippeld", () => {
+  const u = berekenStand({ "2026-09-10": 500, "2026-11-05": 600 })!;
+  assert.equal(u.maanden[9].soort, "bijgeschat");
+  assert.equal(u.maanden[9].verwacht, 500);
+  assert.equal(u.maanden[11].soort, "verwachting");
+  assert.equal(u.maanden[11].verwacht, 600);
+});
+
+test("het jaar is voorbij: definitief, ook als de laatste meting vóór 31 december ligt", () => {
+  const reeks = { "2026-12-29": 900 };
+  assert.equal(berekenStand(reeks, { vandaag: "2026-12-30" })!.definitief, false);
+  assert.equal(berekenStand(reeks, { vandaag: "2027-01-02" })!.definitief, true);
+});
+
+test("in februari 2027: basis uit de bewaarde stand van 2026, realisatie uit de export van nu", () => {
+  // De export van nu is van 2027; de stand van 2026 komt uit de bewaarde dagstanden.
+  const historie = { contacten: { "2026-12-31": 2 }, "optin:PREFERENCES_VW": { "2026-12-31": 1 } };
+  const groepen = crmOverzicht(telCrm(proeftabel()), "2027-02-01", { historie, vandaag: "2027-02-01" });
+  const per = Object.fromEntries(groepen.flatMap((g) => g.kpis).map((k) => [k.naam, k]));
+  assert.equal(per["Contacten"].uitkomst!.verwacht, 2);
+  assert.equal(per["Contacten"].uitkomst!.definitief, true);
+  assert.deepEqual(per["Contacten"].realisatie, { waarde: 3, peildatum: "2027-02-01" });
+  assert.equal(per["Opt-in Volkswagen"].uitkomst!.verwacht, 1);
+  // Een KPI zonder bewaarde stand in 2026 heeft geen basis, wel een realisatie.
+  assert.equal(per["Opt-in Audi"].uitkomst, null);
+  assert.deepEqual(per["Opt-in Audi"].realisatie, { waarde: 1, peildatum: "2027-02-01" });
+});
+
+test("zonder historie en met een export uit 2027: geen basis, wel realisatie", () => {
+  assert.equal(berekenStand({ "2027-02-01": 1000 }), null);
   const groepen = crmOverzicht(telCrm(proeftabel()), "2027-02-01");
   assert.equal(groepen[0].kpis[0].uitkomst, null);
   assert.deepEqual(groepen[0].kpis[0].realisatie, { waarde: 3, peildatum: "2027-02-01" });
+});
+
+test("de export van nu gaat voor op een eerder bewaarde stand van dezelfde dag", () => {
+  const reeksen = metHuidigeStand({ contacten: { "2026-11-19": 5, "2026-11-20": 99 } }, telCrm(proeftabel()), "2026-11-20");
+  assert.deepEqual(reeksen.contacten, { "2026-11-19": 5, "2026-11-20": 3 });
 });
 
 test("het overzicht: Contacten en Opt-ins als groepen, realisatie 0 vóór 2027", () => {
@@ -187,7 +243,7 @@ test("de definitie onder elke grafiek noemt de juiste kolommen en de algemene op
   for (const r of regels) {
     assert.ok(r.keuzes.length >= 3, r.naam);
     assert.ok(r.keuzes.some((k) => k.startsWith("Target: +10%")), r.naam);
-    assert.ok(r.keuzes.some((k) => k.startsWith("Realisatie 2027")), r.naam);
+    assert.ok(r.keuzes.some((k) => k.includes("Realisatie 2027")), r.naam);
   }
   // De kolomnamen staan in de keuzes, zodat de definitie klopt met wat er geteld wordt.
   assert.ok(per["Contacten"].keuzes[0].includes("MAIL"));

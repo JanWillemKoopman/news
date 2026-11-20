@@ -22,10 +22,11 @@
  *
  * ## Een stand, geen optelsom
  *
- * Er wordt niets bewaard (besluit van de eigenaar, november 2026): het tabblad kent alleen de
- * stand van de laatste export. Alle maanden van 2026 vóór die meting krijgen hetzelfde getal
- * (een aanname, gestippeld), de stand eind 2026 is die laatste stand, en het target eind 2027
- * is die stand plus {@link CRM_GROEI} — voor elke KPI hetzelfde.
+ * De export bevat alleen de stand van vandaag. Daarom wordt elke dag van elke KPI het aantal
+ * bewaard (`kpi_2027_crm_standen`, migratie 0040; alleen aantallen). De maanden van 2026 vóór de
+ * eerste bewaarde stand krijgen die eerste stand (een aanname, gestippeld), de stand eind 2026 is
+ * de laatste meting van 2026, en het target eind 2027 is die stand plus {@link CRM_GROEI} — voor
+ * elke KPI hetzelfde. Zie `rekenen.ts` (`berekenStand`).
  */
 
 /** Het groeipercentage voor elke CRM-KPI: +10% (besluit van de eigenaar, 20 november 2026). */
@@ -124,8 +125,8 @@ export interface KeuzeContext {
 export function keuzesVoor({ soort, mailKolom, kolom, algemeen = null }: KeuzeContext): string[] {
   const gemeen = [
     `Target: +${Math.round(CRM_GROEI * 100)}% op de stand eind 2026, voor elke CRM-KPI hetzelfde en niet per KPI aan te passen (besluit van de eigenaar, november 2026).`,
-    "Er wordt geen historie bewaard: alleen de stand van de laatste export telt. Januari t/m de maand vóór de export krijgen dezelfde stand (een aanname, gestippeld), en de stand eind 2026 is die laatste stand.",
-    "Realisatie 2027 is de stand van de laatste export in 2027. Omdat er niets bewaard wordt, is de stand eind 2026 dan niet meer uit het bestand te lezen; die moet vóór 1 januari 2027 worden vastgelegd.",
+    "Elke dag wordt van elke KPI het aantal bewaard (alleen het aantal, geen e-mailadressen of kentekens), want de export zelf bevat alleen de stand van vandaag. De maanden van 2026 vóór de eerste bewaarde stand krijgen die eerste stand (een aanname, gestippeld); een maand zonder meting tussen twee metingen de vorige stand.",
+    "De stand eind 2026 is de laatste meting van 2026; zolang 2026 loopt, is dat de stand van de laatste export. Realisatie 2027 is de laatste meting in 2027. Omdat de dagstanden bewaard worden, blijft de stand eind 2026 ook in 2027 te lezen.",
   ];
   const optinUitleg =
     "Een opt-in staat aan als de cel True is; hoofdletters en spaties aan de rand maken niet uit. False en een lege cel tellen niet.";
