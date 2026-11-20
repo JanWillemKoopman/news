@@ -37,7 +37,7 @@ export default function SocialOverzichtTabel({
         <>
           Hoeveel procent het target boven {KPI_JAAR} ligt. Standaard het percentage dat het team per KPI voor{" "}
           {KPI_DOELJAAR} vastlegde. Klik erop om het aan te passen (Enter om op te slaan, Escape om te annuleren); het
-          geldt voor iedereen. Het pijltje ervoor zet een aangepast percentage terug naar dat van het team.
+          geldt voor iedereen.
         </>
       }
       uitlegRealisatie={

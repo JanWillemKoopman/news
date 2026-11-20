@@ -6,7 +6,7 @@ import KpiJaarGrafiek, { type VergelijkLijn } from "@/components/kpi/KpiJaarGraf
 import KanaalGrafiek from "@/components/kpi/KanaalGrafiek";
 import type { KanalenAntwoord } from "@/lib/kpi2027/kanalen";
 import { formatteer } from "@/components/chat/chartTheme";
-import { STANDAARD_GROEI_TEKST, groeiTekst, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
+import { groeiTekst, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import type { KpiOverzichtRegel, KpiUitkomst, WebsiteOverzicht } from "@/lib/kpi2027/rekenen";
 
@@ -54,7 +54,8 @@ function perMaandTekst(waarde: number): string {
 
 /**
  * Hoe de groei op een kaart aan te passen is:
- *  - `bewerkbaar`: klikken en een ander percentage typen; `opslaan(null)` = terug naar +5%;
+ *  - `bewerkbaar`: klikken en een ander percentage typen (de vastgestelde targets; er is
+ *    bewust geen knop meer om terug te gaan naar +5%, verzoek november 2026);
  *  - `afgeleid`: een totaal, waarvan het percentage volgt uit de kaarten erin.
  */
 export type GroeiInstelling =
@@ -62,7 +63,7 @@ export type GroeiInstelling =
       soort: "bewerkbaar";
       aangepast: boolean;
       opslaan: (groei: number | null) => Promise<void>;
-      /** Waar "terug naar" heen gaat; standaard +5% (social media: het percentage van het team). */
+      /** Het percentage zonder eigen rij in de tabel; standaard +5% (social media: het percentage van het team). */
       standaard?: number;
     }
   | { soort: "afgeleid" };
@@ -248,6 +249,24 @@ export default function KpiKaart({
 }
 
 /**
+ * "200 gemeten t/m 14 nov · 79 bijgeschat · 41 verwacht". Bijgeschat (voorbije dagen zonder
+ * meting, of vóór de rekenbasis van een Syntec-KPI) en verwacht (de rest van het jaar) apart:
+ * samen onder één woord zou de ene helft altijd verkeerd heten. Uit de maanden, zodat het ook
+ * klopt bij een totaal, waar elke kaart zijn eigen gemiddelde heeft.
+ */
+function toelichtingVerwachting(u: KpiUitkomst): string {
+  const bijgeschat = Math.round(
+    u.maanden.filter((m) => m.soort === "bijgeschat").reduce((t, m) => t + m.verwacht - (m.gerealiseerd ?? 0), 0),
+  );
+  // Afgeleid uit de afgeronde getallen, zodat de delen optellen tot het getal op de kaart.
+  const verwacht = Math.round(u.verwacht) - Math.round(u.gerealiseerd) - bijgeschat;
+  const delen = [`${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`}`];
+  if (bijgeschat > 0) delen.push(`${aantal(bijgeschat)} bijgeschat`);
+  if (verwacht > 0) delen.push(`${aantal(verwacht)} verwacht`);
+  return delen.join(" · ");
+}
+
+/**
  * De kaart zelf — kop, de vier kaartjes en de jaargrafiek — met de bronregel als
  * `children`. Ook gebruikt door KPI's 2027 Syntec (`KpiSyntecKaart.tsx`), zodat beide
  * tabbladen er precies hetzelfde uitzien en alleen de bron eronder verschilt.
@@ -339,7 +358,7 @@ export function KpiKaartOpmaak({
                 toelichting={
                   u.definitief && u.dagenBijgeschat === 0
                     ? "volledig gemeten"
-                    : `${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`} · ${aantal(u.bijgeschat)} ${u.dagenNietGemeten > 0 ? "bijgeschat" : "verwacht"}`
+                    : toelichtingVerwachting(u)
                 }
               />
             )}
@@ -481,21 +500,13 @@ function BewerkbareGroei({
   instelling: Extract<GroeiInstelling, { soort: "bewerkbaar" }>;
   verschil: string;
 }) {
-  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(
-    u.groei,
-    instelling.opslaan,
-    instelling.standaard,
-  );
+  const { bewerken, bezig, fout, begin, invoerProps } = useGroeiBewerken(u.groei, instelling.opslaan, instelling.standaard);
 
   return (
     <div
-      className={`flex flex-col gap-1 rounded-card border px-3 py-2.5 ${
-        instelling.aangepast ? "border-primary bg-surface-tint" : "border-line bg-surface-tint"
-      }`}
+      className="flex flex-col gap-1 rounded-card border border-line bg-surface-tint px-3 py-2.5"
     >
-      <span className="label-theme text-label text-ink-faint">
-        Groei{instelling.aangepast ? " · aangepast" : ""}
-      </span>
+      <span className="label-theme text-label text-ink-faint">Groei</span>
       {bewerken ? (
         <span className="flex items-center gap-1">
           <input
@@ -517,15 +528,6 @@ function BewerkbareGroei({
       <span className={`text-meta ${fout ? "text-negative" : "text-ink-muted"}`}>
         {fout ?? (bezig ? "Opslaan…" : verschil)}
       </span>
-      {instelling.aangepast && !bewerken && !bezig && (
-        <button
-          type="button"
-          onClick={terugzetten}
-          className="w-fit text-meta text-ink-muted underline underline-offset-2 hover:text-ink"
-        >
-          terug naar {instelling.standaard === undefined ? STANDAARD_GROEI_TEKST : groeiTekst(instelling.standaard)}
-        </button>
-      )}
     </div>
   );
 }

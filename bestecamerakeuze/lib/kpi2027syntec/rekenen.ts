@@ -309,7 +309,15 @@ export function uitkomstVoorKpi(
   const uitval = kpi.meetVanaf
     ? [{ van: `${kpi.meetVanaf.slice(0, 4)}-01-01`, tot: dagErvoor(kpi.meetVanaf) }]
     : [];
-  return berekenKpi(maandInvoerUitMaanden(maanden, peildatum, uitval), peildatum, { groei });
+  const uitkomst = berekenKpi(maandInvoerUitMaanden(maanden, peildatum, uitval), peildatum, { groei });
+  if (!kpi.meetVanaf) return uitkomst;
+  // De standaardtoelichting van een bijgeschatte maand gaat over websitesessies (GA4); hier
+  // is de reden een andere: deze KPI rekent pas vanaf meetVanaf.
+  const toelichting = `telt niet mee (rekent vanaf ${datumTekst(kpi.meetVanaf)}); ingevuld met het gemiddelde per dag vanaf dan`;
+  return {
+    ...uitkomst,
+    maanden: uitkomst.maanden.map((m) => (m.soort === "bijgeschat" ? { ...m, toelichting } : m)),
+  };
 }
 
 function dagErvoor(datum: string): string {

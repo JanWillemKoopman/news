@@ -144,11 +144,11 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
           <strong className="font-semibold text-ink">{KPI_JAAR} incl. verwachting</strong> = de leads die Syntec
           t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van {KPI_JAAR}.{" "}
           <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting plus de groei
-          (standaard +{groeiTekst}; klik op het percentage bij Groei om het per KPI aan te passen — dat geldt voor
+          (het vastgestelde percentage per KPI, anders +{groeiTekst}; klik op het percentage bij Groei om het aan te passen — dat geldt voor
           iedereen). Een totaal is de som van zijn kaarten, ook het target; zijn percentage volgt daaruit. Het
           maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles schuift elke zondag op t/m zaterdag. In de grafiek is de
-          doorgetrokken lijn gemeten en de gestippelde lijn verwachting. Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
+          doorgetrokken lijn gemeten en de gestippelde lijn verwachting (bij inruilvoorstel en contact in januari t/m maart: bijgeschat). Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
         </span>
       </Definitie>
 

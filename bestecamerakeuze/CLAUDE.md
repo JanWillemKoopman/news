@@ -93,7 +93,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `NavigationItem` voor een groepspagina terug in `Sidebar.tsx`. Een groep zonder zichtbare
   pagina krijgt in de sidebar geen kopje en zegt op het startscherm dat in één regel.
 - **Indeling en namen (november 2026, op verzoek):** de groep KPI's heet **KPI's 2027** met
-  **KPI's Google Analytics** (`kpi-2027`) en **KPI's Syntec** (`kpi-2027-syntec`); **KPI's
+  **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`) en **KPI's social media** (`kpi-2027-social`); **KPI's
   2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
   **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
   **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
@@ -1074,16 +1074,20 @@ realisatie van 2027.
 - **Target % is ook in de overzichtstabel aan te passen** (op beide tabbladen), met precies
   hetzelfde gedrag als het kaartje Groei: dezelfde hook (`useGroeiBewerken` in
   `GroeiBewerken.tsx`), dezelfde opslag en dezelfde herberekening in het paneel, dus tabel
-  en kaart tonen altijd hetzelfde getal. Een aangepast percentage heeft in de tabel een
-  pijltje ervoor dat terugzet naar +5%. Totalen en combinaties op Syntec zijn ook hier niet
+  en kaart tonen altijd hetzelfde getal. Totalen en combinaties op Syntec zijn ook hier niet
   aan te passen.
+- **De percentages zijn de vastgestelde targets** (20 november 2026, door het team
+  aangeleverd en zo ingevoerd, op KPI's 2027 GA én Syntec). Daarom zijn de knop "terug naar
+  +5%" (kaart) en het pijltje (tabel) er op verzoek af, net als de markering "aangepast":
+  bijna elke KPI wijkt nu af, dus die zei niets meer. Aanpassen kan nog gewoon door op het
+  percentage te klikken. Zet de herstelknop niet terug zonder dat daarom gevraagd wordt.
 - **Het groeipercentage is per KPI met de hand aan te passen** (november 2026, op verzoek;
   geldt ook voor KPI's 2027 Syntec). Klik op het percentage in het kaartje Groei, typ een
   getal (komma of punt, "-3" mag) en druk op Enter of klik weg; Escape annuleert. Target,
   maandtarget en de targetlijn in de grafiek rekenen meteen mee (`metGroei` in
   `rekenen.ts`). Opslag: `dataloket.kpi_2027_groei` (migratie 0036), één rij per tabblad ×
   website × KPI, gedeeld voor het hele team; alleen afwijkingen van +5% staan erin, en
-  "terug naar 5%" (of precies 5 typen) haalt de rij weg. Elke ingelogde collega mag het
+  precies 5 typen haalt de rij weg. Elke ingelogde collega mag het
   (`POST /api/kpi-2027/groei`, die controleert dat de KPI in `definities.ts` bestaat). Lukt
   het lezen van die tabel niet, dan rekent het tabblad gewoon met +5% (`leesGroeiVeilig`).
   De GET-routes van beide tabbladen staan daarom op `no-store`: anders toont herladen
@@ -1194,11 +1198,12 @@ opzet als KPI's 2027 GA en Syntec — statusbalk, overzichtstabel (`SocialOverzi
 Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
 
 - **De targets komen van het team**, niet +5%: per KPI het percentage uit de lijst van de eigenaar
-  (bv. Instagram nieuwe volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in
+  (bv. Instagram volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in
   `lib/kpi2027social/definities.ts` (`groei` per KPI; de test controleert ze één voor één). Met de
   hand aanpassen werkt zoals op de andere tabbladen (`kpi_2027_groei`, tabblad `kpi-2027-social`,
-  website = merksleutel); "terugzetten" gaat naar het percentage van het team
-  (`standaard` in `useGroeiBewerken` / `GroeiInstelling` / `OverzichtRegel`).
+  website = merksleutel). Net als op GA en Syntec zonder herstelknop en zonder markering
+  "aangepast"; precies het percentage van het team typen haalt de eigen rij weg (`standaard` in
+  `useGroeiBewerken` / `GroeiInstelling` / `OverzichtRegel`).
 - **Impressies rekenen als KPI's 2027 GA** (`berekenKpi`): gemeten + gemiddelde per dag × resterende
   dagen, × (1 + groei), maandtarget ÷ 12. Eén verschil: hooguit drie lege dagen vlak vóór de
   peildatum tellen als nog niet gemeten (`achterstand`), want LinkedIn en Meta leveren een tot twee
