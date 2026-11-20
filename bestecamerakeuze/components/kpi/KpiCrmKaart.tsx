@@ -38,6 +38,8 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       <p className="mt-0.5">
         {kpi.soort === "contacten"
           ? `Het aantal verschillende e-mailadressen in de kolom ${kpi.kolom}${u ? ` (${aantal(u.gerealiseerd)})` : ""}. Precies het getal van de tegel E-mailadressen op Tools → Selligent database.`
+          : kpi.soort === "met-optin"
+          ? `Het aantal verschillende e-mailadressen met minstens één rij waarop minstens één opt-inkolom True is${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`
           : `Het aantal verschillende e-mailadressen met minstens één rij waarop de kolom ${kpi.kolom} True is${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`}
       </p>
 

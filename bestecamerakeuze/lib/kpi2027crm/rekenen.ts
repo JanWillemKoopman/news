@@ -4,6 +4,7 @@ import {
   ALGEMENE_OPTINS,
   CONTACTEN_SLEUTEL,
   CRM_GROEI,
+  MET_OPTIN_SLEUTEL,
   algemenePlek,
   keuzesVoor,
   optinNaam,
@@ -37,11 +38,14 @@ import type { Tabel } from "@/lib/selligent/tabel";
  * dan niet meer te lezen (er wordt niets bewaard), dus dan valt er voor 2026 niets te rekenen.
  */
 
+/** Contacten, Contacten met opt-in (minstens één opt-in True), of één opt-inkolom. */
+export type CrmSoort = "contacten" | "met-optin" | "optin";
+
 /** Wat de stand van één KPI is in de export. */
 export interface CrmTelling {
   sleutel: string;
   naam: string;
-  soort: "contacten" | "optin";
+  soort: CrmSoort;
   /** De kolom waaruit geteld is: `MAIL` of de opt-inkolom. */
   kolom: string;
   /** Unieke e-mailadressen. */
@@ -87,6 +91,10 @@ export function telCrm(tabel: Tabel): CrmTellingen {
     }
   }
 
+  // Per e-mailadres: staat er ergens een opt-in op True? Een *of* over alle booleaanse
+  // kolommen, per contact — dezelfde definitie als het filter "Minimaal 1 opt-in" op Tools →
+  // Selligent database.
+  const metEenOptin = new Uint8Array(aantalMails);
   const optins = tabel.kolommen
     .filter((k) => k.type === "booleaans")
     .map((k) => {
@@ -99,6 +107,7 @@ export function telCrm(tabel: Tabel): CrmTellingen {
         const m = mail.codes[i];
         if (m === 0 || metOptin[m] || !waar[k.codes[i]]) continue;
         metOptin[m] = 1;
+        metEenOptin[m] = 1;
         aantal++;
       }
       return {
@@ -116,6 +125,13 @@ export function telCrm(tabel: Tabel): CrmTellingen {
     ontbrekend: ALGEMENE_OPTINS.filter((_, i) => !gevonden.has(i)).map((a) => a.naam),
     tellingen: [
       { sleutel: CONTACTEN_SLEUTEL, naam: "Contacten", soort: "contacten", kolom: mail.naam, aantal: contacten },
+      {
+        sleutel: MET_OPTIN_SLEUTEL,
+        naam: "Contacten met opt-in",
+        soort: "met-optin",
+        kolom: mail.naam,
+        aantal: metEenOptin.reduce((t, v) => t + v, 0),
+      },
       ...optins,
     ],
     rijen: tabel.rijen,
@@ -208,7 +224,7 @@ export function berekenStand(
 export interface CrmKpiRegel {
   sleutel: string;
   naam: string;
-  soort: "contacten" | "optin";
+  soort: CrmSoort;
   kolom: string;
   uitkomst: CrmUitkomst | null;
   realisatie: { waarde: number; peildatum: string | null };
@@ -251,9 +267,10 @@ export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroe
       : { waarde: 0, peildatum: null },
     keuzes: keuzesVoor(t.soort),
   });
-  // Bovenaan Contacten, dan de algemene opt-ins in hun vaste volgorde (VDU, Service); daaronder
-  // de merk-opt-ins in de volgorde van het bestand.
-  const plek = (t: CrmTelling) => (t.soort === "contacten" ? -1 : algemenePlek(t.kolom));
+  // Bovenaan Contacten, dan Contacten met opt-in, dan de algemene opt-ins in hun vaste volgorde
+  // (VDU, Service); daaronder de merk-opt-ins in de volgorde van het bestand.
+  const plek = (t: CrmTelling) =>
+    t.soort === "contacten" ? -2 : t.soort === "met-optin" ? -1 : algemenePlek(t.kolom);
   const algemeen = telling.tellingen.filter((t) => plek(t) !== null).sort((a, b) => plek(a)! - plek(b)!);
   const merken = telling.tellingen.filter((t) => plek(t) === null);
   const groepen: CrmGroep[] = [

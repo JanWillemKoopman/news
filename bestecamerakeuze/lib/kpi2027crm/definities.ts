@@ -9,6 +9,8 @@
  *
  *  - **Contacten**: het aantal verschillende waarden in de kolom `MAIL` (lege cel telt niet).
  *    Precies het getal van de tegel "E-mailadressen" op Tools → Selligent database.
+ *  - **Contacten met opt-in**: het aantal verschillende e-mailadressen met minstens één rij
+ *    waarop minstens één opt-inkolom `True` is (een *of* over alle booleaanse kolommen).
  *  - **Opt-in <merk>**: per booleaanse kolom (`PREFERENCES_VW`, `PREFERENCES_AUDI`, …) het
  *    aantal verschillende e-mailadressen met minstens één rij waarop die kolom `True` is.
  *    Welke kolommen dat zijn staat nergens opgesomd: het zijn de kolommen die als booleaans
@@ -90,15 +92,16 @@ export function optinNaam(kolom: string): string {
   return `Opt-in ${OPTIN_NAMEN[deel] ?? alsNaam(deel)}`;
 }
 
-/** De sleutel van een KPI: `contacten`, of `optin:<kolomnaam>`. */
+/** De sleutel van een KPI: `contacten`, `met-optin`, of `optin:<kolomnaam>`. */
 export const CONTACTEN_SLEUTEL = "contacten";
+export const MET_OPTIN_SLEUTEL = "met-optin";
 
 export function optinSleutel(kolom: string): string {
   return `optin:${kolom}`;
 }
 
 /** De besluiten achter een KPI, voor onder de grafiek ("Keuzes in de definitie"). */
-export function keuzesVoor(soort: "contacten" | "optin"): string[] {
+export function keuzesVoor(soort: "contacten" | "met-optin" | "optin"): string[] {
   const gemeen = [
     `Target: +${Math.round(CRM_GROEI * 100)}% op de stand eind 2026, voor elke CRM-KPI hetzelfde (besluit van de eigenaar, november 2026).`,
     "Er wordt geen historie bewaard: alleen de stand van de laatste export telt. Alle maanden van 2026 vóór die meting krijgen hetzelfde getal (een aanname, gestippeld), en de stand eind 2026 is die laatste stand.",
@@ -107,6 +110,13 @@ export function keuzesVoor(soort: "contacten" | "optin"): string[] {
     return [
       "Een contact is een uniek e-mailadres, niet een rij en niet een klantnummer: een rij in de export is een klant mét een voertuig, en één klant kan meerdere klantnummers hebben.",
       "Rijen zonder e-mailadres tellen niet mee. Het e-mailadres wordt geteld zoals het in de export staat; er wordt niets opgeschoond (net als op Tools → Selligent database).",
+      ...gemeen,
+    ];
+  }
+  if (soort === "met-optin") {
+    return [
+      "Een e-mailadres telt als het op minstens één van zijn rijen True heeft in minstens één opt-inkolom (alle True/False-kolommen in de export: VDU, Service en de merken). Zo is het op minstens één manier te bereiken. Dezelfde definitie als het filter Minimaal 1 opt-in op Tools → Selligent database.",
+      "Elk e-mailadres telt één keer, ook als het bij meerdere merken of op meerdere rijen True heeft. Dit getal is dus kleiner dan de opt-ins hieronder bij elkaar opgeteld.",
       ...gemeen,
     ];
   }

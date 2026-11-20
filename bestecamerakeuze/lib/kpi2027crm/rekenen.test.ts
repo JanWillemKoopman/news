@@ -37,8 +37,10 @@ test("een opt-in telt unieke e-mailadressen met ergens True, ongeacht schrijfwij
   // "true " (kleine letter, spatie) telt mee.
   assert.equal(per["Opt-in Audi"], 1);
   assert.equal(per["Opt-in SEAT"], 0);
-  // Alleen booleaanse kolommen zijn een opt-in.
-  assert.equal(t.tellingen.length, 4);
+  // a@x en c@x hebben ergens True; b@x nergens; de rij zonder adres telt niet.
+  assert.equal(per["Contacten met opt-in"], 2);
+  // Alleen booleaanse kolommen zijn een opt-in (plus Contacten en Contacten met opt-in).
+  assert.equal(t.tellingen.length, 5);
 });
 
 test("namen: bekende merken voluit, onbekende kolommen op hun eigen naam", () => {
@@ -83,7 +85,7 @@ test("het overzicht: Contacten en Opt-ins als groepen, realisatie 0 vóór 2027"
   assert.ok(groepen.every((g) => g.kpis.every((k) => k.keuzes.length >= 2)));
 });
 
-test("volgorde bovenaan: Contacten, dan VDU, dan Service; daaronder de merken", () => {
+test("volgorde bovenaan: Contacten, Contacten met opt-in, dan VDU, dan Service; daaronder de merken", () => {
   const tabel = bouwTabel(
     [
       '"MAIL";"PREFERENCES_AUDI";"PREFERENCES_SERVICE";"PREFERENCES_VW";"PREFERENCES_VDU"',
@@ -95,8 +97,13 @@ test("volgorde bovenaan: Contacten, dan VDU, dan Service; daaronder de merken", 
   const telling = telCrm(tabel);
   assert.deepEqual(telling.ontbrekend, []);
   const [algemeen, merken] = crmOverzicht(telling, "2026-11-20");
-  assert.deepEqual(algemeen.kpis.map((k) => k.naam), ["Contacten", "Opt-in VDU", "Opt-in Service"]);
-  assert.deepEqual(algemeen.kpis.map((k) => k.uitkomst!.verwacht), [2, 2, 1]);
+  assert.deepEqual(algemeen.kpis.map((k) => k.naam), [
+    "Contacten",
+    "Contacten met opt-in",
+    "Opt-in VDU",
+    "Opt-in Service",
+  ]);
+  assert.deepEqual(algemeen.kpis.map((k) => k.uitkomst!.verwacht), [2, 2, 2, 1]);
   assert.deepEqual(merken.kpis.map((k) => k.naam), ["Opt-in Audi", "Opt-in Volkswagen"]);
 });
 
@@ -106,4 +113,21 @@ test("VDU en Service worden herkend met en zonder voorvoegsel, en een ontbrekend
   assert.equal(algemenePlek("PREFERENCES_SERVICES"), 1);
   assert.equal(algemenePlek("PREFERENCES_VW"), null);
   assert.deepEqual(telCrm(proeftabel()).ontbrekend, ["VDU", "Service"]);
+});
+
+test("Contacten met opt-in telt elk adres één keer, ook met meerdere opt-ins", () => {
+  const tabel = bouwTabel(
+    [
+      '"MAIL";"PREFERENCES_VW";"PREFERENCES_AUDI"',
+      '"a@x.nl";"True";"True"',
+      '"a@x.nl";"False";"True"',
+      '"b@x.nl";"False";"False"',
+      '"c@x.nl";"";"true"',
+    ].join("\n") + "\n",
+    META,
+  );
+  const per = Object.fromEntries(telCrm(tabel).tellingen.map((r) => [r.naam, r.aantal]));
+  assert.equal(per["Contacten"], 3);
+  assert.equal(per["Opt-in Volkswagen"] + per["Opt-in Audi"], 3);
+  assert.equal(per["Contacten met opt-in"], 2);
 });

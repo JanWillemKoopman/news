@@ -150,7 +150,8 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
         <span>
           Alles telt <strong className="font-semibold text-ink">unieke e-mailadressen</strong> uit de Selligent-export
           (kolom {data?.mailKolom ?? "MAIL"}). <strong className="font-semibold text-ink">Contacten</strong> is het aantal
-          verschillende e-mailadressen; <strong className="font-semibold text-ink">Opt-in &lt;merk&gt;</strong> het aantal
+          verschillende e-mailadressen; <strong className="font-semibold text-ink">Contacten met opt-in</strong> het
+          aantal daarvan met minstens één opt-in op True; <strong className="font-semibold text-ink">Opt-in &lt;merk&gt;</strong> het aantal
           verschillende e-mailadressen met minstens één rij waarop die opt-inkolom True is — elke booleaanse kolom in de
           export krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de laatste
           export), het target de stand die er eind {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI.{" "}
@@ -165,10 +166,11 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data.groepen.map((groep) => (
             <section key={groep.sleutel} className="flex flex-col gap-3">
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
-              {/* Contacten, VDU en Service staan naast elkaar (verzoek van de eigenaar) vanaf 1600px; smaller lopen de vier tegels per kaart over hun rand; de
+              {/* De vier bovenste kaarten (Contacten, Contacten met opt-in, VDU, Service) staan als
+                  2 × 2: drie of vier naast elkaar laat de tegels per kaart over hun rand lopen. De
                   merk-opt-ins volgen het raster van de andere KPI-tabbladen. */}
               <div
-                className={`grid gap-6 ${groep.sleutel === "algemeen" ? "grid-cols-2 min-[1600px]:grid-cols-3" : "grid-cols-2 min-[1800px]:grid-cols-3"}`}
+                className={`grid gap-6 ${groep.sleutel === "algemeen" ? "grid-cols-2" : "grid-cols-2 min-[1800px]:grid-cols-3"}`}
               >
                 {groep.kpis.map((kpi) => (
                   <KpiCrmKaart key={kpi.sleutel} kpi={kpi} />
