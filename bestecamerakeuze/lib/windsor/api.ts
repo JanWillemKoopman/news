@@ -66,6 +66,7 @@ const STANDAARD_ACCOUNTS: Record<Connector, string[]> = {
     "17841400735388282", // porschebrabant
     "17841409820778415", // porschecentrummaastricht
     "17841457360463399", // veloonl
+    "17841402138338797", // audisportdealer (KPI's 2027 social media: nieuwe volgers bewaren)
   ],
   linkedin: ["500669928", "515419437", "515420450", "515420451", "515422432"],
   linkedin_organic: [

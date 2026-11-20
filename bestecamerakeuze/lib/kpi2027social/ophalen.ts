@@ -11,19 +11,23 @@ import type { SocialKanaal } from "@/lib/kpi2027social/definities";
  * Per kanaal wat er gevraagd wordt — elk met een paar velden op accountniveau, dus kleine
  * antwoorden:
  *
- *  - **Instagram**: `views` per dag over het jaar, en `followers_count` (alleen vandaag).
+ *  - **Instagram**: `views` per dag over het jaar, `follower_count_1d` (nieuwe volgers, alleen de
+ *    laatste dertig dagen) en `followers_count` (alleen vandaag).
  *  - **LinkedIn**: `account_analytics_impression_count` en de netto volgersaanwas
  *    (`followers_gain_organic` + `followers_gain_paid`) per dag, tot en met vandaag, plus
  *    `organization_follower_count` van vandaag. De stand op een dag = de stand van vandaag
  *    min de aanwas van alle dagen erna. In stukken van 180 dagen: één opvraging mag bij
  *    LinkedIn niet meer dan 14 maanden beslaan.
- *  - **Facebook**: `page_follows` (de stand, per dag; `page_fans` als terugval voor pagina's
+ *  - **Facebook**: `page_daily_follows` (nieuwe volgers per dag), `page_follows` (de stand, per
+ *    dag; `page_fans` als terugval voor pagina's
  *    die nooit naar volgers zijn omgezet) en `page_impressions` per dag, in stukken van
  *    90 dagen: de Facebook-connector is traag (131 s voor een kwartaal posts gemeten).
  */
 
 export interface OpgehaaldAccount {
   vertoningen: Record<string, number>;
+  /** Nieuwe volgers per dag; elke gemeten dag staat erin, ook met 0. */
+  nieuweVolgers: Record<string, number>;
   volgers: Record<string, number>;
   rijen: number;
 }
@@ -130,14 +134,28 @@ export async function haalAccount(
   const van = `${jaar}-01-01`;
   switch (kanaal) {
     case "instagram": {
-      const [dagen, nu] = await Promise.all([
+      // Nieuwe volgers levert Meta alleen over de laatste dertig dagen, zonder vandaag; de
+      // oudere dagen komen uit windsor_account_dag (zie bijwerken.ts).
+      const vroegst = tekstVan(alsDatum(vandaag) - 29 * DAG_MS);
+      const gisteren = tekstVan(alsDatum(vandaag) - DAG_MS);
+      const nvVan = vroegst > van ? vroegst : van;
+      const nvTot = gisteren < peildatum ? gisteren : peildatum;
+      const [dagen, nu, nieuw] = await Promise.all([
         haalOp("instagram", ["date", "account_id", "views"], van, peildatum, undefined, [accountId]),
         haalOp("instagram", ["account_id", "followers_count"], vandaag, vandaag, undefined, [accountId]),
+        nvVan <= nvTot
+          ? haalOp("instagram", ["date", "account_id", "follower_count_1d"], nvVan, nvTot, undefined, [accountId])
+          : Promise.resolve([]),
       ]);
       const stand = eersteGetal(nu, "followers_count");
       const volgers: Record<string, number> = {};
       if (stand > 0 && vandaag.startsWith(`${jaar}-`)) volgers[vandaag] = stand;
-      return { vertoningen: somPerDag(dagen, "views", van, peildatum), volgers, rijen: dagen.length + nu.length };
+      return {
+        vertoningen: somPerDag(dagen, "views", van, peildatum),
+        nieuweVolgers: somPerDag(nieuw, "follower_count_1d", van, peildatum),
+        volgers,
+        rijen: dagen.length + nu.length + nieuw.length,
+      };
     }
     case "linkedin": {
       // De aanwas tot en met vandaag: de stand van vandaag wordt erop teruggerekend.
@@ -156,6 +174,7 @@ export async function haalAccount(
       const stand = eersteGetal(nu, "organization_follower_count");
       return {
         vertoningen: somPerDag(dagen, "account_analytics_impression_count", van, peildatum),
+        nieuweVolgers: {},
         volgers: standenUitAanwas(stand, aanwas, van, peildatum),
         rijen: dagen.length + nu.length,
       };
@@ -163,7 +182,7 @@ export async function haalAccount(
     case "facebook": {
       const dagen = await inDelen(
         "facebook_organic",
-        ["date", "account_id", "page_follows", "page_fans", "page_impressions"],
+        ["date", "account_id", "page_follows", "page_fans", "page_daily_follows", "page_impressions"],
         van,
         peildatum,
         90,
@@ -175,7 +194,12 @@ export async function haalAccount(
         const n = getal(r.page_follows) || getal(r.page_fans);
         if (d && d >= van && d <= peildatum && n > 0) volgers[d] = n;
       }
-      return { vertoningen: somPerDag(dagen, "page_impressions", van, peildatum), volgers, rijen: dagen.length };
+      return {
+        vertoningen: somPerDag(dagen, "page_impressions", van, peildatum),
+        nieuweVolgers: somPerDag(dagen, "page_daily_follows", van, peildatum),
+        volgers,
+        rijen: dagen.length,
+      };
     }
     default:
       throw new Error(`${kanaal} is niet gekoppeld.`);

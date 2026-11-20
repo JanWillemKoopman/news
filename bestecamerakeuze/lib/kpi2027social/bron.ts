@@ -19,7 +19,7 @@ function reeks(waarde: unknown): Record<string, number> {
 function dagen(waarde: unknown): SocialStand["dagen"] {
   const ruw = (typeof waarde === "object" && waarde !== null ? waarde : {}) as Record<string, unknown>;
   const uit: SocialStand["dagen"] = {};
-  for (const maat of ["vertoningen", "volgers"] as SocialMaat[]) if (ruw[maat]) uit[maat] = reeks(ruw[maat]);
+  for (const maat of ["vertoningen", "nieuwe-volgers", "volgers"] as SocialMaat[]) if (ruw[maat]) uit[maat] = reeks(ruw[maat]);
   return uit;
 }
 
@@ -84,6 +84,29 @@ export async function leesInstagramMomentopnames(
   );
   const uit: Record<string, number> = {};
   for (const r of res.rows) if (Number(r.volgers) > 0) uit[String(r.datum)] = Number(r.volgers);
+  return uit;
+}
+
+/**
+ * De nieuwe Instagram-volgers per dag uit `windsor_account_dag` (`volgers_erbij`, uit
+ * `follower_count_1d`). Meta levert dat cijfer maar dertig dagen terug; de nachtelijke sync
+ * bewaart het sinds 16 augustus 2026. Vandaag telt niet mee: die rij is nog onvolledig (de
+ * momentopname van vandaag krijgt 0 tot de volgende nacht de echte waarde schrijft).
+ */
+export async function leesInstagramNieuweVolgers(
+  client: Client,
+  accountId: string,
+  jaar: number,
+  vandaag: string,
+): Promise<Record<string, number>> {
+  const res = await client.query(
+    `select datum::text as datum, volgers_erbij from dataloket.windsor_account_dag
+      where bron = 'instagram' and account_id = $1 and volgers_erbij is not null
+        and datum between $2::date and $3::date and datum < $4::date`,
+    [accountId, `${jaar}-01-01`, `${jaar}-12-31`, vandaag],
+  );
+  const uit: Record<string, number> = {};
+  for (const r of res.rows) uit[String(r.datum)] = Math.max(0, Number(r.volgers_erbij) || 0);
   return uit;
 }
 

@@ -1194,7 +1194,7 @@ opzet als KPI's 2027 GA en Syntec — statusbalk, overzichtstabel (`SocialOverzi
 Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
 
 - **De targets komen van het team**, niet +5%: per KPI het percentage uit de lijst van de eigenaar
-  (bv. Instagram volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in
+  (bv. Instagram nieuwe volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in
   `lib/kpi2027social/definities.ts` (`groei` per KPI; de test controleert ze één voor één). Met de
   hand aanpassen werkt zoals op de andere tabbladen (`kpi_2027_groei`, tabblad `kpi-2027-social`,
   website = merksleutel); "terugzetten" gaat naar het percentage van het team
@@ -1203,7 +1203,20 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   dagen, × (1 + groei), maandtarget ÷ 12. Eén verschil: hooguit drie lege dagen vlak vóór de
   peildatum tellen als nog niet gemeten (`achterstand`), want LinkedIn en Meta leveren een tot twee
   dagen later.
-- **Volgers zijn een stand, geen optelsom** (`berekenVolgers`). Basis = de stand op 31 december 2026
+- **Instagram en Facebook: nieuwe volgers, geen volgers** (besluit van de eigenaar, 20 november 2026;
+  de percentages uit zijn lijst voor "volgers" gelden nu voor nieuwe volgers). Optelbaar, dus dezelfde
+  som als impressies, maar alleen over de **gemeten** dagen (`berekenNieuweVolgers`): een dag die niet in
+  de reeks staat is niet gemeten (`ontbrekendeDagen`) en wordt met het gemiddelde per gemeten dag
+  ingevuld, gestippeld — zoals de uitval op KPI's 2027 GA. Een gemeten dag met 0 staat er wél in.
+  Instagram (`follower_count_1d`) levert Meta maar 30 dagen terug; de nachtelijke sync bewaart het sinds
+  16 augustus 2026 in `windsor_account_dag.volgers_erbij`, en de wekelijkse ophaalactie voegt dat samen
+  met de vorige stand en het verse 30-dagenvenster. 2026 rekent dus op ±3 maanden (augustus had een
+  piek), januari t/m 15 augustus is bijgeschat. `follows_and_unfollows` is **geen** vervanger: dat is
+  volgen + ontvolgen samen (per dag altijd ≥ `follower_count_1d`). Audi Sport (`audisportdealer`) stond
+  niet in de Instagram-accounts van de nachtelijke sync; sinds november 2026 wel, dus zijn historie
+  begint pas bij het 30-dagenvenster van de eerste ophaalactie. Facebook: `page_daily_follows`, wél
+  historisch beschikbaar, zodra de koppeling terug is.
+- **Volgers zijn een stand, geen optelsom** (`berekenVolgers`; LinkedIn, TikTok, YouTube). Basis = de stand op 31 december 2026
   (zolang het jaar loopt: laatste stand + trend per dag; trend = eerste → laatste stand van het jaar,
   pas vanaf zeven dagen ertussen). Target = de stand eind 2027. In de grafiek de stand per maandeinde
   en een vlakke lijn "Doel eind 2027" (`stand` op `KpiKaartOpmaak`, `jaarNaam`/`targetNaam` op
@@ -1226,9 +1239,9 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
     "niet gekoppeld"; aansluiten = account in Windsor koppelen, `accountId` in `definities.ts` zetten en
     een tak in `haalAccount` (`ophalen.ts`) toevoegen.
 - **Opslag**: `kpi_2027_social_standen` (migratie 0039), één rij per account (`kanaal:account-id`) per
-  jaar, met `dagen.vertoningen` (datum → aantal) en `dagen.volgers` (datum → stand). De Instagram-
-  volgers worden samengevoegd (vorige stand + nachtelijke momentopnames + vandaag), de rest
-  overschreven. **Wekelijks op zondag 10:45 UTC** (`/api/kpi-2027-social/bijwerken`, eigen cron, buiten
+  jaar, met `dagen.vertoningen` en `dagen["nieuwe-volgers"]` (datum → aantal) en `dagen.volgers`
+  (datum → stand). Bij Instagram worden volgers en nieuwe volgers samengevoegd (vorige stand + wat de
+  nachtelijke sync bewaarde + het verse antwoord), de rest overschreven. **Wekelijks op zondag 10:45 UTC** (`/api/kpi-2027-social/bijwerken`, eigen cron, buiten
   de inlog via `CRON_PADEN`), alle accounts tegelijk; een account dat faalt houdt zijn vorige stand en
   de fout staat bovenaan de pagina (laatste run in `sync_runs`, bron `kpi-2027-social`). Jaren en
   definitief worden als op GA (`opdrachtenVoor`).

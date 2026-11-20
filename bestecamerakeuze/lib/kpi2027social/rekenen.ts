@@ -34,7 +34,12 @@ import {
  * twee dagen later. Anders zou een zaterdag die nog niet binnen is als een dag met nul
  * vertoningen het gemiddelde drukken.
  *
- * ## Volgers: een stand, geen som
+ * ## Nieuwe volgers: dezelfde som, alleen over de gemeten dagen
+ *
+ * Instagram en Facebook (`berekenNieuweVolgers`). Een dag die niet in de reeks staat is niet
+ * gemeten en wordt met het gemiddelde per gemeten dag ingevuld (`ontbrekendeDagen`).
+ *
+ * ## Volgers: een stand, geen som (LinkedIn, TikTok, YouTube)
  *
  *  1. **Laatste stand**: de jongste dag t/m de peildatum waarop de stand bekend is.
  *  2. **Trend per dag**: (laatste stand − eerste stand van het jaar) ÷ het aantal dagen
@@ -59,7 +64,10 @@ export interface SocialStand {
   peildatum: string;
   berekendOp: string;
   definitief: boolean;
-  /** `vertoningen`: datum → aantal; `volgers`: datum → stand aan het eind van die dag. */
+  /**
+   * `vertoningen` en `nieuwe-volgers`: datum → aantal (bij nieuwe volgers staat elke gemeten
+   * dag erin, ook met 0); `volgers`: datum → stand aan het eind van die dag.
+   */
   dagen: Partial<Record<SocialMaat, Record<string, number>>>;
 }
 
@@ -107,6 +115,54 @@ export function achterstand(dagwaarden: Readonly<Record<string, number>>, peilda
   const leeg = dagenTussen(laatste, eind) - 1;
   if (leeg > MAX_ACHTERSTAND) return [];
   return [{ van: tekstVan(alsDatum(laatste) + DAG_MS), tot: eind }];
+}
+
+/**
+ * De dagen van het jaar t/m de peildatum die níet in de reeks staan, samengevoegd tot
+ * periodes. Bij nieuwe volgers staat elke gemeten dag erin, ook met 0; een ontbrekende dag
+ * is dus niet gemeten (Instagram: vóór 16 augustus 2026, toen de nachtelijke sync ermee
+ * begon — Meta bewaart het maar dertig dagen).
+ */
+export function ontbrekendeDagen(dagwaarden: Readonly<Record<string, number>>, peildatum: string, jaar: number): Periode[] {
+  const periodes: Periode[] = [];
+  const eind = alsDatum(tot(peildatum, jaar));
+  for (let t = alsDatum(`${jaar}-01-01`); t <= eind; t += DAG_MS) {
+    const d = tekstVan(t);
+    if (d in dagwaarden) continue;
+    const vorige = periodes[periodes.length - 1];
+    if (vorige && tekstVan(alsDatum(vorige.tot) + DAG_MS) === d) vorige.tot = d;
+    else periodes.push({ van: d, tot: d });
+  }
+  return periodes;
+}
+
+/**
+ * Nieuwe volgers van één account: dezelfde som als vertoningen, maar alleen over de dagen
+ * die gemeten zijn; de rest wordt met het gemiddelde per gemeten dag ingevuld (gestippeld),
+ * zoals de uitval op KPI's 2027 GA. Een maand zonder één gemeten dag krijgt een eigen uitleg
+ * in de tooltip, want de standaardzin daar gaat over sessies.
+ */
+export function berekenNieuweVolgers(
+  dagwaarden: Readonly<Record<string, number>>,
+  peildatum: string,
+  jaar: number,
+  groei: number,
+): SocialUitkomst | null {
+  const uitval = ontbrekendeDagen(dagwaarden, peildatum, jaar);
+  const u = berekenKpi(maandInvoerUitDagen(dagwaarden, peildatum, uitval, jaar), peildatum, { jaar, groei });
+  if (u.dagenGemeten === 0) return null;
+  const maanden = u.maanden.map((m) =>
+    m.soort !== "bijgeschat"
+      ? m
+      : {
+          ...m,
+          toelichting:
+            m.dagenGemeten > 0
+              ? `${m.dagenGemeten} van ${m.dagenInMaand} dagen gemeten; de rest ingevuld met het gemiddelde per gemeten dag`
+              : "Niet gemeten; ingevuld met het gemiddelde per gemeten dag",
+        },
+  );
+  return { ...u, maanden, maat: "nieuwe-volgers", standDatum: null, eersteDatum: null };
 }
 
 /** Vertoningen van één account: de som van KPI's 2027 GA. */
@@ -269,7 +325,7 @@ export function realisatieVoor(
 ): { waarde: number; peildatum: string | null } {
   if (!stand) return { waarde: 0, peildatum: null };
   const reeks = stand.dagen[maat] ?? {};
-  if (maat === "vertoningen") {
+  if (maat !== "volgers") {
     const waarde = Object.entries(reeks)
       .filter(([d]) => d.startsWith(`${stand.jaar}-`) && d <= stand.peildatum)
       .reduce((t, [, n]) => t + (Number(n) || 0), 0);
@@ -341,9 +397,11 @@ function regelVoor(
     ? null
     : kpi.maat === "volgers"
       ? berekenVolgers(reeks, stand.peildatum, stand.jaar, groei)
-      : Object.keys(reeks).length > 0
-        ? berekenVertoningen(reeks, stand.peildatum, stand.jaar, groei)
-        : null;
+      : kpi.maat === "nieuwe-volgers"
+        ? berekenNieuweVolgers(reeks, stand.peildatum, stand.jaar, groei)
+        : Object.keys(reeks).length > 0
+          ? berekenVertoningen(reeks, stand.peildatum, stand.jaar, groei)
+          : null;
   return {
     sleutel: kpi.sleutel,
     naam: kpi.naam,

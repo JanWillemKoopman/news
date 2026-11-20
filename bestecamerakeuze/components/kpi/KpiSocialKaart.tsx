@@ -26,6 +26,11 @@ function watTeltMee(kpi: SocialKpiRegel): string {
         return "";
     }
   }
+  if (kpi.maat === "nieuwe-volgers") {
+    return kpi.kanaal === "instagram"
+      ? "Nieuwe volgers per dag (follower_count_1d): accounts die deze dag gingen volgen. Ontvolgers gaan er niet af. Meta levert dit cijfer maar dertig dagen terug; de nachtelijke sync van het dashboard bewaart het sinds 16 augustus 2026. Januari t/m 15 augustus 2026 is daarom niet gemeten en met het gemiddelde per gemeten dag bijgeschat."
+      : "Nieuwe volgers per dag (page_daily_follows): accounts die de pagina deze dag gingen volgen. Ontvolgers gaan er niet af.";
+  }
   switch (kpi.kanaal) {
     case "instagram":
       return "Het aantal volgers (followers_count). Instagram geeft alleen de stand van vandaag, geen historie: de reeks begint daarom op 20 november 2026 en groeit elke nacht met een stand aan. Vóór de eerste stand is er niets ingevuld.";
@@ -65,6 +70,15 @@ export default function KpiSocialKaart({
           eerste naar de laatste bekende stand van {KPI_JAAR}, gedeeld door het aantal dagen ertussen). De vlakke lijn is
           het doel eind {KPI_DOELJAAR}: de stand eind {KPI_JAAR} plus de groei. Volgers tellen niet op; het target is een
           stand, geen jaartotaal.
+        </p>
+      ) : kpi.maat === "nieuwe-volgers" ? (
+        <p>
+          <span className="text-ink-muted">Grafiek:</span> per maand het aantal nieuwe volgers in {KPI_JAAR}. De
+          doorgetrokken lijn is een volledig gemeten maand; de gestippelde lijn is (deels) verwachting of bijgeschat
+          {u && u.dagenNietGemeten > 0
+            ? `: ${aantal(u.dagenNietGemeten)} verstreken dagen zijn niet gemeten en ingevuld met het gemiddelde per gemeten dag`
+            : ""}
+          . De vlakke lijn is het maandtarget {KPI_DOELJAAR} (het jaartarget ÷ 12).
         </p>
       ) : (
         <p>

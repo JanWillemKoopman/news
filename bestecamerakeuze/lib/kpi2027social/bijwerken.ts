@@ -5,7 +5,12 @@ import { KPI_JAAR } from "@/lib/kpi2027/definities";
 import { opdrachtenVoor } from "@/lib/kpi2027/bijwerken";
 import { datumInNederland, isDefinitief } from "@/lib/kpi2027/rekenen";
 import { KANAAL_NAMEN, alleAccounts, standSleutel, type SocialKanaal } from "@/lib/kpi2027social/definities";
-import { leesInstagramMomentopnames, leesStand, schrijfSocialStand } from "@/lib/kpi2027social/bron";
+import {
+  leesInstagramMomentopnames,
+  leesInstagramNieuweVolgers,
+  leesStand,
+  schrijfSocialStand,
+} from "@/lib/kpi2027social/bron";
 import { haalAccount } from "@/lib/kpi2027social/ophalen";
 
 /**
@@ -20,9 +25,9 @@ import { haalAccount } from "@/lib/kpi2027social/ophalen";
  * (Facebook zolang de koppeling in Windsor uit staat) laat de andere staan en houdt zijn
  * vorige stand; de fout staat in `sync_runs` (bron `kpi-2027-social`) en bovenaan de pagina.
  *
- * Instagram-volgers zijn de uitzondering op "overschrijven": het platform geeft alleen de
- * stand van vandaag. De nieuwe stand wordt daarom samengevoegd met wat er al stond en met de
- * nachtelijke momentopnames uit `windsor_account_dag`.
+ * Instagram is de uitzondering op "overschrijven": het platform geeft de volgersstand alleen
+ * voor vandaag en nieuwe volgers alleen dertig dagen terug. Beide worden daarom samengevoegd
+ * met wat er al stond en met wat de nachtelijke sync in `windsor_account_dag` bewaarde.
  */
 
 export interface AccountUitkomst {
@@ -54,9 +59,18 @@ async function werkAccountBij(
     if (!forceer && vorige?.definitief) return { ...basis, status: "al-definitief", rijen: 0 };
     const opgehaald = await haalAccount(account.kanaal, account.accountId, opdracht.jaar, opdracht.peildatum, vandaag);
     let volgers = opgehaald.volgers;
+    let nieuweVolgers = opgehaald.nieuweVolgers;
     if (account.kanaal === "instagram") {
-      const nacht = await leesInstagramMomentopnames(client, account.accountId, opdracht.jaar);
+      // Instagram kent geen historie van volgers en nieuwe volgers: samenvoegen met wat er al
+      // stond en met de nachtelijke sync; het verse antwoord van Windsor gaat voor.
+      const [nacht, nieuwNacht] = await Promise.all([
+        leesInstagramMomentopnames(client, account.accountId, opdracht.jaar),
+        leesInstagramNieuweVolgers(client, account.accountId, opdracht.jaar, vandaag),
+      ]);
       volgers = { ...(vorige?.dagen.volgers ?? {}), ...nacht, ...opgehaald.volgers };
+      const tm = (r: Record<string, number>) =>
+        Object.fromEntries(Object.entries(r).filter(([d]) => d <= opdracht.peildatum));
+      nieuweVolgers = tm({ ...(vorige?.dagen["nieuwe-volgers"] ?? {}), ...nieuwNacht, ...opgehaald.nieuweVolgers });
     }
     if (Object.keys(opgehaald.vertoningen).length === 0 && Object.keys(volgers).length === 0) {
       throw new Error("Windsor gaf geen enkele rij terug.");
@@ -66,7 +80,7 @@ async function werkAccountBij(
       jaar: opdracht.jaar,
       peildatum: opdracht.peildatum,
       definitief: isDefinitief(opdracht.peildatum, opdracht.jaar),
-      dagen: { vertoningen: opgehaald.vertoningen, volgers },
+      dagen: { vertoningen: opgehaald.vertoningen, "nieuwe-volgers": nieuweVolgers, volgers },
     });
     return { ...basis, status: "bijgewerkt", rijen: opgehaald.rijen };
   } catch (err) {

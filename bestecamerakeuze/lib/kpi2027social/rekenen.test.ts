@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { SOCIAL_MERKEN, vindSocialKpi } from "@/lib/kpi2027social/definities";
 import {
   achterstand,
+  berekenNieuweVolgers,
   berekenVertoningen,
+  ontbrekendeDagen,
   berekenVolgers,
   merkOverzicht,
   metSocialGroei,
@@ -28,9 +30,9 @@ function dagen(van: string, tot: string, waarde: (d: string, i: number) => numbe
 test("de percentages van het team staan per merk zoals aangeleverd", () => {
   const verwacht: Record<string, Record<string, number>> = {
     udenhout: {
-      "facebook-volgers": 0.01,
+      "facebook-nieuwe-volgers": 0.01,
       "facebook-vertoningen": 0.08,
-      "instagram-volgers": 0.07,
+      "instagram-nieuwe-volgers": 0.07,
       "instagram-vertoningen": 0.19,
       "linkedin-volgers": 0.05,
       "linkedin-vertoningen": 0.09,
@@ -38,17 +40,17 @@ test("de percentages van het team staan per merk zoals aangeleverd", () => {
       "youtube-volgers": 0.04,
     },
     veloo: {
-      "facebook-volgers": 0.05,
+      "facebook-nieuwe-volgers": 0.05,
       "facebook-vertoningen": -0.06,
-      "instagram-volgers": 0.17,
+      "instagram-nieuwe-volgers": 0.17,
       "instagram-vertoningen": 0.17,
       "linkedin-volgers": 0.07,
       "linkedin-vertoningen": 0.21,
     },
     "audi-sport": {
-      "facebook-volgers": 0.05,
+      "facebook-nieuwe-volgers": 0.05,
       "facebook-vertoningen": 0.33,
-      "instagram-volgers": 0.02,
+      "instagram-nieuwe-volgers": 0.02,
       "instagram-vertoningen": 0.15,
     },
   };
@@ -81,6 +83,24 @@ test("impressies: hooguit drie lege dagen vóór de peildatum zijn nog niet binn
   assert.equal(u.verwacht, 3650); // het gemiddelde blijft 10, niet gedrukt door twee nullen
   // Langer stil is geen vertraging: die dagen tellen als gemeten nul.
   assert.deepEqual(achterstand(dagen("2026-01-01", "2026-11-01", () => 10), "2026-11-14", 2026), []);
+});
+
+test("nieuwe volgers: alleen gemeten dagen tellen, een ontbrekende dag wordt bijgeschat, een 0 niet", () => {
+  // Gemeten vanaf 16 augustus (zoals Instagram), 3 per dag, met één dag 0.
+  const reeks = dagen("2026-08-16", "2026-11-14", (d) => (d === "2026-09-01" ? 0 : 3));
+  assert.deepEqual(ontbrekendeDagen(reeks, "2026-11-14", 2026), [{ van: "2026-01-01", tot: "2026-08-15" }]);
+  const u = berekenNieuweVolgers(reeks, "2026-11-14", 2026, 0.07)!;
+  assert.equal(u.dagenGemeten, 91);
+  assert.equal(u.gerealiseerd, 270); // 91 dagen, waarvan één met 0
+  assert.ok(Math.abs(u.verwacht - (270 / 91) * 365) < 1e-9);
+  assert.ok(Math.abs(u.target - u.verwacht * 1.07) < 1e-9);
+  assert.equal(u.maanden[0].soort, "bijgeschat");
+  assert.match(u.maanden[0].toelichting ?? "", /Niet gemeten/);
+  assert.equal(u.maanden[7].soort, "bijgeschat"); // augustus: 16 van 31 dagen gemeten
+  assert.match(u.maanden[7].toelichting ?? "", /16 van 31/);
+  assert.equal(u.maanden[8].soort, "gerealiseerd");
+  // Niets gemeten: geen uitkomst (de kaart zegt dan "nog geen stand").
+  assert.equal(berekenNieuweVolgers({}, "2026-11-14", 2026, 0), null);
 });
 
 test("volgers: de laatste stand plus de trend tot 31 december, × (1 + groei)", () => {
@@ -139,6 +159,10 @@ test("realisatie: impressies opgeteld, volgers de laatste stand", () => {
     dagen: { vertoningen: { "2027-01-02": 5, "2027-01-09": 7, "2027-01-10": 99 }, volgers: { "2027-01-03": 10, "2027-01-08": 12 } },
   };
   assert.deepEqual(realisatieVoor("vertoningen", stand), { waarde: 12, peildatum: "2027-01-09" });
+  assert.deepEqual(realisatieVoor("nieuwe-volgers", { ...stand, dagen: { "nieuwe-volgers": { "2027-01-02": 3, "2027-01-05": 4 } } }), {
+    waarde: 7,
+    peildatum: "2027-01-09",
+  });
   assert.deepEqual(realisatieVoor("volgers", stand), { waarde: 12, peildatum: "2027-01-08" });
   assert.deepEqual(realisatieVoor("volgers", null), { waarde: 0, peildatum: null });
 });
@@ -152,13 +176,19 @@ test("merkoverzicht: niet gekoppelde kanalen zonder uitkomst, groei per KPI aan 
       peildatum: "2026-11-14",
       berekendOp: "2026-11-15T10:00:00Z",
       definitief: false,
-      dagen: { vertoningen: dagen("2026-01-01", "2026-11-14", () => 100), volgers: { "2026-11-14": 3772 } },
+      dagen: {
+        vertoningen: dagen("2026-01-01", "2026-11-14", () => 100),
+        "nieuwe-volgers": dagen("2026-08-16", "2026-11-14", () => 2),
+        volgers: { "2026-11-14": 3772 },
+      },
     },
   ];
   const o = merkOverzicht(merk, standen, (k) => (k === "instagram-vertoningen" ? 0.25 : undefined));
   assert.deepEqual(o.kanalen.map((g) => g.kanaal), ["facebook", "instagram", "linkedin", "tiktok", "youtube"]);
   const ig = o.kanalen.find((g) => g.kanaal === "instagram")!.kpis;
-  assert.equal(ig[0].uitkomst?.verwacht, 3772);
+  assert.equal(ig[0].sleutel, "instagram-nieuwe-volgers");
+  assert.equal(ig[0].uitkomst?.verwacht, 730); // 2 per gemeten dag × 365
+  assert.equal(ig[0].uitkomst?.dagenNietGemeten, 227); // 1 januari t/m 15 augustus
   assert.equal(ig[1].uitkomst?.groei, 0.25);
   assert.equal(ig[1].groeiAangepast, true);
   const tiktok = o.kanalen.find((g) => g.kanaal === "tiktok")!.kpis[0];
@@ -169,8 +199,12 @@ test("merkoverzicht: niet gekoppelde kanalen zonder uitkomst, groei per KPI aan 
   // Terug naar het percentage van het team.
   const terug = pasSocialGroeiToe([o], "udenhout", "instagram-vertoningen", null)[0];
   assert.equal(terug.kanalen.find((g) => g.kanaal === "instagram")!.kpis[1].uitkomst?.groei, 0.19);
-  const stand = ig[0].uitkomst!;
+  const li = o.kanalen.find((g) => g.kanaal === "linkedin")!.kpis[0];
+  assert.equal(li.maat, "volgers");
+  assert.equal(li.uitkomst, null); // geen LinkedIn-stand in dit voorbeeld
+  const stand = berekenVolgers({ "2026-11-14": 3772 }, "2026-11-14", 2026, 0)!;
   assert.equal(metSocialGroei(stand, 0.1).targetPerMaand, metSocialGroei(stand, 0.1).target);
+  assert.ok(Math.abs(metSocialGroei(ig[0].uitkomst!, 0.1).targetPerMaand - (730 * 1.1) / 12) < 1e-9);
 });
 
 test("ophalen: stukken en optellen per dag", () => {
