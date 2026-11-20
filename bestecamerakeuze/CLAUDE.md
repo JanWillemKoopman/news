@@ -1288,9 +1288,16 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
   e-mailadressen met minstens één rij waarop minstens één opt-inkolom `True` is — een *of* over alle
   booleaanse kolommen, per contact; dezelfde definitie als het filter "Minimaal 1 opt-in" op Tools →
   Selligent. Elk adres telt één keer, dus kleiner dan de opt-ins bij elkaar opgeteld.
-- **Volgorde (verzoek van de eigenaar, 20 november 2026): Contacten, Contacten met opt-in, Opt-in VDU,
-  Opt-in Service**, samen bovenaan in de groep "Contacten en algemene opt-ins", als 2 × 2 (drie of vier
-  naast elkaar laat de vier tegels per kaart over hun rand lopen). Daaronder "Opt-ins per merk" in de volgorde van het
+- **Aantal auto's** en **Auto's met opt-in** (verzoek van de eigenaar, 20 november 2026): unieke kentekens
+  (`VDUVEHICLES_LICENSE_PLATE`, terugval: een kolom met PLATE of KENTEKEN in de naam), en daarvan de
+  kentekens die op minstens één rij staan bij een e-mailadres met minstens één opt-in — de auto's van
+  Contacten met opt-in. Een rij zonder e-mailadres maakt een auto niet "met opt-in". Let op: Tools →
+  Selligent telt auto's op `VDUVEHICLES_VEHICLE_ID`, dus die twee getallen kunnen een paar auto's
+  verschillen. Ontbreekt de kentekenkolom, dan staan deze twee er niet en meldt de pagina dat bovenaan.
+- **Volgorde (verzoek van de eigenaar, 20 november 2026): Contacten, Contacten met opt-in, Aantal auto's,
+  Auto's met opt-in, Opt-in VDU, Opt-in Service**, samen bovenaan in de groep "Contacten, auto's en
+  algemene opt-ins", twee per rij (drie of meer naast elkaar laat de vier tegels per kaart over hun rand
+  lopen). Daaronder "Opt-ins per merk" in de volgorde van het
   bestand. Welke kolommen VDU en Service zijn staat in `ALGEMENE_OPTINS` (`PREFERENCES_VDU`,
   `PREFERENCES_SERVICE`/`…SERVICES`, ook zonder voorvoegsel). Staat een ervan niet als True/False-kolom in
   de export, dan meldt de pagina dat bovenaan (`ontbrekend`) in plaats van dat de kaart stil ontbreekt.

@@ -24,7 +24,8 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       leegTekst={`Er is geen stand van ${KPI_JAAR} bekend: de export ligt buiten ${KPI_JAAR} en er wordt geen historie bewaard.`}
     >
       <p>
-        <span className="text-ink-muted">Grafiek:</span> per maand het aantal unieke e-mailadressen in {KPI_JAAR}. Er is
+        <span className="text-ink-muted">Grafiek:</span> per maand het aantal unieke{" "}
+        {kpi.soort === "autos" || kpi.soort === "autos-optin" ? "kentekens" : "e-mailadressen"} in {KPI_JAAR}. Er is
         één meting: de export van {u ? datumKort(u.standDatum) : "vandaag"}. De maanden ervóór krijgen dezelfde stand (een
         aanname, gestippeld), de maanden erna de stand doorgetrokken tot 31 december. De vlakke lijn is het doel eind{" "}
         {KPI_DOELJAAR}: de stand eind {KPI_JAAR} plus 10%. Een stand telt niet op; het target is een stand, geen jaartotaal.
@@ -38,6 +39,10 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       <p className="mt-0.5">
         {kpi.soort === "contacten"
           ? `Het aantal verschillende e-mailadressen in de kolom ${kpi.kolom}${u ? ` (${aantal(u.gerealiseerd)})` : ""}. Precies het getal van de tegel E-mailadressen op Tools → Selligent database.`
+          : kpi.soort === "autos"
+          ? `Het aantal verschillende kentekens in de kolom ${kpi.kolom}${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`
+          : kpi.soort === "autos-optin"
+          ? `Het aantal verschillende kentekens (kolom ${kpi.kolom}) op een rij met een e-mailadres dat minstens één opt-in op True heeft${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`
           : kpi.soort === "met-optin"
           ? `Het aantal verschillende e-mailadressen met minstens één rij waarop minstens één opt-inkolom True is${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`
           : `Het aantal verschillende e-mailadressen met minstens één rij waarop de kolom ${kpi.kolom} True is${u ? ` (${aantal(u.gerealiseerd)})` : ""}.`}

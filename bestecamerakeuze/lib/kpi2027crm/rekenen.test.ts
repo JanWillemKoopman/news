@@ -79,7 +79,7 @@ test("een meting buiten 2026 levert geen basis op, wel realisatie in 2027", () =
 
 test("het overzicht: Contacten en Opt-ins als groepen, realisatie 0 vóór 2027", () => {
   const groepen = crmOverzicht(telCrm(proeftabel()), "2026-11-20");
-  assert.deepEqual(groepen.map((g) => g.naam), ["Contacten en algemene opt-ins", "Opt-ins per merk"]);
+  assert.deepEqual(groepen.map((g) => g.naam), ["Contacten, auto's en algemene opt-ins", "Opt-ins per merk"]);
   assert.equal(groepen[1].kpis.length, 3);
   assert.deepEqual(groepen[1].kpis[0].realisatie, { waarde: 0, peildatum: null });
   assert.ok(groepen.every((g) => g.kpis.every((k) => k.keuzes.length >= 2)));
@@ -130,4 +130,45 @@ test("Contacten met opt-in telt elk adres één keer, ook met meerdere opt-ins",
   assert.equal(per["Contacten"], 3);
   assert.equal(per["Opt-in Volkswagen"] + per["Opt-in Audi"], 3);
   assert.equal(per["Contacten met opt-in"], 2);
+});
+
+test("auto's: unieke kentekens, en met opt-in = de kentekens van een contact met opt-in", () => {
+  const tabel = bouwTabel(
+    [
+      '"MAIL";"PREFERENCES_VDU";"PREFERENCES_SERVICE";"PREFERENCES_VW";"VDUVEHICLES_LICENSE_PLATE"',
+      // a@x heeft een opt-in (op één rij) en twee auto's: allebei met opt-in.
+      '"a@x.nl";"True";"";"";"AA-11-AA"',
+      '"a@x.nl";"False";"";"";"BB-22-BB"',
+      // b@x heeft geen opt-in; zijn auto staat ook bij c@x, die wél een opt-in heeft.
+      '"b@x.nl";"False";"False";"False";"CC-33-CC"',
+      '"c@x.nl";"";"";"true";"CC-33-CC"',
+      // d@x zonder opt-in, met een eigen auto.
+      '"d@x.nl";"";"";"";"DD-44-DD"',
+      // Een rij zonder e-mailadres maar met True: telt wel als auto, niet als auto met opt-in.
+      '"";"True";"";"";"EE-55-EE"',
+      // Een contact zonder auto.
+      '"e@x.nl";"True";"";"";""',
+    ].join("\n") + "\n",
+    META,
+  );
+  const telling = telCrm(tabel);
+  assert.equal(telling.kentekenKolom, "VDUVEHICLES_LICENSE_PLATE");
+  const per = Object.fromEntries(telling.tellingen.map((r) => [r.naam, r.aantal]));
+  assert.equal(per["Aantal auto's"], 5);
+  assert.equal(per["Auto's met opt-in"], 3);
+  const [algemeen] = crmOverzicht(telling, "2026-11-20");
+  assert.deepEqual(algemeen.kpis.map((k) => k.naam), [
+    "Contacten",
+    "Contacten met opt-in",
+    "Aantal auto's",
+    "Auto's met opt-in",
+    "Opt-in VDU",
+    "Opt-in Service",
+  ]);
+});
+
+test("zonder kentekenkolom geen auto-KPI's, en dat wordt gemeld", () => {
+  const telling = telCrm(proeftabel());
+  assert.equal(telling.kentekenKolom, null);
+  assert.ok(!telling.tellingen.some((t) => t.soort === "autos" || t.soort === "autos-optin"));
 });

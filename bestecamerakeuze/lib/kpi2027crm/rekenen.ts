@@ -2,6 +2,8 @@ import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { dagenInMaand, type KpiUitkomst, type MaandUitkomst } from "@/lib/kpi2027/rekenen";
 import {
   ALGEMENE_OPTINS,
+  AUTOS_OPTIN_SLEUTEL,
+  AUTOS_SLEUTEL,
   CONTACTEN_SLEUTEL,
   CRM_GROEI,
   MET_OPTIN_SLEUTEL,
@@ -38,17 +40,20 @@ import type { Tabel } from "@/lib/selligent/tabel";
  * dan niet meer te lezen (er wordt niets bewaard), dus dan valt er voor 2026 niets te rekenen.
  */
 
-/** Contacten, Contacten met opt-in (minstens één opt-in True), of één opt-inkolom. */
-export type CrmSoort = "contacten" | "met-optin" | "optin";
+/**
+ * Contacten, Contacten met opt-in (minstens één opt-in True), Aantal auto's (unieke kentekens),
+ * Auto's met opt-in (kentekens van een contact met opt-in), of één opt-inkolom.
+ */
+export type CrmSoort = "contacten" | "met-optin" | "autos" | "autos-optin" | "optin";
 
 /** Wat de stand van één KPI is in de export. */
 export interface CrmTelling {
   sleutel: string;
   naam: string;
   soort: CrmSoort;
-  /** De kolom waaruit geteld is: `MAIL` of de opt-inkolom. */
+  /** De kolom waaruit geteld is: `MAIL`, de kentekenkolom of de opt-inkolom. */
   kolom: string;
-  /** Unieke e-mailadressen. */
+  /** Unieke e-mailadressen (bij de auto-KPI's: unieke kentekens). */
   aantal: number;
 }
 
@@ -61,7 +66,15 @@ export interface CrmTellingen {
   rijenZonderMail: number;
   /** De algemene opt-ins (VDU, Service) waarvoor geen booleaanse kolom in de export staat. */
   ontbrekend: string[];
+  /** De kolom met de kentekens, of null als die ontbreekt (dan geen auto-KPI's). */
+  kentekenKolom: string | null;
 }
+
+/**
+ * De kolom met kentekens: eerst `VDUVEHICLES_LICENSE_PLATE`, anders de eerste kolom met
+ * "PLATE" of "KENTEKEN" in de naam.
+ */
+const KENTEKEN_KOLOMMEN = ["VDUVEHICLES_LICENSE_PLATE"];
 
 /** De kolommen met e-mailadressen, in volgorde van voorkeur (zelfde als Tools → Selligent). */
 const MAIL_KOLOMMEN = ["MAIL", "EMAIL"];
@@ -73,7 +86,9 @@ function isWaar(waarde: string): boolean {
 /** Telt de contacten en per booleaanse kolom de opt-ins, in unieke e-mailadressen. */
 export function telCrm(tabel: Tabel): CrmTellingen {
   const mail = MAIL_KOLOMMEN.map((n) => tabel.kolommen.find((k) => k.naam === n)).find(Boolean) ?? null;
-  if (!mail) return { mailKolom: null, tellingen: [], rijen: tabel.rijen, rijenZonderMail: tabel.rijen, ontbrekend: [] };
+  if (!mail) {
+    return { mailKolom: null, tellingen: [], rijen: tabel.rijen, rijenZonderMail: tabel.rijen, ontbrekend: [], kentekenKolom: null };
+  }
 
   const aantalMails = mail.waarden.length;
   const gezien = new Uint8Array(aantalMails);
@@ -119,9 +134,47 @@ export function telCrm(tabel: Tabel): CrmTellingen {
       };
     });
 
+  // Auto's: unieke kentekens. Een auto heeft een opt-in als hij op minstens één rij bij een
+  // e-mailadres staat dat ergens een opt-in op True heeft — de auto's van "Contacten met opt-in".
+  const kenteken =
+    KENTEKEN_KOLOMMEN.map((n) => tabel.kolommen.find((k) => k.naam === n)).find(Boolean) ??
+    tabel.kolommen.find((k) => /PLATE|KENTEKEN/i.test(k.naam)) ??
+    null;
+  const autos: CrmTelling[] = [];
+  if (kenteken) {
+    const gezienAuto = new Uint8Array(kenteken.waarden.length);
+    const autoMetOptin = new Uint8Array(kenteken.waarden.length);
+    let aantalAutos = 0;
+    let aantalMetOptin = 0;
+    for (let i = 0; i < tabel.rijen; i++) {
+      const a = kenteken.codes[i];
+      if (a === 0) continue;
+      if (!gezienAuto[a]) {
+        gezienAuto[a] = 1;
+        aantalAutos++;
+      }
+      const m = mail.codes[i];
+      if (!autoMetOptin[a] && m !== 0 && metEenOptin[m]) {
+        autoMetOptin[a] = 1;
+        aantalMetOptin++;
+      }
+    }
+    autos.push(
+      { sleutel: AUTOS_SLEUTEL, naam: "Aantal auto's", soort: "autos", kolom: kenteken.naam, aantal: aantalAutos },
+      {
+        sleutel: AUTOS_OPTIN_SLEUTEL,
+        naam: "Auto's met opt-in",
+        soort: "autos-optin",
+        kolom: kenteken.naam,
+        aantal: aantalMetOptin,
+      },
+    );
+  }
+
   const gevonden = new Set(optins.map((o) => algemenePlek(o.kolom)).filter((p) => p !== null));
   return {
     mailKolom: mail.naam,
+    kentekenKolom: kenteken?.naam ?? null,
     ontbrekend: ALGEMENE_OPTINS.filter((_, i) => !gevonden.has(i)).map((a) => a.naam),
     tellingen: [
       { sleutel: CONTACTEN_SLEUTEL, naam: "Contacten", soort: "contacten", kolom: mail.naam, aantal: contacten },
@@ -132,6 +185,7 @@ export function telCrm(tabel: Tabel): CrmTellingen {
         kolom: mail.naam,
         aantal: metEenOptin.reduce((t, v) => t + v, 0),
       },
+      ...autos,
       ...optins,
     ],
     rijen: tabel.rijen,
@@ -250,6 +304,8 @@ export interface Kpi2027CrmAntwoord {
   rijenZonderMail: number;
   /** De algemene opt-ins (VDU, Service) die niet als booleaanse kolom in de export staan. */
   ontbrekend: string[];
+  /** De kolom met kentekens, of null (dan staan de auto-KPI's er niet). */
+  kentekenKolom: string | null;
   groepen: CrmGroep[];
   fout?: string;
 }
@@ -267,14 +323,15 @@ export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroe
       : { waarde: 0, peildatum: null },
     keuzes: keuzesVoor(t.soort),
   });
-  // Bovenaan Contacten, dan Contacten met opt-in, dan de algemene opt-ins in hun vaste volgorde
-  // (VDU, Service); daaronder de merk-opt-ins in de volgorde van het bestand.
-  const plek = (t: CrmTelling) =>
-    t.soort === "contacten" ? -2 : t.soort === "met-optin" ? -1 : algemenePlek(t.kolom);
+  // Bovenaan Contacten, Contacten met opt-in, Aantal auto's, Auto's met opt-in, dan de algemene
+  // opt-ins in hun vaste volgorde (VDU, Service); daaronder de merk-opt-ins in de volgorde van het
+  // bestand.
+  const VOORAAN: Partial<Record<CrmSoort, number>> = { contacten: -4, "met-optin": -3, autos: -2, "autos-optin": -1 };
+  const plek = (t: CrmTelling) => VOORAAN[t.soort] ?? algemenePlek(t.kolom);
   const algemeen = telling.tellingen.filter((t) => plek(t) !== null).sort((a, b) => plek(a)! - plek(b)!);
   const merken = telling.tellingen.filter((t) => plek(t) === null);
   const groepen: CrmGroep[] = [
-    { sleutel: "algemeen", naam: "Contacten en algemene opt-ins", kpis: algemeen.map(regel) },
+    { sleutel: "algemeen", naam: "Contacten, auto's en algemene opt-ins", kpis: algemeen.map(regel) },
     { sleutel: "merken", naam: "Opt-ins per merk", kpis: merken.map(regel) },
   ];
   return groepen.filter((g) => g.kpis.length > 0);

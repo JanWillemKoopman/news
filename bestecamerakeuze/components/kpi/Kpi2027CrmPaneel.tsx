@@ -146,12 +146,25 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
         </p>
       )}
 
+      {data && data.mailKolom && !data.kentekenKolom && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>
+            <strong className="font-semibold">Geen kentekenkolom gevonden.</strong> Aantal auto&apos;s en Auto&apos;s met
+            opt-in tellen de kolom VDUVEHICLES_LICENSE_PLATE (of een kolom met PLATE of KENTEKEN in de naam); die staat
+            niet in de export, dus die twee KPI&apos;s ontbreken.
+          </span>
+        </p>
+      )}
+
       <Definitie zonderLijn>
         <span>
           Alles telt <strong className="font-semibold text-ink">unieke e-mailadressen</strong> uit de Selligent-export
           (kolom {data?.mailKolom ?? "MAIL"}). <strong className="font-semibold text-ink">Contacten</strong> is het aantal
           verschillende e-mailadressen; <strong className="font-semibold text-ink">Contacten met opt-in</strong> het
-          aantal daarvan met minstens één opt-in op True; <strong className="font-semibold text-ink">Opt-in &lt;merk&gt;</strong> het aantal
+          aantal daarvan met minstens één opt-in op True. <strong className="font-semibold text-ink">Aantal auto&apos;s</strong>{" "}
+          telt unieke kentekens, <strong className="font-semibold text-ink">Auto&apos;s met opt-in</strong> de kentekens van
+          een contact met opt-in; <strong className="font-semibold text-ink">Opt-in &lt;merk&gt;</strong> het aantal
           verschillende e-mailadressen met minstens één rij waarop die opt-inkolom True is — elke booleaanse kolom in de
           export krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de laatste
           export), het target de stand die er eind {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI.{" "}
@@ -166,8 +179,9 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data.groepen.map((groep) => (
             <section key={groep.sleutel} className="flex flex-col gap-3">
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
-              {/* De vier bovenste kaarten (Contacten, Contacten met opt-in, VDU, Service) staan als
-                  2 × 2: drie of vier naast elkaar laat de tegels per kaart over hun rand lopen. De
+              {/* De bovenste kaarten (Contacten, Contacten met opt-in, Aantal auto's, Auto's met opt-in,
+                  VDU, Service) staan twee per rij: drie of meer naast elkaar laat de tegels per kaart
+                  over hun rand lopen. De
                   merk-opt-ins volgen het raster van de andere KPI-tabbladen. */}
               <div
                 className={`grid gap-6 ${groep.sleutel === "algemeen" ? "grid-cols-2" : "grid-cols-2 min-[1800px]:grid-cols-3"}`}
