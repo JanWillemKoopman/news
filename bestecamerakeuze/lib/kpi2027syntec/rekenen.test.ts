@@ -179,6 +179,9 @@ test("inruilvoorstel en contact rekenen vanaf april: januari t/m maart bijgescha
   assert.equal(u.dagenNietGemeten, 90);
   assert.deepEqual(u.maanden.slice(0, 4).map((m) => m.soort), ["bijgeschat", "bijgeschat", "bijgeschat", "gerealiseerd"]);
   assert.equal(u.maanden[0].verwacht, 31);
+  // De tooltip legt uit waarom de maand bijgeschat is — niet met de tekst over websitesessies.
+  assert.match(u.maanden[0].toelichting ?? "", /rekent vanaf 1 april 2026/);
+  assert.equal(u.maanden[3].toelichting ?? null, null);
   // "Wat telt mee" toont alleen wat in de verwachting zit.
   assert.deepEqual(inruil.bron.map((b) => b.aantal), [0, 91]);
   assert.ok(inruil.keuzes[0].startsWith("Rekent vanaf 1 april 2026"));

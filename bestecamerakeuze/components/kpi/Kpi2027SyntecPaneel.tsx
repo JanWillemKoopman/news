@@ -148,7 +148,7 @@ export default function Kpi2027SyntecPaneel({ ingelogd }: { ingelogd: boolean })
           iedereen). Een totaal is de som van zijn kaarten, ook het target; zijn percentage volgt daaruit. Het
           maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles schuift elke zondag op t/m zaterdag. In de grafiek is de
-          doorgetrokken lijn gemeten en de gestippelde lijn verwachting. Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
+          doorgetrokken lijn gemeten en de gestippelde lijn verwachting (bij inruilvoorstel en contact in januari t/m maart: bijgeschat). Met de schakelaar Eerdere jaren rechtsboven staan ook 2024 en 2025 erin, als dunne lijnen met dezelfde definitie, zoals gemeten.
         </span>
       </Definitie>
 
