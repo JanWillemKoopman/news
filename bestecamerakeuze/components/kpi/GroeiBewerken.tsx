@@ -8,8 +8,8 @@ import { leesPercentage, percentageInvoer } from "@/lib/kpi2027/groeiInvoer";
 /**
  * Het groeipercentage van één KPI met de hand aanpassen — op de kaart (`KpiKaart.tsx`)
  * én in de overzichtstabel (`OverzichtTabel.tsx`), met precies hetzelfde gedrag: klik op
- * het percentage, typ een getal, Enter of wegklikken slaat op, Escape annuleert; precies
- * de standaard typen zet hem terug. Het opslaan en herberekenen doet de ouder
+ * het percentage, typ een getal, Enter of wegklikken slaat op, Escape annuleert. Er is
+ * bewust geen knop om terug te gaan naar +5% (verzoek november 2026); 5 typen kan wel. Het opslaan en herberekenen doet de ouder
  * (`opslaan`, zie de panelen), zodat kaart en tabel altijd hetzelfde getal tonen.
  */
 
@@ -93,5 +93,5 @@ export function useGroeiBewerken(groei: number, opslaan: (groei: number | null) 
     onBlur: () => void bevestig(),
   };
 
-  return { bewerken, bezig, fout, begin, terugzetten: () => void bewaar(null), invoerProps };
+  return { bewerken, bezig, fout, begin, invoerProps };
 }

@@ -2,8 +2,7 @@
 
 import type { ReactNode } from "react";
 import { formatteer } from "@/components/chat/chartTheme";
-import { STANDAARD_GROEI_TEKST, useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
-import { IconRefresh } from "@/components/icons";
+import { useGroeiBewerken } from "@/components/kpi/GroeiBewerken";
 import { Definitie, aantal, datumKort } from "@/components/kpi/KpiKaart";
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { voortgang, type KpiUitkomst } from "@/lib/kpi2027/rekenen";
@@ -71,7 +70,7 @@ export function OverzichtRegel({
       <td className={cel}>{u ? aantal(u.verwacht) : streepje}</td>
       <td className={`${cel} bg-primary-light/60`}>{u ? aantal(u.target) : streepje}</td>
       <td className={cel}>
-        {u && groei ? <GroeiCel groei={u.groei} {...groei} /> : u ? procent(u.groei) : streepje}
+        {u && groei ? <GroeiCel groei={u.groei} opslaan={groei.opslaan} /> : u ? procent(u.groei) : streepje}
       </td>
       <td className={cel}>{aantal(realisatie.waarde)}</td>
       <td className={cel}>
@@ -92,18 +91,17 @@ export function OverzichtRegel({
 
 /**
  * Target % als aan te klikken getal: dezelfde invoer als op de kaart (`useGroeiBewerken`).
- * Een aangepast percentage krijgt een stip en een knopje om terug te gaan naar de standaard.
+ * Het percentage is het vastgestelde target; er is bewust geen knop om terug te gaan naar
+ * +5% (verzoek november 2026).
  */
 function GroeiCel({
   groei,
-  aangepast,
   opslaan,
 }: {
   groei: number;
-  aangepast: boolean;
   opslaan: (groei: number | null) => Promise<void>;
 }) {
-  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(groei, opslaan);
+  const { bewerken, bezig, fout, begin, invoerProps } = useGroeiBewerken(groei, opslaan);
 
   return (
     <span className="inline-flex flex-col items-end">
@@ -118,25 +116,12 @@ function GroeiCel({
           </>
         ) : (
           <>
-            {aangepast && !bezig && (
-              <button
-                type="button"
-                onClick={terugzetten}
-                title={`Aangepast — klik om terug te gaan naar ${STANDAARD_GROEI_TEKST}`}
-                aria-label={`Terug naar ${STANDAARD_GROEI_TEKST}`}
-                className="rounded-control p-0.5 text-ink-faint transition-colors duration-[var(--duur-snel)] ease-merk hover:text-ink"
-              >
-                <IconRefresh className="h-3 w-3" />
-              </button>
-            )}
             <button
               type="button"
               onClick={begin}
               disabled={bezig}
               title="Klik om het groeipercentage aan te passen"
-              className={`rounded-control px-1 underline decoration-dotted underline-offset-4 transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint disabled:cursor-wait ${
-                aangepast ? "decoration-primary" : "decoration-ink-faint"
-              }`}
+              className="rounded-control px-1 underline decoration-dotted decoration-ink-faint underline-offset-4 transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint disabled:cursor-wait"
             >
               {bezig ? "…" : procent(groei)}
             </button>
@@ -217,10 +202,9 @@ export function OverzichtTabel({
         </dd>
         <dt className="font-semibold text-ink">Target %</dt>
         <dd>
-          Hoeveel procent het Target {KPI_DOELJAAR} boven de verwachting voor {KPI_JAAR} ligt; standaard{" "}
-          {STANDAARD_GROEI_TEKST}. Klik op het percentage van een KPI om het aan te passen (Enter om op te slaan, Escape om
-          te annuleren): het target, de voortgang en de kaart eronder rekenen meteen mee, en het geldt voor iedereen. Het
-          pijltje ervoor zet een aangepast percentage terug naar {STANDAARD_GROEI_TEKST}.
+          Hoeveel procent het Target {KPI_DOELJAAR} boven de verwachting voor {KPI_JAAR} ligt: het vastgestelde
+          percentage per KPI. Klik op het percentage van een KPI om het aan te passen (Enter om op te slaan, Escape om te
+          annuleren): het target, de voortgang en de kaart eronder rekenen meteen mee, en het geldt voor iedereen.
         </dd>
         <dt className="font-semibold text-ink">Realisatie</dt>
         <dd>

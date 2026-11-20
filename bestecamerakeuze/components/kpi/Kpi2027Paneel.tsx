@@ -270,7 +270,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
           de gemeten dagen t/m de peildatum telde, plus het gemiddelde per gemeten dag × alle overige dagen van{" "}
           {KPI_JAAR} (de resterende dagen, en dagen waarop de website 0 sessies had).{" "}
           <strong className="font-semibold text-ink">Target {KPI_DOELJAAR}</strong> = die verwachting plus de groei
-          (standaard +{groeiTekst}; klik op het percentage bij Groei om het per KPI aan te passen — dat geldt voor
+          (het vastgestelde percentage per KPI, anders +{groeiTekst}; klik op het percentage bij Groei om het aan te passen — dat geldt voor
           iedereen); het maandtarget is het jaartarget ÷ 12. <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong>{" "}
           telt vanaf 1 januari {KPI_DOELJAAR} mee. Alles wordt elke zondag bijgewerkt t/m zaterdag. In de grafiek is de
           doorgetrokken lijn gemeten en de gestippelde lijn verwachting of bijgeschat.
