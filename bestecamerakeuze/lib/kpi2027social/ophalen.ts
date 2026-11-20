@@ -18,7 +18,8 @@ import type { SocialKanaal } from "@/lib/kpi2027social/definities";
  *    `organization_follower_count` van vandaag. De stand op een dag = de stand van vandaag
  *    min de aanwas van alle dagen erna. In stukken van 180 dagen: één opvraging mag bij
  *    LinkedIn niet meer dan 14 maanden beslaan.
- *  - **Facebook**: `page_daily_follows` (nieuwe volgers per dag), `page_follows` (de stand, per
+ *  - **Facebook**: `page_daily_follows` (nieuwe volgers per dag — per dag, want Windsors eigen
+ *    maandoptelling van dit veld geeft voor sommige maanden 0, zie `definities.ts`), `page_follows` (de stand, per
  *    dag; `page_fans` als terugval voor pagina's
  *    die nooit naar volgers zijn omgezet) en `page_impressions` per dag, in stukken van
  *    90 dagen: de Facebook-connector is traag (131 s voor een kwartaal posts gemeten).

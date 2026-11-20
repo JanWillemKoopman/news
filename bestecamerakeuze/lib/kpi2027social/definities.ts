@@ -35,11 +35,13 @@
  *    netto aanwas per dag erna (`followers_gain_organic` + `followers_gain_paid`, kan
  *    negatief zijn): zo is de stand op elke dag van het jaar terug te rekenen. Eén opvraging
  *    mag niet meer dan 14 maanden beslaan.
- *  - **Facebook** (`facebook_organic`): nieuwe volgers = `page_daily_follows` per dag (historisch
- *    beschikbaar; tot 8 oktober stond het ook in `windsor_account_dag`), volgers = `page_follows`,
- *    vertoningen = `page_impressions` per dag. **Niet gekoppeld sinds 8 oktober 2026**: de
- *    nachtelijke sync faalt met "No facebook_organic accounts are configured". Zodra de
- *    pagina's in Windsor opnieuw zijn geselecteerd, haalt de eerstvolgende run heel 2026 op.
+ *  - **Facebook** (`facebook_organic`): nieuwe volgers = `page_daily_follows`, vertoningen =
+ *    `page_impressions`, volgers = `page_follows` (een stand), allemaal per dag en het hele jaar
+ *    terug. Op 20 november 2026 opnieuw gekoppeld (stond sinds 8 oktober uit) en nagelopen: alle
+ *    318 dagen t/m 14 november aanwezig voor alle drie de pagina's. **Altijd per dag opvragen**:
+ *    Windsors eigen maandoptelling van `page_daily_follows` geeft voor februari, april, juni en
+ *    september 0, terwijl de dagen ervan gewoon nieuwe volgers hebben (februari Van den Udenhout:
+ *    12). `somPerDag` telt zelf op. Audi Sport = de pagina Audi Sport Eindhoven.
  *  - **TikTok en YouTube**: niet gekoppeld in Windsor. De KPI's staan erin (met hun
  *    percentage) en tonen "nog niet gekoppeld" tot er een account is.
  */
@@ -90,8 +92,6 @@ export const KANAAL_NAMEN: Record<SocialKanaal, string> = {
 /** De volgorde van de kanalen op de pagina en in de tabel. */
 export const KANAAL_VOLGORDE: readonly SocialKanaal[] = ["facebook", "instagram", "linkedin", "tiktok", "youtube"];
 
-const FACEBOOK_LOS =
-  "De Facebook-koppeling in Windsor staat sinds 8 oktober 2026 uit (\"No facebook_organic accounts are configured\"). Selecteer de pagina's opnieuw in Windsor; de eerstvolgende update haalt dan heel 2026 op.";
 const NIET_IN_WINDSOR = (kanaal: string) =>
   `${kanaal} is niet gekoppeld in Windsor. Zodra het account daar gekoppeld is, kan deze KPI worden aangesloten.`;
 
@@ -110,7 +110,7 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
     sleutel: "udenhout",
     naam: "Van den Udenhout",
     accounts: [
-      { kanaal: "facebook", accountId: "135654409827841", naam: "Van den Udenhout", nietGekoppeld: FACEBOOK_LOS },
+      { kanaal: "facebook", accountId: "135654409827841", naam: "Van den Udenhout" },
       { kanaal: "instagram", accountId: "17841400383959539", naam: "udenhoutgroep" },
       { kanaal: "linkedin", accountId: "288254", naam: "Van den Udenhout Groep" },
       { kanaal: "tiktok", accountId: null, naam: "TikTok", nietGekoppeld: NIET_IN_WINDSOR("TikTok") },
@@ -131,7 +131,7 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
     sleutel: "veloo",
     naam: "VELOO",
     accounts: [
-      { kanaal: "facebook", accountId: "113133791655546", naam: "VELOO", nietGekoppeld: FACEBOOK_LOS },
+      { kanaal: "facebook", accountId: "113133791655546", naam: "VELOO" },
       { kanaal: "instagram", accountId: "17841457360463399", naam: "veloonl" },
       { kanaal: "linkedin", accountId: "91687065", naam: "VELOO" },
     ],
@@ -148,7 +148,7 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
     sleutel: "audi-sport",
     naam: "Audi Sport",
     accounts: [
-      { kanaal: "facebook", accountId: "324389797988583", naam: "Audi Sport Eindhoven", nietGekoppeld: FACEBOOK_LOS },
+      { kanaal: "facebook", accountId: "324389797988583", naam: "Audi Sport Eindhoven" },
       { kanaal: "instagram", accountId: "17841402138338797", naam: "audisportdealer" },
     ],
     kpis: [

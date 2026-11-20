@@ -1215,7 +1215,7 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   volgen + ontvolgen samen (per dag altijd ≥ `follower_count_1d`). Audi Sport (`audisportdealer`) stond
   niet in de Instagram-accounts van de nachtelijke sync; sinds november 2026 wel, dus zijn historie
   begint pas bij het 30-dagenvenster van de eerste ophaalactie. Facebook: `page_daily_follows`, wél
-  historisch beschikbaar, zodra de koppeling terug is.
+  historisch beschikbaar: elke dag van 2026 is gemeten, er wordt niets bijgeschat.
 - **Volgers zijn een stand, geen optelsom** (`berekenVolgers`; LinkedIn, TikTok, YouTube). Basis = de stand op 31 december 2026
   (zolang het jaar loopt: laatste stand + trend per dag; trend = eerste → laatste stand van het jaar,
   pas vanaf zeven dagen ertussen). Target = de stand eind 2027. In de grafiek de stand per maandeinde
@@ -1231,10 +1231,11 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   - *LinkedIn*: impressies = `account_analytics_impression_count`; volgers per dag teruggerekend uit de
     stand van vandaag min de netto aanwas (`followers_gain_organic` + `_paid`) erna (`standenUitAanwas`).
     Opvragingen in stukken van 180 dagen (LinkedIn weigert boven de 14 maanden).
-  - *Facebook*: `page_follows` en `page_impressions` per dag. **De koppeling staat sinds 8 oktober 2026
-    uit** in Windsor ("No facebook_organic accounts are configured"; ook de nachtelijke sync faalt
-    daarop). Zodra de pagina's opnieuw geselecteerd zijn, haalt de volgende run heel 2026 op. Audi
-    Sport = de pagina Audi Sport Eindhoven.
+  - *Facebook*: `page_daily_follows` (nieuwe volgers), `page_impressions` en `page_follows` per dag.
+    Stond sinds 8 oktober 2026 los in Windsor; op 20 november opnieuw gekoppeld en nagelopen (alle
+    318 dagen t/m 14 november, alle drie de pagina's). **Altijd per dag opvragen**: Windsors eigen
+    maandoptelling van `page_daily_follows` geeft voor februari, april, juni en september 0, terwijl
+    de dagen ervan gewoon nieuwe volgers hebben. Audi Sport = de pagina Audi Sport Eindhoven.
   - *TikTok en YouTube*: niet gekoppeld in Windsor. De KPI's staan erin met hun percentage en tonen
     "niet gekoppeld"; aansluiten = account in Windsor koppelen, `accountId` in `definities.ts` zetten en
     een tak in `haalAccount` (`ophalen.ts`) toevoegen.

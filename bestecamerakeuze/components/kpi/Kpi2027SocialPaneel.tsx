@@ -179,9 +179,6 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
           <span>
             <strong className="font-semibold">{nietGekoppeld.join(", ")}: nog geen cijfers.</strong>{" "}
-            {nietGekoppeld.includes("Facebook")
-              ? "De Facebook-koppeling in Windsor staat sinds 8 oktober 2026 uit; zodra de pagina's daar opnieuw zijn geselecteerd, haalt de volgende update heel 2026 op. "
-              : ""}
             {nietGekoppeld.some((k) => k === "TikTok" || k === "YouTube")
               ? "TikTok en YouTube zijn niet gekoppeld in Windsor. "
               : ""}
