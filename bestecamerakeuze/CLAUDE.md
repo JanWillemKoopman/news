@@ -79,7 +79,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
 - **Het dashboard opent op een startscherm** (view `home`, `components/home/HomeDashboard.tsx`,
   november 2026 op verzoek). Bovenaan gecentreerd "Marketing dashboard" (geen PageHeader),
   daaronder vier blokken in een raster van 2 × 2: **KPI's 2027** (linksboven), **Kanalen**
-  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Elk blok heeft een
+  (rechtsboven), **Tools** (linksonder) en **Campagnes** (rechtsonder). Het geheel past precies
+  in het scherm (hoogte = viewport min de padding van `<main>`, geen scrollen), en elk blok
+  heeft twee kolommen: links de illustratie, rechts kopje, titel, omschrijving en de pagina's
+  als één lijst onder elkaar (verzoek november 2026). Elk blok heeft een
   klein grijs kopje met de groepsnaam uit de sidebar en daaronder een eigen titel: Key
   performance indicators, Online kanalen analyseren, Interne data en Campagnes monitoren.
 - **Sidebar en startscherm delen één lijst** (`components/navigatie.tsx`, `NAV_GROEPEN`):

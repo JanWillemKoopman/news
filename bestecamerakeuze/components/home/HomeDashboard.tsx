@@ -67,13 +67,17 @@ type Props = {
   gebruikerEmail: string | null;
 };
 
-/** Het startscherm: titel in het midden en vier blokken die naar elke pagina doorverwijzen. */
+/**
+ * Het startscherm: titel in het midden en vier blokken die naar elke pagina doorverwijzen.
+ * Het geheel past precies in het scherm: de hoogte is de viewport min de verticale padding
+ * van `<main>` (py-6 = 3rem), en de twee rijen blokken verdelen de rest.
+ */
 export default function HomeDashboard({ onNavigate, gebruikerEmail }: Props) {
   return (
-    <div>
-      <h1 className="titel-theme text-center text-ink">Marketing dashboard</h1>
+    <div className="flex h-[calc(100vh-3rem)] flex-col">
+      <h1 className="titel-theme shrink-0 text-center text-ink">Marketing dashboard</h1>
 
-      <div className="mt-8 grid grid-cols-2 gap-6">
+      <div className="mt-6 grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-6">
         {BLOKKEN.map((blok) => {
           const groep = navGroep(blok.groep);
           return (
@@ -103,25 +107,27 @@ function GroepBlok({
   onNavigate: (view: DashboardView) => void;
 }) {
   return (
-    <section className="iso-blok kaart-accent kaart-omlijst flex flex-col rounded-panel border border-line bg-card shadow-card">
-      <div className="relative px-7 pt-6">
+    <section className="iso-blok kaart-accent kaart-omlijst grid min-h-0 grid-cols-2 overflow-hidden rounded-panel border border-line bg-card shadow-card">
+      {/* Kolom 1: de illustratie, schaalt mee met de hoogte van het blok. */}
+      <div className="relative flex min-h-0 flex-col px-7 py-6">
         <span className="font-mono text-label tracking-[0.08em] text-ink-faint">{blok.fig}</span>
-        <div className="mx-auto mt-1 h-[230px] max-w-[380px]">{blok.illustratie}</div>
+        <div className="mx-auto mt-2 min-h-0 w-full max-w-[380px] flex-1">{blok.illustratie}</div>
       </div>
 
-      <div className="flex flex-1 flex-col px-7 pb-6 pt-4">
+      {/* Kolom 2: kopje, titel, omschrijving en de pagina's als één lijst. */}
+      <div className="flex min-h-0 flex-col justify-center overflow-y-auto py-6 pl-2 pr-7">
         <p className="label-theme text-label text-ink-faint">{kopje}</p>
         <h2 className="mt-0.5 font-sans-w7 text-base font-bold text-ink">{blok.titel}</h2>
         <p className="mt-1 text-meta text-ink-muted">{blok.omschrijving}</p>
 
         {paginas.length > 0 ? (
-          <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-line-soft pt-3">
+          <ul className="mt-4 flex flex-col gap-0.5 border-t border-line-soft pt-3">
             {paginas.map((pg) => (
               <li key={pg.view}>
                 <button
                   type="button"
                   onClick={() => onNavigate(pg.view)}
-                  className="group/link flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-left text-sm text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint hover:text-ink"
+                  className="group/link -ml-2.5 flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-left text-sm text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint hover:text-ink"
                 >
                   <span className="shrink-0 [&>svg]:h-4 [&>svg]:w-4">{pg.icon}</span>
                   <span className="flex-1 truncate">{pg.label}</span>
