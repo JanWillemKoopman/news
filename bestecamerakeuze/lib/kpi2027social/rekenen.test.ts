@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SOCIAL_MERKEN, vindSocialKpi } from "@/lib/kpi2027social/definities";
+import { SOCIAL_MERKEN, keuzesVoor, vindSocialKpi } from "@/lib/kpi2027social/definities";
 import {
   achterstand,
   berekenNieuweVolgers,
@@ -65,6 +65,25 @@ test("de percentages van het team staan per merk zoals aangeleverd", () => {
   }
   assert.equal(vindSocialKpi("veloo", "linkedin-vertoningen")?.groei, 0.21);
   assert.equal(vindSocialKpi("veloo", "tiktok-volgers"), undefined);
+});
+
+test("elke KPI heeft keuzes onder de grafiek, met zijn eigen percentage en de besluiten van zijn kanaal", () => {
+  for (const merk of SOCIAL_MERKEN) {
+    for (const kpi of merk.kpis) {
+      const keuzes = keuzesVoor(merk, kpi);
+      assert.ok(keuzes.length >= 2, `${merk.sleutel} ${kpi.sleutel}`);
+      const procent = `${kpi.groei >= 0 ? "+" : "−"}${String(Math.round(Math.abs(kpi.groei) * 1000) / 10).replace(".", ",")}%`;
+      assert.ok(keuzes[0].startsWith(procent), `${merk.sleutel} ${kpi.sleutel}: ${keuzes[0]}`);
+    }
+  }
+  const udenhout = SOCIAL_MERKEN.find((m) => m.sleutel === "udenhout")!;
+  const kpi = (s: string) => udenhout.kpis.find((k) => k.sleutel === s)!;
+  assert.ok(keuzesVoor(udenhout, kpi("instagram-volgers")).some((k) => k.includes("20 november")));
+  assert.ok(keuzesVoor(udenhout, kpi("facebook-volgers")).some((k) => k.includes("page_follows")));
+  assert.ok(keuzesVoor(udenhout, kpi("instagram-vertoningen")).some((k) => k.includes("views")));
+  assert.ok(keuzesVoor(udenhout, kpi("tiktok-volgers")).some((k) => k.includes("niet gekoppeld")));
+  const veloo = SOCIAL_MERKEN.find((m) => m.sleutel === "veloo")!;
+  assert.ok(keuzesVoor(veloo, veloo.kpis.find((k) => k.sleutel === "facebook-vertoningen")!)[0].startsWith("−6%"));
 });
 
 test("impressies: gemeten t/m de peildatum plus het gemiddelde per dag, × (1 + groei)", () => {

@@ -1204,6 +1204,15 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   website = merksleutel). Net als op GA en Syntec zonder herstelknop en zonder markering
   "aangepast"; precies het percentage van het team typen haalt de eigen rij weg (`standaard` in
   `useGroeiBewerken` / `GroeiInstelling` / `OverzichtRegel`).
+- **Onder elke grafiek de definitie en de besluiten** (verzoek van de eigenaar, 20 november 2026),
+  ingeklapt achter "Lees definitie" en in dezelfde opbouw als Syntec (`KpiSocialKaart.tsx`): *Grafiek*,
+  *Bron* (kanaal, account en id), *Wat telt mee* (welk Windsor-veld, in gewone taal) en *Keuzes in de
+  definitie*: de besluiten per KPI uit `keuzesVoor` in `definities.ts` — het vastgestelde percentage,
+  stand of optelsom, per kanaal wat er wel en niet gebruikt is en waarom, en wanneer 2026 definitief
+  wordt. Elke KPI heeft er minstens twee, en de eerste noemt zijn eigen percentage (getest). Verander je
+  een definitie of rekenregel, pas dan in dezelfde wijziging `keuzesVoor` aan. De afwijkende regel bij
+  Instagram (1 januari t/m de dag vóór de eerste meting = die eerste meting) staat, net als "vanaf
+  1 april" op Syntec, óók als melding bovenaan het tabblad.
 - **Impressies rekenen als KPI's 2027 GA** (`berekenKpi`): gemeten + gemiddelde per dag × resterende
   dagen, × (1 + groei), maandtarget ÷ 12. Eén verschil: hooguit drie lege dagen vlak vóór de
   peildatum tellen als nog niet gemeten (`achterstand`), want LinkedIn en Meta leveren een tot twee

@@ -8,7 +8,9 @@ import type { SocialKpiRegel } from "@/lib/kpi2027social/rekenen";
 
 /**
  * Eén social-KPI: dezelfde kaart als op KPI's 2027 GA en Syntec (`KpiKaartOpmaak`), met
- * eronder — ingeklapt achter "Lees definitie" — welk cijfer van welk account erin zit.
+ * eronder — ingeklapt achter "Lees definitie" — dezelfde opbouw als op Syntec: *Grafiek*, *Bron*,
+ * *Wat telt mee* en *Keuzes in de definitie* (de besluiten per KPI, `keuzesVoor` in
+ * `lib/kpi2027social/definities.ts`).
  * Volgers zijn een stand (`stand`), impressies een aantal; zie `lib/kpi2027social/rekenen.ts`.
  */
 
@@ -100,11 +102,22 @@ export default function KpiSocialKaart({
       </p>
       <p className="mt-2 text-ink-muted">Wat telt mee{u ? ` — ${KPI_JAAR} t/m ${datumKort(u.peildatum)}` : ""}</p>
       <p className="mt-0.5">{watTeltMee(kpi)}</p>
-      <p className="mt-2">
-        <span className="text-ink-muted">Groei:</span> het team legde voor deze KPI {groeiTekst(kpi.standaardGroei)} vast
-        (november 2026).
-        {kpi.groeiAangepast && u ? ` Nu met de hand op ${groeiTekst(u.groei)} gezet.` : ""}
-      </p>
+      {u && Math.abs(u.groei - kpi.standaardGroei) > 1e-9 && (
+        <p className="mt-1">
+          Het percentage staat nu met de hand op {groeiTekst(u.groei)} (vastgesteld was{" "}
+          {groeiTekst(kpi.standaardGroei)}).
+        </p>
+      )}
+
+      <p className="mt-2 text-ink-muted">Keuzes in de definitie</p>
+      <ul className="mt-0.5 flex flex-col gap-0.5">
+        {kpi.keuzes.map((k) => (
+          <li key={k} className="flex gap-1.5">
+            <span aria-hidden="true">•</span>
+            <span>{k}</span>
+          </li>
+        ))}
+      </ul>
     </KpiKaartOpmaak>
   );
 }

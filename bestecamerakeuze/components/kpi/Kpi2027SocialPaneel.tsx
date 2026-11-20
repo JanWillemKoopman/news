@@ -35,6 +35,13 @@ function datumLang(datum: string): string {
   });
 }
 
+/** "19 november": de dag `verschuiving` dagen na `datum`. */
+function datumDag(datum: string, verschuiving: number): string {
+  const d = new Date(`${datum}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + verschuiving);
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", timeZone: "UTC" });
+}
+
 function momentTekst(iso: string): string {
   return new Date(iso).toLocaleString("nl-NL", {
     weekday: "long",
@@ -103,6 +110,11 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
   if (!ingelogd) return <Inlogprompt tekst="Log in om de KPI's en targets te bekijken." />;
 
   const merk = data?.merken.find((m) => m.sleutel === gekozen) ?? null;
+  /** De eerste echte Instagram-meting, als de maanden ervóór zijn aangevuld (`berekenVolgers`). */
+  const aangevuld =
+    merk?.kanalen
+      .find((g) => g.kanaal === "instagram")
+      ?.kpis.find((k) => k.maat === "volgers")?.uitkomst?.aangevuldTot ?? null;
   const nietGekoppeld = merk
     ? [...new Set(merk.kanalen.filter((g) => g.kpis.every((k) => k.nietGekoppeld)).map((g) => KANAAL_NAMEN[g.kanaal]))]
     : [];
@@ -183,6 +195,22 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
               ? "TikTok en YouTube zijn niet gekoppeld in Windsor. "
               : ""}
             De targets staan er wel, met het percentage van het team.
+          </span>
+        </p>
+      )}
+
+      {/* Dezelfde vorm als de melding "vanaf 1 april" op KPI's 2027 Syntec: een afwijkende
+          rekenregel hoort bovenaan te staan, niet alleen in de kleine letters onder één grafiek. */}
+      {aangevuld && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>
+            <strong className="font-semibold">
+              Instagram volgers: 1 januari t/m {datumDag(aangevuld, -1)} is een aanname.
+            </strong>{" "}
+            Instagram geeft alleen het aantal volgers van vandaag, geen historie. Daarom staat over die periode het aantal
+            van de eerste meting ({datumDag(aangevuld, 0)}), gestippeld in de grafiek; vanaf dan telt elke dag het echte
+            aantal. Het target rust op het echt gemeten aantal van 31 december {KPI_JAAR}.
           </span>
         </p>
       )}

@@ -192,3 +192,71 @@ export function alleAccounts(): { kanaal: SocialKanaal; accountId: string; naam:
 export function vindSocialKpi(merkSleutel: string, kpiSleutel: string): SocialKpi | undefined {
   return SOCIAL_MERKEN.find((m) => m.sleutel === merkSleutel)?.kpis.find((k) => k.sleutel === kpiSleutel);
 }
+
+/** +7% / −6%, voor in de keuzes (de UI heeft zijn eigen notatie in `GroeiBewerken.tsx`). */
+function procentTekst(groei: number): string {
+  const p = Math.round(groei * 1000) / 10;
+  return `${p >= 0 ? "+" : "−"}${String(Math.abs(p)).replace(".", ",")}%`;
+}
+
+const KEUZE_STAND =
+  "Volgers is het totaal aantal volgers op een dag, geen optelsom (besluit van de eigenaar, 20 november 2026). De basis is het aantal op 31 december 2026; het target is het aantal dat er eind 2027 moet zijn. Zolang 2026 loopt, is de basis de laatste stand plus de gemiddelde groei per dag tot 31 december.";
+const KEUZE_OPTELLEN =
+  "Rekent precies als KPI's Google Analytics: wat het platform t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van 2026. Het maandtarget is het jaartarget ÷ 12, zonder seizoenspatroon.";
+const KEUZE_ACHTERSTAND =
+  "Hooguit drie lege dagen vlak vóór de peildatum tellen als nog niet binnen in plaats van als nul: LinkedIn en Meta leveren hun dagcijfers een tot twee dagen later.";
+const KEUZE_DEFINITIEF =
+  "Vanaf 3 januari 2027 wordt 2026 één laatste keer volledig opgehaald en definitief: dan rust het target op het hele, gemeten jaar en verdwijnt elke verwachting.";
+
+/**
+ * De besluiten achter één KPI, in gewone taal, voor onder de grafiek ("Keuzes in de
+ * definitie", net als op KPI's 2027 Syntec). Elke KPI heeft er minstens één (getest).
+ * Verander je een definitie of een rekenregel, pas dan in dezelfde wijziging deze tekst aan.
+ */
+export function keuzesVoor(merk: SocialMerk, kpi: SocialKpi): string[] {
+  const account = accountVoor(merk, kpi.kanaal);
+  const uit: string[] = [
+    `${procentTekst(kpi.groei)} is het target dat het team voor deze KPI vastlegde (november 2026), op basis van het resultaat van 2026; geen standaard +5%.`,
+  ];
+  if (!account?.accountId) {
+    uit.push(
+      `${KANAAL_NAMEN[kpi.kanaal]} is niet gekoppeld in Windsor. Het target staat erop, maar zonder cijfers. Zodra het account gekoppeld is, telt het totaal aantal volgers, als stand (net als de andere volgers-KPI's).`,
+    );
+    return uit;
+  }
+  if (kpi.maat === "volgers") {
+    uit.push(KEUZE_STAND);
+    if (kpi.kanaal === "instagram") {
+      uit.push(
+        "Instagram geeft alleen het aantal volgers van vandaag (followers_count), geen historie. Besluit van de eigenaar (20 november 2026): 1 januari t/m 19 november 2026 krijgen het aantal van de eerste meting op 20 november; vanaf dan telt elke dag het echte aantal. Het dashboard bewaart daarvoor elke nacht de stand.",
+        "Die aangevulde maanden zijn een aanname: gestippeld in de grafiek, en ze tellen niet mee in de groei per dag. Het target zelf rust op het echt gemeten aantal van 31 december 2026.",
+        "Niet gebruikt: nieuwe volgers per dag (follower_count_1d, bij Meta maar 30 dagen terug) en follows_and_unfollows (volgen en ontvolgen bij elkaar opgeteld, dus geen netto groei).",
+      );
+    } else if (kpi.kanaal === "facebook") {
+      uit.push(
+        "Facebook levert het totaal aantal volgers per dag (page_follows), heel 2026 gemeten: hier is niets aangevuld of geschat. Eerst was gekozen voor 'nieuwe volgers'; dat is teruggedraaid zodra bleek dat het totaal beschikbaar is.",
+        "Een pagina die nooit van likes naar volgers is omgezet, telt het aantal paginalikes (page_fans).",
+      );
+    } else if (kpi.kanaal === "linkedin") {
+      uit.push(
+        "LinkedIn levert het aantal volgers van vandaag en de netto aanwas per dag (organisch plus via advertenties). Het aantal op elke eerdere dag van 2026 is daaruit teruggerekend.",
+      );
+    }
+  } else {
+    uit.push(KEUZE_OPTELLEN, KEUZE_ACHTERSTAND);
+    if (kpi.kanaal === "instagram") {
+      uit.push(
+        "Instagram heeft geen impressies meer: views is sinds 2025 Meta's opvolger en telt ook herhaald bekijken van posts, reels en stories. Het percentage van het team geldt dus voor views.",
+      );
+    } else if (kpi.kanaal === "facebook") {
+      uit.push("Vertoningen van de pagina (page_impressions), organisch en betaald samen, zoals Facebook ze telt.");
+    } else if (kpi.kanaal === "linkedin") {
+      uit.push("Alleen organische vertoningen van de bedrijfspagina; advertenties tellen niet mee.");
+    }
+  }
+  if (account.naam && merk.sleutel === "audi-sport" && kpi.kanaal === "facebook") {
+    uit.push("Audi Sport is op Facebook de pagina Audi Sport Eindhoven.");
+  }
+  uit.push(KEUZE_DEFINITIEF);
+  return uit;
+}

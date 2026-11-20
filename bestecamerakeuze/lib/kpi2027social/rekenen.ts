@@ -14,6 +14,7 @@ import {
 import {
   KANAAL_VOLGORDE,
   accountVoor,
+  keuzesVoor,
   standSleutel,
   type SocialKanaal,
   type SocialKpi,
@@ -386,6 +387,8 @@ export interface SocialKpiRegel {
   realisatie: { waarde: number; peildatum: string | null };
   /** Wanneer de stand van 2026 van dit account is bijgewerkt. */
   berekendOp: string | null;
+  /** De besluiten achter deze KPI, voor onder de grafiek (`keuzesVoor` in `definities.ts`). */
+  keuzes: string[];
 }
 
 export interface SocialKanaalGroep {
@@ -450,6 +453,7 @@ function regelVoor(
     groeiAangepast: aangepast !== undefined,
     realisatie: realisatieVoor(kpi.maat, standDoeljaar),
     berekendOp: stand?.berekendOp ?? null,
+    keuzes: keuzesVoor(merk, kpi),
   };
 }
 
