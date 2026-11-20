@@ -18,7 +18,7 @@
  * `app/api/kpi-2027/bijwerken/route.ts`). Zou de inlog ze tegenhouden, dan stopt de
  * nachtelijke sync zonder dat iemand het merkt.
  */
-export const CRON_PADEN = ["/api/sync", "/api/windsor-sync", "/api/kpi-2027/bijwerken"] as const;
+export const CRON_PADEN = ["/api/sync", "/api/windsor-sync", "/api/kpi-2027/bijwerken", "/api/kpi-2027-social/bijwerken"] as const;
 
 export type Toegangsbesluit =
   /** Laat het verzoek door. */

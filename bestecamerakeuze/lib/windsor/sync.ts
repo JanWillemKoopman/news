@@ -244,7 +244,14 @@ async function schrijfBatch(
   const BATCH = 500;
   const bijwerken = kolommen
     .filter((k) => !conflictSleutel.includes(k))
-    .map((k) => `${k} = excluded.${k}`)
+    .map((k) =>
+      // De Instagram-volgers zijn een momentopname per nacht: de rij van gisteren komt de
+      // volgende nacht terug met een lege volgerskolom (de API kent alleen vandaag). Een
+      // bekende stand laten staan, anders blijft er nooit meer dan één dag historie over.
+      tabel === "windsor_account_dag" && k === "volgers"
+        ? `${k} = coalesce(excluded.${k}, dataloket.${tabel}.${k})`
+        : `${k} = excluded.${k}`,
+    )
     .join(", ");
 
   let geschreven = 0;

@@ -213,6 +213,11 @@ export interface MaandUitkomst {
    * en bijgeschatte KPI's kan optellen.
    */
   toelichting?: string;
+  /**
+   * Optioneel: er is voor deze maand niets bekend, dus ook geen punt in de grafiek. Gebruikt
+   * door de volgerskaarten van KPI's 2027 social media vóór de eerste bekende stand.
+   */
+  leeg?: boolean;
 }
 
 export interface KpiUitkomst {

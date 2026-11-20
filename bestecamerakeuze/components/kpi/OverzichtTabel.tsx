@@ -37,6 +37,8 @@ export function OverzichtRegel({
   realisatie,
   soort,
   groei,
+  voortgangVan,
+  leegTekst,
 }: {
   naam: string;
   /** Null als er voor deze KPI nog niets te rekenen valt: dan streepjes. */
@@ -47,9 +49,13 @@ export function OverzichtRegel({
    * Alleen bij een gewone KPI: dan is Target % aan te klikken en aan te passen, precies
    * zoals het kaartje Groei. Een totaal of combinatie volgt uit zijn KPI's.
    */
-  groei?: { aangepast: boolean; opslaan: (groei: number | null) => Promise<void> };
+  groei?: { aangepast: boolean; opslaan: (groei: number | null) => Promise<void>; standaard?: number };
+  /** Een andere voortgangsberekening (volgers: `voortgangStand`); standaard `voortgang`. */
+  voortgangVan?: (u: KpiUitkomst, realisatie: { waarde: number; peildatum: string | null }) => ReturnType<typeof voortgang>;
+  /** Een korte reden bij de streepjes als er geen uitkomst is ("niet gekoppeld"). */
+  leegTekst?: string;
 }) {
-  const v = u ? voortgang(u.target, realisatie) : null;
+  const v = u ? (voortgangVan ? voortgangVan(u, realisatie) : voortgang(u.target, realisatie)) : null;
   const vet = soort === "totaal" || soort === "eindtotaal";
   const rand =
     soort === "eindtotaal" ? "border-t-2 border-ink" : soort === "totaal" ? "border-t border-line" : "border-t border-line-soft";
@@ -66,6 +72,7 @@ export function OverzichtRegel({
       >
         {naam}
         {soort === "combinatie" && <span className="ml-1.5 text-meta not-italic text-ink-faint">(niet in het totaal)</span>}
+        {!u && leegTekst && <span className="ml-1.5 text-meta text-ink-faint">({leegTekst})</span>}
       </th>
       <td className={cel}>{u ? aantal(u.verwacht) : streepje}</td>
       <td className={`${cel} bg-primary-light/60`}>{u ? aantal(u.target) : streepje}</td>
@@ -97,11 +104,13 @@ export function OverzichtRegel({
 function GroeiCel({
   groei,
   opslaan,
+  standaard,
 }: {
   groei: number;
   opslaan: (groei: number | null) => Promise<void>;
+  standaard?: number;
 }) {
-  const { bewerken, bezig, fout, begin, invoerProps } = useGroeiBewerken(groei, opslaan);
+  const { bewerken, bezig, fout, begin, invoerProps } = useGroeiBewerken(groei, opslaan, standaard);
 
   return (
     <span className="inline-flex flex-col items-end">
@@ -156,11 +165,18 @@ export function OverzichtTabel({
   peildatum2027,
   uitlegJaar,
   uitlegTotalen,
+  uitlegGroei,
+  uitlegRealisatie,
+  uitlegVoortgang,
   children,
 }: {
   peildatum2027: string | null;
   uitlegJaar: ReactNode;
   uitlegTotalen?: ReactNode;
+  /** Optioneel andere uitleg van Target %, Realisatie en Voortgang (social media). */
+  uitlegGroei?: ReactNode;
+  uitlegRealisatie?: ReactNode;
+  uitlegVoortgang?: ReactNode;
   children: ReactNode;
 }) {
   const kop = "px-3 py-2 text-right label-theme text-label text-ink-faint font-normal";
@@ -201,23 +217,23 @@ export function OverzichtTabel({
           Het doel voor {KPI_DOELJAAR}: de verwachting voor {KPI_JAAR} plus het Target %.
         </dd>
         <dt className="font-semibold text-ink">Target %</dt>
-        <dd>
+        {uitlegGroei ? <dd>{uitlegGroei}</dd> : <dd>
           Hoeveel procent het Target {KPI_DOELJAAR} boven de verwachting voor {KPI_JAAR} ligt: het vastgestelde
           percentage per KPI. Klik op het percentage van een KPI om het aan te passen (Enter om op te slaan, Escape om te
           annuleren): het target, de voortgang en de kaart eronder rekenen meteen mee, en het geldt voor iedereen.
-        </dd>
+        </dd>}
         <dt className="font-semibold text-ink">Realisatie</dt>
-        <dd>
+        {uitlegRealisatie ? <dd>{uitlegRealisatie}</dd> : <dd>
           Wat er in {KPI_DOELJAAR} werkelijk is binnengekomen, t/m de laatste zaterdag. Tot 1 januari {KPI_DOELJAAR} staat
           hier 0.
-        </dd>
+        </dd>}
         <dt className="font-semibold text-ink">Voortgang</dt>
-        <dd>
+        {uitlegVoortgang ? <dd>{uitlegVoortgang}</dd> : <dd>
           Ligt de KPI vandaag op schema? Het jaartarget gaat gelijk over de 365 dagen van {KPI_DOELJAAR}: op dag 40 hoort
           er target × 40 ÷ 365 binnen te zijn. Voortgang is de realisatie ten opzichte daarvan: <span className="text-positive">+10%</span>{" "}
           is 10% vóór op schema, <span className="text-negative">−10%</span> 10% erachter. Ga met de muis over het getal
           voor de berekening. Tot 1 januari {KPI_DOELJAAR} staat hier een streepje.
-        </dd>
+        </dd>}
         {uitlegTotalen && (
           <>
             <dt className="font-semibold text-ink">Totalen</dt>

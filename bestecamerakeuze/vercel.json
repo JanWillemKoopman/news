@@ -43,6 +43,10 @@
     {
       "path": "/api/kpi-2027/bijwerken",
       "schedule": "15 10 * * 0"
+    },
+    {
+      "path": "/api/kpi-2027-social/bijwerken",
+      "schedule": "45 10 * * 0"
     }
   ]
 }

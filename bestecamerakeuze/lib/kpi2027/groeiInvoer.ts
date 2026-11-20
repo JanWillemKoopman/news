@@ -4,9 +4,9 @@
  * route en de tabel (`0036_kpi_2027_groei.sql`). Getest in `groeiInvoer.test.ts`.
  */
 
-export type KpiTabblad = "kpi-2027" | "kpi-2027-syntec";
+export type KpiTabblad = "kpi-2027" | "kpi-2027-syntec" | "kpi-2027-social";
 
-export const KPI_TABBLADEN: readonly KpiTabblad[] = ["kpi-2027", "kpi-2027-syntec"];
+export const KPI_TABBLADEN: readonly KpiTabblad[] = ["kpi-2027", "kpi-2027-syntec", "kpi-2027-social"];
 
 /** De grenzen die de tabel ook afdwingt: meer dan −100% en hooguit +1000%. */
 export const GROEI_MIN = -1;
@@ -16,7 +16,7 @@ export function isGeldigeGroei(groei: unknown): groei is number {
   return typeof groei === "number" && Number.isFinite(groei) && groei > GROEI_MIN && groei <= GROEI_MAX;
 }
 
-/** Sleutel voor een aangepast percentage: website en KPI. Bij Syntec is de website "". */
+/** Sleutel voor een aangepast percentage: website (social: het merk) en KPI. Bij Syntec is de website "". */
 export function groeiSleutel(website: string, kpi: string): string {
   return `${website}|${kpi}`;
 }
