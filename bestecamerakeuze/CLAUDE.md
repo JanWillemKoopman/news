@@ -1074,16 +1074,20 @@ realisatie van 2027.
 - **Target % is ook in de overzichtstabel aan te passen** (op beide tabbladen), met precies
   hetzelfde gedrag als het kaartje Groei: dezelfde hook (`useGroeiBewerken` in
   `GroeiBewerken.tsx`), dezelfde opslag en dezelfde herberekening in het paneel, dus tabel
-  en kaart tonen altijd hetzelfde getal. Een aangepast percentage heeft in de tabel een
-  pijltje ervoor dat terugzet naar +5%. Totalen en combinaties op Syntec zijn ook hier niet
+  en kaart tonen altijd hetzelfde getal. Totalen en combinaties op Syntec zijn ook hier niet
   aan te passen.
+- **De percentages zijn de vastgestelde targets** (20 november 2026, door het team
+  aangeleverd en zo ingevoerd, op KPI's 2027 GA én Syntec). Daarom zijn de knop "terug naar
+  +5%" (kaart) en het pijltje (tabel) er op verzoek af, net als de markering "aangepast":
+  bijna elke KPI wijkt nu af, dus die zei niets meer. Aanpassen kan nog gewoon door op het
+  percentage te klikken. Zet de herstelknop niet terug zonder dat daarom gevraagd wordt.
 - **Het groeipercentage is per KPI met de hand aan te passen** (november 2026, op verzoek;
   geldt ook voor KPI's 2027 Syntec). Klik op het percentage in het kaartje Groei, typ een
   getal (komma of punt, "-3" mag) en druk op Enter of klik weg; Escape annuleert. Target,
   maandtarget en de targetlijn in de grafiek rekenen meteen mee (`metGroei` in
   `rekenen.ts`). Opslag: `dataloket.kpi_2027_groei` (migratie 0036), één rij per tabblad ×
   website × KPI, gedeeld voor het hele team; alleen afwijkingen van +5% staan erin, en
-  "terug naar 5%" (of precies 5 typen) haalt de rij weg. Elke ingelogde collega mag het
+  precies 5 typen haalt de rij weg. Elke ingelogde collega mag het
   (`POST /api/kpi-2027/groei`, die controleert dat de KPI in `definities.ts` bestaat). Lukt
   het lezen van die tabel niet, dan rekent het tabblad gewoon met +5% (`leesGroeiVeilig`).
   De GET-routes van beide tabbladen staan daarom op `no-store`: anders toont herladen
