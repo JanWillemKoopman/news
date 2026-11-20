@@ -111,7 +111,9 @@ function GroepBlok({
       {/* Kolom 1: de illustratie, schaalt mee met de hoogte van het blok. */}
       <div className="relative flex min-h-0 flex-col px-7 py-6">
         <span className="font-mono text-label tracking-[0.08em] text-ink-faint">{blok.fig}</span>
-        <div className="mx-auto mt-2 min-h-0 w-full max-w-[380px] flex-1">{blok.illustratie}</div>
+        <div className="mt-2 flex min-h-0 flex-1 items-center justify-center">
+          <div className="h-[70%] w-[70%] max-w-[266px]">{blok.illustratie}</div>
+        </div>
       </div>
 
       {/* Kolom 2: kopje, titel, omschrijving en de pagina's als één lijst. */}
