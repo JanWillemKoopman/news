@@ -34,7 +34,7 @@ export type NavGroep = {
  * niets anders. Volgorde = volgorde in de sidebar.
  *
  * - **Campagnes** staat bovenaan: de campagnetabel is waar het weekoverleg begint.
- * - **KPI's 2027**: de targets per GA4-website en per Syntec-bron. KPI's 2026
+ * - **KPI's 2027**: de targets per GA4-website, per Syntec-bron en per social-account. KPI's 2026
  *   (`kpi-overzicht`) is er in november 2026 op verzoek uit gehaald en staat verborgen.
  * - **Kanalen** komt ná de KPI's: dat is waar je doorklikt om te zien waaróm een
  *   campagne loopt zoals hij loopt. Social en Google staan apart omdat het twee andere
@@ -62,6 +62,7 @@ export const NAV_GROEPEN: NavGroep[] = [
     paginas: [
       { view: "kpi-2027", label: "KPI's Google Analytics", icon: <IconTrendUp /> },
       { view: "kpi-2027-syntec", label: "KPI's Syntec", icon: <IconTarget /> },
+      { view: "kpi-2027-social", label: "KPI's social media", icon: <IconUsers /> },
     ],
   },
   {

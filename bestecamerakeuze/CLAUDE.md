@@ -1184,6 +1184,59 @@ Externe portals, elk met een totaalkaart, en onderaan het totaal over alles.
 - **Realisatie 2027** (het vierde kaartje, net als op KPI's 2027) telt dezelfde definitie
   vanaf 1 januari 2027 t/m de laatste zaterdag; tot dan staat er "2027 is nog niet begonnen".
 
+### KPI's → KPI's social media
+
+Vierde tabblad onder **KPI's 2027** (view `kpi-2027-social`, `components/kpi/Kpi2027SocialPaneel.tsx`,
+route `app/api/kpi-2027-social/route.ts`), op verzoek van de eigenaar (november 2026): precies dezelfde
+opzet als KPI's 2027 GA en Syntec — statusbalk, overzichtstabel (`SocialOverzichtTabel.tsx`, gedeelde
+`OverzichtTabel.tsx`), dezelfde kaart (`KpiKaartOpmaak`, via `KpiSocialKaart.tsx`), grafiek, peildatum
+(de laatste zaterdag) en "Nu bijwerken" voor beheerders. Tabs per merk (`?kpimerk=veloo`): Van den
+Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
+
+- **De targets komen van het team**, niet +5%: per KPI het percentage uit de lijst van de eigenaar
+  (bv. Instagram volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in
+  `lib/kpi2027social/definities.ts` (`groei` per KPI; de test controleert ze één voor één). Met de
+  hand aanpassen werkt zoals op de andere tabbladen (`kpi_2027_groei`, tabblad `kpi-2027-social`,
+  website = merksleutel); "terugzetten" gaat naar het percentage van het team
+  (`standaard` in `useGroeiBewerken` / `GroeiInstelling` / `OverzichtRegel`).
+- **Impressies rekenen als KPI's 2027 GA** (`berekenKpi`): gemeten + gemiddelde per dag × resterende
+  dagen, × (1 + groei), maandtarget ÷ 12. Eén verschil: hooguit drie lege dagen vlak vóór de
+  peildatum tellen als nog niet gemeten (`achterstand`), want LinkedIn en Meta leveren een tot twee
+  dagen later.
+- **Volgers zijn een stand, geen optelsom** (`berekenVolgers`). Basis = de stand op 31 december 2026
+  (zolang het jaar loopt: laatste stand + trend per dag; trend = eerste → laatste stand van het jaar,
+  pas vanaf zeven dagen ertussen). Target = de stand eind 2027. In de grafiek de stand per maandeinde
+  en een vlakke lijn "Doel eind 2027" (`stand` op `KpiKaartOpmaak`, `jaarNaam`/`targetNaam` op
+  `KpiJaarGrafiek`); maanden zonder bekende stand blijven leeg (`MaandUitkomst.leeg`). Voortgang in de
+  tabel: de groei sinds eind 2026 tegen het lineaire deel van de doelgroei (`voortgangStand`).
+- **Wat Windsor per kanaal kan** (onderzocht november 2026, zie de kop van `definities.ts`):
+  - *Instagram*: impressies = `views` (impressions is door Meta afgevoerd), per dag, terug tot
+    augustus 2025. Volgers: **alleen de stand van vandaag** (`followers_count`). `follower_count_1d`
+    gaat 30 dagen terug en telt alleen nieuwe volgers, `follows_and_unfollows` telt volgen en
+    ontvolgen bij elkaar op — geen netto historie. De reeks begint op 20 november 2026 en groeit uit
+    de nachtelijke momentopname (`windsor_account_dag`) plus de wekelijkse ophaalactie.
+  - *LinkedIn*: impressies = `account_analytics_impression_count`; volgers per dag teruggerekend uit de
+    stand van vandaag min de netto aanwas (`followers_gain_organic` + `_paid`) erna (`standenUitAanwas`).
+    Opvragingen in stukken van 180 dagen (LinkedIn weigert boven de 14 maanden).
+  - *Facebook*: `page_follows` en `page_impressions` per dag. **De koppeling staat sinds 8 oktober 2026
+    uit** in Windsor ("No facebook_organic accounts are configured"; ook de nachtelijke sync faalt
+    daarop). Zodra de pagina's opnieuw geselecteerd zijn, haalt de volgende run heel 2026 op. Audi
+    Sport = de pagina Audi Sport Eindhoven.
+  - *TikTok en YouTube*: niet gekoppeld in Windsor. De KPI's staan erin met hun percentage en tonen
+    "niet gekoppeld"; aansluiten = account in Windsor koppelen, `accountId` in `definities.ts` zetten en
+    een tak in `haalAccount` (`ophalen.ts`) toevoegen.
+- **Opslag**: `kpi_2027_social_standen` (migratie 0039), één rij per account (`kanaal:account-id`) per
+  jaar, met `dagen.vertoningen` (datum → aantal) en `dagen.volgers` (datum → stand). De Instagram-
+  volgers worden samengevoegd (vorige stand + nachtelijke momentopnames + vandaag), de rest
+  overschreven. **Wekelijks op zondag 10:45 UTC** (`/api/kpi-2027-social/bijwerken`, eigen cron, buiten
+  de inlog via `CRON_PADEN`), alle accounts tegelijk; een account dat faalt houdt zijn vorige stand en
+  de fout staat bovenaan de pagina (laatste run in `sync_runs`, bron `kpi-2027-social`). Jaren en
+  definitief worden als op GA (`opdrachtenVoor`).
+- **Meegerepareerd**: de nachtelijke sync overschreef de Instagram-volgers van gisteren met een lege
+  waarde (het 30-dagenvenster komt elke nacht terug zonder stand), zodat er nooit meer dan één dag
+  historie bleef. `schrijfBatch` laat voor `windsor_account_dag.volgers` nu een bekende stand staan
+  (`coalesce`).
+
 ### Sheet-sync in blokken
 
 `/api/sync` (elke nacht, `vercel.json`) kopieert de sheet-tabbladen uit `lib/sync/bronnen.ts`

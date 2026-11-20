@@ -58,7 +58,13 @@ function perMaandTekst(waarde: number): string {
  *  - `afgeleid`: een totaal, waarvan het percentage volgt uit de kaarten erin.
  */
 export type GroeiInstelling =
-  | { soort: "bewerkbaar"; aangepast: boolean; opslaan: (groei: number | null) => Promise<void> }
+  | {
+      soort: "bewerkbaar";
+      aangepast: boolean;
+      opslaan: (groei: number | null) => Promise<void>;
+      /** Waar "terug naar" heen gaat; standaard +5% (social media: het percentage van het team). */
+      standaard?: number;
+    }
   | { soort: "afgeleid" };
 
 /** De kanaalverdeling van de hele website, één keer opgehaald voor alle kaarten. */
@@ -253,6 +259,8 @@ export function KpiKaartOpmaak({
   groei,
   vergelijking = null,
   wissel,
+  stand = false,
+  leegTekst = "Nog geen stand voor deze website.",
   children,
 }: {
   naam: string;
@@ -269,9 +277,19 @@ export function KpiKaartOpmaak({
    * een andere (de kanaalverdeling op KPI's 2027 GA). De rest van de kaart blijft staan.
    */
   wissel?: GrafiekWissel;
+  /**
+   * Een stand in plaats van een aantal (volgers op KPI's 2027 social media): het eerste
+   * kaartje is de stand eind {KPI_JAAR}, het target de stand eind {KPI_DOELJAAR}, de
+   * realisatie de laatste stand, en de lijn in de grafiek het doel eind {KPI_DOELJAAR}.
+   * `uitkomst.standDatum` (als die er is) is de dag van de laatste bekende stand.
+   */
+  stand?: boolean;
+  /** Wat er staat als er geen uitkomst is. */
+  leegTekst?: string;
   children: ReactNode;
 }) {
   const [toonWissel, setToonWissel] = useState(false);
+  const standDatum = (u as (KpiUitkomst & { standDatum?: string | null }) | null)?.standDatum ?? null;
   return (
     <section className="kaart-omlijst flex flex-col rounded-panel border border-line bg-card px-5 py-4 shadow-subtle">
       <header className="flex items-baseline justify-between gap-4">
@@ -279,8 +297,12 @@ export function KpiKaartOpmaak({
         <div className="flex items-center gap-3">
           {u && !toonWissel && (
             <p className="text-right text-meta text-ink-muted">
-              gemiddeld {perDagTekst(u.perDag)} per dag
-              {u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
+              {stand
+                ? u.perDag === 0
+                  ? "nog geen trend bekend"
+                  : `gemiddeld ${u.perDag > 0 ? "+" : "−"}${perDagTekst(Math.abs(u.perDag))} per dag`
+                : `gemiddeld ${perDagTekst(u.perDag)} per dag`}
+              {!stand && u.dagenNietGemeten > 0 ? ` (over ${u.dagenGemeten} gemeten dagen)` : ""}
             </p>
           )}
           {u && wissel && (
@@ -300,19 +322,35 @@ export function KpiKaartOpmaak({
       {u ? (
         <>
           <div className="mt-3 grid grid-cols-4 gap-2.5">
+            {stand ? (
+              <Statistiek
+                label={u.definitief ? `Eind ${KPI_JAAR}` : `Eind ${KPI_JAAR} verwacht`}
+                waarde={aantal(u.verwacht)}
+                toelichting={
+                  standDatum
+                    ? `${aantal(u.gerealiseerd)} op ${datumKort(standDatum)}${Math.round(u.bijgeschat) !== 0 ? ` · ${u.bijgeschat >= 0 ? "+" : "−"}${aantal(Math.abs(u.bijgeschat))} verwacht` : ""}`
+                    : "volledig gemeten"
+                }
+              />
+            ) : (
+              <Statistiek
+                label={u.definitief ? `${KPI_JAAR}` : `${KPI_JAAR} incl. verwachting`}
+                waarde={aantal(u.verwacht)}
+                toelichting={
+                  u.definitief && u.dagenBijgeschat === 0
+                    ? "volledig gemeten"
+                    : `${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`} · ${aantal(u.bijgeschat)} ${u.dagenNietGemeten > 0 ? "bijgeschat" : "verwacht"}`
+                }
+              />
+            )}
             <Statistiek
-              label={u.definitief ? `${KPI_JAAR}` : `${KPI_JAAR} incl. verwachting`}
-              waarde={aantal(u.verwacht)}
-              toelichting={
-                u.definitief && u.dagenBijgeschat === 0
-                  ? "volledig gemeten"
-                  : `${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`} · ${aantal(u.bijgeschat)} ${u.dagenNietGemeten > 0 ? "bijgeschat" : "verwacht"}`
-              }
-            />
-            <Statistiek
-              label={`Target ${KPI_DOELJAAR}`}
+              label={stand ? `Target eind ${KPI_DOELJAAR}` : `Target ${KPI_DOELJAAR}`}
               waarde={aantal(u.target)}
-              toelichting={`${perMaandTekst(u.targetPerMaand)} per maand`}
+              toelichting={
+                stand
+                  ? `${u.target >= u.verwacht ? "+" : "−"}${aantal(Math.abs(u.target - u.verwacht))} in ${KPI_DOELJAAR}`
+                  : `${perMaandTekst(u.targetPerMaand)} per maand`
+              }
               nadruk
             />
             <GroeiStatistiek uitkomst={u} instelling={groei} />
@@ -320,9 +358,11 @@ export function KpiKaartOpmaak({
               label={`Realisatie ${KPI_DOELJAAR}`}
               waarde={aantal(realisatie.waarde)}
               toelichting={
-                realisatie.peildatum
-                  ? `t/m ${datumKort(realisatie.peildatum)} · ${u.target > 0 ? formatteer((realisatie.waarde / u.target) * 100, "procent") : "—"} van het target`
-                  : `${KPI_DOELJAAR} is nog niet begonnen`
+                !realisatie.peildatum
+                  ? `${KPI_DOELJAAR} is nog niet begonnen`
+                  : stand
+                    ? `op ${datumKort(realisatie.peildatum)} · ${realisatie.waarde >= u.verwacht ? "+" : "−"}${aantal(Math.abs(realisatie.waarde - u.verwacht))} sinds eind ${KPI_JAAR}`
+                    : `t/m ${datumKort(realisatie.peildatum)} · ${u.target > 0 ? formatteer((realisatie.waarde / u.target) * 100, "procent") : "—"} van het target`
               }
             />
           </div>
@@ -336,12 +376,13 @@ export function KpiKaartOpmaak({
                 targetPerMaand={u.targetPerMaand}
                 peildatumTekst={datumKort(u.peildatum)}
                 vergelijking={vergelijking}
+                {...(stand ? { jaarNaam: `Stand ${KPI_JAAR}`, targetNaam: `Doel eind ${KPI_DOELJAAR}` } : {})}
               />
             )}
           </div>
         </>
       ) : (
-        <p className="mt-3 text-sm text-ink-muted">Nog geen stand voor deze website.</p>
+        <p className="mt-3 text-sm text-ink-muted">{leegTekst}</p>
       )}
 
       <Definitie>
@@ -440,7 +481,11 @@ function BewerkbareGroei({
   instelling: Extract<GroeiInstelling, { soort: "bewerkbaar" }>;
   verschil: string;
 }) {
-  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(u.groei, instelling.opslaan);
+  const { bewerken, bezig, fout, begin, terugzetten, invoerProps } = useGroeiBewerken(
+    u.groei,
+    instelling.opslaan,
+    instelling.standaard,
+  );
 
   return (
     <div
@@ -478,7 +523,7 @@ function BewerkbareGroei({
           onClick={terugzetten}
           className="w-fit text-meta text-ink-muted underline underline-offset-2 hover:text-ink"
         >
-          terug naar {STANDAARD_GROEI_TEKST}
+          terug naar {instelling.standaard === undefined ? STANDAARD_GROEI_TEKST : groeiTekst(instelling.standaard)}
         </button>
       )}
     </div>

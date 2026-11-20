@@ -56,6 +56,8 @@ interface Punt {
   dagenGemeten: number;
   dagenInMaand: number;
   toelichting: string | null;
+  /** Niets bekend in deze maand: geen punt op de lijn. */
+  leeg: boolean;
   /** Het (eerste) vergelijkingsjaar in deze maand, zoals gemeten; null zonder vergelijkingslijn. */
   vergelijk: number | null;
   /** Alle vergelijkingsjaren in deze maand, per jaar. */
@@ -94,21 +96,22 @@ export function bouwPunten(
     const waarde = rond(m.verwacht);
     // Een gemeten maand naast een geschatte krijgt óók een punt op de gestippelde lijn,
     // anders hangen de twee stukken los van elkaar in de lucht.
-    const vorigeGeschat = i > 0 && !gemeten(maanden[i - 1]);
-    const volgendeGeschat = i < maanden.length - 1 && !gemeten(maanden[i + 1]);
+    const vorigeGeschat = i > 0 && !gemeten(maanden[i - 1]) && !maanden[i - 1].leeg;
+    const volgendeGeschat = i < maanden.length - 1 && !gemeten(maanden[i + 1]) && !maanden[i + 1].leeg;
     const raaktSchatting = vorigeGeschat || volgendeGeschat;
     return {
       label: MAANDEN_KORT[i],
       maandNaam: MAANDEN_LANG[i],
       soort: m.soort,
-      gemeten: gemeten(m) ? waarde : null,
-      verwachting: !gemeten(m) || raaktSchatting ? waarde : null,
+      gemeten: m.leeg ? null : gemeten(m) ? waarde : null,
+      verwachting: m.leeg ? null : !gemeten(m) || raaktSchatting ? waarde : null,
       target: rond(targetPerMaand),
       gerealiseerd: m.gerealiseerd === null ? null : rond(m.gerealiseerd),
       verwacht: waarde,
       dagenGemeten: m.dagenGemeten,
       dagenInMaand: m.dagenInMaand,
       toelichting: m.toelichting ?? null,
+      leeg: Boolean(m.leeg),
       vergelijk: lijnen.length > 0 ? rond(lijnen[0].maanden[i] ?? 0) : null,
       jaren: Object.fromEntries(lijnen.map((l) => [l.jaar, rond(l.maanden[i] ?? 0)])),
     };
@@ -159,9 +162,15 @@ export default function KpiJaarGrafiek({
   targetPerMaand,
   peildatumTekst,
   vergelijking = null,
+  jaarNaam = "2026",
+  targetNaam = "Maandtarget 2027",
 }: {
   maanden: MaandUitkomst[];
   targetPerMaand: number;
+  /** Naam van de lijn van het basisjaar in legenda en tooltip (volgers: "Stand 2026"). */
+  jaarNaam?: string;
+  /** Naam van de targetlijn (volgers: "Doel eind 2027"). */
+  targetNaam?: string;
   /** "14 nov", voor de tooltip van de lopende maand. */
   peildatumTekst: string;
   /** Optioneel: de lijn(en) van één of meer vergelijkingsjaren. */
@@ -205,6 +214,8 @@ export default function KpiJaarGrafiek({
               kleur2026={kleur2026}
               kleurTarget={kleurTarget}
               vergelijkLijnen={vergelijkLijnen}
+              jaarNaam={jaarNaam}
+              targetNaam={targetNaam}
             />
           }
           cursor={{ stroke: kleuren.raster, strokeWidth: 1 }}
@@ -236,7 +247,7 @@ export default function KpiJaarGrafiek({
         ))}
         <Line
           dataKey="gemeten"
-          name="2026"
+          name={jaarNaam}
           type={kleuren.lijnvorm}
           stroke={kleur2026}
           strokeWidth={kleuren.lijndikte}
@@ -247,7 +258,7 @@ export default function KpiJaarGrafiek({
         />
         <Line
           dataKey="verwachting"
-          name="2026 verwachting"
+          name={`${jaarNaam} verwachting`}
           type={kleuren.lijnvorm}
           stroke={kleur2026}
           strokeWidth={kleuren.lijndikte}
@@ -259,7 +270,7 @@ export default function KpiJaarGrafiek({
         />
         <Line
           dataKey="target"
-          name="Maandtarget 2027"
+          name={targetNaam}
           type="linear"
           stroke={kleurTarget}
           strokeWidth={kleuren.lijndikte}
@@ -284,6 +295,8 @@ function MaandTooltip({
   kleur2026,
   kleurTarget,
   vergelijkLijnen,
+  jaarNaam,
+  targetNaam,
 }: {
   active?: boolean;
   payload?: { payload: Punt }[];
@@ -291,27 +304,37 @@ function MaandTooltip({
   kleur2026: string;
   kleurTarget: string;
   vergelijkLijnen: { jaar: number; kleur: string }[];
+  jaarNaam: string;
+  targetNaam: string;
 }) {
   const p = payload?.[0]?.payload;
   if (!active || !p) return null;
+  if (p.leeg) {
+    return (
+      <div className="rounded-card border border-line bg-card px-3 py-2 text-xs shadow-card">
+        <p className="text-ink-muted">{p.maandNaam.charAt(0).toUpperCase() + p.maandNaam.slice(1)}</p>
+        <p className="mt-1 text-ink">{p.toelichting ?? "Nog niets bekend."}</p>
+      </div>
+    );
+  }
   const verschil = p.target - p.verwacht;
 
   let regel2026: string;
   let toelichting: string | null = null;
   switch (p.soort) {
     case "gerealiseerd":
-      regel2026 = `2026: ${formatteer(p.verwacht, "aantal")}`;
+      regel2026 = `${jaarNaam}: ${formatteer(p.verwacht, "aantal")}`;
       break;
     case "deels":
-      regel2026 = `2026 verwacht: ${formatteer(p.verwacht, "aantal")}`;
+      regel2026 = `${jaarNaam} verwacht: ${formatteer(p.verwacht, "aantal")}`;
       toelichting = `waarvan ${formatteer(p.gerealiseerd, "aantal")} gemeten t/m ${peildatumTekst} (${p.dagenGemeten} van ${p.dagenInMaand} dagen)`;
       break;
     case "verwachting":
-      regel2026 = `2026 verwacht: ${formatteer(p.verwacht, "aantal")}`;
+      regel2026 = `${jaarNaam} verwacht: ${formatteer(p.verwacht, "aantal")}`;
       toelichting = "gemiddelde per dag × dagen in de maand";
       break;
     case "bijgeschat":
-      regel2026 = `2026 bijgeschat: ${formatteer(p.verwacht, "aantal")}`;
+      regel2026 = `${jaarNaam} bijgeschat: ${formatteer(p.verwacht, "aantal")}`;
       toelichting =
         p.dagenGemeten > 0
           ? `waarvan ${formatteer(p.gerealiseerd, "aantal")} gemeten (${p.dagenGemeten} van ${p.dagenInMaand} dagen); de dagen zonder sessies met het gemiddelde per dag`
@@ -351,7 +374,7 @@ function MaandTooltip({
       <p className="mt-1 flex items-center gap-2 text-ink">
         <span aria-hidden="true" className="inline-block h-0.5 w-3" style={{ background: kleurTarget }} />
         <span>
-          Maandtarget 2027: <span className="font-sans-w7 font-semibold">{formatteer(p.target, "aantal")}</span>
+          {targetNaam}: <span className="font-sans-w7 font-semibold">{formatteer(p.target, "aantal")}</span>
         </span>
       </p>
       <p className="pl-5 text-ink-muted">

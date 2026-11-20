@@ -5,19 +5,22 @@ import { KPI_WEBSITES } from "@/lib/kpi2027/definities";
 import { verwijderGroei, zetGroei } from "@/lib/kpi2027/groei";
 import { GROEI_MAX, GROEI_MIN, KPI_TABBLADEN, isGeldigeGroei, type KpiTabblad } from "@/lib/kpi2027/groeiInvoer";
 import { SYNTEC_KPIS } from "@/lib/kpi2027syntec/definities";
+import { vindSocialKpi } from "@/lib/kpi2027social/definities";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Het groeipercentage van één KPI op KPI's 2027 of KPI's 2027 Syntec met de hand zetten.
+ * Het groeipercentage van één KPI op KPI's 2027, KPI's 2027 Syntec of KPI's 2027 social media
+ * met de hand zetten.
  *
  * POST { tabblad, website, kpi, groei } — `groei` als fractie (0,075 = +7,5%), of null om
- * terug te gaan naar de standaard (+5%). Elke ingelogde gebruiker mag dit; wie het als
+ * terug te gaan naar de standaard (+5%; op social media het percentage uit de definities). Elke ingelogde gebruiker mag dit; wie het als
  * laatste zette staat in de tabel (migratie 0036). De KPI moet bestaan in de definities van
  * dat tabblad, zodat er geen rijen ontstaan die nergens meer bij horen.
  */
 function bestaat(tabblad: KpiTabblad, website: string, kpi: string): boolean {
   if (tabblad === "kpi-2027-syntec") return website === "" && SYNTEC_KPIS.some((k) => k.sleutel === kpi);
+  if (tabblad === "kpi-2027-social") return Boolean(vindSocialKpi(website, kpi));
   return KPI_WEBSITES.some((w) => w.sleutel === website && w.kpis.some((k) => k.sleutel === kpi));
 }
 

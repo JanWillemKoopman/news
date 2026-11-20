@@ -19,7 +19,15 @@ export function groeiTekst(groei: number): string {
 
 export const STANDAARD_GROEI_TEKST = groeiTekst(KPI_GROEI);
 
-export function useGroeiBewerken(groei: number, opslaan: (groei: number | null) => Promise<void>) {
+/**
+ * `standaard` is het percentage waar "terugzetten" naartoe gaat en waarbij geen eigen rij
+ * nodig is: +5% op KPI's 2027 GA en Syntec, het percentage van het team op social media.
+ */
+export function useGroeiBewerken(
+  groei: number,
+  opslaan: (groei: number | null) => Promise<void>,
+  standaard: number = KPI_GROEI,
+) {
   const [bewerken, setBewerken] = useState(false);
   const [invoer, setInvoer] = useState("");
   const [bezig, setBezig] = useState(false);
@@ -65,7 +73,7 @@ export function useGroeiBewerken(groei: number, opslaan: (groei: number | null) 
       setBewerken(false);
       return;
     }
-    await bewaar(Math.abs(nieuw - KPI_GROEI) < 1e-9 ? null : nieuw);
+    await bewaar(Math.abs(nieuw - standaard) < 1e-9 ? null : nieuw);
     klaar.current = false;
   }
 
