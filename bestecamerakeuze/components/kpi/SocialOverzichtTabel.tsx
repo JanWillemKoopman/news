@@ -28,10 +28,9 @@ export default function SocialOverzichtTabel({
         <>
           <strong className="font-semibold text-ink">Impressies</strong>: wat {KPI_JAAR} naar verwachting wordt — wat het
           platform t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen.{" "}
-          <strong className="font-semibold text-ink">Nieuwe volgers</strong>: hetzelfde, alleen over de gemeten dagen;
-          niet gemeten dagen (Instagram vóór 16 augustus) zijn met het gemiddelde per gemeten dag bijgeschat.{" "}
-          <strong className="font-semibold text-ink">Volgers</strong>: de stand op 31 december {KPI_JAAR} — de laatste
-          bekende stand plus de trend per dag tot het eind van het jaar.
+          <strong className="font-semibold text-ink">Volgers</strong>: het totaal aantal volgers op 31 december{" "}
+          {KPI_JAAR} — de laatste bekende stand plus de trend per dag tot het eind van het jaar. Bij Instagram tellen
+          de dagen vóór de eerste meting als gelijk aan die eerste meting.
         </>
       }
       uitlegGroei={
@@ -43,13 +42,13 @@ export default function SocialOverzichtTabel({
       }
       uitlegRealisatie={
         <>
-          Impressies en nieuwe volgers: wat er in {KPI_DOELJAAR} binnenkwam, t/m de laatste zaterdag. Volgers: de laatste stand in{" "}
+          Impressies: wat er in {KPI_DOELJAAR} binnenkwam, t/m de laatste zaterdag. Volgers: de laatste stand in{" "}
           {KPI_DOELJAAR}. Tot 1 januari {KPI_DOELJAAR} staat hier 0.
         </>
       }
       uitlegVoortgang={
         <>
-          Ligt de KPI op schema? Impressies en nieuwe volgers: het jaartarget gaat gelijk over de 365 dagen; op dag 40 hoort er target × 40 ÷
+          Ligt de KPI op schema? Impressies: het jaartarget gaat gelijk over de 365 dagen; op dag 40 hoort er target × 40 ÷
           365 binnen te zijn. Volgers: de groei van eind {KPI_JAAR} naar het target, gelijk over het jaar; op dag 40 hoort
           40/365 van die groei erbij te zijn. <span className="text-positive">+10%</span> is 10% vóór op schema,{" "}
           <span className="text-negative">−10%</span> 10% erachter. Tot 1 januari {KPI_DOELJAAR} een streepje.

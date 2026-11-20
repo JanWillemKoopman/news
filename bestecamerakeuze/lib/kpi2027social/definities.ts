@@ -10,10 +10,10 @@
  *  - **Vertoningen** tellen op, net als sessies op KPI's 2027 GA: wat er t/m de peildatum
  *    binnenkwam plus het gemiddelde per dag × de resterende dagen = verwachting 2026,
  *    × (1 + groei) = target 2027, ÷ 12 = maandtarget.
- *  - **Nieuwe volgers** (Instagram en Facebook, keuze van de eigenaar, november 2026) tellen
- *    op, net als vertoningen. Waar een dag niet gemeten is, vult het gemiddelde per gemeten dag
- *    hem in (zoals de uitval op KPI's 2027 GA).
- *  - **Volgers** (LinkedIn, TikTok, YouTube) tellen niet op: het is een stand op een dag. "Volgers +7%" betekent: eind
+ *  - **Volgers** tellen niet op: het is een stand op een dag (alle kanalen, besluit van de
+ *    eigenaar op 20 november 2026; daarvoor was het een paar uur "nieuwe volgers" bij Instagram
+ *    en Facebook — de maat `nieuwe-volgers` en de opslag ervan bestaan nog, maar geen KPI
+ *    gebruikt hem). "Volgers +7%" betekent: eind
  *    2027 7% meer volgers dan eind 2026. De basis is dus de stand op 31 december 2026 (zolang
  *    het jaar loopt: de laatste stand plus de trend per dag tot 31 december), het target de
  *    stand die er eind 2027 moet zijn.
@@ -26,18 +26,18 @@
  *    historie. `follower_count_1d` gaat maar dertig dagen terug en telt alleen nieuwe
  *    volgers, `follows_and_unfollows` telt volgen én ontvolgen bij elkaar op (1–14 november
  *    bij udenhoutgroep: 63 tegen 49 nieuwe volgers) — geen van beide geeft de netto groei.
- *    Daarom is de KPI **nieuwe volgers** (`follower_count_1d`): ook die levert Meta maar dertig
- *    dagen terug, maar de nachtelijke sync bewaart hem sinds 16 augustus 2026 per dag in
- *    `windsor_account_dag` (`volgers_erbij`). 2026 rekent dus met het gemiddelde over de dagen
- *    vanaf 16 augustus; januari t/m 15 augustus is daarmee bijgeschat.
+ *    Besluit van de eigenaar (20 november 2026): toch `followers_count`, vanaf nu elke dag
+ *    bijgehouden (nachtelijke sync + wekelijkse ophaalactie), en 1 januari t/m de dag vóór de
+ *    eerste gemeten stand krijgen de waarde van die eerste stand (`aanvullen` in
+ *    `berekenVolgers`, gestippeld in de grafiek).
  *  - **LinkedIn** (`linkedin_organic`): vertoningen = `account_analytics_impression_count`
  *    per dag. Volgers = de stand van vandaag (`organization_follower_count`) min de
  *    netto aanwas per dag erna (`followers_gain_organic` + `followers_gain_paid`, kan
  *    negatief zijn): zo is de stand op elke dag van het jaar terug te rekenen. Eén opvraging
  *    mag niet meer dan 14 maanden beslaan.
- *  - **Facebook** (`facebook_organic`): nieuwe volgers = `page_daily_follows`, vertoningen =
- *    `page_impressions`, volgers = `page_follows` (een stand), allemaal per dag en het hele jaar
- *    terug. Op 20 november 2026 opnieuw gekoppeld (stond sinds 8 oktober uit) en nagelopen: alle
+ *  - **Facebook** (`facebook_organic`): volgers = `page_follows` (het totaal, een stand per
+ *    dag), vertoningen = `page_impressions`, nieuwe volgers = `page_daily_follows`, allemaal per
+ *    dag en het hele jaar terug. Op 20 november 2026 opnieuw gekoppeld (stond sinds 8 oktober uit) en nagelopen: alle
  *    318 dagen t/m 14 november aanwezig voor alle drie de pagina's. **Altijd per dag opvragen**:
  *    Windsors eigen maandoptelling van `page_daily_follows` geeft voor februari, april, juni en
  *    september 0, terwijl de dagen ervan gewoon nieuwe volgers hebben (februari Van den Udenhout:
@@ -117,9 +117,9 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
       { kanaal: "youtube", accountId: null, naam: "YouTube", nietGekoppeld: NIET_IN_WINDSOR("YouTube") },
     ],
     kpis: [
-      kpi("facebook", "nieuwe-volgers", 0.01),
+      kpi("facebook", "volgers", 0.01),
       kpi("facebook", "vertoningen", 0.08),
-      kpi("instagram", "nieuwe-volgers", 0.07),
+      kpi("instagram", "volgers", 0.07),
       kpi("instagram", "vertoningen", 0.19),
       kpi("linkedin", "volgers", 0.05),
       kpi("linkedin", "vertoningen", 0.09),
@@ -136,9 +136,9 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
       { kanaal: "linkedin", accountId: "91687065", naam: "VELOO" },
     ],
     kpis: [
-      kpi("facebook", "nieuwe-volgers", 0.05),
+      kpi("facebook", "volgers", 0.05),
       kpi("facebook", "vertoningen", -0.06),
-      kpi("instagram", "nieuwe-volgers", 0.17),
+      kpi("instagram", "volgers", 0.17),
       kpi("instagram", "vertoningen", 0.17),
       kpi("linkedin", "volgers", 0.07),
       kpi("linkedin", "vertoningen", 0.21),
@@ -152,9 +152,9 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
       { kanaal: "instagram", accountId: "17841402138338797", naam: "audisportdealer" },
     ],
     kpis: [
-      kpi("facebook", "nieuwe-volgers", 0.05),
+      kpi("facebook", "volgers", 0.05),
       kpi("facebook", "vertoningen", 0.33),
-      kpi("instagram", "nieuwe-volgers", 0.02),
+      kpi("instagram", "volgers", 0.02),
       kpi("instagram", "vertoningen", 0.15),
     ],
   },

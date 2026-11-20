@@ -192,12 +192,12 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
           <strong className="font-semibold text-ink">Impressies</strong> rekenen precies als op KPI&apos;s Google
           Analytics: wat het platform t/m de peildatum telde, plus het gemiddelde per dag × de resterende dagen van{" "}
           {KPI_JAAR} = de verwachting; het target {KPI_DOELJAAR} is die verwachting plus de groei, het maandtarget het
-          jaartarget ÷ 12. <strong className="font-semibold text-ink">Nieuwe volgers</strong> (Instagram en Facebook)
-          rekenen net zo, alleen over de gemeten dagen: Instagram bewaart dat cijfer maar dertig dagen, het dashboard
-          sinds 16 augustus 2026; de dagen daarvóór zijn met het gemiddelde per gemeten dag bijgeschat.{" "}
-          <strong className="font-semibold text-ink">Volgers</strong> (LinkedIn, TikTok, YouTube) zijn een stand:
+          jaartarget ÷ 12. <strong className="font-semibold text-ink">Volgers</strong> zijn het totaal aantal volgers,
+          een stand op een dag:
           de basis is het aantal volgers eind {KPI_JAAR} (de laatste stand plus de trend per dag tot 31 december), het
-          target het aantal dat er eind {KPI_DOELJAAR} moet zijn. De groei per KPI is het percentage dat het team voor{" "}
+          target het aantal dat er eind {KPI_DOELJAAR} moet zijn. Instagram geeft geen historie van het aantal volgers: daar hebben 1 januari t/m de dag vóór de
+          eerste meting dezelfde stand als die eerste meting (gestippeld), en vanaf dan telt elke dag de echte stand. De
+          groei per KPI is het percentage dat het team voor{" "}
           {KPI_DOELJAAR} vastlegde; klik erop om het aan te passen — dat geldt voor iedereen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> telt vanaf 1 januari{" "}
           {KPI_DOELJAAR}. Alles wordt elke zondag bijgewerkt t/m zaterdag.

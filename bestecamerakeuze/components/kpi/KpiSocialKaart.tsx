@@ -33,11 +33,11 @@ function watTeltMee(kpi: SocialKpiRegel): string {
   }
   switch (kpi.kanaal) {
     case "instagram":
-      return "Het aantal volgers (followers_count). Instagram geeft alleen de stand van vandaag, geen historie: de reeks begint daarom op 20 november 2026 en groeit elke nacht met een stand aan. Vóór de eerste stand is er niets ingevuld.";
+      return "Het totaal aantal volgers (followers_count). Instagram geeft alleen de stand van vandaag, geen historie. Het dashboard bewaart daarom elke dag de stand. 1 januari t/m de dag vóór de eerste meting krijgen dezelfde stand als die eerste meting (een aanname, gestippeld in de grafiek); vanaf dan telt elke dag de echte stand.";
     case "linkedin":
       return "Het aantal volgers van de bedrijfspagina: de stand van vandaag, per dag teruggerekend met de netto aanwas (organisch + betaald) van LinkedIn.";
     case "facebook":
-      return "Het aantal volgers van de pagina per dag (page_follows).";
+      return "Het totaal aantal volgers van de pagina, per dag (page_follows). Het hele jaar is gemeten.";
     default:
       return "";
   }
@@ -70,6 +70,9 @@ export default function KpiSocialKaart({
           eerste naar de laatste bekende stand van {KPI_JAAR}, gedeeld door het aantal dagen ertussen). De vlakke lijn is
           het doel eind {KPI_DOELJAAR}: de stand eind {KPI_JAAR} plus de groei. Volgers tellen niet op; het target is een
           stand, geen jaartotaal.
+          {u?.aangevuldTot
+            ? ` De maanden vóór ${datumKort(u.aangevuldTot)} zijn niet gemeten: daar staat de eerste gemeten stand (gestippeld).`
+            : ""}
         </p>
       ) : kpi.maat === "nieuwe-volgers" ? (
         <p>

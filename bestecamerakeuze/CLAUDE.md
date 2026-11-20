@@ -1203,20 +1203,21 @@ Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
   dagen, × (1 + groei), maandtarget ÷ 12. Eén verschil: hooguit drie lege dagen vlak vóór de
   peildatum tellen als nog niet gemeten (`achterstand`), want LinkedIn en Meta leveren een tot twee
   dagen later.
-- **Instagram en Facebook: nieuwe volgers, geen volgers** (besluit van de eigenaar, 20 november 2026;
-  de percentages uit zijn lijst voor "volgers" gelden nu voor nieuwe volgers). Optelbaar, dus dezelfde
-  som als impressies, maar alleen over de **gemeten** dagen (`berekenNieuweVolgers`): een dag die niet in
-  de reeks staat is niet gemeten (`ontbrekendeDagen`) en wordt met het gemiddelde per gemeten dag
-  ingevuld, gestippeld — zoals de uitval op KPI's 2027 GA. Een gemeten dag met 0 staat er wél in.
-  Instagram (`follower_count_1d`) levert Meta maar 30 dagen terug; de nachtelijke sync bewaart het sinds
-  16 augustus 2026 in `windsor_account_dag.volgers_erbij`, en de wekelijkse ophaalactie voegt dat samen
-  met de vorige stand en het verse 30-dagenvenster. 2026 rekent dus op ±3 maanden (augustus had een
-  piek), januari t/m 15 augustus is bijgeschat. `follows_and_unfollows` is **geen** vervanger: dat is
-  volgen + ontvolgen samen (per dag altijd ≥ `follower_count_1d`). Audi Sport (`audisportdealer`) stond
-  niet in de Instagram-accounts van de nachtelijke sync; sinds november 2026 wel, dus zijn historie
-  begint pas bij het 30-dagenvenster van de eerste ophaalactie. Facebook: `page_daily_follows`, wél
-  historisch beschikbaar: elke dag van 2026 is gemeten, er wordt niets bijgeschat.
-- **Volgers zijn een stand, geen optelsom** (`berekenVolgers`; LinkedIn, TikTok, YouTube). Basis = de stand op 31 december 2026
+- **Volgers = het totaal aantal volgers, op alle kanalen** (besluit van de eigenaar, 20 november 2026).
+  Het was een paar uur "nieuwe volgers" bij Instagram en Facebook; dat is teruggedraaid zodra bleek dat
+  Facebook het totaal per dag heeft (`page_follows`, heel 2026). De maat `nieuwe-volgers`
+  (`berekenNieuweVolgers`, `ontbrekendeDagen`) en de opslag ervan (`dagen["nieuwe-volgers"]`) staan er
+  nog, maar geen KPI gebruikt hem.
+  - **Instagram: aanvullen tot de eerste meting** (`aanvullen` in `berekenVolgers`). Instagram kent alleen
+    de stand van vandaag. Op verzoek krijgen 1 januari t/m de dag vóór de eerste gemeten stand de
+    waarde van die eerste stand; vanaf dan telt elke dag de echte stand. Die maanden zijn `bijgeschat`
+    (gestippeld) met "Aangenomen: …" in de tooltip, en de trend rekent alleen over echte metingen
+    (pas vanaf zeven dagen ertussen). De eerste stand is die van **20 november 2026** (3.772 / 214 /
+    7.228), met de hand in `kpi_2027_social_standen` gezet omdat de oude nachtelijke sync hem anders
+    overschreef; de ophaalactie voegt er elke week aan toe.
+  - **Een stand mag na de peildatum liggen** (`standTot` = de dag van ophalen): de momentopname van
+    zondag hoeft niet een week op de volgende zaterdag te wachten. Ook de realisatie leest tot die dag.
+- **Volgers zijn een stand, geen optelsom** (`berekenVolgers`). Basis = de stand op 31 december 2026
   (zolang het jaar loopt: laatste stand + trend per dag; trend = eerste → laatste stand van het jaar,
   pas vanaf zeven dagen ertussen). Target = de stand eind 2027. In de grafiek de stand per maandeinde
   en een vlakke lijn "Doel eind 2027" (`stand` op `KpiKaartOpmaak`, `jaarNaam`/`targetNaam` op

@@ -30,9 +30,9 @@ function dagen(van: string, tot: string, waarde: (d: string, i: number) => numbe
 test("de percentages van het team staan per merk zoals aangeleverd", () => {
   const verwacht: Record<string, Record<string, number>> = {
     udenhout: {
-      "facebook-nieuwe-volgers": 0.01,
+      "facebook-volgers": 0.01,
       "facebook-vertoningen": 0.08,
-      "instagram-nieuwe-volgers": 0.07,
+      "instagram-volgers": 0.07,
       "instagram-vertoningen": 0.19,
       "linkedin-volgers": 0.05,
       "linkedin-vertoningen": 0.09,
@@ -40,17 +40,17 @@ test("de percentages van het team staan per merk zoals aangeleverd", () => {
       "youtube-volgers": 0.04,
     },
     veloo: {
-      "facebook-nieuwe-volgers": 0.05,
+      "facebook-volgers": 0.05,
       "facebook-vertoningen": -0.06,
-      "instagram-nieuwe-volgers": 0.17,
+      "instagram-volgers": 0.17,
       "instagram-vertoningen": 0.17,
       "linkedin-volgers": 0.07,
       "linkedin-vertoningen": 0.21,
     },
     "audi-sport": {
-      "facebook-nieuwe-volgers": 0.05,
+      "facebook-volgers": 0.05,
       "facebook-vertoningen": 0.33,
-      "instagram-nieuwe-volgers": 0.02,
+      "instagram-volgers": 0.02,
       "instagram-vertoningen": 0.15,
     },
   };
@@ -132,6 +132,27 @@ test("volgers zonder historie (Instagram): lege maanden vóór de eerste stand, 
   assert.equal(week.perDag, 2);
 });
 
+test("Instagram-volgers: vóór de eerste meting de eerste stand, daarna de echte; stand van zondag telt mee", () => {
+  // Eerste meting vrijdag 20 november, de ophaalactie draait zondag 22 (peildatum zaterdag 21).
+  const reeks = { "2026-11-20": 3772, "2026-11-21": 3775, "2026-11-22": 3776 };
+  const u = berekenVolgers(reeks, "2026-11-21", 2026, 0.07, { standTot: "2026-11-22", aanvullen: true })!;
+  assert.equal(u.standDatum, "2026-11-22"); // de momentopname van zondag wacht niet een week
+  assert.equal(u.gerealiseerd, 3776);
+  assert.equal(u.aangevuldTot, "2026-11-20");
+  assert.equal(u.perDag, 0); // pas een trend vanaf zeven dagen echte metingen; de aanvulling telt niet
+  assert.equal(u.verwacht, 3776);
+  for (const m of u.maanden.slice(0, 10)) {
+    assert.equal(m.soort, "bijgeschat");
+    assert.equal(m.verwacht, 3772);
+    assert.match(m.toelichting ?? "", /Aangenomen/);
+  }
+  assert.equal(u.maanden[10].soort, "deels");
+  // Zonder aanvullen (LinkedIn, Facebook): lege maanden in plaats van een aanname.
+  const zonder = berekenVolgers(reeks, "2026-11-21", 2026, 0, { standTot: "2026-11-22" })!;
+  assert.equal(zonder.maanden[0].leeg, true);
+  assert.equal(zonder.aangevuldTot, null);
+});
+
 test("volgers: de stand op elke dag teruggerekend uit de aanwas (LinkedIn)", () => {
   const aanwas = { "2026-11-18": 2, "2026-11-19": -1, "2026-11-20": 3 };
   const s = standenUitAanwas(6211, aanwas, "2026-11-17", "2026-11-19");
@@ -186,11 +207,15 @@ test("merkoverzicht: niet gekoppelde kanalen zonder uitkomst, groei per KPI aan 
   const o = merkOverzicht(merk, standen, (k) => (k === "instagram-vertoningen" ? 0.25 : undefined));
   assert.deepEqual(o.kanalen.map((g) => g.kanaal), ["facebook", "instagram", "linkedin", "tiktok", "youtube"]);
   const ig = o.kanalen.find((g) => g.kanaal === "instagram")!.kpis;
-  assert.equal(ig[0].sleutel, "instagram-nieuwe-volgers");
-  assert.equal(ig[0].uitkomst?.verwacht, 730); // 2 per gemeten dag × 365
-  assert.equal(ig[0].uitkomst?.dagenNietGemeten, 227); // 1 januari t/m 15 augustus
+  assert.equal(ig[0].sleutel, "instagram-volgers");
+  assert.equal(ig[0].maat, "volgers");
+  assert.equal(ig[0].uitkomst?.verwacht, 3772);
+  assert.equal(ig[0].uitkomst?.aangevuldTot, "2026-11-14"); // januari t/m 13 november aangevuld
+  assert.equal(ig[0].uitkomst?.maanden[0].soort, "bijgeschat");
   assert.equal(ig[1].uitkomst?.groei, 0.25);
   assert.equal(ig[1].groeiAangepast, true);
+  const fb = o.kanalen.find((g) => g.kanaal === "facebook")!.kpis;
+  assert.deepEqual(fb.map((k) => k.maat), ["volgers", "vertoningen"]);
   const tiktok = o.kanalen.find((g) => g.kanaal === "tiktok")!.kpis[0];
   assert.equal(tiktok.uitkomst, null);
   assert.ok(tiktok.nietGekoppeld);
@@ -202,9 +227,9 @@ test("merkoverzicht: niet gekoppelde kanalen zonder uitkomst, groei per KPI aan 
   const li = o.kanalen.find((g) => g.kanaal === "linkedin")!.kpis[0];
   assert.equal(li.maat, "volgers");
   assert.equal(li.uitkomst, null); // geen LinkedIn-stand in dit voorbeeld
-  const stand = berekenVolgers({ "2026-11-14": 3772 }, "2026-11-14", 2026, 0)!;
+  const stand = ig[0].uitkomst!;
   assert.equal(metSocialGroei(stand, 0.1).targetPerMaand, metSocialGroei(stand, 0.1).target);
-  assert.ok(Math.abs(metSocialGroei(ig[0].uitkomst!, 0.1).targetPerMaand - (730 * 1.1) / 12) < 1e-9);
+  assert.ok(Math.abs(metSocialGroei(ig[1].uitkomst!, 0.1).targetPerMaand - (36500 * 1.1) / 12) < 1e-9);
 });
 
 test("ophalen: stukken en optellen per dag", () => {

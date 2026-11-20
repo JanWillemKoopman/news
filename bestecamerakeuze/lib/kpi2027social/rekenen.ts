@@ -78,6 +78,11 @@ export interface SocialUitkomst extends KpiUitkomst {
   standDatum: string | null;
   /** Volgers: de eerste dag van het jaar met een bekende stand. */
   eersteDatum: string | null;
+  /**
+   * Volgers op Instagram: de eerste echt gemeten dag; alle dagen ervóór zijn aangevuld met
+   * die stand (`aanvullen`). Null als er niets is aangevuld.
+   */
+  aangevuldTot?: string | null;
 }
 
 const DAG_MS = 86_400_000;
@@ -205,8 +210,24 @@ export function berekenVolgers(
   peildatum: string,
   jaar: number,
   groei: number,
+  opties: {
+    /**
+     * De laatste dag waarvan een stand mag meetellen, als die na de peildatum ligt. Een stand
+     * is een momentopname van de dag van ophalen (Instagram: zondag), en die hoort niet een
+     * week te wachten tot de volgende zaterdag. Standaard de peildatum.
+     */
+    standTot?: string;
+    /**
+     * Instagram (besluit van de eigenaar, 20 november 2026): het platform kent geen historie,
+     * dus 1 januari t/m de dag vóór de eerste gemeten stand krijgen de waarde van die eerste
+     * stand. Gestippeld in de grafiek (soort `bijgeschat`, met uitleg in de tooltip); de
+     * trend rekent alleen over de echt gemeten standen.
+     */
+    aanvullen?: boolean;
+  } = {},
 ): SocialUitkomst | null {
-  const standen = standenIn(volgers, peildatum, jaar);
+  const standTot = opties.standTot && opties.standTot > peildatum ? opties.standTot : peildatum;
+  const standen = standenIn(volgers, standTot, jaar);
   if (standen.length === 0) return null;
   const [eersteDatum, eerste] = standen[0];
   const [laatsteDatum, laatste] = standen[standen.length - 1];
@@ -216,7 +237,8 @@ export function berekenVolgers(
   const dagenNaLaatste = Math.round((alsDatum(eindJaar) - alsDatum(laatsteDatum)) / DAG_MS);
   const verwacht = laatste + perDag * dagenNaLaatste;
   const target = verwacht * (1 + groei);
-  const grens = tot(peildatum, jaar);
+  const grens = tot(standTot, jaar);
+  const aangevuld = opties.aanvullen && eersteDatum > `${jaar}-01-01` ? eersteDatum : null;
 
   const maanden: MaandUitkomst[] = Array.from({ length: 12 }, (_, i) => {
     const maand = i + 1;
@@ -226,6 +248,15 @@ export function berekenVolgers(
     const eind = `${jaar}-${mm}-${String(dagen).padStart(2, "0")}`;
     const inMaand = standen.filter(([d]) => d >= begin && d <= eind);
     const basis = { maand, dagenGemeten: inMaand.length, dagenInMaand: dagen };
+    if (eind < eersteDatum && aangevuld) {
+      return {
+        ...basis,
+        soort: "bijgeschat",
+        gerealiseerd: null,
+        verwacht: eerste,
+        toelichting: `Aangenomen: gelijk aan de eerste gemeten stand (${rondAf(eerste)} op ${datumKort(eersteDatum)}). Instagram geeft geen historie.`,
+      };
+    }
     if (eind < eersteDatum) {
       return {
         ...basis,
@@ -283,6 +314,7 @@ export function berekenVolgers(
     definitief: isDefinitief(peildatum, jaar),
     standDatum: laatsteDatum,
     eersteDatum,
+    aangevuldTot: aangevuld,
   };
 }
 
@@ -331,7 +363,8 @@ export function realisatieVoor(
       .reduce((t, [, n]) => t + (Number(n) || 0), 0);
     return { waarde, peildatum: stand.peildatum };
   }
-  const standen = standenIn(reeks, stand.peildatum, stand.jaar);
+  const opgehaald = stand.berekendOp.slice(0, 10);
+  const standen = standenIn(reeks, opgehaald > stand.peildatum ? opgehaald : stand.peildatum, stand.jaar);
   const laatste = standen.at(-1);
   return laatste ? { waarde: laatste[1], peildatum: laatste[0] } : { waarde: 0, peildatum: null };
 }
@@ -396,7 +429,10 @@ function regelVoor(
   const uitkomst = !stand
     ? null
     : kpi.maat === "volgers"
-      ? berekenVolgers(reeks, stand.peildatum, stand.jaar, groei)
+      ? berekenVolgers(reeks, stand.peildatum, stand.jaar, groei, {
+          standTot: stand.berekendOp.slice(0, 10),
+          aanvullen: kpi.kanaal === "instagram",
+        })
       : kpi.maat === "nieuwe-volgers"
         ? berekenNieuweVolgers(reeks, stand.peildatum, stand.jaar, groei)
         : Object.keys(reeks).length > 0
