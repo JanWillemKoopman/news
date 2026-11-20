@@ -126,7 +126,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   "kpi-2027-crm": {
     title: "KPI's CRM",
     subtitle:
-      "De targets voor 2027 uit de Selligent-database: contacten en opt-ins in unieke e-mailadressen, de stand van 2026 plus 10%.",
+      "De targets voor 2027 uit de Selligent-database: contacten, auto's en opt-ins (unieke e-mailadressen en kentekens), de stand van 2026 plus 10%.",
   },
   "social-ads": {
     title: "Social ads",

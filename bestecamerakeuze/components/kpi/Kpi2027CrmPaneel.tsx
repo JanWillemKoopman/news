@@ -157,19 +157,23 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
         </p>
       )}
 
+      {/* Standaard ingeklapt, net als op de andere KPI-tabbladen. De definitie per KPI staat
+          onder zijn eigen grafiek (KpiCrmKaart); hier alleen wat voor alle KPI's geldt. */}
       <Definitie zonderLijn>
         <span>
-          Alles telt <strong className="font-semibold text-ink">unieke e-mailadressen</strong> uit de Selligent-export
-          (kolom {data?.mailKolom ?? "MAIL"}). <strong className="font-semibold text-ink">Contacten</strong> is het aantal
-          verschillende e-mailadressen; <strong className="font-semibold text-ink">Contacten met opt-in</strong> het
-          aantal daarvan met minstens één opt-in op True. <strong className="font-semibold text-ink">Aantal auto&apos;s</strong>{" "}
-          telt unieke kentekens, <strong className="font-semibold text-ink">Auto&apos;s met opt-in</strong> de kentekens van
-          een contact met opt-in; <strong className="font-semibold text-ink">Opt-in &lt;merk&gt;</strong> het aantal
-          verschillende e-mailadressen met minstens één rij waarop die opt-inkolom True is — elke booleaanse kolom in de
-          export krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de laatste
-          export), het target de stand die er eind {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI.{" "}
+          Alle KPI&apos;s komen uit de Selligent-export en tellen <strong className="font-semibold text-ink">unieke
+          waarden, geen rijen</strong>: een rij is een contact mét een voertuig.{" "}
+          <strong className="font-semibold text-ink">Contacten</strong> en de opt-ins tellen unieke e-mailadressen (kolom{" "}
+          {data?.mailKolom ?? "MAIL"}); <strong className="font-semibold text-ink">Aantal auto&apos;s</strong> en{" "}
+          <strong className="font-semibold text-ink">Auto&apos;s met opt-in</strong> tellen unieke kentekens (kolom{" "}
+          {data?.kentekenKolom ?? "VDUVEHICLES_LICENSE_PLATE"}). &quot;Met opt-in&quot; betekent: het contact heeft op
+          minstens één rij minstens één opt-in op True (VDU, Service of een merk). Elke True/False-kolom in de export is
+          een opt-in en krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de
+          laatste export; de maanden ervóór krijgen dezelfde stand, gestippeld), het target de stand die er eind{" "}
+          {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI, niet aan te passen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> is de stand van de laatste export in{" "}
-          {KPI_DOELJAAR}. Elke ochtend zet Selligent een nieuwe export neer; deze pagina leest steeds de laatste.
+          {KPI_DOELJAAR}. Selligent zet elke ochtend een nieuwe export neer; deze pagina leest steeds de laatste. Onder
+          elke grafiek staat per KPI precies wat er geteld wordt.
         </span>
       </Definitie>
 

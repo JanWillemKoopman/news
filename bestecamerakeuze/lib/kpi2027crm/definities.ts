@@ -105,43 +105,62 @@ export function optinSleutel(kolom: string): string {
   return `optin:${kolom}`;
 }
 
-/** De besluiten achter een KPI, voor onder de grafiek ("Keuzes in de definitie"). */
-export function keuzesVoor(soort: "contacten" | "met-optin" | "autos" | "autos-optin" | "optin"): string[] {
+/** Wat `keuzesVoor` van een KPI moet weten. */
+export interface KeuzeContext {
+  soort: "contacten" | "met-optin" | "autos" | "autos-optin" | "optin";
+  /** De kolom met e-mailadressen (`MAIL`). */
+  mailKolom: string;
+  /** Bij een opt-in: de opt-inkolom; bij de auto-KPI's: de kentekenkolom. */
+  kolom: string;
+  /** Bij een opt-in: "VDU" of "Service" als het een algemene opt-in is, anders null. */
+  algemeen?: string | null;
+}
+
+/**
+ * De besluiten achter een KPI, voor onder de grafiek ("Keuzes in de definitie"). Elke KPI heeft
+ * er minstens drie: wat er geteld wordt en waarom zo, het target, en hoe de stand en de
+ * realisatie werken (getest). Verander je een definitie, pas deze tekst in dezelfde wijziging aan.
+ */
+export function keuzesVoor({ soort, mailKolom, kolom, algemeen = null }: KeuzeContext): string[] {
   const gemeen = [
-    `Target: +${Math.round(CRM_GROEI * 100)}% op de stand eind 2026, voor elke CRM-KPI hetzelfde (besluit van de eigenaar, november 2026).`,
-    "Er wordt geen historie bewaard: alleen de stand van de laatste export telt. Alle maanden van 2026 vóór die meting krijgen hetzelfde getal (een aanname, gestippeld), en de stand eind 2026 is die laatste stand.",
+    `Target: +${Math.round(CRM_GROEI * 100)}% op de stand eind 2026, voor elke CRM-KPI hetzelfde en niet per KPI aan te passen (besluit van de eigenaar, november 2026).`,
+    "Er wordt geen historie bewaard: alleen de stand van de laatste export telt. Januari t/m de maand vóór de export krijgen dezelfde stand (een aanname, gestippeld), en de stand eind 2026 is die laatste stand.",
+    "Realisatie 2027 is de stand van de laatste export in 2027. Omdat er niets bewaard wordt, is de stand eind 2026 dan niet meer uit het bestand te lezen; die moet vóór 1 januari 2027 worden vastgelegd.",
   ];
-  if (soort === "contacten") {
-    return [
-      "Een contact is een uniek e-mailadres, niet een rij en niet een klantnummer: een rij in de export is een klant mét een voertuig, en één klant kan meerdere klantnummers hebben.",
-      "Rijen zonder e-mailadres tellen niet mee. Het e-mailadres wordt geteld zoals het in de export staat; er wordt niets opgeschoond (net als op Tools → Selligent database).",
-      ...gemeen,
-    ];
+  const optinUitleg =
+    "Een opt-in staat aan als de cel True is; hoofdletters en spaties aan de rand maken niet uit. False en een lege cel tellen niet.";
+  switch (soort) {
+    case "contacten":
+      return [
+        `Een contact is een uniek e-mailadres (kolom ${mailKolom}), niet een rij en niet een klantnummer: een rij in de export is een klant mét een voertuig, dus één klant met drie auto's staat er drie keer in, en één klant kan meerdere klantnummers hebben.`,
+        "Rijen zonder e-mailadres tellen niet mee. Het e-mailadres wordt geteld zoals het in de export staat; er wordt niets opgeschoond, net als op Tools → Selligent database (tegel E-mailadressen).",
+        ...gemeen,
+      ];
+    case "met-optin":
+      return [
+        `Een e-mailadres telt als het op minstens één van zijn rijen minstens één opt-in aan heeft: VDU, Service of een merk (alle True/False-kolommen in de export). Zo is het op minstens één manier te bereiken. Dezelfde definitie als het filter Minimaal 1 opt-in op Tools → Selligent database.`,
+        `Elk e-mailadres (kolom ${mailKolom}) telt één keer, ook als het meerdere opt-ins aan heeft. Dit getal is dus kleiner dan de opt-ins bij elkaar opgeteld. ${optinUitleg}`,
+        ...gemeen,
+      ];
+    case "autos":
+      return [
+        `Een auto is een uniek kenteken (kolom ${kolom}), niet een rij: dezelfde auto kan bij meerdere contacten in de export staan en telt dan één keer. Rijen zonder kenteken (contacten zonder auto) tellen niet mee.`,
+        "Het kenteken wordt geteld zoals het in de export staat; er wordt niets opgeschoond. Tools → Selligent database telt auto's op het voertuig-id (VDUVEHICLES_VEHICLE_ID), dus dat getal kan een paar auto's afwijken.",
+        ...gemeen,
+      ];
+    case "autos-optin":
+      return [
+        `Een auto (kenteken, kolom ${kolom}) telt als hij op minstens één rij staat bij een e-mailadres dat minstens één opt-in aan heeft: VDU, Service of een merk. Het zijn dus de auto's van Contacten met opt-in. De opt-in hoeft niet op dezelfde rij te staan als de auto: hij hoort bij het contact.`,
+        `Een rij zonder e-mailadres (kolom ${mailKolom}) maakt een auto niet bereikbaar en telt hier dus niet, ook niet als er een opt-in op staat. Elk kenteken telt één keer, ook als het bij meerdere contacten met opt-in staat.`,
+        ...gemeen,
+      ];
+    case "optin":
+      return [
+        `Een e-mailadres telt als het op minstens één van zijn rijen de kolom ${kolom} aan heeft; elk adres telt één keer. ${optinUitleg}`,
+        algemeen
+          ? `${algemeen} is een algemene opt-in en staat daarom bovenaan naast Contacten, niet bij de merken (besluit van de eigenaar, november 2026). Herkend aan de kolomnaam ${kolom} (ALGEMENE_OPTINS in lib/kpi2027crm/definities.ts).`
+          : "Elke True/False-kolom in de export is een opt-in en krijgt een eigen KPI; een nieuwe voorkeur in de export verschijnt hier vanzelf. De naam van de KPI komt uit de kolomnaam (OPTIN_NAMEN in lib/kpi2027crm/definities.ts).",
+        ...gemeen,
+      ];
   }
-  if (soort === "autos") {
-    return [
-      "Een auto is een uniek kenteken (kolom VDUVEHICLES_LICENSE_PLATE), niet een rij: dezelfde auto kan bij meerdere contacten in de export staan. Rijen zonder kenteken (contacten zonder auto) tellen niet mee.",
-      "Het kenteken wordt geteld zoals het in de export staat; er wordt niets opgeschoond. Tools → Selligent database telt auto's op het voertuig-id, dus dat getal kan een paar auto's afwijken.",
-      ...gemeen,
-    ];
-  }
-  if (soort === "autos-optin") {
-    return [
-      "Een auto telt als hij op minstens één rij staat bij een e-mailadres met minstens één opt-in op True (VDU, Service of een merk): de auto's van Contacten met opt-in. Een rij zonder e-mailadres maakt een auto niet bereikbaar en telt dus niet.",
-      "Elk kenteken telt één keer, ook als het bij meerdere contacten met opt-in staat.",
-      ...gemeen,
-    ];
-  }
-  if (soort === "met-optin") {
-    return [
-      "Een e-mailadres telt als het op minstens één van zijn rijen True heeft in minstens één opt-inkolom (alle True/False-kolommen in de export: VDU, Service en de merken). Zo is het op minstens één manier te bereiken. Dezelfde definitie als het filter Minimaal 1 opt-in op Tools → Selligent database.",
-      "Elk e-mailadres telt één keer, ook als het bij meerdere merken of op meerdere rijen True heeft. Dit getal is dus kleiner dan de opt-ins hieronder bij elkaar opgeteld.",
-      ...gemeen,
-    ];
-  }
-  return [
-    "Een e-mailadres telt als het op minstens één van zijn rijen True heeft in deze kolom (hoofdletters en spaties aan de rand maken niet uit). False en een lege cel tellen niet.",
-    "Elke booleaanse kolom in de export is een opt-in en krijgt een eigen KPI; een nieuwe voorkeur in de export verschijnt hier vanzelf.",
-    ...gemeen,
-  ];
 }

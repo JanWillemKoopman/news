@@ -1301,6 +1301,14 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
   bestand. Welke kolommen VDU en Service zijn staat in `ALGEMENE_OPTINS` (`PREFERENCES_VDU`,
   `PREFERENCES_SERVICE`/`…SERVICES`, ook zonder voorvoegsel). Staat een ervan niet als True/False-kolom in
   de export, dan meldt de pagina dat bovenaan (`ontbrekend`) in plaats van dat de kaart stil ontbreekt.
+- **Onder elke grafiek de definitie** (verzoek van de eigenaar, 20 november 2026), ingeklapt achter "Lees
+  definitie" en in dezelfde opbouw als Syntec en social media (`KpiCrmKaart.tsx`): *Grafiek* (één meting,
+  welke maanden aangenomen en welke doorgetrokken zijn, doel eind 2027), *Bron* (het bestand en de kolommen
+  die deze KPI leest), *Wat telt mee* (de telling met het aantal; bij Contacten en Auto's met opt-in ook de
+  lijst opt-inkolommen die meetellen) en *Keuzes in de definitie* (`keuzesVoor` in `definities.ts`, met de
+  echte kolomnamen; elke KPI minstens drie, waaronder het target en de realisatie — getest). De uitleg
+  bovenaan de pagina en onder de overzichtstabel noemt alleen wat voor alle KPI's geldt. Verander je een
+  telling in `rekenen.ts`, pas dan in dezelfde wijziging `KpiCrmKaart.tsx` en `keuzesVoor` aan.
 - **Een stand uit één meting** (`berekenStand`, besluit van de eigenaar): er wordt niets bewaard, dus januari
   t/m de maand vóór de export krijgen dezelfde stand (`bijgeschat`, gestippeld, "Aangenomen" in de tooltip),
   de maand van de export is gemeten, de maanden erna doorgetrokken. Stand eind 2026 = de laatste stand,

@@ -279,7 +279,14 @@ export interface CrmKpiRegel {
   sleutel: string;
   naam: string;
   soort: CrmSoort;
+  /** De kolom waaruit geteld is: `MAIL`, de kentekenkolom of de opt-inkolom. */
   kolom: string;
+  /** De kolom met e-mailadressen. */
+  mailKolom: string;
+  /** Alle opt-inkolommen in de export (voor "met opt-in": welke kolommen meetellen). */
+  optinKolommen: string[];
+  /** Bij een opt-in: "VDU" of "Service" als het een algemene opt-in is, anders null. */
+  algemeen: string | null;
   uitkomst: CrmUitkomst | null;
   realisatie: { waarde: number; peildatum: string | null };
   keuzes: string[];
@@ -312,17 +319,26 @@ export interface Kpi2027CrmAntwoord {
 
 /** Het overzicht uit de tellingen van één export, gemeten op `standDatum`. */
 export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroep[] {
-  const regel = (t: CrmTelling): CrmKpiRegel => ({
-    sleutel: t.sleutel,
-    naam: t.naam,
-    soort: t.soort,
-    kolom: t.kolom,
-    uitkomst: berekenStand(t.aantal, standDatum),
-    realisatie: standDatum.startsWith(`${KPI_DOELJAAR}-`)
-      ? { waarde: t.aantal, peildatum: standDatum }
-      : { waarde: 0, peildatum: null },
-    keuzes: keuzesVoor(t.soort),
-  });
+  const mailKolom = telling.mailKolom ?? "MAIL";
+  const optinKolommen = telling.tellingen.filter((t) => t.soort === "optin").map((t) => t.kolom);
+  const regel = (t: CrmTelling): CrmKpiRegel => {
+    const plekAlgemeen = t.soort === "optin" ? algemenePlek(t.kolom) : null;
+    const algemeen = plekAlgemeen === null ? null : ALGEMENE_OPTINS[plekAlgemeen].naam;
+    return {
+      sleutel: t.sleutel,
+      naam: t.naam,
+      soort: t.soort,
+      kolom: t.kolom,
+      mailKolom,
+      optinKolommen,
+      algemeen,
+      uitkomst: berekenStand(t.aantal, standDatum),
+      realisatie: standDatum.startsWith(`${KPI_DOELJAAR}-`)
+        ? { waarde: t.aantal, peildatum: standDatum }
+        : { waarde: 0, peildatum: null },
+      keuzes: keuzesVoor({ soort: t.soort, mailKolom, kolom: t.kolom, algemeen }),
+    };
+  };
   // Bovenaan Contacten, Contacten met opt-in, Aantal auto's, Auto's met opt-in, dan de algemene
   // opt-ins in hun vaste volgorde (VDU, Service); daaronder de merk-opt-ins in de volgorde van het
   // bestand.

@@ -7,8 +7,9 @@ import { voortgangStand } from "@/lib/kpi2027social/rekenen";
 
 /**
  * De overzichtstabel bovenaan KPI's 2027 CRM: dezelfde tabel als op de andere KPI-tabbladen
- * (`OverzichtTabel.tsx`), met een kopje per groep (Contacten, Opt-ins). Zonder totaalregel:
- * opt-ins overlappen (één adres kan bij meerdere merken aanstaan), dus optellen betekent niets.
+ * (`OverzichtTabel.tsx`), met een kopje per groep (Contacten, auto's en algemene opt-ins; Opt-ins
+ * per merk). Zonder totaalregel: opt-ins overlappen (één adres kan bij meerdere merken aanstaan)
+ * en contacten en auto's zijn verschillende eenheden, dus optellen betekent niets.
  *
  * Alles is een stand, net als volgers op KPI's social media: de kolom {KPI_JAAR} is de stand
  * eind {KPI_JAAR}, het target de stand eind {KPI_DOELJAAR}, de voortgang de groei sinds eind
@@ -26,15 +27,16 @@ export default function CrmOverzichtTabel({
       peildatum2027={peildatumDoeljaar}
       uitlegJaar={
         <>
-          Het aantal unieke e-mailadressen op 31 december {KPI_JAAR}: de stand van de laatste Selligent-export. Er wordt
-          geen historie bewaard, dus alle maanden van {KPI_JAAR} krijgen die stand.
+          De stand op 31 december {KPI_JAAR}: unieke e-mailadressen (contacten en opt-ins) of unieke kentekens
+          (auto&apos;s) in de laatste Selligent-export. Er wordt geen historie bewaard, dus alle maanden van {KPI_JAAR}{" "}
+          krijgen die stand. Wat er per KPI precies geteld wordt, staat onder zijn grafiek.
         </>
       }
       uitlegGroei={<>Hoeveel procent het target boven {KPI_JAAR} ligt: +10% voor elke CRM-KPI. Niet aan te passen.</>}
       uitlegRealisatie={
         <>
-          De stand van de laatste export in {KPI_DOELJAAR}, in unieke e-mailadressen. Tot 1 januari {KPI_DOELJAAR} staat hier
-          0.
+          De stand van de laatste export in {KPI_DOELJAAR}, met dezelfde telling als de kolom {KPI_JAAR}. Tot 1 januari{" "}
+          {KPI_DOELJAAR} staat hier 0.
         </>
       }
       uitlegVoortgang={

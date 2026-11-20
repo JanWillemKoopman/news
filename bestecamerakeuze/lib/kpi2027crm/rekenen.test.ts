@@ -82,7 +82,7 @@ test("het overzicht: Contacten en Opt-ins als groepen, realisatie 0 vóór 2027"
   assert.deepEqual(groepen.map((g) => g.naam), ["Contacten, auto's en algemene opt-ins", "Opt-ins per merk"]);
   assert.equal(groepen[1].kpis.length, 3);
   assert.deepEqual(groepen[1].kpis[0].realisatie, { waarde: 0, peildatum: null });
-  assert.ok(groepen.every((g) => g.kpis.every((k) => k.keuzes.length >= 2)));
+  assert.ok(groepen.every((g) => g.kpis.every((k) => k.keuzes.length >= 3)));
 });
 
 test("volgorde bovenaan: Contacten, Contacten met opt-in, dan VDU, dan Service; daaronder de merken", () => {
@@ -171,4 +171,33 @@ test("zonder kentekenkolom geen auto-KPI's, en dat wordt gemeld", () => {
   const telling = telCrm(proeftabel());
   assert.equal(telling.kentekenKolom, null);
   assert.ok(!telling.tellingen.some((t) => t.soort === "autos" || t.soort === "autos-optin"));
+});
+
+test("de definitie onder elke grafiek noemt de juiste kolommen en de algemene opt-ins", () => {
+  const tabel = bouwTabel(
+    [
+      '"MAIL";"PREFERENCES_VDU";"PREFERENCES_SERVICE";"PREFERENCES_VW";"VDUVEHICLES_LICENSE_PLATE"',
+      '"a@x.nl";"True";"False";"False";"AA-11-AA"',
+    ].join("\n") + "\n",
+    META,
+  );
+  const regels = crmOverzicht(telCrm(tabel), "2026-11-20").flatMap((g) => g.kpis);
+  const per = Object.fromEntries(regels.map((r) => [r.naam, r]));
+  // Elke KPI: minstens drie keuzes, waarvan het target en de realisatie.
+  for (const r of regels) {
+    assert.ok(r.keuzes.length >= 3, r.naam);
+    assert.ok(r.keuzes.some((k) => k.startsWith("Target: +10%")), r.naam);
+    assert.ok(r.keuzes.some((k) => k.startsWith("Realisatie 2027")), r.naam);
+  }
+  // De kolomnamen staan in de keuzes, zodat de definitie klopt met wat er geteld wordt.
+  assert.ok(per["Contacten"].keuzes[0].includes("MAIL"));
+  assert.ok(per["Aantal auto's"].keuzes[0].includes("VDUVEHICLES_LICENSE_PLATE"));
+  assert.ok(per["Opt-in Volkswagen"].keuzes[0].includes("PREFERENCES_VW"));
+  // VDU en Service worden als algemene opt-in uitgelegd, de merken niet.
+  assert.equal(per["Opt-in VDU"].algemeen, "VDU");
+  assert.equal(per["Opt-in Service"].algemeen, "Service");
+  assert.equal(per["Opt-in Volkswagen"].algemeen, null);
+  assert.ok(per["Opt-in Service"].keuzes[1].includes("algemene opt-in"));
+  // "Met opt-in" weet welke opt-inkolommen meetellen.
+  assert.deepEqual(per["Contacten met opt-in"].optinKolommen, ["PREFERENCES_VDU", "PREFERENCES_SERVICE", "PREFERENCES_VW"]);
 });
