@@ -1284,6 +1284,12 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
   staat nergens opgesomd: elke booleaanse kolom is een opt-in, dus een nieuwe voorkeur levert vanzelf een
   KPI op. De namen (`PREFERENCES_VW` → "Opt-in Volkswagen") staan in `OPTIN_NAMEN` in `definities.ts`; een
   onbekende kolom draagt zijn eigen naam, dus die lijst is een verfraaiing en nooit een voorwaarde.
+- **Volgorde (verzoek van de eigenaar, 20 november 2026): Contacten, dan Opt-in VDU, dan Opt-in Service**,
+  samen bovenaan in de groep "Contacten en algemene opt-ins" (vanaf 1600px naast elkaar; smaller lopen de
+  vier tegels per kaart over hun rand, dan twee per rij). Daaronder "Opt-ins per merk" in de volgorde van het
+  bestand. Welke kolommen VDU en Service zijn staat in `ALGEMENE_OPTINS` (`PREFERENCES_VDU`,
+  `PREFERENCES_SERVICE`/`…SERVICES`, ook zonder voorvoegsel). Staat een ervan niet als True/False-kolom in
+  de export, dan meldt de pagina dat bovenaan (`ontbrekend`) in plaats van dat de kaart stil ontbreekt.
 - **Een stand uit één meting** (`berekenStand`, besluit van de eigenaar): er wordt niets bewaard, dus januari
   t/m de maand vóór de export krijgen dezelfde stand (`bijgeschat`, gestippeld, "Aangenomen" in de tooltip),
   de maand van de export is gemeten, de maanden erna doorgetrokken. Stand eind 2026 = de laatste stand,

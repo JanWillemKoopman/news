@@ -48,9 +48,35 @@ const OPTIN_NAMEN: Record<string, string> = {
   BEDRIJFSWAGENS: "Volkswagen Bedrijfswagens",
   PORSCHE: "Porsche",
   BENTLEY: "Bentley",
-  VDU: "Van den Udenhout",
+  VDU: "VDU",
+  SERVICE: "Service",
+  SERVICES: "Service",
   VELOO: "VELOO",
 };
+
+/**
+ * De algemene opt-ins: die staan niet bij de merken maar bovenaan, in de groep Algemeen naast
+ * Contacten, in deze volgorde (verzoek van de eigenaar, 20 november 2026: Contacten is de
+ * belangrijkste, dan VDU, dan Service, dan de merken). Herkend op het deel na `PREFERENCES_`
+ * (of de hele kolomnaam zonder voorvoegsel), hoofdletterongevoelig.
+ */
+export const ALGEMENE_OPTINS: readonly { naam: string; delen: readonly string[] }[] = [
+  { naam: "VDU", delen: ["VDU"] },
+  { naam: "Service", delen: ["SERVICE", "SERVICES"] },
+];
+
+/** Het deel van de kolomnaam na `PREFERENCES_`, in hoofdletters. */
+function deelVan(kolom: string): string {
+  const groot = kolom.toUpperCase();
+  return groot.startsWith(OPTIN_VOORVOEGSEL) ? groot.slice(OPTIN_VOORVOEGSEL.length) : groot;
+}
+
+/** De plek van een kolom in {@link ALGEMENE_OPTINS} (0 = VDU), of null als het een merk-opt-in is. */
+export function algemenePlek(kolom: string): number | null {
+  const deel = deelVan(kolom);
+  const plek = ALGEMENE_OPTINS.findIndex((a) => a.delen.includes(deel));
+  return plek === -1 ? null : plek;
+}
 
 /** "FOO_BAR" → "Foo bar". */
 function alsNaam(deel: string): string {
@@ -60,8 +86,8 @@ function alsNaam(deel: string): string {
 
 /** De naam van de KPI bij een opt-inkolom: `PREFERENCES_VW` → "Opt-in Volkswagen". */
 export function optinNaam(kolom: string): string {
-  const deel = kolom.toUpperCase().startsWith(OPTIN_VOORVOEGSEL) ? kolom.slice(OPTIN_VOORVOEGSEL.length) : kolom;
-  return `Opt-in ${OPTIN_NAMEN[deel.toUpperCase()] ?? alsNaam(deel)}`;
+  const deel = deelVan(kolom);
+  return `Opt-in ${OPTIN_NAMEN[deel] ?? alsNaam(deel)}`;
 }
 
 /** De sleutel van een KPI: `contacten`, of `optin:<kolomnaam>`. */

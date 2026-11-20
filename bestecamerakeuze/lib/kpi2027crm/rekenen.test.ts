@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CRM_GROEI, optinNaam } from "@/lib/kpi2027crm/definities";
+import { CRM_GROEI, algemenePlek, optinNaam } from "@/lib/kpi2027crm/definities";
 import { berekenStand, crmOverzicht, telCrm } from "@/lib/kpi2027crm/rekenen";
 import { bouwTabel } from "@/lib/selligent/tabel";
 
@@ -77,8 +77,33 @@ test("een meting buiten 2026 levert geen basis op, wel realisatie in 2027", () =
 
 test("het overzicht: Contacten en Opt-ins als groepen, realisatie 0 vóór 2027", () => {
   const groepen = crmOverzicht(telCrm(proeftabel()), "2026-11-20");
-  assert.deepEqual(groepen.map((g) => g.naam), ["Contacten", "Opt-ins"]);
+  assert.deepEqual(groepen.map((g) => g.naam), ["Contacten en algemene opt-ins", "Opt-ins per merk"]);
   assert.equal(groepen[1].kpis.length, 3);
   assert.deepEqual(groepen[1].kpis[0].realisatie, { waarde: 0, peildatum: null });
   assert.ok(groepen.every((g) => g.kpis.every((k) => k.keuzes.length >= 2)));
+});
+
+test("volgorde bovenaan: Contacten, dan VDU, dan Service; daaronder de merken", () => {
+  const tabel = bouwTabel(
+    [
+      '"MAIL";"PREFERENCES_AUDI";"PREFERENCES_SERVICE";"PREFERENCES_VW";"PREFERENCES_VDU"',
+      '"a@x.nl";"True";"True";"False";"True"',
+      '"b@x.nl";"False";"False";"True";"True"',
+    ].join("\n") + "\n",
+    META,
+  );
+  const telling = telCrm(tabel);
+  assert.deepEqual(telling.ontbrekend, []);
+  const [algemeen, merken] = crmOverzicht(telling, "2026-11-20");
+  assert.deepEqual(algemeen.kpis.map((k) => k.naam), ["Contacten", "Opt-in VDU", "Opt-in Service"]);
+  assert.deepEqual(algemeen.kpis.map((k) => k.uitkomst!.verwacht), [2, 2, 1]);
+  assert.deepEqual(merken.kpis.map((k) => k.naam), ["Opt-in Audi", "Opt-in Volkswagen"]);
+});
+
+test("VDU en Service worden herkend met en zonder voorvoegsel, en een ontbrekende wordt gemeld", () => {
+  assert.equal(algemenePlek("PREFERENCES_VDU"), 0);
+  assert.equal(algemenePlek("service"), 1);
+  assert.equal(algemenePlek("PREFERENCES_SERVICES"), 1);
+  assert.equal(algemenePlek("PREFERENCES_VW"), null);
+  assert.deepEqual(telCrm(proeftabel()).ontbrekend, ["VDU", "Service"]);
 });

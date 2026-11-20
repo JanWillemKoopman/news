@@ -45,6 +45,7 @@ export async function GET(request: Request) {
       mailKolom: telling.mailKolom,
       rijen: telling.rijen,
       rijenZonderMail: telling.rijenZonderMail,
+      ontbrekend: telling.ontbrekend,
       groepen: crmOverzicht(telling, standDatum),
       fout: telling.mailKolom ? undefined : "De export heeft geen kolom MAIL (of EMAIL): er valt niets te tellen.",
     };

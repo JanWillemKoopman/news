@@ -1,6 +1,14 @@
 import { KPI_DOELJAAR, KPI_JAAR } from "@/lib/kpi2027/definities";
 import { dagenInMaand, type KpiUitkomst, type MaandUitkomst } from "@/lib/kpi2027/rekenen";
-import { CONTACTEN_SLEUTEL, CRM_GROEI, keuzesVoor, optinNaam, optinSleutel } from "@/lib/kpi2027crm/definities";
+import {
+  ALGEMENE_OPTINS,
+  CONTACTEN_SLEUTEL,
+  CRM_GROEI,
+  algemenePlek,
+  keuzesVoor,
+  optinNaam,
+  optinSleutel,
+} from "@/lib/kpi2027crm/definities";
 import type { Tabel } from "@/lib/selligent/tabel";
 
 /**
@@ -47,6 +55,8 @@ export interface CrmTellingen {
   /** Rijen in de export, en hoeveel daarvan geen e-mailadres hebben. */
   rijen: number;
   rijenZonderMail: number;
+  /** De algemene opt-ins (VDU, Service) waarvoor geen booleaanse kolom in de export staat. */
+  ontbrekend: string[];
 }
 
 /** De kolommen met e-mailadressen, in volgorde van voorkeur (zelfde als Tools → Selligent). */
@@ -59,7 +69,7 @@ function isWaar(waarde: string): boolean {
 /** Telt de contacten en per booleaanse kolom de opt-ins, in unieke e-mailadressen. */
 export function telCrm(tabel: Tabel): CrmTellingen {
   const mail = MAIL_KOLOMMEN.map((n) => tabel.kolommen.find((k) => k.naam === n)).find(Boolean) ?? null;
-  if (!mail) return { mailKolom: null, tellingen: [], rijen: tabel.rijen, rijenZonderMail: tabel.rijen };
+  if (!mail) return { mailKolom: null, tellingen: [], rijen: tabel.rijen, rijenZonderMail: tabel.rijen, ontbrekend: [] };
 
   const aantalMails = mail.waarden.length;
   const gezien = new Uint8Array(aantalMails);
@@ -100,8 +110,10 @@ export function telCrm(tabel: Tabel): CrmTellingen {
       };
     });
 
+  const gevonden = new Set(optins.map((o) => algemenePlek(o.kolom)).filter((p) => p !== null));
   return {
     mailKolom: mail.naam,
+    ontbrekend: ALGEMENE_OPTINS.filter((_, i) => !gevonden.has(i)).map((a) => a.naam),
     tellingen: [
       { sleutel: CONTACTEN_SLEUTEL, naam: "Contacten", soort: "contacten", kolom: mail.naam, aantal: contacten },
       ...optins,
@@ -204,7 +216,7 @@ export interface CrmKpiRegel {
 }
 
 export interface CrmGroep {
-  sleutel: "contacten" | "optins";
+  sleutel: "algemeen" | "merken";
   naam: string;
   kpis: CrmKpiRegel[];
 }
@@ -220,6 +232,8 @@ export interface Kpi2027CrmAntwoord {
   mailKolom: string | null;
   rijen: number;
   rijenZonderMail: number;
+  /** De algemene opt-ins (VDU, Service) die niet als booleaanse kolom in de export staan. */
+  ontbrekend: string[];
   groepen: CrmGroep[];
   fout?: string;
 }
@@ -237,9 +251,14 @@ export function crmOverzicht(telling: CrmTellingen, standDatum: string): CrmGroe
       : { waarde: 0, peildatum: null },
     keuzes: keuzesVoor(t.soort),
   });
+  // Bovenaan Contacten, dan de algemene opt-ins in hun vaste volgorde (VDU, Service); daaronder
+  // de merk-opt-ins in de volgorde van het bestand.
+  const plek = (t: CrmTelling) => (t.soort === "contacten" ? -1 : algemenePlek(t.kolom));
+  const algemeen = telling.tellingen.filter((t) => plek(t) !== null).sort((a, b) => plek(a)! - plek(b)!);
+  const merken = telling.tellingen.filter((t) => plek(t) === null);
   const groepen: CrmGroep[] = [
-    { sleutel: "contacten", naam: "Contacten", kpis: telling.tellingen.filter((t) => t.soort === "contacten").map(regel) },
-    { sleutel: "optins", naam: "Opt-ins", kpis: telling.tellingen.filter((t) => t.soort === "optin").map(regel) },
+    { sleutel: "algemeen", naam: "Contacten en algemene opt-ins", kpis: algemeen.map(regel) },
+    { sleutel: "merken", naam: "Opt-ins per merk", kpis: merken.map(regel) },
   ];
   return groepen.filter((g) => g.kpis.length > 0);
 }

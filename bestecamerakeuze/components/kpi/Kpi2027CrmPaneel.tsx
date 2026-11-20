@@ -132,6 +132,20 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
         </p>
       )}
 
+      {/* Welke kolom bij VDU en Service hoort, staat niet vast: zegt het bestand er niets over,
+          dan staat dat hier in plaats van dat de kaart stilletjes ontbreekt. */}
+      {data && data.mailKolom && data.ontbrekend.length > 0 && (
+        <p className="flex items-start gap-2 rounded-panel border border-line bg-card px-4 py-3 text-sm text-ink">
+          <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
+          <span>
+            <strong className="font-semibold">Geen kolom gevonden voor opt-in {data.ontbrekend.join(" en ")}.</strong> De
+            pagina zoekt een True/False-kolom met de naam {data.ontbrekend.map((n) => `PREFERENCES_${n.toUpperCase()}`).join(" of ")}{" "}
+            (zonder voorvoegsel mag ook). Heet de kolom anders, dan staat hij nu bij de merken; de naam is aan te vullen in{" "}
+            <code>ALGEMENE_OPTINS</code> in <code>lib/kpi2027crm/definities.ts</code>.
+          </span>
+        </p>
+      )}
+
       <Definitie zonderLijn>
         <span>
           Alles telt <strong className="font-semibold text-ink">unieke e-mailadressen</strong> uit de Selligent-export
@@ -151,7 +165,11 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data.groepen.map((groep) => (
             <section key={groep.sleutel} className="flex flex-col gap-3">
               <h2 className="label-theme text-label text-ink-faint">{groep.naam}</h2>
-              <div className="grid grid-cols-2 gap-6 min-[1800px]:grid-cols-3">
+              {/* Contacten, VDU en Service staan naast elkaar (verzoek van de eigenaar) vanaf 1600px; smaller lopen de vier tegels per kaart over hun rand; de
+                  merk-opt-ins volgen het raster van de andere KPI-tabbladen. */}
+              <div
+                className={`grid gap-6 ${groep.sleutel === "algemeen" ? "grid-cols-2 min-[1600px]:grid-cols-3" : "grid-cols-2 min-[1800px]:grid-cols-3"}`}
+              >
                 {groep.kpis.map((kpi) => (
                   <KpiCrmKaart key={kpi.sleutel} kpi={kpi} />
                 ))}
