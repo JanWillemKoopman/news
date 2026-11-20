@@ -243,6 +243,24 @@ export default function KpiKaart({
 }
 
 /**
+ * "200 gemeten t/m 14 nov · 79 bijgeschat · 41 verwacht". Bijgeschat (voorbije dagen zonder
+ * meting, of vóór de rekenbasis van een Syntec-KPI) en verwacht (de rest van het jaar) apart:
+ * samen onder één woord zou de ene helft altijd verkeerd heten. Uit de maanden, zodat het ook
+ * klopt bij een totaal, waar elke kaart zijn eigen gemiddelde heeft.
+ */
+function toelichtingVerwachting(u: KpiUitkomst): string {
+  const bijgeschat = Math.round(
+    u.maanden.filter((m) => m.soort === "bijgeschat").reduce((t, m) => t + m.verwacht - (m.gerealiseerd ?? 0), 0),
+  );
+  // Afgeleid uit de afgeronde getallen, zodat de delen optellen tot het getal op de kaart.
+  const verwacht = Math.round(u.verwacht) - Math.round(u.gerealiseerd) - bijgeschat;
+  const delen = [`${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`}`];
+  if (bijgeschat > 0) delen.push(`${aantal(bijgeschat)} bijgeschat`);
+  if (verwacht > 0) delen.push(`${aantal(verwacht)} verwacht`);
+  return delen.join(" · ");
+}
+
+/**
  * De kaart zelf — kop, de vier kaartjes en de jaargrafiek — met de bronregel als
  * `children`. Ook gebruikt door KPI's 2027 Syntec (`KpiSyntecKaart.tsx`), zodat beide
  * tabbladen er precies hetzelfde uitzien en alleen de bron eronder verschilt.
@@ -307,7 +325,7 @@ export function KpiKaartOpmaak({
               toelichting={
                 u.definitief && u.dagenBijgeschat === 0
                   ? "volledig gemeten"
-                  : `${aantal(u.gerealiseerd)} gemeten${u.definitief ? "" : ` t/m ${datumKort(u.peildatum)}`} · ${aantal(u.bijgeschat)} ${u.dagenNietGemeten > 0 ? "bijgeschat" : "verwacht"}`
+                  : toelichtingVerwachting(u)
               }
             />
             <Statistiek
