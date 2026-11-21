@@ -25,8 +25,8 @@ function bericht(err: unknown): string {
  * Elk verzoek:
  *  1. telt de KPI's in de export van nu (`telCrm`);
  *  2. legt die stand vast in `kpi_2027_crm_standen` (alleen aantallen) — een vangnet naast de
- *     dagelijkse taak (`/api/kpi-2027-crm/bijwerken`), zodat een dag waarop de taak niet liep
- *     toch bewaard is zodra iemand het tabblad opent;
+ *     wekelijkse taak (`/api/kpi-2027-crm/bijwerken`, vrijdag 12:00 en 31 december), zodat er
+ *     ook tussen twee vrijdagen een stand bewaard wordt op elke dag dat iemand het tabblad opent;
  *  3. leest alle bewaarde dagstanden en rekent daarmee (`crmOverzicht`).
  * Lukt 2 of 3 niet, dan rekent het tabblad met alleen de stand van nu en zegt het dat bovenaan.
  *

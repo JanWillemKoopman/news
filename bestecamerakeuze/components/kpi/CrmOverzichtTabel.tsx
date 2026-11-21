@@ -28,7 +28,8 @@ export default function CrmOverzichtTabel({
       uitlegJaar={
         <>
           De stand op 31 december {KPI_JAAR}: unieke e-mailadressen (contacten en opt-ins) of unieke kentekens
-          (auto&apos;s): de laatste meting van {KPI_JAAR}. Elke dag wordt van elke KPI het aantal bewaard; zolang
+          (auto&apos;s): de laatste meting van {KPI_JAAR}. Elke vrijdag om 12:00, op 31 december en bij elk bezoek aan
+          deze pagina wordt van elke KPI het aantal bewaard; zolang
           {KPI_JAAR} loopt is dit de stand van de laatste export. Wat er per KPI precies geteld wordt, staat onder zijn
           grafiek.
         </>

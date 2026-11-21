@@ -1283,9 +1283,14 @@ Vijfde tabblad onder **KPI's 2027** (view `kpi-2027-crm`, `components/kpi/Kpi202
   `met-optin`, `autos`, `autos-optin`, `optin:<kolom>`) met **alleen het aantal** — geen e-mailadres of
   kenteken, dus de afspraak uit README-selligent.md (geen persoonsgegevens in een tweede database) blijft staan.
   De dag is die van de export (Last-Modified, Nederlandse kalender), niet die van de taak.
-  - **Wie schrijft**: de dagelijkse taak `/api/kpi-2027-crm/bijwerken` (Vercel Cron, elke dag 10:20 UTC, na
-    de ochtendexport; buiten de inlog via `CRON_PADEN`, met `CRON_SECRET`; `lib/kpi2027crm/bijwerken.ts`, run in
-    `sync_runs` met bron `kpi-2027-crm`) én, als vangnet, elk bezoek aan het tabblad (`GET /api/kpi-2027-crm`).
+  - **Wie schrijft**: de wekelijkse taak `/api/kpi-2027-crm/bijwerken` (Vercel Cron, **elke vrijdag 11:00 UTC**
+    = 12:00 in de winter, 13:00 in de zomer — Vercel kent geen tijdzones; verzoek van de eigenaar, 21 november
+    2026) plus **één extra run op 31 december 11:00 UTC** (`?jaareinde=1`, een eigen regel in `vercel.json`).
+    Die extra run is nodig: de laatste vrijdag van 2026 is 25 december en vrijdag 1 januari 2027 leest al een
+    export uit 2027, dus zonder hem was de basis voor het target de stand van eerste kerstdag. Buiten de inlog
+    via `CRON_PADEN`, met `CRON_SECRET`; `lib/kpi2027crm/bijwerken.ts`, run in `sync_runs` met bron
+    `kpi-2027-crm`. Daarnaast legt elk bezoek aan het tabblad (`GET /api/kpi-2027-crm`) de stand van die dag
+    vast, dus tussen twee vrijdagen komt er een stand bij op elke dag dat iemand kijkt.
     Allebei via `SYNC_DATABASE_URL` met upsert op (datum, kpi); er wordt nooit iets verwijderd. Lezen via de
     view `v_kpi_2027_crm_standen` met `DATAQUERY_DATABASE_URL` (`lib/kpi2027crm/bron.ts`).
   - **Lukt schrijven of lezen niet**, dan rekent het tabblad met alleen de stand van nu en staat er bovenaan een

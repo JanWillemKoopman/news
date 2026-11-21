@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * De dagelijkse vastlegging van KPI's 2027 CRM, aangeroepen door Vercel Cron (zie `vercel.json`):
- * per KPI het aantal van vandaag in `kpi_2027_crm_standen` — zie `lib/kpi2027crm/bijwerken.ts`.
+ * De wekelijkse vastlegging van KPI's 2027 CRM, aangeroepen door Vercel Cron (zie `vercel.json`):
+ * elke vrijdag om 11:00 UTC, plus op 31 december (`?jaareinde=1`, alleen om het een eigen regel in
+ * `vercel.json` te geven; de route doet hetzelfde). Per KPI het aantal van de export in
+ * `kpi_2027_crm_standen` — zie `lib/kpi2027crm/bijwerken.ts`.
  *
  * Staat buiten de inlog (`CRON_PADEN` in `lib/toegang.ts`) en legitimeert zich met
  * `CRON_SECRET`, net als de andere cron-routes. `?vers=1` haalt de export opnieuw op in plaats

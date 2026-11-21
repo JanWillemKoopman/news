@@ -96,7 +96,8 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
     >
       <p>
         <span className="text-ink-muted">Grafiek:</span> per maand het aantal unieke {telt(kpi)} in {KPI_JAAR}: de laatste
-        bewaarde stand van die maand (Stand {KPI_JAAR}). Elke dag wordt één meting bewaard
+        bewaarde stand van die maand (Stand {KPI_JAAR}). Elke vrijdag om 12:00, op 31 december en op elke dag dat iemand
+        deze pagina opent, wordt een meting bewaard
         {u
           ? `; voor deze KPI ${u.metingen === 1 ? `is dat er één, van ${datumLang(u.standDatum)}` : `zijn dat er ${aantal(u.metingen)}, van ${datumLang(u.eersteDatum)} t/m ${datumLang(u.standDatum)}`}`
           : ""}
@@ -115,7 +116,8 @@ export default function KpiCrmKaart({ kpi }: { kpi: CrmKpiRegel }) {
       <p className="mt-1">
         <span className="text-ink-muted">Bron:</span> de Selligent-export op Azure Blob Storage
         (output/autoline/users_customers_dashboard.csv), hetzelfde bestand als Tools → Selligent database. Selligent zet hem
-        elke ochtend vers neer; deze pagina leest steeds de laatste. Elke dag wordt van elke KPI alleen het aantal bewaard
+        elke ochtend vers neer; deze pagina leest steeds de laatste. Elke vrijdag om 12:00, op 31 december en bij elk
+        bezoek aan deze pagina wordt van elke KPI alleen het aantal bewaard
         (tabel kpi_2027_crm_standen), geen e-mailadressen of kentekens. Gebruikte kolommen: {kolommenVan(kpi)}.
         Een rij is een contact mét een voertuig, dus één contact of auto kan op meerdere rijen staan; daarom telt alles
         unieke waarden en geen rijen.

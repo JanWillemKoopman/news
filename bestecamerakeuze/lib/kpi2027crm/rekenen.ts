@@ -27,7 +27,8 @@ import type { Tabel } from "@/lib/selligent/tabel";
  *
  * ## De stand (`berekenStand`)
  *
- * Elke dag wordt van elke KPI het aantal bewaard (`kpi_2027_crm_standen`, migratie 0040, alleen
+ * Elke vrijdag (en op 31 december) en bij elk bezoek aan het tabblad wordt van elke KPI het aantal
+ * van die dag bewaard (`kpi_2027_crm_standen`, migratie 0040, alleen
  * aantallen — zie `bron.ts` en `bijwerken.ts`), plus de stand van de export die nu openstaat. Per
  * KPI is er dus een reeks dag → aantal. Daaruit, per jaar:
  *

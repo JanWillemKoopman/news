@@ -254,7 +254,8 @@ waarheid. De knop **Opnieuw ophalen** slaat de vergelijking over (`?vers=1`).
 ## KPI's CRM bewaart alleen aantallen
 
 Het tabblad **KPI's CRM** (KPI's 2027) leest hetzelfde bestand. Omdat de export alleen de stand van vandaag
-bevat, legt dat tabblad elke dag van elke KPI het **aantal** vast in `dataloket.kpi_2027_crm_standen`
+bevat, wordt elke vrijdag om 12:00 (en extra op 31 december), en bij elk bezoek aan dat tabblad, van elke
+KPI het **aantal** vastgelegd in `dataloket.kpi_2027_crm_standen`
 (migratie 0040): bijvoorbeeld "20-11-2026, Opt-in Audi, 11.158". Er komt geen enkele waarde uit de export in
 de database — geen e-mailadres, kenteken of klantnummer. Wat hieronder staat over persoonsgegevens blijft dus
 onverkort gelden. Zie `CLAUDE.md` → "KPI's → KPI's CRM".

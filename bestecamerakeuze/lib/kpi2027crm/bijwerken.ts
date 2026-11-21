@@ -5,8 +5,12 @@ import { haalTabel } from "@/lib/selligent/bron";
 import { isSelligentGeconfigureerd } from "@/lib/selligent/verbinding";
 
 /**
- * De dagelijkse vastlegging van KPI's 2027 CRM (`/api/kpi-2027-crm/bijwerken`, Vercel Cron,
- * zie `vercel.json`).
+ * De wekelijkse vastlegging van KPI's 2027 CRM (`/api/kpi-2027-crm/bijwerken`, Vercel Cron,
+ * zie `vercel.json`): elke vrijdag om 11:00 UTC (12:00 in de winter, 13:00 in de zomer — Vercel
+ * kent geen tijdzones), plus één extra run op 31 december om 11:00 UTC. Die laatste is nodig omdat
+ * de laatste vrijdag van 2026 op 25 december valt en de vrijdag erna (1 januari 2027) al een
+ * export uit 2027 leest: zonder die run zou de basis voor het target de stand van eerste kerstdag
+ * zijn.
  *
  * Leest de Selligent-export (dezelfde tabel als Tools → Selligent database), telt de KPI's
  * (`telCrm`) en schrijft per KPI één aantal weg onder de dag van de export
@@ -16,7 +20,8 @@ import { isSelligentGeconfigureerd } from "@/lib/selligent/verbinding";
  * De dag is die waarop Selligent de export neerzette (Last-Modified, Nederlandse kalender), niet
  * de dag van de taak: staat er nog een export van gisteren, dan wordt gisteren nog een keer
  * vastgelegd en niet vandaag met de cijfers van gisteren. Het tabblad zelf legt bij elk bezoek
- * dezelfde stand vast, als vangnet voor een dag waarop de taak niet liep.
+ * dezelfde stand vast: tussen twee vrijdagen in komt er zo een stand bij op elke dag dat iemand het
+ * tabblad opent.
  *
  * De run staat in `sync_runs` (bron `kpi-2027-crm`).
  */

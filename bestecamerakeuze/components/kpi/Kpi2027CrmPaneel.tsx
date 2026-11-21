@@ -130,7 +130,8 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
               De standen worden bewaard sinds {datumLang(data.historie.vanaf)} ({aantal(data.historie.dagen)}{" "}
               {data.historie.dagen === 1 ? "dag" : "dagen"}).
             </strong>{" "}
-            Elke dag wordt van elke KPI het aantal vastgelegd (alleen aantallen, geen persoonsgegevens). De maanden van{" "}
+            Elke vrijdag om 12:00 en op 31 december wordt van elke KPI het aantal vastgelegd, en daarnaast op elke dag dat
+            iemand deze pagina opent (alleen aantallen, geen persoonsgegevens). De maanden van{" "}
             {KPI_JAAR} vóór de eerste meting krijgen de eerste bewaarde stand (gestippeld). De stand eind {KPI_JAAR} is de
             laatste meting van {KPI_JAAR}; het target {KPI_DOELJAAR} is die stand plus {groeiTekst}.
           </span>
@@ -188,7 +189,8 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data?.kentekenKolom ?? "VDUVEHICLES_LICENSE_PLATE"}). &quot;Met opt-in&quot; betekent: het contact heeft op
           minstens één rij minstens één opt-in op True (VDU, Service of een merk). Elke True/False-kolom in de export is
           een opt-in en krijgt een eigen KPI. Het zijn standen, geen optelsommen: de basis is de stand eind {KPI_JAAR} (de
-          laatste meting van {KPI_JAAR}; elke dag wordt van elke KPI het aantal bewaard, en de maanden vóór de eerste
+          laatste meting van {KPI_JAAR}; elke vrijdag om 12:00, op 31 december en bij elk bezoek aan deze pagina wordt van
+          elke KPI het aantal bewaard, en de maanden vóór de eerste
           meting krijgen de eerste bewaarde stand, gestippeld), het target de stand die er eind{" "}
           {KPI_DOELJAAR} moet zijn: +{groeiTekst} voor elke KPI, niet aan te passen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> is de stand van de laatste export in{" "}
