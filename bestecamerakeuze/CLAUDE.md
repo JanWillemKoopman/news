@@ -1195,7 +1195,18 @@ route `app/api/kpi-2027-social/route.ts`), op verzoek van de eigenaar (november 
 opzet als KPI's 2027 GA en Syntec — statusbalk, overzichtstabel (`SocialOverzichtTabel.tsx`, gedeelde
 `OverzichtTabel.tsx`), dezelfde kaart (`KpiKaartOpmaak`, via `KpiSocialKaart.tsx`), grafiek, peildatum
 (de laatste zaterdag) en "Nu bijwerken" voor beheerders. Tabs per merk (`?kpimerk=veloo`): Van den
-Udenhout, VELOO, Audi Sport; daaronder per kanaal een kopje.
+Udenhout, VELOO, Audi Sport, Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra; daaronder per
+kanaal een kopje.
+- **Elk organisch social-account dat in Windsor gekoppeld is en in 2026 actief was, heeft een tab**
+  (verzoek van de eigenaar, 21 november 2026). Nagelopen in Windsor: `facebook_organic` (6 pagina's),
+  `instagram` (5) en `linkedin_organic` (4) — samen precies deze zes merken. Bentley Maastricht en PGZ staan
+  alleen bij de advertentiekoppelingen (`facebook`, `linkedin`), niet organisch; TikTok, YouTube, X,
+  Pinterest en Threads zijn niet gekoppeld. Een nieuw account = een merk in `SOCIAL_MERKEN` en het id in
+  `STANDAARD_ACCOUNTS` (`lib/windsor/api.ts`, voor de nachtelijke Instagram-stand).
+- **Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra hebben (nog) geen percentage van het
+  team**: volgers en impressies op elk kanaal staan op +5% (`STANDAARD_GROEI`, `standaard: true` op de KPI);
+  de eerste keuze onder de grafiek zegt dat het een voorlopig target is. Komen de percentages, zet ze dan
+  als `kpi(kanaal, maat, groei)` in `definities.ts` en in de test.
 
 - **De targets komen van het team**, niet +5%: per KPI het percentage uit de lijst van de eigenaar
   (bv. Instagram volgers Van den Udenhout +7%, VELOO Facebook impressies −6%). Ze staan in

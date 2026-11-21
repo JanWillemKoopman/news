@@ -17,7 +17,7 @@ import { slaGroeiOp } from "@/components/kpi/groeiOpslaan";
  * manier als KPI's 2027 GA en Syntec — dezelfde statusbalk, overzichtstabel, kaarten en
  * grafiek. Het groeipercentage is per KPI het percentage dat het team vastlegde (niet +5%).
  *
- * Bovenaan één tab per merk (`?kpimerk=veloo`), net als de websitetabs op KPI's 2027 GA.
+ * Bovenaan één tab per merk/account (`?kpimerk=veloo`), net als de websitetabs op KPI's 2027 GA.
  * De standen worden wekelijks op zondag bijgewerkt (`lib/kpi2027social/bijwerken.ts`); welk
  * account bij welke KPI hoort en waarom staat in `lib/kpi2027social/definities.ts`.
  */
@@ -226,7 +226,8 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
           target het aantal dat er eind {KPI_DOELJAAR} moet zijn. Instagram geeft geen historie van het aantal volgers: daar hebben 1 januari t/m de dag vóór de
           eerste meting dezelfde stand als die eerste meting (gestippeld), en vanaf dan telt elke dag de echte stand. De
           groei per KPI is het percentage dat het team voor{" "}
-          {KPI_DOELJAAR} vastlegde; klik erop om het aan te passen — dat geldt voor iedereen.{" "}
+          {KPI_DOELJAAR} vastlegde (bij Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra voorlopig +5%,
+          tot het team een percentage vastlegt); klik erop om het aan te passen — dat geldt voor iedereen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> telt vanaf 1 januari{" "}
           {KPI_DOELJAAR}. Alles wordt elke zondag bijgewerkt t/m zaterdag.
         </span>

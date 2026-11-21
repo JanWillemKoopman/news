@@ -53,6 +53,14 @@ test("de percentages van het team staan per merk zoals aangeleverd", () => {
       "instagram-volgers": 0.02,
       "instagram-vertoningen": 0.15,
     },
+    // Nog geen percentage van het team: de standaard +5%.
+    "porsche-brabant": Object.fromEntries(
+      ["facebook", "instagram", "linkedin"].flatMap((k) => [[`${k}-volgers`, 0.05], [`${k}-vertoningen`, 0.05]]),
+    ),
+    "porsche-maastricht": Object.fromEntries(
+      ["facebook", "instagram", "linkedin"].flatMap((k) => [[`${k}-volgers`, 0.05], [`${k}-vertoningen`, 0.05]]),
+    ),
+    instra: { "facebook-volgers": 0.05, "facebook-vertoningen": 0.05 },
   };
   for (const merk of SOCIAL_MERKEN) {
     assert.deepEqual(Object.fromEntries(merk.kpis.map((k) => [k.sleutel, k.groei])), verwacht[merk.sleutel]);
@@ -79,6 +87,9 @@ test("elke KPI heeft keuzes onder de grafiek, met zijn eigen percentage en de be
   const udenhout = SOCIAL_MERKEN.find((m) => m.sleutel === "udenhout")!;
   const kpi = (s: string) => udenhout.kpis.find((k) => k.sleutel === s)!;
   assert.ok(keuzesVoor(udenhout, kpi("instagram-volgers")).some((k) => k.includes("20 november")));
+  assert.match(keuzesVoor(udenhout, kpi("instagram-volgers"))[0], /team .*vastlegde/);
+  const instra = SOCIAL_MERKEN.find((m) => m.sleutel === "instra")!;
+  assert.match(keuzesVoor(instra, instra.kpis[0])[0], /voorlopig/);
   assert.ok(keuzesVoor(udenhout, kpi("facebook-volgers")).some((k) => k.includes("page_follows")));
   assert.ok(keuzesVoor(udenhout, kpi("instagram-vertoningen")).some((k) => k.includes("views")));
   assert.ok(keuzesVoor(udenhout, kpi("tiktok-volgers")).some((k) => k.includes("niet gekoppeld")));

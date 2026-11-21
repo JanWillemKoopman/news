@@ -62,6 +62,12 @@ export interface SocialKpi {
   maat: SocialMaat;
   /** Het groeipercentage voor 2027 zoals het team het vastlegde (fractie: 0,07 = +7%). */
   groei: number;
+  /**
+   * True als het team (nog) geen percentage vastlegde en `groei` de standaard +5% is
+   * (Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra, toegevoegd 21 november
+   * 2026). Aan te passen op de pagina zelf, net als de andere percentages.
+   */
+  standaard?: boolean;
 }
 
 export interface SocialAccount {
@@ -95,14 +101,23 @@ export const KANAAL_VOLGORDE: readonly SocialKanaal[] = ["facebook", "instagram"
 const NIET_IN_WINDSOR = (kanaal: string) =>
   `${kanaal} is niet gekoppeld in Windsor. Zodra het account daar gekoppeld is, kan deze KPI worden aangesloten.`;
 
-function kpi(kanaal: SocialKanaal, maat: SocialMaat, groei: number): SocialKpi {
+/** Het percentage voor een KPI waarvoor het team (nog) niets vastlegde: +5%, net als op KPI's 2027 GA. */
+export const STANDAARD_GROEI = 0.05;
+
+function kpi(kanaal: SocialKanaal, maat: SocialMaat, groei: number, standaard = false): SocialKpi {
   return {
     sleutel: `${kanaal}-${maat}`,
     naam: `${KANAAL_NAMEN[kanaal]} ${maat === "volgers" ? "volgers" : maat === "nieuwe-volgers" ? "nieuwe volgers" : "impressies"}`,
     kanaal,
     maat,
     groei,
+    ...(standaard ? { standaard: true } : {}),
   };
+}
+
+/** Volgers en impressies op elk gegeven kanaal, met de standaard +5%. */
+function standaardKpis(kanalen: SocialKanaal[]): SocialKpi[] {
+  return kanalen.flatMap((k) => [kpi(k, "volgers", STANDAARD_GROEI, true), kpi(k, "vertoningen", STANDAARD_GROEI, true)]);
 }
 
 export const SOCIAL_MERKEN: readonly SocialMerk[] = [
@@ -157,6 +172,35 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
       kpi("instagram", "volgers", 0.02),
       kpi("instagram", "vertoningen", 0.15),
     ],
+  },
+  // Toegevoegd 21 november 2026: alle organische social-accounts die in Windsor gekoppeld
+  // zijn en in 2026 actief waren, krijgen een tab. Het team legde voor deze drie nog geen
+  // percentages vast; tot dan +5% (`standaard`), op de pagina aan te passen.
+  {
+    sleutel: "porsche-brabant",
+    naam: "Porsche Centrum Brabant",
+    accounts: [
+      { kanaal: "facebook", accountId: "152454588113374", naam: "Porsche Centrum Brabant" },
+      { kanaal: "instagram", accountId: "17841400735388282", naam: "porschebrabant" },
+      { kanaal: "linkedin", accountId: "1688996", naam: "Porsche Centrum Brabant" },
+    ],
+    kpis: standaardKpis(["facebook", "instagram", "linkedin"]),
+  },
+  {
+    sleutel: "porsche-maastricht",
+    naam: "Porsche Centrum Maastricht",
+    accounts: [
+      { kanaal: "facebook", accountId: "1856659467764845", naam: "Porsche Centrum Maastricht" },
+      { kanaal: "instagram", accountId: "17841409820778415", naam: "porschecentrummaastricht" },
+      { kanaal: "linkedin", accountId: "77458602", naam: "Porsche Centrum Maastricht" },
+    ],
+    kpis: standaardKpis(["facebook", "instagram", "linkedin"]),
+  },
+  {
+    sleutel: "instra",
+    naam: "Instra",
+    accounts: [{ kanaal: "facebook", accountId: "274218899266126", naam: "Instra Bedrijfswagen- en Werkplaatsinrichtingen" }],
+    kpis: standaardKpis(["facebook"]),
   },
 ];
 
@@ -216,7 +260,9 @@ const KEUZE_DEFINITIEF =
 export function keuzesVoor(merk: SocialMerk, kpi: SocialKpi): string[] {
   const account = accountVoor(merk, kpi.kanaal);
   const uit: string[] = [
-    `${procentTekst(kpi.groei)} is het target dat het team voor deze KPI vastlegde (november 2026), op basis van het resultaat van 2026; geen standaard +5%.`,
+    kpi.standaard
+      ? `${procentTekst(kpi.groei)} is een voorlopig target: het team legde voor dit account nog geen percentage vast, dus geldt de standaard +5% (net als op KPI's 2027 GA). Aan te passen hierboven.`
+      : `${procentTekst(kpi.groei)} is het target dat het team voor deze KPI vastlegde (november 2026), op basis van het resultaat van 2026; geen standaard +5%.`,
   ];
   if (!account?.accountId) {
     uit.push(
@@ -228,7 +274,7 @@ export function keuzesVoor(merk: SocialMerk, kpi: SocialKpi): string[] {
     uit.push(KEUZE_STAND);
     if (kpi.kanaal === "instagram") {
       uit.push(
-        "Instagram geeft alleen het aantal volgers van vandaag (followers_count), geen historie. Besluit van de eigenaar (20 november 2026): 1 januari t/m 19 november 2026 krijgen het aantal van de eerste meting op 20 november; vanaf dan telt elke dag het echte aantal. Het dashboard bewaart daarvoor elke nacht de stand.",
+        "Instagram geeft alleen het aantal volgers van vandaag (followers_count), geen historie. Besluit van de eigenaar (20 november 2026): 1 januari t/m de dag vóór de eerste meting krijgen het aantal van die eerste meting; vanaf dan telt elke dag het echte aantal. Het dashboard bewaart daarvoor elke nacht de stand.",
         "Die aangevulde maanden zijn een aanname: gestippeld in de grafiek, en ze tellen niet mee in de groei per dag. Het target zelf rust op het echt gemeten aantal van 31 december 2026.",
         "Niet gebruikt: nieuwe volgers per dag (follower_count_1d, bij Meta maar 30 dagen terug) en follows_and_unfollows (volgen en ontvolgen bij elkaar opgeteld, dus geen netto groei).",
       );
