@@ -191,10 +191,12 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
           <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" />
           <span>
             <strong className="font-semibold">{nietGekoppeld.join(", ")}: nog geen cijfers.</strong>{" "}
-            {nietGekoppeld.some((k) => k === "TikTok" || k === "YouTube")
-              ? "TikTok en YouTube zijn niet gekoppeld in Windsor. "
-              : ""}
-            De targets staan er wel, met het percentage van het team.
+            {merk && merk.kanalen.every((g) => g.kpis.every((k) => k.nietGekoppeld))
+              ? `De organische pagina's van ${merk.naam} zijn niet gekoppeld in Windsor (er is alleen een advertentieaccount). Zodra ze gekoppeld zijn, verschijnen de cijfers. `
+              : nietGekoppeld.some((k) => k === "TikTok" || k === "YouTube")
+                ? "TikTok en YouTube zijn niet gekoppeld in Windsor. "
+                : ""}
+            De targets staan er wel.
           </span>
         </p>
       )}
@@ -226,7 +228,7 @@ export default function Kpi2027SocialPaneel({ ingelogd }: { ingelogd: boolean })
           target het aantal dat er eind {KPI_DOELJAAR} moet zijn. Instagram geeft geen historie van het aantal volgers: daar hebben 1 januari t/m de dag vóór de
           eerste meting dezelfde stand als die eerste meting (gestippeld), en vanaf dan telt elke dag de echte stand. De
           groei per KPI is het percentage dat het team voor{" "}
-          {KPI_DOELJAAR} vastlegde (bij Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra voorlopig +5%,
+          {KPI_DOELJAAR} vastlegde (bij Porsche Centrum Brabant, Porsche Centrum Maastricht, Instra, Bentley Maastricht en PGZ voorlopig +5%,
           tot het team een percentage vastlegt); klik erop om het aan te passen — dat geldt voor iedereen.{" "}
           <strong className="font-semibold text-ink">Realisatie {KPI_DOELJAAR}</strong> telt vanaf 1 januari{" "}
           {KPI_DOELJAAR}. Alles wordt elke zondag bijgewerkt t/m zaterdag.

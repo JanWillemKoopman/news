@@ -64,8 +64,8 @@ export interface SocialKpi {
   groei: number;
   /**
    * True als het team (nog) geen percentage vastlegde en `groei` de standaard +5% is
-   * (Porsche Centrum Brabant, Porsche Centrum Maastricht en Instra, toegevoegd 21 november
-   * 2026). Aan te passen op de pagina zelf, net als de andere percentages.
+   * (Porsche Centrum Brabant, Porsche Centrum Maastricht, Instra, Bentley Maastricht en PGZ,
+   * toegevoegd 21 november 2026). Aan te passen op de pagina zelf, net als de andere percentages.
    */
   standaard?: boolean;
 }
@@ -100,6 +100,10 @@ export const KANAAL_VOLGORDE: readonly SocialKanaal[] = ["facebook", "instagram"
 
 const NIET_IN_WINDSOR = (kanaal: string) =>
   `${kanaal} is niet gekoppeld in Windsor. Zodra het account daar gekoppeld is, kan deze KPI worden aangesloten.`;
+
+/** Een merk dat in Windsor alleen een advertentieaccount heeft, geen organische pagina. */
+const ALLEEN_ADVERTENTIES = (kanaal: string) =>
+  `De organische ${kanaal}-pagina is niet gekoppeld in Windsor (er is alleen een advertentieaccount). Zodra de pagina daar gekoppeld is, zet het account-id in definities.ts en verschijnen de cijfers.`;
 
 /** Het percentage voor een KPI waarvoor het team (nog) niets vastlegde: +5%, net als op KPI's 2027 GA. */
 export const STANDAARD_GROEI = 0.05;
@@ -202,6 +206,31 @@ export const SOCIAL_MERKEN: readonly SocialMerk[] = [
     accounts: [{ kanaal: "facebook", accountId: "274218899266126", naam: "Instra Bedrijfswagen- en Werkplaatsinrichtingen" }],
     kpis: standaardKpis(["facebook"]),
   },
+  // Bentley Maastricht en PGZ staan in Windsor alleen bij de advertentiekoppelingen (Meta Ads,
+  // LinkedIn Ads), niet organisch. Op verzoek (21 november 2026) toch een tab, met elke KPI
+  // als "niet gekoppeld" tot de pagina's in Windsor gekoppeld zijn.
+  {
+    sleutel: "bentley",
+    naam: "Bentley Maastricht",
+    accounts: (["facebook", "instagram", "linkedin"] as const).map((k) => ({
+      kanaal: k,
+      accountId: null,
+      naam: "Bentley Maastricht",
+      nietGekoppeld: ALLEEN_ADVERTENTIES(KANAAL_NAMEN[k]),
+    })),
+    kpis: standaardKpis(["facebook", "instagram", "linkedin"]),
+  },
+  {
+    sleutel: "pgz",
+    naam: "PGZ",
+    accounts: (["facebook", "instagram", "linkedin"] as const).map((k) => ({
+      kanaal: k,
+      accountId: null,
+      naam: "PGZ",
+      nietGekoppeld: ALLEEN_ADVERTENTIES(KANAAL_NAMEN[k]),
+    })),
+    kpis: standaardKpis(["facebook", "instagram", "linkedin"]),
+  },
 ];
 
 /**
@@ -266,7 +295,11 @@ export function keuzesVoor(merk: SocialMerk, kpi: SocialKpi): string[] {
   ];
   if (!account?.accountId) {
     uit.push(
-      `${KANAAL_NAMEN[kpi.kanaal]} is niet gekoppeld in Windsor. Het target staat erop, maar zonder cijfers. Zodra het account gekoppeld is, telt het totaal aantal volgers, als stand (net als de andere volgers-KPI's).`,
+      `${KANAAL_NAMEN[kpi.kanaal]} is niet gekoppeld in Windsor. Het target staat erop, maar zonder cijfers. Zodra het account gekoppeld is, ${
+        kpi.maat === "vertoningen"
+          ? "tellen de impressies per dag op, net als bij de andere impressie-KPI's."
+          : "telt het totaal aantal volgers, als stand (net als de andere volgers-KPI's)."
+      }`,
     );
     return uit;
   }
