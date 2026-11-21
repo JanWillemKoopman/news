@@ -3,6 +3,7 @@ import { getGebruiker } from "@/lib/auth";
 import { vindWebsite } from "@/lib/kpi2027/definities";
 import {
   bronMediumRegels,
+  emailTotalen,
   kanalenVoorKpi,
   metKpiTotalen,
   type KanaalVerdeling,
@@ -61,6 +62,9 @@ export async function GET(req: NextRequest) {
         kpis,
         bronMedia: bronMediumRegels(verdeling, keuzes),
         staart: verdeling.staartInfo,
+        ...(website.emailCorrectie
+          ? { email: emailTotalen(verdeling) ?? [], emailDefinitie: website.emailCorrectie }
+          : {}),
       },
       // Niet in de browser cachen: na een handmatige keuze moet de nieuwe indeling er staan.
       { headers: { "Cache-Control": "private, no-store" } },

@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { vindWebsite } from "@/lib/kpi2027/definities";
-import { KANALEN, kanaalVoor, kanalenVoorKpi, maandenTussen, verdelingUitRijen } from "@/lib/kpi2027/kanalen";
+import {
+  EMAIL_GA4,
+  EMAIL_MBT,
+  KANALEN,
+  emailTotalen,
+  isKanaalSleutel,
+  kanaalVoor,
+  kanalenVoorKpi,
+  maandenTussen,
+  verdelingUitRijen,
+} from "@/lib/kpi2027/kanalen";
 
 test("de bron/media die udenhout.nl werkelijk binnenkrijgt, vallen in de bedoelde groep", () => {
   const verwacht: Record<string, string> = {
@@ -64,9 +74,13 @@ test("een korte naam past op het domein, niet op een domein waar hij toevallig i
   assert.equal(kanaalVoor("t.co / referral"), "social-organisch");
 });
 
-test("acht groepen: meer kleuren is in een gestapelde grafiek niet te lezen", () => {
-  assert.equal(KANALEN.length, 8);
-  assert.equal(new Set(KANALEN.map((k) => k.sleutel)).size, 8);
+test("acht groepen, plus E-mail (alleen udenhout.nl): meer kleuren is in een gestapelde grafiek niet te lezen", () => {
+  assert.equal(KANALEN.length, 9);
+  assert.equal(new Set(KANALEN.map((k) => k.sleutel)).size, 9);
+  // E-mail volgt nooit uit bron/medium en is niet met de hand te kiezen.
+  assert.equal(kanaalVoor("Nieuwsbrief / email"), "overig");
+  assert.equal(isKanaalSleutel("email"), false);
+  assert.equal(isKanaalSleutel("direct"), true);
 });
 
 test("maanden van januari 2025 t/m de maand van de peildatum", () => {
@@ -117,7 +131,7 @@ test("verdeling: ingedeeld per maand en bron, uitgesloten hosts weg, totaal per 
   assert.equal(k.maanden[15].perKanaal[KANALEN.findIndex((x) => x.sleutel === "organisch-zoeken")], 2);
   // Een maand zonder iets is nul, geen gat.
   assert.equal(k.maanden[5].totaal, 0);
-  assert.equal(k.maanden[5].perKanaal.length, 8);
+  assert.equal(k.maanden[5].perKanaal.length, 9);
 
   const gebruikers = udenhout.kpis.find((x) => x.sleutel === "gebruikers")!;
   assert.equal(kanalenVoorKpi(gebruikers, v).maanden[0].totaal, 140);
@@ -341,4 +355,113 @@ test("controle naast de kanaalverdeling: geen KPI-cijfer in maanden met een verv
   };
   assert.equal(kpiMaandTotaal(werkplaats, stand, "2026-09"), null);
   assert.equal(kpiMaandTotaal(werkplaats, stand, "2026-11"), 4);
+});
+
+const idx = (sleutel: string) => KANALEN.findIndex((k) => k.sleutel === sleutel);
+
+function emailVerdeling(bronMax?: number) {
+  const udenhout = vindWebsite("udenhout")!;
+  return verdelingUitRijen(
+    udenhout,
+    {
+      verkeer: [
+        { year_month: "202603", session_source_medium: "(direct) / (none)", sessions: 1000, active_users: 900 },
+        { year_month: "202603", session_source_medium: "Nieuwsbrief / email", sessions: 300, active_users: 250 },
+        { year_month: "202603", session_source_medium: "selligent / e-mail", sessions: 20, active_users: 18 },
+        { year_month: "202603", session_source_medium: "google / cpc", sessions: 500, active_users: 400 },
+      ],
+      events: [],
+      email: {
+        // Windsor zet de hostname er zelf bij; "(not set)" telt niet.
+        ga4: [
+          { year_month: "202603", session_source_medium: "Nieuwsbrief / email", hostname: "www.udenhout.nl", sessions: 200 },
+          { year_month: "202603", session_source_medium: "Nieuwsbrief / email", hostname: "udenhout.nl", sessions: 40 },
+          { year_month: "202603", session_source_medium: "Nieuwsbrief / email", hostname: "(not set)", sessions: 60 },
+          { year_month: "202603", session_source_medium: "selligent / e-mail", hostname: "www.udenhout.nl", sessions: 20 },
+        ],
+        mbt: [
+          { year_month: "202603", hostname: "www.udenhout.nl", landing_page_plus_query_string: "/?M_BT=123", sessions: 150 },
+          { year_month: "202603", hostname: "udenhout.nl", landing_page_plus_query_string: "/occasions?M_BT=9&x=1", sessions: 30 },
+          { year_month: "202603", hostname: "(not set)", landing_page_plus_query_string: "/?M_BT=1", sessions: 999 },
+          { year_month: "202603", hostname: "www.udenhout.nl", landing_page_plus_query_string: "/zonder", sessions: 999 },
+        ],
+      },
+    },
+    "2026-03-28",
+    [],
+    bronMax,
+  );
+}
+
+test("e-mail: GA4-kanaalgroep Email plus direct met M_BT, alleen op udenhout.nl en www.udenhout.nl", () => {
+  const v = emailVerdeling();
+  assert.deepEqual(v.bronnen[EMAIL_GA4]["2026-03"], { "Nieuwsbrief / email": 240, "selligent / e-mail": 20 });
+  assert.deepEqual(v.bronnen[EMAIL_MBT]["2026-03"], { "(direct) / (none)": 180 });
+  assert.deepEqual(emailTotalen(v), [{ jaar: 2026, ga4: 260, mbt: 180 }]);
+});
+
+test("e-mail: verschuift bij Sessies van Direct en Verwijzingen & overig naar E-mail, totaal gelijk", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const sessies = udenhout.kpis.find((k) => k.bron.soort === "sessies")!;
+  const v = emailVerdeling();
+  const maart = kanalenVoorKpi(sessies, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(maart.totaal, 1820);
+  assert.equal(maart.perKanaal[idx("email")], 260 + 180);
+  assert.equal(maart.perKanaal[idx("direct")], 1000 - 180);
+  // De 60 e-mailsessies op hostname "(not set)" blijven waar de regels ze zetten.
+  assert.equal(maart.perKanaal[idx("overig")], 320 - 260);
+  // Betaald blijft betaald.
+  assert.equal(maart.perKanaal[idx("google-ads")], 500);
+  assert.equal(maart.perKanaal.reduce((t, n) => t + n, 0), maart.totaal);
+});
+
+test("e-mail: ook vanuit de staart, en nooit meer dan er in de groep staat", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const sessies = udenhout.kpis.find((k) => k.bron.soort === "sessies")!;
+  // Alleen de grootste twee los; "selligent / e-mail" zit in de staart (overig).
+  const v = emailVerdeling(2);
+  const maart = kanalenVoorKpi(sessies, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(maart.totaal, 1820);
+  assert.equal(maart.perKanaal[idx("email")], 440);
+  // Meer M_BT dan direct (afronding/telling in GA4): niet onder nul, totaal blijft.
+  v.bronnen[EMAIL_MBT]["2026-03"]["(direct) / (none)"] = 5000;
+  const m2 = kanalenVoorKpi(sessies, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(m2.perKanaal[idx("direct")], 0);
+  assert.equal(m2.totaal, 1820);
+});
+
+test("e-mail: alleen bij Sessies, en een handmatige keuze bepaalt waar het vandaan komt", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const v = emailVerdeling();
+  const gebruikers = udenhout.kpis.find((k) => k.bron.soort === "gebruikers")!;
+  const g = kanalenVoorKpi(gebruikers, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(g.perKanaal[idx("email")], 0);
+
+  const sessies = udenhout.kpis.find((k) => k.bron.soort === "sessies")!;
+  const keuzes = new Map([["Nieuwsbrief / email", "social-organisch" as const]]);
+  const s = kanalenVoorKpi(sessies, v, keuzes).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(s.perKanaal[idx("social-organisch")], 300 - 240);
+  assert.equal(s.perKanaal[idx("email")], 440);
+  assert.equal(s.totaal, 1820);
+});
+
+test("e-mail: een website zonder emailCorrectie krijgt geen E-mail", () => {
+  const udenhout = vindWebsite("udenhout")!;
+  const { emailCorrectie: _weg, ...zonder } = udenhout;
+  const v = verdelingUitRijen(
+    zonder,
+    {
+      verkeer: [{ year_month: "202603", session_source_medium: "Nieuwsbrief / email", sessions: 300, active_users: 250 }],
+      events: [],
+      email: { ga4: [{ year_month: "202603", session_source_medium: "Nieuwsbrief / email", sessions: 300 }], mbt: [] },
+    },
+    "2026-03-28",
+    [],
+  );
+  assert.equal(v.bronnen[EMAIL_GA4], undefined);
+  assert.equal(emailTotalen(v), null);
+  const sessies = udenhout.kpis.find((k) => k.bron.soort === "sessies")!;
+  const maart = kanalenVoorKpi(sessies, v).maanden.find((m) => m.maand === "2026-03")!;
+  assert.equal(maart.perKanaal[idx("email")], 0);
+  assert.equal(maart.perKanaal[idx("overig")], 300);
 });

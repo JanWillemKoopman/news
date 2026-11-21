@@ -1,5 +1,5 @@
 import { getal, tekst, type WindsorRij } from "@/lib/windsor/api";
-import { eventBron, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/definities";
+import { eventBron, type EmailCorrectie, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/definities";
 
 /**
  * De kanaalverdeling achter het knopje "Kanalen" op KPI's 2027 GA (elke website):
@@ -63,6 +63,38 @@ import { eventBron, type KpiDefinitie, type KpiWebsite } from "@/lib/kpi2027/def
  *  8. Al het andere → **Verwijzingen & overig**: e-mail (de nieuwsbrief), merksites
  *     (`werkplaats.volkswagen.nl`), Pepper, de eigen leasesites, interne links (Teams,
  *     SharePoint, het kantoornetwerk) en onbekend.
+ *
+ * ## E-mail (alleen udenhout.nl, november 2026)
+ *
+ * Een negende groep, **E-mail**, en die volgt bewust níet uit bron/medium. De tracking
+ * vanuit het e-mailprogramma (Selligent) ging mis: veel klikken uit de mailing komen in GA4
+ * binnen als `(direct) / (none)`, maar met de Selligent-parameter `M_BT=` in de URL van de
+ * landingspagina. Op verzoek van de eigenaar telt E-mail daarom precies dit, met de metric
+ * `sessions` en alleen op de hostnames `udenhout.nl` en `www.udenhout.nl` (`EmailCorrectie`
+ * in `definities.ts`; beide filters op beide delen):
+ *
+ *     session_default_channel_group = 'Email'
+ *     OR (session_source_medium = '(direct) / (none)'
+ *         AND landing_page_plus_query_string bevat 'M_BT=')
+ *
+ * M_BT telt alleen op de landingspagina van de sessie, niet op een pagina die later in de
+ * sessie komt. De twee delen sluiten elkaar uit (een directe sessie zit nooit in GA4's
+ * kanaalgroep Email) en worden apart opgehaald (`kanalenBron.ts`), per maand, en bewaard
+ * onder `EMAIL_GA4` en `EMAIL_MBT` in `bronnen`.
+ *
+ * De GA4-kanaalgroep zelf blijft ongemoeid: de correctie gebeurt bij het lezen
+ * (`kanalenVoorKpi`) en **verschuift** sessies, zodat het totaal over alle kanalen gelijk
+ * blijft aan de KPI. De GA4-e-mailsessies gaan van de groep van hun bron/medium (volgens de
+ * regels "Verwijzingen & overig") naar E-mail, de directe sessies met M_BT van Direct naar
+ * E-mail. Sessies met M_BT die GA4 aan iets anders toeschrijft (Google Ads, organisch,
+ * een verwijzing) blijven waar ze staan — die worden niet opgehaald. E-mailsessies op een
+ * andere hostname (vooral "(not set)") tellen niet als E-mail en blijven ook staan.
+ *
+ * Alleen de KPI Sessies krijgt de correctie (zo gevraagd: metric `sessions`); bij
+ * gebruikers en aanvragen blijft E-mail leeg. Websites zonder `emailCorrectie` hebben geen
+ * E-mail: daar valt de nieuwsbrief zoals altijd onder Verwijzingen & overig, en de groep
+ * staat niet in hun legenda. E-mail is niet met de hand te kiezen in
+ * "Kanaalgroepindeling" (`isKanaalSleutel`): wat erin zit, ligt vast in de definitie.
  */
 
 export const KANALEN = [
@@ -102,6 +134,12 @@ export const KANALEN = [
     uitleg: "Zonder herkomst: adres getypt, bladwijzer, of een link waar GA4 de bron niet van kent.",
   },
   {
+    sleutel: "email",
+    naam: "E-mail",
+    uitleg:
+      "Alleen udenhout.nl, bij sessies: GA4-kanaalgroep Email plus directe sessies met M_BT= in de landingspagina (Selligent), op udenhout.nl en www.udenhout.nl.",
+  },
+  {
     sleutel: "overig",
     naam: "Verwijzingen & overig",
     uitleg:
@@ -110,6 +148,15 @@ export const KANALEN = [
 ] as const;
 
 export type KanaalSleutel = (typeof KANALEN)[number]["sleutel"];
+
+/**
+ * Bronsleutels in `KanaalVerdeling.bronnen` voor de e-mailcorrectie (zie de kop): per
+ * maand de GA4-e-mailsessies per bron/medium, en de directe sessies met M_BT (onder
+ * `(direct) / (none)`). Alleen bij een website met `emailCorrectie`.
+ */
+export const EMAIL_GA4 = "correctie:email-ga4";
+export const EMAIL_MBT = "correctie:email-mbt";
+export const DIRECT = "(direct) / (none)";
 
 const BETAALDE_MEDIA = new Set(["cpc", "ppc", "cpm", "cpv", "display", "paidsearch", "paidsocial"]);
 const META = ["facebook", "fb", "instagram", "ig", "meta"];
@@ -253,7 +300,13 @@ function telOp<T extends string>(doel: Record<string, Record<string, Partial<Rec
  */
 export function verdelingUitRijen(
   website: KpiWebsite,
-  rijen: { verkeer: WindsorRij[]; events: WindsorRij[]; padEvents?: Record<string, WindsorRij[]> },
+  rijen: {
+    verkeer: WindsorRij[];
+    events: WindsorRij[];
+    padEvents?: Record<string, WindsorRij[]>;
+    /** Alleen bij `emailCorrectie`: de twee delen van E-mail (zie de kop). */
+    email?: { ga4: WindsorRij[]; mbt: WindsorRij[] };
+  },
   peildatum: string,
   gezocht: readonly string[],
   max: number = BRON_MEDIA_MAX,
@@ -300,6 +353,28 @@ export function verdelingUitRijen(
     }
   }
 
+  if (rijen.email && website.emailCorrectie) {
+    const { hosts, landingBevat } = website.emailCorrectie;
+    const ga4: MaandPerBronMedium = (bronnen[EMAIL_GA4] = {});
+    const mbt: MaandPerBronMedium = (bronnen[EMAIL_MBT] = {});
+    for (const rij of rijen.email.ga4) {
+      const maand = maandSleutel(rij.year_month);
+      if (!maand || !emailRijTelt(rij, hosts)) continue;
+      if (rij.session_default_channel_group !== undefined && tekst(rij.session_default_channel_group) !== "Email") continue;
+      const bm = tekst(rij.session_source_medium) ?? "";
+      const perMaand = (ga4[maand] ??= {});
+      perMaand[bm] = (perMaand[bm] ?? 0) + getal(rij.sessions);
+    }
+    for (const rij of rijen.email.mbt) {
+      const maand = maandSleutel(rij.year_month);
+      if (!maand || !emailRijTelt(rij, hosts)) continue;
+      if (rij.session_source_medium !== undefined && tekst(rij.session_source_medium) !== DIRECT) continue;
+      if (rij.landing_page_plus_query_string !== undefined && !(tekst(rij.landing_page_plus_query_string) ?? "").includes(landingBevat)) continue;
+      const perMaand = (mbt[maand] ??= {});
+      perMaand[DIRECT] = (perMaand[DIRECT] ?? 0) + getal(rij.sessions);
+    }
+  }
+
   const staartRijen = gesorteerd.slice(max);
   return {
     website: website.sleutel,
@@ -312,6 +387,15 @@ export function verdelingUitRijen(
   };
 }
 
+/**
+ * Windsor zet de dimensies waarop gefilterd is er soms zelf bij (hostname, landingspagina);
+ * staat de hostname in de rij, dan moet hij een van de toegestane zijn. Het filter in de
+ * opvraging doet hetzelfde; dit is de controle erachteraan.
+ */
+function emailRijTelt(rij: WindsorRij, hosts: readonly string[]): boolean {
+  return rij.hostname === undefined || hosts.includes(tekst(rij.hostname) ?? "");
+}
+
 /** Een handmatige keuze per bron/medium (`kpi_2027_kanaal_keuzes`), die vóór de regels gaat. */
 export type KanaalKeuzes = ReadonlyMap<string, KanaalSleutel>;
 
@@ -320,8 +404,12 @@ export function kanaalMetKeuze(bronMedium: string, keuzes: KanaalKeuzes): Kanaal
   return keuzes.get(bronMedium) ?? kanaalVoor(bronMedium);
 }
 
+/**
+ * Een kanaal dat met de hand te kiezen is in "Kanaalgroepindeling". E-mail niet: wat
+ * daarin zit, ligt vast in de definitie (zie de kop), niet in bron/medium.
+ */
 export function isKanaalSleutel(waarde: unknown): waarde is KanaalSleutel {
-  return typeof waarde === "string" && KANALEN.some((k) => k.sleutel === waarde);
+  return typeof waarde === "string" && waarde !== "email" && KANALEN.some((k) => k.sleutel === waarde);
 }
 
 /** Alle maanden van `van` t/m de maand van `peildatum`, als "2025-01". */
@@ -389,8 +477,10 @@ export function kanalenVoorKpi(
   return {
     maanden: maandenTussen(verdeling.van, verdeling.peildatum).map((maand) => {
       const perKanaal = KANALEN.map(() => 0);
+      const los = new Set<string>();
       for (const b of bronnen) {
         for (const [bm, n] of Object.entries(verdeling.bronnen[b]?.[maand] ?? {})) {
+          los.add(bm);
           let i = kanaalVan.get(bm);
           if (i === undefined) kanaalVan.set(bm, (i = index.get(kanaalMetKeuze(bm, keuzes)) ?? KANALEN.length - 1));
           perKanaal[i] += Math.max(0, Number(n) || 0);
@@ -399,6 +489,21 @@ export function kanalenVoorKpi(
           const i = index.get(k as KanaalSleutel);
           if (i !== undefined) perKanaal[i] += Math.max(0, Number(n) || 0);
         }
+      }
+      if (definitie.bron.soort === "sessies") {
+        // E-mail (zie de kop): verschuiven, niet optellen, zodat het totaal gelijk blijft.
+        // Een bron/medium die los bewaard is, staat in de groep van zijn keuze of regel; een
+        // uit de staart in de groep van de regels. Nooit meer weghalen dan er staat.
+        const email = index.get("email")!;
+        const verschuif = (bm: string, n: number) => {
+          const i = los.has(bm) ? (index.get(kanaalMetKeuze(bm, keuzes)) ?? KANALEN.length - 1) : index.get(kanaalVoor(bm))!;
+          if (i === email) return;
+          const m = Math.min(Math.max(0, Number(n) || 0), perKanaal[i]);
+          perKanaal[i] -= m;
+          perKanaal[email] += m;
+        };
+        for (const [bm, n] of Object.entries(verdeling.bronnen[EMAIL_GA4]?.[maand] ?? {})) verschuif(bm, n);
+        for (const [bm, n] of Object.entries(verdeling.bronnen[EMAIL_MBT]?.[maand] ?? {})) verschuif(bm, n);
       }
       return { maand, totaal: perKanaal.reduce((t, n) => t + n, 0), perKanaal, kpiTotaal: null };
     }),
@@ -443,5 +548,37 @@ export interface KanalenAntwoord {
   /** De tabel "Kanaalgroepindeling". */
   bronMedia?: BronMediumRegel[];
   staart?: { aantal: number; sessies: number };
+  /** Alleen bij `emailCorrectie`: de sessies in E-mail per jaar, uitgesplitst (zie de kop). */
+  email?: EmailTotaal[];
+  /** Alleen bij `emailCorrectie`: op welke hostnames en met welke parameter, voor de uitleg. */
+  emailDefinitie?: EmailCorrectie;
   fout?: string;
+}
+
+/** De twee delen van E-mail over één jaar (t/m de peildatum). */
+export interface EmailTotaal {
+  jaar: number;
+  /** GA4-kanaalgroep Email, op de toegestane hostnames. */
+  ga4: number;
+  /** `(direct) / (none)` met M_BT in de landingspagina, op de toegestane hostnames. */
+  mbt: number;
+}
+
+/** Per jaar de twee delen van E-mail, of null als de verdeling geen e-mailcorrectie heeft. */
+export function emailTotalen(verdeling: KanaalVerdeling): EmailTotaal[] | null {
+  const ga4 = verdeling.bronnen[EMAIL_GA4];
+  const mbt = verdeling.bronnen[EMAIL_MBT];
+  if (!ga4 || !mbt) return null;
+  const perJaar = new Map<number, EmailTotaal>();
+  const tel = (bron: MaandPerBronMedium, veld: "ga4" | "mbt") => {
+    for (const [maand, perBm] of Object.entries(bron)) {
+      const jaar = Number(maand.slice(0, 4));
+      const t = perJaar.get(jaar) ?? { jaar, ga4: 0, mbt: 0 };
+      for (const n of Object.values(perBm)) t[veld] += Math.max(0, Number(n) || 0);
+      perJaar.set(jaar, t);
+    }
+  };
+  tel(ga4, "ga4");
+  tel(mbt, "mbt");
+  return [...perJaar.values()].sort((a, b) => a.jaar - b.jaar);
 }

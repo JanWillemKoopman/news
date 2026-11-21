@@ -1065,6 +1065,22 @@ realisatie van 2027.
     keuze na herladen klopt).
   - **Gebruikers** tellen per maand per kanaal: wie in één maand via twee kanalen kwam, telt in
     allebei. Dat staat onder de grafiek.
+  - **E-mail op udenhout.nl** (november 2026, op verzoek; alleen deze website, alleen de KPI
+    Sessies): een negende groep die níet uit bron/medium volgt, omdat de tracking vanuit Selligent
+    misging en klikken uit de mailing als `(direct) / (none)` binnenkomen met `M_BT=` in de URL.
+    E-mail = `session_default_channel_group = 'Email'` OF (`(direct) / (none)` EN
+    `landing_page_plus_query_string` bevat `M_BT=`), metric `sessions`, beide delen alleen op
+    hostnames `udenhout.nl` en `www.udenhout.nl` (`emailCorrectie` in `definities.ts`). M_BT telt
+    alleen op de landingspagina. Twee extra Windsor-opvragingen per maand (`kanalenBron.ts`),
+    bewaard onder `correctie:email-ga4` / `correctie:email-mbt` in `bronnen` (geen migratie). De
+    GA4-kanaalgroep blijft ongemoeid: `kanalenVoorKpi` **verschuift** bij het lezen (van de groep
+    van de bron/medium, normaal Verwijzingen & overig, en van Direct naar E-mail), dus het totaal
+    blijft gelijk aan de KPI. M_BT-sessies die GA4 aan Google Ads, organisch of een verwijzing
+    toeschrijft blijven daar; e-mailsessies op hostname "(not set)" (±2.100 in 2026) ook. E-mail is
+    niet met de hand te kiezen, staat alleen in de legenda waar hij gevuld is, en de zijbalk
+    Kanaalgroepindeling toont per jaar de twee delen. Controle 1 jan t/m 20 nov 2026: 6.916 + 21.011
+    = 27.927 (eerdere meting 27.928; het verschil van 1 is GA4's afronding bij uitsplitsen naar
+    bron/medium). Regels en tests: kop van `kanalen.ts`, `kanalen.test.ts`.
 
 - **Bovenaan staat dezelfde overzichtstabel als op KPI's 2027 Syntec** (`GaOverzichtTabel.tsx`),
   voor de gekozen website: per KPI 2026 (verwachting), Target 2027, Target %, Realisatie en

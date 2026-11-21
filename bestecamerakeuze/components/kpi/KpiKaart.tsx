@@ -146,6 +146,11 @@ export default function KpiKaart({
                   {kpi.sleutel === "gebruikers"
                     ? " Een gebruiker die in dezelfde maand via twee kanalen kwam, telt in allebei."
                     : ""}
+                  {kanalen.antwoord?.emailDefinitie
+                    ? kpi.sleutel === "sessies"
+                      ? ` E-mail = GA4-kanaalgroep Email plus directe sessies met ${kanalen.antwoord.emailDefinitie.landingBevat} in de landingspagina, op ${kanalen.antwoord.emailDefinitie.hosts.join(" en ")}; die schuiven van Verwijzingen & overig en Direct naar E-mail, het totaal blijft gelijk.`
+                      : " E-mail staat alleen bij Sessies; hier valt e-mailverkeer onder Verwijzingen & overig of Direct."
+                    : ""}
                   {opgeteld
                     ? ` De aanvragen uit ${opgeteld.naam} zitten er niet in: dat is een andere GA4-property, de verdeling gaat alleen over ${website.domein}.`
                     : ""}

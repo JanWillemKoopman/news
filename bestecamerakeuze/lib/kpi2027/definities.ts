@@ -164,7 +164,21 @@ export interface KpiWebsite {
    * sinds november 2026, de andere vijf een paar dagen later, op verzoek).
    */
   kanaalverdeling?: boolean;
+  /**
+   * Optioneel: de groep E-mail in de kanaalverdeling, met een correctie voor kapotte
+   * e-mailtracking (nu alleen udenhout.nl, zie de kop van `lib/kpi2027/kanalen.ts`).
+   */
+  emailCorrectie?: EmailCorrectie;
   kpis: readonly KpiDefinitie[];
+}
+
+/**
+ * E-mail = GA4-kanaalgroep Email, of `(direct) / (none)` met `landingBevat` in de
+ * landingspagina + querystring — allebei alleen op deze hostnames.
+ */
+export interface EmailCorrectie {
+  hosts: readonly string[];
+  landingBevat: string;
 }
 
 const SESSIES: KpiDefinitie = {
@@ -253,6 +267,11 @@ export const KPI_WEBSITES: readonly KpiWebsite[] = [
     // dag met sessies (geen uitval), en heel 2025 draaide de oude tracking — dezelfde
     // events als januari t/m maart 2026, die de KPI's hieronder al meetellen.
     kanaalverdeling: true,
+    // November 2026, op verzoek: de tracking vanuit Selligent ging mis, dus klikken uit de
+    // mailing kwamen binnen als direct, met M_BT= in de landingspagina. Die tellen in de
+    // kanaalverdeling (KPI Sessies) als E-mail. Gecontroleerd 1 januari t/m 20 november
+    // 2026: 6.917 GA4-e-mailsessies + 21.011 directe met M_BT = 27.928 (per maand opgeteld).
+    emailCorrectie: { hosts: ["udenhout.nl", "www.udenhout.nl"], landingBevat: "M_BT=" },
     vergelijkingsjaar: {
       jaar: 2025,
       toelichting:

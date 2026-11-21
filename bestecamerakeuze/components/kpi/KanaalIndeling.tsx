@@ -170,7 +170,7 @@ export default function KanaalIndeling({
                               r.handmatig ? "border-ink-faint font-semibold" : "border-line"
                             }`}
                           >
-                            {KANALEN.map((k) => (
+                            {KANALEN.filter((k) => k.sleutel !== "email").map((k) => (
                               <option key={k.sleutel} value={k.sleutel}>
                                 {k.naam}
                                 {k.sleutel === r.regel ? " (regel)" : ""}
@@ -185,6 +185,26 @@ export default function KanaalIndeling({
               </tbody>
             </table>
             {zichtbaar.length === 0 && <p className="text-ink-muted">Niets gevonden voor &ldquo;{zoek}&rdquo;.</p>}
+
+            {antwoord?.email && (
+              <div className="text-meta text-ink-muted">
+                <p>
+                  <span className="text-ink">E-mail</span> staat niet in deze lijst en is niet met de hand te kiezen. Bij
+                  sessies telt hij: GA4-kanaalgroep Email, plus sessies op (direct) / (none) met M_BT= in de URL van de
+                  landingspagina (de Selligent-tracking ging mis) — allebei alleen op udenhout.nl en www.udenhout.nl. Die
+                  sessies schuiven van hun eigen groep (Verwijzingen &amp; overig, Direct) naar E-mail; het totaal blijft
+                  gelijk.
+                </p>
+                <ul className="mt-1">
+                  {antwoord.email.map((e) => (
+                    <li key={e.jaar}>
+                      {e.jaar}: {formatteer(e.ga4, "aantal")} GA4-e-mail + {formatteer(e.mbt, "aantal")} direct met M_BT ={" "}
+                      <span className="text-ink">{formatteer(e.ga4 + e.mbt, "aantal")}</span> sessies
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {antwoord?.staart && antwoord.staart.aantal > 0 && (
               <p className="text-meta text-ink-muted">

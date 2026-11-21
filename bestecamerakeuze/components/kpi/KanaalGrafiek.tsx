@@ -12,7 +12,7 @@ import { KANALEN, type KpiKanalen } from "@/lib/kpi2027/kanalen";
  *
  * ## Kleur
  *
- * Acht kanalen, acht kleuren in een vaste volgorde: de kleur hoort bij het kanaal, dus
+ * Acht kanalen (negen op udenhout.nl, met E-mail), elk een vaste kleur: de kleur hoort bij het kanaal, dus
  * Google Ads is in elke grafiek en in elk theme hetzelfde blauw. De eerste zeven komen
  * uit een gevalideerd palet (lichtheid, verzadiging en onderscheid bij kleurenblindheid
  * doorgerekend voor licht én donker, met de stapelvolgorde als buurparen); de achtste,
@@ -26,8 +26,10 @@ import { KANALEN, type KpiKanalen } from "@/lib/kpi2027/kanalen";
  * De lopende maand staat lichter: hij loopt t/m de peildatum en kan nog verschuiven.
  */
 
-const LICHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#a3a29b"];
-const DONKER = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9", "#76756f"];
+// De negende, E-mail (alleen udenhout.nl), zit tussen Direct (paars) en de grijze rest:
+// een donker petrol, dat naast paars en grijs goed te scheiden is.
+const LICHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#0b7f8f", "#a3a29b"];
+const DONKER = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9", "#1fa3b5", "#76756f"];
 
 const MAANDEN_KORT = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 const MAANDEN_LANG = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
@@ -77,6 +79,10 @@ export default function KanaalGrafiek({
   const kleuren = useGrafiekKleuren();
   const palet = kanaalKleuren(kleuren.vlak);
   const lopendeMaand = peildatum.slice(0, 7);
+  // E-mail bestaat alleen op udenhout.nl en alleen bij sessies; elders geen lege legenda.
+  const zichtbaar = KANALEN.map((k, i) => ({ k, i })).filter(
+    ({ k, i }) => k.sleutel !== "email" || kanalen.maanden.some((m) => (m.perKanaal[i] ?? 0) > 0),
+  );
   const punten: Punt[] = kanalen.maanden.map((m) => {
     const maand = Number(m.maand.slice(5, 7)) - 1;
     const p: Punt = {
@@ -93,7 +99,7 @@ export default function KanaalGrafiek({
   return (
     <div className="flex h-full flex-col">
       <ul className="mb-1.5 flex flex-wrap justify-end gap-x-3 gap-y-0.5 text-meta text-ink-muted">
-        {KANALEN.map((k, i) => (
+        {zichtbaar.map(({ k, i }) => (
           <li key={k.sleutel} className="flex items-center gap-1.5" title={k.uitleg}>
             <span aria-hidden="true" className="inline-block h-2 w-2 rounded-[2px]" style={{ background: palet[i] }} />
             {k.naam}
@@ -124,7 +130,7 @@ export default function KanaalGrafiek({
               content={<KanaalTooltip palet={palet} peildatumTekst={peildatumTekst} eenheid={eenheid} />}
               cursor={{ fill: kleuren.raster, fillOpacity: 0.5 }}
             />
-            {KANALEN.map((k, i) => (
+            {zichtbaar.map(({ k, i }) => (
               <Bar
                 key={k.sleutel}
                 dataKey={k.sleutel}

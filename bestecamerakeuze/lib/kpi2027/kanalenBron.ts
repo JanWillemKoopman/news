@@ -2,9 +2,9 @@ import { Client } from "pg";
 import { haalOp, isWindsorGeconfigureerd, type WindsorRij } from "@/lib/windsor/api";
 import { metVerbinding } from "@/lib/kanalen/bron";
 import { eisVerbindingssnaar } from "@/lib/verbindingssnaar";
-import { eventBron, gewoneEvents, heeftAankopen, padEvents, type KpiWebsite } from "@/lib/kpi2027/definities";
+import { eventBron, gewoneEvents, heeftAankopen, padEvents, vindWebsite, type KpiWebsite } from "@/lib/kpi2027/definities";
 import { eventFilter, hostUitsluiting } from "@/lib/kpi2027/ophalen";
-import { KANALEN_VANAF, verdelingUitRijen, type KanaalVerdeling } from "@/lib/kpi2027/kanalen";
+import { DIRECT, EMAIL_GA4, KANALEN_VANAF, verdelingUitRijen, type KanaalVerdeling } from "@/lib/kpi2027/kanalen";
 
 /**
  * Ophalen, bewaren en lezen van de kanaalverdeling (`kpi_2027_kanalen`, migratie 0037).
@@ -20,6 +20,10 @@ import { KANALEN_VANAF, verdelingUitRijen, type KanaalVerdeling } from "@/lib/kp
  *     hosts vallen in `verdelingUitRijen` weg.
  *  3. Per event met een padvoorwaarde (Bentley: Contactaanvraag op /caw-bedankt/offerte/)
  *     een eigen opvraging, met hetzelfde filter op `page_path` als de stand.
+ *  4. Alleen bij `emailCorrectie` (udenhout.nl): de twee delen van de groep E-mail, elk
+ *     met het hostnamefilter erop — sessies met kanaalgroep Email per maand × bron/medium,
+ *     en sessies op `(direct) / (none)` met `M_BT=` in `landing_page_plus_query_string`
+ *     per maand. Zie de kop van `kanalen.ts`.
  *
  * Elke week opnieuw over de hele periode (in de cron en met "Nu bijwerken"), zodat een
  * aangepaste indeling binnen een week overal geldt. Bestaat er nog geen verdeling, dan
@@ -34,7 +38,8 @@ export async function haalKanaalVerdeling(
   const accounts = [website.property];
   const events = gewoneEvents(website);
   const metPad = padEvents(website);
-  const [verkeer, eventRijen, padRijen] = await Promise.all([
+  const email = website.emailCorrectie;
+  const [verkeer, eventRijen, padRijen, emailRijen] = await Promise.all([
     haal(
       "googleanalytics4",
       heeftAankopen(website)
@@ -67,13 +72,54 @@ export async function haalKanaalVerdeling(
         ),
       ),
     ),
+    email
+      ? Promise.all([
+          haal(
+            "googleanalytics4",
+            ["year_month", "session_source_medium", "sessions"],
+            KANALEN_VANAF,
+            peildatum,
+            [["session_default_channel_group", "eq", "Email"], "and", hostFilter(email.hosts)],
+            accounts,
+          ),
+          haal(
+            "googleanalytics4",
+            ["year_month", "sessions"],
+            KANALEN_VANAF,
+            peildatum,
+            [
+              ["session_source_medium", "eq", DIRECT],
+              "and",
+              ["landing_page_plus_query_string", "contains", email.landingBevat],
+              "and",
+              hostFilter(email.hosts),
+            ],
+            accounts,
+          ),
+        ])
+      : Promise.resolve(null),
   ]);
   if (verkeer.length === 0) {
     throw new Error(`${website.naam}: GA4 gaf geen sessies per bron/medium; de vorige verdeling blijft staan.`);
   }
   const padEventRijen: Record<string, WindsorRij[]> = {};
   metPad.forEach((e, i) => (padEventRijen[eventBron(e)] = padRijen[i]));
-  return verdelingUitRijen(website, { verkeer, events: eventRijen, padEvents: padEventRijen }, peildatum, events);
+  return verdelingUitRijen(
+    website,
+    {
+      verkeer,
+      events: eventRijen,
+      padEvents: padEventRijen,
+      ...(emailRijen ? { email: { ga4: emailRijen[0], mbt: emailRijen[1] } } : {}),
+    },
+    peildatum,
+    events,
+  );
+}
+
+/** "Hostname is een van deze", als één voorwaarde (`in` met een JSON-lijst). */
+function hostFilter(hosts: readonly string[]): readonly [string, string, string] {
+  return ["hostname", "in", JSON.stringify(hosts)];
 }
 
 /** Schrijft de verdeling van één website weg; overschrijft de vorige. */
@@ -132,6 +178,9 @@ export async function leesKanaalVerdeling(
     // Een rij in de oude vorm (vóór migratie 0038: al ingedeeld, zonder losse bron/media)
     // telt als "nog geen verdeling", zodat hij in de nieuwe vorm wordt opgehaald.
     if (!r || !Array.isArray(r.bron_media) || r.bron_media.length === 0) return null;
+    // Een website met e-mailcorrectie waarvan de rij van vóór die correctie is: ook opnieuw
+    // ophalen, anders blijft E-mail leeg tot de zondagse cron.
+    if (vindWebsite(website)?.emailCorrectie && !(r.bronnen ?? {})[EMAIL_GA4]) return null;
     return {
       website: String(r.website),
       van: String(r.van),
