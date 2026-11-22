@@ -59,9 +59,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   GA4-property.
 - **Wie welk tabblad ziet** (november 2026, op verzoek van de eigenaar), op één plek:
   `lib/beperkteTabbladen.ts`, getest. **Voor niemand** (ook niet de eigenaar): Scores,
-  Kennis en acties, Budget beheer, Koppeltabel en Kosten — de code staat er nog, terugzetten
-  is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar** (zijn twee accounts):
-  Leads, Landingspagina en Instellingen. Toegepast in de sidebar en het profielmenu, in
+  Kennis en acties, Budget beheer, Koppeltabel, Kosten, Landingspagina en KPI's 2026 — de code
+  staat er nog, terugzetten is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar**
+  (zijn twee accounts): Leads (sinds november 2026 weer zichtbaar, onder Tools) en Instellingen. Toegepast in de sidebar en het profielmenu, in
   `AppShell` (`?tab=…` opent een verborgen tabblad niet, en de weekwinnaar-pop-up van
   Scores verschijnt niet) en in `app/page.tsx` (het paneel wordt niet gerenderd). De module
   staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser laadt, en daar staat
@@ -96,7 +96,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`), **KPI's social media** (`kpi-2027-social`) en **KPI's CRM** (`kpi-2027-crm`); **KPI's
   2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
   **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
-  **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
+  **Leads** (`leads`, alleen voor de eigenaar), plus Budget beheer en Landingspagina
   (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
   hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
   het over deze pagina's onder hun nieuwe naam en plek.
@@ -717,6 +717,21 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   leads zonder bekende kosten bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
   dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
   bij elkaar horen.
+
+- **Kostenverdeling: handmatige kosten per bron/medium per maand** (verzoek van de eigenaar,
+  november 2026). Gaspedaal (`gaspedaal.nl / referral`, na Google Ads een van de grootste bronnen)
+  staat in GA4 als verwijzing maar wordt per maand gefactureerd. De knop **Kostenverdeling**
+  rechtsboven (vaste plek naast het oogje, alleen als het tabblad open is) opent een brede
+  zijbalk (`components/leads/Kostenverdeling.tsx`, `Drawer` met `extraBreed`): elke
+  sessiebron/medium van udenhout.nl op sessies (hoog → laag, uit `v_ga4_verkeer`, dat op
+  1 augustus 2026 begint), met per maand een veld. Standaard leeg; opslaan bij Enter/wegklikken
+  (`/api/leads/kanaalkosten`, alleen de eigenaar). Opslag `dataloket.lead_kanaalkosten`
+  (migratie 0041), alleen bedragen > 0. Rekenwerk in `lib/leads/kanaalkosten.ts` (getest): van
+  een maand telt het deel dat in het venster valt **naar rato van de dagen**, en dat gaat gelijk
+  over de leads van die bron/medium in die maand. Onbetaald verkeer met een bedrag wordt betaald
+  (platform `handmatig`, label "Handmatige kosten"); betaald verkeer houdt zijn platform (Google:
+  bedrag erbij; Bing: kosten nu bekend). Een bedrag zonder lead staat in "zonder lead" en in de
+  campagnetabel (één regel per bron/medium). Het telt mee in Uitgaven en kosten per betaalde lead.
 
 ### Kanalen → Leads Syntec
 

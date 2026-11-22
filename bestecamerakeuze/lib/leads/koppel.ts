@@ -84,6 +84,11 @@ export interface LeadRegel extends LeadInvoer {
   status: KostenStatus;
   /** Toegerekende kosten; `null` als ze onbekend zijn (zie `status`), `0` als onbetaald. */
   kosten: number | null;
+  /**
+   * Het deel van `kosten` dat uit een handmatig maandbedrag komt (`kanaalkosten.ts`);
+   * ontbreekt als er voor deze bron/medium en maand niets is ingevuld.
+   */
+  handmatigeKosten?: number;
 }
 
 /** Eén regel in de tabel Betaalde campagnes. */

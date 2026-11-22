@@ -121,7 +121,7 @@ export function telTotalen(regels: LeadRegel[]): Totalen {
       continue;
     }
     t.betaald += r.aantal;
-    if (heeftKostenbron(r.platform)) t.kostenbronLeads += r.aantal;
+    if (heeftKostenbron(r.platform) || (r.handmatigeKosten ?? 0) > 0) t.kostenbronLeads += r.aantal;
     if (r.status === "toegerekend") {
       t.metKosten += r.aantal;
       t.kosten += r.kosten ?? 0;

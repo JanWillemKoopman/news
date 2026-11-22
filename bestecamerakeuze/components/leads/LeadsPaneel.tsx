@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import Inlogprompt from "@/components/Inlogprompt";
-import { IconInfo, IconTarget } from "@/components/icons";
+import { IconCoin, IconInfo, IconTarget } from "@/components/icons";
 import { formatteer } from "@/components/chat/chartTheme";
+import Kostenverdeling from "@/components/leads/Kostenverdeling";
 import LeadsCampagnes from "@/components/leads/LeadsCampagnes";
 import LeadsGrafiek from "@/components/leads/LeadsGrafiek";
 import LeadsTabel from "@/components/leads/LeadsTabel";
 import { bouwCampagneRijen } from "@/lib/leads/campagnes";
+import { useIsActief } from "@/lib/kanalen/actieveWeergave";
+import type { HandmatigePost } from "@/lib/leads/kanaalkosten";
 import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import type { CampagneRegel, LeadRegel } from "@/lib/leads/koppel";
 import {
@@ -49,6 +52,8 @@ interface Antwoord {
   zonderLead: { uitgaven: number; campagnes: number };
   uitgavenTotaal: number;
   uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
+  handmatig: HandmatigePost[];
+  kanaalkostenFout: string | null;
   laatsteSync: string | null;
   syncLoopt: boolean;
   fout?: string;
@@ -113,11 +118,27 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(GEEN_FILTERS);
+  const actief = useIsActief("leads");
+  const [verdelingOpen, setVerdelingOpen] = useState(false);
+  // Na opslaan in Kostenverdeling halen we de leads opnieuw op (zonder de browsercache van
+  // vijf minuten), zodat de nieuwe kosten meteen meetellen.
+  const [ververs, setVervers] = useState(0);
+  const gewijzigd = useRef(false);
+  const markeerGewijzigd = useCallback(() => {
+    gewijzigd.current = true;
+  }, []);
+  const sluitVerdeling = useCallback(() => {
+    setVerdelingOpen(false);
+    if (gewijzigd.current) {
+      gewijzigd.current = false;
+      setVervers((v) => v + 1);
+    }
+  }, []);
 
   useEffect(() => {
     if (!ingelogd) return;
     let afgebroken = false;
-    fetch("/api/leads")
+    fetch("/api/leads", ververs > 0 ? { cache: "reload" } : undefined)
       .then(async (res) => {
         const antwoord = (await res.json()) as Antwoord;
         if (afgebroken) return;
@@ -137,7 +158,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     return () => {
       afgebroken = true;
     };
-  }, [ingelogd]);
+  }, [ingelogd, ververs]);
 
   const alleRegels = useMemo(() => data?.regels ?? [], [data]);
   const regels = useMemo(() => filterRegels(alleRegels, filters), [alleRegels, filters]);
@@ -197,9 +218,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const perFormulier = useMemo(() => groepeer(regels, (r) => waardeOfOnbekend(r.formulier)), [regels]);
 
   const campagneRijen = useMemo(() => {
+    // Handmatige kosten gaan per bron/medium, niet per campagne: daar is de bron/medium de
+    // "campagne" (zie lib/leads/kanaalkosten.ts).
     const betaald = groepeer(
       regels.filter((r) => r.platform !== null),
-      (r) => `${r.platform}\u0000${r.campagne}`,
+      (r) => `${r.platform}\u0000${r.platform === "handmatig" ? r.bronMedium : r.campagne}`,
     );
     // Zonder filter ook de campagnes die geld kostten en niets opleverden: met een filter
     // zegt "geen leads" niets meer over de campagne zelf.
@@ -265,8 +288,32 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     perLead: perBetaaldeLead,
   };
 
+  const knop = actief && (
+    <button
+      type="button"
+      onClick={() => setVerdelingOpen(true)}
+      className="fixed right-16 top-4 z-50 flex h-9 items-center gap-2 rounded-button border border-line bg-card px-3 text-sm font-medium text-ink shadow-subtle transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+    >
+      <IconCoin className="h-4 w-4 text-ink-muted" />
+      Kostenverdeling
+    </button>
+  );
+  const verdeling = verdelingOpen && (
+    <Kostenverdeling onClose={sluitVerdeling} onGewijzigd={markeerGewijzigd} />
+  );
+
+  const handmatigTotaal = data.uitgavenPerPlatform.handmatig ?? 0;
+
   return (
     <div className="flex flex-col gap-6">
+      {knop}
+      {verdeling}
+      {data.kanaalkostenFout && (
+        <p className="rounded-panel border border-line bg-surface-tint px-5 py-3 text-sm text-negative">
+          De handmatige kosten (Kostenverdeling) konden niet worden gelezen en tellen nu niet mee:{" "}
+          {data.kanaalkostenFout}
+        </p>
+      )}
       {/* Filterbalk: één samenhangend blok, net als op de andere pagina's. */}
       <div className="kaart-omlijst flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-card px-4 py-3 shadow-subtle">
         <div className="flex items-center gap-3">
@@ -387,14 +434,18 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           toelichting={
             filtersActief
               ? `toegerekend aan deze selectie, van ${formatteer(data.uitgavenTotaal, "euro-heel")} in totaal`
-              : "Google Ads, Meta Ads en LinkedIn Ads"
+              : handmatigTotaal > 0
+                ? "Google Ads, Meta Ads, LinkedIn Ads en handmatige kosten"
+                : "Google Ads, Meta Ads en LinkedIn Ads"
           }
           noot={
             !filtersActief
               ? `Google ${formatteer(data.uitgavenPerPlatform.google ?? 0, "euro-heel")} · Meta ${formatteer(
                   data.uitgavenPerPlatform.meta ?? 0,
                   "euro-heel",
-                )} · LinkedIn ${formatteer(data.uitgavenPerPlatform.linkedin ?? 0, "euro-heel")}`
+                )} · LinkedIn ${formatteer(data.uitgavenPerPlatform.linkedin ?? 0, "euro-heel")}${
+                  handmatigTotaal > 0 ? ` · handmatig ${formatteer(handmatigTotaal, "euro-heel")}` : ""
+                }`
               : undefined
           }
         />
@@ -406,7 +457,9 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               ? totalen.metKosten > 0
                 ? `toegerekende kosten ÷ ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
                 : "geen betaalde leads met bekende kosten"
-              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn`
+              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn${
+                  handmatigTotaal > 0 ? " en de kanalen met handmatige kosten" : ""
+                }`
           }
         />
       </div>
@@ -502,6 +555,13 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               de uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads maakt
               elke lead € 50, ook een vacature- of proefritlead). Google en Meta weten niet welke
               lead welk deel kostte.
+            </li>
+            <li>
+              <strong className="text-ink">Handmatige kosten</strong> komen uit de knop
+              Kostenverdeling rechtsboven: een bedrag per sessiebron/medium per maand (bijvoorbeeld
+              de factuur van Gaspedaal). Van elke maand telt het deel dat in deze dertig dagen valt,
+              naar rato van de dagen, en dat gaat gelijk over de leads van die bron/medium in die
+              maand. Verkeer met zo&apos;n bedrag telt als betaald.
             </li>
             <li>
               <strong className="text-ink">&quot;Onbekend&quot;</strong> bij uitgaven betekent betaald

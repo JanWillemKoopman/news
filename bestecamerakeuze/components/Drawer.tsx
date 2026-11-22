@@ -10,6 +10,8 @@ type Props = {
   children: React.ReactNode;
   /** De helft van het scherm in plaats van een derde, voor een tabel met lange waarden. */
   breed?: boolean;
+  /** Bijna de hele breedte, voor een tabel met een kolom per maand (Kostenverdeling op Leads). */
+  extraBreed?: boolean;
 };
 
 /**
@@ -22,7 +24,7 @@ type Props = {
  * die vanuit een sticky tabelkop opent zit in zijn eigen stacking context en kan daar
  * niet met een hoge z-index uit ontsnappen.
  */
-export default function Drawer({ title, onClose, children, breed = false }: Props) {
+export default function Drawer({ title, onClose, children, breed = false, extraBreed = false }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [gemount, setGemount] = useState(false);
   const [zichtbaar, setZichtbaar] = useState(false);
@@ -58,7 +60,7 @@ export default function Drawer({ title, onClose, children, breed = false }: Prop
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`absolute inset-y-0 right-0 flex ${breed ? "w-1/2" : "w-1/3"} min-w-[420px] flex-col border-l border-line bg-card shadow-modal transition-transform duration-[var(--duur)] ease-merk ${
+        className={`absolute inset-y-0 right-0 flex ${extraBreed ? "w-[92vw]" : breed ? "w-1/2" : "w-1/3"} min-w-[420px] flex-col border-l border-line bg-card shadow-modal transition-transform duration-[var(--duur)] ease-merk ${
           zichtbaar ? "translate-x-0" : "translate-x-full"
         }`}
       >
