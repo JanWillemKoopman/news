@@ -617,17 +617,22 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 
 - **Afbakening staat op één plek** (`lib/leads/bereik.ts`): GA4-property 255949462
   (udenhout.nl), Google Ads-account "Udenhout", Meta-account "Van den Udenhout",
-  LinkedIn-account "Van den Udenhout Groep", dertig dagen tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
+  LinkedIn-account "Van den Udenhout Groep", **vanaf 1 juni 2026** (`LEADS_VANAF`) tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
   `generate_lead_*`; de andere properties van het concern leverden nul lead-events. Het
   aparte Google Ads-account "Van den Udenhout Lease" staat niet in de Windsor-sync.
-- **De leadtabel is een rollend venster en geen archief** (`windsor_ga4_leads`, migratie
-  0033) en dat is de manier waarop hij zo klein blijft (±1.100 rijen, ±160 kB). Op verzoek zo
+- **De leadtabel bewaart alles vanaf 1 juni 2026** (`windsor_ga4_leads`, migratie 0033; verzoek
+  van de eigenaar, november 2026 — daarvoor een rollend venster van dertig dagen). 1 juni ligt na
+  de trackingwissel van eind maart, dus alleen de nieuwe eventnamen. ±10.000 rijen, een paar MB;
+  de uitgavenquery over januari t/m november duurde 0,45 s. Op verzoek zo
   compact mogelijk, dus ook wat er *niet* in staat: geen uitgaven (die staan al in
   `windsor_advertenties` en komen via `v_leads_uitgaven` bij het lezen erbij), geen account,
   website, kanaalgroep of inleestijdstip, geen primary key en geen index (elke query leest
   de hele tabel; een index zou hem alleen verdubbelen). `aantal` is een smallint.
   Dubbele sleutels voorkomt `leadRijenUitWindsor`, dat ze optelt vóór het schrijven.
-- **De sync vervangt de hele tabel** (`syncGa4Leads` in `lib/windsor/sync.ts`): eerst
+- **De sync vervangt alleen de laatste dertig dagen** (`syncGa4Leads` in `lib/windsor/sync.ts`,
+  `leadsVenster`), zodat late toeschrijving van GA4 meekomt; ouder blijft staan. Mist het begin
+  (eerste run, of lege tabel: `min(datum)` later dan 1 juni + een week), dan haalt hij eenmalig
+  alles vanaf 1 juni op, in stukken van 31 dagen. Eerst
   ophalen, dan pas wissen en schrijven in één transactie. Faalt Windsor, dan staat gisteren's
   data er nog; een leeg antwoord is een fout (geen nul) en laat de tabel ongemoeid. Hij draait
   in het onderdeel `website`, **buiten** de stukken van dertig dagen (per stuk wissen zou elk
@@ -710,7 +715,12 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   precies de lead bracht. Een lege waarde heet "Onbekend". Ze staan bewust naast elkaar en
   niet in plaats van elkaar: het kanaal is te kiezen zonder de schrijfwijzen van GA4 te kennen.
 - **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
-- **Weergave.** Alles filtert in het geheugen (één ophaalactie). Bij merken en modellen staat
+- **Periodekeuze** boven de filterbalk (`lib/leads/periode.ts`, getest): Sinds 1 juni (standaard),
+  Deze maand, Vorige maand, Laatste 30 dagen en een eigen periode, allemaal gerekend vanaf de
+  laatste dag in de tabel (niet vandaag). Een andere periode is een **nieuwe ophaalactie**
+  (`/api/leads?van=&tot=`), geen filter in de browser: de uitgaven van een campagne en de
+  handmatige maandbedragen moeten over dezelfde dagen verdeeld worden als de leads.
+- **Weergave.** Binnen een periode filtert alles in het geheugen (één ophaalactie). Bij merken en modellen staat
   "Onbekend" **vast onderaan** (`vastgezet`) en niet in de uitklapbare lijst: hij is vaak de
   grootste groep en zou de echte merken wegduwen, maar hij moet zichtbaar blijven omdat de
   tabel anders niet optelt. Een sterretje achter een bedrag betekent dat de rij ook betaalde

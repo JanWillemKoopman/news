@@ -28,21 +28,31 @@ import {
  * Twee kleine queries en geen join in SQL. De koppeling gaat over platform én
  * campagnenaam, met een genormaliseerde naam (hoofdletters, soort streepje) — dat hoort
  * in getest TypeScript en niet in een `on lower(...) = lower(...)` die niemand
- * terugleest. Beide tabellen zijn klein: ±1.100 leadrijen en ±70 campagnes.
+ * terugleest. Beide tabellen zijn klein: ±10.000 leadrijen vanaf 1 juni en ±115 campagnes.
  *
- * ## Welke uitgaven
+ * ## Welke periode
  *
- * Dezelfde periode als de leads, en wel de periode die de leadtabel zelf beslaat
- * (`min(datum)` t/m `max(datum)`) en niet "de laatste dertig dagen vanaf nu". Draait de
- * sync een paar nachten niet, dan staan de leads op een oudere stand; de uitgaven van
- * dié periode erbij zoeken is eerlijk, die van de dagen erna zou kosten zonder leads
- * opleveren.
+ * De gevraagde periode (standaard alles: 1 juni 2026 t/m de laatste dag in de tabel),
+ * **ingeperkt tot wat de leadtabel beslaat** (`min(datum)` t/m `max(datum)`). Draait de sync
+ * een paar nachten niet, dan staan de leads op een oudere stand; de uitgaven van dié periode
+ * erbij zoeken is eerlijk, die van de dagen erna zou kosten zonder leads opleveren. Leads,
+ * uitgaven en de handmatige maandbedragen rekenen over precies dezelfde dagen, dus een
+ * andere periode is een nieuwe ophaalactie en geen filter in de browser: de kosten van een
+ * campagne verdelen over zijn leads kan alleen over dezelfde dagen.
  */
 
+export interface Periode {
+  van?: string;
+  tot?: string;
+}
+
 export interface LeadsData {
-  /** De periode die de leadtabel beslaat; `null` als hij leeg is. */
+  /** De periode waarover gerekend is; `null` als er niets in valt. */
   van: string | null;
   tot: string | null;
+  /** Alles wat de leadtabel beslaat (voor de periodekeuze); `null` als hij leeg is. */
+  beschikbaarVan: string | null;
+  beschikbaarTot: string | null;
   regels: LeadRegel[];
   campagnes: CampagneRegel[];
   zonderLead: { uitgaven: number; campagnes: number };
@@ -87,12 +97,38 @@ async function leesKanaalkosten(
   }
 }
 
-export async function haalLeads(): Promise<LeadsData> {
+export async function haalLeads(periode: Periode = {}): Promise<LeadsData> {
   return metVerbinding(async (client) => {
+    const bereikRes = await client.query(
+      `select min(datum)::text as van, max(datum)::text as tot from dataloket.v_ga4_leads`,
+    );
+    const beschikbaarVan: string | null = bereikRes.rows[0]?.van ?? null;
+    const beschikbaarTot: string | null = bereikRes.rows[0]?.tot ?? null;
+    const leeg: LeadsData = {
+      van: null,
+      tot: null,
+      beschikbaarVan,
+      beschikbaarTot,
+      regels: [],
+      campagnes: [],
+      zonderLead: { uitgaven: 0, campagnes: 0 },
+      uitgavenTotaal: 0,
+      uitgavenPerPlatform: {},
+      handmatig: [],
+      kanaalkostenFout: null,
+    };
+    if (!beschikbaarVan || !beschikbaarTot) return leeg;
+
+    const van = [periode.van ?? beschikbaarVan, beschikbaarVan].sort()[1];
+    const tot = [periode.tot ?? beschikbaarTot, beschikbaarTot].sort()[0];
+    if (van > tot) return leeg;
+
     const leadRes = await client.query(
       `select datum::text as datum, event, bron_medium, campagne, merk, model, formulier, aantal
          from dataloket.v_ga4_leads
+        where datum between $1::date and $2::date
         order by datum, event`,
+      [van, tot],
     );
     const leads: LeadInvoer[] = leadRes.rows.map((r) => ({
       datum: String(r.datum),
@@ -105,22 +141,7 @@ export async function haalLeads(): Promise<LeadsData> {
       aantal: Number(r.aantal),
     }));
 
-    if (leads.length === 0) {
-      return {
-        van: null,
-        tot: null,
-        regels: [],
-        campagnes: [],
-        zonderLead: { uitgaven: 0, campagnes: 0 },
-        uitgavenTotaal: 0,
-        uitgavenPerPlatform: {},
-        handmatig: [],
-        kanaalkostenFout: null,
-      };
-    }
-
-    const van = leads[0].datum;
-    const tot = leads[leads.length - 1].datum;
+    if (leads.length === 0) return leeg;
 
     // Geen `having sum(uitgaven) > 0`: een campagne met € 0 en wél leads (een campagne die
     // in de periode werd gepauzeerd, of een Pmax zonder budget) hoort als "€ 0" gekoppeld
@@ -148,7 +169,14 @@ export async function haalLeads(): Promise<LeadsData> {
     const maanden = maandenInVenster(van, tot);
     const kanaalkosten = await leesKanaalkosten(client, maanden[0], maanden[maanden.length - 1]);
     const koppeling = pasKanaalkostenToe(koppelLeads(leads, uitgaven), kanaalkosten.kosten, van, tot);
-    return { van, tot, ...koppeling, kanaalkostenFout: kanaalkosten.fout };
+    return {
+      van,
+      tot,
+      beschikbaarVan,
+      beschikbaarTot,
+      ...koppeling,
+      kanaalkostenFout: kanaalkosten.fout,
+    };
   });
 }
 

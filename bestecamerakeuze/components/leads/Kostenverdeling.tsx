@@ -217,7 +217,7 @@ export default function Kostenverdeling({
         <p className="text-sm text-ink-muted">
           Vul per sessiebron/medium per maand in wat het kanaal kostte, bijvoorbeeld de factuur van
           Gaspedaal; dat kan voor 2025, 2026 en 2027. Het maandbedrag wordt per dag verdeeld
-          (bedrag ÷ dagen in de maand) en alleen de dagen die in de leadtabel vallen tellen mee:
+          (bedrag ÷ dagen in de maand) en alleen de dagen die in de gekozen periode op het tabblad vallen tellen mee:
           op de 20e van een maand van 30 dagen is dat 20 × het daggemiddelde, dus 2/3 van het
           bedrag. Dat gaat gelijk over de leads die in die dagen via die bron/medium binnenkwamen.
           Leeg is geen kosten. Een veld slaat op bij Enter of wegklikken.

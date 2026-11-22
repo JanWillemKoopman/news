@@ -1,5 +1,5 @@
 /**
- * Waar het tabblad Leads over gaat: één bedrijf, één website, dertig dagen.
+ * Waar het tabblad Leads over gaat: één bedrijf, één website, vanaf 1 juni 2026.
  *
  * Dit bestand is de enige plek die dat afbakent, en zowel de sync (die de leads uit GA4
  * haalt) als de route (die de uitgaven erbij zoekt) lezen het hier. Zo kan het ene niet
@@ -19,13 +19,16 @@
  *  - Meta Ads: het account "Van den Udenhout".
  *  - LinkedIn Ads: het account "Van den Udenhout Groep" (klein, een paar campagnes).
  *
- * ## Waarom precies dertig dagen
+ * ## Vanaf 1 juni 2026, de laatste dertig dagen elke nacht opnieuw
  *
- * De leadtabel is bewust een rollend venster en geen archief: de uitgaven blijven in
- * `windsor_advertenties` zoals altijd, maar de leads zelf worden elke nacht vervangen
- * door de laatste dertig dagen. Het venster loopt tot en met **gisteren**, net als
- * `periodeGrenzen` op de andere Kanalen-pagina's: de sync draait 's nachts, dus vandaag
- * is nog niet af.
+ * Tot november 2026 was de leadtabel een rollend venster van dertig dagen. Op verzoek van de
+ * eigenaar bewaart hij nu alles vanaf **1 juni 2026** (`LEADS_VANAF`; na de trackingwissel van
+ * eind maart, dus alleen de nieuwe eventnamen). De nachtelijke sync vervangt alleen de
+ * laatste dertig dagen (`leadsVenster`): GA4 schrijft een lead soms een paar dagen later aan
+ * een kanaal toe, en die late toeschrijving hoort mee te komen. Wat ouder is blijft staan.
+ * Ontbreekt het begin (de eerste keer, of na een lege tabel), dan vult de sync eenmalig aan
+ * vanaf 1 juni. Alles loopt tot en met **gisteren**, net als `periodeGrenzen` op de andere
+ * Kanalen-pagina's: de sync draait 's nachts, dus vandaag is nog niet af.
  */
 
 /** De GA4-property van udenhout.nl. */
@@ -40,8 +43,11 @@ export const LEADS_META_ACCOUNT = "69324444";
 /** LinkedIn Ads-account "Van den Udenhout Groep" in `windsor_advertenties.account_id`. */
 export const LEADS_LINKEDIN_ACCOUNT = "500669928";
 
-/** Hoeveel dagen de leadtabel bevat. */
+/** Hoeveel dagen de nachtelijke sync opnieuw ophaalt en vervangt. */
 export const LEADS_DAGEN = 30;
+
+/** De eerste dag die de leadtabel bewaart (verzoek van de eigenaar, november 2026). */
+export const LEADS_VANAF = "2026-06-01";
 
 /**
  * Events die ook als lead tellen, hoewel er "lead" niet in de naam staat.
@@ -88,4 +94,16 @@ export function leadsVenster(nu: Date = new Date(), dagen: number = LEADS_DAGEN)
   const van = new Date(tot);
   van.setUTCDate(van.getUTCDate() - (dagen - 1));
   return { van: datumTekst(van), tot: datumTekst(tot) };
+}
+
+/** Alles wat de leadtabel beslaat: 1 juni 2026 t/m gisteren. */
+export function leadsBereik(nu: Date = new Date()): LeadsVenster {
+  return { van: LEADS_VANAF, tot: leadsVenster(nu).tot };
+}
+
+/** Een datum `JJJJ-MM-DD` plus (of min) een aantal dagen. */
+export function verschuifDatum(datum: string, dagen: number): string {
+  const d = new Date(`${datum}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dagen);
+  return datumTekst(d);
 }

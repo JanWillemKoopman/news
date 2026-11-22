@@ -48,7 +48,13 @@ import {
   isConversieActie,
   labelVoorConversie,
 } from "@/lib/windsor/velden";
-import { LEADS_EXTRA_EVENTS, LEADS_GA4_PROPERTY, leadsVenster } from "@/lib/leads/bereik";
+import {
+  LEADS_EXTRA_EVENTS,
+  LEADS_GA4_PROPERTY,
+  LEADS_VANAF,
+  leadsVenster,
+  verschuifDatum,
+} from "@/lib/leads/bereik";
 import { leadRijenUitWindsor, type LeadRij } from "@/lib/leads/normaliseer";
 
 /** Hoeveel dagen terug de sync standaard opnieuw ophaalt. */
@@ -1697,43 +1703,57 @@ export interface LeadsSyncOpties {
 }
 
 /**
- * De lead-events van udenhout.nl: de laatste dertig dagen, elke nacht vervangen.
+ * De lead-events van udenhout.nl: vanaf 1 juni 2026 bewaard, de laatste dertig dagen elke
+ * nacht vervangen.
  *
- * Dit is het enige onderdeel van de sync dat zijn tabel **leegmaakt** in plaats van bij te
- * werken, en dat is de bedoeling: de leadtabel is een rollend venster van dertig dagen en
- * geen archief (zie de kop van migratie 0033). Dat maakt hem klein, en het maakt
- * opruimen overbodig — de tabel kan niet groeien.
+ * De tabel is een archief vanaf `LEADS_VANAF`; alleen de laatste dertig dagen
+ * (`leadsVenster`) worden elke nacht opnieuw opgehaald en vervangen, zodat late toeschrijving
+ * van GA4 meekomt. Mist het begin (de eerste keer, of na een lege tabel), dan haalt hij
+ * eenmalig alles vanaf 1 juni op, in stukken van een maand (`AANVUL_STUK_DAGEN`).
  *
  * Twee dingen houden dat veilig:
  *
  *  1. **Eerst ophalen, dan pas wissen.** Faalt Windsor, dan staat gisteren's data er nog.
- *     Een nacht zonder verversing is een stuk beter dan een lege tabel.
  *  2. **Een leeg antwoord is een fout, geen nul.** Dertig dagen zonder één lead op
  *     udenhout.nl bestaat niet; een leeg antwoord is een storing aan Windsors kant of een
  *     verkeerd veld, en dan hoort de tabel ongemoeid te blijven.
  *
  * Wissen en schrijven staan in één transactie: een lezer ziet de oude of de nieuwe stand,
- * nooit een halve.
+ * nooit een halve. Er wordt alleen gewist wat opnieuw is opgehaald (plus eventuele rijen
+ * van vóór 1 juni, die er niet horen).
  *
- * Staat buiten de stukken van `draai`: het venster is altijd dezelfde dertig dagen,
- * welke periode de aanroeper ook vroeg — zie `lib/windsor/uitvoeren.ts`.
+ * Staat buiten de stukken van `draai`: het venster hangt niet af van de periode die de
+ * aanroeper vroeg — zie `lib/windsor/uitvoeren.ts`.
  */
 export async function syncGa4Leads(
   client: Client,
   opties: LeadsSyncOpties = {},
 ): Promise<SyncResultaat> {
   const start = Date.now();
-  const { van, tot } = leadsVenster(opties.nu);
+  const recent = leadsVenster(opties.nu);
+  const tot = recent.tot;
   const haal = opties.haal ?? haalOp;
 
-  const rijen = await haal(
-    "googleanalytics4",
-    GA4_LEADVELDEN,
-    van,
-    tot,
-    leadEventFilter(),
-    [LEADS_GA4_PROPERTY],
+  // Staat het begin er al? Een week speling: een dag zonder lead mag niet elke nacht een
+  // volledige aanvulronde veroorzaken.
+  const stand = await client.query(
+    "select min(datum)::text as eerste from dataloket.windsor_ga4_leads",
   );
+  const eerste: string | null = stand.rows?.[0]?.eerste ?? null;
+  const aanvullen = eerste === null || eerste > verschuifDatum(LEADS_VANAF, 7);
+  const van = aanvullen ? LEADS_VANAF : [recent.van, LEADS_VANAF].sort()[1];
+
+  // Ophalen in stukken van een maand: één opvraging over een half jaar met zeven dimensies
+  // is groter dan nodig, en een stuk dat faalt is opnieuw te proberen zonder de rest.
+  const rijen: WindsorRij[] = [];
+  for (let stukVan = van; stukVan <= tot; stukVan = verschuifDatum(stukVan, AANVUL_STUK_DAGEN)) {
+    const stukTot = [verschuifDatum(stukVan, AANVUL_STUK_DAGEN - 1), tot].sort()[0];
+    rijen.push(
+      ...(await haal("googleanalytics4", GA4_LEADVELDEN, stukVan, stukTot, leadEventFilter(), [
+        LEADS_GA4_PROPERTY,
+      ])),
+    );
+  }
   const leads = leadRijenUitWindsor(rijen);
 
   if (leads.length === 0) {
@@ -1748,7 +1768,10 @@ export async function syncGa4Leads(
 
   await client.query("begin");
   try {
-    await client.query("delete from dataloket.windsor_ga4_leads");
+    await client.query(
+      "delete from dataloket.windsor_ga4_leads where datum >= $1::date or datum < $2::date",
+      [van, LEADS_VANAF],
+    );
     await schrijfLeads(client, leads);
     await client.query("commit");
   } catch (err) {
@@ -1763,3 +1786,6 @@ export async function syncGa4Leads(
     duurMs: Date.now() - start,
   };
 }
+
+/** Hoeveel dagen één opvraging bij Windsor beslaat als de sync aanvult vanaf 1 juni. */
+const AANVUL_STUK_DAGEN = 31;
