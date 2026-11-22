@@ -59,9 +59,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   GA4-property.
 - **Wie welk tabblad ziet** (november 2026, op verzoek van de eigenaar), op één plek:
   `lib/beperkteTabbladen.ts`, getest. **Voor niemand** (ook niet de eigenaar): Scores,
-  Kennis en acties, Budget beheer, Koppeltabel en Kosten — de code staat er nog, terugzetten
-  is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar** (zijn twee accounts):
-  Leads, Landingspagina en Instellingen. Toegepast in de sidebar en het profielmenu, in
+  Kennis en acties, Budget beheer, Koppeltabel, Kosten, Landingspagina en KPI's 2026 — de code
+  staat er nog, terugzetten is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar**
+  (zijn twee accounts): Leads (sinds november 2026 weer zichtbaar, onder Tools) en Instellingen. Toegepast in de sidebar en het profielmenu, in
   `AppShell` (`?tab=…` opent een verborgen tabblad niet, en de weekwinnaar-pop-up van
   Scores verschijnt niet) en in `app/page.tsx` (het paneel wordt niet gerenderd). De module
   staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser laadt, en daar staat
@@ -96,7 +96,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`), **KPI's social media** (`kpi-2027-social`) en **KPI's CRM** (`kpi-2027-crm`); **KPI's
   2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
   **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
-  **Leads** (`leads`, nu voor iedereen verborgen), plus Budget beheer en Landingspagina
+  **Leads** (`leads`, alleen voor de eigenaar), plus Budget beheer en Landingspagina
   (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
   hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
   het over deze pagina's onder hun nieuwe naam en plek.
@@ -617,17 +617,22 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 
 - **Afbakening staat op één plek** (`lib/leads/bereik.ts`): GA4-property 255949462
   (udenhout.nl), Google Ads-account "Udenhout", Meta-account "Van den Udenhout",
-  LinkedIn-account "Van den Udenhout Groep", dertig dagen tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
+  LinkedIn-account "Van den Udenhout Groep", **vanaf 1 juni 2026** (`LEADS_VANAF`) tot en met gisteren. Sync én route lezen het daar. Alleen deze property vuurt
   `generate_lead_*`; de andere properties van het concern leverden nul lead-events. Het
   aparte Google Ads-account "Van den Udenhout Lease" staat niet in de Windsor-sync.
-- **De leadtabel is een rollend venster en geen archief** (`windsor_ga4_leads`, migratie
-  0033) en dat is de manier waarop hij zo klein blijft (±1.100 rijen, ±160 kB). Op verzoek zo
+- **De leadtabel bewaart alles vanaf 1 juni 2026** (`windsor_ga4_leads`, migratie 0033; verzoek
+  van de eigenaar, november 2026 — daarvoor een rollend venster van dertig dagen). 1 juni ligt na
+  de trackingwissel van eind maart, dus alleen de nieuwe eventnamen. ±10.000 rijen, een paar MB;
+  de uitgavenquery over januari t/m november duurde 0,45 s. Op verzoek zo
   compact mogelijk, dus ook wat er *niet* in staat: geen uitgaven (die staan al in
   `windsor_advertenties` en komen via `v_leads_uitgaven` bij het lezen erbij), geen account,
   website, kanaalgroep of inleestijdstip, geen primary key en geen index (elke query leest
   de hele tabel; een index zou hem alleen verdubbelen). `aantal` is een smallint.
   Dubbele sleutels voorkomt `leadRijenUitWindsor`, dat ze optelt vóór het schrijven.
-- **De sync vervangt de hele tabel** (`syncGa4Leads` in `lib/windsor/sync.ts`): eerst
+- **De sync vervangt alleen de laatste dertig dagen** (`syncGa4Leads` in `lib/windsor/sync.ts`,
+  `leadsVenster`), zodat late toeschrijving van GA4 meekomt; ouder blijft staan. Mist het begin
+  (eerste run, of lege tabel: `min(datum)` later dan 1 juni + een week), dan haalt hij eenmalig
+  alles vanaf 1 juni op, in stukken van 31 dagen. Eerst
   ophalen, dan pas wissen en schrijven in één transactie. Faalt Windsor, dan staat gisteren's
   data er nog; een leeg antwoord is een fout (geen nul) en laat de tabel ongemoeid. Hij draait
   in het onderdeel `website`, **buiten** de stukken van dertig dagen (per stuk wissen zou elk
@@ -710,13 +715,38 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   precies de lead bracht. Een lege waarde heet "Onbekend". Ze staan bewust naast elkaar en
   niet in plaats van elkaar: het kanaal is te kiezen zonder de schrijfwijzen van GA4 te kennen.
 - **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
-- **Weergave.** Alles filtert in het geheugen (één ophaalactie). Bij merken en modellen staat
+- **Periodekeuze** boven de filterbalk (`lib/leads/periode.ts`, getest): Sinds 1 juni (standaard),
+  Deze maand, Vorige maand, Laatste 30 dagen en een eigen periode, allemaal gerekend vanaf de
+  laatste dag in de tabel (niet vandaag). Een andere periode is een **nieuwe ophaalactie**
+  (`/api/leads?van=&tot=`), geen filter in de browser: de uitgaven van een campagne en de
+  handmatige maandbedragen moeten over dezelfde dagen verdeeld worden als de leads.
+- **Weergave.** Binnen een periode filtert alles in het geheugen (één ophaalactie). Bij merken en modellen staat
   "Onbekend" **vast onderaan** (`vastgezet`) en niet in de uitklapbare lijst: hij is vaak de
   grootste groep en zou de echte merken wegduwen, maar hij moet zichtbaar blijven omdat de
   tabel anders niet optelt. Een sterretje achter een bedrag betekent dat de rij ook betaalde
   leads zonder bekende kosten bevat. De uitgaven zijn die van de periode die de leadtabel zelf beslaat, niet "de laatste
   dertig dagen vanaf nu": draait de sync een paar nachten niet, dan blijven leads en kosten
   bij elkaar horen.
+
+- **Kostenverdeling: handmatige kosten per bron/medium per maand** (verzoek van de eigenaar,
+  november 2026). Gaspedaal (`gaspedaal.nl / referral`, na Google Ads een van de grootste bronnen)
+  staat in GA4 als verwijzing maar wordt per maand gefactureerd. De knop **Kostenverdeling**
+  rechtsboven (vaste plek naast het oogje, alleen als het tabblad open is) opent een brede
+  zijbalk (`components/leads/Kostenverdeling.tsx`, `Drawer` met `extraBreed`): elke
+  sessiebron/medium van udenhout.nl op sessies (hoog → laag, uit `v_ga4_verkeer`, dat op
+  1 augustus 2026 begint), met per maand een veld. Standaard leeg; opslaan bij Enter/wegklikken
+  (`/api/leads/kanaalkosten`, alleen de eigenaar). Opslag `dataloket.lead_kanaalkosten`
+  (migratie 0041), alleen bedragen > 0. In te vullen voor **2025, 2026 en 2027** (`KOSTEN_JAREN`,
+  knoppen bovenaan de zijbalk; route weigert andere jaren). De lijst bron/media en hun sessies komen
+  uit álle beschikbare verkeersdata, niet uit het gekozen jaar — anders was hij voor 2025 en 2027
+  leeg. Rekenwerk in `lib/leads/kanaalkosten.ts` (getest): van
+  een maand telt het deel dat in het venster valt **naar rato van de dagen** (maandbedrag ÷ dagen in
+  de maand × dagen in het venster; op de 20e van een maand van 30 dagen dus 2/3, zoals de eigenaar
+  vroeg: de geschatte uitgave tot nu toe, ÷ de leads tot nu toe), en dat gaat gelijk
+  over de leads van die bron/medium in die maand. Onbetaald verkeer met een bedrag wordt betaald
+  (platform `handmatig`, label "Handmatige kosten"); betaald verkeer houdt zijn platform (Google:
+  bedrag erbij; Bing: kosten nu bekend). Een bedrag zonder lead staat in "zonder lead" en in de
+  campagnetabel (één regel per bron/medium). Het telt mee in Uitgaven en kosten per betaalde lead.
 
 ### Kanalen → Leads Syntec
 

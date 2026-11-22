@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import Inlogprompt from "@/components/Inlogprompt";
-import { IconInfo, IconTarget } from "@/components/icons";
+import { IconCoin, IconInfo, IconTarget } from "@/components/icons";
 import { formatteer } from "@/components/chat/chartTheme";
+import Kostenverdeling from "@/components/leads/Kostenverdeling";
 import LeadsCampagnes from "@/components/leads/LeadsCampagnes";
 import LeadsGrafiek from "@/components/leads/LeadsGrafiek";
 import LeadsTabel from "@/components/leads/LeadsTabel";
 import { bouwCampagneRijen } from "@/lib/leads/campagnes";
+import { useIsActief } from "@/lib/kanalen/actieveWeergave";
+import type { HandmatigePost } from "@/lib/leads/kanaalkosten";
+import {
+  PERIODE_KEUZES,
+  aantalDagen,
+  herkenKeuze,
+  periodeVoor,
+  type LeadsPeriode,
+} from "@/lib/leads/periode";
 import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import type { CampagneRegel, LeadRegel } from "@/lib/leads/koppel";
 import {
@@ -44,11 +54,15 @@ import {
 interface Antwoord {
   van: string | null;
   tot: string | null;
+  beschikbaarVan: string | null;
+  beschikbaarTot: string | null;
   regels: LeadRegel[];
   campagnes: CampagneRegel[];
   zonderLead: { uitgaven: number; campagnes: number };
   uitgavenTotaal: number;
   uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
+  handmatig: HandmatigePost[];
+  kanaalkostenFout: string | null;
   laatsteSync: string | null;
   syncLoopt: boolean;
   fout?: string;
@@ -113,11 +127,33 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(GEEN_FILTERS);
+  const actief = useIsActief("leads");
+  // `null` = de standaard: alles vanaf 1 juni t/m de laatste dag met data. Een andere
+  // periode is een nieuwe ophaalactie (de kosten van een campagne gaan over de leads van
+  // dezelfde dagen); de andere filters blijven in het geheugen.
+  const [periode, setPeriode] = useState<LeadsPeriode | null>(null);
+  const [verdelingOpen, setVerdelingOpen] = useState(false);
+  // Na opslaan in Kostenverdeling halen we de leads opnieuw op (zonder de browsercache van
+  // vijf minuten), zodat de nieuwe kosten meteen meetellen.
+  const [ververs, setVervers] = useState(0);
+  const gewijzigd = useRef(false);
+  const markeerGewijzigd = useCallback(() => {
+    gewijzigd.current = true;
+  }, []);
+  const sluitVerdeling = useCallback(() => {
+    setVerdelingOpen(false);
+    if (gewijzigd.current) {
+      gewijzigd.current = false;
+      setVervers((v) => v + 1);
+    }
+  }, []);
 
   useEffect(() => {
     if (!ingelogd) return;
     let afgebroken = false;
-    fetch("/api/leads")
+    const zoek = periode ? `?van=${periode.van}&tot=${periode.tot}` : "";
+    setBezig(true);
+    fetch(`/api/leads${zoek}`, ververs > 0 ? { cache: "reload" } : undefined)
       .then(async (res) => {
         const antwoord = (await res.json()) as Antwoord;
         if (afgebroken) return;
@@ -137,7 +173,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     return () => {
       afgebroken = true;
     };
-  }, [ingelogd]);
+  }, [ingelogd, ververs, periode]);
 
   const alleRegels = useMemo(() => data?.regels ?? [], [data]);
   const regels = useMemo(() => filterRegels(alleRegels, filters), [alleRegels, filters]);
@@ -197,9 +233,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const perFormulier = useMemo(() => groepeer(regels, (r) => waardeOfOnbekend(r.formulier)), [regels]);
 
   const campagneRijen = useMemo(() => {
+    // Handmatige kosten gaan per bron/medium, niet per campagne: daar is de bron/medium de
+    // "campagne" (zie lib/leads/kanaalkosten.ts).
     const betaald = groepeer(
       regels.filter((r) => r.platform !== null),
-      (r) => `${r.platform}\u0000${r.campagne}`,
+      (r) => `${r.platform}\u0000${r.platform === "handmatig" ? r.bronMedium : r.campagne}`,
     );
     // Zonder filter ook de campagnes die geld kostten en niets opleverden: met een filter
     // zegt "geen leads" niets meer over de campagne zelf.
@@ -237,16 +275,79 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     return <div className="laadvlak h-64 rounded-panel border border-line bg-card" aria-busy="true" />;
   }
 
+  const laatsteDag = data?.beschikbaarTot ?? null;
+  const huidigePeriode: LeadsPeriode | null =
+    data?.van && data.tot ? { van: data.van, tot: data.tot } : periode;
+  const gekozen = huidigePeriode && laatsteDag ? herkenKeuze(huidigePeriode, laatsteDag) : "alles";
+  const periodeBalk = laatsteDag && (
+    <div
+      className={`kaart-omlijst flex flex-wrap items-center gap-3 rounded-panel border border-line bg-card px-4 py-2.5 shadow-subtle ${
+        bezig ? "opacity-70" : ""
+      }`}
+    >
+      <span className="label-theme text-label text-ink-faint">Periode</span>
+      <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Periode">
+        {PERIODE_KEUZES.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => setPeriode(k.id === "alles" ? null : periodeVoor(k.id, laatsteDag))}
+            aria-pressed={gekozen === k.id}
+            className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
+              gekozen === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+            }`}
+          >
+            {k.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 border-l border-line pl-3 text-sm text-ink-muted">
+        <span className={gekozen === "eigen" ? "font-medium text-ink" : ""}>Eigen periode</span>
+        <input
+          type="date"
+          aria-label="Van"
+          min={data?.beschikbaarVan ?? undefined}
+          max={laatsteDag}
+          value={huidigePeriode?.van ?? ""}
+          onChange={(e) =>
+            e.target.value &&
+            setPeriode({ van: e.target.value, tot: huidigePeriode?.tot ?? laatsteDag })
+          }
+          className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
+        />
+        <span>t/m</span>
+        <input
+          type="date"
+          aria-label="Tot en met"
+          min={data?.beschikbaarVan ?? undefined}
+          max={laatsteDag}
+          value={huidigePeriode?.tot ?? ""}
+          onChange={(e) =>
+            e.target.value &&
+            setPeriode({ van: huidigePeriode?.van ?? (data?.beschikbaarVan ?? laatsteDag), tot: e.target.value })
+          }
+          className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
+        />
+      </div>
+      {bezig && <span className="text-meta text-ink-faint">laden…</span>}
+    </div>
+  );
+
   if (!data || !data.van || !data.tot || alleRegels.length === 0) {
     return (
-      <section className="rounded-panel border border-line bg-card px-5 py-6 shadow-subtle">
-        <p className="text-sm text-ink-muted">
-          De leadtabel is nog leeg. De nachtelijke sync (onderdeel website) vult hem met de
-          lead-events van de afgelopen dertig dagen.
-        </p>
-      </section>
+      <div className="flex flex-col gap-6">
+        {periodeBalk}
+        <section className="rounded-panel border border-line bg-card px-5 py-6 shadow-subtle">
+          <p className="text-sm text-ink-muted">
+            {data?.beschikbaarTot
+              ? "Geen leads in deze periode."
+              : "De leadtabel is nog leeg. De nachtelijke sync (onderdeel website) vult hem met de lead-events vanaf 1 juni 2026."}
+          </p>
+        </section>
+      </div>
     );
   }
+  const dagenInPeriode = aantalDagen({ van: data.van, tot: data.tot });
 
   const pct = (n: number) => (totalen.leads > 0 ? (n / totalen.leads) * 100 : null);
   // De basis is de totale uitgave van Google en Meta. Met een filter op de leads bestaat dat
@@ -265,8 +366,33 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     perLead: perBetaaldeLead,
   };
 
+  const knop = actief && (
+    <button
+      type="button"
+      onClick={() => setVerdelingOpen(true)}
+      className="fixed right-16 top-4 z-50 flex h-9 items-center gap-2 rounded-button border border-line bg-card px-3 text-sm font-medium text-ink shadow-subtle transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+    >
+      <IconCoin className="h-4 w-4 text-ink-muted" />
+      Kostenverdeling
+    </button>
+  );
+  const verdeling = verdelingOpen && (
+    <Kostenverdeling onClose={sluitVerdeling} onGewijzigd={markeerGewijzigd} />
+  );
+
+  const handmatigTotaal = data.uitgavenPerPlatform.handmatig ?? 0;
+
   return (
     <div className="flex flex-col gap-6">
+      {knop}
+      {verdeling}
+      {data.kanaalkostenFout && (
+        <p className="rounded-panel border border-line bg-surface-tint px-5 py-3 text-sm text-negative">
+          De handmatige kosten (Kostenverdeling) konden niet worden gelezen en tellen nu niet mee:{" "}
+          {data.kanaalkostenFout}
+        </p>
+      )}
+      {periodeBalk}
       {/* Filterbalk: één samenhangend blok, net als op de andere pagina's. */}
       <div className="kaart-omlijst flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-card px-4 py-3 shadow-subtle">
         <div className="flex items-center gap-3">
@@ -278,7 +404,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               {datumKort(data.van)} t/m {datumKort(data.tot)}
             </p>
             <p className="text-xs text-ink-faint">
-              laatste 30 dagen · udenhout.nl · bijgewerkt {syncTekst(data.laatsteSync)}
+              {dagenInPeriode} dagen · udenhout.nl · bijgewerkt {syncTekst(data.laatsteSync)}
               {data.syncLoopt ? " · sync loopt" : ""}
             </p>
           </div>
@@ -356,8 +482,8 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           waarde={formatteer(totalen.leads, "aantal")}
           toelichting={
             filtersActief
-              ? `van ${formatteer(totalenAlles.leads, "aantal")} in de laatste 30 dagen`
-              : "in de laatste 30 dagen"
+              ? `van ${formatteer(totalenAlles.leads, "aantal")} in deze periode`
+              : `in ${dagenInPeriode} dagen`
           }
         />
         <Kaart
@@ -387,14 +513,18 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           toelichting={
             filtersActief
               ? `toegerekend aan deze selectie, van ${formatteer(data.uitgavenTotaal, "euro-heel")} in totaal`
-              : "Google Ads, Meta Ads en LinkedIn Ads"
+              : handmatigTotaal > 0
+                ? "Google Ads, Meta Ads, LinkedIn Ads en handmatige kosten"
+                : "Google Ads, Meta Ads en LinkedIn Ads"
           }
           noot={
             !filtersActief
               ? `Google ${formatteer(data.uitgavenPerPlatform.google ?? 0, "euro-heel")} · Meta ${formatteer(
                   data.uitgavenPerPlatform.meta ?? 0,
                   "euro-heel",
-                )} · LinkedIn ${formatteer(data.uitgavenPerPlatform.linkedin ?? 0, "euro-heel")}`
+                )} · LinkedIn ${formatteer(data.uitgavenPerPlatform.linkedin ?? 0, "euro-heel")}${
+                  handmatigTotaal > 0 ? ` · handmatig ${formatteer(handmatigTotaal, "euro-heel")}` : ""
+                }`
               : undefined
           }
         />
@@ -406,7 +536,9 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               ? totalen.metKosten > 0
                 ? `toegerekende kosten ÷ ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
                 : "geen betaalde leads met bekende kosten"
-              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn`
+              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn${
+                  handmatigTotaal > 0 ? " en de kanalen met handmatige kosten" : ""
+                }`
           }
         />
       </div>
@@ -484,7 +616,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           <ul className="mt-3 flex flex-col gap-2 text-meta text-ink-muted">
             <li>
               <strong className="text-ink">Een lead</strong> is een GA4-event met &quot;lead&quot; in de
-              naam op udenhout.nl, over de laatste dertig dagen, plus een paar events die het team
+              naam op udenhout.nl, over de gekozen periode (bewaard vanaf 1 juni 2026), plus een paar events die het team
               als lead aanwees (de bedankpagina van de werkplaatsplanner en de verhuurevents). Het
               telt events, niet unieke personen: iemand die twee formulieren invult is twee leads.
               Vacatures en de werkplaatsplanner tellen mee en zijn groot; filter ze weg via Soort
@@ -502,6 +634,13 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               de uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads maakt
               elke lead € 50, ook een vacature- of proefritlead). Google en Meta weten niet welke
               lead welk deel kostte.
+            </li>
+            <li>
+              <strong className="text-ink">Handmatige kosten</strong> komen uit de knop
+              Kostenverdeling rechtsboven: een bedrag per sessiebron/medium per maand (bijvoorbeeld
+              de factuur van Gaspedaal). Van elke maand telt het deel dat in de gekozen periode valt,
+              naar rato van de dagen, en dat gaat gelijk over de leads van die bron/medium in die
+              maand. Verkeer met zo&apos;n bedrag telt als betaald.
             </li>
             <li>
               <strong className="text-ink">&quot;Onbekend&quot;</strong> bij uitgaven betekent betaald

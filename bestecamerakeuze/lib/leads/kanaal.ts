@@ -17,7 +17,11 @@
  */
 
 /** Het advertentieplatform achter betaald verkeer. */
-export type BetaaldPlatform = "google" | "meta" | "microsoft" | "linkedin" | "overig";
+/**
+ * `handmatig` volgt nooit uit bron/medium (`kanaalVan` geeft hem niet): dat is verkeer waarvoor
+ * de eigenaar zelf een maandbedrag invulde, zoals Gaspedaal (zie `kanaalkosten.ts`).
+ */
+export type BetaaldPlatform = "google" | "meta" | "microsoft" | "linkedin" | "overig" | "handmatig";
 
 export interface KanaalInfo {
   /** Het label voor in de tabel. */
@@ -30,7 +34,9 @@ export interface KanaalInfo {
 export const PLATFORMEN_MET_KOSTEN: readonly BetaaldPlatform[] = ["google", "meta", "linkedin"];
 
 export function heeftKostenbron(platform: BetaaldPlatform | null): boolean {
-  return platform !== null && PLATFORMEN_MET_KOSTEN.includes(platform);
+  // Handmatig heeft per definitie een bedrag, maar staat niet in PLATFORMEN_MET_KOSTEN: die
+  // lijst is die van de advertentieplatforms waarvan de uitgaven uit Windsor komen.
+  return platform === "handmatig" || (platform !== null && PLATFORMEN_MET_KOSTEN.includes(platform));
 }
 
 /** De labels van de betaalde kanalen, ook voor de "kosten onbekend"-uitleg in de UI. */
@@ -40,6 +46,7 @@ export const PLATFORM_LABEL: Record<BetaaldPlatform, string> = {
   microsoft: "Microsoft Ads",
   linkedin: "LinkedIn Ads",
   overig: "Betaald (overig)",
+  handmatig: "Handmatige kosten",
 };
 
 /** Media waaraan GA4 betaald verkeer herkent, naast alles wat met "paid" begint. */

@@ -14,10 +14,15 @@ import { GA4_LEADVELDEN } from "@/lib/windsor/velden";
  * fout helemaal wordt teruggedraaid.
  */
 
-function nepClient(faalOp?: RegExp) {
+/**
+ * `eerste` is wat `min(datum)` van de tabel teruggeeft: standaard staat het begin er al
+ * (1 juni), dus haalt de sync alleen de laatste dertig dagen op. `null` = lege tabel.
+ */
+function nepClient(faalOp?: RegExp, eerste: string | null = "2026-06-01") {
   const queries: { sql: string; waarden: unknown[] }[] = [];
   const client = {
     async query(sql: string, waarden: unknown[] = []) {
+      if (/min\(datum\)/.test(sql)) return { rowCount: 1, rows: [{ eerste }] };
       queries.push({ sql: sql.replace(/\s+/g, " ").trim(), waarden });
       if (faalOp && faalOp.test(sql)) throw new Error("insert mislukt");
       return { rowCount: 0, rows: [] };
@@ -42,7 +47,7 @@ function windsorRij(over: Partial<Record<string, string | number>> = {}): Windso
   };
 }
 
-test("vraagt alleen de property van udenhout.nl en alleen lead-events op, over dertig dagen", async () => {
+test("vraagt alleen de property van udenhout.nl en alleen lead-events op, over de laatste dertig dagen", async () => {
   let aanroep: unknown[] = [];
   const { client } = nepClient();
   await syncGa4Leads(client, {
@@ -172,4 +177,47 @@ test("een grote ronde gaat in batches van vijfhonderd rijen", async () => {
     inserts.map((q) => q.waarden.length / 8),
     [500, 500, 200],
   );
+});
+
+test("staat het begin er nog niet, dan vult hij eenmalig aan vanaf 1 juni, in stukken van een maand", async () => {
+  const aanroepen: [string, string][] = [];
+  const { client, queries } = nepClient(undefined, "2026-10-18");
+  await syncGa4Leads(client, {
+    nu: NU,
+    haal: async (_c: unknown, _v: unknown, van: string, tot: string) => {
+      aanroepen.push([van, tot]);
+      return [windsorRij({ date: van })];
+    },
+  });
+  assert.equal(aanroepen[0][0], "2026-06-01");
+  assert.equal(aanroepen[aanroepen.length - 1][1], "2026-11-16");
+  // Aansluitend, zonder gat en zonder overlap.
+  for (let i = 1; i < aanroepen.length; i++) {
+    const vorige = new Date(`${aanroepen[i - 1][1]}T00:00:00Z`);
+    vorige.setUTCDate(vorige.getUTCDate() + 1);
+    assert.equal(aanroepen[i][0], vorige.toISOString().slice(0, 10));
+  }
+  const wis = queries.find((q) => q.sql.startsWith("delete"));
+  assert.deepEqual(wis?.waarden, ["2026-06-01", "2026-06-01"]);
+});
+
+test("een lege tabel vult ook aan vanaf 1 juni", async () => {
+  let eersteVan = "";
+  const { client } = nepClient(undefined, null);
+  await syncGa4Leads(client, {
+    nu: NU,
+    haal: async (_c: unknown, _v: unknown, van: string) => {
+      eersteVan ||= van;
+      return [windsorRij()];
+    },
+  });
+  assert.equal(eersteVan, "2026-06-01");
+});
+
+test("staat het begin er al, dan wist hij alleen de laatste dertig dagen", async () => {
+  const { client, queries } = nepClient();
+  await syncGa4Leads(client, { nu: NU, haal: async () => [windsorRij()] });
+  const wis = queries.find((q) => q.sql.startsWith("delete"));
+  assert.match(wis?.sql ?? "", /datum >= \$1::date or datum < \$2::date/);
+  assert.deepEqual(wis?.waarden, ["2026-10-18", "2026-06-01"]);
 });

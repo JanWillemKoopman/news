@@ -9,15 +9,20 @@ export const dynamic = "force-dynamic";
 /**
  * De data achter het tabblad Leads onder Kanalen.
  *
- * Eén verzoek, geen filterparameters: de periode is vast (de laatste dertig dagen, zoals
- * de leadtabel ze bevat) en de pagina filtert daarna zelf in het geheugen. Zo kost een klik
- * op een filter geen netwerkronde — hetzelfde uitgangspunt als `/api/kanalen`.
+ * `?van=JJJJ-MM-DD&tot=JJJJ-MM-DD` kiest de periode (standaard alles vanaf 1 juni 2026). Een
+ * andere periode is een nieuw verzoek, omdat de kosten van een campagne over de leads van
+ * dezelfde dagen verdeeld worden; de overige filters (soort, kanaal, merk …) doet de pagina
+ * daarna zelf in het geheugen, zodat een klik daarop geen netwerkronde kost.
  *
  * De data verandert één keer per nacht, dus het antwoord mag ruim gecachet worden.
  */
 const CACHE = "private, max-age=300, stale-while-revalidate=3600";
 
-export async function GET() {
+function datum(waarde: string | null): string | undefined {
+  return waarde && /^\d{4}-\d{2}-\d{2}$/.test(waarde) ? waarde : undefined;
+}
+
+export async function GET(request: Request) {
   // Leaddata is bedrijfsdata: wie niet is ingelogd, krijgt hem niet.
   const gebruiker = await getGebruiker();
   if (!gebruiker) {
@@ -37,7 +42,10 @@ export async function GET() {
 
   try {
     const [data, stand] = await Promise.all([
-      haalLeads(),
+      haalLeads({
+        van: datum(new URL(request.url).searchParams.get("van")),
+        tot: datum(new URL(request.url).searchParams.get("tot")),
+      }),
       haalSyncStand().catch(() => ({ laatsteSync: null, loopt: false })),
     ]);
     return NextResponse.json(
