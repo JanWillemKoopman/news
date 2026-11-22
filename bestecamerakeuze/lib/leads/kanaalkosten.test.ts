@@ -144,3 +144,17 @@ test("leesBedrag leest Nederlandse notatie; leeg en nul zijn geen bedrag", () =>
   assert.equal(leesBedrag("-5"), "ongeldig");
   assert.equal(leesBedrag("abc"), "ongeldig");
 });
+
+test("lopende maand: op de 20e telt 20 × het daggemiddelde, gedeeld door de leads t/m de 20e", () => {
+  // November heeft 30 dagen; data t/m de 20e = 2/3 van het maandbedrag.
+  assert.equal(maandAandeel("2026-11", "2026-10-22", "2026-11-20"), 20 / 30);
+  const koppeling = koppelLeads([lead({ datum: "2026-11-05", aantal: 10 })], []);
+  const uit = pasKanaalkostenToe(
+    koppeling,
+    [{ bronMedium: "gaspedaal.nl / referral", maand: "2026-11", bedrag: 20_000 }],
+    "2026-10-22",
+    "2026-11-20",
+  );
+  // 20.000 ÷ 30 × 20 = 13.333,33, over 10 leads = 1.333,33 per lead.
+  assert.ok(Math.abs((uit.regels[0].kosten ?? 0) - 13_333.333) < 0.01);
+});

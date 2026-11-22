@@ -13,9 +13,14 @@ import type { CampagneRegel, Koppeling, LeadRegel } from "@/lib/leads/koppel";
  *
  * Een maandbedrag hoort bij een hele maand; de leadtabel beslaat dertig dagen die meestal
  * over twee maanden lopen. Daarom telt van elke maand alleen het deel dat in het venster
- * valt, **naar rato van de dagen**: van € 20.000 in oktober (31 dagen) telt bij een venster
- * van 23 oktober t/m 21 november 9/31 = € 5.806. Zou de hele € 20.000 over de leads van
- * 23–31 oktober gaan, dan kostte een Gaspedaal-lead daar ineens drie keer zoveel.
+ * valt, **naar rato van de dagen** (maandbedrag ÷ dagen in de maand × dagen in het venster):
+ * van € 20.000 in oktober (31 dagen) telt bij een venster van 23 oktober t/m 21 november
+ * 9/31 = € 5.806. Zou de hele € 20.000 over de leads van 23–31 oktober gaan, dan kostte een
+ * Gaspedaal-lead daar ineens drie keer zoveel.
+ *
+ * Voor de lopende maand is dat precies wat de eigenaar vroeg: op de 20e (data t/m de 20e)
+ * telt 20 × het daggemiddelde, dus 2/3 van een maand van 30 dagen, gedeeld door de leads van
+ * 1 t/m 20 — de geschatte kosten per lead tot nu toe, zonder te wachten op de factuur.
  *
  * Dat deel gaat gelijk over de leads van die bron/medium in die maand (binnen het venster):
  * € 5.806 en twaalf leads is € 484 per lead — net als bij een advertentiecampagne een
@@ -34,6 +39,9 @@ import type { CampagneRegel, Koppeling, LeadRegel } from "@/lib/leads/koppel";
  *
  * Pure functies: geen database, geen React.
  */
+
+/** De jaren waarvoor maandbedragen in te vullen zijn (verzoek van de eigenaar, november 2026). */
+export const KOSTEN_JAREN = [2025, 2026, 2027] as const;
 
 /** Eén ingevuld bedrag: bron/medium zoals GA4 hem levert, maand als `JJJJ-MM`. */
 export interface Kanaalkost {

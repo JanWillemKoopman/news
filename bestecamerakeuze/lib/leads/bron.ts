@@ -155,7 +155,7 @@ export async function haalLeads(): Promise<LeadsData> {
 /** Eén regel in de tabel Kostenverdeling. */
 export interface KostenverdelingRegel {
   bronMedium: string;
-  /** Sessies op udenhout.nl in het gekozen jaar. */
+  /** Sessies op udenhout.nl over alle beschikbare verkeersdata (zie `sessiesVan`). */
   sessies: number;
   /** Ingevulde bedragen per maand (`JJJJ-MM` → euro); een lege maand staat er niet in. */
   bedragen: Record<string, number>;
@@ -163,7 +163,11 @@ export interface KostenverdelingRegel {
 
 export interface KostenverdelingData {
   jaar: number;
-  /** De periode waarover de sessies geteld zijn (de verkeerstabel begint op 1 augustus 2026). */
+  /**
+   * De periode waarover de sessies geteld zijn: alles wat de verkeerstabel heeft (hij begint
+   * op 1 augustus 2026), los van het gekozen jaar. Zo staat de lijst ook voor 2025 en 2027
+   * klaar, jaren zonder sessies in de tabel.
+   */
   sessiesVan: string | null;
   sessiesTot: string | null;
   regels: KostenverdelingRegel[];
@@ -171,7 +175,9 @@ export interface KostenverdelingData {
 
 /**
  * De tabel achter de knop Kostenverdeling: elke sessiebron/medium van udenhout.nl, op
- * sessies van hoog naar laag, met de ingevulde bedragen van dat jaar. Een bron/medium met
+ * sessies van hoog naar laag, met de ingevulde bedragen van het gekozen jaar. De sessies zijn
+ * die van alle beschikbare data en niet die van het jaar: voor 2025 (vóór de verkeerstabel)
+ * en 2027 (nog niet begonnen) zou de lijst anders leeg zijn en viel er niets in te vullen. Een bron/medium met
  * een bedrag maar zonder sessies in dat jaar staat er ook in (onderaan), anders zou een
  * ingevuld bedrag onvindbaar worden.
  *
@@ -181,14 +187,13 @@ export interface KostenverdelingData {
 export async function haalKostenverdeling(jaar: number): Promise<KostenverdelingData> {
   return metVerbinding(async (client) => {
     const van = `${jaar}-01-01`;
-    const tot = `${jaar}-12-31`;
     const [sessiesRes, kostenRes, bereikRes] = await Promise.all([
       client.query(
         `select bron_medium, sum(sessies)::bigint as sessies
            from dataloket.v_ga4_verkeer
-          where account_id = $1 and datum between $2 and $3
+          where account_id = $1
           group by bron_medium`,
-        [LEADS_GA4_PROPERTY, van, tot],
+        [LEADS_GA4_PROPERTY],
       ),
       client.query(
         `select bron_medium, to_char(maand, 'YYYY-MM') as maand, bedrag
@@ -199,8 +204,8 @@ export async function haalKostenverdeling(jaar: number): Promise<Kostenverdeling
       client.query(
         `select min(datum)::text as van, max(datum)::text as tot
            from dataloket.v_ga4_verkeer
-          where account_id = $1 and datum between $2 and $3`,
-        [LEADS_GA4_PROPERTY, van, tot],
+          where account_id = $1`,
+        [LEADS_GA4_PROPERTY],
       ),
     ]);
 

@@ -3,7 +3,7 @@ import { getGebruiker } from "@/lib/auth";
 import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import { isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { haalKostenverdeling } from "@/lib/leads/bron";
-import { leesBedrag } from "@/lib/leads/kanaalkosten";
+import { KOSTEN_JAREN, leesBedrag } from "@/lib/leads/kanaalkosten";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 /**
  * De tabel achter de knop Kostenverdeling op het tabblad Leads.
  *
- * GET `?jaar=2026`: elke sessiebron/medium van udenhout.nl op sessies, met de ingevulde
+ * GET `?jaar=2026` (2025, 2026 of 2027): elke sessiebron/medium van udenhout.nl op sessies, met de ingevulde
  * maandbedragen van dat jaar. POST: één cel opslaan (bron/medium, maand, bedrag; leeg
  * bedrag = weghalen).
  *
@@ -42,10 +42,7 @@ export async function GET(request: Request) {
   }
 
   const gevraagd = Number(new URL(request.url).searchParams.get("jaar"));
-  const jaar =
-    Number.isInteger(gevraagd) && gevraagd >= 2020 && gevraagd <= 2100
-      ? gevraagd
-      : new Date().getUTCFullYear();
+  const jaar = (KOSTEN_JAREN as readonly number[]).includes(gevraagd) ? gevraagd : 2026;
 
   try {
     const data = await haalKostenverdeling(jaar);
@@ -66,7 +63,11 @@ export async function POST(request: Request) {
   // Een lege bron/medium bestaat in GA4 ("" = niet bekend) en mag dus een bedrag krijgen.
   const bronMedium = typeof body.bronMedium === "string" ? body.bronMedium.trim().slice(0, 300) : null;
   const maand =
-    typeof body.maand === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(body.maand) ? body.maand : null;
+    typeof body.maand === "string" &&
+    /^\d{4}-(0[1-9]|1[0-2])$/.test(body.maand) &&
+    (KOSTEN_JAREN as readonly number[]).includes(Number(body.maand.slice(0, 4)))
+      ? body.maand
+      : null;
   const bedrag = leesBedrag(body.bedrag);
 
   if (bronMedium === null || !maand) {

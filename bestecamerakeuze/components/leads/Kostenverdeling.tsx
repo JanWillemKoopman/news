@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Drawer from "@/components/Drawer";
 import { formatteer } from "@/components/chat/chartTheme";
-import { leesBedrag } from "@/lib/leads/kanaalkosten";
+import { KOSTEN_JAREN, leesBedrag } from "@/lib/leads/kanaalkosten";
 import type { KostenverdelingData, KostenverdelingRegel } from "@/lib/leads/bron";
 
 /**
@@ -110,7 +110,10 @@ export default function Kostenverdeling({
   /** Er is iets opgeslagen; het tabblad haalt de leads opnieuw op bij sluiten. */
   onGewijzigd: () => void;
 }) {
-  const [jaar, setJaar] = useState(() => new Date().getFullYear());
+  const [jaar, setJaar] = useState<number>(() => {
+    const nu = new Date().getFullYear();
+    return (KOSTEN_JAREN as readonly number[]).includes(nu) ? nu : 2026;
+  });
   const [data, setData] = useState<KostenverdelingData | null>(null);
   const [fout, setFout] = useState<string | null>(null);
   const [bezig, setBezig] = useState(true);
@@ -213,34 +216,31 @@ export default function Kostenverdeling({
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-muted">
           Vul per sessiebron/medium per maand in wat het kanaal kostte, bijvoorbeeld de factuur van
-          Gaspedaal. Het bedrag wordt verdeeld over de leads die in die maand via die bron/medium
-          binnenkwamen. Valt een maand maar deels in de dertig dagen van de leadtabel, dan telt
-          het bedrag naar rato van de dagen mee. Leeg is geen kosten. Een veld slaat op bij Enter
-          of wegklikken.
+          Gaspedaal; dat kan voor 2025, 2026 en 2027. Het maandbedrag wordt per dag verdeeld
+          (bedrag ÷ dagen in de maand) en alleen de dagen die in de leadtabel vallen tellen mee:
+          op de 20e van een maand van 30 dagen is dat 20 × het daggemiddelde, dus 2/3 van het
+          bedrag. Dat gaat gelijk over de leads die in die dagen via die bron/medium binnenkwamen.
+          Leeg is geen kosten. Een veld slaat op bij Enter of wegklikken.
         </p>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1" role="group" aria-label="Jaar">
-            <button
-              type="button"
-              onClick={() => setJaar((j) => j - 1)}
-              className="rounded-control px-2 py-1 text-sm text-ink-muted hover:bg-surface"
-              aria-label="Vorig jaar"
-            >
-              ‹
-            </button>
-            <span className="min-w-12 text-center text-sm font-semibold text-ink">{jaar}</span>
-            <button
-              type="button"
-              onClick={() => setJaar((j) => j + 1)}
-              className="rounded-control px-2 py-1 text-sm text-ink-muted hover:bg-surface"
-              aria-label="Volgend jaar"
-            >
-              ›
-            </button>
+            {KOSTEN_JAREN.map((j) => (
+              <button
+                key={j}
+                type="button"
+                onClick={() => setJaar(j)}
+                aria-pressed={jaar === j}
+                className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
+                  jaar === j ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                }`}
+              >
+                {j}
+              </button>
+            ))}
             {data?.sessiesVan && (
               <span className="ml-3 text-meta text-ink-faint">
-                sessies van {data.sessiesVan} t/m {data.sessiesTot} · udenhout.nl
+                sessies van {data.sessiesVan} t/m {data.sessiesTot} (alle beschikbare data) · udenhout.nl
               </span>
             )}
           </div>
@@ -290,7 +290,7 @@ export default function Kostenverdeling({
                 {zichtbaar.length === 0 ? (
                   <tr>
                     <td colSpan={MAANDEN.length + 3} className="px-3 py-8 text-center text-ink-muted">
-                      {zoek ? "Geen bron/medium gevonden." : `Geen sessies in ${jaar}.`}
+                      {zoek ? "Geen bron/medium gevonden." : "Nog geen verkeersdata."}
                     </td>
                   </tr>
                 ) : (

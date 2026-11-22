@@ -726,8 +726,13 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   sessiebron/medium van udenhout.nl op sessies (hoog → laag, uit `v_ga4_verkeer`, dat op
   1 augustus 2026 begint), met per maand een veld. Standaard leeg; opslaan bij Enter/wegklikken
   (`/api/leads/kanaalkosten`, alleen de eigenaar). Opslag `dataloket.lead_kanaalkosten`
-  (migratie 0041), alleen bedragen > 0. Rekenwerk in `lib/leads/kanaalkosten.ts` (getest): van
-  een maand telt het deel dat in het venster valt **naar rato van de dagen**, en dat gaat gelijk
+  (migratie 0041), alleen bedragen > 0. In te vullen voor **2025, 2026 en 2027** (`KOSTEN_JAREN`,
+  knoppen bovenaan de zijbalk; route weigert andere jaren). De lijst bron/media en hun sessies komen
+  uit álle beschikbare verkeersdata, niet uit het gekozen jaar — anders was hij voor 2025 en 2027
+  leeg. Rekenwerk in `lib/leads/kanaalkosten.ts` (getest): van
+  een maand telt het deel dat in het venster valt **naar rato van de dagen** (maandbedrag ÷ dagen in
+  de maand × dagen in het venster; op de 20e van een maand van 30 dagen dus 2/3, zoals de eigenaar
+  vroeg: de geschatte uitgave tot nu toe, ÷ de leads tot nu toe), en dat gaat gelijk
   over de leads van die bron/medium in die maand. Onbetaald verkeer met een bedrag wordt betaald
   (platform `handmatig`, label "Handmatige kosten"); betaald verkeer houdt zijn platform (Google:
   bedrag erbij; Bing: kosten nu bekend). Een bedrag zonder lead staat in "zonder lead" en in de
