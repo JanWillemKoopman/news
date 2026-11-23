@@ -664,18 +664,24 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   `uitgavenPerPlatform`), niet de toegerekende kosten: een platform dat € 32.827 uitgaf stond
   eerder op € 27.229 omdat campagnes zonder lead buiten beeld vielen, en dat was voor collega's
   onbegrijpelijk. Een platform zonder lead krijgt toch een rij.
-- **Kosten per lead (kerncijfer en grafiek) = uitgaven ÷ álle leads**, betaald én onbetaald
-  (definitie van de eigenaar, november 2026; `kostenPerLeadAlle`, `uitgavenVoorSelectie` en
-  `echteUitgavenGelden` in `samenvatting.ts`, getest). Zonder filters, en ook met **alleen** het filter
-  Betaald, zijn de uitgaven de echte uitgaven (Google, Meta, LinkedIn en handmatig): onbetaalde leads
-  hebben geen kosten, dus Betaald haalt geen euro weg en het cijfer wordt uitgaven ÷ betaalde leads.
-  Met Onbetaald of een ander filter (soort, kanaal, merk …) zijn het de toegerekende kosten van de
-  selectie ÷ de leads in de selectie; dat geldt dan ook voor het kerncijfer Uitgaven. Eerder was het
-  kerncijfer "kosten per betaalde lead" (uitgaven ÷ betaalde leads van platforms met een kostenbron);
-  dat is op verzoek vervangen. **De tabellen zijn niet meegegaan**: hun kolom per lead en de
-  totaalregel delen nog door de betaalde leads met bekende kosten (`kostenPerLead`,
-  `kostenPerLeadTotaal`), want daar gaat het per kanaal/campagne om wat een betaalde lead kost. Een rij
-  deelt de aan haar toegerekende kosten door haar leads met bekende kosten.
+- **Kosten per lead = kosten ÷ álle leads, betaald én onbetaald, op de hele pagina**
+  (definitie van de eigenaar, november 2026): kerncijfer, grafiek, de kolom "Per lead" in elke
+  tabel en de totaalregels. Wie de kosten per betaalde lead wil, kiest het filter **Betaald**.
+  Rekenwerk in `samenvatting.ts` (getest): `kostenPerLeadAlle` (kerncijfer/totaal),
+  `kostenPerLead` (een rij), `uitgavenVoorSelectie` en `echteUitgavenGelden`.
+  - **Echte of toegerekende uitgaven.** Zonder filters, en ook met **alleen** Betaald, gelden de
+    echte uitgaven (Google, Meta, LinkedIn en handmatig): onbetaalde leads hebben geen kosten, dus
+    Betaald haalt geen euro weg. Dan tonen de kanalentabel de platformuitgaven, de andere tabellen
+    de regel "Campagnes zonder lead" en de campagnetabel de campagnes zonder lead, zodat alles
+    optelt tot het kerncijfer. Met Onbetaald of een ander filter (soort, kanaal, merk …) zijn het
+    de toegerekende kosten van de selectie, zonder die regels.
+  - **Een rij** deelt haar (toegerekende of platform)kosten door al haar leads; betaalde leads
+    zonder bekende kosten (sterretje) tellen in de noemer mee. Geen bedrag (—) bij een rij zonder
+    betaald verkeer of met alleen betaald verkeer zonder bekende kosten (Bing): nul zou "gratis"
+    zeggen. De totaalregel van de campagnetabel is de som van de uitgaven ÷ de som van de leads.
+  - Eerder stond er "kosten per betaalde lead" (uitgaven ÷ betaalde leads met een kostenbron,
+    `kostenPerLeadTotaal`); dat is op verzoek overal vervangen. Zet het niet terug zonder dat
+    daarom gevraagd wordt.
 - **Betaald is niet hetzelfde als "kosten bekend".** Bing is betaald maar heeft hier geen
   kostenbron (`geen-bron`). LinkedIn heeft er wel een (klein: ± € 1.600 per maand, drie
   campagnes), maar de UTM-naam in GA4 is een korte slug ("vriendenprijs") terwijl de campagne

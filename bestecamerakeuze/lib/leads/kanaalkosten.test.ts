@@ -7,7 +7,7 @@ import {
   pasKanaalkostenToe,
 } from "@/lib/leads/kanaalkosten";
 import { koppelLeads, type LeadInvoer } from "@/lib/leads/koppel";
-import { kostenPerLeadTotaal, telTotalen } from "@/lib/leads/samenvatting";
+import { kostenPerLeadAlle, telTotalen } from "@/lib/leads/samenvatting";
 
 function lead(over: Partial<LeadInvoer> = {}): LeadInvoer {
   return {
@@ -78,7 +78,7 @@ test("een maandbedrag gaat naar rato over de leads van die bron/medium in die ma
   assert.ok(Math.abs(t.kosten - 30_000) < 1e-6);
   assert.equal(t.betaald, 7);
   assert.equal(t.kostenbronLeads, 7);
-  assert.ok(Math.abs((kostenPerLeadTotaal(t, uit.uitgavenTotaal, false) ?? 0) - 30_000 / 7) < 1e-6);
+  assert.ok(Math.abs((kostenPerLeadAlle(uit.uitgavenTotaal, t.leads) ?? 0) - 30_000 / t.leads) < 1e-6);
 
   // De campagnetabel krijgt één regel per bron/medium.
   const rij = uit.campagnes.find((c) => c.platform === "handmatig");

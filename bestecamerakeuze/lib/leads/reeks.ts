@@ -4,7 +4,7 @@ import type { LeadsPeriode } from "@/lib/leads/periode";
 
 /**
  * De reeks achter de grafiek op het tabblad Leads: per dag, week of maand de leads
- * (betaald en onbetaald), de uitgaven en wat nodig is voor de kosten per betaalde lead.
+ * (betaald en onbetaald), de uitgaven en daarmee de kosten per lead.
  *
  * Zelfde korrels als op Syntec leads (verzoek november 2026): dag, week (maandag t/m
  * zondag) of maand, standaard per week. Een eerste of laatste week/maand die maar half in de

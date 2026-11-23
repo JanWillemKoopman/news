@@ -6,7 +6,8 @@ import { kostenPerLead, type Groep, type Totalen } from "@/lib/leads/samenvattin
 
 /**
  * Eén tabel van het tabblad Leads: een rij per groep, met leads, aandeel, uitgaven en kosten
- * per lead, en onderaan altijd een totaalregel.
+ * per lead (kosten ÷ alle leads van de rij, betaald en onbetaald), en onderaan altijd een
+ * totaalregel (uitgaven ÷ alle leads).
  *
  * ## De tabel telt op tot de totale uitgaven
  *
@@ -68,7 +69,7 @@ function Uitgaven({ g }: { g: Groep }) {
         {g.zonderKosten > 0 && (
           <span
             className="text-ink-faint"
-            title={`${g.zonderKosten} betaalde ${g.zonderKosten === 1 ? "lead" : "leads"} in deze rij ${g.zonderKosten === 1 ? "heeft" : "hebben"} geen bekende kosten en tellen hier niet mee.`}
+            title={`${g.zonderKosten} betaalde ${g.zonderKosten === 1 ? "lead" : "leads"} in deze rij ${g.zonderKosten === 1 ? "heeft" : "hebben"} geen bekende kosten: niet in dit bedrag, wel in het aantal leads waardoor de kosten per lead worden gedeeld.`}
           >
             *
           </span>
@@ -117,7 +118,7 @@ export default function LeadsTabel({
     "Aandeel",
     ...(toonBetaald ? ["Betaald"] : []),
     "Uitgaven",
-    "Per betaalde lead",
+    "Per lead",
   ];
 
   const rij = (g: Groep) => {

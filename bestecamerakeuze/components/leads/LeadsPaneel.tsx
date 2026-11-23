@@ -33,7 +33,6 @@ import {
   heeftFilters,
   echteUitgavenGelden,
   kostenPerLeadAlle,
-  kostenPerLeadTotaal,
   uitgavenVoorSelectie,
   metPlatformUitgaven,
   leadSoort,
@@ -235,16 +234,17 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     [eventOpties],
   );
 
-  // Zonder filters tonen de kanalen Google Ads en Meta Ads de echte uitgaven van het
-  // platform (ook van campagnes zonder lead); met een filter zijn het de toegerekende kosten
-  // van de selectie, want de uitgaven van een campagne zijn niet op merk of model te filteren.
+  // Zonder filters (of alleen Betaald) tonen de kanalen Google Ads en Meta Ads de echte
+  // uitgaven van het platform (ook van campagnes zonder lead); met een ander filter zijn het de
+  // toegerekende kosten van de selectie, want de uitgaven van een campagne zijn niet op merk of
+  // model te filteren.
   const perKanaal = useMemo(() => {
     const groepen = groepeer(regels, (r) => r.kanaal);
-    if (filtersActief) return groepen;
+    if (!echteUitgaven) return groepen;
     return metPlatformUitgaven(groepen, data?.uitgavenPerPlatform ?? {}).sort(
       (a, b) => b.leads - a.leads || a.sleutel.localeCompare(b.sleutel, "nl"),
     );
-  }, [regels, data, filtersActief]);
+  }, [regels, data, echteUitgaven]);
   const perSoort = useMemo(() => groepeer(regels, (r) => r.event), [regels]);
   // "Onbekend" staat vast onderaan en niet in de uitklapbare lijst: bij een merk of model is
   // hij vaak de grootste groep en zou de echte merken naar beneden duwen, maar hij moet
@@ -276,11 +276,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     );
     // Zonder filter ook de campagnes die geld kostten en niets opleverden: met een filter
     // zegt "geen leads" niets meer over de campagne zelf.
-    const zonderLead = filtersActief
+    const zonderLead = !echteUitgaven
       ? []
       : (data?.campagnes ?? []).filter((c) => c.leads === 0 && (c.uitgaven ?? 0) > 0);
     return bouwCampagneRijen(betaald, zonderLead);
-  }, [regels, data, filtersActief]);
+  }, [regels, data, echteUitgaven]);
 
   // De reeks voor de grafiek. Zonder filters tellen de echte uitgaven per dag; met een filter
   // de toegerekende kosten van de selectie (zie lib/leads/reeks.ts).
@@ -409,25 +409,24 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const dagenInPeriode = aantalDagen({ van: data.van, tot: data.tot });
 
   const pct = (n: number) => (totalen.leads > 0 ? (n / totalen.leads) * 100 : null);
-  // De basis is de totale uitgave van Google en Meta. Met een filter op de leads bestaat dat
-  // totaal niet meer; dan zijn het de toegerekende kosten van de selectie.
-  const uitgavenBasis = filtersActief ? totalen.kosten : data.uitgavenTotaal;
-  const perBetaaldeLead = kostenPerLeadTotaal(totalen, data.uitgavenTotaal, filtersActief);
-  // De kerncijfers: Uitgaven en Kosten per lead = uitgaven ÷ alle leads in de selectie,
-  // betaald en onbetaald (definitie van de eigenaar, november 2026). Met het filter Betaald
-  // dus de uitgaven ÷ de betaalde leads.
+  // Kosten per lead is op de hele pagina dezelfde som (definitie van de eigenaar, november
+  // 2026): uitgaven ÷ alle leads in de selectie, betaald en onbetaald. Met het filter Betaald
+  // dus de uitgaven ÷ de betaalde leads. De uitgaven zijn de echte (zonder filters of met
+  // alleen Betaald) of de toegerekende kosten van de selectie (met een ander filter).
   const uitgavenKaart = uitgavenVoorSelectie(totalen, filters, data.uitgavenTotaal);
   const perLead = kostenPerLeadAlle(uitgavenKaart, totalen.leads);
-  const zonderLead = filtersActief ? null : data.zonderLead;
+  const zonderLead = echteUitgaven ? data.zonderLead : null;
   const tabelTotaal = {
     totaal: totalen,
-    totaalUitgaven: uitgavenBasis,
-    totaalPerLead: perBetaaldeLead,
+    totaalUitgaven: uitgavenKaart,
+    totaalPerLead: perLead,
   };
+  const campagneLeads = campagneRijen.reduce((t, r) => t + r.leads, 0);
+  const campagneUitgaven = campagneRijen.reduce((t, r) => t + (r.kosten ?? 0), 0);
   const campagneTotaal = {
-    leads: campagneRijen.reduce((t, r) => t + r.leads, 0),
-    uitgaven: campagneRijen.reduce((t, r) => t + (r.kosten ?? 0), 0),
-    perLead: perBetaaldeLead,
+    leads: campagneLeads,
+    uitgaven: campagneUitgaven,
+    perLead: kostenPerLeadAlle(campagneUitgaven, campagneLeads),
   };
 
   const knop = actief && (
@@ -605,7 +604,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         <LeadsTabel
           titel="Kanalen"
           toelichting={
-            filtersActief
+            !echteUitgaven
               ? "Uit welk kanaal de leads binnenkwamen. Met een filter zijn de uitgaven toegerekend aan de geselecteerde leads."
               : "Uit welk kanaal de leads binnenkwamen, afgeleid van bron en medium in GA4. Bij Google, Meta en LinkedIn Ads staan de echte uitgaven van het platform."
           }
@@ -695,8 +694,9 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               <strong className="text-ink">Kosten per lead</strong> (kerncijfer en grafiek) is alle
               uitgaven ÷ alle leads, betaald én onbetaald. Kies je Betaald, dan zijn het de uitgaven
               ÷ de betaalde leads. Met een ander filter (soort, kanaal, merk …) zijn het de
-              toegerekende kosten van de selectie ÷ de leads in de selectie. De kolom per lead in de
-              tabellen is anders: die deelt door de betaalde leads met bekende kosten.
+              toegerekende kosten van de selectie ÷ de leads in de selectie. Zo rekent de hele
+              pagina: ook de kolom per lead en de totaalregel in elke tabel. Een rij zonder betaald
+              verkeer heeft geen bedrag (—).
             </li>
             <li>
               <strong className="text-ink">Handmatige kosten</strong> komen uit de knop
@@ -713,7 +713,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
             <li>
               <strong className="text-ink">Een sterretje</strong> achter een bedrag betekent dat die rij
               ook betaalde leads bevat waarvan de kosten onbekend zijn. Ze tellen niet mee in het
-              bedrag en niet in de kosten per lead.
+              bedrag, wel in het aantal leads waardoor de kosten per lead worden gedeeld.
             </li>
             <li>
               <strong className="text-ink">Campagnes zonder lead</strong> hebben uitgaven maar in deze

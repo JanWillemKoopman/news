@@ -35,7 +35,7 @@ export default function LeadsCampagnes({ rijen, totaal }: Props) {
   const [alles, setAlles] = useState(false);
   const zichtbaar = alles ? rijen : rijen.slice(0, STANDAARD_RIJEN);
 
-  const kopken = ["Campagne", "Platform", "Leads", "Uitgaven", "Per betaalde lead"];
+  const kopken = ["Campagne", "Platform", "Leads", "Uitgaven", "Per lead"];
 
   return (
     <section className="kaart-omlijst rounded-panel border border-line bg-card shadow-subtle">

@@ -14,13 +14,13 @@ import type { LeadRegel } from "@/lib/leads/koppel";
  * geheugen — net als op de andere Kanalen-pagina's kost een klik op een filter dus geen
  * netwerkronde.
  *
- * ## Betaald is niet hetzelfde als "kosten bekend"
+ * ## Kosten per lead
  *
- * Een lead is **betaald** als het verkeer betaald was (`platform !== null`). Zijn kosten
- * zijn daarmee nog niet bekend: Bing en LinkedIn zijn betaald, maar hebben geen
- * kostenbron. Daarom is "kosten per betaalde lead" gedeeld door alleen de leads waarvan
- * de kosten bekend zijn (`metKosten`) — anders trekt elke Bing-lead de gemiddelde prijs
- * omlaag met een lead waarvan niemand weet wat hij kostte.
+ * Overal op de pagina: kosten ÷ **alle** leads, betaald en onbetaald (definitie van de
+ * eigenaar, november 2026). Wie de kosten per betaalde lead wil zien, kiest het filter
+ * Betaald. Een lead is **betaald** als het verkeer betaald was (`platform !== null`); zijn
+ * kosten zijn daarmee nog niet bekend (Bing heeft geen kostenbron), en een rij met alleen
+ * zulke leads krijgt geen bedrag in plaats van € 0.
  */
 
 export type BetaaldFilter = "alle" | "betaald" | "onbetaald";
@@ -98,8 +98,8 @@ export interface Totalen {
   kosten: number;
   /**
    * Betaalde leads van platformen waarvan we de kosten kennen (Google en Meta), ook als hun
-   * campagne niet te vinden was. Dit is de noemer van "totale uitgaven ÷ betaalde leads":
-   * alles wat Google en Meta uitgaven, gedeeld door alle leads die zij brachten.
+   * campagne niet te vinden was. Was de noemer van de oude "kosten per betaalde lead"; die
+   * is vervangen door uitgaven ÷ alle leads (`kostenPerLeadAlle`).
    */
   kostenbronLeads: number;
 }
@@ -132,29 +132,22 @@ export function telTotalen(regels: LeadRegel[]): Totalen {
   return t;
 }
 
-/** Kosten per betaalde lead, gedeeld door de leads waarvan de kosten bekend zijn. */
-export function kostenPerLead(t: Pick<Totalen, "kosten" | "metKosten">): number | null {
-  return t.metKosten > 0 ? t.kosten / t.metKosten : null;
-}
-
 /**
- * Kosten per betaalde lead voor een totaalregel of kerncijfer.
+ * Kosten per lead van een rij: de kosten van de rij ÷ **alle** leads van de rij, betaald en
+ * onbetaald (definitie van de eigenaar, november 2026 — op de hele pagina dezelfde som; wie
+ * alleen de betaalde leads wil, kiest het filter Betaald).
  *
- * Zonder filters: **alle** uitgaven van Google en Meta, gedeeld door **alle** betaalde leads
- * van Google en Meta. Dat is het getal waar de vraag "wat kost een lead ons" om vraagt, en
- * het is inclusief de campagnes die niets opleverden — wie die weglaat, rekent zich rijk.
- *
- * Met een filter bestaat dat totaal niet meer (de uitgaven van een campagne zijn niet op
- * merk of model te filteren); dan zijn het de toegerekende kosten van de selectie, gedeeld
- * door de leads in de selectie waarvan de kosten bekend zijn.
+ * `null` (een streepje) als de rij geen leads heeft, geen betaald verkeer (er is niets
+ * uitgegeven: "—", net als in de kolom Uitgaven), of alleen betaald verkeer waarvan de kosten
+ * onbekend zijn (Bing, een campagne die niet te vinden is): nul zou beweren dat het gratis was.
+ * Betaalde leads zonder bekende kosten in een rij mét kosten tellen wél mee in de noemer.
  */
-export function kostenPerLeadTotaal(
-  t: Totalen,
-  uitgavenTotaal: number,
-  filtersActief: boolean,
+export function kostenPerLead(
+  t: Pick<Totalen, "kosten" | "leads" | "betaald" | "metKosten">,
 ): number | null {
-  if (filtersActief) return kostenPerLead(t);
-  return t.kostenbronLeads > 0 ? uitgavenTotaal / t.kostenbronLeads : null;
+  if (t.leads === 0 || t.betaald === 0) return null;
+  if (t.metKosten === 0 && t.kosten === 0) return null;
+  return t.kosten / t.leads;
 }
 
 /**
@@ -173,8 +166,9 @@ export function uitgavenVoorSelectie(t: Totalen, f: LeadFilters, uitgavenTotaal:
 }
 
 /**
- * Kosten per lead (definitie van de eigenaar, november 2026): de uitgaven ÷ **alle** leads,
- * betaald en onbetaald. Met het filter Betaald zijn dat dus de uitgaven ÷ de betaalde leads.
+ * Kosten per lead voor een kerncijfer of totaalregel (definitie van de eigenaar, november 2026):
+ * de uitgaven ÷ **alle** leads, betaald en onbetaald. Met het filter Betaald zijn dat dus de
+ * uitgaven ÷ de betaalde leads.
  */
 export function kostenPerLeadAlle(uitgaven: number, leads: number): number | null {
   return leads > 0 ? uitgaven / leads : null;

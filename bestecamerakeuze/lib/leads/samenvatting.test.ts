@@ -7,7 +7,7 @@ import {
   groepeer,
   heeftFilters,
   kostenPerLead,
-  kostenPerLeadTotaal,
+  kostenPerLeadAlle,
   leadSoort,
   metPlatformUitgaven,
   perDag,
@@ -51,14 +51,16 @@ test("totalen onderscheiden betaald, onbetaald en betaald zonder bekende kosten"
   assert.equal(t.kosten, 80);
 });
 
-test("kosten per lead deelt alleen door leads waarvan de kosten bekend zijn", () => {
-  // De drie Bing-leads trekken het gemiddelde niet omlaag: niemand weet wat ze kostten.
-  assert.equal(kostenPerLead(telTotalen(voorbeeld())), 20);
+test("kosten per lead deelt door alle leads, betaald en onbetaald", () => {
+  // € 80 over 12 leads: 4 Google, 3 Bing (kosten onbekend) en 5 onbetaald.
+  assert.equal(kostenPerLead(telTotalen(voorbeeld())), 80 / 12);
 });
 
-test("kosten per lead is niet te berekenen zonder bekende kosten", () => {
+test("kosten per lead: geen bedrag zonder betaald verkeer of zonder bekende kosten", () => {
   const onbetaald = voorbeeld().filter((r) => r.platform === null);
   assert.equal(kostenPerLead(telTotalen(onbetaald)), null);
+  const bing = voorbeeld().filter((r) => r.bronMedium === "bing / cpc");
+  assert.equal(kostenPerLead(telTotalen(bing)), null);
 });
 
 test("filteren op betaald en onbetaald", () => {
@@ -267,26 +269,18 @@ test("kosten per lead in een kanaalrij delen alle leads van het platform, ook di
   assert.ok(Math.abs((kostenPerLead(google!) ?? 0) - 1800 / 17) < 1e-9);
 });
 
-test("kosten per betaalde lead zonder filters: alle uitgaven gedeeld door alle betaalde leads met kostenbron", () => {
+test("kosten per lead zonder filters: alle uitgaven gedeeld door alle leads", () => {
   const k = sluitend();
   const t = telTotalen(k.regels);
-  // Bing (3 leads) heeft geen kostenbron en telt niet mee in de noemer.
-  assert.equal(t.kostenbronLeads, 17);
-  assert.ok(Math.abs((kostenPerLeadTotaal(t, k.uitgavenTotaal, false) ?? 0) - 2000 / 17) < 1e-9);
+  assert.ok(Math.abs((kostenPerLeadAlle(k.uitgavenTotaal, t.leads) ?? 0) - 2000 / t.leads) < 1e-9);
 });
 
-test("kosten per betaalde lead met een filter: toegerekende kosten van de selectie", () => {
-  const k = sluitend();
-  const selectie = telTotalen(filterRegels(k.regels, { ...GEEN_FILTERS, merken: ["Audi"] }));
-  assert.equal(kostenPerLeadTotaal(selectie, k.uitgavenTotaal, true), kostenPerLead(selectie));
-});
-
-test("kosten per betaalde lead is niet te berekenen zonder betaalde leads", () => {
+test("kosten per lead met alleen organisch verkeer: de uitgaven ÷ die leads", () => {
   const k = koppelLeads(
     [lead({ bronMedium: "google / organic", campagne: "(organic)" })],
     [{ bron: "google", campagne: "T | Branding VDU", uitgaven: 100, klikken: 1, vertoningen: 1 }],
   );
-  assert.equal(kostenPerLeadTotaal(telTotalen(k.regels), 100, false), null);
+  assert.equal(kostenPerLeadAlle(100, telTotalen(k.regels).leads), 100);
 });
 
 test("metPlatformUitgaven verandert de invoer niet", () => {
