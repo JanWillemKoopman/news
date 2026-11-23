@@ -6,8 +6,8 @@ import { VERGRENDELDE_EMAILS } from "@/lib/gebruikersbeheer";
 const EIGENAAR = ["koopman.janwillem@gmail.com", "JKoopman@Udenhout.nl"];
 const ANDEREN = ["collega@udenhout.nl", null, undefined, ""];
 
-test("Instellingen en Leads alleen voor de eigenaar", () => {
-  for (const view of ["instellingen", "leads"]) {
+test("Instellingen alleen voor de eigenaar", () => {
+  for (const view of ["instellingen"]) {
     for (const email of EIGENAAR) assert.equal(magTabbladZien(view, email), true, `${view} ${email}`);
     for (const email of ANDEREN) assert.equal(magTabbladZien(view, email), false, `${view} ${email}`);
   }
@@ -20,7 +20,7 @@ test("Scores, Kennis en acties, Budget beheer, Koppeltabel, Kosten, Landingspagi
 });
 
 test("de rest voor iedereen", () => {
-  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-2027", "kpi-2027-syntec", "kpi-2027-social", "kpi-2027-crm", "website", "selligent", "leads-syntec"]) {
+  for (const view of ["campagnes", "tijdlijn", "campagnebeheer", "kpi-2027", "kpi-2027-syntec", "kpi-2027-social", "kpi-2027-crm", "website", "selligent", "leads-syntec", "leads"]) {
     for (const email of [...EIGENAAR, ...ANDEREN]) assert.equal(magTabbladZien(view, email), true, `${view} ${email}`);
   }
 });

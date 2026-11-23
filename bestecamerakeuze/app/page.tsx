@@ -29,7 +29,7 @@ import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
 import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
-import { magTabbladZien } from "@/lib/beperkteTabbladen";
+import { magBeperkteTabbladenZien, magTabbladZien } from "@/lib/beperkteTabbladen";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
 import { Ga4KoppelingProvider } from "@/lib/ga4KoppelingContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
@@ -109,8 +109,8 @@ export default async function DashboardPage() {
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
         leads={
-          // Alleen voor de eigenaar; de API-route controleert dit ook zelf.
-          zie("leads") ? <LeadsPaneel ingelogd={ingelogd} /> : null
+          // Voor iedereen; alleen de Kostenverdeling (handmatige kosten) blijft voor de eigenaar.
+          <LeadsPaneel ingelogd={ingelogd} magKostenBewerken={magBeperkteTabbladenZien(gebruiker.email)} />
         }
         leadsSyntec={<LeadsSyntecPaneel ingelogd={ingelogd} />}
         selligent={<SelligentPaneel ingelogd={ingelogd} />}

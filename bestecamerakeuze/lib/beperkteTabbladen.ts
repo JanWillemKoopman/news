@@ -7,18 +7,19 @@
  *    acties, Budget beheer, Koppeltabel, Kosten, Landingspagina en KPI's 2026 (`kpi-overzicht`,
  *    november 2026). De code blijft staan; terugzetten is ze
  *    uit deze lijst halen.
- *  - **Alleen voor de eigenaar** (zijn twee accounts, `BEPERKTE_TABBLADEN`): Instellingen en Leads (Leads sinds
- *    november 2026 weer zichtbaar, eerst alleen voor de eigenaar).
+ *  - **Alleen voor de eigenaar** (zijn twee accounts, `BEPERKTE_TABBLADEN`): Instellingen. Online
+ *    leads (view `leads`) stond hier tot eind november 2026 ook; sindsdien is het voor iedereen,
+ *    alleen het bewerken van de Kostenverdeling blijft voor de eigenaar
+ *    (`/api/leads/kanaalkosten`).
  *
  * Zelfde twee adressen als de beheerders in `lib/gebruikersbeheer.ts`, maar bewust een
  * eigen module: deze wordt ook in de browser geladen (Sidebar, AppShell), en
  * `gebruikersbeheer.ts` bevat het standaardwachtwoord voor nieuwe accounts, dat nooit in
  * de clientbundel mag komen.
  *
- * Verbergen in de sidebar is niet genoeg: wie `?tab=leads` intypt, komt er ook niet. Daarom
+ * Verbergen in de sidebar is niet genoeg: wie `?tab=instellingen` intypt, komt er ook niet. Daarom
  * op drie plekken toegepast: de sidebar (en het profielmenu), `AppShell` (een tabblad uit de
- * URL opent niet) en `app/page.tsx` (het paneel wordt niet eens gerenderd). `/api/leads`
- * controleert het daarnaast zelf. De API-routes van de verborgen tabbladen staan bewust nog
+ * URL opent niet) en `app/page.tsx` (het paneel wordt niet eens gerenderd). De API-routes van de verborgen tabbladen staan bewust nog
  * open: `/api/campagne-notities` draagt ook het logboek per campagne, `/api/profiel` het
  * theme van iedereen.
  */
@@ -29,7 +30,7 @@ export const BEPERKTE_TABBLADEN_EMAILS = ["koopman.janwillem@gmail.com", "jkoopm
 export const VERBORGEN_TABBLADEN = ["scores", "kennisacties", "budget-beheer", "koppeltabel", "kosten", "landingspagina", "kpi-overzicht"] as const;
 
 /** Tabbladen die alleen voor de accounts van de eigenaar bestaan. */
-export const BEPERKTE_TABBLADEN = ["instellingen", "leads"] as const;
+export const BEPERKTE_TABBLADEN = ["instellingen"] as const;
 
 export function magBeperkteTabbladenZien(email: string | null | undefined): boolean {
   if (!email) return false;

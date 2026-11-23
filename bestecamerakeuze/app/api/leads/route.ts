@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
-import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import { haalSyncStand, isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { haalLeads } from "@/lib/leads/bron";
 
 export const dynamic = "force-dynamic";
 
 /**
- * De data achter het tabblad Leads onder Kanalen.
+ * De data achter het tabblad Online leads (view `leads`), voor elke ingelogde collega.
  *
  * `?van=JJJJ-MM-DD&tot=JJJJ-MM-DD` kiest de periode (standaard alles vanaf 1 juni 2026). Een
  * andere periode is een nieuw verzoek, omdat de kosten van een campagne over de leads van
@@ -27,10 +26,6 @@ export async function GET(request: Request) {
   const gebruiker = await getGebruiker();
   if (!gebruiker) {
     return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
-  }
-  // Het tabblad Leads is alleen voor de eigenaar (lib/beperkteTabbladen.ts).
-  if (!magBeperkteTabbladenZien(gebruiker.email)) {
-    return NextResponse.json({ fout: "Geen toegang tot dit tabblad." }, { status: 403 });
   }
 
   if (!isKanalenGeconfigureerd()) {

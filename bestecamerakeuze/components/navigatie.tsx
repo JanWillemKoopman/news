@@ -83,7 +83,7 @@ export const NAV_GROEPEN: NavGroep[] = [
     paginas: [
       { view: "leads-syntec", label: "Syntec leads", icon: <IconUsers /> },
       { view: "selligent", label: "Selligent database", icon: <IconMail /> },
-      { view: "leads", label: "Leads", icon: <IconTarget /> },
+      { view: "leads", label: "Online leads", icon: <IconTarget /> },
       { view: "budget-beheer", label: "Budget beheer", icon: <IconCoin /> },
       { view: "landingspagina", label: "Landingspagina", icon: <IconGlobe /> },
     ],

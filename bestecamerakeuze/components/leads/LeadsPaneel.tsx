@@ -131,7 +131,14 @@ function Kaart({
   );
 }
 
-export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
+export default function LeadsPaneel({
+  ingelogd,
+  magKostenBewerken = false,
+}: {
+  ingelogd: boolean;
+  /** De knop Kostenverdeling (handmatige kosten bewerken) staat er alleen voor de eigenaar. */
+  magKostenBewerken?: boolean;
+}) {
   const [data, setData] = useState<Antwoord | null>(null);
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState<string | null>(null);
@@ -429,7 +436,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     perLead: kostenPerLeadAlle(campagneUitgaven, campagneLeads),
   };
 
-  const knop = actief && (
+  const knop = actief && magKostenBewerken && (
     <button
       type="button"
       onClick={() => setVerdelingOpen(true)}
@@ -699,8 +706,8 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               verkeer heeft geen bedrag (—).
             </li>
             <li>
-              <strong className="text-ink">Handmatige kosten</strong> komen uit de knop
-              Kostenverdeling rechtsboven: een bedrag per sessiebron/medium per maand (bijvoorbeeld
+              <strong className="text-ink">Handmatige kosten</strong> komen uit de Kostenverdeling
+              (de knop rechtsboven, alleen voor de eigenaar): een bedrag per sessiebron/medium per maand (bijvoorbeeld
               de factuur van Gaspedaal). Van elke maand telt het deel dat in de gekozen periode valt,
               naar rato van de dagen, en dat gaat gelijk over de leads van die bron/medium in die
               maand. Verkeer met zo&apos;n bedrag telt als betaald.

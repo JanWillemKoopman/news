@@ -150,7 +150,7 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
       "Wat er op de websites gebeurt: bezoek, instappunten, pagina's, events en conversies.",
   },
   leads: {
-    title: "Leads",
+    title: "Online leads",
     subtitle:
       "Offerte- en proefritaanvragen van udenhout.nl: welk merk en model, via welk kanaal, en wat de betaalde campagnes kostten.",
   },

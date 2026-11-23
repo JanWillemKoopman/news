@@ -61,7 +61,9 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `lib/beperkteTabbladen.ts`, getest. **Voor niemand** (ook niet de eigenaar): Scores,
   Kennis en acties, Budget beheer, Koppeltabel, Kosten, Landingspagina en KPI's 2026 — de code
   staat er nog, terugzetten is ze uit `VERBORGEN_TABBLADEN` halen. **Alleen voor de eigenaar**
-  (zijn twee accounts): Leads (sinds november 2026 weer zichtbaar, onder Tools) en Instellingen. Toegepast in de sidebar en het profielmenu, in
+  (zijn twee accounts): Instellingen. **Online leads** (view `leads`, eerst "Leads" en alleen voor de
+  eigenaar) is sinds eind november 2026 voor iedereen; alleen de knop Kostenverdeling en
+  `/api/leads/kanaalkosten` blijven voor de eigenaar. Toegepast in de sidebar en het profielmenu, in
   `AppShell` (`?tab=…` opent een verborgen tabblad niet, en de weekwinnaar-pop-up van
   Scores verschijnt niet) en in `app/page.tsx` (het paneel wordt niet gerenderd). De module
   staat los van `lib/gebruikersbeheer.ts` omdat hij ook in de browser laadt, en daar staat
@@ -96,7 +98,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   **KPI's Google Analytics** (`kpi-2027`), **KPI's Syntec** (`kpi-2027-syntec`), **KPI's social media** (`kpi-2027-social`) en **KPI's CRM** (`kpi-2027-crm`); **KPI's
   2026** (`kpi-overzicht`) staat in `VERBORGEN_TABBLADEN` (code blijft staan). Onder
   **Tools** staan **Syntec leads** (`leads-syntec`), **Selligent database** (`selligent`) en
-  **Leads** (`leads`, alleen voor de eigenaar), plus Budget beheer en Landingspagina
+  **Online leads** (`leads`, voor iedereen), plus Budget beheer en Landingspagina
   (ook verborgen). De paginatitels in `AppShell` (`TITLES`) volgen dezelfde namen. Waar
   hieronder nog "Leads Syntec", "Selligent", "KPI's 2027 GA" of "onder Kanalen" staat, gaat
   het over deze pagina's onder hun nieuwe naam en plek.
@@ -607,11 +609,13 @@ niet uit af te lezen zijn:
   `lib/`-module alleen te testen als hij toevallig niets anders importeerde dan types, en
   dat is een rare eis aan juist de code die het rekenwerk doet.
 
-### Kanalen → Leads
+### Tools → Online leads
 
-Tabblad onder **Kanalen**, direct onder Website (view `leads`, `components/leads/`, route
-`app/api/leads/route.ts`). **Alleen zichtbaar voor de eigenaar** (zie "Wie welk tabblad
-ziet" hieronder); `/api/leads` geeft anderen daarnaast een 403. Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
+Tabblad onder **Tools** (view `leads`, `components/leads/`, route `app/api/leads/route.ts`). Heette
+"Leads" en was alleen voor de eigenaar; sinds eind november 2026 heet het **Online leads** en is het
+**voor elke ingelogde collega** (verzoek van de eigenaar). Alleen de knop **Kostenverdeling** (de
+handmatige kosten bewerken, `magKostenBewerken` op `LeadsPaneel`) en `/api/leads/kanaalkosten`
+blijven voor de eigenaar; de bedragen tellen voor iedereen mee. Het laat de leads van udenhout.nl zien: offerte-, proefrit- en
 andere aanvragen die als GA4-event met "lead" in de naam worden afgevuurd, met merk, model,
 kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 
@@ -758,7 +762,7 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
 - **Kostenverdeling: handmatige kosten per bron/medium per maand** (verzoek van de eigenaar,
   november 2026). Gaspedaal (`gaspedaal.nl / referral`, na Google Ads een van de grootste bronnen)
   staat in GA4 als verwijzing maar wordt per maand gefactureerd. De knop **Kostenverdeling**
-  rechtsboven (vaste plek naast het oogje, alleen als het tabblad open is) opent een brede
+  rechtsboven (vaste plek naast het oogje, alleen als het tabblad open is en alleen voor de eigenaar) opent een brede
   zijbalk (`components/leads/Kostenverdeling.tsx`, `Drawer` met `extraBreed`): elke
   sessiebron/medium van udenhout.nl op sessies (hoog → laag, uit `v_ga4_verkeer`, dat op
   1 augustus 2026 begint), met per maand een veld. Standaard leeg; opslaan bij Enter/wegklikken
