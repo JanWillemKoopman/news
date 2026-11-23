@@ -13,6 +13,7 @@ export type DashboardView =
   | "campagnes"
   | "tijdlijn"
   | "campagnebeheer"
+  | "campagne-insight"
   | "kpi-overzicht"
   | "kpi-2027"
   | "kpi-2027-syntec"

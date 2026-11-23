@@ -1657,6 +1657,49 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
   - **Eén ophaalactie** voor de campagnetabel en dit tabblad
     (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
 
+### Campagnes → Campaign insight
+
+Vierde tabblad onder **Campagnes** (view `campagne-insight`, `components/insight/`, routes
+`app/api/campagne-insight/`, rekenwerk in `lib/insight/`, migratie 0042). Gevraagd in november
+2026: per campagne een full-funnel analyse — kosten, bereik, klikken, verkeer en gedrag op de
+campagnepagina('s), e-mailverkeer, lead-events op de website en de leads in Syntec — die
+**Claude Code maakt** en het dashboard toont. Voor iedereen zichtbaar.
+
+- **Werkverdeling.** Het team vult in het dashboard de *briefing* in (naam, looptijd, doel,
+  budget, omschrijving, merk/model, optioneel zoektermen en campagnepagina's). De eigenaar
+  zegt in Claude Code "maak een campaign insight-analyse van …" (of vraagt hem aan met de knop
+  in de zijbalk en zegt "draai de aangevraagde analyses"). Claude volgt dan de skill
+  **`.claude/skills/campagne-insight/SKILL.md`** (root van de repo): briefing en hoofdprompt
+  ophalen, data uit de `windsor_*`-tabellen, `v_leads` en Windsor zelf, resultaat wegschrijven
+  met `dataloket.insight_bewaar_analyse`. Het dashboard schrijft zelf nooit een analyse en
+  roept geen model aan.
+- **Drie lagen, bewust gescheiden.** De *hoofdprompt* (`insight_prompts`, knop rechtsboven,
+  bewerkbaar door de beheerders) zegt wát er geanalyseerd wordt; de *skill* zegt hoe de data
+  wordt opgehaald en weggeschreven; het *formaat* (`lib/insight/types.ts`, `InsightResultaat`)
+  ligt vast in de code. Zo kan de prompt vrij worden herschreven zonder de pagina te breken.
+  Zolang er niets is opgeslagen geldt `lib/insight/standaardPrompt.ts`. **Verander je het
+  formaat, pas dan de skill in dezelfde wijziging aan.**
+- **Versies.** Elke analyse is een nieuwe regel in `insight_analyses` (v1, v2, …); de functie
+  kent het nummer toe onder een rijslot en legt de briefing van dat moment vast (`briefing`),
+  zodat een latere wijziging een oude versie niet verandert. Ook de prompt heeft versies: elke
+  analyse onthoudt met welke (`prompt_id`). Opslaan in de editor maakt altijd een nieuwe versie.
+- **Een generiek formaat.** Een analyse is een samenvatting, een funnelrij (tegels met de
+  doorstroom tussen twee aantallen; bewust geen trechtergrafiek, de stappen verschillen een
+  factor duizend), secties in funnelvolgorde (elk met optioneel kerncijfers, Markdown,
+  tabellen en grafieken), inzichten, aanbevelingen en de *verantwoording*: wat aan de campagne
+  is toegerekend en waarom (`herkenning`) plus kanttekeningen bij de data. Een veld dat
+  ontbreekt laat de pagina niet vastlopen (`normaliseerResultaat`).
+- **Het overzicht** is één regel per campagne met de vaste `kerncijfers` uit de laatste
+  analyse (kosten, vertoningen, klikken, sessies, leads web, leads Syntec, voortgang op het
+  doel). Klik = analysepagina met versiekeuze; het potlood = briefing in de zijbalk. De open
+  analyse staat in de URL (`?insight=<campagne-id>`).
+- **Een eigen tabel, niet de sheet.** CLAUDE.md zegt elders dat er geen campagnetabel in de
+  database komt zolang de sheet de bron is. Dit is geen campagnelijst maar de briefing voor
+  een analyse; de sheet blijft de bron van de campagnetabel.
+- **Rechten.** Lezen, aanmaken en bewerken: iedereen die ingelogd is. Hoofdprompt opslaan en
+  een campagne verwijderen: alleen de beheerders (`isBeheerder`). Analyses schrijven alleen
+  via de functie (service role / Claude Code).
+
 ### Component- en codepatronen
 
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,
