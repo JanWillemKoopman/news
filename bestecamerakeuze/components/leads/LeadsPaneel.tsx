@@ -533,7 +533,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           }
         />
         <Kaart
-          label="Betaald"
+          label="Leads betaald"
           waarde={formatteer(totalen.betaald, "aantal")}
           toelichting={
             pct(totalen.betaald) === null ? "—" : `${formatteer(pct(totalen.betaald), "procent")} van de leads`
@@ -545,7 +545,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           }
         />
         <Kaart
-          label="Onbetaald"
+          label="Leads onbetaald"
           waarde={formatteer(totalen.onbetaald, "aantal")}
           toelichting={
             pct(totalen.onbetaald) === null
