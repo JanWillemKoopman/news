@@ -664,13 +664,18 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   `uitgavenPerPlatform`), niet de toegerekende kosten: een platform dat € 32.827 uitgaf stond
   eerder op € 27.229 omdat campagnes zonder lead buiten beeld vielen, en dat was voor collega's
   onbegrijpelijk. Een platform zonder lead krijgt toch een rij.
-- **Kosten per betaalde lead.** Zonder filters: **alle** uitgaven van Google en Meta gedeeld
-  door **alle** betaalde leads van Google en Meta (`kostenPerLeadTotaal`, inclusief
-  campagnes die niets opleverden en leads zonder herkenbare campagne). Een rij in een
-  tabel deelt de aan haar toegerekende kosten door haar leads met bekende kosten; dat is niet
-  hetzelfde getal als de totaalregel, en dat is bedoeld. Met een filter op de leads bestaat het
-  totaal niet meer (campagnekosten zijn niet op merk of model te filteren): dan zijn het
-  toegerekende kosten van de selectie, en dat staat bij het kerncijfer.
+- **Kosten per lead (kerncijfer en grafiek) = uitgaven ÷ álle leads**, betaald én onbetaald
+  (definitie van de eigenaar, november 2026; `kostenPerLeadAlle`, `uitgavenVoorSelectie` en
+  `echteUitgavenGelden` in `samenvatting.ts`, getest). Zonder filters, en ook met **alleen** het filter
+  Betaald, zijn de uitgaven de echte uitgaven (Google, Meta, LinkedIn en handmatig): onbetaalde leads
+  hebben geen kosten, dus Betaald haalt geen euro weg en het cijfer wordt uitgaven ÷ betaalde leads.
+  Met Onbetaald of een ander filter (soort, kanaal, merk …) zijn het de toegerekende kosten van de
+  selectie ÷ de leads in de selectie; dat geldt dan ook voor het kerncijfer Uitgaven. Eerder was het
+  kerncijfer "kosten per betaalde lead" (uitgaven ÷ betaalde leads van platforms met een kostenbron);
+  dat is op verzoek vervangen. **De tabellen zijn niet meegegaan**: hun kolom per lead en de
+  totaalregel delen nog door de betaalde leads met bekende kosten (`kostenPerLead`,
+  `kostenPerLeadTotaal`), want daar gaat het per kanaal/campagne om wat een betaalde lead kost. Een rij
+  deelt de aan haar toegerekende kosten door haar leads met bekende kosten.
 - **Betaald is niet hetzelfde als "kosten bekend".** Bing is betaald maar heeft hier geen
   kostenbron (`geen-bron`). LinkedIn heeft er wel een (klein: ± € 1.600 per maand, drie
   campagnes), maar de UTM-naam in GA4 is een korte slug ("vriendenprijs") terwijl de campagne
@@ -733,8 +738,8 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   delen Leads en Syntec leads: `components/grafiek/StaafLabels.tsx`). Uitgaven: zonder filters de
   echte uitgaven per dag (`uitgavenPerDag` uit de route: Google, Meta en LinkedIn per dag plus de
   handmatige maandbedragen ÷ dagen in de maand, opgeteld precies het kerncijfer); met een filter de
-  toegerekende kosten van de selectie op de dag van de lead. Kosten per lead: dezelfde som als het
-  kerncijfer, per vak; als **lijn** met het bedrag boven elk punt, want het is een afgeleide. Een
+  toegerekende kosten van de selectie op de dag van de lead (met alleen Betaald: de echte uitgaven).
+  Kosten per lead: dezelfde som als het kerncijfer (uitgaven ÷ alle leads in het vak); als **lijn** met het bedrag boven elk punt, want het is een afgeleide. Een
   getal verschijnt alleen als het past.
 - **Weergave.** Binnen een periode filtert alles in het geheugen (één ophaalactie). Bij merken en modellen staat
   "Onbekend" **vast onderaan** (`vastgezet`) en niet in de uitklapbare lijst: hij is vaak de

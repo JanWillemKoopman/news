@@ -158,6 +158,29 @@ export function kostenPerLeadTotaal(
 }
 
 /**
+ * Gelden voor deze selectie de **echte** uitgaven (zoals Google, Meta, LinkedIn en de
+ * handmatige kosten ze opleveren) in plaats van de toegerekende kosten? Ja zonder filters, en
+ * ook met alleen het filter Betaald: onbetaalde leads hebben geen kosten, dus daar valt geen
+ * euro door weg. Met Onbetaald of een ander filter niet.
+ */
+export function echteUitgavenGelden(f: LeadFilters): boolean {
+  return !heeftFilters({ ...f, betaald: "alle" }) && f.betaald !== "onbetaald";
+}
+
+/** De uitgaven bij de kerncijfers: echt als dat kan, anders toegerekend aan de selectie. */
+export function uitgavenVoorSelectie(t: Totalen, f: LeadFilters, uitgavenTotaal: number): number {
+  return echteUitgavenGelden(f) ? uitgavenTotaal : t.kosten;
+}
+
+/**
+ * Kosten per lead (definitie van de eigenaar, november 2026): de uitgaven ÷ **alle** leads,
+ * betaald en onbetaald. Met het filter Betaald zijn dat dus de uitgaven ÷ de betaalde leads.
+ */
+export function kostenPerLeadAlle(uitgaven: number, leads: number): number | null {
+  return leads > 0 ? uitgaven / leads : null;
+}
+
+/**
  * Zet bij de kanalen Google Ads en Meta Ads de **echte uitgaven van het platform** in
  * plaats van de toegerekende kosten.
  *

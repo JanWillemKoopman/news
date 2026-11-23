@@ -46,21 +46,21 @@ test("per week: alle weken, halve weken onvolledig, leads opgeteld", () => {
   );
 });
 
-test("met filter: toegerekende kosten en alleen leads met bekende kosten in de noemer", () => {
+test("met filter: toegerekende kosten; kosten per lead deelt door alle leads", () => {
   const [, eerste, tweede] = leadsReeks(regels, { van: "2026-11-01", tot: "2026-11-12" }, "week", null);
   assert.equal(eerste.uitgaven, 40);
-  assert.equal(eerste.betaaldMetKosten, 2);
-  assert.equal(kostenPerLeadVan(eerste), 20);
-  // Bing is betaald maar zonder kosten: telt niet in de noemer.
-  assert.equal(tweede.betaaldMetKosten, 2);
+  // 40 ÷ (2 betaald + 5 onbetaald)
+  assert.equal(kostenPerLeadVan(eerste), 40 / 7);
+  // 40 ÷ (2 Google + 3 Bing): ook betaalde leads zonder bekende kosten tellen mee.
   assert.equal(tweede.uitgaven, 40);
+  assert.equal(kostenPerLeadVan(tweede), 8);
 });
 
 test("zonder filter: echte uitgaven per dag, ook op dagen zonder lead", () => {
   const perDag = { "2026-11-02": 30, "2026-11-05": 50, "2026-11-11": 25, "2026-12-01": 999 };
   const punten = leadsReeks(regels, { van: "2026-11-01", tot: "2026-11-12" }, "week", perDag);
   assert.deepEqual(punten.map((p) => p.uitgaven), [0, 80, 25]);
-  assert.equal(punten[2].betaaldMetKosten, 2);
+  assert.equal(kostenPerLeadVan(punten[1]), 80 / 7);
   assert.equal(kostenPerLeadVan(punten[0]), null);
 });
 

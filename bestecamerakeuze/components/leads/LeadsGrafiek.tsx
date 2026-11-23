@@ -35,10 +35,10 @@ import { KORRELS, kostenPerLeadVan, type Korrel, type ReeksPunt } from "@/lib/le
  *   met het aantal midden in elk deel en het totaal boven de staaf.
  * - **Uitgaven**: één staaf per vak met het bedrag erboven. Zonder filters de echte uitgaven
  *   van Google, Meta en LinkedIn plus de handmatige kosten; met een filter de toegerekende
- *   kosten van de selectie (`lib/leads/reeks.ts`).
- * - **Kosten per lead**: kosten per betaalde lead per vak, met het bedrag boven elk punt. Een
+ *   kosten van de selectie; met alleen het filter Betaald gewoon de echte uitgaven (`lib/leads/reeks.ts`).
+ * - **Kosten per lead**: uitgaven ÷ alle leads (betaald en onbetaald) per vak, met het bedrag boven elk punt. Een
  *   lijn en geen staaf: het is een afgeleide (uitgaven ÷ leads), en zo'n cijfer tekent op de
- *   Kanalen-pagina's als lijn. Een vak zonder betaalde lead met kosten heeft geen punt.
+ *   Kanalen-pagina's als lijn. Een vak zonder lead heeft geen punt.
  *
  * Eén cijfer tegelijk — twee assen in één beeld suggereren een verband dat er niet is. Een
  * getal verschijnt alleen als het past (per dag over een lange periode dus alleen in de
@@ -100,9 +100,9 @@ const euro = (v: number) => formatteer(v, "euro-heel");
 const euroKort = (v: number) => formatteer(v, "euro-heel", true);
 const euroLabel = (v: number) => formatteer(v, v < 10 ? "euro-exact" : "euro-heel");
 
-type TooltipProps = { active?: boolean; payload?: { payload: Punt }[]; filtersActief: boolean };
+type TooltipProps = { active?: boolean; payload?: { payload: Punt }[]; echteUitgaven: boolean };
 
-function VakTooltip({ active, payload, filtersActief }: TooltipProps) {
+function VakTooltip({ active, payload, echteUitgaven }: TooltipProps) {
   const p = payload?.[0]?.payload;
   if (!active || !p) return null;
   return (
@@ -114,10 +114,10 @@ function VakTooltip({ active, payload, filtersActief }: TooltipProps) {
       <p className="text-ink-muted">Betaald: {formatteer(p.betaald, "aantal")}</p>
       <p className="text-ink-muted">Onbetaald: {formatteer(p.onbetaald, "aantal")}</p>
       <p className="mt-1 text-ink-muted">
-        {filtersActief ? "Toegerekende kosten" : "Uitgaven"}: {euro(p.uitgaven)}
+        {echteUitgaven ? "Uitgaven" : "Toegerekende kosten"}: {euro(p.uitgaven)}
       </p>
       <p className="text-ink-muted">
-        Kosten per betaalde lead: {p.kpl === null ? "—" : formatteer(p.kpl, "euro-exact")}
+        Kosten per lead: {p.kpl === null ? "—" : formatteer(p.kpl, "euro-exact")}
       </p>
       {!p.volledig && (
         <p className="mt-1 text-meta text-ink-faint">Niet compleet: valt maar voor een deel in de periode.</p>
@@ -162,14 +162,15 @@ export default function LeadsGrafiek({
   onKorrel,
   metriek,
   onMetriek,
-  filtersActief,
+  echteUitgaven,
 }: {
   punten: ReeksPunt[];
   korrel: Korrel;
   onKorrel: (korrel: Korrel) => void;
   metriek: LeadsMetriek;
   onMetriek: (metriek: LeadsMetriek) => void;
-  filtersActief: boolean;
+  /** Echte uitgaven (geen filter, of alleen Betaald) of toegerekende kosten van de selectie. */
+  echteUitgaven: boolean;
 }) {
   const kleuren = useGrafiekKleuren();
   const [breedte, setBreedte] = useState(0);
@@ -202,18 +203,18 @@ export default function LeadsGrafiek({
     metriek === "leads"
       ? `Leads per ${per}`
       : metriek === "uitgaven"
-        ? `${filtersActief ? "Toegerekende kosten" : "Uitgaven"} per ${per}`
-        : `Kosten per betaalde lead per ${per}`;
+        ? `${echteUitgaven ? "Uitgaven" : "Toegerekende kosten"} per ${per}`
+        : `Kosten per lead per ${per}`;
   const toelichting =
     metriek === "leads"
       ? "Betaald is verkeer met medium cpc of paid; alles wat daarbuiten valt (organisch, direct, verwijzingen, e-mail) is onbetaald. In de staaf staat het aantal per deel, erboven het totaal."
       : metriek === "uitgaven"
-        ? filtersActief
+        ? !echteUitgaven
           ? "Met een filter: de kosten die aan de geselecteerde leads zijn toegerekend, op de dag van de lead. Campagnekosten zijn niet op merk of model te filteren."
           : "Wat Google Ads, Meta Ads en LinkedIn Ads op die dagen uitgaven, plus de handmatige kosten (Kostenverdeling) naar rato van de dagen. Opgeteld is dit het kerncijfer Uitgaven."
-        : filtersActief
-          ? "Met een filter: toegerekende kosten ÷ de geselecteerde betaalde leads met bekende kosten, per vak."
-          : "Alle uitgaven in het vak ÷ de betaalde leads van Google, Meta, LinkedIn en de kanalen met handmatige kosten in dat vak — dezelfde som als het kerncijfer. Geen punt: geen betaalde lead in dat vak.";
+        : echteUitgaven
+          ? "Alle uitgaven in het vak ÷ alle leads in het vak (betaald en onbetaald; met het filter Betaald alleen de betaalde) — dezelfde som als het kerncijfer. Geen punt: geen lead in dat vak."
+          : "Met een filter: toegerekende kosten ÷ de geselecteerde leads in het vak. Geen punt: geen lead in dat vak.";
 
   const asOpmaak =
     metriek === "leads" ? (v: number) => formatteer(v, "aantal") : (v: number) => formatteer(v, "euro-heel", true);
@@ -271,7 +272,7 @@ export default function LeadsGrafiek({
               allowDecimals={metriek === "kpl"}
               tickFormatter={asOpmaak}
             />
-            <Tooltip content={<VakTooltip filtersActief={filtersActief} />} cursor={{ fill: kleuren.raster }} />
+            <Tooltip content={<VakTooltip echteUitgaven={echteUitgaven} />} cursor={{ fill: kleuren.raster }} />
 
             {metriek === "leads" && (
               <Bar dataKey="betaald" name="Betaald" stackId="leads" fill={hoofdkleur} isAnimationActive={false}>
@@ -336,7 +337,7 @@ export default function LeadsGrafiek({
             {metriek === "uitgaven" && (
               <Bar
                 dataKey="uitgaven"
-                name={filtersActief ? "Toegerekende kosten" : "Uitgaven"}
+                name={echteUitgaven ? "Uitgaven" : "Toegerekende kosten"}
                 fill={hoofdkleur}
                 radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
                 isAnimationActive={false}
@@ -362,7 +363,7 @@ export default function LeadsGrafiek({
             {metriek === "kpl" && (
               <Line
                 dataKey="kpl"
-                name="Kosten per betaalde lead"
+                name="Kosten per lead"
                 type={kleuren.lijnvorm}
                 stroke={hoofdkleur}
                 strokeWidth={kleuren.lijndikte}

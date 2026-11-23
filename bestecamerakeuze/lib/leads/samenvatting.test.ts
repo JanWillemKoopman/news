@@ -296,3 +296,25 @@ test("metPlatformUitgaven verandert de invoer niet", () => {
   metPlatformUitgaven(groepen, k.uitgavenPerPlatform);
   assert.equal(JSON.stringify(groepen), voor);
 });
+
+test("kosten per lead: alle uitgaven ÷ alle leads, met Betaald alleen de betaalde", async () => {
+  const { echteUitgavenGelden, kostenPerLeadAlle, uitgavenVoorSelectie } = await import("@/lib/leads/samenvatting");
+  const regels = voorbeeld();
+  const alle = telTotalen(regels); // 12 leads, 7 betaald
+  assert.equal(echteUitgavenGelden(GEEN_FILTERS), true);
+  assert.equal(kostenPerLeadAlle(uitgavenVoorSelectie(alle, GEEN_FILTERS, 120), alle.leads), 10);
+
+  const betaaldFilter = { ...GEEN_FILTERS, betaald: "betaald" as const };
+  const betaald = telTotalen(filterRegels(regels, betaaldFilter));
+  assert.equal(echteUitgavenGelden(betaaldFilter), true);
+  assert.equal(uitgavenVoorSelectie(betaald, betaaldFilter, 120), 120);
+  assert.equal(kostenPerLeadAlle(120, betaald.leads), 120 / 7);
+
+  // Een ander filter: dan zijn het de toegerekende kosten van de selectie.
+  const merkFilter = { ...GEEN_FILTERS, merken: ["Audi"] };
+  assert.equal(echteUitgavenGelden(merkFilter), false);
+  assert.equal(echteUitgavenGelden({ ...GEEN_FILTERS, betaald: "onbetaald" }), false);
+  const audi = telTotalen(filterRegels(regels, merkFilter));
+  assert.equal(uitgavenVoorSelectie(audi, merkFilter, 120), audi.kosten);
+  assert.equal(kostenPerLeadAlle(0, 0), null);
+});

@@ -31,7 +31,10 @@ import {
   filterRegels,
   groepeer,
   heeftFilters,
+  echteUitgavenGelden,
+  kostenPerLeadAlle,
   kostenPerLeadTotaal,
+  uitgavenVoorSelectie,
   metPlatformUitgaven,
   leadSoort,
   telTotalen,
@@ -210,6 +213,9 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const totalenAlles = useMemo(() => telTotalen(alleRegels), [alleRegels]);
 
   const filtersActief = heeftFilters(filters);
+  // Zonder filters, of met alleen het filter Betaald, gelden de echte uitgaven: daar valt
+  // geen euro door weg (onbetaalde leads hebben geen kosten).
+  const echteUitgaven = echteUitgavenGelden(filters);
 
   const eventOpties = useMemo(() => opties(alleRegels, (r) => r.event), [alleRegels]);
   const kanaalOpties = useMemo(() => opties(alleRegels, (r) => r.kanaal), [alleRegels]);
@@ -281,9 +287,9 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const punten = useMemo(
     () =>
       data?.van && data.tot
-        ? leadsReeks(regels, { van: data.van, tot: data.tot }, korrel, filtersActief ? null : (data.uitgavenPerDag ?? {}))
+        ? leadsReeks(regels, { van: data.van, tot: data.tot }, korrel, echteUitgaven ? (data.uitgavenPerDag ?? {}) : null)
         : [],
-    [regels, data, korrel, filtersActief],
+    [regels, data, korrel, echteUitgaven],
   );
 
   const metMerk = useMemo(
@@ -407,6 +413,11 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   // totaal niet meer; dan zijn het de toegerekende kosten van de selectie.
   const uitgavenBasis = filtersActief ? totalen.kosten : data.uitgavenTotaal;
   const perBetaaldeLead = kostenPerLeadTotaal(totalen, data.uitgavenTotaal, filtersActief);
+  // De kerncijfers: Uitgaven en Kosten per lead = uitgaven ÷ alle leads in de selectie,
+  // betaald en onbetaald (definitie van de eigenaar, november 2026). Met het filter Betaald
+  // dus de uitgaven ÷ de betaalde leads.
+  const uitgavenKaart = uitgavenVoorSelectie(totalen, filters, data.uitgavenTotaal);
+  const perLead = kostenPerLeadAlle(uitgavenKaart, totalen.leads);
   const zonderLead = filtersActief ? null : data.zonderLead;
   const tabelTotaal = {
     totaal: totalen,
@@ -545,16 +556,16 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         />
         <Kaart
           label="Uitgaven"
-          waarde={formatteer(uitgavenBasis, "euro-heel")}
+          waarde={formatteer(uitgavenKaart, "euro-heel")}
           toelichting={
-            filtersActief
+            !echteUitgaven
               ? `toegerekend aan deze selectie, van ${formatteer(data.uitgavenTotaal, "euro-heel")} in totaal`
               : handmatigTotaal > 0
                 ? "Google Ads, Meta Ads, LinkedIn Ads en handmatige kosten"
                 : "Google Ads, Meta Ads en LinkedIn Ads"
           }
           noot={
-            !filtersActief
+            echteUitgaven
               ? `Google ${formatteer(data.uitgavenPerPlatform.google ?? 0, "euro-heel")} · Meta ${formatteer(
                   data.uitgavenPerPlatform.meta ?? 0,
                   "euro-heel",
@@ -565,15 +576,17 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           }
         />
         <Kaart
-          label="Kosten per betaalde lead"
-          waarde={perBetaaldeLead === null ? "—" : formatteer(perBetaaldeLead, "euro-exact")}
+          label="Kosten per lead"
+          waarde={perLead === null ? "—" : formatteer(perLead, "euro-exact")}
           toelichting={
-            filtersActief
-              ? totalen.metKosten > 0
-                ? `toegerekende kosten ÷ ${formatteer(totalen.metKosten, "aantal")} betaalde leads met bekende kosten`
-                : "geen betaalde leads met bekende kosten"
-              : `alle uitgaven ÷ ${formatteer(totalen.kostenbronLeads, "aantal")} betaalde leads van Google, Meta en LinkedIn${
-                  handmatigTotaal > 0 ? " en de kanalen met handmatige kosten" : ""
+            totalen.leads === 0
+              ? "geen leads in deze selectie"
+              : `${echteUitgaven ? "alle uitgaven" : "toegerekende kosten"} ÷ ${formatteer(totalen.leads, "aantal")} ${
+                  filters.betaald === "betaald"
+                    ? "betaalde leads"
+                    : filters.betaald === "onbetaald"
+                      ? "onbetaalde leads"
+                      : "leads (betaald en onbetaald)"
                 }`
           }
         />
@@ -585,7 +598,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         onKorrel={setKorrel}
         metriek={metriek}
         onMetriek={setMetriek}
-        filtersActief={filtersActief}
+        echteUitgaven={echteUitgaven}
       />
 
       <div className="grid grid-cols-2 items-start gap-6">
@@ -677,6 +690,13 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               de uitgaven van een campagne gaan gelijk over zijn leads (€ 500 en tien leads maakt
               elke lead € 50, ook een vacature- of proefritlead). Google en Meta weten niet welke
               lead welk deel kostte.
+            </li>
+            <li>
+              <strong className="text-ink">Kosten per lead</strong> (kerncijfer en grafiek) is alle
+              uitgaven ÷ alle leads, betaald én onbetaald. Kies je Betaald, dan zijn het de uitgaven
+              ÷ de betaalde leads. Met een ander filter (soort, kanaal, merk …) zijn het de
+              toegerekende kosten van de selectie ÷ de leads in de selectie. De kolom per lead in de
+              tabellen is anders: die deelt door de betaalde leads met bekende kosten.
             </li>
             <li>
               <strong className="text-ink">Handmatige kosten</strong> komen uit de knop

@@ -1,6 +1,5 @@
 import type { HandmatigePost } from "@/lib/leads/kanaalkosten";
 import type { LeadRegel } from "@/lib/leads/koppel";
-import { heeftKostenbron } from "@/lib/leads/kanaal";
 import type { LeadsPeriode } from "@/lib/leads/periode";
 
 /**
@@ -15,13 +14,17 @@ import type { LeadsPeriode } from "@/lib/leads/periode";
  *
  * Zonder filters zijn het de **echte uitgaven** van Google Ads, Meta Ads en LinkedIn Ads op
  * die dagen (`uitgavenPerDag` uit de route), plus de handmatige maandbedragen naar rato van
- * de dagen — opgeteld over de vakken precies het kerncijfer Uitgaven. Kosten per betaalde lead
- * is dan die uitgaven ÷ de betaalde leads van Google, Meta, LinkedIn en de kanalen met
- * handmatige kosten in dat vak, dezelfde som als het kerncijfer.
+ * de dagen — opgeteld over de vakken precies het kerncijfer Uitgaven. Dat geldt ook met alleen
+ * het filter Betaald: daar valt geen uitgave door weg.
  *
- * Met een filter bestaat dat niet meer (campagnekosten zijn niet op merk of model te
- * filteren): dan zijn het de **toegerekende** kosten van de geselecteerde leads in dat vak,
- * gedeeld door de leads daarvan met bekende kosten — net als het kerncijfer met een filter.
+ * Met een ander filter bestaat dat niet meer (campagnekosten zijn niet op merk of model te
+ * filteren): dan zijn het de **toegerekende** kosten van de geselecteerde leads in dat vak.
+ *
+ * ## Kosten per lead
+ *
+ * Uitgaven ÷ **alle** leads in het vak, betaald en onbetaald (definitie van de eigenaar,
+ * november 2026) — dezelfde som als het kerncijfer. Met het filter Betaald zijn dat dus de
+ * uitgaven ÷ de betaalde leads.
  *
  * Pure functies, getest in `reeks.test.ts`.
  */
@@ -103,23 +106,22 @@ export interface ReeksPunt {
   onbetaald: number;
   /** Uitgaven in dit vak: echt (zonder filters) of toegerekend aan de selectie (met filters). */
   uitgaven: number;
-  /** De noemer van de kosten per betaalde lead in dit vak. */
-  betaaldMetKosten: number;
   /** Valt het vak helemaal binnen de periode? */
   volledig: boolean;
 }
 
-/** Kosten per betaalde lead van één vak; `null` als er geen betaalde lead met kosten was. */
-export function kostenPerLeadVan(p: Pick<ReeksPunt, "uitgaven" | "betaaldMetKosten">): number | null {
-  return p.betaaldMetKosten > 0 ? p.uitgaven / p.betaaldMetKosten : null;
+/** Kosten per lead van één vak: uitgaven ÷ alle leads; `null` als er geen lead was. */
+export function kostenPerLeadVan(p: Pick<ReeksPunt, "uitgaven" | "betaald" | "onbetaald">): number | null {
+  const leads = p.betaald + p.onbetaald;
+  return leads > 0 ? p.uitgaven / leads : null;
 }
 
 /**
  * Alle vakken van de periode, ook die zonder lead: een rustige week hoort als dal in de
  * grafiek te staan en niet te verdwijnen.
  *
- * `uitgavenPerDag`: de echte uitgaven per dag (zonder filters). `null` = er staat een filter
- * aan; dan tellen de toegerekende kosten van de regels.
+ * `uitgavenPerDag`: de echte uitgaven per dag (zonder filters, of alleen Betaald). `null` = er
+ * staat een ander filter aan; dan tellen de toegerekende kosten van de regels.
  */
 export function leadsReeks(
   regels: LeadRegel[],
@@ -137,7 +139,6 @@ export function leadsReeks(
       betaald: 0,
       onbetaald: 0,
       uitgaven: 0,
-      betaaldMetKosten: 0,
       volledig: begin >= periode.van && laatste <= periode.tot,
     };
     punten.push(punt);
@@ -153,13 +154,7 @@ export function leadsReeks(
       continue;
     }
     punt.betaald += r.aantal;
-    if (echt) {
-      // Dezelfde noemer als `kostenbronLeads` in telTotalen.
-      if (heeftKostenbron(r.platform) || (r.handmatigeKosten ?? 0) > 0) punt.betaaldMetKosten += r.aantal;
-    } else if (r.status === "toegerekend") {
-      punt.betaaldMetKosten += r.aantal;
-      punt.uitgaven += r.kosten ?? 0;
-    }
+    if (!echt && r.status === "toegerekend") punt.uitgaven += r.kosten ?? 0;
   }
   if (echt) {
     for (const [dag, bedrag] of Object.entries(uitgavenPerDag)) {
