@@ -14,6 +14,14 @@ import {
 } from "recharts";
 import { AS_GROOTTE, formatteer } from "@/components/chat/chartTheme";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
+import {
+  MiddenLabel,
+  TotaalLabel,
+  gemengd,
+  tekstOp,
+  type LabelProps,
+  type LabelStijl,
+} from "@/components/grafiek/StaafLabels";
 import { KORRELS, type Korrel, type ReeksPunt } from "@/lib/leadsSyntec/samenvatting";
 
 /**
@@ -72,116 +80,6 @@ interface Punt {
   offline: number;
   totaal: number;
   volledig: boolean;
-}
-
-/** Relatieve luminantie van een #rrggbb-kleur (WCAG). */
-function luminantie(hex: string): number {
-  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
-  if (!m) return 0;
-  const [r, g, b] = [m[1], m[2], m[3]].map((h) => {
-    const c = parseInt(h, 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function contrast(a: string, b: string): number {
-  const [l1, l2] = [luminantie(a), luminantie(b)].sort((x, y) => y - x);
-  return (l1 + 0.05) / (l2 + 0.05);
-}
-
-/** De tekstkleur uit het theme (label of vlak) die het best leesbaar is op deze vulkleur. */
-function tekstOp(vul: string, opties: string[]): string {
-  return opties.reduce((best, k) => (contrast(vul, k) > contrast(vul, best) ? k : best), opties[0]);
-}
-
-/** Een kleur met dekking `dekking` over de ondergrond: wat je ziet bij een lichtere staaf. */
-function gemengd(kleur: string, ondergrond: string, dekking: number): string {
-  const rgb = (hex: string) => {
-    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
-    return m ? [m[1], m[2], m[3]].map((h) => parseInt(h, 16)) : [0, 0, 0];
-  };
-  const [a, b] = [rgb(kleur), rgb(ondergrond)];
-  return `#${a
-    .map((c, i) => Math.round(c * dekking + b[i] * (1 - dekking)).toString(16).padStart(2, "0"))
-    .join("")}`;
-}
-
-/** Hoe een getal in een deel van de staaf eruitziet: tekstkleur en een rand in de vulkleur. */
-interface LabelStijl {
-  tekst: string;
-  /** Zelfde kleur als het deel: een smalle rand om de cijfers, zodat ze ook op de rand van
-   *  een deel of een rasterlijn leesbaar blijven. */
-  halo: string;
-}
-
-/** Minimale ruimte voor een getal: breedte van de staaf en hoogte van het deel, in pixels. */
-const MIN_BREEDTE = 24;
-const MIN_HOOGTE = 15;
-
-interface LabelProps {
-  x?: number | string;
-  y?: number | string;
-  width?: number | string;
-  height?: number | string;
-  value?: number | string | null;
-  index?: number;
-}
-
-function getal(v: LabelProps["value"]): number {
-  return typeof v === "number" ? v : Number(v ?? 0);
-}
-
-/** Het getal midden in een deel van de staaf, alleen als het er ruim in past. */
-function MiddenLabel({ stijl, ...p }: LabelProps & { stijl: LabelStijl }) {
-  const [x, y, w, h, v] = [Number(p.x), Number(p.y), Number(p.width), Number(p.height), getal(p.value)];
-  if (!v || w < MIN_BREEDTE || h < MIN_HOOGTE) return null;
-  const tekst = formatteer(v, "aantal");
-  if (tekst.length * 7 > w - 2) return null;
-  return (
-    <text
-      x={x + w / 2}
-      y={y + h / 2}
-      fill={stijl.tekst}
-      stroke={stijl.halo}
-      strokeWidth={3}
-      paintOrder="stroke"
-      fontSize={AS_GROOTTE}
-      fontWeight={600}
-      textAnchor="middle"
-      dominantBaseline="central"
-      pointerEvents="none"
-    >
-      {tekst}
-    </text>
-  );
-}
-
-/**
- * Het totaal boven de staaf. Staat op het bovenste deel dat er is: offline, of online als
- * er in dat vak geen offline lead was (een deel van nul hoogte krijgt van Recharts geen label).
- */
-function TotaalLabel({ kleur, halo, ...p }: LabelProps & { kleur: string; halo: string }) {
-  const [x, y, w, v] = [Number(p.x), Number(p.y), Number(p.width), getal(p.value)];
-  if (!v || w < MIN_BREEDTE - 6) return null;
-  const tekst = formatteer(v, "aantal");
-  if (tekst.length * 7 > w + 10) return null;
-  return (
-    <text
-      x={x + w / 2}
-      y={y - 6}
-      fill={kleur}
-      stroke={halo}
-      strokeWidth={3}
-      paintOrder="stroke"
-      fontSize={AS_GROOTTE}
-      fontWeight={700}
-      textAnchor="middle"
-      pointerEvents="none"
-    >
-      {tekst}
-    </text>
-  );
 }
 
 type TooltipProps = { active?: boolean; payload?: { payload: Punt }[] };

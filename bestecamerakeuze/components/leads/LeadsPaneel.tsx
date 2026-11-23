@@ -1,24 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import FilterSelect from "@/components/FilterSelect";
 import Inlogprompt from "@/components/Inlogprompt";
-import { IconCoin, IconInfo, IconTarget } from "@/components/icons";
+import { IconCoin, IconInfo } from "@/components/icons";
 import { formatteer } from "@/components/chat/chartTheme";
 import Kostenverdeling from "@/components/leads/Kostenverdeling";
 import LeadsCampagnes from "@/components/leads/LeadsCampagnes";
-import LeadsGrafiek from "@/components/leads/LeadsGrafiek";
+import LeadsGrafiek, { type LeadsMetriek } from "@/components/leads/LeadsGrafiek";
+import { EigenPeriode } from "@/components/kanalen/KanalenFilterBalk";
 import LeadsTabel from "@/components/leads/LeadsTabel";
 import { bouwCampagneRijen } from "@/lib/leads/campagnes";
 import { useIsActief } from "@/lib/kanalen/actieveWeergave";
 import type { HandmatigePost } from "@/lib/leads/kanaalkosten";
+import { eigenPeriode as maakEigenPeriode, type PeriodeKeuze as KanaalPeriodeKeuze } from "@/lib/kanalen/gebruik";
 import {
   PERIODE_KEUZES,
+  STANDAARD_PERIODE,
   aantalDagen,
-  herkenKeuze,
   periodeVoor,
   type LeadsPeriode,
+  type PeriodeKeuze,
 } from "@/lib/leads/periode";
+import { STANDAARD_KORREL, leadsReeks, type Korrel } from "@/lib/leads/reeks";
 import type { BetaaldPlatform } from "@/lib/leads/kanaal";
 import type { CampagneRegel, LeadRegel } from "@/lib/leads/koppel";
 import {
@@ -30,7 +34,6 @@ import {
   kostenPerLeadTotaal,
   metPlatformUitgaven,
   leadSoort,
-  perDag,
   telTotalen,
   waardeOfOnbekend,
   type BetaaldFilter,
@@ -62,6 +65,7 @@ interface Antwoord {
   uitgavenTotaal: number;
   uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
   handmatig: HandmatigePost[];
+  uitgavenPerDag?: Record<string, number>;
   kanaalkostenFout: string | null;
   laatsteSync: string | null;
   syncLoopt: boolean;
@@ -74,12 +78,15 @@ const BETAALD_KEUZES: { id: BetaaldFilter; label: string }[] = [
   { id: "onbetaald", label: "Onbetaald" },
 ];
 
-function datumKort(datum: string): string {
-  return new Date(`${datum}T00:00:00Z`).toLocaleDateString("nl-NL", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  });
+function periodeTekst(p: LeadsPeriode): string {
+  const f = (d: string) =>
+    new Date(`${d}T00:00:00Z`).toLocaleDateString("nl-NL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  return `${f(p.van)} t/m ${f(p.tot)}`;
 }
 
 function syncTekst(iso: string | null): string {
@@ -128,10 +135,23 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   const [fout, setFout] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(GEEN_FILTERS);
   const actief = useIsActief("leads");
-  // `null` = de standaard: alles vanaf 1 juni t/m de laatste dag met data. Een andere
-  // periode is een nieuwe ophaalactie (de kosten van een campagne gaan over de leads van
-  // dezelfde dagen); de andere filters blijven in het geheugen.
-  const [periode, setPeriode] = useState<LeadsPeriode | null>(null);
+  // De periode kies je net als op Syntec leads: vaste knoppen (standaard 12 maanden) of een
+  // eigen periode. Een andere periode is een nieuwe ophaalactie (de kosten van een campagne
+  // gaan over de leads van dezelfde dagen); de andere filters blijven in het geheugen. De vaste
+  // periodes rekenen vanaf de laatste dag in de leadtabel, en die kennen we pas na de eerste
+  // ophaalactie (zonder periode: alles wat de tabel beslaat).
+  const [periodeId, setPeriodeId] = useState<PeriodeKeuze>(STANDAARD_PERIODE);
+  const [eigen, setEigen] = useState<LeadsPeriode | null>(null);
+  const [bereik, setBereik] = useState<LeadsPeriode | null>(null);
+  const [korrel, setKorrel] = useState<Korrel>(STANDAARD_KORREL);
+  const [metriek, setMetriek] = useState<LeadsMetriek>("leads");
+  const gevraagd = useMemo<LeadsPeriode | null>(() => {
+    if (periodeId === "eigen") return eigen;
+    return bereik ? periodeVoor(periodeId, bereik.tot, bereik.van) : null;
+  }, [periodeId, eigen, bereik]);
+  // Welke periode (en welke verversing) er nu in `data` staat, zodat de eerste ophaalactie
+  // niet nog eens over dezelfde dagen gaat als de standaardperiode daar al mee samenvalt.
+  const geladen = useRef<string | null>(null);
   const [verdelingOpen, setVerdelingOpen] = useState(false);
   // Na opslaan in Kostenverdeling halen we de leads opnieuw op (zonder de browsercache van
   // vijf minuten), zodat de nieuwe kosten meteen meetellen.
@@ -148,10 +168,13 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     }
   }, []);
 
+  const gevraagdVan = gevraagd?.van ?? null;
+  const gevraagdTot = gevraagd?.tot ?? null;
   useEffect(() => {
     if (!ingelogd) return;
+    if (gevraagdVan && gevraagdTot && geladen.current === `${gevraagdVan}|${gevraagdTot}#${ververs}`) return;
     let afgebroken = false;
-    const zoek = periode ? `?van=${periode.van}&tot=${periode.tot}` : "";
+    const zoek = gevraagdVan && gevraagdTot ? `?van=${gevraagdVan}&tot=${gevraagdTot}` : "";
     setBezig(true);
     fetch(`/api/leads${zoek}`, ververs > 0 ? { cache: "reload" } : undefined)
       .then(async (res) => {
@@ -163,6 +186,12 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         }
         setData(antwoord);
         setFout(null);
+        geladen.current = `${antwoord.van ?? gevraagdVan}|${antwoord.tot ?? gevraagdTot}#${ververs}`;
+        if (antwoord.beschikbaarVan && antwoord.beschikbaarTot) {
+          const van = antwoord.beschikbaarVan;
+          const tot = antwoord.beschikbaarTot;
+          setBereik((b) => (b && b.van === van && b.tot === tot ? b : { van, tot }));
+        }
       })
       .catch((err: unknown) => {
         if (!afgebroken) setFout(err instanceof Error ? err.message : String(err));
@@ -173,7 +202,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     return () => {
       afgebroken = true;
     };
-  }, [ingelogd, ververs, periode]);
+  }, [ingelogd, ververs, gevraagdVan, gevraagdTot]);
 
   const alleRegels = useMemo(() => data?.regels ?? [], [data]);
   const regels = useMemo(() => filterRegels(alleRegels, filters), [alleRegels, filters]);
@@ -247,9 +276,14 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     return bouwCampagneRijen(betaald, zonderLead);
   }, [regels, data, filtersActief]);
 
-  const dagen = useMemo(
-    () => (data?.van && data.tot ? perDag(regels, data.van, data.tot) : []),
-    [regels, data],
+  // De reeks voor de grafiek. Zonder filters tellen de echte uitgaven per dag; met een filter
+  // de toegerekende kosten van de selectie (zie lib/leads/reeks.ts).
+  const punten = useMemo(
+    () =>
+      data?.van && data.tot
+        ? leadsReeks(regels, { van: data.van, tot: data.tot }, korrel, filtersActief ? null : (data.uitgavenPerDag ?? {}))
+        : [],
+    [regels, data, korrel, filtersActief],
   );
 
   const metMerk = useMemo(
@@ -276,67 +310,86 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
   }
 
   const laatsteDag = data?.beschikbaarTot ?? null;
+  // De periode die in beeld staat: wat de server teruggaf, anders wat er gevraagd is.
   const huidigePeriode: LeadsPeriode | null =
-    data?.van && data.tot ? { van: data.van, tot: data.tot } : periode;
-  const gekozen = huidigePeriode && laatsteDag ? herkenKeuze(huidigePeriode, laatsteDag) : "alles";
-  const periodeBalk = laatsteDag && (
-    <div
-      className={`kaart-omlijst flex flex-wrap items-center gap-3 rounded-panel border border-line bg-card px-4 py-2.5 shadow-subtle ${
-        bezig ? "opacity-70" : ""
-      }`}
-    >
-      <span className="label-theme text-label text-ink-faint">Periode</span>
-      <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Periode">
-        {PERIODE_KEUZES.map((k) => (
-          <button
-            key={k.id}
-            type="button"
-            onClick={() => setPeriode(k.id === "alles" ? null : periodeVoor(k.id, laatsteDag))}
-            aria-pressed={gekozen === k.id}
-            className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
-              gekozen === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
-            }`}
-          >
-            {k.label}
-          </button>
-        ))}
+    data?.van && data.tot ? { van: data.van, tot: data.tot } : gevraagd;
+  const eigenKeuze: KanaalPeriodeKeuze | null = huidigePeriode
+    ? maakEigenPeriode(huidigePeriode.van, huidigePeriode.tot)
+    : null;
+  const periodeKeuze: KanaalPeriodeKeuze | null =
+    eigenKeuze && (periodeId === "eigen" ? eigenKeuze : { ...eigenKeuze, id: periodeId });
+  const metData = Boolean(data?.van && data.tot && alleRegels.length > 0);
+
+  /** Eén filterbalk, net als op Syntec leads: boven de periode en de versheid, onder de filters. */
+  const filterBalk = (filterRij: ReactNode) =>
+    laatsteDag && (
+      <div className="sticky top-0 z-30 -mx-1 px-1 pt-1">
+        <div className={`kaart-omlijst rounded-panel border border-line bg-card px-4 py-3 shadow-card ${bezig ? "opacity-90" : ""}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <div>
+                <p className="font-sans-w7 text-sm font-semibold text-ink">
+                  {metData ? `${formatteer(totalen.leads, "aantal")} leads` : "Geen leads"}
+                </p>
+                <p className="text-meta text-ink-faint">{huidigePeriode ? periodeTekst(huidigePeriode) : "—"}</p>
+              </div>
+              <span aria-hidden="true" className="h-8 w-px bg-line" />
+              <div className="flex items-center gap-1">
+                <div className="flex rounded-control border border-line p-0.5" role="group" aria-label="Periode">
+                  {PERIODE_KEUZES.map((k) => {
+                    const p = periodeVoor(k.id, laatsteDag, data?.beschikbaarVan ?? undefined);
+                    return (
+                      <button
+                        key={k.id}
+                        type="button"
+                        onClick={() => {
+                          setPeriodeId(k.id);
+                          setEigen(null);
+                        }}
+                        aria-pressed={periodeId === k.id}
+                        title={p.van <= p.tot ? periodeTekst(p) : "Geen dagen met data"}
+                        className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                          periodeId === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                        }`}
+                      >
+                        {k.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {periodeKeuze && (
+                  <EigenPeriode
+                    periode={periodeKeuze}
+                    onKies={(p) => {
+                      setPeriodeId("eigen");
+                      setEigen({ van: p.van, tot: p.tot });
+                    }}
+                  />
+                )}
+              </div>
+              {bezig && <span className="text-meta text-ink-faint">laden…</span>}
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-ink-muted">
+                {huidigePeriode ? `${aantalDagen(huidigePeriode)} dagen` : ""} · udenhout.nl
+              </p>
+              <p className="text-meta text-ink-faint">
+                Bijgewerkt {syncTekst(data?.laatsteSync ?? null)}
+                {data?.syncLoopt ? " · sync loopt" : ""}
+              </p>
+            </div>
+          </div>
+          {filterRij && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line-soft pt-3">{filterRij}</div>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-2 border-l border-line pl-3 text-sm text-ink-muted">
-        <span className={gekozen === "eigen" ? "font-medium text-ink" : ""}>Eigen periode</span>
-        <input
-          type="date"
-          aria-label="Van"
-          min={data?.beschikbaarVan ?? undefined}
-          max={laatsteDag}
-          value={huidigePeriode?.van ?? ""}
-          onChange={(e) =>
-            e.target.value &&
-            setPeriode({ van: e.target.value, tot: huidigePeriode?.tot ?? laatsteDag })
-          }
-          className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
-        />
-        <span>t/m</span>
-        <input
-          type="date"
-          aria-label="Tot en met"
-          min={data?.beschikbaarVan ?? undefined}
-          max={laatsteDag}
-          value={huidigePeriode?.tot ?? ""}
-          onChange={(e) =>
-            e.target.value &&
-            setPeriode({ van: huidigePeriode?.van ?? (data?.beschikbaarVan ?? laatsteDag), tot: e.target.value })
-          }
-          className="rounded-control border border-line bg-card px-2 py-1 text-sm text-ink"
-        />
-      </div>
-      {bezig && <span className="text-meta text-ink-faint">laden…</span>}
-    </div>
-  );
+    );
 
   if (!data || !data.van || !data.tot || alleRegels.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        {periodeBalk}
+        {filterBalk(null)}
         <section className="rounded-panel border border-line bg-card px-5 py-6 shadow-subtle">
           <p className="text-sm text-ink-muted">
             {data?.beschikbaarTot
@@ -392,24 +445,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
           {data.kanaalkostenFout}
         </p>
       )}
-      {periodeBalk}
-      {/* Filterbalk: één samenhangend blok, net als op de andere pagina's. */}
-      <div className="kaart-omlijst flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-card px-4 py-3 shadow-subtle">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface text-ink-muted">
-            <IconTarget className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-ink">
-              {datumKort(data.van)} t/m {datumKort(data.tot)}
-            </p>
-            <p className="text-xs text-ink-faint">
-              {dagenInPeriode} dagen · udenhout.nl · bijgewerkt {syncTekst(data.laatsteSync)}
-              {data.syncLoopt ? " · sync loopt" : ""}
-            </p>
-          </div>
-        </div>
-
+      {filterBalk(
         <div className="flex flex-wrap items-center divide-x divide-line">
           <FilterSelect
             label="Soort lead"
@@ -473,8 +509,8 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
               </button>
             </div>
           )}
-        </div>
-      </div>
+        </div>,
+      )}
 
       <div className="grid grid-cols-5 gap-3">
         <Kaart
@@ -543,7 +579,14 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
         />
       </div>
 
-      <LeadsGrafiek dagen={dagen} />
+      <LeadsGrafiek
+        punten={punten}
+        korrel={korrel}
+        onKorrel={setKorrel}
+        metriek={metriek}
+        onMetriek={setMetriek}
+        filtersActief={filtersActief}
+      />
 
       <div className="grid grid-cols-2 items-start gap-6">
         <LeadsTabel

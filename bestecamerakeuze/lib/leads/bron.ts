@@ -13,6 +13,7 @@ import {
   type Kanaalkost,
 } from "@/lib/leads/kanaalkosten";
 import type { BetaaldPlatform } from "@/lib/leads/kanaal";
+import { metHandmatigPerDag } from "@/lib/leads/reeks";
 import {
   koppelLeads,
   type CampagneRegel,
@@ -60,6 +61,12 @@ export interface LeadsData {
   uitgavenPerPlatform: Partial<Record<BetaaldPlatform, number>>;
   /** Wat er van de handmatige maandbedragen (Kostenverdeling) in dit venster telt. */
   handmatig: HandmatigePost[];
+  /**
+   * De uitgaven per dag (datum → bedrag) voor de grafiek: Google Ads, Meta Ads en LinkedIn Ads
+   * zoals op die dag uitgegeven, plus de handmatige maandbedragen naar rato van de dagen.
+   * Opgeteld is dit `uitgavenTotaal`.
+   */
+  uitgavenPerDag: Record<string, number>;
   /** Gezet als de handmatige kosten niet te lezen waren (bv. migratie 0041 nog niet gedraaid). */
   kanaalkostenFout: string | null;
 }
@@ -115,6 +122,7 @@ export async function haalLeads(periode: Periode = {}): Promise<LeadsData> {
       uitgavenTotaal: 0,
       uitgavenPerPlatform: {},
       handmatig: [],
+      uitgavenPerDag: {},
       kanaalkostenFout: null,
     };
     if (!beschikbaarVan || !beschikbaarTot) return leeg;
@@ -166,6 +174,20 @@ export async function haalLeads(periode: Periode = {}): Promise<LeadsData> {
       vertoningen: Number(r.vertoningen),
     }));
 
+    // Dezelfde uitgaven, per dag, voor de grafiek (Uitgaven en Kosten per lead per dag, week
+    // of maand). Een aparte kleine query: de koppeling hierboven gaat over de hele periode.
+    const perDagRes = await client.query(
+      `select datum::text as datum, coalesce(sum(uitgaven), 0) as uitgaven
+         from dataloket.v_leads_uitgaven
+        where datum between $1 and $2
+          and ((bron = 'google' and account_id = $3) or (bron = 'meta' and account_id = $4)
+               or (bron = 'linkedin' and account_id = $5))
+        group by datum`,
+      [van, tot, LEADS_GOOGLE_ACCOUNT, LEADS_META_ACCOUNT, LEADS_LINKEDIN_ACCOUNT],
+    );
+    const platformPerDag: Record<string, number> = {};
+    for (const r of perDagRes.rows) platformPerDag[String(r.datum)] = Number(r.uitgaven);
+
     const maanden = maandenInVenster(van, tot);
     const kanaalkosten = await leesKanaalkosten(client, maanden[0], maanden[maanden.length - 1]);
     const koppeling = pasKanaalkostenToe(koppelLeads(leads, uitgaven), kanaalkosten.kosten, van, tot);
@@ -175,6 +197,7 @@ export async function haalLeads(periode: Periode = {}): Promise<LeadsData> {
       beschikbaarVan,
       beschikbaarTot,
       ...koppeling,
+      uitgavenPerDag: metHandmatigPerDag(platformPerDag, koppeling.handmatig, { van, tot }),
       kanaalkostenFout: kanaalkosten.fout,
     };
   });

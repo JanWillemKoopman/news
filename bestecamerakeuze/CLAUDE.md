@@ -715,11 +715,27 @@ kanaal en — bij betaalde campagnes — wat daarvoor is uitgegeven.
   precies de lead bracht. Een lege waarde heet "Onbekend". Ze staan bewust naast elkaar en
   niet in plaats van elkaar: het kanaal is te kiezen zonder de schrijfwijzen van GA4 te kennen.
 - **Het telt events, geen personen**: iemand die twee formulieren invult is twee leads.
-- **Periodekeuze** boven de filterbalk (`lib/leads/periode.ts`, getest): Sinds 1 juni (standaard),
-  Deze maand, Vorige maand, Laatste 30 dagen en een eigen periode, allemaal gerekend vanaf de
-  laatste dag in de tabel (niet vandaag). Een andere periode is een **nieuwe ophaalactie**
-  (`/api/leads?van=&tot=`), geen filter in de browser: de uitgaven van een campagne en de
-  handmatige maandbedragen moeten over dezelfde dagen verdeeld worden als de leads.
+- **Periodekeuze net als op Syntec leads** (`lib/leads/periode.ts`, getest; verzoek november 2026):
+  één filterbalk met bovenaan het aantal leads, de periode en de knoppen Deze maand, Vorige maand,
+  30 dagen, 90 dagen, 12 maanden (standaard), Dit jaar, Alles en Eigen periode (`EigenPeriode` uit
+  `KanalenFilterBalk`), daaronder de filters. Alles gerekend vanaf de laatste dag in de tabel (niet
+  vandaag) en nooit vóór de eerste dag in de tabel; zolang die korter dan een jaar beslaat zijn
+  12 maanden, Dit jaar en Alles dus dezelfde dagen. De gekozen knop staat in de state, niet
+  afgeleid uit de datums (anders licht bij gelijke periodes de verkeerde knop op). Een andere
+  periode is een **nieuwe ophaalactie** (`/api/leads?van=&tot=`), geen filter in de browser: de
+  uitgaven van een campagne en de handmatige maandbedragen moeten over dezelfde dagen verdeeld
+  worden als de leads. De eerste ophaalactie gaat zonder periode (de laatste dag is dan nog niet
+  bekend); valt de standaardperiode daarmee samen, dan volgt er geen tweede.
+- **De grafiek** (`LeadsGrafiek.tsx`, reeks in `lib/leads/reeks.ts`, getest; verzoek november
+  2026): knopjes rechtsboven voor **Leads / Uitgaven / Kosten per lead** en voor **dag / week /
+  maand** (standaard week, maandag t/m zondag; een half vak tekent lichter). Leads: gestapeld
+  betaald/onbetaald met het aantal in elk deel en het totaal boven de staaf (de labelhulpjes
+  delen Leads en Syntec leads: `components/grafiek/StaafLabels.tsx`). Uitgaven: zonder filters de
+  echte uitgaven per dag (`uitgavenPerDag` uit de route: Google, Meta en LinkedIn per dag plus de
+  handmatige maandbedragen ÷ dagen in de maand, opgeteld precies het kerncijfer); met een filter de
+  toegerekende kosten van de selectie op de dag van de lead. Kosten per lead: dezelfde som als het
+  kerncijfer, per vak; als **lijn** met het bedrag boven elk punt, want het is een afgeleide. Een
+  getal verschijnt alleen als het past.
 - **Weergave.** Binnen een periode filtert alles in het geheugen (één ophaalactie). Bij merken en modellen staat
   "Onbekend" **vast onderaan** (`vastgezet`) en niet in de uitklapbare lijst: hij is vaak de
   grootste groep en zou de echte merken wegduwen, maar hij moet zichtbaar blijven omdat de
