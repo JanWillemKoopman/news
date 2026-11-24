@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 6 · 24 november 2026 · status: fase 1 gebouwd (zie §10a); fase 2 (analyse opzetten) gebouwd (zie §13)*
+*Versie 7 · 24 november 2026 · status: fase 1 gebouwd (zie §10a); fase 2 (analyse opzetten) gebouwd (zie §13); analysepagina in tabbladen gebouwd (zie §14)*
 
 ## 1. Waar het om gaat
 
@@ -240,17 +240,12 @@ Lopende campagnes staan bovenaan op startdatum; afgelopen campagnes staan eronde
 - data correctie.
 
 
-**Analysepagina**, van boven naar beneden:
+**Analysepagina** (sinds 24 november 2026 in tabbladen, zie §14):
 
 1. Kop met versiekeuze en label
-2. Samenvatting van vijf regels (ook voor het management) en het oordeel over het doel
-3. Briefing van die versie
-4. Funnelrij
-5. Een blok per funnelstap
-6. Inzichten en aanbevelingen. Bij een tussentijdse evaluatie: wat nu bijsturen; bij een eindevaluatie: lessen.
-7. Verantwoording (wat is toegerekend en welke bronnen zijn gebruikt)
-8. Het veld **Data correctie**
-9. Eventuele **voorstellen voor de semantic layer**: correcties die voor alle campagnes lijken te gelden. Jij beslist of je ze overneemt.
+2. Samenvatting in drie kolommen: links de samenvatting en het doeloordeel, in het midden de aanbevolen acties op prioriteit, rechts de briefing van die versie (ingeklapt)
+3. Tabbladen in funnelvolgorde, elk met links (3/4) de cijfers en rechts (1/4) de bevindingen en acties
+4. Tabblad Verantwoording: wat is toegerekend, welke bronnen, wat er met de Data correctie is gedaan, het veld **Data correctie** en de **voorstellen voor de semantic layer**
 
 Alleen de eigenaar ziet bij een versie de knop **Versie verwijderen**.
 
@@ -360,3 +355,42 @@ dus de indeling Lopend/Afgelopen (§8) werkt alleen voor campagnes.
   leest. Daar ook "Nieuwe opzet" (alleen de eigenaar).
 - Skill: stap 1 haalt de prompt van de opzet op en stopt bij een lege prompt; rapportages
   slaan het label over.
+
+## 14. Analysepagina in tabbladen (gebouwd 24 november 2026, formaat 2)
+
+Op verzoek van de eigenaar is de analysepagina van één lange kolom omgebouwd tot een
+samenvatting met daaronder tabbladen. Besluiten:
+
+- **Samenvatting bovenaan, altijd zichtbaar**, in drie kolommen. Links de kop, de vijf regels,
+  het doeloordeel en de toelichting (ingeklapt). In het midden de aanbevolen acties in twee
+  lagen: eerst **de campagne als geheel** (drie tot zes acties die de LLM schrijft door over de
+  hele funnel te kijken, met de tabbladen waar de onderbouwing staat), daaronder **uit de
+  tabbladen** (alle acties per tabblad op prioriteit, standaard alleen hoog). Rechts de
+  **briefing** van die versie als smalle verticale strook; een klik klapt hem uit (per browser
+  onthouden). De oude balk "Briefing bij vN" is weg.
+- **Tien tabbladen in funnelvolgorde**, in groepen: Media (Bereik, Investering, Advertenties),
+  Content (Organische posts, E-mail), Website (Verkeer, Gedrag op de pagina), Resultaat
+  (Lead-events, Leads in Syntec), en los achteraan Verantwoording. Bereik staat vóór
+  Investering (keuze van de eigenaar). Google Ads, Meta Ads en LinkedIn Ads delen één tabblad
+  Advertenties.
+- **Onder elke tabnaam het hoofdgetal** (het eerste kerncijfer van de sectie) en naast de naam
+  een stipje met het oordeel (goed, aandacht, probleem, geen data). De losse funnelstrip is
+  daarmee weg.
+- **Elk tabblad: links 3/4 cijfers, rechts 1/4 oordeel.** Links kerncijfers, grafieken, tabellen
+  en hoogstens drie zinnen over hoe je de cijfers leest. Rechts een kop van één zin, twee tot
+  vijf bevindingen met cijfer en nul tot drie acties met prioriteit. De rechterkolom blijft
+  staan bij scrollen. Een conclusie staat op één plek.
+- **Een tabblad zonder data staat grijs met de reden** in plaats van te verdwijnen, zodat de
+  plekken vast blijven. Leads in Syntec is grijs met "niet van toepassing" als de analyse niet
+  uitsluitend over Van den Udenhout gaat.
+- **Investering** heeft altijd de tabel Per platform en campagne met CTR, conversies (Google),
+  leads (Meta, LinkedIn) en kosten per conversie of lead; wat een platform niet levert staat
+  als "n.v.t.". Geen extra kanaalkosten (besluit van dezelfde dag, §3).
+- **Formaat 2** (`types.ts`): `tab`, `kop`, `oordeel`, `bevindingen` en `acties` per sectie;
+  `aanbevelingen` zijn de acties voor de campagne als geheel met `tabs`; `inzichten` vervallen.
+  Versies in formaat 1 openen met een tabblad per sectie, en hun inzichten en aanbevelingen
+  staan in de samenvatting. Een rapportage krijgt ook een tabblad per sectie.
+- Het open tabblad staat in de URL (`&mtab=investering`).
+- Dit is op verzoek een derde uitzondering op "geen dubbele navigatie" in het dashboard (naast
+  Campagnebeheer en KPI's 2027).
+

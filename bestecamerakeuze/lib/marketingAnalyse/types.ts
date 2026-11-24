@@ -173,14 +173,57 @@ export interface Grafiek {
   voetnoot?: string;
 }
 
+/**
+ * De vaste tabbladen van een campagne-analyse (formaat 2), in funnelvolgorde en in groepen. Een
+ * sectie hoort bij een tabblad via `tab`. De volgorde en de groepen zijn een besluit van de
+ * eigenaar (november 2026); verander ze samen met de prompt en de skill.
+ */
+export const TAB_GROEPEN = ["Media", "Content", "Website", "Resultaat"] as const;
+export type TabGroep = (typeof TAB_GROEPEN)[number];
+
+export const ANALYSE_TABBLADEN = [
+  { sleutel: "bereik", naam: "Bereik", groep: "Media" },
+  { sleutel: "investering", naam: "Investering", groep: "Media" },
+  { sleutel: "advertenties", naam: "Advertenties", groep: "Media" },
+  { sleutel: "organisch", naam: "Organische posts", groep: "Content" },
+  { sleutel: "email", naam: "E-mail", groep: "Content" },
+  { sleutel: "verkeer", naam: "Verkeer", groep: "Website" },
+  { sleutel: "gedrag", naam: "Gedrag op de pagina", groep: "Website" },
+  { sleutel: "lead-events", naam: "Lead-events", groep: "Resultaat" },
+  { sleutel: "syntec", naam: "Leads in Syntec", groep: "Resultaat" },
+] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
+
+export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"];
+
+/** Het oordeel over één tabblad: het stipje in de tabbalk. */
+export type TabOordeel = "goed" | "aandacht" | "probleem" | "geen-data";
+
+export const TAB_OORDEEL_NAAM: Record<TabOordeel, string> = {
+  goed: "Goed",
+  aandacht: "Aandacht",
+  probleem: "Probleem",
+  "geen-data": "Geen data",
+};
+
 export interface Sectie {
   stap: number;
   titel: string;
   ondertitel?: string;
+  /** Formaat 2: bij welk tabblad de sectie hoort. Ontbreekt hij, dan wordt de sectie een eigen tabblad. */
+  tab?: TabSleutel | string;
+  /** Het eerste kerncijfer is het hoofdgetal dat in de tabbalk staat. */
   kerncijfers?: Kerncijfer[];
+  /** Links: alleen hoe je de cijfers leest (twee of drie zinnen). Oordelen staan rechts. */
   tekst?: string;
   tabellen?: Tabel[];
   grafieken?: Grafiek[];
+  /** Formaat 2, rechterkolom: één zin met het oordeel over dit onderdeel. */
+  kop?: string;
+  oordeel?: TabOordeel;
+  /** Formaat 2, rechterkolom: twee tot vijf korte bevindingen, elk met het cijfer erbij. */
+  bevindingen?: string[];
+  /** Formaat 2, rechterkolom: nul tot drie acties voor dit onderdeel. */
+  acties?: Aanbeveling[];
 }
 
 export interface FunnelStap {
@@ -203,6 +246,11 @@ export interface Aanbeveling {
   titel: string;
   toelichting: string;
   prioriteit: Prioriteit;
+  /**
+   * Formaat 2, alleen bij de overkoepelende acties (`MaResultaat.aanbevelingen`): de tabbladen
+   * waar de onderbouwing staat.
+   */
+  tabs?: TabSleutel[];
 }
 
 /** Wat de analyse aan de campagne heeft toegerekend, en waarom. */
@@ -229,7 +277,12 @@ export interface SemantiekVoorstel {
 }
 
 export interface MaResultaat {
-  formaat: 1;
+  /**
+   * 1: secties onder elkaar, inzichten en aanbevelingen onderaan (versies tot 24 november 2026).
+   * 2: secties per tabblad met bevindingen en acties rechts; `aanbevelingen` zijn de acties
+   * voor de campagne als geheel en `inzichten` vervallen.
+   */
+  formaat: 1 | 2;
   samenvatting: {
     /** Eén zin: het oordeel. */
     kop: string;
@@ -239,9 +292,12 @@ export interface MaResultaat {
     tekst?: string;
   };
   doel?: DoelOordeel;
+  /** Niet meer getoond (de hoofdgetallen staan in de tabbalk); blijft voor oudere versies. */
   funnel: FunnelStap[];
   secties: Sectie[];
+  /** Alleen formaat 1. */
   inzichten?: Inzicht[];
+  /** Formaat 1: alle aanbevelingen. Formaat 2: de acties voor de campagne als geheel. */
   aanbevelingen?: Aanbeveling[];
   herkenning: Herkenning[];
   /** Welke bronnen er gebruikt zijn (bijv. "Windsor · Meta Ads · Van den Udenhout"). */

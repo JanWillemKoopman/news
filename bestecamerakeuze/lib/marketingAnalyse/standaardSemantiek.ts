@@ -67,16 +67,19 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
 
     google_ads: `- Campagnetypes: Search, Performance Max, Demand Gen en Display. Het type staat vaak vóór in de naam ("Demand Gen | …").
 - Google levert geen eigen leadveld: het leadcijfer zit in de conversies (conversie-acties die in Google Ads zijn ingesteld). Gebruik conversies alleen als aanvulling; GA4 is leidend voor wat er op de website gebeurt.
-- In GA4 komt Google Ads-verkeer binnen als "google / cpc"; Performance Max en Demand Gen staan in GA4's kanaalgroep soms als "Cross-network".`,
+- In GA4 komt Google Ads-verkeer binnen als "google / cpc"; Performance Max en Demand Gen staan in GA4's kanaalgroep soms als "Cross-network".
+- Tabel Per platform en campagne (tabblad Investering): Conversies = het veld conversions; Leads = "n.v.t." (Google levert geen leadveld).`,
 
     meta_ads: `- Eén account per bedrijf (zie Algemeen); Meta Ads omvat Facebook, Instagram, Messenger en Audience Network.
 - Advertentienamen: "PR" = prospecting (nieuwe doelgroep), "RT" = retargeting. Vergelijk die twee apart.
 - UTM-opbouw: utm_source=facebook, utm_medium=paid, utm_campaign = campagnenaam, utm_content = advertentienaam, utm_term = advertentieset.
 - Meta-leads (actions_lead) zijn de eigen telling van Meta (leadformulieren, Messenger en pixel samen). GA4 en Syntec zijn leidend; laat verschillen zien.
-- Bereik is niet op te tellen over dagen of platforms: vraag het periodebereik op zonder dagindeling.`,
+- Bereik is niet op te tellen over dagen of platforms: vraag het periodebereik op zonder dagindeling.
+- Tabel Per platform en campagne (tabblad Investering): Leads = actions_lead. Conversies = de websiteconversies van de pixel (offsite_conversion) die niet al onder lead vallen; zijn die er niet of niet te onderscheiden, dan "n.v.t." en meld je het bij de datakwaliteit. (Voorlopige keuze; de eigenaar kan hem aanpassen.)`,
 
     linkedin_ads: `- LinkedIn Ads wordt weinig gebruikt (kleine budgetten).
-- De utm_campaign in GA4 is vaak een korte slug (bijv. "vriendenprijs") terwijl de campagne bij LinkedIn langer heet: koppel op inhoud en periode, niet alleen op exacte naam.`,
+- De utm_campaign in GA4 is vaak een korte slug (bijv. "vriendenprijs") terwijl de campagne bij LinkedIn langer heet: koppel op inhoud en periode, niet alleen op exacte naam.
+- Tabel Per platform en campagne (tabblad Investering): Leads = de leads uit leadformulieren; Conversies = externe websiteconversies als die zijn ingesteld, anders "n.v.t.".`,
 
     facebook: `- Organische posts met lifetime-cijfers, gedateerd op publicatiedatum. Alleen posts die binnen de campagneperiode zijn gepubliceerd tellen mee.
 - Een post hoort bij de campagne als de tekst het model of de actie noemt.

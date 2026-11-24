@@ -130,31 +130,52 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   semantic layer zegt; altijd apart van de mediakosten.
 - Reken verhoudingen uit totalen. Bereik niet optellen over dagen of platforms.
 
-## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 1`)
+## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 2`)
+De pagina toont bovenaan de samenvatting met de acties en daaronder **vaste tabbladen** in
+funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`). Elke sectie hoort bij één tabblad via
+`tab`. Links (3/4) staan de kerncijfers, grafieken en tabellen; het **eerste kerncijfer is het
+hoofdgetal in de tabbalk**. Rechts (1/4) staan `kop`, `oordeel`, `bevindingen` en `acties`.
+Wat er per tabblad in hoort, staat in de prompt.
+
+Tabbladsleutels, in deze volgorde: `bereik`, `investering`, `advertenties`, `organisch`,
+`email`, `verkeer`, `gedrag`, `lead-events`, `syntec` (alleen als de analyse uitsluitend over
+Van den Udenhout gaat; anders weglaten). Een tabblad zonder data krijgt toch een sectie met
+`oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt een los
+tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
+**rapportage** toont elke sectie als eigen tabblad in de volgorde van `stap`; `tab` mag daar weg.
+
 ```jsonc
 {
-  "formaat": 1,
+  "formaat": 2,
   "samenvatting": {
     "kop": "Eén zin met het oordeel",
     "regels": ["hoogstens vijf korte regels, ook voor het management"],
-    "tekst": "optioneel: Markdown-toelichting"
+    "tekst": "optioneel: Markdown-toelichting (staat ingeklapt)"
   },
   "doel": { "status": "voor|op-koers|achter|onbekend", "toelichting": "…" },
-  "funnel": [ { "label": "Kosten", "waarde": 1960.8, "eenheid": "euro" },
-              { "label": "Vertoningen", "waarde": 520000, "eenheid": "aantal" } ],
+  "funnel": [],
   "secties": [ {
-    "stap": 1, "titel": "Investering", "ondertitel": "…",
+    "stap": 2, "tab": "investering", "titel": "Investering", "ondertitel": "…",
     "kerncijfers": [ { "label": "Besteed", "waarde": 1960.8, "eenheid": "euro",
-                       "toelichting": "39% van het budget", "vergelijking": { "label": "Budget", "waarde": 5000 } } ],
-    "tekst": "Markdown",
-    "tabellen": [ { "titel": "Per platform",
-                    "kolommen": [ { "label": "Platform", "eenheid": "tekst" }, { "label": "Kosten", "eenheid": "euro" } ],
-                    "rijen": [ ["Meta", 971.2], ["Google Ads", 980.4] ], "totaal": ["Totaal", 1951.6] } ],
+                       "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } } ],
+    "tekst": "Hoogstens drie zinnen: hoe je de cijfers leest. Geen oordelen.",
+    "tabellen": [ { "titel": "Per platform en campagne",
+                    "kolommen": [ { "label": "Campagne", "eenheid": "tekst" }, { "label": "Platform", "eenheid": "tekst" },
+                                  { "label": "Kosten", "eenheid": "euro" }, { "label": "Vertoningen", "eenheid": "aantal" },
+                                  { "label": "Klikken", "eenheid": "aantal" }, { "label": "CTR", "eenheid": "procent" },
+                                  { "label": "Kosten per klik", "eenheid": "euro" }, { "label": "Conversies", "eenheid": "aantal" },
+                                  { "label": "Leads", "eenheid": "aantal" }, { "label": "Kosten per conversie of lead", "eenheid": "euro" } ],
+                    "rijen": [ ["Demand Gen | A2", "Google Ads", 980.4, 250000, 7000, 2.8, 0.14, 12, "n.v.t.", 81.7] ],
+                    "totaal": ["Totaal", "", 1960.8, 520000, 14000, 2.7, 0.14, 12, 9, 93.4] } ],
     "grafieken": [ { "titel": "Kosten per week", "type": "staaf", "eenheid": "euro",
-                     "x": ["2026-09-14", "2026-09-21"], "reeksen": [ { "naam": "Meta", "waarden": [100, 120] } ] } ]
+                     "x": ["2026-09-14", "2026-09-21"], "reeksen": [ { "naam": "Meta", "waarden": [100, 120] } ] } ],
+    "kop": "Eén zin met het oordeel over dit onderdeel",
+    "oordeel": "goed|aandacht|probleem|geen-data",
+    "bevindingen": [ "twee tot vijf korte punten, elk met het cijfer erbij" ],
+    "acties": [ { "titel": "…", "toelichting": "wat, waar en hoeveel", "prioriteit": "hoog|middel|laag" } ]
   } ],
-  "inzichten": [ { "soort": "sterk|zwak|kans|risico", "titel": "…", "toelichting": "…" } ],
-  "aanbevelingen": [ { "titel": "…", "toelichting": "…", "prioriteit": "hoog|middel|laag" } ],
+  "aanbevelingen": [ { "titel": "…", "toelichting": "…", "prioriteit": "hoog|middel|laag",
+                       "tabs": ["advertenties", "email"] } ],
   "herkenning": [ { "bron": "Meta Ads", "soort": "campagne", "naam": "…", "reden": "…", "zekerheid": "zeker|waarschijnlijk|twijfel" } ],
   "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov" ],
   "correcties": [ { "correctie": "regel uit de Data correctie", "verwerking": "wat je ermee deed" } ],
@@ -163,10 +184,14 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
 }
 ```
 Eenheden: `aantal | euro | procent | seconden | tekst` (procent als 3.2). Grafieken: hoogstens
-zes reeksen, één eenheid, datums `JJJJ-MM-DD`. Getallen als getal. Bij een tussentijdse
-evaluatie zijn de aanbevelingen "nu bijsturen", bij een eindevaluatie "lessen".
-`semantiekVoorstellen` alleen voor bevindingen die voor álle campagnes gelden; je past de
-semantic layer nooit zelf aan.
+zes reeksen, één eenheid, datums `JJJJ-MM-DD`. Getallen als getal; wat een platform niet
+levert als tekst `"n.v.t."`, nooit als 0. `aanbevelingen` zijn in formaat 2 de **acties voor de
+campagne als geheel** (drie tot zes, met in `tabs` waar de onderbouwing staat); de pagina zet
+ze bovenaan, samen met alle `acties` uit de tabbladen op prioriteit. `inzichten` vervallen in
+formaat 2 (de bevindingen per tabblad nemen ze over). `funnel` wordt niet meer getoond (de
+hoofdgetallen staan in de tabbalk); `[]` mag. Bij een tussentijdse evaluatie zijn de acties
+"nu bijsturen", bij een eindevaluatie "lessen". `semantiekVoorstellen` alleen voor bevindingen
+die voor álle campagnes gelden; je past de semantic layer nooit zelf aan.
 
 **Kerncijfers** (`MaKerncijfers`, voor het overzicht; null als onbekend):
 ```json
@@ -185,12 +210,14 @@ Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals 
 een aantal leads gaat. Het overzicht zet de leads (Syntec bij alleen Van den Udenhout met
 modellen, anders `leadEvents`) tegen dit doel, en de kosten tegen het budget.
 Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
-vanzelf meekomt), laat `doel` weg en gebruik `funnel` alleen als de prompt erom vraagt (`[]`
-mag).
+vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 
 ## Stap 5 — Wegschrijven
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met
-`JSON.parse`; elke sectie heeft `stap` en `titel`; hoogstens vijf `regels`). Sla op met
+`JSON.parse`): `formaat` is 2; elke sectie heeft `stap`, `titel` en (bij een campagne) een
+geldige `tab`; elk tabblad hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
+elke actie en aanbeveling heeft een `prioriteit`; geen tegel, regel of kolom met extra
+kanaalkosten bij een campagne-analyse. Sla op met
 dollar-quoting:
 ```sql
 select * from dataloket.marketing_analyse_bewaar(

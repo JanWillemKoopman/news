@@ -18,10 +18,13 @@ import {
   leesSemantiek,
   looptijdLabel,
   normaliseerResultaat,
+  actiesUitTabbladen,
+  syntecVanToepassing,
+  tabbladenVoor,
   vandaagNL,
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
-import { SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
+import { ANALYSE_TABBLADEN, SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
 
 
 const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijven: [] as string[] };
@@ -252,4 +255,94 @@ test("overzichtcijfers: gezamenlijke CTR en bezoekers", () => {
   // Zonder advertentievertoningen geen CTR: de vertoningen inclusief organisch tellen niet.
   assert.equal(overzichtCijfers(c, { klikken: 1500, vertoningen: 500000 }).ctr, null);
   assert.equal(overzichtCijfers(c, { klikken: 0, vertoningenAds: 1000 }).ctr, 0);
+});
+
+test("formaat 2: bevindingen, acties en oordeel worden opgeschoond", () => {
+  const r = normaliseerResultaat({
+    formaat: 2,
+    secties: [
+      {
+        stap: 1,
+        titel: "Investering",
+        tab: "investering",
+        oordeel: "raar",
+        bevindingen: ["a", 3, "", "b", "c", "d", "e", "f"],
+        acties: [{ titel: "Schuif budget", toelichting: "x", prioriteit: "urgent" }, { titel: "" }],
+      },
+    ],
+    aanbevelingen: [{ titel: "Geheel", toelichting: "y", prioriteit: "hoog", tabs: ["email", "bestaat-niet"] }],
+  });
+  assert.equal(r.formaat, 2);
+  const s = r.secties[0];
+  assert.equal(s.oordeel, undefined);
+  assert.deepEqual(s.bevindingen, ["a", "b", "c", "d", "e"]);
+  assert.deepEqual(s.acties, [{ titel: "Schuif budget", toelichting: "x", prioriteit: "laag" }]);
+  assert.deepEqual(r.aanbevelingen?.[0].tabs, ["email"]);
+  assert.equal(normaliseerResultaat({ formaat: 7 }).formaat, 1);
+});
+
+test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie achteraan", () => {
+  const resultaat = normaliseerResultaat({
+    formaat: 2,
+    secties: [
+      { stap: 2, titel: "Kosten", tab: "investering", kerncijfers: [{ label: "Besteed", waarde: 1989, eenheid: "euro" }] },
+      { stap: 1, titel: "Bereik", tab: "bereik", oordeel: "goed" },
+      { stap: 4, titel: "Posts", tab: "organisch", oordeel: "geen-data" },
+      { stap: 9, titel: "Iets anders" },
+    ],
+  });
+  const tabs = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["Van den Udenhout"] });
+  assert.deepEqual(
+    tabs.map((t) => t.sleutel),
+    [...ANALYSE_TABBLADEN.map((t) => t.sleutel), "sectie-1"],
+  );
+  const per = Object.fromEntries(tabs.map((t) => [t.sleutel, t]));
+  assert.equal(per.investering.hoofdcijfer?.waarde, 1989);
+  assert.equal(per.bereik.oordeel, "goed");
+  assert.equal(per.bereik.leeg, false);
+  assert.equal(per.organisch.leeg, true);
+  assert.equal(per.organisch.reden, null);
+  assert.equal(per.email.leeg, true);
+  assert.match(per.email.reden ?? "", /geen onderdeel/);
+  assert.match(per.syntec.reden ?? "", /geen onderdeel/);
+  assert.equal(per["sectie-1"].naam, "Iets anders");
+  assert.equal(per["sectie-1"].groep, null);
+
+  const pgz = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
+  assert.match(pgz.find((t) => t.sleutel === "syntec")?.reden ?? "", /Niet van toepassing/);
+});
+
+test("tabbladen: formaat 1 en rapportage krijgen een tabblad per sectie", () => {
+  const oud = normaliseerResultaat({ secties: [{ stap: 1, titel: "Investering" }, { stap: 2, titel: "Bereik" }] });
+  assert.deepEqual(
+    tabbladenVoor(oud, { rapportage: false, bedrijven: [] }).map((t) => t.naam),
+    ["Investering", "Bereik"],
+  );
+  const rapportage = normaliseerResultaat({ formaat: 2, secties: [{ stap: 1, titel: "Verkeer", tab: "verkeer" }] });
+  assert.deepEqual(
+    tabbladenVoor(rapportage, { rapportage: true, bedrijven: [] }).map((t) => t.sleutel),
+    ["sectie-1"],
+  );
+});
+
+test("acties uit de tabbladen: op prioriteit, verder in tabvolgorde", () => {
+  const resultaat = normaliseerResultaat({
+    formaat: 2,
+    secties: [
+      { stap: 1, titel: "Bereik", tab: "bereik", acties: [{ titel: "A", prioriteit: "laag" }, { titel: "B", prioriteit: "hoog" }] },
+      { stap: 2, titel: "Investering", tab: "investering", acties: [{ titel: "C", prioriteit: "hoog" }, { titel: "D", prioriteit: "middel" }] },
+    ],
+  });
+  const acties = actiesUitTabbladen(tabbladenVoor(resultaat, { rapportage: false, bedrijven: [] }));
+  assert.deepEqual(
+    acties.map((a) => `${a.actie.titel}:${a.tabSleutel}`),
+    ["B:bereik", "C:investering", "D:investering", "A:bereik"],
+  );
+});
+
+test("Syntec alleen als de analyse uitsluitend over Van den Udenhout gaat", () => {
+  assert.equal(syntecVanToepassing(["Van den Udenhout"]), true);
+  assert.equal(syntecVanToepassing(["Van den Udenhout", "PGZ"]), false);
+  assert.equal(syntecVanToepassing([]), false);
+  assert.equal(syntecVanToepassing(null), false);
 });
