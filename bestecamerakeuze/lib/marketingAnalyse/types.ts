@@ -116,7 +116,7 @@ export interface DoelOordeel {
  * bepalen; `leadsSyntec` is bij elk ander bedrijf dan Van den Udenhout altijd null (n.v.t.).
  */
 export interface MaKerncijfers {
-  /** Mediakosten (advertentieaccounts) plus de verdeelde extra kanaalkosten, in euro. */
+  /** Mediakosten uit de advertentieplatformen (Google Ads, Meta Ads, LinkedIn Ads), in euro. Geen extra kanaalkosten. */
   kosten?: number | null;
   /** Vertoningen betaald + organisch. */
   vertoningen?: number | null;

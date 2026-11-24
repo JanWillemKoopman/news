@@ -125,6 +125,6 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
     kanaalkosten: `- Tabel dataloket.lead_kanaalkosten: maandkosten per GA4-sessiebron/medium die niet in de advertentieaccounts staan (bijv. gaspedaal.nl / referral). Maand = eerste dag van de maand.
 - Verdeling over sessies: kosten per sessie = maandbedrag ÷ alle sessies van die bron/medium in die maand (op de GA4-property van het bedrijf). Campagnekosten = Σ kosten per sessie × sessies van die bron/medium op de campagnepagina('s) binnen de periode.
 - Lopende maand: het maandbedrag naar rato van de verstreken dagen (t/m gisteren), gedeeld door de sessies t/m gisteren.
-- Tel deze kosten op bij de mediakosten en noem ze apart.`,
+- **Niet bij een campagne-analyse** (besluit van de eigenaar, november 2026): de kosten van een campagne zijn alleen de mediakosten uit de advertentieplatformen. Alleen een rapportage mag deze kosten gebruiken, en dan apart genoemd naast de mediakosten.`,
   },
 };

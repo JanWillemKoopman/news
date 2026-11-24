@@ -1668,7 +1668,9 @@ lees dat eerst voordat je hier iets verandert.
 
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
-  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`.
+  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`
+  (die laatste **niet** bij een campagne-analyse: daar zijn de kosten alleen de mediakosten uit
+  Google Ads, Meta Ads en LinkedIn Ads; besluit van de eigenaar, 24 november 2026).
   **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
   regel staat in de skill, in de standaard-hoofdprompt en in de verantwoording van elke analyse.
 - **Leads-kopie** (`marketing_analyse_leads`, gevuld door `/api/sync` uit dezelfde keer lezen

@@ -263,7 +263,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
               <span className="label-theme font-normal">Ronde</span>
             </th>
             <th className={`${KOP} pl-3`}>Campagne</th>
-            <th className={KOP} title="Mediakosten plus de verdeelde extra kanaalkosten, tegen het totaalbudget">
+            <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
               Uitgaven
             </th>
             <th className={KOP} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">

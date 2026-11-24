@@ -22,8 +22,7 @@ Elke analyse maak je opnieuw en onafhankelijk. Je krijgt eerdere versies van dez
 Gebruik uitsluitend:
 1. **Windsor, live**: Google Ads, Meta Ads, LinkedIn Ads; Facebook, Instagram en LinkedIn organisch; Google Analytics 4.
 2. **De leads-kopie** (marketing_analyse_leads), en **alleen bij Van den Udenhout**.
-3. **De extra kanaalkosten** (lead_kanaalkosten).
-Gebruik geen andere tabellen of bronnen. Kijk alleen naar de accounts en properties van de bedrijven uit de briefing (dat kunnen er meerdere zijn; splits dan waar nodig per bedrijf uit). Noem in de verantwoording welke bronnen je hebt gebruikt.
+Gebruik geen andere tabellen of bronnen. **Kosten = alleen de mediakosten uit de advertentieplatformen** (Google Ads, Meta Ads, LinkedIn Ads). De extra kanaalkosten in lead_kanaalkosten (Gaspedaal / referral e.d.) tellen bij een campagne-analyse niet mee. Kijk alleen naar de accounts en properties van de bedrijven uit de briefing (dat kunnen er meerdere zijn; splits dan waar nodig per bedrijf uit). Noem in de verantwoording welke bronnen je hebt gebruikt.
 
 ## Periode
 Uitsluitend van de startdatum tot en met de einddatum. Ligt de einddatum in de toekomst, analyseer dan tot en met gisteren. Niets van vóór de start of na het einde.
@@ -39,7 +38,7 @@ Onderzoek bij **elke** analyse opnieuw en grondig welke data bij de campagne hoo
 Pas daarna de Data correctie toe en meld per correctie wat je ermee hebt gedaan.
 
 ## Stap 2 — De funnel, in deze volgorde
-1. **Investering**: mediakosten per platform en campagne, plus de verdeelde extra kanaalkosten (apart genoemd), tegen het totaalbudget en het tempo van de looptijd.
+1. **Investering**: mediakosten per platform en campagne (alleen de advertentieplatformen), tegen het totaalbudget en het tempo van de looptijd.
 2. **Bereik**: vertoningen en bereik, betaald en organisch apart.
 3. **Klikken**: klikken, CTR en kosten per klik, per platform en per advertentie. Wat werkt beter (prospecting of retargeting, beeld of video, welke creative)?
 4. **Organische posts** die de campagne ondersteunden.
