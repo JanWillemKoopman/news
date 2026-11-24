@@ -1657,48 +1657,54 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
   - **Eén ophaalactie** voor de campagnetabel en dit tabblad
     (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
 
-### Campagnes → Campaign insight
+### Campagnes → Marketing analyse
 
-Vierde tabblad onder **Campagnes** (view `campagne-insight`, `components/insight/`, routes
-`app/api/campagne-insight/`, rekenwerk in `lib/insight/`, migratie 0042). Gevraagd in november
-2026: per campagne een full-funnel analyse — kosten, bereik, klikken, verkeer en gedrag op de
-campagnepagina('s), e-mailverkeer, lead-events op de website en de leads in Syntec — die
-**Claude Code maakt** en het dashboard toont. Voor iedereen zichtbaar.
+Vierde tabblad onder **Campagnes** (view `marketing-analyse`, `components/marketingAnalyse/`,
+routes `app/api/marketing-analyse/`, rekenwerk in `lib/marketingAnalyse/`, migratie 0042). Per
+campagne een full-funnel analyse die **Claude Code maakt** (skill
+`.claude/skills/marketing-analyse/` in de root van de repo) en het dashboard toont. Voor iedereen
+zichtbaar. **Het plan en alle besluiten van de eigenaar staan in `campagne-analyse-tool.md`**;
+lees dat eerst voordat je hier iets verandert.
 
-- **Werkverdeling.** Het team vult in het dashboard de *briefing* in (naam, looptijd, doel,
-  budget, omschrijving, merk/model, optioneel zoektermen en campagnepagina's). De eigenaar
-  zegt in Claude Code "maak een campaign insight-analyse van …" (of vraagt hem aan met de knop
-  in de zijbalk en zegt "draai de aangevraagde analyses"). Claude volgt dan de skill
-  **`.claude/skills/campagne-insight/SKILL.md`** (root van de repo): briefing en hoofdprompt
-  ophalen, data uit de `windsor_*`-tabellen, `v_leads` en Windsor zelf, resultaat wegschrijven
-  met `dataloket.insight_bewaar_analyse`. Het dashboard schrijft zelf nooit een analyse en
-  roept geen model aan.
-- **Drie lagen, bewust gescheiden.** De *hoofdprompt* (`insight_prompts`, knop rechtsboven,
-  bewerkbaar door de beheerders) zegt wát er geanalyseerd wordt; de *skill* zegt hoe de data
-  wordt opgehaald en weggeschreven; het *formaat* (`lib/insight/types.ts`, `InsightResultaat`)
-  ligt vast in de code. Zo kan de prompt vrij worden herschreven zonder de pagina te breken.
-  Zolang er niets is opgeslagen geldt `lib/insight/standaardPrompt.ts`. **Verander je het
-  formaat, pas dan de skill in dezelfde wijziging aan.**
-- **Versies.** Elke analyse is een nieuwe regel in `insight_analyses` (v1, v2, …); de functie
-  kent het nummer toe onder een rijslot en legt de briefing van dat moment vast (`briefing`),
-  zodat een latere wijziging een oude versie niet verandert. Ook de prompt heeft versies: elke
-  analyse onthoudt met welke (`prompt_id`). Opslaan in de editor maakt altijd een nieuwe versie.
-- **Een generiek formaat.** Een analyse is een samenvatting, een funnelrij (tegels met de
-  doorstroom tussen twee aantallen; bewust geen trechtergrafiek, de stappen verschillen een
-  factor duizend), secties in funnelvolgorde (elk met optioneel kerncijfers, Markdown,
-  tabellen en grafieken), inzichten, aanbevelingen en de *verantwoording*: wat aan de campagne
-  is toegerekend en waarom (`herkenning`) plus kanttekeningen bij de data. Een veld dat
-  ontbreekt laat de pagina niet vastlopen (`normaliseerResultaat`).
-- **Het overzicht** is één regel per campagne met de vaste `kerncijfers` uit de laatste
-  analyse (kosten, vertoningen, klikken, sessies, leads web, leads Syntec, voortgang op het
-  doel). Klik = analysepagina met versiekeuze; het potlood = briefing in de zijbalk. De open
-  analyse staat in de URL (`?insight=<campagne-id>`).
-- **Een eigen tabel, niet de sheet.** CLAUDE.md zegt elders dat er geen campagnetabel in de
-  database komt zolang de sheet de bron is. Dit is geen campagnelijst maar de briefing voor
-  een analyse; de sheet blijft de bron van de campagnetabel.
-- **Rechten.** Lezen, aanmaken en bewerken: iedereen die ingelogd is. Hoofdprompt opslaan en
-  een campagne verwijderen: alleen de beheerders (`isBeheerder`). Analyses schrijven alleen
-  via de functie (service role / Claude Code).
+- **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
+  alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
+  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`.
+  **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
+  regel staat in de skill, in de standaard-hoofdprompt en in de verantwoording van elke analyse.
+- **Leads-kopie** (`marketing_analyse_leads`, gevuld door `/api/sync` uit dezelfde keer lezen
+  als `leads_raw`, eigen transactie en eigen regel `Marketing analyse leads` in `sync_runs`):
+  precies zes kolommen 1-op-1 uit "Data leads" (Ordersoort, Onderwerp, Kanaalgroep, Merk,
+  Model, Aangelegd) plus `aangelegd_op` om op te filteren; de laatste 365 dagen; zonder rijen
+  met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts` (getest). Alleen van
+  toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven kijken voor leads
+  alleen naar GA4 en tonen in het overzicht "n.v.t.".
+- **Vier kennislagen.** De *briefing* (naam, **Bedrijf** = welk van onze bedrijven, **Merk** =
+  automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving); de
+  *hoofdprompt* (één prompt met een hoofdstuk per label); de *semantic layer* (per databron een
+  tekstblok, plus in Algemeen de bedrijvenlijst voor de keuzelijst en welke accounts bij welk
+  bedrijf horen; startinhoud in `standaardSemantiek.ts`); en de *Data correctie* per campagne
+  (wat er bij een vorige analyse niet klopte). Hoofdprompt en semantic layer: lezen iedereen,
+  opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
+  iedereen.
+- **Versies en label.** `marketing_analyse_bewaar` kent het versienummer toe uit
+  `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
+  label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
+  evaluatie**), legt briefing en Data correctie van dat moment vast en zet de **Analyse ronde**
+  uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
+  gemaakt. Alleen de eigenaar kan een versie verwijderen.
+- **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
+  (kop + hoogstens vijf regels voor het management), doeloordeel, funnelrij, secties in
+  funnelvolgorde (kerncijfers, Markdown, tabellen, grafieken), inzichten, aanbevelingen,
+  verantwoording (herkenning, gebruikte bronnen, wat er met de Data correctie is gedaan,
+  kanttekeningen) en voorstellen voor de semantic layer. `normaliseerResultaat` zorgt dat een
+  ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
+  wijziging aan.**
+- **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
+  Afgelopen; per regel de schakelaar Analyse ronde en de kerncijfers uit de laatste analyse.
+  Rechtsboven Hoofdprompt, Semantic layer en Nieuwe campagne. De open analyse staat in de URL
+  (`?analyse=<campagne-id>`).
+- **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
+  analyse; de sheet blijft de bron van de campagnetabel.
 
 ### Component- en codepatronen
 

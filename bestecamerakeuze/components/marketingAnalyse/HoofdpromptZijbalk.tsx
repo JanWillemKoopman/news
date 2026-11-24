@@ -2,18 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
-import type { InsightPrompt } from "@/lib/insight/types";
+import type { MaPrompt } from "@/lib/marketingAnalyse/types";
 
-type Versie = { id: string; versie: number; opgeslagenOp: string };
+function opgeslagenRegel(p: { standaard: boolean; versie: number; opgeslagenOp: string | null; opgeslagenDoorNaam: string | null }, leeg: string) {
+  if (p.standaard) return leeg;
+  const op = p.opgeslagenOp
+    ? `, opgeslagen ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(p.opgeslagenOp))}`
+    : "";
+  return `Versie ${p.versie}${op}${p.opgeslagenDoorNaam ? ` door ${p.opgeslagenDoorNaam}` : ""}`;
+}
+
+export { opgeslagenRegel };
 
 /**
- * De hoofdprompt: de opdracht waarmee Claude Code elke analyse maakt. Opslaan maakt een
- * nieuwe versie (nooit overschrijven), zodat bij elke analyse terug te lezen is met welke
- * opdracht hij is gemaakt. Lezen mag iedereen, bewerken alleen de beheerders.
+ * De hoofdprompt: hoe Claude Code elke analyse maakt, met een hoofdstuk per label. Opslaan
+ * maakt altijd een nieuwe versie, zodat bij elke analyse terug te lezen is met welke opdracht
+ * hij is gemaakt. Lezen mag iedereen, bewerken alleen de eigenaar.
  */
 export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void }) {
-  const [prompt, setPrompt] = useState<InsightPrompt | null>(null);
-  const [versies, setVersies] = useState<Versie[]>([]);
+  const [prompt, setPrompt] = useState<MaPrompt | null>(null);
   const [magBewerken, setMagBewerken] = useState(false);
   const [tekst, setTekst] = useState("");
   const [bezig, setBezig] = useState(false);
@@ -21,18 +28,12 @@ export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void })
   const [melding, setMelding] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/campagne-insight/prompt")
+    fetch("/api/marketing-analyse/prompt")
       .then(async (res) => {
-        const data = (await res.json().catch(() => ({}))) as {
-          prompt?: InsightPrompt;
-          versies?: Versie[];
-          magBewerken?: boolean;
-          fout?: string;
-        };
+        const data = (await res.json().catch(() => ({}))) as { prompt?: MaPrompt; magBewerken?: boolean; fout?: string };
         if (!res.ok || !data.prompt) throw new Error(data.fout ?? "Kon de hoofdprompt niet laden.");
         setPrompt(data.prompt);
         setTekst(data.prompt.inhoud);
-        setVersies(data.versies ?? []);
         setMagBewerken(Boolean(data.magBewerken));
       })
       .catch((err) => setFout(err instanceof Error ? err.message : String(err)));
@@ -41,25 +42,19 @@ export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void })
   const gewijzigd = prompt !== null && tekst.trim() !== prompt.inhoud.trim();
 
   async function opslaan() {
-    if (!gewijzigd && !prompt?.standaard) return;
     setBezig(true);
     setFout(null);
     setMelding(null);
     try {
-      const res = await fetch("/api/campagne-insight/prompt", {
+      const res = await fetch("/api/marketing-analyse/prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inhoud: tekst }),
       });
-      const data = (await res.json().catch(() => ({}))) as { prompt?: InsightPrompt; fout?: string };
+      const data = (await res.json().catch(() => ({}))) as { prompt?: MaPrompt; fout?: string };
       if (!res.ok || !data.prompt) throw new Error(data.fout ?? "Kon de prompt niet opslaan.");
       setPrompt(data.prompt);
       setTekst(data.prompt.inhoud);
-      setVersies((v) =>
-        v.some((x) => x.id === data.prompt!.id)
-          ? v
-          : [{ id: data.prompt!.id!, versie: data.prompt!.versie, opgeslagenOp: data.prompt!.opgeslagenOp! }, ...v],
-      );
       setMelding(`Opgeslagen als versie ${data.prompt.versie}. De volgende analyse gebruikt deze versie.`);
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
@@ -75,14 +70,11 @@ export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void })
       ) : (
         <div className="flex h-full flex-col gap-3">
           <p className="text-sm text-ink-muted">
-            De opdracht waarmee Claude Code elke analyse maakt: wat er geanalyseerd wordt en hoe. Het formaat van het resultaat ligt
-            vast in de code, dus hier kun je vrij schrijven zonder het dashboard te breken.
+            Hoe Claude Code elke analyse maakt en beoordeelt, met een hoofdstuk voor de tussentijdse evaluatie en een voor de
+            eindevaluatie. Hoe de data per bron te lezen is, staat in de semantic layer. Het formaat van het resultaat ligt vast in
+            de code, dus hier kun je vrij schrijven zonder de pagina te breken.
           </p>
-          <p className="text-meta text-ink-faint">
-            {prompt.standaard
-              ? "Nog niet opgeslagen: dit is de standaardtekst. Opslaan maakt versie 1."
-              : `Versie ${prompt.versie}${prompt.opgeslagenOp ? `, opgeslagen ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(prompt.opgeslagenOp))}` : ""}${prompt.opgeslagenDoorNaam ? ` door ${prompt.opgeslagenDoorNaam}` : ""}${versies.length > 1 ? ` · ${versies.length} versies` : ""}`}
-          </p>
+          <p className="text-meta text-ink-faint">{opgeslagenRegel(prompt, "Nog niet opgeslagen: dit is de standaardtekst. Opslaan maakt versie 1.")}</p>
           <textarea
             value={tekst}
             onChange={(e) => {
@@ -91,7 +83,8 @@ export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void })
             }}
             readOnly={!magBewerken}
             spellCheck={false}
-            className="min-h-[60vh] flex-1 resize-none rounded-card border border-line bg-surface-tint px-4 py-3 font-mono text-[13px] leading-relaxed text-ink outline-none focus:border-primary"
+            aria-label="Hoofdprompt"
+            className="min-h-[60vh] flex-1 resize-none rounded-card border border-line bg-surface-tint px-4 py-3 font-mono text-sm leading-relaxed text-ink outline-none focus:border-primary"
           />
           {fout && <p className="text-sm text-negative">{fout}</p>}
           {melding && <p className="text-sm text-positive">{melding}</p>}
@@ -117,7 +110,7 @@ export default function HoofdpromptZijbalk({ onClose }: { onClose: () => void })
               </button>
             </div>
           ) : (
-            <p className="text-meta text-ink-faint">Alleen de beheerders kunnen de hoofdprompt aanpassen.</p>
+            <p className="text-meta text-ink-faint">Alleen de eigenaar kan de hoofdprompt aanpassen.</p>
           )}
         </div>
       )}

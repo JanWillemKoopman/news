@@ -14,8 +14,8 @@ import {
 } from "recharts";
 import { useGrafiekKleuren } from "@/components/ThemeProvider";
 import { AS_GROOTTE } from "@/components/chat/chartTheme";
-import { formatWaarde } from "@/lib/insight/rekenen";
-import type { Grafiek } from "@/lib/insight/types";
+import { formatWaarde } from "@/lib/marketingAnalyse/rekenen";
+import type { Grafiek } from "@/lib/marketingAnalyse/types";
 
 /** Hoogstens zes reeksen: een zevende kleur bestaat niet in het palet (zie CLAUDE.md). */
 const MAX_REEKSEN = 6;
@@ -31,7 +31,7 @@ function kortLabel(x: string): string {
  * kleuren in vaste volgorde uit het palet van het theme. Eén reeks heeft geen legenda nodig:
  * de titel zegt wat het is.
  */
-export default function InsightGrafiek({ grafiek }: { grafiek: Grafiek }) {
+export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
   const kleuren = useGrafiekKleuren();
   const reeksen = grafiek.reeksen.slice(0, MAX_REEKSEN);
   const data = grafiek.x.map((x, i) => {

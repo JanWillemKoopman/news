@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 5 · 24 november 2026 · status: plan rond, klaar om te bouwen (fase 1)*
+*Versie 5 · 24 november 2026 · status: fase 1 gebouwd (zie §10a)*
 
 ## 1. Waar het om gaat
 
@@ -278,6 +278,18 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | **1** | Code aanpassen volgens §9; leads-kopie bouwen en een nacht laten draaien; migraties toepassen; semantic layer vooraf vullen; briefing Audi A2; eerste analyse (v1, tussentijdse evaluatie); samen beoordelen |
 | **2** | Hoofdprompt en semantic layer aanscherpen op basis van v1; data correctie invullen; v2 draaien en controleren dat de correcties zijn toegepast |
 | **3** | Later: e-mailcijfers uit Selligent, benchmarks tussen campagnes, automatisch wekelijks draaien |
+
+## 10a. Status fase 1 (24 november 2026)
+
+| Onderdeel | Status |
+|---|---|
+| Pagina **Marketing analyse** (overzicht met lopend/afgelopen, Analyse ronde, analysepagina met label, Data correctie, voorstellen semantic layer, versie verwijderen) | Gebouwd, lokaal getest met voorbeelddata |
+| Briefing met Bedrijf, Merk, Modellen, Data correctie | Gebouwd |
+| Hoofdprompt (één prompt, hoofdstuk per label) en **Semantic layer** (blok per bron, vooraf gevuld) | Gebouwd; nog niet opgeslagen, dus de standaardteksten gelden |
+| Migratie 0042 (tabellen + opslagfunctie) | **Toegepast** in Supabase |
+| Nachtelijke leads-kopie `marketing_analyse_leads` | Gebouwd in `/api/sync`; draait pas zodra deze branch live staat (Vercel) |
+| Skill `marketing-analyse` | Herschreven naar de besluiten |
+| Eerste analyse Audi A2 | Wacht op de briefing (einddatum, doel, budget) en op de eerste nachtelijke leads-kopie |
 
 ## 11. Open vragen
 

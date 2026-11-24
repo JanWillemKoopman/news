@@ -1,9 +1,9 @@
 "use client";
 
 import Markdown from "@/components/chat/Markdown";
-import InsightGrafiek from "@/components/insight/InsightGrafiek";
-import { formatWaarde } from "@/lib/insight/rekenen";
-import type { Kerncijfer, Sectie, Tabel } from "@/lib/insight/types";
+import AnalyseGrafiek from "@/components/marketingAnalyse/AnalyseGrafiek";
+import { formatWaarde } from "@/lib/marketingAnalyse/rekenen";
+import type { Kerncijfer, Sectie, Tabel } from "@/lib/marketingAnalyse/types";
 
 /** Eén rij kerncijfers: het cijfer groot, de toelichting en vergelijking eronder. */
 export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
@@ -27,7 +27,7 @@ export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
 }
 
 /** Een tabel uit de analyse: getallen rechts uitgelijnd in de eenheid van hun kolom. */
-export function InsightTabel({ tabel }: { tabel: Tabel }) {
+export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
   const cel = (waarde: string | number | null, k: number) => {
     const kolom = tabel.kolommen[k];
     const getal = typeof waarde === "number";
@@ -102,11 +102,11 @@ export default function SectieBlok({ sectie, nummer }: { sectie: Sectie; nummer:
         {sectie.grafieken && sectie.grafieken.length > 0 && (
           <div className={`grid gap-4 ${sectie.grafieken.length > 1 ? "lg:grid-cols-2" : ""}`}>
             {sectie.grafieken.map((g, i) => (
-              <InsightGrafiek key={i} grafiek={g} />
+              <AnalyseGrafiek key={i} grafiek={g} />
             ))}
           </div>
         )}
-        {sectie.tabellen?.map((t, i) => <InsightTabel key={i} tabel={t} />)}
+        {sectie.tabellen?.map((t, i) => <AnalyseTabel key={i} tabel={t} />)}
       </div>
     </section>
   );

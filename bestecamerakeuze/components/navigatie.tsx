@@ -55,7 +55,7 @@ export const NAV_GROEPEN: NavGroep[] = [
       { view: "campagnes", label: "Campagnes", icon: <IconMegaphone /> },
       { view: "tijdlijn", label: "Tijdlijn", icon: <IconCalendar /> },
       { view: "campagnebeheer", label: "Campagnebeheer", icon: <IconSettings /> },
-      { view: "campagne-insight", label: "Campaign insight", icon: <IconChartBar /> },
+      { view: "marketing-analyse", label: "Marketing analyse", icon: <IconChartBar /> },
     ],
   },
   {

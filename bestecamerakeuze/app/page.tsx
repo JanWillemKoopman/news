@@ -27,7 +27,7 @@ import KostenPaneel from "@/components/kosten/KostenPaneel";
 import NietGeconfigureerd from "@/components/NietGeconfigureerd";
 import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
 import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
-import CampagneInsightPaneel from "@/components/insight/CampagneInsightPaneel";
+import MarketingAnalysePaneel from "@/components/marketingAnalyse/MarketingAnalysePaneel";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
 import { magBeperkteTabbladenZien, magTabbladZien } from "@/lib/beperkteTabbladen";
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
         }
         tijdlijn={<CampagneTijdlijn />}
         campagnebeheer={<CampagneBeheer ingelogd={ingelogd} />}
-        campagneInsight={<CampagneInsightPaneel ingelogd={ingelogd} />}
+        marketingAnalyse={<MarketingAnalysePaneel ingelogd={ingelogd} />}
         kpiOverzicht={zie("kpi-overzicht") ? <KpiOverzicht /> : null}
         kpi2027={<Kpi2027Paneel ingelogd={ingelogd} />}
         kpi2027Syntec={<Kpi2027SyntecPaneel ingelogd={ingelogd} />}

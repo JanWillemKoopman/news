@@ -1,21 +1,23 @@
 /**
- * Campaign insight — pure functies voor het formulier en de weergave. Zonder React of
- * database, zodat ze zonder bundler te testen zijn (`rekenen.test.ts`).
+ * Marketing analyse — pure functies voor formulier, semantic layer en weergave. Zonder
+ * React of database, zodat ze zonder bundler te testen zijn (`rekenen.test.ts`).
  */
-import type {
-  Eenheid,
-  FunnelStap,
-  InsightCampagneInvoer,
-  InsightKerncijfers,
-  InsightResultaat,
+import {
+  SEMANTIEK_BLOKKEN,
+  type Eenheid,
+  type FunnelStap,
+  type MaCampagneInvoer,
+  type MaResultaat,
+  type SemantiekInhoud,
+  type SemantiekSleutel,
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Formulier
+// Briefing
 // ---------------------------------------------------------------------------
 
 const MAX_KORT = 200;
-const MAX_LANG = 5_000;
+const MAX_LANG = 10_000;
 
 function tekstOfNull(waarde: unknown, max: number): string | null {
   if (typeof waarde !== "string") return null;
@@ -44,15 +46,31 @@ export function leesBedrag(waarde: unknown): number | null {
   return Number.isFinite(getal) && getal >= 0 ? getal : null;
 }
 
-export type InvoerUitkomst =
-  | { ok: true; invoer: InsightCampagneInvoer }
-  | { ok: false; fout: string };
+/** Modellen uit een lijst of uit tekst ("A2, Q4" of één per regel), zonder dubbele. */
+export function leesModellen(waarde: unknown): string[] {
+  const ruw = Array.isArray(waarde) ? waarde : typeof waarde === "string" ? waarde.split(/[,\n;]/) : [];
+  const gezien = new Set<string>();
+  const uit: string[] = [];
+  for (const m of ruw) {
+    if (typeof m !== "string") continue;
+    const s = m.trim().slice(0, MAX_KORT);
+    if (s && !gezien.has(s.toLowerCase())) {
+      gezien.add(s.toLowerCase());
+      uit.push(s);
+    }
+  }
+  return uit.slice(0, 20);
+}
 
-/** De invoer uit het formulier, gecontroleerd en opgeschoond. Alleen de naam is verplicht. */
+export type InvoerUitkomst = { ok: true; invoer: MaCampagneInvoer } | { ok: false; fout: string };
+
+/** De invoer uit het briefingformulier, gecontroleerd. Naam en bedrijf zijn verplicht. */
 export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
   const b = (body ?? {}) as Record<string, unknown>;
   const naam = tekstOfNull(b.naam, MAX_KORT);
   if (!naam) return { ok: false, fout: "Geef de campagne een naam." };
+  const bedrijf = tekstOfNull(b.bedrijf, MAX_KORT);
+  if (!bedrijf) return { ok: false, fout: "Kies voor welk bedrijf de campagne is." };
 
   const startdatum = datumOfNull(b.startdatum);
   const einddatum = datumOfNull(b.einddatum);
@@ -60,9 +78,8 @@ export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
     return { ok: false, fout: "De einddatum ligt vóór de startdatum." };
   }
 
-  const budgetRuw = b.budget;
-  const budget = leesBedrag(budgetRuw);
-  if (budget === null && typeof budgetRuw === "string" && budgetRuw.trim() !== "") {
+  const budget = leesBedrag(b.budget);
+  if (budget === null && typeof b.budget === "string" && b.budget.trim() !== "") {
     return { ok: false, fout: "Vul het budget in als bedrag, bijvoorbeeld 5000 of 5.000." };
   }
 
@@ -70,17 +87,63 @@ export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
     ok: true,
     invoer: {
       naam,
+      bedrijf,
       merk: tekstOfNull(b.merk, MAX_KORT),
-      model: tekstOfNull(b.model, MAX_KORT),
+      modellen: leesModellen(b.modellen),
       startdatum,
       einddatum,
       doel: tekstOfNull(b.doel, MAX_LANG),
       budget,
       omschrijving: tekstOfNull(b.omschrijving, MAX_LANG),
-      zoektermen: tekstOfNull(b.zoektermen, MAX_LANG),
-      campagnepaginas: tekstOfNull(b.campagnepaginas, MAX_LANG),
+      dataCorrectie: tekstOfNull(b.dataCorrectie, MAX_LANG),
     },
   };
+}
+
+/** De datum van vandaag in Nederland, als "JJJJ-MM-DD". */
+export function vandaagNL(nu: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(nu);
+}
+
+/** Afgelopen = de einddatum ligt vóór vandaag. Zonder einddatum loopt een campagne nog. */
+export function isAfgelopen(einddatum: string | null | undefined, vandaag: string): boolean {
+  return Boolean(einddatum && einddatum < vandaag);
+}
+
+/**
+ * Lopend bovenaan op startdatum (nieuwste eerst, zonder startdatum achteraan); afgelopen
+ * apart, op einddatum (meest recent eerst).
+ */
+export function deelOpInLopendEnAfgelopen<T extends { startdatum: string | null; einddatum: string | null }>(
+  campagnes: readonly T[],
+  vandaag: string,
+): { lopend: T[]; afgelopen: T[] } {
+  const lopend = campagnes
+    .filter((c) => !isAfgelopen(c.einddatum, vandaag))
+    .sort((a, b) => (b.startdatum ?? "").localeCompare(a.startdatum ?? ""));
+  const afgelopen = campagnes
+    .filter((c) => isAfgelopen(c.einddatum, vandaag))
+    .sort((a, b) => (b.einddatum ?? "").localeCompare(a.einddatum ?? ""));
+  return { lopend, afgelopen };
+}
+
+// ---------------------------------------------------------------------------
+// Semantic layer
+// ---------------------------------------------------------------------------
+
+const MAX_BLOK = 50_000;
+
+/** Een semantic layer uit de database of de editor, compleet en opgeschoond. */
+export function leesSemantiek(ruw: unknown, terugval?: SemantiekInhoud): SemantiekInhoud {
+  const r = (ruw ?? {}) as { bedrijven?: unknown; blokken?: Record<string, unknown> };
+  const bedrijven = leesModellen(r.bedrijven);
+  const blokken = {} as Record<SemantiekSleutel, string>;
+  for (const { sleutel } of SEMANTIEK_BLOKKEN) {
+    const waarde = r.blokken?.[sleutel];
+    blokken[sleutel] =
+      typeof waarde === "string" ? waarde.replace(/\r\n/g, "\n").slice(0, MAX_BLOK) : (terugval?.blokken[sleutel] ?? "");
+  }
+  return { bedrijven: bedrijven.length > 0 ? bedrijven : (terugval?.bedrijven ?? []), blokken };
 }
 
 // ---------------------------------------------------------------------------
@@ -89,7 +152,6 @@ export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
 
 const NL = "nl-NL";
 
-/** Een cijfer in de eenheid die de analyse opgeeft, in Nederlandse notatie. */
 export function formatWaarde(waarde: number | string | null | undefined, eenheid: Eenheid = "aantal"): string {
   if (waarde === null || waarde === undefined || waarde === "") return "—";
   if (typeof waarde === "string") return waarde;
@@ -118,10 +180,8 @@ export function formatWaarde(waarde: number | string | null | undefined, eenheid
 }
 
 /**
- * Het percentage dat van de ene funnelstap naar de volgende doorgaat (bv. klikken ÷
- * vertoningen). Alleen tussen twee aantallen; tussen een bedrag en een aantal, als een van
- * beide ontbreekt of nul is, of als de volgende stap groter is dan de vorige, is er geen
- * zinnige verhouding en komt er null.
+ * Het percentage dat van de ene funnelstap naar de volgende doorgaat. Alleen tussen twee
+ * aantallen, en niet boven de 100%: dan is de volgende stap geen deel van de vorige.
  */
 export function doorstroom(stappen: FunnelStap[]): (number | null)[] {
   return stappen.map((stap, i) => {
@@ -130,25 +190,20 @@ export function doorstroom(stappen: FunnelStap[]): (number | null)[] {
     if (stap.eenheid !== "aantal" || vorige.eenheid !== "aantal") return null;
     if (stap.waarde === null || vorige.waarde === null || vorige.waarde <= 0) return null;
     const pct = (stap.waarde / vorige.waarde) * 100;
-    // Boven de 100% is de volgende stap geen deel van de vorige (bv. Syntec-leads, waar ook
-    // offline leads in zitten, na de lead-events op de website): dan is het geen doorstroom.
     return pct > 100 ? null : pct;
   });
 }
 
-/** Voortgang op het doel als percentage, of null zonder doel of realisatie. */
-export function doelVoortgang(k: InsightKerncijfers | null | undefined): number | null {
-  if (!k || k.doelWaarde == null || k.doelRealisatie == null || k.doelWaarde <= 0) return null;
-  return (k.doelRealisatie / k.doelWaarde) * 100;
+export function datumKort(op: string): string {
+  const d = new Date(op);
+  return Number.isNaN(d.getTime())
+    ? op
+    : new Intl.DateTimeFormat(NL, { day: "numeric", month: "short", year: "numeric" }).format(d);
 }
 
 /** "v2 · 23 nov 2026" */
 export function versieLabel(versie: number, op: string): string {
-  const d = new Date(op);
-  const datum = Number.isNaN(d.getTime())
-    ? op
-    : new Intl.DateTimeFormat(NL, { day: "numeric", month: "short", year: "numeric" }).format(d);
-  return `v${versie} · ${datum}`;
+  return `v${versie} · ${datumKort(op)}`;
 }
 
 /** De looptijd als "18 sep – 31 dec 2026", of wat er van bekend is. */
@@ -157,29 +212,27 @@ export function looptijdLabel(start: string | null | undefined, eind: string | n
     new Intl.DateTimeFormat(NL, { day: "numeric", month: "short", ...(metJaar ? { year: "numeric" } : {}) }).format(
       new Date(`${s}T00:00:00Z`),
     );
-  if (start && eind) {
-    const zelfdeJaar = start.slice(0, 4) === eind.slice(0, 4);
-    return `${fmt(start, !zelfdeJaar)} – ${fmt(eind, true)}`;
-  }
+  if (start && eind) return `${fmt(start, start.slice(0, 4) !== eind.slice(0, 4))} – ${fmt(eind, true)}`;
   if (start) return `vanaf ${fmt(start, true)}`;
   if (eind) return `t/m ${fmt(eind, true)}`;
   return "Geen looptijd";
 }
 
 /**
- * Een resultaat uit de database zo neerzetten dat de weergave er niet op kan vastlopen: een
- * ontbrekende lijst wordt een lege lijst, secties staan op funnelvolgorde. Een analyse is
- * door een model geschreven; een veld dat ontbreekt mag de pagina niet laten crashen.
+ * Een resultaat uit de database zo neerzetten dat de weergave er niet op kan vastlopen. Een
+ * analyse is door een model geschreven; een veld dat ontbreekt mag de pagina niet breken.
  */
-export function normaliseerResultaat(ruw: unknown): InsightResultaat {
-  const r = (ruw ?? {}) as Partial<InsightResultaat>;
+export function normaliseerResultaat(ruw: unknown): MaResultaat {
+  const r = (ruw ?? {}) as Partial<MaResultaat>;
   const lijst = <T,>(x: T[] | undefined | null): T[] => (Array.isArray(x) ? x : []);
   return {
     formaat: 1,
     samenvatting: {
       kop: r.samenvatting?.kop ?? "",
+      regels: lijst(r.samenvatting?.regels).filter((x) => typeof x === "string").slice(0, 5),
       tekst: r.samenvatting?.tekst ?? "",
     },
+    doel: r.doel,
     funnel: lijst(r.funnel),
     secties: lijst(r.secties)
       .map((s, i) => ({ ...s, stap: typeof s.stap === "number" ? s.stap : i + 1 }))
@@ -187,6 +240,9 @@ export function normaliseerResultaat(ruw: unknown): InsightResultaat {
     inzichten: lijst(r.inzichten),
     aanbevelingen: lijst(r.aanbevelingen),
     herkenning: lijst(r.herkenning),
+    bronnen: lijst(r.bronnen),
+    correcties: lijst(r.correcties),
+    semantiekVoorstellen: lijst(r.semantiekVoorstellen),
     datakwaliteit: lijst(r.datakwaliteit),
   };
 }
