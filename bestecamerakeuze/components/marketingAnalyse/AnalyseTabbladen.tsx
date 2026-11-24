@@ -42,7 +42,7 @@ function TabKnop({
       aria-selected={actief}
       onClick={onKies}
       title={tab?.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab?.reden ?? undefined)}
-      className={`-mb-px flex min-w-0 flex-col items-start border-b-2 px-3 pb-2.5 pt-1 text-left transition-colors duration-[var(--duur-snel)] ease-merk ${
+      className={`-mb-px flex min-w-0 flex-col items-start border-b-2 px-2.5 pb-2.5 pt-1 text-left transition-colors duration-[var(--duur-snel)] ease-merk ${
         actief ? "border-primary text-ink" : "border-transparent text-ink-muted hover:text-ink"
       } ${tab?.leeg && !actief ? "opacity-60" : ""}`}
     >
@@ -71,10 +71,10 @@ export function AnalyseTabbalk({
   const groepen = groepeer(tabs);
   return (
     <div className="overflow-x-auto border-b border-line" role="tablist" aria-label="Onderdelen van de analyse">
-      <div className="flex min-w-max items-end gap-5">
+      <div className="flex min-w-max items-end gap-4">
         {groepen.map((g, i) => (
           <div key={`${g.naam}-${i}`} className="flex flex-col">
-            {g.naam && <p className="label-theme px-3 text-label text-ink-faint">{g.naam}</p>}
+            {g.naam && <p className="label-theme px-2.5 text-label text-ink-faint">{g.naam}</p>}
             <div className="flex">
               {g.tabs.map((t) => (
                 <TabKnop key={t.sleutel} tab={t} naam={t.naam} actief={actief === t.sleutel} onKies={() => onKies(t.sleutel)} />
@@ -82,7 +82,7 @@ export function AnalyseTabbalk({
             </div>
           </div>
         ))}
-        <div className="ml-auto flex flex-col pl-5">
+        <div className="ml-auto flex flex-col pl-4">
           <TabKnop naam="Verantwoording" actief={actief === VERANTWOORDING} onKies={() => onKies(VERANTWOORDING)} />
         </div>
       </div>
@@ -103,7 +103,7 @@ function BevindingenKolom({ tab, formaat }: { tab: AnalyseTab; formaat: 1 | 2 })
       </p>
     );
   }
-  if (tab.secties.length === 0) return <p className="text-sm text-ink-muted">{tab.reden}</p>;
+  if (tab.secties.length === 0) return <p className="text-sm text-ink-muted">Geen bevindingen of acties voor dit onderdeel.</p>;
 
   return (
     <div className="flex flex-col">

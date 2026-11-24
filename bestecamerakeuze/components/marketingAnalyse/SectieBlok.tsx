@@ -31,10 +31,12 @@ export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
   const cel = (waarde: string | number | null, k: number) => {
     const kolom = tabel.kolommen[k];
     const getal = typeof waarde === "number";
+    // Een getallenkolom lijnt rechts uit, ook een cel met tekst als "n.v.t.".
+    const rechts = getal || (k > 0 && kolom?.eenheid !== undefined && kolom.eenheid !== "tekst");
     return (
       <td
         key={k}
-        className={`px-3 py-2 ${getal ? "text-right tabular-nums" : ""} ${k === 0 ? "font-medium text-ink" : "text-ink"}`}
+        className={`px-3 py-2 ${rechts ? "text-right tabular-nums" : ""} ${k === 0 ? "font-medium text-ink" : getal ? "text-ink" : "text-ink-muted"}`}
       >
         {getal ? formatWaarde(waarde, kolom?.eenheid ?? "aantal") : (waarde ?? "—")}
       </td>
