@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 2 · 24 november 2026 · status: plan, verwerkt met de antwoorden van de eigenaar*
+*Versie 3 · 24 november 2026 · status: plan, verwerkt met twee rondes antwoorden van de eigenaar*
 
 ## 1. Waar het om gaat
 
@@ -36,6 +36,14 @@ Drie kennislagen sturen de analyse:
 | 14 | Migraties | Toegestaan. |
 | 15a | Periode | Alleen **binnen start- en einddatum**. Ligt de einddatum in de toekomst: tot en met **gisteren**. Het totaalbudget is wat marketing voor de hele periode beschikbaar heeft, om te beoordelen of de campagne op schema ligt. |
 | 15b | Supabase-queries | Toegestaan waar nodig (binnen de grenzen van §3). |
+| v2-A | Leads-data | Een **nachtelijke kopie** van "Data leads" in Supabase, alleen voor de analyse: zes kolommen (Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd), de laatste 365 dagen, zonder rijen met "FW:" in Onderwerp (zie §3.1). |
+| v2-B | Kostenverdeling | De rekensom in §5.3 klopt. |
+| v2-C | GA4 udenhout.nl | Alleen property **"GA4_https://udenhout.nl"** (255949462) voor Van den Udenhout. |
+| v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. |
+| v2-E | Merk en model | Blijven in de briefing (optioneel). |
+| v2-F | Semantic layer | Krijgt een blok **Algemeen**, met daarin ook welke accounts bij welk bedrijf horen. |
+| v2-G | Labelgrens | Einddatum vandaag = tussentijds (t/m gisteren); vanaf de dag erna = eindevaluatie. |
+| v2-H | Bedrijf in de briefing | De briefing vraagt **voor welk bedrijf** de campagne is (Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht …). Zo weet de analyse in welke accounts en properties hij moet kijken (zie §8). |
 
 ## 3. Harde regel: welke data de analyse mag gebruiken
 
@@ -46,10 +54,10 @@ Drie kennislagen sturen de analyse:
 | Google Ads, Meta Ads, LinkedIn Ads | **Windsor** (live) | Kosten, vertoningen, bereik, klikken, advertenties, bestemmings-URL's |
 | Facebook, Instagram, LinkedIn (organisch) | **Windsor** (live) | Posts met tekst, bereik, interacties, klikken |
 | Google Analytics 4 (alle websites) | **Windsor** (live) | Sessies, landingspagina's, kanalen, bron/medium, events, betrokkenheid |
-| Leads | **Spreadsheet, tabblad "Data leads"** (ruwe data) | Leads per kanaal, kanaalgroep, merk, model, lead type, datum aangelegd |
+| Leads | **Nachtelijke kopie van de spreadsheet "Data leads"** in Supabase (`marketing_analyse_leads`, §3.1) | Ordersoort, onderwerp, kanaalgroep, merk, model, datum aangelegd — laatste 365 dagen, zonder "FW:" |
 | Extra kanaalkosten | **Supabase `dataloket.lead_kanaalkosten`** | Maandkosten per GA4-bron/medium die niet in de advertentieaccounts staan |
 
-**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**.
+**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, en leads alleen uit `marketing_analyse_leads`.
 
 **Wel in Supabase, maar dat is geen analysedata:**
 
@@ -62,7 +70,24 @@ Deze regel komt op drie plekken te staan, zodat hij niet per ongeluk wordt losge
 - in de standaard-hoofdprompt;
 - in de verantwoording van elke analyse, die noemt welke bronnen zijn gebruikt.
 
-**Gevolg:** een analyse duurt langer. Windsor live bevragen kost per bron tot een paar minuten (Facebook organisch gemeten ±2 min). Dat is acceptabel, want de analyse draait in Claude Code en niet in de browser.
+### 3.1 De leads-kopie voor de analyse
+
+Het tabblad "Data leads" is te groot om tijdens een analyse rechtstreeks te lezen (±286.000 rijen, 37 kolommen). Daarom komt er een smalle, eigen kopie in Supabase, alleen voor de analyse:
+
+| | |
+|---|---|
+| **Tabel** | `dataloket.marketing_analyse_leads` (werknaam) |
+| **Kolommen** | Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd (als datum-tijd) |
+| **Rijen** | Alleen leads met Aangelegd in de **laatste 365 dagen**; rijen met **"FW:"** ergens in Onderwerp eruit; lege opvulregels eruit |
+| **Verversen** | **Elke nacht** in dezelfde run als de bestaande sheet-sync (`/api/sync`), uit dezelfde keer lezen van de sheet. Eerst alles vervangen in één transactie, zodat de tabel nooit half gevuld is. |
+| **Controle** | Elke run wordt gelogd. De analyse meldt tot welke datum de kopie loopt. |
+| **Rechten** | Lezen voor ingelogde collega's en voor Claude Code; schrijven alleen door de nachtelijke taak |
+
+Waarom dit binnen de regel "rechtstreeks uit de spreadsheet" valt: de kopie wordt elke nacht vers uit de sheet gemaakt en bevat precies de gekozen kolommen en filters. Hij leunt niet op `leads_raw` of `v_leads`.
+
+Gevolg van 365 dagen: een campagne die langer dan een jaar geleden begon, kan niet volledig opnieuw worden geanalyseerd. Een eerder gemaakte versie blijft wel bewaard.
+
+**Gevolg van de bronnenregel:** een analyse duurt langer. Windsor live bevragen kost per bron tot een paar minuten (Facebook organisch gemeten ±2 min). Dat is acceptabel, want de analyse draait in Claude Code en niet in de browser.
 
 ## 4. De flow
 
@@ -96,7 +121,7 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 | 6 | **Gedrag op de pagina**: betrokkenheid, tijd, events | Windsor GA4 |
 | 7 | **E-mailverkeer apart**: gedrag op de pagina en lead-events | Windsor GA4 (hoe e-mail te herkennen: semantic layer) |
 | 8 | **Lead-events in de sessie** (proefrit, offerte, servicebeurt …) | Windsor GA4, zie §5.2 (welke events tellen: semantic layer) |
-| 9 | **Leads**: totaal, via Internet, per lead type | Spreadsheet "Data leads" |
+| 9 | **Leads**: totaal, via Internet (kanaalgroep), per ordersoort (en lead type, zie vraag 1) | `marketing_analyse_leads` |
 | 10 | **Doel**: hoe staat de campagne ervoor, gezien doel, budget en periode | Briefing + alles hierboven |
 
 ### 5.2 Lead-events later in de sessie (geverifieerd)
@@ -114,7 +139,7 @@ campagnekosten (bron)           = Σ over de maanden: kosten per sessie × sessi
 ```
 
 - **Lopende maand:** het maandbedrag naar rato van de verstreken dagen, gedeeld door de sessies tot en met gisteren. Zo telt een half verstreken maand niet als een volle factuur.
-- **Website:** "alle sessies" wordt geteld op de GA4-property waar de campagnepagina op staat (vervolgvraag C).
+- **Website:** "alle sessies" wordt geteld op de GA4-property van het bedrijf waar de campagnepagina op staat; voor Van den Udenhout is dat "GA4_https://udenhout.nl".
 
 ### 5.4 Tussentijdse evaluatie of eindevaluatie
 
@@ -157,7 +182,7 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 
 | Blok | Voorbeelden van wat erin hoort |
 |---|---|
-| **Algemeen** (voorstel) | Naamgeving van campagnes ("Actie(s) - …"), merken en vestigingen, wat Van den Udenhout onder een lead verstaat |
+| **Algemeen** | **Welke accounts en GA4-properties bij welk bedrijf horen** (bijv. Van den Udenhout = Meta "Van den Udenhout", Google Ads "Udenhout", LinkedIn "Van den Udenhout Groep", GA4 "GA4_https://udenhout.nl"); naamgeving van campagnes ("Actie(s) - …"); wat Van den Udenhout onder een lead verstaat |
 | **Google Ads** | Campagnetypes (Search, PMax, Demand Gen), naamconventies, welke conversies betrouwbaar zijn |
 | **Meta Ads** | PR = prospecting, RT = retargeting; utm-opbouw; Meta-leads zijn de eigen telling van Meta |
 | **LinkedIn Ads** | Welke accounts horen bij welk merk |
@@ -165,7 +190,7 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 | **Instagram** | Accounts; organisch vs geboost bereik |
 | **LinkedIn organisch** | Bedrijfspagina's |
 | **Google Analytics 4** | Welke property bij welke website hoort; **hoe e-mailverkeer te herkennen** (kanaalgroep, utm_source/medium); **welke events als lead tellen**; welke andere events interessant zijn |
-| **Data leads (spreadsheet)** | Kolommen; "Internet" = online; lead types; modelnamen op veel manieren gespeld; dubbele leads; kolom Campagnes niet gebruiken |
+| **Data leads (spreadsheet)** | De zes kolommen en wat ze betekenen; "Internet" = online; ordersoorten; modelnamen op veel manieren gespeld; "FW:" is er al uit; 365 dagen |
 | **Extra kanaalkosten** | Wat erin staat en hoe het te verdelen (§5.3) |
 
 - **Bewerken** alleen door de eigenaar, **lezen** door iedereen.
@@ -193,13 +218,14 @@ Rechtsboven staan **Hoofdprompt**, **Semantic layer** en **Nieuwe campagne**. Ee
 **Briefing** (zijbalk). Velden:
 
 - naam (verplicht);
+- **bedrijf** (verplicht, keuzelijst): Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra … De lijst komt uit het blok Algemeen van de semantic layer, zodat een nieuw bedrijf daar maar op één plek bij hoeft;
+- merk en model (optioneel, de auto: bijv. Audi / A2 e-tron);
 - startdatum en einddatum;
 - totaalbudget;
 - doel (open tekst);
 - omschrijving;
 - data correctie.
 
-Merk en model staan nog ter discussie (vervolgvraag E).
 
 **Analysepagina**, van boven naar beneden:
 
@@ -220,41 +246,29 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 |---|---|
 | Naam | "Campaign insight" wordt **Marketing analyse** (sidebar, titel, startscherm, documentatie) |
 | Knop "Analyse aanvragen" | Wordt de schakelaar **Analyse ronde** in het overzicht |
-| Briefing | Zoektermen, campagnepagina's en de sheetkoppeling eruit; **Data correctie** erin |
+| Briefing | Zoektermen, campagnepagina's en de sheetkoppeling eruit; **Bedrijf** en **Data correctie** erin |
 | Nieuw | **Semantic layer**: knop, zijbalk met een blok per bron, tabel met versies |
 | Analyse | **Label** (tussentijds/eind) automatisch bij opslaan; momentopname van data correctie en semantic layer per versie |
-| Kerncijfers overzicht | Leads uit de spreadsheet (totaal + via Internet) in plaats van "Leads Syntec" |
+| Kerncijfers overzicht | Leads uit `marketing_analyse_leads` (totaal + via Internet) in plaats van "Leads Syntec" |
+| Nachtelijke sync | Extra tabel `marketing_analyse_leads` vullen in dezelfde run (§3.1), plus migratie |
 | Hoofdprompt (standaardtekst) | Herschreven naar de besluiten: bronnenregel, periode, leads (totaal/Internet/type), kostenverdeling, twee labels, geen orders, geen vergelijking met vóór de campagne |
-| Skill | Alleen Windsor live, de spreadsheet en `lead_kanaalkosten`; semantic layer en data correctie inlezen; analyseronde |
+| Skill | Alleen Windsor live, `marketing_analyse_leads` en `lead_kanaalkosten`; bedrijf → accounts uit de semantic layer; semantic layer en data correctie inlezen; analyseronde; ronde uit na eindevaluatie |
 | Rechten | Hoofdprompt en semantic layer: alleen de eigenaar (de twee accounts van Jan Willem) |
 
 ## 10. Fasering
 
 | Fase | Wat |
 |---|---|
-| **1** | Code aanpassen volgens §9; migraties toepassen; semantic layer vooraf vullen; briefing Audi A2; eerste analyse (v1, tussentijdse evaluatie); samen beoordelen |
+| **1** | Code aanpassen volgens §9; leads-kopie bouwen en een nacht laten draaien; migraties toepassen; semantic layer vooraf vullen; briefing Audi A2; eerste analyse (v1, tussentijdse evaluatie); samen beoordelen |
 | **2** | Hoofdprompt en semantic layer aanscherpen op basis van v1; data correctie invullen; v2 draaien en controleren dat de correcties zijn toegepast |
 | **3** | Later: e-mailcijfers uit Selligent, benchmarks tussen campagnes, automatisch wekelijks draaien |
 
-## 11. Vervolgvragen
+## 11. Vervolgvragen (ronde 3)
 
-**A. Toegang tot de spreadsheet (belangrijk).** Het tabblad "Data leads" heeft ±286.000 rijen en 37 kolommen. Via de Google Sheets-koppeling kan ik die niet rechtstreeks filteren: elk opgehaald blok gaat volledig door mijn werkgeheugen, en een campagneperiode is al gauw 10.000 rijen. Opties:
-
-- **A1 (voorstel): Google Sheets koppelen in Windsor.** Windsor heeft een Google Sheets-connector die op de server filtert, bijvoorbeeld op model en periode. Dan komen alleen de relevante leads terug, rechtstreeks uit de ruwe sheet, en past het in "via Windsor". Jij moet de sheet één keer koppelen in Windsor; ik geef je de link.
-- **A2:** een klein script in de repository dat de sheet met de bestaande Google-sleutel van het dashboard leest en filtert. Dat werkt alleen waar die sleutel beschikbaar is (Vercel of lokaal), niet in deze cloudsessie.
-- **A3:** de nachtelijke kopie (`leads_raw`) als uitzondering toestaan. Dat is dezelfde ruwe data, maar die wil je uitdrukkelijk niet.
-
-**B. Kostenverdeling extra kanaalkosten.** Klopt de rekensom in §5.3: maandbedrag ÷ alle sessies van die bron/medium in die maand × de sessies op de campagnepagina, en de lopende maand naar rato van de dagen?
-
-**C. GA4-property van udenhout.nl.** In Windsor staan er drie die op udenhout.nl lijken: "GA4_https://udenhout.nl", "https://www.udenhout.nl - Data property - GA4" en "vdu-site". Welke is leidend? Dit zet ik daarna in de semantic layer.
-
-**D. Analyse ronde na de eindevaluatie.** Zal de schakelaar automatisch op Uit springen zodra er een eindevaluatie is gemaakt? *Voorstel: ja,* anders blijft een afgelopen campagne elke ronde terugkomen.
-
-**E. Merk en model in de briefing.** Voor de leads moet de analyse weten om welk model het gaat. Dat kan Claude uit de naam en omschrijving halen, maar twee optionele velden "Merk" en "Model" maken het zekerder. *Voorstel: houden, optioneel.*
-
-**F. Blok "Algemeen" in de semantic layer.** Voor kennis die over alle bronnen gaat, zoals naamconventies en wat een lead is. *Voorstel: ja.*
-
-**G. Grens van het label.** Is de einddatum vandaag, dan loopt de campagne nog en wordt het een tussentijdse evaluatie (t/m gisteren). Vanaf de dag ná de einddatum wordt het een eindevaluatie. *Voorstel: zo.*
+1. **Lead Type in de leads-kopie?** Bij vraag 6 vroeg je welke lead types het waren, maar de kolom **Lead Type** (kolom Z) staat niet in je lijst van zes. Zonder die kolom kan de analyse alleen uitsplitsen naar ordersoort. *Voorstel: Lead Type toevoegen.*
+2. **Kanaal in de leads-kopie?** De kolom **Kanaal** (kolom A, bijv. Udenhout.nl, Audi.nl, Gaspedaal) zegt via welke bron een online lead binnenkwam. Dat helpt om leads aan de campagne te koppelen (via udenhout.nl tegenover een merksite of portal). *Voorstel: toevoegen.*
+3. **Bedrijf of merk.** In de briefing staan straks twee dingen die allebei "merk" kunnen heten: het **bedrijf** (Van den Udenhout, Porsche Centrum Brabant …) en het **automerk** (Audi, Volkswagen …). *Voorstel: het veld voor het bedrijf heet "Bedrijf" en het automerk "Merk (auto)".* Andere namen mogen ook.
+4. **Leads van andere bedrijven.** "Data leads" lijkt alleen de leads van Van den Udenhout te bevatten (Volkswagen-groep). Voor een campagne van bijvoorbeeld Porsche Centrum Brabant of Bentley Maastricht zijn er dan geen leads in deze bron. Klopt dat? Dan meldt de analyse dat bij die bedrijven en kijkt hij alleen naar de lead-events in GA4.
 
 ## 12. Risico's
 
@@ -262,7 +276,8 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 |---|---|
 | Verkeerde toerekening | Grondige herkenning bij elke analyse + verantwoording + Data correctie |
 | Windsor live is traag of een pull blijft hangen | Per bron ophalen, gefilterd op periode en campagne; bij uitval melden in de datakwaliteit |
-| Spreadsheet te groot om rechtstreeks te lezen | Vervolgvraag A |
+| Spreadsheet te groot om rechtstreeks te lezen | Smalle nachtelijke kopie (§3.1) |
+| Nachtelijke kopie loopt vast | Eigen log per run; de analyse meldt tot welke datum de leads lopen |
 | Modelnamen in de leads op veel manieren gespeld | Brede zoekterm, gebruikte waarden tonen, semantic layer, Data correctie |
 | Per ongeluk andere Supabase-tabellen gebruikt | Bronnenregel in skill, hoofdprompt en verantwoording |
 | Bestaand beveiligingspunt: 15 `dataloket`-tabellen zonder RLS | Los van deze tool oppakken |
