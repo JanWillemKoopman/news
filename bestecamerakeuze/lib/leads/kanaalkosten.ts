@@ -5,7 +5,7 @@ import type { CampagneRegel, Koppeling, LeadRegel } from "@/lib/leads/koppel";
  *
  * Sommige kanalen kosten geld zonder dat dit dashboard het weet: Gaspedaal
  * (`gaspedaal.nl / referral`) staat in GA4 als verwijzing, maar wordt per maand
- * gefactureerd. Op het tabblad Leads vult de eigenaar daarvoor per bron/medium per maand een
+ * gefactureerd. Op het tabblad Leads vult iedere gebruiker daarvoor per bron/medium per maand een
  * bedrag in (de knop "Kostenverdeling", tabel `dataloket.lead_kanaalkosten`). Dit bestand
  * rekent dat bedrag toe aan de leads.
  *

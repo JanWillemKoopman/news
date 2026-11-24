@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
-import { magBeperkteTabbladenZien } from "@/lib/beperkteTabbladen";
 import { isKanalenGeconfigureerd } from "@/lib/kanalen/bron";
 import { haalKostenverdeling } from "@/lib/leads/bron";
 import { KOSTEN_JAREN, leesBedrag } from "@/lib/leads/kanaalkosten";
@@ -15,23 +14,21 @@ export const dynamic = "force-dynamic";
  * maandbedragen van dat jaar. POST: één cel opslaan (bron/medium, maand, bedrag; leeg
  * bedrag = weghalen).
  *
- * Alleen voor de eigenaar, net als het tabblad zelf. Lezen gaat via de read-only verbinding
+ * Voor iedere ingelogde gebruiker, net als het tabblad zelf (sinds eind november 2026; daarvoor
+ * alleen de eigenaar). Lezen gaat via de read-only verbinding
  * (`haalKostenverdeling`), schrijven via de Supabase-client met de sessie van de gebruiker,
  * zodat de RLS-policies gelden en `bijgewerkt_door` klopt — dezelfde tweedeling als Budget
  * beheer. `no-store`: na opslaan en herladen moet het nieuwe bedrag er staan.
  */
 
-async function eigenaar() {
+async function ingelogdeGebruiker() {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return { fout: NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 }) };
-  if (!magBeperkteTabbladenZien(gebruiker.email)) {
-    return { fout: NextResponse.json({ fout: "Geen toegang tot dit tabblad." }, { status: 403 }) };
-  }
   return { gebruiker };
 }
 
 export async function GET(request: Request) {
-  const { fout } = await eigenaar();
+  const { fout } = await ingelogdeGebruiker();
   if (fout) return fout;
 
   if (!isKanalenGeconfigureerd()) {
@@ -56,7 +53,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { gebruiker, fout } = await eigenaar();
+  const { gebruiker, fout } = await ingelogdeGebruiker();
   if (fout) return fout;
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
