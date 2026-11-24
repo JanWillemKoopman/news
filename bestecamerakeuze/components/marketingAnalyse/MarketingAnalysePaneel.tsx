@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Inlogprompt from "@/components/Inlogprompt";
 import AnalyseWeergave, { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/AnalyseWeergave";
 import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
@@ -65,6 +66,10 @@ function RondeSchakelaar({ aan, bezig, onWissel, naam }: { aan: boolean; bezig: 
 /**
  * Het menu Analyse prompts: per opzet de prompt openen, en voor de eigenaar "Nieuwe opzet".
  * Een opzet zonder prompt zegt dat erbij; uitgezette opzetten ziet alleen de eigenaar.
+ *
+ * Het menu rendert via een portal naar <body> met een vaste positie onder de knop: de knop
+ * staat in de kop van een paneel met `overflow-hidden`, en daarbinnen viel alles onder de
+ * rand van een kort paneel weg (de PGZ-opzetten en "Nieuwe opzet").
  */
 function AnalysePromptsMenu({
   opzetten,
@@ -77,32 +82,47 @@ function AnalysePromptsMenu({
   onKies: (opzet: MaOpzet) => void;
   onNieuw: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [plek, setPlek] = useState<{ top: number; right: number } | null>(null);
+  const open = plek !== null;
+  const knopRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  function wissel() {
+    const r = knopRef.current?.getBoundingClientRect();
+    setPlek((huidig) => (huidig || !r ? null : { top: r.bottom + 8, right: window.innerWidth - r.right }));
+  }
 
   useEffect(() => {
     if (!open) return;
+    const sluit = () => setPlek(null);
     function buiten(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const doel = e.target as Node;
+      if (!knopRef.current?.contains(doel) && !menuRef.current?.contains(doel)) sluit();
     }
     function toets(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") sluit();
     }
     document.addEventListener("mousedown", buiten);
     document.addEventListener("keydown", toets);
+    // Vaste positie: bij scrollen of een ander venstermaat klopt hij niet meer, dus dicht.
+    window.addEventListener("scroll", sluit, true);
+    window.addEventListener("resize", sluit);
     return () => {
       document.removeEventListener("mousedown", buiten);
       document.removeEventListener("keydown", toets);
+      window.removeEventListener("scroll", sluit, true);
+      window.removeEventListener("resize", sluit);
     };
   }, [open]);
 
   const zichtbaar = opzetten.filter((o) => o.actief || isEigenaar);
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={knopRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={wissel}
         aria-expanded={open}
         aria-haspopup="menu"
         className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
@@ -111,8 +131,14 @@ function AnalysePromptsMenu({
         Analyse prompts
         <IconChevronDown className={`h-4 w-4 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && (
-        <div role="menu" className="absolute right-0 z-40 mt-2 w-80 overflow-hidden rounded-card border border-line bg-card py-1 shadow-dropdown">
+      {plek &&
+        createPortal(
+        <div
+          ref={menuRef}
+          role="menu"
+          style={{ top: plek.top, right: plek.right }}
+          className="fixed z-50 max-h-[70vh] w-80 overflow-y-auto rounded-card border border-line bg-card py-1 shadow-dropdown"
+        >
           {zichtbaar.length === 0 && <p className="px-4 py-2 text-sm text-ink-muted">Laden…</p>}
           {zichtbaar.map((o) => (
             <button
@@ -120,7 +146,7 @@ function AnalysePromptsMenu({
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
+                setPlek(null);
                 onKies(o);
               }}
               className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-surface"
@@ -136,7 +162,7 @@ function AnalysePromptsMenu({
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
+                setPlek(null);
                 onNieuw();
               }}
               className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface"
@@ -145,9 +171,10 @@ function AnalysePromptsMenu({
               Nieuwe opzet
             </button>
           )}
-        </div>
-      )}
-    </div>
+        </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
