@@ -1739,12 +1739,24 @@ lees dat eerst voordat je hier iets verandert.
   uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
   gemaakt. Alleen de eigenaar kan een versie verwijderen.
 - **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
-  (kop + hoogstens vijf regels voor het management), doeloordeel, funnelrij, secties in
-  funnelvolgorde (kerncijfers, Markdown, tabellen, grafieken), inzichten, aanbevelingen,
+  (kop + hoogstens vijf regels voor het management), doeloordeel, secties per tabblad
+  (kerncijfers, Markdown, tabellen, grafieken, en rechts kop, oordeel, bevindingen en acties),
+  acties voor de campagne als geheel,
   verantwoording (herkenning, gebruikte bronnen, wat er met de Data correctie is gedaan,
   kanttekeningen) en voorstellen voor de semantic layer. `normaliseerResultaat` zorgt dat een
   ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
   wijziging aan.**
+- **De analysepagina in tabbladen** (24 november 2026, formaat 2, op verzoek; besluiten in §14
+  van het plan). Bovenaan altijd de samenvatting in drie kolommen (`SamenvattingBlok.tsx`):
+  samenvatting met doeloordeel, de aanbevolen acties (eerst voor de campagne als geheel, dan
+  alle acties uit de tabbladen op prioriteit) en de briefing als ingeklapte verticale strook.
+  Daaronder tien tabbladen in funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`, indeling in
+  `tabbladenVoor` in `rekenen.ts`, getest), in groepen, met onder elke naam het hoofdgetal en
+  een stipje met het oordeel; los achteraan Verantwoording. Elk tabblad: links 3/4 de cijfers
+  (`SectieBlok.tsx`), rechts 1/4 de bevindingen en acties, die blijven staan bij scrollen
+  (`AnalyseTabbladen.tsx`). Een tabblad zonder data staat grijs met de reden. Het open tabblad
+  staat in de URL (`mtab`). Dit is een derde uitzondering op "geen dubbele navigatie"; maak er
+  geen precedent van. Versies in formaat 1 en rapportages krijgen een tabblad per sectie.
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
   schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
