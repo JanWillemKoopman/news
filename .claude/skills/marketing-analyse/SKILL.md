@@ -172,6 +172,7 @@ semantic layer nooit zelf aan.
 ```json
 { "kosten": 1960.8, "vertoningen": 520000, "vertoningenAds": 410000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
   "leadsSyntec": 60, "leadsSyntecInternet": 41, "doelLeads": 20,
+  "doelMeting": { "wat": "proefritten", "doel": 20, "gehaald": 14, "bron": "syntec" },
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
 `vertoningen` = betaald + organisch. `vertoningenAds` = alleen de vertoningen van Google Ads,
@@ -180,7 +181,21 @@ clicks, LinkedIn clicks). Het overzicht toont de gezamenlijke CTR als klikken ÷
 vul daarom altijd allebei in. `sessies` = sessies die op de campagnepagina('s) begonnen, uit elk
 kanaal: dat zijn de "bezoekers" in het overzicht.
 `leadsSyntec` en `leadsSyntecInternet` zijn null tenzij de analyse uitsluitend over Van den
-Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
+Udenhout gaat. **`doelMeting`** (besluit van de eigenaar, november 2026): het doel precies zoals het er
+staat, met de bron. Het overzicht toont dit in de kolom Doel ("2 van 20 proefritten",
+balkje, en klein "Bron: Syntec" of "Bron: GA4, campagnepagina"). Vul hem altijd in als het
+doel een aantal noemt; anders null.
+- **Wat** = het soort uit het doel ("20 proefritten" → `"proefritten"`, "40 offerteaanvragen"
+  → `"offerteaanvragen"`). Tel alleen dat soort, nooit alle leads.
+- **Bron** uit de tekst van het doel: "in Syntec" → `"syntec"`: tel die soort leads in de
+  leads-kopie (soort volgens de semantic layer, blok Data leads). "Via de website" (of
+  "online", "op de site") → `"ga4"`: tel het bijbehorende GA4-event (bijv.
+  generate_lead_proefrit) in sessies die op de campagnepagina begonnen, ook als het event later
+  in de sessie viel. **Geen bron genoemd**: Syntec als die van toepassing is (alleen Van den
+  Udenhout, met modellen in de briefing), anders GA4. Noem de gekozen bron ook bij het doel in
+  de analyse.
+- **Gehaald** = het getelde aantal in de periode; null als het niet te tellen is.
+`doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
 ("20 proefritten" → 20; proefrit- en offerteaanvragen zijn leads), null als het doel niet over
 een aantal leads gaat. Het overzicht zet de leads (Syntec bij alleen Van den Udenhout met
 modellen, anders `leadEvents`) tegen dit doel, en de kosten tegen het budget.

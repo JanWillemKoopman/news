@@ -336,7 +336,7 @@ export function normaliseerResultaat(ruw: unknown): MaResultaat {
 
 /**
  * Het eerste aantal in een doel in vrije tekst: "20 proefritten" → 20, "1.000 leads" → 1000.
- * Null zonder getal. Alleen een terugval: de analyse zet het gelezen doel in `doelLeads`.
+ * Null zonder getal. Alleen een terugval: de analyse zet het gelezen doel in `doelMeting`.
  */
 export function leesDoelGetal(doel: string | null | undefined): number | null {
   if (!doel) return null;
@@ -369,9 +369,8 @@ export interface OverzichtCijfers {
   bezoekers: number | null;
   leads: number | null;
   bron: LeadBron;
-  doelLeads: number | null;
-  /** Deel van het leaddoel dat is gehaald, in procenten; null zonder doel of leads. */
-  gehaaldPct: number | null;
+  /** Het doel zoals gemeten: wat, hoeveel, hoeveel gehaald en uit welke bron. Null zonder doel. */
+  doel: { wat: string; aantal: number; gehaald: number | null; bron: LeadBron; pct: number | null } | null;
 }
 
 /** De cijfers voor één regel in het overzicht van campagne-analyses. */
@@ -382,7 +381,11 @@ export function overzichtCijfers(
   const kosten = k?.kosten ?? null;
   const bron = leadBron(c);
   const leads = (bron === "syntec" ? k?.leadsSyntec : k?.leadEvents) ?? null;
-  const doelLeads = k?.doelLeads ?? leesDoelGetal(c.doel);
+  const meting = k?.doelMeting;
+  const doelAantal = meting?.doel ?? k?.doelLeads ?? leesDoelGetal(c.doel);
+  // Met een doelmeting telt precies wat het doel zegt; zonder (oudere analyses) alle leads uit de leadbron.
+  const gehaald = meting ? meting.gehaald : leads;
+  const doelBron: LeadBron = meting?.bron === "syntec" || meting?.bron === "ga4" ? meting.bron : bron;
   return {
     kosten,
     budget: c.budget,
@@ -393,7 +396,15 @@ export function overzichtCijfers(
     bezoekers: k?.sessies ?? null,
     leads,
     bron,
-    doelLeads,
-    gehaaldPct: leads !== null && doelLeads ? (leads / doelLeads) * 100 : null,
+    doel:
+      doelAantal && doelAantal > 0
+        ? {
+            wat: meting?.wat?.trim() || "leads",
+            aantal: doelAantal,
+            gehaald,
+            bron: doelBron,
+            pct: gehaald !== null ? (gehaald / doelAantal) * 100 : null,
+          }
+        : null,
   };
 }

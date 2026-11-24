@@ -137,7 +137,28 @@ export interface MaKerncijfers {
    * zoals de analyse het las. Null als het doel niet over een aantal leads gaat.
    */
   doelLeads?: number | null;
+  /**
+   * Het doel uit de briefing zoals de analyse het meet: wat, hoeveel, hoeveel gehaald en uit
+   * welke bron. Het overzicht toont dit in de kolom Doel. Heeft een oudere analyse dit niet,
+   * dan valt het overzicht terug op doelLeads tegen alle leads.
+   */
+  doelMeting?: MaDoelMeting | null;
   doel?: DoelOordeel | null;
+}
+
+/**
+ * Het doel gemeten zoals het in de briefing staat (besluit van de eigenaar, november 2026):
+ * "20 proefritten in Syntec" telt proefritten in Syntec; "20 proefritten via de website" telt
+ * proefrit-events in GA4 in sessies die op de campagnepagina begonnen. Zonder bron: Syntec als
+ * die van toepassing is (alleen Van den Udenhout met modellen), anders GA4.
+ */
+export interface MaDoelMeting {
+  /** Wat er geteld wordt, meervoud en klein: "proefritten", "offerteaanvragen", "leads". */
+  wat: string;
+  doel: number;
+  /** Null als de analyse het (nog) niet kon tellen. */
+  gehaald: number | null;
+  bron: "syntec" | "ga4";
 }
 
 export type Eenheid = "aantal" | "euro" | "procent" | "seconden" | "tekst";

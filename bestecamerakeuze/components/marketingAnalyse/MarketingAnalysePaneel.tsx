@@ -20,6 +20,7 @@ import {
   vandaagNL,
   versieLabel,
   type LeadBron,
+  type OverzichtCijfers,
 } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import type { MaCampagne, MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
@@ -265,6 +266,39 @@ function BalkCel({
 }
 
 const BRON_NAAM: Record<LeadBron, string> = { syntec: "Syntec", ga4: "Google Analytics" };
+
+/** Waar het doel uit komt, klein en grijs onder het doel. */
+const DOEL_BRON: Record<LeadBron, string> = { syntec: "Bron: Syntec", ga4: "Bron: GA4, campagnepagina" };
+
+/**
+ * Het doel zoals de analyse het meet: "2 van 20 proefritten", een balkje met hoeveel er gehaald
+ * is, en altijd de bron (Syntec of GA4). Verzoek van de eigenaar: het doel telt precies wat er
+ * staat, niet alle leads.
+ */
+function DoelCel({ doel }: { doel: OverzichtCijfers["doel"] }) {
+  if (!doel) {
+    return (
+      <div className="flex min-w-[160px] flex-col gap-1.5">
+        <span className="text-ink">—</span>
+        <span className="text-meta text-ink-faint">Geen aantal in het doel</span>
+      </div>
+    );
+  }
+  const gehaald = doel.pct !== null && doel.pct >= 100;
+  return (
+    <div className="flex min-w-[160px] flex-col gap-1.5">
+      <span className="tabular-nums text-ink">
+        {doel.gehaald !== null ? `${formatWaarde(doel.gehaald)} van ` : ""}
+        {formatWaarde(doel.aantal)} {doel.wat}
+      </span>
+      {doel.pct !== null && <ProgressBar percent={doel.pct} className="h-1 max-w-40" />}
+      <span className={`text-meta ${gehaald ? "text-positive" : "text-ink-faint"}`}>
+        {doel.pct !== null ? `${formatWaarde(doel.pct, "procent")} gehaald` : "Nog niet gemeten"}
+      </span>
+      <span className="text-meta text-ink-faint">{DOEL_BRON[doel.bron]}</span>
+    </div>
+  );
+}
 const BRON_UITLEG: Record<LeadBron, string> = {
   syntec: "Leads in Syntec (Data leads) voor het merk en de modellen uit de briefing",
   ga4: "Lead-events in GA4 in sessies die op de campagnepagina('s) begonnen",
@@ -297,8 +331,8 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
             <th className={KOP} title="Syntec bij Van den Udenhout met opgegeven modellen, anders lead-events in Google Analytics">
               Leads
             </th>
-            <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
-              Doel leads
+            <th className={KOP} title="Het doel uit de briefing zoals de analyse het meet, hoeveel ervan gehaald is en uit welke bron">
+              Doel
             </th>
             <th className="w-24 px-4 py-2.5">
               <span className="sr-only">Briefing en mail</span>
@@ -365,19 +399,8 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
                     <span className="text-meta text-ink-faint">{BRON_NAAM[o.bron]}</span>
                   </div>
                 </td>
-                <td className="px-3 py-3">
-                  <BalkCel
-                    waarde={o.doelLeads !== null ? formatWaarde(o.doelLeads) : "—"}
-                    pct={o.gehaaldPct}
-                    toon={o.gehaaldPct !== null && o.gehaaldPct >= 100 ? "positief" : "neutraal"}
-                    onder={
-                      o.doelLeads === null
-                        ? "Geen aantal in het doel"
-                        : o.gehaaldPct === null
-                          ? "Nog niet gemeten"
-                          : `${formatWaarde(o.gehaaldPct, "procent")} gehaald`
-                    }
-                  />
+                <td className="px-3 py-3" title={c.doel ?? undefined}>
+                  <DoelCel doel={o.doel} />
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />

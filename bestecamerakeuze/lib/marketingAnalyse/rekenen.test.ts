@@ -215,21 +215,32 @@ test("leadbron: Syntec alleen bij Van den Udenhout met modellen", () => {
   assert.equal(leadBron({ bedrijven: ["Van den Udenhout", "PGZ"], modellen: ["A2"] }), "ga4");
 });
 
-test("overzichtcijfers: uitgaven tegen budget, leads tegen doel", () => {
+test("overzichtcijfers: uitgaven tegen budget, doel zoals gemeten", () => {
   const a2 = { bedrijven: ["Van den Udenhout"], modellen: ["A2"], budget: 3150, doel: "20 proefritten" };
-  const o = overzichtCijfers(a2, { kosten: 3189.79, leadEvents: 30, leadsSyntec: 12 });
+  const o = overzichtCijfers(a2, {
+    kosten: 3189.79,
+    leadEvents: 30,
+    leadsSyntec: 94,
+    doelMeting: { wat: "proefritten", doel: 20, gehaald: 2, bron: "syntec" },
+  });
   assert.equal(o.bron, "syntec");
-  assert.equal(o.leads, 12);
-  assert.equal(o.doelLeads, 20);
+  assert.equal(o.leads, 94);
   assert.equal(Math.round(o.besteedPct!), 101);
-  assert.equal(o.gehaaldPct, 60);
-  // De analyse kan het doel anders lezen dan de eerste regex: die wint.
-  assert.equal(overzichtCijfers(a2, { doelLeads: 25 }).doelLeads, 25);
-  const zonder = overzichtCijfers({ ...a2, budget: null, modellen: [] }, { kosten: 100, leadEvents: 30 });
+  // Het doel telt alleen proefritten, niet alle leads.
+  assert.deepEqual(o.doel, { wat: "proefritten", aantal: 20, gehaald: 2, bron: "syntec", pct: 10 });
+  // Doel via de website: GA4, ook al is de leadbron Syntec.
+  const web = overzichtCijfers(a2, { leadsSyntec: 94, doelMeting: { wat: "proefritten", doel: 20, gehaald: 22, bron: "ga4" } });
+  assert.equal(web.doel?.bron, "ga4");
+  assert.equal(Math.round(web.doel!.pct!), 110);
+  // Oudere analyse zonder doelmeting: doelLeads (of het getal uit de tekst) tegen alle leads.
+  const oud = overzichtCijfers(a2, { leadsSyntec: 12, doelLeads: 25 });
+  assert.deepEqual(oud.doel, { wat: "leads", aantal: 25, gehaald: 12, bron: "syntec", pct: 48 });
+  assert.equal(overzichtCijfers(a2, null).doel?.aantal, 20);
+  assert.equal(overzichtCijfers(a2, null).doel?.pct, null);
+  const zonder = overzichtCijfers({ ...a2, budget: null, modellen: [], doel: "Naamsbekendheid" }, { kosten: 100, leadEvents: 30 });
   assert.equal(zonder.besteedPct, null);
   assert.equal(zonder.bron, "ga4");
-  assert.equal(zonder.leads, 30);
-  assert.equal(overzichtCijfers(a2, null).gehaaldPct, null);
+  assert.equal(zonder.doel, null);
 });
 
 test("meerdere bedrijven in de briefing en als label", () => {

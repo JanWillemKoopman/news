@@ -47,7 +47,7 @@ Pas daarna de Data correctie toe en meld per correctie wat je ermee hebt gedaan.
 7. **E-mailverkeer apart**: gedrag op de pagina en lead-events, vergeleken met betaald verkeer.
 8. **Lead-events en andere interessante events** in sessies die op de campagnepagina begonnen, per soort.
 9. **Leads in Syntec** — alleen bij Van den Udenhout: totaal, hoeveel via Internet, en welke soort leads (volgens de semantic layer). Bij andere bedrijven: meld dat leads alleen uit GA4 komen.
-10. **Doel**: hoe staat de campagne ervoor, gezien het doel, het budget en hoeveel van de looptijd verstreken is? Geef een status (voor, op koers, achter, niet te beoordelen) met toelichting.
+10. **Doel**: hoe staat de campagne ervoor, gezien het doel, het budget en hoeveel van de looptijd verstreken is? Geef een status (voor, op koers, achter, niet te beoordelen) met toelichting. Meet het doel precies zoals het er staat: "20 proefritten" zijn 20 proefritten, niet 20 leads. "In Syntec" meet je in Syntec; "via de website" meet je met het GA4-event in sessies die op de campagnepagina begonnen (ook als het event later in de sessie viel). Staat er geen bron, dan Syntec als die van toepassing is, anders GA4. Noem altijd de bron.
 
 ## Stap 3 — Hoofdstuk per label
 Het label staat vast voordat je begint: **Tussentijdse evaluatie** als de campagne nog loopt, **Eindevaluatie** als de einddatum voorbij is.

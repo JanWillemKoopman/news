@@ -1703,10 +1703,14 @@ lees dat eerst voordat je hier iets verandert.
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
   Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (Syntec bij alleen Van den Udenhout met modellen,
-  anders lead-events in Google Analytics, met de bron eronder) en Doel leads (balkje, groen
-  vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
-  vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
-  getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.
+  anders lead-events in Google Analytics, met de bron eronder) en Doel ("2 van 20
+  proefritten", balkje, groen vanaf 100%, en altijd klein en grijs de bron: "Bron: Syntec" of
+  "Bron: GA4, campagnepagina"). Het doel telt precies wat er staat, niet alle leads
+  (besluit van de eigenaar): de analyse zet het in `kerncijfers.doelMeting` (wat, doel,
+  gehaald, bron). "In Syntec" = Syntec; "via de website" = het GA4-event in sessies die op de
+  campagnepagina begonnen; zonder bron Syntec als die van toepassing is, anders GA4. Oudere
+  analyses zonder doelMeting vallen terug op `doelLeads` tegen alle leads
+  (`overzichtCijfers` in `rekenen.ts`, getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.
 - **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijven** = welke van onze bedrijven, **Merk** =
   automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving; bij een
   rapportage naam, bedrijf, periode en omschrijving); de
