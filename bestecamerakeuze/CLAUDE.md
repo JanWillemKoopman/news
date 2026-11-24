@@ -1657,6 +1657,55 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
   - **Eén ophaalactie** voor de campagnetabel en dit tabblad
     (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
 
+### Campagnes → Marketing analyse
+
+Vierde tabblad onder **Campagnes** (view `marketing-analyse`, `components/marketingAnalyse/`,
+routes `app/api/marketing-analyse/`, rekenwerk in `lib/marketingAnalyse/`, migratie 0042). Per
+campagne een full-funnel analyse die **Claude Code maakt** (skill
+`.claude/skills/marketing-analyse/` in de root van de repo) en het dashboard toont. Voor iedereen
+zichtbaar. **Het plan en alle besluiten van de eigenaar staan in `campagne-analyse-tool.md`**;
+lees dat eerst voordat je hier iets verandert.
+
+- **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
+  alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
+  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`.
+  **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
+  regel staat in de skill, in de standaard-hoofdprompt en in de verantwoording van elke analyse.
+- **Leads-kopie** (`marketing_analyse_leads`, gevuld door `/api/sync` uit dezelfde keer lezen
+  als `leads_raw`, eigen transactie en eigen regel `Marketing analyse leads` in `sync_runs`):
+  precies zes kolommen 1-op-1 uit "Data leads" (Ordersoort, Onderwerp, Kanaalgroep, Merk,
+  Model, Aangelegd) plus `aangelegd_op` om op te filteren; de laatste 365 dagen; zonder rijen
+  met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts` (getest). Alleen van
+  toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven kijken voor leads
+  alleen naar GA4 en tonen in het overzicht "n.v.t.".
+- **Vier kennislagen.** De *briefing* (naam, **Bedrijf** = welk van onze bedrijven, **Merk** =
+  automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving); de
+  *hoofdprompt* (één prompt met een hoofdstuk per label); de *semantic layer* (per databron een
+  tekstblok, plus in Algemeen de bedrijvenlijst voor de keuzelijst en welke accounts bij welk
+  bedrijf horen; startinhoud in `standaardSemantiek.ts`); en de *Data correctie* per campagne
+  (wat er bij een vorige analyse niet klopte). Hoofdprompt en semantic layer: lezen iedereen,
+  opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
+  iedereen.
+- **Versies en label.** `marketing_analyse_bewaar` kent het versienummer toe uit
+  `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
+  label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
+  evaluatie**), legt briefing en Data correctie van dat moment vast en zet de **Analyse ronde**
+  uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
+  gemaakt. Alleen de eigenaar kan een versie verwijderen.
+- **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
+  (kop + hoogstens vijf regels voor het management), doeloordeel, funnelrij, secties in
+  funnelvolgorde (kerncijfers, Markdown, tabellen, grafieken), inzichten, aanbevelingen,
+  verantwoording (herkenning, gebruikte bronnen, wat er met de Data correctie is gedaan,
+  kanttekeningen) en voorstellen voor de semantic layer. `normaliseerResultaat` zorgt dat een
+  ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
+  wijziging aan.**
+- **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
+  Afgelopen; per regel de schakelaar Analyse ronde en de kerncijfers uit de laatste analyse.
+  Rechtsboven Hoofdprompt, Semantic layer en Nieuwe campagne. De open analyse staat in de URL
+  (`?analyse=<campagne-id>`).
+- **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
+  analyse; de sheet blijft de bron van de campagnetabel.
+
 ### Component- en codepatronen
 
 - Herbruikbare, kleine componenten per concern:  `Sidebar`, `NavigationItem`,

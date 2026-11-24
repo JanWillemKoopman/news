@@ -3,6 +3,8 @@ import { Client } from "pg";
 import { BRONNEN, haalSheetOp, type Bron, type GeparsteRij } from "@/lib/sync/bronnen";
 import { bouwBlokInsert, inBlokken, rijenAlsRecords, teBewarenAfwijkingen } from "@/lib/sync/blokken";
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
+import { analyseLeadRecords } from "@/lib/sync/analyseLeads";
+import { vandaagNL } from "@/lib/marketingAnalyse/rekenen";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -31,7 +33,56 @@ interface SyncResultaat {
   afgekeurd: number;
 }
 
-async function syncBron(client: Client, bron: Bron): Promise<SyncResultaat> {
+/** De bron waaruit de leads-kopie voor Marketing analyse wordt gemaakt. */
+const ANALYSE_LEADS_BRON = "Data leads";
+const ANALYSE_LEADS_RUN = "Marketing analyse leads";
+
+/**
+ * De leads-kopie voor Marketing analyse (`marketing_analyse_leads`): zes kolommen 1-op-1, de
+ * laatste 365 dagen, zonder "FW:" (`lib/sync/analyseLeads.ts`). Uit dezelfde sheetrijen als
+ * `leads_raw`, maar een eigen transactie en een eigen regel in `sync_runs`: gaat dit mis, dan
+ * blijft de vorige kopie staan en loopt de rest van de sync gewoon door.
+ */
+async function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<SyncResultaat | { bron: string; fout: string }> {
+  const startRes = await client.query<{ id: string }>(
+    `insert into dataloket.sync_runs (bron) values ($1) returning id`,
+    [ANALYSE_LEADS_RUN],
+  );
+  const runId = startRes.rows[0].id;
+  try {
+    const records = analyseLeadRecords(rijen, vandaagNL());
+    await client.query("begin");
+    await client.query(`truncate table dataloket.marketing_analyse_leads`);
+    for (const blok of inBlokken(records)) {
+      await client.query(
+        `insert into dataloket.marketing_analyse_leads
+           (ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op)
+         select ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op
+           from json_populate_recordset(null::dataloket.marketing_analyse_leads, $1::json)`,
+        [JSON.stringify(blok)],
+      );
+    }
+    await client.query("commit");
+    await client.query(
+      `update dataloket.sync_runs
+          set geeindigd_op = now(), rijen_gelezen = $2, rijen_geplaatst = $3,
+              rijen_afgekeurd = $4, gelukt = true
+        where id = $1`,
+      [runId, rijen.length, records.length, rijen.length - records.length],
+    );
+    return { bron: ANALYSE_LEADS_RUN, gelezen: rijen.length, geplaatst: records.length, afgekeurd: rijen.length - records.length };
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    const bericht = err instanceof Error ? err.message : String(err);
+    await client.query(
+      `update dataloket.sync_runs set geeindigd_op = now(), gelukt = false, fout = $2 where id = $1`,
+      [runId, bericht],
+    );
+    return { bron: ANALYSE_LEADS_RUN, fout: bericht };
+  }
+}
+
+async function syncBron(client: Client, bron: Bron, bewaarRijen?: (rijen: GeparsteRij[]) => void): Promise<SyncResultaat> {
   const startRes = await client.query<{ id: string }>(
     `insert into dataloket.sync_runs (bron) values ($1) returning id`,
     [bron.naam],
@@ -65,6 +116,7 @@ async function syncBron(client: Client, bron: Bron): Promise<SyncResultaat> {
       }
       goed.push(rij);
     }
+    bewaarRijen?.(goed);
 
     // Volledige verversing in één transactie: bij duizenden rijen simpeler en
     // betrouwbaarder dan bijhouden wat er veranderd is. Mislukt er iets halverwege, dan
@@ -153,10 +205,14 @@ export async function POST(request: Request) {
 
   try {
     await client.connect();
-    const resultaten: SyncResultaat[] = [];
+    const resultaten: (SyncResultaat | { bron: string; fout: string })[] = [];
+    let leadRijen: GeparsteRij[] | null = null;
     for (const bron of BRONNEN) {
-      resultaten.push(await syncBron(client, bron));
+      resultaten.push(
+        await syncBron(client, bron, bron.naam === ANALYSE_LEADS_BRON ? (rijen) => (leadRijen = rijen) : undefined),
+      );
     }
+    if (leadRijen) resultaten.push(await syncAnalyseLeads(client, leadRijen));
     return NextResponse.json({ status: "klaar", resultaten });
   } catch (err) {
     const bericht = err instanceof Error ? err.message : String(err);
