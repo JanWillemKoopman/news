@@ -209,6 +209,16 @@ export interface MaOverzichtRegel extends MaCampagne {
   aantalAnalyses: number;
 }
 
+/** Iemand die een mail krijgt bij een nieuwe analyse van een campagne. */
+export interface MaVolger {
+  id: string;
+  email: string;
+  toegevoegdOp: string;
+  /** Het adres van de ingelogde gebruiker zelf. */
+  ikZelf: boolean;
+  magVerwijderen: boolean;
+}
+
 export interface MaVersie {
   id: string;
   versie: number;

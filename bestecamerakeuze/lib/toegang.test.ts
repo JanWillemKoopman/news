@@ -33,6 +33,14 @@ test("de cron-routes blijven bereikbaar zonder sessie", () => {
   assert.equal(besluit("/api/kpi-2027", false).soort, "weiger");
 });
 
+test("notificatie en afmelden van Marketing analyse zijn openbaar, de rest niet", () => {
+  assert.equal(besluit("/api/marketing-analyse/notificatie", false).soort, "door");
+  assert.equal(besluit("/api/marketing-analyse/afmelden", false, "?token=x").soort, "door");
+  assert.equal(besluit("/api/marketing-analyse/volgers", false).soort, "weiger");
+  assert.equal(besluit("/api/marketing-analyse", false).soort, "weiger");
+  assert.equal(besluit("/api/marketing-analyse/notificatie/extra", false).soort, "weiger");
+});
+
 test("de auth-routes blijven bereikbaar zonder sessie", () => {
   assert.equal(besluit("/auth/callback", false).soort, "door");
   assert.equal(besluit("/auth/signout", false).soort, "door");

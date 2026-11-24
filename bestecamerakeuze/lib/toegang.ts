@@ -38,6 +38,13 @@ export interface Verzoek {
   ingelogd: boolean;
 }
 
+/**
+ * Openbare routes van Marketing analyse. De notificatieroute roept de database zelf aan
+ * (pg_net, migratie 0043) en verstuurt alleen nog niet verstuurde mails van een bestaande
+ * versie; de afmeldroute komt uit de mail en werkt op een willekeurig token per volger.
+ */
+export const OPENBARE_PADEN = ["/api/marketing-analyse/notificatie", "/api/marketing-analyse/afmelden"] as const;
+
 function isCronPad(pad: string): boolean {
   return (CRON_PADEN as readonly string[]).includes(pad);
 }
@@ -48,6 +55,7 @@ export function bepaalToegang({ pad, zoek, ingelogd }: Verzoek): Toegangsbesluit
   // niemand er nog doorheen.
   if (pad === "/auth" || pad.startsWith("/auth/")) return { soort: "door" };
   if (isCronPad(pad)) return { soort: "door" };
+  if ((OPENBARE_PADEN as readonly string[]).includes(pad)) return { soort: "door" };
 
   if (ingelogd) {
     return pad === "/login" ? { soort: "naar-dashboard" } : { soort: "door" };
