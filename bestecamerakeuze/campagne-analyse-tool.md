@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 3 · 24 november 2026 · status: plan, verwerkt met twee rondes antwoorden van de eigenaar*
+*Versie 4 · 24 november 2026 · status: plan rond, klaar om te bouwen (fase 1)*
 
 ## 1. Waar het om gaat
 
@@ -25,7 +25,7 @@ Drie kennislagen sturen de analyse:
 | 2–3 | Doel | **Open tekstveld** in de briefing. De analyse krijgt het doel als context en beoordeelt zelf hoe het ervoor staat. Wat het doel is, staat in de briefing. |
 | 4 | Kosten | Mediakosten uit de advertentieaccounts (via Windsor) **plus** de extra kanaalkosten uit `dataloket.lead_kanaalkosten` (bijv. gaspedaal.nl / referral), verdeeld over de sessies (zie §5.3). |
 | 5 | Orders | **Niet** meenemen. |
-| 6 | Leads | Uit de spreadsheet: **totaal aantal leads**, **hoeveel via Internet** en **welke lead types**. |
+| 6 | Leads | Uit de leads-kopie: **totaal aantal leads**, **hoeveel via Internet** en **welke soort leads**. Welke soort een lead is, leidt de analyse af uit de zes kolommen volgens de semantic layer van Data leads (er is geen kolom Lead Type). |
 | 7 | E-mailcijfers (Selligent) | **Nu niet**, later misschien. E-mail alleen vanaf de klik (GA4). |
 | 8 | Toerekening | Bij **elke** analyse grondig onderzoeken welke data bij de campagne hoort en dat tonen in het resultaat. Plus een open veld **Data correctie** per campagne (zie §6). |
 | 9 | Label | Analysedatum vóór de einddatum: **Tussentijdse evaluatie** (gericht op bijsturen). Einddatum verstreken: **Eindevaluatie** (terugblik op de hele campagne). |
@@ -44,6 +44,10 @@ Drie kennislagen sturen de analyse:
 | v2-F | Semantic layer | Krijgt een blok **Algemeen**, met daarin ook welke accounts bij welk bedrijf horen. |
 | v2-G | Labelgrens | Einddatum vandaag = tussentijds (t/m gisteren); vanaf de dag erna = eindevaluatie. |
 | v2-H | Bedrijf in de briefing | De briefing vraagt **voor welk bedrijf** de campagne is (Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht …). Zo weet de analyse in welke accounts en properties hij moet kijken (zie §8). |
+| v3-1 | Lead Type | **Niet** in de kopie. Wat welk soort lead is, legt de eigenaar vast in de semantic layer van Data leads. |
+| v3-2 | Kolommen kopie | Precies de zes opgegeven velden, **1-op-1** zoals in de sheet: Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd. Geen Kanaal, geen andere kolommen. Hoe ze te analyseren, staat in de semantic layer. |
+| v3-3 | Veldnamen briefing | **Bedrijf** = welk van onze bedrijven (Van den Udenhout, Porsche Centrum Brabant, Bentley Maastricht …). **Merk** = het automerk (Audi, Volkswagen …). |
+| v3-4 | Leads per bedrijf | **Alleen Van den Udenhout** gebruikt de leads-kopie, naast de leads en andere interessante events uit GA4. **Alle andere bedrijven**: de leads-kopie is niet van toepassing; voor leads kijken ze **alleen naar GA4**. Dit staat ook in het blok Algemeen van de semantic layer. |
 
 ## 3. Harde regel: welke data de analyse mag gebruiken
 
@@ -54,7 +58,7 @@ Drie kennislagen sturen de analyse:
 | Google Ads, Meta Ads, LinkedIn Ads | **Windsor** (live) | Kosten, vertoningen, bereik, klikken, advertenties, bestemmings-URL's |
 | Facebook, Instagram, LinkedIn (organisch) | **Windsor** (live) | Posts met tekst, bereik, interacties, klikken |
 | Google Analytics 4 (alle websites) | **Windsor** (live) | Sessies, landingspagina's, kanalen, bron/medium, events, betrokkenheid |
-| Leads | **Nachtelijke kopie van de spreadsheet "Data leads"** in Supabase (`marketing_analyse_leads`, §3.1) | Ordersoort, onderwerp, kanaalgroep, merk, model, datum aangelegd — laatste 365 dagen, zonder "FW:" |
+| Leads (**alleen Van den Udenhout**) | **Nachtelijke kopie van de spreadsheet "Data leads"** in Supabase (`marketing_analyse_leads`, §3.1) | Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd — laatste 365 dagen, zonder "FW:" |
 | Extra kanaalkosten | **Supabase `dataloket.lead_kanaalkosten`** | Maandkosten per GA4-bron/medium die niet in de advertentieaccounts staan |
 
 **Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, en leads alleen uit `marketing_analyse_leads`.
@@ -77,7 +81,7 @@ Het tabblad "Data leads" is te groot om tijdens een analyse rechtstreeks te leze
 | | |
 |---|---|
 | **Tabel** | `dataloket.marketing_analyse_leads` (werknaam) |
-| **Kolommen** | Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd (als datum-tijd) |
+| **Kolommen** | Precies deze zes, 1-op-1 zoals in de sheet: Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd. De waarden blijven ongewijzigd; alleen Aangelegd wordt daarnaast als datum opgeslagen, zodat er op periode te filteren is. |
 | **Rijen** | Alleen leads met Aangelegd in de **laatste 365 dagen**; rijen met **"FW:"** ergens in Onderwerp eruit; lege opvulregels eruit |
 | **Verversen** | **Elke nacht** in dezelfde run als de bestaande sheet-sync (`/api/sync`), uit dezelfde keer lezen van de sheet. Eerst alles vervangen in één transactie, zodat de tabel nooit half gevuld is. |
 | **Controle** | Elke run wordt gelogd. De analyse meldt tot welke datum de kopie loopt. |
@@ -120,8 +124,8 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 | 5 | **Verkeer naar de campagnepagina('s)** per kanaal en bron/medium | Windsor GA4 |
 | 6 | **Gedrag op de pagina**: betrokkenheid, tijd, events | Windsor GA4 |
 | 7 | **E-mailverkeer apart**: gedrag op de pagina en lead-events | Windsor GA4 (hoe e-mail te herkennen: semantic layer) |
-| 8 | **Lead-events in de sessie** (proefrit, offerte, servicebeurt …) | Windsor GA4, zie §5.2 (welke events tellen: semantic layer) |
-| 9 | **Leads**: totaal, via Internet (kanaalgroep), per ordersoort (en lead type, zie vraag 1) | `marketing_analyse_leads` |
+| 8 | **Lead-events en andere interessante events in de sessie** (proefrit, offerte, servicebeurt …) — voor **elk** bedrijf | Windsor GA4, zie §5.2 (welke events tellen: semantic layer) |
+| 9 | **Leads in Syntec** — **alleen bij Van den Udenhout**: totaal, via Internet (kanaalgroep), per soort lead (volgens de semantic layer). Bij de andere bedrijven vervalt deze stap en meldt de analyse dat leads alleen uit GA4 komen. | `marketing_analyse_leads` |
 | 10 | **Doel**: hoe staat de campagne ervoor, gezien doel, budget en periode | Briefing + alles hierboven |
 
 ### 5.2 Lead-events later in de sessie (geverifieerd)
@@ -182,7 +186,7 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 
 | Blok | Voorbeelden van wat erin hoort |
 |---|---|
-| **Algemeen** | **Welke accounts en GA4-properties bij welk bedrijf horen** (bijv. Van den Udenhout = Meta "Van den Udenhout", Google Ads "Udenhout", LinkedIn "Van den Udenhout Groep", GA4 "GA4_https://udenhout.nl"); naamgeving van campagnes ("Actie(s) - …"); wat Van den Udenhout onder een lead verstaat |
+| **Algemeen** | **Welke accounts en GA4-properties bij welk bedrijf horen**; **welke bronnen per bedrijf van toepassing zijn** (Data leads alleen voor Van den Udenhout; de andere bedrijven alleen GA4 voor leads) (bijv. Van den Udenhout = Meta "Van den Udenhout", Google Ads "Udenhout", LinkedIn "Van den Udenhout Groep", GA4 "GA4_https://udenhout.nl"); naamgeving van campagnes ("Actie(s) - …"); wat Van den Udenhout onder een lead verstaat |
 | **Google Ads** | Campagnetypes (Search, PMax, Demand Gen), naamconventies, welke conversies betrouwbaar zijn |
 | **Meta Ads** | PR = prospecting, RT = retargeting; utm-opbouw; Meta-leads zijn de eigen telling van Meta |
 | **LinkedIn Ads** | Welke accounts horen bij welk merk |
@@ -190,7 +194,7 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 | **Instagram** | Accounts; organisch vs geboost bereik |
 | **LinkedIn organisch** | Bedrijfspagina's |
 | **Google Analytics 4** | Welke property bij welke website hoort; **hoe e-mailverkeer te herkennen** (kanaalgroep, utm_source/medium); **welke events als lead tellen**; welke andere events interessant zijn |
-| **Data leads (spreadsheet)** | De zes kolommen en wat ze betekenen; "Internet" = online; ordersoorten; modelnamen op veel manieren gespeld; "FW:" is er al uit; 365 dagen |
+| **Data leads (spreadsheet)** | De zes kolommen en wat ze betekenen; **welk soort lead een rij is** (af te leiden uit Onderwerp, Ordersoort enz.); "Internet" = online; modelnamen op veel manieren gespeld; "FW:" is er al uit; 365 dagen; alleen Van den Udenhout |
 | **Extra kanaalkosten** | Wat erin staat en hoe het te verdelen (§5.3) |
 
 - **Bewerken** alleen door de eigenaar, **lezen** door iedereen.
@@ -218,8 +222,8 @@ Rechtsboven staan **Hoofdprompt**, **Semantic layer** en **Nieuwe campagne**. Ee
 **Briefing** (zijbalk). Velden:
 
 - naam (verplicht);
-- **bedrijf** (verplicht, keuzelijst): Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra … De lijst komt uit het blok Algemeen van de semantic layer, zodat een nieuw bedrijf daar maar op één plek bij hoeft;
-- merk en model (optioneel, de auto: bijv. Audi / A2 e-tron);
+- **Bedrijf** (verplicht, keuzelijst): Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra … De lijst komt uit het blok Algemeen van de semantic layer, zodat een nieuw bedrijf daar maar op één plek bij hoeft;
+- **Merk** en **Model** (optioneel, de auto: bijv. Audi / A2 e-tron);
 - startdatum en einddatum;
 - totaalbudget;
 - doel (open tekst);
@@ -249,7 +253,7 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | Briefing | Zoektermen, campagnepagina's en de sheetkoppeling eruit; **Bedrijf** en **Data correctie** erin |
 | Nieuw | **Semantic layer**: knop, zijbalk met een blok per bron, tabel met versies |
 | Analyse | **Label** (tussentijds/eind) automatisch bij opslaan; momentopname van data correctie en semantic layer per versie |
-| Kerncijfers overzicht | Leads uit `marketing_analyse_leads` (totaal + via Internet) in plaats van "Leads Syntec" |
+| Kerncijfers overzicht | Lead-events GA4 (elk bedrijf) en leads uit `marketing_analyse_leads` (alleen Van den Udenhout; bij de andere bedrijven "n.v.t." in plaats van een nul) |
 | Nachtelijke sync | Extra tabel `marketing_analyse_leads` vullen in dezelfde run (§3.1), plus migratie |
 | Hoofdprompt (standaardtekst) | Herschreven naar de besluiten: bronnenregel, periode, leads (totaal/Internet/type), kostenverdeling, twee labels, geen orders, geen vergelijking met vóór de campagne |
 | Skill | Alleen Windsor live, `marketing_analyse_leads` en `lead_kanaalkosten`; bedrijf → accounts uit de semantic layer; semantic layer en data correctie inlezen; analyseronde; ronde uit na eindevaluatie |
@@ -263,12 +267,9 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | **2** | Hoofdprompt en semantic layer aanscherpen op basis van v1; data correctie invullen; v2 draaien en controleren dat de correcties zijn toegepast |
 | **3** | Later: e-mailcijfers uit Selligent, benchmarks tussen campagnes, automatisch wekelijks draaien |
 
-## 11. Vervolgvragen (ronde 3)
+## 11. Open vragen
 
-1. **Lead Type in de leads-kopie?** Bij vraag 6 vroeg je welke lead types het waren, maar de kolom **Lead Type** (kolom Z) staat niet in je lijst van zes. Zonder die kolom kan de analyse alleen uitsplitsen naar ordersoort. *Voorstel: Lead Type toevoegen.*
-2. **Kanaal in de leads-kopie?** De kolom **Kanaal** (kolom A, bijv. Udenhout.nl, Audi.nl, Gaspedaal) zegt via welke bron een online lead binnenkwam. Dat helpt om leads aan de campagne te koppelen (via udenhout.nl tegenover een merksite of portal). *Voorstel: toevoegen.*
-3. **Bedrijf of merk.** In de briefing staan straks twee dingen die allebei "merk" kunnen heten: het **bedrijf** (Van den Udenhout, Porsche Centrum Brabant …) en het **automerk** (Audi, Volkswagen …). *Voorstel: het veld voor het bedrijf heet "Bedrijf" en het automerk "Merk (auto)".* Andere namen mogen ook.
-4. **Leads van andere bedrijven.** "Data leads" lijkt alleen de leads van Van den Udenhout te bevatten (Volkswagen-groep). Voor een campagne van bijvoorbeeld Porsche Centrum Brabant of Bentley Maastricht zijn er dan geen leads in deze bron. Klopt dat? Dan meldt de analyse dat bij die bedrijven en kijkt hij alleen naar de lead-events in GA4.
+Geen. Alle vragen uit de rondes 1 tot en met 3 zijn beantwoord en verwerkt in §2. Nieuwe vragen die tijdens het bouwen opkomen, komen hier te staan.
 
 ## 12. Risico's
 
