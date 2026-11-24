@@ -40,7 +40,8 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 
 **Niet gebruiken**: alle andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of
 `v_leads`. De tabellen van de tool zelf (`marketing_analyse_campagnes`, `_prompts`,
-`_semantiek`, `_versies`) lees en schrijf je wel; dat is geen analysedata.
+`_semantiek`) lees en schrijf je wel; dat is geen analysedata. `_versies` schrijf je alleen
+(via `marketing_analyse_bewaar`); eerdere versies lees je niet.
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
@@ -65,9 +66,12 @@ where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": wher
 select id, versie, inhoud from dataloket.marketing_analyse_prompts
 where opzet_id = '<opzet_id>' order by versie desc limit 1;
 select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by versie desc limit 1;
-select versie, label, geanalyseerd_op, kerncijfers, resultaat->'samenvatting' as samenvatting
-from dataloket.marketing_analyse_versies where campagne_id = '<id>' order by versie desc limit 1;
 ```
+- **Geen voorkennis** (besluit van de eigenaar): lees **geen** eerdere versies van de analyse
+  (`marketing_analyse_versies`), ook niet bij een nieuwe versie van een bestaande analyse.
+  Maak elke analyse zelfstandig en vergelijk niet met een vorige versie. Volgt een vergelijking
+  met een vorige versie toch uit een opgeslagen prompt, sla die dan over en meld dat in
+  `datakwaliteit`. De Data correctie geldt wel gewoon.
 - **Geen prompt bij een andere opzet dan Campagne analyse: stop.** Maak geen analyse en meld:
   "Er is nog geen prompt voor <opzet>. De eigenaar schrijft hem in het dashboard via Analyse
   prompts." Val nooit terug op de campagneprompt (besluit van de eigenaar). In een analyseronde

@@ -10,6 +10,7 @@ Van den Udenhout draait campagnes (bijv. "Audi A2") over meerdere kanalen tegeli
 2. De eigenaar geeft in Claude Code het sein, met de skill.
 3. Claude zoekt alle data van de campagne op, analyseert de funnel en schrijft het resultaat weg in Supabase.
 4. Het dashboard toont de analyse. Elke analyse is een **nieuwe versie**; eerdere versies blijven op te halen.
+   Claude maakt elke versie **zonder voorkennis**: eerdere versies van de analyse worden niet meegegeven of gelezen (besluit van de eigenaar, november 2026).
 
 Drie kennislagen sturen de analyse:
 
